@@ -491,3 +491,46 @@ test('a selected audio clip has a Volume button in the simple view that opens it
     expect(visible('Volume')).toBe(true);
     expect(labelled('Volume').length).toBeGreaterThan(0);
 });
+
+describe('opening a project that does not load', () => {
+    const spinners = () => root.container.queryAll((node) => String(node.type).includes('ActivityIndicator'));
+    const documentCalls = () => mockRequest.mock.calls.filter(([path]) => String(path).endsWith('/document') && !path.includes('?')).length;
+    const defaultImpl = (path: string) => (path.endsWith('/document') ? { revision: 4, document: serverDocument } : path.endsWith('/media-info') ? { seconds: 4 } : { project: { id: projectId, workspace_id: 'workspace', name: 'Native cut' } });
+
+    test('a load that never answers switches from the spinner to an error with Retry and Back after 15 seconds', async () => {
+        let hang = true;
+        mockRequest.mockImplementation(async (path: string) => (hang && path.endsWith('/document') ? new Promise(() => {}) : defaultImpl(path)));
+        await renderSimple();
+        expect(spinners()).toHaveLength(1);
+        expect(visible('Check your connection and try again.')).toBe(false);
+        await act(async () => { jest.advanceTimersByTime(14000); });
+        expect(spinners()).toHaveLength(1);
+        await act(async () => { jest.advanceTimersByTime(1500); });
+        expect(spinners()).toHaveLength(0);
+        expect(visible('Check your connection and try again.')).toBe(true);
+        expect(labelled('Retry now')).toHaveLength(1);
+        expect(labelled('Back')).toHaveLength(1);
+        hang = false;
+        await press('Retry now');
+        await act(async () => Promise.resolve());
+        expect(documentCalls()).toBe(2);
+        expect(visible('Native cut')).toBe(true);
+        expect(visible('Check your connection and try again.')).toBe(false);
+    });
+
+    test('a rejected load shows the error without a spinner, and Back leaves', async () => {
+        mockRequest.mockImplementation(async (path: string) => { if (path.endsWith('/document')) throw new Error('offline'); return defaultImpl(path); });
+        await renderSimple();
+        expect(spinners()).toHaveLength(0);
+        expect(visible('Check your connection and try again.')).toBe(true);
+        await press('Back');
+        expect(mockRouter.back).toHaveBeenCalledTimes(1);
+    });
+
+    test('the timeline opens when only the project name or the media list fails', async () => {
+        mockRequest.mockImplementation(async (path: string) => { if (path.endsWith('/document')) return defaultImpl(path); if (path.includes('/assets')) throw new Error('slow'); throw new Error('project lookup failed'); });
+        await renderSimple();
+        expect(visible('TIMELINE')).toBe(true);
+        expect(visible('Check your connection and try again.')).toBe(false);
+    });
+});
