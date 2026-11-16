@@ -15,7 +15,7 @@ import BeatRegionActions from './BeatRegionActions';
 import useRegionDrag from './useRegionDrag';
 import { button, input } from './beatStyles';
 
-export default function BeatArrangement({ doc, edit, selectPattern, editTrackId, setEditTrackId,
+export default function BeatArrangement({ ai, onAi, doc, edit, selectPattern, editTrackId, setEditTrackId,
   locator, setLocator, playhead, runId, announce, onSelectRegion }) {
   useEffect(() => () => clearBeatAssets(), []);
   useEffect(() => { syncAssetTempo(doc.tempo.bpm); }, [doc.tempo.bpm]);
@@ -147,7 +147,7 @@ export default function BeatArrangement({ doc, edit, selectPattern, editTrackId,
         { label: 'delete region', regionId: selectedRegion.id })}>Delete region</button>
     </div>}
     {selectedRegion?.pattern && <button className={button} onClick={() => edit((d) => midi.convertDrums(d, selectedRegion.id), { label: 'convert drums to MIDI', message: 'Converted to MIDI. The original drum region remains and its track is muted.' })}>Convert to MIDI</button>}
-    {selectedRegion?.assetId && <BeatRegionInspector region={selectedRegion} edit={edit} />}
+    {selectedRegion?.assetId && <BeatRegionInspector ai={ai} onAi={onAi} asset={doc.assets[selectedRegion.assetId]} trackId={selectedTrack.id} region={selectedRegion} edit={edit} />}
     <BeatRegionActions region={selectedRegion} track={selectedTrack} locator={locator} snap={snap} edit={edit} selectPattern={selectPattern}
       movePlayhead={(delta) => setLocator(clampLocator(locator + delta, end))} />
     <p className="text-xs text-vx-fg-muted">Drag to move; Alt-drag to copy. Drag edges to trim or loop.

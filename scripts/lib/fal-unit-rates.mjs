@@ -29,6 +29,9 @@ export const UNIT_RATES = {
     'mmaudio-v2-video': { rate: 0.001, per: 's', quantity: 10 },
 };
 
+// Private alias, excluded by check-fal-catalog; placeholder until owner D6.
+UNIT_RATES['ace-step-loop'] = UNIT_RATES['ace-step-1.5'];
+
 // fal's base price for each endpoint an active catalog row uses: the
 // `endpointBilling` object in the model page's payload (billing_unit and
 // price), read on 2026-10-09. Keyed by endpoint, as fal keys it.

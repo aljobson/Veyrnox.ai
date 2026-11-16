@@ -1,4 +1,6 @@
 'use client';
+import { useSyncExternalStore } from 'react';
+import { assetState, subscribeAssets } from '../../../_lib/music/beat/beatAssets.js';
 import BeatMidiPreview from './BeatMidiPreview';
 import BeatAudioRegion, { BeatAudioRetry } from './BeatAudioRegion';
 import { formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
@@ -8,6 +10,7 @@ import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 export default function BeatRegion({ region, track, doc, zoom, snap, locator, selected, select, edit, drag }) {
   const position = { left: region.start / 3840 * zoom, width: region.length / 3840 * zoom };
   const asset = region.assetId && doc.assets[region.assetId];
+  const held = useSyncExternalStore(subscribeAssets, () => !!asset && assetState(asset, doc.tempo.bpm).status === 'held', () => false);
   const clip = region.clipId && doc.clips[region.clipId];
   const loops = clip ? `${Math.ceil(region.length / clip.lengthTicks)} clip loops` : asset ? audioLoopLabel(region, asset, doc.tempo.bpm) : drumLoopLabel(region, doc.steps);
   const name = `${selected ? 'Selected, ' : ''}${clip ? `MIDI ${clip.name}` : asset ? `Audio ${asset.name}` : `Pattern ${region.pattern}`} on ${track.name}, ` +
@@ -49,7 +52,7 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
     <button data-region-id={region.id} className={`absolute inset-0 min-h-11 touch-none overflow-hidden rounded-lg
       border ${clip ? 'border-vx-hue-rose bg-vx-hue-rose/35' : asset ? 'border-vx-hue-sky bg-vx-hue-sky/35' : 'border-vx-hue-iris bg-vx-hue-iris/35'} text-vx-fg focus-visible:z-20 focus-visible:outline
       focus-visible:outline-2 focus-visible:outline-vx-accent ${selected ? 'ring-2 ring-vx-accent' : ''}`}
-      aria-label={name} aria-pressed={selected} onKeyDown={key}
+      aria-label={held ? `${name}. Held for review — this part can't be played or exported` : name} aria-pressed={selected} onKeyDown={key}
       onPointerDown={(event) => drag.begin(event, region, track.id)}
       onClick={(event) => {
         event.stopPropagation();

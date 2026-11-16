@@ -251,8 +251,10 @@ test('the tokens.js fallback offers the lengths the live catalog does', () => {
 });
 
 test('every fallback model derives all public capabilities from the gateway registry', () => {
-    assert.deepEqual(Object.keys(FALLBACK_MODEL_ENDPOINTS).sort(), MODELS.map((model) => model.id).sort(),
-        'each fallback row has exactly one registry join');
+    assert.deepEqual(Object.keys(FALLBACK_MODEL_ENDPOINTS).filter(id => id !== 'ace-step-loop').sort(), MODELS.map((model) => model.id).sort(),
+        'each public fallback row has exactly one registry join');
+    assert.equal(MODELS.some(m => m.id === 'ace-step-loop'), false);
+    assert.deepEqual(fallbackCapabilitiesFor('ace-step-loop'), fallbackCapabilitiesFor('ace-step-1.5'));
     for (const model of MODELS) {
         const endpoint = FALLBACK_MODEL_ENDPOINTS[model.id];
         assert.ok(capabilityFor(endpoint), `${model.id} has a registered endpoint`);

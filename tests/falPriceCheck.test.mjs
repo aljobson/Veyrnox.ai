@@ -200,9 +200,10 @@ test('the script refuses a switch value it does not know', () => {
 const built = (id) => comparisonRate(row({ id }), UNIT_RATES).built.toFixed(4);
 
 test('each listed rate comes to the cost of one generation', () => {
-    assert.deepEqual(Object.keys(UNIT_RATES).sort(), ['ace-step', 'ace-step-1.5', 'demucs-stems', 'inworld-tts', 'kling-avatar-v2', 'mmaudio-v2-video']);
+    assert.deepEqual(Object.keys(UNIT_RATES).sort(), ['ace-step', 'ace-step-1.5', 'ace-step-loop', 'demucs-stems', 'inworld-tts', 'kling-avatar-v2', 'mmaudio-v2-video']);
     assert.equal(built('ace-step'), '0.0120');
     assert.equal(built('ace-step-1.5'), '0.0360');
+    assert.equal(UNIT_RATES['ace-step-loop'], UNIT_RATES['ace-step-1.5']);
     assert.equal(built('inworld-tts'), '0.0200');
     assert.equal(built('kling-avatar-v2'), '0.5620');
     assert.equal(built('mmaudio-v2-video'), '0.0100');

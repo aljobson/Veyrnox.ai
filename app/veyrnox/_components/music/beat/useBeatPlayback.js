@@ -1,8 +1,9 @@
 'use client';
+import { playbackHoldObserver } from '../../../_lib/music/beat/beatAssetAvailability.mjs';
 import { useBeatMidi } from './useBeatMidi';
 import { effectiveGain } from '../../../_lib/music/beat/beatEvents.mjs';
 import { recordingSequence } from '../../../_lib/music/beat/beatRecording.mjs';
-import { cachedAsset, loadAsset, syncAssetTempo, assetKey } from '../../../_lib/music/beat/beatAssets.js';
+import { assetState, subscribeAssets, cachedAsset, loadAsset, syncAssetTempo, assetKey } from '../../../_lib/music/beat/beatAssets.js';
 import { arrangementStructure, lateAudioSegment, playbackAssets } from '../../../_lib/music/beat/beatPlaybackAudio.mjs';
 import { playAudioSegment } from '../../../_lib/music/beat/beatAudioGraph.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -45,6 +46,8 @@ export function useBeatPlayback(current, edit, announce, options) {
     setRunId(null); setPlayhead(-1); setLoading(false);
     return finalized;
   }, []);
+  useEffect(() => subscribeAssets(playbackHoldObserver({ current: () => current.current, state: assetState,
+    playing: () => !!(active.current || starting.current), stop, announce })), [current, stop, announce]);
   function terminate() { stop(); }
   function audio() {
     if (!engine.current) engine.current = createBeatEngine();

@@ -61,7 +61,7 @@ async function loadCatalog() {
     }
     if (!res.ok) throw new Error(`catalog read ${res.status}`);
     const rows = await res.json();
-    return rows.filter((r) => r.active && r.provider === 'fal');
+    return rows.filter((r) => r.active && r.provider === 'fal' && r.id !== 'ace-step-loop');
 }
 
 /** HEAD-ish check: does the fal model page exist? */
