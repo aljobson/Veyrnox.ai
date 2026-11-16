@@ -2279,7 +2279,7 @@ export default {
   "explore.searchOpen": "Rechercher",
   "explore.seeAll": "Voir tous les modèles prédéfinis",
   "explore.seeAllShort": "Tout voir",
-  "explore.start.body": "Créez une ressource, préparez vos idées avec l’IA ou réalisez un film cohérent en plusieurs plans.",
+  "explore.start.body": "Créez une ressource ou planifiez avec l’IA.",
   "explore.start.chat.body": "Préparez ou améliorez une idée avec les principaux modèles d’IA.",
   "explore.start.create.body": "Générez une image, une vidéo ou une ressource audio.",
   "explore.start.create.hint": "Ouvre Créer.",

@@ -2236,7 +2236,7 @@ export default {
   "explore.searchOpen": "खोजें",
   "explore.seeAll": "सभी टेम्पलेट देखें",
   "explore.seeAllShort": "सब देखें",
-  "explore.start.body": "एक एसेट बनाएँ, AI के साथ योजना बनाएँ या सुसंगत कई शॉट वाली फ़िल्म बनाएँ।",
+  "explore.start.body": "एक एसेट बनाएँ या AI के साथ योजना बनाएँ।",
   "explore.start.chat.body": "अग्रणी AI मॉडलों से किसी विचार की योजना बनाएँ या उसे बेहतर करें।",
   "explore.start.create.body": "एक इमेज, वीडियो या ऑडियो एसेट जनरेट करें।",
   "explore.start.create.hint": "बनाएँ खोलता है।",

@@ -2279,7 +2279,7 @@ export default {
   "explore.searchOpen": "Buscar",
   "explore.seeAll": "Ver todas las plantillas",
   "explore.seeAllShort": "Ver todo",
-  "explore.start.body": "Crea un recurso, planifica con IA o construye una película coherente con varios planos.",
+  "explore.start.body": "Crea un recurso o planifica con IA.",
   "explore.start.chat.body": "Planifica o mejora una idea con modelos de IA líderes.",
   "explore.start.create.body": "Genera un recurso de imagen, vídeo o audio.",
   "explore.start.create.hint": "Abre Crear.",

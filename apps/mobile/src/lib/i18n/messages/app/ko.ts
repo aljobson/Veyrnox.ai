@@ -2193,7 +2193,7 @@ export default {
   "explore.searchOpen": "검색",
   "explore.seeAll": "모든 템플릿 보기",
   "explore.seeAllShort": "모두 보기",
-  "explore.start.body": "자산 하나를 만들거나 AI와 계획하거나 일관된 여러 샷의 영화를 만드세요.",
+  "explore.start.body": "자산 하나를 만들거나 AI와 계획하세요.",
   "explore.start.chat.body": "주요 AI 모델로 아이디어를 계획하거나 개선하세요.",
   "explore.start.create.body": "이미지, 영상 또는 오디오 자산 하나를 생성하세요.",
   "explore.start.create.hint": "만들기를 엽니다.",

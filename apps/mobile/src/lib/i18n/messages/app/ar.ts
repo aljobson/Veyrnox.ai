@@ -2408,7 +2408,7 @@ export default {
   "explore.searchOpen": "بحث",
   "explore.seeAll": "عرض كل القوالب",
   "explore.seeAllShort": "عرض الكل",
-  "explore.start.body": "أنشئ أصلًا واحدًا، أو خطط بالذكاء الاصطناعي، أو ابنِ فيلمًا متسقًا من عدة لقطات.",
+  "explore.start.body": "أنشئ أصلًا واحدًا، أو خطط بالذكاء الاصطناعي.",
   "explore.start.chat.body": "خطط لفكرة أو حسّنها بأبرز نماذج الذكاء الاصطناعي.",
   "explore.start.create.body": "ولّد صورة أو فيديو أو أصلًا صوتيًا واحدًا.",
   "explore.start.create.hint": "يفتح «إنشاء».",

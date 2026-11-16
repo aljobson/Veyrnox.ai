@@ -2322,7 +2322,7 @@ export default {
   "explore.searchOpen": "Поиск",
   "explore.seeAll": "Все шаблоны",
   "explore.seeAllShort": "Смотреть все",
-  "explore.start.body": "Создайте один ресурс, составьте план с ИИ или соберите фильм с согласованными кадрами.",
+  "explore.start.body": "Создайте один ресурс или составьте план с ИИ.",
   "explore.start.chat.body": "Планируйте или улучшайте идею с ведущими моделями ИИ.",
   "explore.start.create.body": "Создайте одно изображение, видео или аудио.",
   "explore.start.create.hint": "Открывает раздел «Создать».",
