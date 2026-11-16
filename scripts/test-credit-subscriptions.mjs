@@ -69,15 +69,19 @@ try {
 
     await testUltraRetirement(c);
 
-    // ── Plans: the three monthly tiers and their three yearly twins (0383, activated by 0385), cheapest first. ──
+    // ── Plans: the four monthly tiers and their four yearly twins (0383, activated by 0385), cheapest first. ──
+    // Ultra stays active in this replay: its retirement (docs/operations/0549) is held and is exercised, with the
+    // six-plan catalogue it leaves, inside testUltraRetirement's savepoint above.
     assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => [p.id, p.price_usd_cents, p.credits]),
         [
             ['lite-monthly', 1000, 157],
             ['starter-monthly', 1900, S],
             ['plus-monthly', 5900, P],
             ['lite-yearly', 9699, 157],
+            ['ultra-monthly', 12900, 2011],
             ['starter-yearly', 18299, S],
             ['plus-yearly', 56900, P],
+            ['ultra-yearly', 123840, 2011],
         ]);
 
     // ── Start: idempotent on its key; the key cannot be moved to another plan. ──

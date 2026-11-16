@@ -18,6 +18,8 @@ export async function testUltraRetirement(c) {
     const held = readFileSync('docs/operations/0549_retire_ultra_plans.sql', 'utf8').replace(/^\s*BEGIN;\s*$/m, '').replace(/^\s*COMMIT;\s*$/m, '');
     await c.query(held);
     await c.query("UPDATE public.credit_subscription_plans SET retired_at = $1 WHERE id IN ('ultra-monthly','ultra-yearly') AND NOT active", [cutoff]);
+    assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => p.id),
+      ['lite-monthly', 'starter-monthly', 'plus-monthly', 'lite-yearly', 'starter-yearly', 'plus-yearly'], 'the public catalogue is the six Lite/Starter/Plus plans once 0549 runs');
     const ultra = await one("SELECT active, credits FROM public.credit_subscription_plans WHERE id = 'ultra-monthly'");
     assert.deepEqual(ultra, { active: false, credits: 2011 });
     let tick = 0; // every event carries a strictly newer period end, as the credit-cycle guard requires (PERIOD_NOT_NEWER)
