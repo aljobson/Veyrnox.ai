@@ -30,7 +30,7 @@ const rejected = async (sql, args, code = '23514') => {
 };
 await query('BEGIN');
 try {
-  const migration = await readFile(new URL('../packages/db/schema/supabase/0544_music_studio_mixdown.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../packages/db/schema/supabase/0546_music_studio_mixdown.sql', import.meta.url), 'utf8');
   await query(migration); await query(migration);
   const alice = await signup(), bob = await signup();
   const before = await value('SELECT jsonb_build_object(\'entries\',(SELECT count(*) FROM public.ledger_entries),\'balances\',(SELECT jsonb_agg(to_jsonb(b) ORDER BY user_id) FROM public.credit_balances b))');

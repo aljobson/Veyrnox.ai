@@ -32,7 +32,7 @@ test('the surviving jobs check preserves free allowance and exactly the approved
   const zeroCredit = body.match(/^credits\s*>\s*0 OR free_allowance OR \(\s*credits\s*=\s*0 AND model_id IN \(([^)]*)\) AND provider\s*=\s*'local' AND state\s*=\s*'STORED'\s*\)$/);
   assert.ok(zeroCredit, body);
   const models = [...zeroCredit[1].matchAll(/'([^']*)'/g)].map((m) => m[1]);
-  assert.equal(defining.at(-1), '0544_music_studio_mixdown.sql');
+  assert.equal(defining.at(-1), '0546_music_studio_mixdown.sql');
   assert.deepEqual(models, ['music-local-crop', 'music-local-fade', 'music-local-speed', 'music-local-reorder',
     'music-local-remaster', 'music-local-reverse', 'music-local-mixdown']);
 });
