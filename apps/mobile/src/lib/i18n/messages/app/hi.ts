@@ -6169,5 +6169,8 @@ export default {
   "create.expectedVideo": "वीडियो में आम तौर पर लगभग {minutes} मिनट लगते हैं",
   "form.describeMotion": "गति का वर्णन करें (वैकल्पिक)",
   "form.describeSound": "ध्वनि का वर्णन करें (वैकल्पिक)",
+  "notFound.title": "यह लिंक नहीं खुल सका",
+  "notFound.body": "लिंक गलत लिखा हो सकता है या पुराना हो सकता है। कुछ भी नहीं बदला गया।",
+  "notFound.action": "होम पर जाएँ",
   "form.describeSoundPass": "जो आवाज़ चाहिए उसका वर्णन करें (वैकल्पिक)",
 } as const;

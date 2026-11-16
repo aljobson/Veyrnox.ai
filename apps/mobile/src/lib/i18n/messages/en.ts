@@ -132,6 +132,7 @@ import area_montage from './en/montage';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
 import area_network from './en/network';
+import area_notFound from './en/notFound';
 import area_oac from './en/oac';
 import area_oauth from './en/oauth';
 import area_oddlings from './en/oddlings';
@@ -349,6 +350,7 @@ const catalog = {
     ...area_nativeEditorModel,
     ...area_net,
     ...area_network,
+    ...area_notFound,
     ...area_oac,
     ...area_oauth,
     ...area_oddlings,

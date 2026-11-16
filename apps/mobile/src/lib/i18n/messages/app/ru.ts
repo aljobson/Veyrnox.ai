@@ -6323,5 +6323,8 @@ export default {
   "create.expectedVideo": "Видео обычно занимает около {minutes} мин",
   "form.describeMotion": "Опишите движение (необязательно)",
   "form.describeSound": "Опишите звук (необязательно)",
+  "notFound.title": "Не удалось открыть эту ссылку",
+  "notFound.body": "Возможно, ссылка набрана с ошибкой или устарела. Ничего не изменилось.",
+  "notFound.action": "На главную",
   "form.describeSoundPass": "Опишите нужный звук (необязательно)",
 } as const;

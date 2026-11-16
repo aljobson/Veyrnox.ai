@@ -6477,5 +6477,8 @@ export default {
   "create.expectedVideo": "تستغرق الفيديوهات عادةً حوالي {minutes} دقيقة",
   "form.describeMotion": "صف الحركة (اختياري)",
   "form.describeSound": "صف الصوت (اختياري)",
+  "notFound.title": "تعذّر فتح هذا الرابط",
+  "notFound.body": "قد يكون الرابط مكتوبًا بشكل خاطئ أو قديمًا. لم يتغيّر أي شيء.",
+  "notFound.action": "الذهاب إلى الصفحة الرئيسية",
   "form.describeSoundPass": "صف الصوت الذي تريده (اختياري)",
 } as const;

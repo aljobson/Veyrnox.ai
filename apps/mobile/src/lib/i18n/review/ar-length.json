@@ -1842,6 +1842,12 @@
     "ratio": 1.74
   },
   {
+    "id": "notFound.action",
+    "english": "Go to Home",
+    "translation": "الذهاب إلى الصفحة الرئيسية",
+    "ratio": 2.6
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

@@ -13,6 +13,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('expo-video', () => ({ useVideoPlayer: () => ({ addListener: () => ({ remove: () => {} }), replace: () => {}, play: () => {} }), VideoView: () => null }));
 jest.mock('../src/components/dev/EditorSpikeHarness', () => ({ EditorSpikeHarness: () => require('react').createElement(require('react-native').Text, null, 'spike harness') }));
+jest.mock('../src/components/EmptyState', () => ({ EmptyState: (p: { title: string }) => require('react').createElement(require('react-native').Text, null, p.title) }));
 void [RN.View, RN.Text];
 const flags = globalThis as unknown as { __DEV__: boolean; IS_REACT_ACT_ENVIRONMENT: boolean };
 const textOf = (node: TestInstance): string => node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
@@ -56,8 +57,8 @@ describe('in a development build they still open', () => {
     });
 });
 
-test('a path with no screen goes to the root instead of an unmatched-route page', async () => {
+test('a path with no screen says so instead of redirecting silently or showing an unmatched-route page', async () => {
     await act(async () => root.render(<NotFound />));
-    expect(hrefs()).toEqual(['/']);
-    expect(textOf(root.container)).toBe('');
+    expect(hrefs()).toEqual([]);
+    expect(textOf(root.container)).toBe(t('notFound.title'));
 });

@@ -6092,5 +6092,8 @@ export default {
   "create.expectedVideo": "视频通常需要约 {minutes} 分钟",
   "form.describeMotion": "描述动作（可选）",
   "form.describeSound": "描述声音（可选）",
+  "notFound.title": "无法打开此链接",
+  "notFound.body": "链接可能输入有误或已过期。没有任何更改。",
+  "notFound.action": "前往首页",
   "form.describeSoundPass": "描述你想要的声音（可选）",
 } as const;

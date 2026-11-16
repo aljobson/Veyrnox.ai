@@ -6246,5 +6246,8 @@ export default {
   "create.expectedVideo": "Los vídeos suelen tardar unos {minutes} min",
   "form.describeMotion": "Describe el movimiento (opcional)",
   "form.describeSound": "Describe el sonido (opcional)",
+  "notFound.title": "No se puede abrir este enlace",
+  "notFound.body": "Puede que el enlace esté mal escrito o caducado. No se ha cambiado nada.",
+  "notFound.action": "Ir al inicio",
   "form.describeSoundPass": "Describe el sonido que quieres (opcional)",
 } as const;
