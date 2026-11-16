@@ -54,10 +54,10 @@ test('Publish checkout supports the server-owned $4.99 weekly plan', async () =>
   assert.equal(fields.get('line_items[0][price_data][recurring][interval]'), 'week');
 });
 
-test('Publish checkout supports the server-owned $126 annual plan', async () => {
+test('Publish checkout supports the server-owned $125.99 annual plan', async () => {
   let fields;
   const result = await createPublishPlanCheckout({
-    subscriptionId: id, planId: 'publish-annual', interval: 'year', priceUsdCents: 12600,
+    subscriptionId: id, planId: 'publish-annual', interval: 'year', priceUsdCents: 12599,
   }, {
     fetch: async (_url, init) => {
       fields = new URLSearchParams(init.body);
@@ -66,7 +66,7 @@ test('Publish checkout supports the server-owned $126 annual plan', async () => 
     apiKey: 'sk_test_x', publicHost: 'https://veyrnox.ai', signingSecret: secret,
   });
   assert.equal(result.ok, true);
-  assert.equal(fields.get('line_items[0][price_data][unit_amount]'), '12600');
+  assert.equal(fields.get('line_items[0][price_data][unit_amount]'), '12599');
   assert.equal(fields.get('line_items[0][price_data][recurring][interval]'), 'year');
 });
 

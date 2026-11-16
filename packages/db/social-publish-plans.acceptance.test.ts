@@ -29,6 +29,9 @@ describe('social Publish Plan entitlement (0293, 0298, 0340, 0341)', { skip: !pr
     const annualMigration = await readFile(new URL('./schema/supabase/0341_annual_social_publish_plan.sql', import.meta.url), 'utf8');
     await pool.query(annualMigration);
     await pool.query(annualMigration);
+    const annualPriceMigration = await readFile(new URL('./schema/supabase/0555_publish_annual_price_12599.sql', import.meta.url), 'utf8');
+    await pool.query(annualPriceMigration);
+    await pool.query(annualPriceMigration);
   });
 
   after(async () => { if (pool) await pool.end(); });
@@ -55,7 +58,7 @@ describe('social Publish Plan entitlement (0293, 0298, 0340, 0341)', { skip: !pr
     assert.deepEqual(plans, [
       { id: 'publish-weekly', name: 'Publish Plan', billing_interval: 'week', price_usd_cents: 499, analytics_days: 366, best_time_enabled: true },
       { id: 'publish', name: 'Publish Plan', billing_interval: 'month', price_usd_cents: 1500, analytics_days: 366, best_time_enabled: true },
-      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12600, analytics_days: 366, best_time_enabled: true },
+      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12599, analytics_days: 366, best_time_enabled: true },
     ]);
     const auth = await user();
     const own = await entitlement(auth);

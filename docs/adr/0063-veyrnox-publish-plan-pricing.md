@@ -215,3 +215,13 @@ approved as proposed by the product owner.
    brand) to bound the same anti-abuse risk the base cap addresses, or is linear per-account
    billing itself a sufficient economic deterrent? Recommend deferring to implementation with a
    conservative default (e.g., 50 accounts total) rather than leaving it fully unbounded.
+
+## Amendment — 16 November 2026: annual is $125.99
+
+Apple has no $126.00 price point; App Store Connect's nearest is $125.99. The owner
+requires identical prices on web and in both stores, so the web `publish-annual` row
+moves from 12600 to 12599 cents (migration 0555). Google Play is set to $125.99 to
+match. The $126/year and "exactly 30% off" wording above is the 17 October decision;
+the saving is now 30.0006% and the product still says "Save 30%". Running
+subscriptions keep the price snapshot they started with; only new purchases pay
+$125.99. Weekly ($4.99) and monthly ($15) are unchanged.

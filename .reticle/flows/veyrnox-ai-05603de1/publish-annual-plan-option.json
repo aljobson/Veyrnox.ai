@@ -1,7 +1,7 @@
 {
   "version": 2,
   "name": "publish-annual-plan-option",
-  "intent": "A publisher can choose Veyrnox Publish annual billing at $126 per year, see the exact 30% saving and monthly equivalent, review the automatic-renewal disclosure, and enable checkout only after consent.",
+  "intent": "A publisher can choose Veyrnox Publish annual billing at $125.99 per year, see the exact 30% saving and monthly equivalent, review the automatic-renewal disclosure, and enable checkout only after consent.",
   "intentId": "flow:publish-annual-plan-option",
   "projectId": "veyrnox-ai-05603de1",
   "startPath": "/app/publish/plan",
@@ -41,7 +41,7 @@
         "predicates": [
           {
             "kind": "text",
-            "contains": "Start my Publish Plan at $126.00 plus tax every year. I understand it renews automatically until I cancel."
+            "contains": "Start my Publish Plan at $125.99 plus tax every year. I understand it renews automatically until I cancel."
           },
           {
             "kind": "text",
@@ -68,7 +68,7 @@
       "anchor": {
         "kind": "role",
         "role": "checkbox",
-        "name": "Start my Publish Plan at $126.00 plus tax every year. I understand it renews automatically until I cancel."
+        "name": "Start my Publish Plan at $125.99 plus tax every year. I understand it renews automatically until I cancel."
       },
       "source": {
         "file": "app/veyrnox/app/publish/plan/PublishPlanPanel.js",

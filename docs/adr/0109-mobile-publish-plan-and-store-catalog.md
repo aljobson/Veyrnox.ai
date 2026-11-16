@@ -5,7 +5,7 @@
 
 ## Context
 
-ADR-0108 deliberately left subscriptions out. The Publish Plan (weekly $4.99, monthly $15, annual $126; five accounts, scheduling, 366-day analytics, best-time) is a digital service consumed in the app, so Apple and Google require their own in-app purchase for it inside the apps, as for credits. The web keeps Stripe.
+ADR-0108 deliberately left subscriptions out. The Publish Plan (weekly $4.99, monthly $15, annual $126, now $125.99 (0555); five accounts, scheduling, 366-day analytics, best-time) is a digital service consumed in the app, so Apple and Google require their own in-app purchase for it inside the apps, as for credits. The web keeps Stripe.
 
 ## Decisions
 
@@ -41,3 +41,9 @@ Tested on local Postgres: 11 acceptance tests for 0346 (fresh base schema twice,
 - **Double billing is not visible here.** The person is charged by both and entitled once; the flagged row is not in this response. The app must call this endpoint before showing its paywall (ADR-0109 decision 5), and an operator refund is the fix. Surfacing a flagged row to the app needs a new field from the RPC and is not done.
 - **Mobile reads** `subscription.source`: `'stripe'` -> "Manage on the web" (no in-app link to Stripe); `'store'` -> the store's subscription settings; `null` -> offer the paywall. Never a customer id, receipt or token.
 
+
+## Amendment — 16 November 2026: annual is $125.99
+
+The annual store product is priced $125.99 on both stores (Apple has no $126.00 price
+point), and the web plan row follows in migration 0555. See the ADR-0063 amendment of
+the same date.

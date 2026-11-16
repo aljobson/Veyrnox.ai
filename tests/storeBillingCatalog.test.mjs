@@ -22,7 +22,7 @@ test('active saleable products are exactly the post-0549 catalog in each store',
 test('migration prices, 0407 price points and latest credit amendments survive catalog extraction', () => {
     const ios = catalog.filter(p => p.store === 'ios');
     assert.deepEqual(ios.filter(p => p.offering === 'credits').map(p => [p.credits, p.priceUsdCents]).sort((a,b) => a[0]-b[0]), [[156,999],[392,2499],[1177,7499]]);
-    assert.deepEqual(ios.filter(p => p.offering === 'publish').map(p => p.priceUsdCents).sort((a,b)=>a-b), [499,1500,12600]);
+    assert.deepEqual(ios.filter(p => p.offering === 'publish').map(p => p.priceUsdCents).sort((a,b)=>a-b), [499,1500,12599]);
     assert.deepEqual(ios.filter(p => p.offering === 'generation').map(p => [p.plan,p.priceUsdCents,p.credits]).sort(), [
         ['lite-monthly',1000,157],['lite-yearly',9699,157],['plus-monthly',5900,924],['plus-yearly',56900,924],
         ['starter-monthly',1900,297],['starter-yearly',18299,297],

@@ -46,6 +46,8 @@ describe("Store Publish subscriptions (0346)", { skip: !process.env.DATABASE_URL
         }
         if (!(await has("public.social_publish_plans"))) for (const f of SOCIAL_CHAIN) await pool.query(await readFile(file(f), "utf8"));
         for (const _round of [1, 2]) await pool.query(await readFile(file(FINAL), "utf8"));
+        // Idempotent: the shared CI database may already hold 0341 from another suite, without the 0555 price.
+        for (const _round of [1, 2]) await pool.query(await readFile(file("0555_publish_annual_price_12599.sql"), "utf8"));
     });
     after(async () => { if (pool) await pool.end(); });
 
@@ -136,7 +138,7 @@ describe("Store Publish subscriptions (0346)", { skip: !process.env.DATABASE_URL
         await event(u.customer, { txn: first.a.txn, product: "ai.veyrnox.publish.annual", type: "product_change", when: at(-1000), end: at(365 * day) });
         const e = await entitlement(u.auth);
         assert.equal(e.subscription.plan_id, "publish-annual");
-        assert.equal(e.subscription.price_usd_cents, 12600);
+        assert.equal(e.subscription.price_usd_cents, 12599);
     });
 
     it("flags, never entitles, a store purchase while another plan is live", async () => {
