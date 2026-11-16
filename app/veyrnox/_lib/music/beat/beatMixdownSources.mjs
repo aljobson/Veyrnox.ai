@@ -1,11 +1,11 @@
 import { exportRange } from './beatSequence.mjs';
-import { effectiveGain } from './beatEvents.mjs';
+import { trackContributes } from './beatEvents.mjs';
 import { tickSeconds } from './beatAudioSegments.mjs';
 export function mixdownSources(doc, { range = 'song', soloTrackId } = {}) {
   const { startStep, endStep } = exportRange(doc, range);
   const songs = new Map(); let hasTakes = false;
   for (const track of doc.tracks) {
-    if (effectiveGain(doc, track.id, 'song') === 0 || (soloTrackId && track.id !== soloTrackId)) continue;
+    if (!trackContributes(doc, track.id, 'song') || (soloTrackId && track.id !== soloTrackId)) continue;
     for (const region of track.regions) {
       if (region.start >= endStep * 240 || region.start + region.length <= startStep * 240) continue;
       const asset = doc.assets?.[region.assetId];

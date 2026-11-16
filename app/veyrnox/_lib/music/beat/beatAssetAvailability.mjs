@@ -1,6 +1,6 @@
 import { usedAssets } from './beatAudioRules.mjs';
 import { exportRange } from './beatSequence.mjs';
-import { effectiveGain } from './beatEvents.mjs';
+import { trackContributes } from './beatEvents.mjs';
 import { tickSeconds } from './beatAudioSegments.mjs';
 export const HELD_EXPORT = "A part in this song is held for review, so it can't be exported. Remove it, or try again after review.";
 export const UNCONFIRMED_EXPORT = "Couldn't confirm every part is still available. Try again.";
@@ -51,7 +51,7 @@ export async function confirmAssetAvailability(doc, { request, state, markHeld }
 export function exportAssetDocument(doc, { range = 'song', soloTrackId, pattern = false } = {}) {
   if (pattern) return { ...doc, tracks: [] }; // Drum-pattern exports use no assets.
   const { startStep, endStep } = exportRange(doc, range);
-  return { ...doc, tracks: doc.tracks.filter(t => effectiveGain(doc, t.id, 'song') > 0
+  return { ...doc, tracks: doc.tracks.filter(t => trackContributes(doc, t.id, 'song')
     && (!soloTrackId || t.id === soloTrackId)).map(t => ({ ...t, regions: t.regions.filter(r => {
       if (!r.assetId) return false;
       const from = Math.max(0, tickSeconds(startStep * 240 - r.start, doc.tempo.bpm), r.fadeIn?.startSec ?? 0);

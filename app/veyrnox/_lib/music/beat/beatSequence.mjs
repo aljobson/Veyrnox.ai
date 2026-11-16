@@ -1,3 +1,4 @@
+import { mixTailSeconds } from './beatMixRules.mjs';
 import { patternTrack } from './beatEvents.mjs';
 import { BEAT_LIMITS, songEnd, validateBeat } from './beatDocument.mjs';
 import { stepSeconds } from './beatTime.mjs';
@@ -13,8 +14,8 @@ export function exportRange(doc, range) {
 export function exportSize(doc, sampleRate = 44100, selectedRange) {
   const range = exportRange(doc, selectedRange);
   const seconds = (range.endStep - range.startStep) * stepSeconds(doc.tempo.bpm);
-  const frames = Math.ceil((seconds + 1.5) * sampleRate);
-  if (seconds > BEAT_LIMITS.seconds || frames > Math.ceil((600 + 1.5) * sampleRate)) {
+  const frames = Math.ceil((seconds + mixTailSeconds(doc)) * sampleRate);
+  if (seconds > BEAT_LIMITS.seconds || frames > Math.ceil((600 + mixTailSeconds(doc)) * sampleRate)) {
     throw new BeatExportError('Song export is limited to 600 seconds.');
   }
   return { ...range, seconds, frames };

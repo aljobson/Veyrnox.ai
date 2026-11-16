@@ -1,3 +1,4 @@
+import { automationEnvelope, envelopeAt } from './beatAutomation.mjs';
 export function patternEvents(doc) {
   return Object.entries(doc.patterns[doc.currentPattern].rows)
     .flatMap(([pad, hits]) => hits.filter(([step]) => step < doc.steps).map(([step, velocity]) => ({ step, pad, velocity: velocity / 127 })))
@@ -36,4 +37,15 @@ export function effectiveGain(doc, trackId, mode = doc.view) {
   const track = doc.tracks.find((t) => t.id === trackId);
   if (!track) return 0;
   return mode === 'pattern' ? track.gain : track.mute || (doc.tracks.some((t) => t.solo) && !track.solo) ? 0 : track.gain;
+}
+
+export function trackEnabled(doc, trackId, mode = doc.view) {
+  const track = doc.tracks.find(t => t.id === trackId);
+  return !!track && (mode === 'pattern' || (!track.mute && (!doc.tracks.some(t => t.solo) || track.solo)));
+}
+export function trackContributes(doc, trackId, mode = doc.view) {
+  const track = doc.tracks.find(t => t.id === trackId);
+  if (!trackEnabled(doc, trackId, mode)) return false;
+  const envelope = mode === 'song' && track.automation?.gain ? automationEnvelope(track.automation.gain, doc.tempo.bpm) : [];
+  return track.gain > 0 || envelope.some(([sec]) => envelopeAt(envelope, sec) > 0);
 }
