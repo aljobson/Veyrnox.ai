@@ -1,5 +1,6 @@
 export default {
     "modelPage.unavailable": "This model is unavailable.",
+    "modelPage.generateLabel": "Generate with {title}, {credits} credits",
     "modelPage.generateLabel.one": "Generate with {title}, {count} credit",
     "modelPage.generateLabel.other": "Generate with {title}, {count} credits",
     "modelPage.price": "{credits} cr",

@@ -17,6 +17,7 @@ export default {
     'form.costs.other': 'Costs {count} credits. Refunded if it fails.',
     'form.err.insufficient': 'Not enough credits for this.',
     'form.err.rate': 'Too many requests. Wait a moment.',
+    'form.err.priceChanged': 'The price changed to {credits} credits. Check it and try again.',
     'form.err.priceChanged.one': 'The price changed to {count} credit. Check it and try again.',
     'form.err.priceChanged.other': 'The price changed to {count} credits. Check it and try again.',
     'form.err.priceChangedUnknown': 'The price changed to a new amount. Check it and try again.',
