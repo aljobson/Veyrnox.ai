@@ -51,8 +51,16 @@ test('daily check-in is on in production and accepts only explicit boolean strin
     for (const vars of [config.vars, config.env.staging.vars]) {
         if (Object.hasOwn(vars, 'CHECKIN_ENABLED')) assert.ok(['true', 'false'].includes(vars.CHECKIN_ENABLED));
     }
-    // ADR-0257: enabled in production by the owner on 2026-10-24. Removing the line turns it off.
-    assert.equal(config.vars.CHECKIN_ENABLED, 'true');
+    // ADR-0257: enabled in production by the owner on 2026-10-24; since 2026-11-16 it lives in APP_RUNTIME_FLAGS.
+    assert.equal(Object.hasOwn(config.vars, 'CHECKIN_ENABLED'), false, 'production check-in moved into APP_RUNTIME_FLAGS');
+    assert.equal(JSON.parse(config.vars.APP_RUNTIME_FLAGS).checkin, true);
+});
+
+test('mobile push and Music notifications are on in production through grouped bindings (ADR-0113 amendment 1)', () => {
+    // The Worker is at its text-binding cap, so push rides in APP_RUNTIME_FLAGS, never its own var.
+    assert.equal(Object.hasOwn(config.vars, 'PUSH_NOTIFICATIONS_ENABLED'), false);
+    assert.equal(JSON.parse(config.vars.APP_RUNTIME_FLAGS).push, true);
+    assert.equal(JSON.parse(config.vars.MUSIC_RUNTIME_FLAGS).notifications, true);
 });
 
 test('store billing production switches are secrets and sandbox crediting is forbidden (ADR-0108)', () => {

@@ -79,11 +79,13 @@ If a build starts failing after a dependency change, bisect these three first.
   Pushes are sent by a per-minute sweep that reads finished jobs and writes only `push_*`
   tables: never call the sender from a job-completion or refund path. A table that holds
   tokens must be erased with the account (trigger on `users.deleted_at`). Off unless
-  `PUSH_NOTIFICATIONS_ENABLED` is `"true"` (staging only; not in production `wrangler.jsonc`).
+  `PUSH_NOTIFICATIONS_ENABLED` is `"true"` (staging) or `APP_RUNTIME_FLAGS` has `"push": true`
+  (production, on since 2026-11-16; the Worker is at its binding cap, `lib/appRuntime.js`).
 - **Daily check-in** (ADR-0257): `daily_checkin` is the only reward writer, grants
   only through `ledger_grant`; ordinary non-expiring Pack credits. Off unless
-  `CHECKIN_ENABLED` is exactly `"true"`. Absent means off. On in production since
-  2026-10-24 (owner); remove the var to turn it off.
+  `CHECKIN_ENABLED` is exactly `"true"` or `APP_RUNTIME_FLAGS` has `"checkin": true`.
+  Absent means off. On in production since 2026-10-24 (owner), in `APP_RUNTIME_FLAGS`
+  since 2026-11-16; set the key to false to turn it off.
 - **Free Credits** (ADR-0013): only `grant:signup` credits are free. Every
   ledger row sets `free_delta` (the part of `delta` that moved Free Credits;
   0 for anything else) and `credit_balances.free_balance` moves with it,

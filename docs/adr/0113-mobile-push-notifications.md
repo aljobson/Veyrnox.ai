@@ -61,3 +61,13 @@ A job older than two hours, or one that finished more than 15 minutes ago, is no
 - Tokens are stored in the clear: sending needs them. They are table-only (RLS forced, no browser-role or direct `service_role` grant, access through `SECURITY DEFINER` functions), never logged and never returned by any route.
 - Messages are English only. Localising them needs a per-device locale, deferred with the app's i18n slice.
 - Still to do before production: the iOS push entitlement and Android FCM credentials in the app's EAS project (the mobile session's), a real-device delivery check on staging, and the flag.
+
+## Amendment 1 (2026-11-16): on in production
+
+The owner turned push on in production. The Worker was at its 128 text-binding cap (67 vars, 61 secrets),
+so a new var was not possible. `APP_RUNTIME_FLAGS` (`lib/appRuntime.js`) is one JSON binding for app-wide
+switches; it replaces the production `CHECKIN_ENABLED` var (now `"checkin": true`) and adds `"push": true`, a net
+change of zero bindings. `pushEnabled` and `checkinEnabled` accept either the legacy var or the grouped key, so
+staging is unchanged. Music notifications (`MUSIC_RUNTIME_FLAGS.notifications`, 0536) are on in production too.
+Rollback: set `push` to false and deploy.
+
