@@ -211,3 +211,9 @@ export const setAudioRegion = (doc, id, patch, now = Date.now()) => edit(doc, no
   Object.assign(region, patch);
   if (Object.hasOwn(patch, 'fadeIn') || Object.hasOwn(patch, 'fadeOut')) clampFades(region, d.tempo.bpm);
 });
+
+export function restoreVersion(doc, versionDoc, now = Date.now()) {
+  const next = { ...structuredClone(versionDoc), id: doc.id, createdAt: doc.createdAt, updatedAt: Math.max(now, doc.updatedAt, doc.createdAt) };
+  if (!validateBeat(next).ok) throw new Error('invalid');
+  return next;
+}

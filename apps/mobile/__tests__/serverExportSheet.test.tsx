@@ -50,6 +50,7 @@ afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimer
 test.each([new ApiError(501, 'editor_server_render_disabled'), new ApiError(403, 'preview_only')])('gate refusal quietly opens compose: %s', async error => {
     request.mockRejectedValue(error); await render(); expect(push).toHaveBeenCalledWith('/publish/compose'); expect(close).toHaveBeenCalled();
     expect(visible('Server export is unavailable for this account.')).toBe(false);
+    expect(request.mock.calls.some(([path]) => path === '/api/v1/editor/server-render')).toBe(false); // refused before any charge
 });
 test('confirm displays server credits and only then submits a durable immutable attempt', async () => {
     await render(); expect(visible('Export at 1080p for 17 credits?')).toBe(true);

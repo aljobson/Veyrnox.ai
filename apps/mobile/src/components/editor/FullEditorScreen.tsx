@@ -28,6 +28,7 @@ import { useEditorLeaveGuard } from './useEditorLeaveGuard';
 import { EditorSaveSheets } from './EditorSaveSheets';
 import { EditorVersionsSheet } from './EditorVersionsSheet';
 import { Button } from '../ui/Button';
+import { EditorLoadState } from './EditorLoadState';
 import { useEffect, useRef, useState } from 'react';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import type { Cut } from '../../lib/smartCutHandoff';
@@ -109,7 +110,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions();
     const previewHeight = Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen || advanced ? 0.1 : 0.14))));
-    if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
+    if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const timeline = timelineOf(document.timeline);
     const total = framesIn(timeline);
@@ -309,7 +310,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>
             {advanced ? <><Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /><View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View></> : null}
         </View>
-        {problem ? <StatusText variant="inherit" accessibilityRole="alert" numberOfLines={2} style={styles.problem}>{problem}</StatusText> : null}
+        {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
         {advanced ? null : <View style={styles.simpleActions}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />
@@ -377,7 +378,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>
             <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
-        {advanced || panelOpen ? <EditorToolSheet rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
+        {advanced || panelOpen ? <EditorToolSheet inline={advanced} rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>
                 {item.id === 'markers' ? <View style={{ width: 12, height: 12, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] }} /> : <Text style={[styles.toolIcon, tool === item.id && styles.toolIconActive]}>{item.icon}</Text>}
                 <Text style={[styles.toolLabel, tool === item.id && styles.toolLabelActive]}>{item.label}</Text>
@@ -462,7 +463,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </> : null}
         </ScrollView>
         </EditorToolSheet> : null}
-        {advanced ? null : <SimpleEditorBar onOpen={setSheet} />}
+        {advanced || panelOpen ? null : <SimpleEditorBar onOpen={setSheet} />}
         {bestCut.sheet}
         {speechMode && speechQuote ? <EditorSpeechCutSheet api={api} quote={speechQuote} mode={speechMode} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness(), selection })}
             apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorSpeech.applied')); return true; }}

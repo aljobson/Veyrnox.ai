@@ -137,3 +137,27 @@ test('legacy reads migrate only valid records; first save writes v4 with origina
   fake.rows.set(bad.id, { id: bad.id, revision: 1, doc: bad, updatedAt: 1 });
   assert.equal((await isolated.getBeat(bad.id)).error, 'damaged');
 });
+
+test('cloud links are transactionally account-bound, preserve local revisions, and cloud replacement guards local races', async (t) => {
+  const previous = globalThis.indexedDB, fake = fakeIndexedDB(); globalThis.indexedDB = fake;
+  t.after(() => { globalThis.indexedDB = previous; });
+  const isolated = await import('../app/veyrnox/_lib/music/beat/beatStore.js?cloud-transactions');
+  const doc = createBeat({ id: randomUUID(), now: 1 });
+  const cloud = { userId: randomUUID(), projectId: null, revision: 0, syncedUpdatedAt: 0 };
+  await isolated.createBeat(doc);
+  assert.equal((await isolated.setCloudLink(doc.id, null, cloud)).record.revision, 1);
+  assert.deepEqual(fake.rows.get(doc.id).doc, doc);
+  assert.equal((await isolated.setCloudLink(doc.id, { userId: randomUUID() }, cloud)).error, 'conflict');
+  const linked = { ...cloud, projectId: randomUUID(), revision: 4, syncedUpdatedAt: 1 };
+  await isolated.setCloudLink(doc.id, cloud, linked);
+  const theirs = { ...doc, title: 'Account version', updatedAt: 5 };
+  const replacement = { current: () => true, link: { ...linked, revision: 5, syncedUpdatedAt: 5 } };
+  await isolated.updateBeat(rename(doc, 'Concurrent local edit', 2), 1);
+  assert.equal((await isolated.updateBeat(theirs, 1, replacement)).error, 'conflict');
+  assert.equal(fake.rows.get(doc.id).doc.title, 'Concurrent local edit');
+  assert.equal((await isolated.updateBeat(theirs, 2, { ...replacement, current: () => false })).error, 'conflict');
+  assert.equal((await isolated.updateBeat(theirs, 2, replacement)).revision, 3);
+  assert.equal(fake.rows.get(doc.id).doc.title, theirs.title);
+  assert.equal(fake.rows.get(doc.id).cloud.revision, 5);
+  assert.equal(fake.rows.get(doc.id).cloud.syncedUpdatedAt, 5);
+});

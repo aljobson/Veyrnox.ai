@@ -9,6 +9,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { plural, t } from '../../../lib/i18n';
+import { templateCountLabel } from '../../../lib/templateCountLabel';
 import { rawText } from '../../../lib/i18n/translate';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
@@ -22,6 +23,9 @@ import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetPrice, type Preset } from '../../../lib/presets';
+import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
+import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
+import { audioAsPreset, imageAsPreset, isDirectTemplate, mixKinds, priceOfDirect } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
@@ -109,6 +113,18 @@ export default function Explore() {
         return () => { live = false; };
     }, []);
 
+    // Image and audio templates come from the same lists as Create > Templates; if one fails, Explore keeps the rest.
+    const [imageList, setImageList] = useState<ImageTemplate[]>([]);
+    const [audioList, setAudioList] = useState<AudioTemplate[]>([]);
+    useEffect(() => {
+        let live = true;
+        fetchImageTemplates().then((list) => live && setImageList(list)).catch(() => {});
+        fetchAudioTemplates().then((list) => live && setAudioList(list)).catch(() => {});
+        return () => { live = false; };
+    }, []);
+    const models = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog]);
+    const allTemplates = useMemo(() => presets && [...presets, ...imageList.map((i) => imageAsPreset(i, models)), ...audioList.map((a) => audioAsPreset(a, models))], [presets, imageList, audioList, models]);
+
     const vibe = useVibeAnswers();
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
     const jobsRunning = useRef(false), rerun = useRef(false), mounted = useRef(true);
@@ -157,13 +173,16 @@ export default function Explore() {
         }, [api]),
     );
 
-    const typedPresets = useMemo(() => filterPresets(presets ?? [], { type, category: ALL_CATEGORIES, query: '' }), [presets, type]);
+    const typedPresets = useMemo(() => filterPresets(allTemplates ?? [], { type, category: ALL_CATEGORIES, query: '' }), [allTemplates, type]);
     const categories = useMemo(() => templateChips(typedPresets, popularIds), [typedPresets, popularIds]);
     const [limit, setLimit] = useState(PAGE);
-    const matching = useMemo(() => rankPresets(filterPresets(templatesFor(typedPresets, category, popularIds), { type, category: ALL_CATEGORIES, query }), vibe), [typedPresets, type, category, popularIds, query, vibe]);
+    const matching = useMemo(() => {
+        const ranked = rankPresets(filterPresets(templatesFor(typedPresets, category, popularIds), { type, category: ALL_CATEGORIES, query }), vibe);
+        return type === ALL_TYPES && category === ALL_CATEGORIES ? mixKinds(ranked) : ranked;
+    }, [typedPresets, type, category, popularIds, query, vibe]);
     useEffect(() => setLimit(PAGE), [type, category, query]);
     const shown = useMemo(() => matching.slice(0, limit), [matching, limit]);
-    const modelCount = useMemo(() => new Set((presets ?? []).map((preset) => preset.modelId)).size, [presets]);
+    const modelCount = useMemo(() => new Set((allTemplates ?? []).map((preset) => preset.modelId)).size, [allTemplates]);
 
     function pickType(next: TypeFilter) {
         setType(next);
@@ -181,14 +200,15 @@ export default function Explore() {
     }
 
     function openPreset(p: Preset) {
-        router.push(templatePageHref(p));
+        // Image and audio templates have no template page; like Create > Templates they open Create with their prompt.
+        router.push(isDirectTemplate(p.id) ? promptHref(p.modelId, p.prompt) : templatePageHref(p));
     }
 
     const search = query.trim();
     const filtered = search.length > 0 || type !== ALL_TYPES || category !== ALL_CATEGORIES;
     // Said once when the list empties. The line on screen echoes the query; this one does not, so typing on does not repeat it.
     const noResults = !presetsFailed && presets !== null && shown.length === 0;
-    useAnnouncement(noResults ? (type === 'audio' && !search ? t('explore.audioSoon') : t('explore.noMatch')) : null, { everywhere: true });
+    useAnnouncement(noResults ? (t('explore.noMatch')) : null, { everywhere: true });
     function clearFilters() {
         setQuery('');
         setType(ALL_TYPES);
@@ -226,7 +246,7 @@ export default function Explore() {
                         if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
-                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
+                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="pianoKeys" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </Card>
 
 
@@ -274,10 +294,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {t('explore.templateCount', {
-                                    templates: presets.length,
-                                    models: modelCount,
-                                })}
+                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length, modelCount)}
                             </Text>
                         ) : null}
                     </View>
@@ -345,14 +362,14 @@ export default function Explore() {
                         {shown.length === 0 ? (
                             <View style={styles.notice}>
                                 <Text tone="tertiary">
-                                    {type === 'audio' && !search ? t('explore.audioSoon') : search ? t('explore.noMatchQuery', { query: search }) : t('explore.noMatch')}
+                                    {search ? t('explore.noMatchQuery', { query: search }) : t('explore.noMatch')}
                                 </Text>
                                 {filtered ? <Button variant="secondary" size="md" label={t('common.clearFilters')} onPress={clearFilters} /> : null}
                             </View>
                         ) : (
                             <View style={styles.grid}>
                                 {shown.map((preset) => (
-                                    <PresetCard key={preset.id} preset={preset} price={presetPrice(preset)} onOpen={openPreset} />
+                                    <PresetCard key={preset.id} preset={preset} price={isDirectTemplate(preset.id) ? priceOfDirect(preset, models) : presetPrice(preset)} onOpen={openPreset} />
                                 ))}
                             </View>
                         )}

@@ -1,5 +1,5 @@
 import { BEAT_LIMITS, validateBeat, migrateBeat, validBeatId } from './beatDocument.mjs';
-import { decideCreate, decideUpdate, decideDelete, validRecord } from './beatStoreRules.mjs';
+import { decideCreate, decideUpdate, decideDelete, validRecord, validCloudLink, decideCloudLink } from './beatStoreRules.mjs';
 
 const NAME = 'veyrnox-beat-projects';
 const memory = new Map();
@@ -106,17 +106,24 @@ function writeResult(result) {
   if (result.action === 'delete') broadcast({ id: result.id, deleted: true });
   return result;
 }
-export async function createBeat(doc) {
+export async function createBeat(doc, cloud) {
+  if (cloud !== undefined && !validCloudLink(cloud)) return { error: 'invalid' };
   if (!validateBeat(doc).ok) return { error: 'invalid' };
   return writeResult(await run('readwrite', (rows) => {
     const decision = decideCreate(rows.find((r) => r.id === doc.id));
     if (decision.error) return decision;
     if (rows.length >= BEAT_LIMITS.projects) return { error: 'limit' };
-    return { action: 'put', record: { id: doc.id, revision: 1, doc, updatedAt: doc.updatedAt } };
+    return { action: 'put', record: { id: doc.id, revision: 1, ...(cloud ? { cloud } : {}), doc, updatedAt: doc.updatedAt } };
   }));
 }
-export async function updateBeat(doc, expectedRevision) {
-  return writeResult(await run('readwrite', (rows) => decideUpdate(rows.find((r) => r.id === doc?.id), doc, expectedRevision)));
+export async function updateBeat(doc, expectedRevision, replacement) {
+  return writeResult(await run('readwrite', rows => {
+    const existing = rows.find(r => r.id === doc?.id);
+    if (replacement && (!replacement.current() || !validCloudLink(replacement.link) || existing?.cloud?.userId !== replacement.link.userId)) return { error: 'conflict' };
+    const decision = decideUpdate(existing, doc, expectedRevision);
+    if (replacement && decision.record) decision.record.cloud = replacement.link;
+    return decision;
+  }));
 }
 export async function deleteBeat(id, expectedRevision) {
   return writeResult(await run('readwrite', (rows) => ({ ...decideDelete(rows.find((r) => r.id === id), expectedRevision), id })));
@@ -130,4 +137,10 @@ export async function getBeat(id) {
     const record = rows.find((r) => r.id === id);
     return !record ? { error: 'not_found' } : !validRecord(record) ? { error: 'damaged' } : { record: { ...record, doc: migrateBeat(record.doc) } };
   });
+}
+
+export async function setCloudLink(id, captured, link) {
+  const result = await run('readwrite', rows => decideCloudLink(rows.find(r => r.id === id), captured, link));
+  if (result.action === 'put') broadcast({ id, cloud: true });
+  return result;
 }

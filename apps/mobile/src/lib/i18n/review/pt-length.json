@@ -1158,6 +1158,12 @@
     "ratio": 1.89
   },
   {
+    "id": "explore.templateCountNone",
+    "english": "0 templates",
+    "translation": "0 modelos de template",
+    "ratio": 1.91
+  },
+  {
     "id": "explore.templates",
     "english": "Templates",
     "translation": "Modelos prontos",
@@ -2140,6 +2146,12 @@
     "english": "Templates",
     "translation": "Modelos prontos",
     "ratio": 1.67
+  },
+  {
+    "id": "privacyExport.email",
+    "english": "Email {email}",
+    "translation": "Escrever para {email}",
+    "ratio": 1.62
   },
   {
     "id": "privacyExport.more",
