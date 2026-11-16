@@ -19,7 +19,7 @@ test('0504 drops the superseded jobs check only when its replacement exists', ()
   assert.doesNotMatch(sql, /ADD CONSTRAINT/);
 });
 
-test('the surviving jobs check still contains the free-allowance rule and only adds the local zero-credit row', () => {
+test('the surviving jobs check preserves free allowance and exactly the approved local zero-credit STORED models', () => {
   // The newest definition of jobs_credits_check is the one a fully migrated database holds.
   const defining = readdirSync(DIR)
     .filter((n) => /^\d{4}_.*\.sql$/.test(n))
@@ -29,12 +29,12 @@ test('the surviving jobs check still contains the free-allowance rule and only a
   const check = latest.match(/ADD CONSTRAINT jobs_credits_check CHECK \(([\s\S]*?)\);/);
   assert.ok(check, `no jobs_credits_check body in ${defining.at(-1)}`);
   const body = check[1].replace(/\s+/g, ' ').trim();
-  assert.ok(body.startsWith('credits > 0 OR free_allowance OR ('), body);
-  const zeroCredit = body.match(/credits = 0 AND model_id IN \(([^)]*)\) AND provider = 'local' AND state = 'STORED' \)$/);
+  const zeroCredit = body.match(/^credits\s*>\s*0 OR free_allowance OR \(\s*credits\s*=\s*0 AND model_id IN \(([^)]*)\) AND provider\s*=\s*'local' AND state\s*=\s*'STORED'\s*\)$/);
   assert.ok(zeroCredit, body);
   const models = [...zeroCredit[1].matchAll(/'([^']*)'/g)].map((m) => m[1]);
-  assert.ok(models.length > 0);
-  for (const model of models) assert.match(model, /^music-local-[a-z]+$/, 'only music-local-* models may be zero-credit');
+  assert.equal(defining.at(-1), '0546_music_studio_mixdown.sql');
+  assert.deepEqual(models, ['music-local-crop', 'music-local-fade', 'music-local-speed', 'music-local-reorder',
+    'music-local-remaster', 'music-local-reverse', 'music-local-mixdown']);
 });
 
 test('0504 builds the publication slug from pg_catalog functions only', () => {

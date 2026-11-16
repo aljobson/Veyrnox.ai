@@ -8,7 +8,7 @@ export default defineConfig({
     // Only the smoke's own specs. Every other spec here has its own config
     // (page-coverage, music-preview, music-server, authenticated-fixtures), and
     // a '*.spec.mjs' glob pulled them all into the 15-minute staging smoke.
-    testMatch: ['signup.spec.mjs', 'generate.spec.mjs', 'buy.spec.mjs', 'model-switch.spec.mjs'],
+    testMatch: ['signup.spec.mjs', 'generate.spec.mjs', 'buy.spec.mjs', 'model-switch.spec.mjs', 'music-beat-export.spec.mjs'],
     testIgnore: 'authenticated-*.spec.mjs',
     timeout: 60_000,
     retries: process.env.CI ? 1 : 0,

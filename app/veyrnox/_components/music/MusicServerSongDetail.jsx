@@ -44,10 +44,11 @@ const OPERATION_LABELS = {
 };
 
 function operationLabel(value) {
+  if (value === 'studio_mixdown') return 'Made in Beats';
   return OPERATION_LABELS[value] || 'Version branch';
 }
 
-export function MusicServerSongDetail({ id }) {
+export function MusicServerSongDetail({ id, beatEditor = false }) {
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -126,7 +127,7 @@ export function MusicServerSongDetail({ id }) {
           <div className="grid min-h-72 place-items-center rounded-2xl border border-vx-border bg-vx-panel-raised"><div className="text-center"><span aria-hidden="true" className="font-vx text-8xl font-black text-vx-accent">♪</span><p className="mt-3 font-vx-mono text-xs uppercase tracking-widest text-vx-fg-muted">Private server version</p></div></div>
           <div className="min-w-0 self-center">
             <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-vx-accent/15 px-3 py-1 text-xs font-bold text-vx-accent">Ready</span><span className="rounded-full border border-vx-border px-3 py-1 text-xs text-vx-fg-muted">Private</span></div>
-            <div className="mt-4 flex items-start gap-3"><h1 className="min-w-0 flex-1 break-words font-vx text-4xl font-black tracking-tight sm:text-5xl">{song.title}</h1><MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={song.actions} onViewLineage={focusLineage} onShare={() => setDistributionMode('share')} onDownload={() => setDistributionMode('download')} onPublish={() => setDistributionMode('publish')} onCover={() => setDistributionMode('cover')} onMashup={() => setDistributionMode('mashup')} onSample={() => setDistributionMode('sample')} onExtend={() => setDistributionMode('extend')} onReplace={() => setDistributionMode('replace')} onAddSection={() => setDistributionMode('add-section')} onReuse={() => setDistributionMode('reuse')} onStems={() => setDistributionMode('stems')} onTargetStem={() => setDistributionMode('target-stem')} onAddTrack={() => setDistributionMode('add-track')} onCrop={() => setDistributionMode('crop')} onRender={() => setDistributionMode('render')} onReverse={() => setDistributionMode('render-reverse')} onSpeed={() => setDistributionMode('render-speed')} externalTriggerRef={actionsTriggerRef} /></div>
+            <div className="mt-4 flex items-start gap-3"><h1 className="min-w-0 flex-1 break-words font-vx text-4xl font-black tracking-tight sm:text-5xl">{song.title}</h1><MusicSongActions beatEditor={beatEditor} songId={song.id} jobId={song.job_id} title={song.title} actions={song.actions} onViewLineage={focusLineage} onShare={() => setDistributionMode('share')} onDownload={() => setDistributionMode('download')} onPublish={() => setDistributionMode('publish')} onCover={() => setDistributionMode('cover')} onMashup={() => setDistributionMode('mashup')} onSample={() => setDistributionMode('sample')} onExtend={() => setDistributionMode('extend')} onReplace={() => setDistributionMode('replace')} onAddSection={() => setDistributionMode('add-section')} onReuse={() => setDistributionMode('reuse')} onStems={() => setDistributionMode('stems')} onTargetStem={() => setDistributionMode('target-stem')} onAddTrack={() => setDistributionMode('add-track')} onCrop={() => setDistributionMode('crop')} onRender={() => setDistributionMode('render')} onReverse={() => setDistributionMode('render-reverse')} onSpeed={() => setDistributionMode('render-speed')} externalTriggerRef={actionsTriggerRef} /></div>
             <dl className="mt-6 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"><div className="rounded-2xl bg-vx-base p-3"><dt className="text-vx-fg-muted">Created</dt><dd className="mt-1 text-vx-fg">{new Date(song.created_at).toLocaleDateString()}</dd></div><div className="rounded-2xl bg-vx-base p-3"><dt className="text-vx-fg-muted">Visibility</dt><dd className="mt-1 capitalize text-vx-fg">{String(song.visibility || 'private').replace('_', ' ')}</dd></div></dl>
           </div>
         </div>
@@ -153,10 +154,10 @@ export function MusicServerSongDetail({ id }) {
             <div className="mt-6">
               <h3 className="font-vx text-lg font-black">Source links</h3>
               <ul className="mt-3 space-y-2">
-                {lineage.map((edge) => <li key={edge.id} className="rounded-xl border border-vx-border bg-vx-panel-raised p-3 text-sm text-vx-fg-body"><strong className="text-vx-fg">{edge.source_title}</strong> · version {edge.source_version_number} → {operationLabel(versions.find((version) => version.id === edge.output_version_id)?.operation)}</li>)}
+                {lineage.map((edge) => <li key={edge.id} className="rounded-xl border border-vx-border bg-vx-panel-raised p-3 text-sm text-vx-fg-body">{edge.relation === 'mix_source' && 'Made in Beats from '}<strong className="text-vx-fg">{edge.source_title}</strong> · version {edge.source_version_number} → {operationLabel(versions.find((version) => version.id === edge.output_version_id)?.operation)}</li>)}
               </ul>
             </div>
-          ) : <p className="mt-6 rounded-xl border border-dashed border-vx-border p-4 text-sm text-vx-fg-muted">This is an original generation with no source version.</p>}
+          ) : <p className="mt-6 rounded-xl border border-dashed border-vx-border p-4 text-sm text-vx-fg-muted">{versions.some(version => version.operation === 'studio_mixdown') ? 'Made in Beats. This mix has no source song versions.' : 'This is an original generation with no source version.'}</p>}
         </section>
       </article>
       {distributionMode === 'publish' ? <MusicPublicationDialog song={song} onClose={closeDistribution} /> : null}
