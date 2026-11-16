@@ -33,9 +33,10 @@ for (const [studio, beatEditor] of [[false, false], [false, true], [true, false]
     });
     Object.assign(process.env, env);
     const id = '123e4567-e89b-42d3-a456-426614174000';
+    const caller = '223e4567-e89b-42d3-a456-426614174000';
     t.mock.method(globalThis, 'fetch', async () => Response.json({ ok: true, song: { id, actions: [] } }));
     const response = await GET(new Request('https://x.invalid', {
-      headers: { 'x-veyrnox-auth-id': '223e4567-e89b-42d3-a456-426614174000' },
+      headers: { 'x-veyrnox-auth-id': caller },
     }), { params: Promise.resolve({ id }) });
     assert.equal(response.status, 200);
     assert.equal((await response.json()).actions.filter(action => action === 'open_studio').length, studio || beatEditor ? 1 : 0);
