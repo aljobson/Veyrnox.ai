@@ -2,10 +2,10 @@ import { DRUM_PADS, GUITAR_STRINGS, SAMPLE_RATE, getPreset, midiToFrequency, nor
 
 // Voices take (context, output, noise, ...) so the same code plays live and renders offline.
 
-export function makeNoise(context, seconds = 1) {
+export function makeNoise(context, seconds = 1, random = Math.random) {
   const buffer = context.createBuffer(1, Math.floor(context.sampleRate * seconds), context.sampleRate);
   const data = buffer.getChannelData(0);
-  for (let index = 0; index < data.length; index += 1) data[index] = Math.random() * 2 - 1;
+  for (let index = 0; index < data.length; index += 1) data[index] = random() * 2 - 1;
   return buffer;
 }
 

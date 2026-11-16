@@ -71,7 +71,7 @@ export function cachedAsset(asset, bpm, reverse = false) {
   cache.delete(key); cache.set(key, entry);
   return reverse ? entry.reversed : entry.buffer;
 }
-export async function renderSound(ref, bpm) {
+export async function renderSound(ref, bpm, random) {
   const sound = soundById(ref);
   if (!sound) throw new Error('Starter sound is unavailable');
   const context = offline(2, Math.round(soundDuration(ref, bpm) * AUDIO_RATE));
@@ -82,7 +82,7 @@ export async function renderSound(ref, bpm) {
     sweep.frequency.exponentialRampToValueAtTime(8000, soundDuration(ref, bpm));
     out.connect(sweep).connect(context.destination);
   } else out.connect(context.destination);
-  const noise = makeNoise(context);
+  const noise = makeNoise(context, 1, random);
   for (const [beat, length, value, vel] of sound.notes) playEvent(context, out, noise, sound.instrument, sound.preset,
     { value, vel, dur: length * 60 / bpm }, beat * 60 / bpm);
   return context.startRendering();

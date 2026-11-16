@@ -4,6 +4,9 @@ import { effectiveGain } from './beatEvents.mjs';
 import { estimateExport, usedAssets } from './beatAudioRules.mjs';
 import { audioSegments } from './beatAudioSegments.mjs';
 import { playAudioSegment } from './beatAudioGraph.js';
+import { AUDIO_RATE } from './beatAudioRules.mjs';
+import { seededRandom, exportSeed } from './beatSeed.mjs';
+import { chunkPlan } from './beatExport.mjs';
 import { SAMPLE_RATE } from '../../../../../lib/musicInstruments.js';
 import { makeNoise, playEvent } from '../instrumentEngine.js';
 import { beatOutput, connectTrackChannel } from './beatEngine.js';
@@ -19,7 +22,7 @@ export async function renderBeat(doc, loops, editTrackId) {
   const length = loopSeconds(doc.tempo.bpm, doc.steps);
   const context = new Offline(1, Math.ceil((length * loops + 1.5) * SAMPLE_RATE), SAMPLE_RATE);
   const master = beatOutput(context);
-  const noise = makeNoise(context);
+  const noise = makeNoise(context, 1, seededRandom(exportSeed(doc)));
   const events = patternEvents(doc);
   for (let loop = 0; loop < loops; loop++) {
     for (const event of events) {
@@ -32,12 +35,12 @@ export async function renderBeat(doc, loops, editTrackId) {
 
 export { exportRange, BeatExportError } from './beatSequence.mjs';
 import { exportSize } from './beatSequence.mjs';
-export async function loadSongBuffers(doc, progress = () => {}) {
-  const { frames } = exportSize(doc, SAMPLE_RATE);
+export async function loadSongBuffers(doc, progress = () => {}, range = 'song') {
+  const { frames } = exportSize(doc, AUDIO_RATE, range);
   estimateExport(doc, frames); // cold-cache refusal before any fetch, decode, or output allocation
   const ids = usedAssets(doc), buffers = new Map();
   if (!ids.length) return buffers;
-  const { loadAssetBuffers, prepareExportCache } = await import('./beatAssets.js');
+  const { loadAssetBuffers, prepareExportCache, renderSound } = await import('./beatAssets.js');
   prepareExportCache(doc);
   let index = 0, completed = 0;
   await Promise.all(Array.from({ length: Math.min(2, ids.length) }, async () => {
@@ -45,46 +48,68 @@ export async function loadSongBuffers(doc, progress = () => {}) {
       const id = ids[index++], asset = doc.assets[id];
       progress(`Loading ${++completed} of ${ids.length} sounds…`);
       const reversed = doc.tracks.some((t) => t.regions.some((r) => r.assetId === id && r.reverse));
-      const loaded = await loadAssetBuffers(asset, doc.tempo.bpm, reversed);
+      let loaded;
+      if (asset.source === 'sound') {
+        // Live cache may contain unseeded procedural FX. Export owns a seeded
+        // render so a cold cache and a warm cache produce the same bytes.
+        const buffer = await renderSound(asset.ref, doc.tempo.bpm, seededRandom(exportSeed(doc)));
+        let reverse;
+        if (reversed) {
+          const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+          reverse = new Offline(2, 1, AUDIO_RATE).createBuffer(buffer.numberOfChannels, buffer.length, AUDIO_RATE);
+          for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+            const from = buffer.getChannelData(channel), to = reverse.getChannelData(channel);
+            for (let frame = 0; frame < from.length; frame++) to[frame] = from[from.length - 1 - frame];
+          }
+        }
+        loaded = { buffer, reversed: reverse };
+      } else loaded = await loadAssetBuffers(asset, doc.tempo.bpm, reversed);
       const buffer = loaded?.buffer, reverse = loaded?.reversed;
       buffers.set(id, { buffer, reverse, missing: !buffer || (reversed && !reverse) });
     }
   }));
   return buffers;
 }
-export async function renderSong(doc, { buffers: prepared, progress } = {}) {
-  estimateExport(doc, exportSize(doc, SAMPLE_RATE).frames);
-  const buffers = prepared || await loadSongBuffers(doc, progress);
-  const { startStep, endStep, frames } = exportSize(doc, SAMPLE_RATE);
+export async function renderSong(doc, { buffers: prepared, progress, range = 'song', soloTrackId, startSec = 0, endSec, originSec } = {}) {
+  const size = exportSize(doc, AUDIO_RATE, range);
+  endSec ??= size.frames / AUDIO_RATE;
+  if (originSec === undefined) {
+    originSec = startSec === 0 ? 0 : chunkPlan(doc, { range })?.find(c => c.startSec === startSec)?.originSec;
+  }
+  if (!(originSec >= 0 && originSec <= startSec && endSec > startSec && endSec <= size.frames / AUDIO_RATE)) throw new Error('Invalid render window.');
+  const frames = Math.round(endSec * AUDIO_RATE) - Math.round(originSec * AUDIO_RATE);
+  estimateExport(doc, frames);
+  const buffers = prepared || await loadSongBuffers(doc, progress, range);
   const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   if (!Offline) throw new Error("Sound isn't available in this browser");
-  const context = new Offline(2, frames, SAMPLE_RATE);
-  const master = beatOutput(context);
-  const noise = makeNoise(context);
-  const channels = new Map(doc.tracks.map((track) => [track.id,
-    connectTrackChannel(context, master, effectiveGain(doc, track.id, 'song'), track.pan).input]));
-  const song = { ...doc, view: 'song' };
-  for (let step = startStep; step < endStep; step++) {
-    const time = eventTime((step - startStep) * stepSeconds(doc.tempo.bpm), step, doc.tempo.bpm, doc.swing);
-    for (const event of eventsAtStep(song, step, { includeMuted: true })) {
-      const track = doc.tracks.find((t) => t.id === event.trackId);
-      playEvent(context, channels.get(track.id), noise, 'drums', track.kit,
-        { value: event.pad, vel: event.velocity }, time);
+  const context = new Offline(2, frames, AUDIO_RATE), master = beatOutput(context);
+  const noise = makeNoise(context, 1, seededRandom(exportSeed(doc)));
+  const tracks = doc.tracks.filter(t => effectiveGain(doc, t.id, 'song') > 0 && (!soloTrackId || t.id === soloTrackId));
+  const channels = new Map(tracks.map(t => [t.id, connectTrackChannel(context, master, effectiveGain(doc, t.id, 'song'), t.pan).input]));
+  const song = { ...doc, tracks, view: 'song' }, step = stepSeconds(doc.tempo.bpm);
+  const from = size.startStep * step, to = size.endStep * step, origin = from + originSec;
+  // Track order is document order; voices within each track are chronological.
+  for (const track of tracks) {
+    const single = { ...song, tracks: [track] };
+    for (let i = size.startStep; i < size.endStep; i++) {
+      const time = eventTime((i - size.startStep) * step, i, doc.tempo.bpm, doc.swing);
+      if (time < originSec || time >= endSec) continue;
+      for (const event of eventsAtStep(single, i)) playEvent(context, channels.get(track.id), noise, 'drums', track.kit,
+        { value: event.pad, vel: event.velocity }, time - originSec);
+    }
+    for (const segment of audioSegments(single, origin, Math.min(to, from + endSec))) {
+      const loaded = buffers.get(segment.assetId), buffer = segment.reverse ? loaded?.reverse : loaded?.buffer;
+      if (!buffer) continue;
+      const region = track.regions.find(r => r.id === segment.regionId);
+      playAudioSegment(context, channels.get(track.id), buffer, segment, region, doc.tempo.bpm, segment.songTimeSec - origin);
+    }
+    const pool = createVoicePool();
+    for (const note of midiNoteOnsInWindow(single, origin, Math.min(to, from + endSec), { endSec: to })) {
+      const at = note.songTimeSec - origin;
+      const voice = startVoice(context, channels.get(track.id), noise, track.instrument, note.pitch, note.velocity, at);
+      voice.release(at + note.durationSec); pool.add(track.id, voice, at);
     }
   }
-  for (const segment of audioSegments(song, startStep * stepSeconds(doc.tempo.bpm), endStep * stepSeconds(doc.tempo.bpm), { includeMuted: true })) {
-    const loaded = buffers.get(segment.assetId), buffer = segment.reverse ? loaded?.reverse : loaded?.buffer;
-    if (!buffer) continue;
-    const region = doc.tracks.find((t) => t.id === segment.trackId).regions.find((r) => r.id === segment.regionId);
-    playAudioSegment(context, channels.get(segment.trackId), buffer, segment, region, doc.tempo.bpm,
-      segment.songTimeSec - startStep * stepSeconds(doc.tempo.bpm));
-  }
-  const pool = createVoicePool(), from = startStep * stepSeconds(doc.tempo.bpm), to = endStep * stepSeconds(doc.tempo.bpm);
-  for (const note of midiNoteOnsInWindow(song, from, to, { includeMuted: true, endSec: to })) {
-    const track = doc.tracks.find((t) => t.id === note.trackId), at = note.songTimeSec - from;
-    const voice = startVoice(context, channels.get(track.id), noise, track.instrument, note.pitch, note.velocity, at);
-    voice.release(at + note.durationSec); pool.add(track.id, voice, at);
-  }
-  const rendered = await context.startRendering();
-  return { channels: [rendered.getChannelData(0), rendered.getChannelData(1)], sampleRate: rendered.sampleRate };
+  const rendered = await context.startRendering(), offset = Math.round(startSec * AUDIO_RATE) - Math.round(originSec * AUDIO_RATE);
+  return { channels: [rendered.getChannelData(0).subarray(offset), rendered.getChannelData(1).subarray(offset)], sampleRate: rendered.sampleRate };
 }

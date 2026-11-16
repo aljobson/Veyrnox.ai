@@ -1,9 +1,12 @@
+import { redirect } from 'next/navigation';
+import { musicBeatEditorEnabled } from '../../../../../lib/musicBackend.js';
 import Link from 'next/link';
 import { getT } from '../../../../../lib/i18n/server';
 
 export async function generateMetadata() { const { t } = await getT(); return { title: t('music.meta.studio') }; }
 
 export default function MusicStudioHubPage() {
+  if (musicBeatEditorEnabled()) redirect('/app/music/beats');
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Local session workspace</p>
