@@ -22,7 +22,7 @@ const BROWSER_CALLABLE = new Set([
     'public.spend_watch_status()',              // 0444, anon: spend-watch; verdict only, no figures (ADR-0328)
     'public.recovery_status()',                 // 0131, anon: recovery-health
     // ADR-0245 film studio cloud
-    // ADR-0344 music beat cloud
+    // ADR-0345 music beat cloud
     'public.save_music_beat_project(uuid,integer,text,text,text,text)',
     'private.save_music_beat_project(uuid,integer,text,text,text,text)',
     'public.remove_music_beat_project(uuid,integer)',

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// ADR-0344: fixtures are transaction-local, only in a disposable local database.
+// ADR-0345: fixtures are transaction-local, only in a disposable local database.
 import pg from 'pg';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';

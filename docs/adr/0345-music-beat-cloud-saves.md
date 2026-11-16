@@ -1,4 +1,4 @@
-# ADR-0344: Music beat cloud saves and versions
+# ADR-0345: Music beat cloud saves and versions
 
 Status: Implemented behind disabled `MUSIC_RUNTIME_FLAGS.beatCloud`, pending independent review and host acceptance.
 
@@ -56,8 +56,8 @@ beatCloud is deliberately absent from wrangler.jsonc until activation (runtimeSw
 Proof: `npm test && npm run lint`; local migration replay followed by
 `scripts/test-music-beat-cloud.mjs`, default-privileges, account-deletion and privacy-export
 acceptance; Worker build below 60,500 KiB; regenerated Vey inventory; host UI checks.
-Builder evidence and any unavailable checks are reported separately. ADR-0344/0542
-were free locally; the open-PR allocation check could not reach GitHub in the sandbox.
+ADR-0345 and migration 0542 were checked free against main, open PRs and local
+worktrees on 2026-11-16 (0343 is ADR-0343 on main; 0344 is taken by open PR #2314).
 
 Security: a signed-in user can call reserve/read directly through PostgREST with their
 own JWT and see their own object keys. Keys are not credentials: R2 access still

@@ -1,4 +1,4 @@
--- ADR-0344: MUSIC_RUNTIME_FLAGS.beatCloud; free saves write no ledger rows.
+-- ADR-0345: MUSIC_RUNTIME_FLAGS.beatCloud; free saves write no ledger rows.
 BEGIN;
 CREATE TABLE IF NOT EXISTS public.music_beat_projects (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
