@@ -25,7 +25,7 @@ import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetPrice, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
 import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
-import { audioAsPreset, imageAsPreset, isDirectTemplate, mixKinds, priceOfDirect } from '../../../lib/exploreTemplates';
+import { audioAsPreset, imageAsPreset, isDirectTemplate, mixKinds, priceOfDirect, templatesWithCatalogModel } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
@@ -82,7 +82,8 @@ export default function Explore() {
         ? { keys: phoneStarts(null, null), suggested: false }
         : profile.ready ? { keys: phoneStarts(profile.role, profile.goal), suggested: hasRealAnswer(profile) } : null;
     const [prompt, setPrompt] = useState('');
-    const [catalog, setCatalog] = useState<CatalogModel[]>([]);
+    // null until the catalog arrives (and if it never does); a loaded catalog, even an empty one, decides which templates are listed.
+    const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popularIds, setPopularIds] = useState<string[]>([]);
@@ -122,8 +123,11 @@ export default function Explore() {
         fetchAudioTemplates().then((list) => live && setAudioList(list)).catch(() => {});
         return () => { live = false; };
     }, []);
-    const models = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog]);
-    const allTemplates = useMemo(() => presets && [...presets, ...imageList.map((i) => imageAsPreset(i, models)), ...audioList.map((a) => audioAsPreset(a, models))], [presets, imageList, audioList, models]);
+    const models = useMemo(() => new Map((catalog ?? []).map((m) => [m.id, m])), [catalog]);
+    const allTemplates = useMemo(() => {
+        const known = catalog ? models : null;
+        return presets && [...presets, ...templatesWithCatalogModel(imageList, known).map((i) => imageAsPreset(i, models)), ...templatesWithCatalogModel(audioList, known).map((a) => audioAsPreset(a, models))];
+    }, [presets, imageList, audioList, models, catalog]);
 
     const vibe = useVibeAnswers();
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
@@ -193,7 +197,7 @@ export default function Explore() {
     const recent = useMemo(() => recentCreations(jobs, RECENT), [jobs]);
 
     function make(kind: Kind) {
-        const model = firstModelFor(catalog, kind);
+        const model = firstModelFor(catalog ?? [], kind);
         if (!model) return setNote(t('explore.noModel'));
         setNote(null);
         router.push(promptHref(model.id, prompt));

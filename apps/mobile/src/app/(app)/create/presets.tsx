@@ -9,6 +9,7 @@ import { ImageTemplateCard } from '../../../components/templates/ImageTemplateCa
 import { fetchImageTemplates, imageCategoriesOf, imageTemplatesIn, type ImageTemplate } from '../../../lib/imageTemplates';
 import { audioCategoriesOf, audioTemplatesIn, fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
 import { promptHref } from '../../../lib/explore';
+import { templatesWithCatalogModel } from '../../../lib/exploreTemplates';
 import { priceLines } from '../../../lib/catalogPages';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
 import { plural, t } from '../../../lib/i18n';
@@ -50,11 +51,17 @@ export default function Templates() {
         return () => { live = false; };
     }, [attempt]);
     useEffect(() => {
+        if (kind !== 'audio' && kind !== 'image') return;
+        let live = true;
+        // Audio templates carry no price; the card shows the catalog price of the template's model when it is listed.
+        // The same catalog hides a template whose model is switched off, so Images needs it too. If it never arrives nothing is hidden.
+        fetchCatalogCached(list => { if (live) setCatalog(list); }).catch(() => { /* Cards stay without a price. */ });
+        return () => { live = false; };
+    }, [kind, attempt]);
+    useEffect(() => {
         if (kind !== 'audio') return;
         let live = true; setAudioFailed(false);
         fetchAudioTemplates().then(value => { if (live) setAudio(value); }).catch(() => { if (live) setAudioFailed(true); });
-        // Audio templates carry no price; the card shows the catalog price of the template's model when it is listed.
-        fetchCatalogCached(list => { if (live) setCatalog(list); }).catch(() => { /* Cards stay without a price. */ });
         return () => { live = false; };
     }, [kind, attempt]);
     useEffect(() => {
@@ -70,11 +77,13 @@ export default function Templates() {
     const shown = useMemo(() => searchPresets(templatesFor(rankPresets(presets ?? [], vibe), chip, popular), query), [presets, vibe, chip, popular, query]);
     const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
     const unavailablePreset = presets?.find(p => p.id === unavailableId);
+    const known = useMemo(() => catalog ? new Map(catalog.map(m => [m.id, m])) : null, [catalog]);
     const audioShown = useMemo(() => {
         const words = query.trim().toLowerCase();
-        return audioTemplatesIn(audio ?? [], audioChip).filter(a => !words || a.name.toLowerCase().includes(words) || a.prompt.toLowerCase().includes(words));
-    }, [audio, audioChip, query]);
-    const imagesShown = useMemo(() => imageTemplatesIn(images ?? [], imageChip, query), [images, imageChip, query]);
+        return audioTemplatesIn(templatesWithCatalogModel(audio ?? [], known), audioChip).filter(a => !words || a.name.toLowerCase().includes(words) || a.prompt.toLowerCase().includes(words));
+    }, [audio, audioChip, query, known]);
+    const imagesListed = useMemo(() => templatesWithCatalogModel(images ?? [], known), [images, known]);
+    const imagesShown = useMemo(() => imageTemplatesIn(imagesListed, imageChip, query), [imagesListed, imageChip, query]);
     const audioCredits = useMemo(() => new Map((catalog ?? []).map(m => [m.id, priceLines(m)[0]?.credits])), [catalog]);
     const openAudio = (a: AudioTemplate) => router.push(promptHref(a.modelId, a.prompt));
     const openImage = (i: ImageTemplate) => router.push(promptHref(i.modelId, i.prompt));
@@ -92,7 +101,7 @@ export default function Templates() {
             : images === null ? <ActivityIndicator /> : <FlatList key="image" data={imagesShown} numColumns={2} keyExtractor={i => i.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
-                    <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...imageCategoriesOf(images)].map(c => <Chip key={c} selected={imageChip === c} accessibilityState={{ selected: imageChip === c }} label={c === 'ALL' ? t('explore.type.all') : themeTitle(c)} onPress={() => setImageChip(c)} />)}</ScrollView>
+                    <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...imageCategoriesOf(imagesListed)].map(c => <Chip key={c} selected={imageChip === c} accessibilityState={{ selected: imageChip === c }} label={c === 'ALL' ? t('explore.type.all') : themeTitle(c)} onPress={() => setImageChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={empty}
                 renderItem={({ item }) => <ImageTemplateCard template={item} onOpen={() => openImage(item)} />} />)
@@ -100,7 +109,7 @@ export default function Templates() {
             : audio === null ? <ActivityIndicator /> : <FlatList key="audio" data={audioShown} keyExtractor={a => a.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
-                    <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(audio)].map(c => <Chip key={c} selected={audioChip === c} accessibilityState={{ selected: audioChip === c }} label={c === 'ALL' ? t('audioTemplates.all') : t(`audioTemplates.cat.${c}`)} onPress={() => setAudioChip(c)} />)}</ScrollView>
+                    <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(templatesWithCatalogModel(audio ?? [], known))].map(c => <Chip key={c} selected={audioChip === c} accessibilityState={{ selected: audioChip === c }} label={c === 'ALL' ? t('audioTemplates.all') : t(`audioTemplates.cat.${c}`)} onPress={() => setAudioChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
                 renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} onOpen={() => openAudio(item)} />} />)

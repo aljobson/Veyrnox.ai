@@ -41,6 +41,13 @@ export function priceOfDirect(p: Preset, models: ReadonlyMap<string, CatalogMode
     return typeof credits === 'number' && credits > 0 ? plural('library.cost', credits) : '';
 }
 
+// A direct template whose model the live catalog does not list (switched off, or not supported here) opens a dead end in
+// Create, so it is not listed. `null` means the catalog is unknown (not loaded yet, or the fetch failed): nothing is hidden.
+// A loaded catalog is authoritative, even an empty one.
+export function templatesWithCatalogModel<T extends { readonly modelId: string }>(list: readonly T[], models: ReadonlyMap<string, CatalogModel> | null): T[] {
+    return models ? list.filter((item) => models.has(item.modelId)) : [...list];
+}
+
 // "All" shows each kind, not only the biggest list: one of each in turn, every kind keeping its own order.
 export function mixKinds(presets: readonly Preset[]): Preset[] {
     const lanes = new Map<string, Preset[]>();

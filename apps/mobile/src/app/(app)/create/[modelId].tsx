@@ -268,7 +268,20 @@ export default function CreateWithModel() {
     }, []);
     const { contract: loadedContract, loading: contractLoading, retry: retryContract } = useTemplateContract(swapScene ? null : template?.id);
     if (!model || (swap !== undefined && swapScene?.id !== swap)) {
-        return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
+        // The model is not in the live catalog (switched off, or removed): say so in words and offer a way out.
+        if (error === t('form.modelGone')) {
+            return <View style={styles.screen}>
+                <Stack.Screen options={{ title: t('form.modelGoneTitle') }} />
+                <Text variant="title2" accessibilityRole="header" accessibilityLiveRegion="polite">{t('form.modelGone')}</Text>
+                <Text variant="body" tone="secondary">{t('form.modelGoneBody')}</Text>
+                <Button label={t('form.modelGoneBack')} onPress={() => router.replace('/create/presets')} />
+                <Button variant="secondary" label={t('form.modelGoneChoose')} onPress={() => router.replace('/create')} />
+            </View>;
+        }
+        return <View style={styles.screen}>
+            <Stack.Screen options={{ title: t('label.Create') }} />
+            {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}
+        </View>;
     }
     const isVideo = kindOf(model.modality) === 'video';
     const options = optionsFor(model), tier = resolveTier(options, opts.tier);

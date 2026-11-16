@@ -6,9 +6,11 @@ import { parsePresets } from '../src/lib/presets';
 import { t } from '../src/lib/i18n';
 const mockPush = jest.fn(); const mockFetch = jest.fn(); const mockImages = jest.fn(); const mockAudio = jest.fn();
 const mockApi = { request: jest.fn() };
+const entry = (id: string) => ({ id, name: id, modality: 'text-to-image', credits: 3 });
+let mockCatalog: any[] | null = [];
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => ({}), useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, status: 'signedOut' }) }));
-jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { cb([]); return []; }, mediaApi: () => ({ listJobs: async () => ({ jobs: [] }) }) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { if (mockCatalog === null) throw new Error('offline'); cb(mockCatalog); return mockCatalog; }, mediaApi: () => ({ listJobs: async () => ({ jobs: [] }) }) }));
 jest.mock('../src/lib/presets', () => ({ ...jest.requireActual('../src/lib/presets'), fetchPresets: () => mockFetch() }));
 jest.mock('../src/lib/imageTemplates', () => ({ ...jest.requireActual('../src/lib/imageTemplates'), fetchImageTemplates: () => mockImages() }));
 jest.mock('../src/lib/audioTemplates', () => ({ ...jest.requireActual('../src/lib/audioTemplates'), fetchAudioTemplates: () => mockAudio() }));
@@ -33,6 +35,7 @@ const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const click = (label: string) => act(async () => control(label)!.props.onClick(event));
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    mockCatalog = [entry('nano'), entry('suno')];
     root = createRoot(); mockPush.mockReset(); mockFetch.mockReset().mockResolvedValue(video);
     mockImages.mockReset().mockResolvedValue(images); mockAudio.mockReset().mockResolvedValue(audio);
     await act(async () => root.render(<Home />));
@@ -64,4 +67,27 @@ test('Explore still lists video when the image and audio lists fail to load', as
     expect(titles()).toContain('Video 0');
     await click(t('explore.type.audio'));
     expect(titles()).toEqual([]);
+});
+
+const IDS = ['Video 0', 'Forest Light', 'Pastel Corridor', 'Midnight Soul'];
+async function rerender(models: any[] | null) {
+    await act(async () => root.unmount()); mockCatalog = models; root = createRoot();
+    await act(async () => root.render(<Home />));
+}
+const countText = () => root.container.queryAll(n => typeof n.props.children === 'string' && /templates? on/.test(n.props.children)).map(n => n.props.children).join(' ');
+test('image and audio templates whose model is not in the catalog are not listed, and the count stays honest', async () => {
+    mockImages.mockResolvedValue([...images, { id: 'red-light', name: 'RED LIGHT FILTER', category: 'REALISTIC', modelId: 'nano-banana-pro-edit-grsai', prompt: 'p', previewUrl: null, previewAspect: 1, photoRequired: true }]);
+    await rerender([entry('nano'), entry('suno')]);
+    expect(titles()).toEqual(expect.arrayContaining(['Forest Light', 'Midnight Soul']));
+    expect(root.container.queryAll(n => String(n.props.accessibilityLabel).startsWith('RED LIGHT FILTER'))).toHaveLength(0);
+    expect(countText()).toMatch(/9 templates on 3 models/);
+});
+test('a loaded but empty catalog hides every image and audio template', async () => {
+    await rerender([]);
+    expect(titles().filter(x => IDS.slice(1).includes(x))).toEqual([]);
+    expect(countText()).toMatch(/6 templates on 1 model/);
+});
+test('while the catalog is unknown (fetch failed) nothing is hidden', async () => {
+    await rerender(null);
+    expect(titles()).toEqual(expect.arrayContaining(['Video 0', 'Forest Light', 'Midnight Soul']));
 });
