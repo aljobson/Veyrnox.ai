@@ -3091,9 +3091,9 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "AI Edit",
-    "translation": "Edição com IA",
-    "ratio": 1.86
+    "english": "Quick tools",
+    "translation": "Ferramentas rápidas",
+    "ratio": 1.73
   },
   {
     "id": "editorSimple.allTools",

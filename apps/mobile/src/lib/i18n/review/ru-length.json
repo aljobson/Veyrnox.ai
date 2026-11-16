@@ -3342,6 +3342,12 @@
     "ratio": 2.67
   },
   {
+    "id": "editorSimple.aiEdit",
+    "english": "Quick tools",
+    "translation": "Быстрые инструменты",
+    "ratio": 1.73
+  },
+  {
     "id": "editorAi.apply",
     "english": "Apply",
     "translation": "Применить",
