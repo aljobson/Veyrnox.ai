@@ -7,6 +7,16 @@ describe('editor tool panels sit in a bottom sheet', () => {
     it('renders the inspector inside EditorToolSheet, not as an inline flex sibling', () => {
         expect(screen).toMatch(/<EditorToolSheet[\s\S]*styles\.inspector[\s\S]*<\/EditorToolSheet>/);
     });
+    it('does not draw the Add / AI Edit / More bar over an open panel (QA 8.7: the bar floated mid-panel)', () => {
+        expect(screen).toMatch(/\{advanced \|\| panelOpen \? null : <SimpleEditorBar/);
+        expect(screen).not.toMatch(/\{advanced \? null : <SimpleEditorBar/);
+    });
+    it('keeps the sheet clear of the home indicator and above the keyboard', () => {
+        const sheet = read('components/editor/EditorToolSheet.tsx');
+        expect(sheet).toContain('SafeAreaInsetsContext');
+        expect(sheet).toMatch(/keyboard(Will|Did)Show/);
+        expect(sheet).toMatch(/bottom: keyboard/);
+    });
     it('keeps the sheet inside the visible area at the smallest iPhone height', () => {
         const { toolSheetHeight } = (require('../src/components/editor/EditorToolSheet') as unknown) as { toolSheetHeight(h: number): number };
         expect(toolSheetHeight(568)).toBeGreaterThanOrEqual(250);
