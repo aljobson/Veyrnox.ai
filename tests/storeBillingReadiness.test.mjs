@@ -7,6 +7,8 @@ const worker = (sales = true) => ({ resources: { bindings: ['STORE_BILLING_ENABL
 const check = (data = fixture(), options = {}) => checkReadiness(data, { workerVersions: [worker()], probeStatus: 401, ...options });
 test('all configured; Android is excluded, never ready, by default', () => {
     const result = check(); assert.equal(result.ok, true);
+    assert.ok(!JSON.stringify(fixture()).includes('.ultra.'));
+    assert.ok(!result.checks.some(c => c.status === 'warning'));
     assert.ok(result.checks.some(c => c.status === 'excluded' && c.message.startsWith('android:')));
     assert.ok(!result.checks.some(c => c.status === 'ready' && /android|app_android/.test(c.message)));
     assert.equal(check(fixture(), { store: 'all' }).ok, true);
@@ -85,7 +87,7 @@ test('API reader follows pagination, reads attachment endpoints and strips sensi
         return { ok: true, json: async () => ({ items, next_page: path === 'products' && !u.searchParams.has('starting_after') ? '/v2/projects/fixture/products?starting_after=first' : null }) };
     };
     const result = await revenueCatSnapshot({ key: 'fixture-only', project: 'fixture', fetchImpl });
-    assert.equal(check(result).ok, true); assert.equal(result.products.length, 27);
+    assert.equal(check(result).ok, true); assert.equal(result.products.length, 24);
     assert.ok(!JSON.stringify(result).includes('REDACTED'));
     paths.length = 0; await revenueCatSnapshot({ key: 'fixture-only', project: 'fixture', stage: 'catalog', fetchImpl });
     assert.ok(!paths.includes('integrations/webhooks'));
@@ -95,4 +97,16 @@ test('API errors and unsafe pagination fail closed', async () => {
         await assert.rejects(revenueCatSnapshot({ key: 'fixture-only', project: 'fixture', fetchImpl: async () => ({ ok: true, json: async () => ({ items: [], next_page }) }) }));
     }
     await assert.rejects(revenueCatSnapshot({ key: 'fixture-only', project: 'fixture', fetchImpl: async () => ({ ok: false, status: 403 }) }));
+});
+
+test('legacy Ultra entitlement attachments are allowed and stale offering packages only warn', () => {
+    const data = fixture();
+    const retired = JSON.parse(readFileSync(new URL('./fixtures/revenuecat/retired-ultra.json', import.meta.url)));
+    data.products.push(...retired.products);
+    data.entitlements.find(e => e.lookup_key === 'generation').products.push(...retired.entitlement_products);
+    assert.equal(check(data, { store: 'all' }).ok, true);
+    data.offerings.find(o => o.lookup_key === 'generation').packages.push(...retired.packages);
+    const result = check(data, { store: 'all' });
+    assert.equal(result.ok, true);
+    assert.ok(result.checks.some(c => c.status === 'warning' && c.message.startsWith('retired product still in offering')));
 });

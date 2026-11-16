@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { getCacheUser } from '../../lib/appCache';
 import { publishBalance } from '../../lib/balanceEvents';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
+import { hasRetiredGenerationPackages } from '../../lib/billing';
 
 // The RevenueCat dashboard paywall for one offering (ADR-0108 amendment 4). Off unless the build sets
 // EXPO_PUBLIC_RC_PAYWALLS_ENABLED; the Credits and Publish screens stay the fallback.
@@ -67,6 +68,8 @@ export default function Paywall() {
     if (!paywallsEnabled() || !offeringId) return <Unavailable text={t('billing.paywall.notReady')} onRetry={retry} onClose={close} />;
     if (billing.status === 'loading') return <Unavailable text={t('common.loading')} onClose={close} />;
     if (!offering || !billing.canPurchase) return <Unavailable text={t(billing.salesOpen ? 'billing.paywall.notReady' : 'billing.paywall.salesClosed')} onRetry={retry} onClose={close} />;
+    // The custom Credits screen filters retired packages even when the dashboard offering is stale.
+    if (hasRetiredGenerationPackages(offering.availablePackages)) return <Redirect href="/credits" />;
     return (
         <View style={[styles.screen, themed.page]}>
             <Stack.Screen options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />
