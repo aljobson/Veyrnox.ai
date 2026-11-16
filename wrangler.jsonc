@@ -110,7 +110,7 @@
     // Music's migrated pair queue is independent of generic durable admission. One JSON binding opens the
     // verified ACE-Step create/library/Studio paths and its recovery sweep while provider-specific models
     // that remain inactive in model_catalog stay hidden behind their own false switches.
-    "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":true,\"stems\":true,\"targetStems\":true,\"trackAdd\":true,\"extend\":true,\"replace\":true,\"addSection\":true,\"comments\":true,\"reactions\":true,\"follows\":true,\"rails\":true,\"remix\":true,\"libraryTabs\":true,\"plays\":true,\"songReports\":true,\"reverse\":true,\"lyrics\":true,\"bestOf\":true,\"notifications\":false,\"labs\":true,\"ranking\":true,\"magicBar\":false}",
+    "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":true,\"stems\":true,\"targetStems\":true,\"trackAdd\":true,\"extend\":true,\"replace\":true,\"addSection\":true,\"comments\":true,\"reactions\":true,\"follows\":true,\"rails\":true,\"remix\":true,\"libraryTabs\":true,\"plays\":true,\"songReports\":true,\"reverse\":true,\"lyrics\":true,\"bestOf\":true,\"notifications\":true,\"labs\":true,\"ranking\":true,\"magicBar\":false}",
     // ADR-0069: MAX_CHARGE_ENABLED is omitted (unset is off) while generic durable admission remains off.
     // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
     // Cloud saving and Projects navigation share the separate TENANT_PROJECTS_ENABLED gate.
@@ -142,9 +142,10 @@
     // ADR-0071: referrals. Migrations 0217 to 0219 are applied on production. On only after the reconcile jobs have run clean for
     // 24 hours (CLAUDE.md, Delivery); the storage notice is re-prompted in the same change so the referral wording is seen.
     "REFERRALS_ENABLED": "true",
-    // ADR-0257: daily check-in streak rewards. Migration 0368 applied on production 2026-10-23 (apply-migrations run 40022370873); owner
-    // approved going live 2026-10-24. Rollback: remove this line (absent means off) and deploy; credits already granted stay.
-    "CHECKIN_ENABLED": "true",
+    // App-wide switches in one binding (lib/appRuntime.js): the Worker is at its 128 text-binding cap (ADR-0113 amendment 1).
+    // checkin: ADR-0257 daily check-in, live since 2026-10-24 (was CHECKIN_ENABLED). push: ADR-0113 mobile push, on 2026-11-16 at the
+    // owner's word. Rollback: set a key to false (or remove it) and deploy; credits already granted stay.
+    "APP_RUNTIME_FLAGS": "{\"checkin\":true,\"push\":true}",
     // docs/editor/CAPTIONS.md: the Clip Editor's captions step. On 2026-10-08 at the owner's request: 0225 is applied on production, both
     // paths passed on staging. The edit sheet still hides it behind localStorage.veyrnox_editor_captions. Rollback: set "false" and deploy.
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
