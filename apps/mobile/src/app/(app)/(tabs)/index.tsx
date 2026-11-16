@@ -25,7 +25,7 @@ import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetPrice, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
 import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
-import { audioAsPreset, imageAsPreset, isDirectTemplate, mixKinds, priceOfDirect } from '../../../lib/exploreTemplates';
+import { isDirectTemplate, listedTemplates, mixKinds, priceOfDirect } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
@@ -82,7 +82,8 @@ export default function Explore() {
         ? { keys: phoneStarts(null, null), suggested: false }
         : profile.ready ? { keys: phoneStarts(profile.role, profile.goal), suggested: hasRealAnswer(profile) } : null;
     const [prompt, setPrompt] = useState('');
-    const [catalog, setCatalog] = useState<CatalogModel[]>([]);
+    // null until the catalog arrives; only a confirmed (not stale saved) catalog, even an empty one, decides which templates are listed.
+    const [catalog, setCatalog] = useState<CatalogModel[] | null>(null), [catalogConfirmed, setCatalogConfirmed] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popularIds, setPopularIds] = useState<string[]>([]);
@@ -97,7 +98,7 @@ export default function Explore() {
     const [jobs, setJobs] = useState<Job[]>([]);
 
     useEffect(() => {
-        void fetchCatalogCached((models) => setCatalog(models)).catch(() => {});
+        void fetchCatalogCached((models, meta) => { setCatalog(models); setCatalogConfirmed(!meta.stale); }).catch(() => {});
     }, []);
 
     const loadPresets = useCallback(() => {
@@ -122,8 +123,8 @@ export default function Explore() {
         fetchAudioTemplates().then((list) => live && setAudioList(list)).catch(() => {});
         return () => { live = false; };
     }, []);
-    const models = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog]);
-    const allTemplates = useMemo(() => presets && [...presets, ...imageList.map((i) => imageAsPreset(i, models)), ...audioList.map((a) => audioAsPreset(a, models))], [presets, imageList, audioList, models]);
+    const models = useMemo(() => new Map((catalog ?? []).map((m) => [m.id, m])), [catalog]);
+    const allTemplates = useMemo(() => presets && listedTemplates(presets, imageList, audioList, models, catalog && catalogConfirmed ? models : null), [presets, imageList, audioList, models, catalog, catalogConfirmed]);
 
     const vibe = useVibeAnswers();
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
@@ -175,12 +176,14 @@ export default function Explore() {
 
     const typedPresets = useMemo(() => filterPresets(allTemplates ?? [], { type, category: ALL_CATEGORIES, query: '' }), [allTemplates, type]);
     const categories = useMemo(() => templateChips(typedPresets, popularIds), [typedPresets, popularIds]);
+    // A chosen category the catalog later removed (its templates are gone) falls back to All instead of an empty list with no chip selected.
+    const activeCategory = category === ALL_CATEGORIES || categories.length === 0 || categories.includes(category) ? category : ALL_CATEGORIES;
     const [limit, setLimit] = useState(PAGE);
     const matching = useMemo(() => {
-        const ranked = rankPresets(filterPresets(templatesFor(typedPresets, category, popularIds), { type, category: ALL_CATEGORIES, query }), vibe);
-        return type === ALL_TYPES && category === ALL_CATEGORIES ? mixKinds(ranked) : ranked;
-    }, [typedPresets, type, category, popularIds, query, vibe]);
-    useEffect(() => setLimit(PAGE), [type, category, query]);
+        const ranked = rankPresets(filterPresets(templatesFor(typedPresets, activeCategory, popularIds), { type, category: ALL_CATEGORIES, query }), vibe);
+        return type === ALL_TYPES && activeCategory === ALL_CATEGORIES ? mixKinds(ranked) : ranked;
+    }, [typedPresets, type, activeCategory, popularIds, query, vibe]);
+    useEffect(() => setLimit(PAGE), [type, activeCategory, query]);
     const shown = useMemo(() => matching.slice(0, limit), [matching, limit]);
     const modelCount = useMemo(() => new Set((allTemplates ?? []).map((preset) => preset.modelId)).size, [allTemplates]);
 
@@ -193,7 +196,7 @@ export default function Explore() {
     const recent = useMemo(() => recentCreations(jobs, RECENT), [jobs]);
 
     function make(kind: Kind) {
-        const model = firstModelFor(catalog, kind);
+        const model = firstModelFor(catalog ?? [], kind);
         if (!model) return setNote(t('explore.noModel'));
         setNote(null);
         router.push(promptHref(model.id, prompt));
@@ -205,7 +208,7 @@ export default function Explore() {
     }
 
     const search = query.trim();
-    const filtered = search.length > 0 || type !== ALL_TYPES || category !== ALL_CATEGORIES;
+    const filtered = search.length > 0 || type !== ALL_TYPES || activeCategory !== ALL_CATEGORIES;
     // Said once when the list empties. The line on screen echoes the query; this one does not, so typing on does not repeat it.
     const noResults = !presetsFailed && presets !== null && shown.length === 0;
     useAnnouncement(noResults ? (t('explore.noMatch')) : null, { everywhere: true });
@@ -343,10 +346,10 @@ export default function Explore() {
                                 <Button
                                     size="md"
                                     variant="tertiary"
-                                    label={category !== ALL_CATEGORIES ? categoryLabel(category) : t('explore.categories')}
+                                    label={activeCategory !== ALL_CATEGORIES ? categoryLabel(activeCategory) : t('explore.categories')}
                                     accessibilityState={{
                                         expanded: categoriesOpen,
-                                        selected: category !== ALL_CATEGORIES,
+                                        selected: activeCategory !== ALL_CATEGORIES,
                                     }}
                                     onPress={() => setCategoriesOpen((open) => !open)}
                                 />
@@ -355,7 +358,7 @@ export default function Explore() {
                         {categories.length > 1 && categoriesOpen ? (
                             <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                                 {categories.map((c) => (
-                                    <Chip key={c} label={c === ALL_CATEGORIES ? t('explore.categoryAll') : categoryLabel(c)} selected={c === category} onPress={() => setCategory(c)} />
+                                    <Chip key={c} label={c === ALL_CATEGORIES ? t('explore.categoryAll') : categoryLabel(c)} selected={c === activeCategory} onPress={() => setCategory(c)} />
                                 ))}
                             </ScrollView>
                         ) : null}

@@ -67,6 +67,25 @@ export default function AppLayout() {
                     <Stack.Screen name="vibe" options={{ headerShown: false }} />
                     <Stack.Screen name="rate" options={{ title: t('rate.title'), headerShown: false, presentation: 'modal' }} />
                     <Stack.Screen name="paywall" options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />
+                    {/* Dynamic routes: a static fallback title, so an early error or loading return can never show the route's file name. A screen's own title still wins. */}
+                    <Stack.Screen name="chat/[id]" options={{ title: t('chat.lLMChat') }} />
+                    <Stack.Screen name="chat/persona/[id]" options={{ title: t('chat.editpersona') }} />
+                    <Stack.Screen name="cinema/[id]" options={{ title: t('menu.cinema') }} />
+                    <Stack.Screen name="cinema/creator/[id]" options={{ title: t('menu.cinema') }} />
+                    <Stack.Screen name="cinema/series/[slug]" options={{ title: t('menu.cinema') }} />
+                    <Stack.Screen name="cinema/watch/[id]" options={{ title: t('cinema.nowplaying') }} />
+                    <Stack.Screen name="create/[modelId]" options={{ title: t('label.Create') }} />
+                    <Stack.Screen name="editor/[projectId]" options={{ title: t('editor.title') }} />
+                    <Stack.Screen name="features/[slug]" options={{ title: t('features.creativetool') }} />
+                    <Stack.Screen name="film/shot/[id]" options={{ title: t('film.shot') }} />
+                    <Stack.Screen name="guides/[id]" options={{ title: t('helpGuides.title') }} />
+                    <Stack.Screen name="job/[id]" options={{ title: t('job.title') }} />
+                    <Stack.Screen name="legal/[doc]" options={{ title: t('label.Terms') }} />
+                    <Stack.Screen name="model/[id]" options={{ title: t('mdl.title') }} />
+                    <Stack.Screen name="oddlings/[id]" options={{ title: t('oddlings.title') }} />
+                    <Stack.Screen name="projects/[id]" options={{ title: t('projects.project') }} />
+                    <Stack.Screen name="publish/post/[id]" options={{ title: t('publish.post') }} />
+                    <Stack.Screen name="templates/[id]" options={{ title: t('presets.templates') }} />
                 </Stack>
                 </HardPaywallGate>
                 </AgeConfirmationGate>
