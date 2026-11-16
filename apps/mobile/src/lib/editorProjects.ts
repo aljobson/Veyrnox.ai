@@ -4,6 +4,7 @@ import { MEDIA_ID, validDocument, type AssetError, type ProjectDocument } from '
 import { mediaApi } from './media';
 import { observe } from './network';
 import { fetchWorkspaces, parseProject } from './projects';
+import { notifyProjectsChanged } from './projectsChanged';
 
 export interface DocumentHead { revision: number; document: ProjectDocument }
 export async function defaultWorkspace(api: ApiClient) {
@@ -18,6 +19,7 @@ export async function createProject(api: ApiClient, workspaceId: string, name: s
         body: JSON.stringify({ workspace_id: workspaceId, name: trimmed }),
     })));
     if (!result) throw new ApiError(503, 'invalid_response');
+    notifyProjectsChanged();
     return result;
 }
 const path = (id: string) => `/api/v1/projects/${encodeURIComponent(id)}/document`;
@@ -37,6 +39,7 @@ export async function putDocument(api: ApiClient, id: string, expectedRevision: 
         body: JSON.stringify({ expected_revision: expectedRevision, document }),
     }));
     if (!Number.isSafeInteger(result?.revision) || result.revision <= expectedRevision) throw new ApiError(503, 'invalid_response');
+    notifyProjectsChanged();
     return result;
 }
 export function conflictCopyName(name: string) {
