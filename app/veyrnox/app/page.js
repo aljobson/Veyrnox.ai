@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { AppNav } from '../_components/NavBar';
 import { Main } from '../_components/Main';
-import { PresetGallery } from '../_components/PresetGallery';
+import { ExploreTemplates } from '../_components/ExploreTemplates';
 import { VibeOffer } from '../_components/VibeOffer';
 import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
@@ -110,7 +110,7 @@ export default function Explore() {
         <section aria-labelledby="explore-presets-title">
           <h2 id="explore-presets-title" className="vx-display text-balance text-[30px] sm:text-[38px]">{t('app.explore.presets')}</h2>
           <p className="mb-7 mt-2 max-w-[60ch] text-pretty leading-[1.6] text-vx-fg-body">{t('app.explore.intro')}</p>
-          <PresetGallery size="md" columns="lg:columns-4" taste={vibe.answers} />
+          <ExploreTemplates taste={vibe.answers} />
         </section>
       </Main>
     </div>
