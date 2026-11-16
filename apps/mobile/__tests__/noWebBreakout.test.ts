@@ -16,6 +16,7 @@ const allowed: Record<string, { call: string; reason: string }[]> = {
     ],
     'app/(app)/credits.tsx': [{ call: 'openBrowserAsync(billing.managementURLasstring)', reason: 'Apple/Google subscription management belongs to the store.' }],
     'app/(app)/help.tsx': [{ call: 'openURL(`mailto:${SUPPORT_EMAIL}`)', reason: 'Contact support in the mail app; the scheme is fixed.' }],
+    'app/(app)/privacy-export.tsx': [{ call: 'openURL(`mailto:${PRIVACY_EMAIL}?subject=${encodeURIComponent(MAIL_SUBJECT)}`)', reason: 'Ask privacy in the mail app; the scheme is fixed and the subject is constant text.' }],
     'app/(app)/about.tsx': [{ call: 'openURL(`mailto:${LEGAL_EMAIL}`)', reason: 'Contact legal in the mail app; the scheme is fixed.' }],
     'components/cinema/creator/UploadPanel.tsx': [{ call: 'openURL(SUPPORT_MAIL_URL)', reason: 'Creator support uses the existing mailto support constant.' }],
     'components/account/MfaCard.tsx': [{ call: 'openURL(pending.uri)', reason: 'The existing isTotpUri gate allows only otpauth TOTP enrollment.' }],

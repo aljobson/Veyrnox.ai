@@ -1,7 +1,10 @@
 export default {
     'privacyExport.title': 'Get a copy of your data',
     'privacyExport.explanation': 'This covers most of your account data: your profile, credits, top-ups and subscriptions, creations, chats, Publish brands and posts, Cinema follows, watch progress, votes and comments, and safety requests. It does not include Cinema pass and unlock purchases, Cinema creator applications and submissions, Publish uploads and team memberships, or project memberships; email us for those. Media files are not included; they stay downloadable from Library.',
-    'privacyExport.storage': 'This JSON file is kept only on this phone until you share it. It is removed when you leave this screen, sign out or restart the app. You can request a copy once a day, with 60 minutes to prepare it.',
+    'privacyExport.storage': 'This file is kept only on this phone until you share it. It is removed when you leave this screen, sign out or restart the app. You can request a copy once a day, with 60 minutes to prepare it.',
+    'privacyExport.closed': 'Getting your data in the app is not open yet. Email {email} and we will send it.',
+    'privacyExport.email': 'Email {email}',
+    'privacyExport.copied': 'Address copied.',
     'privacyExport.more': 'For anything else, email {email}.',
     'privacyExport.prepare': 'Prepare my file',
     'privacyExport.progress': 'Section {section} of {total}',

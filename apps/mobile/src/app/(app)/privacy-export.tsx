@@ -1,144 +1,28 @@
-import { isAccountChanged, type SessionTask } from '../../auth/sessionTask';
-import { Text as StatusText } from '../../components/ui/Text';
-import { useAnnouncement } from '../../lib/useAnnouncement';
-import { File } from 'expo-file-system';
 import { Stack } from 'expo-router';
-import * as Sharing from 'expo-sharing';
-import { useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, Text } from 'react-native';
-import { useAuth } from '../../auth/AuthProvider';
-import { CodeField } from '../../components/account/CodeField';
+import { useState } from 'react';
+import { Linking, Platform, ScrollView, Text } from 'react-native';
+import { Text as StatusText } from '../../components/ui/Text';
 import { Action, styles } from '../../components/account/shared';
 import { PRIVACY_EMAIL } from '../../lib/account';
-import { ApiError } from '../../lib/api';
-import { exportDirectory, getCacheUser, subscribeCacheUser } from '../../lib/appCache';
-import { fetchProfile, verifyFactor } from '../../lib/auth/accountCalls';
-import { toSession } from '../../lib/auth/supabaseAuth';
+import { copyText } from '../../lib/clipboard';
 import { t } from '../../lib/i18n';
-import { validCode, verifiedFactors } from '../../lib/mfa';
-import { exportErrorState, runExport, type ExportProgress, type ExportState } from '../../lib/privacyExport';
 import { colors } from '../../theme';
 
+// Getting a copy of your data is by email for now: a file the person has to open and read is no help to most people.
+// The subject is fixed text; no account detail goes in the address or the body.
+const MAIL_SUBJECT = 'Copy of my data';
+
 export default function PrivacyExportScreen() {
-    const { api, beginSessionTask, adoptSession } = useAuth();
-    const [state, setState] = useState<ExportState>('idle');
-    const [now, setNow] = useState(Date.now);
-    const [progress, setProgress] = useState<ExportProgress>({ section: 0, total: 0, waiting: false });
-    useAnnouncement(state === 'preparing' ? (progress.waiting ? t('privacyExport.waiting') : t('privacyExport.progress', { section: progress.section, total: progress.total })) : state === 'ready' ? t('privacyExport.ready') : null);
-    const [waitUntil, setWaitUntil] = useState(0);
-    const [windowUntil, setWindowUntil] = useState(0);
-    const [code, setCode] = useState('');
-    const [codeError, setCodeError] = useState(false);
-    const [verifying, setVerifying] = useState(false);
-    const file = useRef<File | null>(null);
-    const controller = useRef<AbortController | null>(null);
-    const live = useRef(true);
-    const owner = useRef(getCacheUser());
-    const remove = () => { if (file.current?.exists) file.current.delete(); file.current = null; };
-    useEffect(() => {
-        live.current = true;
-        const unsubscribe = subscribeCacheUser(() => {
-            if (getCacheUser() !== owner.current) {
-                live.current = false; controller.current?.abort(); remove(); setState('unavailable');
-            }
-        });
-        return () => { live.current = false; controller.current?.abort(); remove(); unsubscribe(); };
-    }, []);
-    useEffect(() => {
-        if (!waitUntil || (state !== 'expired' && state !== 'rate_limited')) return;
-        const tick = setInterval(() => setNow(Date.now()), 60000);
-        const timer = setTimeout(() => {
-            setWaitUntil(0);
-            if (state === 'rate_limited') setState('idle');
-        }, Math.max(0, waitUntil - Date.now()));
-        return () => { clearTimeout(timer); clearInterval(tick); };
-    }, [state, waitUntil]);
-    async function prepare(task: SessionTask = beginSessionTask()) {
-        if (!task.current()) return;
-        if (!live.current || controller.current) return;
-        remove();
-        const abort = new AbortController(); controller.current = abort;
-        setState('preparing');
-        try {
-            const request = await runExport(api, {
-                create(request) {
-                    if (!task.current()) throw new ApiError(401, 'account_changed');
-                    setWindowUntil(Date.parse(request.expires_at));
-                    setWaitUntil(Date.parse(request.expires_at) + 23 * 60 * 60 * 1000);
-                    const directory = exportDirectory();
-                    directory.create({ intermediates: true, idempotent: true });
-                    file.current = new File(directory, `veyrnox-data-${request.export_id.slice(0, 8)}.json`);
-                    file.current.create({ overwrite: true });
-                },
-                async append(text) { if (!task.current()) throw new ApiError(401, 'account_changed'); if (!file.current) throw new Error('export_file_removed'); await file.current.write(text, { append: true }); },
-                delete: () => { if (task.current()) remove(); },
-            }, p => { if (live.current) setProgress(p); }, abort.signal);
-            if (!task.current()) return;
-            // Resumed requests can be nearly a day older; the server remains authoritative on a later start.
-            setWaitUntil(Date.parse(request.expires_at) + 23 * 60 * 60 * 1000);
-            if (live.current && !abort.signal.aborted) setState('ready');
-        } catch (err) {
-            if (!task.current() || isAccountChanged(err)) return;
-            if (live.current) {
-                setNow(Date.now());
-                if (err instanceof ApiError && err.code === 'rate_limited') {
-                    const seconds = (err.retryAfterSeconds ?? Number(err.body.retry_after_seconds)) || 86400;
-                    setWaitUntil(Date.now() + seconds * 1000);
-                }
-                setState(abort.signal.aborted ? 'idle' : exportErrorState(err));
-            }
-        } finally { controller.current = null; }
+    const [copied, setCopied] = useState(false);
+    async function email() {
+        try { await Linking.openURL(`mailto:${PRIVACY_EMAIL}?subject=${encodeURIComponent(MAIL_SUBJECT)}`); }
+        catch { setCopied(await copyText(PRIVACY_EMAIL)); }
     }
-    async function verify() {
-        const task = beginSessionTask();
-        setVerifying(true); setCodeError(false);
-        try {
-            const profile = await fetchProfile(task.tokens, 'privacy-export');
-            if (!task.current()) return;
-            const factor = verifiedFactors(profile.factors)[0];
-            if (!factor) throw new Error('factor_missing');
-            const session = toSession(await verifyFactor(task.tokens, factor.id, code), Date.now());
-            if (!live.current || !task.current()) return;
-            await adoptSession(session, task.gen);
-            if (!live.current || !task.current()) return;
-            setCode(''); await prepare(task);
-        } catch (err) { if (live.current && task.current() && !isAccountChanged(err)) setCodeError(true); }
-        finally { if (live.current) setVerifying(false); }
-    }
-    async function share() {
-        const task = beginSessionTask();
-        if (!live.current) return;
-        if (!file.current?.exists) { setNow(Date.now()); setState('expired'); return; }
-        try { await Sharing.shareAsync(file.current.uri, { mimeType: 'application/json' }); }
-        catch { if (!task.current()) return; remove(); if (live.current) setState('unavailable'); }
-    }
-    const hours = Math.max(1, Math.ceil((waitUntil - now) / 3600000));
     return <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }} style={{ backgroundColor: colors.background }}>
         <Stack.Screen options={{ title: t('privacyExport.title') }} />
         <Text accessibilityRole="header" style={styles.title}>{t('privacyExport.title')}</Text>
-        <Text style={styles.help}>{t('privacyExport.explanation')}</Text>
-        <Text style={styles.help}>{t('privacyExport.storage')}</Text>
-        <Text style={styles.help}>{t('privacyExport.more', { email: PRIVACY_EMAIL })}</Text>
-        {state === 'idle' && <Action label={t('privacyExport.prepare')} onPress={() => void prepare()} />}
-        {state === 'preparing' && <>
-            <StatusText variant="inherit" style={styles.status} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{progress.waiting ? t('privacyExport.waiting') : t('privacyExport.progress', { section: progress.section, total: progress.total })}</StatusText>
-            <Action label={t('privacyExport.cancel')} onPress={() => { controller.current?.abort(); remove(); }} />
-        </>}
-        {state === 'ready' && <>
-            <StatusText variant="inherit" style={styles.status} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{t('privacyExport.ready')}</StatusText>
-            <Action label={t('privacyExport.share')} onPress={() => void share()} />
-        </>}
-        {state === 'expired' && <>
-            <Text style={styles.help}>{t('privacyExport.expired')}</Text>
-            {waitUntil > now && windowUntil <= now ? <Text style={styles.help}>{t('privacyExport.rateLimited', { hours })}</Text> : <Action label={t('privacyExport.again')} onPress={() => void prepare()} />}
-        </>}
-        {state === 'rate_limited' && <Text style={styles.help}>{t('privacyExport.rateLimited', { hours })}</Text>}
-        {(state === 'unavailable' || state === 'restricted') && <Text style={styles.help}>{t('privacyExport.unavailable', { email: PRIVACY_EMAIL })}</Text>}
-        {state === 'mfa' && <>
-            <Text style={styles.help}>{t('privacyExport.mfa')}</Text>
-            <CodeField value={code} onChange={setCode} />
-            {codeError && <StatusText variant="inherit" accessibilityRole="alert" style={styles.danger}>{t('privacyExport.codeError')}</StatusText>}
-            <Action label={t('privacyExport.verify')} disabled={verifying || !validCode(code)} onPress={() => void verify()} />
-        </>}
+        <Text style={styles.help}>{t('privacyExport.closed', { email: PRIVACY_EMAIL })}</Text>
+        <Action label={t('privacyExport.email', { email: PRIVACY_EMAIL })} onPress={() => void email()} />
+        {copied && <StatusText variant="inherit" style={styles.status} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{t('privacyExport.copied')}</StatusText>}
     </ScrollView>;
 }
