@@ -55,6 +55,21 @@ describe('tool groups', () => {
         expect(g[0].tools[0].id).toBe('brand-new-tool');
     });
     test('nothing in the catalog is no groups', () => expect(toolGroups([])).toEqual([]));
+    // QA 4.T6 / 4.T12: Relight is a Face filter and Video Upscale a task of its own. Both are catalog rows that are
+    // inactive until fal billing is verified (0356/0357, 0202), so the phone shows them only when the live catalog
+    // serves them, at the catalog price. Nothing here invents a row.
+    test('Video Upscale shows as its own group, at its catalog price, once the catalog serves it', () => {
+        const video = { video: { required: true } };
+        const g = toolGroups([model('topaz-upscale-video', video, 49)]);
+        expect(g).toHaveLength(1);
+        expect(g[0]).toMatchObject({ key: 'video-upscale' });
+        expect(g[0].tools[0].credits).toBe(49);
+    });
+    test('Relight sits under Face filters, and without a catalog row there is no Video Upscale or Relight', () => {
+        const g = toolGroups([model('face-relight', media, 7)]);
+        expect(g.map((x) => x.key)).toEqual(['face-filters']);
+        expect(toolGroups([model('topaz-upscale', media, 5)]).map((x) => x.key)).toEqual(['upscale']);
+    });
 });
 
 describe('rows with the same public name are told apart from catalog data', () => {
