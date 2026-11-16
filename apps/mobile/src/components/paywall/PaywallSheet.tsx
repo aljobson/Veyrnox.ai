@@ -5,7 +5,7 @@ import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
 import { getPurchaseSnapshot, type PurchaseRequest } from '../../billing/storePurchaseStore';
 import { LEGAL_LINKS } from '../../lib/account';
-import { isWebParityPack, parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../../lib/billing';
+import { webParityPacks, parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../../lib/billing';
 import { bestPackId, packSavingPercent, planName, typicalCosts } from '../../lib/creditOffers';
 import { fetchCatalog } from '../../lib/media';
 import { t } from '../../lib/i18n';
@@ -44,7 +44,7 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     }, [api, purchase.abortPreparing]);
     const packPackages = useMemo(() => (billing.offerings?.all.credits?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const planPackages = useMemo(() => (billing.offerings?.all.generation?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
-    const packs = useMemo(() => toDisplayPackages(packPackages).filter(isWebParityPack), [packPackages]);
+    const packs = useMemo(() => webParityPacks(toDisplayPackages(packPackages)), [packPackages]);
     const plans = useMemo(() => toDisplayPackages(planPackages).filter(plan => plan.generationPlan !== null && plan.interval !== null), [planPackages]);
     const subscriptionsOpen = billing.status === 'ready' && plans.length > 0;
     const showToggle = subscriptionsOpen && !billing.paidAccess;

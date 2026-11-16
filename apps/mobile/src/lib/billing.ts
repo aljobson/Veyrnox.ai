@@ -60,7 +60,18 @@ export interface DisplayPackage {
 
 export type GenerationPlan = 'lite' | 'starter' | 'plus' | 'ultra';
 
-export const WEB_PARITY_PACK_CREDITS = [209, 523, 1571] as const;
+/** Credit pack sizes sold on web, iOS and Android (ADR-0343, migrations 0540/0541). */
+export const WEB_PARITY_PACK_CREDITS = [156, 392, 1177] as const;
+/**
+ * The sizes sold before ADR-0343. The store offering may still hold these products until the owner
+ * swaps in ai.veyrnox.credits.156/.392/.1177, so they stay listable, but only when no current size is
+ * present. Remove this list once the offering has been swapped.
+ */
+export const LEGACY_WEB_PARITY_PACK_CREDITS = [209, 523, 1571] as const;
+
+/** The tier we point people to (owner, 2026-11-16): every tier costs about the same per credit, so the middle one is recommended. */
+export const RECOMMENDED_GENERATION_PLAN: GenerationPlan = 'starter';
+export const isRecommendedPlan = (plan: Pick<DisplayPackage, 'generationPlan'>): boolean => plan.generationPlan === RECOMMENDED_GENERATION_PLAN;
 
 export interface GenerationCatalogPlan {
     readonly id: string;
@@ -102,7 +113,14 @@ export function generationCatalogId(productId: string): string | null {
 }
 
 export function isWebParityPack(pkg: DisplayPackage): boolean {
-    return pkg.credits !== null && (WEB_PARITY_PACK_CREDITS as readonly number[]).includes(pkg.credits);
+    return pkg.credits !== null && ((WEB_PARITY_PACK_CREDITS as readonly number[]).includes(pkg.credits)
+        || (LEGACY_WEB_PARITY_PACK_CREDITS as readonly number[]).includes(pkg.credits));
+}
+
+/** The packs to show: the current sizes when the offering has any, else the legacy sizes it still holds. */
+export function webParityPacks(packs: readonly DisplayPackage[]): DisplayPackage[] {
+    const current = packs.filter((pkg) => pkg.credits !== null && (WEB_PARITY_PACK_CREDITS as readonly number[]).includes(pkg.credits));
+    return current.length > 0 ? current : packs.filter(isWebParityPack);
 }
 
 export function parseGenerationCatalog(value: unknown): GenerationCatalogPlan[] {

@@ -1,4 +1,4 @@
-import { creditsFor, generationCatalogId, generationPlanFor, intervalFor, isPaidSubscriptionProduct, isWebParityPack, parseGenerationCatalog, renewalTerms, stayDiscountFor, toDisplayPackages, waitForBalanceChange, type RcPackage } from '../src/lib/billing';
+import { creditsFor, generationCatalogId, generationPlanFor, intervalFor, isPaidSubscriptionProduct, isWebParityPack, parseGenerationCatalog, renewalTerms, stayDiscountFor, toDisplayPackages, waitForBalanceChange, webParityPacks, type RcPackage } from '../src/lib/billing';
 
 const pkg = (id: string, product: string, price = '$1.00'): RcPackage => ({ identifier: id, product: { identifier: product, title: product, priceString: price } });
 
@@ -33,10 +33,19 @@ describe('billing helpers', () => {
 
     test('lists known packs in order and drops anything else', () => {
         const list = toDisplayPackages([
-            pkg('c4', 'ai.veyrnox.credits.1571'), pkg('c3', 'ai.veyrnox.credits.3000'), pkg('c1', 'ai.veyrnox.credits.209'), pkg('x', 'ai.wallet.sub'), pkg('c2', 'ai.veyrnox.credits.523'), pkg('old', 'ai.veyrnox.credits.100'),
+            pkg('c4', 'ai.veyrnox.credits.1177'), pkg('c3', 'ai.veyrnox.credits.3000'), pkg('c1', 'ai.veyrnox.credits.156'), pkg('x', 'ai.wallet.sub'), pkg('c2', 'ai.veyrnox.credits.392'), pkg('old', 'ai.veyrnox.credits.100'),
         ]);
-        expect(list.map((p) => p.credits)).toEqual([100, 209, 523, 1571, 3000]);
-        expect(list.filter(isWebParityPack).map((p) => p.credits)).toEqual([209, 523, 1571]);
+        expect(list.map((p) => p.credits)).toEqual([100, 156, 392, 1177, 3000]);
+        expect(list.filter(isWebParityPack).map((p) => p.credits)).toEqual([156, 392, 1177]);
+    });
+
+    test('web-parity packs follow ADR-0343 and fall back to the old sizes only while the offering still has them', () => {
+        const sizes = (ids: number[]) => toDisplayPackages(ids.map((n) => pkg(`p${n}`, `ai.veyrnox.credits.${n}`)));
+        expect(webParityPacks(sizes([209, 523, 1571])).map((p) => p.credits)).toEqual([209, 523, 1571]);
+        expect(webParityPacks(sizes([156, 392, 1177])).map((p) => p.credits)).toEqual([156, 392, 1177]);
+        expect(webParityPacks(sizes([209, 156, 523, 392, 1571, 1177])).map((p) => p.credits)).toEqual([156, 392, 1177]);
+        expect(webParityPacks(sizes([156, 523])).map((p) => p.credits)).toEqual([156]);
+        expect(webParityPacks([])).toEqual([]);
         const subs = toDisplayPackages([pkg('a', 'ai.veyrnox.publish.annual'), pkg('w', 'ai.veyrnox.publish.weekly'), pkg('m', 'ai.veyrnox.publish.monthly')]);
         expect(subs.map((p) => p.interval)).toEqual(['week', 'month', 'year']);
     });
@@ -50,7 +59,7 @@ describe('billing helpers', () => {
         ]);
         expect(plans.map((p) => `${p.generationPlan}:${p.interval}`)).toEqual(['lite:month', 'starter:month', 'starter:year', 'ultra:year']);
         expect(generationCatalogId('ai.veyrnox.generation.starter.annual')).toBe('starter-yearly');
-        expect(parseGenerationCatalog({ plans: [{ id: 'starter-monthly', credits: 398 }, { id: '', credits: 0 }, null] })).toEqual([{ id: 'starter-monthly', credits: 398 }]);
+        expect(parseGenerationCatalog({ plans: [{ id: 'starter-monthly', credits: 297 }, { id: '', credits: 0 }, null] })).toEqual([{ id: 'starter-monthly', credits: 297 }]);
     });
 
     test('renewal terms name the price, period, auto-renewal and where to cancel', () => {
