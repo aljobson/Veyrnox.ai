@@ -198,12 +198,6 @@
     "ratio": 1.76
   },
   {
-    "id": "approvals.noAccounts",
-    "english": "No connected account can post {type} files yet.",
-    "translation": "Ninguna cuenta conectada puede publicar un archivo de tipo {type} todavía.",
-    "ratio": 1.72
-  },
-  {
     "id": "approvals.sentTitle",
     "english": "Sent",
     "translation": "Enviados",

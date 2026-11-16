@@ -402,12 +402,6 @@
     "ratio": 1.78
   },
   {
-    "id": "approvals.noAccounts",
-    "english": "No connected account can post {type} files yet.",
-    "translation": "Aucun compte connecté ne peut encore publier de contenu de type {type}.",
-    "ratio": 1.65
-  },
-  {
     "id": "approvals.none",
     "english": "No approval requests yet.",
     "translation": "Aucune demande d’approbation pour le moment.",
