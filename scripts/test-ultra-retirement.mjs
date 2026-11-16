@@ -20,7 +20,8 @@ export async function testUltraRetirement(c) {
     await c.query("UPDATE public.credit_subscription_plans SET retired_at = $1 WHERE id IN ('ultra-monthly','ultra-yearly') AND NOT active", [cutoff]);
     const ultra = await one("SELECT active, credits FROM public.credit_subscription_plans WHERE id = 'ultra-monthly'");
     assert.deepEqual(ultra, { active: false, credits: 2011 });
-    const end = new Date(Date.now() + 30 * 86400000).toISOString();
+    let tick = 0; // every event carries a strictly newer period end, as the credit-cycle guard requires (PERIOD_NOT_NEWER)
+    const nextEnd = () => new Date(Date.now() + (30 + ++tick) * 86400000).toISOString();
     async function customer() {
       const auth = randomUUID();
       await c.query('INSERT INTO auth.users(id, email, email_confirmed_at) VALUES ($1,$2,now())', [auth, `${auth}@example.invalid`]);
@@ -31,7 +32,7 @@ export async function testUltraRetirement(c) {
     }
     async function event(u, { plan = 'ultra.monthly', purchased = null, type = 'initial_purchase', action = 'activate', eventId = `retire_${hex()}`, channel = 'ios' } = {}) {
       return rpc('public.apply_store_generation_event($1,$2,$3,$4,$5,$6,$7,$8,now(),$9)',
-        [u.rc, channel, `ai.veyrnox.generation.${plan}`, u.transaction, eventId, action, type, end, purchased]);
+        [u.rc, channel, `ai.veyrnox.generation.${plan}`, u.transaction, eventId, action, type, nextEnd(), purchased]);
     }
     async function subscription(u) {
       return one('SELECT plan_id, price_usd_cents, credits, status FROM public.credit_subscriptions WHERE store_original_transaction_id=$1', [u.transaction]);
