@@ -11,16 +11,28 @@ export const winsSeenPolicy: CachePolicy = { name: 'your-wins-seen', perUser: tr
 export const nextMilestone = (data: YourWins) => data.milestones.find(m => !m.reached_at) ?? null;
 const pending = new Map<string, Promise<{ data: YourWins | null; fetched: boolean }>>();
 const memory = new Map<string, { at: number; data: YourWins | null }>();
-subscribeCacheUser(() => { memory.clear(); pending.clear(); });
+const stale = new Set<string>();
+const staleListeners = new Set<() => void>();
+subscribeCacheUser(() => { memory.clear(); pending.clear(); stale.clear(); });
+// Something the card shows just changed (a check-in): the next read must go to the server, and a mounted card re-reads now.
+export function invalidateYourWins(owner: string): void {
+    memory.delete(owner); pending.delete(owner); stale.add(owner);
+    staleListeners.forEach(listener => listener());
+}
+export function subscribeYourWinsStale(listener: () => void): () => void {
+    staleListeners.add(listener);
+    return () => { staleListeners.delete(listener); };
+}
 export async function fetchYourWins(api: ApiClient, onFetched?: (data: YourWins | null) => void): Promise<YourWins | null> {
     const owner = getCacheUser();
     if (!YOUR_WINS_ENABLED || !owner) return null;
-    const saved = memory.get(owner);
+    const saved = stale.has(owner) ? undefined : memory.get(owner);
     if (saved && Date.now() - saved.at < winsPolicy.freshMs) return saved.data;
     let request = pending.get(owner);
     if (!request) {
         request = (async () => {
-            const cached = await appCache.read<YourWins | null>(winsPolicy, owner);
+            const refetch = stale.has(owner);
+            const cached = refetch ? null : await appCache.read<YourWins | null>(winsPolicy, owner);
             if (owner !== getCacheUser()) return { data: null, fetched: false };
             if (cached && !cached.meta.stale) {
                 memory.set(owner, { at: cached.meta.savedAt, data: cached.value });
@@ -29,6 +41,7 @@ export async function fetchYourWins(api: ApiClient, onFetched?: (data: YourWins 
             let data: YourWins | null = null;
             try { const response = await api.request<YourWins>('/api/v1/wins'); data = response?.ok === true ? response : null; } catch {}
             if (owner !== getCacheUser()) return { data: null, fetched: false };
+            if (data || !refetch) stale.delete(owner);
             memory.set(owner, { at: Date.now(), data });
             await appCache.write(winsPolicy, data, owner).catch(() => undefined);
             return { data: owner === getCacheUser() ? data : null, fetched: true };
