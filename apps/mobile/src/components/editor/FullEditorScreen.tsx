@@ -68,7 +68,7 @@ const tools: readonly { id: Tool; icon: string; label: string }[] = [
     { id: 'adjust', icon: '☷', label: t('editor.adjust2') },
 ];
 const seconds = (frames = 0, fps = 30) => `${formatNumber(Math.max(0, frames / fps), 1)}s`;
-import { overlaySpan } from '../../lib/editorOverlay';
+import { mediaFrames, overlaySpan } from '../../lib/editorOverlay';
 import { useFullEditorSession } from './useFullEditorSession';
 export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; startAdvanced?: boolean; startBestCut?: boolean }) {
     const mounted = useRef(true);
@@ -101,8 +101,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         const current = currentDocument(); if (!isReady() || !current || current.project_id !== projectId) return 'dropped';
         const result = insertMediaAt(timelineOf(current.timeline), media, at);
         if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' })); return result.error; }
-        markDocument({ ...current, schema_version: 3, timeline: result.timeline });
-        if (select) { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
+        markDocument({ ...current, schema_version: 3, timeline: result.timeline }); if (result.trimmed) setProblem(t('editor.musicTrimmed'));
+        if (select || media.kind === 'audio') { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
     const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     useAnnouncement(problem);
@@ -162,15 +162,14 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         const seq = timeline.seq + 1;
         const trackId = timeline.tracks.find((track) => track.kind === 'text' && !track.locked)?.id;
         const caption = kind === 'caption';
-        const span = caption ? overlaySpan(timeline, frameStore.get(), Math.round(timeline.fps * 2)) : placeTitle(frameStore.get(), Math.max(0, ...timeline.video.map((clip) => clip.start + clip.len)), total);
+        const span = caption ? overlaySpan(timeline, frameStore.get(), Math.round(timeline.fps * 2)) : placeTitle(frameStore.get(), mediaFrames(timeline), total);
         const item: TextClip = { id: `t${seq}`, text: caption ? t('editor.captiondefault') : t('editor.yourtitle'), ...span, x: 0.5, y: caption ? 0.92 : 0.85, size: caption ? 4 : 6, trackId, style: DEFAULT_TEXT_STYLE };
         applyTimeline({ ...timeline, seq, text: [...timeline.text, item] });
         setSelection({ track: 'text', id: item.id });
         setSelections([{ track: 'text', id: item.id }]);
         setTool(caption ? 'captions' : 'text');
     };
-    const addText = () => addOverlay('title');
-    const addCaption = () => addOverlay('caption');
+    const addText = () => addOverlay('title'), addCaption = () => addOverlay('caption');
     const updateSelectedText = (text: string) => {
         if (selection?.track !== 'text') return;
         applyTimeline(updateClip(timeline, selection, { text: text.slice(0, 1000) }));
@@ -315,6 +314,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />
             {selection ? <>
+                <Command icon="⇥" label={t('editorSimple.closeGaps')} selected={ripple !== 'none'} onPress={() => setRipple(ripple === 'none' ? 'lane' : 'none')} />{selection.track === 'audio' ? <Command icon="♪" label={t('editor.volume')} onPress={() => showPanel('adjust')} /> : null}
                 <Command icon="✂" label={t('editor.split')} onPress={splitSelection} />
                 <Command icon="⧉" label={t('editor.duplicate')} onPress={duplicateSelection} />
                 <Command icon="⌫" label={t('editor.delete')} danger onPress={removeSelection} />

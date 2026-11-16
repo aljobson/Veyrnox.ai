@@ -1758,12 +1758,6 @@
     "ratio": 1.67
   },
   {
-    "id": "editorSimple.aiEdit",
-    "english": "AI Edit",
-    "translation": "تحرير بالذكاء الاصطناعي",
-    "ratio": 3.29
-  },
-  {
     "id": "editorAi.edge.out",
     "english": "end",
     "translation": "النهاية",
