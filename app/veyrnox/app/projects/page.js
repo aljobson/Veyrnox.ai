@@ -95,6 +95,7 @@ export default function Projects() {
                     <div className="flex gap-2"><Button data-testid={`project-rename-${p.id}`} size="sm" variant="ghost" aria-label={t('app.projects.renameLabel', { name: p.name })} onClick={() => setDialog({ mode: 'rename', project: p })}>{t("app.projects.rename")}</Button><Button data-testid={`project-delete-${p.id}`} size="sm" variant="ghost" aria-label={t('app.projects.deleteLabel', { name: p.name })} onClick={() => setDialog({ mode: 'delete', project: p })}>{t("app.publish.composer.delete")}</Button></div>
                   </li>)}</ul>}
                 </section>}
+        {projects.length >= 100 && <p className="mt-3 text-sm text-vx-fg-muted">{t("app.projects.limit")}</p>}
         <p className="mt-6 text-xs text-vx-fg-muted">{t("app.projects.lookingMedia")}<Link href="/app/library" className="text-vx-accent underline">{t("recovery.library")}</Link></p>
       </>}
       {dialog && <ProjectDialog {...dialog} workspace={workspace} onClose={() => setDialog(null)} onSaved={saved} />}
