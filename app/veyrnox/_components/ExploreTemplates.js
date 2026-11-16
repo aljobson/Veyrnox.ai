@@ -13,9 +13,9 @@ import { pluralKey } from '../../../lib/i18n/translate.mjs';
 // Audio lists the licensed Music templates and links to Music Discover and Instruments.
 const TYPES = ['all', 'image', 'video', 'audio'];
 const AUDIO_LINKS = [
-  { href: '/app/music/discover', label: 'label.Discover' },
-  { href: '/app/music/instruments', label: 'label.Instruments' },
-  { href: '/app/music/sounds', label: 'label.Sounds' },
+  { href: '/app/music/discover', name: 'Discover' },
+  { href: '/app/music/instruments', name: 'Instruments' },
+  { href: '/app/music/sounds', name: 'Sounds' },
 ];
 
 export function ExploreTemplates({ taste }) {
@@ -37,7 +37,7 @@ export function ExploreTemplates({ taste }) {
         <div data-testid="explore-audio-templates">
           <nav className="mb-6 flex flex-wrap gap-2">
             {AUDIO_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="vx-press inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 text-sm font-bold text-vx-fg-body hover:border-vx-accent hover:text-vx-fg">{t(l.label)}</Link>
+              <Link key={l.href} href={l.href} className="vx-press inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 text-sm font-bold text-vx-fg-body hover:border-vx-accent hover:text-vx-fg">{t.label(l.name)}</Link>
             ))}
           </nav>
           <ul className="grid gap-4 sm:grid-cols-3">
