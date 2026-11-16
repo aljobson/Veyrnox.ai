@@ -22,6 +22,9 @@ export const KNOWN_PAIRS = {
     '1.20.13': ['16.4'],
     // PR #1985's worker-smoke completed successfully with Next 16.4.4.
     '1.20.15': ['16.4'],
+    // PR #2303's worker-smoke covers Next 16.4.6 after adopting the adapter's
+    // exact-path asset handling requirement.
+    '1.20.16': ['16.4'],
 };
 
 export function checkPair(nextVersion, adapterVersion, table = KNOWN_PAIRS) {
