@@ -11,7 +11,7 @@ import { paywallsEnabled } from '../../billing/paywallGate';
 import { getPurchaseSnapshot, type PurchaseOutcome } from '../../billing/storePurchaseStore';
 import { LEGAL_LINKS } from '../../lib/account';
 import {
-    isWebParityPack,
+    webParityPacks,
     renewalTerms,
     toDisplayPackages,
 } from '../../lib/billing';
@@ -114,7 +114,7 @@ export default function Credits() {
 
     const packPackages = useMemo(() => (billing.offerings?.all.credits?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const planPackages = useMemo(() => (billing.offerings?.all.generation?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
-    const packs = useMemo(() => toDisplayPackages(packPackages).filter(isWebParityPack), [packPackages]);
+    const packs = useMemo(() => webParityPacks(toDisplayPackages(packPackages)), [packPackages]);
     const plans = useMemo(
         () => toDisplayPackages(planPackages).filter((plan) => plan.generationPlan !== null && plan.interval !== null),
         [planPackages],

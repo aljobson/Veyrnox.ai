@@ -8,7 +8,7 @@ import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
 import { Chip, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
-import { isWebParityPack, toDisplayPackages } from '../../lib/billing';
+import { webParityPacks, toDisplayPackages } from '../../lib/billing';
 import { usePlanCatalog } from '../../lib/usePlanCatalog';
 import { bestPackId, packSavingPercent } from '../../lib/creditOffers';
 import { priceLines } from '../../lib/catalogPages';
@@ -21,7 +21,7 @@ export default function Pricing() {
     const styles = useThemedStyles(sheets), billing = useBilling(), { api } = useAuth();
     const { catalog, status: catalogStatus, retry: retryCatalog } = usePlanCatalog(api);
     const plans = useMemo(() => toDisplayPackages(billing.offerings?.all.generation?.availablePackages ?? []).filter(p => p.generationPlan), [billing.offerings]);
-    const packs = useMemo(() => toDisplayPackages(billing.offerings?.all.credits?.availablePackages ?? []).filter(isWebParityPack), [billing.offerings]);
+    const packs = useMemo(() => webParityPacks(toDisplayPackages(billing.offerings?.all.credits?.availablePackages ?? [])), [billing.offerings]);
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: t('prc.title') }} />
         <Text variant="body" tone="secondary">{t('prc.intro')}</Text>

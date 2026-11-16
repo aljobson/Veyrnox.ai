@@ -5041,6 +5041,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "यह मॉडल शॉट के फ़्रेम फ़ॉर्मैट का समर्थन नहीं करता। सेटअप में संगत वर्कफ़्लो चुनें।",
   "creditsPage.balance": "मौजूदा बैलेंस",
   "creditsPage.best": "सर्वोत्तम मूल्य",
+  "creditsPage.recommended": "अनुशंसित",
   "creditsPage.monthly": "मासिक",
   "creditsPage.yearly": "वार्षिक",
   "creditsPage.yearlyMonthly": "{amount} प्रति माह, वार्षिक बिलिंग",

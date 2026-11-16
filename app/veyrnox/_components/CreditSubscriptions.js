@@ -20,7 +20,7 @@ import {
   subscriptionCheckoutUrl, canCheckCoolingOffRefund,
   subscriptionReturnFrom,
 } from '../_lib/creditSubscriptionUi';
-import { subscriptionSavingPercent, yearlySaving } from '../_lib/subscriptionPlans';
+import { isRecommendedPlan, subscriptionSavingPercent, yearlySaving } from '../_lib/subscriptionPlans';
 import { VeyCardPeek } from './VeyCardPeek';
 const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -111,6 +111,11 @@ export function Plans({ plans, packs, selected, onSelect, publicOnly = false, in
             {saving && (
               <p className="mb-2 font-vx-mono text-[12px] font-bold text-vx-accent">
                 {t('pricing.subs.saving', { pct: saving })}
+              </p>
+            )}
+            {isRecommendedPlan(p) && (
+              <p className="mb-2 inline-block rounded-full border border-vx-accent/40 bg-vx-accent/[0.07] px-3 py-1 font-vx-mono text-[10px] font-bold uppercase tracking-[0.12em] text-vx-accent">
+                {t('pricing.subs.recommended')}
               </p>
             )}
             <h3 className="text-xl font-bold">{planName}</h3>

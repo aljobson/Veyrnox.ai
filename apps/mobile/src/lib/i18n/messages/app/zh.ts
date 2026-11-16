@@ -4966,6 +4966,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "此模型不支持该镜头画面格式。请在设置中选择兼容的工作流。",
   "creditsPage.balance": "当前余额",
   "creditsPage.best": "最超值",
+  "creditsPage.recommended": "推荐",
   "creditsPage.monthly": "按月",
   "creditsPage.yearly": "按年",
   "creditsPage.yearlyMonthly": "每月 {amount}，按年计费",

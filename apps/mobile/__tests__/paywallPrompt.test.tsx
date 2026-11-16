@@ -11,7 +11,7 @@ import { useAnnouncement } from '../src/lib/useAnnouncement';
 import { LEGAL_LINKS } from '../src/lib/account';
 import { setLocaleFromDevice, t } from '../src/lib/i18n';
 const pkg = (id: string, product: string, price: number) => ({ identifier: id, product: { identifier: product, title: id, price, priceString: `£${price}.00`, currencyCode: 'GBP' } });
-const packs = [pkg('small', 'ai.veyrnox.credits.209', 10), pkg('medium', 'ai.veyrnox.credits.523', 25), pkg('best', 'ai.veyrnox.credits.1571', 70)];
+const packs = [pkg('small', 'ai.veyrnox.credits.156', 10), pkg('medium', 'ai.veyrnox.credits.392', 25), pkg('best', 'ai.veyrnox.credits.1177', 70)];
 const plans = [pkg('starter', 'ai.veyrnox.generation.starter.monthly', 10), pkg('annual', 'ai.veyrnox.generation.starter.annual', 100)];
 let mockBalance = 0, mockGeneration = 1, mockPath = '/', mockCreated = new Date().toISOString();
 const mockPush = jest.fn();
@@ -125,7 +125,7 @@ test('store blocks dismissal and every control; confirmation allows dismissal an
     await press(t('credits.paywall.later')); expect(nodes('radio')).toHaveLength(0);
     await act(async () => root.render(<Credits />));
     expect(getPurchaseSnapshot().phase).toBe('confirming'); expect(button(t('credits.restore')).props.accessibilityState.disabled).toBe(true);
-    const pack = button('209 credits, £10.00'); expect(pack.props.accessibilityState.disabled).toBe(true); await click(pack); expect(mockBilling.purchase).toHaveBeenCalledTimes(1);
+    const pack = button('156 credits, £10.00'); expect(pack.props.accessibilityState.disabled).toBe(true); await click(pack); expect(mockBilling.purchase).toHaveBeenCalledTimes(1);
     mockBalance = 1571; await tick(2000); expect(text()).toContain(t('credits.added', { balance: 1571 }));
 });
 test('dismissing a slow preparation never calls native purchase', async () => {

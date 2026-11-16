@@ -29,7 +29,7 @@ function insertedPlans(name, table) {
     });
 }
 
-// A deliberately bounded SQL reader for the catalog at migration 0407, not a SQL interpreter.
+// A deliberately bounded SQL reader for the catalog at migration 0541 (ADR-0343), not a SQL interpreter.
 // Values come from INSERTs and the subsequent guarded UPDATEs, never duplicated price constants.
 export function storeBillingCatalog() {
     const generation = new Map();
@@ -55,13 +55,27 @@ export function storeBillingCatalog() {
         if (!plan || plan.credits !== Number(match[3])) throw new Error('Catalog price UPDATE no longer matches');
         plan.price_usd_cents = Number(match[1]);
     }
+    // 0539 (ADR-0343): one price list on every channel. Monthly plans keep their price and take the new
+    // credits; yearly plans take the new price and credits. Each row must name a plan read above.
+    const uniform = sql('0539_uniform_yearly_discount_plan_credits');
+    for (const [id, price, credits] of rows(section(uniform, /FROM \(VALUES([\s\S]*?)\) AS v\(id, price, credits, old_credits\)/, '0539 monthly'))) {
+        const plan = generation.get(id);
+        if (!plan || plan.price_usd_cents !== price) throw new Error('0539 monthly plan no longer matches the catalog');
+        plan.credits = credits;
+    }
+    for (const [id, price, , credits] of rows(section(uniform, /FROM \(VALUES((?:(?!FROM \(VALUES)[\s\S])*?)\) AS v\(id, price, old_price, credits, old_credits\)/, '0539 yearly'))) {
+        const plan = generation.get(id);
+        if (!plan) throw new Error('0539 yearly plan is unknown');
+        plan.price_usd_cents = price;
+        plan.credits = credits;
+    }
     const removedIos = new Set([...pricePoints.matchAll(/DELETE FROM public\.credit_subscription_store_products\s*WHERE channel = 'ios' AND store_product_id = '([^']+)'/g)].map(m => m[1]));
     if (removedIos.size !== 1) throw new Error('Catalog iOS removal SQL changed');
     const publish = new Map(['0293_social_publish_plans', '0340_weekly_social_publish_plan', '0341_annual_social_publish_plan']
         .flatMap(name => insertedPlans(name, 'social_publish_plans')).map(plan => [plan.id, plan]));
-    // 0421 (ADR-0312 amendment 1): the store packs carry the web credit sizes. 0394's 100/300/1000 are retired.
+    // 0541 (ADR-0343): the store packs carry the web credit sizes (156 / 392 / 1,177). 0421's 209 / 523 / 1571 and 0394's 100/300/1000 are retired.
     const parity = sql('0394_mobile_credit_pack_parity');
-    const packs = rows(section(sql('0421_store_packs_match_web'), /INSERT INTO public\.credit_packs \(id, sales_channel, credits, price_usd_cents, store_product_id, active\)\s*VALUES([\s\S]*?)ON CONFLICT/, 'packs'));
+    const packs = rows(section(sql('0541_store_packs_follow_new_plan_rate'), /INSERT INTO public\.credit_packs \(id, sales_channel, credits, price_usd_cents, store_product_id, active\)\s*VALUES([\s\S]*?)ON CONFLICT/, 'packs'));
     const catalog = packs.map(([, store, credits, price, productId]) => ({ store, productId,
         kind: 'consumable', credits, plan: null, period: null, priceUsdCents: price,
         offering: 'credits', package: String(credits) }));

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { generationCatalogId, type DisplayPackage } from '../../lib/billing';
+import { generationCatalogId, isRecommendedPlan, type DisplayPackage } from '../../lib/billing';
 import { planName, subscriptionSavingPercent, yearlySaving } from '../../lib/creditOffers';
 import { formatLocale, t } from '../../lib/i18n';
 import { ds } from '../../theme';
-import { Card, SegmentedControl, Text, themedStyles, useThemedStyles } from '../ui';
+import { Card, Chip, SegmentedControl, Text, themedStyles, useThemedStyles } from '../ui';
 export type Cadence = 'month' | 'year';
 export const initialCadence = (plans: readonly DisplayPackage[]): Cadence => plans.some(p => p.interval === 'month') ? 'month' : 'year';
 export function PlanCards({ plans, packs, credits, cadence, onCadence, chosenId, onChoose, readOnly = false, disabled = false }: {
@@ -27,6 +27,7 @@ export function PlanCards({ plans, packs, credits, cadence, onCadence, chosenId,
             const saving = subscriptionSavingPercent(plan, count, packs), yearly = yearlySaving(plan, plans);
             return <Card key={plan.id} style={s.card} accessibilityRole={readOnly ? undefined : 'radio'} selected={!readOnly && chosenId === plan.id}
                 disabled={disabled} accessibilityState={{ disabled, ...(!readOnly ? { selected: chosenId === plan.id } : {}) }} onPress={readOnly ? undefined : () => { if (!disabled) onChoose?.(plan.id); }}>
+                {isRecommendedPlan(plan) ? <Chip selected label={t('creditsPage.recommended')} /> : null}
                 {saving != null && saving >= 1 ? <Text variant="micro" tone="accent">{t('creditsPage.vsPack', { pct: saving })}</Text> : null}
                 <Text variant="title3">{planName(plan.generationPlan ?? '')}</Text>
                 <Text variant="title2" tone="warning">{t(plan.interval === 'year' ? 'creditsPage.perYear' : 'creditsPage.perMonth', { price: plan.priceString })}</Text>
