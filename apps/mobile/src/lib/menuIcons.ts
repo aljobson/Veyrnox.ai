@@ -22,6 +22,7 @@ export const MENU_ICONS = {
     close: require('../../assets/icons/x.png'),
     video: require('../../assets/icons/video-camera.png'),
     audio: require('../../assets/icons/music-notes.png'),
+    pianoKeys: require('../../assets/icons/piano-keys.png'),
     wrench: require('../../assets/icons/wrench.png'),
     smiley: require('../../assets/icons/smiley.png'),
     thumbsUp: require('../../assets/icons/thumbs-up.png'),

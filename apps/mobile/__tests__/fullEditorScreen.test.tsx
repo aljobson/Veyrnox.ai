@@ -402,10 +402,10 @@ test('split, paste, text, markers and media insertion read the position after se
     const tl = await savedTimeline();
     expect(tl.video.some((clip: any) => clip.start === 0 && clip.len === 10)).toBe(true);
     expect(tl.video.some((clip: any) => clip.start === 20 && clip.len === 10)).toBe(true);
-    // The playhead (frame 40) is past the last video frame (60 when the title was added), so the title is pulled back inside the video.
+    // The playhead (frame 40) is past the last video frame (70 when the title was added: the paste at the playhead inserts, so it pushes later video right), so the title is pulled back inside the video.
     const title = tl.text.find((clip: any) => clip.text === 'Your title');
     expect(title.start).toBe(0);
-    expect(title.start + title.len).toBeLessThanOrEqual(60);
+    expect(title.start + title.len).toBeLessThanOrEqual(70);
     expect(tl.markers[0].frame).toBe(45);
     expect(tl.video.at(-1).start).toBe(50);
 });

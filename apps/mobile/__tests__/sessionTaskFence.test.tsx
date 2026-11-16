@@ -71,12 +71,10 @@ import { usePush } from '../src/push/pushContext';
 import * as Notifications from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import OAuthConsent from '../src/app/(app)/oauth-consent';
-import PrivacyExport from '../src/app/(app)/privacy-export';
 import Account from '../src/app/(app)/account';
 import { decide, fetchRequest } from '../src/lib/oauthConsent';
 import { runVibeIntent } from '../src/lib/creatorProfileStore';
 import { ApiError } from '../src/lib/api';
-import { runExport } from '../src/lib/privacyExport';
 declare const require: (id: string) => any;
 const { PushProviderLive } = require('../src/push/PushProviderLive') as typeof import('../src/push/PushProviderLive');
 jest.mock('../src/lib/auth/passkeyNative', () => ({ ...jest.requireActual('../src/lib/auth/passkeyNative'), nativePasskeysSupported: () => true, createCredential: jest.fn() }));
@@ -97,7 +95,6 @@ jest.mock('../src/lib/oauthConsent', () => ({ ...jest.requireActual('../src/lib/
 jest.mock('../src/lib/creatorProfile', () => ({ ...jest.requireActual('../src/lib/creatorProfile'), CREATOR_PROFILE_ENABLED: true, fetchVibeStatus: jest.fn(async () => ({ kind: 'none' })) }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ clearVibe: jest.fn(async () => { mockStorage.delete('veyrnox.vibe.v2'); }), clearAllVibes: jest.fn(async () => {}), runVibeIntent: jest.fn() }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off', refreshSales: jest.fn() }) }));
-jest.mock('../src/lib/privacyExport', () => ({ ...jest.requireActual('../src/lib/privacyExport'), runExport: jest.fn() }));
 
 let push: ReturnType<typeof usePush>;
 function PushProbe() { push = usePush(); return null; }
@@ -182,14 +179,6 @@ test('addPasskey platform prompt resolving after B sends no verification and nev
     jest.mocked(refreshSession).mockRejectedValueOnce(new AuthError(401, 'rejected'));
     await act(async () => gate.resolve({ id: 'id', rawId: 'raw', response: { clientDataJSON: 'data' } }));
     expect(send).toHaveBeenCalledTimes(1); expect(refreshSession).not.toHaveBeenCalled(); expect(auth.status).toBe('signedIn'); expect(auth.beginSessionTask().user).toBe('B');
-});
-test('privacy-export stale profile sends no verifyFactor', async () => {
-    await mount(); await adopt(); jest.mocked(runExport).mockRejectedValueOnce(new ApiError(403, 'mfa_required'));
-    await act(async () => root.render(<AuthProvider><Probe /><PrivacyExport /></AuthProvider>)); await press(t('privacyExport.prepare'));
-    const gate = deferred<calls.Profile>(); jest.spyOn(calls, 'fetchProfile').mockReturnValueOnce(gate.promise); const verify = jest.spyOn(calls, 'verifyFactor');
-    const field = root.container.queryAll(n => n.props.onChangeText)[0]; await act(async () => field.props.onChangeText('123456')); await press(t('privacyExport.verify'));
-    await switchToB(); await act(async () => gate.resolve({ email: 'A', provider: 'email', factors: [{ id: 'f', status: 'verified', friendlyName: 'auth' }] }));
-    expect(verify).not.toHaveBeenCalled(); expect(texts(t('privacyExport.codeError'))).toHaveLength(0);
 });
 test('oauth consent decided after switch opens no URL and does not navigate', async () => {
     jest.mocked(fetchRequest).mockResolvedValue({ name: 'Assistant', scopes: [] } as any); const gate = deferred<string>(); jest.mocked(decide).mockReturnValueOnce(gate.promise);

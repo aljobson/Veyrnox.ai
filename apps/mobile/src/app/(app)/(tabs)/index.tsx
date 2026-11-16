@@ -9,6 +9,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { plural, t } from '../../../lib/i18n';
+import { templateCountLabel } from '../../../lib/templateCountLabel';
 import { rawText } from '../../../lib/i18n/translate';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
@@ -245,7 +246,7 @@ export default function Explore() {
                         if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
-                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
+                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="pianoKeys" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </Card>
 
 
@@ -293,10 +294,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {t('explore.templateCount', {
-                                    templates: allTemplates?.length ?? presets.length,
-                                    models: modelCount,
-                                })}
+                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length, modelCount)}
                             </Text>
                         ) : null}
                     </View>

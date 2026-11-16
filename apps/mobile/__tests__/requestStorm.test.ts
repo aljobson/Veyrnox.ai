@@ -108,7 +108,7 @@ describe('where the pieces sit', () => {
     });
 
     test('every screen that reads the profile says who it is', () => {
-        for (const file of [['app', '(app)', 'account.tsx'], ['app', '(app)', 'privacy-export.tsx'], ['components', 'MenuDrawer.tsx'], ['components', 'account', 'MfaGate.tsx'], ['components', 'account', 'MfaCard.tsx']]) {
+        for (const file of [['app', '(app)', 'account.tsx'], ['components', 'MenuDrawer.tsx'], ['components', 'account', 'MfaGate.tsx'], ['components', 'account', 'MfaCard.tsx']]) {
             expect(read(...file)).toMatch(/fetchProfile\((?:getAccessToken|task\.tokens), '[a-z-]+'\)/);
         }
     });

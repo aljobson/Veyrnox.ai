@@ -36,11 +36,11 @@ describe('EAS build profiles always bundle the JavaScript', () => {
         expect(eas.build['production-simulator']).toEqual({ extends: 'production', autoIncrement: false, ios: { simulator: true }, env: { SENTRY_DISABLE_AUTO_UPLOAD: 'true' } });
     });
 
-    // ADR-0261 amendment 2 / ADR-0275: phone export costs a flat 3 credits and is tried on internal builds first.
-    // It must not reach the App Store build until the owner has seen one real export (and the Fly runner is proven).
-    test('phone export is on for internal preview builds only, not production', () => {
+    // ADR-0261 amendment 2 / ADR-0275: phone export costs a flat 3 credits. Owner switched it on for production
+    // builds on 2026-11-16 (QA 8.14); the server still decides who may use it (serverRender preview list).
+    test('phone export is on for preview and production builds', () => {
         expect(eas.build.preview.env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED).toBe('true');
-        expect(eas.build.production.env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED).toBeUndefined();
+        expect(eas.build.production.env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED).toBe('true');
     });
 
     test('store submissions name the App Store Connect app', () => {
