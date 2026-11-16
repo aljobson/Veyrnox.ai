@@ -13,7 +13,7 @@
   "app.oddlings.referenceLimit": "Keep the local reference under 2 MB.",
   "app.oddlings.opensCreate": "OPENS CREATE · NO CHARGE UNTIL CONFIRMED",
   "app.editor.legacy.policy": "Editing and export run in this browser and use no credits. Saving a project stores its timeline and settings in your workspace; files from this computer stay here. Keep this tab open during export. Preview and export share the same audio mix. Imported sources can be up to 10 minutes; this edit is up to 60 seconds.",
-  "app.create.feedbackIntro": "Want prompt feedback? Studio skills cost 1 Credit a reply:",
+  "app.create.feedbackIntro": "Want prompt feedback? Studio skills cost 2 Credits a reply:",
   "app.create.fixedOutputHelp": "This model produces one fixed output length at the displayed price.",
   "app.create.pricingUnavailable": "Live prices are unavailable. You can browse models, but generation is paused so a cached quote can never be charged."
 }

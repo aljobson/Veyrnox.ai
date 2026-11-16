@@ -113,12 +113,15 @@ test('email submit requires captcha and prevents duplicate requests without cons
     });
     await act(async () => control('email.signInCta').props.onPress());
     expect(mockEmail).not.toHaveBeenCalled();
-    expect(root.container.queryAll(n => n.props.children === t('email.securityFirst')).length).toBeGreaterThan(0);
-    await act(async () => root.container.queryAll((n) => n.props.testID === 'captcha')[0].props.onMessage({ type: 'token', token: 'proof' }));
-    expect(control('email.signInCta').props.disabled).toBe(false);
+    // QA 1.12: tapping early must not leave a red "finish the check" line behind once the check is ready.
+    expect(root.container.queryAll(n => n.props.children === t('email.securityFirst'))).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.children === t('email.checking')).length).toBeGreaterThan(0);
     let finish!: () => void;
     mockEmail.mockReturnValue(new Promise<void>((resolve) => { finish = resolve; }));
-    await act(async () => { control('email.signInCta').props.onPress(); });
+    // The queued sign-in is sent by itself when the token arrives.
+    await act(async () => root.container.queryAll((n) => n.props.testID === 'captcha')[0].props.onMessage({ type: 'token', token: 'proof' }));
+    expect(mockEmail).toHaveBeenCalledTimes(1);
+    expect(root.container.queryAll(n => n.props.children === t('email.securityFirst'))).toHaveLength(0);
     expect(control('email.signInCta').props.disabled).toBe(true);
     await act(async () => { control('email.signInCta').props.onPress(); });
     expect(mockEmail).toHaveBeenCalledTimes(1);
@@ -216,7 +219,9 @@ test('change address returns to signup with an empty password and creates the co
         emailControl('email.passwordTitle').props.onChangeText('new-password');
     });
     await act(async () => emailControl('email.signUpCta').props.onPress()); expect(mockEmail).toHaveBeenCalledTimes(1);
-    await token('new-signup-token'); await act(async () => emailControl('email.signUpCta').props.onPress());
+    // The early tap is queued and sent by itself when the fresh token arrives.
+    await token('new-signup-token');
+    expect(mockEmail).toHaveBeenCalledTimes(2);
     expect(mockEmail).toHaveBeenLastCalledWith('correct@example.test', 'new-password', 'new-signup-token');
     expect(mockResend).not.toHaveBeenCalled();
 });
