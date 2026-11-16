@@ -28,6 +28,7 @@ import { useEditorLeaveGuard } from './useEditorLeaveGuard';
 import { EditorSaveSheets } from './EditorSaveSheets';
 import { EditorVersionsSheet } from './EditorVersionsSheet';
 import { Button } from '../ui/Button';
+import { EditorLoadState } from './EditorLoadState';
 import { useEffect, useRef, useState } from 'react';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import type { Cut } from '../../lib/smartCutHandoff';
@@ -109,7 +110,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions();
     const previewHeight = Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen || advanced ? 0.1 : 0.14))));
-    if (!document) return <View style={styles.loading}><Stack.Screen options={{ title: t('editor.title') }} /><ActivityIndicator color={colors.accent} /><Text style={styles.muted}>{problem ?? t('editor.fullLoading')}</Text></View>;
+    if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const timeline = timelineOf(document.timeline);
     const total = framesIn(timeline);
