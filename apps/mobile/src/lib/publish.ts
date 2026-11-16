@@ -130,6 +130,8 @@ export interface PublishPost {
     // The version stamp cancel and restore need; the server does not send it on every row yet.
     readonly updatedAt: string | null;
     readonly targets: PostTarget[];
+    // What the post carries, in order: a creation (jobId) or a device upload (no jobId).
+    readonly media: readonly { readonly jobId: string | null; readonly mediaType: string }[];
 }
 
 export function parsePost(raw: unknown): PublishPost | null {
@@ -144,7 +146,8 @@ export function parsePost(raw: unknown): PublishPost | null {
         if (!tid || !network) continue;
         targets.push({ id: tid, network, publishStatus: str(t.publish_status) ?? 'pending', url: https(t.platform_post_url), lastError: str(t.last_error) });
     }
-    return { id, status: str(raw.status) ?? 'unknown', scheduledAt: str(raw.scheduled_at), text: typeof raw.global_text === 'string' ? raw.global_text : '', createdAt: str(raw.created_at), updatedAt: str(raw.updated_at), targets };
+    const media = list(raw.media).flatMap(m => isObject(m) ? [{ jobId: str(m.job_id), mediaType: str(m.media_type) ?? 'image' }] : []);
+    return { id, status: str(raw.status) ?? 'unknown', scheduledAt: str(raw.scheduled_at), text: typeof raw.global_text === 'string' ? raw.global_text : '', createdAt: str(raw.created_at), updatedAt: str(raw.updated_at), targets, media };
 }
 
 export function parsePosts(body: unknown): PublishPost[] {

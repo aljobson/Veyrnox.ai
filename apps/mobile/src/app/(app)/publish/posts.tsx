@@ -13,11 +13,14 @@ import { fetchPosts, mergePage, postStatusLabel, publishErrorMessage, type Publi
 import { colors } from '../../../theme';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { usePublishApi } from '../../../lib/usePublishApi';
+import { useAssetLinks } from '../../../components/JobThumb';
+import { PostThumb } from '../../../components/CreationThumbs';
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString(formatLocale()) : null);
 
 export default function Posts() {
     const api = usePublishApi();
+    const links = useAssetLinks(api);
     const networkStyles = useThemedStyles(networkSheets);
     const router = useRouter();
     const { done } = useLocalSearchParams<{ done?: string }>();
@@ -77,9 +80,12 @@ export default function Posts() {
                     ListEmptyComponent={<EmptyState title={tr('empty.posts.title')} body={tr('empty.posts.body')} actionLabel={tr('empty.posts.action')} href="/publish/compose" />}
                     renderItem={({ item }) => (
                         <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('publish.post2', { value1: postStatusLabel(item.status), value2: item.text.slice(0, 60) }))} style={styles.row} onPress={() => router.push({ pathname: '/publish/post/[id]', params: { id: item.id } })}>
-                            <Text style={[styles.status, (item.status === 'failed') && styles.bad]}>{postStatusLabel(item.status)}{item.scheduledAt ? `  ·  ${when(item.scheduledAt)}` : ''}</Text>
-                            <Text style={styles.text} numberOfLines={2}>{item.text || t('publish.notext')}</Text>
-                            {item.targets.length ? item.targets.map(target => <View key={target.id} style={networkStyles.row}><NetworkLogo network={target.network} /><ThemedText tone="secondary">{networkName(target.network)}</ThemedText></View>) : <Text style={styles.muted}>{t('publish.nonetworks')}</Text>}
+                            <PostThumb links={links} media={item.media} />
+                            <View style={styles.copy}>
+                                <Text style={[styles.status, (item.status === 'failed') && styles.bad]}>{postStatusLabel(item.status)}{item.scheduledAt ? `  ·  ${when(item.scheduledAt)}` : ''}</Text>
+                                <Text style={styles.text} numberOfLines={2}>{item.text || t('publish.notext')}</Text>
+                                {item.targets.length ? item.targets.map(target => <View key={target.id} style={networkStyles.row}><NetworkLogo network={target.network} /><ThemedText tone="secondary">{networkName(target.network)}</ThemedText></View>) : <Text style={styles.muted}>{t('publish.nonetworks')}</Text>}
+                            </View>
                         </Pressable>
                     )}
                 />
@@ -90,7 +96,8 @@ export default function Posts() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
-    row: { paddingVertical: 14, gap: 4, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    row: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 14, gap: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
+    copy: { flex: 1, gap: 4 },
     status: { color: colors.accent, fontSize: 13, fontWeight: '600' },
     bad: { color: colors.danger },
     text: { color: colors.text, fontSize: 16 },
