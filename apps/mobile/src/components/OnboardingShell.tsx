@@ -17,13 +17,14 @@ interface Props {
     onBack?: () => void;
     onSkip?: () => void;
     skipLabel?: string;
+    backLabel?: string;
     footer: ReactNode;
     children: ReactNode;
 }
 
 // The frame every first-run screen shares: a progress bar that fills as you go, Back and Skip in the corners, a soft accent
 // glow behind the content and the primary action pinned to the bottom. Reduce Motion fills the bar without easing.
-export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, footer, children }: Props) {
+export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, backLabel, footer, children }: Props) {
     const insets = useSafeAreaInsets();
     const s = useThemedStyles(sheets);
     const reduced = useReducedMotion();
@@ -38,7 +39,7 @@ export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, footer
             <View style={s.top}>
                 <View style={s.slot}>
                     {onBack ? (
-                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('public.vey.back'))} hitSlop={8} onPress={onBack} style={s.back}>
+                        <Pressable accessibilityRole="button" accessibilityLabel={rawText(backLabel ?? t('public.vey.back'))} hitSlop={8} onPress={onBack} style={s.back}>
                             <Icon name="arrowLeft" size={20} />
                         </Pressable>
                     ) : null}

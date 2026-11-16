@@ -59,6 +59,7 @@ export default function Welcome() {
             onBack={index > 0 ? () => setIndex(index - 1) : undefined}
             onSkip={() => done('skip')}
             skipLabel={t('welcome.skip')}
+            backLabel={t('public.vey.back')}
             footer={<Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? done() : (captureEvent('onboarding_step', { step: 'welcome', action: 'next' }), setIndex(index + 1)))} />}
         >
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
