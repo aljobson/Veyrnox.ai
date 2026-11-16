@@ -444,7 +444,7 @@ function PostThumbs({ media }) {
     if (!items.length) return null;
     return (
         <span className="relative shrink-0">
-            {first ? <JobThumb jobId={first.job_id} size={56} /> : <span aria-hidden="true" className="inline-flex h-14 w-14 items-center justify-center rounded-lg bg-vx-panel text-xl text-vx-fg-muted">{first?.media_type === 'video' ? '▶' : '▧'}</span>}
+            {first ? <JobThumb jobId={first.job_id} size={56} /> : <span aria-hidden="true" className="inline-flex h-14 w-14 items-center justify-center rounded-lg bg-vx-panel text-xl text-vx-fg-muted">{items[0].media_type === 'video' ? '▶' : '▧'}</span>}
             {items.length > 1 && <span aria-hidden="true" className="absolute -top-1 -end-1 rounded-full bg-vx-accent px-1.5 text-[10px] font-bold text-vx-accent-ink">{items.length}</span>}
         </span>
     );
