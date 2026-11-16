@@ -13,9 +13,13 @@ let beforeReverse = async () => {};
 globalThis.beatCacheFixture = {
   cancelSongLoads() {},
   decodes: { acquire: async () => { await beforeReverse(); return () => {}; } },
-  offline: () => ({ createBuffer: (numberOfChannels, length, sampleRate) => {
+  offline: (channels = 1, frames = 1) => ({
+    decodeAudioData: async () => globalThis.beatCacheFixture.offline().createBuffer(1, 48000, 48000),
+    startRendering: async () => globalThis.beatCacheFixture.offline().createBuffer(channels, frames, 48000),
+    createBufferSource: () => ({ connect() {}, start() {} }), destination: {},
+    createBuffer: (numberOfChannels, length, sampleRate) => {
     const channels = Array.from({ length: numberOfChannels }, () => new Float32Array(4));
-    return { numberOfChannels, length, sampleRate, getChannelData: (c) => channels[c] };
+    return { numberOfChannels, length, sampleRate, getChannelData: (c) => channels[c], copyToChannel() {} };
   } }),
   loadSong: async (asset) => {
     loads.set(asset.ref.jobId, (loads.get(asset.ref.jobId) || 0) + 1);
@@ -102,4 +106,34 @@ test('pagehide cancels retention of late work and bfcache restoration allows a f
   assert.ok(await assets.loadAsset(asset, 60));
   assert.equal(assets.assetState(asset, 60).status, 'ready');
   assets.clearBeatAssets();
+});
+
+
+test('cloud-origin takes survive shelf changes; deleted shelf takes fall back to ready account media', async () => {
+  const shelf = await import('../app/veyrnox/_lib/music/instrumentShelf.js');
+  const originalFetch = globalThis.fetch;
+  shelf.configureShelfStorage({ list: async () => [], put: async () => {}, remove: async () => {} });
+  await shelf.hydrateShelf();
+  const asset = { source: 'take', ref: 'cloud-only', name: 'Take', durationSec: 1, sourceChannels: 1, encodedBytes: 0, bpm: null };
+  const controller = new AbortController();
+  let signed = 0;
+  const config = { userId: uuid(100), beatId: uuid(101), rows: [{ id: uuid(102), take_ref: asset.ref, status: 'ready', byte_size: 44 }],
+    signal: controller.signal, load: async () => { signed++; return { url: 'https://media.example.invalid/take.wav' }; } };
+  globalThis.fetch = async () => new Response(new Uint8Array(44));
+  try {
+    assets.configureCloudTakes(config);
+    const cloud = await assets.loadAssetBuffers(asset, 92); assert.equal(cloud.origin, 'cloud');
+    const unrelated = shelf.addShelfTake({ label: 'Other take', samples: new Float32Array(48000), sampleRate: 48000 });
+    assert.equal(assets.cachedAsset(asset, 92), cloud.buffer); assert.equal(assets.assetState(asset, 92).status, 'ready');
+    shelf.removeShelfTake(unrelated.id);
+    assert.equal(assets.cachedAsset(asset, 92), cloud.buffer);
+    const local = shelf.addShelfTake({ label: 'Local take', samples: new Float32Array(48000), sampleRate: 48000 });
+    const localAsset = { ...asset, ref: local.id };
+    assets.configureCloudTakes({ ...config, rows: [...config.rows, { id: uuid(103), take_ref: local.id, status: 'ready', byte_size: 44 }] });
+    const loaded = await assets.loadAssetBuffers(localAsset, 92); assert.equal(loaded.origin, 'shelf');
+    shelf.removeShelfTake(local.id);
+    assert.equal(assets.cachedAsset(localAsset, 92), null);
+    const fallback = await assets.loadAssetBuffers(localAsset, 92); assert.equal(fallback.origin, 'cloud'); assert.equal(signed, 2);
+    assets.configureCloudTakes(null); assert.equal(assets.cachedAsset(localAsset, 92), null);
+  } finally { globalThis.fetch = originalFetch; assets.configureCloudTakes(null); }
 });

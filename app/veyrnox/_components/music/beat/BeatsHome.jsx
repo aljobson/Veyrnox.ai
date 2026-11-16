@@ -2,13 +2,14 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useBeatAccountList } from './useBeatAccountList';
 import { trackSummary } from '../../../_lib/music/beat/beatTrackSummary.mjs';
 import { BEAT_LIMITS, createBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 import { rename } from '../../../_lib/music/beat/beatOps.mjs';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 import { action, button, input, storageWarning } from './beatStyles';
 
-export default function BeatsHome() {
+export default function BeatsHome({ cloud = false }) {
   const router = useRouter();
   const [records, setRecords] = useState([]);
   const [count, setCount] = useState(0);
@@ -24,6 +25,7 @@ export default function BeatsHome() {
     if (token !== request.current) return;
     setRecords(result.records); setCount(result.count); setPersistent(result.persistent); setLoaded(true);
   }, []);
+  const account = useBeatAccountList(cloud, router, setMessage, refresh);
   useEffect(() => {
     refresh();
     const unsubscribe = store.subscribeBeats(refresh);
@@ -34,7 +36,8 @@ export default function BeatsHome() {
     let number = 1;
     while (records.some((r) => r.doc.title === `Untitled beat ${number}`)) number++;
     const doc = createBeat({ id: crypto.randomUUID(), title: `Untitled beat ${number}` });
-    const result = await store.createBeat(doc);
+    const userId = account.userId();
+    const result = await store.createBeat(doc, cloud && userId ? { userId, projectId: null, revision: 0, syncedUpdatedAt: 0 } : undefined);
     if (result.error) { setMessage(result.error === 'limit' ? 'This device has 50 beats. Delete one to make room.' : 'Could not create this beat.'); await refresh(); setBusy(false); }
     else router.push(`/app/music/beats/${doc.id}`);
   }
@@ -63,9 +66,18 @@ export default function BeatsHome() {
           <button className={action} disabled={busy || !editing.title.trim()}>Save name</button><button type="button" className={button} onClick={() => setEditing(null)}>Cancel</button>
         </form> : <h2 className="break-words text-xl font-bold">{record.doc.title}</h2>}
         <p className="my-2 text-sm text-vx-fg-muted">{record.doc.tempo.bpm} BPM · {trackSummary(record.doc.tracks)} · Last edited {new Date(record.updatedAt).toLocaleString()}</p>
+        {cloud && <p className="my-2 text-sm text-vx-fg-muted">On this device{account.rows.some(row => row.beat_id === record.id) ? ' · In your account' : ''}</p>}
         <div className="flex flex-wrap gap-2"><Link className={`${action} inline-flex items-center`} href={`/app/music/beats/${record.id}`}>Open</Link>
-          <button className={button} disabled={busy} onClick={() => setEditing({ ...record, title: record.doc.title })}>Rename</button><button className={button} disabled={busy} onClick={() => remove(record)}>Delete</button></div>
+          <button className={button} disabled={busy} onClick={() => setEditing({ ...record, title: record.doc.title })}>Rename</button><button className={button} disabled={busy} onClick={() => remove(record)}>Delete</button>
+          {cloud && account.rows.some(row => row.beat_id === record.id) && <button className={button} onClick={() => account.remove(account.rows.find(row => row.beat_id === record.id))}>Remove from account</button>}</div>
       </li>)}</ul>}
+    {cloud && <section aria-label="Account beats" className="space-y-3">
+      {account.message && <p role="status">{account.message} <button className={button} onClick={account.refresh}>Retry</button></p>}
+      <ul className="space-y-3">{account.rows.filter(row => !records.some(record => record.id === row.beat_id)).map(row => <li key={row.id} className="space-y-3 rounded-2xl border border-vx-border bg-vx-panel p-4">
+        <h2 className="text-xl font-bold">{row.title}</h2><p className="text-sm text-vx-fg-muted">In your account</p>
+        <div className="flex flex-wrap gap-2"><button className={action} onClick={() => account.open(row)}>Open</button><button className={button} onClick={() => account.remove(row)}>Remove from account</button></div>
+      </li>)}</ul>
+    </section>}
     <p aria-live="polite" className="text-sm text-vx-fg-muted">{message}</p>
   </div>;
 }

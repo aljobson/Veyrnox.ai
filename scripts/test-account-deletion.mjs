@@ -207,7 +207,7 @@ try {
         'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs', 'music_reference_links', 'music_song_reactions', 'music_creator_follows', 'music_social_mutations', 'music_comments', 'music_comment_reports', 'music_comment_mutations', 'music_remix_sources', 'music_listen_history', 'music_hooks', 'music_song_covers', 'music_play_listens', 'music_song_reports', 'labs_rank_pairs',
         'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks', 'creator_profiles', 'first_goals', 'library_favourites', 'create_drafts', 'checkin_streaks']);
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
-        'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows', 'mfa_recovery_codes', 'mfa_recovery_attempts']);
+        'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows', 'music_beat_projects', 'music_beat_project_versions', 'music_beat_project_takes', 'music_beat_save_windows', 'mfa_recovery_codes', 'mfa_recovery_attempts']);
     const REFUSED_UNTIL_CLEARED = new Set(['cinema_submissions', 'cinema_competitions', 'cinema_story_polls', 'credit_subscriptions',
         'social_publish_subscriptions', 'social_brand_members', 'social_brand_invitations', 'voice_profiles',
         // Music owns generated media, provider receipts and collaboration state. Until the dedicated
