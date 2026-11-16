@@ -83,7 +83,7 @@ export function ProjectThumb({ projectId, label = '', size = 56, className = '' 
   return (
     <span ref={ref} className="inline-flex shrink-0">
       {jobId ? <JobThumb jobId={jobId} label={label} size={size} className={className} />
-        : <span aria-hidden="true" style={{ width: size, height: size }} className={`inline-flex items-center justify-center rounded-lg bg-vx-panel text-xl text-vx-fg-muted ${className}`}>▤</span>}
+        : <span aria-hidden="true" style={{ width: size, height: size }} className={`inline-flex items-center justify-center rounded-lg bg-vx-panel text-xl text-vx-fg-muted before:content-['▤'] ${className}`} />}
     </span>
   );
 }
