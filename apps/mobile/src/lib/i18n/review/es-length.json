@@ -2748,6 +2748,12 @@
     "ratio": 2.13
   },
   {
+    "id": "facelessReel.next",
+    "english": "Next",
+    "translation": "Siguiente",
+    "ratio": 2.25
+  },
+  {
     "id": "facelessReel.storyBrief",
     "english": "Story brief",
     "translation": "Resumen de la historia",

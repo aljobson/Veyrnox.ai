@@ -46,9 +46,9 @@ test('Remix gate needs Cover gates plus its own switch, which ships false', asyn
   assert.equal(musicRemixEnabled(ready), true);
   for (const key of Object.keys(ready)) assert.equal(musicRemixEnabled({ ...ready, [key]: 'false' }), false, key);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  // Off in production; on in staging for the billed proof run (owner, 2026-11-16).
-  assert.equal((wrangler.match(/\\"remix\\":false/g) || []).length, 1);
-  assert.equal((wrangler.match(/\\"remix\\":true/g) || []).length, 1);
+  // On in production and staging after the billed staging proof (owner, 2026-11-16).
+  assert.equal((wrangler.match(/\\"remix\\":false/g) || []).length, 0);
+  assert.equal((wrangler.match(/\\"remix\\":true/g) || []).length, 2);
 });
 
 test('WAV mix halves each input, keeps the shorter length and refuses mismatched formats', () => {
@@ -92,4 +92,18 @@ test('a thrown admission never leaves an unclaimed prepared mix in storage', asy
   const route = await readFile(new URL('../app/api/v1/music/songs/[id]/route.js', import.meta.url), 'utf8');
   assert.match(route, /if \(preparedKey\) await discardUnclaimedSource\(preparedKey/);
   assert.match(route, /if \(check\?\.ok && check\.idempotent\) return;\s+await deleteObject\(key, r2cfg\);/);
+});
+
+test('0543 switches both Mashup and Sample rows on with exact row-count guards, prices untouched', async () => {
+  const sql = await readFile(new URL('../packages/db/schema/supabase/0543_music_remix_catalog_active.sql', import.meta.url), 'utf8');
+  for (const id of ['stable-audio-3-mashup', 'stable-audio-3-sample']) {
+    assert.match(sql, new RegExp(`SET active = true, updated_at = now\\(\\)\\s+WHERE id = '${id}' AND provider = 'fal';\\s+GET DIAGNOSTICS affected = ROW_COUNT;\\s+IF affected <> 1 THEN`));
+  }
+  assert.doesNotMatch(sql, /credits_5s|provider_cost_per_unit/);
+});
+
+test('the Sample refusal for a non-WAV song speaks of one song', async () => {
+  const source = await readFile(new URL('../app/veyrnox/_components/music/MusicRemixDialog.jsx', import.meta.url), 'utf8');
+  assert.match(source, /kind === 'sample'\n\s+\? 'This song must be a WAV master\./);
+  assert.equal((source.match(/setError\(friendlyError\(reason, kind\)\)/g) || []).length, 2);
 });
