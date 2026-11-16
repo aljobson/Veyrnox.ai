@@ -16,7 +16,7 @@ export const MAX_SELECTED_SKILLS = 4;  // keeps every chosen specialist complete
 
 export const SKILL_GROUPS = ['Make', 'Edit', 'Plan', 'Film'];
 
-// 1 Credit, reads images: the cheapest chat model that can look at a picture the person attached.
+// 2 Credits, reads images: the cheapest chat model that can look at a picture the person attached.
 const SKILL_MODEL = 'chat-gpt-6-luna';
 
 const PREAMBLE = [
