@@ -32,7 +32,7 @@ export function placeAiResults(doc, record, results) {
       regions: [{ id: ids.region, start, length, assetId: ids.asset, phaseSec, gainDb: 0, fadeIn: null, fadeOut: null, reverse: false }] };
   });
   next.tracks.splice(anchor >= 0 && !sourceGone ? anchor + 1 : next.tracks.length, 0, ...tracks);
-  if (sourceTrack && tracks.length) sourceTrack.mute = true;
+  if (sourceTrack && !sourceGone && tracks.length) sourceTrack.mute = true;
   next.updatedAt = Math.max(Date.now(), doc.updatedAt);
   const check = validateBeat(next); if (!check.ok) throw new Error('These parts exceed the project limits.');
   return next;

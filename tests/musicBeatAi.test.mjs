@@ -26,6 +26,14 @@ test('generation body is bounded, instrumental, simple, valid and keeps an 80-ch
   assert.throws(() => generateBody({ ...d, cycle:{start:0,end:200000} },'x'),/60 seconds/);
   assert.throws(() => generateBody(d,'x','bad'),/key/);
 });
+test('generation describes whole bars, fractional bars and sub-bar cycles accurately', () => {
+  const d = doc();
+  for (const [ticks, length] of [[7680, '2 bars of 4/4'], [9600, 'a 5.0-second part'], [12000, 'a 6.3-second part'], [240, 'a 0.1-second part']]) {
+    const body = generateBody({ ...d, cycle: { start: 3840, end: 3840 + ticks } }, 'Warm keys');
+    assert.equal(body.prompt, `Warm keys. Instrumental part, ${length} at 120 BPM.`);
+    if (ticks !== 7680) assert.doesNotMatch(body.prompt, /bars of 4\/4/);
+  }
+});
 test('current-version eligibility uses the real song response and rejects repeated/reversed replacement', () => {
   const d=doc(), song={version_id:uuid(3),current_version:{id:uuid(3)}};
   assert.equal(actionEligibility('extend',d,region,asset,song,{}),'');
@@ -62,6 +70,15 @@ test('pair placement is one immutable edit, idempotent, B-only audible, track ca
   assert.equal(placeAiResults(d,r,[results[1]]).tracks[1].mute,false);
   const full={...d,tracks:Array.from({length:15},(_,i)=>({...d.tracks[0],id:`t${i}`,regions:[]}))};
   assert.throws(()=>placeAiResults(full,r,results),/Remove a track/);
+});
+test('deleted source region leaves its surviving track audible and puts results at the end', () => {
+  const d = doc(), r = pending();
+  r.op = 'stems'; r.placement.sourceTrackId = d.tracks[0].id; r.placement.regionId = 'rdeleted';
+  const end = Math.max(0, ...d.tracks.flatMap(t => t.regions.map(r => r.start + r.length)));
+  const next = placeAiResults(d, r, [{ ordinal: 0, asset, name: 'Vocals' }]);
+  assert.equal(next.tracks[0].mute, false);
+  assert.equal(next.tracks.at(-1).regions[0].start, end);
+  assert.equal(next.tracks.at(-1).mute, false);
 });
 test('persistent records reject injected paths and malformed refs; two taps share one POST and retries reuse the key', async () => {
   const r=pending(), data=new Map(), storage={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};

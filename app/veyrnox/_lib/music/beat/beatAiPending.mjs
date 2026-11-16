@@ -45,6 +45,13 @@ export function writePending(beatId, record, storage = globalThis.localStorage) 
 export function retirePending(beatId, key, storage = globalThis.localStorage) {
   storage.setItem(prefix + beatId, JSON.stringify(readPending(beatId, storage).filter(r => r.key !== key)));
 }
+export function definitivelyRefused(error) {
+  // Authentication can interrupt a retry of an already accepted request.
+  if (error.status === 401 || ['account_changed', 'mfa_required'].includes(error.code)) return false;
+  if (error.code?.endsWith('_acceptance_unknown') || (error.status === 429 && error.retryAfter)) return false;
+  return error.status >= 400 && error.status < 500 && typeof error.code === 'string'
+    && !!error.code && !['gateway_error', 'network_error'].includes(error.code);
+}
 // Synchronous exclusion is independent of React's next render, including rapid taps.
 export function singleFlight() {
   let flight = null;

@@ -1,6 +1,6 @@
 'use client';
 import { gatewayFetch } from '../../../_lib/gateway.js';
-import { confirmAssetAvailability } from '../../../_lib/music/beat/beatAssetAvailability.mjs';
+import { exportAvailabilityGuard } from '../../../_lib/music/beat/beatAssetAvailability.mjs';
 import { assetState, markAssetHeld } from '../../../_lib/music/beat/beatAssets.js';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -69,11 +69,7 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
     if (!soloTrackId) { rendered.current = { signature, bytes }; setHasDownload(true); }
     return bytes;
   }
-  async function confirm() {
-    try { await confirmAssetAvailability(snapshot.current, { request: gatewayFetch, state: assetState, markHeld: markAssetHeld }); }
-    catch (e) { prepared.current = null; rendered.current = null; setHasDownload(false); throw e; }
-  }
-  async function deliver(bytes, filename) {
+  async function deliver(bytes, filename, confirm) {
     await confirm();
     const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
     const link = document.createElement('a'); link.href = url; link.download = filename;
@@ -84,6 +80,7 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
     if (running.current || !modules.current) return;
     running.current = true; setBusy(true); setError('');
     const { mixdown, plan, instruments, save: saver } = modules.current;
+    const confirm = exportAvailabilityGuard(snapshot.current, { request: gatewayFetch, state: assetState, markHeld: markAssetHeld });
     try {
       if (save) {
         if (!online) throw Object.assign(new Error(saver.SAVE_OFFLINE_MESSAGE), { code: 'network_error' });
@@ -100,15 +97,15 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
       } else if (kind === 'pattern') {
         status('Rendering pattern…');
         const result = await mixdown.renderBeat(snapshot.current, loops, editTrackId);
-        await deliver(instruments.encodeWav(result.samples, result.sampleRate), plan.exportFilename(snapshot.current.title));
+        await deliver(instruments.encodeWav(result.samples, result.sampleRate), plan.exportFilename(snapshot.current.title), confirm);
       } else if (output === 'stems') {
         const planned = plan.planExport(snapshot.current, { range, output, bitDepth, phone: phone() });
         for (const track of planned.tracks.filter(t => t.audible)) {
-          status(`Rendering ${track.name}…`); await deliver(await render(bitDepth, track.id), track.filename);
+          status(`Rendering ${track.name}…`); await deliver(await render(bitDepth, track.id), track.filename, confirm);
           // Let the previous Blob's URL release before allocating the next stem.
           await new Promise(resolve => setTimeout(resolve, 1100));
         }
-      } else await deliver(await render(bitDepth), plan.exportFilename(snapshot.current.title));
+      } else await deliver(await render(bitDepth), plan.exportFilename(snapshot.current.title), confirm);
     } catch (e) {
       if (['reservation_closed', 'reservation_expired', 'idempotency_conflict'].includes(e.code)) saveAttempt.current = null;
       if (['asset_held', 'asset_unconfirmed'].includes(e.code)) { prepared.current = null; rendered.current = null; setHasDownload(false); failure(e.message); return; }

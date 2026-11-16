@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch, notifyBalanceChanged } from '../../../_lib/gateway.js';
 import { AI_TERMINAL, aiError, aiPollPath } from '../../../_lib/music/beat/beatAi.mjs';
-import { readPending, writePending, retirePending, placementIds, singleFlight, submitPending } from '../../../_lib/music/beat/beatAiPending.mjs';
+import { readPending, writePending, retirePending, placementIds, singleFlight, submitPending, definitivelyRefused } from '../../../_lib/music/beat/beatAiPending.mjs';
 import { placeAiResults, placedAlready } from '../../../_lib/music/beat/beatAiOps.mjs';
 import { loadAiResults } from '../../../_lib/music/beat/beatAiResults.js';
 
@@ -23,8 +23,21 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
     return () => { live.current = false; window.removeEventListener('online', network); window.removeEventListener('offline', network); };
   }, [beatId, enabled, refreshPending]);
   const say = useCallback(text => { if (live.current) { setMessage(text); current.current.announce(text); } }, []);
-  const fail = useCallback(e => { if (live.current) { const text = aiError(e, recordRef.current?.op); setError(text); current.current.announce(text); } }, []);
+  const fail = useCallback((e, op = recordRef.current?.op) => { if (live.current) { const text = aiError(e, op); setError(text); current.current.announce(text); } }, []);
   function keep(next) { writePending(beatId, next); recordRef.current = next; if (live.current) setRecord(next); refreshPending(); }
+  function clearRequest(r) {
+    retirePending(beatId, r.key); refreshPending();
+    recordRef.current = null; quoteRef.current = null;
+    if (live.current) { setRecord(null); setQuote(null); setMessage(''); setError(''); }
+  }
+  function discard() {
+    return gate.current(() => {
+      const r = recordRef.current;
+      if (!r || r.requestId) return;
+      try { clearRequest(r); say('Request discarded from this beat. Any accepted results will stay in your Music library.'); }
+      catch (e) { fail(e); }
+    });
+  }
   const refresh = useCallback(async r => {
     const status = await gatewayFetch(aiPollPath(r)); // Resume is GET-only, even without an acknowledgement.
     if (!live.current || recordRef.current?.key !== r.key) return;
@@ -37,7 +50,7 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
     if (results.length) {
       const sourceGone = r.placement.sourceTrackId && !project.current.current.tracks.some(t => t.id === r.placement.sourceTrackId && t.regions.some(region => region.id === r.placement.regionId));
       const already = results.every(item => placedAlready(project.current.current, r, item.ordinal));
-      if (!already && !project.edit(d => placeAiResults(d, r, results), { label: 'add AI parts', message: r.source ? 'Original track muted — unmute it to compare' : 'AI parts added' }))
+      if (!already && !project.edit(d => placeAiResults(d, r, results), { label: 'add AI parts', message: r.source && !sourceGone ? 'Original track muted — unmute it to compare' : 'AI parts added' }))
         throw new Error('Could not add these parts. Finish the current edit and try again.');
       const placed = project.current.current;
       await project.flushLatest();
@@ -92,12 +105,14 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
       setBusy('Sending…'); setElapsed(0); setError('');
       try {
         keep(r); // If durable storage fails, there is no POST.
-        const result = await submitPending(r, gatewayFetch);
+        let result;
+        try { result = await submitPending(r, gatewayFetch); }
+        catch (e) { if (definitivelyRefused(e)) clearRequest(r); throw e; }
         const next = { ...r, requestId: result.generation_id || result.request_id, state: 'accepted', balanceAfter: result.balance_after };
         keep(next); notifyBalanceChanged(); say('Making your parts…');
-      } catch (e) { fail(e); } finally { if (live.current) setBusy(''); }
+      } catch (e) { fail(e, r.op); } finally { if (live.current) setBusy(''); }
     });
   }
-  return { selection, record, pending, quote, busy, error, message, online, elapsed: busy || record?.requestId ? elapsed : 0, open, resume, reset, price, send,
+  return { selection, record, pending, quote, busy, error, message, online, elapsed: busy || record?.requestId ? elapsed : 0, open, resume, reset, price, send, discard,
     close: () => { if (!busy) setSelection(null); } };
 }

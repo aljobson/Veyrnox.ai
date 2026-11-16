@@ -13,6 +13,7 @@ export default function BeatAiActionSheet({ request, doc, afterTrackId }) {
   const draftKey = `veyrnox.beat.ai.draft.${doc.id}.${op}`;
   const [prompt, setPrompt] = useState(() => { try { return record?.prompt || selection.prompt || localStorage.getItem(draftKey)?.slice(0, 400) || ''; } catch { return ''; } }), [key, setKey] = useState('');
   const [instrument, setInstrument] = useState(record?.instrument || selection.instrument || 'drums'), [rights, setRights] = useState(false);
+  const [discardKey, setDiscardKey] = useState(null);
   const source = selection.source, asset = source?.asset;
   const region = selection.region || { start: selection.placement?.start, length: selection.placement?.length, phaseSec: selection.placement?.phaseSec, reverse: selection.placement?.reverse || false };
   const held = useSyncExternalStore(subscribeAssets, () => asset ? assetState(asset, doc.tempo.bpm) : idle, () => idle);
@@ -61,7 +62,13 @@ export default function BeatAiActionSheet({ request, doc, afterTrackId }) {
       {!record && !quote && <button className={action} disabled={!!busy || !online || !!reason} onClick={price}>{busy || 'Price'}</button>}
       {(quote || record) && <button className={action} disabled={!!busy || !online || (!record && (!quote.affordable || !!reason))} onClick={request.send}>{busy || (record ? record.requestId ? 'Check again' : 'Try again — Check again' : 'Send')}</button>}
       {quote && !record && <button className={button} disabled={!!busy} onClick={request.reset}>Change</button>}
+      {record && !record.requestId && discardKey !== record.key && <button className={button} disabled={!!busy} onClick={() => setDiscardKey(record.key)}>Discard request</button>}
     </div>
+    {record && !record.requestId && discardKey === record.key && <div className="my-4 space-y-3" role="group" aria-label="Confirm discard request">
+      <p role="status">Discard this request from the beat? This does not cancel a request already accepted. Any results will stay in your Music library.</p>
+      <div className="flex flex-wrap gap-3"><button className={button} disabled={!!busy} onClick={request.discard}>Confirm discard</button>
+        <button className={button} disabled={!!busy} onClick={() => setDiscardKey(null)}>Keep request</button></div>
+    </div>}
     {request.elapsed >= 3 && <p role="status">{busy || 'Making parts…'} · {request.elapsed} s</p>}
     {request.message && <p className="my-3" role="status">{request.message}</p>}
     {request.error && <p className="my-3 text-vx-danger" role="alert">{request.error}</p>}

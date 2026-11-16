@@ -14,7 +14,8 @@ export function generateBody(doc, prompt, key = '') {
   if (!prompt.trim() || prompt.trim().length > 400) throw new Error('Describe a part in 1–400 characters');
   if (key && !MUSIC_KEY_SCALES.includes(key)) throw new Error('Choose a musical key');
   const bpm = Math.max(40, Math.min(220, Math.round(doc.tempo.bpm))), bars = (doc.cycle.end - doc.cycle.start) / 3840;
-  return { mode: 'simple', model_id: 'ace-step-loop', prompt: `${prompt.trim()}. Instrumental part, ${bars} bars of 4/4 at ${bpm} BPM${key ? `, in ${key}` : ''}.`,
+  const length = Number.isInteger(bars) ? `${bars} bars of 4/4` : `a ${seconds.toFixed(1)}-second part`;
+  return { mode: 'simple', model_id: 'ace-step-loop', prompt: `${prompt.trim()}. Instrumental part, ${length} at ${bpm} BPM${key ? `, in ${key}` : ''}.`,
     title: `${doc.title.trim().slice(0, 75)} part`, duration_seconds: Math.max(10, Math.ceil(seconds)), bpm, key_scale: key || null, time_signature: '4' };
 }
 export function replaceRange(doc, region, asset) {
@@ -74,5 +75,6 @@ export function aiError(e, op) {
     range_invalid: 'Set the cycle over 1–30 s of this region', source_duration_invalid: 'This song is too long for this action',
     source_unavailable: 'This source is no longer available', network_error: 'Generate needs a connection',
     model_unavailable: "AI parts aren't available right now", quote_expired: 'This price expired. Get a new price.',
-    quote_stale: 'This price changed. Get a new price.' })[e.code] || (e.code ? "AI parts aren't available right now" : e.message || 'Could not complete the request. Try again.');
+    quote_stale: 'This price changed. Get a new price.', quote_already_used: 'This price was already used. Get a new price.',
+    idempotency_conflict: 'This request conflicts with an earlier request. Get a new price.' })[e.code] || (e.code ? "AI parts aren't available right now" : e.message || 'Could not complete the request. Try again.');
 }

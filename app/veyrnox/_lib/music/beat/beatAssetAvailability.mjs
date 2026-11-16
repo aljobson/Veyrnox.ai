@@ -15,24 +15,48 @@ export function assertNoHeldAssets(doc, state) {
 // The URL is deliberately discarded: cached audio is never release authority.
 export async function confirmAssetAvailability(doc, { request, state, markHeld }) {
   assertNoHeldAssets(doc, state);
-  const checked = new Set();
+  const assets = new Map();
   for (const id of usedAssets(doc)) {
     const asset = doc.assets[id], path = assetSigningPath(asset);
-    if (!path || checked.has(path)) continue;
-    checked.add(path);
-    try {
-      const result = await request(path);
-      if (!result?.url) throw new Error('Missing signed URL');
-    } catch (e) {
-      if (isHeldError(e)) {
-        // Mark every document alias, including metadata variants of this source.
-        for (const other of usedAssets(doc)) if (assetSigningPath(doc.assets[other]) === path) markHeld(doc.assets[other]);
-        throw Object.assign(new Error(HELD_EXPORT), { code: 'asset_held' });
+    if (!path) continue;
+    if (!assets.has(path)) assets.set(path, []);
+    assets.get(path).push(asset);
+  }
+  const entries = [...assets];
+  let cursor = 0, failure;
+  async function worker() {
+    while (!failure && cursor < entries.length) {
+      const [path, aliases] = entries[cursor++];
+      try {
+        const result = await request(path);
+        if (!result?.url) throw new Error('Missing signed URL');
+      } catch (e) {
+        if (isHeldError(e)) {
+          // Mark every document alias, including metadata variants of this source.
+          aliases.forEach(markHeld);
+          failure = Object.assign(new Error(HELD_EXPORT), { code: 'asset_held' });
+        } else failure ||= Object.assign(new Error(UNCONFIRMED_EXPORT), { code: 'asset_unconfirmed' });
       }
-      throw Object.assign(new Error(UNCONFIRMED_EXPORT), { code: 'asset_unconfirmed' });
     }
   }
+  await Promise.all(Array.from({ length: Math.min(4, entries.length) }, worker));
+  if (failure) throw failure;
   assertNoHeldAssets(doc, state);
+}
+
+// Create one guard per user action, never reuse it across downloads or saves.
+export function exportAvailabilityGuard(doc, options, now = Date.now) {
+  let confirmedAt = null, failure;
+  return async () => {
+    if (failure) throw failure;
+    try {
+      assertNoHeldAssets(doc, options.state);
+      if (confirmedAt === null || now() - confirmedAt > 60_000) {
+        await confirmAssetAvailability(doc, options);
+        confirmedAt = now();
+      }
+    } catch (e) { failure = e; throw e; }
+  };
 }
 
 // Observe transitions, so an already-held silent placeholder does not prevent
