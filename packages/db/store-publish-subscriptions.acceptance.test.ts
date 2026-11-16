@@ -46,6 +46,8 @@ describe("Store Publish subscriptions (0346)", { skip: !process.env.DATABASE_URL
         }
         if (!(await has("public.social_publish_plans"))) for (const f of SOCIAL_CHAIN) await pool.query(await readFile(file(f), "utf8"));
         for (const _round of [1, 2]) await pool.query(await readFile(file(FINAL), "utf8"));
+        // Idempotent: the shared CI database may already hold 0341 from another suite, without the 0555 price.
+        for (const _round of [1, 2]) await pool.query(await readFile(file("0555_publish_annual_price_12599.sql"), "utf8"));
     });
     after(async () => { if (pool) await pool.end(); });
 

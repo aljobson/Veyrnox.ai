@@ -29,6 +29,9 @@ describe('social Publish Plan entitlement (0293, 0298, 0340, 0341)', { skip: !pr
     const annualMigration = await readFile(new URL('./schema/supabase/0341_annual_social_publish_plan.sql', import.meta.url), 'utf8');
     await pool.query(annualMigration);
     await pool.query(annualMigration);
+    const annualPriceMigration = await readFile(new URL('./schema/supabase/0555_publish_annual_price_12599.sql', import.meta.url), 'utf8');
+    await pool.query(annualPriceMigration);
+    await pool.query(annualPriceMigration);
   });
 
   after(async () => { if (pool) await pool.end(); });
