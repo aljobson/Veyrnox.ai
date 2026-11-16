@@ -23,6 +23,7 @@ import type { SlotKind } from '../../lib/sources';
 
 type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
+const EDITOR_LOAD_TIMEOUT_MS = 15000;
 
 export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = () => {}, onCopy = () => {} }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; onOwnerChange?: () => void; onCopy?: (id: string) => void }) {
     const { api, beginSessionTask } = useAuth();
@@ -40,6 +41,7 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const projectName = useRef(name);
     const [document, setDocument] = useState<ProjectDocument | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
+    const [attempt, setAttempt] = useState(0);
     const [tool, setTool] = useState<Tool>('media');
     const [selection, setSelection] = useState<Selection | null>(null);
     const [selections, setSelections] = useState<Selection[]>([]);
@@ -162,19 +164,23 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     useEffect(() => {
         mounted.current = true;
         let cancelled = false;
-        void Promise.all([fetchProject(api, projectId), getDocument(api, projectId), listEditorProjectAssets(api, projectId)])
+        // Only the document gates the editor. The project name/workspace and the media list are best effort, so a slow or failing one cannot hide the timeline.
+        const timer = setTimeout(() => { if (!cancelled && sync.live()) { cancelled = true; setProblem(t('editor.fullFailed')); } }, EDITOR_LOAD_TIMEOUT_MS);
+        void Promise.all([fetchProject(api, projectId).catch(() => null), getDocument(api, projectId), listEditorProjectAssets(api, projectId).catch(() => [] as Media[])])
             .then(async ([project, head, assets]) => {
                 if (cancelled || !sync.live()) return;
+                clearTimeout(timer);
                 if (project) { projectName.current = project.name; setName(project.name); }
                 baseline(head); setProjectAssets(assets);
                 await sync.loaded(head, project?.workspaceId ?? null);
             })
-            .catch(error => { if (isAccountChanged(error)) sync.accountChanged(); else if (sync.live()) setProblem(t('editor.fullFailed')); });
+            .catch(error => { clearTimeout(timer); if (cancelled) return; if (isAccountChanged(error)) sync.accountChanged(); else if (sync.live()) setProblem(t('editor.fullFailed')); });
         SecureStore.getItemAsync('veyrnox.editorPrivacyNotice.v1')
             .then((value) => { if (mounted.current && value !== 'seen') setPrivacyNotice(true); })
             .catch(() => { if (mounted.current) setPrivacyNotice(true); });
-        return () => { cancelled = true; mounted.current = false; };
-    }, [api, baseline, projectId, sync]);
+        return () => { cancelled = true; clearTimeout(timer); mounted.current = false; };
+    }, [api, baseline, projectId, sync, attempt]);
+    const retryLoad = useCallback(() => { setProblem(null); setAttempt(count => count + 1); }, []);
 
     useEffect(() => {
         if (!playing || playbackTotal <= 0) return;
@@ -225,5 +231,5 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         return documentRef.current;
     };
 
-    return { getEditRevision: () => editRevisionRef.current, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel };
+    return { getEditRevision: () => editRevisionRef.current, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument: () => documentRef.current, preparePicked, savedDocument, applyBackup, api, router, name, document, retryLoad, revision, dirty, saving, problem, setProblem, tool, setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice, history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, setLocalMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel };
 }

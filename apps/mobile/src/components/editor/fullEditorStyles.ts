@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { colors, fonts } from '../../theme';
 export const styles = StyleSheet.create({
+    loadingActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
     screen: { flex: 1, overflow: 'hidden', backgroundColor: colors.background },
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: colors.background },
     projectBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },

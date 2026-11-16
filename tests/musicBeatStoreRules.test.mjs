@@ -27,3 +27,12 @@ test('create refuses duplicates and conditional delete protects a newer revision
   assert.equal(decideDelete(existing, 3).error, 'conflict');
   assert.equal(decideDelete(existing).action, 'delete');
 });
+
+test('account links survive ordinary autosave and rename without changing old records', () => {
+  const cloud = { userId: crypto.randomUUID(), projectId: crypto.randomUUID(), revision: 7, syncedUpdatedAt: 0 };
+  const linked = { ...existing, cloud };
+  assert.equal(validRecord(linked), true);
+  assert.deepEqual(decideUpdate(linked, { ...doc, title: 'Renamed', updatedAt: 2 }, 4).record.cloud, cloud);
+  assert.equal(decideUpdate(existing, doc, 4).record.cloud, undefined);
+  assert.equal(validRecord({ ...linked, cloud: { ...cloud, requestKey: 'private' } }), false);
+});

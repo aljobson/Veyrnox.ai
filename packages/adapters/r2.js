@@ -248,7 +248,8 @@ export async function deleteObject(key, cfg) {
  * images). Returns { ok:false, error } on any failure or non-2xx status.
  * @returns {Promise<{ok:true, response:Response}|{ok:false, error:string}>}
  */
-export async function getObject(key, cfg) {
+export async function getObject(key, cfg, { method = 'GET' } = {}) {
+    if (!['GET', 'HEAD'].includes(method)) throw new Error('Invalid read method');
     if (!isConfigured(cfg)) {
         return { ok: false, error: 'R2 not configured' };
     }
@@ -264,7 +265,7 @@ export async function getObject(key, cfg) {
         `x-amz-date:${amzDate}\n`;
     const signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
     const canonicalRequest =
-        `GET\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
+        `${method}\n${canonicalUri}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
 
     const credentialScope = `${dateStamp}/${REGION}/${SERVICE}/aws4_request`;
     const stringToSign =
@@ -277,7 +278,7 @@ export async function getObject(key, cfg) {
     let res;
     try {
         res = await fetch(`https://${host}${canonicalUri}`, {
-            method: 'GET',
+            method, ...(method === 'HEAD' ? { signal: AbortSignal.timeout(10000) } : {}),
             headers: {
                 host,
                 'x-amz-content-sha256': payloadHash,
@@ -290,10 +291,13 @@ export async function getObject(key, cfg) {
         return { ok: false, error: `R2 GET transport: ${err && err.name}` };
     }
     if (!res.ok) {
-        return { ok: false, error: `R2 GET ${res.status}` };
+        await res.body?.cancel();
+        return { ok: false, ...(method === 'HEAD' ? { status: res.status } : {}), error: `R2 GET ${res.status}` };
     }
     return { ok: true, response: res };
 }
+
+export const headObject = (key, cfg) => getObject(key, cfg, { method: 'HEAD' });
 
 /**
  * List objects under a prefix (S3 ListObjectsV2). Used by the upload sweep,
