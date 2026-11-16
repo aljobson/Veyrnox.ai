@@ -6086,6 +6086,7 @@ export default {
     "editorSpeech.clip": "Choisir un clip",
     "editorSpeech.uploadFirst": "Importez d’abord ce clip",
     "editorSpeech.unsupported": "Pas encore disponible pour ce clip",
+    "editorSpeech.sourceRejected": "Les outils vocaux n’ont pas pu utiliser le fichier de ce clip. Il dépasse peut-être 100 Mo, environ 2 Mo par seconde de vidéo, ou son format est illisible. Essayez un clip plus court ou plus léger. Aucun crédit n’a été dépensé.",
     "editorSpeech.tooLong": "Choisissez un clip source de 60 secondes maximum.",
     "editorSpeech.durationChanged": "La durée de la source a changé. Rechargez le clip et réessayez.",
     "editorSpeech.price": "{n} crédits par analyse",
