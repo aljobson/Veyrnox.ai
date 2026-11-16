@@ -5246,6 +5246,7 @@ export default {
   "libraryCreate.stems": "作品を開くと個別の音声トラックを再生できます。",
   "libraryCreate.elapsed": "{seconds} 秒",
   "libraryCreate.useTemplate": "テンプレートを使用",
+  "libraryCreate.previewSample": "プレビューはサンプルクリップです。作成される動画は{seconds}秒です。",
   "libraryCreate.editBeforeGenerating": "生成前に編集",
   "filmOutput.asset": "パスポートを作るアセット",
   "filmOutput.savePassport": "パスポートの下書きを保存",
