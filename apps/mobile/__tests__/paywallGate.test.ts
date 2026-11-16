@@ -69,3 +69,12 @@ test('a plan fails closed when the existing plan cannot be checked', async () =>
     expect((await checkPaywallPurchase(plan, value)).result).toBe('not_ready');
     expect(release).toHaveBeenCalledTimes(1);
 });
+
+test('a retired package is refused before taking a lock or contacting the store', async () => {
+    for (const id of ['ai.veyrnox.generation.ultra.monthly', 'ai.veyrnox.generation.ultra.annual:annual']) {
+        const { value } = deps();
+        expect((await checkPaywallPurchase(pkg(id), value)).result).toBe('not_ready');
+        expect(value.acquireLock).not.toHaveBeenCalled();
+        expect(value.refreshSales).not.toHaveBeenCalled();
+    }
+});

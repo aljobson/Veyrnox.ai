@@ -267,13 +267,13 @@ test('a generation free trial is typed apart from a paid purchase (0422)', () =>
 
 test('routes AI Generation subscriptions to the credit subscription ledger', async () => {
     handlers.apply_store_generation_event = json({ ok: true, status: 'active', granted: 398 });
-    const event = sub('INITIAL_PURCHASE', { product_id: 'ai.veyrnox.generation.starter.monthly', id: 'evt-generation-start-1' });
+    const event = sub('INITIAL_PURCHASE', { product_id: 'ai.veyrnox.generation.starter.monthly', id: 'evt-generation-start-1', purchased_at_ms: 1792195200000 });
     assert.equal((await send(event)).status, 200);
     assert.equal(rpcCalls('apply_store_publish_event').length, 0);
     assert.deepEqual(rpcCalls('apply_store_generation_event')[0].body, {
         p_rc_customer_id: CUSTOMER, p_channel: 'ios', p_store_product_id: 'ai.veyrnox.generation.starter.monthly',
         p_original_transaction_id: '2000000000000001', p_event_id: 'evt-generation-start-1', p_action: 'activate', p_type: 'initial_purchase',
-        p_period_end: '2026-11-17T00:00:00.000Z', p_occurred_at: '2026-10-17T00:00:00.000Z',
+        p_period_end: '2026-11-17T00:00:00.000Z', p_occurred_at: '2026-10-17T00:00:00.000Z', p_purchased_at: new Date(1792195200000).toISOString(),
     });
 });
 
@@ -341,4 +341,12 @@ test('customer route remains 200 with sales open or closed, independent of recor
         assert.equal(res.headers.get('cache-control'), 'no-store');
         assert.deepEqual(await res.json(), { rc_customer_id: CUSTOMER, sales_open: value === 'true' });
     }
+});
+
+test('purchase time is separately validated and never falls back to event occurrence', () => {
+    for (const value of [undefined, null, 0, -1, 1.5, '1792195200000', NaN, Infinity, 8640000000000001]) {
+        assert.equal(parseStoreEvent(sub('RENEWAL', { product_id: 'ai.veyrnox.generation.ultra.monthly', purchased_at_ms: value })).purchasedAt, null);
+    }
+    const event = parseStoreEvent(sub('RENEWAL', { purchased_at_ms: 1792195200000 }));
+    assert.equal(event.purchasedAt, new Date(1792195200000).toISOString());
 });

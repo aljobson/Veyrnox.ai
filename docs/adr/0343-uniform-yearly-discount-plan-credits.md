@@ -47,3 +47,7 @@ Packs follow the best plan rate (Lite, 0.157 credits a cent), rounded down, at t
 - Four rows (Veo 3.1 Lite, Veo 3.1 Fast, Seedream, Seedance 2.0 Fast) look under 50% on old costs; check provider invoices.
 - Apply order: 0539, then 0540, then 0541 (0540 refuses to run before 0539).
 - Rollback: forward migrations restoring 209 / 398 / 1,171 / 2,411 credits, yearly 10899 / 20900 / 60900, and reactivating the old packs.
+
+## Amendment — Ultra sales retirement (2026-11-16)
+
+[ADR-0346](0346-retire-ultra-plans.md) retires Ultra sales in stages while preserving existing subscription snapshots and settlement. The table above remains the historical pricing decision; Lite, Starter and Plus are unchanged.

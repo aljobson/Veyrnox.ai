@@ -1,5 +1,5 @@
 import type { PurchasesPackage } from 'react-native-purchases';
-import { generationPlanFor } from '../lib/billing';
+import { generationPlanFor, isRetiredGenerationProduct } from '../lib/billing';
 
 // RevenueCat paywalls (ADR-0108 amendment 4) run their own purchase, so the app's checks run first in
 // onPurchasePackageInitiated and the purchase goes ahead only on 'ok'. Same rules as BillingProvider.purchase.
@@ -24,6 +24,7 @@ export interface PaywallGateDeps {
 // On 'ok' the returned release must be called when the purchase ends, whatever the outcome.
 export async function checkPaywallPurchase(pkg: PurchasesPackage, deps: PaywallGateDeps): Promise<{ result: PaywallGateResult; release: () => void }> {
     const none = () => undefined;
+    if (isRetiredGenerationProduct(pkg.product.identifier)) return { result: 'not_ready', release: none };
     if (!deps.canPurchase) return { result: 'not_ready', release: none };
     const release = deps.acquireLock();
     if (!release) return { result: 'busy', release: none };

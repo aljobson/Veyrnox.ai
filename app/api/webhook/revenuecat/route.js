@@ -126,6 +126,7 @@ async function applySubscription(cfg, p) {
             p_rc_customer_id: customerId, p_channel: p.channel, p_store_product_id: p.productId,
             p_original_transaction_id: p.originalTransactionId, p_event_id: p.eventId, p_action: p.action, p_type: p.type,
             p_period_end: p.periodEnd, p_occurred_at: p.occurredAt,
+            ...(p.family === 'generation' ? { p_purchased_at: p.purchasedAt } : {}),
         }, cfg);
         if (res && res.ok === true) {
             await markProcessed(cfg, SOURCE, p.eventId);

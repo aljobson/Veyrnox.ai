@@ -60,10 +60,10 @@ async function yearly(plan = 'starter-yearly') {
 try {
     await c.query('BEGIN');
 
-    // ── The four yearly plans exist and are active (0385), on App Store price points (0407). ──
+    // ── The three saleable yearly plans exist and Ultra remains for history (0385), on App Store price points (0407). ──
     const plans = await q(`SELECT id, price_usd_cents, credits, active FROM public.credit_subscription_plans WHERE billing_interval = 'year' ORDER BY price_usd_cents`);
     assert.deepEqual(plans.map((p) => [p.id, p.price_usd_cents, p.credits, p.active]),
-        [['lite-yearly', 9699, 157, true], ['starter-yearly', 18299, 297, true], ['plus-yearly', 56900, 924, true], ['ultra-yearly', 123840, 2011, true]]);
+        [['lite-yearly', 9699, 157, true], ['starter-yearly', 18299, 297, true], ['plus-yearly', 56900, 924, true], ['ultra-yearly', 123840, 2011, false]]);
 
     // ── Month 1 comes with the invoice and ends in a month, not a year. ──
     const a = await yearly();

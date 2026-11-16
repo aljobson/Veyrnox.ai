@@ -58,7 +58,8 @@ export interface DisplayPackage {
     readonly trialDays?: number | null;
 }
 
-export type GenerationPlan = 'lite' | 'starter' | 'plus' | 'ultra';
+export type GenerationPlan = 'lite' | 'starter' | 'plus';
+export const RETIRED_GENERATION_PLANS: readonly string[] = ['ultra'];
 
 /** Credit pack sizes sold on web, iOS and Android (ADR-0343, migrations 0540/0541). */
 export const WEB_PARITY_PACK_CREDITS = [156, 392, 1177] as const;
@@ -96,8 +97,16 @@ export function intervalFor(productId: string): Interval | null {
     return publishInterval(productId) ?? (generation?.[2] === 'monthly' ? 'month' : generation?.[2] === 'annual' ? 'year' : null);
 }
 
+export function isRetiredGenerationProduct(productId: string): boolean {
+    return RETIRED_GENERATION_PLANS.some(plan => productId.startsWith(`ai.veyrnox.generation.${plan}.`));
+}
+
+export function hasRetiredGenerationPackages(packages: readonly RcPackage[]): boolean {
+    return packages.some(pkg => isRetiredGenerationProduct(pkg.product.identifier));
+}
+
 export function generationPlanFor(productId: string): GenerationPlan | null {
-    return generationParts(productId)?.[1] as GenerationPlan | undefined ?? null;
+    return isRetiredGenerationProduct(productId) ? null : generationParts(productId)?.[1] as GenerationPlan | undefined ?? null;
 }
 
 export function generationCatalogId(productId: string): string | null {
@@ -131,12 +140,13 @@ export function parseGenerationCatalog(value: unknown): GenerationCatalogPlan[] 
 }
 
 export function isPaidSubscriptionProduct(productId: string): boolean {
-    return publishInterval(productId) !== null || generationPlanFor(productId) !== null;
+    return publishInterval(productId) !== null || generationParts(productId) !== null;
 }
 
 // App Store price points are localized and may not land on exactly 15%. Only advertise the
 // retention offer when the configured price is within one percentage point of the promised saving.
 export function stayDiscountFor(pkg: RcPackage, identifier = 'stay15'): RcDiscount | null {
+    if (isRetiredGenerationProduct(pkg.product.identifier)) return null;
     const full = pkg.product.price;
     if (!full || full <= 0) return null;
     const discount = pkg.product.discounts?.find((item) => item.identifier === identifier) ?? null;
@@ -146,10 +156,11 @@ export function stayDiscountFor(pkg: RcPackage, identifier = 'stay15'): RcDiscou
 }
 
 const INTERVAL_ORDER: Record<Interval, number> = { week: 0, month: 1, year: 2 };
-const GENERATION_PLAN_ORDER: Record<GenerationPlan, number> = { lite: 0, starter: 1, plus: 2, ultra: 3 };
+const GENERATION_PLAN_ORDER: Record<GenerationPlan, number> = { lite: 0, starter: 1, plus: 2 };
 
 export function toDisplayPackages(packages: readonly RcPackage[]): DisplayPackage[] {
     return packages
+        .filter(p => !isRetiredGenerationProduct(p.product.identifier))
         .map((p) => ({
             id: p.identifier,
             productId: p.product.identifier,

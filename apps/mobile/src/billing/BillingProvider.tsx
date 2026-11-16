@@ -5,7 +5,7 @@ import { AppState, Platform } from 'react-native';
 import Purchases, { type CustomerInfo, type PurchasesOfferings, type PurchasesPackage } from 'react-native-purchases';
 import { useAuth } from '../auth/AuthProvider';
 import { ApiError } from '../lib/api';
-import { revenueCatKey, generationPlanFor, stayDiscountFor } from '../lib/billing';
+import { revenueCatKey, generationPlanFor, isRetiredGenerationProduct, stayDiscountFor } from '../lib/billing';
 import { getCacheUser } from '../lib/appCache';
 import { APP_ENV } from '../lib/config';
 
@@ -261,6 +261,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     }, [authStatus, api, refreshGenerationAccess, generation, beginSessionTask]);
 
     const purchase = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
+        if (isRetiredGenerationProduct(pkg.product.identifier)) throw new Error('billing_not_ready');
         const task = beginSessionTask();
         if (!canRestore || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
         if (generationPlanFor(pkg.product.identifier) !== null && (generationActive || await refreshGenerationAccess(task))) {
@@ -288,6 +289,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     }, [canRestore, ensureSalesOpen, generationActive, refreshGenerationAccess, beginSessionTask]);
 
     const purchaseStayOffer = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
+        if (isRetiredGenerationProduct(pkg.product.identifier)) throw new Error('billing_not_ready');
         const task = beginSessionTask();
         if (!canRestore || bound.current?.gen !== task.gen) throw new Error('billing_not_ready');
         if (!stayDiscountFor(pkg)) throw new Error('stay_offer_unavailable');

@@ -4,15 +4,17 @@ import { createRoot, type Root } from 'test-renderer';
 import Paywall from '../src/app/(app)/paywall';
 
 void [ActivityIndicator, Pressable, Text, View];
+const mockNativePaywall = jest.fn(() => null);
+const mockRedirect = jest.fn((_props: unknown) => null);
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
 let mockCanGoBack = true;
 const mockRetryOfferings = jest.fn();
 const mockRefreshSales = jest.fn(async () => true);
 let mockBilling: Record<string, unknown>;
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ back: mockBack, replace: mockReplace, canGoBack: () => mockCanGoBack }), useLocalSearchParams: () => ({ offering: 'generation' }) }));
+jest.mock('expo-router', () => ({ Redirect: (props: unknown) => mockRedirect(props), Stack: { Screen: () => null }, useRouter: () => ({ back: mockBack, replace: mockReplace, canGoBack: () => mockCanGoBack }), useLocalSearchParams: () => ({ offering: 'generation' }) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-jest.mock('react-native-purchases-ui', () => ({ __esModule: true, default: { Paywall: () => null } }));
+jest.mock('react-native-purchases-ui', () => ({ __esModule: true, default: { Paywall: () => mockNativePaywall() } }), { virtual: true });
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
 jest.mock('../src/billing/useStorePurchase', () => ({ useStorePurchase: () => ({ acquireAuxiliary: jest.fn() }) }));
@@ -63,4 +65,17 @@ test('Close falls back to the credits screen when there is no history (cold deep
     await act(async () => button('Close')[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     expect(mockBack).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith('/credits');
+});
+
+test.each([true, false])('native paywall routes retired offerings to filtered custom Credits: %s', async retired => {
+    const families = retired ? ['lite', 'starter', 'plus', 'ultra'] : ['lite', 'starter', 'plus'];
+    mockBilling = { ...mockBilling, status: 'ready', canPurchase: true, offerings: { all: { generation: { availablePackages: families.map(f => ({ product: { identifier: `ai.veyrnox.generation.${f}.monthly` } })) } } } };
+    await act(async () => root.render(<Paywall />));
+    if (retired) {
+        expect(mockRedirect).toHaveBeenCalledWith({ href: '/credits' });
+        expect(mockNativePaywall).not.toHaveBeenCalled();
+    } else {
+        expect(mockRedirect).not.toHaveBeenCalled();
+        expect(mockNativePaywall).toHaveBeenCalled();
+    }
 });

@@ -10,14 +10,12 @@ const event = (productId, store, subscription = false) => ({ event: {
     environment: 'PRODUCTION', purchased_at_ms: 1793232000000, event_timestamp_ms: 1793232000000,
     expiration_at_ms: 1795910400000,
 } });
-test('active saleable products are exactly the post-0394 catalog in each store', () => {
+test('active saleable products are exactly the post-0546 catalog in each store', () => {
     for (const store of ['ios', 'android']) {
         const expected = [156, 392, 1177].map(n => `ai.veyrnox.credits.${n}`);
         const product = id => store === 'android' ? `${id}:${id.split('.').at(-1)}` : id;
         expected.push(...['weekly', 'monthly', 'annual'].map(c => product(`ai.veyrnox.publish.${c}`)));
-        expected.push(...['lite', 'starter', 'plus', 'ultra'].flatMap(f => ['monthly', 'annual'].map(c => product(`ai.veyrnox.generation.${f}.${c}`)))
-            // 0407: Ultra yearly is above the App Store maximum, so iOS does not sell it.
-            .filter(id => store === 'android' || id !== 'ai.veyrnox.generation.ultra.annual'));
+        expected.push(...['lite', 'starter', 'plus'].flatMap(f => ['monthly', 'annual'].map(c => product(`ai.veyrnox.generation.${f}.${c}`))));
         assert.deepEqual(catalog.filter(p => p.store === store).map(p => p.productId).sort(), expected.sort());
     }
 });
@@ -27,16 +25,20 @@ test('migration prices, 0407 price points and latest credit amendments survive c
     assert.deepEqual(ios.filter(p => p.offering === 'publish').map(p => p.priceUsdCents).sort((a,b)=>a-b), [499,1500,12600]);
     assert.deepEqual(ios.filter(p => p.offering === 'generation').map(p => [p.plan,p.priceUsdCents,p.credits]).sort(), [
         ['lite-monthly',1000,157],['lite-yearly',9699,157],['plus-monthly',5900,924],['plus-yearly',56900,924],
-        ['starter-monthly',1900,297],['starter-yearly',18299,297],['ultra-monthly',12900,2011],
+        ['starter-monthly',1900,297],['starter-yearly',18299,297],
     ].sort());
     assert.match(catalogMarkdown(), /\$24\.99/);
 });
 test('every saleable identifier is understood by the adapter', () => {
     for (const row of catalog) assert.notEqual(parseStoreEvent(event(row.productId, row.store, row.kind !== 'consumable')).kind, 'ignore', row.productId);
 });
-test('Android sells Ultra yearly at the ADR-0343 price and credits', () => {
-    const ultra = catalog.find(p => p.store === 'android' && p.plan === 'ultra-yearly');
-    assert.deepEqual([ultra.priceUsdCents, ultra.credits], [123840, 2011]);
+test('neither store offers Ultra, while settlement still recognizes its identifiers', () => {
+    assert.ok(!catalog.some(p => p.plan?.startsWith('ultra-')));
+    for (const store of ['ios', 'android']) {
+        assert.equal(catalog.filter(p => p.store === store && p.offering === 'generation').length, 6);
+        const id = 'ai.veyrnox.generation.ultra.monthly' + (store === 'android' ? ':monthly' : '');
+        assert.equal(parseStoreEvent(event(id, store, true)).kind, 'subscription');
+    }
 });
 test('the old pack sizes are no longer offered but still settle', () => {
     for (const n of [209, 523, 1571]) {
