@@ -21,6 +21,8 @@ import { PaywallPrompt } from '../../components/PaywallPrompt';
 import { HardPaywallGate } from '../../components/HardPaywallGate';
 import { paletteForScheme } from '../../theme';
 
+export const unstable_settings = { anchor: '(tabs)' };
+
 export default function AppLayout() {
     useOfflineRecovery();
     const { status, generation } = useAuth();
