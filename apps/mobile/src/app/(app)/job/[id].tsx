@@ -291,6 +291,7 @@ export default function JobScreen() {
             if (href && current()) { if (replace) router.replace(href); else router.push(href); }
         } catch { if (current()) setNote(t('common.error')); }
     }
+    const inlineOutput = !!asset && stems.length === 0 && !held && !error && !asset.mime.startsWith('image/');
     const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false, reuse: false };
     const reusableKind = asset ? kindForMime(asset.mime) : null;
 
@@ -308,13 +309,12 @@ export default function JobScreen() {
                     {/* Inside the scroll content so the player sits above it, never under it. */}
                     {retentionFooter}
                 </ScrollView>
-            ) : asset ? (
-                <View style={[styles.output, !asset.mime.startsWith('image/') && styles.outputFixed]} testID="job-output">
-                    {asset.mime.startsWith('image/') ? <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" transition={reduced ? 0 : { duration: ds.motion.enter, effect: 'cross-dissolve', timing: 'ease-out' }} cachePolicy="memory" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
-                        : <InlineMedia onReady={outputReady} key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />}
+            ) : asset ? (inlineOutput ? null : (
+                <View style={styles.output} testID="job-output">
+                    <Image onLoad={outputReady} source={{ uri: asset.url }} style={styles.image} contentFit="contain" transition={reduced ? 0 : { duration: ds.motion.enter, effect: 'cross-dissolve', timing: 'ease-out' }} cachePolicy="memory" accessibilityLabel={t('job.title')} accessibilityIgnoresInvertColors />
                     <GeneratedChip />
                 </View>
-            ) : (
+            )) : (
                 <View style={styles.center}>
                     {waiting || pollEnded || state === 'failed' || hasFinishedWithoutFile ? (
                         <VeyCharacter width={96} interactive mood={cancelledCredits !== null || lookup === 'missing' ? 'idle' : state === 'failed' ? 'worried' : 'working'} />
@@ -348,9 +348,20 @@ export default function JobScreen() {
                     ) : null}
                 </View>
             )}
-            {stems.length > 0 && asset ? null : retentionFooter}
+            {(stems.length > 0 && asset) || inlineOutput ? null : retentionFooter}
             {asset && stems.length === 0 ? (
-                <ScrollView style={styles.actions} contentContainerStyle={styles.actionsBody}>
+                <ScrollView style={inlineOutput ? styles.grow : styles.actions} contentContainerStyle={styles.actionsBody}>
+                    {/* A video or audio player lives in the scroll content with what follows it, so
+                        nothing can be laid out over it whatever size the player renders at. */}
+                    {inlineOutput && asset ? (
+                        <>
+                            <View style={styles.outputInline} testID="job-output">
+                                <InlineMedia onReady={outputReady} key={asset.url} url={asset.url} audio={!asset.mime.startsWith('video/')} label={asset.mime.startsWith('video/') ? t('job.playVideo') : t('job.playAudio')} />
+                                <GeneratedChip />
+                            </View>
+                            {retentionFooter}
+                        </>
+                    ) : null}
                     {next.edit || next.publish || next.makeAnother || next.reuse ? (
                         <View style={styles.nextBlock}>
                             <Text variant="title3" tone="primary" style={styles.nextTitle} accessibilityRole="header">{t('job.next.title')}</Text>
@@ -400,9 +411,8 @@ const sheets = themedStyles((p) => ({
     hint: { color: p.textTertiary, textAlign: 'center' },
     error: { color: p.danger, textAlign: 'center' },
     output: { flex: 1, justifyContent: 'center', overflow: 'hidden' },
-    // The player has a fixed height, so its box must not shrink under it when the actions below grow
-    // (opening "How this was made"); the actions scroll instead of being drawn over.
-    outputFixed: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', overflow: 'visible', justifyContent: 'flex-start' },
+    // Video and audio sit inside the scroll content, so the box is content-sized and in normal flow.
+    outputInline: { gap: ds.space.sm },
     image: { flex: 1, width: '100%' },
     actions: { flexGrow: 0, flexShrink: 1 },
     nextBlock: { gap: ds.space.sm },
