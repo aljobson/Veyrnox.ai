@@ -56,7 +56,7 @@ export default function FilmShot() {
     }
 
     const label = t('filmWorkspace.shotLabel', { value1: film.shots.indexOf(shot) + 1 });
-    const displayLabel = `${label} · ${shot.id}`;
+    const displayLabel = label;
     const row = shotRow(film, shot);
     const prompt = latestPrompt(film, shot.id);
     const attempts = film.attempts.filter((a) => a.shot === shot.id);

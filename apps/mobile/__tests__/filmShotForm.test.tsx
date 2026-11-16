@@ -134,12 +134,12 @@ test('typing into Location asset lands in that field, not the script box, and th
     await mount(ready()); await stage(2); await press(t('film.addshot'));
     expect(dismiss).toHaveBeenCalled();
     await press(t('filmWorkspace.fillDefaults'));
-    expect(has(t('filmWorkspace.defaultsNeedYou'))).toBe(true);
+    expect(has(t('filmWorkspace.stillToFill'))).toBe(true);
     for (const label of [t('filmStudio.locationasset'), t('filmStudio.timeofday')]) {
         await type(label, '@desk:v1');
         expect(field(label).props.value).toBe('@desk:v1');
     }
     expect(field(t('film.scripttreatmentoridea')).props.value).toBe('Script');
     await click(controls('checkbox').find(n => n.props.accessibilityLabel === t('filmWorkspace.oneAction')));
-    expect(has(t('filmWorkspace.defaultsNeedYou'))).toBe(false);
+    expect(has(t('filmWorkspace.stillToFill'))).toBe(false);
 });
