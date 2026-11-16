@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
+import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
 import { expiryLabel, fetchFileLink, fetchMasters, fetchRenders, fileErrorMessage, lengthLabel, resolutionLabel, sizeLabel, type FileKind, type LibraryFile } from '../../../lib/libraryFiles';
 import { saveOutput, shareOutput } from '../../../lib/output';
 import { colors, noticeColor } from '../../../theme';
@@ -69,7 +70,7 @@ export default function LibraryFiles() {
                     </Pressable>
                 ))}
             </View>
-            {kind === 'masters' ? (
+            {kind === 'masters' && FILM_STUDIO_ENABLED ? (
                 <Pressable accessibilityRole="button" style={touchTarget} onPress={() => router.push('/film')}>
                     <Text style={styles.link}>{t('files.openyourfilminFilmStudio')}</Text>
                 </Pressable>

@@ -1,55 +1,15 @@
-import { test, expect, installProductFixtures, SYNTHETIC_USER, SYNTHETIC_MODELS } from './fixtures/authenticated-product.mjs';
+import { test, expect, installProductFixtures, SYNTHETIC_MODELS } from './fixtures/authenticated-product.mjs';
 import { capabilityFor, publicCapabilities, lengthsFor } from '../lib/modelCapabilities.js';
-import { emptyFilm, STYLE_BOARDS, assetKey, testMatrix, lockAsset, buildShotPrompt, nextPromptVersion } from '../app/veyrnox/_lib/filmStudio.js';
 import { STARTER_PROMPT } from '../app/veyrnox/_lib/starterPrompt.mjs';
-import { filmFixture } from '../tests/fixtures/filmStudio.mjs';
 
-const filmKey = `veyrnox_film_studio_v1:${SYNTHETIC_USER.id}`;
-async function installFilm(fixture, page, film) {
-  await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: filmKey, value: JSON.stringify(film) });
-  await fixture.reload();
-}
-function readyFilm(aspect) {
-  let film = { ...emptyFilm(), ...filmFixture(), stack: { image: 'flux-2-pro', imageAccess: 'Studio', video: 'seedance-2.0-fast', videoAccess: 'Studio', seconds: '10', aspect } };
-  film.boards = [{ id: 'room', name: '@room:v1', type: 'location', decision: 'approved', references: Array.from({ length: 8 }, (_, i) => ({ source: `synthetic-room-${i}.png`, caption: `Synthetic view ${i}`, kind: 'reference' })) }, ...STYLE_BOARDS.map(name => ({ id: name, name, type: 'style', decision: 'approved', references: [{ source: `${name}.png`, caption: name, kind: 'reference' }] }))];
-  const asset = { tag: '@room', version: 1, type: 'location', descriptor: 'An empty cream room with an oak floor and west window.', references: ['synthetic-room.png'], tests: {}, lock: null };
-  asset.tests = Object.fromEntries(testMatrix(film, asset).map(row => [row.id, { result: `${row.id}.png`, verdict: 'pass' }]));
-  film.assets = [asset]; film = lockAsset(film, assetKey(asset));
-  const details = Object.fromEntries(['map', 'camera', 'timing', 'physics', 'lighting', 'audio', 'palette', 'quality', 'constraints'].map(key => [key, `Synthetic ${key}.`]));
-  return { ...film, prompts: [nextPromptVersion(film, film.shots[0], buildShotPrompt(film, film.shots[0], details))] };
-}
-
-test('Film Setup normalizes declared duration/aspect and persists the chosen workflow', async ({ page }) => {
-  const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
-  await installFilm(fixture, page, { ...emptyFilm(), name: 'Synthetic setup', stack: { image: 'flux-2-pro', imageAccess: 'Studio', video: 'External', videoAccess: 'External', seconds: '12', aspect: '1:1' } });
-  await page.getByRole('navigation', { name: 'Film Studio stages' }).getByRole('button').filter({ hasText: 'Set up your tools' }).click();
-  await page.getByTestId('film-video-workflow').selectOption('Studio');
-  await page.getByTestId('film-video-model').selectOption('seedance-2.0-fast');
-  await expect(page.getByTestId('film-clip-length')).toHaveValue('10');
-  await expect(page.getByTestId('film-frame-format')).toHaveValue('16:9');
+// Film Studio is hidden (ADR-0344): the page answers 404 and nothing links to it.
+test('Film Studio is hidden: the workspace answers 404 and the home has no Film Studio card', async ({ page }) => {
+  const fixture = await installProductFixtures(page);
   await fixture.open('/app/film-studio');
-  await expect.poll(() => page.evaluate(key => JSON.parse(localStorage.getItem(key)).stack.seconds, filmKey)).toBe('10');
-});
-
-test('Film Studio does not expose local project archives or master creation', async ({ page }) => {
-  const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
-  await installFilm(fixture, page, { ...emptyFilm(), name: 'Synthetic project' });
-  await expect(page.locator('body')).not.toContainText('JSON');
-  await expect(page.getByTestId('film-download-project')).toHaveCount(0);
-  await expect(page.getByText('Download project', { exact: true })).toHaveCount(0);
-  await expect(page.getByText(/Prepare .* master/)).toHaveCount(0);
-});
-
-test('Film handoff honestly blocks incompatible format then transfers a compatible complete prompt without generating', async ({ page }) => {
-  const fixture = await installProductFixtures(page); await fixture.open('/app/film-studio');
-  await installFilm(fixture, page, readyFilm('1:1'));
-  await expect(page.getByText(/does not support the shot’s frame format/)).toBeVisible();
-  await expect(page.getByTestId('film-open-in-studio')).toHaveCount(0);
-  const compatible = readyFilm('9:16'); await installFilm(fixture, page, compatible);
-  await page.getByTestId('film-open-in-studio').click();
-  await expect(page).toHaveURL(/\/app\/create\?model=seedance-2.0-fast/);
-  await expect(page.locator('[data-assistant-target="create.prompt"]')).toHaveValue(compatible.prompts[0].content);
-  expect(fixture.requests.filter(row => row.path === '/api/v1/generations')).toEqual([]);
+  await expect(page.locator('[data-assistant-target="film.stages"]')).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Film Studio stages' })).toHaveCount(0);
+  await fixture.open('/app');
+  await expect(page.locator('a[href="/app/film-studio"]')).toHaveCount(0);
 });
 
 test('Video Agent waits for balance and its retry performs only a balance read', async ({ page }) => {

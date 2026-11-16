@@ -1,3 +1,5 @@
+// Film Studio is hidden (ADR-0344); these tests keep its chat entry points covered for a restore.
+jest.mock('../src/lib/filmStudioSwitch', () => ({ FILM_STUDIO_ENABLED: true, isFilmStudioLink: () => false }));
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';

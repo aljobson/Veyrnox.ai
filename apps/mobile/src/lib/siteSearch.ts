@@ -1,4 +1,5 @@
 import { kindOf, type CatalogModel } from './media';
+import { FILM_STUDIO_ENABLED } from './filmStudioSwitch';
 import { CREATIVE_FEATURES } from './creativeFeatures';
 
 // Search over the app's own screens and the model catalogue (parity P7, the web's site search). It works on the
@@ -53,7 +54,7 @@ export const SCREENS: readonly ScreenDef[] = [
 
 export function screenEntries(title: (key: string) => string, faceFiltersAvailable = false): SearchEntry[] {
     return [
-        ...SCREENS.filter(s => s.id !== 'face-filters' || faceFiltersAvailable).map((s) => ({ id: `screen:${s.id}`, kind: 'screen' as const, title: title(s.titleKey), detail: '', href: s.href, keywords: s.keywords })),
+        ...SCREENS.filter(s => (s.id !== 'face-filters' || faceFiltersAvailable) && (s.id !== 'film' || FILM_STUDIO_ENABLED)).map((s) => ({ id: `screen:${s.id}`, kind: 'screen' as const, title: title(s.titleKey), detail: '', href: s.href, keywords: s.keywords })),
         ...CREATIVE_FEATURES.map((feature) => ({
             id: `feature:${feature.slug}`,
             kind: 'screen' as const,

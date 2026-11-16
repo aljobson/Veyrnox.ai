@@ -40,6 +40,7 @@ import {
   resolveDialogueCastAssignments,
   setDialogueCastVoice,
 } from '../../_lib/dialogueCastMap';
+import { FILM_STUDIO_ENABLED } from '../../_lib/filmStudioSwitch';
 import {
   bindProjectCastPortrait,
   projectCastTurns,
@@ -476,7 +477,7 @@ export default function DialogueStudio() {
                                   <p className="min-w-0 truncate text-[10px] text-vx-fg-faint">{member.portraitLabel}</p>
                                   <div className="flex items-center gap-3">
                                     <Link href={`/app/performance?workflow=talking-photo&recipe=talking-avatar&portrait=${encodeURIComponent(member.portraitJobId)}&castMember=${encodeURIComponent(member.speaker)}`} className="text-[10px] font-bold text-vx-accent underline">Use in Talking Avatar</Link>
-                                    <Link href={`/app/film-studio?castPortrait=${encodeURIComponent(member.portraitJobId)}&castMember=${encodeURIComponent(member.speaker)}`} className="text-[10px] font-bold text-vx-accent underline">Prepare Film reference</Link>
+                                    {FILM_STUDIO_ENABLED && <Link href={`/app/film-studio?castPortrait=${encodeURIComponent(member.portraitJobId)}&castMember=${encodeURIComponent(member.speaker)}`} className="text-[10px] font-bold text-vx-accent underline">Prepare Film reference</Link>}
                                     <button type="button" disabled={busy} onClick={() => unlinkProjectCastPortrait(cast.id, member.speaker)} className="min-h-7 text-[10px] font-bold text-vx-danger underline disabled:opacity-40">Unlink</button>
                                   </div>
                                 </div>

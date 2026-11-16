@@ -45,12 +45,12 @@ describe('the first-run answers (role, destination)', () => {
         for (const role of [...FIRST_ROLES, 'skipped', null]) {
             for (const goal of [null, 'image', 'video', 'audio', 'edit', 'publish', 'unsure', 'skipped']) {
                 expect([...orderStarts(role, goal)].sort()).toEqual(['chat', 'create', 'film', 'smart-cut']);
-                expect([...phoneStarts(role, goal)].sort()).toEqual(['chat', 'create', 'film']);
+                expect([...phoneStarts(role, goal)].sort()).toEqual(['chat', 'create']); // Film Studio is hidden (ADR-0344)
             }
         }
         expect(orderStarts(null, null)).toEqual(['create', 'chat', 'film', 'smart-cut']);
-        expect(phoneStarts('pro', null)[0]).toBe('film');
-        expect(phoneStarts('creator', 'video')[0]).toBe('film');
+        expect(phoneStarts('pro', null)[0]).toBe('create');
+        expect(phoneStarts('creator', 'video')).not.toContain('film');
         expect(phoneStarts('creator', 'edit')[0]).toBe('create');
     });
 

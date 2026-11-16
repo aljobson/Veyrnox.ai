@@ -15,6 +15,8 @@ export function activeStudioDestination(pathname, items) {
 // visible nav is the product pillars only: Create (image and video models
 // behind its goal chips), Audio (the hub for music, speech, dialogue and lip sync), Editor, Publish and Cinema, with
 // Library, Credits and the Vey chat as the utility group.
+import { FILM_STUDIO_ENABLED } from './filmStudioSwitch.js';
+
 export const STUDIO_DESTINATIONS = [
   { section: 'tools', key: 'create', href: '/app/create', labelKey: 'label.Create', icon: 'image' },
   { section: 'tools', key: 'audio', href: '/app/audio', labelKey: 'app.audio.title', icon: 'music' },
@@ -43,7 +45,7 @@ export const STUDIO_DESTINATIONS = [
   { section: 'assets', href: '/presets', labelKey: 'label.Templates', icon: 'template', menu: false, nav: false },
   { section: 'assets', href: '/models', labelKey: 'label.Models', icon: 'cube', menu: false, nav: false },
   { section: 'assets', href: '/guides', labelKey: 'label.Guides', icon: 'book', menu: false, nav: false },
-];
+].filter((destination) => FILM_STUDIO_ENABLED || destination.key !== 'film'); // ADR-0344
 
 export const STUDIO_HOME = { key: 'explore', href: '/app', labelKey: 'label.Explore' };
 

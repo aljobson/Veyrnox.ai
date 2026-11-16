@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { writeTemplateChatDraft } from '../_lib/chatTemplateDraft';
 import { useCatalog } from '../_lib/useCatalog';
+import { FILM_STUDIO_ENABLED } from '../_lib/filmStudioSwitch';
 import { writeFilmStarter } from '../_lib/filmTemplateDraft';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { clearTemplateMediaHandoff, TEMPLATE_IMAGE_ACCEPT, templateImageFileError, writeTemplateMediaHandoff } from '../_lib/templateMediaHandoff';
@@ -208,7 +209,7 @@ export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked:
           ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
           : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits == null ? "—" : `${credits} cr`}</span>}
       </button>}
-      {!templateClip && isVideo && <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
+      {FILM_STUDIO_ENABLED && !templateClip && isVideo && <div className="mt-6 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
         <p className="font-bold">{t("presets.use.longer")}</p>
         <p className="mt-1 text-[13px] text-vx-fg-muted">{t("presets.use.filmPlan")}</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">

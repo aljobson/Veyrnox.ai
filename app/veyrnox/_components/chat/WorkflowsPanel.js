@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { STUDIO_WORKFLOWS, workflowById } from '../../_lib/studioWorkflows';
+import { FILM_STUDIO_ENABLED } from '../../_lib/filmStudioSwitch';
 import { StudioSkillIcon } from './StudioSkillIcon';
 import { StudioWorkflowIcon } from './StudioWorkflowIcon';
 import { WorkflowDetailsDialog } from './WorkflowDetailsDialog';
@@ -31,7 +32,7 @@ export function WorkflowsPanel() {
       </div>
 
       <ul className="mt-5 grid gap-3 md:grid-cols-2">
-        {STUDIO_WORKFLOWS.map((workflow) => (
+        {STUDIO_WORKFLOWS.filter((workflow) => FILM_STUDIO_ENABLED || workflow.href !== '/app/film-studio').map((workflow) => (
           <li key={workflow.id}>
             <button type="button" onClick={() => setDetailWorkflow(workflow)} className="group flex h-full w-full flex-col rounded-2xl border border-vx-border bg-vx-panel p-5 text-start transition motion-safe:hover:-translate-y-0.5 hover:border-vx-accent hover:shadow-xl">
               <span className="flex w-full items-start gap-4">
