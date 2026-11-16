@@ -19,10 +19,10 @@ test('confirming removes the empty track from the live document, keeping what ar
     const next = apply.mock.calls[0][0] as Timeline;
     expect(next.video).toHaveLength(1); expect(next.media.m).toBeTruthy(); expect(next.tracks.some(t => t.id === extra)).toBe(false);
 });
-test('a track that gained a clip before confirming is not removed; the first track of a kind never prompts', async () => {
+test('a track that gained a clip before confirming is not removed; the last track of a kind never prompts', async () => {
     const shown = addTrack(emptyTimeline(), 'video'); const extra = shown.tracks[3].id;
     const filled: Timeline = { ...shown, video: [{ id: 'v9', mediaId: 'm', start: 0, len: 10, trackId: extra }] };
     await act(async () => root.render(<Harness shown={shown} live={() => filled} />));
     await act(async () => actions.pressTrack(extra)); await confirm(); expect(apply).not.toHaveBeenCalled();
-    jest.mocked(Alert.alert).mockClear(); await act(async () => actions.pressTrack('video-0')); expect(Alert.alert).not.toHaveBeenCalled();
+    jest.mocked(Alert.alert).mockClear(); await act(async () => actions.pressTrack('audio-0')); expect(Alert.alert).not.toHaveBeenCalled();
 });
