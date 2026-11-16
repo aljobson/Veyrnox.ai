@@ -22,23 +22,27 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); });
 const render = async () => act(async () => root.render(<Screen />));
 const fill = async (value: string) => act(async () => control('facelessReel.briefLabel').props.onChangeText(value));
+const next = async () => press('facelessReel.next');
 const attest = async () => { await press('facelessReel.originality'); await press('facelessReel.noImitation'); };
 test('short brief shows a translated error without navigating', async () => {
-    await render(); await fill('short'); await press('facelessReel.openCreate');
+    await render(); await fill('short'); await next();
     expect(text(t('facelessReel.error.topicShort')).length).toBeGreaterThan(0); expect(mockPush).not.toHaveBeenCalled();
 });
 test('sound is cleared and disabled at 10 seconds', async () => {
-    await render(); await press('facelessReel.soundTitle');
+    await render(); await fill('Original scenery over a quiet mountain'); await next(); await next(); await press('facelessReel.soundTitle');
     expect(control('facelessReel.soundTitle').props.accessibilityState.checked).toBe(true);
+    await act(async () => control('facelessReel.back').props.onClick(event));
     await act(async () => root.container.queryAll(n => n.props.accessibilityLabel === t('facelessReel.seconds', { n: 10 }))[0].props.onClick(event));
+    await next();
     expect(control('facelessReel.soundTitle').props.accessibilityState).toMatchObject({ disabled: true, checked: false });
-    await fill('Original scenery over a quiet mountain'); await attest(); await press('facelessReel.openCreate');
+    await attest(); await press('facelessReel.openCreate');
     const params = mockPush.mock.calls[0][0].params;
     expect(params.duration).toBe('10'); expect(readCreativeSourceHandoff(params.sourceHandoff, params.recipe, params.modelId)?.followup).toBeUndefined();
 });
 test('Web transfers 16:9 and the 5-second sound intent in an in-memory token', async () => {
-    await render(); await fill('Original scenery over a quiet mountain'); await attest(); await press('facelessReel.soundTitle');
+    await render(); await fill('Original scenery over a quiet mountain'); await next();
     await act(async () => root.container.queryAll(n => n.props.accessibilityLabel === `${t('facelessReel.platform.web')}. 16:9`)[0].props.onClick(event));
+    await next(); await attest(); await press('facelessReel.soundTitle');
     await press('facelessReel.openCreate');
     const params = mockPush.mock.calls[0][0].params;
     expect(params).toMatchObject({ modelId: 'wan-2.5-kie', duration: '5', recipe: 'faceless-reel', prompt: expect.stringContaining('Original scenery') });
@@ -46,14 +50,14 @@ test('Web transfers 16:9 and the 5-second sound intent in an in-memory token', a
 });
 test('adding a hook over budget leaves maxLength fixed and shortening immediately enables Open', async () => {
     await render(); const values = { topic: '', duration: 5, format: 'explainer', pacing: 'balanced', platform: 'reels' };
-    const room = briefRoom(values, 800); await fill('b'.repeat(room));
+    const room = briefRoom(values, 800); await fill('b'.repeat(room)); await next();
     await act(async () => control('facelessReel.hookAria').props.onChangeText('h'.repeat(100)));
     const nextRoom = briefRoom({ ...values, hook: 'h'.repeat(100) },800);
-    expect(control('facelessReel.briefLabel').props.maxLength).toBe(800);
-    expect(control('facelessReel.openCreate').props.accessibilityState.disabled).toBe(true);
+    await next(); expect(control('facelessReel.openCreate').props.accessibilityState.disabled).toBe(true);
     expect(text(t('facelessReel.error.promptLong', { max: 800 })).length).toBeGreaterThan(0);
+    await press('facelessReel.back'); await press('facelessReel.back'); expect(control('facelessReel.briefLabel').props.maxLength).toBe(800);
     expect(root.container.queryAll(n => n.props.accessibilityLiveRegion === 'polite' && n.children.some(c => typeof c === 'string' && c.includes(t('facelessReel.over', { over: room - nextRoom })))).length).toBeGreaterThan(0);
-    await fill('b'.repeat(nextRoom)); expect(control('facelessReel.openCreate').props.accessibilityState.disabled).toBe(false);
+    await fill('b'.repeat(nextRoom)); await next(); await next(); expect(control('facelessReel.openCreate').props.accessibilityState.disabled).toBe(false);
 });
 test.each(['missing','failed','loading'])('%s catalog disables Open', async state => {
     jest.mocked(fetchCatalogCached).mockImplementation(async callback => {
@@ -61,6 +65,6 @@ test.each(['missing','failed','loading'])('%s catalog disables Open', async stat
         if (state === 'missing') callback?.([], {} as any);
         return {} as any;
     });
-    await render(); expect(control('facelessReel.openCreate').props.accessibilityState.disabled).toBe(true);
+    await render(); await fill('Original scenery over a quiet mountain'); await next(); await next(); expect(control('facelessReel.openCreate').props.accessibilityState.disabled).toBe(true);
     if (state !== 'loading') expect(text(t('facelessReel.unavailable')).length).toBeGreaterThan(0);
 });

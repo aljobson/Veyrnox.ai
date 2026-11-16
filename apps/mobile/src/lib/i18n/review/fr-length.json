@@ -4422,6 +4422,18 @@
     "ratio": 2.06
   },
   {
+    "id": "facelessReel.next",
+    "english": "Next",
+    "translation": "Suivant",
+    "ratio": 1.75
+  },
+  {
+    "id": "facelessReel.exampleTitle",
+    "english": "Need an idea? Tap to use it:",
+    "translation": "Besoin d’une idée ? Touchez pour l’utiliser :",
+    "ratio": 1.61
+  },
+  {
     "id": "facelessReel.workflow.rhythm",
     "english": "Set rhythm & frame",
     "translation": "Choisir le rythme et le cadre",

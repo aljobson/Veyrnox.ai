@@ -2754,6 +2754,12 @@
     "ratio": 2.06
   },
   {
+    "id": "facelessReel.next",
+    "english": "Next",
+    "translation": "Avançar",
+    "ratio": 1.75
+  },
+  {
     "id": "facelessReel.workflow.rhythm",
     "english": "Set rhythm & frame",
     "translation": "Escolher ritmo e enquadramento",
