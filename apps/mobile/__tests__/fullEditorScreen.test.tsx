@@ -15,6 +15,7 @@ const mockBeginSessionTask = () => ({ current: () => true });
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest };
 const mockScreenRender = jest.fn();
+const mockStackOptions = jest.fn();
 
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
@@ -24,7 +25,7 @@ jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
-jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => options?.headerRight?.() ?? null }, usePreventRemove: () => () => {}, useRouter: () => mockRouter }));
+jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockStackOptions(options); return options?.headerRight?.() ?? null; } }, usePreventRemove: () => () => {}, useRouter: () => mockRouter }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => { mockScreenRender(); return { api: mockApi, beginSessionTask: mockBeginSessionTask }; } }));
 jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: ({ media, localUri }: any) => require('react').createElement(require('react-native').View, { accessibilityLabel: `Real preview ${media.name}`, testID: localUri }) }));
 jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot', createdAt: '2026-10-23T00:00:00Z' }) }) }));
@@ -131,6 +132,37 @@ test('splits a clip, copies it and pastes it at the playhead', async () => {
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(saved.video).toHaveLength(3);
     expect(saved.video.map((clip: any) => clip.len)).toEqual([1, 59, 1]);
+});
+
+const twoClips = () => ({ ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 2, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Scene one', frames: 60 } }, video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }, { id: 'v2', mediaId: 'media1', start: 60, in: 0, len: 30, trackId: 'video-0' }], audio: [], text: [], tracks: [{ id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false }, { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false }, { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } });
+
+test('simple view moves a selected clip later, disables it at the end, and Undo restores the order', async () => {
+    serverDocument = twoClips();
+    await renderSimple();
+    expect(labelled('Move left')).toHaveLength(0);
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    expect(labelled('Move left')[0].props.accessibilityState.disabled).toBe(true);
+    await press('Move right');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    const starts = () => Object.fromEntries(JSON.parse(puts().at(-1)![1].body).document.timeline.video.map((clip: any) => [clip.id, clip.start]));
+    expect(starts()).toEqual({ v1: 30, v2: 0 });
+    expect(labelled('Move right')[0].props.accessibilityState.disabled).toBe(true);
+    await press('Undo');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    expect(starts()).toEqual({ v1: 0, v2: 60 });
+});
+
+test('swipe-back is switched off while a timeline clip is touched and back on after', async () => {
+    serverDocument = twoClips();
+    await renderSimple();
+    const clipNode = () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0];
+    const enabled = () => mockStackOptions.mock.calls.at(-1)![0].gestureEnabled;
+    expect(enabled()).toBe(true);
+    const touch = { nativeEvent: { pageX: 10, pageY: 10, locationX: 10, locationY: 10 } };
+    await act(async () => clipNode().props.onResponderGrant(touch));
+    expect(enabled()).toBe(false);
+    await act(async () => clipNode().props.onResponderRelease(touch));
+    expect(enabled()).toBe(true);
 });
 
 test('adds native timeline tracks and review markers', async () => {
