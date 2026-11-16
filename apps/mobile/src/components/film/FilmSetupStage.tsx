@@ -1,8 +1,8 @@
 import { Text, View } from 'react-native';
-import { t } from '../../lib/i18n';
+import { plural, t } from '../../lib/i18n';
 import type { Film } from '../../lib/filmStudio';
 import type { CatalogModel } from '../../lib/media';
-import { clipLengths, frameFormats, isStudio, normalizeFilmStack, setupModels } from '../../lib/filmStudioOptions';
+import { clipLengths, frameFormats, isStudio, normalizeFilmStack, setupModels, setupPrice } from '../../lib/filmStudioOptions';
 import { colors } from '../../theme';
 import { Button } from '../ui';
 import { Field } from './FilmFields';
@@ -19,7 +19,7 @@ export function FilmSetupStage({ film, change, catalog, live, unavailable, retry
             const access = `${kind}Access` as const;
             const models = live ? setupModels(catalog, kind) : [];
             const value = film.stack[kind];
-            const options = [{ value: '', label: t('filmWorkspace.chooseModel') }, ...models.map(m => ({ value: m.id, label: m.name }))];
+            const options = [{ value: '', label: t('filmWorkspace.chooseModel') }, ...models.map(m => ({ value: m.id, label: `${m.name} · ${plural('create.from', setupPrice(m, kind))}` }))];
             if (live && value && !models.some(m => m.id === value)) options.push({ value, label: t('filmWorkspace.legacyModel', { value1: value }) });
             const label = kind === 'image' ? t('film.imagemodel') : t('film.videomodel');
             return <View key={kind} style={{ gap: 14 }}>
@@ -29,6 +29,7 @@ export function FilmSetupStage({ film, change, catalog, live, unavailable, retry
             </View>;
         })}
         <FilmSelect label={t('film.cliplength')} value={film.stack.seconds} options={clipLengths(film.stack, catalog).map(n => ({ value: String(n), label: `${n}${t('film.sec')}` }))} onChange={v => write('seconds', v)} />
+        <Text style={{ color: colors.muted }}>{t('filmWorkspace.clipLengthWhy')}</Text>
         <FilmSelect label={t('filmWorkspace.frameFormat')} value={film.stack.aspect} options={frameFormats(film.stack, catalog).map(value => ({ value, label: value }))} onChange={v => write('aspect', v)} />
     </View>;
 }

@@ -8,7 +8,7 @@ import * as store from '../src/lib/filmStudioStore';
 import { emptyFilm, FILM_STAGES, parseFilm, SHOT_LANES, stageIssues, type Film } from '../src/lib/filmStudio';
 import { newShot } from '../src/lib/filmStudioOptions';
 import type { CatalogModel } from '../src/lib/media';
-import { t } from '../src/lib/i18n';
+import { plural, t } from '../src/lib/i18n';
 const mockRequest = jest.fn(), mockApi = { request: mockRequest };
 const mockRouter = { back: jest.fn(), push: jest.fn() };
 const mockPrevent = jest.fn();
@@ -34,6 +34,7 @@ const field = (label: string) => root.container.queryAll(n => n.props.accessibil
 const click = async (node: any) => { expect(node).toBeDefined(); await act(async () => node.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); };
 const press = async (label: string) => click(button(label));
 const type = async (label: string, text: string) => { expect(field(label)).toBeDefined(); await act(async () => field(label).props.onChangeText(text)); };
+const priced = (name: string, credits: number) => `${name} · ${plural('create.from', credits)}`;
 async function pick(label: string, option: string) {
     await click(controls('button').find(n => String(n.props.accessibilityLabel ?? '').startsWith(`${label}, `)));
     await press(option);
@@ -63,11 +64,11 @@ afterEach(async () => { if (root) await act(async () => root.unmount()); jest.re
 
 test('setup shows only eligible models, stores ids, snaps seconds and exposes External text', async () => {
     await mount();
-    await pick(t('film.imagemodel'), 'Name image');
+    await pick(t('film.imagemodel'), priced('Name image', 1));
     await click(controls('button').find(n => String(n.props.accessibilityLabel ?? '').startsWith(`${t('film.videomodel')}, `)));
     expect(has('Name gated')).toBe(false); expect(has('Name short')).toBe(false);
     for (const key of ['clips', 'topic', 'plan_id']) expect(has(`Name ${key}`)).toBe(false);
-    await press('Name fifteen'); await tick();
+    await press(priced('Name fifteen', 3)); await tick();
     expect((await saved())?.stack).toMatchObject({ image: 'image', video: 'fifteen', seconds: '15' });
     await pick(t('filmWorkspace.videoWorkflow'), t('filmWorkspace.external'));
     expect(field(t('film.videomodel'))).toBeDefined(); expect(has(t('filmWorkspace.credentials'))).toBe(true);
@@ -101,7 +102,7 @@ test('later stages and Continue are disabled until issues clear', async () => {
     expect(RN.StyleSheet.flatten(controls('tab')[2].props.style).opacity).toBeLessThan(1);
     expect(RN.StyleSheet.flatten(controls('tab')[0].props.style).opacity ?? 1).toBe(1);
     expect(button(t('filmWorkspace.continue', { value1: FILM_STAGES[1][1] })).props.accessibilityState.disabled).toBe(true);
-    await pick(t('film.imagemodel'), 'Name image'); await pick(t('film.videomodel'), 'Name video');
+    await pick(t('film.imagemodel'), priced('Name image', 1)); await pick(t('film.videomodel'), priced('Name video', 2));
     await press(t('filmWorkspace.continue', { value1: FILM_STAGES[1][1] }));
     expect(controls('tab')[1].props.accessibilityState.disabled).toBe(false);
     expect(RN.StyleSheet.flatten(controls('tab')[1].props.style).opacity ?? 1).toBe(1);
@@ -286,7 +287,7 @@ test('an old leave confirmation cannot cancel a new account’s pending edit', a
     const repeat = jest.fn(); await act(async () => mockPrevent.mock.calls.at(-1)[1]({ repeat }));
     const leave = (RN.Alert.alert as jest.Mock).mock.calls.at(-1)[2][1].onPress;
     await act(async () => bindCacheUser('bob'));
-    await pick(t('film.imagemodel'), 'Name image');
+    await pick(t('film.imagemodel'), priced('Name image', 1));
     await act(async () => leave()); await tick();
     expect(repeat).not.toHaveBeenCalled(); expect((await store.loadStudio(appCache, 'bob'))?.film.stack.image).toBe('image');
 });

@@ -14,7 +14,7 @@ import { useEditorLeaveGuard } from '../../../components/editor/useEditorLeaveGu
 import { appCache, getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { accessibleStage, emptyFilm, FILM_STAGES, stageIssues, type Film } from '../../../lib/filmStudio';
@@ -42,6 +42,7 @@ export default function FilmWorkspace() {
     const [live, setLive] = useState(false);
     const [unavailable, setUnavailable] = useState(false);
     const [catalogTry, setCatalogTry] = useState(0);
+    const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const autosave = useFilmAutosave();
     const { cancel, flush, schedule } = autosave;
     const valid = () => !installing.current && cloudGeneration.current === getFilmGeneration() && binding !== null && binding.owner === getCacheUser() && binding.generation === generation.current;
@@ -140,7 +141,7 @@ export default function FilmWorkspace() {
                     </Pressable>;
                 })}
             </ScrollView>
-            <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} contentContainerStyle={styles.content}>
+            <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} contentContainerStyle={styles.content}>
                 <View style={styles.titleRow}>
                     <View style={{ flex: 1 }}><Text style={styles.kicker}>{t('film.sTAGEOF7', { value1: stage + 1 })}</Text><Text style={styles.title} accessibilityRole="header">{FILM_STAGES[stage][1]}</Text></View>
                     <Pressable accessibilityRole="button" style={styles.smallButton} onPress={newFilm}><Text style={styles.smallButtonText}>{t('film.new')}</Text></Pressable>
@@ -148,7 +149,7 @@ export default function FilmWorkspace() {
                 {issues.length ? <View style={styles.issues}><Text style={styles.issueTitle}>{plural('film.itemsToFinish', issues.length)}</Text>{issues.slice(0, 12).map((issue) => <Text key={issue} style={styles.issue}>• {issue}</Text>)}{issues.length > 12 ? <Text style={styles.issue}>{t('filmWorkspace.notShown', { value1: issues.length - 12 })}</Text> : null}</View> : <Text style={styles.complete}>{t('film.thisstageiscomplete')}</Text>}
                 {stage === 0 ? <FilmSetupStage key={generation.current} film={film} change={change} catalog={catalog} live={live} unavailable={unavailable} retry={() => setCatalogTry(n => n + 1)} /> : null}
                 {stage === 1 ? <Identity key={generation.current} film={film} change={change} catalog={catalog} live={live} /> : null}
-                {stage === 2 ? <FilmBreakdownStage key={generation.current} film={film} change={change} catalog={catalog} live={live} /> : null}
+                {stage === 2 ? <FilmBreakdownStage key={generation.current} scrollTo={y => scroller.current?.scrollTo({ y, animated: true })} film={film} change={change} catalog={catalog} live={live} /> : null}
                 {stage === 3 ? <FilmBoardsStage key={generation.current} film={film} change={change} catalog={catalog} live={live} /> : null}
                 {stage === 4 ? <FilmPassportsStage key={generation.current} film={film} change={change} catalog={catalog} live={live} /> : null}
                 {stage === 5 ? <FilmTestsStage key={generation.current} film={film} change={change} catalog={catalog} live={live} /> : null}

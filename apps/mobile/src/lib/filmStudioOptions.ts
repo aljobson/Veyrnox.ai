@@ -1,16 +1,27 @@
 import { SHOT_LANES, assetKey, validAssetKey, type Film, type Shot } from './filmStudio';
 import { optionsFor } from './createOptions';
-import { kindOf, textInput, type CatalogModel } from './media';
+import { estimateCredits, kindOf, textInput, type CatalogModel } from './media';
 
 const FORMATS = ['16:9', '9:16', '1:1'];
 export const isStudio = (access: string): boolean => access === 'Studio';
 const promptModel = (model: CatalogModel): boolean => {
     const inputs = model.capabilities?.inputs ?? {};
-    return !!inputs.prompt && !model.gated && !inputs.clips && !inputs.topic && !inputs.plan_id;
+    // A model that needs a source file (edit tools, the Seedance reference model) cannot run from a film prompt alone.
+    const needsFile = Object.values(model.capabilities?.media ?? {}).some(slot => slot.required);
+    return !!inputs.prompt && !model.gated && !inputs.clips && !inputs.topic && !inputs.plan_id && !needsFile;
 };
 export function setupModels(catalog: readonly CatalogModel[], kind: 'image' | 'video'): CatalogModel[] {
     return catalog.filter(m => kindOf(m.modality) === kind && promptModel(m) &&
         (kind !== 'video' || m.durations.some(n => n >= 10 && n <= 15)));
+}
+// Catalog price shown next to a model in setup: one image, or the shortest clip Film Studio allows. Display only.
+export function setupPrice(model: CatalogModel, kind: 'image' | 'video'): number {
+    return estimateCredits(model, kind === 'video' ? Math.min(...model.durations.filter(n => n >= 10 && n <= 15)) : null);
+}
+const LOCATION_TAG = /^@[a-z0-9_-]+:v\d+$/i;
+// What a user must still fill in on a shot after the sensible defaults: nothing can be guessed for these two.
+export function shotNeeds(shot: Shot): ('location' | 'oneAction')[] {
+    return [...(LOCATION_TAG.test(String(shot.location ?? '').trim()) ? [] : ['location' as const]), ...(shot.oneAction ? [] : ['oneAction' as const])];
 }
 export function clipLengths(stack: Film['stack'], catalog: readonly CatalogModel[]): number[] {
     if (!isStudio(stack.videoAccess)) return [10, 11, 12, 13, 14, 15];
