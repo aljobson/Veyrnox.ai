@@ -26,11 +26,13 @@ const COPY = {
   },
 };
 
-function friendlyError(reason) {
+function friendlyError(reason, kind) {
   const code = reason?.code;
   if (code === 'plan_unavailable') return 'Mashup and Sample need an active paid plan.';
   if (code === 'model_unavailable') return 'This provider is not switched on yet. Nothing was charged.';
-  if (code === 'format_unavailable') return 'Both songs must be WAV masters. Make a WAV copy from Download first.';
+  if (code === 'format_unavailable') return kind === 'sample'
+    ? 'This song must be a WAV master. Make a WAV copy from Download first.'
+    : 'Both songs must be WAV masters. Make a WAV copy from Download first.';
   if (code === 'mix_format_mismatch') return 'These two songs use different audio formats, so they cannot be mixed.';
   if (code === 'source_duration_invalid') return 'Each song must be at least 5 seconds long.';
   if (code === 'sample_range_invalid') return 'Choose a range of 5 to 30 seconds inside the song.';
@@ -108,7 +110,7 @@ export function MusicRemixDialog({ kind, song, onClose }) {
       setQuote(await gatewayFetch(`/music/songs/${song.id}`, {
         method: 'POST', body: JSON.stringify({ phase: 'quote', ...body() }),
       }));
-    } catch (reason) { setError(friendlyError(reason)); }
+    } catch (reason) { setError(friendlyError(reason, kind)); }
     finally { setBusy(false); }
   }
 
@@ -124,7 +126,7 @@ export function MusicRemixDialog({ kind, song, onClose }) {
       attemptRef.current = null;
       setGeneration({ id: accepted.generation_id, state: accepted.state, candidates: accepted.candidates });
       await refresh(accepted.generation_id);
-    } catch (reason) { setError(friendlyError(reason)); }
+    } catch (reason) { setError(friendlyError(reason, kind)); }
     finally { setBusy(false); }
   }
 
