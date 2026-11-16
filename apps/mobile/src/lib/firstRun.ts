@@ -6,6 +6,9 @@ export const FIRST_RUN_SLOT = `veyrnox.welcome.seen.v${FIRST_RUN_VERSION}`;
 
 export const WELCOME_CARDS = ['hello', 'credits', 'start'] as const;
 export type WelcomeCard = (typeof WELCOME_CARDS)[number];
+// One progress bar runs across the whole journey: the welcome cards, the three questions and the recap that closes it.
+export const FIRST_RUN_QUESTIONS = 3;
+export const ONBOARDING_TOTAL = WELCOME_CARDS.length + FIRST_RUN_QUESTIONS + 1;
 
 export function hasSeenWelcome(raw: string | null | undefined): boolean {
     if (!raw) return false;

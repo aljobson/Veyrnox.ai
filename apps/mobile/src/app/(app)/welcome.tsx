@@ -3,20 +3,19 @@ import { captureEvent } from '../../lib/analytics/events';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
 import { HARD_PAYWALL_STARTER_CREDITS, hardPaywallEnabled } from '../../lib/hardPaywall';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { VeyCharacter } from '../../components/VeyCharacter';
-import { WELCOME_CARDS, creditsCardKeys } from '../../lib/firstRun';
+import { ONBOARDING_TOTAL, WELCOME_CARDS, creditsCardKeys } from '../../lib/firstRun';
+import { OnboardingShell } from '../../components/OnboardingShell';
 import { plural, t } from '../../lib/i18n';
 import { ds } from '../../theme';
-import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../components/ui';
+import { Button, Icon, Text, themedStyles, useThemedStyles } from '../../components/ui';
 
 // Three cards, shown once and skippable on every one. Vey waves on the first and last; the second quotes the real free credits.
 export default function Welcome() {
-    const insets = useSafeAreaInsets();
     const router = useRouter();
     useEffect(() => { captureEvent('onboarding_step', { step: 'welcome', action: 'view' }); }, []);
     const styles = useThemedStyles(sheets);
@@ -37,7 +36,7 @@ export default function Welcome() {
     const card = WELCOME_CARDS[index] ?? 'hello';
     const last = index === WELCOME_CARDS.length - 1;
     const credits = creditsCardKeys(free, hardPaywallEnabled() ? HARD_PAYWALL_STARTER_CREDITS : null);
-    const stepLabel = rawText(t('welcome.step', { n: index + 1, total: WELCOME_CARDS.length }));
+    const stepLabel = rawText(t('welcome.step', { n: index + 1, total: ONBOARDING_TOTAL }));
     const cardTitle = card === 'hello' ? t('welcome.hello.title') : card === 'credits' ? t(credits.title) : t('welcome.start.title');
     // Next and Back swap the card under a button that keeps focus, so a screen reader is told the new card's title and step.
     // Not on first show: the screen is read then anyway. `everywhere`: there is no live region here for Android to use.
@@ -54,50 +53,43 @@ export default function Welcome() {
     }
 
     return (
-        <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <OnboardingShell
+            step={index + 1}
+            total={ONBOARDING_TOTAL}
+            onBack={index > 0 ? () => setIndex(index - 1) : undefined}
+            onSkip={() => done('skip')}
+            skipLabel={t('welcome.skip')}
+            footer={<Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? done() : (captureEvent('onboarding_step', { step: 'welcome', action: 'next' }), setIndex(index + 1)))} />}
+        >
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
-            <ScrollView contentContainerStyle={styles.body}>
-                {/* One card for all three steps, so Vey stays mounted (and keeps waving) instead of loading again on every Next and Back. */}
-                <Card style={styles.card}>
-                    <View style={[styles.hero, card === 'credits' && styles.hidden]}>
-                        <VeyCharacter width={160} interactive />
-                    </View>
-                    {card === 'credits' ? <View style={styles.coins} accessibilityElementsHidden><Icon name="coins" size={28} /></View> : null}
-                    <Text variant="title1" style={styles.title} accessibilityRole="header">
-                        {cardTitle}
-                    </Text>
-                    <Text tone="secondary" style={styles.text}>
-                        {card === 'hello' ? t('welcome.hello.body') : card === 'start' ? t('welcome.start.body')
-                            : credits.count !== null ? plural(credits.body, credits.count) : t(credits.body, credits.params)}
-                    </Text>
-                    {card === 'credits' ? (
-                        <Text tone="secondary" style={styles.text}>
-                            {t('welcome.credits.price')}
-                        </Text>
-                    ) : null}
-                </Card>
-            </ScrollView>
-            <View style={styles.footer}>
-                <Text style={styles.step} accessibilityLabel={stepLabel}>
-                    {index + 1} / {WELCOME_CARDS.length}
+            {/* One layout for all three steps, so Vey stays mounted (and keeps waving) instead of loading again on every Next and Back. */}
+            <ScrollView contentContainerStyle={styles.stage} showsVerticalScrollIndicator={false}>
+                <View style={[styles.hero, card === 'credits' && styles.hidden]}>
+                    <VeyCharacter width={200} interactive />
+                </View>
+                {card === 'credits' ? <View style={styles.coins} accessibilityElementsHidden><Icon name="coins" size={28} /></View> : null}
+                <Text variant="title1" style={styles.title} accessibilityRole="header">
+                    {cardTitle}
                 </Text>
-                <Button label={last ? t('welcome.go') : t('welcome.next')} onPress={() => (last ? done() : (captureEvent('onboarding_step', { step: 'welcome', action: 'next' }), setIndex(index + 1)))} />
-                {index > 0 ? <Button variant="tertiary" label={t('public.vey.back')} onPress={() => setIndex(index - 1)} /> : null}
-                <Button variant="tertiary" label={t('welcome.skip')} onPress={() => done('skip')} />
-            </View>
-        </View>
+                <Text tone="secondary" style={styles.text}>
+                    {card === 'hello' ? t('welcome.hello.body') : card === 'start' ? t('welcome.start.body')
+                        : credits.count !== null ? plural(credits.body, credits.count) : t(credits.body, credits.params)}
+                </Text>
+                {card === 'credits' ? (
+                    <Text tone="secondary" style={styles.text}>
+                        {t('welcome.credits.price')}
+                    </Text>
+                ) : null}
+            </ScrollView>
+        </OnboardingShell>
     );
 }
 
 const sheets = themedStyles((p) => ({
-    screen: { flex: 1, backgroundColor: p.bg },
-    body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter },
-    card: { alignItems: 'center', gap: ds.space.lg },
-    coins: { width: 72, height: 72, borderRadius: 36, backgroundColor: p.surface, alignItems: 'center', justifyContent: 'center' },
+    stage: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: ds.space.lg, paddingVertical: ds.space.lg },
+    coins: { width: 96, height: 96, borderRadius: 48, backgroundColor: p.accentSubtle, borderWidth: 1.5, borderColor: p.accent, alignItems: 'center', justifyContent: 'center' },
     hero: { marginBottom: ds.space.sm },
     hidden: { display: 'none' },
     title: { textAlign: 'center' },
     text: { textAlign: 'center' },
-    footer: { padding: ds.space.gutter, gap: ds.space.sm },
-    step: { color: p.textTertiary, textAlign: 'center' },
 }));
