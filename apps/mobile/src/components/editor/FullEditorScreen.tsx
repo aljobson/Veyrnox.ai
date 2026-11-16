@@ -309,7 +309,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>
             {advanced ? <><Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /><View style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></View></> : null}
         </View>
-        {problem ? <StatusText variant="inherit" accessibilityRole="alert" numberOfLines={2} style={styles.problem}>{problem}</StatusText> : null}
+        {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
         {advanced ? null : <View style={styles.simpleActions}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />
