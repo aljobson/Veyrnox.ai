@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS public.music_beat_project_versions (
 CREATE UNIQUE INDEX IF NOT EXISTS music_beat_versions_revision ON public.music_beat_project_versions(project_id,revision) WHERE reason <> 'stash';
 CREATE UNIQUE INDEX IF NOT EXISTS music_beat_versions_request ON public.music_beat_project_versions(project_id,request_key) WHERE request_key IS NOT NULL;
 CREATE INDEX IF NOT EXISTS music_beat_versions_saved ON public.music_beat_project_versions(project_id,saved_at DESC);
+-- Auth deletion cascades by user_id; scripts/test-fk-indexes.mjs requires a leading index.
+CREATE INDEX IF NOT EXISTS music_beat_versions_user ON public.music_beat_project_versions(user_id);
 CREATE TABLE IF NOT EXISTS public.music_beat_project_takes (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), project_id uuid NOT NULL REFERENCES public.music_beat_projects(id) ON DELETE CASCADE,
  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -29,6 +31,7 @@ CREATE TABLE IF NOT EXISTS public.music_beat_project_takes (
  status text NOT NULL CHECK (status IN ('pending','ready')), upload_expires_at timestamptz,
  created_at timestamptz NOT NULL DEFAULT now(), ready_at timestamptz, UNIQUE(project_id,take_ref)
 );
+CREATE INDEX IF NOT EXISTS music_beat_takes_user ON public.music_beat_project_takes(user_id);
 CREATE TABLE IF NOT EXISTS private.music_beat_save_windows (
  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
  minute_start timestamptz NOT NULL, minute_count integer NOT NULL CHECK (minute_count >= 0),
