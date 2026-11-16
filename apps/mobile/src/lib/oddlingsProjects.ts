@@ -6,6 +6,7 @@ import { cleanProjectName } from './projects';
 import { observe } from './network';
 import { emptyDoc, fitsProject, fromServerDocument, toServerDocument } from './oddlingsDocument';
 import { applyOps, boundOrphans, oddlingsStore, sameOp, switchLink, type CreateIntent, type Inflight, type OddlingsRecord, type OddlingsStore, type Orphan } from './oddlingsAccountStore';
+import { notifyProjectsChanged } from './projectsChanged';
 import type { PassportDoc } from './oddlingsLibrary';
 
 export type SyncState = 'local' | 'saved' | 'full' | 'unavailable' | 'busy' | 'rejected' | 'conflict' | 'gone' | 'other';
@@ -35,9 +36,13 @@ export function createOddlingsProjects(api: ApiClient, store: OddlingsStore = od
         if (parsed.kind === 'oddlings' && raw.document.project_id !== id) throw new ApiError(503, 'invalid_response');
         return { revision: raw.revision, ...parsed };
     }
-    const send = (f: Orphan) => observe(api.request<{ revision: number; document: unknown }>(path(f.projectId), {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': f.key }, body: f.body,
-    }));
+    const send = async (f: Orphan) => {
+        const result = await observe(api.request<{ revision: number; document: unknown }>(path(f.projectId), {
+            method: 'PUT', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': f.key }, body: f.body,
+        }));
+        notifyProjectsChanged();
+        return result;
+    };
     function quiet(s: Session, e: unknown): SyncState {
         const code = status(e);
         s.state = code === 0 || code === 401 ? 'local' : code === 429 ? 'busy' : code === 400 ? 'rejected' : 'unavailable';
