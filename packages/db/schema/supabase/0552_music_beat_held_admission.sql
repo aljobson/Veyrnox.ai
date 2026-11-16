@@ -288,7 +288,7 @@ DECLARE v_user UUID; v_balance INTEGER; v_active INTEGER; v_recent INTEGER; v_qu
  v_request public.music_generation_requests%ROWTYPE; v_existing public.music_generation_requests%ROWTYPE;
  v_one JSONB; v_two JSONB; v_failure JSONB; v_job_one UUID; v_job_two UUID; v_jobs JSONB; v_payload JSONB;
 BEGIN
- IF p_idempotency_key !~ '^[A-Za-z0-9._-]{8,120}$' OR (p_source_audio_url !~ '^https://[^[:space:]]+$' OR length(p_source_audio_url) > 2008)
+ IF p_idempotency_key !~ '^[A-Za-z0-9._-]{8,120}$' OR p_source_audio_url IS NULL OR (p_source_audio_url !~ '^https://[^[:space:]]+$' OR length(p_source_audio_url) > 2008)
  THEN RETURN jsonb_build_object('ok',false,'code','INVALID_INPUTS'); END IF;
  SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id FOR UPDATE;
  IF v_user IS NULL THEN RETURN jsonb_build_object('ok',false,'code','USER_NOT_FOUND'); END IF;
