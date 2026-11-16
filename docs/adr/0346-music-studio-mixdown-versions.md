@@ -27,6 +27,8 @@ are capped at 25 MiB before upload and on the server. Each reservation binds tit
 duration, size, sources, rights and SHA-256. PUT signs content length and
 `If-None-Match: *`, so even an unexpired URL cannot overwrite a live asset. Commit
 checks the stored WAV and its hash before a locked, idempotent transaction.
+Re-renders match within 1 LSB at 16-bit because Chromium sums overlapping sources
+in a non-fixed order; the saved file is always the exact bytes rendered for that save.
 
 An upload refusal abandons the exact reservation version; it never deletes the
 object inline. Tombstones bind the key until the 30-day sweep. The reaper waits

@@ -32,6 +32,7 @@ test('save uploads the exact assembled download bytes and reserves their SHA-256
   calls = []; uploaded = null;
   const progress = []; const result = await saveMixdownToLibrary({ doc, wavBytes: bytes, rightsConfirmed: false, idempotencyKey: 'same-key-1', progress: message => progress.push(message) });
   assert.equal(uploaded, bytes); assert.equal(calls[0].body.sha256, await wavSha256(bytes));
+  assert.equal(await wavSha256(uploaded), await wavSha256(bytes), 'upload and download retain the same single-render hash');
   assert.equal(calls[0].body.size_bytes, bytes.byteLength); assert.equal(calls[0].body.rights_confirmed, false);
   assert.equal(calls[1].body.idempotency_key, 'same-key-1'); assert.equal(result.committed, true);
   assert.ok(progress.includes('Uploading 50%…')); assert.ok(progress.includes('Adding to your library…'));

@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation';
 import { musicBeatCloudEnabled, musicBeatEditorEnabled } from '../../../../../../lib/musicBackend.js';
-import BeatSongSeed from '../../../../_components/music/beat/BeatSongSeed';
-export function generateMetadata() { return { title: 'Open song in Beats' }; }
+import { BeatSongSeedLoader } from '../../../../_components/music/beat/BeatSongSeedLoader';
+import { getT } from '../../../../../../lib/i18n/server';
+export async function generateMetadata() { const { t } = await getT(); return { title: t('music.beats.seed.title') }; }
 export default async function NewBeatPage({ searchParams }) {
   if (!musicBeatEditorEnabled()) notFound();
   const { song } = await searchParams;
-  return <BeatSongSeed key={typeof song === 'string' ? song : ''} songId={typeof song === 'string' ? song : ''} cloud={musicBeatCloudEnabled()} />;
+  return <BeatSongSeedLoader songId={typeof song === 'string' ? song : ''} cloud={musicBeatCloudEnabled()} />;
 }
