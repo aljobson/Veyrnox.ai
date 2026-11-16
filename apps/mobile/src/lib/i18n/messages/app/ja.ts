@@ -5930,6 +5930,7 @@ export default {
     "editorSpeech.clip": "クリップを選択",
     "editorSpeech.uploadFirst": "先にこのクリップをアップロードしてください",
     "editorSpeech.unsupported": "このクリップではまだ利用できません",
+    "editorSpeech.sourceRejected": "音声ツールはこのクリップのファイルを使用できませんでした。100 MB を超えているか、動画1秒あたり約 2 MB を超えているか、読み取れない形式の可能性があります。より短い、またはより小さいクリップをお試しください。クレジットは消費されていません。",
     "editorSpeech.tooLong": "60秒以内のソースクリップを選んでください。",
     "editorSpeech.durationChanged": "ソースの長さが変わりました。クリップを再読み込みしてお試しください。",
     "editorSpeech.price": "分析1回につき {n} クレジット",

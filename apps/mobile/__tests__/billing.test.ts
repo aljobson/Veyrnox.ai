@@ -39,9 +39,9 @@ describe('billing helpers', () => {
         expect(list.filter(isWebParityPack).map((p) => p.credits)).toEqual([156, 392, 1177]);
     });
 
-    test('web-parity packs follow ADR-0343 and fall back to the old sizes only while the offering still has them', () => {
+    test('web-parity packs follow ADR-0343 and hide the retired sizes', () => {
         const sizes = (ids: number[]) => toDisplayPackages(ids.map((n) => pkg(`p${n}`, `ai.veyrnox.credits.${n}`)));
-        expect(webParityPacks(sizes([209, 523, 1571])).map((p) => p.credits)).toEqual([209, 523, 1571]);
+        expect(webParityPacks(sizes([209, 523, 1571]))).toEqual([]);
         expect(webParityPacks(sizes([156, 392, 1177])).map((p) => p.credits)).toEqual([156, 392, 1177]);
         expect(webParityPacks(sizes([209, 156, 523, 392, 1571, 1177])).map((p) => p.credits)).toEqual([156, 392, 1177]);
         expect(webParityPacks(sizes([156, 523])).map((p) => p.credits)).toEqual([156]);
