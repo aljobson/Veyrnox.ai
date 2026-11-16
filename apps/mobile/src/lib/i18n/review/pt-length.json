@@ -2142,6 +2142,12 @@
     "ratio": 1.67
   },
   {
+    "id": "privacyExport.email",
+    "english": "Email {email}",
+    "translation": "Escrever para {email}",
+    "ratio": 1.62
+  },
+  {
     "id": "privacyExport.more",
     "english": "For anything else, email {email}.",
     "translation": "Para qualquer outra coisa, envie um e-mail para {email}.",
