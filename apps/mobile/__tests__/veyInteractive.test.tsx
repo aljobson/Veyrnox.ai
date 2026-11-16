@@ -4,16 +4,22 @@ import { AccessibilityInfo, Animated, StyleSheet } from 'react-native';
 import { VeyCharacter } from '../src/components/VeyCharacter';
 import { VeyLoader } from '../src/components/VeyLoader';
 import { EmptyState } from '../src/components/EmptyState';
-import Welcome from '../src/app/(app)/welcome';
+import FirstRun from '../src/app/(app)/first-run';
 import Rate from '../src/app/(app)/rate';
 import { playSelection } from '../src/lib/haptics';
 import { t } from '../src/lib/i18n';
 
 jest.mock('../src/lib/haptics', () => ({ playSelection: jest.fn() }));
 const mockApi = { getBalance: jest.fn(async () => ({ free_credits: 10 })) };
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: 0 }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: 0, beginSessionTask: () => ({ current: () => true }) }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ children }: any) => children, useRouter: () => ({}), useLocalSearchParams: () => ({}) }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
+// The first-run screen shows Vey above its first question; it needs no network or storage here.
+jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstAnswers: async () => ({ goal: null, role: null, destination: null }), writeFirstProfile: async () => ({}) }));
+jest.mock('../src/lib/firstGoalStore', () => ({ writeFirstGoal: async () => undefined }));
+jest.mock('../src/lib/firstProfileSync', () => ({ pushFirstAnswers: async () => undefined }));
+jest.mock('../src/lib/markWelcomeSeen', () => ({ markWelcomeSeen: async () => undefined }));
+jest.mock('../src/lib/presets', () => ({ fetchPresets: async () => [] }));
 jest.mock('../src/lib/storeReview', () => ({ markReviewAsked: jest.fn(), openRatingSheet: jest.fn() }));
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: async () => null }));
 jest.mock('../src/lib/languageStore', () => ({ loadLanguage: async () => 'en', readLanguage: () => 'en' }));
@@ -189,18 +195,10 @@ test('empty state greets with an interactive one-shot wave', async () => {
     await render(<EmptyState title="Nothing yet" />); reachable(button());
     expect(started).toHaveLength(1); expect(flatten(started[0]).filter(a => a.config?.duration === 360)).toHaveLength(7);
 });
-test.each([['welcome', Welcome], ['rate', Rate]] as const)('%s exposes Vey and its Wave action without hidden ancestors', async (_, Screen) => {
+test.each([['first run', FirstRun], ['rate', Rate]] as const)('%s exposes Vey and its Wave action without hidden ancestors', async (_, Screen) => {
     await render(<Screen />); expect(button()).toBeDefined(); reachable(button());
     expect(button().props.accessibilityActions).toContainEqual({ name: 'wave', label: t('vey.touch.wave') });
 });
-test('last welcome card also exposes its Vey button', async () => {
-    await render(<Welcome />);
-    for (let i = 0; i < 2; i++) await act(async () => root.container.queryAll(n => n.props.accessibilityLabel === t('welcome.next') && n.props.onClick)[0].props.onClick(event()));
-    expect(button()).toBeDefined(); reachable(button());
-    expect(button().props.accessibilityActions).toContainEqual({ name: 'wave', label: t('vey.touch.wave') });
-});
-
-
 test('working alternates the arms vertically while keeping the body at rest', async () => {
     await render(<VeyCharacter width={160} mood="working" />);
     const busy = started.flatMap(flatten).find(a => a.config?.duration === 360)!.value!;
