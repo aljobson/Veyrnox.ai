@@ -2193,7 +2193,7 @@ export default {
   "explore.searchOpen": "検索",
   "explore.seeAll": "すべてのテンプレートを見る",
   "explore.seeAllShort": "すべて見る",
-  "explore.start.body": "アセットを1つ作る、AIと計画する、一貫性のある複数ショットの映像を作る。",
+  "explore.start.body": "アセットを一つ作る、またはAIと計画する。",
   "explore.start.chat.body": "先進的なAIモデルとアイデアを計画・改善できます。",
   "explore.start.create.body": "画像・動画・音声のアセットを1つ生成します。",
   "explore.start.create.hint": "「作成」を開きます。",

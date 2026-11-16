@@ -1,7 +1,7 @@
 // English strings for explore. Add keys here; keep their original wording and placeholders.
 export default {
     'explore.start.title': 'Start creating',
-    'explore.start.body': 'Make one asset, plan with AI, or build a consistent multi-shot film.',
+    'explore.start.body': 'Make one asset, or plan with AI.',
     'explore.start.create.body': 'Generate one image, video or audio asset.',
     'explore.start.create.hint': 'Opens Create.',
     'explore.start.chat.body': 'Plan or improve an idea with leading AI models.',

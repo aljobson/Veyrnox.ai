@@ -2236,7 +2236,7 @@ export default {
   "explore.searchOpen": "Suchen",
   "explore.seeAll": "Alle Vorlagen ansehen",
   "explore.seeAllShort": "Alle ansehen",
-  "explore.start.body": "Erstelle ein Asset, plane mit KI oder baue einen konsistenten Film mit mehreren Einstellungen.",
+  "explore.start.body": "Erstelle ein Asset oder plane mit KI.",
   "explore.start.chat.body": "Plane oder verbessere eine Idee mit führenden KI-Modellen.",
   "explore.start.create.body": "Generiere ein Bild-, Video- oder Audio-Asset.",
   "explore.start.create.hint": "Öffnet Erstellen.",

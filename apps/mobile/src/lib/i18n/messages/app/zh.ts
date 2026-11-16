@@ -2193,7 +2193,7 @@ export default {
   "explore.searchOpen": "搜索",
   "explore.seeAll": "查看全部模板",
   "explore.seeAllShort": "查看全部",
-  "explore.start.body": "制作单个素材、用 AI 规划，或打造连贯的多镜头影片。",
+  "explore.start.body": "制作单个素材，或用 AI 规划。",
   "explore.start.chat.body": "借助领先的 AI 模型规划或改进创意。",
   "explore.start.create.body": "生成一个图像、视频或音频素材。",
   "explore.start.create.hint": "打开“创作”。",
