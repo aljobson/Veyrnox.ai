@@ -226,7 +226,7 @@ export default function Explore() {
                         if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
-                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="sparkle" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
+                    <StartOption href="/instruments" hue="rose" style={styles.startOption} icon="pianoKeys" title={t('instruments.title')} body={t('instruments.homeBody')} hint={t('instruments.homeHint')} divided />
                 </Card>
 
 
