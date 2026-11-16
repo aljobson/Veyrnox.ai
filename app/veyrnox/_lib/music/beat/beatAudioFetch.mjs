@@ -3,7 +3,7 @@ import { probeAudioHeader, admitProbe } from './beatAudioProbe.mjs';
 import { admitScan, admitDecode, checkDecoded, reservationPool, MB } from './beatAudioRules.mjs';
 export const scans = reservationPool(2, 240 * MB);
 export const decodes = reservationPool(2, 600 * MB);
-async function readBounded(response, bound, prefix = false) {
+export async function readBounded(response, bound, prefix = false) {
   const reader = response.body?.getReader();
   if (!reader) throw new Error('This browser cannot read audio safely.');
   const bytes = new Uint8Array(bound); let length = 0;

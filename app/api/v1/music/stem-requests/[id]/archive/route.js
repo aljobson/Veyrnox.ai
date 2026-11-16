@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
         const context = await rpc('music_get_stem_archive_context', {
             p_auth_id: authId, p_request_id: id,
         }, cfg);
-        if (!context?.ok) return reply({ error: 'not_found' }, 404);
+        if (!context?.ok) return reply({ error: context?.code === 'HELD' ? 'held' : 'not_found' }, 404);
         const signed = await presignGetUrl(context.r2_key, 300, r2cfg, {
             downloadFilename: `veyrnox-stems-${String(context.song_id).slice(0, 8)}.zip`,
         });

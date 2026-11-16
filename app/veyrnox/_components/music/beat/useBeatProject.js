@@ -25,7 +25,7 @@ export function useBeatProject(id, announce) {
   const revision = useRef(0);
   const blocked = useRef(null);
   const saving = useRef(false);
-  const inFlight = useRef(Promise.resolve()), replacing = useRef(false);
+  const inFlight = useRef(Promise.resolve()), replacing = useRef(false), durable = useRef(true);
   const flushRequested = useRef(false);
   const mounted = useRef(false);
   const generation = useRef(0);
@@ -48,6 +48,7 @@ export function useBeatProject(id, announce) {
     const result = await inFlight.current;
     saving.current = false;
     if (token !== generation.current) return;
+    durable.current = result.persistent !== false;
     if (mounted.current) setPersistent(result.persistent !== false);
     if (result.error === 'conflict') markConflict('changed');
     else if (result.error === 'not_found') markConflict('deleted');
@@ -165,7 +166,7 @@ export function useBeatProject(id, announce) {
     await inFlight.current;
     await flush();
     await inFlight.current;
-    if (blocked.current || unsaved.current) throw new Error('Local save incomplete');
+    if (blocked.current || unsaved.current || !durable.current) throw new Error('Local save incomplete');
   }
   async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId, expected = null) {
     if (replacing.current || blocked.current) throw new Error('Local beat is busy');

@@ -1,4 +1,7 @@
 'use client';
+import { gatewayFetch } from '../../../_lib/gateway.js';
+import { exportAvailabilityGuard } from '../../../_lib/music/beat/beatAssetAvailability.mjs';
+import { assetState, markAssetHeld } from '../../../_lib/music/beat/beatAssets.js';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { action, button, input } from './beatStyles';
@@ -66,7 +69,8 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
     if (!soloTrackId) { rendered.current = { signature, bytes }; setHasDownload(true); }
     return bytes;
   }
-  function deliver(bytes, filename) {
+  async function deliver(bytes, filename, confirm) {
+    await confirm();
     const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
     const link = document.createElement('a'); link.href = url; link.download = filename;
     document.body.append(link); link.click(); link.remove();
@@ -76,6 +80,7 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
     if (running.current || !modules.current) return;
     running.current = true; setBusy(true); setError('');
     const { mixdown, plan, instruments, save: saver } = modules.current;
+    const confirm = exportAvailabilityGuard(snapshot.current, { request: gatewayFetch, state: assetState, markHeld: markAssetHeld });
     try {
       if (save) {
         if (!online) throw Object.assign(new Error(saver.SAVE_OFFLINE_MESSAGE), { code: 'network_error' });
@@ -86,22 +91,23 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
         if (saveAttempt.current?.payload !== payload) saveAttempt.current = { payload, key: crypto.randomUUID() };
         controller.current = new AbortController();
         const result = await saver.saveMixdownToLibrary({ doc: { ...snapshot.current, title }, range, wavBytes: bytes,
-          rightsConfirmed: rights, idempotencyKey: saveAttempt.current.key, signal: controller.current.signal, progress: status });
+          rightsConfirmed: rights, idempotencyKey: saveAttempt.current.key, signal: controller.current.signal, progress: status, beforePost: () => confirm({ range }) });
         setSaved({ ...result, title: title.trim() }); status(`${title.trim()} saved to Music`);
       } else if (kind === 'pattern') {
         status('Rendering pattern…');
         const result = await mixdown.renderBeat(snapshot.current, loops, editTrackId);
-        deliver(instruments.encodeWav(result.samples, result.sampleRate), plan.exportFilename(snapshot.current.title));
+        await deliver(instruments.encodeWav(result.samples, result.sampleRate), plan.exportFilename(snapshot.current.title), () => confirm({ pattern: true }));
       } else if (output === 'stems') {
         const planned = plan.planExport(snapshot.current, { range, output, bitDepth, phone: phone() });
         for (const track of planned.tracks.filter(t => t.audible)) {
-          status(`Rendering ${track.name}…`); deliver(await render(bitDepth, track.id), track.filename);
+          status(`Rendering ${track.name}…`); await deliver(await render(bitDepth, track.id), track.filename, () => confirm({ range, soloTrackId: track.id }));
           // Let the previous Blob's URL release before allocating the next stem.
           await new Promise(resolve => setTimeout(resolve, 1100));
         }
-      } else deliver(await render(bitDepth), plan.exportFilename(snapshot.current.title));
+      } else await deliver(await render(bitDepth), plan.exportFilename(snapshot.current.title), () => confirm({ range }));
     } catch (e) {
       if (['reservation_closed', 'reservation_expired', 'idempotency_conflict'].includes(e.code)) saveAttempt.current = null;
+      if (['asset_held', 'asset_unconfirmed'].includes(e.code)) { prepared.current = null; rendered.current = null; setHasDownload(false); failure(e.message); return; }
       const known = e instanceof RangeError || /missing|too long|too much|600 seconds/.test(e.message);
       failure(save && e.code ? saver.mixdownSaveError(e) : known ? e.message : save ? saver.mixdownSaveError(e) : "Couldn't render this mix. Try again.");
     } finally { running.current = false; if (mounted.current) setBusy(false); }
@@ -143,7 +149,7 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
       {saved && <Link className={`${button} inline-flex items-center`} href={`/app/music/songs/${saved.song_id}`}>Open in Music</Link>}
       <div className="mt-4 flex flex-wrap gap-2">
         <button className={action} disabled={busy || !opened || (kind === 'song' && empty)} onClick={() => run()}>Download</button>
-        {error && hasDownload && <button className={button} disabled={busy} onClick={() => deliver(rendered.current.bytes, modules.current.plan.exportFilename(snapshot.current.title))}>Download rendered WAV instead</button>}
+        {error && hasDownload && <button className={button} disabled={busy} onClick={() => run()}>Download rendered WAV instead</button>}
         <button className={button} disabled={busy} onClick={() => dialog.current.close()}>Close</button>
       </div>
     </dialog>

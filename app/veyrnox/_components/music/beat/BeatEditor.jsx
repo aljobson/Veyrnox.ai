@@ -1,4 +1,7 @@
 'use client';
+import BeatGenerateSheet from './BeatGenerateSheet';
+import BeatAiActionSheet from './BeatAiActionSheet';
+import { useBeatAiRequest } from './useBeatAiRequest';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,11 +27,12 @@ import BeatMagicBar from './BeatMagicBar';
 import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input, storageWarning } from './beatStyles';
 
-export default function BeatEditor({ id, magicBar = false, cloud = false, librarySave = false }) {
+export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = false, librarySave = false }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const announce = useCallback((text) => setMessage(text), []);
   const project = useBeatProject(id, announce);
+  const aiRequest = useBeatAiRequest({ beatId: id, project, announce, enabled: Object.values(ai).some(Boolean) });
   const sync = useBeatCloudSync({ beatId: id, project, cloud, announce });
   const root = useRef(null);
   const [selectedRegionId, setSelectedRegionId] = useState(null), [rollOpen, setRollOpen] = useState(true);
@@ -124,7 +128,10 @@ export default function BeatEditor({ id, magicBar = false, cloud = false, librar
       <button className={button} aria-disabled={!project.canRedo}
         onClick={() => { project.redo(); setTitleDraft(null); }}>Redo</button>
       <button className={button} disabled={copying} onClick={copy}>Save as copy</button>
+      {ai.generate && <button className={action} onClick={() => aiRequest.open({ op: 'generate' })}><span aria-hidden="true">✦ </span>Generate</button>}
+      {Object.values(ai).some(Boolean) && aiRequest.pending.map(r => <button className={button} key={r.key} onClick={() => aiRequest.resume(r)}>Resume {r.prompt.slice(0, 24) || 'AI parts'}</button>)}
     </header>
+    {aiRequest.selection && (aiRequest.selection.op === 'generate' ? <BeatGenerateSheet key="generate" request={aiRequest} doc={doc} afterTrackId={track.id} /> : <BeatAiActionSheet key={aiRequest.selection.op} request={aiRequest} doc={doc} afterTrackId={track.id} />)}
     <div className="flex flex-wrap items-end justify-between gap-3"><label className="flex min-w-0 flex-1 flex-col gap-1">Title<input className={`${input} w-full text-xl font-bold`} maxLength={80} value={title} aria-invalid={!title.trim()} aria-describedby={!title.trim() ? 'title-error' : undefined} onChange={(e) => {
       const value = e.target.value;
       setTitleDraft(value);
@@ -154,7 +161,7 @@ export default function BeatEditor({ id, magicBar = false, cloud = false, librar
         project.undo(); setTitleDraft(null); setUndo(null); clearTimeout(undoTimer.current);
       }}>Undo</button>
     </div>}
-    <BeatArrangement key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
+    <BeatArrangement ai={ai} onAi={aiRequest.open} key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
       onSelectRegion={(id) => { setSelectedRegionId(id); setRollOpen(true); }} setEditTrackId={setEditTrackId} locator={locator} setLocator={setLocator}
       playhead={playback.playhead} runId={playback.runId} announce={announce} />
     {track.kind === 'midi' ? <>
@@ -172,7 +179,7 @@ export default function BeatEditor({ id, magicBar = false, cloud = false, librar
       <BeatStepGrid doc={doc} edit={lockedEdit} playhead={patternPlayhead} runId={playback.runId} />
       <BeatPads hit={playback.hit} record={playback.record} setRecord={playback.setRecord} />
     </>}
-    {magicBar && <BeatMagicBar doc={doc} loops={loops} announce={announce} />}
+    {magicBar && <BeatMagicBar hidePrompt={ai.generate} doc={doc} loops={loops} announce={announce} />}
     <p aria-live="polite" aria-atomic="true" className="min-h-6 text-sm text-vx-fg-muted">{message}</p>
   </div>;
 }

@@ -228,6 +228,7 @@ test('a listed rate is the base price of its endpoint', () => {
     const endpoints = {
         'ace-step': 'fal-ai/ace-step',
         'ace-step-1.5': 'fal-ai/ace-step-1.5',
+        'ace-step-loop': 'fal-ai/ace-step-1.5',
         'inworld-tts': 'fal-ai/inworld-tts',
         'kling-avatar-v2': 'fal-ai/kling-video/ai-avatar/v2/standard',
         'mmaudio-v2-video': 'fal-ai/mmaudio-v2',
