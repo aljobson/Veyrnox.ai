@@ -156,7 +156,7 @@ export default function Account() {
 
             {process.env.EXPO_PUBLIC_BEST_CUT_ENABLED === 'true' ? (
                 <Section title={t('bestCut.settings')}>
-                    <BestCutSettings />
+                    <BestCutSettings showTitle={false} />
                 </Section>
             ) : null}
 

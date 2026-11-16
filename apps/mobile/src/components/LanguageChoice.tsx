@@ -69,6 +69,7 @@ export function LanguageChoice({ returnPath, active = ACTIVE_LOCALES, onComplete
             </ScrollView>
             {more ? <View testID="language-more" pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={s.fade}>
                 {FADE_STEPS.map(opacity => <View key={opacity} style={[s.fadeStep, { opacity }]} />)}
+                <View testID="language-more-cue" style={s.cue}><Text variant="title3" tone="secondary" accessible={false}>⌄</Text></View>
             </View> : null}
         </View>
         <View style={s.footer}><Button label={t('vibe.language.continue')} disabled={busy || status === 'loading'} onPress={() => void apply()} /></View>
@@ -83,5 +84,6 @@ const sheets = themedStyles(p => ({
     options: { gap: ds.space.md },
     fade: { position: 'absolute', left: 0, right: 0, bottom: 0 },
     fadeStep: { height: ds.space.md, backgroundColor: p.bg },
+    cue: { alignItems: 'center', backgroundColor: p.bg },
     footer: { padding: ds.space.gutter },
 }));

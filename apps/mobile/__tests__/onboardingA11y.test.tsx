@@ -62,6 +62,7 @@ test('a list taller than the screen shows a bottom fade until the last row is sc
     await act(async () => scroll.props.onContentSizeChange(390, 900));
     expect(fade()).toHaveLength(1);
     expect(fade()[0].props.importantForAccessibility).toBe('no-hide-descendants');
+    expect(root.container.queryAll(n => n.props.testID === 'language-more-cue')).toHaveLength(1);
     await act(async () => scroll.props.onScroll({ nativeEvent: { contentOffset: { y: 300 } } }));
     expect(fade()).toHaveLength(0);
 });

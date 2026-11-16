@@ -21,7 +21,7 @@ export default {
     'approvals.step.when': '4. Post at',
     'approvals.step.reviewers': '5. Reviewers',
     'approvals.noCreations': 'No finished images or videos yet. Make one in Create first.',
-    'approvals.noAccounts': 'No connected account can post a {type} yet.',
+    'approvals.noAccounts': 'No connected account can post {type} files yet.',
     'approvals.textPlaceholder': 'Write the caption',
     'approvals.whenNote': 'The time the post goes out if it is approved. It must be in the future.',
     'approvals.reviewersPlaceholder': 'Email addresses, separated by commas (up to {max})',
