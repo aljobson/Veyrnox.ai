@@ -46,7 +46,9 @@ test('Remix gate needs Cover gates plus its own switch, which ships false', asyn
   assert.equal(musicRemixEnabled(ready), true);
   for (const key of Object.keys(ready)) assert.equal(musicRemixEnabled({ ...ready, [key]: 'false' }), false, key);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  assert.equal((wrangler.match(/\\"remix\\":false/g) || []).length, 2);
+  // Off in production; on in staging for the billed proof run (owner, 2026-11-16).
+  assert.equal((wrangler.match(/\\"remix\\":false/g) || []).length, 1);
+  assert.equal((wrangler.match(/\\"remix\\":true/g) || []).length, 1);
 });
 
 test('WAV mix halves each input, keeps the shorter length and refuses mismatched formats', () => {
