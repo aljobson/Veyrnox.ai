@@ -64,7 +64,8 @@ export default function EditorHome() {
         } catch (error) {
             if (currentRequest === request.current) {
                 setProblem(projectsErrorMessage(error));
-                setProjects([]);
+                // A quiet refresh that fails keeps the rows already shown and just offers the retry.
+                if (!(keepRows && loadedOnce.current)) setProjects([]);
             }
         }
     }, [api]);

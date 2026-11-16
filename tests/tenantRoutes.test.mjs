@@ -71,6 +71,22 @@ test('project list reports each project\'s latest saved revision and time throug
     assert.equal(projects[1].latest_revision,null);
     assert.equal(projects[1].saved_at,null);
 });
+test('project list still answers with plain rows when the saved-revision read fails',async()=>{
+    const calls=[];
+    globalThis.fetch=async(url)=>{
+        calls.push(url.toString());
+        if(calls.length===1)return new Response('{}',{status:400});
+        return Response.json([{id:projectId,workspace_id:workspaceId,name:'Plain',version:1,created_at:'2026-11-15T17:38:00Z',updated_at:'2026-11-15T17:38:00Z'}]);
+    };
+    const response=await GET(request(`?workspace_id=${workspaceId}`));
+    assert.equal(response.status,200);
+    assert.equal(calls.length,2);
+    assert.ok(!calls[1].includes('project_document_versions'));
+    const {projects}=await response.json();
+    assert.equal(projects[0].name,'Plain');
+    assert.equal(projects[0].latest_revision,null);
+    assert.equal(projects[0].saved_at,null);
+});
 test('not-found response is identical when RLS hides a cross-tenant object',async()=>{
     globalThis.fetch=async()=>Response.json([]);
     const response=await getProject(request(`/${projectId}`),{params:Promise.resolve({id:projectId})});

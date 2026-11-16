@@ -47,3 +47,14 @@ test('a save that finishes after the focus fetch refreshes the list without clea
     expect(lines).toContain('FIRST');
     expect(lines.find(l => /^Version 3 /.test(l))).toBeTruthy();
 });
+
+test('a quiet refresh that fails keeps the rows and shows the retry', async () => {
+    projects = [row('a', 'KEEP ME', { latest_revision: 4, saved_at: '2026-11-16T10:00:00Z' })];
+    await act(async () => root.render(<EditorHome />));
+    const failing = jest.spyOn(mockApi, 'request').mockRejectedValue(Object.assign(new Error('down'), { status: 503 }));
+    await act(async () => { notifyProjectsChanged(); });
+    failing.mockRestore();
+    const lines = text();
+    expect(lines).toContain('KEEP ME');
+    expect(lines.some(l => /busy|try again/i.test(l))).toBe(true);
+});
