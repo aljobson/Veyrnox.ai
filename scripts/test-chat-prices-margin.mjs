@@ -40,8 +40,15 @@ const SELECT = `SELECT id, credits_5s, provider_cost_per_unit::float8 AS base, c
 
 try {
     await c.query('BEGIN');
+    // The replay as it stands (0553 applied last): the owner's rule that no model costs 1 credit a reply holds for every chat row.
+    const replayed = await q(`SELECT id, credits_5s FROM public.model_catalog WHERE provider = 'openrouter-chat' AND id LIKE 'chat-%'`);
+    assert.equal(replayed.length, 10, 'the ten chat rows');
+    assert.deepEqual(replayed.filter((r) => r.credits_5s < 2), [], 'no chat row is left at 1 credit a reply (0553)');
     const sql = await readFile(new URL('../packages/db/schema/supabase/0519_chat_prices_50_percent_margin.sql', import.meta.url), 'utf8');
     await c.query(sql); await c.query(sql); // safe to apply twice
+    // 0553 (every 1-credit chat model is now 2) runs after 0519 in a full replay; 0519 above re-set luna and DeepSeek to 1.
+    const two = await readFile(new URL('../packages/db/schema/supabase/0553_chat_one_credit_models_now_two.sql', import.meta.url), 'utf8');
+    await c.query(two); await c.query(two); // safe to apply twice
     const rows = await q(SELECT);
     assert.equal(rows.length, 11, 'ten chat rows and the editor row');
 
@@ -56,12 +63,13 @@ try {
     const editor = rows.find((r) => r.id === 'editor-ai-edit-gemini-3.8-flash');
     covers(editor.credits_5s, editor.base, 9000 * 0.825e-6 + 4096 * 4.125e-6, 'editor AI edit');
 
-    // No price went down, and only Opus went up (base 7 -> 8, Thinking 5 -> 6).
+    // No price went down, only Opus went up (base 7 -> 8, Thinking 5 -> 6), and the base price of every 1-credit chat row is now 2 (0553).
+    const base = (id) => (id === 'chat-claude-opus-5.5' ? 8 : WAS[id][0] === 1 && RATE[id] ? 2 : WAS[id][0]);
     const credits = (r) => [r.credits_5s, r.tc, r.wc, r.ic, r.lc];
     for (const r of rows) {
         const was = WAS[r.id];
         credits(r).forEach((n, k) => assert.ok(n === was[k] || n > was[k], `${r.id} price ${k} went down`));
-        if (r.id !== 'chat-claude-opus-5.5') assert.deepEqual(credits(r), was, `${r.id} Credits unchanged`);
+        if (r.id !== 'chat-claude-opus-5.5') assert.deepEqual(credits(r), [base(r.id), ...was.slice(1)], `${r.id} Credits unchanged except a 1-credit base now 2`);
     }
     assert.deepEqual(credits(rows.find((r) => r.id === 'chat-claude-opus-5.5')), [8, 6, 3, 6, 2]);
 
