@@ -122,7 +122,30 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
         additions[track].push({ ...item, id, start: Math.max(0, frame + item.start - origin) });
         selections.push({ track, id });
     }
-    return { timeline: { ...timeline, seq, video: [...timeline.video, ...additions.video as Clip[]], audio: [...timeline.audio, ...additions.audio as Clip[]], text: [...timeline.text, ...additions.text as TextClip[]] }, selections };
+    // Insert, never overlap: on each track the existing items from the insert point on move right by the pasted span;
+    // an item the insert point falls inside is split there, and only its tail moves.
+    const next = { ...timeline, seq } as Timeline;
+    for (const track of ['video', 'audio', 'text'] as const) {
+        const added = additions[track];
+        if (!added.length) continue;
+        const lanes = new Map<string | undefined, (Clip | TextClip)[]>();
+        for (const item of added) lanes.set(item.trackId, [...(lanes.get(item.trackId) ?? []), item]);
+        let existing = timeline[track] as (Clip | TextClip)[];
+        for (const [lane, items] of lanes) {
+            const from = Math.min(...items.map((item) => item.start));
+            const span = Math.max(...items.map((item) => item.start + item.len)) - from;
+            existing = existing.flatMap((item) => {
+                if (item.trackId !== lane || item.start + item.len <= from) return [item];
+                if (item.start >= from) return [{ ...item, start: item.start + span }];
+                const head = from - item.start;
+                seq += 1;
+                const tail = { ...item, id: `${track[0]}${seq}`, start: from + span, len: item.len - head, ...('in' in item ? { in: (item.in ?? 0) + head } : {}) };
+                return [{ ...item, len: head }, tail];
+            });
+        }
+        (next as Record<TrackKind, (Clip | TextClip)[]>)[track] = [...existing, ...added];
+    }
+    return { timeline: { ...next, seq }, selections };
 }
 
 export function duplicateSelections(timeline: Timeline, selections: readonly Selection[]): { timeline: Timeline; selections: Selection[] } | null {
