@@ -9,9 +9,10 @@ const mockApi = { request: jest.fn() };
 const entry = (id: string) => ({ id, name: id, modality: 'text-to-image', credits: 3 });
 let mockCatalog: any[] | null = [];
 let mockStale = false;
+let mockHold: Promise<void> | null = null;
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => ({}), useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, status: 'signedOut' }) }));
-jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { if (mockCatalog === null) throw new Error('offline'); cb(mockCatalog, { fromCache: mockStale, stale: mockStale, savedAt: 0, ageMs: 0 }); return mockCatalog; }, mediaApi: () => ({ listJobs: async () => ({ jobs: [] }) }) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { if (mockCatalog === null) throw new Error('offline'); if (mockHold) await mockHold; cb(mockCatalog, { fromCache: mockStale, stale: mockStale, savedAt: 0, ageMs: 0 }); return mockCatalog; }, mediaApi: () => ({ listJobs: async () => ({ jobs: [] }) }) }));
 jest.mock('../src/lib/presets', () => ({ ...jest.requireActual('../src/lib/presets'), fetchPresets: () => mockFetch() }));
 jest.mock('../src/lib/imageTemplates', () => ({ ...jest.requireActual('../src/lib/imageTemplates'), fetchImageTemplates: () => mockImages() }));
 jest.mock('../src/lib/audioTemplates', () => ({ ...jest.requireActual('../src/lib/audioTemplates'), fetchAudioTemplates: () => mockAudio() }));
@@ -31,12 +32,12 @@ const audio = [{ id: 'midnight-soul', name: 'Midnight Soul', category: 'MUSIC', 
 let root: Root;
 const buttons = () => root.container.queryAll(n => n.props.accessibilityRole === 'button');
 const control = (label: string) => buttons().find(n => n.props.accessibilityLabel === label);
-const titles = () => buttons().map(n => String(n.props.accessibilityLabel).split(',')[0]).filter(s => /^(Video \d|Forest Light|Pastel Corridor|Midnight Soul)$/.test(s));
+const titles = () => buttons().map(n => String(n.props.accessibilityLabel).split(',')[0]).filter(s => /^(Video \d|Forest Light|Pastel Corridor|Midnight Soul|Red Light)$/.test(s));
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const click = (label: string) => act(async () => control(label)!.props.onClick(event));
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-    mockCatalog = [entry('nano'), entry('suno')]; mockStale = false;
+    mockCatalog = [entry('nano'), entry('suno')]; mockStale = false; mockHold = null;
     root = createRoot(); mockPush.mockReset(); mockFetch.mockReset().mockResolvedValue(video);
     mockImages.mockReset().mockResolvedValue(images); mockAudio.mockReset().mockResolvedValue(audio);
     await act(async () => root.render(<Home />));
@@ -96,4 +97,18 @@ test('a saved catalog copy past its freshness window does not hide templates unt
     mockStale = true;
     await rerender([]);
     expect(titles()).toEqual(expect.arrayContaining(['Video 0', 'Forest Light', 'Midnight Soul']));
+});
+test('a category chosen before the catalog arrives falls back to All when the catalog removes it', async () => {
+    let deliver: () => void = () => {};
+    mockImages.mockResolvedValue([...images, { id: 'red', name: 'Red Light', category: 'CINEMATIC', modelId: 'gone', prompt: 'p', previewUrl: null, previewAspect: 1, photoRequired: true }]);
+    mockHold = new Promise<void>(resolve => { deliver = resolve; });
+    await act(async () => root.unmount()); root = createRoot();
+    await act(async () => root.render(<Home />));
+    await click(t('explore.type.image'));
+    await act(async () => control(t('explore.categories'))!.props.onClick(event));
+    const chip = root.container.queryAll(n => n.props.accessibilityRole === 'button' && /cinematic/i.test(String(n.props.accessibilityLabel)))[0];
+    await act(async () => chip.props.onClick(event));
+    expect(titles()).toEqual(['Red Light']);
+    await act(async () => { deliver(); await mockHold; });
+    expect(titles()).toEqual(['Forest Light', 'Pastel Corridor']);
 });

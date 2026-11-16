@@ -181,12 +181,14 @@ export default function Explore() {
 
     const typedPresets = useMemo(() => filterPresets(allTemplates ?? [], { type, category: ALL_CATEGORIES, query: '' }), [allTemplates, type]);
     const categories = useMemo(() => templateChips(typedPresets, popularIds), [typedPresets, popularIds]);
+    // A chosen category the catalog later removed (its templates are gone) falls back to All instead of an empty list with no chip selected.
+    const activeCategory = category === ALL_CATEGORIES || categories.length === 0 || categories.includes(category) ? category : ALL_CATEGORIES;
     const [limit, setLimit] = useState(PAGE);
     const matching = useMemo(() => {
-        const ranked = rankPresets(filterPresets(templatesFor(typedPresets, category, popularIds), { type, category: ALL_CATEGORIES, query }), vibe);
-        return type === ALL_TYPES && category === ALL_CATEGORIES ? mixKinds(ranked) : ranked;
-    }, [typedPresets, type, category, popularIds, query, vibe]);
-    useEffect(() => setLimit(PAGE), [type, category, query]);
+        const ranked = rankPresets(filterPresets(templatesFor(typedPresets, activeCategory, popularIds), { type, category: ALL_CATEGORIES, query }), vibe);
+        return type === ALL_TYPES && activeCategory === ALL_CATEGORIES ? mixKinds(ranked) : ranked;
+    }, [typedPresets, type, activeCategory, popularIds, query, vibe]);
+    useEffect(() => setLimit(PAGE), [type, activeCategory, query]);
     const shown = useMemo(() => matching.slice(0, limit), [matching, limit]);
     const modelCount = useMemo(() => new Set((allTemplates ?? []).map((preset) => preset.modelId)).size, [allTemplates]);
 
@@ -211,7 +213,7 @@ export default function Explore() {
     }
 
     const search = query.trim();
-    const filtered = search.length > 0 || type !== ALL_TYPES || category !== ALL_CATEGORIES;
+    const filtered = search.length > 0 || type !== ALL_TYPES || activeCategory !== ALL_CATEGORIES;
     // Said once when the list empties. The line on screen echoes the query; this one does not, so typing on does not repeat it.
     const noResults = !presetsFailed && presets !== null && shown.length === 0;
     useAnnouncement(noResults ? (t('explore.noMatch')) : null, { everywhere: true });
@@ -349,10 +351,10 @@ export default function Explore() {
                                 <Button
                                     size="md"
                                     variant="tertiary"
-                                    label={category !== ALL_CATEGORIES ? categoryLabel(category) : t('explore.categories')}
+                                    label={activeCategory !== ALL_CATEGORIES ? categoryLabel(activeCategory) : t('explore.categories')}
                                     accessibilityState={{
                                         expanded: categoriesOpen,
-                                        selected: category !== ALL_CATEGORIES,
+                                        selected: activeCategory !== ALL_CATEGORIES,
                                     }}
                                     onPress={() => setCategoriesOpen((open) => !open)}
                                 />
@@ -361,7 +363,7 @@ export default function Explore() {
                         {categories.length > 1 && categoriesOpen ? (
                             <ScrollView keyboardShouldPersistTaps="handled" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
                                 {categories.map((c) => (
-                                    <Chip key={c} label={c === ALL_CATEGORIES ? t('explore.categoryAll') : categoryLabel(c)} selected={c === category} onPress={() => setCategory(c)} />
+                                    <Chip key={c} label={c === ALL_CATEGORIES ? t('explore.categoryAll') : categoryLabel(c)} selected={c === activeCategory} onPress={() => setCategory(c)} />
                                 ))}
                             </ScrollView>
                         ) : null}
