@@ -21,8 +21,9 @@ test('both Studio pages redirect only when the beat editor flag is on', async ()
 });
 test('song action and Studio navigation use the server-provided flag', async () => {
   const action = await readFile('app/veyrnox/_components/music/MusicSongActions.jsx', 'utf8');
-  assert.match(action, /beatEditor \? `\/app\/music\/beats\/new\?song=/);
-  assert.match(action, /: `\/app\/music\/studio\//);
+  assert.match(action, /const canStudio = enabled\.has\('open_studio'\);/);
+  assert.match(action, /href=\{beatEditor \? `\/app\/music\/beats\/new\?song=\$\{encodeURIComponent\(songId\)\}` : `\/app\/music\/studio\/\$\{songId\}`\}/);
+  assert.match(action, /\{beatEditor \? 'Open in Beats' : 'Open in Studio workspace'\}/);
   const nav = await readFile('app/veyrnox/_components/music/MusicPreviewShell.jsx', 'utf8');
   assert.match(nav, /entry.studio && beatsMode/);
 });

@@ -31,7 +31,7 @@ export function MusicSongActions({
   const canStems = enabled.has('stems') && typeof onStems === 'function';
   const canTargetStem = enabled.has('target_stem') && typeof onTargetStem === 'function';
   const canAddTrack = enabled.has('add_track') && typeof onAddTrack === 'function';
-  const canStudio = beatEditor || enabled.has('open_studio');
+  const canStudio = enabled.has('open_studio');
   const canCrop = enabled.has('crop') && typeof onCrop === 'function';
   const canRender = enabled.has('render') && typeof onRender === 'function';
   // Reverse and Speed open the Render dialog on that tab, so Render always comes first.
@@ -238,7 +238,7 @@ export function MusicSongActions({
           ) : null}
           {canStudio ? (
             <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender ? firstItemRef : undefined} role="menuitem" href={beatEditor ? `/app/music/beats/new?song=${encodeURIComponent(songId)}` : `/app/music/studio/${songId}`} className={itemClass}>
-              Open in Studio workspace
+              {beatEditor ? 'Open in Beats' : 'Open in Studio workspace'}
             </Link>
           ) : null}
           {canEditor ? (

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { musicStudioEnabled } from '../lib/musicBackend.js';
+import { GET } from '../app/api/v1/music/songs/[id]/route.js';
 
 const workspaceUrl = new URL('../app/veyrnox/_components/music/MusicStudioWorkspace.jsx', import.meta.url);
 const recorderUrl = new URL('../app/veyrnox/_components/music/MusicStudioRecorder.jsx', import.meta.url);
@@ -9,7 +10,6 @@ const midiUrl = new URL('../app/veyrnox/_components/music/MusicStudioMidi.jsx', 
 const effectsUrl = new URL('../app/veyrnox/_components/music/MusicStudioEffects.jsx', import.meta.url);
 const clipEditorUrl = new URL('../app/veyrnox/_components/music/MusicStudioClipEditor.jsx', import.meta.url);
 const latencyUrl = new URL('../app/veyrnox/_components/music/MusicStudioLatencyCalibration.jsx', import.meta.url);
-const songRouteUrl = new URL('../app/api/v1/music/songs/[id]/route.js', import.meta.url);
 
 test('Studio rollout composes schema and private Library gates', () => {
   const ready = { MUSIC_SCHEMA_ENABLED: 'true', MUSIC_LIBRARY_ENABLED: 'true', MUSIC_STUDIO_ENABLED: 'true' };
@@ -17,10 +17,30 @@ test('Studio rollout composes schema and private Library gates', () => {
   for (const key of Object.keys(ready)) assert.equal(musicStudioEnabled({ ...ready, [key]: 'false' }), false, key);
 });
 
-test('song projection exposes Studio only through the independent disabled gate', async () => {
-  const route = await readFile(songRouteUrl, 'utf8');
-  assert.match(route, /musicStudioEnabled\(\) \? \['open_studio'\] : \[\]/);
-});
+for (const [studio, beatEditor] of [[false, false], [false, true], [true, false], [true, true]]) {
+  test(`song route offers open_studio only with Studio (${studio}) or Beats (${beatEditor}) enabled`, async (t) => {
+    const env = {
+      SUPABASE_URL: 'https://fixture.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'fixture',
+      MUSIC_RUNTIME_FLAGS: JSON.stringify({ ui: true, schema: true, library: true, studio, beatEditor }),
+    };
+    const previous = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
+    t.after(() => {
+      for (const [key, value] of Object.entries(previous)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    });
+    Object.assign(process.env, env);
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    t.mock.method(globalThis, 'fetch', async () => Response.json({ ok: true, song: { id, actions: [] } }));
+    const response = await GET(new Request('https://x.invalid', {
+      headers: { 'x-veyrnox-auth-id': '223e4567-e89b-42d3-a456-426614174000' },
+    }), { params: Promise.resolve({ id }) });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).actions.filter(action => action === 'open_studio').length, studio || beatEditor ? 1 : 0);
+  });
+}
 
 test('Studio workspace is functional but explicit about local-only capability limits', async () => {
   const source = await readFile(workspaceUrl, 'utf8');
