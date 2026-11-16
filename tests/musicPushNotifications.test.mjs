@@ -17,14 +17,14 @@ test('Music pushes never name the other person and only route to fixed-form path
   assert.equal(buildMessage({ kind: 'job_done', job_id: 'x', modality: 'text-to-video' }, TOKEN).title, 'Your video is ready');
 });
 
-test('Music pushes need the push switch and the Music notifications switch, which ships false', async () => {
+test('Music pushes need the push switch and the Music notifications switch', async () => {
   assert.equal(musicPushEnabled({ PUSH_NOTIFICATIONS_ENABLED: 'true', MUSIC_RUNTIME_FLAGS: '{"notifications":true}' }), true);
   assert.equal(musicPushEnabled({ PUSH_NOTIFICATIONS_ENABLED: 'false', MUSIC_RUNTIME_FLAGS: '{"notifications":true}' }), false);
   assert.equal(musicPushEnabled({ PUSH_NOTIFICATIONS_ENABLED: 'true', MUSIC_RUNTIME_FLAGS: '{}' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  // Off in production; on in staging only (owner, 2026-11-15).
-  assert.equal((wrangler.match(/\\"notifications\\":false/g) || []).length, 1);
-  assert.equal((wrangler.match(/\\"notifications\\":true/g) || []).length, 1);
+  // On in staging (2026-11-15) and production (owner, 2026-11-16).
+  assert.equal((wrangler.match(/\\"notifications\\":false/g) || []).length, 0);
+  assert.equal((wrangler.match(/\\"notifications\\":true/g) || []).length, 2);
 });
 
 test('0536 fills the outbox from a sweep, dedupes by event key, honours blocks and keeps the job claim intact', async () => {
