@@ -1,4 +1,4 @@
-import { automationEnvelope, envelopeAt } from './beatAutomation.mjs';
+import { automationEnvelope } from './beatAutomation.mjs';
 export function patternEvents(doc) {
   return Object.entries(doc.patterns[doc.currentPattern].rows)
     .flatMap(([pad, hits]) => hits.filter(([step]) => step < doc.steps).map(([step, velocity]) => ({ step, pad, velocity: velocity / 127 })))
@@ -46,6 +46,7 @@ export function trackEnabled(doc, trackId, mode = doc.view) {
 export function trackContributes(doc, trackId, mode = doc.view) {
   const track = doc.tracks.find(t => t.id === trackId);
   if (!trackEnabled(doc, trackId, mode)) return false;
-  const envelope = mode === 'song' && track.automation?.gain ? automationEnvelope(track.automation.gain, doc.tempo.bpm) : [];
-  return track.gain > 0 || envelope.some(([sec]) => envelopeAt(envelope, sec) > 0);
+  // In song mode a gain lane replaces the fader, so only the lane decides audibility.
+  if (mode !== 'song' || !track.automation?.gain?.length) return track.gain > 0;
+  return automationEnvelope(track.automation.gain, doc.tempo.bpm).some(([, value]) => value > 0);
 }

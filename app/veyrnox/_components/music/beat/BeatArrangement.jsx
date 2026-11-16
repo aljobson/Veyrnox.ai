@@ -105,7 +105,7 @@ export default function BeatArrangement({ automationLanes = {}, onAutomation, re
             setLocator={setLocator} cycle={doc.cycle} edit={edit} announce={announce} />
           {doc.tracks.map((track) => <Fragment key={track.id}><div data-track-lane={track.id}
             onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, track.id)}
-            className="relative h-64 border-b border-vx-border bg-vx-base md:h-144"
+            className="relative h-48 border-b border-vx-border bg-vx-base md:h-80"
             onClick={(event) => { if (event.target === event.currentTarget) setLocator(clampLocator(laneTick(event), end)); }}
             onDoubleClick={(event) => {
               if (event.target !== event.currentTarget || track.kind === 'audio') return;

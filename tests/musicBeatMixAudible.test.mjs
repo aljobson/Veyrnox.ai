@@ -32,3 +32,10 @@ test('audible automated cloud source is freshly signed and a held transition ref
   await assert.rejects(() => confirmAssetAvailability(exportAssetDocument(doc), options), { message: HELD_EXPORT });
   assert.equal(signed, 1); assert.equal(held, true); assert.equal(mixdownSources(doc).songs.length, 1);
 });
+test('an all-zero gain lane silences the track in song mode even with manual gain', () => {
+  const doc = audioDoc(takeAsset()); const track = doc.tracks[1]; track.gain = 1; track.automation = { gain: [[0, 0, 0], [960, 0, 0.6]] };
+  assert.equal(trackContributes(doc, track.id, 'song'), false);
+  assert.equal(trackContributes(doc, track.id, 'pattern'), true);
+  assert.equal(planExport(doc, { output: 'stems' }).tracks[1].audible, false);
+  assert.equal(mixdownSources(doc).hasTakes, false);
+});

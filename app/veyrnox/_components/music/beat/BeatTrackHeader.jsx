@@ -17,6 +17,11 @@ export default function BeatTrackHeader({ mode = 'song', recording = false, auto
     field(ops.renameTrack, nameDraft.trim(), 'rename track', 'name');
     setNameDraft(null);
   }
+  function automationButton(extra = '') {
+    return <button className={`${button} min-w-0 truncate px-2 text-xs ${extra}`} aria-expanded={!!automationLane}
+      aria-label={`Automation for ${track.name}${track.fx?.length ? `, ${track.fx.length} effects` : ''}`}
+      onClick={() => onAutomation?.(automationLane ? null : 'gain')}>Automation</button>;
+  }
   function settings(location) {
     const automationId = `${track.id}-${location}-automated`;
     return <div className="grid min-w-0 grid-cols-2 gap-1">
@@ -33,18 +38,19 @@ export default function BeatTrackHeader({ mode = 'song', recording = false, auto
           {PRESETS.drums.map((kit) => <option key={kit.id} value={kit.id}>{kit.label}</option>)}
         </select>
       </label>}
-      <label data-beat-live className="min-w-0 text-xs">Gain {Math.round(track.gain * 100)}%
+      <label data-beat-live className="min-w-0 text-xs">Gain {gain.disabled ? 'automated' : `${Math.round(track.gain * 100)}%`}
         <input aria-label={`${track.name} gain`} disabled={gain.disabled} aria-describedby={gain.disabled ? `${automationId}-gain` : undefined} type="range" min="0" max="100" value={track.gain * 100}
           className="min-h-11 w-full accent-vx-accent focus-visible:outline-vx-accent"
           onChange={(e) => field(ops.setTrackGain, Number(e.target.value) / 100, 'change track gain', 'gain')} />
       </label>
-      <label data-beat-live className="min-w-0 text-xs">Pan L–R
+      <label data-beat-live className="min-w-0 text-xs">Pan {pan.disabled ? 'automated' : 'L–R'}
         <input aria-label={`${track.name} pan`} disabled={pan.disabled} aria-describedby={pan.disabled ? `${automationId}-pan` : undefined} type="range" min="-100" max="100" value={track.pan * 100}
           className="min-h-11 w-full accent-vx-accent focus-visible:outline-vx-accent"
           onChange={(e) => field(ops.setTrackPan, Number(e.target.value) / 100, 'change track pan', 'pan')} />
       </label>
-      {gain.disabled && <p id={`${automationId}-gain`} className="col-span-2 text-xs">{gain.message}</p>}
-      {pan.disabled && <p id={`${automationId}-pan`} className="col-span-2 text-xs">{pan.message}</p>}
+      {gain.disabled && <span id={`${automationId}-gain`} className="sr-only">{gain.message}</span>}
+      {pan.disabled && <span id={`${automationId}-pan`} className="sr-only">{pan.message}</span>}
+      {location === 'mobile' && automationButton('col-span-2')}
       {track.kind !== 'audio' && <button className={button} onClick={() => edit((d) => track.kind === 'midi' ? addMidiRegion(d, track.id, locator) : ops.addRegion(d, track.id, locator, d.currentPattern),
         { label: 'add region', trackId: track.id, start: locator })}>Add region</button>}
       <button className={button} disabled={last} title={last ? 'Keep at least one track.' : undefined}
@@ -53,7 +59,7 @@ export default function BeatTrackHeader({ mode = 'song', recording = false, auto
         } }}>Delete track</button>
     </div>;
   }
-  return <div className={`relative h-64 border-b border-vx-border md:h-144 ${selected ? 'bg-vx-accent/10' : 'bg-vx-panel'}`}>
+  return <div className={`relative h-48 border-b border-vx-border md:h-80 ${selected ? 'bg-vx-accent/10' : 'bg-vx-panel'}`}>
     <div className="flex flex-wrap items-center justify-center gap-1 md:justify-start md:px-2">
       <button className="min-h-11 w-full truncate text-xs font-bold focus-visible:outline-vx-accent md:w-auto md:flex-1"
         aria-pressed={selected} onClick={onSelect} title={track.name}>{track.name}</button>
@@ -65,8 +71,8 @@ export default function BeatTrackHeader({ mode = 'song', recording = false, auto
         data-beat-live aria-label={`Solo ${track.name}`}
         aria-pressed={track.solo} onClick={() => field(ops.setTrackSolo, !track.solo,
           `${track.solo ? 'unsolo' : 'solo'} ${track.name}`)}>S</button>
+      <span className="hidden md:inline-flex">{automationButton()}</span>
     </div>
-    <div className="flex items-center gap-1 px-1"><button className={`${button} min-w-0 truncate px-1 text-xs`} aria-expanded={!!automationLane} onClick={() => onAutomation?.(automationLane ? null : 'gain')}>Automation</button><span className="hidden text-xs md:inline">{track.fx?.length || 0} effects</span></div>
     <div className="hidden p-2 md:block">{settings('desktop')}</div>
     <details className="md:hidden">
       <summary data-beat-live aria-label={`Track settings for ${track.name}`}
