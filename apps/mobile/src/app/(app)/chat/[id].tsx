@@ -188,6 +188,7 @@ export default function Conversation() {
             const knownIds = new Set(messages.map((m) => m.id));
             const stamp = Date.now();
             deltas.begin(`a${stamp}`);
+            setStarredOnly(false);
             setMessages((m) => [...(m ?? []), { id: `u${stamp}`, role: 'user', content: text }, { id: `a${stamp}`, role: 'assistant', content: '' }]);
             const controller = new AbortController();
             abort.current = controller;
@@ -276,7 +277,7 @@ export default function Conversation() {
             setSending(false);
             busy.current = false; setRound(r => r + 1);
         },
-        [api, draft, id, images, messages, model, options, deltas],
+        [api, draft, id, images, messages, model, options, deltas, setStarredOnly],
     );
 
     // Switching the model changes what the next reply costs; the choices the new model does not offer are dropped.

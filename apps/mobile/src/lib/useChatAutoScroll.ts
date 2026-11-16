@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import type { FlatList, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import type { FlatList, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 // How close to the bottom still counts as "reading the newest message", in points.
 const AT_END_SLOP = 48;
@@ -14,28 +14,41 @@ export function useChatAutoScroll(count: number, sending: boolean, keyboardOpen 
     const messageList = useRef<FlatList>(null);
     const followReply = useRef(false);
     const atEnd = useRef(true);
+    const contentHeight = useRef<number | null>(null);
+    const viewportHeight = useRef<number | null>(null);
+    const toEnd = useCallback((animated: boolean) => {
+        if (contentHeight.current === null || viewportHeight.current === null) {
+            messageList.current?.scrollToEnd({ animated });
+        } else {
+            messageList.current?.scrollToOffset({
+                offset: Math.max(0, contentHeight.current - viewportHeight.current), animated,
+            });
+        }
+    }, []);
     const previous = useRef({ count: 0, sending: false, keyboardOpen: false });
     useEffect(() => {
         const before = previous.current;
         if (count > before.count || (sending && !before.sending)) {
             followReply.current = true;
-            messageList.current?.scrollToEnd({ animated: true });
+            toEnd(false);
         } else if (keyboardOpen && !before.keyboardOpen && (followReply.current || atEnd.current)) {
-            messageList.current?.scrollToEnd({ animated: true });
+            toEnd(true);
         }
         previous.current = { count, sending, keyboardOpen };
-    }, [count, sending, keyboardOpen]);
+    }, [count, sending, keyboardOpen, toEnd]);
     const settle = (event: ScrollEvent) => {
         atEnd.current = isAtEnd(event);
         if (atEnd.current) followReply.current = true;
     };
     return {
         messageList,
-        onContentSizeChange: () => {
-            if (followReply.current) messageList.current?.scrollToEnd({ animated: true });
+        onContentSizeChange: (_width: number, height: number) => {
+            contentHeight.current = height;
+            if (followReply.current) toEnd(false);
         },
-        onLayout: () => {
-            if (followReply.current || atEnd.current) messageList.current?.scrollToEnd({ animated: false });
+        onLayout: (event: LayoutChangeEvent) => {
+            viewportHeight.current = event.nativeEvent.layout.height;
+            if (followReply.current || atEnd.current) toEnd(false);
         },
         onScroll: (event: ScrollEvent) => { atEnd.current = isAtEnd(event); },
         onScrollBeginDrag: () => { followReply.current = false; },
