@@ -1,0 +1,16 @@
+{
+  "products": [
+    {"id": "prod_fixture_9","app_id": "app_android","store_identifier": "ai.veyrnox.generation.ultra.annual:annual","state": "active","type": "subscription"},
+    {"id": "prod_fixture_10","app_id": "app_android","store_identifier": "ai.veyrnox.generation.ultra.monthly:monthly","state": "active","type": "subscription"},
+    {"id": "prod_fixture_24","app_id": "app_ios","store_identifier": "ai.veyrnox.generation.ultra.monthly","state": "active","type": "subscription"}
+  ],
+  "entitlement_products": [
+    {"id": "prod_fixture_9","app_id": "app_android","store_identifier": "ai.veyrnox.generation.ultra.annual:annual","state": "active","type": "subscription"},
+    {"id": "prod_fixture_10","app_id": "app_android","store_identifier": "ai.veyrnox.generation.ultra.monthly:monthly","state": "active","type": "subscription"},
+    {"id": "prod_fixture_24","app_id": "app_ios","store_identifier": "ai.veyrnox.generation.ultra.monthly","state": "active","type": "subscription"}
+  ],
+  "packages": [
+    {"id": "pkg_generation_ultra-annual","lookup_key": "ultra-annual","products": [{"product": {"id": "prod_fixture_9","app_id": "app_android","store_identifier": "ai.veyrnox.generation.ultra.annual:annual","state": "active","type": "subscription"},"eligibility_criteria": "all"}]},
+    {"id": "pkg_generation_ultra-monthly","lookup_key": "ultra-monthly","products": [{"product": {"id": "prod_fixture_10","app_id": "app_android","store_identifier": "ai.veyrnox.generation.ultra.monthly:monthly","state": "active","type": "subscription"},"eligibility_criteria": "all"},{"product": {"id": "prod_fixture_24","app_id": "app_ios","store_identifier": "ai.veyrnox.generation.ultra.monthly","state": "active","type": "subscription"},"eligibility_criteria": "all"}]}
+  ]
+}

@@ -1,4 +1,4 @@
-import { creditsFor, generationCatalogId, generationPlanFor, intervalFor, isPaidSubscriptionProduct, isWebParityPack, parseGenerationCatalog, renewalTerms, stayDiscountFor, toDisplayPackages, waitForBalanceChange, webParityPacks, type RcPackage } from '../src/lib/billing';
+import { creditsFor, hasRetiredGenerationPackages, isRetiredGenerationProduct, generationCatalogId, generationPlanFor, intervalFor, isPaidSubscriptionProduct, isWebParityPack, parseGenerationCatalog, renewalTerms, stayDiscountFor, toDisplayPackages, waitForBalanceChange, webParityPacks, type RcPackage } from '../src/lib/billing';
 
 const pkg = (id: string, product: string, price = '$1.00'): RcPackage => ({ identifier: id, product: { identifier: product, title: product, priceString: price } });
 
@@ -57,7 +57,7 @@ describe('billing helpers', () => {
             pkg('sm', 'ai.veyrnox.generation.starter.monthly'),
             pkg('sy', 'ai.veyrnox.generation.starter.annual'),
         ]);
-        expect(plans.map((p) => `${p.generationPlan}:${p.interval}`)).toEqual(['lite:month', 'starter:month', 'starter:year', 'ultra:year']);
+        expect(plans.map((p) => `${p.generationPlan}:${p.interval}`)).toEqual(['lite:month', 'starter:month', 'starter:year']);
         expect(generationCatalogId('ai.veyrnox.generation.starter.annual')).toBe('starter-yearly');
         expect(parseGenerationCatalog({ plans: [{ id: 'starter-monthly', credits: 297 }, { id: '', credits: 0 }, null] })).toEqual([{ id: 'starter-monthly', credits: 297 }]);
     });
@@ -121,4 +121,18 @@ test('test-store keys are restricted to development or the existing staging envi
     expect(revenueCatKey(true, 'production', 'test', 'ios')).toBe('test');
     expect(revenueCatKey(false, 'staging', 'test', 'ios')).toBe('test');
     expect(revenueCatKey(true, 'staging', '', 'android')).toBe('android');
+});
+
+test('retired Ultra packages are hidden while their holders remain paid', () => {
+    for (const interval of ['monthly', 'annual']) for (const suffix of ['', `:${interval}`]) {
+        const id = `ai.veyrnox.generation.ultra.${interval}${suffix}`;
+        expect(isRetiredGenerationProduct(id)).toBe(true);
+        expect(generationPlanFor(id)).toBeNull();
+        expect(isPaidSubscriptionProduct(id)).toBe(true);
+        expect(toDisplayPackages([pkg('legacy', id)])).toEqual([]);
+        expect(hasRetiredGenerationPackages([pkg('legacy', id)])).toBe(true);
+    }
+    expect(hasRetiredGenerationPackages([pkg('starter', 'ai.veyrnox.generation.starter.monthly')])).toBe(false);
+    expect(hasRetiredGenerationPackages([pkg('legacy-unknown', 'ai.veyrnox.generation.ultra.weekly')])).toBe(true);
+    expect(stayDiscountFor({ identifier: 'legacy', product: { identifier: 'ai.veyrnox.generation.ultra.monthly', title: 'Ultra', priceString: '$129', price: 129, discounts: [{ identifier: 'stay15', price: 109.65, priceString: '$109.65', cycles: 3 }] } })).toBeNull();
 });

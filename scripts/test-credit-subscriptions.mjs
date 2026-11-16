@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import pg from 'pg';
+import { testUltraRetirement } from './test-ultra-retirement.mjs';
 
 // Plan credits set by 0381 (Starter and Plus change with the yearly limits, ADR-0037 amendment 2).
 const S = 297, P = 924;
@@ -66,7 +67,11 @@ try {
 
     await c.query('BEGIN');
 
+    await testUltraRetirement(c);
+
     // ── Plans: the four monthly tiers and their four yearly twins (0383, activated by 0385), cheapest first. ──
+    // Ultra stays active in this replay: its retirement (docs/operations/0549) is held and is exercised, with the
+    // six-plan catalogue it leaves, inside testUltraRetirement's savepoint above.
     assert.deepEqual((await rpc('public.list_credit_subscription_plans()')).map((p) => [p.id, p.price_usd_cents, p.credits]),
         [
             ['lite-monthly', 1000, 157],

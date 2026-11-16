@@ -20,13 +20,14 @@ import {
   subscriptionCheckoutUrl, canCheckCoolingOffRefund,
   subscriptionReturnFrom,
 } from '../_lib/creditSubscriptionUi';
-import { isRecommendedPlan, subscriptionSavingPercent, yearlySaving } from '../_lib/subscriptionPlans';
+import { isRecommendedPlan, subscriptionSavingPercent, yearlySaving, saleablePlans, ownedSubscriptionInterval } from '../_lib/subscriptionPlans';
 import { VeyCardPeek } from './VeyCardPeek';
 const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   trailingZeroDisplay: 'stripIfInteger',
 });
+// Legacy Ultra labels remain for subscribers who already own the plan.
 const names = {
   'lite-monthly': 'Lite',
   'lite-yearly': 'Lite',
@@ -51,7 +52,7 @@ async function publicPlans() {
     }),
     b = await r.json();
   if (!r.ok) throw Object.assign(Error('plans unavailable'), { code: b.error });
-  return b;
+  return { ...b, plans: saleablePlans(b.plans) };
 }
 async function publicPacks() {
   const r = await fetch('/api/credit-packs', { cache: 'no-store' }),
@@ -77,8 +78,9 @@ async function publicOfferState() {
   }
 }
 const CADENCES = ['month', 'year'];
-export function Plans({ plans, packs, selected, onSelect, publicOnly = false, initialCadence = 'month' }) {
+export function Plans({ plans: catalogPlans, packs, selected, onSelect, publicOnly = false, initialCadence = 'month' }) {
   const { t, locale } = useI18n();
+  const plans = saleablePlans(catalogPlans);
   const hasYearly = plans.some((p) => p.billing_interval === 'year') && plans.some((p) => p.billing_interval === 'month');
   const [cadence, setCadence] = useState(initialCadence);
   const shown = hasYearly ? plans.filter((p) => p.billing_interval === cadence) : plans;
@@ -451,7 +453,7 @@ function Billing({ account, recovery, setRecovery }) {
       sub && ['pending', 'active', 'past_due', 'flagged'].includes(sub.status),
     plan = catalog?.plans.find((p) => p.id === selected),
     activePlan = catalog?.plans?.find((candidate) => candidate.id === sub?.plan_id),
-    activeInterval = activePlan?.billing_interval || (sub?.plan_id?.endsWith('-weekly') ? 'week' : 'month');
+    activeInterval = ownedSubscriptionInterval(sub, activePlan);
   return (
     <section
       id="credit-subscriptions"

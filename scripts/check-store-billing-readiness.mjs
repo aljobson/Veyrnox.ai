@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { storeBillingCatalog } from './store-billing-catalog.mjs';
+import { storeBillingCatalog, RETIRED_GENERATION_PRODUCTS } from './store-billing-catalog.mjs';
 
 export const EVENT_TYPES = ['non_renewing_purchase', 'cancellation', 'initial_purchase', 'renewal',
     'product_change', 'uncancellation', 'billing_issue', 'expiration'];
@@ -91,6 +91,7 @@ export function checkReadiness(snapshot, { store = 'ios', stage = 'selling', wor
         for (const entry of entitlement?.products ?? []) {
             const p = unwrap(entry);
             if (!inScope(p)) continue;
+            if (name === 'generation' && RETIRED_GENERATION_PRODUCTS.has(p.store_identifier)) continue;
             check(expected.some(row => row.offering === name && row.store === appStore.get(p.app_id) && row.productId === p.store_identifier),
                 `${name} entitlement has no wrong product: ${safe(p.store_identifier)}`);
         }
@@ -99,7 +100,10 @@ export function checkReadiness(snapshot, { store = 'ios', stage = 'selling', wor
         note('info', `offering ${safe(offering.lookup_key)}`);
         for (const pkg of offering.packages) {
             const attached = pkg.products.map(unwrap);
-            const scoped = attached.filter(inScope);
+            const retired = attached.filter(p => inScope(p) && RETIRED_GENERATION_PRODUCTS.has(p.store_identifier));
+            for (const p of retired) note('warning', `retired product still in offering: ${safe(p.store_identifier)}`);
+            const scoped = attached.filter(p => inScope(p) && !RETIRED_GENERATION_PRODUCTS.has(p.store_identifier));
+            if (retired.length && !scoped.length) continue;
             if (attached.length && !scoped.length) {
                 note('excluded', `package ${safe(offering.lookup_key)}/${safe(pkg.lookup_key)}: other store`);
                 continue;

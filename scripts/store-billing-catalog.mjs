@@ -2,6 +2,11 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
+// Kept for entitlement settlement; never part of the saleable catalog.
+export const RETIRED_GENERATION_PRODUCTS = new Set(['monthly', 'annual'].flatMap(interval => [
+    `ai.veyrnox.generation.ultra.${interval}`, `ai.veyrnox.generation.ultra.${interval}:${interval}`,
+]));
+
 const schema = new URL('../packages/db/schema/supabase/', import.meta.url);
 const sql = name => readFileSync(new URL(name + '.sql', schema), 'utf8').replace(/--[^\n]*/g, '');
 function section(source, pattern, label) {
@@ -48,7 +53,7 @@ export function storeBillingCatalog() {
         if (!plan || plan.price_usd_cents !== price || plan.credits !== credits) throw new Error('Yearly activation no longer matches');
         plan.active = true;
     }
-    // 0407: yearly prices moved to App Store price points; iOS no longer sells Ultra yearly.
+    // Historical yearly price-point adjustments.
     const pricePoints = sql('0407_store_yearly_price_points');
     for (const match of pricePoints.matchAll(/UPDATE public\.credit_subscription_plans SET price_usd_cents = (\d+), updated_at = now\(\)\s*WHERE id = '([^']+)' AND billing_interval = 'year' AND credits = (\d+)/g)) {
         const plan = generation.get(match[2]);
@@ -82,7 +87,7 @@ export function storeBillingCatalog() {
     const addPlan = (store, productId, planId, offering) => {
         const plan = (offering === 'generation' ? generation : publish).get(planId);
         if (!plan) throw new Error(`Unknown mapped plan: ${planId}`);
-        if (!plan.active) return;
+        if (!plan.active || RETIRED_GENERATION_PRODUCTS.has(productId)) return;
         const suffix = productId.split(':')[0].split('.').slice(offering === 'generation' ? -2 : -1).join('-');
         catalog.push({ store, productId, kind: 'auto-renewable subscription', credits: plan.credits ?? null,
             plan: plan.id, period: plan.billing_interval, priceUsdCents: plan.price_usd_cents,
@@ -101,7 +106,7 @@ export function storeBillingCatalog() {
     for (const match of parity.matchAll(/FROM \(VALUES([^;]*?)\) AS mapping\(product_id, plan_id\)/g)) {
         for (const [product, plan] of rows(match[1])) addPlan('android', product, plan, product.includes('.generation.') ? 'generation' : 'publish');
     }
-    if (catalog.length !== 27 || new Set(catalog.map(p => `${p.store}:${p.productId}`)).size !== 27) {
+    if (catalog.length !== 24 || new Set(catalog.map(p => `${p.store}:${p.productId}`)).size !== 24) {
         throw new Error('Catalog mapping shape changed; review the SQL reader');
     }
     return catalog.sort((a, b) => a.store.localeCompare(b.store) || a.productId.localeCompare(b.productId));

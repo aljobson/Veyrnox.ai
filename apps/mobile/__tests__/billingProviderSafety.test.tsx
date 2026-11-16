@@ -145,3 +145,21 @@ test('focus refresh reopens and recloses sales without rebinding or sign-out', a
     }
     expect(Purchases.logIn).toHaveBeenCalledTimes(logins); expect(Purchases.logOut).not.toHaveBeenCalled();
 });
+
+test('retired generation products are rejected by both purchase entry points before store calls', async () => {
+    const legacy = { product: { identifier: 'ai.veyrnox.generation.ultra.monthly' } } as any;
+    for (const method of ['purchase', 'purchaseStayOffer'] as const) {
+        await expect(billing[method](legacy)).rejects.toThrow('billing_not_ready');
+    }
+    expect(Purchases.purchasePackage).not.toHaveBeenCalled();
+    expect(Purchases.purchaseDiscountedPackage).not.toHaveBeenCalled();
+    expect(Purchases.getPromotionalOffer).not.toHaveBeenCalled();
+});
+
+test('an existing Ultra entitlement is still paid access', async () => {
+    jest.mocked(Purchases.restorePurchases).mockResolvedValue(info({ generation: { productIdentifier: 'ai.veyrnox.generation.ultra.monthly' } }, ['ai.veyrnox.generation.ultra.monthly']));
+    await act(async () => { await billing.restore(); });
+    expect(billing.generationActive).toBe(true);
+    expect(billing.paidAccess).toBe(true);
+    expect(billing.generationPurchaseReady).toBe(false);
+});

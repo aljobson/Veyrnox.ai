@@ -40,3 +40,9 @@ export const RECOMMENDED_PLAN_FAMILY = 'starter';
 export function isRecommendedPlan(plan) {
   return typeof plan?.id === 'string' && plan.id.split('-')[0] === RECOMMENDED_PLAN_FAMILY;
 }
+
+// Keep retired names for owned subscriptions, but never offer them from stale catalogs.
+export const RETIRED_PLAN_IDS = new Set(['ultra-monthly', 'ultra-yearly', 'ultra-weekly']);
+export const saleablePlans = (plans) => plans.filter((plan) => !RETIRED_PLAN_IDS.has(plan.id));
+export const ownedSubscriptionInterval = (sub, activePlan) => activePlan?.billing_interval || sub?.billing_interval
+  || (sub?.plan_id?.endsWith('-yearly') ? 'year' : sub?.plan_id?.endsWith('-weekly') ? 'week' : 'month');

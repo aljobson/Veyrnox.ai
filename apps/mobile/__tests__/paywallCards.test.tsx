@@ -35,7 +35,8 @@ const allTiers = packages(['lite', 'starter', 'plus', 'ultra'].flatMap(f => ['mo
 test.each(['month', 'year'] as const)('only Starter carries the Recommended badge in the %s view', async cadence => {
     await act(async () => root.render(<PlanCards plans={allTiers} packs={[pack]} credits={new Map()} cadence={cadence} onChoose={jest.fn()} />));
     const cards = controls('radio');
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(3);
+    expect(cards.some(card => textOf(card).includes('Ultra'))).toBe(false);
     const badged = cards.filter(card => textOf(card).includes(t('creditsPage.recommended')));
     expect(badged).toHaveLength(1);
     expect(textOf(badged[0])).toContain('Starter');

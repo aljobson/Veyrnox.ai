@@ -189,8 +189,8 @@ try {
     // ── The App Store / Play path calls the same subscription_grant. ──
     const st = await user();
     const customer = (await rpc('public.get_or_create_store_customer($1)', [st.auth])).rc_customer_id;
-    const event = (extra = {}) => rpc('public.apply_store_generation_event($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-        [customer, 'ios', 'ai.veyrnox.generation.starter.monthly', `otx_${hex()}`.slice(0, 40), `evt_${hex()}`, 'activate', 'initial_purchase', inDays(30), new Date().toISOString()]);
+    const event = (extra = {}) => rpc('public.apply_store_generation_event($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+        [customer, 'ios', 'ai.veyrnox.generation.starter.monthly', `otx_${hex()}`.slice(0, 40), `evt_${hex()}`, 'activate', 'initial_purchase', inDays(30), new Date().toISOString(), null]);
     const ev = await event();
     assert.equal(ev.ok, true, JSON.stringify(ev));
     assert.deepEqual(await buckets(st), [S + 10, 10, S]);
@@ -200,8 +200,8 @@ try {
     // Store: RevenueCat INITIAL_PURCHASE with period_type TRIAL is typed 'initial_purchase_trial'.
     let tick = 0;
     const storeEvent = (customer, otx, type, action = 'activate', product = 'ai.veyrnox.generation.starter.monthly', id = `evt_${hex()}`) =>
-        rpc('public.apply_store_generation_event($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-            [customer, 'ios', product, otx, id, action, type, inDays(7), new Date(Date.now() - 60000 + 1000 * ++tick).toISOString()]);
+        rpc('public.apply_store_generation_event($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+            [customer, 'ios', product, otx, id, action, type, inDays(7), new Date(Date.now() - 60000 + 1000 * ++tick).toISOString(), null]);
     const storeUser = async () => {
         const u = await user();
         u.customer = (await rpc('public.get_or_create_store_customer($1)', [u.auth])).rc_customer_id;

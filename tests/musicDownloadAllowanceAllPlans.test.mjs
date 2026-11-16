@@ -42,3 +42,8 @@ test('the function keeps its security settings and privileges', () => {
   assert.ok(code.includes('GRANT EXECUTE ON FUNCTION public.music_quote_audio_export(TEXT,UUID,UUID,TEXT) TO service_role;'));
   assert.doesNotMatch(code, /ledger_|credit_balances/);
 });
+
+test('retired Ultra subscribers retain 60 monthly Music downloads without an active catalog requirement', () => {
+  for (const id of ['ultra-monthly', 'ultra-yearly']) assert.match(code, new RegExp(`WHEN '${id}' THEN 60`));
+  assert.doesNotMatch(code, /p\.active/);
+});

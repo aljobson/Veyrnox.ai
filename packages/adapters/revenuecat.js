@@ -73,7 +73,7 @@ const finiteMs = (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? 
  *     transactionId:string, customerIds:string[], sandbox:boolean}
  *   |{kind:'subscription', family:'publish'|'generation', eventId:string, type:string, action:'activate'|'cancel_at_period_end'|'past_due'|'expire'|'refund',
  *     channel:'ios'|'android', productId:string, originalTransactionId:string, periodEnd:string|null,
- *     occurredAt:string, customerIds:string[], sandbox:boolean}}
+ *     occurredAt:string, purchasedAt:string|null, customerIds:string[], sandbox:boolean}}
  */
 export function parseStoreEvent(body) {
     const event = body && typeof body === 'object' ? body.event : null;
@@ -113,6 +113,9 @@ export function parseStoreEvent(body) {
     if (original.length > TRANSACTION_MAX) return { kind: 'ignore', reason: 'transaction' };
     const expires = finiteMs(event.expiration_at_ms);
     const occurred = finiteMs(event.event_timestamp_ms);
+    // Only a valid store purchase timestamp can qualify a delayed retired-plan purchase.
+    const purchased = Number.isSafeInteger(event.purchased_at_ms) && event.purchased_at_ms > 0
+        && event.purchased_at_ms <= 8640000000000000 ? event.purchased_at_ms : null;
     if (action === 'activate' && expires === null) return { kind: 'ignore', reason: 'period_end' };
     return {
         // A generation free trial is told apart from a paid purchase: it entitles the account and carries the
@@ -121,6 +124,7 @@ export function parseStoreEvent(body) {
         type: type === 'INITIAL_PURCHASE' && family === 'generation' && String(event.period_type || '').toUpperCase() === 'TRIAL'
             ? 'initial_purchase_trial' : type.toLowerCase(), channel, productId, originalTransactionId: original,
         periodEnd: expires === null ? null : new Date(expires).toISOString(),
+        purchasedAt: purchased === null ? null : new Date(purchased).toISOString(),
         occurredAt: new Date(occurred ?? Date.now()).toISOString(), customerIds, sandbox,
     };
 }
