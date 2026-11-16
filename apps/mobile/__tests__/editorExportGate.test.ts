@@ -26,3 +26,23 @@ describe('editor export gate (QA build 50, F09)', () => {
         });
     });
 });
+
+describe('editor export banner is never cut off', () => {
+    it('does not cap the problem banner height in the editor', () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const source: string = require('fs').readFileSync(require('path').join(__dirname, '../src/components/editor/FullEditorScreen.tsx'), 'utf8');
+        const banner = source.split('\n').find(line => line.includes('styles.problem}'));
+        expect(banner).toBeDefined();
+        expect(banner).not.toMatch(/numberOfLines/);
+    });
+});
+
+describe('production builds ship the export switch (QA 8.14)', () => {
+    it('sets EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED in production and does not override it in production-simulator', () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const eas = require('../eas.json').build;
+        expect(eas.production.env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED).toBe('true');
+        expect(eas['production-simulator'].extends).toBe('production');
+        expect(eas['production-simulator'].env.EXPO_PUBLIC_EDITOR_SERVER_EXPORT_ENABLED).toBeUndefined();
+    });
+});
