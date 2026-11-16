@@ -46,7 +46,7 @@ import { Platform, ActivityIndicator, Modal, Pressable, ScrollView, Text, TextIn
 import { touchTarget } from '../../lib/a11y';
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
-import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
+import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, moveClip, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
@@ -75,6 +75,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const mounted = useRef(true);
     const [libraryPending, setLibraryPending] = useState(false);
     const [viewport, setViewport] = useState(0);
+    const [timelineTouch, setTimelineTouch] = useState(false);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [voiceoverAt, setVoiceoverAt] = useState<number | null>(null);
     const [voiceoverMessage, setVoiceoverMessage] = useState<string | null>(null); useAnnouncement(voiceoverMessage); const onVoiceoverAdded = () => { setVoiceoverMessage(t('editorVoiceover.added')); setVoiceoverAt(null); };
@@ -115,7 +116,6 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const timeline = timelineOf(document.timeline);
     const total = framesIn(timeline);
     const selected = clipAt(timeline, selection);
-    const selectedIndex = selection ? timeline[selection.track].findIndex((item) => item.id === selection.id) : -1;
     const selectedMedia = selected && 'mediaId' in selected && selected.mediaId ? timeline.media[selected.mediaId] : undefined;
     const clipCount = timeline.video.length + timeline.audio.length + timeline.text.length;
     const selectedGroup = selected?.groupId;
@@ -137,13 +137,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 : [...current, next];
         });
     };
+    const canMove = (direction: -1 | 1) => !!selection && !timeline.tracks.find((track) => track.id === clipAt(timeline, selection)?.trackId)?.locked && moveClip(timeline, selection, direction) !== null;
     const moveSelection = (direction: -1 | 1) => {
-        if (!selection || selectedIndex < 0) return;
-        const list = [...timeline[selection.track]];
-        const to = selectedIndex + direction;
-        if (to < 0 || to >= list.length) return;
-        [list[selectedIndex], list[to]] = [list[to], list[selectedIndex]];
-        applyTimeline({ ...timeline, [selection.track]: list });
+        const next = selection && canMove(direction) ? moveClip(timeline, selection, direction) : null;
+        if (next) applyTimeline(next);
     };
     const removeSelection = () => {
         const targets = selections.length ? selections : selection ? [selection] : [];
@@ -301,7 +298,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     ];
     return <View style={styles.screen}>
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
-        <Stack.Screen options={{ title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
+        <Stack.Screen options={{ gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */, title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
         <View style={styles.projectBar}>
             {advanced ? <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}
             <View style={styles.titleGroup}>
@@ -318,6 +315,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 <Command icon="⇥" label={t('editorSimple.closeGaps')} selected={ripple !== 'none'} onPress={() => setRipple(ripple === 'none' ? 'lane' : 'none')} />{selection.track === 'audio' ? <Command icon="♪" label={t('editor.volume')} onPress={() => showPanel('adjust')} /> : null}
                 <Command icon="✂" label={t('editor.split')} onPress={splitSelection} />
                 <Command icon="⧉" label={t('editor.duplicate')} onPress={duplicateSelection} />
+                <Command icon="◀" label={t('editor.moveLeft')} disabled={!canMove(-1)} onPress={() => moveSelection(-1)} />
+                <Command icon="▶" label={t('editor.moveRight')} disabled={!canMove(1)} onPress={() => moveSelection(1)} />
                 <Command icon="⌫" label={t('editor.delete')} danger onPress={removeSelection} />
             </> : null}
             <View style={styles.simpleSpacer} />
@@ -376,7 +375,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? (advanced ? t('editor.tapacommandtoeditselection') : t('editor.clipSelectedUseButtons')) : t('editor.tapacliptoselect')}</Text>
             </View>
-            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>
@@ -443,7 +442,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </> : null}
             {tool === 'adjust' ? <>
                 <PanelHeading title={selection ? selectedMedia?.name || t('editor.layer', { value1: selection.track[0].toUpperCase(), value2: selection.track.slice(1) }) : t('editor.projectSettings')} detail={selection ? seconds(selected?.len, timeline.fps) : t('editor.sequence')} />
-                {selection ? <View style={styles.quickActions}><Action label={t('editor.moveLeft')} disabled={selectedIndex <= 0} onPress={() => moveSelection(-1)} /><Action label={t('editor.moveRight')} disabled={selectedIndex >= timeline[selection.track].length - 1} onPress={() => moveSelection(1)} /><Action label={t('editor.remove')} danger onPress={removeSelection} /></View> : null}
+                {selection ? <View style={styles.quickActions}><Action label={t('editor.moveLeft')} disabled={!canMove(-1)} onPress={() => moveSelection(-1)} /><Action label={t('editor.moveRight')} disabled={!canMove(1)} onPress={() => moveSelection(1)} /><Action label={t('editor.remove')} danger onPress={removeSelection} /></View> : null}
                 {selection && selected ? <>
                     <Text style={styles.fieldLabel}>{t('editor.track')}</Text><View style={styles.choices}>{timeline.tracks.filter((track) => track.kind === selection.track).map((track) => <Choice key={track.id} label={editorTrackLabel(track)} selected={selected.trackId === track.id} onPress={() => patchSelected({ trackId: track.id })} />)}</View>
                     <Stepper label={t('editorCore.startSeconds', { value1: t('editorCore.seconds', { value1: formatNumber(selected.start / timeline.fps, 1) }) })} value={selected.start} min={selectedTrack?.locked ? selected.start : 0} max={selectedTrack?.locked ? selected.start : (SEQUENCE_MAX - selected.len)} step={timeline.fps} suffix={t('editor.frames')} onChange={value => adjustStart(value - selected.start)} />
