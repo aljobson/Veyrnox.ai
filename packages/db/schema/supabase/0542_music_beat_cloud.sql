@@ -204,7 +204,8 @@ BEGIN
  OR (SELECT coalesce(pg_catalog.sum(byte_size),0) FROM public.music_beat_project_takes WHERE user_id=actor)+p_byte_size>1000000000 THEN
  RAISE EXCEPTION 'LIMIT_REACHED' USING ERRCODE='PT429',DETAIL='music_beat_takes'; END IF;
  END IF;
- PERFORM private.consume_music_beat_save(actor);
+ -- A retried reservation of a pending take only re-issues its URL: it uses no rate-limit slot.
+ IF NOT replay THEN PERFORM private.consume_music_beat_save(actor); END IF;
  IF replay THEN UPDATE public.music_beat_project_takes SET upload_expires_at=pg_catalog.now()+interval '15 minutes' WHERE id=take.id RETURNING * INTO take;
  ELSE INSERT INTO public.music_beat_project_takes(project_id,user_id,take_ref,r2_key,byte_size,duration_sec,status,upload_expires_at)
  VALUES(project,actor,p_take_ref,'music-beat-takes/'||actor::text||'/'||pg_catalog.gen_random_uuid()::text||'.wav',p_byte_size,p_duration_sec,'pending',pg_catalog.now()+interval '15 minutes') RETURNING * INTO take; END IF;

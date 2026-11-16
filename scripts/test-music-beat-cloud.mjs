@@ -159,6 +159,14 @@ try {
     assert.equal((await value(save, saveArgs(project.revision - 1, raw, 'checkpoint', 'checkpoint-122'))).idempotent, true);
     await query('RESET ROLE'); await query('UPDATE private.music_beat_save_windows SET minute_count=0,day_count=2000 WHERE user_id=$1', [owner]); await actor(owner);
     await rejects(reserve, [beatId, 'rate-day', 44, 1], 'PT429', 'RATE_LIMITED'); await resetWindow();
+    // A retried reservation of a pending take re-issues its URL without using a rate-limit slot.
+    const pending = await value(reserve, [beatId, 'rate-replay', 44, 1]);
+    await query('RESET ROLE'); await query('UPDATE private.music_beat_save_windows SET minute_count=20,minute_start=now() WHERE user_id=$1', [owner]); await actor(owner);
+    const again = await value(reserve, [beatId, 'rate-replay', 44, 1]);
+    assert.equal(again.take_id, pending.take_id); assert.equal(again.idempotent, true);
+    await query('RESET ROLE'); assert.equal(await value('SELECT minute_count FROM private.music_beat_save_windows WHERE user_id=$1', [owner]), 20);
+    await query('DELETE FROM public.music_beat_project_takes WHERE id=$1', [pending.take_id]); await actor(owner);
+    await resetWindow();
   });
   await check('50 projects/account cap', async () => {
     await query('SAVEPOINT caps');
