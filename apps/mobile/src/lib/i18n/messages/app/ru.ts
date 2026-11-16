@@ -5180,6 +5180,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "Модель не поддерживает формат кадра. Выберите совместимый процесс в настройках.",
   "creditsPage.balance": "Текущий баланс",
   "creditsPage.best": "Выгоднее всего",
+  "creditsPage.recommended": "Рекомендуем",
   "creditsPage.monthly": "Ежемесячно",
   "creditsPage.yearly": "Ежегодно",
   "creditsPage.yearlyMonthly": "{amount} в месяц, оплата раз в год",

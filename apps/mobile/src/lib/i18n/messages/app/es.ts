@@ -5107,6 +5107,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "Este modelo no admite el formato de la toma. Elige un flujo compatible en la configuración.",
   "creditsPage.balance": "Saldo actual",
   "creditsPage.best": "Mejor valor",
+  "creditsPage.recommended": "Recomendado",
   "creditsPage.monthly": "Mensual",
   "creditsPage.yearly": "Anual",
   "creditsPage.yearlyMonthly": "{amount} al mes, facturado anualmente",

@@ -21,7 +21,7 @@ const mockApi = { getBalance: jest.fn(async () => mockBalance), request: jest.fn
     return mockPlans();
 }) };
 const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
-    activeProductIds: [] as string[], managementURL: null, offerings: { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.209', 10), pkg('large', 'ai.veyrnox.credits.1571', 70)] } } },
+    activeProductIds: [] as string[], managementURL: null, offerings: { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.156', 10), pkg('large', 'ai.veyrnox.credits.1177', 70)] } } },
     purchase: jest.fn(), restore: jest.fn(), refreshGenerationAccess: jest.fn(),
 };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: 0, beginSessionTask: () => {
@@ -52,7 +52,7 @@ beforeEach(async () => {
     mockRow = null; mockPlans = mockPlansOk; mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
     mockApi.getBalance.mockReset().mockImplementation(async () => mockBalance); mockApi.request.mockClear(); mockPost.mockReset();
     mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.refreshSales.mockClear();
-    mockBilling.offerings = { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.209', 10), pkg('large', 'ai.veyrnox.credits.1571', 70)] } } };
+    mockBilling.offerings = { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.156', 10), pkg('large', 'ai.veyrnox.credits.1177', 70)] } } };
     mockBilling.generationActive = false; mockBilling.activeProductIds = []; mockBilling.offerings.all.generation.availablePackages = [monthly, annual];
     mockBilling.purchase.mockReset().mockResolvedValue('purchased'); mockBilling.restore.mockReset().mockResolvedValue(undefined); mockBilling.refreshGenerationAccess.mockReset().mockResolvedValue(false);
 });
@@ -110,7 +110,7 @@ test.each(['post','access','balance'])('refreshes independent pieces despite %s 
 });
 test('top-up updates the mounted focused balance card and refreshes free fields', async () => {
     await mount(); mockBilling.purchase.mockImplementation(async () => { mockBalance = { balance: 1443, free_credits: 30, free_expires_at: '2026-12-01T00:00:00Z' }; return 'purchased'; });
-    await press('209 credits, £10.00'); expect(text()).toContain('1,443'); expect(text()).toContain('30 credits'); expect(text()).toContain('Dec 1, 2026');
+    await press('156 credits, £10.00'); expect(text()).toContain('1,443'); expect(text()).toContain('30 credits'); expect(text()).toContain('Dec 1, 2026');
 });
 test('restore republishes balance and rereads details', async () => {
     await mount(); mockBilling.restore.mockImplementation(async () => { mockBalance = { ...mockBalance, balance: 1500 }; });
@@ -199,7 +199,7 @@ test.each(['pending', 'throwAfterPurchase', 'cancelled', 'failed'])('purchase re
         return result === 'throwAfterPurchase' ? 'purchased' : result;
     });
     try {
-        await press('209 credits, £10.00');
+        await press('156 credits, £10.00');
         const key = result === 'cancelled' ? 'credits.cancelled' : result === 'failed' ? 'credits.error' : 'credits.pending';
         expect(text()).toContain(t(key));
         if (key !== 'credits.error') expect(text()).not.toContain(t('credits.error'));

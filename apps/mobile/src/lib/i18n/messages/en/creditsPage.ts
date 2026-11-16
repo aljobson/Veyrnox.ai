@@ -1,6 +1,7 @@
 export default {
   "creditsPage.balance": "Current balance",
   "creditsPage.best": "Best value",
+  "creditsPage.recommended": "Recommended",
   "creditsPage.monthly": "Monthly",
   "creditsPage.yearly": "Yearly",
   "creditsPage.yearlyMonthly": "{amount} a month, billed yearly",

@@ -4961,6 +4961,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "このモデルはショットのフレーム形式に対応していません。設定で対応するワークフローを選んでください。",
   "creditsPage.balance": "現在の残高",
   "creditsPage.best": "いちばんお得",
+  "creditsPage.recommended": "おすすめ",
   "creditsPage.monthly": "月額",
   "creditsPage.yearly": "年額",
   "creditsPage.yearlyMonthly": "月あたり {amount}、年払い",

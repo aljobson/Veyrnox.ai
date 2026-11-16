@@ -5107,6 +5107,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "Ce modèle ne prend pas en charge le format du plan. Choisissez un workflow compatible dans la configuration.",
   "creditsPage.balance": "Solde actuel",
   "creditsPage.best": "Meilleure valeur",
+  "creditsPage.recommended": "Recommandé",
   "creditsPage.monthly": "Mensuel",
   "creditsPage.yearly": "Annuel",
   "creditsPage.yearlyMonthly": "{amount} par mois, facturé annuellement",

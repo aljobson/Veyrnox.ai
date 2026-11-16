@@ -34,3 +34,9 @@ export function yearlySaving(plan, plans) {
   const saved = full - plan.price_usd_cents;
   return saved > 0 ? { amountCents: saved, pct: Math.round((saved / full) * 100) } : null;
 }
+
+/** The tier we point people to (owner, 2026-11-16): every tier costs about the same per credit, so the middle one is recommended. */
+export const RECOMMENDED_PLAN_FAMILY = 'starter';
+export function isRecommendedPlan(plan) {
+  return typeof plan?.id === 'string' && plan.id.split('-')[0] === RECOMMENDED_PLAN_FAMILY;
+}
