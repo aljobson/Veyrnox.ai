@@ -5,7 +5,7 @@ import {
 } from '../../../../../../packages/adapters/r2.js';
 import { publishFalDispatchWakeup } from '../../../../../../lib/falDispatchWakeup.js';
 import { inspectStoredSource } from '../../../../../../lib/resolveSource.js';
-import { musicAddSectionEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicRankingEnabled, musicReplaceEnabled, musicReuseEnabled, musicReverseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
+import { musicAddSectionEnabled, musicBeatEditorEnabled, musicCoverEnabled, musicDistributionEnabled, musicEditingEnabled, musicExtendEnabled, musicLibraryEnabled, musicPromptPolicy, musicPublicationEnabled, musicRankingEnabled, musicReplaceEnabled, musicReuseEnabled, musicReverseEnabled, musicRpcStatus, musicSchemaEnabled, musicStemsEnabled, musicStudioEnabled, musicTargetStemsEnabled, musicTrackAddEnabled, parseMusicGeneration, parseMusicSongLifecycle, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../lib/musicBackend.js';
 import { musicLyricsEnabled, publicLyrics } from '../../../../../../lib/musicLyrics.js';
 import {
     MUSIC_MASHUP_SECONDS_MAX, MUSIC_MASHUP_SECONDS_MIN, mashupSeconds, musicRemixEnabled,
@@ -76,7 +76,7 @@ export async function GET(request, { params }) {
                 ...(musicStemsEnabled() && mp3Source ? ['stems'] : []),
                 ...(musicTargetStemsEnabled() ? ['target_stem'] : []),
                 ...(musicTrackAddEnabled() && mp3Source ? ['add_track'] : []),
-                ...(musicStudioEnabled() ? ['open_studio'] : []),
+                ...(musicStudioEnabled() || musicBeatEditorEnabled() ? ['open_studio'] : []),
                 ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
                 ...(musicEditingEnabled() ? ['crop', 'render'] : []),
                 ...(musicReverseEnabled() ? ['reverse', 'speed'] : []),

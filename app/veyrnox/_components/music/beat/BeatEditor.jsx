@@ -24,7 +24,7 @@ import BeatMagicBar from './BeatMagicBar';
 import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input, storageWarning } from './beatStyles';
 
-export default function BeatEditor({ id, magicBar = false, cloud = false }) {
+export default function BeatEditor({ id, magicBar = false, cloud = false, librarySave = false }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const announce = useCallback((text) => setMessage(text), []);
@@ -131,7 +131,7 @@ export default function BeatEditor({ id, magicBar = false, cloud = false }) {
       if (value.trim() && edit((d) => ops.rename(d, value), { key: 'title', label: 'rename beat' })) {
         setStoredTitle(value);
       }
-    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog finalize={() => playback.isRecording() || playback.pending.current ? playback.stop() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></div>
+    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog librarySave={librarySave} finalize={() => playback.isRecording() || playback.pending.current ? playback.stop() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></div>
     {!title.trim() && <p id="title-error">Give your beat a title.</p>}
     <p className="text-sm text-vx-fg-muted">{project.conflict ? 'Autosave paused' : project.saveError ? <>{"Couldn't save on this device."} <button className={button} onClick={project.retry}>Retry</button></> : !project.persistent ? 'Kept in memory for this visit' : project.dirty ? 'Saving…' : 'Saved on this device'}</p>
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{storageWarning}</p>}
