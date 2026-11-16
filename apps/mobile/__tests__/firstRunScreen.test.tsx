@@ -8,6 +8,9 @@ import { loadFirstAnswers, writeFirstProfile } from '../src/lib/firstProfileStor
 import { pushFirstAnswers } from '../src/lib/firstProfileSync';
 import { markWelcomeSeen } from '../src/lib/markWelcomeSeen';
 
+// The first test pays for loading the screen and its modules cold, which can pass 5 s on a busy machine.
+jest.setTimeout(20000);
+
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockPrompt: CatalogModel = { id: 'prompt-image', name: 'Prompt image', modality: 'text-to-image', credits: 2, durations: [], gated: false, capabilities: { inputs: { prompt: {} } } };
@@ -20,7 +23,7 @@ jest.mock('../src/lib/markWelcomeSeen', () => ({ markWelcomeSeen: jest.fn(async 
 jest.mock('../src/lib/firstProfileSync', () => ({ pushFirstAnswers: jest.fn(async () => undefined) }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
 jest.mock('../src/lib/presets', () => ({ fetchPresets: jest.fn(async () => []) }));
-jest.mock('../src/auth/AuthProvider', () => { const api = {}; const task = { current: () => true }; return { useAuth: () => ({ api, beginSessionTask: () => task }) }; });
+jest.mock('../src/auth/AuthProvider', () => { const api = { getBalance: async () => ({ free_credits: 10 }) }; const task = { current: () => true }; return { useAuth: () => ({ api, beginSessionTask: () => task }) }; });
 
 let root: Root;
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
@@ -43,19 +46,20 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
 const start = () => press(t('welcome.go'));
 
-test('asks the role, then the goal, then where it will go, one per screen; each answer is saved on the phone and sent to the account', async () => {
+test('asks the goal first (under Vey\'s hello), then where it will go, then the role, one per screen; each answer is saved on the phone and sent to the account', async () => {
     await act(async () => root.render(<FirstRun />));
-    expect(hasText(t('create.firstRun.roleTitle'))).toBe(true);
-    await press(t('create.firstRun.role.creator'));
-    expect(writeFirstProfile).toHaveBeenCalledWith({ role: 'creator' });
-    expect(pushFirstAnswers).toHaveBeenCalledWith(expect.anything(), { role: 'creator' });
     expect(hasText(t('create.firstGoal.title'))).toBe(true);
+    expect(hasText(t('welcome.hello.title'))).toBe(true);
     await press(t('create.firstGoal.video'));
     expect(writeFirstGoal).toHaveBeenCalledWith('video');
+    expect(pushFirstAnswers).toHaveBeenCalledWith(expect.anything(), { goal: 'video' });
     expect(hasText(t('create.firstRun.destTitle'))).toBe(true);
-    expect(mockReplace).not.toHaveBeenCalled();
     await press(t('create.firstRun.dest.reels'));
     expect(writeFirstProfile).toHaveBeenLastCalledWith({ destination: 'reels' });
+    expect(hasText(t('create.firstRun.roleTitle'))).toBe(true);
+    expect(mockReplace).not.toHaveBeenCalled();
+    await press(t('create.firstRun.role.creator'));
+    expect(writeFirstProfile).toHaveBeenLastCalledWith({ role: 'creator' });
     // A creation goal ends on the recap, which names the idea; Start creating carries on.
     expect(mockReplace).not.toHaveBeenCalled();
     expect(hasText(t('create.firstRun.suggested'))).toBe(true);
@@ -65,35 +69,35 @@ test('asks the role, then the goal, then where it will go, one per screen; each 
 
 test('a creation goal opens that kind\'s starter form with the work example for a creator', async () => {
     await act(async () => root.render(<FirstRun />));
-    await press(t('create.firstRun.role.business'));
     await press(t('create.firstGoal.image'));
     await press(t('create.firstRun.dest.youtube'));
+    await press(t('create.firstRun.role.business'));
     await start();
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: { modelId: 'prompt-image', prompt: t('create.firstRun.example.work.image') } });
 });
 
 test('a hobbyist gets the everyday example, and Edit goes to its tab', async () => {
     await act(async () => root.render(<FirstRun />));
-    await press(t('create.firstRun.role.hobbyist'));
     await press(t('create.firstGoal.audio'));
     await press(t('create.firstRun.dest.private'));
+    await press(t('create.firstRun.role.hobbyist'));
     await start();
     expect(mockPush).not.toHaveBeenCalledWith(expect.objectContaining({ params: expect.objectContaining({ prompt: t('create.firstRun.example.work.audio') }) }));
     await act(async () => root.unmount());
     root = createRoot(); mockPush.mockClear();
     await act(async () => root.render(<FirstRun />));
-    await press(t('create.firstRun.role.pro'));
     await press(t('create.firstGoal.edit'));
     await press(t('create.firstRun.dest.tiktok'));
+    await press(t('create.firstRun.role.pro'));
     expect(mockPush).toHaveBeenCalledWith('/editor');
 });
 
 test('every screen can be skipped; skipping all three records "skipped" and lands on the next screen', async () => {
     await act(async () => root.render(<FirstRun />));
     await skip(); await skip(); await skip();
-    expect(writeFirstProfile).toHaveBeenCalledWith({ role: 'skipped' });
     expect(writeFirstGoal).toHaveBeenCalledWith('skipped');
     expect(writeFirstProfile).toHaveBeenCalledWith({ destination: 'skipped' });
+    expect(writeFirstProfile).toHaveBeenCalledWith({ role: 'skipped' });
     expect(mockReplace).toHaveBeenCalledWith('/');
     expect(mockPush).not.toHaveBeenCalled();
 });
@@ -107,10 +111,10 @@ test('an account that already answered is not asked again and goes straight on',
 
 test('the welcome is marked seen only when the questions end, so quitting part-way brings them back next launch', async () => {
     await act(async () => root.render(<FirstRun />));
-    await press(t('create.firstRun.role.creator'));
     await press(t('create.firstGoal.video'));
-    expect(markWelcomeSeen).not.toHaveBeenCalled();
     await press(t('create.firstRun.dest.reels'));
+    expect(markWelcomeSeen).not.toHaveBeenCalled();
+    await press(t('create.firstRun.role.creator'));
     expect(markWelcomeSeen).not.toHaveBeenCalled();
     await start();
     expect(markWelcomeSeen).toHaveBeenCalledTimes(1);
@@ -125,26 +129,35 @@ test('an account that already answered is marked seen at once, so it is never lo
 
 test('Back after a pick cancels the pending hop, and a real answer is not replaced by a skip', async () => {
     await act(async () => root.render(<FirstRun />));
-    await press(t('create.firstRun.role.creator'));
-    // Pick a goal and go Back at once: the hop to the next question must not still fire.
-    await act(async () => { labelled(t('create.firstGoal.video'))!.props.onClick(event); });
+    await press(t('create.firstGoal.video'));
+    // Pick a destination and go Back at once: the hop to the next question must not still fire.
+    await act(async () => { labelled(t('create.firstRun.dest.reels'))!.props.onClick(event); });
     await act(async () => { labelled(t('public.vey.back'))!.props.onClick(event); jest.advanceTimersByTime(400); });
-    expect(hasText(t('create.firstRun.roleTitle'))).toBe(true);
-    // Skipping the role again keeps "creator": nothing is written over it.
-    jest.mocked(writeFirstProfile).mockClear();
+    expect(hasText(t('create.firstGoal.title'))).toBe(true);
+    // Skipping the goal again keeps "video": nothing is written over it.
+    jest.mocked(writeFirstGoal).mockClear();
     await skip();
-    expect(writeFirstProfile).not.toHaveBeenCalledWith({ role: 'skipped' });
+    expect(writeFirstGoal).not.toHaveBeenCalledWith('skipped');
 });
 
 test('account writes go out in order, one after another', async () => {
     const order: string[] = [];
     let release: () => void = () => {};
-    jest.mocked(pushFirstAnswers).mockImplementationOnce(() => new Promise<void>((resolve) => { release = () => { order.push('role-done'); resolve(); }; }));
+    jest.mocked(pushFirstAnswers).mockImplementationOnce(() => new Promise<void>((resolve) => { release = () => { order.push('goal-done'); resolve(); }; }));
     jest.mocked(pushFirstAnswers).mockImplementation(async (_api, a) => { order.push(Object.keys(a)[0]); });
     await act(async () => root.render(<FirstRun />));
-    await press(t('create.firstRun.role.creator'));
     await press(t('create.firstGoal.video'));
+    await press(t('create.firstRun.dest.reels'));
     expect(order).toEqual([]);
     await act(async () => { release(); });
-    expect(order).toEqual(['role-done', 'goal']);
+    expect(order).toEqual(['goal-done', 'destination']);
+});
+
+test('tapping Start creating twice opens the starter form once', async () => {
+    await act(async () => root.render(<FirstRun />));
+    await press(t('create.firstGoal.image'));
+    await press(t('create.firstRun.dest.youtube'));
+    await press(t('create.firstRun.role.business'));
+    await act(async () => { labelled(t('welcome.go'))!.props.onClick(event); labelled(t('welcome.go'))!.props.onClick(event); });
+    expect(mockPush).toHaveBeenCalledTimes(1);
 });

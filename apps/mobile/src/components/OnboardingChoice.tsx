@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { EASE_OUT } from '../lib/motionCurves';
@@ -43,7 +43,9 @@ export function OnboardingChoice({ label, icon, layout, selected = false, imageU
     }, [pop, reduced, selected]);
     const dip = (to: number) => { if (!reduced) Animated.spring(press, { toValue: to, speed: 40, bounciness: 0, useNativeDriver: true }).start(); };
     const lift = enter.interpolate({ inputRange: [0, 1], outputRange: [reduced ? 0 : 14, 0] });
-    const photo = layout === 'tile' && !!imageUri;
+    // A picture that fails to load falls back to the icon badge.
+    const [failed, setFailed] = useState(false);
+    const photo = layout === 'tile' && !!imageUri && !failed;
     return (
         <Animated.View style={[layout === 'tile' ? s.tileWrap : s.rowWrap, { opacity: enter, transform: [{ translateY: lift }, { scale: press }] }]}>
             <Pressable
@@ -57,7 +59,7 @@ export function OnboardingChoice({ label, icon, layout, selected = false, imageU
             >
                 {photo ? (
                     <>
-                        <Image source={{ uri: imageUri }} style={s.photo} contentFit="cover" transition={reduced ? 0 : 200} accessibilityIgnoresInvertColors />
+                        <Image source={{ uri: imageUri }} style={s.photo} contentFit="cover" transition={reduced ? 0 : 200} onError={() => setFailed(true)} accessibilityIgnoresInvertColors />
                         <View style={s.scrim} />
                         <Text variant="bodyStrong" style={s.photoLabel}>{label}</Text>
                     </>

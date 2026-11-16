@@ -32,8 +32,8 @@ describe('the first-run record (N3)', () => {
 });
 
 describe('the cards', () => {
-    test('there are three, in order: hello, credits, start', () => {
-        expect(WELCOME_CARDS).toEqual(['hello', 'credits', 'start']);
+    test('the intro is one hello, shown by Vey above the first question; the credits line moved to the recap', () => {
+        expect(WELCOME_CARDS).toEqual(['hello']);
     });
 
     test('the credits card names the real free amount when the server gave one', () => {
@@ -59,7 +59,7 @@ describe('the credits card under the hard paywall', () => {
     test('its words are the paywall\'s own, so the two screens cannot disagree', () => {
         const paywall = read('components', 'HardPaywallGate.tsx');
         expect(paywall).toContain("t('credits.hardPaywall.bodyFree', { count: HARD_PAYWALL_STARTER_CREDITS })");
-        expect(read('app', '(app)', 'welcome.tsx')).toContain('HARD_PAYWALL_STARTER_CREDITS');
+        expect(read('app', '(app)', 'first-run.tsx')).toContain('HARD_PAYWALL_STARTER_CREDITS');
         expect(en['credits.hardPaywall.bodyFree' as keyof typeof en]).toContain('{count}');
     });
 
@@ -107,11 +107,11 @@ describe('where the welcome shows', () => {
         expect(decision).toContain("return '/welcome'");
         expect(decision).toContain('appStorage.get(FIRST_RUN_SLOT)');
         const screen = read('app', '(app)', 'welcome.tsx');
-        // Seen is recorded when the first-run questions end, not when the cards end (quitting during the questions brings them back).
+        // Seen is recorded when the first-run questions end, not on arrival (quitting during the questions brings them back).
         expect(screen).not.toContain('markWelcomeSeen');
         expect(read('app', '(app)', 'first-run.tsx')).toContain('void markWelcomeSeen()');
         expect(read('lib', 'markWelcomeSeen.ts')).toContain('appStorage.set(FIRST_RUN_SLOT, seen)');
-        expect(screen).toContain("t('welcome.skip')");
+        expect(read('app', '(app)', 'first-run.tsx')).toContain("skipLabel={t('create.firstGoal.skip')}");
     });
 
     test('welcome leads to the first-run questions, which lead on to the home screen; the four-box Start screen is gone', () => {
