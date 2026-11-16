@@ -78,6 +78,10 @@ export function storeBillingCatalog() {
     if (removedIos.size !== 1) throw new Error('Catalog iOS removal SQL changed');
     const publish = new Map(['0293_social_publish_plans', '0340_weekly_social_publish_plan', '0341_annual_social_publish_plan']
         .flatMap(name => insertedPlans(name, 'social_publish_plans')).map(plan => [plan.id, plan]));
+    // 0555: Publish annual moves from $126.00 to $125.99 to match the App Store price point.
+    const annualPrice = sql('0555_publish_annual_price_12599').match(/UPDATE public\.social_publish_plans\s+SET price_usd_cents = (\d+),[^;]*?WHERE id = 'publish-annual'/);
+    if (!annualPrice || !publish.has('publish-annual')) throw new Error('Catalog Publish annual price UPDATE changed');
+    publish.get('publish-annual').price_usd_cents = Number(annualPrice[1]);
     // 0541 (ADR-0343): the store packs carry the web credit sizes (156 / 392 / 1,177). 0421's 209 / 523 / 1571 and 0394's 100/300/1000 are retired.
     const parity = sql('0394_mobile_credit_pack_parity');
     const packs = rows(section(sql('0541_store_packs_follow_new_plan_rate'), /INSERT INTO public\.credit_packs \(id, sales_channel, credits, price_usd_cents, store_product_id, active\)\s*VALUES([\s\S]*?)ON CONFLICT/, 'packs'));

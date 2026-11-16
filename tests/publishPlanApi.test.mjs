@@ -36,14 +36,14 @@ test('read returns only public entitlement fields and every billing interval', a
     list_social_publish_plans: [
       { id: 'publish-weekly', name: 'Publish Plan', billing_interval: 'week', price_usd_cents: 499, analytics_days: 366, best_time_enabled: true, internal: 'x' },
       { id: 'publish', name: 'Publish Plan', billing_interval: 'month', price_usd_cents: 1500, analytics_days: 366, best_time_enabled: true },
-      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12600, analytics_days: 366, best_time_enabled: true },
+      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12599, analytics_days: 366, best_time_enabled: true },
     ],
     read_social_publish_entitlement: entitlement(),
   });
   const response = await s.handler(request());
   assert.equal(response.status, 200);
   const body = await response.json();
-  assert.deepEqual(body.plans.map((plan) => [plan.billing_interval, plan.price_usd_cents]), [['week', 499], ['month', 1500], ['year', 12600]]);
+  assert.deepEqual(body.plans.map((plan) => [plan.billing_interval, plan.price_usd_cents]), [['week', 499], ['month', 1500], ['year', 12599]]);
   assert.equal(body.plans[0].internal, undefined);
   assert.equal(body.entitlement.account_limit, 1);
   assert.equal(body.entitlement.analytics_days, 0);
@@ -81,7 +81,7 @@ test('start passes the weekly Publish interval from the database snapshot', asyn
 
 test('start passes the annual Publish interval and 30%-off price from the database snapshot', async () => {
   const s = setup('start', {
-    start_social_publish_subscription: { ok: true, status: 'pending', subscription_id: subscriptionId, plan_id: 'publish-annual', billing_interval: 'year', price_usd_cents: 12600 },
+    start_social_publish_subscription: { ok: true, status: 'pending', subscription_id: subscriptionId, plan_id: 'publish-annual', billing_interval: 'year', price_usd_cents: 12599 },
   });
   const response = await s.handler(request('', {
     plan_id: 'publish-annual', idempotency_key: 'publish-annual-key', consent: true,
@@ -89,7 +89,7 @@ test('start passes the annual Publish interval and 30%-off price from the databa
   }));
   assert.equal(response.status, 200);
   const checkout = s.calls.find((call) => call.name === 'checkout');
-  assert.deepEqual([checkout.args.interval, checkout.args.priceUsdCents], ['year', 12600]);
+  assert.deepEqual([checkout.args.interval, checkout.args.priceUsdCents], ['year', 12599]);
 });
 
 test('identity, feature flag and consent gates run before billing', async () => {

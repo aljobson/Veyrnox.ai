@@ -30,7 +30,7 @@ const PUBLISH_PLAN_FEATURES = ['accountsFeature', 'multiFeature', 'fairFeature',
 const PUBLISH_PLANS = [
   { id: 'publish-weekly', billingInterval: 'week', priceUsdCents: 499 },
   { id: 'publish', billingInterval: 'month', priceUsdCents: 1500 },
-  { id: 'publish-annual', billingInterval: 'year', priceUsdCents: 12600, bestValue: true },
+  { id: 'publish-annual', billingInterval: 'year', priceUsdCents: 12599, bestValue: true },
 ];
 const link = 'font-bold underline underline-offset-4 hover:text-vx-accent';
 const button = 'inline-block border-2 border-vx-fg px-6 py-3 font-black hover:text-vx-accent';

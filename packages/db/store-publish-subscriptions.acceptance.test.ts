@@ -136,7 +136,7 @@ describe("Store Publish subscriptions (0346)", { skip: !process.env.DATABASE_URL
         await event(u.customer, { txn: first.a.txn, product: "ai.veyrnox.publish.annual", type: "product_change", when: at(-1000), end: at(365 * day) });
         const e = await entitlement(u.auth);
         assert.equal(e.subscription.plan_id, "publish-annual");
-        assert.equal(e.subscription.price_usd_cents, 12600);
+        assert.equal(e.subscription.price_usd_cents, 12599);
     });
 
     it("flags, never entitles, a store purchase while another plan is live", async () => {

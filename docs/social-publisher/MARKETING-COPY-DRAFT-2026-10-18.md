@@ -90,7 +90,7 @@ When something needs you, a failed post or a comment worth answering, it is wait
 
 The Publish Plan is a separate subscription. It never touches your generation credits, and your credits never pay for it.
 
-*(Weekly $4.99 and yearly $126 options exist in migrations 0340/0341 but the README marks the interval migrations as pending deployment. Do not list them until they are live. Confirm the Free column against the live plan page before publishing — the ADR-0062 amendment of 10 October described five free accounts, while the README built-state line says Free keeps one.)*
+*(Weekly $4.99 and yearly $125.99 options exist in migrations 0340/0341 but the README marks the interval migrations as pending deployment. Do not list them until they are live. Confirm the Free column against the live plan page before publishing — the ADR-0062 amendment of 10 October described five free accounts, while the README built-state line says Free keeps one.)*
 
 ### What you would otherwise rent
 

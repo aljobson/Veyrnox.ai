@@ -70,7 +70,7 @@ for (const locale of ['en', 'de', 'ja', 'ar']) {
       expose: { [smartlink]: ['Editor'], [plan]: ['Plan'] },
       states: {
         [smartlink]: [{ slug: 'fixture', title: 'User title unchanged', bio: '', avatarUrl: '', theme: 'midnight', published: false, items: [{ id: 'link', label: 'User link unchanged', url: 'https://example.invalid', enabled: true, clicks: 21 }] }, { views: 1234, clicks: 21 }, false, false, '', false, 'owner', snapshot, 0],
-        [plan]: [{ entitlement: { tier: 'free' }, consent_version: 'fixture', plans: [{ id: 'publish-annual', billing_interval: 'year', price_usd_cents: 12600 }] }, '', false, false, 'publish-annual', false],
+        [plan]: [{ entitlement: { tier: 'free' }, consent_version: 'fixture', plans: [{ id: 'publish-annual', billing_interval: 'year', price_usd_cents: 12599 }] }, '', false, false, 'publish-annual', false],
         [drafts]: [[{ id: 'draft', draft_batch_id: 'batch', scheduled_at: '2026-10-18T12:00:00Z', global_text: 'User caption unchanged', networks: ['instagram'], media: [] }], true, '', null],
         [uploads]: [[], false, '', '', null, false, null],
         [approvals]: [[{ id: 'request', global_text: 'User approval caption', scheduled_at: '2026-10-18T12:00:00Z', policy: 'all', status: 'future_status', reviewers: [] }], '', ''],
@@ -86,7 +86,7 @@ for (const locale of ['en', 'de', 'ja', 'ar']) {
     assert.ok(smartHtml.includes(escape(t(pluralKey(t, locale, 'app.publish.smartlink.clickCount', 21), { count: locale === 'en' ? 21 : (21).toLocaleString(locale) }))));
     const planHtml = render('plan/PublishPlanPanel.js', 'Plan');
     assert.ok(planHtml.includes(escape(t('app.publish.plan.save'))));
-    assert.ok(planHtml.includes('<span lang="en" dir="ltr">Start my Publish Plan at $126.00 plus tax every year. I understand it renews automatically until I cancel.</span>'));
+    assert.ok(planHtml.includes('<span lang="en" dir="ltr">Start my Publish Plan at $125.99 plus tax every year. I understand it renews automatically until I cancel.</span>'));
     const draftHtml = render('DraftReview.js', 'DraftReview');
     assert.ok(draftHtml.includes('User caption unchanged'));
     assert.ok(draftHtml.includes('Instagram'));

@@ -55,7 +55,7 @@ describe('social Publish Plan entitlement (0293, 0298, 0340, 0341)', { skip: !pr
     assert.deepEqual(plans, [
       { id: 'publish-weekly', name: 'Publish Plan', billing_interval: 'week', price_usd_cents: 499, analytics_days: 366, best_time_enabled: true },
       { id: 'publish', name: 'Publish Plan', billing_interval: 'month', price_usd_cents: 1500, analytics_days: 366, best_time_enabled: true },
-      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12600, analytics_days: 366, best_time_enabled: true },
+      { id: 'publish-annual', name: 'Publish Plan', billing_interval: 'year', price_usd_cents: 12599, analytics_days: 366, best_time_enabled: true },
     ]);
     const auth = await user();
     const own = await entitlement(auth);
