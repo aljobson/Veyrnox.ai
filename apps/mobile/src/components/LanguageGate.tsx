@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { needsLanguageChoice } from '../lib/languageTransition';
 import { readLanguage, syncPendingAccountLanguage } from '../lib/languageStore';
 import { captureIssue } from '../lib/crash';
+import { restoreReturnRoute } from '../lib/restoreReturnRoute';
 import { LanguageChoice } from './LanguageChoice';
 import { BrandSplash } from './BrandSplash';
 
@@ -26,7 +27,7 @@ export function LanguageGate({ children, active = ACTIVE_LOCALES }: { children: 
         void reconcileLanguageDirection(returnPath, { signedIn: status === 'signedIn', canReloadSession }).then(ok => {
             if (!live || !task.current()) return;
             const next = directionReconciler.takeReturnPath();
-            if (next && next !== returnPath) router.replace(next as never);
+            if (next && next !== returnPath) restoreReturnRoute(router, next);
             if (ok && !directionReconciler.handledRepair() && status === 'signedIn') {
                 void syncPendingAccountLanguage({ request: (path, init) => api.request(path, init, { task }) }, active)
                     .catch(() => { if (task.current()) captureIssue('language_sync_failed', {}); });
