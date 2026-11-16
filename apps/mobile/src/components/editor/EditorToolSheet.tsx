@@ -4,6 +4,7 @@ import { colors } from '../../theme';
 
 /** Share of the window a tool panel may use; the preview and timeline stay visible above it. */
 const SHEET_SHARE = 0.46, SHEET_MIN = 250, SHEET_MAX = 420;
+const INLINE_MIN = 180;
 export const toolSheetHeight = (windowHeight: number) => Math.round(Math.max(SHEET_MIN, Math.min(SHEET_MAX, windowHeight * SHEET_SHARE)));
 
 /**
@@ -11,11 +12,14 @@ export const toolSheetHeight = (windowHeight: number) => Math.round(Math.max(SHE
  * inline panel got squeezed to nothing under the preview and timeline. This overlays a fixed-height
  * sheet instead; `rail` (advanced tool picker) stays above `children` (the panel itself).
  */
-export function EditorToolSheet({ rail, children }: { rail?: ReactNode; children: ReactNode }) {
+export function EditorToolSheet({ rail, children, inline }: { rail?: ReactNode; children: ReactNode; inline?: boolean }) {
     const { height } = useWindowDimensions();
+    // Full editor: take the room left under the timeline, so the timeline stays visible and the panel scrolls below the tool strip.
+    if (inline) return <View testID="editor-tool-sheet" style={local.inline}>{rail}{children}</View>;
     return <View testID="editor-tool-sheet" style={[local.sheet, { height: toolSheetHeight(height) }]}>{rail}{children}</View>;
 }
 
 const local = StyleSheet.create({
+    inline: { flex: 1, minHeight: INLINE_MIN, overflow: 'hidden', backgroundColor: colors.surface },
     sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden', borderTopWidth: StyleSheet.hairlineWidth, borderTopLeftRadius: 16, borderTopRightRadius: 16, borderColor: colors.border, backgroundColor: colors.surface, elevation: 12, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: -4 } },
 });

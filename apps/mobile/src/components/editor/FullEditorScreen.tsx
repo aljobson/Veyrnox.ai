@@ -377,7 +377,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>
             <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
-        {advanced || panelOpen ? <EditorToolSheet rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
+        {advanced || panelOpen ? <EditorToolSheet inline={advanced} rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>
                 {item.id === 'markers' ? <View style={{ width: 12, height: 12, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] }} /> : <Text style={[styles.toolIcon, tool === item.id && styles.toolIconActive]}>{item.icon}</Text>}
                 <Text style={[styles.toolLabel, tool === item.id && styles.toolLabelActive]}>{item.label}</Text>
