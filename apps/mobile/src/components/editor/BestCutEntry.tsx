@@ -20,7 +20,7 @@ export function BestCutEntry() {
             const workspace = workspaces.find(w => w.isDefault) || workspaces[0]; if (!workspace) throw new Error('no_workspace');
             const project = await createProject(api, workspace.id, t('bestCut.title'), randomUUID());
             if (task.current()) router.push({ pathname: '/editor/[projectId]', params: { projectId: project.id, bestCut: '1' } });
-        } catch { if (task.current()) setError(true); } finally { if (task.current()) { setBusy(false); setAskOpen(false); } }
+        } catch { if (task.current()) setError(true); } finally { setBusy(false); setAskOpen(false); } // Always release the dialog, even if the session changed mid-confirm.
     }
     return <Card style={{ padding: 16, gap: 12 }}><Text variant="title2">{t('bestCut.title')}</Text><Text>{t('bestCut.intro')}</Text>
         <Button label={t('bestCut.title')} disabled={busy} onPress={() => setAskOpen(true)} />{error ? <Text>{t('common.error')}</Text> : null}

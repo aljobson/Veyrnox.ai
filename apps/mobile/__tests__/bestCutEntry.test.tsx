@@ -130,4 +130,5 @@ test.each(['workspaces', 'project'])('session change while awaiting %s stops sub
     mockCurrent = false;
     await act(async () => wait.resolve(stage === 'workspaces' ? workspaces : project));
     expect(creates()).toHaveLength(stage === 'workspaces' ? 0 : 1); expect(mockPush).not.toHaveBeenCalled();
+    expect(modals()).toHaveLength(0); // A stale session must never leave the dialog stuck busy.
 });
