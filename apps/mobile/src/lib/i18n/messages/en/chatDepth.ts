@@ -30,7 +30,7 @@ export default {
   "chatDepth.wfApprove": "You approve every generation.",
   "chatDepth.wfPriceNote": "No generation runs until you press Generate.",
   "chatDepth.wfClose": "Close workflow",
-  "chatDepth.video": "Video",
+  "chatDepth.video": "Attach a video",
   "chatDepth.videoLabel": "Attach video frames",
   "chatDepth.videoRoom": "A video needs room for at least 2 of the {count} images. Remove one first.",
   "chatDepth.reading": "Reading frames from your video…",

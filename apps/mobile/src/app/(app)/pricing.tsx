@@ -12,7 +12,7 @@ import { isWebParityPack, toDisplayPackages } from '../../lib/billing';
 import { usePlanCatalog } from '../../lib/usePlanCatalog';
 import { bestPackId, packSavingPercent } from '../../lib/creditOffers';
 import { priceLines } from '../../lib/catalogPages';
-import { t } from '../../lib/i18n';
+import { plural, t } from '../../lib/i18n';
 import { ds } from '../../theme';
 
 // What each model costs, in credits, from the public catalogue (read-only). It shows prices only: credits are
@@ -40,7 +40,7 @@ export default function Pricing() {
             {g.models.map(m => <View key={m.id} style={styles.row}>
                 <View style={styles.name}><Text variant="bodyStrong">{m.name}</Text>{m.gated ? <Chip label={t('creditsPage.premium')} /> : null}</View>
                 <View style={styles.prices}>{priceLines(m).map(p => <Text key={p.seconds ?? 'one'} variant="footnote" tone="warning">
-                    {p.seconds ? t('prc.perClip', { seconds: p.seconds, credits: p.credits }) : t('prc.each', { credits: p.credits })}
+                    {p.seconds ? plural('prc.perClip', p.credits, { seconds: p.seconds }) : plural('prc.each', p.credits)}
                 </Text>)}</View>
             </View>)}
         </>} />

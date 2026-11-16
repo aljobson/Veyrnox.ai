@@ -7,7 +7,7 @@ import { generationMessage } from '../src/lib/generationSubmit';
 import { CREATE_ERROR_CODES, failedJobMessage } from '../src/lib/failedJob';
 import { CONSENT_DECLINED_MESSAGE } from '../src/lib/aiConsent';
 import { OfflineError, OFFLINE_PAID_MESSAGE } from '../src/lib/network';
-import { chooseLocale, LOCALE_CODES, WEB_CATALOGS, t } from '../src/lib/i18n';
+import { chooseLocale, LOCALE_CODES, WEB_CATALOGS, plural, t } from '../src/lib/i18n';
 import en from '../src/lib/i18n/messages/en';
 import webKeys from '../src/lib/i18n/webKeys.json';
 
@@ -94,7 +94,7 @@ test.each([
 
 test('confirmation metadata, declined consent, offline and non-API failures are unchanged', () => {
     expect(generationMessage(new ApiError(409, 'credit_confirmation_mismatch', { expected_credits: 9 })))
-        .toBe(t('form.err.priceChanged', { credits: '9' }));
+        .toBe(plural('form.err.priceChanged', 9));
     expect(generationMessage(new ApiError(400, 'consent_declined'))).toBe(CONSENT_DECLINED_MESSAGE);
     expect(generationMessage(new OfflineError())).toBe(OFFLINE_PAID_MESSAGE);
     for (const value of [new Error('oops'), null, undefined, { code: 'provider_error' }]) {

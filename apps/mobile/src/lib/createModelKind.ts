@@ -8,7 +8,7 @@ export function isAudioDriven(model: CatalogModel): boolean {
 
 /** Adds generated sound to a clip you supply: lens words and "describe the change" do not fit it. */
 export function isSoundPass(model: CatalogModel): boolean {
-    return model.id === 'mmaudio-v2-video';
+    return model.id === 'mmaudio-v2-video' || /video-to-audio/.test(model.modality);
 }
 
 /** Text to speech: the box holds the words to say, not a description of what to create. */
