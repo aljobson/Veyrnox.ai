@@ -33,6 +33,11 @@ describe('moveClip', () => {
         expect(moveClip(make(clip('a', 10, 20), clip('b', 10, 20)), { track: 'video', id: 'a' }, 1)).toBeNull();
     });
 
+    it('refuses a swap that would cover a third clip on the lane', () => {
+        const timeline = make(clip('a', 0, 50), clip('b', 10, 10), clip('c', 60, 50));
+        expect(moveClip(timeline, { track: 'video', id: 'b' }, 1)).toBeNull();
+    });
+
     it('only considers clips on the same lane', () => {
         const timeline = make(clip('a', 0, 30), clip('x', 30, 10, 'video-1'), clip('b', 30, 20));
         expect(starts(moveClip(timeline, { track: 'video', id: 'a' }, 1)!)).toEqual({ a: 20, x: 30, b: 0 });

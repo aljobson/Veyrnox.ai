@@ -158,7 +158,7 @@ export function duplicateSelections(timeline: Timeline, selections: readonly Sel
 /**
  * Swap a clip with its neighbour on the same lane (earlier or later by start), keeping the pair's combined span and the gap
  * between them, so nothing else moves and nothing overlaps. Returns null at a lane end, for an unknown clip, or when the pair
- * already overlaps (the controls use this as their eligibility check).
+ * already overlaps or the swap would cover another clip on the lane (the controls use this as their eligibility check).
  */
 export function moveClip(timeline: Timeline, selection: Selection, direction: -1 | 1): Timeline | null {
     const item = clipAt(timeline, selection);
@@ -173,6 +173,9 @@ export function moveClip(timeline: Timeline, selection: Selection, direction: -1
     const gap = second.start - (first.start + first.len);
     if (gap < 0) return null;
     const starts = new Map([[second.id, first.start], [first.id, first.start + second.len + gap]]);
+    const moved = [{ start: first.start, len: second.len }, { start: first.start + second.len + gap, len: first.len }];
+    // A third clip on the lane (reachable when earlier drags left overlaps) must not end up covered by either moved clip.
+    if (lane.some(({ candidate }) => !starts.has(candidate.id) && moved.some((m) => m.start < candidate.start + candidate.len && candidate.start < m.start + m.len))) return null;
     return { ...timeline, [selection.track]: timeline[selection.track].map((candidate) => starts.has(candidate.id) ? { ...candidate, start: starts.get(candidate.id)! } : candidate) } as Timeline;
 }
 
