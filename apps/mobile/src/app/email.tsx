@@ -96,6 +96,16 @@ export default function EmailAuth() {
         return () => clearTimeout(t);
     }, [resetKey]);
 
+    // Sign-in tapped before the check finished: it runs by itself the moment a token arrives.
+    const queuedSubmit = useRef(false);
+    const submitRef = useRef<() => void>(() => {});
+    useEffect(() => {
+        if (captcha && queuedSubmit.current) {
+            queuedSubmit.current = false;
+            submitRef.current();
+        }
+    }, [captcha]);
+
     if (status === 'signedIn') return <SignedInRedirect />;
 
     function onCaptcha(m: TurnstileMessage) {
@@ -107,10 +117,14 @@ export default function EmailAuth() {
         if (m.type === 'token') {
             setCaptcha(m.token);
             setCaptchaError(false);
+            // The check is ready now: a "not finished yet" line from an earlier tap would contradict it.
+            setMessage((current) => (current === t('email.securityFirst') || current === t('email.checking') ? null : current));
             void playSuccess();
         } else if (m.type === 'expired') {
             setCaptcha(null);
         } else {
+            queuedSubmit.current = false;
+            setMessage((current) => (current === t('email.checking') ? null : current));
             setCaptcha(null);
             setCaptchaCode(m.code);
             setCaptchaError(true);
@@ -128,6 +142,14 @@ export default function EmailAuth() {
             return;
         }
         if (!captcha) {
+            // Not an error: wait for the check and send the form when it passes. A failed check
+            // clears this and shows the retry button.
+            if (!captchaError) {
+                queuedSubmit.current = true;
+                setMessageTone('success');
+                setMessage(t('email.checking'));
+                return;
+            }
             setMessageTone('error');
             setMessage(t('email.securityFirst'));
             void playError();
@@ -162,6 +184,8 @@ export default function EmailAuth() {
         }
     }
 
+    submitRef.current = () => { void submit(); };
+
     async function startProvider(provider: 'apple' | 'google') {
         if (busy || providerBusy || running.current) return;
         running.current = true;
@@ -187,6 +211,7 @@ export default function EmailAuth() {
 
     function chooseMode(next: Mode) {
         if (running.current || busy || providerBusy || (next === mode && !pendingEmail)) return;
+        queuedSubmit.current = false;
         clearPending(); setCaptcha(null); setResetKey(k => k + 1);
         void playSelection();
         setMode(next);
@@ -195,6 +220,7 @@ export default function EmailAuth() {
 
     function retrySecurityCheck() {
         void playSelection();
+        queuedSubmit.current = false;
         setCaptcha(null);
         setCaptchaError(false);
         setMessage(null);
