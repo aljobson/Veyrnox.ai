@@ -3689,7 +3689,7 @@ export default {
   "privacyExport.rateLimited": "约 {hours} 小时后可再次申请。",
   "privacyExport.ready": "你的文件已就绪。",
   "privacyExport.share": "分享／保存",
-  "privacyExport.storage": "分享之前，此 文件仅保存在这部手机上。离开此页面、退出登录或重启应用时会将其删除。你每天可申请一次副本，有 60 分钟时间准备。",
+  "privacyExport.storage": "分享之前，此文件仅保存在这部手机上。离开此页面、退出登录或重启应用时会将其删除。你每天可申请一次副本，有 60 分钟时间准备。",
   "privacyExport.title": "获取你的数据副本",
   "privacyExport.unavailable": "应用暂不支持。请发送邮件至 {email}，我们会发给你。",
   "privacyExport.verify": "验证并准备",
