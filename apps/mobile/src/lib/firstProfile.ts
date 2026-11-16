@@ -1,6 +1,7 @@
 // First-run personal answers (ADR-0339): role and destination, beside the goal (firstGoal.ts). One fixed word each (or
 // "skipped"); never free text, never in a URL. They only order and pre-fill screens: no price, model or access.
 // Mirrors app/veyrnox/_lib/firstProfile.js; __tests__/firstProfile.test.ts checks the two agree.
+import { FILM_STUDIO_ENABLED } from './filmStudioSwitch';
 export const FIRST_PROFILE_VERSION = 1;
 export const FIRST_PROFILE_SLOT = `veyrnox.firstProfile.v${FIRST_PROFILE_VERSION}`;
 
@@ -71,7 +72,7 @@ export function orderStarts(r: string | null | undefined, goal: string | null | 
     return first ? [first, ...base.filter((key) => key !== first)] : [...base];
 }
 export const phoneStarts = (r: string | null | undefined, goal: string | null | undefined): ('create' | 'chat' | 'film')[] =>
-    orderStarts(r, goal).filter((key): key is 'create' | 'chat' | 'film' => key !== 'smart-cut');
+    orderStarts(r, goal).filter((key): key is 'create' | 'chat' | 'film' => key !== 'smart-cut' && (FILM_STUDIO_ENABLED || key !== 'film'));
 
 // "work" examples (product, ad and brand ideas) for creator, business and pro; the everyday ones for everyone else.
 export const exampleSetFor = (r: string | null | undefined): 'work' | 'everyday' => (r === 'creator' || r === 'business' || r === 'pro' ? 'work' : 'everyday');

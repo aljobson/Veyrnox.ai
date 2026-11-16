@@ -47,7 +47,7 @@ test('fallback guidance maps common questions to reviewed controls', () => {
 
 test('reviewed knowledge covers every main product workspace', () => {
     const routes = new Set(PRODUCT_KNOWLEDGE.flatMap((entry) => entry.routes));
-    for (const route of ['/app', '/app/create', '/app/oddlings', '/app/chat', '/app/film-studio', '/app/library', '/app/credits', '/app/account', '/app/projects', '/app/enhance', '/app/video-agent', '/app/publish', '/app/publish/calendar', '/app/publish/analytics', '/app/admin']) {
+    for (const route of ['/app', '/app/create', '/app/oddlings', '/app/chat', '/app/library', '/app/credits', '/app/account', '/app/projects', '/app/enhance', '/app/video-agent', '/app/publish', '/app/publish/calendar', '/app/publish/analytics', '/app/admin']) {
         assert.ok(routes.has(route), `missing knowledge for ${route}`);
     }
     for (const entry of PRODUCT_KNOWLEDGE) {
@@ -60,8 +60,9 @@ test('knowledge retrieval selects the requested workflow and keeps context bound
     assert.equal(searchProductKnowledge('How do I set up passkeys and 2FA?', '/app/account', 1)[0].id, 'account-security');
     assert.equal(searchProductKnowledge('How can I generate speech or sound effects?', '/app/create', 1)[0].id, 'create-audio');
     assert.equal(searchProductKnowledge('How do I schedule a post?', '/app/publish', 1)[0].id, 'publish-compose');
-    const context = productKnowledgeContext('How do Film Studio stages work?', '/app/film-studio', HELP_TARGET_IDS);
-    assert.match(context, /Film Studio/);
+    // Film Studio is hidden (ADR-0344): Vey no longer has a reviewed article for it.
+    assert.ok(!PRODUCT_KNOWLEDGE.some((entry) => entry.routes.includes('/app/film-studio')));
+    const context = productKnowledgeContext('How do I make a video?', '/app/create', HELP_TARGET_IDS);
     assert.match(context, /AUTO-DISCOVERED PAGE/);
     assert.ok(context.length < 9000);
 });
@@ -85,8 +86,7 @@ test('knowledge retrieval recognises creation and product feature questions', ()
         ['How do I upload my own file?', '/app/create', 'create-sources'],
         ['Where are my finished generations?', '/app', 'library'],
         ['How do I attach an image and use web search?', '/app/chat', 'llm-chat'],
-        ['How do I keep the same character across shots?', '/app/film-studio', 'film-studio'],
-        ['How do I export my Film Studio?', '/app/film-studio', 'film-export'],
+        ['How do I keep the same character across shots?', '/app/oddlings', 'oddlings'],
         ['How do I buy more Credits?', '/app', 'credits'],
         ['How do I add a passkey?', '/app/account', 'account-security'],
         ['How do I schedule a social post?', '/app/publish', 'publish-compose'],
@@ -109,7 +109,7 @@ test('starter questions follow the current workspace', () => {
     for (const env of [{}, { ODDLINGS_PUBLIC_ENABLED: 'true' }]) {
         for (const starter of helpStartersForPath('/oddlings')) assert.equal(isGroundedQuestion(starter, env), true, starter);
     }
-    assert.match(helpStartersForPath('/app/film-studio')[0], /Film Studio/);
+    assert.doesNotMatch(helpStartersForPath('/app/film-studio').join(' '), /Film Studio/);
     assert.equal(helpStartersForPath('/app')[0], 'What can I create in Veyrnox.ai?');
 });
 

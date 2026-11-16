@@ -116,15 +116,27 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
     let seq = timeline.seq;
     const additions: Record<TrackKind, (Clip | TextClip)[]> = { video: [], audio: [], text: [] };
     const selections: Selection[] = [];
+    const tracks = [...timeline.tracks], restored = new Map<string, string>();
     for (const { track, item } of clipboard.items) {
         seq += 1;
         const id = `${track[0]}${seq}`;
-        additions[track].push({ ...item, id, start: Math.max(0, frame + item.start - origin) });
+        // The clip's original track may be gone (an emptied extra track is removed): recreate one lane per missing track so simultaneous clips never share a lane.
+        let lane = item.trackId;
+        if (!tracks.some((candidate) => candidate.id === lane && candidate.kind === track)) {
+            const key = `${track}:${item.trackId}`;
+            if (!restored.has(key)) {
+                seq += 1;
+                restored.set(key, `${track}-${seq}`);
+                tracks.push({ id: `${track}-${seq}`, kind: track, name: `${track[0].toUpperCase()}${track.slice(1)} ${tracks.filter((candidate) => candidate.kind === track).length + 1}`, locked: false, muted: false, hidden: false });
+            }
+            lane = restored.get(key);
+        }
+        additions[track].push({ ...item, id, trackId: lane, start: Math.max(0, frame + item.start - origin) });
         selections.push({ track, id });
     }
     // Insert, never overlap: on each track the existing items from the insert point on move right by the pasted span;
     // an item the insert point falls inside is split there, and only its tail moves.
-    const next = { ...timeline, seq } as Timeline;
+    const next = { ...timeline, seq, tracks } as Timeline;
     for (const track of ['video', 'audio', 'text'] as const) {
         const added = additions[track];
         if (!added.length) continue;
@@ -145,7 +157,7 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
         }
         (next as Record<TrackKind, (Clip | TextClip)[]>)[track] = [...existing, ...added];
     }
-    return { timeline: { ...next, seq }, selections };
+    return { timeline: { ...next, seq, tracks }, selections };
 }
 
 export function duplicateSelections(timeline: Timeline, selections: readonly Selection[]): { timeline: Timeline; selections: Selection[] } | null {
@@ -153,6 +165,30 @@ export function duplicateSelections(timeline: Timeline, selections: readonly Sel
     if (!clipboard) return null;
     const end = Math.max(...clipboard.items.map(({ item }) => item.start + item.len));
     return pasteClipboard(timeline, clipboard, end);
+}
+
+/**
+ * Swap a clip with its neighbour on the same lane (earlier or later by start), keeping the pair's combined span and the gap
+ * between them, so nothing else moves and nothing overlaps. Returns null at a lane end, for an unknown clip, or when the pair
+ * already overlaps or the swap would cover another clip on the lane (the controls use this as their eligibility check).
+ */
+export function moveClip(timeline: Timeline, selection: Selection, direction: -1 | 1): Timeline | null {
+    const item = clipAt(timeline, selection);
+    if (!item) return null;
+    const lane = (timeline[selection.track] as (Clip | TextClip)[]).map((candidate, index) => ({ candidate, index }))
+        .filter(({ candidate }) => candidate.trackId === item.trackId)
+        .sort((a, b) => a.candidate.start - b.candidate.start || a.index - b.index);
+    const at = lane.findIndex(({ candidate }) => candidate.id === item.id);
+    const other = lane[at + direction]?.candidate;
+    if (!other) return null;
+    const [first, second] = direction === 1 ? [item, other] : [other, item];
+    const gap = second.start - (first.start + first.len);
+    if (gap < 0) return null;
+    const starts = new Map([[second.id, first.start], [first.id, first.start + second.len + gap]]);
+    const moved = [{ start: first.start, len: second.len }, { start: first.start + second.len + gap, len: first.len }];
+    // A third clip on the lane (reachable when earlier drags left overlaps) must not end up covered by either moved clip.
+    if (lane.some(({ candidate }) => !starts.has(candidate.id) && moved.some((m) => m.start < candidate.start + candidate.len && candidate.start < m.start + m.len))) return null;
+    return { ...timeline, [selection.track]: timeline[selection.track].map((candidate) => starts.has(candidate.id) ? { ...candidate, start: starts.get(candidate.id)! } : candidate) } as Timeline;
 }
 
 export function groupSelections(timeline: Timeline, selections: readonly Selection[], grouped: boolean): Timeline {
@@ -175,4 +211,28 @@ export function addTrack(timeline: Timeline, kind: TrackKind): Timeline {
 export function addMarker(timeline: Timeline, frame: number): Timeline {
     const seq = timeline.seq + 1;
     return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: rawText(t('nativeEditorModel.marker', { value1: timeline.markers.length + 1 })), color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
+}
+
+const clipsOnTrack = (timeline: Timeline, track: EditorTrack) => (timeline[track.kind] as (Clip | TextClip)[]).filter((item) => item.trackId === track.id);
+
+/** A track can be removed when it holds no clips and is not the last track of its kind. */
+export function canRemoveTrack(timeline: Timeline, trackId: string): boolean {
+    const track = timeline.tracks.find((item) => item.id === trackId);
+    return !!track && !clipsOnTrack(timeline, track).length && timeline.tracks.filter((item) => item.kind === track.kind).length > 1;
+}
+
+export function removeTrack(timeline: Timeline, trackId: string): Timeline | null {
+    return canRemoveTrack(timeline, trackId) ? { ...timeline, tracks: timeline.tracks.filter((item) => item.id !== trackId) } : null;
+}
+
+/** Empty tracks beyond the first of each kind: the ones that block server export and are safe to drop automatically. */
+export function emptyExtraTracks(timeline: Timeline): EditorTrack[] {
+    return timeline.tracks.filter((track, index) => timeline.tracks.findIndex((item) => item.kind === track.kind) !== index && !clipsOnTrack(timeline, track).length);
+}
+
+/** After deleting clips: drop only the named tracks that are now empty extras (never the first track of a kind). */
+export function pruneEmptiedExtraTracks(timeline: Timeline, trackIds: readonly (string | undefined)[]): Timeline {
+    const extras = new Set(emptyExtraTracks(timeline).map((track) => track.id));
+    const drop = new Set(trackIds.filter((id): id is string => !!id && extras.has(id)));
+    return drop.size ? { ...timeline, tracks: timeline.tracks.filter((track) => !drop.has(track.id)) } : timeline;
 }

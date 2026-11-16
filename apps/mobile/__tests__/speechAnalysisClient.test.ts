@@ -1,4 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
+import { t } from '../src/lib/i18n';
 import { fetchSpeechQuote, startSpeech, pollSpeech, speechKeyFor, forgetSpeechKey, SPEECH_PATH, speechMessage } from '../src/lib/speechAnalysis';
 import { resetNetworkState, markOffline } from '../src/lib/networkState';
 import { OFFLINE_PAID_MESSAGE } from '../src/lib/network';
@@ -54,4 +55,10 @@ test('account change while read resolves cannot release the previous account ana
     let resolve!: (v: unknown) => void; const request = jest.fn(() => new Promise(r => { resolve = r; }));
     const pending = pollSpeech(api(request), 'key', 'owner', new AbortController().signal, jest.fn()); const check = expect(pending).rejects.toMatchObject({ code: 'cancelled' });
     mockOwner = 'other'; mockListeners.forEach(fn => fn()); resolve({ status: 'failed', refunded: true }); await check;
+});
+
+test('a server source_unsupported says why the file was refused, not that the clip is unavailable', () => {
+    const message = speechMessage(new ApiError(400, 'source_unsupported'));
+    expect(message).toBe(t('editorSpeech.sourceRejected'));
+    expect(message).not.toBe(t('editorSpeech.unsupported'));
 });

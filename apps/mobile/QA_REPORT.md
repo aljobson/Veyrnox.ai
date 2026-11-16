@@ -40,6 +40,15 @@ Device runs use `e2e.config.ts`, iPhone 17 Pro, one worker, no retries, and reta
 - Universal/App Link association lists do not yet cover every nested Editor, Creative Tool, Cinema, Publish, OAuth, and review path supported by the in-app mapper.
 - AI Lip Sync and Talking Objects currently present still examples for video-output workflows. Six other tool examples are WebM; their detail renderer does not provide a poster/fallback for iOS playback failure.
 
+## Relight and Video Upscale (QA rows 4.T6, 4.T12)
+
+Neither is missing from the code. Both are catalog rows that are inactive, so the Tools page (which lists only what the live catalog serves) correctly omits them:
+
+- **Relight** is the Face filters model `face-relight` (`fal-ai/iclight-v2`, 7 Credits provisional). Migration 0357 left it inactive: fal billed 2.00 megapixels ($0.20, double the $0.10 recorded) in a test that did not use the pinned canvas. It appears under Face filters once one job with the pinned payload is verified and a migration activates it.
+- **Video Upscale** is `topaz-upscale-video` (`fal-ai/topaz/upscale/video`, 49 Credits, worst-case flat tier). Migration 0202 staged it inactive until a real staging generation is checked against fal's usage page.
+
+The phone already has the `video-upscale` task and lists `face-relight`, matching the web `/tools` page. The QA expectation should read "shown when the catalog serves it". No endpoint was activated or invented here.
+
 ## Repeat locally
 
 ```sh

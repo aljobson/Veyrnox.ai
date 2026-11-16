@@ -2,6 +2,7 @@ import { resolveAppLink } from '../lib/resolveAppLink';
 import { rememberReferralFromLink } from '../lib/referralCapture';
 import { rememberPendingLink } from '../lib/pendingLink';
 import { isSchemeCallback } from '../lib/schemeCallbacks';
+import { isFilmStudioLink } from '../lib/filmStudioSwitch';
 
 // A link opened while signed out lands on sign-in; this keeps where it was going (pendingLink.ts). Never throws.
 function remembered(route: string): string {
@@ -16,6 +17,8 @@ export function redirectSystemPath({ path, initial }: { path: string; initial: b
     // its own listener. There is no screen for it, so while the app is open nothing is navigated (Expo Router skips an
     // empty result) and on a cold start the app opens at the root.
     try { if (isSchemeCallback(path)) return initial ? '/' : null; } catch { return initial ? '/' : null; }
+    // Film Studio is hidden (ADR-0344): a stale link to it opens Home, never a screen that is no longer offered.
+    try { if (isFilmStudioLink(path)) return '/'; } catch { return '/'; }
     try { rememberReferralFromLink(path); } catch { /* a friend's code is a nicety: never block the link */ }
     try {
         const route = resolveAppLink(path);

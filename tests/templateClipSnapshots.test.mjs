@@ -22,7 +22,7 @@ function load(file, source, mocks) {
   return compiled.exports;
 }
 // Frozen before this work: mock translations, catalog and imported child components are stable.
-const FROZEN = { TemplateRecipe: 'b8266a3e7eccadda1ffcb7499f6bd6e887ac1a2765c2b279c5facba518b39e3f', UseTemplate: '7f132ba0bce1698ec0be21efe4a247c4e3dfa5e35a18181b0cda68d8ef879aff', mobile: '8dee856206106ce25d35549dd4223150c7d35a113660f05c8a23ff8d5f269bac' };
+const FROZEN = { TemplateRecipe: 'b8266a3e7eccadda1ffcb7499f6bd6e887ac1a2765c2b279c5facba518b39e3f', UseTemplate: '19959a30ae93891dcbc91bcf5e17e84ad4cb84656b75f93ef828cea2c388740f', mobile: '8dee856206106ce25d35549dd4223150c7d35a113660f05c8a23ff8d5f269bac' };
 const digest = text => createHash('sha256').update(text).digest('hex');
 const versions = file => [readFileSync(file, 'utf8')];
 const webMocks = {

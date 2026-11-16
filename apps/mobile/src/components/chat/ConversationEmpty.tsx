@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { SKILL_GROUPS, SKILLS, MAX_SELECTED_SKILLS, type Skill } from '../../lib/studioSkills';
 import { t } from '../../lib/i18n';
+import { FILM_STUDIO_ENABLED } from '../../lib/filmStudioSwitch';
 import { Button, Icon, Text, themedStyles, useThemedStyles } from '../ui';
 
 export function ConversationEmpty({ selectedIds = [], lockedIds = [], saving = false, onToggle, applyStarter }: { selectedIds?: readonly string[]; lockedIds?: readonly string[]; saving?: boolean; onToggle?: (skill: Skill) => Promise<void>; skillNote?: string | null; applyStarter?: (skill: Skill) => Promise<void> }) {
@@ -34,9 +35,9 @@ export function ConversationEmpty({ selectedIds = [], lockedIds = [], saving = f
                         </View>
                     </View>
                 ))}
-                <Button accessibilityRole="button" containerStyle={styles.filmLink} onPress={() => router.push('/film')} variant="tertiary" size="md" label={t('chat.openFilmStudio')}>
+                {FILM_STUDIO_ENABLED ? <Button accessibilityRole="button" containerStyle={styles.filmLink} onPress={() => router.push('/film')} variant="tertiary" size="md" label={t('chat.openFilmStudio')}>
                     <Text variant="footnote" style={styles.filmLinkText}>{t('chat.openFilmStudio')}</Text><Icon name="arrowRight" size={20} />
-                </Button>
+                </Button> : null}
             </View>
         </View>
     );

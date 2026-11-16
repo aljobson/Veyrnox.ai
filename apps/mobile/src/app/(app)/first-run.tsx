@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { captureEvent } from '../../lib/analytics/events';
 import { CREATOR_PROFILE_ENABLED } from '../../lib/creatorProfile';
-import { fetchCatalogCached } from '../../lib/media';
+import { fetchCatalogCached, kindOf } from '../../lib/media';
+import { fetchPresets } from '../../lib/presets';
+import { useAnnouncement } from '../../lib/useAnnouncement';
+import { useReducedMotion } from '../../components/ui/useReducedMotion';
 import { starterModel } from '../../lib/createOptions';
 import { firstGoalTarget, FIRST_GOALS, type FirstGoal, type StoredFirstGoal } from '../../lib/firstGoal';
 import { writeFirstGoal } from '../../lib/firstGoalStore';
@@ -14,13 +17,22 @@ import { loadFirstAnswers, writeFirstProfile } from '../../lib/firstProfileStore
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
 import { pushFirstAnswers } from '../../lib/firstProfileSync';
 import { firstRunExample } from '../../lib/firstRunExamples';
-import { afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
-import { t } from '../../lib/i18n';
+import { HARD_PAYWALL_STARTER_CREDITS, afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
+import { noteOnboardingCompleted } from '../../lib/celebrate';
+import { plural, t } from '../../lib/i18n';
 import { rawText } from '../../lib/i18n/translate';
 import { ds } from '../../theme';
-import { Button, Text, themedStyles, usePressStyle, useThemedStyles } from '../../components/ui';
+import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui';
+import { OnboardingShell } from '../../components/OnboardingShell';
+import { OnboardingChoice } from '../../components/OnboardingChoice';
+import { VeyCharacter } from '../../components/VeyCharacter';
+import { ONBOARDING_TOTAL, creditsCardKeys } from '../../lib/firstRun';
+import type { MenuIcon } from '../../lib/menuIcons';
 
-const STEPS = ['role', 'goal', 'destination'] as const;
+// Goal first: it is the one answer that changes what happens next, and the picture grid is the strongest first screen.
+// Then where it will go, then who it is for (which shapes the example), then the recap with the idea to start from.
+const STEPS = ['goal', 'destination', 'role'] as const;
+const JOURNEY_TOTAL = ONBOARDING_TOTAL;
 type Step = (typeof STEPS)[number];
 
 // Literal keys, so the translation tooling can see every string this screen uses.
@@ -46,18 +58,56 @@ const DESTINATION_LABEL: Record<(typeof FIRST_DESTINATIONS)[number], () => strin
     private: () => t('create.firstRun.dest.private'),
 };
 
-// The first-run questions (ADR-0339), right after the welcome cards: which describes you best, what to make first, where
-// it will go. One per screen, each skippable, asked once of someone whose account has no goal and no role on record.
+const ROLE_ICON: Record<(typeof FIRST_ROLES)[number], MenuIcon> = { creator: 'video', business: 'store', pro: 'brush', hobbyist: 'smiley', beginner: 'lightbulb' };
+const GOAL_ICON: Record<FirstGoal, MenuIcon> = { image: 'image', video: 'video', audio: 'audio', edit: 'magicWand', publish: 'send', unsure: 'sparkle' };
+const DESTINATION_ICON: Record<(typeof FIRST_DESTINATIONS)[number], MenuIcon> = { tiktok: 'video', reels: 'camera', youtube: 'monitorPlay', private: 'eyeOff' };
+
+// The first-run journey (ADR-0339), the first screen a new person sees after sign-in: Vey says hello above what to make
+// first, then where it will go, then which describes you best, then a recap of the idea to start from. One per screen,
+// each skippable, asked once of someone whose account has no goal and no role on record.
 export default function FirstRun() {
-    const insets = useSafeAreaInsets();
     const router = useRouter();
     const styles = useThemedStyles(sheets);
-    const pressStyle = usePressStyle();
-    const { api } = useAuth();
+    const { api, beginSessionTask } = useAuth();
     const [step, setStep] = useState(0);
     const [asking, setAsking] = useState(false);
     const answers = useRef<{ role?: StoredRole; goal?: StoredFirstGoal; destination?: StoredDestination }>({});
+    // The same answers as state, so the closing recap redraws with them.
+    const [shown, setShown] = useState<{ role?: StoredRole; goal?: StoredFirstGoal; destination?: StoredDestination }>({});
     const leaving = useRef(false);
+    const reduced = useReducedMotion();
+    // Account writes go out one after another, so a quick Back and re-pick can never let an older request land last.
+    const writes = useRef<Promise<unknown>>(Promise.resolve());
+    // Remote writes only: each is dropped if the session that made the answer has ended by the time its turn comes.
+    const queueWrite = useCallback((job: () => Promise<unknown>) => {
+        const task = beginSessionTask();
+        const run = () => (task.current() ? job() : Promise.resolve());
+        writes.current = writes.current.then(run, run).catch(() => {});
+    }, [beginSessionTask]);
+    // Local saves go straight out (not behind the network) and finish() waits for them, so Create reads the answers.
+    const saved = useRef<Promise<unknown>>(Promise.resolve());
+    const saveLocal = useCallback((job: () => Promise<unknown>) => { saved.current = saved.current.then(job, job).catch(() => {}); }, []);
+    const picking = useRef(false);
+    // Set before the first await in finish(), so a second tap or a Back during the wait cannot start or undo a completion.
+    const finishing = useRef(false);
+    const [sampleBroken, setSampleBroken] = useState(false);
+    // The pending hop to the next question, so Back or leaving can cancel it.
+    const hop = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (hop.current) clearTimeout(hop.current); }, []);
+    // Real template results for the goal tiles. Without them (offline, nothing published) the tiles keep their icons.
+    const [photos, setPhotos] = useState<Partial<Record<FirstGoal, string>>>({});
+    useEffect(() => {
+        let alive = true;
+        fetchPresets().then((all) => {
+            if (!alive) return;
+            // Only a real still: a poster, or a preview that is an image (previews can be video files, which an image view cannot show).
+            const still = (p: (typeof all)[number]) => p.posterUrl ?? (p.previewUrl && !/\.(mp4|webm|mov|m4v)(\?|$)/i.test(p.previewUrl) ? p.previewUrl : null);
+            const pick = (kind: 'image' | 'video') => all.find((p) => p.available && kindOf(p.modality) === kind && still(p));
+            const image = pick('image'), video = pick('video');
+            setPhotos({ ...(image ? { image: still(image)! } : {}), ...(video ? { video: still(video)! } : {}) });
+        }).catch(() => {});
+        return () => { alive = false; };
+    }, []);
 
     const leave = useCallback(() => {
         if (leaving.current) return;
@@ -65,10 +115,20 @@ export default function FirstRun() {
         // The welcome counts as seen only once these questions are answered, skipped or already on record, so quitting the
         // app part-way brings them back next launch. Anyone who answered one is not asked again (needsFirstRun).
         void markWelcomeSeen();
+        // Flag off: first run ends here, so the milestones may open. Flag on, the paywall comes next and ends it.
+        if (!hardPaywallEnabled()) noteOnboardingCompleted();
         router.replace(afterWelcomeHref(hardPaywallEnabled(), CREATOR_PROFILE_ENABLED));
     }, [router]);
 
     // Someone whose account already answered (a second phone, or an older account) goes straight on.
+    // The free credits this account holds, for the recap's credits line. Unreadable means the line explains credits without a number.
+    const [free, setFree] = useState<number | null>(null);
+    useEffect(() => {
+        let alive = true;
+        Promise.resolve().then(() => api.getBalance()).then((b) => { if (alive) setFree(b.free_credits); }).catch(() => {});
+        return () => { alive = false; };
+    }, [api]);
+
     useEffect(() => {
         let alive = true;
         captureEvent('onboarding_step', { step: 'questions', action: 'view' });
@@ -81,7 +141,10 @@ export default function FirstRun() {
     }, [api, leave]);
 
     const finish = useCallback(async () => {
+        if (finishing.current) return;
+        finishing.current = true;
         const goal = answers.current.goal;
+        await saved.current;
         leave();
         if (!goal) return;
         const target = firstGoalTarget(goal);
@@ -93,69 +156,143 @@ export default function FirstRun() {
         if (model) router.push({ pathname: '/create/[modelId]', params: { modelId: model.id, prompt: firstRunExample(answers.current.role, target.goal) } });
     }, [leave, router]);
 
+    // A real answer already given is not replaced by a skip or "not sure" when someone goes Back, so what the recap shows,
+    // what is stored here and what the account holds stay the same.
     const answer = useCallback((word: string) => {
+        if (picking.current) return;
         const key: Step = STEPS[step];
+        const given = key === 'role' ? answers.current.role : key === 'goal' ? answers.current.goal : answers.current.destination;
+        const weak = word === 'skipped' || (key === 'goal' && word === 'unsure');
+        const keep = weak && !!given && given !== 'skipped' && given !== 'unsure';
         captureEvent('onboarding_step', { step: 'questions', action: word === 'skipped' ? 'skip' : 'next' });
-        if (key === 'role') {
-            answers.current = { ...answers.current, role: word as StoredRole };
-            void writeFirstProfile({ role: word as StoredRole });
-            void pushFirstAnswers(api, { role: word });
-        } else if (key === 'goal') {
-            answers.current = { ...answers.current, goal: word as StoredFirstGoal };
-            void writeFirstGoal(word as StoredFirstGoal);
-            void pushFirstAnswers(api, { goal: word });
-        } else {
-            answers.current = { ...answers.current, destination: word as StoredDestination };
-            void writeFirstProfile({ destination: word as StoredDestination });
-            void pushFirstAnswers(api, { destination: word });
+        const next = keep ? (given as string) : word;
+        if (!keep) {
+            if (key === 'role') {
+                answers.current = { ...answers.current, role: next as StoredRole };
+                saveLocal(() => writeFirstProfile({ role: next as StoredRole }));
+                queueWrite(() => pushFirstAnswers(api, { role: next }));
+            } else if (key === 'goal') {
+                answers.current = { ...answers.current, goal: next as StoredFirstGoal };
+                saveLocal(() => writeFirstGoal(next as StoredFirstGoal));
+                queueWrite(() => pushFirstAnswers(api, { goal: next }));
+            } else {
+                answers.current = { ...answers.current, destination: next as StoredDestination };
+                saveLocal(() => writeFirstProfile({ destination: next as StoredDestination }));
+                queueWrite(() => pushFirstAnswers(api, { destination: next }));
+            }
         }
-        if (step < STEPS.length - 1) setStep(step + 1);
-        else void finish();
-    }, [api, finish, step]);
+        setShown(answers.current);
+        // A short beat lets the chosen card show its tick before the screen moves on (none with Reduce Motion).
+        picking.current = true;
+        hop.current = setTimeout(() => {
+            hop.current = null;
+            picking.current = false;
+            if (step < STEPS.length - 1) { setStep(step + 1); return; }
+            // After the last question: a creation goal gets a recap with the idea it will start from; any other goes straight on.
+            const goal = answers.current.goal;
+            if (goal === 'image' || goal === 'video' || goal === 'audio') setStep(STEPS.length);
+            else void finish();
+        }, reduced || word === 'skipped' ? 0 : 220);
+    }, [api, finish, queueWrite, reduced, saveLocal, step]);
+
+    // Back cancels a pending hop, so a quick pick-then-Back never jumps forward again.
+    const goBack = useCallback((to: number) => {
+        if (finishing.current) return;
+        if (hop.current) { clearTimeout(hop.current); hop.current = null; }
+        picking.current = false;
+        setStep(to);
+    }, []);
+
+    // Moving between questions swaps the whole screen, so say which one is now showing (WCAG 4.1.3).
+    const spokenTitle = step === 0 ? t('create.firstGoal.title') : step === 1 ? t('create.firstRun.destTitle') : step === 2 ? t('create.firstRun.roleTitle') : t('create.firstRun.suggested');
+    useAnnouncement(asking ? `${rawText(spokenTitle)}. ${rawText(t('welcome.step', { n: step + 1, total: ONBOARDING_TOTAL }))}` : null, { everywhere: true });
 
     if (!asking) return <View style={styles.screen}><Stack.Screen options={{ headerShown: false, gestureEnabled: false }} /></View>;
 
+    // The recap is the payoff: a real result for the chosen goal, the idea this person will start from, what they told us as
+    // chips, and the credits promise in the paywall's own words.
+    if (step >= STEPS.length) {
+        const goal = shown.goal === 'image' || shown.goal === 'video' || shown.goal === 'audio' ? shown.goal : 'image';
+        const sample = sampleBroken ? null : photos[goal] ?? null;
+        const credits = creditsCardKeys(free, hardPaywallEnabled() ? HARD_PAYWALL_STARTER_CREDITS : null);
+        const creditsLine = credits.count !== null ? plural(credits.body, credits.count) : t(credits.body, credits.params);
+        const chips = [
+            shown.role && shown.role !== 'skipped' ? ROLE_LABEL[shown.role as (typeof FIRST_ROLES)[number]]?.() : null,
+            shown.goal && shown.goal !== 'skipped' ? GOAL_LABEL[shown.goal as FirstGoal]?.() : null,
+            shown.destination && shown.destination !== 'skipped' ? DESTINATION_LABEL[shown.destination as (typeof FIRST_DESTINATIONS)[number]]?.() : null,
+        ].filter((c): c is string => !!c);
+        return (
+            <OnboardingShell step={JOURNEY_TOTAL} total={JOURNEY_TOTAL} onBack={() => goBack(STEPS.length - 1)} backLabel={t('public.vey.back')}
+                footer={<Button label={t('welcome.go')} onPress={() => { captureEvent('onboarding_step', { step: 'recap', action: 'next' }); void finish(); }} />}>
+                <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
+                <ScrollView contentContainerStyle={styles.recap} showsVerticalScrollIndicator={false}>
+                    {sample ? (
+                        <Image source={{ uri: sample }} style={styles.sample} contentFit="cover" transition={reduced ? 0 : 240} onError={() => setSampleBroken(true)} accessibilityIgnoresInvertColors />
+                    ) : (
+                        <VeyCharacter width={120} interactive />
+                    )}
+                    <Text variant="title1" style={styles.title} accessibilityRole="header">{t('create.firstRun.suggested')}</Text>
+                    <View style={styles.idea}>
+                        <Text tone="primary" style={styles.ideaText}>{firstRunExample(shown.role, goal)}</Text>
+                    </View>
+                    <View style={styles.chips}>
+                        {chips.map((chip) => <View key={chip} style={styles.chip}><Text variant="bodyStrong" tone="primary">{chip}</Text></View>)}
+                    </View>
+                    {/* Credits, then the receipt promise: price first, refund if it fails. */}
+                    <Text tone="secondary" style={styles.promise}>{creditsLine}</Text>
+                    <Text tone="secondary" style={styles.promise}>{t('welcome.credits.price')}</Text>
+                </ScrollView>
+            </OnboardingShell>
+        );
+    }
+
     const key = STEPS[step];
-    const options: { id: string; label: string }[] =
-        key === 'role' ? FIRST_ROLES.map((id) => ({ id, label: ROLE_LABEL[id]() }))
-            : key === 'goal' ? FIRST_GOALS.map((id) => ({ id, label: GOAL_LABEL[id]() }))
-                : FIRST_DESTINATIONS.map((id) => ({ id, label: DESTINATION_LABEL[id]() }));
-    const title = key === 'role' ? t('create.firstRun.roleTitle') : key === 'goal' ? t('create.firstGoal.title') : t('create.firstRun.destTitle');
+    const options: { id: string; label: string; icon: MenuIcon }[] =
+        key === 'role' ? FIRST_ROLES.map((id) => ({ id, label: ROLE_LABEL[id](), icon: ROLE_ICON[id] }))
+            : key === 'goal' ? FIRST_GOALS.map((id) => ({ id, label: GOAL_LABEL[id](), icon: GOAL_ICON[id] }))
+                : FIRST_DESTINATIONS.map((id) => ({ id, label: DESTINATION_LABEL[id](), icon: DESTINATION_ICON[id] }));
+    const title = key === 'goal' ? t('create.firstGoal.title') : key === 'destination' ? t('create.firstRun.destTitle') : t('create.firstRun.roleTitle');
+    const picked = key === 'role' ? shown.role : key === 'goal' ? shown.goal : shown.destination;
 
     return (
-        <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <OnboardingShell step={step + 1} total={JOURNEY_TOTAL}
+            onBack={step > 0 ? () => goBack(step - 1) : undefined} backLabel={t('public.vey.back')} onSkip={() => answer('skipped')} skipLabel={t('create.firstGoal.skip')} footer={null}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
-            <ScrollView contentContainerStyle={styles.body}>
+            <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+                {/* Vey introduces the journey above the first question, so hello and what-to-make share one screen. */}
+                {key === 'goal' ? (
+                    <View style={styles.intro}>
+                        <VeyCharacter width={96} interactive />
+                        <Text variant="bodyStrong" tone="secondary" style={styles.text}>{t('welcome.hello.title')}</Text>
+                    </View>
+                ) : null}
                 <Text variant="title1" style={styles.title} accessibilityRole="header">{title}</Text>
                 <Text tone="secondary" style={styles.text}>{t('create.firstRun.personalise')}</Text>
-                <View style={styles.choices}>
-                    {options.map((option) => (
-                        <Pressable key={option.id} accessibilityRole="button" accessibilityLabel={rawText(option.label)} onPress={() => answer(option.id)}
-                            style={({ pressed }) => [styles.choice, pressed && pressStyle]}>
-                            <Text variant="bodyStrong" tone="primary">{option.label}</Text>
-                        </Pressable>
+                {/* The goal is the picture-led question: a two-column grid of big tiles. The others are full-width rows. */}
+                <View accessibilityRole="radiogroup" style={key === 'goal' ? styles.grid : styles.list}>
+                    {options.map((option, index) => (
+                        <OnboardingChoice key={`${key}-${option.id}`} label={option.label} icon={option.icon} layout={key === 'goal' ? 'tile' : 'row'}
+                            selected={picked === option.id} imageUri={key === 'goal' ? photos[option.id as FirstGoal] ?? null : null} index={index} onPress={() => answer(option.id)} />
                     ))}
                 </View>
             </ScrollView>
-            <View style={styles.footer}>
-                <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                    {STEPS.map((name, index) => <View key={name} style={[styles.dot, index === step && styles.dotOn]} />)}
-                </View>
-                <Button variant="tertiary" label={t('create.firstGoal.skip')} onPress={() => answer('skipped')} />
-            </View>
-        </View>
+        </OnboardingShell>
     );
 }
 
 const sheets = themedStyles((p) => ({
     screen: { flex: 1, backgroundColor: p.bg },
-    body: { flexGrow: 1, justifyContent: 'center', padding: ds.space.gutter, gap: ds.space.md },
+    body: { flexGrow: 1, justifyContent: 'center', paddingVertical: ds.space.xl, gap: ds.space.md },
     title: { textAlign: 'center' },
-    text: { textAlign: 'center' },
-    choices: { gap: ds.space.sm, marginTop: ds.space.sm },
-    choice: { minHeight: 56, justifyContent: 'center', paddingHorizontal: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1 },
-    footer: { padding: ds.space.gutter, gap: ds.space.sm },
-    dots: { flexDirection: 'row', justifyContent: 'center', gap: ds.space.sm },
-    dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: p.borderSubtle },
-    dotOn: { backgroundColor: p.textPrimary },
+    text: { textAlign: 'center', marginBottom: ds.space.sm },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: ds.space.md },
+    list: { gap: ds.space.md },
+    recap: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', gap: ds.space.lg, paddingVertical: ds.space.lg },
+    promise: { textAlign: 'center' },
+    intro: { alignItems: 'center', gap: ds.space.xs },
+    sample: { alignSelf: 'stretch', height: 200, borderRadius: ds.radius.xl },
+    idea: { alignSelf: 'stretch', borderRadius: ds.radius.xl, borderWidth: 1.5, borderColor: p.accent, backgroundColor: p.accentSubtle, padding: ds.space.xl },
+    ideaText: { textAlign: 'center' },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: ds.space.sm },
+    chip: { borderRadius: ds.radius.pill, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle, paddingHorizontal: ds.space.md, paddingVertical: ds.space.sm },
 }));

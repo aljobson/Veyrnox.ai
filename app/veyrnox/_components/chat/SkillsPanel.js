@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { MAX_SELECTED_SKILLS, SKILLS, SKILL_GROUPS, skillById } from '../../_lib/studioSkills';
 import { SkillDetailsDialog } from './SkillDetailsDialog';
 import { StudioSkillIcon } from './StudioSkillIcon';
+import { FILM_STUDIO_ENABLED } from '../../_lib/filmStudioSwitch';
 
 /**
  * The Studio skills (ADR-0073): always on the empty chat, grouped by what they help with. Choosing one starts the chat with
@@ -30,8 +31,8 @@ export function SkillsPanel({ selectedIds = null, selectedId = '', lockedIds = [
       <h2 className="font-vx-mono text-[11px] tracking-[0.14em] text-vx-fg-muted">{t("app.chat.skills.title")}</h2>
       <p className="mt-1 text-sm text-vx-fg-muted">{t("app.chat.skills.help")}</p>
       {!linkToChat && selected.size > 0 && <p className="mt-1 font-vx-mono text-[10px] uppercase text-vx-accent">{t('app.chat.skills.selected', { count: selected.size, max: MAX_SELECTED_SKILLS })}</p>}
-      <Link href="/app/film-studio" className="mt-3 inline-block text-sm font-semibold text-vx-accent">{t("app.chat.skills.film")}</Link>
-      {SKILL_GROUPS.map((group) => (
+      {FILM_STUDIO_ENABLED && <Link href="/app/film-studio" className="mt-3 inline-block text-sm font-semibold text-vx-accent">{t("app.chat.skills.film")}</Link>}
+      {SKILL_GROUPS.filter((group) => FILM_STUDIO_ENABLED || group !== 'Film').map((group) => (
         <div key={group} className="mt-4">
           <h3 className="text-xs font-semibold text-vx-fg-muted">{tOr(t, `app.chat.skill.${group}`, group)}</h3>
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">

@@ -14,6 +14,7 @@ import { createTileColumns } from '../../../lib/createLayout';
 import { t } from '../../../lib/i18n';
 import { fetchCatalog } from '../../../lib/media';
 import { SKILL_GROUPS, SKILL_MODEL, SKILLS, skillById, skillsInstructions, fittingSkills, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
+import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
 import { STUDIO_WORKFLOWS, workflowById, workflowSteps, type Workflow } from '../../../lib/studioWorkflows';
 import { ds, LIST_END_PADDING, TEXT_SCALE } from '../../../theme';
 
@@ -102,10 +103,10 @@ export default function StudioSkills() {
                 <Text variant="title1" accessibilityRole="header">{t('chatDepth.wfTitle')}</Text>
                 <Text variant="callout" tone="secondary">{t('chatDepth.wfHelp')}</Text>
                 <View style={styles.pill}><Text variant="caption">{t('skillsUi.wfControl')}</Text></View>
-                {STUDIO_WORKFLOWS.map(w => <WorkflowCard key={w.id} workflow={w} disabled={creating} onPress={() => { setSkill(null); setWorkflow(w); }} />)}
+                {STUDIO_WORKFLOWS.filter(w => FILM_STUDIO_ENABLED || w.href !== '/film').map(w => <WorkflowCard key={w.id} workflow={w} disabled={creating} onPress={() => { setSkill(null); setWorkflow(w); }} />)}
                 <Text variant="title1" accessibilityRole="header">{t('skillsUi.skillsTitle')}</Text>
-                <Button variant="tertiary" label={t('chat.openFilmStudio')} icon="arrowRight" onPress={() => router.push('/film')} />
-                {SKILL_GROUPS.map(g => <View key={g} style={styles.group}>
+                {FILM_STUDIO_ENABLED ? <Button variant="tertiary" label={t('chat.openFilmStudio')} icon="arrowRight" onPress={() => router.push('/film')} /> : null}
+                {SKILL_GROUPS.filter(g => FILM_STUDIO_ENABLED || g !== 'Film').map(g => <View key={g} style={styles.group}>
                     <Text variant="title3" accessibilityRole="header">{t(`chat.skills.group.${g}`)}</Text>
                     <View style={styles.grid}>{SKILLS.filter(s => s.group === g).map(s => {
                         const chosen = selected.some(value => value.id === s.id);

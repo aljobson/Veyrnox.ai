@@ -1,7 +1,7 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
-import { InlineMedia } from '../src/components/InlineMedia';
+import { InlineMedia, MEDIA_HEIGHT } from '../src/components/InlineMedia';
 import { t } from '../src/lib/i18n';
 
 type Listener = (event: any) => void;
@@ -76,4 +76,18 @@ test('the control strip never shrinks below the 56pt play button plus padding, s
     const style = RN.StyleSheet.flatten(strip.props.style);
     expect(style.flexShrink).toBe(0);
     expect(style.minHeight).toBeGreaterThanOrEqual(44);
+});
+test.each([['landscape', 1920, 1080], ['portrait', 1080, 1920], ['square', 1080, 1080]])('a %s video is drawn inside one clipped, fixed-height frame', async (_name, _w, _h) => {
+    await act(async () => root.render(<InlineMedia url="https://media.example/clip.mp4" label="Finished video" />));
+    const view = root.container.queryAll(n => n.type === 'VideoView')[0];
+    expect(view.props.contentFit).toBe('contain');
+    // The video fills a frame that clips it and has a fixed height, so the space it takes in the layout
+    // is the space it draws in, whatever its aspect ratio.
+    expect(RN.StyleSheet.flatten(view.props.style)).toMatchObject({ position: 'absolute' });
+    const frame = RN.StyleSheet.flatten(view.parent!.props.style);
+    expect(frame).toMatchObject({ height: MEDIA_HEIGHT, overflow: 'hidden', flexShrink: 0 });
+});
+test('audio draws no video frame, only the controls', async () => {
+    await act(async () => root.render(<InlineMedia url="https://media.example/a.mp3" label="Audio" audio />));
+    expect(root.container.queryAll(n => n.props.testID === 'inline-audio-toggle')).toHaveLength(1);
 });

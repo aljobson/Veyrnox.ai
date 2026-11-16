@@ -9,6 +9,7 @@ import { VibeOffer } from '../_components/VibeOffer';
 import { YourWinsCard } from '../_components/YourWinsCard';
 import { useVibe } from '../_lib/creatorProfile';
 import { recordHomeStart } from '../_lib/firstGoalSync';
+import { FILM_STUDIO_ENABLED } from '../_lib/filmStudioSwitch';
 import { FirstRunFlow } from '../_components/FirstRunFlow';
 import { hasRealAnswer, orderStarts } from '../_lib/firstProfile';
 import { useFirstProfile } from '../_lib/useFirstProfile';
@@ -75,7 +76,7 @@ export default function Explore() {
         </header>
 
         <section aria-label={t('app.explore.start')} className="my-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {orderStarts(profile.ready ? profile.role : null, profile.ready ? profile.goal : null).map((key, index) => (
+          {orderStarts(profile.ready ? profile.role : null, profile.ready ? profile.goal : null).filter((key) => FILM_STUDIO_ENABLED || key !== 'film').map((key, index) => (
             key === 'create' ? <StarterCard href="/app/create" key={key} label={t('label.Create')} description={t('app.explore.createStart')} icon="create" suggested={suggestedLabel(index)} />
               : key === 'chat' ? <StarterCard href="/app/chat" key={key} label={t('label.LLM Chat')} description={t('app.explore.chat')} icon="chat" suggested={suggestedLabel(index)} />
               : key === 'film' ? <StarterCard href="/app/film-studio" key={key} label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" suggested={suggestedLabel(index)} />

@@ -69,6 +69,15 @@ test('lists current and restored-from, loads older, previews clip count and conf
     expect(JSON.parse(puts()[0][1].body)).toEqual({ expected_revision: 4, restore_revision: 2 });
     expect(puts()[0][1].headers['Idempotency-Key']).toBeTruthy(); expect(session.document?.brief).toBe('restored'); expect(session.revision).toBe(5);
 });
+test('tapping a version shows its preview and Restore above the list, not below 19 rows', async () => {
+    await open(); await press('Load older'); await row('Version 2');
+    const all = root.container.queryAll(() => true);
+    const at = (match: (node: (typeof all)[number]) => boolean) => all.findIndex(match);
+    const previewAt = at(node => node.props.testID === 'version-preview');
+    const firstRowAt = at(node => node.props.accessibilityLabel === 'Version 4 (current)');
+    expect(previewAt).toBeGreaterThanOrEqual(0); expect(firstRowAt).toBeGreaterThan(previewAt);
+    expect(root.container.queryAll(node => node.props.accessibilityLabel === 'Restore' && typeof node.props.onClick === 'function')).not.toHaveLength(0);
+});
 test('Restore is disabled while dirty or while an import runs and is rechecked at confirmation', async () => {
     await open(); await press('Load older'); await row('Version 2');
     await act(async () => session.markDocument({ ...doc, brief: 'edit' }));

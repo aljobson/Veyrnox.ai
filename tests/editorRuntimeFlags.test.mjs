@@ -63,13 +63,13 @@ test('Oddlings stays off in production and staging and requires its grouped opt-
     assert.equal(editorFeatureEnabled('PROJECT_ODDLINGS_ENABLED', env({oddlings:'true'})), true);
 });
 
-test('server render is owner-preview in production (fail-closed allowlist), recovery on; both off in staging', () => {
+test('server render is open to everyone in production (owner-approved 16 Nov 2026), recovery on; both off in staging', () => {
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
-    for (const [vars, render, recovery, mode] of [[config.vars, 'preview', 'true', 'preview'], [config.env.staging.vars, 'false', 'false', 'off']]) {
+    for (const [vars, render, recovery, mode] of [[config.vars, 'true', 'true', 'on'], [config.env.staging.vars, 'false', 'false', 'off']]) {
         assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRender, render);
         assert.equal(JSON.parse(vars.EDITOR_RUNTIME_FLAGS).serverRenderRecovery, recovery);
-        // Only the literal 'true' means open to everyone; 'preview' is not that.
-        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', vars), false);
+        // The literal 'true' means open to everyone: the grouped flag turns the render feature on.
+        assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_ENABLED', vars), render === 'true');
         assert.equal(editorFeatureEnabled('EDITOR_SERVER_RENDER_RECOVERY_ENABLED', vars), recovery === 'true');
         assert.equal(editorServerRenderMode(vars), mode);
         assert.equal(Object.hasOwn(vars, 'EDITOR_SERVER_RENDER_SWEEP_ENABLED'), false);

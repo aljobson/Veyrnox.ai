@@ -68,12 +68,16 @@ test('result replaces Vey', async () => {
     await render(); await complete('succeeded'); expect(vey()).toHaveLength(0);
     expect(root.container.queryAll(n => n.props.source?.uri === 'https://file')).toHaveLength(1);
 });
-test('a video result keeps its full height so the actions scroll under it, not over it', async () => {
+test('a video result sits inside the scroll content with what follows it, so nothing can overlap it', async () => {
     getJob.mockResolvedValue({ state: 'succeeded', model_id: 'model' });
     getAsset.mockResolvedValue({ url: 'https://file', mime_type: 'video/mp4' });
     await render(); await complete('succeeded');
-    const box = RN.StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'job-output')[0].props.style);
-    expect(box).toMatchObject({ flexGrow: 0, flexShrink: 0, flexBasis: 'auto', overflow: 'visible' });
+    const box = root.container.queryAll(n => n.props.testID === 'job-output')[0];
+    expect(RN.StyleSheet.flatten(box.props.style)).not.toHaveProperty('flex');
+    let scroll = box.parent;
+    while (scroll && scroll.type !== 'RCTScrollView' && scroll.type !== 'ScrollView') scroll = scroll.parent;
+    expect(scroll).toBeTruthy();
+    expect(scroll!.queryAll(n => n.children.includes(t('job.next.title'))).length).toBeGreaterThan(0);
 });
 
 test('the file is requested alongside the job read, not after it', async () => {

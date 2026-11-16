@@ -61,7 +61,7 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
     const view = <VideoView player={player} nativeControls={false} contentFit="contain" accessibilityLabel={rawText(label)} style={styles.media} />;
     return (
         <View style={styles.deck}>
-            <View>
+            <View style={styles.frame}>
             {view}
             {poster && resting && !playing ? (
                 <Pressable testID="inline-media-poster" accessibilityRole="button" accessibilityLabel={rawText(label)} onPress={() => { if (player.currentTime >= player.duration - 0.05) player.currentTime = 0; player.play(); }} style={styles.poster}>
@@ -75,6 +75,7 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
     );
 }
 const POSTER_AT_S = 0.5;
+export const MEDIA_HEIGHT = 260;
 const SKIP_S = 10;
 const clock = (seconds: number) => {
     const whole = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
@@ -127,7 +128,10 @@ const sheets = themedStyles(p => ({
     poster: { position: 'absolute', top: 0, start: 0, end: 0, bottom: 0, borderRadius: ds.radius.md, overflow: 'hidden', backgroundColor: p.bgElevated1, alignItems: 'center', justifyContent: 'center' },
     fill: { position: 'absolute', top: 0, start: 0, end: 0, bottom: 0 },
     play: { width: 56, height: 56, borderRadius: 28, backgroundColor: p.bgElevated1, alignItems: 'center', justifyContent: 'center' },
-    media: { width: '100%', height: 260, flexShrink: 0, backgroundColor: p.bgElevated1, borderRadius: ds.radius.md },
+    // One clipped box of a fixed height: the video letterboxes inside it for any aspect, so the space
+    // reserved in the layout is exactly the space drawn.
+    frame: { width: '100%', height: MEDIA_HEIGHT, flexShrink: 0, overflow: 'hidden', borderRadius: ds.radius.md, backgroundColor: p.bgElevated1 },
+    media: { position: 'absolute', top: 0, start: 0, end: 0, bottom: 0 },
     hidden: { position: 'absolute', width: 1, height: 1, opacity: 0 },
     controls: { flexDirection: 'row', alignItems: 'center', flexShrink: 0, minHeight: 56 + ds.space.md * 2, gap: ds.space.md, padding: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1 },
     toggle: { width: 56, height: 56, borderRadius: ds.radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: p.bgElevated2, borderWidth: 1, borderColor: p.borderStrong },
