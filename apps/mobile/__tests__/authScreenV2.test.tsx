@@ -123,7 +123,6 @@ test('email submit requires captcha and prevents duplicate requests without cons
     expect(mockEmail).toHaveBeenCalledTimes(1);
     expect(root.container.queryAll(n => n.props.children === t('email.securityFirst'))).toHaveLength(0);
     expect(control('email.signInCta').props.disabled).toBe(true);
-    expect(control('email.signInCta').props.disabled).toBe(true);
     await act(async () => { control('email.signInCta').props.onPress(); });
     expect(mockEmail).toHaveBeenCalledTimes(1);
     expect(mockEmail).toHaveBeenCalledWith('person@example.test', 'password123', 'proof');
