@@ -12,11 +12,11 @@
       row('veo-3.1-lite-kie', 'Veo 3.1 Lite', 5), row('hailuo-02-kie', 'MiniMax Hailuo 02', 9),
     ]],
     ['Image', [
-      row('nano-banana-kie', 'Nano Banana', 1), row('nano-banana-pro-grsai', 'Nano Banana Pro', 2),
-      row('flux-2-pro', 'Flux.2 [pro]', 2), row('seedream-4', 'Seedream v4', 1), row('sana-1.5-4.8b', 'Sana v1.5 4.8B', 1),
+      row('nano-banana-kie', 'Nano Banana', 2), row('nano-banana-pro-grsai', 'Nano Banana Pro', 2),
+      row('flux-2-pro', 'Flux.2 [pro]', 2), row('seedream-4', 'Seedream v4', 2), row('sana-1.5-4.8b', 'Sana v1.5 4.8B', 2),
     ]],
     ['Audio', [
-      row('ace-step', 'ACE-Step', 1), row('elevenlabs-sfx-v2', 'ElevenLabs Sound Effects v2', 2),
+      row('ace-step', 'ACE-Step', 2), row('elevenlabs-sfx-v2', 'ElevenLabs Sound Effects v2', 2),
       row('inworld-tts', 'Inworld TTS', 2), row('elevenlabs-tts-turbo', 'ElevenLabs TTS Turbo 2.5', 3),
     ]],
   ];
