@@ -56,7 +56,7 @@ export default function FacelessReel() {
     return <KeyboardScreen style={styles.screen}>
         <Stack.Screen options={{ title: t('facelessReel.chip') }} />
         <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-            <Text variant="caption" accessibilityLiveRegion="polite">{t(`facelessReel.step${step}`)}</Text>
+            <Text variant="caption" accessibilityLiveRegion="polite">{step === 1 ? t('facelessReel.step1') : step === 2 ? t('facelessReel.step2') : t('facelessReel.step3')}</Text>
             {step === 1 ? <>
                 <Text>{t('facelessReel.lead')}</Text>
                 <Text variant="title2" accessibilityRole="header">{t('facelessReel.storyBrief')}</Text>
