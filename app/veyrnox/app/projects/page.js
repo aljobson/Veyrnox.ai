@@ -10,6 +10,7 @@ import { Button } from '../../_components/Button';
 import { Modal } from '../../_components/Modal';
 import { gatewayFetch, makeIdempotencyKey } from '../../_lib/gateway';
 import { useProjectsEnabled } from '../../_components/ProjectsFlag';
+import { ProjectThumb } from '../../_components/JobThumb';
 
 const field = 'w-full rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 function errorMessage(error, t) {
@@ -91,6 +92,7 @@ export default function Projects() {
                 : <section aria-label={t("label.Projects")} className="overflow-hidden rounded-2xl border border-vx-border">
                   <div className="flex items-center justify-between border-b border-vx-border bg-vx-panel px-5 py-3 text-xs text-vx-fg-muted"><span>{t(pluralKey(t, locale, 'app.projects.count', shown.length), { count: locale === 'en' ? String(shown.length) : shown.length.toLocaleString(localeTag(locale)) })}</span><span>{t("app.projects.newest")}</span></div>
                   {!shown.length ? <p data-testid="project-no-match" className="p-10 text-center text-vx-fg-muted">{t('app.projects.noMatch', { query })}</p> : <ul className="divide-y divide-vx-border">{shown.map(p => <li key={p.id} className="flex flex-col items-start justify-between gap-4 px-5 py-5 sm:flex-row sm:items-center">
+                    <ProjectThumb projectId={p.id} size={64} />
                     <div className="min-w-0 flex-1"><h2 className="wrap-break-word font-bold"><Link className="hover:text-vx-accent focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent" href={`/app/projects/${encodeURIComponent(p.id)}`}>{p.name}</Link></h2><p className="mt-1 text-xs text-vx-fg-muted">{t('app.projects.createdAt', { date: new Date(p.created_at).toLocaleDateString(localeTag(locale), { day: 'numeric', month: 'short', year: 'numeric' }) })}</p></div>
                     <div className="flex gap-2"><Button data-testid={`project-rename-${p.id}`} size="sm" variant="ghost" aria-label={t('app.projects.renameLabel', { name: p.name })} onClick={() => setDialog({ mode: 'rename', project: p })}>{t("app.projects.rename")}</Button><Button data-testid={`project-delete-${p.id}`} size="sm" variant="ghost" aria-label={t('app.projects.deleteLabel', { name: p.name })} onClick={() => setDialog({ mode: 'delete', project: p })}>{t("app.publish.composer.delete")}</Button></div>
                   </li>)}</ul>}

@@ -16,6 +16,13 @@ Migration 0549 copies every catalog column explicitly, changing only identity,
 name and activation. Its price is a copied placeholder, **pending owner price
 decision D6 (staging probe + fal bill)**. It remains inactive. No provider probe,
 price decision, flag flip, or migration application is authorized by this work.
+
+**Amendment 1 (2026-11-16, D6).** One STAGING probe (request
+`01a1e610-b245-7621-9afc-86f6f974dcac`, one 60 s loop on `fal-ai/ace-step-1.5`) billed
+more than the $0.036 that the copied price of 3 Credits assumed. The owner set the
+price at 5 Credits a part, so one Generate (two Alternates) costs 10. Migration 0554
+sets `credits_5s = 5` and switches `ace-step-loop` on. The editor surface still needs
+`MUSIC_RUNTIME_FLAGS.beatAi`.
 The public catalog, cached projection, model picker and fallback tokens exclude
 it; the price watch skips this private alias. Existing endpoint capabilities and
 unit-rate metadata apply. No new dependency, Worker binding, CSP host or route.

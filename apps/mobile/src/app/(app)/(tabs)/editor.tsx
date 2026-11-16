@@ -8,6 +8,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useRef, useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { useAssetLinks } from '../../../components/JobThumb';
+import { ProjectThumb } from '../../../components/CreationThumbs';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
@@ -27,6 +29,7 @@ export default function EditorHome() {
     const styles = useThemedStyles(sheets);
     const { scheme } = useAppearance();
     const { api } = useAuth();
+    const links = useAssetLinks(api);
     const router = useRouter();
     const selectedWorkspace = useRef<string | null>(null);
     const request = useRef(0);
@@ -179,9 +182,7 @@ export default function EditorHome() {
                         style={[styles.project]}
                         onPress={() => router.push({ pathname: '/editor/[projectId]', params: { projectId: item.id } })}
                     >
-                        <View style={styles.projectIconBox}>
-                            <Image source={MENU_ICONS.slate} style={styles.projectIcon} tintColor={styles.accentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
-                        </View>
+                        <ProjectThumb api={api} links={links} projectId={item.id} size={44} />
                         <View style={styles.projectCopy}>
                             <Text variant="bodyStrong" style={styles.projectName} numberOfLines={1}>{item.name}</Text>
                             <Text variant="footnote" style={styles.projectMeta}>{t('editor.home.version', { version: String(projectVersion(item)) })}{projectSavedAt(item) ? ` · ${new Date(projectSavedAt(item) as string).toLocaleString(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</Text>

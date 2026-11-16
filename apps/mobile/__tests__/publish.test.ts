@@ -199,6 +199,11 @@ describe('parsePost and fetchPost', () => {
         expect(parsePost(null)).toBeNull();
         expect(parsePost({ ...post, id: '' })).toBeNull();
     });
+    test('a post keeps its attached creations in order, so a list can show a thumbnail', () => {
+        const media = [{ media_type: 'video', job_id: 'j1' }, { media_type: 'image', upload_id: 'u1' }, 'junk'];
+        expect(parsePost({ ...post, media })?.media).toEqual([{ jobId: 'j1', mediaType: 'video' }, { jobId: null, mediaType: 'image' }]);
+        expect(parsePost({ ...post })?.media).toEqual([]);
+    });
     test('fetchPost reads GET /social/posts/:id and unwraps the row', async () => {
         const { api, request } = apiWith({ brand_id: 'b', post: { ...post, updated_at: 'u1' } });
         const p = await fetchPost(api, 'a/b');

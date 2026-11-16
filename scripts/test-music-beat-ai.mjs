@@ -15,11 +15,15 @@ const call = (fn, ...args) => value(`SELECT public.${fn}(${args.map((_, i) => `$
 const migrations = ['0549_music_beat_ace_step_loop.sql','0550_music_beat_loop_dispatch.sql','0551_music_beat_held_contexts.sql','0552_music_beat_held_admission.sql'];
 try {
   await query('BEGIN');
+  // 0554 prices the row and switches it on; check that, then start from the state 0549 leaves so its replay guard holds.
+  const priced = (await query("SELECT credits_5s, active FROM public.model_catalog WHERE id='ace-step-loop'")).rows[0];
+  assert.deepEqual([priced.credits_5s, priced.active], [5, true], '0554 prices ace-step-loop at 5 and switches it on');
+  await query("UPDATE public.model_catalog l SET active=false, credits_5s=s.credits_5s FROM public.model_catalog s WHERE l.id='ace-step-loop' AND s.id='ace-step-1.5'");
   for (let replay = 0; replay < 2; replay++) for (const file of migrations) await query(await readFile(new URL(`../packages/db/schema/supabase/${file}`, import.meta.url), 'utf8'));
   const source = (await query("SELECT * FROM public.model_catalog WHERE id='ace-step-1.5'")).rows[0];
   const loop = (await query("SELECT * FROM public.model_catalog WHERE id='ace-step-loop'")).rows[0];
   assert.equal(loop.active, false);
-  for (const field of Object.keys(source).filter(k => !['id','name','active'].includes(k))) assert.deepEqual(loop[field], source[field], field);
+  for (const field of Object.keys(source).filter(k => !['id','name','active','updated_at'].includes(k))) assert.deepEqual(loop[field], source[field], field);
   console.log('PASS inactive catalog copy and replay');
   const auth = randomUUID();
   await query('INSERT INTO auth.users(id,email) VALUES($1,$2)', [auth, `${auth}@example.invalid`]);
