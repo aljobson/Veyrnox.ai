@@ -143,6 +143,9 @@ export default function JobScreen() {
                 if (controller.signal.aborted) return;
                 if (final === 'queued' || final === 'running') { setPollEnded(true); return; }
                 void settleFilmJob(id, final, undefined, () => !controller.signal.aborted);
+                // The file link is asked for while the job record is read, not after it: the two do not depend on each other.
+                const assetRequest = final === 'succeeded' ? media.getAsset(id) : null;
+                assetRequest?.catch(() => {});
                 // The model lets a failed job offer "Try again" on the same model.
                 const job = await media.getJob(id).catch(() => null);
                 if (controller.signal.aborted) return;
@@ -157,7 +160,7 @@ export default function JobScreen() {
                 if (final !== 'succeeded') return;
                 let a;
                 try {
-                    a = await media.getAsset(id);
+                    a = await assetRequest!;
                 } catch (err) {
                     if (controller.signal.aborted) return;
                     if (err instanceof ApiError && err.code === 'held') {

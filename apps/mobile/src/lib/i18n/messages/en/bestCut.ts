@@ -27,7 +27,7 @@ export default {
     "bestCut.punchy": "Short and punchy",
     "bestCut.steps": "Keep every step",
     "bestCut.settings": "Best Cut",
-    "bestCut.captions": "Generate Captions Automatically",
+    "bestCut.captions": "Generate captions automatically",
     "bestCut.language": "Video Language",
     "bestCut.auto": "Auto-detect",
     "bestCut.consent": "To find your best take, the full video files you select are uploaded to Veyrnox.ai and sent to a speech-transcription service to read their audio. Your script and notes stay on this phone. Temporary transcription uploads are scheduled for deletion after 24 hours; cleanup may take longer. Transcripts are kept up to 30 days to avoid charging you twice. Account deletion removes transcripts. Library originals and project backups keep their own lifecycle. If nobody speaks you are not charged.",

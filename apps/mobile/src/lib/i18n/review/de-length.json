@@ -222,12 +222,6 @@
     "ratio": 1.65
   },
   {
-    "id": "approvals.noAccounts",
-    "english": "No connected account can post a {type} yet.",
-    "translation": "Noch kein verbundenes Konto kann Inhalte vom Typ {type} veröffentlichen.",
-    "ratio": 1.67
-  },
-  {
     "id": "approvals.sentTitle",
     "english": "Sent",
     "translation": "Gesendet",

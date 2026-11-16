@@ -29,7 +29,7 @@ jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, g
     return { gen: 0, user: owner, current: () => owner === require('../src/lib/appCache').getCacheUser() };
 } }) }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
-jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Stack: { Screen: () => null }, router: { push: jest.fn() }, useFocusEffect: (fn: any) => require('react').useEffect(fn, [fn]) }));
+jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Stack: { Screen: (props: any) => { (globalThis as any).__stackTitle = props.options?.title; return null; } }, router: { push: jest.fn() }, useFocusEffect: (fn: any) => require('react').useEffect(fn, [fn]) }));
 jest.mock('../src/components/VeyCardPeek', () => ({ VeyCardPeek: () => null, peekRoom: () => 0 }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [] }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
@@ -245,4 +245,12 @@ test('plan credits show a loading line while the request is open', async () => {
     await mount(); expect(text()).toContain(t('credits.planDetails.loading'));
     await act(async () => answer({ plans: [{ id: 'starter-monthly', credits: 200 }] }));
     expect(text()).not.toContain(t('credits.planDetails.loading')); expect(text()).toContain('200 creation credits each month');
+});
+
+test('screen title is Credits while purchases are closed and Buy credits once they are open', async () => {
+    mockBilling.canPurchase = false; await mount();
+    expect((globalThis as any).__stackTitle).toBe(t('menu.credits'));
+    await act(async () => root.unmount()); root = createRoot();
+    mockBilling.canPurchase = true; await mount();
+    expect((globalThis as any).__stackTitle).toBe(t('pricing.packs.buy'));
 });

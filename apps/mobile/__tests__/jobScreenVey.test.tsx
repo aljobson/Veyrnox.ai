@@ -75,3 +75,12 @@ test('a video result keeps its full height so the actions scroll under it, not o
     const box = RN.StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'job-output')[0].props.style);
     expect(box).toMatchObject({ flexGrow: 0, flexShrink: 0, flexBasis: 'auto', overflow: 'visible' });
 });
+
+test('the file is requested alongside the job read, not after it', async () => {
+    let releaseJob: (job: object) => void = () => {};
+    getJob.mockReturnValue(new Promise(resolve => { releaseJob = resolve; }));
+    await render(); await complete('succeeded');
+    expect(getAsset).toHaveBeenCalledTimes(1);
+    await act(async () => releaseJob({ state: 'succeeded', model_id: 'model' }));
+    expect(root.container.queryAll(n => n.props.source?.uri === 'https://file')).toHaveLength(1);
+});

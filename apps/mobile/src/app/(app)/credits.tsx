@@ -169,7 +169,7 @@ export default function Credits() {
 
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-            <Stack.Screen options={{ title: t('pricing.packs.buy') }} />
+            <Stack.Screen options={{ title: t(billing.canPurchase ? 'pricing.packs.buy' : 'menu.credits') }} />
             <Text variant="title1" tone="primary" style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
             <Text variant="callout" tone="secondary" style={styles.lead}>{t('credits.lead')}</Text>
 
