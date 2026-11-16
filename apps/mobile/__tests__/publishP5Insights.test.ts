@@ -92,7 +92,7 @@ describe('calendar month', () => {
         expect(monthGrid(new Date(2027, 1, 1))).toHaveLength(4); // February 2027
     });
     test('posts are counted by local day', () => {
-        const post = (id: string, at: string | null): CalendarPost => ({ id, status: 'scheduled', scheduledAt: at, text: '', createdAt: null, updatedAt: null, targets: [], canReschedule: false, canCancel: false, canRestore: false });
+        const post = (id: string, at: string | null): CalendarPost => ({ id, status: 'scheduled', scheduledAt: at, text: '', createdAt: null, updatedAt: null, targets: [], media: [], canReschedule: false, canCancel: false, canRestore: false });
         const noon = new Date(2026, 9, 5, 12).toISOString();
         const c = countByDay([post('1', noon), post('2', noon), post('3', null)]);
         expect(c.get('2026-10-05')).toBe(2);
