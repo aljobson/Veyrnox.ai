@@ -30,6 +30,6 @@ describe('stems result footer', () => {
     it('renders the expiry footer inside the stems scroll content, after the player', () => {
         const stems = job.slice(job.indexOf('<StemList'), job.indexOf(') : asset ? ('));
         expect(stems).toContain('{retentionFooter}');
-        expect(job).toMatch(/stems\.length > 0 && asset \? null : retentionFooter/);
+        expect(job).toMatch(/\(stems\.length > 0 && asset\) \|\| inlineOutput \? null : retentionFooter/);
     });
 });
