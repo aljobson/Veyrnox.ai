@@ -27,12 +27,12 @@ function useKeyboardHeight(): number {
  * The screen must not draw its own bottom bar under an open sheet: the sheet owns the bottom edge,
  * keeps clear of the home indicator and lifts above the keyboard so a text field stays visible.
  */
-export function EditorToolSheet({ rail, children, inline }: { rail?: ReactNode; children: ReactNode; inline?: boolean }) {
+export function EditorToolSheet({ rail, children, inline, minHeight }: { rail?: ReactNode; children: ReactNode; inline?: boolean; minHeight?: number }) {
     const { height } = useWindowDimensions();
     const inset = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
     const keyboard = useKeyboardHeight();
     // Full editor: take the room left under the timeline, so the timeline stays visible and the panel scrolls below the tool strip.
-    if (inline) return <View testID="editor-tool-sheet" style={local.inline}>{rail}{children}</View>;
+    if (inline) return <View testID="editor-tool-sheet" style={[local.inline, minHeight ? { minHeight: Math.max(INLINE_MIN, minHeight) } : null]}>{rail}{children}</View>;
     const room = Math.max(SHEET_MIN, height - keyboard - TOP_ROOM);
     return <View testID="editor-tool-sheet" style={[local.sheet, { bottom: keyboard, height: Math.min(toolSheetHeight(height), room), paddingBottom: keyboard ? 0 : inset }]}>{rail}{children}</View>;
 }
