@@ -13,9 +13,11 @@ const read = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url), 'utf8'
 const code = (rel) => read(rel).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
 
 test('/presets and Explore render through the shared gallery', () => {
-    for (const page of ['app/veyrnox/presets/page.js', 'app/veyrnox/app/page.js']) {
+    // Explore wraps the gallery in ExploreTemplates (the All/Image/Video/Audio filter).
+    for (const page of ['app/veyrnox/presets/page.js', 'app/veyrnox/_components/ExploreTemplates.js']) {
         assert.match(code(page), /<PresetGallery\b/, page);
     }
+    assert.match(code('app/veyrnox/app/page.js'), /<ExploreTemplates\b/, 'Explore uses ExploreTemplates');
 });
 
 test('PresetCard prints the catalog price, not the preset constant', () => {

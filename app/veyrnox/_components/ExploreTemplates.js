@@ -5,18 +5,22 @@ import { useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider';
 import { PresetGallery } from './PresetGallery';
 import { createTemplatesFor } from '../_lib/createTemplates.js';
+import { useCatalog } from '../_lib/useCatalog';
+import { presetCredits } from '../_lib/tokens.js';
+import { pluralKey } from '../../../lib/i18n/translate.mjs';
 
 // Explore's template area, the same type filter the mobile Explore tab has: All, Image, Video, Audio.
 // Audio lists the licensed Music templates and links to Music Discover and Instruments.
 const TYPES = ['all', 'image', 'video', 'audio'];
 const AUDIO_LINKS = [
-  { href: '/app/music/discover', label: 'Discover' },
-  { href: '/app/music/instruments', label: 'Instruments' },
-  { href: '/app/music/sounds', label: 'Sounds' },
+  { href: '/app/music/discover', label: 'label.Discover' },
+  { href: '/app/music/instruments', label: 'label.Instruments' },
+  { href: '/app/music/sounds', label: 'label.Sounds' },
 ];
 
 export function ExploreTemplates({ taste }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { models } = useCatalog();
   const [type, setType] = useState('all');
   const audio = createTemplatesFor('audio');
   return (
@@ -33,11 +37,13 @@ export function ExploreTemplates({ taste }) {
         <div data-testid="explore-audio-templates">
           <nav className="mb-6 flex flex-wrap gap-2">
             {AUDIO_LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="vx-press inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 text-sm font-bold text-vx-fg-body hover:border-vx-accent hover:text-vx-fg">{l.label}</Link>
+              <Link key={l.href} href={l.href} className="vx-press inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 text-sm font-bold text-vx-fg-body hover:border-vx-accent hover:text-vx-fg">{t(l.label)}</Link>
             ))}
           </nav>
           <ul className="grid gap-4 sm:grid-cols-3">
-            {audio.map((tpl) => (
+            {audio.map((tpl) => {
+              const credits = presetCredits(tpl, models);
+              return (
               <li key={tpl.id} className="overflow-hidden rounded-2xl border border-vx-border bg-vx-panel">
                 <div className="aspect-[4/3]" style={{ background: tpl.bg }}>
                   <img src={tpl.previewImage} alt={tpl.name} loading="lazy" className="h-full w-full object-cover" />
@@ -46,10 +52,11 @@ export function ExploreTemplates({ taste }) {
                   <h3 className="text-sm font-black">{tpl.name}</h3>
                   <audio controls preload="none" src={tpl.previewAudio} aria-label={tpl.previewTitle} className="mt-2 h-10 w-full" />
                   <p className="mt-2 text-[11px] leading-4 text-vx-fg-muted">{t('musicDiscover.lic.template.note')}</p>
-                  <Link href="/app/music/create" className="vx-press mt-3 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{tpl.credits} cr</Link>
+                  <Link href="/app/music/create" className="vx-press mt-3 inline-flex min-h-11 items-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink">{Number.isFinite(credits) ? t(pluralKey(t, locale, 'model.credits', credits), { n: credits }) : t('app.create.templates.title')}</Link>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       ) : (
