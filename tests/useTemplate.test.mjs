@@ -53,12 +53,12 @@ test('UseTemplate renders an enabled button and defaults for a non-runnable exac
   assert.match(JSON.stringify(button(tree)), /34/);
 });
 
-test('film handoff is available for ordinary video only, never image or clip mode', async () => {
+test('film handoff is hidden (ADR-0344), for ordinary video, image and clip mode alike', async () => {
   const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
   const image = IMAGE_TEMPLATES[0];
   const imageModel = { ...imageFallbackCatalog().find(model => model.id === image.model), modality: 'text-to-image' };
   const hasFilm = tree => nodes(tree).some(node => node.type === 'button' && node.props.children === 'presets.use.build');
-  assert.equal(hasFilm(harness().render()), true);
+  assert.equal(hasFilm(harness().render()), false);
   assert.equal(hasFilm(harness({ template: image, models: [imageModel] }).render()), false);
   const clipTree = harness({ templateClip: { id: preset.id, model: original.id, credits: 17 } }).render();
   assert.equal(hasFilm(clipTree), false);

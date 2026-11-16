@@ -1,5 +1,7 @@
 # Film Studio
 
+> **Hidden since 2026-11-16 ([ADR-0344](../adr/0344-hide-film-studio.md)).** Nothing in the app or on the website links here and `/app/film-studio` answers 404. The code, saved films, masters and API stay; this page describes how it works for a restore.
+
 The seven-stage workspace at `/app/film-studio` adapts the production workflow described in [Machina’s Film Studio skills](https://github.com/machina-exm/film-studio-skills). It is implemented as native forms and checks, with original assistant instructions. The source skills are not installed or executed on the server.
 
 1. **Setup:** explicitly choose the existing image and video workflows, clip length (10–15 seconds) and format. External tools use model names only; credentials stay with their original tools.
