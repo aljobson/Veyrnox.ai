@@ -5341,6 +5341,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "لا يدعم هذا النموذج تنسيق إطار اللقطة. اختر سير عمل متوافقًا في الإعداد.",
   "creditsPage.balance": "الرصيد الحالي",
   "creditsPage.best": "أفضل قيمة",
+  "creditsPage.recommended": "موصى به",
   "creditsPage.monthly": "شهري",
   "creditsPage.yearly": "سنوي",
   "creditsPage.yearlyMonthly": "{amount} شهريًا، تُفوتر سنويًا",

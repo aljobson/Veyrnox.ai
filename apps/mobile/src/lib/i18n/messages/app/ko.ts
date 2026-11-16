@@ -4966,6 +4966,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "이 모델은 샷의 프레임 형식을 지원하지 않습니다. 설정에서 호환되는 워크플로를 선택하세요.",
   "creditsPage.balance": "현재 잔액",
   "creditsPage.best": "최고의 가성비",
+  "creditsPage.recommended": "추천",
   "creditsPage.monthly": "월간",
   "creditsPage.yearly": "연간",
   "creditsPage.yearlyMonthly": "월 {amount}, 연간 결제",

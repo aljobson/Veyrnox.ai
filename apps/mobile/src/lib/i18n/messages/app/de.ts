@@ -5041,6 +5041,7 @@ export default {
   "filmWorkspace.incompatibleAspect": "Dieses Modell unterstützt das Bildformat nicht. Wähle einen kompatiblen Workflow in der Einrichtung.",
   "creditsPage.balance": "Aktuelles Guthaben",
   "creditsPage.best": "Bestes Preis-Leistungs-Verhältnis",
+  "creditsPage.recommended": "Empfohlen",
   "creditsPage.monthly": "Monatlich",
   "creditsPage.yearly": "Jährlich",
   "creditsPage.yearlyMonthly": "{amount} pro Monat, jährlich abgerechnet",

@@ -35,7 +35,7 @@ describe('paywall UI wiring', () => {
         const credits = source('src/app/(app)/credits.tsx');
         expect(credits).toContain('offerings?.all.generation');
         expect(credits).toContain('offerings?.all.credits');
-        expect(credits).toContain('filter(isWebParityPack)');
+        expect(credits).toContain('webParityPacks(toDisplayPackages(packPackages))');
         expect(credits).toContain('renewalTerms(');
         expect(credits).toContain("runPurchase({ kind: 'restore' })");
         expect(source('src/billing/storePurchaseStore.ts')).toContain('deps.billing.restore()');
@@ -53,12 +53,12 @@ describe('paywall UI wiring', () => {
     });
 
     test('store catalog and owner checklist use the deployed web pack sizes', () => {
-        const packMigration = repoSource('packages/db/schema/supabase/0421_store_packs_match_web.sql');
+        const packMigration = repoSource('packages/db/schema/supabase/0541_store_packs_follow_new_plan_rate.sql');
         const migration = repoSource('packages/db/schema/supabase/0394_mobile_credit_pack_parity.sql');
         const checklist = repoSource('docs/mobile/M7-STORE-SUBMISSION-CHECKLIST.md');
-        for (const size of [209, 523, 1571]) {
+        for (const size of [156, 392, 1177]) {
             expect(packMigration).toContain(`ai.veyrnox.credits.${size}`);
-            expect(checklist).toContain(size === 209 ? '`ai.veyrnox.credits.209`' : `\`.${size}\``);
+            expect(checklist).toContain(size === 156 ? '`ai.veyrnox.credits.156`' : `\`.${size}\``);
         }
         expect(checklist).not.toContain('`ai.veyrnox.credits.100`, `.270`, `.1200`, `.3000`');
         expect(migration).toContain('ai.veyrnox.generation.lite.monthly:monthly');
