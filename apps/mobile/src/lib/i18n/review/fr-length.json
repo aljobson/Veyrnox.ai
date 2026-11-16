@@ -1920,6 +1920,12 @@
     "ratio": 3.17
   },
   {
+    "id": "editor.musicTrimmed",
+    "english": "Music trimmed to fit your video.",
+    "translation": "La musique a été raccourcie pour correspondre à la vidéo.",
+    "ratio": 1.78
+  },
+  {
     "id": "editor.saved",
     "english": "Saved",
     "translation": "Enregistré",
@@ -4954,6 +4960,12 @@
     "english": "Add",
     "translation": "Ajouter",
     "ratio": 2.33
+  },
+  {
+    "id": "editorSimple.closeGaps",
+    "english": "Close gaps",
+    "translation": "Combler les vides",
+    "ratio": 1.7
   },
   {
     "id": "editorSimple.closePanel",

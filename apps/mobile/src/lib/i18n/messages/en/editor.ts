@@ -144,6 +144,7 @@ export default {
     "editor.credits": "Credits",
     "editor.snap": "Snap",
     "editor.ripple": "Ripple",
+    "editor.musicTrimmed": "Music trimmed to fit your video.",
     "editor.off": "Off",
     "editor.selectedtrack": "Selected track",
     "editor.alltracks": "All tracks",

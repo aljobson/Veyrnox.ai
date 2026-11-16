@@ -27,9 +27,9 @@ test('Library tabs need the Library gate and their own switch, which ships false
   assert.equal(musicLibraryTabsEnabled(ready), true);
   assert.equal(musicLibraryTabsEnabled({ ...ready, MUSIC_LIBRARY_TABS_ENABLED: 'false' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  // Off in production; on in staging only (owner, 2026-11-15).
-  assert.equal((wrangler.match(/\\"libraryTabs\\":false/g) || []).length, 1);
-  assert.equal((wrangler.match(/\\"libraryTabs\\":true/g) || []).length, 1);
+  // On in production and staging (owner, 2026-11-15).
+  assert.equal((wrangler.match(/\\"libraryTabs\\":false/g) || []).length, 0);
+  assert.equal((wrangler.match(/\\"libraryTabs\\":true/g) || []).length, 2);
 });
 
 test('0532 keeps everything private, erased with the account and free of credit writes', async () => {

@@ -3,7 +3,7 @@ import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import ModelDetail from '../src/app/(app)/model/[id]';
 import { fetchCatalog, type CatalogModel } from '../src/lib/media';
-import { t } from '../src/lib/i18n';
+import { plural, t } from '../src/lib/i18n';
 const mockPush = jest.fn();
 let mockId: unknown = 'video';
 jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ id: mockId }), useRouter: () => ({ push: mockPush }), Stack: { Screen: () => null }, Link: ({ children }: any) => children }));
@@ -30,7 +30,7 @@ test('shows only the catalog price, ordered accessible facts and in-app destinat
         'Mode: text to video', 'Clip lengths: 5 s, 10 s', 'Prompt: Text prompt',
     ]);
     expect(hasText('Generate with A video · 7 cr')).toBe(true);
-    await click(t('modelPage.generateLabel', { title: model.name, credits: 7 }));
+    await click(plural('modelPage.generateLabel', 7, { title: model.name }));
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/create/[modelId]', params: { modelId: 'video' } });
     await click(t('modelPage.packs')); expect(mockPush).toHaveBeenLastCalledWith('/pricing');
     await click(t('modelPage.all')); expect(mockPush).toHaveBeenLastCalledWith('/models');
@@ -38,7 +38,7 @@ test('shows only the catalog price, ordered accessible facts and in-app destinat
 test.each(['unknown', undefined, ['video']])('unavailable id %p offers all models without Generate', async id => {
     mockId = id; await render();
     expect(hasText(t('modelPage.unavailable'))).toBe(true);
-    expect(control(t('modelPage.generateLabel', { title: model.name, credits: 7 }))).toBeUndefined();
+    expect(control(plural('modelPage.generateLabel', 7, { title: model.name }))).toBeUndefined();
     await click(t('modelPage.all')); expect(mockPush).toHaveBeenCalledWith('/models');
 });
 test('catalog failure shows safe copy and Retry succeeds', async () => {
@@ -72,7 +72,7 @@ test('a gated model from the premium list shows the Premium tag and a disabled c
     expect(hasText(t('modelPage.unavailable'))).toBe(false);
     const closed = control(t('projectHome.premiumClosed'));
     expect(closed.props.accessibilityState.disabled).toBe(true);
-    expect(control(t('modelPage.generateLabel', { title: model.name, credits: 7 }))).toBeUndefined();
+    expect(control(plural('modelPage.generateLabel', 7, { title: model.name }))).toBeUndefined();
     await act(async () => closed.props.onClick?.(event));
     expect(mockPush).not.toHaveBeenCalled();
     await click(t('modelPage.packs'));
@@ -83,6 +83,6 @@ test('a premium-list failure still renders a supported model', async () => {
     await render();
     expect(hasText('7 cr')).toBe(true);
     expect(hasText(t('catalog.failed'))).toBe(false);
-    await click(t('modelPage.generateLabel', { title: model.name, credits: 7 }));
+    await click(plural('modelPage.generateLabel', 7, { title: model.name }));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: { modelId: model.id } });
 });

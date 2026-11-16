@@ -246,7 +246,7 @@ export default function Explore() {
                     />
                     <View style={styles.actions}>
                         <Button variant="secondary" size="md" label={t('explore.makeVideo')} disabled={empty} onPress={() => make('video')} />
-                        <Button size="md" label={t('explore.makeImage')} disabled={empty} onPress={() => make('image')} />
+                        <Button variant={empty ? 'secondary' : 'primary'} size="md" label={t('explore.makeImage')} disabled={empty} onPress={() => make('image')} />
                     </View>
                 </Card>
 

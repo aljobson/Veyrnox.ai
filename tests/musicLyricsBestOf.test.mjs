@@ -27,9 +27,9 @@ test('both switches ship false', async () => {
   assert.equal(musicBestOfEnabled(on), true);
   assert.equal(musicBestOfEnabled({ ...on, MUSIC_BEST_OF_ENABLED: 'false' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  // Off in production; on in staging only (owner, 2026-11-15).
-  assert.equal((wrangler.match(/\\"lyrics\\":false,\\"bestOf\\":false/g) || []).length, 1);
-  assert.equal((wrangler.match(/\\"lyrics\\":true,\\"bestOf\\":true/g) || []).length, 1);
+  // On in production and staging (owner, 2026-11-15).
+  assert.equal((wrangler.match(/\\"lyrics\\":false,\\"bestOf\\":false/g) || []).length, 0);
+  assert.equal((wrangler.match(/\\"lyrics\\":true,\\"bestOf\\":true/g) || []).length, 2);
 });
 
 test('0535 reads published tracks only, bounded, and grants nothing to browsers', async () => {

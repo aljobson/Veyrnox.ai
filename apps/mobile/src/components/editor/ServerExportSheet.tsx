@@ -43,6 +43,7 @@ export function ServerExportSheet(props: ServerExportProps) {
             {state.phase === 'failed' ? <Text style={styles.text}>{t(state.job?.refunded ? 'editorServerExport.refunded' : 'editorServerExport.failedNoRefund')}</Text> : null}
             {state.phase === 'done' ? <View>
                 <Text accessibilityRole="header" style={styles.heading}>{t('editorServerExport.done')}</Text>
+                {state.job?.renderId ? <Button label={t('editorServerExport.save')} onPress={() => void state.save()} /> : null}
                 {state.job?.renderId ? <Button label={t('editorServerExport.share')} onPress={() => void state.share()} /> : null}
                 <Button label={t('editorServerExport.library')} onPress={state.library} />
                 <Button label={t('editorServerExport.publish')} onPress={state.publish} />

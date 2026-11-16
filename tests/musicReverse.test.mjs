@@ -42,9 +42,9 @@ test('Reverse needs editing and its own switch, which ships false; 0534 admits i
   assert.equal(musicReverseEnabled(on), true);
   assert.equal(musicReverseEnabled({ ...on, MUSIC_REVERSE_ENABLED: 'false' }), false);
   const wrangler = await readFile(new URL('../wrangler.jsonc', import.meta.url), 'utf8');
-  // Off in production; on in staging only (owner, 2026-11-15).
-  assert.equal((wrangler.match(/\\"reverse\\":false/g) || []).length, 1);
-  assert.equal((wrangler.match(/\\"reverse\\":true/g) || []).length, 1);
+  // On in production and staging (owner, 2026-11-15).
+  assert.equal((wrangler.match(/\\"reverse\\":false/g) || []).length, 0);
+  assert.equal((wrangler.match(/\\"reverse\\":true/g) || []).length, 2);
   const sql = await readFile(new URL('../packages/db/schema/supabase/0534_music_reverse_render.sql', import.meta.url), 'utf8');
   assert.match(sql, /'music-local-reverse'/);
   assert.match(sql, /'remaster','reverse'\)\);/);

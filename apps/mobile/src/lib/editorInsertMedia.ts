@@ -7,17 +7,20 @@ export function holdsClip(timeline: Timeline, mediaId: string): boolean {
     return [...timeline.video, ...timeline.audio].some(clip => clip.mediaId === mediaId);
 }
 
-export function insertMediaAt(timeline: Timeline, media: Media, at: number): { timeline: Timeline; selection: Selection } | { error: 'track' | 'full' } {
+export function insertMediaAt(timeline: Timeline, media: Media, at: number): { timeline: Timeline; selection: Selection; trimmed: boolean } | { error: 'track' | 'full' } {
     const kind = media.kind === 'audio' ? 'audio' : 'video';
     const open = timeline.tracks.filter(track => track.kind === kind && !track.locked);
     if (!open.length) return { error: 'track' };
     if ((!Object.hasOwn(timeline.media, media.id) && Object.keys(timeline.media).length >= 40) || timeline[kind].length >= 40) return { error: 'full' };
-    const start = clampFrame(at);
+    const wanted = clampFrame(at);
     // QA build 52 (8.8): a song longer than the cut would stretch the project (a 60 s song made a 5 s edit 1:00:00,
     // black after the clips). Audio that starts inside the video stops at the video's last frame.
     const videoEnd = kind === 'audio' ? timeline.video.reduce((end, clip) => Math.max(end, clip.start + clip.len), 0) : 0;
+    const full = Math.max(1, media.frames || 90);
+    // Audio parked at or past the video end moves back so it ends with the video instead of stretching the project.
+    const start = videoEnd > 0 && wanted >= videoEnd ? Math.max(0, videoEnd - Math.min(full, videoEnd)) : wanted;
     const room = videoEnd > start ? videoEnd - start : SEQUENCE_MAX - start;
-    const len = Math.max(1, Math.min(media.frames || 90, room, SEQUENCE_MAX - start));
+    const len = Math.max(1, Math.min(full, room, SEQUENCE_MAX - start));
     // QA build 50 (F10): never stack a clip over another one. Use the first unlocked track that is
     // free at the playhead; if every one is busy there, the clip goes on a new track (its own layer).
     const free = (trackId: string) => !timeline[kind].some(clip => clip.trackId === trackId && clip.start < start + len && start < clip.start + clip.len);
@@ -28,5 +31,6 @@ export function insertMediaAt(timeline: Timeline, media: Media, at: number): { t
     return {
         timeline: { ...base, seq, media: { ...base.media, [media.id]: media }, [kind]: [...base[kind], clip] },
         selection: { track: kind, id: clip.id },
+        trimmed: videoEnd > 0 && len < full,
     };
 }
