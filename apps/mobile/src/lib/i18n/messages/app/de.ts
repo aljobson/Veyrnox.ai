@@ -4916,6 +4916,7 @@ export default {
   "chatDepth.videoLabel": "Videobilder anhängen",
   "chatDepth.videoRoom": "Ein Video braucht Platz für mindestens 2 der {count} Bilder. Entferne zuerst eines.",
   "chatDepth.reading": "Frames aus deinem Video werden gelesen…",
+  "chatDepth.videoNone": "Es wurde kein Video ausgewählt. Wähle ein Video aus deiner Mediathek oder versuche erneut „Video anhängen“.",
   "chatDepth.videoFailed": "Dieses Video konnte nicht gelesen werden. Versuche MP4, WebM oder MOV oder hänge einen Screenshot an.",
   "chatDepth.videoFrames": "Dein Video wird nicht hochgeladen, nur einige auf deinem Gerät entnommene Frames.",
   "chatDepth.wf.viral-short.name": "Viraler Kurzclip",

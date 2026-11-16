@@ -43,20 +43,26 @@ export async function loadVideo(uri: string, deps?: Pick<FrameDeps, 'createPlaye
     } catch { player?.release(); throw new Error('video_unreadable'); }
     finally { subscriptions.forEach(s => s.remove()); }
 }
-export async function extractFrames(uri: string, count: number, deps?: FrameDeps): Promise<string[]> {
+export async function extractFrames(uri: string, count: number, deps?: FrameDeps, cancel?: { cancelled: boolean }): Promise<string[]> {
     let player: ReturnType<FrameDeps['createPlayer']> | undefined;
+    const checkCancelled = () => { if (cancel?.cancelled) throw new Error('video_unreadable'); };
     try {
         const lib = deps ?? nativeDeps();
         player = await loadVideo(uri, lib);
+        checkCancelled();
         const times = frameTimes(player.duration, count);
         if (!times.length) throw new Error('video_unreadable');
         const thumbnails = await timeout(player.generateThumbnailsAsync(times, { maxWidth: 1280, maxHeight: 1280 }));
+        checkCancelled();
         if (thumbnails.length !== count) throw new Error('video_unreadable');
         const uris: string[] = [];
         for (const thumbnail of thumbnails) {
+            checkCancelled();
             const rendered = await timeout(lib.manipulate(thumbnail).renderAsync());
             try {
+                checkCancelled();
                 const saved = await timeout(rendered.saveAsync({ compress: 0.85, format: 'jpeg' as import('expo-image-manipulator').SaveFormat }));
+                checkCancelled();
                 uris.push(saved.uri);
             } finally { rendered.release?.(); }
         }

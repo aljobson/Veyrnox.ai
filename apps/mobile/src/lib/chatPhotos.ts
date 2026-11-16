@@ -38,12 +38,26 @@ export async function uploadChatImages(api: ApiClient, files: readonly ChatImage
     return keys;
 }
 
-export async function pickVideoFrames(room: number, deps = { pick: ImagePicker.launchImageLibraryAsync, extract: extractFrames }): Promise<{ images: ChatImage[]; problem: 'room' | 'video_unreadable' | null }> {
+export type VideoResult = { images: ChatImage[]; problem: 'room' | 'video_none' | 'video_unreadable' | null };
+
+export async function pickVideoFrames(room: number, deps = { pick: ImagePicker.launchImageLibraryAsync, extract: extractFrames }, onReading?: () => void, readMs = 30000): Promise<VideoResult> {
     if (room < 2) return { images: [], problem: 'room' };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cancel = { cancelled: false };
     try {
         const result = await deps.pick({ mediaTypes: ['videos'], allowsMultipleSelection: false });
         if (result.canceled) return { images: [], problem: null };
-        const uris = await deps.extract(result.assets[0].uri, Math.min(4, room));
+        const uri = result.assets?.[0]?.uri;
+        if (!uri) return { images: [], problem: 'video_none' };
+        onReading?.();
+        const deadline = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => {
+                cancel.cancelled = true;
+                reject(new Error('video_unreadable'));
+            }, readMs);
+        });
+        const uris = await Promise.race([deps.extract(uri, Math.min(4, room), undefined, cancel), deadline]);
         return { images: uris.map((uri, i) => ({ id: `v-${Date.now()}-${i}`, video: true, uri, preview: uri })), problem: null };
     } catch { return { images: [], problem: 'video_unreadable' }; }
+    finally { clearTimeout(timer); }
 }

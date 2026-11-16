@@ -4841,6 +4841,7 @@ export default {
   "chatDepth.videoLabel": "附加视频帧",
   "chatDepth.videoRoom": "视频至少需要占用 {count} 张图片中的 2 个位置。请先移除一张。",
   "chatDepth.reading": "正在读取视频帧…",
+  "chatDepth.videoNone": "未选择视频。请从图库中选择视频，或再次尝试“附加视频”。",
   "chatDepth.videoFailed": "无法读取该视频。请尝试 MP4、WebM 或 MOV，或附加截图。",
   "chatDepth.videoFrames": "不会上传视频，只上传在设备上截取的几个帧。",
   "chatDepth.wf.viral-short.name": "爆款短视频",

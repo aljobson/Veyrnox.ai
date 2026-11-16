@@ -5216,6 +5216,7 @@ export default {
   "chatDepth.videoLabel": "إرفاق إطارات فيديو",
   "chatDepth.videoRoom": "يحتاج الفيديو إلى مساحة لما لا يقل عن 2 من الصور البالغ عددها {count}. أزل صورة أولًا.",
   "chatDepth.reading": "جارٍ قراءة إطارات الفيديو…",
+  "chatDepth.videoNone": "لم يتم اختيار فيديو. اختر فيديو من مكتبتك، أو جرّب «إرفاق فيديو» مرة أخرى.",
   "chatDepth.videoFailed": "تعذر قراءة هذا الفيديو. جرّب MP4 أو WebM أو MOV، أو أرفق لقطة شاشة.",
   "chatDepth.videoFrames": "لا يُرفع فيديوك؛ فقط بعض إطاراته المأخوذة على جهازك.",
   "chatDepth.wf.viral-short.name": "فيديو قصير رائج",

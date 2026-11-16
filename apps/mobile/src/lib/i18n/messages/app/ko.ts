@@ -4841,6 +4841,7 @@ export default {
   "chatDepth.videoLabel": "동영상 프레임 첨부",
   "chatDepth.videoRoom": "동영상에는 {count}개 이미지 중 최소 2개분의 공간이 필요합니다. 먼저 하나를 삭제하세요.",
   "chatDepth.reading": "동영상 프레임 읽는 중…",
+  "chatDepth.videoNone": "선택한 동영상이 없습니다. 라이브러리에서 동영상을 선택하거나 «동영상 첨부»를 다시 시도하세요.",
   "chatDepth.videoFailed": "동영상을 읽지 못했습니다. MP4, WebM 또는 MOV를 사용하거나 스크린샷을 첨부하세요.",
   "chatDepth.videoFrames": "동영상 자체는 업로드되지 않고 기기에서 추출한 일부 프레임만 전송됩니다.",
   "chatDepth.wf.viral-short.name": "바이럴 쇼츠",

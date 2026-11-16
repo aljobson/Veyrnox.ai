@@ -4991,6 +4991,7 @@ export default {
   "chatDepth.videoLabel": "Anexar quadros de vídeo",
   "chatDepth.videoRoom": "Um vídeo precisa de espaço para pelo menos 2 das {count} imagens. Remova uma primeiro.",
   "chatDepth.reading": "Lendo quadros do seu vídeo…",
+  "chatDepth.videoNone": "Nenhum vídeo foi escolhido. Escolha um vídeo da sua biblioteca ou tente «Anexar um vídeo» novamente.",
   "chatDepth.videoFailed": "Não foi possível ler esse vídeo. Tente MP4, WebM ou MOV, ou anexe uma captura de tela.",
   "chatDepth.videoFrames": "Seu vídeo não é enviado: só alguns quadros extraídos no seu dispositivo.",
   "chatDepth.wf.viral-short.name": "Vídeo curto viral",
