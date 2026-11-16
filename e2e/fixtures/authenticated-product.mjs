@@ -162,6 +162,8 @@ export async function installProductFixtures(page, options = {}) {
           const template = templateDetail(decodeURIComponent(templateId[1]));
           return template ? json({ template }) : json({ error: 'template_not_found' }, 404);
         }
+        // Ranked template ids: nothing has enough use yet, which is a normal answer (ADR-0072).
+        if (url.pathname === '/api/popular-templates') return json({ templates: [] });
         if (url.pathname === '/api/status') return json({ status: 'ok', checkedAt: Date.now() });
         if (url.pathname === '/api/v1/account') return state.user ? json({ email: state.user.email, credits: state.balance, balance: state.balance, assets: 0 }) : json({ error: 'not_authenticated' }, 401);
         if (url.pathname === '/api/v1/account/language') return state.user ? json({ locale: null }) : json({ error: 'not_authenticated' }, 401);
