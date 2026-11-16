@@ -162,7 +162,7 @@ export async function installProductFixtures(page, options = {}) {
           const template = templateDetail(decodeURIComponent(templateId[1]));
           return template ? json({ template }) : json({ error: 'template_not_found' }, 404);
         }
-        // Ranked template ids: nothing has enough use yet, which is a normal answer (ADR-0072).
+        // Ranked template ids: nothing has enough use yet in a synthetic run, so the gallery keeps its own order.
         if (url.pathname === '/api/popular-templates') return json({ templates: [] });
         if (url.pathname === '/api/status') return json({ status: 'ok', checkedAt: Date.now() });
         if (url.pathname === '/api/v1/account') return state.user ? json({ email: state.user.email, credits: state.balance, balance: state.balance, assets: 0 }) : json({ error: 'not_authenticated' }, 401);

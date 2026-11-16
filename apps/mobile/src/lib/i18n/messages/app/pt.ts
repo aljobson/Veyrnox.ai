@@ -5396,6 +5396,7 @@ export default {
   "libraryCreate.stems": "Abra a criação para reproduzir suas faixas de áudio separadas.",
   "libraryCreate.elapsed": "{seconds} seg.",
   "libraryCreate.useTemplate": "Usar modelo",
+  "libraryCreate.previewSample": "A prévia é um clipe de exemplo. Seu vídeo terá {seconds} s.",
   "libraryCreate.editBeforeGenerating": "Editar antes de gerar",
   "filmOutput.asset": "Recurso para a ficha",
   "filmOutput.savePassport": "Salvar rascunho da ficha",

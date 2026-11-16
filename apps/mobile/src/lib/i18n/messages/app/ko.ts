@@ -5246,6 +5246,7 @@ export default {
   "libraryCreate.stems": "작품을 열어 개별 오디오 트랙을 재생하세요.",
   "libraryCreate.elapsed": "{seconds}초",
   "libraryCreate.useTemplate": "템플릿 사용",
+  "libraryCreate.previewSample": "미리보기는 샘플 클립입니다. 만들어지는 영상은 {seconds}초입니다.",
   "libraryCreate.editBeforeGenerating": "생성 전에 편집",
   "filmOutput.asset": "기록할 에셋",
   "filmOutput.savePassport": "기록 초안 저장",

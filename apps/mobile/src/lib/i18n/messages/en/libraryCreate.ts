@@ -23,5 +23,6 @@ export default {
     "libraryCreate.stems": "Open the creation to play its separate audio tracks.",
     "libraryCreate.elapsed": "{seconds} s",
     "libraryCreate.useTemplate": "Use template",
+    "libraryCreate.previewSample": "The preview is a sample clip. Your video will be {seconds} s.",
     "libraryCreate.editBeforeGenerating": "Edit before generating"
 } as const;

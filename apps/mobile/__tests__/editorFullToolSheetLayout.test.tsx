@@ -31,4 +31,12 @@ describe('full editor keeps the timeline visible above the tool panel', () => {
         expect(screen).toMatch(/<EditorToolSheet inline=\{advanced\}/);
         expect(screen.indexOf('styles.timelineSection')).toBeLessThan(screen.indexOf('<EditorToolSheet'));
     });
+    it('the inline sheet honours a minimum panel height and the timeline is a bounded scroll region', async () => {
+        const root = createRoot();
+        await act(async () => { root.render(<EditorToolSheet inline minHeight={300}><Text>panel</Text></EditorToolSheet>); });
+        const node = root.container.queryAll(n => n.props.testID === 'editor-tool-sheet')[0];
+        expect((StyleSheet.flatten(node?.props.style) as Record<string, unknown>).minHeight).toBe(300);
+        expect(screen).toMatch(/testID="editor-timeline-scroll"/);
+        expect(screen).toMatch(/editorLayoutBudget\(/);
+    });
 });

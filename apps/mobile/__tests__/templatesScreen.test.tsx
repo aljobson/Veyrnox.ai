@@ -154,3 +154,12 @@ test('an exact prompt that needs a source video we cannot supply is inspiration 
     expect(root.container.queryAll(n => n.children.includes(t('public.TemplateRecipe.sourceVideoUnsupported'))).length).toBeGreaterThan(0);
     for (const key of ['slip.generate', 'libraryCreate.editBeforeGenerating', 'libraryCreate.useTemplate']) expect(controls(t(key))).toHaveLength(0);
 });
+test('the preview says it is a sample and states the length the video will actually have', async () => {
+    mockFetch.mockResolvedValue([{ ...feed[0], durationSeconds: 10 }]);
+    await act(async () => root.render(<TemplatePage />));
+    expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.previewSample', { seconds: '10' })))).toHaveLength(1);
+    mockFetch.mockResolvedValue([{ ...feed[0], durationSeconds: 7 }]);
+    await act(async () => { root.unmount(); root = createRoot(); });
+    await act(async () => root.render(<TemplatePage />));
+    expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.previewSample', { seconds: '5' })))).toHaveLength(1);
+});
