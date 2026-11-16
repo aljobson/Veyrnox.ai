@@ -25,7 +25,7 @@ import { useBalance } from '../../../lib/useBalance';
 import { fetchPresets, presetPrice, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
 import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
-import { audioAsPreset, imageAsPreset, isDirectTemplate, mixKinds, priceOfDirect, templatesWithCatalogModel } from '../../../lib/exploreTemplates';
+import { isDirectTemplate, listedTemplates, mixKinds, priceOfDirect } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
@@ -82,10 +82,8 @@ export default function Explore() {
         ? { keys: phoneStarts(null, null), suggested: false }
         : profile.ready ? { keys: phoneStarts(profile.role, profile.goal), suggested: hasRealAnswer(profile) } : null;
     const [prompt, setPrompt] = useState('');
-    // null until the catalog arrives (and if it never does); a loaded catalog, even an empty one, decides which templates are listed.
-    const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
-    // A saved copy older than its freshness window shows names and prices but does not decide what is listed (the network has not confirmed it).
-    const [catalogConfirmed, setCatalogConfirmed] = useState(false);
+    // null until the catalog arrives; only a confirmed (not stale saved) catalog, even an empty one, decides which templates are listed.
+    const [catalog, setCatalog] = useState<CatalogModel[] | null>(null), [catalogConfirmed, setCatalogConfirmed] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popularIds, setPopularIds] = useState<string[]>([]);
@@ -126,10 +124,7 @@ export default function Explore() {
         return () => { live = false; };
     }, []);
     const models = useMemo(() => new Map((catalog ?? []).map((m) => [m.id, m])), [catalog]);
-    const allTemplates = useMemo(() => {
-        const known = catalog && catalogConfirmed ? models : null;
-        return presets && [...presets, ...templatesWithCatalogModel(imageList, known).map((i) => imageAsPreset(i, models)), ...templatesWithCatalogModel(audioList, known).map((a) => audioAsPreset(a, models))];
-    }, [presets, imageList, audioList, models, catalog, catalogConfirmed]);
+    const allTemplates = useMemo(() => presets && listedTemplates(presets, imageList, audioList, models, catalog && catalogConfirmed ? models : null), [presets, imageList, audioList, models, catalog, catalogConfirmed]);
 
     const vibe = useVibeAnswers();
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);

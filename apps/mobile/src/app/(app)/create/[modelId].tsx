@@ -18,6 +18,7 @@ import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollVi
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { CreateStatusNotes, costLine } from '../../../components/create/CreateStatusNotes';
 import { RevealOnFirstLayout } from '../../../components/create/RevealOnFirstLayout';
+import { ModelUnavailable } from '../../../components/create/ModelUnavailable';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { useModelSwitch } from '../../../components/create/useModelSwitch';
@@ -267,21 +268,7 @@ export default function CreateWithModel() {
         clearDraft(undefined, undefined, sceneServices.current.api).catch(() => undefined);
     }, []);
     const { contract: loadedContract, loading: contractLoading, retry: retryContract } = useTemplateContract(swapScene ? null : template?.id);
-    if (!model || (swap !== undefined && swapScene?.id !== swap)) {
-        // Every path here carries the same static title, so the route's file name never shows. A failure (the model is
-        // switched off or gone, or the catalog would not load) says so in words and offers a way out.
-        const failed = error === t('form.modelGone') || error === t('form.modelLoad');
-        const fromTemplate = !!template || !!tpl;
-        return <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('label.Create') }} />
-            {failed ? <>
-                <Text variant="title2" accessibilityRole="header" accessibilityLiveRegion="polite">{error}</Text>
-                <Text variant="body" tone="secondary">{t(error === t('form.modelGone') ? 'form.modelGoneBody' : 'form.modelLoadBody')}</Text>
-                <Button label={t('form.modelGoneChoose')} onPress={() => router.replace('/create')} />
-                <Button variant="secondary" label={t(fromTemplate ? 'form.modelGoneBack' : 'form.modelBack')} onPress={() => (fromTemplate ? router.replace('/create/presets') : router.canGoBack() ? router.back() : router.replace('/create'))} />
-            </> : error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}
-        </View>;
-    }
+    if (!model || (swap !== undefined && swapScene?.id !== swap)) return <ModelUnavailable error={error} fromTemplate={!!template || !!tpl} />;
     const isVideo = kindOf(model.modality) === 'video';
     const options = optionsFor(model), tier = resolveTier(options, opts.tier);
     const unit = swapScene?.credits ?? estimateCredits(model, duration, tier);

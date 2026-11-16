@@ -48,6 +48,11 @@ export function templatesWithCatalogModel<T extends { readonly modelId: string }
     return models ? list.filter((item) => models.has(item.modelId)) : [...list];
 }
 
+// Every template Explore lists: the video presets, then the image and audio templates whose model the catalog still lists.
+export function listedTemplates(presets: readonly Preset[], images: readonly ImageTemplate[], audio: readonly AudioTemplate[], models: ReadonlyMap<string, CatalogModel>, known: ReadonlyMap<string, CatalogModel> | null): Preset[] {
+    return [...presets, ...templatesWithCatalogModel(images, known).map((i) => imageAsPreset(i, models)), ...templatesWithCatalogModel(audio, known).map((a) => audioAsPreset(a, models))];
+}
+
 // "All" shows each kind, not only the biggest list: one of each in turn, every kind keeping its own order.
 export function mixKinds(presets: readonly Preset[]): Preset[] {
     const lanes = new Map<string, Preset[]>();
