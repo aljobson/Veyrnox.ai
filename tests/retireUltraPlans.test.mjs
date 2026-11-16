@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import { subscriptionHandler, subscriptionProjection, SUBSCRIPTION_CONSENT_VERSION, SUBSCRIPTION_CONSENT_VERSION_YEARLY } from '../lib/subscriptions/api.js';
 
 const read = name => readFileSync(`packages/db/schema/supabase/${name}.sql`, 'utf8');
-const support = read('0545_store_retirement_support');
-// 0546 is held outside the migrations folder so apply-migrations cannot apply it with 0545 (ADR-0346).
-const retirement = readFileSync('docs/operations/0546_retire_ultra_plans.sql', 'utf8');
+const support = read('0548_store_retirement_support');
+// 0549 is held outside the migrations folder so apply-migrations cannot apply it with 0545 (ADR-0346).
+const retirement = readFileSync('docs/operations/0549_retire_ultra_plans.sql', 'utf8');
 const code = sql => sql.replace(/--[^\n]*/g, '');
 const sig = 'TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ';
 

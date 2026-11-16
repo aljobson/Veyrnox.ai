@@ -1,4 +1,4 @@
--- ADR-0346. Support only: no plan is deactivated and retired_at remains NULL until 0546.
+-- ADR-0346. Support only: no plan is deactivated and retired_at remains NULL until 0549.
 -- Apply before deploying the webhook that forwards purchased_at_ms; old callers omit the defaulted arg.
 BEGIN;
 ALTER TABLE public.credit_subscription_plans ADD COLUMN IF NOT EXISTS retired_at TIMESTAMPTZ;

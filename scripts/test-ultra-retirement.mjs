@@ -14,8 +14,8 @@ export async function testUltraRetirement(c) {
     const cutoff = '2020-01-02T00:00:00.000Z';
     const before = '2020-01-01T23:59:59.999Z';
     const after = '2020-01-02T00:00:00.001Z';
-    // 0546 is held outside the migrations folder (ADR-0346): run it here, inside the savepoint, as the later release will.
-    const held = readFileSync('docs/operations/0546_retire_ultra_plans.sql', 'utf8').replace(/^\s*BEGIN;\s*$/m, '').replace(/^\s*COMMIT;\s*$/m, '');
+    // 0549 is held outside the migrations folder (ADR-0346): run it here, inside the savepoint, as the later release will.
+    const held = readFileSync('docs/operations/0549_retire_ultra_plans.sql', 'utf8').replace(/^\s*BEGIN;\s*$/m, '').replace(/^\s*COMMIT;\s*$/m, '');
     await c.query(held);
     await c.query("UPDATE public.credit_subscription_plans SET retired_at = $1 WHERE id IN ('ultra-monthly','ultra-yearly') AND NOT active", [cutoff]);
     const ultra = await one("SELECT active, credits FROM public.credit_subscription_plans WHERE id = 'ultra-monthly'");

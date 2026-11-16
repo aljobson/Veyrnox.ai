@@ -34,7 +34,7 @@ function insertedPlans(name, table) {
     });
 }
 
-// A deliberately bounded SQL reader for the catalog at migration 0546 (ADR-0343), not a SQL interpreter.
+// A deliberately bounded SQL reader for the catalog at migration 0541 (ADR-0343), not a SQL interpreter.
 // Values come from INSERTs and the subsequent guarded UPDATEs, never duplicated price constants.
 export function storeBillingCatalog() {
     const generation = new Map();

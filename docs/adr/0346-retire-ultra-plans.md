@@ -8,7 +8,7 @@ The owner requires identical web and store prices and has decided to drop Ultra 
 
 0545 adds nullable `retired_at` and replaces the nine-argument store event RPC with a ten-argument function whose final named `p_purchased_at` argument defaults to NULL. It deactivates nothing. Old callers still resolve using the default; the new webhook must not deploy before 0545. The owned-subscription read also returns the plan's interval, including inactive plans.
 
-0546 retires exactly Ultra monthly and yearly, keeps the first retirement timestamp on replay, and asserts that only the six Lite/Starter/Plus rows remain active at ADR-0343 figures. No plans, mappings, balances or ledger records are deleted or directly rewritten. "Deactivating mappings" means refusing new purchases through the mapped plan's active flag; mapping rows remain for audit and settlement.
+0549 retires exactly Ultra monthly and yearly, keeps the first retirement timestamp on replay, and asserts that only the six Lite/Starter/Plus rows remain active at ADR-0343 figures. No plans, mappings, balances or ledger records are deleted or directly rewritten. "Deactivating mappings" means refusing new purchases through the mapped plan's active flag; mapping rows remain for audit and settlement.
 
 Web APIs and stale client catalogs exclude Ultra. Mobile custom cards exclude it, native paywalls with retired packages fall back to Credits, and both purchase gates reject it before store calls. Legacy names, translations, paid entitlements, and 60 Music downloads per month remain supported. Readiness accepts legacy entitlement attachments and warns "retired product still in offering" for stale offerings; a warning is not proof that sales have stopped.
 
@@ -25,9 +25,9 @@ New rows and switches to a different inactive plan require that plan's `retired_
 1. Stop Ultra sales in App Store Connect, Play and RevenueCat and confirm closure. The parent session owns this. Old app builds can show cached offerings until closure; “no new purchases” is only true after this prerequisite.
 2. Apply **0545 only** through `apply-migrations`.
 3. Merge/deploy the web/mobile code and verify that the webhook forwards validated purchase time. Do not advance while old callers remain.
-4. Retire: in a follow-up PR move `docs/operations/0546_retire_ultra_plans.sql` into `packages/db/schema/supabase/` (recheck the number against main) and apply it through `apply-migrations`.
+4. Retire: in a follow-up PR move `docs/operations/0549_retire_ultra_plans.sql` into `packages/db/schema/supabase/` (recheck the number against main) and apply it through `apply-migrations`.
 
-**Rollout control:** `apply-migrations` applies every pending file, so 0546 is held at `docs/operations/0546_retire_ultra_plans.sql`, outside the migrations folder, and ships only in the follow-up in step 4. Until step 2, new webhook code calling the 9-argument function fails the RPC call and RevenueCat retries it, so merge and apply 0545 close together. This work makes no workflow or dashboard changes and applies no production SQL.
+**Rollout control:** `apply-migrations` applies every pending file, so 0549 is held at `docs/operations/0549_retire_ultra_plans.sql`, outside the migrations folder, and ships only in the follow-up in step 4. Until step 2, new webhook code calling the 9-argument function fails the RPC call and RevenueCat retries it, so merge and apply 0545 close together. This work makes no workflow or dashboard changes and applies no production SQL.
 
 ## Owner questions and exclusions
 

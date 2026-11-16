@@ -9,10 +9,10 @@ BEGIN
        SET active = false, retired_at = COALESCE(retired_at, now()), updated_at = now()
      WHERE id IN ('ultra-monthly', 'ultra-yearly');
     GET DIAGNOSTICS affected = ROW_COUNT;
-    IF affected <> 2 THEN RAISE EXCEPTION '0546: expected 2 Ultra plans, got %', affected; END IF;
+    IF affected <> 2 THEN RAISE EXCEPTION '0549: expected 2 Ultra plans, got %', affected; END IF;
 
     IF EXISTS (SELECT 1 FROM public.credit_subscription_plans WHERE active AND id LIKE 'ultra-%') THEN
-        RAISE EXCEPTION '0546: Ultra remains active';
+        RAISE EXCEPTION '0549: Ultra remains active';
     END IF;
     IF (SELECT count(*) FROM public.credit_subscription_plans WHERE active) <> 6
        OR (SELECT count(*) FROM public.credit_subscription_plans p
@@ -24,7 +24,7 @@ BEGIN
            ON p.id = expected.id AND p.billing_interval = expected.billing_interval
               AND p.price_usd_cents = expected.price AND p.credits = expected.credits
            WHERE p.active) <> 6 THEN
-        RAISE EXCEPTION '0546: active catalog differs from the six ADR-0343 Lite/Starter/Plus plans';
+        RAISE EXCEPTION '0549: active catalog differs from the six ADR-0343 Lite/Starter/Plus plans';
     END IF;
 END $$;
 NOTIFY pgrst, 'reload schema';

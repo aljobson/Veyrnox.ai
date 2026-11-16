@@ -10,7 +10,7 @@ const event = (productId, store, subscription = false) => ({ event: {
     environment: 'PRODUCTION', purchased_at_ms: 1793232000000, event_timestamp_ms: 1793232000000,
     expiration_at_ms: 1795910400000,
 } });
-test('active saleable products are exactly the post-0546 catalog in each store', () => {
+test('active saleable products are exactly the post-0549 catalog in each store', () => {
     for (const store of ['ios', 'android']) {
         const expected = [156, 392, 1177].map(n => `ai.veyrnox.credits.${n}`);
         const product = id => store === 'android' ? `${id}:${id.split('.').at(-1)}` : id;
