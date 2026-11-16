@@ -32,17 +32,9 @@ import { skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SEL
 import { useKeyboardOpen } from '../../../lib/useKeyboardOpen';
 import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QUIET_MS, resumeNoticeKey, stopNoticeKey, type StopOutcome } from '../../../lib/chatStop';
 import { plural, t } from '../../../lib/i18n';
+import { ERROR_TEXT } from '../../../lib/chatErrorText';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
 import { Text, TextField, Button, Icon, themedStyles, useThemedStyles } from '../../../components/ui';
-const ERROR_TEXT: Record<string, string> = {
-    insufficient_credits: t('chat.notenoughcreditsforthisreply'),
-    insufficient_balance: t('chat.notenoughcreditsforthisreply'),
-    rate_limited: t('chat.toomanymessagesWaitamoment'),
-    option_unavailable: t('chat.thatchoiceisnotavailableforthis'),
-    invalid_text: t('chat.composer.tooLong'),
-    chat_not_open: t('chat.chatisnotavailablerightnow'),
-    consent_declined: t('chat.youneedtoagreetoAIsharing'),
-};
 export default function Conversation() {
     const styles = useThemedStyles(sheets);
     const { id, starter, asset, prompt } = useLocalSearchParams<{ id: string; starter?: string; asset?: string; prompt?: string }>();
@@ -188,6 +180,7 @@ export default function Conversation() {
             const knownIds = new Set(messages.map((m) => m.id));
             const stamp = Date.now();
             deltas.begin(`a${stamp}`);
+            setStarredOnly(false);
             setMessages((m) => [...(m ?? []), { id: `u${stamp}`, role: 'user', content: text }, { id: `a${stamp}`, role: 'assistant', content: '' }]);
             const controller = new AbortController();
             abort.current = controller;
@@ -276,7 +269,7 @@ export default function Conversation() {
             setSending(false);
             busy.current = false; setRound(r => r + 1);
         },
-        [api, draft, id, images, messages, model, options, deltas],
+        [api, draft, id, images, messages, model, options, deltas, setStarredOnly],
     );
 
     // Switching the model changes what the next reply costs; the choices the new model does not offer are dropped.
