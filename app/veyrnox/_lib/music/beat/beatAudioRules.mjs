@@ -16,6 +16,12 @@ export function validAsset(a, bpm) {
   if (a.source === 'sound') return !!soundById(a.ref) && a.sourceChannels === 2 && a.encodedBytes === 0
     && Math.abs(a.durationSec - soundDuration(a.ref, bpm)) < 1e-8;
   if (a.source === 'take') return typeof a.ref === 'string' && a.ref.length > 0 && a.ref.length <= 128 && !/[:/]/.test(a.ref) && a.sourceChannels === 1 && a.bpm === null;
+  if (a.source === 'stem' || a.source === 'target') {
+    const keys = a.source === 'stem' ? ['songId', 'versionId', 'requestId', 'part'] : ['songId', 'versionId', 'requestId', 'kind', 'instrument'];
+    return exact(a.ref, keys) && ['songId', 'versionId', 'requestId'].every(k => uuid(a.ref[k]))
+      && (a.source === 'stem' ? ['vocals', 'instrumental'].includes(a.ref.part)
+        : ['target', 'residual'].includes(a.ref.kind) && ['vocals', 'drums', 'bass', 'guitar', 'piano', 'strings', 'synthesizer', 'brass', 'woodwinds'].includes(a.ref.instrument));
+  }
   return a.source === 'song' && exact(a.ref, ['songId', 'versionId', 'jobId']) && Object.values(a.ref).every(uuid);
 }
 export function validRamp(r, fadeIn) {

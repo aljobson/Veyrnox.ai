@@ -21,7 +21,7 @@ function friendly(reason) {
  * the two results to the beat as a loop layer. Results are also saved as
  * private songs in the Music Library, like every Create pair.
  */
-export default function BeatMagicBar({ doc, loops, announce }) {
+export default function BeatMagicBar({ doc, loops, announce, hidePrompt = false }) {
   const [prompt, setPrompt] = useState('');
   const bars = barChoices(doc.tempo.bpm);
   const [length, setLength] = useState(bars.includes(8) ? 8 : bars[0]);
@@ -88,7 +88,7 @@ export default function BeatMagicBar({ doc, loops, announce }) {
   return (
     <section aria-labelledby="magic-bar-title" className="space-y-4 rounded-2xl border border-vx-border bg-vx-panel p-4">
       <div><h2 id="magic-bar-title" className="text-lg font-black">Magic Bar</h2><p className="text-sm text-vx-fg-muted">Describe a part and get two loops in time with this beat. You see the price before anything is charged.</p></div>
-      {!generation ? (
+      {!hidePrompt && !generation ? (
         <form onSubmit={price} className="flex flex-col gap-3 md:flex-row md:items-end">
           <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-bold">Describe the part<input className={`${input} w-full font-normal`} value={prompt} maxLength={MAGIC_PROMPT_MAX} placeholder="Warm Rhodes chords, laid-back" onChange={(e) => { setPrompt(e.target.value); reset(); }} /></label>
           <label className="flex flex-col gap-1 text-sm font-bold">Length<select className={`${input} font-normal`} value={length} onChange={(e) => { setLength(Number(e.target.value)); reset(); }}>{bars.map((n) => <option key={n} value={n}>{n} bars</option>)}</select></label>
@@ -96,7 +96,7 @@ export default function BeatMagicBar({ doc, loops, announce }) {
         </form>
       ) : null}
       {full && !generation ? <p className="text-sm text-vx-fg-muted">This beat has {MAGIC_LAYER_LIMIT} loops. Remove one to add another.</p> : null}
-      {quote && !generation ? (
+      {!hidePrompt && quote && !generation ? (
         <div className="rounded-xl border border-vx-accent/40 bg-vx-accent/10 p-3">
           <p className="font-bold">Two loops · <span className="text-vx-money">{quote.total_credits} credits</span></p>
           <p className="text-sm text-vx-fg-muted">Balance {quote.balance} → {quote.balance_after}. A failed loop is refunded.</p>

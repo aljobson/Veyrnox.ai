@@ -1,3 +1,4 @@
+import { assertNoHeldAssets } from './beatAssetAvailability.mjs';
 import { startVoice, createVoicePool } from './beatVoices.js';
 import { midiNoteOnsInWindow } from './beatMidiWindow.mjs';
 import { effectiveGain } from './beatEvents.mjs';
@@ -40,7 +41,8 @@ export async function loadSongBuffers(doc, progress = () => {}, range = 'song') 
   estimateExport(doc, frames); // cold-cache refusal before any fetch, decode, or output allocation
   const ids = usedAssets(doc), buffers = new Map();
   if (!ids.length) return buffers;
-  const { loadAssetBuffers, prepareExportCache, renderSound } = await import('./beatAssets.js');
+  const { loadAssetBuffers, prepareExportCache, renderSound, assetState } = await import('./beatAssets.js');
+  assertNoHeldAssets(doc, assetState);
   prepareExportCache(doc);
   let index = 0, completed = 0;
   await Promise.all(Array.from({ length: Math.min(2, ids.length) }, async () => {
@@ -64,6 +66,7 @@ export async function loadSongBuffers(doc, progress = () => {}, range = 'song') 
         }
         loaded = { buffer, reversed: reverse };
       } else loaded = await loadAssetBuffers(asset, doc.tempo.bpm, reversed);
+      assertNoHeldAssets(doc, assetState);
       const buffer = loaded?.buffer, reverse = loaded?.reversed;
       buffers.set(id, { buffer, reverse, missing: !buffer || (reversed && !reverse) });
     }
@@ -71,6 +74,10 @@ export async function loadSongBuffers(doc, progress = () => {}, range = 'song') 
   return buffers;
 }
 export async function renderSong(doc, { buffers: prepared, progress, range = 'song', soloTrackId, startSec = 0, endSec, originSec } = {}) {
+  if (usedAssets(doc).some(id => ['song', 'stem', 'target'].includes(doc.assets[id]?.source))) {
+    const { assetState } = await import('./beatAssets.js');
+    assertNoHeldAssets(doc, assetState);
+  }
   const size = exportSize(doc, AUDIO_RATE, range);
   endSec ??= size.frames / AUDIO_RATE;
   if (originSec === undefined) {

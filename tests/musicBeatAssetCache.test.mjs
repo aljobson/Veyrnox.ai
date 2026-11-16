@@ -137,3 +137,20 @@ test('cloud-origin takes survive shelf changes; deleted shelf takes fall back to
     assets.configureCloudTakes(null); assert.equal(assets.cachedAsset(localAsset, 92), null);
   } finally { globalThis.fetch = originalFetch; assets.configureCloudTakes(null); }
 });
+
+test('hold drops both cache directions and a late reverse load cannot restore ready', async () => {
+  assets.clearBeatAssets();
+  const asset = fixture().assets.a0;
+  await assets.loadAssetBuffers(asset, 60);
+  let resume, entered;
+  const waiting = new Promise(resolve => { entered = resolve; });
+  beforeReverse = async () => { entered(); await new Promise(resolve => { resume = resolve; }); };
+  const late = assets.loadAssetBuffers(asset, 60, true); await waiting;
+  assets.markAssetHeld(asset);
+  assert.equal(assets.cachedAsset(asset, 60), null);
+  assert.equal(assets.cachedAsset(asset, 60, true), null);
+  resume(); assert.equal(await late, null);
+  assert.equal(assets.assetState(asset, 60).status, 'held');
+  assert.equal(await assets.loadAssetBuffers(asset, 60), null);
+  beforeReverse = async () => {}; assets.clearBeatAssets();
+});

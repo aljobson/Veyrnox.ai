@@ -33,6 +33,7 @@ export default function BeatAudioRegion({ region, asset, bpm, zoom }) {
     }
     void draw(); return () => { live = false; };
   }, [asset, bpm, region, zoom, state]);
+  if (state.status === 'held') return <span className="block px-3" aria-label="Held for review — this part can't be played or exported"><span aria-hidden="true">✦ </span>Held for review</span>;
   return <><span className="block truncate px-3 font-bold">{state.status === 'missing' ? 'Missing sound' : asset.name}</span>
     <canvas ref={canvas} aria-hidden="true" className="h-6 w-full text-vx-hue-sky" />
       {state.status !== 'ready' && <span className="block truncate px-3 text-xs" title={state.reason}>{state.status === 'missing' ? state.reason : 'Loading sound…'}</span>}</>;

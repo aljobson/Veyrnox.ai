@@ -30,14 +30,14 @@ function upload(url, headers, bytes, signal, progress) {
     signal?.throwIfAborted(); signal?.addEventListener('abort', abort, { once: true }); xhr.send(bytes);
   });
 }
-export async function saveMixdownToLibrary({ doc, range = 'song', wavBytes, rightsConfirmed, idempotencyKey, signal, progress = () => {} }) {
+export async function saveMixdownToLibrary({ doc, range = 'song', wavBytes, rightsConfirmed, idempotencyKey, signal, progress = () => {}, beforePost = async () => {} }) {
   if (wavBytes.byteLength > 26_214_400) throw Object.assign(new Error(MIXDOWN_LIMIT_MESSAGE), { code: 'mixdown_size_invalid' });
   if (globalThis.navigator?.onLine === false) throw Object.assign(new Error(SAVE_OFFLINE_MESSAGE), { code: 'network_error' });
   const { songs, hasTakes } = mixdownSources(doc, { range });
   const account = getSession()?.user?.id;
   const checkAccount = () => { if (!account || getSession()?.user?.id !== account) throw Object.assign(new Error('Session changed'), { status: 401 }); };
   checkAccount();
-  const post = body => { checkAccount(); return gatewayFetch('/music/mixdowns', { method: 'POST', body: JSON.stringify(body), signal }); };
+  const post = async body => { await beforePost(); checkAccount(); return gatewayFetch('/music/mixdowns', { method: 'POST', body: JSON.stringify(body), signal }); };
   progress('Preparing your save…');
   const result = await post({ action: 'reserve', idempotency_key: idempotencyKey, title: doc.title,
     size_bytes: wavBytes.byteLength, sha256: await wavSha256(wavBytes), duration_seconds: (wavBytes.byteLength - 44) / (48000 * 4),
