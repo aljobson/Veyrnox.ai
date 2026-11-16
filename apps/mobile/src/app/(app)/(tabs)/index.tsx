@@ -84,6 +84,8 @@ export default function Explore() {
     const [prompt, setPrompt] = useState('');
     // null until the catalog arrives (and if it never does); a loaded catalog, even an empty one, decides which templates are listed.
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
+    // A saved copy older than its freshness window shows names and prices but does not decide what is listed (the network has not confirmed it).
+    const [catalogConfirmed, setCatalogConfirmed] = useState(false);
     const [note, setNote] = useState<string | null>(null);
     const [presets, setPresets] = useState<Preset[] | null>(null);
     const [popularIds, setPopularIds] = useState<string[]>([]);
@@ -98,7 +100,7 @@ export default function Explore() {
     const [jobs, setJobs] = useState<Job[]>([]);
 
     useEffect(() => {
-        void fetchCatalogCached((models) => setCatalog(models)).catch(() => {});
+        void fetchCatalogCached((models, meta) => { setCatalog(models); setCatalogConfirmed(!meta.stale); }).catch(() => {});
     }, []);
 
     const loadPresets = useCallback(() => {
@@ -125,9 +127,9 @@ export default function Explore() {
     }, []);
     const models = useMemo(() => new Map((catalog ?? []).map((m) => [m.id, m])), [catalog]);
     const allTemplates = useMemo(() => {
-        const known = catalog ? models : null;
+        const known = catalog && catalogConfirmed ? models : null;
         return presets && [...presets, ...templatesWithCatalogModel(imageList, known).map((i) => imageAsPreset(i, models)), ...templatesWithCatalogModel(audioList, known).map((a) => audioAsPreset(a, models))];
-    }, [presets, imageList, audioList, models, catalog]);
+    }, [presets, imageList, audioList, models, catalog, catalogConfirmed]);
 
     const vibe = useVibeAnswers();
     const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);

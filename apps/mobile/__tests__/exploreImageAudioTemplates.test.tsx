@@ -8,9 +8,10 @@ const mockPush = jest.fn(); const mockFetch = jest.fn(); const mockImages = jest
 const mockApi = { request: jest.fn() };
 const entry = (id: string) => ({ id, name: id, modality: 'text-to-image', credits: 3 });
 let mockCatalog: any[] | null = [];
+let mockStale = false;
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => ({}), useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, status: 'signedOut' }) }));
-jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { if (mockCatalog === null) throw new Error('offline'); cb(mockCatalog); return mockCatalog; }, mediaApi: () => ({ listJobs: async () => ({ jobs: [] }) }) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { if (mockCatalog === null) throw new Error('offline'); cb(mockCatalog, { fromCache: mockStale, stale: mockStale, savedAt: 0, ageMs: 0 }); return mockCatalog; }, mediaApi: () => ({ listJobs: async () => ({ jobs: [] }) }) }));
 jest.mock('../src/lib/presets', () => ({ ...jest.requireActual('../src/lib/presets'), fetchPresets: () => mockFetch() }));
 jest.mock('../src/lib/imageTemplates', () => ({ ...jest.requireActual('../src/lib/imageTemplates'), fetchImageTemplates: () => mockImages() }));
 jest.mock('../src/lib/audioTemplates', () => ({ ...jest.requireActual('../src/lib/audioTemplates'), fetchAudioTemplates: () => mockAudio() }));
@@ -35,7 +36,7 @@ const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const click = (label: string) => act(async () => control(label)!.props.onClick(event));
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-    mockCatalog = [entry('nano'), entry('suno')];
+    mockCatalog = [entry('nano'), entry('suno')]; mockStale = false;
     root = createRoot(); mockPush.mockReset(); mockFetch.mockReset().mockResolvedValue(video);
     mockImages.mockReset().mockResolvedValue(images); mockAudio.mockReset().mockResolvedValue(audio);
     await act(async () => root.render(<Home />));
@@ -89,5 +90,10 @@ test('a loaded but empty catalog hides every image and audio template', async ()
 });
 test('while the catalog is unknown (fetch failed) nothing is hidden', async () => {
     await rerender(null);
+    expect(titles()).toEqual(expect.arrayContaining(['Video 0', 'Forest Light', 'Midnight Soul']));
+});
+test('a saved catalog copy past its freshness window does not hide templates until the network confirms it', async () => {
+    mockStale = true;
+    await rerender([]);
     expect(titles()).toEqual(expect.arrayContaining(['Video 0', 'Forest Light', 'Midnight Soul']));
 });
