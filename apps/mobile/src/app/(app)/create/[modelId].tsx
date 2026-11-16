@@ -18,6 +18,7 @@ import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollVi
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { CreateStatusNotes, costLine } from '../../../components/create/CreateStatusNotes';
 import { RevealOnFirstLayout } from '../../../components/create/RevealOnFirstLayout';
+import { ModelUnavailable } from '../../../components/create/ModelUnavailable';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { useModelSwitch } from '../../../components/create/useModelSwitch';
@@ -267,9 +268,7 @@ export default function CreateWithModel() {
         clearDraft(undefined, undefined, sceneServices.current.api).catch(() => undefined);
     }, []);
     const { contract: loadedContract, loading: contractLoading, retry: retryContract } = useTemplateContract(swapScene ? null : template?.id);
-    if (!model || (swap !== undefined && swapScene?.id !== swap)) {
-        return <View style={styles.screen}>{error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}</View>;
-    }
+    if (!model || (swap !== undefined && swapScene?.id !== swap)) return <ModelUnavailable error={error} fromTemplate={!!template || !!tpl} />;
     const isVideo = kindOf(model.modality) === 'video';
     const options = optionsFor(model), tier = resolveTier(options, opts.tier);
     const unit = swapScene?.credits ?? estimateCredits(model, duration, tier);
