@@ -268,19 +268,18 @@ export default function CreateWithModel() {
     }, []);
     const { contract: loadedContract, loading: contractLoading, retry: retryContract } = useTemplateContract(swapScene ? null : template?.id);
     if (!model || (swap !== undefined && swapScene?.id !== swap)) {
-        // The model is not in the live catalog (switched off, or removed): say so in words and offer a way out.
-        if (error === t('form.modelGone')) {
-            return <View style={styles.screen}>
-                <Stack.Screen options={{ title: t('form.modelGoneTitle') }} />
-                <Text variant="title2" accessibilityRole="header" accessibilityLiveRegion="polite">{t('form.modelGone')}</Text>
-                <Text variant="body" tone="secondary">{t('form.modelGoneBody')}</Text>
-                <Button label={t('form.modelGoneBack')} onPress={() => router.replace('/create/presets')} />
-                <Button variant="secondary" label={t('form.modelGoneChoose')} onPress={() => router.replace('/create')} />
-            </View>;
-        }
+        // Every path here carries the same static title, so the route's file name never shows. A failure (the model is
+        // switched off or gone, or the catalog would not load) says so in words and offers a way out.
+        const failed = error === t('form.modelGone') || error === t('form.modelLoad');
+        const fromTemplate = !!template || !!tpl;
         return <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
-            {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}
+            {failed ? <>
+                <Text variant="title2" accessibilityRole="header" accessibilityLiveRegion="polite">{error}</Text>
+                <Text variant="body" tone="secondary">{t(error === t('form.modelGone') ? 'form.modelGoneBody' : 'form.modelLoadBody')}</Text>
+                <Button label={t('form.modelGoneChoose')} onPress={() => router.replace('/create')} />
+                <Button variant="secondary" label={t(fromTemplate ? 'form.modelGoneBack' : 'form.modelBack')} onPress={() => (fromTemplate ? router.replace('/create/presets') : router.canGoBack() ? router.back() : router.replace('/create'))} />
+            </> : error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}
         </View>;
     }
     const isVideo = kindOf(model.modality) === 'video';
