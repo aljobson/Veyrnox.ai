@@ -75,3 +75,14 @@ test('recording over an existing hit preserves its velocity and document identit
     assert.equal(recorded.patterns.A.rows.kick[0][1], direction === -1 ? 60 : direction === 1 ? 127 : 100);
   }
 });
+
+test('restoring a version is one history entry and preserves identity', async () => {
+  const { restoreVersion } = await import('../app/veyrnox/_lib/music/beat/beatOps.mjs');
+  const { createHistory, record, undo } = await import('../app/veyrnox/_lib/music/beat/beatHistory.mjs');
+  const current = createBeat({ id: crypto.randomUUID(), now: 100 });
+  const previous = { ...current, title: 'Earlier beat', createdAt: 0, updatedAt: 1 };
+  const restored = restoreVersion(current, previous, 200);
+  const history = record(createHistory(current), restored, { label: 'restore version' });
+  assert.equal(history.past.length, 1); assert.deepEqual(undo(history).present, { ...current, updatedAt: restored.updatedAt });
+  assert.equal(restored.id, current.id); assert.equal(restored.createdAt, 100); assert.equal(restored.updatedAt, 200);
+});

@@ -7,6 +7,15 @@ import { clearTransientFailures, permanentAssetFailure } from './beatAssetFailur
 export const yieldAudio = () => new Promise((resolve) => setTimeout(resolve, 0));
 const cache = new Map(), pending = new Map(), states = new Map(), listeners = new Set();
 let size = 0, activeTempo = null, generation = 0, suspended = false;
+let cloudTakes = null;
+export function configureCloudTakes(config) {
+  const changed = cloudTakes?.userId !== config?.userId || cloudTakes?.beatId !== config?.beatId;
+  cloudTakes = config;
+  if (changed) clearBeatAssets();
+  else for (const [key, state] of states) if (state.status === 'missing' && JSON.parse(key)[0] === 'take') states.delete(key);
+  emit();
+}
+const cloudRow = ref => cloudTakes?.rows.find(row => row.take_ref === ref && row.status === 'ready');
 const emit = () => listeners.forEach((f) => f());
 export const subscribeAssets = (f) => { listeners.add(f); return () => listeners.delete(f); };
 export const assetKey = (asset, bpm) => JSON.stringify([asset.source, asset.ref, asset.durationSec, asset.sourceChannels, asset.encodedBytes, asset.source === 'sound' ? bpm : null]);
@@ -49,8 +58,8 @@ export function syncAssetTempo(bpm) {
 }
 subscribeShelf(() => {
   const ids = new Set(getShelf().map((t) => t.id));
-  for (const [key, entry] of cache) if (entry.source === 'take' && !ids.has(entry.ref)) {
-    remove(key); states.set(key, { status: 'missing', reason: 'This take was deleted', permanent: true });
+  for (const [key, entry] of cache) if (entry.source === 'take' && entry.origin !== 'cloud' && !ids.has(entry.ref)) {
+    remove(key); if (!cloudRow(entry.ref)) states.set(key, { status: 'missing', reason: 'This take was deleted', permanent: true });
   }
   emit();
 });
@@ -81,12 +90,33 @@ export async function renderSound(ref, bpm) {
 async function takeBuffer(asset) {
   await hydrateShelf();
   const take = getShelf().find((t) => t.id === asset.ref);
-  if (!take) throw new Error('This take was deleted');
+  if (!take) {
+    const row = cloudRow(asset.ref), config = cloudTakes;
+    if (!row) throw new Error('This take was deleted');
+    const signed = await config.load(row);
+    const response = await fetch(signed.url, { signal: config.signal, credentials: 'omit' });
+    if (!response.ok) { await response.body?.cancel(); throw new Error('Could not load the account take. Retry.'); }
+    const reader = response.body.getReader(), chunks = []; let length = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break;
+        length += value.length;
+        if (length > Number(row.byte_size) || length > 60000000) throw new Error('Account take changed size');
+        chunks.push(value);
+      }
+    } finally { await reader.cancel(); }
+    if (length !== Number(row.byte_size)) throw new Error('Account take changed size');
+    const data = new Uint8Array(length); let at = 0;
+    for (const chunk of chunks) { data.set(chunk, at); at += chunk.length; }
+    const buffer = await offline().decodeAudioData(data.buffer); checkDecoded(buffer, asset);
+    if (cloudTakes !== config || config.signal?.aborted) throw new DOMException('Account changed', 'AbortError');
+    return { buffer, origin: 'cloud' };
+  }
   if (Math.abs(take.seconds - asset.durationSec) > asset.durationSec * 0.02) throw new Error('This sound changed size since it was added');
   const context = offline(1, Math.round(asset.durationSec * AUDIO_RATE));
   const input = context.createBuffer(1, take.samples.length, take.sampleRate); input.copyToChannel(take.samples, 0);
   const source = context.createBufferSource(); source.buffer = input; source.connect(context.destination); source.start();
-  return context.startRendering();
+  return { buffer: await context.startRendering(), origin: 'shelf' };
 }
 export async function prepareAsset(item, bpm) {
   if (suspended) throw new DOMException('Audio load cancelled', 'AbortError');
@@ -131,16 +161,19 @@ export async function loadAssetBuffers(asset, bpm, reverse = false) {
     try {
       const reserve = admitDecode(asset);
       if (!entry) {
-        let buffer;
+        let buffer, origin;
         states.set(key, idle); emit();
         if (asset.source === 'song') buffer = (await loadSong(asset, asset)).buffer;
         else {
           const release = await decodes.acquire(reserve);
-          try { buffer = asset.source === 'sound' ? await renderSound(asset.ref, bpm) : await takeBuffer(asset); }
+          try {
+            if (asset.source === 'sound') buffer = await renderSound(asset.ref, bpm);
+            else ({ buffer, origin } = await takeBuffer(asset));
+          }
           finally { release(); }
         }
         checkDecoded(buffer, asset);
-        entry = { buffer, source: asset.source, ref: asset.ref, bpm, bytes: bytes(buffer) };
+        entry = { buffer, origin, source: asset.source, ref: asset.ref, bpm, bytes: bytes(buffer) };
       }
       if (token !== generation) return null;
       if (reverse && !entry.reversed) {

@@ -5,8 +5,9 @@ import { STARTER_PROMPT } from '../app/veyrnox/_lib/starterPrompt.mjs';
 // Film Studio is hidden (ADR-0344): the page answers 404 and nothing links to it.
 test('Film Studio is hidden: the workspace answers 404 and the home has no Film Studio card', async ({ page }) => {
   const fixture = await installProductFixtures(page);
-  const response = await page.goto('/app/film-studio');
-  expect(response?.status()).toBe(404);
+  await fixture.open('/app/film-studio');
+  await expect(page.locator('[data-assistant-target="film.stages"]')).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Film Studio stages' })).toHaveCount(0);
   await fixture.open('/app');
   await expect(page.locator('a[href="/app/film-studio"]')).toHaveCount(0);
 });

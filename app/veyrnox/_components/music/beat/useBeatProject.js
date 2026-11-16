@@ -4,6 +4,8 @@ import { recordingEditAllowed, RECORDING_LOCK_REASON } from '../../../_lib/music
 import { arrangementMessage } from '../../../_lib/music/beat/beatMessages.mjs';
 import * as historyOps from '../../../_lib/music/beat/beatHistory.mjs';
 import { tryOp, selectPattern as selectPatternOp } from '../../../_lib/music/beat/beatOps.mjs';
+import { getShelf, hydrateShelf } from '../../../_lib/music/instrumentShelf.js';
+import { createDeviceCopy, COPY_TAKES_MESSAGE, replaceAfterStash } from '../../../_lib/music/beat/beatCloudRules.mjs';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 
 export function useBeatProject(id, announce) {
@@ -23,6 +25,7 @@ export function useBeatProject(id, announce) {
   const revision = useRef(0);
   const blocked = useRef(null);
   const saving = useRef(false);
+  const inFlight = useRef(Promise.resolve()), replacing = useRef(false);
   const flushRequested = useRef(false);
   const mounted = useRef(false);
   const generation = useRef(0);
@@ -35,13 +38,14 @@ export function useBeatProject(id, announce) {
     }
   }, [announce]);
   const flush = useCallback(async function savePending() {
-    if (blocked.current || !unsaved.current) return;
+    if (replacing.current || blocked.current || !unsaved.current) return;
     // Lifecycle flushes queue behind an in-flight save and use its returned revision.
     if (saving.current) { flushRequested.current = true; return; }
     saving.current = true; flushRequested.current = false;
     const pendingDoc = unsaved.current;
     const token = generation.current;
-    const result = await store.updateBeat(pendingDoc, revision.current);
+    inFlight.current = store.updateBeat(pendingDoc, revision.current);
+    const result = await inFlight.current;
     saving.current = false;
     if (token !== generation.current) return;
     if (mounted.current) setPersistent(result.persistent !== false);
@@ -78,7 +82,7 @@ export function useBeatProject(id, announce) {
     mounted.current = true;
     Promise.resolve().then(() => { if (mounted.current) reload(); });
     const unsubscribe = store.subscribeBeats((message) => {
-      if (message.id !== id || !current.current) return;
+      if (message.cloud || message.id !== id || !current.current) return;
       if (message.deleted) markConflict('deleted');
       else if (message.revision > revision.current) markConflict('changed');
     });
@@ -99,7 +103,7 @@ export function useBeatProject(id, announce) {
     current.current = next; setDoc(next); setSaveError(false);
   }, []);
   const edit = useCallback((change, options = {}) => {
-    if (!current.current) return null;
+    if (!current.current || replacing.current) return null;
     if (!recordingEditAllowed(recordingState.current(), options)) { announce(RECORDING_LOCK_REASON); return null; }
     try {
       const result = tryOp(current.current, change);
@@ -124,14 +128,14 @@ export function useBeatProject(id, announce) {
     } catch { announce('That change is not valid.'); return null; }
   }, [announce, accept]);
   const selectPattern = useCallback((slot) => {
-    if (recordingState.current()) return;
+    if (replacing.current || recordingState.current()) return;
     if (!current.current || slot === current.current.currentPattern) return;
     const next = selectPatternOp(current.current, slot);
     history.current = historyOps.replacePresent(history.current, next);
     accept(next);
   }, [accept]);
   const travel = useCallback((direction) => {
-    if (!history.current || recordingState.current()) return;
+    if (replacing.current || !history.current || recordingState.current()) return;
     const entry = (direction === 'undo' ? history.current.past : history.current.future).at(-1);
     if (!entry) return;
     history.current = historyOps[direction](history.current);
@@ -149,13 +153,46 @@ export function useBeatProject(id, announce) {
     const finalized = beforeFlush.current?.() || current.current;
     const copyDoc = source || finalized;
     if (!copyDoc) return null;
-    const now = Date.now();
-    const next = { ...structuredClone(copyDoc), id: crypto.randomUUID(), title: `${copyDoc.title.slice(0, 73)} (copy)`, createdAt: now, updatedAt: now };
-    const result = await store.createBeat(next);
-    if (result.error) { announce(result.error === 'limit' ? 'This device has 50 beats. Delete one to make room for a copy.' : 'Could not save a copy.'); return null; }
-    return next.id;
+    await hydrateShelf();
+    const result = await createDeviceCopy(copyDoc, getShelf(), store.createBeat, crypto.randomUUID(), Date.now());
+    if (result.error) {
+      announce(result.error === 'cloud_only_takes' ? COPY_TAKES_MESSAGE : result.error === 'limit' ? 'This device has 50 beats. Delete one to make room for a copy.' : 'Could not save a copy.'); return null;
+    }
+    return result.id;
   }
-  return { doc, current, registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
+  async function flushLatest() {
+    beforeFlush.current?.();
+    await inFlight.current;
+    await flush();
+    await inFlight.current;
+    if (blocked.current || unsaved.current) throw new Error('Local save incomplete');
+  }
+  async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId, expected = null) {
+    if (replacing.current || blocked.current) throw new Error('Local beat is busy');
+    beforeFlush.current?.(); replacing.current = true;
+    try {
+      await replaceAfterStash({
+        latest: async () => {
+          await inFlight.current;
+          if (expected && (revision.current !== expected.revision || JSON.stringify(current.current) !== JSON.stringify(expected.doc)))
+            throw Object.assign(new Error('Local beat changed'), { code: 'LOCAL_CONFLICT' });
+          return { doc: current.current, revision: revision.current };
+        },
+        media, stash,
+        current: captured => isCurrent() && !blocked.current && current.current === captured.doc && revision.current === captured.revision,
+        replace: async captured => {
+          const record = await store.getBeat(id);
+          if (!record.record?.cloud || !isCurrent()) return { error: 'account_changed' };
+          const result = await store.updateBeat(theirsDoc, captured.revision, { current: isCurrent,
+            link: { ...record.record.cloud, projectId: cloudProjectId || record.record.cloud.projectId, revision: theirsRevision, syncedUpdatedAt: theirsDoc.updatedAt } });
+          if (result.error) return result;
+          await reload(); return result;
+        },
+      });
+      announce(expected ? 'Updated from your account' : 'Loaded the account version; your changes are saved in Versions');
+    } finally { replacing.current = false; void flush(); }
+  }
+  return { doc, saved, flushLatest, replaceFromCloud, current, registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
     undo: () => travel('undo'), redo: () => travel('redo'),
     canUndo: Boolean(history.current && historyOps.canUndo(history.current)),
     canRedo: Boolean(history.current && historyOps.canRedo(history.current)),
