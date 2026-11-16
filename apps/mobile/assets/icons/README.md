@@ -26,3 +26,5 @@ hourglass, pen-nib, bandaids, chat-text, slideshow, folder-simple-plus, list-che
 gauge, aperture.
 
 google-g.png is the multicolour Google "G" mark (Google sign-in branding guidelines). It is never tinted.
+
+Instruments card: piano-keys.png is drawn in the same 96 x 96 white, 6 px stroke style (not from the Phosphor package; no licence impact).
