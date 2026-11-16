@@ -119,7 +119,9 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
     for (const { track, item } of clipboard.items) {
         seq += 1;
         const id = `${track[0]}${seq}`;
-        additions[track].push({ ...item, id, start: Math.max(0, frame + item.start - origin) });
+        // The clip's original track may be gone (an emptied extra track is removed): land on the first track of that kind instead of a dangling id.
+        const lane = timeline.tracks.some((candidate) => candidate.id === item.trackId && candidate.kind === track) ? item.trackId : timeline.tracks.find((candidate) => candidate.kind === track)?.id;
+        additions[track].push({ ...item, id, trackId: lane, start: Math.max(0, frame + item.start - origin) });
         selections.push({ track, id });
     }
     // Insert, never overlap: on each track the existing items from the insert point on move right by the pasted span;
@@ -199,4 +201,28 @@ export function addTrack(timeline: Timeline, kind: TrackKind): Timeline {
 export function addMarker(timeline: Timeline, frame: number): Timeline {
     const seq = timeline.seq + 1;
     return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: rawText(t('nativeEditorModel.marker', { value1: timeline.markers.length + 1 })), color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
+}
+
+const clipsOnTrack = (timeline: Timeline, track: EditorTrack) => (timeline[track.kind] as (Clip | TextClip)[]).filter((item) => item.trackId === track.id);
+
+/** A track can be removed when it holds no clips and is not the last track of its kind. */
+export function canRemoveTrack(timeline: Timeline, trackId: string): boolean {
+    const track = timeline.tracks.find((item) => item.id === trackId);
+    return !!track && !clipsOnTrack(timeline, track).length && timeline.tracks.filter((item) => item.kind === track.kind).length > 1;
+}
+
+export function removeTrack(timeline: Timeline, trackId: string): Timeline | null {
+    return canRemoveTrack(timeline, trackId) ? { ...timeline, tracks: timeline.tracks.filter((item) => item.id !== trackId) } : null;
+}
+
+/** Empty tracks beyond the first of each kind: the ones that block server export and are safe to drop automatically. */
+export function emptyExtraTracks(timeline: Timeline): EditorTrack[] {
+    return timeline.tracks.filter((track, index) => timeline.tracks.findIndex((item) => item.kind === track.kind) !== index && !clipsOnTrack(timeline, track).length);
+}
+
+/** After deleting clips: drop only the named tracks that are now empty extras (never the first track of a kind). */
+export function pruneEmptiedExtraTracks(timeline: Timeline, trackIds: readonly (string | undefined)[]): Timeline {
+    const extras = new Set(emptyExtraTracks(timeline).map((track) => track.id));
+    const drop = new Set(trackIds.filter((id): id is string => !!id && extras.has(id)));
+    return drop.size ? { ...timeline, tracks: timeline.tracks.filter((track) => !drop.has(track.id)) } : timeline;
 }

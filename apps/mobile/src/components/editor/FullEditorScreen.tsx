@@ -20,6 +20,7 @@ import { editorTrackLabel } from '../../lib/editorTrackLabel';
 import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { Command, Action, Choice, Stepper, LabeledInput, PanelHeading, EmptyPanel, WorkflowPanel } from './EditorControls';
+import { useEditorTrackActions } from './useEditorTrackActions';
 import { PlaybackPreview, PlaybackTimeline, PlaybackTransport } from './EditorPlayback';
 import { canTrim, fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX, SEQUENCE_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
@@ -48,7 +49,7 @@ import { Platform, ActivityIndicator, Modal, Pressable, ScrollView, Text, TextIn
 import { touchTarget } from '../../lib/a11y';
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
-import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, moveClip, pasteClipboard, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
+import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, moveClip, pasteClipboard, pruneEmptiedExtraTracks, removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
 import { colors } from '../../theme';
 import { HeaderAction } from '../HeaderAction';
@@ -126,6 +127,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
     const applyTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
+    const trackActions = useEditorTrackActions(timeline, applyTimeline);
     const placeVoiceover = (media: Media): 'placed' | 'track' | 'full' => { const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0); if ('error' in result) return result.error; applyTimeline(result.timeline); setSelection(result.selection); setSelections([result.selection]); return 'placed'; };
     const updateCanvas = (patch: Partial<Canvas>) => {
         const nextCanvas = { ...canvas, ...patch };
@@ -149,7 +151,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const removeSelection = () => {
         const targets = selections.length ? selections : selection ? [selection] : [];
         if (!targets.length) return;
-        applyTimeline(removeSelections(timeline, targets, ripple));
+        // An extra track emptied by this delete goes with it (one undo step); the first track of each kind always stays.
+        applyTimeline(pruneEmptiedExtraTracks(removeSelections(timeline, targets, ripple), targets.map((target) => clipAt(timeline, target)?.trackId)));
         setSelection(null);
         setSelections([]);
     };
@@ -342,6 +345,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             <Command icon="▣+" label={t('editor.addvideotrack')} onPress={() => addTimelineTrack('video')} />
             <Command icon="♫+" label={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')} />
             <Command icon="T+" label={t('editor.addtexttrack')} onPress={() => addTimelineTrack('text')} />
+            <Command icon="▣−" label={t('editor.removeemptytrack')} disabled={!trackActions.emptyCount} onPress={trackActions.removeEmptyTracks} />
             <Command icon="◆" label={t('editor.addmarker')} onPress={addTimelineMarker} />
             <Command icon="＋" label={t('editor.addtext')} onPress={addText} />
             <View style={styles.commandDivider} />
@@ -380,8 +384,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? (advanced ? t('editor.tapacommandtoeditselection') : t('editor.clipSelectedUseButtons')) : t('editor.tapacliptoselect')}</Text>
             </View>
             {advanced ? <ScrollView testID="editor-timeline-scroll" nestedScrollEnabled scrollEnabled={!timelineTouch} style={{ maxHeight: budget.timelineScrollMax }} showsVerticalScrollIndicator>
-                <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
-            </ScrollView> : <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />}
+                <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            </ScrollView> : <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />}
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} minHeight={budget.panelMin} rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>

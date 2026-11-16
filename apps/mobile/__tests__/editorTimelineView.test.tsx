@@ -81,3 +81,9 @@ test('dragging the right trim handle left closes the gap for the next clip when 
     onApply.mockClear(); await render([selected], false, 'none'); await call('trim-v1-out', 'onResponderGrant'); await call('trim-v1-out', 'onResponderRelease', event(-60));
     expect(onApply.mock.calls[0][0].video.map((c: any) => [c.id, c.start, c.len])).toEqual([['v1', 60, 60], ['v2', 150, 90]]);
 });
+test('tapping a track name reports that track so an empty extra track can be removed', async () => {
+    const onTrackPress = jest.fn();
+    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={[]} ppf={2} total={300} frame={0} playing={false} snap={false} onSeek={onSeek} onSelect={onSelect} onApply={onApply} onViewport={onViewport} onTrackPress={onTrackPress} />));
+    await act(async () => node('track-header-video-2').props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(onTrackPress).toHaveBeenCalledWith('video-2');
+});

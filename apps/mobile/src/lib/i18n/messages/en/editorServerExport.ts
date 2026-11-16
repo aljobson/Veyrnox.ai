@@ -47,7 +47,7 @@ export default {
     'editorServerExport.disabled': 'Server export is unavailable for this account.',
     'editorServerExport.priceChanged': 'The price changed. Check the price again before exporting.',
     'editorServerExport.finished': 'The export has already finished. Check again.',
-    'editorServerExport.tracks': 'Multiple tracks',
+    'editorServerExport.tracks': 'Multiple tracks. Remove empty extra tracks: tap the track name, or use Remove empty track.',
     'editorServerExport.visibility': 'Hidden, muted or solo tracks',
     'editorServerExport.overlap': 'Overlapping clips',
     'editorServerExport.background': 'Background colour',
