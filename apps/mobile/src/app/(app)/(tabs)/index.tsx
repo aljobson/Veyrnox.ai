@@ -9,6 +9,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { celebrateFinished } from '../../../lib/celebrate';
 import { ALL_CATEGORIES, ALL_TYPES, filterPresets, firstModelFor, pickUp, promptHref, recentCreations, type TypeFilter } from '../../../lib/explore';
 import { plural, t } from '../../../lib/i18n';
+import { templateCountLabel } from '../../../lib/templateCountLabel';
 import { rawText } from '../../../lib/i18n/translate';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type Kind } from '../../../lib/media';
@@ -274,10 +275,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {t('explore.templateCount', {
-                                    templates: presets.length,
-                                    models: modelCount,
-                                })}
+                                {templateCountLabel({ t, plural }, presets.length, modelCount)}
                             </Text>
                         ) : null}
                     </View>

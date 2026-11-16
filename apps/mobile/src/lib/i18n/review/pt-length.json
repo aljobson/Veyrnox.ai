@@ -1158,6 +1158,12 @@
     "ratio": 1.89
   },
   {
+    "id": "explore.templateCountNone",
+    "english": "0 templates",
+    "translation": "0 modelos de template",
+    "ratio": 1.91
+  },
+  {
     "id": "explore.templates",
     "english": "Templates",
     "translation": "Modelos prontos",

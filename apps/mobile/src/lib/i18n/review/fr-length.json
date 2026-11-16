@@ -2106,6 +2106,12 @@
     "ratio": 1.88
   },
   {
+    "id": "explore.templateCountNone",
+    "english": "0 templates",
+    "translation": "0 modèle prédéfini",
+    "ratio": 1.64
+  },
+  {
     "id": "explore.templates",
     "english": "Templates",
     "translation": "Modèles prêts à l’emploi",
