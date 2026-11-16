@@ -75,6 +75,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const mounted = useRef(true);
     const [libraryPending, setLibraryPending] = useState(false);
     const [viewport, setViewport] = useState(0);
+    const [timelineTouch, setTimelineTouch] = useState(false);
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [voiceoverAt, setVoiceoverAt] = useState<number | null>(null);
     const [voiceoverMessage, setVoiceoverMessage] = useState<string | null>(null); useAnnouncement(voiceoverMessage); const onVoiceoverAdded = () => { setVoiceoverMessage(t('editorVoiceover.added')); setVoiceoverAt(null); };
@@ -297,7 +298,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     ];
     return <View style={styles.screen}>
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible} onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
-        <Stack.Screen options={{ gestureEnabled: false /* a clip drag started at the screen edge must not trigger swipe-back; Done and the leave guard exit */, title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
+        <Stack.Screen options={{ gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */, title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
         <View style={styles.projectBar}>
             {advanced ? <View style={styles.cutBadge}><Text style={styles.cutMark}>{t('editor.v')}</Text><Text style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}
             <View style={styles.titleGroup}>
@@ -374,7 +375,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? (advanced ? t('editor.tapacommandtoeditselection') : t('editor.clipSelectedUseButtons')) : t('editor.tapacliptoselect')}</Text>
             </View>
-            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={returns.gestureActive} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>

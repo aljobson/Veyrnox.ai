@@ -152,10 +152,19 @@ test('simple view moves a selected clip later, disables it at the end, and Undo 
     expect(starts()).toEqual({ v1: 0, v2: 60 });
 });
 
-test('swipe-back is off on the editor so a clip drag cannot pop the screen', async () => {
+test('swipe-back is on when idle and off while a clip is touched or selected', async () => {
     serverDocument = twoClips();
     await renderSimple();
-    expect(mockStackOptions.mock.calls.at(-1)![0].gestureEnabled).toBe(false);
+    const clipNode = () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0];
+    const enabled = () => mockStackOptions.mock.calls.at(-1)![0].gestureEnabled;
+    expect(enabled()).toBe(true);
+    const touch = { nativeEvent: { pageX: 10, pageY: 10, locationX: 10, locationY: 10 } };
+    await act(async () => clipNode().props.onResponderGrant(touch));
+    expect(enabled()).toBe(false);
+    await act(async () => clipNode().props.onResponderTerminate());
+    expect(enabled()).toBe(true);
+    await act(async () => clipNode().props.onAccessibilityTap());
+    expect(enabled()).toBe(false);
 });
 
 test('adds native timeline tracks and review markers', async () => {
