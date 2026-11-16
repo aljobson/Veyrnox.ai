@@ -26,11 +26,12 @@ const covers = (credits, cost, worst, what) => {
     assert.ok(credits >= Math.ceil(cost / FLOOR - 1e-9), `${what}: ${credits} Credits under the floor for ${cost}`);
 };
 // Credits before 0519 (base, Thinking, Web search, Images, long text), from 0196-0198, 0220 and 0517.
+// The editor AI edit row is 10 because the full replay also applies 0547 (flat 10 for paid editor actions).
 const WAS = {
     'chat-claude-opus-5.5': [7, 5, 3, 6, 2], 'chat-claude-sonnet-5.5': [4, 3, 2, 3, 1], 'chat-gpt-6.1-sol': [4, 3, 2, 3, 1],
     'chat-grok-4.7': [3, 2, 2, 3, 1], 'chat-gemini-3.8-flash': [2, 1, 1, 1, 1], 'chat-gpt-6-luna': [1, 1, 1, 1, 1],
     'chat-deepseek-v4.1-flash': [1, 1, 1, 1, 1], 'chat-llama-4-maverick': [1, null, 1, 1, 1], 'chat-ministral-14b': [1, null, 1, 1, 1],
-    'chat-mistral-small': [1, null, 1, 1, 1], 'editor-ai-edit-gemini-3.8-flash': [3, null, null, null, null],
+    'chat-mistral-small': [1, null, 1, 1, 1], 'editor-ai-edit-gemini-3.8-flash': [10, null, null, null, null],
 };
 const SELECT = `SELECT id, credits_5s, provider_cost_per_unit::float8 AS base, chat_thinking_extra_credits AS tc,
     chat_thinking_extra_cost::float8 AS tcost, chat_web_extra_credits AS wc, chat_web_extra_cost::float8 AS wcost,
