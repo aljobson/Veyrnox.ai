@@ -17,7 +17,7 @@ function smokeConfig() {
 
 test('the staging smoke runs only its own specs', () => {
   const config = smokeConfig();
-  assert.deepEqual([...config.testMatch].sort(), ['buy.spec.mjs', 'generate.spec.mjs', 'model-switch.spec.mjs', 'signup.spec.mjs']);
+  assert.deepEqual([...config.testMatch].sort(), ['buy.spec.mjs', 'generate.spec.mjs', 'model-switch.spec.mjs', 'music-beat-export.spec.mjs', 'signup.spec.mjs']);
   for (const name of config.testMatch) assert.ok(specs.includes(name), `${name} exists`);
   assert.equal(config.testIgnore, 'authenticated-*.spec.mjs');
   assert.doesNotMatch(read('playwright.config.mjs'), /testMatch:\s*'\*/, 'a glob pulls in specs that have their own config');

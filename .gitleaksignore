@@ -335,3 +335,5 @@ aadccca615b1debc43a1a782e81c5d7a1649ea02:app/veyrnox/_lib/templateClips.js:gener
 78d6a537e866913eec7f2bbaaec6d70229d8b60b:app/veyrnox/_lib/templateClips.js:generic-api-key:302
 # Same reviewed public clip filename after #2267 was squash-merged; not a credential.
 bb6bfb6e59ac46f26913ad03cb45aafbc46fe00e:app/veyrnox/_lib/templateClips.js:generic-api-key:302
+# Fake caller UUID in a test request header (#2342 fix round 2); not a credential. The line now reads it from a variable.
+0c27991ea2eab3d539c0f0a0518399cfddb35bd2:tests/musicStudio.test.mjs:generic-api-key:38
