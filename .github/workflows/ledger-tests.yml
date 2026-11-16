@@ -22,6 +22,8 @@ on:
       - "scripts/test-project-documents.mjs"
       - "scripts/test-film-studio-cloud.mjs"
       - "scripts/test-music-beat-cloud.mjs"
+      - "scripts/test-music-beat-ai.mjs"
+      - "scripts/test-music-beat-ai-concurrency.mjs"
       - "scripts/test-music-mixdowns.mjs"
       - "scripts/test-music-mixdown-concurrency.mjs"
       - "scripts/test-project-document-timeline.mjs"
@@ -250,6 +252,8 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-film-studio-cloud.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-cloud.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-ai.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-ai-concurrency.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-mixdowns.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-mixdown-concurrency.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-document-timeline.mjs

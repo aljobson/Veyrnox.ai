@@ -17,7 +17,7 @@ export function mixdownSources(doc, { range = 'song', soloTrackId } = {}) {
       const to = Math.min(length, tickSeconds(endStep * 240 - region.start, doc.tempo.bpm), length - (region.fadeOut?.endBeforeEndSec ?? 0));
       if (from >= to) continue;
       if (asset?.source === 'take') hasTakes = true;
-      if (asset?.source === 'song') songs.set(asset.ref.versionId, { song_id: asset.ref.songId, version_id: asset.ref.versionId });
+      if (['song', 'stem', 'target'].includes(asset?.source)) songs.set(asset.ref.versionId, { song_id: asset.ref.songId, version_id: asset.ref.versionId });
     }
   }
   if (songs.size > 16) throw new Error('This mix uses more than 16 song versions. Export a shorter cycle range or download the WAV instead.');

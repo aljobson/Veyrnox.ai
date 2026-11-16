@@ -117,10 +117,13 @@ function webhook(modelId) {
     return { run: () => handler(req), copies };
 }
 
-test('the webhook asks for FLAC to WAV for ACE-Step 1.5 only', async () => {
+test('the webhook asks for FLAC to WAV for ACE-Step 1.5 and the private loop alias', async () => {
     const premium = webhook('ace-step-1.5');
     assert.equal((await premium.run()).status, 200);
     assert.deepEqual(premium.copies[0], { flacToWav: true });
+    const loop = webhook('ace-step-loop');
+    assert.equal((await loop.run()).status, 200);
+    assert.deepEqual(loop.copies[0], { flacToWav: true });
     const standard = webhook('ace-step');
     assert.equal((await standard.run()).status, 200);
     assert.equal(standard.copies[0], undefined);
