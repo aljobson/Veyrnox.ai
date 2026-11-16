@@ -7,6 +7,8 @@ import * as Crypto from 'expo-crypto';
 import { EmptyState } from '../../../components/EmptyState';
 import { HeaderAction } from '../../../components/HeaderAction';
 import { useAuth } from '../../../auth/AuthProvider';
+import { useAssetLinks } from '../../../components/JobThumb';
+import { ProjectThumb } from '../../../components/CreationThumbs';
 import { touchTarget } from '../../../lib/a11y';
 import { cleanProjectName, createProject, fetchProjects, fetchWorkspaces, projectDates, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
@@ -15,6 +17,7 @@ import { colors } from '../../../theme';
 
 export default function Projects() {
     const { api } = useAuth();
+    const links = useAssetLinks(api);
     const router = useRouter();
     const [workspaces, setWorkspaces] = useState<Workspace[] | null>(null);
     const [workspaceId, setWorkspaceId] = useState<string | null>(null);
@@ -138,8 +141,11 @@ export default function Projects() {
                             ListFooterComponent={<Text style={styles.note}>{t('projects.openaprojecttorenameitdelete')}</Text>}
                             renderItem={({ item }) => (
                                 <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}, ${projectDates(item)}`)} style={styles.row} onPress={() => router.push({ pathname: '/projects/[id]', params: { id: item.id } })}>
-                                    <Text style={styles.name}>{item.name}</Text>
-                                    <Text style={styles.muted}>{projectDates(item)}</Text>
+                                    <ProjectThumb api={api} links={links} projectId={item.id} size={48} />
+                                    <View style={styles.copy}>
+                                        <Text style={styles.name}>{item.name}</Text>
+                                        <Text style={styles.muted}>{projectDates(item)}</Text>
+                                    </View>
                                 </Pressable>
                             )}
                         />
@@ -157,7 +163,8 @@ const styles = StyleSheet.create({
     chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
     chipText: { color: colors.body },
     chipTextOn: { color: colors.accentInk, fontWeight: '600' },
-    row: { minHeight: 56, justifyContent: 'center', paddingVertical: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 2 },
+    row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+    copy: { flex: 1, gap: 2 },
     name: { color: colors.text, fontSize: 16 },
     muted: { color: colors.muted },
     note: { color: colors.muted, fontSize: 13, paddingVertical: 20 },

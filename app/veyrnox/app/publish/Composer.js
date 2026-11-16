@@ -9,6 +9,7 @@ import DeviceUploads from './DeviceUploads.js';
 import CarouselSelection from './CarouselSelection.js';
 import { orderedMediaSignature, selectionLimit, selectionBlocker, toggleMedia } from '../../../../lib/social/carouselSelection.js';
 import NetworkLogo from './NetworkLogo.js';
+import { JobThumb } from '../../_components/JobThumb.js';
 import { gatewayFetch } from '../../_lib/gateway.js';
 import { ownedPublishUpload } from '../../_lib/editorDelivery.mjs';
 import { NETWORKS } from '../../../lib/socialConnectClient.js';
@@ -436,6 +437,19 @@ function TargetBadge({ target }) {
     );
 }
 
+// The first attached creation stands for the post; a carousel shows how many more follow.
+function PostThumbs({ media }) {
+    const items = Array.isArray(media) ? media : [];
+    const first = items.find((m) => m.job_id) || null;
+    if (!items.length) return null;
+    return (
+        <span className="relative shrink-0">
+            {first ? <JobThumb jobId={first.job_id} size={56} /> : <span aria-hidden="true" className="inline-flex h-14 w-14 items-center justify-center rounded-lg bg-vx-panel text-xl text-vx-fg-muted">{first?.media_type === 'video' ? '▶' : '▧'}</span>}
+            {items.length > 1 && <span aria-hidden="true" className="absolute -top-1 -end-1 rounded-full bg-vx-accent px-1.5 text-[10px] font-bold text-vx-accent-ink">{items.length}</span>}
+        </span>
+    );
+}
+
 export function ScheduledPosts({ refreshToken, scheduleEnabled = true, onReuse }) {
   const { t, locale } = useI18n();
     const [posts, setPosts] = useState(null);
@@ -476,9 +490,14 @@ export function ScheduledPosts({ refreshToken, scheduleEnabled = true, onReuse }
                         </span>
                         {scheduleEnabled && onReuse && (p.media || []).length > 0 && <button type="button" className={button} onClick={() => onReuse?.(p)}>{t("app.publish.composer.reuse")}</button>}
                     </div>
-                    {p.global_text && <p className="text-sm text-vx-fg mb-2 line-clamp-2">{p.global_text}</p>}
-                    <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        {(p.targets || []).map((target) => <TargetBadge key={target.id} target={target} />)}
+                    <div className="flex gap-3">
+                        <PostThumbs media={p.media} />
+                        <div className="min-w-0 flex-1">
+                            {p.global_text && <p className="text-sm text-vx-fg mb-2 line-clamp-2">{p.global_text}</p>}
+                            <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                {(p.targets || []).map((target) => <TargetBadge key={target.id} target={target} />)}
+                            </div>
+                        </div>
                     </div>
                 </li>
             ))}
