@@ -5934,6 +5934,7 @@ export default {
     "editorSpeech.clip": "클립 선택",
     "editorSpeech.uploadFirst": "먼저 이 클립을 업로드하세요",
     "editorSpeech.unsupported": "이 클립에서는 아직 사용할 수 없습니다",
+    "editorSpeech.sourceRejected": "음성 도구가 이 클립의 파일을 사용할 수 없습니다. 100MB를 넘거나, 영상 1초당 약 2MB를 넘거나, 읽을 수 없는 형식일 수 있습니다. 더 짧거나 작은 클립을 시도해 보세요. 크레딧은 사용되지 않았습니다.",
     "editorSpeech.tooLong": "60초 이하의 원본 클립을 선택하세요.",
     "editorSpeech.durationChanged": "원본 길이가 변경되었습니다. 클립을 다시 불러오고 재시도하세요.",
     "editorSpeech.price": "분석 1회당 {n} 크레딧",

@@ -6324,6 +6324,7 @@ export default {
     "editorSpeech.clip": "اختر مقطعًا",
     "editorSpeech.uploadFirst": "ارفع هذا المقطع أولًا",
     "editorSpeech.unsupported": "غير متاح لهذا المقطع بعد",
+    "editorSpeech.sourceRejected": "تعذّر على أدوات الكلام استخدام ملف هذا المقطع. قد يتجاوز 100 ميغابايت، أو نحو 2 ميغابايت لكل ثانية من الفيديو، أو بصيغة غير قابلة للقراءة. جرّب مقطعًا أقصر أو أصغر. لم يتم خصم أي رصيد.",
     "editorSpeech.tooLong": "اختر مقطعًا أصليًا لا تتجاوز مدته 60 ثانية.",
     "editorSpeech.durationChanged": "تغيرت مدة المصدر. أعد تحميل المقطع وحاول مجددًا.",
     "editorSpeech.price": "{n} رصيد لكل تحليل",

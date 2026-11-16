@@ -14,8 +14,8 @@ test('a screen with no history still has a way back (to Explore)', () => {
     expect(button).toContain("accessibilityLabel={t('public.vey.back')}");
 });
 
-test('the welcome cards after the first have a Back', () => {
-    const welcome = read('app/(app)/welcome.tsx');
-    expect(welcome).toContain('setIndex(index - 1)');
-    expect(welcome).toContain("t('public.vey.back')");
+test('the first-run questions after the first have a Back', () => {
+    const firstRun = read('app/(app)/first-run.tsx');
+    expect(firstRun).toContain('goBack(step - 1)');
+    expect(firstRun).toContain("backLabel={t('public.vey.back')}");
 });

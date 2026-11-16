@@ -78,7 +78,7 @@ export function speechMessage(error: unknown): string {
     if (error instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     const code = error instanceof ApiError ? error.code : '';
     if (/^upload_|^(too_many_pending_uploads|insufficient_credits)$/.test(code)) return uploadMessage(error);
-    const messages: Record<string, string> = { source_too_long: 'editorSpeech.tooLong', source_unsupported: 'editorSpeech.unsupported', duration_mismatch: 'editorSpeech.durationChanged',
+    const messages: Record<string, string> = { source_too_long: 'editorSpeech.tooLong', source_unsupported: 'editorSpeech.sourceRejected', duration_mismatch: 'editorSpeech.durationChanged',
         result_expired: 'editorAi.expired', poll_timeout: 'editorSpeech.timeout', outcome_pending: 'editorSpeech.timeout', price_changed: 'editorSpeech.priceChanged', speech_cut_unavailable: 'editorSpeech.unavailable', provider_admission_paused: 'editorSpeech.unavailable',
         account_frozen: 'accountDeletion.youraccountisfrozenContactsupportto', insufficient_balance: 'editorAi.balance', subscription_required: 'editorAi.subscription',
         speech_gate_cooldown: 'bestCut.cooldown', source_not_admitted: 'editorSpeech.unavailable', consent_declined: 'editorAi.consent', rate_limited: 'editorAi.rateLimited', idempotency_conflict: 'editorAi.conflict' };
