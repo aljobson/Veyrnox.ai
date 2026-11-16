@@ -58,24 +58,25 @@ export function EditorVersionsSheet({ sync, api, projectId }: { sync: EditorSave
         <View style={saveSheetStyles.backdrop}><Card style={saveSheetStyles.surface} accessibilityViewIsModal>
             <Text variant="title2" accessibilityRole="header">{t('projects.savedversions')}</Text>
             {error || sync.problem ? <Text accessibilityRole="alert">{error || sync.problem}</Text> : null}
+            {preview ? <Card testID="version-preview"><Text accessibilityRole="header">{`${t('editorSave.versionRow', { value1: preview.revision })} · ${t('editorCore.totalTime', { value1: formatTimecode(framesIn(timeline), timeline.fps) })}`}</Text><Text>{plural('editor.clips2Count', timeline.video.length + timeline.audio.length + timeline.text.length)}</Text>
+                {!sync.restoreUnknown ? <Button label={t('projects.restore')} disabled={sync.dirty || preview.revision === sync.revision || !sync.canStart} onPress={() => sync.restore(preview.revision)} /> : null}
+            </Card> : previewBusy ? <ActivityIndicator /> : null}
+            {sync.dirty ? <Text>{t('editorSave.saveFirst')}</Text> : null}
+            {sync.imports > 0 ? <Text>{t('editorSave.waitingImport')}</Text> : null}
+            {sync.restoreUnknown ? <>
+                <Button label={t('editorSave.retryRestore')} disabled={!sync.retryAllowed} onPress={() => void sync.retryRestore()} />
+                <Text>{t('editorSave.restoreUnknown')}</Text>
+            </> : null}
             <ScrollView>
                 {versions.map(version => <ListRow key={version.revision}
                     accessibilityLabel={`${t('editorSave.versionRow', { value1: version.revision })}${version.revision === sync.revision ? t('editorSave.current') : ''}`}
-                    title={`${t('editorSave.versionRow', { value1: version.revision })}${version.revision === sync.revision ? t('editorSave.current') : ''}`}
+                    accessibilityState={{ selected: preview?.revision === version.revision }}
+                    title={`${t('editorSave.versionRow', { value1: version.revision })}${version.revision === sync.revision ? t('editorSave.current') : ''}${preview?.revision === version.revision ? ' ✓' : ''}`}
                     subtitle={`${version.createdAt ? new Date(version.createdAt).toLocaleString(formatLocale()) : ''}${version.restoredFrom !== null ? ` · ${t('editorSave.restoredFrom', { value1: version.restoredFrom })}` : ''}`}
                     onPress={() => void select(version.revision)} />)}
                 {!busy && !versions.length ? <Text>{t('projects.nosavedversionsyet')}</Text> : null}
-                {busy || previewBusy ? <ActivityIndicator /> : null}
+                {busy ? <ActivityIndicator /> : null}
                 {nextBefore !== null ? <Button label={t('editorSave.loadOlder')} disabled={busy} onPress={() => void load(nextBefore)} /> : null}
-                {preview ? <Card><Text>{`${t('editorSave.versionRow', { value1: preview.revision })} · ${t('editorCore.totalTime', { value1: formatTimecode(framesIn(timeline), timeline.fps) })}`}</Text><Text>{plural('editor.clips2Count', timeline.video.length + timeline.audio.length + timeline.text.length)}</Text>
-                    {!sync.restoreUnknown ? <Button label={t('projects.restore')} disabled={sync.dirty || preview.revision === sync.revision || !sync.canStart} onPress={() => sync.restore(preview.revision)} /> : null}
-                </Card> : null}
-                {sync.dirty ? <Text>{t('editorSave.saveFirst')}</Text> : null}
-                {sync.imports > 0 ? <Text>{t('editorSave.waitingImport')}</Text> : null}
-                {sync.restoreUnknown ? <>
-                    <Button label={t('editorSave.retryRestore')} disabled={!sync.retryAllowed} onPress={() => void sync.retryRestore()} />
-                    <Text>{t('editorSave.restoreUnknown')}</Text>
-                </> : null}
             </ScrollView>
             <Button label={t('editorSave.close')} variant="tertiary" onPress={sync.closeVersions} />
         </Card></View>

@@ -1,7 +1,7 @@
 import { editorTrackLabel } from '../../lib/editorTrackLabel';
 import { rawText } from '../../lib/i18n/translate';
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 import { t } from '../../lib/i18n';
 import { playSelection } from '../../lib/haptics';
 import { canTrim, formatTimecode, frameAtX, moveItems, movingSelections, snapTo, trimItem } from '../../lib/editorTimeline';
@@ -16,6 +16,8 @@ type Props = {
     onGestureActive?(active: boolean): void;
     // A picture of the clip's source, shown at the start of the clip block. Absent: text only.
     clipThumb?(mediaId: string): ReactNode;
+    // Tapping a track name; the screen decides what that does (remove an empty extra track).
+    onTrackPress?(trackId: string): void;
     onSeek(frame: number): void; onSelect(selection: Selection): void; onApply(timeline: Timeline): void; onViewport(width: number): void;
 };
 type Gesture = {
@@ -26,7 +28,7 @@ type Gesture = {
 const ROW = 56;
 const position = (item: Clip | TextClip, ppf: number) => ({ position: 'absolute' as const, left: item.start * ppf, top: 6, width: Math.max(8, item.len * ppf - 2), height: 44 });
 
-export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, onSeek, onSelect, onApply, onViewport, onGestureActive, clipThumb }: Props) {
+export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, onSeek, onSelect, onApply, onViewport, onGestureActive, onTrackPress, clipThumb }: Props) {
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const gesture = useRef<Gesture | null>(null);
     const sentActive = useRef(false), gestureCallback = useRef(onGestureActive); gestureCallback.current = onGestureActive;
@@ -104,10 +106,10 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
     return <View style={local.container}>
         <View style={local.headers}>
             <View style={local.ruler} />
-            {timeline.tracks.map(track => <View key={track.id} style={local.header}>
+            {timeline.tracks.map(track => <Pressable key={track.id} testID={`track-header-${track.id}`} style={local.header} disabled={!onTrackPress} onPress={() => onTrackPress?.(track.id)} accessibilityRole="button" accessibilityLabel={editorTrackLabel(track)} accessibilityHint={onTrackPress ? t('editor.trackhint') : undefined}>
                 <Icon name={track.kind === 'video' ? 'video' : track.kind === 'audio' ? 'audio' : 'textSize'} size={16} />
                 <View style={local.headerCopy}><Text style={styles.trackLabel} numberOfLines={1}>{editorTrackLabel(track)}</Text><Text style={styles.trackState}>{track.locked ? t('editor.lOCK') : ''}{track.muted ? t('editor.mUTE') : ''}{track.hidden ? t('editor.hIDE') : ''}</Text></View>
-            </View>)}
+            </Pressable>)}
         </View>
         <ScrollView ref={scroller} horizontal scrollEnabled={scrollEnabled} style={local.scroller} contentContainerStyle={{ width, direction: 'ltr' }}
             onLayout={event => { const size = event.nativeEvent.layout.width; setViewport(size); onViewport(size); }}
