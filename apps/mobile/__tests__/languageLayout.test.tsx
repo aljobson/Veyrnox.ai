@@ -127,6 +127,10 @@ test('the language screen returns to Account after a reload', () => {
     const src = require('fs').readFileSync(require('path').join(__dirname, '../src/app/(app)/language.tsx'), 'utf8');
     expect(src).toContain('returnPath="/account"');
 });
+test('a screen restored after a language reload keeps the tabs behind it (the app stack is anchored on tabs)', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../src/app/(app)/_layout.tsx'), 'utf8');
+    expect(src).toMatch(/export const unstable_settings = \{ anchor: '\(tabs\)' \}/);
+});
 test('first launch fades the brand page into the language choice, which sits underneath from the start', async () => {
     await act(async () => root.render(<LanguageGate active={['en', 'es']}><RN.Text>Sign-in fixture</RN.Text></LanguageGate>));
     expect(root.container.queryAll(n => n.type === 'splash')).toHaveLength(1);
