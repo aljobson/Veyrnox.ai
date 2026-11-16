@@ -4,6 +4,7 @@ export default {
     "editorSpeech.clip": "Choose a clip",
     "editorSpeech.uploadFirst": "Upload this clip first",
     "editorSpeech.unsupported": "Not available for this clip yet",
+    "editorSpeech.sourceRejected": "Speech tools could not use this clip’s file. It may be over 100 MB, over about 2 MB per second of video, or in a format that cannot be read. Try a shorter or smaller clip. No credits were spent.",
     "editorSpeech.tooLong": "Choose a source clip that is no longer than 60 seconds.",
     "editorSpeech.durationChanged": "The source duration changed. Reload the clip and try again.",
     "editorSpeech.price": "{n} credits per analysis",
