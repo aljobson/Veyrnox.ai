@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 const jobIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
 export function MusicSongActions({
+  beatEditor = false,
   songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onMashup, onSample, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender, onReverse, onSpeed,
   externalTriggerRef,
 }) {
@@ -236,8 +237,8 @@ export function MusicSongActions({
             </button>
           ) : null}
           {canStudio ? (
-            <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender ? firstItemRef : undefined} role="menuitem" href={`/app/music/studio/${songId}`} className={itemClass}>
-              Open in Studio workspace
+            <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender ? firstItemRef : undefined} role="menuitem" href={beatEditor ? `/app/music/beats/new?song=${encodeURIComponent(songId)}` : `/app/music/studio/${songId}`} className={itemClass}>
+              {beatEditor ? 'Open in Beats' : 'Open in Studio workspace'}
             </Link>
           ) : null}
           {canEditor ? (

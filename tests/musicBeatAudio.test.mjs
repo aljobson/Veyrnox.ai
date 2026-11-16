@@ -22,7 +22,7 @@ class Node {
 class Context {
   static instances = [];
   currentTime = 1; sampleRate = 44100; nodes = []; destination = new Node('destination');
-  constructor(channels, length, rate) { this.options = { channels, length, rate }; Context.instances.push(this); }
+  constructor(channels, length, rate) { this.options = { channels, length, rate }; this.sampleRate = rate || 44100; Context.instances.push(this); }
   node(type) { const node = new Node(type); this.nodes.push(node); return node; }
   createStereoPanner() { return this.node('panner'); }
   createGain() { return this.node('gain'); }
@@ -100,8 +100,8 @@ test('song mixdown uses stereo, exact cycle frames, global swing, explicit track
   doc.patterns.A.rows = { kick: [[1, 100]] };
   doc.cycle = { on: true, start: 240, end: 17 * 240 };
   doc.tracks[0].gain = 0.5; doc.tracks[0].pan = 1;
-  const result = await renderSong(doc), context = Context.instances.at(-1);
-  assert.deepEqual(context.options, { channels: 2, length: (2 + 1.5) * 44100, rate: 44100 });
+  const result = await renderSong(doc, { range: 'cycle' }), context = Context.instances.at(-1);
+  assert.deepEqual(context.options, { channels: 2, length: (2 + 1.5) * 48000, rate: 48000 });
   assert.equal(result.channels.length, 2);
   assert.equal(result.channels[0].length, context.options.length);
   const starts = context.nodes.filter((n) => n.type === 'oscillator').map((n) => n.started);
@@ -111,6 +111,6 @@ test('song mixdown uses stereo, exact cycle frames, global swing, explicit track
   assert.equal(trackInput.gain.value, 0.5); assert.equal(trackInput.outputs[0].pan.value, 1);
   doc.tempo.bpm = 40; doc.cycle.end = 102 * 3840;
   const before = Context.instances.length;
-  await assert.rejects(() => renderSong(doc), { name: 'RangeError' });
+  await assert.rejects(() => renderSong(doc, { range: 'cycle' }), { name: 'RangeError' });
   assert.equal(Context.instances.length, before);
 });

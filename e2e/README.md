@@ -8,9 +8,11 @@ Three journeys against **staging**, in Chromium (docs/product/ISSUES.md I5):
 | `generate.spec.mjs` | sign-in, `/api/v1/account`, the catalog, the create form | `POST /api/v1/generations` is answered with `insufficient_balance` |
 | `buy.spec.mjs` | sign-in, `/api/v1/balance`, `/api/v1/credit-packs`, consent gate | `POST /api/v1/top-ups` and the Stripe page are answered by the test |
 
-`playwright.config.mjs` runs exactly these three plus `model-switch.spec.mjs`
+`playwright.config.mjs` runs these three plus `model-switch.spec.mjs`
 (every listed model is selected and sends its own request; the POST is answered
-with `insufficient_balance`). The other specs in this directory are not part of
+with `insufficient_balance`) and `music-beat-export.spec.mjs` (at 375 px, opens a
+new beat and checks that the downloaded WAV has a RIFF header; skips without an
+account or with the beat editor flag off). The other specs in this directory are not part of
 the smoke; each runs from its own config: `page-coverage.config.mjs`,
 `music-preview.config.mjs`, `music-server.config.mjs` and
 `authenticated-fixtures.config.mjs`. A new smoke spec has to be added to

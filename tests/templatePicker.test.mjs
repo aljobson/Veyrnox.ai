@@ -106,8 +106,8 @@ test('templates whose models are unavailable are omitted', () => {
 
 test('template metadata keeps human model names and grammatically correct credit labels', () => {
   const image = renderPicker('image');
-  assert.match(image, /Nano Banana · 1 credit/);
-  assert.doesNotMatch(image, /1 credits/);
+  assert.match(image, /Nano Banana · 2 credits/);
+  assert.doesNotMatch(image, /2 credit(?!s)/);
 });
 
 test('the all-goal picker follows the currently selected model kind', () => {
