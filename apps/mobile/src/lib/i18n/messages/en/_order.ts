@@ -26,7 +26,7 @@ export default [
     "create.from.other", "create.noModels", "credits.unavailable", "credits.notOpen", "credits.pack.one", "credits.pack.other",
     "credits.history", "credits.added", "credits.pending", "credits.error", "library.queued", "library.running",
     "library.succeeded", "library.failed", "library.videoFiles", "library.videoFilesLabel", "library.loadError", "library.empty",
-    "form.topicPlaceholder", "form.modelGone", "form.modelLoad", "form.modelGoneBody", "form.modelGoneBack", "form.modelGoneChoose", "form.modelBack", "form.modelLoadBody", "form.describeCreate", "form.describeChange", "form.topic",
+    "form.topicPlaceholder", "form.modelGone", "form.modelLoad", "form.describeCreate", "form.describeChange", "form.topic",
     "form.consent", "form.seconds.one", "form.seconds.other", "form.costs.one", "form.costs.other", "form.err.insufficient",
     "form.err.rate", "form.err.priceChanged", "form.err.priceChangedUnknown", "form.err.network", "form.err.sourceExpired", "form.err.sourceMismatch",
     "form.err.topicRefused", "form.err.tryAgain", "form.err.default", "job.queued", "job.running", "job.succeeded",

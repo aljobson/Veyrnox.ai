@@ -14,5 +14,5 @@ const layout = readFileSync(join(root, '_layout.tsx'), 'utf8');
 test('every dynamic route under (app) has a static fallback title in the layout', () => {
     const routes = dynamicRoutes(root);
     expect(routes.length).toBeGreaterThan(10);
-    for (const route of routes) expect(layout).toMatch(new RegExp(`<Stack.Screen name="${route.replace(/[[\]]/g, '\\$&')}" options=\\{\\{ title: t\\('[A-Za-z.]+'\\) \\}\\} />`));
+    for (const route of routes) expect(layout).toMatch(new RegExp(`<Stack.Screen name="${route.replace(/[\\[\]]/g, '\\$&')}" options=\\{\\{ title: t\\('[A-Za-z.]+'\\) \\}\\} />`));
 });
