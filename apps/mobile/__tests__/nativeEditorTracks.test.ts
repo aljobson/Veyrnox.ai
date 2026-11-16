@@ -33,6 +33,14 @@ describe('track removal model', () => {
         const board = copySelections(base, [{ track: 'video', id: 'v2' }]);
         const pruned = pruneEmptiedExtraTracks(removeSelections(base, [{ track: 'video', id: 'v2' }], 'none'), [extra]);
         const pasted = pasteClipboard(pruned, board, 0)!.timeline;
-        expect(pasted.video.every(item => pruned.tracks.some(t => t.id === item.trackId && t.kind === 'video'))).toBe(true);
+        expect(pasted.video.every(item => pasted.tracks.some(t => t.id === item.trackId && t.kind === 'video'))).toBe(true);
+    });
+    test('simultaneous clips from two removed tracks paste onto distinct lanes, so none overlap', () => {
+        const a = addTrack(addTrack(emptyTimeline(), 'video'), 'video'); const [x, y] = [a.tracks[3].id, a.tracks[4].id];
+        const both: Timeline = { ...a, video: [clip('v2', x), clip('v3', y)] };
+        const board = copySelections(both, [{ track: 'video', id: 'v2' }, { track: 'video', id: 'v3' }]);
+        const gone = pruneEmptiedExtraTracks(removeSelections(both, [{ track: 'video', id: 'v2' }, { track: 'video', id: 'v3' }], 'none'), [x, y]);
+        const lanes = pasteClipboard(gone, board, 0)!.timeline.video.map(item => item.trackId);
+        expect(new Set(lanes).size).toBe(2);
     });
 });

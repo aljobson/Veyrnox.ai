@@ -127,7 +127,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId === asset.assetSource?.assetId))];
     const applyTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
-    const trackActions = useEditorTrackActions(timeline, applyTimeline);
+    const trackActions = useEditorTrackActions(timeline, () => timelineOf(currentDocument()?.timeline ?? document.timeline), applyTimeline);
     const placeVoiceover = (media: Media): 'placed' | 'track' | 'full' => { const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0); if ('error' in result) return result.error; applyTimeline(result.timeline); setSelection(result.selection); setSelections([result.selection]); return 'placed'; };
     const updateCanvas = (patch: Partial<Canvas>) => {
         const nextCanvas = { ...canvas, ...patch };

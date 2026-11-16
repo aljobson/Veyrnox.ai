@@ -116,17 +116,27 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
     let seq = timeline.seq;
     const additions: Record<TrackKind, (Clip | TextClip)[]> = { video: [], audio: [], text: [] };
     const selections: Selection[] = [];
+    const tracks = [...timeline.tracks], restored = new Map<string, string>();
     for (const { track, item } of clipboard.items) {
         seq += 1;
         const id = `${track[0]}${seq}`;
-        // The clip's original track may be gone (an emptied extra track is removed): land on the first track of that kind instead of a dangling id.
-        const lane = timeline.tracks.some((candidate) => candidate.id === item.trackId && candidate.kind === track) ? item.trackId : timeline.tracks.find((candidate) => candidate.kind === track)?.id;
+        // The clip's original track may be gone (an emptied extra track is removed): recreate one lane per missing track so simultaneous clips never share a lane.
+        let lane = item.trackId;
+        if (!tracks.some((candidate) => candidate.id === lane && candidate.kind === track)) {
+            const key = `${track}:${item.trackId}`;
+            if (!restored.has(key)) {
+                seq += 1;
+                restored.set(key, `${track}-${seq}`);
+                tracks.push({ id: `${track}-${seq}`, kind: track, name: `${track[0].toUpperCase()}${track.slice(1)} ${tracks.filter((candidate) => candidate.kind === track).length + 1}`, locked: false, muted: false, hidden: false });
+            }
+            lane = restored.get(key);
+        }
         additions[track].push({ ...item, id, trackId: lane, start: Math.max(0, frame + item.start - origin) });
         selections.push({ track, id });
     }
     // Insert, never overlap: on each track the existing items from the insert point on move right by the pasted span;
     // an item the insert point falls inside is split there, and only its tail moves.
-    const next = { ...timeline, seq } as Timeline;
+    const next = { ...timeline, seq, tracks } as Timeline;
     for (const track of ['video', 'audio', 'text'] as const) {
         const added = additions[track];
         if (!added.length) continue;
@@ -147,7 +157,7 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
         }
         (next as Record<TrackKind, (Clip | TextClip)[]>)[track] = [...existing, ...added];
     }
-    return { timeline: { ...next, seq }, selections };
+    return { timeline: { ...next, seq, tracks }, selections };
 }
 
 export function duplicateSelections(timeline: Timeline, selections: readonly Selection[]): { timeline: Timeline; selections: Selection[] } | null {
