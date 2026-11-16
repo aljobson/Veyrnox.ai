@@ -463,7 +463,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </> : null}
         </ScrollView>
         </EditorToolSheet> : null}
-        {advanced ? null : <SimpleEditorBar onOpen={setSheet} />}
+        {advanced || panelOpen ? null : <SimpleEditorBar onOpen={setSheet} />}
         {bestCut.sheet}
         {speechMode && speechQuote ? <EditorSpeechCutSheet api={api} quote={speechQuote} mode={speechMode} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness(), selection })}
             apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; applyTimeline(next); setAiAnnouncement(t('editorSpeech.applied')); return true; }}
