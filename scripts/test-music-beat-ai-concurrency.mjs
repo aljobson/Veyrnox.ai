@@ -11,7 +11,7 @@ if(!['localhost','127.0.0.1','[::1]'].includes(target.hostname)||!/^\/(rebuild_c
 const a=new pg.Client({connectionString}),b=new pg.Client({connectionString});await a.connect();await b.connect();
 const value=async(c,sql,args=[])=>Object.values((await c.query(sql,args)).rows[0])[0];
 const call=(c,name,...args)=>value(c,`SELECT public.${name}(${args.map((_,i)=>`$${i+1}`).join(',')})`,args);
-const auth=randomUUID(),song=randomUUID(),version=randomUUID(),job=randomUUID(),asset=randomUUID(),key=randomUUID();
+const auth=randomUUID(),song=randomUUID(),version=randomUUID(),job=randomUUID(),asset=randomUUID(),sibling=randomUUID(),key=randomUUID();
 let user,pending;
 try {
   await a.query('BEGIN');
@@ -24,6 +24,7 @@ try {
   assert.equal((await call(a,'music_reserve_mixdown',auth,song,version,job,asset,key,'Held source',1920044,sha,10,'[]',false,false)).ok,true);
   assert.equal((await call(a,'music_commit_mixdown',auth,key,version,1920044,sha,10)).ok,true);
   await a.query("UPDATE public.assets SET mime_type='audio/mpeg' WHERE id=$1",[asset]);
+  await a.query("INSERT INTO public.assets(id,job_id,r2_key,mime_type,size_bytes,sha256) VALUES($1,$2,$3,'audio/wav',100,$4)",[sibling,job,`test/${sibling}`,sha]);
   const definitions=[
     ['stem','music_create_stem_quote',[auth,song,version,true],'music_submit_stem_request'],
     ['target_stem','music_create_target_stem_quote',[auth,song,version,'drums',true,10],'music_submit_target_stem_request'],
@@ -38,13 +39,13 @@ try {
   await a.query('COMMIT');
   await a.query("SET statement_timeout='12s'");
   const pid=await value(a,'SELECT pg_backend_pid()');
-  for(const q of quotes){
-    await a.query('UPDATE public.assets SET held_at=NULL WHERE id=$1',[asset]);
+  for(const q of quotes) for(const heldAsset of [asset,sibling]){
+    await a.query('UPDATE public.assets SET held_at=NULL WHERE job_id=$1',[job]);
     assert.equal((await call(a,`music_get_${q.op}_source_context`,auth,song,version)).ok,true);
     const requestKey=`beat-ai.${randomUUID()}`;
     assert.equal((await call(a,`music_get_${q.op}_dispatch_context`,auth,song,q.id,requestKey)).ok,true);
     const before=await value(a,"SELECT jsonb_build_object('ledger',(SELECT count(*) FROM public.ledger_entries),'jobs',(SELECT count(*) FROM public.jobs),'dispatch',(SELECT count(*) FROM public.fal_dispatch))");
-    await b.query('BEGIN');await b.query('UPDATE public.assets SET held_at=now() WHERE id=$1',[asset]);
+    await b.query('BEGIN');await b.query('UPDATE public.assets SET held_at=now() WHERE id=$1',[heldAsset]);
     let done=false,result,error;
     pending=call(a,q.submit,auth,song,q.id,requestKey,'https://fixture.invalid/source.mp3').then(r=>result=r,e=>error=e).finally(()=>{done=true;});
     const deadline=Date.now()+8000;let blocked=false;
@@ -56,7 +57,7 @@ try {
     assert.equal(blocked,true);await b.query('COMMIT');await pending;if(error)throw error;
     assert.equal(result.code,'HELD');
     assert.deepEqual(await value(a,"SELECT jsonb_build_object('ledger',(SELECT count(*) FROM public.ledger_entries),'jobs',(SELECT count(*) FROM public.jobs),'dispatch',(SELECT count(*) FROM public.fal_dispatch))"),before);
-    console.log(`PASS ${q.op}: hold committed after context, admission waited and refused without spend or dispatch`);
+    console.log(`PASS ${q.op} ${heldAsset===sibling?'sibling':'source'}: hold committed after context, admission waited and refused without spend or dispatch`);
   }
 } finally {
   await b.query('ROLLBACK').catch(()=>{});if(pending)await pending;await a.query('ROLLBACK').catch(()=>{});
@@ -66,7 +67,7 @@ try {
     for(const table of ['music_stem_quotes','music_target_stem_quotes','music_generation_quotes','music_prompt_specs','music_mixdown_reservations'])await a.query(`DELETE FROM public.${table} WHERE user_id=$1`,[user]);
     await a.query('UPDATE public.music_songs SET current_version_id=NULL WHERE id=$1',[song]);
     await a.query('DELETE FROM public.music_song_versions WHERE id=$1',[version]);await a.query('DELETE FROM public.music_songs WHERE id=$1',[song]);
-    await a.query('DELETE FROM public.assets WHERE id=$1',[asset]);await a.query('DELETE FROM public.jobs WHERE id=$1',[job]);
+    await a.query('DELETE FROM public.assets WHERE job_id=$1',[job]);await a.query('DELETE FROM public.jobs WHERE id=$1',[job]);
     await a.query('DELETE FROM public.credit_subscriptions WHERE user_id=$1',[user]);await a.query('DELETE FROM public.music_workspaces WHERE user_id=$1',[user]);
     await a.query('DELETE FROM public.credit_balances WHERE user_id=$1',[user]);await a.query('DELETE FROM public.users WHERE id=$1',[user]);
     await a.query('DELETE FROM auth.users WHERE id=$1',[auth]);await a.query('COMMIT');

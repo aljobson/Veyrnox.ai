@@ -36,7 +36,10 @@ Held assets cannot play or export. One cache transition removes both decoded
 directions, marks a permanent hold and fences in-flight loads. A discovered
 hold stops playback. A first-load held alternate without metadata is not placed;
 it remains in Music for later review. Every download and library save rechecks
-the signing endpoints, including cached/rendered WAV delivery. Holds and failed
+the signing endpoints immediately before delivery, including cached/rendered WAVs.
+Each stem checks only its track’s used assets; a mix checks its used assets in
+the chosen range. Checks have no confirmation cache and at most four requests
+in flight. Each library-save POST is checked too; any failure stops the run. Holds and failed
 availability checks discard prepared exports and fail closed. Other missing
 sounds retain the existing explicitly acknowledged export behavior.
 

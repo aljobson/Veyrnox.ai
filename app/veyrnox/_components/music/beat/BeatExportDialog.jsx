@@ -90,22 +90,21 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
         const payload = `${range}:${title.normalize('NFKC').trim()}:${rights}`;
         if (saveAttempt.current?.payload !== payload) saveAttempt.current = { payload, key: crypto.randomUUID() };
         controller.current = new AbortController();
-        await confirm();
         const result = await saver.saveMixdownToLibrary({ doc: { ...snapshot.current, title }, range, wavBytes: bytes,
-          rightsConfirmed: rights, idempotencyKey: saveAttempt.current.key, signal: controller.current.signal, progress: status });
+          rightsConfirmed: rights, idempotencyKey: saveAttempt.current.key, signal: controller.current.signal, progress: status, beforePost: () => confirm({ range }) });
         setSaved({ ...result, title: title.trim() }); status(`${title.trim()} saved to Music`);
       } else if (kind === 'pattern') {
         status('Rendering pattern…');
         const result = await mixdown.renderBeat(snapshot.current, loops, editTrackId);
-        await deliver(instruments.encodeWav(result.samples, result.sampleRate), plan.exportFilename(snapshot.current.title), confirm);
+        await deliver(instruments.encodeWav(result.samples, result.sampleRate), plan.exportFilename(snapshot.current.title), () => confirm({ pattern: true }));
       } else if (output === 'stems') {
         const planned = plan.planExport(snapshot.current, { range, output, bitDepth, phone: phone() });
         for (const track of planned.tracks.filter(t => t.audible)) {
-          status(`Rendering ${track.name}…`); await deliver(await render(bitDepth, track.id), track.filename, confirm);
+          status(`Rendering ${track.name}…`); await deliver(await render(bitDepth, track.id), track.filename, () => confirm({ range, soloTrackId: track.id }));
           // Let the previous Blob's URL release before allocating the next stem.
           await new Promise(resolve => setTimeout(resolve, 1100));
         }
-      } else await deliver(await render(bitDepth), plan.exportFilename(snapshot.current.title), confirm);
+      } else await deliver(await render(bitDepth), plan.exportFilename(snapshot.current.title), () => confirm({ range }));
     } catch (e) {
       if (['reservation_closed', 'reservation_expired', 'idempotency_conflict'].includes(e.code)) saveAttempt.current = null;
       if (['asset_held', 'asset_unconfirmed'].includes(e.code)) { prepared.current = null; rendered.current = null; setHasDownload(false); failure(e.message); return; }

@@ -95,7 +95,7 @@ test('definitive refusal clears record and quote, keeps prompt, allows re-pricin
 test('unknown acknowledgement retains its key on rapid presses and retry', async t => {
   const h = await setup(t);
   for (const error of [{ code: 'network_error' }, { status: 500, code: 'gateway_error' },
-    { status: 503, code: 'generation_acceptance_unknown' }, { status: 429, code: 'rate_limited', retryAfter: 60 }]) {
+    { status: 503, code: 'generation_acceptance_unknown' }, { status: 403, code: 'mfa_required' }, { status: 429, code: 'rate_limited', retryAfter: 60 }]) {
     h.refuse(error); await h.price();
     const before = h.calls.length;
     await Promise.all([h.request.send(), h.request.send()]); await h.settle();
@@ -124,4 +124,20 @@ test('untyped failures and interrupted authentication preserve replay safety', (
     { status: 409, code: 'account_changed' }, { status: 403, code: 'mfa_required' }, { status: 409, code: 'stem_acceptance_unknown' }])
     assert.equal(definitivelyRefused(error), false);
   assert.equal(definitivelyRefused({ status: 403, code: 'forbidden' }), true);
+});
+
+test('resuming an acknowledged request polls GET only; unknown acknowledgement never submits', async t => {
+  const h = await setup(t); h.refuse({ code: 'network_error' }); await h.price(); await h.send();
+  const [record] = readPending(h.beatId);
+  const priorDocument = globalThis.document;
+  globalThis.document = { hidden: false };
+  t.after(() => { globalThis.document = priorDocument; });
+  const calls = [];
+  gateway = async (path, init) => { calls.push({ path, method: init?.method || 'GET' }); return { state: 'running' }; };
+  h.request.close(); h.request.resume(record); await h.settle();
+  assert.deepEqual(calls, []);
+  const requestId = crypto.randomUUID();
+  h.request.resume({ ...record, requestId, state: 'accepted' }); await h.settle();
+  assert.deepEqual(calls, [{ path: `/music/generations/${requestId}`, method: 'GET' }]);
+  assert.equal(calls.some(c => c.method === 'POST'), false);
 });

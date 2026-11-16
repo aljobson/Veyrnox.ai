@@ -44,10 +44,11 @@ try {
   }
   console.log('PASS loop and unchanged premium quote → submit → dispatch → replay');
   // A local source gives all four context readers a real owned current version.
-  const song=randomUUID(),version=randomUUID(),job=randomUUID(),asset=randomUUID(),key=randomUUID(),sha='a'.repeat(64);
+  const song=randomUUID(),version=randomUUID(),job=randomUUID(),asset=randomUUID(),sibling=randomUUID(),key=randomUUID(),sha='a'.repeat(64);
   assert.equal((await call('music_reserve_mixdown',auth,song,version,job,asset,key,'AI source',1920044,sha,10,'[]',false,false)).ok,true);
   assert.equal((await call('music_commit_mixdown',auth,key,version,1920044,sha,10)).ok,true);
   await query("UPDATE public.assets SET mime_type='audio/mpeg' WHERE id=$1",[asset]);
+  await query("INSERT INTO public.assets(id,job_id,r2_key,mime_type,size_bytes,sha256) VALUES($1,$2,$3,'audio/wav',100,$4)",[sibling,job,`test/${sibling}`,sha]);
   const definitions=[
     ['stem','music_create_stem_quote',[auth,song,version,true],'music_submit_stem_request'],
     ['target_stem','music_create_target_stem_quote',[auth,song,version,'drums',true,10],'music_submit_target_stem_request'],
@@ -55,12 +56,12 @@ try {
     ['replace','music_create_replace_quote',[auth,song,version,'Keys',1,3,true,10],'music_submit_replace_pair'],
   ];
   await query("UPDATE public.model_catalog SET active=true WHERE id=ANY($1)",[['mureka-stems-v3','sam-audio-target-stem','ace-step-extend','ace-step-replace-section']]);
-  for(const [op,quoteFn,args,submitFn] of definitions) {
+  for(const [op,quoteFn,args,submitFn] of definitions) for(const heldAsset of [asset,sibling]) {
     await query('SAVEPOINT operation');
     const q=await call(quoteFn,...args); assert.equal(q.ok,true,`${op}: ${JSON.stringify(q)}`);
     const requestKey=`beat-ai.${randomUUID()}`;
     const before=await value("SELECT jsonb_build_object('ledger',(SELECT count(*) FROM public.ledger_entries),'jobs',(SELECT count(*) FROM public.jobs),'dispatch',(SELECT count(*) FROM public.fal_dispatch))");
-    await query('UPDATE public.assets SET held_at=now() WHERE id=$1',[asset]);
+    await query('UPDATE public.assets SET held_at=now() WHERE id=$1',[heldAsset]);
     assert.equal((await call(`music_get_${op}_source_context`,auth,song,version)).code,'HELD');
     assert.equal((await call(`music_get_${op}_dispatch_context`,auth,song,q.quote_id,requestKey)).code,'HELD');
     assert.equal((await call(submitFn,auth,song,q.quote_id,requestKey,'https://fixture.invalid/source.mp3')).code,'HELD');
@@ -68,7 +69,7 @@ try {
     await query('ROLLBACK TO SAVEPOINT operation');
     const acceptedQuote=await call(quoteFn,...args), accepted=await call(submitFn,auth,song,acceptedQuote.quote_id,requestKey,'https://fixture.invalid/source.mp3');
     assert.equal(accepted.ok,true,`${op} admission: ${JSON.stringify(accepted)}`);
-    await query('UPDATE public.assets SET held_at=now() WHERE id=$1',[asset]);
+    await query('UPDATE public.assets SET held_at=now() WHERE id=$1',[heldAsset]);
     assert.equal((await call(`music_get_${op}_dispatch_context`,auth,song,acceptedQuote.quote_id,requestKey)).idempotent,true);
     const replay=await call(submitFn,auth,song,acceptedQuote.quote_id,requestKey,'https://fixture.invalid/source.mp3');
     assert.equal(replay.idempotent,true);assert.equal(replay.request_id,accepted.request_id);

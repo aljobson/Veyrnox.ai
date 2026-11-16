@@ -5,7 +5,7 @@ const uuid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const quote={ok:true,quote_id:uuid(1),total_credits:37,unit_credits:18,balance:100,balance_after:63,affordable:true};
 let held=false,signs=0;const calls=[];
 globalThis.beatAiRouteFixture={
-  rpc:async(name,args)=>{calls.push({name,args});return /context$/.test(name)?held?{ok:false,code:'HELD'}:{ok:true,r2_key:'source',mime_type:'audio/mpeg',song_id:uuid(2)}:quote;},
+  rpc:async(name,args)=>{calls.push({name,args});if(name==='music_get_custom_draft')return {draft:{revision:1,styles:'Warm keys',lyrics:''}};return /context$/.test(name)?held?{ok:false,code:'HELD'}:{ok:true,r2_key:'source',mime_type:'audio/mpeg',song_id:uuid(2)}:quote;},
   envConfig:()=>({supabaseUrl:'https://fixture.invalid',serviceRoleKey:'fixture'}),
   r2Env:()=>({}),isConfigured:()=>true,
   presignGetUrl:async()=>{signs++;return {url:'https://fixture.invalid/audio',expires:300};},
@@ -39,4 +39,16 @@ test('held archives and targets return 404 held without signing',async()=>{
 });
 test('all paid source quotes refuse held context with 409 source_held before a quote',async()=>{
  held=true;for(const {op,body,POST} of routes.filter(r=>r.op!=='generate')){calls.length=0;const response=await POST(request(body),{params:Promise.resolve({id:uuid(2)})});assert.equal(response.status,409,op);assert.deepEqual(await response.json(),{error:'source_held'});assert.equal(calls.length,1);}
+});
+
+test('valid custom mode follows the dedicated custom RPC and cannot select the loop model', async () => {
+  held = false; calls.length = 0;
+  const body = { mode: 'custom', draft_revision: 1, instrumental: true, rights_confirmed: false, duration_seconds: 10 };
+  const { POST } = routes[0];
+  const response = await POST(request(body)); assert.equal(response.status, 201);
+  assert.deepEqual(calls.map(c => c.name), ['music_get_custom_draft', 'music_create_custom_quote']);
+  assert.equal(Object.hasOwn(calls[1].args, 'p_model_id'), false, 'custom RPC takes no model selection');
+  calls.length = 0;
+  assert.equal((await POST(request({ ...body, model_id: 'ace-step-loop' }))).status, 400);
+  assert.deepEqual(calls, [], 'model selection cannot reach any RPC through custom mode');
 });

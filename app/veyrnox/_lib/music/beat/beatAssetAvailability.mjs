@@ -1,4 +1,7 @@
 import { usedAssets } from './beatAudioRules.mjs';
+import { exportRange } from './beatSequence.mjs';
+import { effectiveGain } from './beatEvents.mjs';
+import { tickSeconds } from './beatAudioSegments.mjs';
 export const HELD_EXPORT = "A part in this song is held for review, so it can't be exported. Remove it, or try again after review.";
 export const UNCONFIRMED_EXPORT = "Couldn't confirm every part is still available. Try again.";
 export const isHeldError = e => e?.status === 404 && (e.code === 'held' || e.body?.error === 'held');
@@ -44,18 +47,27 @@ export async function confirmAssetAvailability(doc, { request, state, markHeld }
   assertNoHeldAssets(doc, state);
 }
 
-// Create one guard per user action, never reuse it across downloads or saves.
-export function exportAvailabilityGuard(doc, options, now = Date.now) {
-  let confirmedAt = null, failure;
-  return async () => {
+// Restrict release authority to the audio actually used by this delivered file.
+export function exportAssetDocument(doc, { range = 'song', soloTrackId, pattern = false } = {}) {
+  if (pattern) return { ...doc, tracks: [] }; // Drum-pattern exports use no assets.
+  const { startStep, endStep } = exportRange(doc, range);
+  return { ...doc, tracks: doc.tracks.filter(t => effectiveGain(doc, t.id, 'song') > 0
+    && (!soloTrackId || t.id === soloTrackId)).map(t => ({ ...t, regions: t.regions.filter(r => {
+      if (!r.assetId) return false;
+      const from = Math.max(0, tickSeconds(startStep * 240 - r.start, doc.tempo.bpm), r.fadeIn?.startSec ?? 0);
+      const to = Math.min(tickSeconds(r.length, doc.tempo.bpm) - (r.fadeOut?.endBeforeEndSec ?? 0),
+        tickSeconds(endStep * 240 - r.start, doc.tempo.bpm));
+      return from < to;
+    }) })) };
+}
+
+// One guard per export run: every delivery is fresh; a failure stops the run.
+export function exportAvailabilityGuard(doc, options) {
+  let failure;
+  return async selection => {
     if (failure) throw failure;
-    try {
-      assertNoHeldAssets(doc, options.state);
-      if (confirmedAt === null || now() - confirmedAt > 60_000) {
-        await confirmAssetAvailability(doc, options);
-        confirmedAt = now();
-      }
-    } catch (e) { failure = e; throw e; }
+    try { await confirmAssetAvailability(exportAssetDocument(doc, selection), options); }
+    catch (e) { failure = e; throw e; }
   };
 }
 

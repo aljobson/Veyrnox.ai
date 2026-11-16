@@ -26,9 +26,10 @@ BEGIN
     END IF;
     -- Phase 7: replay has returned above; lock before inspecting the marker.
     PERFORM 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) FOR SHARE OF a;
+      JOIN public.assets h ON h.job_id=a.job_id
+      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) FOR SHARE OF a, h;
     IF EXISTS (SELECT 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) AND a.held_at IS NOT NULL) THEN
+      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) AND EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL)) THEN
       RETURN jsonb_build_object('ok',false,'code','HELD');
     END IF;
 
@@ -112,9 +113,10 @@ BEGIN
   END IF;
     -- Phase 7: replay has returned above; lock before inspecting the marker.
     PERFORM 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_target_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) FOR SHARE OF a;
+      JOIN public.assets h ON h.job_id=a.job_id
+      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_target_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) FOR SHARE OF a, h;
     IF EXISTS (SELECT 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_target_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) AND a.held_at IS NOT NULL) THEN
+      WHERE v.user_id=v_user AND v.id IN (SELECT q.source_version_id FROM public.music_target_stem_quotes q WHERE q.id=p_quote_id AND q.user_id=v_user AND q.song_id=p_song_id) AND EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL)) THEN
       RETURN jsonb_build_object('ok',false,'code','HELD');
     END IF;
 
@@ -201,9 +203,10 @@ BEGIN
     END IF;
     -- Phase 7: replay has returned above; lock before inspecting the marker.
     PERFORM 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) FOR SHARE OF a;
+      JOIN public.assets h ON h.job_id=a.job_id
+      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) FOR SHARE OF a, h;
     IF EXISTS (SELECT 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) AND a.held_at IS NOT NULL) THEN
+      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) AND EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL)) THEN
       RETURN jsonb_build_object('ok',false,'code','HELD');
     END IF;
 
@@ -298,9 +301,10 @@ BEGIN
  END IF;
     -- Phase 7: replay has returned above; lock before inspecting the marker.
     PERFORM 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) FOR SHARE OF a;
+      JOIN public.assets h ON h.job_id=a.job_id
+      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) FOR SHARE OF a, h;
     IF EXISTS (SELECT 1 FROM public.assets a JOIN public.music_song_versions v ON v.audio_asset_id=a.id
-      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) AND a.held_at IS NOT NULL) THEN
+      WHERE v.user_id=v_user AND v.id IN (SELECT ps.source_version_id FROM public.music_generation_quotes q JOIN public.music_prompt_specs ps ON ps.id=q.prompt_spec_id WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.source_song_id=p_song_id) AND EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL)) THEN
       RETURN jsonb_build_object('ok',false,'code','HELD');
     END IF;
 

@@ -6,7 +6,7 @@ DECLARE v_user UUID; v_row JSONB;
 BEGIN
     SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
     IF v_user IS NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
-    SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,'size_bytes',a.size_bytes) END
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,'size_bytes',a.size_bytes) END
     INTO v_row FROM public.music_songs s
     JOIN public.music_song_versions v ON v.id=p_version_id AND v.user_id=v_user AND v.song_id=s.id
     JOIN public.assets a ON a.id=v.audio_asset_id
@@ -39,7 +39,7 @@ BEGIN
     SELECT * INTO v_quote FROM public.music_stem_quotes
     WHERE id=p_quote_id AND user_id=v_user AND song_id=p_song_id;
     IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
-    SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,'mime_type',a.mime_type) END
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,'mime_type',a.mime_type) END
     INTO v_row FROM public.music_songs s
     JOIN public.music_song_versions v ON v.id=v_quote.source_version_id AND v.user_id=v_user AND v.song_id=s.id
     JOIN public.assets a ON a.id=v.audio_asset_id
@@ -58,7 +58,7 @@ DECLARE v_user UUID; v_row JSONB;
 BEGIN
   SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
   IF v_user IS NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
-  SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,'size_bytes',a.size_bytes) END
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,'size_bytes',a.size_bytes) END
     INTO v_row FROM public.music_songs s
   JOIN public.music_song_versions v ON v.id=p_version_id AND v.user_id=v_user AND v.song_id=s.id
   JOIN public.assets a ON a.id=v.audio_asset_id
@@ -90,7 +90,7 @@ BEGIN
   SELECT * INTO v_quote FROM public.music_target_stem_quotes
     WHERE id=p_quote_id AND user_id=v_user AND song_id=p_song_id;
   IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
-  SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,'mime_type',a.mime_type,
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,'mime_type',a.mime_type,
     'source_duration_seconds',v_quote.source_duration_seconds) END
     INTO v_row
   FROM public.music_songs s JOIN public.music_song_versions v
@@ -110,7 +110,7 @@ DECLARE v_user UUID; v_row JSONB;
 BEGIN
     SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
     IF v_user IS NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
-    SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,
         'size_bytes',a.size_bytes) END
     INTO v_row FROM public.music_songs s
     JOIN public.music_song_versions v ON v.id=p_version_id AND v.user_id=v_user AND v.song_id=s.id
@@ -152,7 +152,7 @@ BEGIN
     WHERE q.id=p_quote_id AND q.user_id=v_user AND ps.mode='extend'
       AND ps.source_song_id=p_song_id;
     IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
-    SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,
         'mime_type',a.mime_type,'source_duration_seconds',v_prompt.source_duration_seconds) END
     INTO v_row FROM public.music_songs s
     JOIN public.music_song_versions v ON v.id=v_prompt.source_version_id
@@ -171,7 +171,7 @@ RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_user UUID; v_row JSONB;
 BEGIN
  SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
- SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,'size_bytes',a.size_bytes) END
+ SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,'size_bytes',a.size_bytes) END
     INTO v_row
  FROM public.music_songs s JOIN public.music_song_versions v ON v.id=p_version_id AND v.user_id=v_user AND v.song_id=s.id
  JOIN public.assets a ON a.id=v.audio_asset_id WHERE s.id=p_song_id AND s.user_id=v_user AND s.status='active'
@@ -199,7 +199,7 @@ BEGIN
  ON ps.id=q.prompt_spec_id AND ps.user_id=q.user_id WHERE q.id=p_quote_id AND q.user_id=v_user
  AND ps.mode='replace_section' AND ps.source_song_id=p_song_id;
  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
- SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,'mime_type',a.mime_type,
+ SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'idempotent',false,'r2_key',a.r2_key,'mime_type',a.mime_type,
   'source_duration_seconds',v_prompt.source_duration_seconds) END
     INTO v_row FROM public.music_songs s
  JOIN public.music_song_versions v ON v.id=v_prompt.source_version_id AND v.user_id=v_user AND v.song_id=s.id
@@ -215,7 +215,7 @@ RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_user UUID; v_row JSONB;
 BEGIN
     SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
-    SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,
         'size_bytes',a.size_bytes,'song_id',r.song_id) END
     INTO v_row FROM public.music_stem_requests r JOIN public.jobs j ON j.id=r.job_id AND j.state='STORED'
     JOIN public.assets a ON a.job_id=j.id AND a.mime_type='application/zip'
@@ -232,7 +232,7 @@ DECLARE v_user UUID; v_row JSONB;
 BEGIN
   IF p_kind NOT IN ('target','residual') THEN RETURN jsonb_build_object('ok',false,'code','INVALID_INPUTS'); END IF;
   SELECT id INTO v_user FROM public.users WHERE auth_id=p_auth_id;
-  SELECT CASE WHEN a.held_at IS NOT NULL THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM public.assets h WHERE h.job_id = a.job_id AND h.held_at IS NOT NULL) THEN jsonb_build_object('ok',false,'code','HELD') ELSE jsonb_build_object('ok',true,'r2_key',a.r2_key,'mime_type',a.mime_type,
     'size_bytes',a.size_bytes,'song_id',r.song_id,'instrument',r.instrument) END
     INTO v_row FROM public.music_target_stem_requests r
   JOIN public.jobs j ON j.id=r.job_id AND j.state='STORED'

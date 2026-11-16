@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { audioDoc } from './musicBeatAudioFixtures.mjs';
+import { validateBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 import { confirmAssetAvailability, exportAvailabilityGuard, assertNoHeldAssets, playbackHoldObserver, HELD_EXPORT, UNCONFIRMED_EXPORT } from '../app/veyrnox/_lib/music/beat/beatAssetAvailability.mjs';
 const asset={source:'song',ref:{jobId:'job'}},doc={tempo:{bpm:120},assets:{a1:asset},tracks:[{regions:[{assetId:'a1'},{assetId:'a1'}]}]};
 test('cached render must confirm release on each delivery; held marks the region and refuses',async()=>{
@@ -23,42 +25,63 @@ test('a newly discovered hold stops playback once; already-held placeholders per
   observe();assert.equal(stops,1);
 });
 
-test('16 stems share 16 distinct checks, with four in flight and a fresh check for the next action', async () => {
-  const assets = Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`a${i}`, { source: 'song', ref: { jobId: `job${i}` } }]));
-  // Include aliases of the same source, which must share its signing check.
-  assets.alias = { ...assets.a0 };
-  const song = { ...doc, assets, tracks: Object.keys(assets).map(assetId => ({ regions: [{ assetId }] })) };
-  let calls = 0, inFlight = 0, peak = 0, files = 0, now = 0;
+function exportSong() {
+  const source = { source: 'song', name: 'Part', bpm: null, durationSec: 2, sourceChannels: 2, encodedBytes: 100,
+    ref: { songId: 'e40439d1-646a-4c11-9c12-69fa3a851234', versionId: 'e40439d1-646a-4c11-9c12-69fa3a851234', jobId: 'e40439d1-646a-4c11-9c12-69fa3a851234' } };
+  const song = audioDoc(source), track = song.tracks[1];
+  song.assets = Object.fromEntries(Array.from({ length: 16 }, (_, i) => [`a${i}`, { ...source, ref: { ...source.ref, jobId: `e40439d1-646a-4c11-9c12-69fa3a8512${String(i).padStart(2, '0')}` } }]));
+  song.tracks = Object.keys(song.assets).map((assetId, i) => ({ ...track, id: `t${i}`, regions: [{ ...track.regions[0], id: `r${i}`, assetId }] }));
+  assert.equal(validateBeat(song).ok, true);
+  return song;
+}
+test('16 one-asset stems make 16 fresh per-file checks; a 16-asset mix makes 16 with at most four in flight', async () => {
+  const song = exportSong();
+  // A duplicate region on the same track must share its signing check.
+  song.tracks[0].regions.push({ ...song.tracks[0].regions[0], id: 'rdup', start: 3840 });
+  let calls = 0, inFlight = 0, peak = 0;
   const options = { state: () => ({ status: 'ready' }), markHeld: () => {}, request: async () => {
     calls++; peak = Math.max(peak, ++inFlight);
     await new Promise(resolve => setImmediate(resolve)); inFlight--;
     return { url: 'unused' };
   } };
-  const confirm = exportAvailabilityGuard(song, options, () => now);
-  for (let i = 0; i < 16; i++) { await confirm(); files++; now += 1100; }
-  assert.equal(files, 16); assert.equal(calls, 16); assert.equal(peak, 4); assert.equal(inFlight, 0);
-  await exportAvailabilityGuard(song, options, () => now)();
-  assert.equal(calls, 32);
+  const confirm = exportAvailabilityGuard(song, options);
+  for (const track of song.tracks) await confirm({ soloTrackId: track.id });
+  assert.equal(calls, 16); assert.equal(peak, 1);
+  calls = 0; await confirm();
+  assert.equal(calls, 16); assert.equal(peak, 4); assert.equal(inFlight, 0);
+  await confirm(); assert.equal(calls, 32, 'cached WAV redelivery checks every asset again');
 });
 
-test('a hold at the 60-second re-confirmation stops any further files', async () => {
-  let now = 0, calls = 0, files = 0, held = false;
-  const confirm = exportAvailabilityGuard(doc, {
-    state: () => ({ status: held ? 'held' : 'ready' }), markHeld: () => { held = true; },
-    request: async () => { if (++calls > 1) throw { status: 404, body: { error: 'held' } }; return { url: 'unused' }; },
-  }, () => now);
-  const deliver = async () => { await confirm(); files++; };
-  await deliver(); now = 60_000; await deliver();
-  assert.equal(calls, 1);
-  now++; await assert.rejects(deliver(), { message: HELD_EXPORT });
-  await assert.rejects(deliver(), { message: HELD_EXPORT });
-  assert.equal(files, 2); assert.equal(calls, 2); assert.equal(held, true);
+test('a hold landing between stem 3 and stem 4 stops at stem 4 and prevents further files', async () => {
+  const song = exportSong(); let calls = 0, files = 0;
+  const marked = [];
+  const confirm = exportAvailabilityGuard(song, {
+    state: () => ({ status: 'ready' }), markHeld: a => marked.push(a),
+    request: async () => { if (++calls === 4) throw { status: 404, body: { error: 'held' } }; return { url: 'unused' }; },
+  });
+  await assert.rejects(async () => {
+    for (const track of song.tracks) { await confirm({ soloTrackId: track.id }); files++; }
+  }, { message: HELD_EXPORT });
+  assert.equal(files, 3); assert.equal(calls, 4); assert.deepEqual(marked, [song.assets.a3]);
+  await assert.rejects(confirm({ soloTrackId: 't4' }), { message: HELD_EXPORT });
+  assert.equal(calls, 4);
 });
 
 test('an export confirmation rate limit fails closed before a file is delivered', async () => {
   let files = 0;
-  const confirm = exportAvailabilityGuard(doc, { state: () => ({ status: 'ready' }), markHeld: () => {},
+  const confirm = exportAvailabilityGuard(exportSong(), { state: () => ({ status: 'ready' }), markHeld: () => {},
     request: async () => { throw { status: 429, code: 'rate_limited', retryAfter: 60 }; } });
   await assert.rejects(async () => { await confirm(); files++; }, { message: UNCONFIRMED_EXPORT });
   assert.equal(files, 0);
+});
+
+test('range checks ignore muted and non-overlapping assets; pattern exports make no checks', async () => {
+  const song = exportSong(), paths = [];
+  song.cycle = { on: true, start: 0, end: 3840 };
+  for (const track of song.tracks.slice(2)) track.regions[0].start = 7680;
+  song.tracks[1].mute = true;
+  const confirm = exportAvailabilityGuard(song, { state: () => ({ status: 'ready' }), markHeld: () => {},
+    request: async path => { paths.push(path); return { url: 'unused' }; } });
+  await confirm({ range: 'cycle' }); assert.deepEqual(paths, [`/jobs/${song.assets.a0.ref.jobId}/asset`]);
+  await confirm({ pattern: true }); assert.equal(paths.length, 1);
 });

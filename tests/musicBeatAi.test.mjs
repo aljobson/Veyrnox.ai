@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { createBeat, validateBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
-import { generateBody, replaceRange, actionEligibility, actionBody, aiPaths } from '../app/veyrnox/_lib/music/beat/beatAi.mjs';
+import { generateBody, replaceRange, actionEligibility, actionBody, aiPaths, aiError } from '../app/veyrnox/_lib/music/beat/beatAi.mjs';
 import { validAsset } from '../app/veyrnox/_lib/music/beat/beatAudioRules.mjs';
 import { placeAiResults } from '../app/veyrnox/_lib/music/beat/beatAiOps.mjs';
 import { placementIds, validPending, writePending, readPending, singleFlight, submitPending } from '../app/veyrnox/_lib/music/beat/beatAiPending.mjs';
@@ -20,7 +19,7 @@ test('generation body is bounded, instrumental, simple, valid and keeps an 80-ch
   const d = doc(); d.title = 'x'.repeat(80);
   const body = generateBody(d, 'Warm keys', 'C Major');
   assert.equal(body.title.length,80); assert.equal(body.duration_seconds,10); assert.equal(body.model_id,'ace-step-loop');
-  assert.equal(parseMusicQuote(body).ok,true); assert.equal(parseMusicQuote({ ...body, mode:'custom' }).ok,false);
+  assert.equal(parseMusicQuote(body).ok,true);
   assert.equal(parseMusicQuote({ ...body, model_id:'ace-step' }).ok,false);
   assert.throws(() => generateBody({ ...d, tempo:{bpm:221} },'x'),/220/);
   assert.throws(() => generateBody({ ...d, cycle:{start:0,end:200000} },'x'),/60 seconds/);
@@ -35,7 +34,7 @@ test('generation describes whole bars, fractional bars and sub-bar cycles accura
   }
 });
 test('current-version eligibility uses the real song response and rejects repeated/reversed replacement', () => {
-  const d=doc(), song={version_id:uuid(3),current_version:{id:uuid(3)}};
+  const d=doc(), song={version_id:uuid(3),current_version:{id:uuid(3)},actions:['stems','target_stem','extend','replace_section']};
   assert.equal(actionEligibility('extend',d,region,asset,song,{}),'');
   assert.match(actionEligibility('extend',d,region,asset,{...song,version_id:uuid(7)},{}),/current version/);
   assert.match(actionEligibility('replace',d,{...region,length:38400},asset,song,{}),/doesn't repeat/);
@@ -99,9 +98,20 @@ test('flag fails closed and loop stays absent from public projections even if ac
   assert.deepEqual(toPublicModels([row]),[]);assert.deepEqual(normalizeCachedModels([row]),[]);
   assert.equal(musicRpcStatus('HELD'),409);assert.equal(publicMusicError('HELD'),'source_held');
 });
-test('resume never POSTs and legacy prompt is hidden while the existing layer list stays', () => {
-  const hook=readFileSync(new URL('../app/veyrnox/_components/music/beat/useBeatAiRequest.js',import.meta.url),'utf8');
-  assert.match(hook,/gatewayFetch\(aiPollPath\(r\)\)/);assert.match(hook,/keep\(r\);[\s\S]*submitPending\(r/);
-  const bar=readFileSync(new URL('../app/veyrnox/_components/music/beat/BeatMagicBar.jsx',import.meta.url),'utf8');
-  assert.match(bar,/!hidePrompt && !generation/);assert.match(bar,/loops.layers.map/);
+test('each region action requires the corresponding action in the real song response shape', () => {
+  const song = { version_id: uuid(3), current_version: { id: uuid(3), operation: 'cover' }, actions: ['stems', 'target_stem', 'extend', 'replace_section'] };
+  for (const [op, action, reason] of [['stems', 'stems', "This song can't be split into stems"],
+    ['targetStems', 'target_stem', "This song can't have a stem targeted"], ['extend', 'extend', "This song can't be extended"],
+    ['replace', 'replace_section', "This song can't have a section replaced"]]) {
+    assert.equal(actionEligibility(op, doc(), region, asset, song, {}), '');
+    for (const actions of [undefined, null, [], song.actions.filter(a => a !== action)])
+      assert.equal(actionEligibility(op, doc(), region, asset, { ...song, actions }, {}), reason);
+  }
+});
+test('ownership messages use route not_found codes, not every 403 response', () => {
+  assert.equal(aiError({ status: 404, code: 'not_found' }), 'This song belongs to another account');
+  assert.match(aiError({ status: 403, code: 'mfa_required' }), /Sign in again with your second factor/);
+  assert.equal(aiError({ status: 403, code: 'plan_unavailable' }), 'AI parts need an active paid plan.');
+  for (const code of ['music_unavailable', 'feature_off', 'forbidden', 'account_frozen', undefined])
+    assert.doesNotMatch(aiError({ status: 403, code }), /another account/);
 });

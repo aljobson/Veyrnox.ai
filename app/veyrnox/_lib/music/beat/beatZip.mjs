@@ -1,5 +1,20 @@
 // Central-directory reader; no paths are written to disk and decompression is bounded.
 export const ZIP_LIMIT = 120000000;
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, byte) => {
+  let crc = byte;
+  for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+  return crc >>> 0;
+});
+async function crc32(bytes) {
+  let crc = 0xffffffff;
+  const chunkSize = 1024 * 1024;
+  for (let start = 0; start < bytes.length; start += chunkSize) {
+    const end = Math.min(bytes.length, start + chunkSize);
+    for (let i = start; i < end; i++) crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ bytes[i]) & 255];
+    if (end < bytes.length) await new Promise(resolve => setTimeout(resolve, 0));
+  }
+  return ~crc >>> 0;
+}
 const bad = () => Object.assign(new Error('This stem archive has an unexpected layout'), { permanent: true });
 export async function extractStem(bytes, part) {
   try { return await extract(bytes, part); }
@@ -56,8 +71,6 @@ async function extract(bytes, part) {
     } finally { await reader.cancel(); }
   }
   if (output.length !== entry.size) throw bad();
-  let crc = 0xffffffff;
-  for (const b of output) { crc ^= b; for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0); }
-  if ((~crc >>> 0) !== entry.crc) throw bad();
+  if (await crc32(output) !== entry.crc) throw bad();
   return output;
 }

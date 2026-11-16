@@ -33,6 +33,11 @@ export function actionEligibility(op, doc, region, asset, song, state) {
   if (!song) return 'Checking this song…';
   if (asset.ref.versionId !== song.version_id || asset.ref.versionId !== song.current_version?.id)
     return "This isn't the song's current version. Make it current in Music to use AI on it.";
+  const action = { stems: 'stems', targetStems: 'target_stem', extend: 'extend', replace: 'replace_section' }[op];
+  if (!Array.isArray(song.actions) || !song.actions.includes(action)) return {
+    stems: "This song can't be split into stems", targetStems: "This song can't have a stem targeted",
+    extend: "This song can't be extended", replace: "This song can't have a section replaced",
+  }[op];
   if (op === 'extend' && asset.durationSec > 120) return 'Extend needs a song of 120 seconds or less';
   if (op === 'targetStems' && asset.durationSec > 120) return 'Target stem needs a song of 120 seconds or less';
   if (op === 'replace') {
@@ -66,10 +71,10 @@ export function actionBody(op, { doc, region, asset, prompt, instrument, rights 
 }
 export function aiError(e, op) {
   if (e.status === 401) return 'Sign in again to continue. Your request is kept here.';
-  if (e.status === 403) return 'This song belongs to another account';
+  if (e.code === 'not_found') return 'This song belongs to another account';
   if (op === 'stems' && ['source_unavailable', 'format_unavailable', 'source_size_invalid'].includes(e.code)) return 'Stems need an MP3 song of 10 MB or less';
   if (e.code === 'rate_limited') return `Too many requests. Try again in ${e.retryAfter || 60} seconds.`;
-  return ({ source_held: 'This part is held for review', plan_unavailable: 'AI parts need an active paid plan.',
+  return ({ mfa_required: 'Sign in again with your second factor to continue. Your request is kept here.', source_held: 'This part is held for review', plan_unavailable: 'AI parts need an active paid plan.',
     insufficient_balance: 'Not enough Credits — Buy Credits', prompt_blocked: 'Describe the part differently and try again.',
     prompt_not_allowed: 'Describe the part differently and try again.', prompt_invalid: 'Describe a part in 1–400 characters',
     range_invalid: 'Set the cycle over 1–30 s of this region', source_duration_invalid: 'This song is too long for this action',

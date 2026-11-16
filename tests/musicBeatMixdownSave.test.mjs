@@ -49,3 +49,11 @@ test('oversized saves refuse before hashing or network; plain error messages pre
   assert.match(mixdownSaveError({ status: 401 }), /Sign in again/);
   assert.match(mixdownSaveError({ status: 503 }), /Your mix is safe/);
 });
+
+test('availability is confirmed immediately before each library POST; a hold prevents commit', async () => {
+  calls = []; replay = false; let checks = 0;
+  await assert.rejects(saveMixdownToLibrary({ doc: make(), wavBytes: new Uint8Array(48), idempotencyKey: 'hold-key',
+    beforePost: async () => { assert.equal(calls.length, checks++); if (checks === 2) throw Object.assign(new Error('held'), { code: 'asset_held' }); },
+  }), { code: 'asset_held' });
+  assert.equal(checks, 2); assert.deepEqual(calls.map(c => c.body.action), ['reserve']);
+});
