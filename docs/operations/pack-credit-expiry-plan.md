@@ -1,5 +1,7 @@
 # Plan: Pack Credits expire 30 days after purchase
 
+**Scope (owner, 2026-11-16): the 30-day expiry applies ONLY to the three credit packs, 156 / 392 / 1,177 credits at $9.99 / $24.99 / $74.99. Daily check-in credits, Subscription Credits and Free signup credits are unchanged. The retired 209 / 523 / 1,571 packs are out of scope.** Still open: new purchases only versus also unspent credits already held (D2; recommendation: new purchases only).
+
 Status: **plan only, 2026-11-16.** No code, migration, store edit or production change is made by this document. Decision record: [ADR-0348 (draft)](../adr/0348-pack-credit-expiry-30-days.md). Prices are not touched (see [ADR-0312](../adr/0312-packs-at-subscription-rate.md), 0540/0541).
 
 Facts below were read from `main` at `4f23a804e`. Latest migration is `0553`; latest ADR is `0347`; open PRs are #2352 and #1979, neither numbers a migration. Re-check both counters when work starts: take the next free number on `main`, look at open PRs and `git log --all` first.
@@ -15,11 +17,11 @@ Facts below were read from `main` at `4f23a804e`. Latest migration is `0553`; la
 |---|---|---|---|
 | D1 | 30 days | **decided** | Build the length as config (`pack_expiry_config.days`), not a constant. |
 | D2 | New purchases only, or also credits held today | open | New purchases only. Existing buyers were told credits never expire. |
-| D3 | Check-in credits (ADR-0257) | open | Stay non-expiring (not purchased; 1 to 3 credits a day). |
+| D3 | Check-in credits (ADR-0257) | **decided (owner, via session message): unchanged** | Out of scope. |
 | D4 | Window longer than 30 days | open | 6 to 12 months is safer for UK/EU. Build so it can change before launch. |
 | D5 | Apple allows expiry? | open, blocker | Verify guideline 3.1.1 first. |
 | D6 | Several purchases: one date (extend) or a date per purchase | open | One date, extended to the newest purchase. |
-| D7 | Referral rewards | open | Non-expiring. |
+| D7 | Referral rewards | **decided: unchanged** | Out of scope (only the three packs expire). |
 | D8 | Reminder emails at day 7 / 3 / 1 | open | Yes; Resend already sends violation notices (memory: transactional email via Resend). Separate PR. |
 
 ## 2. Data model: bucket vs lots
@@ -112,7 +114,7 @@ Rule: copy changes behind the display flag (`packExpiry`); strings that cannot b
 
 ## 11. Order of work
 
-1. Owner answers D2 to D7 and checks Apple 3.1.1 (D5). Stop here if Apple forbids it for the iOS packs and the owner wants one rule on all channels.
+1. Owner answers D2, D4, D5, D6 and checks Apple 3.1.1 (D5). Stop here if Apple forbids it for the iOS packs and the owner wants one rule on all channels.
 2. Lawyer check (section 10) and ADR-0348 accepted with the owner's answers.
 3. Build, all behind the switches, nothing visible: migrations (schema, RPCs, sweep, reconcile, config), then tests (section 12). Apply by the `apply-migrations` workflow only, owner-approved. Reconcile clean for 24 h with the switch off (the CLAUDE.md flag rule).
 4. Copy PR: all strings and legal text behind `packExpiry`, regenerated knowledge, mobile legal regenerated, new `supply-consent-v2`.

@@ -1,5 +1,7 @@
 # ADR-0348: Purchased Pack Credits expire 30 days after purchase (DRAFT)
 
+**Scope (owner, 2026-11-16): only the three credit packs, 156 / 392 / 1,177 credits at $9.99 / $24.99 / $74.99. Check-in, Subscription and Free signup credits are unchanged; the retired 209 / 523 / 1,571 packs are out of scope.** Whether this applies to new purchases only or also to unspent credits already held stays open (Question 1; recommendation: new purchases only).
+
 Status: **Draft — proposed 2026-11-16, not accepted.** The owner has chosen the 30-day length in chat; the open questions below are not decided. Nothing in this ADR is built, applied, or shown to customers. Plan and work order: [`docs/operations/pack-credit-expiry-plan.md`](../operations/pack-credit-expiry-plan.md).
 
 Amends [ADR-0013](0013-credit-expiry-policy.md) (option 2: "purchased never expire"), [ADR-0018](0018-credit-pack-top-ups.md) and [ADR-0312](0312-packs-at-subscription-rate.md) ("Pack Credits never expire"). Builds on the bucket pattern of [ADR-0064](0064-core-subscriptions.md) (migrations 0183/0184). Daily check-in is [ADR-0257](0257-daily-checkin.md).
@@ -26,10 +28,10 @@ Money-spine constraints that bind the design (CLAUDE.md): the ledger is append-o
 | # | Question | Recommendation |
 |---|---|---|
 | 1 | New purchases only, or also credits people hold today? | **New purchases only.** Existing buyers were told credits never expire; a retroactive rule is the highest consumer-law and refund risk. |
-| 2 | Do check-in credits (ADR-0257, ordinary Pack Credits) stay non-expiring? | **Stay non-expiring.** They are 1 to 3 credits a day, are not purchased, and expiring them adds noise for no cash benefit. |
+| 2 | Check-in credits (ADR-0257) | **Decided by the owner: unchanged.** Out of scope. |
 | 3 | Is 30 days the right length? | **Longer (6 to 12 months) is safer** for UK/EU unfair-terms and refund exposure. The owner asked for 30 days; the plan builds the length as a config value so it can change before launch without a migration. |
 | 4 | **Apple rule.** App Store Review Guideline 3.1.1 says credits bought with in-app purchase may not expire. Do iOS packs expire? | **Verify the current guideline text before any work.** If it holds, iOS packs cannot expire: the rule applies to web and Google Play only, or the iOS packs are repriced, or the idea is dropped. This can decide the whole feature. |
-| 5 | Referral rewards (10% of a pack) | Stay non-expiring (not purchased). |
+| 5 | Referral rewards | **Unchanged** (only the three packs expire). |
 | 6 | One date for the bucket (extend) or a lot per purchase? | **One date, extended by the newest purchase.** Lots roughly double the SQL and every refund path. |
 
 ## Consequences
