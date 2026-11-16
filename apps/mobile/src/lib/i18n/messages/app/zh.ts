@@ -5246,6 +5246,7 @@ export default {
   "libraryCreate.stems": "打开作品以播放各条独立音轨。",
   "libraryCreate.elapsed": "{seconds} 秒",
   "libraryCreate.useTemplate": "使用模板",
+  "libraryCreate.previewSample": "预览为示例片段。你的视频时长为 {seconds} 秒。",
   "libraryCreate.editBeforeGenerating": "生成前编辑",
   "filmOutput.asset": "要建立档案的素材",
   "filmOutput.savePassport": "保存档案草稿",
