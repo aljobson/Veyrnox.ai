@@ -1,5 +1,6 @@
 import { formatLocale, t } from './i18n';
 import type { ApiClient } from './api';
+import { notifyProjectsChanged } from './projectsChanged';
 
 // ADR-0131: workspaces and projects (the editor's cloud saves). Reading, plus create, rename, delete and restore a version (same routes as the web). The routes sit behind TENANT_PROJECTS_ENABLED
 // and answer 404 while it is off. They also return errors as {error:{code,message}} (an object), which the API client
@@ -21,6 +22,9 @@ export interface Project {
     readonly version: number;
     readonly createdAt: string | null;
     readonly updatedAt: string | null;
+    // Newest saved document revision and when it was saved (the project row's own version/updated_at only move on rename).
+    readonly latestRevision: number | null;
+    readonly savedAt: string | null;
 }
 
 export interface Version {
@@ -52,8 +56,13 @@ export function parseProject(raw: unknown): Project | null {
         version: typeof r.version === 'number' && Number.isInteger(r.version) && r.version >= 0 ? r.version : 0,
         createdAt: str(r.created_at),
         updatedAt: str(r.updated_at),
+        latestRevision: typeof r.latest_revision === 'number' && Number.isInteger(r.latest_revision) && r.latest_revision > 0 ? r.latest_revision : null,
+        savedAt: str(r.saved_at),
     };
 }
+
+export const projectVersion = (p: Pick<Project, 'version' | 'latestRevision'>): number => p.latestRevision ?? p.version;
+export const projectSavedAt = (p: Pick<Project, 'savedAt' | 'updatedAt' | 'createdAt'>): string | null => p.savedAt ?? p.updatedAt ?? p.createdAt;
 
 export function parseProjects(body: unknown): Project[] {
     const list = isObject(body) && Array.isArray(body.projects) ? body.projects : [];
@@ -86,6 +95,8 @@ export const fetchProject = async (api: ApiClient, id: string) => parseProject(a
 export const fetchHistory = async (api: ApiClient, id: string, before?: number) =>
     parseHistory(await api.request(`/api/v1/projects/${enc(id)}/history${before === undefined ? '' : `?before=${enc(String(before))}`}`));
 
+// A successful write tells any open project list to fetch again.
+const changed = <T>(value: T): T => { notifyProjectsChanged(); return value; };
 const JSON_HEADERS = { 'Content-Type': 'application/json' } as const;
 // A name the server accepts: 1 to 120 characters, no control characters (packages/security/input.js, projectName).
 export const cleanProjectName = (v: string): string | null => {
@@ -94,16 +105,16 @@ export const cleanProjectName = (v: string): string | null => {
 };
 // Create is idempotent on the key, so a retry of the same tap makes one project.
 export const createProject = async (api: ApiClient, workspaceId: string, name: string, idempotencyKey: string) =>
-    parseProject(await api.request('/api/v1/projects', { method: 'POST', headers: { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ workspace_id: workspaceId, name }) }));
+    changed(parseProject(await api.request('/api/v1/projects', { method: 'POST', headers: { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ workspace_id: workspaceId, name }) })));
 // Rename and delete carry the version the person was looking at; a stale one is refused (409) instead of overwriting.
 export const renameProject = async (api: ApiClient, id: string, name: string, version: number) =>
-    parseProject(await api.request(`/api/v1/projects/${enc(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ name, version }) }));
-export const deleteProject = (api: ApiClient, id: string, version: number) =>
-    api.request(`/api/v1/projects/${enc(id)}`, { method: 'DELETE', headers: JSON_HEADERS, body: JSON.stringify({ version }) });
+    changed(parseProject(await api.request(`/api/v1/projects/${enc(id)}`, { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ name, version }) })));
+export const deleteProject = async (api: ApiClient, id: string, version: number) =>
+    changed(await api.request(`/api/v1/projects/${enc(id)}`, { method: 'DELETE', headers: JSON_HEADERS, body: JSON.stringify({ version }) }));
 // Restoring writes a new version copied from an older one; nothing is lost.
 // The document route requires an Idempotency-Key (packages/security/input.js); the caller keeps one key per restore tap.
-export const restoreVersion = (api: ApiClient, id: string, currentRevision: number, restoreRevision: number, idempotencyKey: string) =>
-    api.request(`/api/v1/projects/${enc(id)}/document`, { method: 'PUT', headers: { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ expected_revision: currentRevision, restore_revision: restoreRevision }) });
+export const restoreVersion = async (api: ApiClient, id: string, currentRevision: number, restoreRevision: number, idempotencyKey: string) =>
+    changed(await api.request(`/api/v1/projects/${enc(id)}/document`, { method: 'PUT', headers: { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey }, body: JSON.stringify({ expected_revision: currentRevision, restore_revision: restoreRevision }) }));
 
 export function projectsErrorMessage(err: unknown): string {
     const status = (err as { status?: unknown } | null)?.status;

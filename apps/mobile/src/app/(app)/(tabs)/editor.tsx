@@ -11,13 +11,16 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
-import { fetchProjects, fetchWorkspaces, projectsErrorMessage, type Project, type Workspace } from '../../../lib/projects';
+import { fetchProjects, fetchWorkspaces, projectSavedAt, projectsErrorMessage, projectVersion, type Project, type Workspace } from '../../../lib/projects';
+import { projectsChangedGeneration, subscribeProjectsChanged } from '../../../lib/projectsChanged';
 import { ds } from '../../../theme';
 
 const newestFirst = (items: readonly Project[]): Project[] => [...items].sort((a, b) => {
-    const aTime = a.updatedAt ? Date.parse(a.updatedAt) : 0;
-    const bTime = b.updatedAt ? Date.parse(b.updatedAt) : 0;
-    return bTime - aTime || b.version - a.version || a.name.localeCompare(b.name);
+    const aSaved = projectSavedAt(a);
+    const bSaved = projectSavedAt(b);
+    const aTime = aSaved ? Date.parse(aSaved) : 0;
+    const bTime = bSaved ? Date.parse(bSaved) : 0;
+    return bTime - aTime || projectVersion(b) - projectVersion(a) || a.name.localeCompare(b.name);
 });
 
 export default function EditorHome() {
@@ -33,11 +36,12 @@ export default function EditorHome() {
     const [projects, setProjects] = useState<Project[] | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
 
-    const load = useCallback(async (requestedWorkspace?: string) => {
+    const load = useCallback(async (requestedWorkspace?: string, keepRows = false) => {
         const currentRequest = ++request.current;
+        const startedAt = projectsChangedGeneration();
         setProblem(null);
         // Keep the rows on screen when coming back to the tab or re-fetching; only a first load or a workspace switch starts empty.
-        if (requestedWorkspace || !loadedOnce.current) setProjects(null);
+        if ((requestedWorkspace && !keepRows) || !loadedOnce.current) setProjects(null);
         try {
             const spaces = await fetchWorkspaces(api);
             if (currentRequest !== request.current) return;
@@ -51,18 +55,27 @@ export default function EditorHome() {
                 return;
             }
             const list = await fetchProjects(api, selected.id);
-            if (currentRequest === request.current) { loadedOnce.current = true; setProjects(newestFirst(list)); }
+            if (currentRequest === request.current) {
+                loadedOnce.current = true;
+                setProjects(newestFirst(list));
+                // A save finished while this fetch was in flight: it may have missed it, so fetch once more (rows stay on screen).
+                if (projectsChangedGeneration() !== startedAt) void load(selected.id, true);
+            }
         } catch (error) {
             if (currentRequest === request.current) {
                 setProblem(projectsErrorMessage(error));
-                setProjects([]);
+                // A quiet refresh that fails keeps the rows already shown and just offers the retry.
+                if (!(keepRows && loadedOnce.current)) setProjects([]);
             }
         }
     }, [api]);
 
     useFocusEffect(useCallback(() => {
-        if (EDITOR_ENABLED) void load();
-        return () => { request.current += 1; };
+        if (!EDITOR_ENABLED) return undefined;
+        void load();
+        // A save, create or rename that lands while this tab is showing refreshes the list quietly.
+        const unsubscribe = subscribeProjectsChanged(() => { void load(selectedWorkspace.current ?? undefined, true); });
+        return () => { unsubscribe(); request.current += 1; };
     }, [load]));
 
     if (!EDITOR_ENABLED) {
@@ -171,7 +184,7 @@ export default function EditorHome() {
                         </View>
                         <View style={styles.projectCopy}>
                             <Text variant="bodyStrong" style={styles.projectName} numberOfLines={1}>{item.name}</Text>
-                            <Text variant="footnote" style={styles.projectMeta}>{t('editor.home.version', { version: String(item.version) })}{item.updatedAt ? ` · ${new Date(item.updatedAt).toLocaleString(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</Text>
+                            <Text variant="footnote" style={styles.projectMeta}>{t('editor.home.version', { version: String(projectVersion(item)) })}{projectSavedAt(item) ? ` · ${new Date(projectSavedAt(item) as string).toLocaleString(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</Text>
                         </View>
                         <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                     </Card>

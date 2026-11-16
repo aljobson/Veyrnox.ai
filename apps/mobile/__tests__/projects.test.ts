@@ -9,6 +9,8 @@ import {
     parseProject,
     parseProjects,
     parseWorkspaces,
+    projectSavedAt,
+    projectVersion,
     projectsErrorMessage,
     versionLabel,
 } from '../src/lib/projects';
@@ -37,9 +39,24 @@ describe('parseWorkspaces', () => {
 
 describe('parseProjects and parseProject', () => {
     test('reads a project and tolerates a missing name or numbers', () => {
-        expect(parseProjects({ projects: [proj] })[0]).toEqual({ id: 'p1', workspaceId: 'w1', name: 'Spring reel', version: 7, createdAt: '2026-10-01T10:00:00Z', updatedAt: '2026-10-18T09:00:00Z' });
+        expect(parseProjects({ projects: [proj] })[0]).toEqual({ id: 'p1', workspaceId: 'w1', name: 'Spring reel', version: 7, createdAt: '2026-10-01T10:00:00Z', updatedAt: '2026-10-18T09:00:00Z', latestRevision: null, savedAt: null });
         const bare = parseProjects({ projects: [{ id: 'p2' }] })[0];
         expect(bare).toMatchObject({ id: 'p2', name: 'Untitled project', version: 0, updatedAt: null });
+    });
+    test('reads the latest saved revision and its time, and rejects malformed ones', () => {
+        const saved = parseProject({ ...proj, latest_revision: 19, saved_at: '2026-11-16T12:00:00Z' });
+        expect(saved).toMatchObject({ latestRevision: 19, savedAt: '2026-11-16T12:00:00Z' });
+        expect(projectVersion(saved!)).toBe(19);
+        expect(projectSavedAt(saved!)).toBe('2026-11-16T12:00:00Z');
+        const odd = parseProject({ ...proj, latest_revision: 0, saved_at: '' });
+        expect(odd).toMatchObject({ latestRevision: null, savedAt: null });
+        expect(parseProject({ ...proj, latest_revision: 1.5 })?.latestRevision).toBeNull();
+    });
+    test('falls back to the row version and dates when nothing was saved yet', () => {
+        const row = parseProject(proj)!;
+        expect(projectVersion(row)).toBe(7);
+        expect(projectSavedAt(row)).toBe('2026-10-18T09:00:00Z');
+        expect(projectSavedAt({ savedAt: null, updatedAt: null, createdAt: '2026-10-01T10:00:00Z' })).toBe('2026-10-01T10:00:00Z');
     });
     test('drops rows without an id; parseProject unwraps one row', () => {
         expect(parseProjects({ projects: [{ name: 'x' }] })).toEqual([]);
