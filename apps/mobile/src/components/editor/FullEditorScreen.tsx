@@ -29,7 +29,9 @@ import { EditorSaveSheets } from './EditorSaveSheets';
 import { EditorVersionsSheet } from './EditorVersionsSheet';
 import { Button } from '../ui/Button';
 import { EditorLoadState } from './EditorLoadState';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
+import { editorLayoutBudget } from '../../lib/editorLayoutBudget';
 import { EDITOR_SERVER_EXPORT_ENABLED } from '../../lib/editorFlag';
 import type { Cut } from '../../lib/smartCutHandoff';
 import { requireOnline, OFFLINE_PAID_MESSAGE } from '../../lib/network';
@@ -110,7 +112,9 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     useAnnouncement(problem);
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions();
-    const previewHeight = Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen || advanced ? 0.1 : 0.14))));
+    const insets = useContext(SafeAreaInsetsContext);
+    const budget = editorLayoutBudget({ windowHeight, topInset: insets?.top ?? 0, bottomInset: insets?.bottom ?? 0, trackCount: document ? timelineOf(document.timeline).tracks.length : 1 });
+    const previewHeight = advanced ? budget.previewHeight : Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen ? 0.1 : 0.14))));
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const timeline = timelineOf(document.timeline);
@@ -359,10 +363,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         </ScrollView> : null}
         <View style={[styles.previewArea, !advanced && !panelOpen && styles.simpleFill]}>
             {bestCut.result}
-            <View style={styles.previewHeading}>
+            {advanced && !budget.showPreviewHeading ? null : <View style={styles.previewHeading}>
                 <Text style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
                 <Text style={styles.previewMeta}>{clipCount ? plural('editor.clipsOnTimelineCount', clipCount) : t('editor.emptysequence')}</Text>
-            </View>
+            </View>}
             <View style={[styles.previewFrame, advanced || panelOpen ? { height: previewHeight } : styles.simpleFill]}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
                     <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} />
@@ -370,14 +374,16 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>
             <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} onSeek={setFrame} onPlaying={setPlaying} />
         </View>
-        <View style={styles.timelineSection}>
+        <View testID="editor-timeline-section" style={[styles.timelineSection, advanced && { flexShrink: 1, flexGrow: 0, maxHeight: budget.timelineMax, minHeight: Math.min(budget.timelineMax, 119) }]}>
             <View style={styles.timelineHeading}>
                 <Text style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
                 <Text style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? (advanced ? t('editor.tapacommandtoeditselection') : t('editor.clipSelectedUseButtons')) : t('editor.tapacliptoselect')}</Text>
             </View>
-            <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            {advanced ? <ScrollView testID="editor-timeline-scroll" nestedScrollEnabled scrollEnabled={!timelineTouch} style={{ maxHeight: budget.timelineScrollMax }} showsVerticalScrollIndicator>
+                <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
+            </ScrollView> : <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onViewport={setViewport} onSeek={value => { setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />}
         </View>
-        {advanced || panelOpen ? <EditorToolSheet inline={advanced} rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
+        {advanced || panelOpen ? <EditorToolSheet inline={advanced} minHeight={budget.panelMin} rail={advanced ? <ScrollView testID="editor-tool-rail" horizontal showsHorizontalScrollIndicator={false} style={styles.toolRail} contentContainerStyle={styles.toolContent}>
             {tools.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: tool === item.id }} onPress={() => setTool(item.id)} style={({ pressed }) => [styles.tool, tool === item.id && styles.toolActive, pressed && styles.pressed]}>
                 {item.id === 'markers' ? <View style={{ width: 12, height: 12, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] }} /> : <Text style={[styles.toolIcon, tool === item.id && styles.toolIconActive]}>{item.icon}</Text>}
                 <Text style={[styles.toolLabel, tool === item.id && styles.toolLabelActive]}>{item.label}</Text>
