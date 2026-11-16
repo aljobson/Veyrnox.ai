@@ -4991,6 +4991,7 @@ export default {
   "chatDepth.videoLabel": "Joindre des images de la vidéo",
   "chatDepth.videoRoom": "Une vidéo nécessite de la place pour au moins 2 des {count} images. Supprimez-en une d’abord.",
   "chatDepth.reading": "Lecture des images de votre vidéo…",
+  "chatDepth.videoNone": "Aucune vidéo n’a été choisie. Choisissez une vidéo dans votre photothèque ou réessayez « Joindre une vidéo ».",
   "chatDepth.videoFailed": "Impossible de lire cette vidéo. Essayez un MP4, WebM ou MOV, ou joignez une capture d’écran.",
   "chatDepth.videoFrames": "La vidéo n’est pas importée : seulement quelques images extraites sur votre appareil.",
   "chatDepth.wf.viral-short.name": "Short viral",

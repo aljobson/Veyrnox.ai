@@ -4991,6 +4991,7 @@ export default {
   "chatDepth.videoLabel": "Adjuntar fotogramas de vídeo",
   "chatDepth.videoRoom": "Un vídeo necesita espacio para al menos 2 de las {count} imágenes. Elimina una primero.",
   "chatDepth.reading": "Leyendo fotogramas de tu vídeo…",
+  "chatDepth.videoNone": "No se eligió ningún vídeo. Elige uno de tu biblioteca o vuelve a pulsar «Adjuntar un vídeo».",
   "chatDepth.videoFailed": "No pudimos leer ese vídeo. Prueba con MP4, WebM o MOV, o adjunta una captura de pantalla.",
   "chatDepth.videoFrames": "Tu vídeo no se sube: solo algunos fotogramas tomados en tu dispositivo.",
   "chatDepth.wf.viral-short.name": "Corto viral",

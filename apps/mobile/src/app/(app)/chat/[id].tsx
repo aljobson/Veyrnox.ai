@@ -27,6 +27,7 @@ import { MIN_TARGET } from '../../../lib/a11y';
 import { chatApi, cleanOptions, cleanTitle, imagesExtra, isLongText, isModelSwitch, longTextState, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
 import { pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
+import { createVideoAttach } from '../../../lib/chatVideoAttempt';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
 import { skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
 import { useKeyboardOpen } from '../../../lib/useKeyboardOpen';
@@ -369,13 +370,12 @@ export default function Conversation() {
         if (r.images.length) setImages((cur) => [...cur, ...r.images]);
         if (r.problem === 'resize_unavailable') setNotice(t('chat.attach.needsUpdate'));
     }
-    async function addVideo() {
-        setNotice(t('chatDepth.reading'));
-        const r = await pickVideoFrames(roomFor(images.length, maxImages));
-        if (!mounted.current) return;
-        if (r.images.length) setImages(cur => [...cur, ...r.images].slice(0, maxImages));
-        setNotice(r.problem ? t(r.problem === 'room' ? 'chatDepth.videoRoom' : 'chatDepth.videoFailed', { count: maxImages }) : null);
-    }
+    const videoAttempt = useRef(0);
+    const [addVideo] = useState(() => createVideoAttach({
+        videoAttempt, pick: (room, onReading) => pickVideoFrames(room, undefined, onReading),
+        setNotice, isMounted: () => mounted.current, t,
+        addImages: (frames, limit) => setImages(cur => [...cur, ...frames].slice(0, limit)),
+    }));
     const isFree = !busy.current && loadedFor === round && !!model && freeLeftFor(left, model.id) > 0 && !options.thinking && !options.web && images.length === 0 && !isLongText(draft.trim());
     const canSend = !sending && !!draft.trim() && price !== null && !longTextState(model, draft.trim()).tooLong;
     const last = messages && messages.length >= 2 ? messages[messages.length - 1] : null;
@@ -447,7 +447,7 @@ export default function Conversation() {
             {model && price !== null ? (
                 <View style={[styles.composerDock, { paddingBottom: typing ? 8 : Math.max(insets.bottom, 8) }]}>
                     <ChatComposerDeck
-                        free={isFree} onVideo={() => { flushDraft(); void addVideo(); }}
+                        free={isFree} onVideo={() => { flushDraft(); void addVideo(roomFor(images.length, maxImages), maxImages); }}
                         model={model}
                         options={cleanOptions(model, options)}
                         draft={draft}

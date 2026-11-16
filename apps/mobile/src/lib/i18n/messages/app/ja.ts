@@ -4841,6 +4841,7 @@ export default {
   "chatDepth.videoLabel": "動画のフレームを添付",
   "chatDepth.videoRoom": "動画には {count} 枚中、少なくとも 2 枚分の空きが必要です。先に画像を削除してください。",
   "chatDepth.reading": "動画からフレームを読み取り中…",
+  "chatDepth.videoNone": "動画が選択されていません。ライブラリから動画を選ぶか、もう一度「動画を添付」をお試しください。",
   "chatDepth.videoFailed": "動画を読み取れませんでした。MP4、WebM、MOV を試すか、スクリーンショットを添付してください。",
   "chatDepth.videoFrames": "動画自体は送信せず、デバイスで抽出した数フレームのみを送信します。",
   "chatDepth.wf.viral-short.name": "バイラルショート",

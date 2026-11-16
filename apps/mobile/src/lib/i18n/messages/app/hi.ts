@@ -4916,6 +4916,7 @@ export default {
   "chatDepth.videoLabel": "वीडियो फ़्रेम जोड़ें",
   "chatDepth.videoRoom": "वीडियो के लिए {count} इमेज में से कम से कम 2 की जगह चाहिए। पहले एक हटाएँ।",
   "chatDepth.reading": "आपके वीडियो से फ़्रेम पढ़े जा रहे हैं…",
+  "chatDepth.videoNone": "कोई वीडियो नहीं चुना गया। अपनी लाइब्रेरी से कोई वीडियो चुनें या फिर से «वीडियो जोड़ें» आज़माएँ।",
   "chatDepth.videoFailed": "वह वीडियो पढ़ा नहीं गया। MP4, WebM या MOV आज़माएँ, या स्क्रीनशॉट जोड़ें।",
   "chatDepth.videoFrames": "वीडियो अपलोड नहीं होता: केवल डिवाइस पर निकाले कुछ फ़्रेम भेजते हैं।",
   "chatDepth.wf.viral-short.name": "वायरल शॉर्ट",
