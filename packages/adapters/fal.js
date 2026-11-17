@@ -1,3 +1,4 @@
+import { templateFacePrompt } from '../../lib/templateFaceWording.mjs';
 import { fetchWithTimeout } from '../../lib/fetchWithTimeout.js';
 import { readBoundedBody } from '../../lib/boundedBody.js';
 
@@ -31,6 +32,17 @@ const JWKS_MISS_REFRESH_MS = 5 * 60 * 1000;
 
 /** @type {{fetchedAt:number, keys:CryptoKey[]} | null} */
 let jwksCache = null;
+
+// Submit-only shaping: never change stored inputs or the replay fingerprint.
+export function buildPayload(job, { faceIdentity = false } = {}) {
+    const payload = { ...job.inputs };
+    if (faceIdentity && ['fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/kling-video/o1/video-to-video/reference'].includes(job.provider_endpoint)) {
+        const prompt = templateFacePrompt(payload.prompt || '');
+        if (prompt === null) console.warn('face_wording_omitted_length', job.job_id);
+        else payload.prompt = prompt;
+    }
+    return payload;
+}
 
 /**
  * Submit a job to fal.ai's queue API. Caller must have already validated
@@ -80,7 +92,7 @@ export async function submitJob(job, cfg, fetchImpl = fetch) {
     const postUrl = new URL(`${FAL_QUEUE_BASE}/${endpoint}`);
     postUrl.searchParams.set('fal_webhook', webhookUrl.toString());
 
-    const payload = { ...job.inputs };
+    const payload = buildPayload(job, cfg);
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 15000);
