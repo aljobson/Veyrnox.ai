@@ -4794,6 +4794,8 @@ export default {
   "welcome.start.body": "Partez d’une idée en quelques mots, ou apportez une photo ou une vidéo comme base.",
   "welcome.start.title": "Prêt quand vous l’êtes",
   "welcome.step": "Étape {n} sur {total}",
+  "welcome.toGo.one": "Plus qu'une étape",
+  "welcome.toGo.two": "Plus que deux étapes",
   "whenPicker.dateyearmonthday": "Date, année-mois-jour",
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "Heure, heure:minute",

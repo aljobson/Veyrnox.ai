@@ -36,16 +36,20 @@ const MODELS = {
     'bytedance/seedance2-0-fast-t2v': { seconds: new Set([5]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16', '1:1']), audio: true },
 };
 // Kling (docs.crun.ai/models/kling/v3-0.json and v2-6.json, read 2026-11-03). Each mirrors the kie row it would back:
-// `kling/v3` is the 3.0 image-to-video offer (pro = 1080p, single shot, audio off, one start frame required) and
+// `kling/v3` is the 3.0 image-to-video offer (pro = 1080p; `kling/v3-std` is the same at 720p, single shot, audio off, one start frame required) and
 // `kling/v2-6` is the 2.6 Pro text-to-video offer (pro, audio off, no source image). Both are sold as a 5 s unit and
 // a 10 s clip bills twice that, so the length is the caller's choice between the two the catalog prices.
 // Crun documents a 2,500-character prompt for both Kling models.
 const KLING_PROMPT_MAX = 2500;
 const KLING_SECONDS = new Set([5, 10]);
 const KLING_ASPECTS = new Set(['16:9', '9:16', '1:1']);
+// `mode` is Crun's tier field: `std` = 720p, `pro` = 1080p (docs.crun.ai/models/kling/v3-0.json, read 2026-11-17).
+// `kling/v3-std` is OUR endpoint name for the 720p tier of the same Crun model `kling/v3`: the endpoint carries the
+// tier, so a route row can say which one it is priced at (14 credits a second at 720p, 18 at 1080p).
 const KLING_MODELS = {
-    'kling/v3': { image: 'required' },
-    'kling/v2-6': { image: 'refused' },
+    'kling/v3': { image: 'required', apiModel: 'kling/v3', mode: 'pro' },
+    'kling/v3-std': { image: 'required', apiModel: 'kling/v3', mode: 'std' },
+    'kling/v2-6': { image: 'refused', apiModel: 'kling/v2-6', mode: 'pro' },
 };
 // Text-to-image (docs.crun.ai/models/google/nano-banana.json and /seedream/seedream-4.0.json, read 2026-10-25).
 // One image per request, no reference images: the offers they back take a prompt and an aspect ratio only.
@@ -129,7 +133,7 @@ function buildKlingRequest(target, spec, inputs) {
     const seconds = inputs.duration_seconds === undefined ? 5 : inputs.duration_seconds;
     if (!KLING_SECONDS.has(seconds)) return { ok: false, error: 'duration_not_supported' };
     // Audio is pinned off: the catalog rows are costed without it, and Crun bills sound extra (1.5x on 3.0, 2x on 2.6).
-    const input = { mode: 'pro', prompt, duration: seconds, audio: false };
+    const input = { mode: spec.mode, prompt, duration: seconds, audio: false };
     if (spec.image === 'required') {
         const url = inputs.image_url;
         if (typeof url !== 'string' || !/^https:\/\//.test(url)) return { ok: false, error: 'inputs_invalid:image_url' };
@@ -143,7 +147,7 @@ function buildKlingRequest(target, spec, inputs) {
         if (!KLING_ASPECTS.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
         input.aspect_ratio = aspect;
     }
-    return { ok: true, body: { model: target.model, input } };
+    return { ok: true, body: { model: spec.apiModel, input } };
 }
 
 function buildImageRequest(target, spec, inputs) {

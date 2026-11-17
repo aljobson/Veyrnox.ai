@@ -2502,6 +2502,18 @@
     "ratio": 1.67
   },
   {
+    "id": "welcome.toGo.one",
+    "english": "One to go",
+    "translation": "Falta uma etapa",
+    "ratio": 1.67
+  },
+  {
+    "id": "welcome.toGo.two",
+    "english": "Two to go",
+    "translation": "Faltam duas etapas",
+    "ratio": 2
+  },
+  {
     "id": "analyticsConsent.policy",
     "english": "Privacy Policy",
     "translation": "Política de Privacidade",

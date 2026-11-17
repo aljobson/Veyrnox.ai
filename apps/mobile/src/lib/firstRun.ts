@@ -11,6 +11,20 @@ export type WelcomeCard = (typeof WELCOME_CARDS)[number];
 export const FIRST_RUN_QUESTIONS = 3;
 export const ONBOARDING_TOTAL = FIRST_RUN_QUESTIONS + 1;
 
+// Only a creation goal (image, video, audio) ends on the recap; any other answer, or a skipped goal, finishes after the
+// last question, so the bar counts one fewer screen. Before a goal is known (first screen, nothing picked) it assumes the long way.
+export function journeyTotalFor(goal: string | undefined, step: number): number {
+    if (step === 0 && !goal) return ONBOARDING_TOTAL;
+    return goal === 'image' || goal === 'video' || goal === 'audio' ? ONBOARDING_TOTAL : ONBOARDING_TOTAL - 1;
+}
+
+// Goal gradient: the bar starts part-filled (step 1 is already a fraction of the way), and near the end it names what is
+// left ("Two to go") rather than what is done. Earlier, and on the last screen, the plain "Step n of total" stands.
+export function stepsLeftKey(step: number, total: number): 'welcome.toGo.one' | 'welcome.toGo.two' | null {
+    const left = total - step;
+    return left === 1 ? 'welcome.toGo.one' : left === 2 ? 'welcome.toGo.two' : null;
+}
+
 export function hasSeenWelcome(raw: string | null | undefined): boolean {
     if (!raw) return false;
     try {
