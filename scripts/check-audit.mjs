@@ -23,7 +23,13 @@ const BLOCKING = new Set(['high', 'critical']);
 
 // Add an entry only when there is no fixed version to move to, and say where
 // the package sits and why that is tolerable. Remove it when the gate says so.
-export const ALLOWED = [];
+export const ALLOWED = [
+  {
+    id: 'GHSA-fc5q-39xc-vjpf',
+    reason: 'picomatch ReDoS via repeated extglobs; every published version (<= 4.0.7) is affected, so there is nothing to upgrade to. '
+      + 'Reached only through lint and test tooling (eslint-config-next, vitest), never a production dependency. Remove when a patched picomatch ships.',
+  },
+];
 
 const advisoryId = (via) => /\/(GHSA(?:-[0-9a-z]{4}){3})$/i.exec(via.url || '')?.[1] ?? null;
 
@@ -79,8 +85,14 @@ export function assessAudit(report, allowed = ALLOWED, prodReport = undefined) {
   return { problems, waived };
 }
 
+// `--prefix <dir>` audits another package (the Workers runtime test package) with the same rules.
+const prefixArgs = () => {
+  const i = process.argv.indexOf('--prefix');
+  return i > 0 && process.argv[i + 1] ? ['--prefix', process.argv[i + 1]] : [];
+};
+
 function readReport(extraArgs = []) {
-  const args = ['audit', '--json', ...extraArgs];
+  const args = ['audit', '--json', ...prefixArgs(), ...extraArgs];
   const run = spawnSync('npm', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (run.error) throw run.error;
   // npm exits non-zero whenever it finds anything; the report is on stdout either way.
