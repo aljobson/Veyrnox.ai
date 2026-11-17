@@ -7,6 +7,7 @@ import { createBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 // revisioned store. No network, IndexedDB or React renderer is needed for these flows.
 let activeRunner, fixture;
 globalThis.beatHookFixture = {
+  subscribeShelf: () => () => {},
   useRef(value) { const r = activeRunner, i = r.cursor++; return r.slots[i] ||= { current: value }; },
   useState(value) {
     const r = activeRunner, i = r.cursor++;
@@ -49,7 +50,7 @@ const exportsByFile = {
   '/beatStore.js': ['getBeat', 'setCloudLink', 'updateBeat', 'subscribeBeats', 'createBeat'],
   '/beatCloud.js': ['getCloudBeat', 'saveCloudBeat', 'listTakes', 'uploadTake', 'takeUrl'],
   '/beatAssets.js': ['configureCloudTakes'],
-  '/instrumentShelf.js': ['getShelf', 'hydrateShelf'],
+  '/instrumentShelf.js': ['getShelf', 'hydrateShelf', 'subscribeShelf'],
 };
 const hooks = registerHooks({ load(url, context, next) {
   for (const [suffix, names] of Object.entries(exportsByFile)) if (url.endsWith(suffix))

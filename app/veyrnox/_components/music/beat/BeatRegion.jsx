@@ -14,7 +14,7 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
   const clip = region.clipId && doc.clips[region.clipId];
   const loops = clip ? `${Math.ceil(region.length / clip.lengthTicks)} clip loops` : asset ? audioLoopLabel(region, asset, doc.tempo.bpm) : drumLoopLabel(region, doc.steps);
   const name = `${selected ? 'Selected, ' : ''}${clip ? `MIDI ${clip.name}` : asset ? `Audio ${asset.name}` : `Pattern ${region.pattern}`} on ${track.name}, ` +
-    `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}, ${loops}${asset ? `, gain ${region.gainDb} dB` : ''}`;
+    `${formatPosition(region.start)} to ${formatPosition(region.start + region.length)}, ${loops}${asset ? `, gain ${region.gainDb} dB` : ''}${region.tailSec ? `, ${Math.round(region.tailSec * 1000)} ms crossfade tail` : ''}`;
   function key(event) {
     const command = event.ctrlKey || event.metaKey;
     let operation, label;
@@ -62,6 +62,7 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
       <span className="block">{clip ? <BeatMidiPreview clip={clip} /> : asset ? <BeatAudioRegion region={region} asset={asset} bpm={doc.tempo.bpm} zoom={zoom} /> : region.pattern}</span>
       <span aria-hidden="true" className="block truncate px-3 text-xs">{dots.map(() => '•').join(' ')}</span>
     </button>
+    {region.tailSec && <span aria-hidden="true" className="pointer-events-none absolute left-full top-0 h-16 border-r border-dashed border-vx-hue-sky bg-vx-hue-sky/25" style={{ width: Math.max(1, region.tailSec * doc.tempo.bpm / 240 * zoom) }} />}
     {asset && <BeatAudioRetry asset={asset} bpm={doc.tempo.bpm} reverse={region.reverse} />}
     {['trim', 'resize'].map((mode) => <span key={mode} aria-hidden="true"
       className={`absolute top-0 z-10 h-16 w-3 touch-none cursor-ew-resize rounded ${asset ? 'bg-vx-hue-sky/25' : 'bg-vx-hue-iris/25'}

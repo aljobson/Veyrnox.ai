@@ -88,6 +88,11 @@ const nextConfig = {
         headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' }],
       },
       {
+        // Microphone only after record intent on an armed track; ADR-0349.
+        source: '/app/music/beats/:path*',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' }],
+      },
+      {
         // Do not append a second CSP to middleware's nonce policy.
         source: '/api/:path*',
         headers: [{ key: 'Content-Security-Policy', value: CSP }],

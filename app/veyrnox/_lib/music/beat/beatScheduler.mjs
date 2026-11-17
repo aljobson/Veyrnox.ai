@@ -11,7 +11,7 @@ export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent
   function normalize(sequence) {
     if (sequence.loop) {
       const { start, end } = sequence.loop;
-      if (nextStepIndex >= end || nextStepIndex < start) nextStepIndex = start;
+      if (nextStepIndex >= end || (nextStepIndex < start && !sequence.recording)) nextStepIndex = start;
     }
   }
   function pass() {

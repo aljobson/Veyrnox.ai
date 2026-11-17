@@ -6,7 +6,7 @@ import { addMidiRegion } from '../../../_lib/music/beat/beatMidiOps.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 import { button, input } from './beatStyles';
 
-export default function BeatTrackHeader({ mode = 'song', recording = false, automationLane, onAutomation, track, edit, locator, last, selected, onSelect }) {
+export default function BeatTrackHeader({ armedId, onArm, mode = 'song', recording = false, automationLane, onAutomation, track, edit, locator, last, selected, onSelect }) {
   const gain = automationControl(track, 'gain', mode, recording), pan = automationControl(track, 'pan', mode, recording);
   const [nameDraft, setNameDraft] = useState(null);
   function field(op, value, label, key) {
@@ -59,7 +59,7 @@ export default function BeatTrackHeader({ mode = 'song', recording = false, auto
         } }}>Delete track</button>
     </div>;
   }
-  return <div className={`relative h-48 border-b border-vx-border md:h-80 ${selected ? 'bg-vx-accent/10' : 'bg-vx-panel'}`}>
+  return <div className={`relative h-64 border-b border-vx-border md:h-80 ${selected ? 'bg-vx-accent/10' : 'bg-vx-panel'}`}>
     <div className="flex flex-wrap items-center justify-center gap-1 md:justify-start md:px-2">
       <button className="min-h-11 w-full truncate text-xs font-bold focus-visible:outline-vx-accent md:w-auto md:flex-1"
         aria-pressed={selected} onClick={onSelect} title={track.name}>{track.name}</button>
@@ -71,6 +71,7 @@ export default function BeatTrackHeader({ mode = 'song', recording = false, auto
         data-beat-live aria-label={`Solo ${track.name}`}
         aria-pressed={track.solo} onClick={() => field(ops.setTrackSolo, !track.solo,
           `${track.solo ? 'unsolo' : 'solo'} ${track.name}`)}>S</button>
+      {track.kind === 'audio' && <button className={`${button} min-h-11 min-w-11 px-1 text-xs`} aria-label={`Arm ${track.name} for recording`} aria-pressed={armedId === track.id} onClick={() => onArm(armedId === track.id ? null : track.id)}><span aria-hidden="true" className="text-vx-hue-rose">●</span> Arm</button>}
       <span className="hidden md:inline-flex">{automationButton()}</span>
     </div>
     <div className="hidden p-2 md:block">{settings('desktop')}</div>

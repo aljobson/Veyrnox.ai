@@ -28,6 +28,7 @@ import BeatMagicBar from './BeatMagicBar';
 import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input, storageWarning } from './beatStyles';
 
+const BeatRecordPanel = dynamic(() => import('./BeatRecordPanel'), { ssr: false });
 const BeatMixer = dynamic(() => import('./BeatMixer'), { ssr: false, loading: () => <div role="status" aria-busy="true" className="h-64 rounded-xl bg-vx-panel p-4">Loading mixer…</div> });
 
 export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = false, librarySave = false }) {
@@ -110,12 +111,12 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
   }
   async function copy() {
     setCopying(true);
-    playback.finalizeRecording(); playback.stop();
+    await playback.finishRecording();
     const nextId = await project.copy();
     if (nextId) { playback.stop(); router.push(`/app/music/beats/${nextId}`); }
     else setCopying(false);
   }
-  const back = <Link onClick={() => { playback.finalizeRecording(); playback.stop(); }} className={`${button} inline-flex items-center`} href="/app/music/beats">My beats</Link>;
+  const back = <Link data-beat-live onClick={async e => { e.preventDefault(); await playback.finishRecording(); await project.flushLatest(); router.push('/app/music/beats'); }} className={`${button} inline-flex items-center`} href="/app/music/beats">My beats</Link>;
   if (project.error) return <div className="space-y-4 p-6"><h1 className="text-2xl font-bold">{project.error === 'damaged' ? 'This beat is damaged' : "This beat isn't on this device"}</h1>{back}</div>;
   if (!doc) return <p className="p-6" aria-busy="true">Loading beat…</p>;
   const title = titleDraft ?? doc.title;
@@ -147,11 +148,11 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
       if (value.trim() && edit((d) => ops.rename(d, value), { key: 'title', label: 'rename beat' })) {
         setStoredTitle(value);
       }
-    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog librarySave={librarySave} finalize={() => playback.isRecording() || playback.pending.current ? playback.stop() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></div>
+    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog librarySave={librarySave} finalize={playback.finishRecording} doc={doc} editTrackId={track.id} announce={announce} /></div>
     {!title.trim() && <p id="title-error">Give your beat a title.</p>}
     <p className="text-sm text-vx-fg-muted">{project.conflict ? 'Autosave paused' : project.saveError ? <>{"Couldn't save on this device."} <button className={button} onClick={project.retry}>Retry</button></> : !project.persistent ? 'Kept in memory for this visit' : project.dirty ? 'Saving…' : 'Saved on this device'}</p>
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{storageWarning}</p>}
-    {project.conflict && <section className="space-y-3 rounded-xl border border-vx-border bg-vx-panel p-4" aria-label="Beat changed elsewhere"><h2 className="font-bold">{project.conflict === 'deleted' ? 'This beat was deleted in another tab' : 'This beat was changed in another tab'}</h2><div className="flex flex-wrap gap-2">{project.conflict !== 'deleted' && <button className={button} onClick={() => { playback.stop(); setTitleDraft(null); setUndo(null); setLocator(0); setEditTrackId(null); setReloadKey((value) => value + 1); project.reload(); }}>Reload</button>}<button className={action} disabled={copying} onClick={copy}>{project.conflict === 'deleted' ? 'Save as a new beat' : 'Save my version as a copy'}</button></div></section>}
+    {project.conflict && <section className="space-y-3 rounded-xl border border-vx-border bg-vx-panel p-4" aria-label="Beat changed elsewhere"><h2 className="font-bold">{project.conflict === 'deleted' ? 'This beat was deleted in another tab' : 'This beat was changed in another tab'}</h2><div className="flex flex-wrap gap-2">{project.conflict !== 'deleted' && <button className={button} onClick={async () => { await playback.finishRecording(); setTitleDraft(null); setUndo(null); setLocator(0); setEditTrackId(null); setReloadKey((value) => value + 1); project.reload(); }}>Reload</button>}<button className={action} disabled={copying} onClick={copy}>{project.conflict === 'deleted' ? 'Save as a new beat' : 'Save my version as a copy'}</button></div></section>}
     {playback.audioError && <p className="rounded-xl border border-vx-border p-3">{playback.audioError}</p>}
     {playback.recordingRun && <p role="status">Stop recording to edit · {playback.overlay.length} pending notes</p>}
     {playback.takeError && <div role="alert" className="rounded-xl border border-vx-border p-3">{playback.takeError}<button className={button} onClick={playback.finalizeRecording}>Try again</button><button className={button} onClick={async () => { try { const take = playback.takeAsBeat(); const id = take && await project.copy(take); if (id) { playback.discardSavedTake(); router.push(`/app/music/beats/${id}`); } } catch (e) { announce(e.message); } }}>Save take as a new beat</button></div>}
@@ -170,9 +171,10 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
         project.undo(); setTitleDraft(null); setUndo(null); clearTimeout(undoTimer.current);
       }}>Undo</button>
     </div>}
-    <BeatArrangement recording={playback.recordingRun} automationLanes={automationLanes} onAutomation={showAutomation} ai={ai} onAi={aiRequest.open} key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
+    <BeatArrangement recording={playback.recordingRun} armedId={playback.audioRecorder.armedId} onArm={playback.audioRecorder.arm} automationLanes={automationLanes} onAutomation={showAutomation} ai={ai} onAi={aiRequest.open} key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
       onSelectRegion={(id) => { setSelectedRegionId(id); setRollOpen(true); }} setEditTrackId={setEditTrackId} locator={locator} setLocator={setLocator}
       playhead={playback.playhead} runId={playback.runId} announce={announce} />
+    {(playback.audioRecorder.armedId || playback.audioRecorder.error || playback.audioRecorder.recovery.length > 0) && <BeatRecordPanel recorder={playback.audioRecorder} playback={playback} announce={announce} />}
     {mixerOpen ? <BeatMixer recording={playback.recordingRun} doc={doc} edit={edit} engine={playback.engine} close={() => setMixerOpen(false)} onAutomation={showAutomation} /> : track.kind === 'midi' ? <>
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={playback.record} onChange={(e) => playback.setRecord(e.target.checked)} />Record</label>

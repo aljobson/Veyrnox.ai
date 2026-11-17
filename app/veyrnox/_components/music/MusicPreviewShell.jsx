@@ -93,10 +93,11 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
                 }).map((entry) => {
                   const link = entry.studio && beatsMode ? { ...entry, href: '/app/music/beats', label: 'Beats', beats: true } : entry;
                   const active = pathname === link.href || pathname.startsWith(`${link.href}/`) || (link.href.includes('library') && pathname.includes('/songs/'));
+                  const NavigationLink = (link.beats || link.studio) && !pathname.startsWith('/app/music/beats') ? 'a' : Link;
                   return (
-                    <Link key={link.href} href={link.href} aria-current={active ? 'page' : undefined} className={`vx-press rounded-full px-4 py-2 ${link.beats ? 'inline-flex min-h-11 items-center' : ''} ${active ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-body hover:text-vx-fg'}`}>
+                    <NavigationLink key={link.href} href={link.href} aria-current={active ? 'page' : undefined} className={`vx-press rounded-full px-4 py-2 ${link.beats ? 'inline-flex min-h-11 items-center' : ''} ${active ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-body hover:text-vx-fg'}`}>
                       {link.label}
-                    </Link>
+                    </NavigationLink>
                   );
                 })}
               </nav>

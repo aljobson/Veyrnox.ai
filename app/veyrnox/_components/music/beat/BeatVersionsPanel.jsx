@@ -4,6 +4,7 @@ import { onSessionChange } from '../../../../lib/authClient.js';
 import { listVersions, getVersion } from '../../../_lib/music/beat/beatCloud.js';
 import { validateBeat, migrateBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 import { restoreVersion } from '../../../_lib/music/beat/beatOps.mjs';
+import { reconcileBeatTakes } from '../../../_lib/music/beat/beatTakeStore.js';
 import { versionReason, versionTime } from '../../../_lib/music/beat/beatVersionLabels.mjs';
 import { action, button } from './beatStyles';
 export default function BeatVersionsPanel({ beatId, project, sync }) {
@@ -23,10 +24,13 @@ export default function BeatVersionsPanel({ beatId, project, sync }) {
   async function restore(row) {
     const token = sync.options(); setBusy(true); setError('');
     try {
+      await project.finishRecording();
       const result = await getVersion(beatId, row.id, token);
       if (!sync.current(token)) return;
       const doc = JSON.parse(result.doc_json);
       if (!validateBeat(doc).ok || doc.id !== beatId) throw new Error('Invalid version');
+      await reconcileBeatTakes(doc);
+      if (!sync.current(token)) return;
       if (project.edit(current => restoreVersion(current, migrateBeat(doc)), { label: 'restore version' })) dialog.current.close();
     } catch { if (sync.current(token)) setError('Could not restore this version. Retry.'); }
     finally { setBusy(false); }

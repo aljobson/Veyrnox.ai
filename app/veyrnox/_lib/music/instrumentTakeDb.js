@@ -2,13 +2,13 @@
 // IndexedDB is missing or blocked, so the page still works, just without surviving a reload.
 
 const DB_NAME = 'veyrnox-instrument-takes';
-const VERSION = 1;
+const VERSION = 2;
 const connections = new Set();
 if (typeof window !== 'undefined') window.addEventListener('pagehide', () => {
   for (const db of connections) db.close();
   connections.clear();
 });
-export const TAKE_STORES = Object.freeze(['takes', 'shelf']);
+export const TAKE_STORES = Object.freeze(['takes', 'shelf', 'beatTakes']);
 
 function open() {
   return new Promise((resolve, reject) => {
@@ -36,9 +36,10 @@ async function run(store, mode, action) {
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(store, mode);
       const result = action(tx.objectStore(store));
-      tx.oncomplete = () => resolve(result?.result);
-      tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error);
+      const timeout = setTimeout(() => { try { tx.abort(); } catch { /* Already settled. */ } reject(new Error('indexeddb_timeout')); }, 10000);
+      tx.oncomplete = () => { clearTimeout(timeout); resolve(result?.result); };
+      tx.onerror = () => { clearTimeout(timeout); reject(tx.error); };
+      tx.onabort = () => { clearTimeout(timeout); reject(tx.error); };
     });
   } finally {
     db.close(); connections.delete(db);

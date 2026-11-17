@@ -154,3 +154,17 @@ test('hold drops both cache directions and a late reverse load cannot restore re
   assert.equal(await assets.loadAssetBuffers(asset, 60), null);
   beforeReverse = async () => {}; assets.clearBeatAssets();
 });
+
+test('recorded take cache survives shelf removals and keeps beat provenance', async () => {
+  const store = await import('../app/veyrnox/_lib/music/beat/beatTakeStore.js');
+  const shelf = await import('../app/veyrnox/_lib/music/instrumentShelf.js');
+  store.configureBeatTakeStorage({ list: async () => [], put: async () => true });
+  shelf.configureShelfStorage({ list: async () => [], put: async () => true, remove: async () => true });
+  const row = { id: 'beat-recorded', label: 'Recorded', samples: new Float32Array(48000), sampleRate: 48000, beatId: uuid(1), state: 'pending' };
+  await store.putBeatTake(row); assets.clearBeatAssets();
+  const asset = { source: 'take', ref: row.id, name: row.label, durationSec: 1, sourceChannels: 1, encodedBytes: 0, bpm: null };
+  const buffer = await assets.loadAsset(asset, 120); assert.ok(buffer);
+  assert.equal((await assets.loadAssetBuffers(asset, 120)).origin, 'beat');
+  shelf.removeShelfTake('unrelated'); assert.equal(assets.cachedAsset(asset, 120), buffer); assert.equal(assets.assetState(asset, 120).status, 'ready');
+  assets.clearBeatAssets();
+});

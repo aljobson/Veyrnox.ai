@@ -4,6 +4,7 @@ const bars = (region) => `${formatPosition(region.start)} to ${formatPosition(re
 
 // Read committed results, including overlap resolution, for every input method.
 export function arrangementMessage(before, after, { label, regionId, trackId, start }) {
+  if (before.tracks.some(t => (t.takeGroups || []).some(g => !after.tracks.find(n => n.id === t.id)?.takeGroups?.some(n => n.id === g.id)))) return 'Take lanes merged into regions';
   const previous = regions(before).find(({ region }) => region.id === regionId);
   const current = regions(after).find(({ region }) => region.id === regionId);
   const track = after.tracks.find((item) => item.id === trackId);
