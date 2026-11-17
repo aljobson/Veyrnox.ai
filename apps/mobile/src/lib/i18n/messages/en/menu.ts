@@ -14,6 +14,7 @@ export default {
     'menu.videoAgentHint': 'Describe a video, we make it',
     'menu.filmHint': 'Plan and direct a multi-shot film',
     'menu.create': 'Create',
+    'menu.audio': 'Audio',
     'menu.videoEditor': 'Video editor',
     'menu.features': 'Creative tools',
     'menu.toolDirectory': 'Tools',

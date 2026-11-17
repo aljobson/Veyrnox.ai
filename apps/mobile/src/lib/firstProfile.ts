@@ -54,25 +54,25 @@ export const hasRealAnswer = (a: { readonly goal?: string | null; readonly role?
     !!a && [a.goal, a.role, a.destination].some((word) => !!word && word !== 'skipped' && word !== 'unsure');
 
 // Home start options in the order this person should see them. Goal puts its own area first; no answer keeps the default.
-// The web has four keys; the phone home shows create, chat and film (Instruments always stays last), so it filters.
-export type StartKey = 'create' | 'chat' | 'film' | 'smart-cut';
+// The web has four keys; the phone home shows create, audio, chat and film (Instruments always stays last), so it filters.
+export type StartKey = 'create' | 'audio' | 'chat' | 'film' | 'smart-cut';
 const START_ORDER: Record<FirstRole, readonly StartKey[]> = {
-    creator: ['create', 'smart-cut', 'film', 'chat'],
-    business: ['create', 'film', 'chat', 'smart-cut'],
-    pro: ['film', 'create', 'smart-cut', 'chat'],
-    hobbyist: ['create', 'film', 'chat', 'smart-cut'],
-    beginner: ['create', 'chat', 'film', 'smart-cut'],
+    creator: ['create', 'audio', 'smart-cut', 'film', 'chat'],
+    business: ['create', 'film', 'audio', 'chat', 'smart-cut'],
+    pro: ['film', 'create', 'audio', 'smart-cut', 'chat'],
+    hobbyist: ['create', 'audio', 'film', 'chat', 'smart-cut'],
+    beginner: ['create', 'audio', 'chat', 'film', 'smart-cut'],
 };
-const DEFAULT_STARTS: readonly StartKey[] = ['create', 'chat', 'film', 'smart-cut'];
-const GOAL_START: Readonly<Record<string, StartKey>> = { video: 'film', edit: 'smart-cut' };
+const DEFAULT_STARTS: readonly StartKey[] = ['create', 'audio', 'chat', 'film', 'smart-cut'];
+const GOAL_START: Readonly<Record<string, StartKey>> = { video: 'film', audio: 'audio', edit: 'smart-cut' };
 
 export function orderStarts(r: string | null | undefined, goal: string | null | undefined): StartKey[] {
     const base = (r && Object.prototype.hasOwnProperty.call(START_ORDER, r) ? START_ORDER[r as FirstRole] : DEFAULT_STARTS) as readonly StartKey[];
     const first = goal ? GOAL_START[goal] : undefined;
     return first ? [first, ...base.filter((key) => key !== first)] : [...base];
 }
-export const phoneStarts = (r: string | null | undefined, goal: string | null | undefined): ('create' | 'chat' | 'film')[] =>
-    orderStarts(r, goal).filter((key): key is 'create' | 'chat' | 'film' => key !== 'smart-cut' && (FILM_STUDIO_ENABLED || key !== 'film'));
+export const phoneStarts = (r: string | null | undefined, goal: string | null | undefined): ('create' | 'audio' | 'chat' | 'film')[] =>
+    orderStarts(r, goal).filter((key): key is 'create' | 'audio' | 'chat' | 'film' => key !== 'smart-cut' && (FILM_STUDIO_ENABLED || key !== 'film'));
 
 // "work" examples (product, ad and brand ideas) for creator, business and pro; the everyday ones for everyone else.
 export const exampleSetFor = (r: string | null | undefined): 'work' | 'everyday' => (r === 'creator' || r === 'business' || r === 'pro' ? 'work' : 'everyday');

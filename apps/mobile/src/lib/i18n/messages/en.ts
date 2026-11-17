@@ -20,6 +20,7 @@ import area_appeals from './en/appeals';
 import area_appearance from './en/appearance';
 import area_approvals from './en/approvals';
 import area_attachFromDevice from './en/attachFromDevice';
+import area_audioHub from './en/audioHub';
 import area_audioTemplates from './en/audioTemplates';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
@@ -238,6 +239,7 @@ const catalog = {
     ...area_appearance,
     ...area_approvals,
     ...area_attachFromDevice,
+    ...area_audioHub,
     ...area_audioTemplates,
     ...area_authGate,
     ...area_autolists,

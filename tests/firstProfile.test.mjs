@@ -7,7 +7,7 @@ import {
 } from '../app/veyrnox/_lib/firstProfile.js';
 import { FIRST_ROLE_VALUES, FIRST_DESTINATION_VALUES, cleanFirstAnswers } from '../lib/firstGoal.js';
 
-const STARTS = ['create', 'chat', 'film', 'smart-cut'];
+const STARTS = ['create', 'audio', 'chat', 'film', 'smart-cut'];
 
 test('the lists are the words the database accepts, plus "skipped"', () => {
     assert.deepEqual([...FIRST_ROLE_VALUES], [...FIRST_ROLES, 'skipped']);
@@ -48,6 +48,7 @@ test('home start options: every role keeps all four, once, and a real goal moves
             assert.deepEqual([...orderStarts(role, goal)].sort(), [...STARTS].sort(), `${role}/${goal}`);
         }
     }
+    for (const role of [...FIRST_ROLES, null]) assert.equal(orderStarts(role, 'audio')[0], 'audio');
     assert.deepEqual(orderStarts(null, null), STARTS, 'no answer keeps today\'s order');
     assert.equal(orderStarts('creator', null)[0], 'create');
     assert.equal(orderStarts('pro', null)[0], 'film');

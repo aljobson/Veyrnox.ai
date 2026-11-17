@@ -48,7 +48,6 @@ const RECENT = 6;
 // Longest the start rows wait for the first-run answers before showing in the default order.
 const START_ORDER_WAIT_MS = 1200;
 
-
 // Explore is the home: say what to make, or start from a template, or pick up what you were making.
 export default function Explore() {
     const styles = useThemedStyles(sheets);
@@ -246,6 +245,7 @@ export default function Explore() {
                         const onPress = () => void recordHomeStart(api, key);
                         const divided = index > 0;
                         if (key === 'create') return <StartOption href="/create" hue="mint" key={key} onPress={onPress} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} divided={divided} badge={badge} />;
+                        if (key === 'audio') return <StartOption href="/audio" hue="rose" key={key} onPress={onPress} style={styles.startOption} icon="audio" title={t('menu.audio')} body={t('audioHub.home.body')} hint={t('audioHub.home.hint')} divided={divided} badge={badge} />;
                         if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}

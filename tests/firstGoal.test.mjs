@@ -67,7 +67,7 @@ test('web sync: signed out asks nothing; failures read as unavailable; a push is
 
 test('a home start option is the answer: Film is video, Smart Cut is edit, Create and Chat name no area', async () => {
   const { HOME_START_GOALS, homeStartGoal } = await import('../app/veyrnox/_lib/firstGoal.js');
-  assert.deepEqual(HOME_START_GOALS, { create: 'skipped', chat: 'skipped', film: 'video', 'smart-cut': 'edit' });
+  assert.deepEqual(HOME_START_GOALS, { create: 'skipped', chat: 'skipped', film: 'video', audio: 'audio', 'smart-cut': 'edit' });
   assert.equal(homeStartGoal('film'), 'video');
   assert.equal(homeStartGoal('nonsense'), null);
   for (const goal of Object.values(HOME_START_GOALS)) assert.doesNotThrow(() => serializeFirstGoal(goal));

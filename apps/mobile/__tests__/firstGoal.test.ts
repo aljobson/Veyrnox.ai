@@ -86,11 +86,11 @@ describe('a home start option is the answer', () => {
     const store = require('../src/lib/firstGoalStore');
 
     test('Film is video, Smart Cut is edit, Create and Chat name no area; same table as the web', () => {
-        expect(HOME_START_GOALS).toEqual({ create: 'skipped', chat: 'skipped', film: 'video', 'smart-cut': 'edit' });
+        expect(HOME_START_GOALS).toEqual({ create: 'skipped', chat: 'skipped', film: 'video', audio: 'audio', 'smart-cut': 'edit' });
         expect(homeStartGoal('film')).toBe('video');
         expect(homeStartGoal('nonsense')).toBeNull();
         const web = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'app', 'veyrnox', '_lib', 'firstGoal.js'), 'utf8');
-        expect(web).toContain("HOME_START_GOALS = { create: 'skipped', chat: 'skipped', film: 'video', 'smart-cut': 'edit' }");
+        expect(web).toContain("HOME_START_GOALS = { create: 'skipped', chat: 'skipped', film: 'video', audio: 'audio', 'smart-cut': 'edit' }");
     });
 
     test('a tap stores and pushes the goal once, and keeps an answer already held', async () => {
