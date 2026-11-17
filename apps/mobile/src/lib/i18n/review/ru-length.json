@@ -2670,6 +2670,18 @@
     "ratio": 2.5
   },
   {
+    "id": "welcome.toGo.one",
+    "english": "One to go",
+    "translation": "Остался один шаг",
+    "ratio": 1.78
+  },
+  {
+    "id": "welcome.toGo.two",
+    "english": "Two to go",
+    "translation": "Осталось два шага",
+    "ratio": 1.89
+  },
+  {
     "id": "analyticsConsent.choices",
     "english": "Privacy choices",
     "translation": "Настройки конфиденциальности",

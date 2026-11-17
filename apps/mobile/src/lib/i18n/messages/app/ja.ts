@@ -4644,6 +4644,8 @@ export default {
   "welcome.start.body": "短い言葉のアイデアから始めるか、写真や動画を素材にして作れます。",
   "welcome.start.title": "いつでも始められます",
   "welcome.step": "ステップ{n}/{total}",
+  "welcome.toGo.one": "あと1ステップ",
+  "welcome.toGo.two": "あと2ステップ",
   "whenPicker.dateyearmonthday": "日付、年-月-日",
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "時刻、時:分",
