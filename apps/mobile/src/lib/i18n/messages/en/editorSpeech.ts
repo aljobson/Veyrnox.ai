@@ -8,6 +8,7 @@ export default {
     "editorSpeech.sourceTooLarge": "This clip is {size} MB, over the {max} MB limit. Choose a smaller or shorter clip. No credits were spent.",
     "editorSpeech.sourceDense": "This clip is {size} MB for {seconds} seconds, over the limit of about 2 MB per second. Choose a shorter or more compressed clip. No credits were spent.",
     "editorSpeech.sourceUnreadable": "Speech tools could not read this clip’s file. It may be in a format that cannot be read. Try a clip saved as MP4 or MOV. No credits were spent.",
+    "editorSpeech.sourceNoAudio": "This video has no sound, so Best Cut has no speech to read. Choose a clip with a voice. No credits were spent.",
     "editorSpeech.tooLong": "Choose a source clip that is no longer than 60 seconds.",
     "editorSpeech.durationChanged": "The source duration changed. Reload the clip and try again.",
     "editorSpeech.price": "{n} credits per analysis",

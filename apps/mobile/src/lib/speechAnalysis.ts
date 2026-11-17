@@ -79,6 +79,7 @@ const num = (value: unknown): string => typeof value === 'number' && Number.isFi
 function sourceMessage(error: ApiError): string | null {
     if (error.code === 'source_too_large') return t('editorSpeech.sourceTooLarge', { size: num(error.body.size_mb), max: num(error.body.max_mb ?? 100) });
     if (error.code === 'source_bitrate_too_high') return t('editorSpeech.sourceDense', { size: num(error.body.size_mb), seconds: num(error.body.seconds) });
+    if (error.code === 'source_no_audio') return t('editorSpeech.sourceNoAudio');
     if (error.code === 'source_unreadable') return t('editorSpeech.sourceUnreadable');
     return null;
 }
