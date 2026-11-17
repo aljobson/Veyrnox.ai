@@ -24,7 +24,7 @@ for (const patch of [{ duration: 0 }, { duration: 61 }, { source: { type: 'proje
     });
 }
 test('untrusted duration, unsupported probe and whole sources over 60s fail before debit', async () => {
-    for (const [opts, b, code] of [[{}, { ...body(), duration: 10 }, 'duration_mismatch'], [{ probe: async () => null }, body(), 'source_unsupported'], [{ probe: async () => ({ duration: 61 }) }, body(), 'source_too_long']]) {
+    for (const [opts, b, code] of [[{}, { ...body(), duration: 10 }, 'duration_mismatch'], [{ probe: async () => null }, body(), 'source_unreadable'], [{ probe: async () => ({ duration: 61 }) }, body(), 'source_too_long']]) {
         const f = fixture(opts); const res = await f.run(request(b)); assert.equal(res.status, 400); assert.equal((await res.json()).error, code); assert.equal(f.debit(), 0);
     }
 });
@@ -151,14 +151,25 @@ test('matching stored probe avoids another range read; mismatched fingerprint or
         assert.equal(f.calls.filter(c => c.name === 'speech_source_probe_store').length, probes);
     }
 });
-test('oversized or implausible bytes/second sources fail before debit, including cached probes', async () => {
-    for (const [size, cached] of [[100 * 1024 * 1024 + 1, false], [25 * 1024 * 1024, false], [25 * 1024 * 1024, true]]) {
+test('oversized or implausible bytes/second sources name the reason before debit, including cached probes', async () => {
+    const MB = 1024 * 1024;
+    for (const [size, cached, expected] of [
+        [100 * MB + 1, false, { error: 'source_too_large', size_mb: 100, max_mb: 100 }],
+        [25 * MB, false, { error: 'source_bitrate_too_high', size_mb: 25, seconds: 12 }],
+        [25 * MB, true, { error: 'source_bitrate_too_high', size_mb: 25, seconds: 12 }]]) {
         let probes = 0;
         const measured = { duration: 12, mime: 'video/mp4', fingerprint: 'a'.repeat(64) };
         const f = fixture({ asset: { size_bytes: size, ...(cached ? { probe: measured } : {}) }, probe: async () => { probes++; return measured; } });
-        const res = await f.run(request()); assert.equal(res.status, 400); assert.deepEqual(await res.json(), { error: 'source_unsupported' });
+        const res = await f.run(request()); assert.equal(res.status, 400); assert.deepEqual(await res.json(), expected);
         assert.equal(f.debit(), 0); assert.equal(f.submissions.length, 0);
-        assert.equal(probes, cached || size > 100 * 1024 * 1024 ? 0 : 1);
+        assert.equal(probes, cached || size > 100 * MB ? 0 : 1);
+    }
+});
+test('a source with no stored size or no hash is reported unreadable with its reason, before debit', async () => {
+    for (const [asset, reason] of [[{ size_bytes: 0 }, 'no_size'], [{ sha256: null }, 'no_hash']]) {
+        const f = fixture({ asset, probe: async () => null });
+        const res = await f.run(request()); assert.equal(res.status, 400); assert.deepEqual(await res.json(), { error: 'source_unreadable', reason });
+        assert.equal(f.debit(), 0); assert.equal(f.submissions.length, 0);
     }
 });
 test('webhook operational failures log only a typed code and job id', async t => {
