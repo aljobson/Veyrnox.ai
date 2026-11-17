@@ -4,6 +4,7 @@ import { hiddenTemplateReport, routeFit, writeHiddenTemplateReport } from '../sc
 import { clipOrigin } from '../scripts/lib/template-origin.mjs';
 import { swapCandidates, auditRecords } from '../scripts/import-template-swap-clips.mjs';
 import { templateContract } from '../lib/templateContract.js';
+// 17 Nov 2026: withdrawing the duplicate community-midnight-fridge-feast (PR 2379) took it out of the gallery: listed 150 -> 149, hidden +1.
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
