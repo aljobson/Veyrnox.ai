@@ -291,3 +291,56 @@ plumbing. The offline inventory and provenance metadata are scripts-only; no
 new full-contract import enters `/api/catalog`. No Worker budget is changed.
 CI must measure compiled size against 60,500 KiB; source-byte accounting is not
 a bundle-size proof.
+
+## Amendment 5: private content-addressed swap manifest (2026-11-17)
+
+Owner decision: keep clip entries and other creators' clip hashes out of Worker
+source. The source registry carries only public template ids and one
+`TEMPLATE_SWAP_CLIP_MANIFEST_SHA256` pin. Both ship empty; the switch remains
+absent and the O1 catalog offer remains inactive. Publication is a reviewed PR
+carrying ids plus the pin after the owner's verified upload. Reverting that PR
+rolls publication back. No price or catalog change is made here.
+
+The private R2 object is
+`template-swap-clips/manifests/<manifestSha256>.json`, containing
+`{ "version": 1, "clips": { "<id>": { ...validated source fields } } }`.
+The pin hashes its exact bytes. The existing SigV4 adapter reads it; status 200,
+a streaming 1 MiB ceiling, matching Web Crypto SHA-256, valid JSON, version 1
+and every entry passing `validTemplateSwapSource` are mandatory. Any invalid
+entry refuses the whole publication. A three-second deadline covers signing,
+headers and complete body consumption; abort cancels transport and the reader.
+An uncooperative transport or cancellation cannot hold the request open.
+
+The module cache is keyed by pin. It installs an in-flight promise before work
+starts so concurrent readers share one GET. Verified entries are frozen and
+kept for the isolate's lifetime, without a TTL. Failure is cached for ten
+seconds from settlement; the next request starts one shared retry. There is no
+stale-on-error fallback. Cost is one R2 GET per isolate per successfully loaded
+pin, then none; failures may retry after ten seconds. Each failed attempt logs
+`[template-swap] manifest unavailable` and a short reason code, never a key,
+hash or upstream message.
+
+Availability requires a current verified entry. Missing pin, absent entry,
+R2 failure, timeout, corruption or invalid schema returns 404
+`template_swap_not_found` before media signing, clip reads, admission, debit
+or provider submission. The anonymous catalog projection also returns 404 and
+no-store. Authenticated otherwise-identical accepted jobs can still replay:
+only a current verified entry participates in the stored source comparison.
+Replay never signs, admits, debits or dispatches. Signing for fresh accepted
+requests still uses the validated entry key with a 900-second expiry.
+
+The owner-run importer retains review hashes, tiers, origin exclusion, review
+packs and the 5.05-second cap. After all approved clips upload and read back,
+it serializes the manifest with sorted ids, conditionally uploads the
+content-addressed JSON and verifies full read-back. Only then does it emit
+`publishable/templateSwapClips.js` (ids plus pin) and `publishable/manifest.json`
+for private records. No manifest entries are emitted as JavaScript. Failed
+manifest uploads/read-back and dry runs emit nothing publishable.
+
+Checkout discrepancies: Amendment 4 from the prerequisite wording PR #2389
+is not present here; its number remains reserved, and its wording/price decision
+must be integrated separately. This amendment does not duplicate that decision.
+The checked-in size script already has a 60,700 KiB budget, despite the frozen
+plan's 60,500 KiB assertion. This work leaves that script unchanged; no budget
+increase is authorized or performed. Source-byte accounting cannot establish
+compiled Worker size; `worker-smoke` must measure the compiled result in CI.

@@ -1,3 +1,4 @@
+import { envConfig as r2EnvConfig } from '../../../packages/adapters/r2.js';
 import { loadTemplateSwapClip } from '../../../lib/templateSwapClipGate.js';
 import { loadTemplateClip } from '../../../lib/templateClipGate.js';
 /**
@@ -22,7 +23,7 @@ export async function GET(req) {
     const cfg = envConfig();
     const templateSwapId = req?.url ? new URL(req.url).searchParams.get('template_swap') : null;
     if (templateSwapId !== null) {
-        const clip = await loadTemplateSwapClip(templateSwapId, cfg);
+        const clip = await loadTemplateSwapClip(templateSwapId, cfg, { r2cfg: r2EnvConfig() });
         const headers = { 'cache-control': 'no-store' };
         return clip ? NextResponse.json(clip.template, { headers })
             : NextResponse.json({ error: 'template_swap_not_found' }, { status: 404, headers });
