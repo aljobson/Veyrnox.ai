@@ -231,4 +231,5 @@ export default {
     "chat.folderCount.other": "{count} chats",
     "chat.newChatFallback": "New chat",
     "chat.chatFallback": "Chat",
+    'chat.pinFailed': 'Could not change the pin. Try again.',
 } as const;

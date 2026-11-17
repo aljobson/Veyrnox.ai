@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleShe
 import { useAuth } from '../../auth/AuthProvider';
 import { touchTarget } from '../../lib/a11y';
 import { blocksErrorKey, fetchBlocks, unblockMember, type BlockedMember } from '../../lib/cinemaBlocks';
+import { SwipeRow } from '../../components/SwipeRow';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 
@@ -76,6 +77,9 @@ export default function Blocked() {
                     }
                     ListEmptyComponent={<Text style={styles.muted}>{t('blocks.none')}</Text>}
                     renderItem={({ item }) => (
+                        <SwipeRow fullSwipe disabled={busy !== null} actions={[
+                            { key: 'unblock', label: t('blocks.unblock'), accessibilityLabel: rawText(t('blocks.unblockTitle', { name: item.displayName })), tone: 'accent', onPress: () => unblock(item) },
+                        ]}>
                         <View style={styles.row}>
                             <View style={styles.text}>
                                 <Text style={styles.name}>{item.displayName}</Text>
@@ -92,6 +96,7 @@ export default function Blocked() {
                                 {busy === item.username ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.actionText}>{t('blocks.unblock')}</Text>}
                             </Pressable>
                         </View>
+                        </SwipeRow>
                     )}
                 />
             )}

@@ -85,4 +85,5 @@ export default {
     'oddlings.puppet.preparing': 'Preparing the moving preview',
     'oddlings.puppet.failed': 'This phone could not draw the moving preview. The picture is the same character.',
     'oddlings.puppet.offline': 'The moving preview needs the portrait once. Connect and try again.',
+    'oddlings.saved.deleteShort': 'Delete',
 } as const;

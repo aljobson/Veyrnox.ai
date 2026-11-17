@@ -11,6 +11,7 @@ import { formatLocale, t } from '../../lib/i18n';
 
 import { Text, TextField, Button, Card, Chip, Icon, themedStyles, useThemedStyles } from '../ui';
 import { radius } from '../../theme';
+import { SwipeRow, type SwipeAction } from '../SwipeRow';
 
 export function ChatLibraryScreen() {
     const styles = useThemedStyles(sheets);
@@ -55,6 +56,25 @@ export function ChatLibraryScreen() {
         ]);
     }
 
+    async function togglePin(thread: ChatThread) {
+        const next = !thread.pinned;
+        setThreads((current) => (current ?? []).map((candidate) => (candidate.id === thread.id ? { ...candidate, pinned: next } : candidate)));
+        try {
+            await chatApi(api).updateThread(thread.id, { pinned: next });
+        } catch {
+            setThreads((current) => (current ?? []).map((candidate) => (candidate.id === thread.id ? { ...candidate, pinned: thread.pinned } : candidate)));
+            Alert.alert(t('chat.pinFailed'));
+        }
+    }
+
+    function swipeActions(thread: ChatThread): SwipeAction[] {
+        const name = thread.title || t('chat.newChatFallback');
+        return [
+            { key: 'delete', label: t('chat.delete.button'), accessibilityLabel: rawText(t('chat.delete.label', { name })), tone: 'danger', onPress: () => confirmDelete(thread) },
+            { key: 'pin', label: thread.pinned ? t('chat.unpin') : t('chat.pin'), accessibilityLabel: rawText(`${thread.pinned ? t('chat.unpin') : t('chat.pin')}, ${name}`), tone: 'accent', onPress: () => void togglePin(thread) },
+        ];
+    }
+
     useFocusEffect(useCallback(() => { void load(); }, [load]));
 
     return (
@@ -91,6 +111,7 @@ export function ChatLibraryScreen() {
                     contentContainerStyle={styles.list}
                     ListEmptyComponent={<Text style={styles.muted}>{query.trim() && (threads ?? []).length > 0 ? t('chat.search.none') : t('chat.nochatsyet')}</Text>}
                     renderItem={({ item }) => (
+                        <SwipeRow actions={swipeActions(item)} fullSwipe>
                         <View style={styles.itemRow}>
                             <Card accessibilityRole="button" style={[styles.row, styles.rowMain]} onPress={() => router.replace({ pathname: '/chat/[id]', params: { id: item.id } })}>
                                 <View style={styles.badge}><Icon name="chat" /></View>
@@ -103,6 +124,7 @@ export function ChatLibraryScreen() {
                                 <Text style={styles.deleteText}>{t('chat.delete.button')}</Text>
                             </Button>
                         </View>
+                        </SwipeRow>
                     )}
                 />
             )}

@@ -8,6 +8,7 @@ import { LoadError } from '../../../components/publish/LoadError';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { SwipeRow } from '../../../components/SwipeRow';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { deleteQueue, fetchQueueList, queueAdminErrorKey, slotText, sortSlots, type Queue } from '../../../lib/publishQueueAdmin';
@@ -99,6 +100,9 @@ export default function Queues() {
                         </Pressable> : undefined
                     }
                     renderItem={({ item }) => (
+                        <SwipeRow fullSwipe actions={canWrite ? [
+                            { key: 'delete', label: t('queues.delete'), accessibilityLabel: rawText(t('queues.deleteLabel', { name: item.name })), tone: 'danger', onPress: () => confirmDelete(item) },
+                        ] : []}>
                         <View style={styles.row}>
                             <Pressable accessibilityRole="button" accessibilityLabel={rawText(`${item.name}. ${item.enabled ? t('queues.on') : t('queues.off')}`)} style={[styles.main, touchTarget]} onPress={() => router.push({ pathname: '/publish/queue-edit', params: { id: item.id } })}>
                                 <Text style={styles.name}>{item.name}</Text>
@@ -109,6 +113,7 @@ export default function Queues() {
                                 <Text style={styles.delText}>{t('queues.delete')}</Text>
                             </Pressable> : null}
                         </View>
+                        </SwipeRow>
                     )}
                 />
             )}
