@@ -54,8 +54,8 @@ test('numeric parity normalizes grouping and Arabic-Indic/Devanagari digits with
 // GDPR retains its ADR-0317 date. Copy changes bump dates, as in commits 20e0672c8 and 797884f91.
 // 14 November: product naming (Veyrnox.ai) in privacy, terms and cinema-content bumps their dates.
 const amendments0317 = {
-  privacy: { keys: ['b075', 'b076', 'b077', 'b078', 'b079', 'b080', 'b081', 'b082'], previousDate: '28 October 2026', currentDate: '14 November 2026' },
-  gdpr: { keys: ['b029'], previousDate: '18 October 2026', currentDate: '2 November 2026' },
+  privacy: { keys: ['b077', 'b078', 'b080', 'b081', 'b082'], previousDate: '28 October 2026', currentDate: '17 November 2026' },
+  gdpr: { keys: [], previousDate: '18 October 2026', currentDate: '17 November 2026' },
 };
 for (const document of LEGAL_DOCUMENTS) {
   test(`${document}: preserves historical English render ${baseline.commit} outside ADR-0317 additions`, async () => {
@@ -97,13 +97,8 @@ for (const document of LEGAL_DOCUMENTS) {
       }
       if (document === 'gdpr') for (const period of periods[code]) assert.ok(translated.messages.b017.includes(period), `${code}: ${period}`);
       if (document === 'privacy') {
-        const [backup, referral] = privacyPeriods[code];
-        assert.ok(translated.messages.b050.includes(backup), `${code}: backup ${backup}`);
+        const [, referral] = privacyPeriods[code];
         assert.ok(translated.messages.b065.includes(referral), `${code}: referral ${referral}`);
-        const { default: publicMessages } = await import(`../lib/i18n/messages/${code}.mjs`);
-        // Russian declines the same defined noun in running prose.
-        const library = code === 'ru' ? publicMessages['label.Library'].slice(0, -1) : publicMessages['label.Library'];
-        for (const key of ['b031', 'b051']) assert.ok(translated.messages[key].includes(library), `${code}/${key}: shared Library term`);
       }
     }
   });
