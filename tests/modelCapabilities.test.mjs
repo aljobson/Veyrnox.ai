@@ -50,7 +50,7 @@ const CATALOG = [
     // Crun text-to-image, added with the image adapter (ADR-0256).
     'crun:google/nano-banana', 'crun:bytedance/seedream-4',
     // Crun Kling, staged standby (2026-11-03).
-    'crun:kling/v3', 'crun:kling/v2-6',
+    'crun:kling/v3', 'crun:kling/v3-std', 'crun:kling/v2-6',
     'higgsfield:kling-video/v3.0/pro/image-to-video', 'higgsfield:kling-video/v2.6/pro/text-to-video',
     // Qwen 3 TTS Voice Design, staged inactive by migration 0235.
     'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
