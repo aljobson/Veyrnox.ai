@@ -27,6 +27,8 @@ import { visionAdmission } from './lib/editorVisionAdmission.mjs';
 import { readToken, validateClaims, verifyES256 } from './lib/supabaseJwt.js';
 import { isPublishApiPath, publishShellAvailable, publishAllowed } from './lib/social/publishFeature.js';
 import { isUnknownStaticPage } from './lib/unknownStaticPage.js';
+import { duplicateKeeperId } from './app/veyrnox/_lib/duplicateTemplateIds.js';
+import { publicTemplateId } from './app/veyrnox/_lib/templateIds.js';
 import { isLocalizedPath, localesEnabled, localizedPathKey, splitLocalePath } from './lib/i18n/locales.mjs';
 import { LOCALE_HEADER, PATH_HEADER } from './lib/i18n/headerNames.mjs';
 import { isAppLocalePath, isSmartLinkLocalePath, localeFromCookie } from './lib/i18n/localeCookie.mjs';
@@ -37,6 +39,10 @@ const POSTHOG_INGEST_PATH = '/ingest';
 const POSTHOG_INGEST_ORIGIN = 'https://eu.i.posthog.com';
 const CANONICAL_HOST = 'veyrnox.ai';
 const PUBLIC_METADATA_PATHS = new Set(['/robots.txt', '/sitemap.xml']);
+// A withdrawn duplicate template (app/veyrnox/_lib/duplicateTemplateIds.js) answers a real permanent redirect to the template kept,
+// before any page renders: /presets/<id> with an optional language prefix. One hour of caching so a withdrawal can be undone.
+const safeDecode = segment => { try { return decodeURIComponent(segment); } catch { return ''; } };
+const DUPLICATE_PRESET_PATH = /^(\/[a-z]{2}(?:-[A-Za-z0-9]{2,8})?)?\/presets\/([^/]+?)\/?$/;
 const PUBLIC_METADATA_CACHE = 'public, max-age=0, s-maxage=21600, stale-while-revalidate=86400';
 const NON_HTML_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
 
@@ -137,6 +143,15 @@ export async function middleware(req, event) {
         return response;
     }
     if (pathname !== '/api/v1' && !pathname.startsWith('/api/v1/')) {
+        const dup = DUPLICATE_PRESET_PATH.exec(pathname);
+        const keeper = dup && duplicateKeeperId(publicTemplateId(safeDecode(dup[2])));
+        if (keeper) {
+            // Built from our own origin and a fixed keeper id; nothing of the request path is reused except the language prefix.
+            const target = new URL(requestUrl.origin);
+            target.pathname = `${dup[1] ?? ''}/presets/${keeper}`;
+            target.search = requestUrl.search;
+            return NextResponse.redirect(target, { status: 301, headers: { 'cache-control': 'public, max-age=3600' } });
+        }
         const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))));
         const policy = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development');
         headers.set('x-nonce', nonce);
