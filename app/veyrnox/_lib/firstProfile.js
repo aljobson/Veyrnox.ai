@@ -46,14 +46,14 @@ export const hasRealAnswer = (profile) => !!profile && [profile.goal, profile.ro
 
 // Home start options in the order this person should see them. Goal puts its own area first; no answer keeps the default.
 const START_ORDER = {
-  creator: ['create', 'smart-cut', 'film', 'chat'],
-  business: ['create', 'film', 'chat', 'smart-cut'],
-  pro: ['film', 'create', 'smart-cut', 'chat'],
-  hobbyist: ['create', 'film', 'chat', 'smart-cut'],
-  beginner: ['create', 'chat', 'film', 'smart-cut'],
+  creator: ['create', 'audio', 'smart-cut', 'film', 'chat'],
+  business: ['create', 'film', 'audio', 'chat', 'smart-cut'],
+  pro: ['film', 'create', 'audio', 'smart-cut', 'chat'],
+  hobbyist: ['create', 'audio', 'film', 'chat', 'smart-cut'],
+  beginner: ['create', 'audio', 'chat', 'film', 'smart-cut'],
 };
-const DEFAULT_STARTS = ['create', 'chat', 'film', 'smart-cut'];
-const GOAL_START = { video: 'film', edit: 'smart-cut' };
+const DEFAULT_STARTS = ['create', 'audio', 'chat', 'film', 'smart-cut'];
+const GOAL_START = { video: 'film', audio: 'audio', edit: 'smart-cut' };
 
 export function orderStarts(r, goal) {
   const base = START_ORDER[r] ?? DEFAULT_STARTS;

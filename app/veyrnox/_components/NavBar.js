@@ -282,7 +282,7 @@ function AppSidebar({ sections, homeLabel, logoLabel, accountLabel, accountHref,
         </button>
       </div>
 
-      <nav aria-label={label} className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-6">
+      <nav aria-label={label} className="flex-1 overflow-y-auto overflow-x-hidden px-2 pb-20">
         {accountLabel && (
           <Link
             href={accountHref}

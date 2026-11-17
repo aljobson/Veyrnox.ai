@@ -18,6 +18,7 @@ function StarterIcon({ name }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       {name === 'create' && <><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="10" r="1.5" /><path d="m4 18 5-5 4 4 3-3 4 4" /></>}
+      {name === 'audio' && <><path d="M9 18V6l11-2v12" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></>}
       {name === 'chat' && <><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /><path d="M8 9h8M8 13h5" /></>}
       {name === 'film' && <><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M8 4v16M16 4v16M4 9h4m8 0h4M4 15h4m8 0h4" /></>}
       {name === 'smart-cut' && <><path d="m4 4 7 7M4 20l7-7" /><circle cx="4" cy="4" r="2" /><circle cx="4" cy="20" r="2" /><path d="m13 12 7-4M13 12l7 4" /></>}
@@ -30,6 +31,7 @@ function StarterIcon({ name }) {
 // the pointer, so they stay aqua.
 const STARTER_HUE = {
   create: 'bg-vx-accent/10 text-vx-accent',
+  audio: 'bg-vx-hue-rose/10 text-vx-hue-rose',
   chat: 'bg-vx-hue-sky/10 text-vx-hue-sky',
   film: 'bg-vx-hue-iris/10 text-vx-hue-iris',
   'smart-cut': 'bg-vx-hue-rose/10 text-vx-hue-rose',
@@ -78,6 +80,7 @@ export default function Explore() {
         <section aria-label={t('app.explore.start')} className="my-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {orderStarts(profile.ready ? profile.role : null, profile.ready ? profile.goal : null).filter((key) => FILM_STUDIO_ENABLED || key !== 'film').map((key, index) => (
             key === 'create' ? <StarterCard href="/app/create" key={key} label={t('label.Create')} description={t('app.explore.createStart')} icon="create" suggested={suggestedLabel(index)} />
+              : key === 'audio' ? <StarterCard href="/app/audio" key={key} label={t('app.audio.title')} description={t('app.explore.audioStart')} icon="audio" suggested={suggestedLabel(index)} />
               : key === 'chat' ? <StarterCard href="/app/chat" key={key} label={t('label.LLM Chat')} description={t('app.explore.chat')} icon="chat" suggested={suggestedLabel(index)} />
               : key === 'film' ? <StarterCard href="/app/film-studio" key={key} label={t('label.Film Studio')} description={t('app.explore.filmStart')} icon="film" suggested={suggestedLabel(index)} />
               : <StarterCard href="/app/library#smart-cut" key={key} label={t('app.explore.smartCut')} description={t('app.explore.smartCutStart')} icon="smart-cut" suggested={suggestedLabel(index)} />

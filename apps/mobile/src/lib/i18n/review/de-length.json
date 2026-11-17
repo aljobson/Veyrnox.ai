@@ -3516,6 +3516,12 @@
     "ratio": 1.61
   },
   {
+    "id": "audioHub.dub.title",
+    "english": "Lip sync and dubbing",
+    "translation": "Lippensynchronisation und Synchronisation",
+    "ratio": 2.05
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

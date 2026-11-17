@@ -31,7 +31,8 @@ const images = [
 const audio = [{ id: 'midnight-soul', name: 'Midnight Soul', category: 'MUSIC', modelId: 'suno', prompt: 'Soulful' }];
 let root: Root;
 const buttons = () => root.container.queryAll(n => n.props.accessibilityRole === 'button');
-const control = (label: string) => buttons().find(n => n.props.accessibilityLabel === label);
+// The Audio start option shares a label with the Audio filter chip; the chip is the one that carries selected state.
+const control = (label: string) => buttons().filter(n => n.props.accessibilityLabel === label).sort((a, b) => Number(b.props.accessibilityState?.selected !== undefined) - Number(a.props.accessibilityState?.selected !== undefined))[0];
 const titles = () => buttons().map(n => String(n.props.accessibilityLabel).split(',')[0]).filter(s => /^(Video \d|Forest Light|Pastel Corridor|Midnight Soul|Red Light)$/.test(s));
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const click = (label: string) => act(async () => control(label)!.props.onClick(event));
