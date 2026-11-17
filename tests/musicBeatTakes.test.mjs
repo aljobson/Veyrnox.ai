@@ -113,3 +113,13 @@ test('a single pass with the same finalized range as a group with room appends a
   assert.equal(track(d).takeGroups.length, 1); assert.equal(track(d).takeGroups[0].id, id); assert.equal(track(d).takeGroups[0].lanes.length, 3);
   assert.deepEqual(track(d).takeGroups[0].comp, [[0, 2]]);
 });
+test('single-pass preflight over a full one-step group is allowed; a longer take replaces it; an identical one is refused', () => {
+  let d = base();
+  for (let i = 0; i < 8; i++) d = takes.commitRecording(d, { trackId: 't2', start: 0, length: 240, single: true, takes: [{ asset: asset(`s${i}`, 1) }] });
+  assert.equal(track(d).takeGroups[0].lanes.length, 8);
+  assert.equal(takes.recordingCapacity(d, 't2', { start: 0, length: 240, single: true, preflight: true }).reason, '');
+  assert.throws(() => takes.commitRecording(d, { trackId: 't2', start: 0, length: 240, single: true, takes: [{ asset: asset('same', 1) }] }), /Take limit reached/);
+  const longer = takes.commitRecording(d, { trackId: 't2', start: 0, length: 3840, single: true, takes: [{ asset: asset('long', 4) }] });
+  assert.equal(validateBeat(longer).ok, true); assert.equal(track(longer).takeGroups.length, 1);
+  assert.equal(track(longer).takeGroups[0].length, 3840); assert.equal(track(longer).takeGroups[0].lanes.length, 1);
+});

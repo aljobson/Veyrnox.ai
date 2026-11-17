@@ -52,13 +52,15 @@ export const materializeGroup = (doc, trackId, groupId, now = Date.now()) => edi
 // identical-range group cannot be refused before recording. Commit then refuses without
 // replacing anything: the takes stay saved and pending, and Try again succeeds once a take
 // in that section is deleted (Discard also stays available).
-export function recordingCapacity(doc, trackId, { start, length, single = false }) {
+// `preflight` marks a single pass checked before its length is known: `length` is a 240-tick
+// placeholder, so it is never treated as an exact append target.
+export function recordingCapacity(doc, trackId, { start, length, single = false, preflight = false }) {
   const track = doc.tracks.find(t => t.id === trackId);
   let reason = '';
   if (doc.version !== 4 || track?.kind !== 'audio') reason = 'Arm an audio track to record.';
   if (![start, length].every(n => Number.isSafeInteger(n) && n % 240 === 0) || start < 0 || length < 240 || start + length > Math.min(512 * 3840, 600 * doc.tempo.bpm * 16)) reason = 'Recording exceeds the song limit.';
   if (reason) return { lanes: 0, reason };
-  const same = track.takeGroups?.find(g => g.start === start && g.length === length);
+  const same = single && preflight ? null : track.takeGroups?.find(g => g.start === start && g.length === length);
   const groups = (track.takeGroups || []).filter(g => !overlaps(g, start, length));
   if (!same && groups.length >= 16) reason = 'Take group limit reached — 16 groups per track.';
   // Count the actual surviving fragments, including a region split around the range.

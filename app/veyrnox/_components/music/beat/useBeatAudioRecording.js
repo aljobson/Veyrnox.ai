@@ -84,7 +84,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
     const availableSeconds = (BEAT_TAKE_BYTES - beatTakeBytes()) / (capture.current.context.sampleRate * 4);
     if (availableSeconds < 1) throw new Error('Recorded takes use 1 GB on this device. Free storage before recording.');
     const range = audioRecordingRange(current.current, locator);
-    const capacity = recordingCapacity(current.current, armed.current, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle });
+    const capacity = recordingCapacity(current.current, armed.current, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle, preflight: !range.cycle });
     if (!capacity.lanes) throw new Error(capacity.reason);
     return { ...range, maxSeconds: Math.min(600, availableSeconds) };
   }

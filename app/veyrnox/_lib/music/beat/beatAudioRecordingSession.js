@@ -24,7 +24,7 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
   const sr = capture.context.sampleRate, bpm = doc.tempo.bpm, recordingId = crypto.randomUUID();
   const startSec = tickSeconds(range.start, bpm), endSec = tickSeconds(range.start + range.length, bpm);
   const c0 = contextStart + (countIn ? tickSeconds(3840, bpm) : 0);
-  const capacity = recordingCapacity(doc, trackId, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle });
+  const capacity = recordingCapacity(doc, trackId, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle, preflight: !range.cycle });
   if (!capacity.lanes) throw new Error(capacity.reason);
   const previousLanes = doc.tracks.find(t => t.id === trackId).takeGroups?.find(g => g.id === capacity.appendTo)?.lanes.length || 0;
   const maxPasses = capacity.lanes, limit = recordingDurationLimit(range, bpm, sr, maxPasses), maxSeconds = limit.seconds;
