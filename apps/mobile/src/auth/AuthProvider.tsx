@@ -16,7 +16,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { fetch as expoFetch } from 'expo/fetch';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { createApiClient, API_BASE, type ApiClient } from '../lib/api';
 import { AUTH_REDIRECT_URL } from '../lib/config';
 import { apiTokenSource, isTransientRefreshFailure } from '../lib/auth/apiToken';
@@ -26,6 +26,7 @@ import { forgetMfaCleared } from '../lib/mfaCheck';
 import { bindCacheUser, clearExportFiles, userIdFromToken, wipeCache } from '../lib/appCache';
 import { cinemaProgressIdentity } from '../lib/cinemaProgress';
 import { clearRefreshToken, readRefreshToken, writeRefreshToken } from '../lib/auth/sessionStore';
+import { clearEmailConfirm, readConfirmVerifier } from '../lib/auth/confirmStore';
 import { forgetPendingLink } from '../lib/pendingLink';
 import {
     AuthError,
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [status, setStatus] = useState<Status>('loading');
     const [appleNativeAvailable, setAppleNativeAvailable] = useState(false);
     const sessionRef = useRef<Session | null>(null);
+    const oauthInFlight = useRef(false);
     const persistedRefresh = useRef<string | null>(null);
     const transientFailure = useRef(false);
     const dropped = useRef(false);
@@ -315,10 +317,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         async (provider: OAuthProvider) => {
             const gen = generationRef.current;
             const pkce = await createPkce();
-            const result = await WebBrowser.openAuthSessionAsync(
-                authorizeUrl(provider, pkce.challenge),
-                AUTH_REDIRECT_URL,
-            );
+            oauthInFlight.current = true;
+            let result: WebBrowser.WebBrowserAuthSessionResult;
+            try {
+                result = await WebBrowser.openAuthSessionAsync(authorizeUrl(provider, pkce.challenge), AUTH_REDIRECT_URL);
+            } finally {
+                oauthInFlight.current = false;
+            }
             if (result.type !== 'success') return;
             const code = new URL(result.url).searchParams.get('code');
             if (!code) throw new Error('oauth_no_code');
@@ -328,6 +333,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         [finishSignIn],
     );
+
+    // The link in the sign-up confirmation email returns here through the site's bridge as
+    // ai.veyrnox.app://auth/callback?code=... (ADR-0106). Exchange it with the verifier kept at sign-up.
+    useEffect(() => {
+        let lastCode = '';
+        const handle = (url: string | null | undefined) => {
+            if (!url || oauthInFlight.current || url.split(/[?#]/, 1)[0] !== AUTH_REDIRECT_URL) return;
+            let code: string | null = null;
+            try { code = new URL(url).searchParams.get('code'); } catch { return; }
+            if (!code || code === lastCode) return;
+            lastCode = code;
+            void (async () => {
+                const verifier = await readConfirmVerifier();
+                if (!verifier) return;
+                const gen = generationRef.current;
+                try {
+                    const adoptedGen = await finishSignIn(await exchangeAuthCode(code, verifier), gen);
+                    if (adoptedGen === null) return;
+                    await clearEmailConfirm();
+                    captureEvent('sign_in_completed', { method: 'email_confirm' });
+                } catch (err) {
+                    captureIssue('email_confirm_exchange_failed', { code: err instanceof AuthError ? err.code : 'unknown' });
+                }
+            })();
+        };
+        void Linking.getInitialURL().then(handle).catch(() => undefined);
+        const sub = Linking.addEventListener('url', (e) => handle(e.url));
+        return () => sub.remove();
+    }, [finishSignIn]);
 
     const signInWithEmail = useCallback(
         async (email: string, password: string, captchaToken: string) => {

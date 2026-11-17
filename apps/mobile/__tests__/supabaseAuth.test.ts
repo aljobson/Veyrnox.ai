@@ -2,7 +2,19 @@ import { AUTH_REDIRECT_URL, OAUTH_BRIDGE_URL } from '../src/lib/config';
 import { AuthError, authorizeUrl, exchangeAuthCode, refreshSession, signInWithIdToken } from '../src/lib/auth/supabaseAuth';
 import { toBase64Url } from '../src/lib/auth/pkce';
 
-jest.mock('expo-crypto', () => ({}));
+jest.mock('expo-crypto', () => ({
+    getRandomBytes: (n: number) => new Uint8Array(n).fill(7),
+    digestStringAsync: async () => 'ZGlnZXN0',
+    CryptoDigestAlgorithm: { SHA256: 'SHA256' },
+    CryptoEncoding: { BASE64: 'base64' },
+}));
+const mockStore = new Map<string, string>();
+jest.mock('expo-secure-store', () => ({
+    AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 1,
+    getItemAsync: async (k: string) => mockStore.get(k) ?? null,
+    setItemAsync: async (k: string, v: string) => { mockStore.set(k, v); },
+    deleteItemAsync: async (k: string) => { mockStore.delete(k); },
+}));
 
 const tokens = { access_token: 'a', refresh_token: 'r', expires_in: 3600 };
 
@@ -94,13 +106,14 @@ describe('passkey authentication transport', () => {
 
 import { resendSignupEmail } from '../src/lib/auth/supabaseAuth';
 describe('signup email resend', () => {
-    test('sends signup type and current captcha, without a password or PKCE fields', async () => {
+    test('sends signup type and current captcha, returning to the app through the site bridge, without a password', async () => {
         globalThis.fetch = jest.fn().mockResolvedValue(new Response('{}', { status: 200 }));
         await expect(resendSignupEmail('person@example.test', 'fresh-token')).resolves.toBeUndefined();
         const [url, init] = (globalThis.fetch as jest.Mock).mock.calls[0];
-        expect(url).toMatch(/\/auth\/v1\/resend$/);
+        expect(url).toMatch(/\/auth\/v1\/resend\?redirect_to=/);
+        expect(new URL(url).searchParams.get('redirect_to')).toBe(OAUTH_BRIDGE_URL);
         expect(init.method).toBe('POST');
-        expect(JSON.parse(init.body)).toEqual({ type: 'signup', email: 'person@example.test', gotrue_meta_security: { captcha_token: 'fresh-token' } });
+        expect(JSON.parse(init.body)).toEqual({ type: 'signup', email: 'person@example.test', gotrue_meta_security: { captcha_token: 'fresh-token' }, code_challenge: expect.any(String), code_challenge_method: 's256' });
     });
     test.each([[429, 'over_email_send_rate_limit'], [400, 'captcha_failed']])('preserves status and code (%s)', async (status, code) => {
         globalThis.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ error_code: code }), { status }));

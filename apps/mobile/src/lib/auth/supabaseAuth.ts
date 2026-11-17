@@ -1,5 +1,6 @@
 import { fetchWithTimeout } from '../fetchWithTimeout';
-import { config } from '../config';
+import { config, OAUTH_BRIDGE_URL } from '../config';
+import { beginEmailConfirm, challengeForResend } from './confirmStore';
 
 export interface Session {
     readonly accessToken: string;
@@ -72,12 +73,24 @@ export async function signUpWithPassword(
     captchaToken: string,
     now = Date.now(),
 ): Promise<Session | null> {
-    const body = await authPost('/auth/v1/signup', withCaptcha({ email, password }, captchaToken));
+    // The confirmation link must come back to the app, not open the website: it returns through our own bridge
+    // (the one origin Supabase always allows), which hands the PKCE code to the app (ADR-0106).
+    const challenge = await beginEmailConfirm();
+    const body = await authPost(confirmPath('/auth/v1/signup'), withCaptcha({ email, password, ...pkceFields(challenge) }, captchaToken));
     return body.access_token ? toSession(body, now) : null;
 }
 
 export async function resendSignupEmail(email: string, captchaToken: string): Promise<void> {
-    await authPost('/auth/v1/resend', withCaptcha({ type: 'signup', email }, captchaToken));
+    const challenge = await challengeForResend();
+    await authPost(confirmPath('/auth/v1/resend'), withCaptcha({ type: 'signup', email, ...pkceFields(challenge) }, captchaToken));
+}
+
+function confirmPath(path: string): string {
+    return `${path}?redirect_to=${encodeURIComponent(OAUTH_BRIDGE_URL)}`;
+}
+
+function pkceFields(challenge: string): Record<string, string> {
+    return { code_challenge: challenge, code_challenge_method: 's256' };
 }
 
 // Sign-in starts on our own site so iOS names veyrnox.ai in its sign-in prompt, not the
