@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
 import { audit } from '../scripts/audit-template-fidelity.mjs';
+import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test', PUBLIC_HOST: 'https://veyrnox.test' });
 const { POST } = await import('../app/api/v1/generations/route.js');
 const cs = Object.values(audit().contracts);
-const safe = cs.find(c => c.class === 'like-for-like-safe' && c.requiredReferences.imageMin === 1);
-const bound = cs.find(c => c.class === 'bound' && c.slotCount === 1 && c.prompt !== c.sourcePrompt);
+const safe = cs.find(c => c.class === 'like-for-like-safe' && c.requiredReferences.imageMin === 1 && !swapNeedsSourceVideo(c.sourcePrompt));
+const bound = cs.find(c => c.class === 'bound' && c.slotCount === 1 && c.prompt !== c.sourcePrompt && !swapNeedsSourceVideo(c.sourcePrompt));
 const blocked = cs.find(c => c.class === 'blocked-needs-video');
 const ref = { slot: 'image', origin: 'upload', key: 'uploads/example.png' };
 const bodyFor = c => ({ model_id: c.modelId, template_id: c.id, idempotency_key: 'template-fidelity-key', inputs: { prompt: c.photoPrompt, duration_seconds: c.duration, ...(c.aspect ? { aspect_ratio: c.aspect } : {}), ...(c.negativePrompt ? { negative_prompt: c.negativePrompt } : {}) }, references: [ref] });
@@ -54,7 +55,7 @@ for (const [name, body, error] of [
 for (const [name, body] of [
   ['valid audited request', bodyFor(safe)],
   ...['bound', 'like-for-like-safe'].map(kind => {
-    const c = cs.find(c => c.class === kind);
+    const c = cs.find(c => c.class === kind && !swapNeedsSourceVideo(c.sourcePrompt));
     return [`${kind} unchanged without template_id`, { ...bodyFor(c), template_id: undefined, preset: c.id }];
   }),
   ['custom blocked-preset edit without video token', { ...bodyFor(blocked), template_id: undefined, preset: blocked.id, inputs: { prompt: 'Custom landscape' } }],
