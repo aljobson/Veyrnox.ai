@@ -29,3 +29,12 @@ test('the rules are still read from the base branch, never the PR', () => {
     assert.match(wf, /git show origin\/__BASE__:CLAUDE\.md/);
     assert.match(wf, /sed -i "s\|__BASE__\|\$\{BASE\}\|g"/);
 });
+
+test('a reviewer stopped by billing is named in the error, not just "no result"', () => {
+    assert.match(wf, /- name: Why the review failed\n\s+id: why\n/);
+    assert.match(wf, /test\("credit balance\|billing\|quota\|spend limit\|insufficient"; "i"\)/);
+    assert.match(wf, /CLAUDE_BILLING: \$\{\{ steps\.why\.outputs\.billing \}\}/);
+    assert.match(wf, /CODEX_OUTCOME: \$\{\{ steps\.codex\.outcome \}\}/);
+    assert.match(wf, /is out of credit; top it up/);
+    assert.match(wf, /Quota exceeded/);
+});
