@@ -11,7 +11,7 @@ function hooks() {
   const slots = [], cleanups = []; let offset = 0, effects = [];
   const memo = (make, deps) => {
     const n = offset++, old = slots[n];
-    if (!old || deps.some((d, i) => d !== old.deps[i])) slots[n] = { deps, value: make() };
+    if (!old || !deps || deps.some((d, i) => d !== old.deps[i])) slots[n] = { deps, value: make() };
     return slots[n].value;
   };
   return {
@@ -25,12 +25,12 @@ function hooks() {
   };
 }
 function load(name, state, extra = {}) {
-  const source = readFileSync(new URL(`../app/veyrnox/_components/music/beat/${name}.jsx`, import.meta.url), 'utf8');
+  const source = readFileSync(new URL(`../app/veyrnox/_components/music/beat/${name}.${name.startsWith('use') ? 'js' : 'jsx'}`, import.meta.url), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
   const compiled = { exports: {} }, stubs = { react: state.react, './beatStyles': {},
     './BeatTakeWaveform': { __esModule: true, default: () => null }, '../../../_lib/music/beat/beatTakeOps.mjs': takeOps, ...extra };
   new Function('require', 'module', 'exports', code)(id => stubs[id] || require(id), compiled, compiled.exports);
-  return compiled.exports.default;
+  return compiled.exports.default || compiled.exports[name];
 }
 function* elements(node) {
   if (Array.isArray(node)) { for (const child of node) yield* elements(child); }
@@ -97,4 +97,85 @@ test('capture URL is a real static file outside every configured rewrite and red
   assert.equal(existsSync(new URL('../public/music', import.meta.url)), false);
   const capture = readFileSync(new URL('../app/veyrnox/_lib/music/beat/beatCapture.js', import.meta.url), 'utf8');
   assert.ok(capture.includes(`addModule('${url}')`));
+});
+
+test('pending take actions remain visible while disarmed; calibration is disabled during playback/finalization', async () => {
+  const state = hooks(), Panel = load('BeatRecordPanel', state, {
+    './BeatMeter': { __esModule: true, default: () => null }, 'next/dynamic': { __esModule: true, default: () => () => null },
+    '../../../_lib/music/beat/beatLatency.mjs': { readLatency: () => null },
+  });
+  let retried = 0, discarded = 0;
+  const recorder = { capture: { current: null }, error: 'Could not save recorded audio', recovery: [], devices: [], hasPending: () => true,
+    retry: () => retried++, discard: () => discarded++ };
+  let tree = state.render(Panel, { recorder, playback: {} });
+  const control = label => [...elements(tree)].find(e => e.type === 'button' && e.props.children === label);
+  control('Try again').props.onClick(); control('Discard these takes').props.onClick(); assert.equal(retried, 1); assert.equal(discarded, 1);
+  recorder.capture.current = { context: {}, analyser: {} };
+  for (const disabled of [true, false]) {
+    recorder.calibrationDisabled = disabled; tree = state.render(Panel, { recorder, playback: {} });
+    assert.equal(control('Calibrate').props.disabled, disabled);
+  }
+});
+
+test('recorder clears ended idle inputs, retains errors across disarm and clears session after retry/discard', async t => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: new EventTarget() });
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'window', previous); else delete globalThis.window; });
+  let ended, closed = 0, options, pending = false, recoveryReads = 0;
+  const reconciled = [];
+  const state = hooks();
+  const hook = load('useBeatAudioRecording', state, {
+    '../../../_lib/music/beat/beatCapture.js': { openBeatCapture: async (context, id, callbacks) => { ended = callbacks.onEnded; return { context, deviceId: id, close() { closed++; } }; } },
+    '../../../_lib/music/beat/beatLatency.mjs': { readLatency: () => null },
+    '../../../_lib/music/beat/beatTakeStore.js': { reconcileBeatTakes: async saved => { reconciled.push(saved); if (++recoveryReads === 1) throw Error('read failed'); }, pendingBeatTakes: () => [{ id: 'recoverable' }] },
+    '../../../_lib/music/beat/beatAudioSegments.mjs': { tickSeconds: () => 0 },
+    '../../../_lib/music/beat/beatAudioRecordingSession.js': { createAudioRecording: o => { options = o; return {
+      get error() { return pending ? 'disk failed' : ''; }, finishing: true,
+      retry: async () => { pending = false; o.onSettled(); o.onState({ status: 'armed', error: '' }); },
+      discard: async () => { pending = false; o.onSettled(); o.onState({ status: 'armed', error: '' }); },
+    }; } },
+  });
+  const current = { current: { id: 'beat', tracks: [{ id: 't2' }], tempo: { bpm: 120 } } };
+  const announce = () => {}, stop = async () => {}, audio = () => ({ instance: { context: {} }, resumed: Promise.resolve() });
+  let playing = false;
+  const render = () => state.render(() => hook(current, () => {}, announce, audio, stop, playing));
+  render(); await new Promise(resolve => setImmediate(resolve));
+  assert.match(render().error, /Couldn't read takes on this device — Retry/);
+  const opened = current.current; current.current = { ...opened, title: 'Unsaved edit' };
+  await render().retry(); assert.equal(render().error, ''); assert.equal(render().recovery.length, 1); assert.equal(reconciled.at(-1), opened);
+  await render().arm('t2'); let recorder = render(); assert.equal(recorder.armedId, 't2');
+  ended(); recorder = render(); assert.equal(recorder.armed(), null); assert.equal(recorder.capture.current, null);
+  assert.equal(recorder.armedId, null); assert.match(recorder.error, /Microphone disconnected — Arm again/); assert.equal(closed, 1);
+  await recorder.arm('t2'); recorder = render(); assert.equal(recorder.calibrationDisabled, false);
+  playing = true; assert.equal(render().calibrationDisabled, true); playing = false;
+  for (const action of ['retry', 'discard']) {
+    recorder = render(); recorder.begin({}, 0, false); assert.equal(render().calibrationDisabled, true);
+    options.onState({ status: 'finishing' }); assert.equal(render().calibrationDisabled, true);
+    pending = true; options.onState({ status: 'error', error: 'disk failed' });
+    await render().arm(null); recorder = render(); assert.equal(recorder.armedId, null); assert.equal(recorder.hasPending(), true); assert.equal(recorder.error, 'disk failed');
+    await recorder.arm('t2'); assert.equal(render().error, 'disk failed');
+    await render()[action](); recorder = render(); assert.equal(recorder.hasPending(), false); assert.equal(recorder.error, '');
+  }
+  state.cleanup();
+});
+
+test('My beats only finalizes a plain left-click, preserving browser modified-click behavior', async () => {
+  const source = readFileSync(new URL('../app/veyrnox/_components/music/beat/BeatEditor.jsx', import.meta.url), 'utf8');
+  const handler = /const back = <Link data-beat-live onClick=\{(async e => .*?)\} className/.exec(source)[1];
+  const events = [], playback = { finishRecording: async () => events.push('finish') }, project = { flushLatest: async () => events.push('save') }, router = { push: () => events.push('navigate') };
+  const click = new Function('playback', 'project', 'router', `return (${handler});`)(playback, project, router);
+  for (const patch of [{ button: 1 }, { button: 2 }, { metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }]) {
+    await click({ button: 0, preventDefault() { events.push('prevent'); }, ...patch }); assert.deepEqual(events, []);
+  }
+  await click({ button: 0, preventDefault() { events.push('prevent'); } }); assert.deepEqual(events, ['prevent', 'finish', 'save', 'navigate']);
+});
+
+test('unsaved version restore does not reconcile takes; normal playback can run with pending audio', () => {
+  const restore = readFileSync(new URL('../app/veyrnox/_components/music/beat/BeatVersionsPanel.jsx', import.meta.url), 'utf8');
+  assert.equal(restore.includes('reconcileBeatTakes'), false);
+  const playback = readFileSync(new URL('../app/veyrnox/_components/music/beat/useBeatPlayback.js', import.meta.url), 'utf8');
+  const condition = /if \((audioRecorderRef.current\?\.locked\(\).*?)\) \{ announce/.exec(playback)[1];
+  const blocked = new Function('audioRecorderRef', 'record', `return ${condition};`);
+  const ref = { current: { locked: () => false, hasPending: () => true } };
+  assert.equal(blocked(ref, { current: false }), false); assert.equal(blocked(ref, { current: true }), true);
 });

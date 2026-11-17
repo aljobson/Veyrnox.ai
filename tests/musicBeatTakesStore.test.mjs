@@ -9,7 +9,7 @@ import { addAudioTrack } from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
 import { commitRecording } from '../app/veyrnox/_lib/music/beat/beatTakeOps.mjs';
 import { takeAsset } from '../app/veyrnox/_lib/music/beat/beatAudioRecordingSession.js';
 const row = (id = 'new') => ({ id, samples: new Float32Array(48000), sampleRate: 48000, beatId: 'beat', label: 'Recorded', state: 'pending', pending: { recordingId: 'run' } });
-function storage() { const rows = new Map(); store.configureBeatTakeStorage({ list: async () => [...rows.values()], put: async r => { rows.set(r.id, structuredClone(r)); return true; } }); return rows; }
+function storage() { const rows = new Map(), states = new Map(); store.configureBeatTakeStorage({ list: async () => [...rows.values()], listState: async () => [...states.values()], putState: async r => { states.set(r.id, r); return true; }, put: async r => { rows.set(r.id, structuredClone(r)); return true; } }); return { rows, states }; }
 test('local registry normalizes both origins; shelf changes keep recorded audio and notify', async () => {
   storage(); configureShelfStorage({ list: async () => [{ ...row('shelf'), label: 'Shelf' }, { ...row('new'), label: 'Collision' }], put: async () => true, remove: async () => true });
   let changes = 0; const unsubscribe = subscribeLocalTakes(() => changes++);
@@ -23,7 +23,9 @@ test('recovery matches immutable refs and beat id, never reused document asset k
   await store.reconcileBeatTakes({ id: 'beat', assets: { a1: { source: 'take', ref: 'old' } } }); assert.equal(store.getBeatTake('new').state, 'pending');
   await store.reconcileBeatTakes({ id: 'other', assets: { a1: { source: 'take', ref: 'new' } } }); assert.equal(store.getBeatTake('new').state, 'pending');
   const saved = { id: 'beat', assets: { a2: { source: 'take', ref: 'new' } } };
-  await store.reconcileBeatTakes({ id: 'beat', assets: {} }, [saved]); assert.equal(disk.get('new').state, 'committed');
+  await store.reconcileBeatTakes({ id: 'beat', assets: {} }, [saved]); assert.equal(store.getBeatTake('new').state, 'pending', 'unsaved versions cannot retire a take');
+  await store.reconcileBeatTakes(saved); assert.equal(disk.states.get('new').state, 'committed');
+  assert.equal(disk.rows.get('new').state, 'pending', 'lifecycle change never rewrites audio');
   await store.reconcileBeatTakes({ id: 'beat', assets: {} }); assert.deepEqual(store.pendingBeatTakes('beat'), []);
   await store.discardBeatTakes(['new']); assert.equal(store.getBeatTake('new').state, 'committed');
   await store.putBeatTake(row('discard')); await store.discardBeatTakes(['discard']); assert.equal(store.getBeatTake('discard').state, 'discarded');
@@ -39,4 +41,54 @@ test('recorded takes can be copied through the existing device copy eligibility 
 test('failed persistence never reports a take saved in memory', async () => {
   store.configureBeatTakeStorage({ list: async () => [], put: async () => false });
   await assert.rejects(store.putBeatTake(row()), /Could not save/); assert.equal(store.getBeatTake('new'), null);
+});
+
+test('append checkpoints persist linear bytes, assemble on reload and keep lifecycle writes small', async () => {
+  const audio = new Map(), chunks = new Map(), states = new Map(); let written = 0;
+  const adapter = { list: async () => [...audio.values()], put: async r => { audio.set(r.id, r); written += r.samples.length; return true; },
+    listChunks: async () => [...chunks.values()], putChunk: async r => { chunks.set(r.id, structuredClone(r)); written += r.samples.length; return true; },
+    listState: async () => [...states.values()], putState: async r => { assert.deepEqual(Object.keys(r).sort(), ['id', 'state']); states.set(r.id, r); return true; } };
+  store.configureBeatTakeStorage(adapter);
+  for (let i = 0; i < 3; i++) await store.appendBeatTake({ ...row(), samples: new Float32Array(10).fill(i + 1), pending: { length: (i + 1) * 240 } }, i * 10);
+  assert.equal(store.beatTakeBytes(), 120);
+  const final = { ...row(), samples: Float32Array.from({ length: 35 }, (_, i) => Math.min(4, Math.floor(i / 10) + 1)) };
+  await store.putBeatTake(final); await store.putBeatTake(final);
+  assert.equal(written, 35, 'commit and retry never rewrite the durable prefix');
+  store.configureBeatTakeStorage(adapter); await store.hydrateBeatTakes();
+  assert.deepEqual(store.getBeatTake('new').samples, final.samples);
+  await store.reconcileBeatTakes({ id: 'beat', assets: { a1: { source: 'take', ref: 'new' } } });
+  assert.equal(written, 35); assert.equal(states.get('new').state, 'committed');
+  store.configureBeatTakeStorage(adapter); await store.hydrateBeatTakes();
+  assert.equal(store.getBeatTake('new').state, 'committed'); assert.deepEqual(store.pendingBeatTakes('beat'), []);
+});
+test('hydrate retries a failed read rather than caching an empty device forever', async () => {
+  let attempts = 0;
+  store.configureBeatTakeStorage({ list: async () => { if (++attempts === 1) throw Error('blocked'); return [row()]; } });
+  await assert.rejects(store.hydrateBeatTakes(), /blocked/);
+  await store.hydrateBeatTakes(); assert.equal(attempts, 2); assert.equal(store.pendingBeatTakes('beat').length, 1);
+});
+test('beat strict reads reject IndexedDB errors while shelf reads retain their fallback', async t => {
+  const db = await import('../app/veyrnox/_lib/music/instrumentTakeDb.js');
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB');
+  Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: { open() {
+    const request = { error: Error('read blocked') }; queueMicrotask(() => request.onerror()); return request;
+  } } });
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'indexedDB', previous); else delete globalThis.indexedDB; });
+  await assert.rejects(db.listSavedTakesStrict('beatTakes'), /read blocked/);
+  assert.deepEqual(await db.listSavedTakes('shelf'), []);
+});
+test('only lifecycle transactions get a 10 second timeout; audio and shelf writes keep their original lifetime', async t => {
+  const db = await import('../app/veyrnox/_lib/music/instrumentTakeDb.js');
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'indexedDB'), realTimer = globalThis.setTimeout, timers = [];
+  t.mock.method(globalThis, 'setTimeout', (fn, delay) => { timers.push(delay); return realTimer(fn, delay); });
+  Object.defineProperty(globalThis, 'indexedDB', { configurable: true, value: { open() {
+    const request = { result: { close() {}, transaction() {
+      const tx = { objectStore: () => ({ put: () => ({}) }) }; queueMicrotask(() => tx.oncomplete()); return tx;
+    } } }; queueMicrotask(() => request.onsuccess()); return request;
+  } } });
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'indexedDB', previous); else delete globalThis.indexedDB; });
+  for (const name of ['shelf', 'takes', 'beatTakes', 'beatTakeChunks', 'beatTakeState']) {
+    timers.length = 0; assert.equal(await db.putSavedTake(name, { id: 'test' }), true);
+    assert.equal(timers.includes(10000), name === 'beatTakeState', name);
+  }
 });

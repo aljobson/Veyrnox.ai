@@ -70,7 +70,7 @@ test('finalization is idempotent and releases the lock with suspended context, p
   const capture = { context, ended: false, subscribe(fn) { receive = fn; return () => {}; }, flush() { throw Error('must not flush'); } };
   const rows = [];
   const session = createAudioRecording({ doc, trackId: 't2', range: { start: 0, length: 7680, cycle: false }, capture, rtt: 0.1, contextStart: 0, countIn: false,
-    current: () => doc, edit(change) { doc = change(doc); return 'undo'; }, announce() {}, onState(s) { status = s.status; }, stop() {}, persist: async row => rows.push(row) });
+    current: () => doc, edit(change) { doc = change(doc); return 'undo'; }, announce() {}, onState(s) { status = s.status; }, stop() {}, checkpointPersist: async () => {}, persist: async row => rows.push(row) });
   session.window({ fromSec: 0, toSec: 4, contextTime: 0 }); receive({ frame: 0, samples: new Float32Array(200).fill(0.25) });
   const first = session.finish(); assert.equal(session.finish(), first); await first;
   assert.equal(status, 'armed'); assert.ok(rows.length); assert.ok(doc.tracks[1].takeGroups.length);
@@ -98,7 +98,7 @@ test('suspension during final batch still persists, commits and releases the rec
   const capture = { context, ended: false, subscribe(fn) { receive = fn; return () => {}; }, flush() { context.state = 'suspended'; return new Promise(() => {}); } };
   const rows = [];
   const session = createAudioRecording({ doc, trackId: 't2', range: { start: 0, length: 7680, cycle: false }, capture, rtt: 0, contextStart: 0, countIn: false,
-    current: () => doc, edit(change) { doc = change(doc); return 'undo'; }, announce() {}, onState(s) { status = s.status; }, stop() {}, persist: async row => rows.push(row) });
+    current: () => doc, edit(change) { doc = change(doc); return 'undo'; }, announce() {}, onState(s) { status = s.status; }, stop() {}, checkpointPersist: async () => {}, persist: async row => rows.push(row) });
   session.window({ fromSec: 0, toSec: 4, contextTime: 0 }); receive({ frame: 0, samples: new Float32Array(200).fill(0.25) });
   await session.finish(); assert.equal(status, 'armed'); assert.equal(rows.length, 1); assert.equal(doc.tracks[1].takeGroups.length, 1);
 });
@@ -140,14 +140,83 @@ for (const cycle of [false, true]) test(`96 kHz ${cycle ? 'cycle' : 'checkpointe
   let doc = addAudioTrack(setTempo(createBeat({ id: crypto.randomUUID(), now: 1 }), 120)), receive, finish;
   const capture = { context: { sampleRate, currentTime: limit + 1, state: 'suspended' }, subscribe(fn) { receive = fn; return () => {}; } };
   const session = createAudioRecording({ doc, trackId: 't2', range: { start: 0, length: 313 * 1920, cycle }, capture, rtt: 0, contextStart: 0, countIn: false,
-    current: () => doc, edit(change) { doc = change(doc); return true; }, announce: m => messages.push(m), onState() {}, stop() { finish = session.finish(); }, persist: async row => rows.push(row) });
+    current: () => doc, edit(change) { doc = change(doc); return true; }, announce: m => messages.push(m), onState() {}, stop() { finish = session.finish(); }, checkpointPersist: async () => {}, persist: async row => rows.push(row) });
   session.window({ fromSec: 0, toSec: 313, contextTime: 0 });
   // The final block straddles the size boundary. Earlier absent chunks are silence.
   receive({ frame: limit * sampleRate - 2, samples: new Float32Array([0.25, 0.5, 0.75, 1]) }); await finish;
-  assert.equal(rows.length, cycle ? 1 : 2);
+  assert.equal(rows.length, 1);
   for (const row of rows) assert.equal(row.samples.length, limit * sampleRate);
   assert.equal(rows[0].samples.at(-1), 0.5); assert.ok(44 + rows[0].samples.length * 2 <= 60e6);
   assert.equal(doc.tracks[1].takeGroups[0].length, (cycle ? 313 : 312) * 1920, 'cycle keeps its range; single pass ends at the size limit');
   assert.equal(doc.tracks[1].regions[0].length, 312 * 1920, 'the absent remainder is silent, never looped');
   assert.match(messages.at(-2), /60 MB/);
+});
+
+test('partial 600 second take allocates only captured samples, and sparse gaps keep their clock', () => {
+  const windows = [{ fromSec: 0, toSec: 600, contextTime: 0 }];
+  const chunks = [{ frame: 0, samples: new Float32Array(48000).fill(1) }, { frame: 48128, samples: new Float32Array(128).fill(2) }];
+  const [part] = splitPasses(chunks, windows, { sr, groupStartSec: 0, groupEndSec: 600, cycle: false });
+  assert.equal(part.samples.length, 48256); assert.equal(part.samples[48000], 0); assert.equal(part.samples[48128], 2);
+  const [compact] = splitPasses(chunks.slice(1), windows, { sr, groupStartSec: 0, groupEndSec: 600, compact: true });
+  assert.equal(compact.offset, 48128); assert.equal(compact.samples.length, 128);
+});
+test('worklet flushes before an absent input block and stamps the next batch after the gap', async () => {
+  const { readFile } = await import('node:fs/promises'), { runInNewContext } = await import('node:vm');
+  let Processor; const messages = [];
+  const world = { currentFrame: 0, Float32Array, AudioWorkletProcessor: class { port = { postMessage: m => messages.push(m) }; }, registerProcessor(name, p) { Processor = p; } };
+  runInNewContext(await readFile(new URL('../public/audio-worklets/beat-capture-worklet.js', import.meta.url), 'utf8'), world);
+  const processor = new Processor();
+  processor.process([[new Float32Array(128).fill(1)]]); world.currentFrame = 128; processor.process([[]]);
+  assert.equal(messages[0].frame, 0); assert.equal(messages[0].samples.length, 128);
+  world.currentFrame = 256; processor.process([[new Float32Array(128).fill(2)]]); processor.send();
+  assert.equal(messages[1].frame, 256); assert.equal(messages[1].samples[0], 2);
+});
+function recordingHarness(options = {}) {
+  let doc = addAudioTrack(setTempo(createBeat({ id: crypto.randomUUID(), now: 1 }), 120)), receive, state, settled = 0, stops = 0;
+  const capture = { context: { sampleRate: 100, currentTime: 30, state: 'suspended' }, subscribe(fn) { receive = fn; return () => {}; } };
+  const session = createAudioRecording({ doc, trackId: 't2', range: { start: 0, length: 600 * 1920, cycle: false }, capture, rtt: 0, contextStart: 0, countIn: false,
+    current: () => doc, edit(change) { doc = change(doc); return true; }, announce() {}, onState(s) { state = s; }, stop() { stops++; }, onSettled() { settled++; }, persist: async () => {}, checkpointPersist: async () => {}, ...options });
+  session.window({ fromSec: 0, toSec: 600, contextTime: 0 });
+  return { session, receive: chunk => receive(chunk), get state() { return state; }, get settled() { return settled; }, get stops() { return stops; } };
+}
+test('10 s checkpoints split/write only new audio, with offsets, and final materialization runs once', async () => {
+  const chunks = [], final = [];
+  const h = recordingHarness({ checkpointPersist: async (row, offset) => chunks.push({ row, offset }), persist: async row => final.push(row) });
+  for (let i = 0; i < 3; i++) h.receive({ frame: i * 1000, samples: new Float32Array(1000).fill(i + 1) });
+  await h.session.finish();
+  assert.deepEqual(chunks.map(c => [c.offset, c.row.samples.length]), [[0, 1000], [1000, 1000], [2000, 1000]]);
+  assert.equal(final.length, 1); assert.equal(final[0].samples.length, 3000); assert.equal(final[0].samples[2000], 3);
+});
+test('checkpoint exceptions surface a failure and stop; empty commit clears failure and settles', async () => {
+  const h = recordingHarness();
+  assert.doesNotThrow(() => h.receive({ frame: 0, get samples() { throw Error('checkpoint failed'); } }));
+  assert.equal(h.session.error, 'checkpoint failed'); assert.equal(h.stops, 1);
+  await h.session.finish(); assert.equal(h.session.error, ''); assert.equal(h.settled, 1); assert.equal(h.state.status, 'armed');
+});
+test('async checkpoint rejection stops capture and successful final persistence clears it', async () => {
+  const h = recordingHarness({ checkpointPersist: async () => { throw Error('disk failed'); } });
+  h.receive({ frame: 0, samples: new Float32Array(1000) });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.session.error, 'disk failed'); assert.equal(h.stops, 1);
+  await h.session.finish(); assert.equal(h.session.error, ''); assert.equal(h.settled, 1);
+});
+test('discard after a failed commit retires durable take ids and clears pending failure', async () => {
+  let ids; const h = recordingHarness({ edit: () => false, discard: async values => { ids = values; } });
+  h.receive({ frame: 0, samples: new Float32Array(200) }); await h.session.finish();
+  assert.match(h.session.error, /Try again/);
+  await h.session.discard(); assert.equal(ids.length, 1); assert.equal(h.session.error, ''); assert.equal(h.settled, 1); assert.equal(h.state.error, '');
+});
+
+test('a failed checkpoint prevents later queued prefixes from hiding unsaved audio at commit', async () => {
+  const store = await import('../app/veyrnox/_lib/music/beat/beatTakeStore.js');
+  const disk = new Map(), chunks = new Map(); let attempts = 0;
+  const adapter = { list: async () => [...disk.values()], put: async row => { disk.set(row.id, structuredClone(row)); return true; },
+    listChunks: async () => [...chunks.values()], putChunk: async chunk => { if (++attempts === 2) return false; chunks.set(chunk.id, structuredClone(chunk)); return true; } };
+  store.configureBeatTakeStorage(adapter);
+  const h = recordingHarness({ persist: store.putBeatTake, checkpointPersist: store.appendBeatTake });
+  for (let i = 0; i < 3; i++) h.receive({ frame: i * 1000, samples: new Float32Array(1000).fill(i + 1) });
+  await h.session.finish(); assert.equal(h.session.error, '');
+  store.configureBeatTakeStorage(adapter); await store.hydrateBeatTakes();
+  const [row] = store.beatTakes();
+  assert.equal(row.samples.length, 3000); assert.equal(row.samples[0], 1); assert.equal(row.samples[1000], 2); assert.equal(row.samples[2000], 3);
 });

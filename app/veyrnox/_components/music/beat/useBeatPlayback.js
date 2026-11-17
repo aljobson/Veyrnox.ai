@@ -53,7 +53,7 @@ export function useBeatPlayback(current, edit, announce, options) {
     finishing.current = Promise.resolve(audioFinished).then(() => current.current || finalized).finally(() => { finishing.current = null; });
     return finishing.current;
   }, [current]);
-  const audioRecorder = useBeatAudioRecording(current, edit, announce, audio, stop);
+  const audioRecorder = useBeatAudioRecording(current, edit, announce, audio, stop, runId !== null || loading);
   useImperativeHandle(audioRecorderRef, () => audioRecorder);
   useEffect(() => subscribeAssets(playbackHoldObserver({ current: () => current.current, state: assetState,
     playing: () => !!(active.current || starting.current), stop, announce })), [current, stop, announce]);
@@ -69,7 +69,7 @@ export function useBeatPlayback(current, edit, announce, options) {
   }
   async function toggle() {
     if (active.current || starting.current) { stop(); return; }
-    if (audioRecorderRef.current?.locked() || audioRecorderRef.current?.hasPending()) { announce('Finish or retry the recorded take before playing.'); return; }
+    if (audioRecorderRef.current?.locked() || (record.current && audioRecorderRef.current?.hasPending())) { announce('Finish or retry the recorded take before playing.'); return; }
     const audioRecording = record.current && !!audioRecorderRef.current?.armed();
     const isRecording = audioRecording || (record.current && editTrack(current.current, optionsRef.current?.editTrackId).kind === 'midi');
     let audioRange, recordContextStart;

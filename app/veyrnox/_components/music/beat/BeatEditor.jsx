@@ -116,7 +116,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
     if (nextId) { playback.stop(); router.push(`/app/music/beats/${nextId}`); }
     else setCopying(false);
   }
-  const back = <Link data-beat-live onClick={async e => { e.preventDefault(); await playback.finishRecording(); await project.flushLatest(); router.push('/app/music/beats'); }} className={`${button} inline-flex items-center`} href="/app/music/beats">My beats</Link>;
+  const back = <Link data-beat-live onClick={async e => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); await playback.finishRecording(); await project.flushLatest(); router.push('/app/music/beats'); }} className={`${button} inline-flex items-center`} href="/app/music/beats">My beats</Link>;
   if (project.error) return <div className="space-y-4 p-6"><h1 className="text-2xl font-bold">{project.error === 'damaged' ? 'This beat is damaged' : "This beat isn't on this device"}</h1>{back}</div>;
   if (!doc) return <p className="p-6" aria-busy="true">Loading beat…</p>;
   const title = titleDraft ?? doc.title;
@@ -174,7 +174,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
     <BeatArrangement recording={playback.recordingRun} armedId={playback.audioRecorder.armedId} onArm={playback.audioRecorder.arm} automationLanes={automationLanes} onAutomation={showAutomation} ai={ai} onAi={aiRequest.open} key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
       onSelectRegion={(id) => { setSelectedRegionId(id); setRollOpen(true); }} setEditTrackId={setEditTrackId} locator={locator} setLocator={setLocator}
       playhead={playback.playhead} runId={playback.runId} announce={announce} />
-    {(playback.audioRecorder.armedId || playback.audioRecorder.error || playback.audioRecorder.recovery.length > 0) && <BeatRecordPanel recorder={playback.audioRecorder} playback={playback} announce={announce} />}
+    {(playback.audioRecorder.armedId || playback.audioRecorder.hasPending() || playback.audioRecorder.error || playback.audioRecorder.recovery.length > 0) && <BeatRecordPanel recorder={playback.audioRecorder} playback={playback} announce={announce} />}
     {mixerOpen ? <BeatMixer recording={playback.recordingRun} doc={doc} edit={edit} engine={playback.engine} close={() => setMixerOpen(false)} onAutomation={showAutomation} /> : track.kind === 'midi' ? <>
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={playback.record} onChange={(e) => playback.setRecord(e.target.checked)} />Record</label>

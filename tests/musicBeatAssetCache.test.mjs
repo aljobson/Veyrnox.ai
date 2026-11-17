@@ -34,6 +34,8 @@ const hooks = registerHooks({ load(url, context, next) {
     source: 'export const { offline, decodes, loadSong, cancelSongLoads } = globalThis.beatCacheFixture;' };
   return next(url, context);
 } });
+const store = await import('../app/veyrnox/_lib/music/beat/beatTakeStore.js');
+store.configureBeatTakeStorage({ list: async () => [], put: async () => true });
 const assets = await import('../app/veyrnox/_lib/music/beat/beatAssets.js');
 const { loadSongBuffers } = await import('../app/veyrnox/_lib/music/beat/beatMixdown.js');
 hooks.deregister();
@@ -167,4 +169,15 @@ test('recorded take cache survives shelf removals and keeps beat provenance', as
   assert.equal((await assets.loadAssetBuffers(asset, 120)).origin, 'beat');
   shelf.removeShelfTake('unrelated'); assert.equal(assets.cachedAsset(asset, 120), buffer); assert.equal(assets.assetState(asset, 120).status, 'ready');
   assets.clearBeatAssets();
+});
+
+test('a device read failure is retryable and never poisons a take as permanently deleted', async () => {
+  assets.clearBeatAssets(); let reads = 0;
+  const row = { id: 'retry-take', label: 'Recorded', samples: new Float32Array(48000), sampleRate: 48000 };
+  store.configureBeatTakeStorage({ list: async () => { if (++reads === 1) throw Error('IndexedDB unavailable'); return [row]; } });
+  const asset = { source: 'take', ref: row.id, name: row.label, durationSec: 1, sourceChannels: 1, encodedBytes: 0, bpm: null };
+  assert.equal(await assets.loadAsset(asset, 120), null);
+  assert.deepEqual(assets.assetState(asset, 120), { status: 'missing', reason: "Couldn't read takes on this device — Retry", permanent: false });
+  assets.retryBeatAssets(asset, 120); assert.ok(await assets.loadAsset(asset, 120)); assert.equal(reads, 2);
+  assert.equal(assets.assetState(asset, 120).status, 'ready'); assets.clearBeatAssets();
 });

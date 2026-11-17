@@ -13,7 +13,7 @@ class BeatCapture extends AudioWorkletProcessor {
   }
   process(inputs) {
     const channels = inputs[0];
-    if (!channels?.[0]) return true;
+    if (!channels?.[0]?.length) { this.send(); return true; }
     for (let i = 0; i < channels[0].length; i++) {
       if (!this.used) this.frame = currentFrame + i;
       this.samples[this.used++] = channels[1] ? (channels[0][i] + channels[1][i]) / 2 : channels[0][i];

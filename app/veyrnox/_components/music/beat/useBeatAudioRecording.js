@@ -6,8 +6,8 @@ import { createAudioRecording, audioRecordingRange, takeAsset } from '../../../_
 import { commitRecording, recordingCapacity } from '../../../_lib/music/beat/beatTakeOps.mjs';
 import { BEAT_TAKE_BYTES, beatTakeBytes, hydrateBeatTakes, documentHasTake, pendingBeatTakes, reconcileBeatTakes, discardBeatTakes } from '../../../_lib/music/beat/beatTakeStore.js';
 import { tickSeconds } from '../../../_lib/music/beat/beatAudioSegments.mjs';
-export function useBeatAudioRecording(current, edit, announce, audio, stop) {
-  const lastArm = useRef(null);
+export function useBeatAudioRecording(current, edit, announce, audio, stop, playing = false) {
+  const lastArm = useRef(null), recoveryFailed = useRef(false), recoveryDocument = useRef(current.current);
   const capture = useRef(null), session = useRef(null), intent = useRef(0), armed = useRef(null), mounted = useRef(true);
   const [state, setState] = useState({ status: 'idle', seconds: 0, pass: 1, error: '' });
   const [armedId, setArmedId] = useState(null), [deviceId, setDeviceId] = useState('default'), [devices, setDevices] = useState([]), [recovery, setRecovery] = useState([]);
@@ -17,29 +17,54 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop) {
   async function refreshDevices() {
     try { const all = await navigator.mediaDevices?.enumerateDevices(); if (mounted.current) setDevices((all || []).filter(d => d.kind === 'audioinput')); } catch { /* Input remains usable without a device list. */ }
   }
+  const pendingError = () => session.current?.error || '';
+  const idleStatus = () => capture.current ? 'armed' : 'idle';
   async function arm(trackId, selectedDevice = deviceId) {
     if (session.current && !session.current.finishing) await latestStop.current();
     const token = ++intent.current;
     capture.current?.close(); capture.current = null; armed.current = null; setArmedId(null);
-    if (!trackId) { show({ status: 'idle', error: '' }); return; }
-    lastArm.current = trackId; armed.current = trackId; setArmedId(trackId); show({ status: 'opening', error: '' });
+    if (!trackId) { show({ status: 'idle', error: pendingError() }); return; }
+    lastArm.current = trackId; armed.current = trackId; setArmedId(trackId); show({ status: 'opening', error: pendingError() });
+    function disconnected() {
+      if (token !== intent.current) return;
+      capture.current?.close(); capture.current = null; armed.current = null; setArmedId(null);
+      const message = 'Microphone disconnected — Arm again';
+      show({ status: 'error', error: pendingError() || message }); announce(message);
+    }
     try {
       const { instance, resumed } = audio(); await resumed;
       const input = await openBeatCapture(instance.context, selectedDevice, { onEnded: () => {
-        announce('Input disconnected — recording stopped and audio kept.'); void latestStop.current();
+        if (token !== intent.current) return;
+        if (['recording', 'finishing'].includes(stateRef.current.status)) {
+          announce('Input disconnected — recording stopped and audio kept.');
+          void latestStop.current().then(() => disconnected());
+        } else disconnected();
       } });
       if (token !== intent.current || !mounted.current) { input.close(); return; }
-      capture.current = input; show({ status: 'armed', error: '' }); await refreshDevices();
+      capture.current = input; if (input.ended) { disconnected(); return; } show({ status: 'armed', error: pendingError() }); await refreshDevices();
     } catch (e) {
       if (token !== intent.current) return;
       armed.current = null; setArmedId(null); show({ status: 'error', error: e.message }); announce(e.message);
     }
   }
+  async function refreshRecovery(active = () => mounted.current) {
+    try {
+      const saved = recoveryDocument.current;
+      await reconcileBeatTakes(saved);
+      if (active()) { recoveryFailed.current = false; setRecovery(pendingBeatTakes(saved.id)); }
+    } catch {
+      if (active()) {
+        recoveryFailed.current = true;
+        const message = "Couldn't read takes on this device — Retry";
+        show({ error: message }); announce(message);
+      }
+    }
+  }
   const projectId = current.current?.id;
   useEffect(() => {
     if (!projectId) return;
-    let active = true;
-    void reconcileBeatTakes(current.current).then(() => { if (active) setRecovery(pendingBeatTakes(projectId)); }).catch(e => announce(e.message));
+    let active = true; recoveryDocument.current = current.current;
+    void refreshRecovery(() => active);
     return () => { active = false; };
   }, [projectId, current, announce]);
   useEffect(() => {
@@ -72,7 +97,8 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop) {
     const rtt = latency ? latency.ms / 1000 : (input.context.outputLatency || 0) + (input.context.baseLatency || 0);
     show({ status: 'recording', seconds: 0, pass: 1, error: '' });
     session.current = createAudioRecording({ doc: current.current, trackId: armed.current, range, capture: input, rtt, contextStart, countIn,
-      current: () => current.current, edit, announce, onState: show, stop: () => latestStop.current() });
+      current: () => current.current, edit, announce, onSettled: () => { session.current = null; },
+      onState: patch => show({ ...patch, ...(patch.status === 'armed' ? { status: idleStatus() } : {}) }), stop: () => latestStop.current() });
     return contextStart + (countIn ? tickSeconds(3840, current.current.tempo.bpm) : 0);
   }
   async function recover(discard = false) {
@@ -91,11 +117,16 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop) {
       setRecovery([]);
     } catch (e) { show({ status: 'error', error: e.message }); announce(e.message); }
   }
-  return { ...state, armedId, capture, deviceId, devices, recovery, recover, arm,
+  return { ...state, error: pendingError() || state.error, calibrationDisabled: playing || ['recording', 'finishing'].includes(state.status), armedId, capture, deviceId, devices, recovery, recover, arm,
     selectDevice: id => { setDeviceId(id); return arm(armedId, id); },
     refreshDevices, prepare, sequence, begin, window: window => session.current?.window(window),
     armed: () => armed.current, locked: () => ['recording', 'finishing'].includes(stateRef.current.status),
-    finish: () => ['recording', 'finishing'].includes(stateRef.current.status) ? session.current.finish() : Promise.resolve(current.current), retry: () => session.current?.error ? session.current.retry() : lastArm.current && arm(lastArm.current),
+    finish: () => ['recording', 'finishing'].includes(stateRef.current.status) ? session.current.finish() : Promise.resolve(current.current), retry: async () => {
+      if (session.current?.error) return session.current.retry();
+      if (recoveryFailed.current) { await refreshRecovery(); if (!recoveryFailed.current) show({ error: '' }); return; }
+      if (lastArm.current) return arm(lastArm.current);
+    },
+    discard: () => session.current?.discard(),
     hasPending: () => !!session.current?.error,
   };
 }

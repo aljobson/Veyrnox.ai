@@ -100,7 +100,8 @@ export async function renderSound(ref, bpm, random) {
   return context.startRendering();
 }
 async function takeBuffer(asset) {
-  await hydrateLocalTakes();
+  try { await hydrateLocalTakes(); }
+  catch { throw new Error("Couldn't read takes on this device — Retry"); }
   const take = localTake(asset.ref);
   if (!take) {
     const row = cloudRow(asset.ref), config = cloudTakes;

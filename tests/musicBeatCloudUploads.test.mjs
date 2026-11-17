@@ -23,6 +23,8 @@ const hooks = registerHooks({ load(url, context, next) {
     return { format: 'module', shortCircuit: true, source: `export const { ${names.join(', ')} } = globalThis.beatUploadFixture;` };
   return next(url, context);
 } });
+const { configureBeatTakeStorage } = await import('../app/veyrnox/_lib/music/beat/beatTakeStore.js');
+configureBeatTakeStorage({ list: async () => [], put: async () => true });
 const { uploadTake } = await import('../app/veyrnox/_lib/music/beat/beatCloud.js');
 hooks.deregister();
 test.after(() => { delete globalThis.beatUploadFixture; });
