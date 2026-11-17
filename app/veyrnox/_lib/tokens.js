@@ -14,6 +14,7 @@ export const MODELS = [
   { id: 'wan-2.5-kie',        name: 'Wan 2.5',             credits: 17,  tag: 'RECOMMENDED', preselected: true, kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
   { id: 'kling-2.6-pro-kie',  name: 'Kling 2.6 Pro',       credits: 16,                                         kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1'] },
   { id: 'kling-3.0-i2v',      name: 'Kling 3.0 · I2V',     credits: 32,                                         kind: 'video', durations: [5, 10], media: { image: { required: true }, endImage: { required: false } } },
+  { id: 'kling-3.0-standard-i2v', staged: true, name: 'Kling 3.0 Standard · I2V', credits: 24, kind: 'video', durations: [5, 10], media: { image: { required: true }, endImage: { required: false } } },
   { id: 'swap-recast', staged: true, name: 'Swap · Pro', credits: 134, kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
   { id: 'swap-quick', staged: true, name: 'Swap · Quick', credits: 67, kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
   { id: 'kling-o1-reference', staged: true, name: 'Kling O1 · Reference', credits: 47, kind: 'video', durations: [5, 10], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
