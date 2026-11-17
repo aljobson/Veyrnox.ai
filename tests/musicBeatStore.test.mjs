@@ -161,3 +161,18 @@ test('cloud links are transactionally account-bound, preserve local revisions, a
   assert.equal(fake.rows.get(doc.id).cloud.revision, 5);
   assert.equal(fake.rows.get(doc.id).cloud.syncedUpdatedAt, 5);
 });
+
+
+test('v4 mixer documents round-trip through IndexedDB and corrupt optional fields are rejected on read', async t => {
+  const previous = globalThis.indexedDB, fake = fakeIndexedDB(); globalThis.indexedDB = fake;
+  t.after(() => { globalThis.indexedDB = previous; });
+  const isolated = await import('../app/veyrnox/_lib/music/beat/beatStore.js?mixer-read');
+  const { DEFAULT_MASTER } = await import('../app/veyrnox/_lib/music/beat/beatMixRules.mjs');
+  const doc = createBeat({ id: randomUUID(), now: 1 }); doc.master = structuredClone(DEFAULT_MASTER);
+  doc.tracks[0].fx = [{ id: 'f1', type: 'eq', bypass: false, params: { low: 2, mid: -1, high: 0 } }];
+  doc.tracks[0].automation = { gain: [[0, 0, 0], [3840, 1, -0.6]] };
+  assert.equal((await isolated.createBeat(doc)).persistent, true);
+  assert.deepEqual((await isolated.getBeat(doc.id)).record.doc, doc);
+  fake.rows.get(doc.id).doc.master.extra = true;
+  assert.equal((await isolated.getBeat(doc.id)).error, 'damaged');
+});

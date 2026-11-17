@@ -1,4 +1,5 @@
 'use client';
+import dynamic from 'next/dynamic';
 import BeatGenerateSheet from './BeatGenerateSheet';
 import BeatAiActionSheet from './BeatAiActionSheet';
 import { useBeatAiRequest } from './useBeatAiRequest';
@@ -27,6 +28,8 @@ import BeatMagicBar from './BeatMagicBar';
 import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input, storageWarning } from './beatStyles';
 
+const BeatMixer = dynamic(() => import('./BeatMixer'), { ssr: false, loading: () => <div role="status" aria-busy="true" className="h-64 rounded-xl bg-vx-panel p-4">Loading mixer…</div> });
+
 export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = false, librarySave = false }) {
   const router = useRouter();
   const [message, setMessage] = useState('');
@@ -35,6 +38,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
   const aiRequest = useBeatAiRequest({ beatId: id, project, announce, enabled: Object.values(ai).some(Boolean) });
   const sync = useBeatCloudSync({ beatId: id, project, cloud, announce });
   const root = useRef(null);
+  const [mixerOpen, setMixerOpen] = useState(false), [automationLanes, setAutomationLanes] = useState({});
   const [selectedRegionId, setSelectedRegionId] = useState(null), [rollOpen, setRollOpen] = useState(true);
   const [snap, setSnap] = useState(240), [octave, setOctave] = useState(0), [velocity, setVelocity] = useState(100);
   const [editTrackId, setEditTrackId] = useState(null);
@@ -121,12 +125,17 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
   const uses = doc.tracks.flatMap((t) => t.regions).filter((r) => r.pattern === doc.currentPattern).length;
   const midiRegion = track.kind === 'midi' ? track.regions.find((r) => r.id === selectedRegionId) : null;
   const lockedEdit = (change, options) => playback.recordingRun ? (announce('Stop recording to edit'), null) : edit(change, options);
+  function showAutomation(id, lane) {
+    setAutomationLanes(previous => ({ ...previous, [id]: lane }));
+    if (lane && doc.view !== 'song') edit(d => ops.setView(d, 'song'), { label: 'Show song automation' });
+  }
   return <div ref={root} className="mx-auto min-w-0 w-full max-w-7xl space-y-5 px-2 py-6 md:px-6">
     <header className="flex flex-wrap items-center gap-3">{back}<h1 className="text-2xl font-black">Beat editor</h1>
       <button className={button} aria-disabled={!project.canUndo}
         onClick={() => { project.undo(); setTitleDraft(null); }}>Undo</button>
       <button className={button} aria-disabled={!project.canRedo}
         onClick={() => { project.redo(); setTitleDraft(null); }}>Redo</button>
+      <button data-beat-live className={button} aria-expanded={mixerOpen} onClick={() => setMixerOpen(value => !value)}>Mixer</button>
       <button className={button} disabled={copying} onClick={copy}>Save as copy</button>
       {ai.generate && <button className={action} onClick={() => aiRequest.open({ op: 'generate' })}><span aria-hidden="true">✦ </span>Generate</button>}
       {Object.values(ai).some(Boolean) && aiRequest.pending.map(r => <button className={button} key={r.key} onClick={() => aiRequest.resume(r)}>Resume {r.prompt.slice(0, 24) || 'AI parts'}</button>)}
@@ -161,10 +170,10 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
         project.undo(); setTitleDraft(null); setUndo(null); clearTimeout(undoTimer.current);
       }}>Undo</button>
     </div>}
-    <BeatArrangement ai={ai} onAi={aiRequest.open} key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
+    <BeatArrangement recording={playback.recordingRun} automationLanes={automationLanes} onAutomation={showAutomation} ai={ai} onAi={aiRequest.open} key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
       onSelectRegion={(id) => { setSelectedRegionId(id); setRollOpen(true); }} setEditTrackId={setEditTrackId} locator={locator} setLocator={setLocator}
       playhead={playback.playhead} runId={playback.runId} announce={announce} />
-    {track.kind === 'midi' ? <>
+    {mixerOpen ? <BeatMixer recording={playback.recordingRun} doc={doc} edit={edit} engine={playback.engine} close={() => setMixerOpen(false)} onAutomation={showAutomation} /> : track.kind === 'midi' ? <>
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={playback.record} onChange={(e) => playback.setRecord(e.target.checked)} />Record</label>
         <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={playback.quantise} onChange={(e) => playback.setQuantise(e.target.checked)} />Quantise while recording</label>

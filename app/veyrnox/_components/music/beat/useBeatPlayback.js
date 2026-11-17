@@ -1,4 +1,6 @@
 'use client';
+import { mixSignature } from '../../../_lib/music/beat/beatMixGraph.js';
+import { mixTailSeconds } from '../../../_lib/music/beat/beatMixRules.mjs';
 import { playbackHoldObserver } from '../../../_lib/music/beat/beatAssetAvailability.mjs';
 import { useBeatMidi } from './useBeatMidi';
 import { effectiveGain } from '../../../_lib/music/beat/beatEvents.mjs';
@@ -88,13 +90,20 @@ export function useBeatPlayback(current, edit, announce, options) {
         announce('Nothing to play. Add a region first.');
         return;
       }
-      let run = instance.startRun();
+      let run = instance.startRun(current.current, { automationActive: isRecording || current.current.view === 'song', onError: message => { setAudioError(message); announce(message); } });
       const scheduled = [];
       const getSequence = () => isRecording ? recordingSequence(current.current, optionsRef.current?.locator || 0, midi.countIn)
         : sequenceFor(current.current, optionsRef.current?.locator || 0, optionsRef.current?.editTrackId, optionsRef.current?.selectedRegionId);
       const gain = (doc, track) => effectiveGain(doc, track.id, isRecording ? 'song' : doc.view);
       const scheduler = createScheduler({
         clock: instance.now, setTimer: setTimeout, clearTimer: clearTimeout, isHidden: () => document.hidden,
+        onWindow: window => {
+          const doc = current.current;
+          if (isRecording || doc.view === 'song') for (const track of doc.tracks) {
+            instance.setTrackMix(run, track.id, gain(doc, track), track.pan, doc);
+            run.channels.get(track.id)?.schedule?.(window);
+          }
+        },
         onAudio: (segment, time) => {
           const doc = current.current, asset = doc.assets[segment.assetId];
           const buffer = asset && cachedAsset(asset, doc.tempo.bpm, segment.reverse);
@@ -114,22 +123,23 @@ export function useBeatPlayback(current, edit, announce, options) {
               if (latestRegion.reverse !== segment.reverse) return;
               const now = instance.now(), remainder = lateAudioSegment(segment, time, now);
               if (remainder) playAudioSegment(instance.context,
-                instance.setTrackMix(scheduledRun, latestTrack.id, gain(latest, latestTrack), latestTrack.pan),
+                instance.setTrackMix(scheduledRun, latestTrack.id, gain(latest, latestTrack), latestTrack.pan, latest),
                 loaded, remainder, latestRegion, latest.tempo.bpm, Math.max(time, now));
             });
             return;
           }
-          playAudioSegment(instance.context, instance.setTrackMix(run, track.id, gain(doc, track), track.pan), buffer, segment, region, doc.tempo.bpm, time);
+          playAudioSegment(instance.context, instance.setTrackMix(run, track.id, gain(doc, track), track.pan, doc), buffer, segment, region, doc.tempo.bpm, time);
         },
         onMidi: (note, time) => {
           const doc = current.current, track = doc.tracks.find((t) => t.id === note.trackId);
           try {
+            run.doc = doc;
             if (track) instance.playMidi(track, note.pitch, note.velocity, time, run, gain(doc, track)).release(time + note.durationSec);
           } catch (failure) { setAudioError(failure.message); announce(failure.message); }
         },
         onEvent: (event, time) => {
           const track = editTrack(current.current, event.trackId);
-          const destination = instance.setTrackMix(run, track.id, gain(current.current, track), track.pan);
+          const destination = instance.setTrackMix(run, track.id, gain(current.current, track), track.pan, current.current);
           instance.playPad(event.pad, event.velocity, time, destination, track.kit);
         },
         onEnd: (time) => {
@@ -143,12 +153,12 @@ export function useBeatPlayback(current, edit, announce, options) {
           const oldest = instance.now() - 2;
           while (scheduled.length && scheduled[0].time < oldest) scheduled.shift();
           scheduled.push({ step, time, run: run.id, pattern: doc.currentPattern });
-          if ((doc.metronome || (isRecording && step * 240 < (optionsRef.current?.locator || 0))) && step % 4 === 0) instance.click(time, step % 16 === 0, run.bus);
+          if ((doc.metronome || (isRecording && step * 240 < (optionsRef.current?.locator || 0))) && step % 4 === 0) instance.click(time, step % 16 === 0, run.master?.input || run.bus);
         },
       });
       scheduler.updateSequence(getSequence);
       active.current = { run, scheduler, scheduled, recording: isRecording, doc: current.current, restart(tick) {
-        scheduler.stop(); instance.stopRun(run); run = instance.startRun(); scheduled.length = 0;
+        scheduler.stop(); instance.stopRun(run); run = instance.startRun(current.current, { automationActive: isRecording || current.current.view === 'song', onError: message => { setAudioError(message); announce(message); } }); scheduled.length = 0;
         active.current.run = run; active.current.endTime = undefined;
         scheduler.updateSequence(() => sequenceFor(current.current, tick, optionsRef.current?.editTrackId, optionsRef.current?.selectedRegionId));
         scheduler.start(instance.now() + 0.03); setRunId(run.id);
@@ -159,7 +169,7 @@ export function useBeatPlayback(current, edit, announce, options) {
         document.querySelector('[aria-label="Transport"] button[data-beat-live]')?.focus();
       }
       scheduler.start(contextStart);
-      setAudioError(''); setRunId(run.id);
+      if (!run.mix?.errors.length) setAudioError(''); setRunId(run.id);
     } catch (failure) {
       if (!mounted.current || pending.current !== token) return;
       stop();
@@ -195,7 +205,7 @@ export function useBeatPlayback(current, edit, announce, options) {
     let frame;
     function animate() {
       for (const [run, endTime] of ringing) {
-        if (engine.current && engine.current.now() >= endTime + 1.5) {
+        if (engine.current && engine.current.now() >= endTime + mixTailSeconds(run.doc || current.current)) {
           engine.current.stopRun(run);
           ringing.delete(run);
         }
@@ -212,7 +222,7 @@ export function useBeatPlayback(current, edit, announce, options) {
         if (playing.doc !== doc) {
           // Restart edited arrangements through the existing 10 ms run fade.
           const old = playing.doc;
-          const changed = old.tempo.bpm !== doc.tempo.bpm || old.view !== doc.view || JSON.stringify(old.cycle) !== JSON.stringify(doc.cycle) || arrangementStructure(old) !== arrangementStructure(doc);
+          const changed = old.tempo.bpm !== doc.tempo.bpm || old.view !== doc.view || JSON.stringify(old.cycle) !== JSON.stringify(doc.cycle) || arrangementStructure(old) !== arrangementStructure(doc) || mixSignature(old) !== mixSignature(doc);
           if (changed && !playing.recording) {
             const nearest = playing.scheduler.nearestStepAt(instance.now());
             playing.restart((nearest?.step ?? 0) * 240);
@@ -224,7 +234,7 @@ export function useBeatPlayback(current, edit, announce, options) {
         midiRef.current.update(instance.now());
         const audible = instance.now() - (instance.context.outputLatency || instance.context.baseLatency || 0);
         for (const track of current.current.tracks) {
-          instance.setTrackMix(playing.run, track.id, effectiveGain(doc, track.id, playing.recording ? 'song' : doc.view), track.pan);
+          instance.setTrackMix(playing.run, track.id, effectiveGain(doc, track.id, playing.recording ? 'song' : doc.view), track.pan, doc);
         }
         if (playing.endTime !== undefined && audible >= playing.endTime) {
           if (playing.recording) { stop(); announce('Recording reached the project time limit.'); frame = requestAnimationFrame(animate); return; }
@@ -261,5 +271,5 @@ export function useBeatPlayback(current, edit, announce, options) {
       engine.current?.close().catch(() => {}); engine.current = null;
     };
   }, [current, stop, announce]);
-  return { ...midi, isRecording, playing: runId !== null, loading, runId, playhead, audioError, toggle, hit, stop, record: recording, setRecord };
+  return { ...midi, engine, isRecording, playing: runId !== null, loading, runId, playhead, audioError, toggle, hit, stop, record: recording, setRecord };
 }

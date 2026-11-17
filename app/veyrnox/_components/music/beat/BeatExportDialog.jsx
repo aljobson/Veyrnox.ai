@@ -1,4 +1,6 @@
 'use client';
+import { mixTailSeconds, patternTailSeconds } from '../../../_lib/music/beat/beatMixRules.mjs';
+import { trackContributes, patternTrack } from '../../../_lib/music/beat/beatEvents.mjs';
 import { gatewayFetch } from '../../../_lib/gateway.js';
 import { exportAvailabilityGuard } from '../../../_lib/music/beat/beatAssetAvailability.mjs';
 import { assetState, markAssetHeld } from '../../../_lib/music/beat/beatAssets.js';
@@ -116,13 +118,13 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
   const fraction = progress.match(/(\d+) of (\d+)/), percent = progress.match(/Uploading (\d+)%/);
   const progressValue = percent ? Number(percent[1]) : fraction ? Number(fraction[1]) / Number(fraction[2]) * 100 : 0;
   const tracks = opened ? displayed.tracks.map(t => ({ ...t,
-    audible: !t.mute && (!displayed.tracks.some(t => t.solo) || t.solo) && t.gain > 0 })) : [];
+    audible: trackContributes(displayed, t.id, 'song') })) : [];
   return <>
     <button className={action} onClick={open}>Download WAV</button>
     <dialog ref={dialog} aria-labelledby="export-title" className="m-auto max-h-full w-full max-w-md overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-5 text-vx-fg backdrop:bg-vx-base/80"
       onCancel={e => { if (busy) e.preventDefault(); }} onClose={() => { prepared.current = null; rendered.current = null; setOpened(false); }}>
       <h2 id="export-title" className="text-xl font-bold">Export beat</h2>
-      <p className="my-3 text-sm text-vx-fg-muted">WAV with a 1.5 second tail and no metronome.</p>
+      <p className="my-3 text-sm text-vx-fg-muted">WAV with a {(kind === 'pattern' ? patternTailSeconds(displayed, patternTrack(displayed, editTrackId)) : mixTailSeconds(displayed)).toFixed(1)} second tail and no metronome.</p>
       <fieldset disabled={busy} className="space-y-3">
         <label className="flex flex-col gap-1">Export<select className={input} value={kind} onChange={e => setKind(e.target.value)}><option value="song">Song · stereo</option><option value="pattern">Pattern loops · mono</option></select></label>
         {kind === 'pattern' ? <label className="flex flex-col gap-1">Loops<select className={input} value={loops} onChange={e => setLoops(Number(e.target.value))}>{[1, 2, 4, 8].map(n => <option key={n}>{n}</option>)}</select></label> : <>

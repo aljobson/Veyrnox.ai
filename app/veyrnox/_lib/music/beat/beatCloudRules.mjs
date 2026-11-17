@@ -1,3 +1,9 @@
+import { migrateBeat, validateBeat } from './beatDocument.mjs';
+export function parseCloudBeat(json, beatId) {
+  const doc = JSON.parse(json);
+  if (!validateBeat(doc).ok || doc.id !== beatId) throw new Error('Invalid account beat');
+  return migrateBeat(doc);
+}
 export const errorCode = error => String(error?.code || '').toUpperCase();
 export const sameAccount = (captured, current) => Boolean(captured?.userId && captured.userId === current?.userId && captured.generation === current.generation);
 export const removedLink = userId => ({ userId, projectId: null, revision: 0 });

@@ -1,3 +1,4 @@
+import { masterError, trackMixError } from './beatMixRules.mjs';
 import { clipsError, validInstrument, validMidiRegion } from './beatMidiRules.mjs';
 import { validAsset, validAudioRegion } from './beatAudioRules.mjs';
 import { DRUM_PADS, PRESETS } from '../../../../../lib/musicInstruments.js';
@@ -62,12 +63,13 @@ export function arrangementError(doc) {
     const midi = doc.version === 4 && track.kind === 'midi';
     const audio = doc.version >= 3 && track.kind === 'audio';
     const trackFields = ['id', 'name', 'mute', 'solo', 'gain', 'pan', 'regions', ...(midi ? ['instrument'] : audio ? [] : ['kit']), ...(doc.version >= 3 ? ['kind'] : [])];
-    if (!exact(track, trackFields) || (doc.version >= 3 && !(doc.version === 4 ? ['drums', 'audio', 'midi'] : ['drums', 'audio']).includes(track.kind)) ||
+    if (!(keys(track, [...trackFields, ...(doc.version === 4 ? ['fx', 'sends', 'automation'] : [])]) && trackFields.every(k => Object.hasOwn(track, k))) || (doc.version >= 3 && !(doc.version === 4 ? ['drums', 'audio', 'midi'] : ['drums', 'audio']).includes(track.kind)) ||
       typeof track.id !== 'string' || !/^t[0-9a-z]{1,12}$/.test(track.id) || ids.has(track.id) ||
       typeof track.name !== 'string' || !track.name.trim() || track.name.length > 40 ||
       (midi && !validInstrument(track.instrument)) || (!audio && !midi && !PRESETS.drums.some((kit) => kit.id === track.kit)) || typeof track.mute !== 'boolean' ||
       typeof track.solo !== 'boolean' || !finite(track.gain, 0, 1) || !finite(track.pan, -1, 1) ||
       !Array.isArray(track.regions)) return 'Invalid track.';
+    if (doc.version === 4) { const reason = trackMixError(track); if (reason) return reason; }
     ids.add(track.id);
     let end = 0;
     for (const region of track.regions) {
@@ -95,10 +97,11 @@ export function validateBeat(doc) {
   if (doc?.version === 1) return validateBeatV1(doc);
   const invalid = { ok: false, error: 'invalid' };
   const v2Fields = [...fields.filter((field) => field !== 'kit'), 'view', 'tracks', 'cycle'];
-  if (!exact(doc, doc?.version === 4 ? [...v2Fields, 'assets', 'clips'] : doc?.version === 3 ? [...v2Fields, 'assets'] : v2Fields) || ![2, 3, 4].includes(doc.version) || !['song', 'pattern'].includes(doc.view)) return invalid;
+  if (!exact(doc, doc?.version === 4 ? [...v2Fields, 'assets', 'clips', ...(Object.hasOwn(doc, 'master') ? ['master'] : [])] : doc?.version === 3 ? [...v2Fields, 'assets'] : v2Fields) || ![2, 3, 4].includes(doc.version) || !['song', 'pattern'].includes(doc.view)) return invalid;
   // Reuse the frozen v1 common-field validation without weakening legacy reads.
-  const { tracks, cycle, view, assets, clips, ...common } = doc;
+  const { tracks, cycle, view, assets, clips, master, ...common } = doc;
   if (!validateBeatV1({ ...common, version: 1, kit: '808' }).ok) return invalid;
+  if (Object.hasOwn(doc, 'master') && masterError(master)) return { ...invalid, reason: masterError(master) };
   const reason = arrangementError(doc);
   return reason ? { ...invalid, reason } : { ok: true, doc };
 }

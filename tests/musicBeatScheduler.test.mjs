@@ -152,3 +152,25 @@ test('outside-cycle locator starts at cycle start; muted tracks stay scheduled f
   for (let i = 0; i < 20; i++) f.advance(0.025);
   assert.ok(f.events.length > queued.length);
 });
+
+
+test('onWindow tiles the exact played context span across cycle wraps', async () => {
+  const { make } = await import('./musicBeatFixtures.mjs');
+  const { sequenceFor } = await import('../app/veyrnox/_lib/music/beat/beatSequence.mjs');
+  const doc = make(); doc.tempo.bpm = 120; doc.cycle = { on: true, start: 960, end: 1920 };
+  let now = 10; const windows = [];
+  const scheduler = createScheduler({ clock: () => now, setTimer: () => 1, clearTimer: () => {}, isHidden: () => false,
+    getSequence: () => sequenceFor(doc, 960), onEvent: () => {}, onStep: () => {}, onWindow: w => windows.push(w) });
+  scheduler.start(10);
+  for (let i = 1; i < 150; i++) { now = 10 + i * 0.025; scheduler.refill(); }
+  scheduler.stop();
+  assert.equal(windows[0].contextTime, 10); assert.equal(windows[0].fromSec, 0.5);
+  let seams = 0;
+  for (let i = 1; i < windows.length; i++) {
+    const a = windows[i - 1], b = windows[i];
+    assert.ok(Math.abs(a.contextTime + a.toSec - a.fromSec - b.contextTime) < 1e-8);
+    if (Math.abs(a.toSec - 1) < 1e-8) { assert.ok(Math.abs(b.fromSec - 0.5) < 1e-8); seams++; }
+    else assert.ok(Math.abs(a.toSec - b.fromSec) < 1e-8);
+  }
+  assert.ok(seams > 5);
+});

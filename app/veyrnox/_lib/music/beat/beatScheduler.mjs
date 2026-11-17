@@ -4,7 +4,7 @@ import { stepSeconds, eventTime } from './beatTime.mjs';
 import { eventsAtStep, patternEvents } from './beatEvents.mjs';
 
 // Straight boundaries advance independently of swing and of wrapped song coordinates.
-export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent, onStep, onAudio = () => {}, onMidi = () => {}, onEnd = () => {}, getSequence }) {
+export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent, onStep, onWindow = () => {}, onAudio = () => {}, onMidi = () => {}, onEnd = () => {}, getSequence }) {
   let audioCursor = 0, audioOrigin = 0, audioStart = 0;
   let read = getSequence, timer, running = false, generation = 0, nextStepIndex = 0;
   let boundary = 0, skipped = 0, first = true, ended = false, scheduled = [];
@@ -25,6 +25,7 @@ export function createScheduler({ clock, setTimer, clearTimer, isHidden, onEvent
       const cycle = audioSequence.loop && { start: audioSequence.loop.start * duration, end: audioSequence.loop.end * duration };
       for (const window of songWindowToContext(audioCursor, until, { startSec: audioStart, contextStart: audioOrigin,
         cycle, endSec: audioSequence.endStep * duration })) {
+        onWindow(window);
         const wrapped = cycle && audioStart + window.contextTime - audioOrigin >= cycle.end - 1e-9;
         for (const note of midiNoteOnsInWindow(audioSequence.doc, window.fromSec, window.toSec, { includeMuted: true, endSec: cycle?.end ?? audioSequence.endStep * duration })) {
           const time = window.contextTime + note.songTimeSec - window.fromSec;
