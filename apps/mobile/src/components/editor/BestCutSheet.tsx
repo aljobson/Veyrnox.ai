@@ -59,16 +59,17 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
             if (picked.canceled || !live()) return;
             const next = [...clips];
             for (const asset of picked.assets.slice(0, 10 - clips.length)) {
-                if (asset.fileSize && asset.fileSize > 100 * 1024 * 1024) throw new ApiError(400, 'source_unsupported');
+                if (asset.fileSize && asset.fileSize > 100 * 1024 * 1024) throw new ApiError(400, 'source_too_large', { size_mb: Math.round(asset.fileSize / 104857.6) / 10, max_mb: 100 });
                 const duration = asset.duration ? asset.duration / 1000 : await probeDuration(asset.uri);
                 if (!duration || duration < .5 || duration > 60) throw new ApiError(400, 'source_too_long');
                 const id = `l-${randomUUID()}`;
                 const type = asset.mimeType || (/\.mov(?:\?|$)/i.test(asset.uri) ? 'video/quicktime' : 'video/mp4');
-                if (!['video/mp4', 'video/quicktime'].includes(type)) throw new ApiError(400, 'source_unsupported');
+                if (!['video/mp4', 'video/quicktime'].includes(type)) throw new ApiError(400, 'source_unreadable');
                 // Copy only: never call preparePicked(), which automatically creates a project backup.
                 const file = await editorDeviceMedia.copy(projectId, id, asset.uri, type, duration);
                 if (!live()) return;
-                if (!file || file.size > 100 * 1024 * 1024) throw new ApiError(400, 'source_unsupported');
+                if (!file) throw new ApiError(400, 'source_unreadable');
+                if (file.size > 100 * 1024 * 1024) throw new ApiError(400, 'source_too_large', { size_mb: Math.round(file.size / 104857.6) / 10, max_mb: 100 });
                 // The editor's sequence validator requires exact, bounded media fields; a camera-roll clip must satisfy it before any charge.
                 const media = { id, kind: 'video' as const, name: (asset.fileName || t('bestCut.camera')).slice(0, 60), frames: Math.floor(duration * 30), hasAudio: true, width: Math.max(0, Math.min(16384, Math.round(asset.width || 0))), height: Math.max(0, Math.min(16384, Math.round(asset.height || 0))) };
                 if (validateAgentTimeline(bestCutBefore([...next.map(c => c.media), media]))) throw new ApiError(400, 'source_unsupported');
