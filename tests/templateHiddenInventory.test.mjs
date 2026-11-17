@@ -14,7 +14,7 @@ test('hidden and Seedance-origin inventory counts come from the current modules'
     seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 24, withdrawn_or_absent: 6, hidden: 170 },
     seedanceHiddenRouteFits: { none_unsupported: 34, o1_clip: 52, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
   });
-  assert.equal(report.becomesRunnableAfterClipApproval.length, 447);
+  assert.equal(report.becomesRunnableAfterClipApproval.length, 448);
   assert.equal(report.overBudget.find(r => r.id === 'jellyfish-airlines').length, 5814);
 });
 test('hidden clip list matches importer candidates; plain photo fit follows allowed models and references', async () => {
