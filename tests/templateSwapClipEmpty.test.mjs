@@ -42,3 +42,17 @@ test('the latest O1 catalog migration and fallback keep the offer inactive', asy
  const { MODELS } = await import('../app/veyrnox/_lib/tokens.js');
  assert.equal(MODELS.find(row=>row.id==='kling-o1-reference').staged,true);
 });
+
+test('the gate stays free of the template-contract graph (it is imported by /api/catalog, a separate Worker bundle)', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../lib/templateSwapClipGate.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /templateContract|templateFidelity|templateSwapGuard/);
+});
+
+test('every id in the shipped registry is a non-blocked swap template', async () => {
+  const { TEMPLATE_SWAP_CLIPS } = await import('../app/veyrnox/_lib/templateSwapClips.js');
+  for (const id of TEMPLATE_SWAP_CLIPS) {
+    const c = templateContract(id);
+    assert.ok(c && c.class !== 'blocked-needs-video' && swapNeedsSourceVideo(c.sourcePrompt), id);
+  }
+});
