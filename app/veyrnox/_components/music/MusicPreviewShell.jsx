@@ -6,18 +6,19 @@ import { useEffect, useState } from 'react';
 import { AppNav } from '../NavBar';
 import { Main } from '../Main';
 import { MUSIC_PREVIEW_FLAG } from '../../_lib/music/previewStore';
+import { useI18n } from '../../../../components/I18nProvider';
 
 const LINKS = [
-  { href: '/app/music/create', label: 'Create' },
-  { href: '/app/music/discover', label: 'Discover', discover: true },
-  { href: '/app/music/instruments', label: 'Instruments', discover: true },
-  { href: '/app/music/library', label: 'Music Library' },
-  { href: '/app/music/workspaces', label: 'Workspaces' },
-  { href: '/app/music/playlists', label: 'Playlists' },
-  { href: '/app/music/sounds', label: 'Sounds', independent: true },
-  { href: '/app/music/beats', label: 'Beats', beats: true },
-  { href: '/app/music/labs', label: 'Labs', labs: true },
-  { href: '/app/music/studio', label: 'Studio', studio: true },
+  { href: '/app/music/create', label: 'Create', key: 'create' },
+  { href: '/app/music/discover', label: 'Discover', key: 'discover', discover: true },
+  { href: '/app/music/instruments', label: 'Instruments', key: 'instruments', discover: true },
+  { href: '/app/music/library', label: 'Music Library', key: 'library' },
+  { href: '/app/music/workspaces', label: 'Workspaces', key: 'workspaces' },
+  { href: '/app/music/playlists', label: 'Playlists', key: 'playlists' },
+  { href: '/app/music/sounds', label: 'Sounds', key: 'sounds', independent: true },
+  { href: '/app/music/beats', label: 'Beats', key: 'beats', beats: true },
+  { href: '/app/music/labs', label: 'Labs', key: 'labs', labs: true },
+  { href: '/app/music/studio', label: 'Studio', key: 'studio', studio: true },
 ];
 
 const previewEvent = 'veyrnox:music-preview-gate';
@@ -36,6 +37,8 @@ const subscribePreview = (onChange) => {
 
 export function MusicPreviewShell({ children, initialEnabled = false, serverMode = false, libraryMode = false, playlistsMode = false, studioMode = false, beatsMode = false, labsMode = false }) {
   const pathname = usePathname().replace(/^\/veyrnox/, '');
+  const { t } = useI18n();
+  const shell = (key) => t(`app.music.beat.shell.${key}`);
   const [enabled, setEnabled] = useState(initialEnabled);
 
   useEffect(() => {
@@ -79,9 +82,9 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
             <div className="mx-auto flex max-w-7xl flex-col items-start gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
                 <p className="font-vx text-lg font-black tracking-tight">Veyrnox.ai Music</p>
-                <p className="text-xs text-vx-fg-muted">{libraryMode ? 'Private beta · authenticated creation and organization' : serverMode ? 'Private beta · authenticated server generation' : 'Local prototype · no provider connected'}</p>
+                <p className="text-xs text-vx-fg-muted">{shell(libraryMode ? 'subtitleLibrary' : serverMode ? 'subtitleServer' : 'subtitleLocal')}</p>
               </div>
-              <nav aria-label="Music preview" className="flex max-w-full overflow-x-auto rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
+              <nav aria-label={shell('nav')} className="flex max-w-full overflow-x-auto rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">
                 {LINKS.filter((link) => {
                   if (link.independent) return serverMode;
                   if (link.beats) return beatsMode && !studioMode;
@@ -91,12 +94,12 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
                   if (link.href.endsWith('/playlists')) return playlistsMode;
                   return !serverMode ? !link.href.endsWith('/workspaces') : libraryMode || link.href.endsWith('/create');
                 }).map((entry) => {
-                  const link = entry.studio && beatsMode ? { ...entry, href: '/app/music/beats', label: 'Beats', beats: true } : entry;
+                  const link = entry.studio && beatsMode ? { ...entry, href: '/app/music/beats', label: 'Beats', key: 'beats', beats: true } : entry;
                   const active = pathname === link.href || pathname.startsWith(`${link.href}/`) || (link.href.includes('library') && pathname.includes('/songs/'));
                   const NavigationLink = (link.beats || link.studio) && !pathname.startsWith('/app/music/beats') ? 'a' : Link;
                   return (
                     <NavigationLink key={link.href} href={link.href} aria-current={active ? 'page' : undefined} className={`vx-press rounded-full px-4 py-2 ${link.beats ? 'inline-flex min-h-11 items-center' : ''} ${active ? 'bg-vx-fg text-vx-base' : 'text-vx-fg-body hover:text-vx-fg'}`}>
-                      {link.label}
+                      {shell(link.key)}
                     </NavigationLink>
                   );
                 })}
