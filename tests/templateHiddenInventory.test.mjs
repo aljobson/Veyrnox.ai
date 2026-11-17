@@ -7,10 +7,10 @@ import { templateContract } from '../lib/templateContract.js';
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
-    addressable: 1926, listed: 150, hidden: 1776,
-    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 98, 'like-for-like-safe': 232, bound: 12, none: 1042 },
+    addressable: 1926, listed: 150, hidden: 1777,
+    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 98, 'like-for-like-safe': 232, bound: 13, none: 1042 },
     hiddenRouteFits: { o1_clip: 447, none_unsupported: 78, text_only_other_model: 112, kling_i2v_photo: 97, none_no_contract: 1042 },
-    hiddenKinds: { video_swap: 300, none: 1329, motion: 92, swap: 55 },
+    hiddenKinds: { video_swap: 300, none: 1329, motion: 92, swap: 56 },
     seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 24, withdrawn_or_absent: 6, hidden: 170 },
     seedanceHiddenRouteFits: { none_unsupported: 34, o1_clip: 52, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
   });
