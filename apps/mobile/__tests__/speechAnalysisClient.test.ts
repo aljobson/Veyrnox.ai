@@ -62,3 +62,30 @@ test('a server source_unsupported says why the file was refused, not that the cl
     expect(message).toBe(t('editorSpeech.sourceRejected'));
     expect(message).not.toBe(t('editorSpeech.unsupported'));
 });
+describe('a refused source names its real reason', () => {
+    test('too large shows the size and the limit', () => {
+        const message = speechMessage(new ApiError(400, 'source_too_large', { size_mb: 120.5, max_mb: 100 }));
+        expect(message).toBe(t('editorSpeech.sourceTooLarge', { size: '120.5', max: '100' }));
+        expect(message).toContain('120.5'); expect(message).toContain('100'); expect(message).not.toBe(t('editorSpeech.sourceRejected'));
+    });
+    test('too many bytes per second shows size and length, not the 100 MB limit', () => {
+        const message = speechMessage(new ApiError(400, 'source_bitrate_too_high', { size_mb: 25, seconds: 12 }));
+        expect(message).toBe(t('editorSpeech.sourceDense', { size: '25', seconds: '12' }));
+        expect(message).toContain('25'); expect(message).toContain('12'); expect(message).not.toContain('100 MB');
+    });
+    test('unreadable format says the file could not be read', () => {
+        const message = speechMessage(new ApiError(400, 'source_unreadable', { reason: 'probe_failed' }));
+        expect(message).toBe(t('editorSpeech.sourceUnreadable')); expect(message).not.toContain('100 MB');
+    });
+    test('a clip longer than a minute says so, not a file problem', () => {
+        expect(speechMessage(new ApiError(400, 'source_too_long'))).toBe(t('editorSpeech.tooLong'));
+    });
+    test('a clip with no speech is not reported as a file problem (it refunds through the no-speech path)', () => {
+        for (const code of ['source_too_large', 'source_bitrate_too_high', 'source_unreadable', 'source_unsupported']) {
+            expect(speechMessage(new ApiError(400, code))).not.toBe(t('bestCut.noSpeech'));
+        }
+    });
+    test('missing numbers never print undefined', () => {
+        expect(speechMessage(new ApiError(400, 'source_too_large'))).not.toMatch(/undefined|NaN/);
+    });
+});

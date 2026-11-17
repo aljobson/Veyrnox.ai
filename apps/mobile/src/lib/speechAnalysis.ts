@@ -74,9 +74,18 @@ export async function pollSpeech(api: ApiClient, key: string, account: string, s
         throw new ApiError(0, 'cancelled');
     } finally { clearTimeout(timer!); active.delete(controller); controller.abort(); }
 }
+const num = (value: unknown): string => typeof value === 'number' && Number.isFinite(value) ? String(value) : '?';
+/** The refusal names its real reason; the generic text is only for a timeline the editor itself rejects. */
+function sourceMessage(error: ApiError): string | null {
+    if (error.code === 'source_too_large') return t('editorSpeech.sourceTooLarge', { size: num(error.body.size_mb), max: num(error.body.max_mb ?? 100) });
+    if (error.code === 'source_bitrate_too_high') return t('editorSpeech.sourceDense', { size: num(error.body.size_mb), seconds: num(error.body.seconds) });
+    if (error.code === 'source_unreadable') return t('editorSpeech.sourceUnreadable');
+    return null;
+}
 export function speechMessage(error: unknown): string {
     if (error instanceof OfflineError) return OFFLINE_PAID_MESSAGE;
     const code = error instanceof ApiError ? error.code : '';
+    const specific = error instanceof ApiError ? sourceMessage(error) : null; if (specific) return specific;
     if (/^upload_|^(too_many_pending_uploads|insufficient_credits)$/.test(code)) return uploadMessage(error);
     const messages: Record<string, string> = { source_too_long: 'editorSpeech.tooLong', source_unsupported: 'editorSpeech.sourceRejected', duration_mismatch: 'editorSpeech.durationChanged',
         result_expired: 'editorAi.expired', poll_timeout: 'editorSpeech.timeout', outcome_pending: 'editorSpeech.timeout', price_changed: 'editorSpeech.priceChanged', speech_cut_unavailable: 'editorSpeech.unavailable', provider_admission_paused: 'editorSpeech.unavailable',
