@@ -35,6 +35,6 @@ Takes are mono PCM in the device's IndexedDB, with a 1 GB guard and no automatic
 deletion. Completed passes and ten-second single-pass checkpoints are recoverable;
 a hard close can lose the fraction since the last durable checkpoint. A take is
 retired from recovery only after a local saved document references its immutable
-ID, or the person explicitly discards it. Committed audio remains for undo/redo.
+ID, or the person explicitly discards it. Committed audio remains for undo/redo. The editor keeps no local version snapshots, so only the saved document is checked; audio loads per take on demand, and opening a beat reads only the small list of take records.
 Calibration is per input and expires after 90 days. Simulated loopback is automated;
 real hardware loopback remains an owner manual check.

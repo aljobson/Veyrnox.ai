@@ -35,6 +35,7 @@ export async function openBeatCapture(context, deviceId = 'default', { onEnded =
   } catch (e) {
     stream?.getTracks().forEach(t => t.stop());
     if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') throw new Error('Microphone blocked — site settings → Microphone → Allow, then Arm again.');
+    if (e.name === 'OverconstrainedError' || e.name === 'NotFoundError') throw new Error("That microphone isn't available — choose another input, then Arm again.");
     throw e;
   }
 }

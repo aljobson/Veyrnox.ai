@@ -148,7 +148,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
       if (value.trim() && edit((d) => ops.rename(d, value), { key: 'title', label: 'rename beat' })) {
         setStoredTitle(value);
       }
-    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog librarySave={librarySave} finalize={playback.finishRecording} doc={doc} editTrackId={track.id} announce={announce} /></div>
+    }} onBlur={() => { if (title.trim()) setTitleDraft(null); }} /></label><BeatExportDialog librarySave={librarySave} finalize={() => playback.isRecording() || playback.pending.current ? playback.finishRecording() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></div>
     {!title.trim() && <p id="title-error">Give your beat a title.</p>}
     <p className="text-sm text-vx-fg-muted">{project.conflict ? 'Autosave paused' : project.saveError ? <>{"Couldn't save on this device."} <button className={button} onClick={project.retry}>Retry</button></> : !project.persistent ? 'Kept in memory for this visit' : project.dirty ? 'Saving…' : 'Saved on this device'}</p>
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{storageWarning}</p>}

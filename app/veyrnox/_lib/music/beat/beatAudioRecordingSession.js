@@ -3,7 +3,7 @@ import { splitPasses } from './beatTakeCapture.mjs';
 import { tickSeconds } from './beatAudioSegments.mjs';
 import { putBeatTake, appendBeatTake, discardBeatTakes } from './beatTakeStore.js';
 import { commitRecording, recordingCapacity } from './beatTakeOps.mjs';
-export const takeAsset = row => ({ source: 'take', ref: row.id, name: row.label.slice(0, 80), durationSec: row.samples.length / row.sampleRate, bpm: null, sourceChannels: 1, encodedBytes: 0 });
+export const takeAsset = row => ({ source: 'take', ref: row.id, name: row.label.slice(0, 80), durationSec: (row.samples?.length ?? row.length) / row.sampleRate, bpm: null, sourceChannels: 1, encodedBytes: 0 });
 // Cloud takes are mono 16-bit WAV, including the 44-byte header.
 export const maxLaneSeconds = sampleRate => Math.min(600, Math.floor((60_000_000 - 44) / (2 * sampleRate)));
 export function recordingDurationLimit(range, bpm, sampleRate, maxPasses) {
@@ -24,7 +24,7 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
   const sr = capture.context.sampleRate, bpm = doc.tempo.bpm, recordingId = crypto.randomUUID();
   const startSec = tickSeconds(range.start, bpm), endSec = tickSeconds(range.start + range.length, bpm);
   const c0 = contextStart + (countIn ? tickSeconds(3840, bpm) : 0);
-  const capacity = recordingCapacity(doc, trackId, { start: range.start, length: range.cycle ? range.length : 240 });
+  const capacity = recordingCapacity(doc, trackId, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle });
   if (!capacity.lanes) throw new Error(capacity.reason);
   const previousLanes = doc.tracks.find(t => t.id === trackId).takeGroups?.find(g => g.id === capacity.appendTo)?.lanes.length || 0;
   const maxPasses = capacity.lanes, limit = recordingDurationLimit(range, bpm, sr, maxPasses), maxSeconds = limit.seconds;
@@ -36,7 +36,7 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
     if (!ids.has(part.pass)) ids.set(part.pass, crypto.randomUUID());
     const name = doc.tracks.find(t => t.id === trackId).name;
     return { id: ids.get(part.pass), label: `Take ${previousLanes + part.pass + 1} · ${name}`.slice(0, 80), samples: part.samples, sampleRate: sr, createdAt: Date.now(), beatId: doc.id, state: 'pending',
-      pending: { beatId: doc.id, trackId, start: range.start, length, pass: part.pass, recordingId } };
+      pending: { beatId: doc.id, trackId, start: range.start, length, pass: part.pass, recordingId, cycle: !!range.cycle } };
   }
   function failed(error) {
     failure = error.message; onState({ error: failure }); announce(failure); void stop();
@@ -85,7 +85,7 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
     const length = range.cycle ? range.length : readyRows[0].pending.length;
     const latest = current();
     if (latest.id !== doc.id) throw new Error('Open the original beat to recover these takes.');
-    const next = commitRecording(latest, { trackId, start: range.start, length, takes: readyRows.map(row => ({ asset: takeAsset(row) })) });
+    const next = commitRecording(latest, { trackId, start: range.start, length, single: !range.cycle, takes: readyRows.map(row => ({ asset: takeAsset(row) })) });
     const count = next.tracks.find(t => t.id === trackId).takeGroups.find(g => g.start === range.start && g.length === length).lanes.length;
     if (!edit(() => next, { recordingCommit: true, label: `Recorded ${readyRows.length} takes`, message: `Recorded ${readyRows.length} takes — using take ${count}` })) throw new Error('Could not commit the recorded takes. Try again.');
     committed = true; failure = ''; onSettled(); return next;

@@ -97,3 +97,13 @@ test('tail only validates on takes and within 50 ms', () => {
   const d = recorded(); track(d).regions[0].tailSec = 0.05; assert.equal(validateBeat(d).ok, true);
   assert.equal(tickSeconds(track(d).regions[0].length, 120), 8);
 });
+test('a single pass over a full 8-lane group of the same range replaces it instead of being refused after recording', () => {
+  let d = recorded(8);
+  assert.equal(takes.recordingCapacity(d, 't2', { start: 0, length: 15360 }).reason, 'Take limit reached — 8 takes per section.');
+  const capacity = takes.recordingCapacity(d, 't2', { start: 0, length: 240, single: true });
+  assert.equal(capacity.reason, ''); assert.equal(capacity.appendTo, undefined);
+  d = takes.commitRecording(d, { trackId: 't2', start: 0, length: 15360, single: true, takes: [{ asset: asset(9) }] });
+  assert.equal(validateBeat(d).ok, true);
+  assert.equal(track(d).takeGroups.length, 1); assert.equal(track(d).takeGroups[0].lanes.length, 1);
+  assert.equal(d.assets[track(d).takeGroups[0].lanes[0]].ref, 'take-9');
+});

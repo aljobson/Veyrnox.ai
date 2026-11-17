@@ -209,14 +209,14 @@ test('discard after a failed commit retires durable take ids and clears pending 
 
 test('a failed checkpoint prevents later queued prefixes from hiding unsaved audio at commit', async () => {
   const store = await import('../app/veyrnox/_lib/music/beat/beatTakeStore.js');
-  const disk = new Map(), chunks = new Map(); let attempts = 0;
-  const adapter = { list: async () => [...disk.values()], put: async row => { disk.set(row.id, structuredClone(row)); return true; },
-    listChunks: async () => [...chunks.values()], putChunk: async chunk => { if (++attempts === 2) return false; chunks.set(chunk.id, structuredClone(chunk)); return true; } };
+  const { memoryBeatTakeStorage } = await import('./musicBeatTakeStorageFixture.mjs');
+  const { adapter } = memoryBeatTakeStorage(); let attempts = 0;
+  const putChunk = adapter.putChunk; adapter.putChunk = async chunk => (++attempts === 2 ? false : putChunk(chunk));
   store.configureBeatTakeStorage(adapter);
   const h = recordingHarness({ persist: store.putBeatTake, checkpointPersist: store.appendBeatTake });
   for (let i = 0; i < 3; i++) h.receive({ frame: i * 1000, samples: new Float32Array(1000).fill(i + 1) });
   await h.session.finish(); assert.equal(h.session.error, '');
   store.configureBeatTakeStorage(adapter); await store.hydrateBeatTakes();
-  const [row] = store.beatTakes();
+  const row = await store.loadBeatTake(store.beatTakes()[0].id);
   assert.equal(row.samples.length, 3000); assert.equal(row.samples[0], 1); assert.equal(row.samples[1000], 2); assert.equal(row.samples[2000], 3);
 });

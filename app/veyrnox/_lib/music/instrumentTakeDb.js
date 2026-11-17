@@ -52,6 +52,13 @@ export async function listSavedTakesStrict(store) {
   return (Array.isArray(rows) ? rows : []).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 }
 
+// Beat takes load lazily: one sample row by id, or one take's checkpoint chunks by key range.
+export const getSavedTakeStrict = (store, id) => run(store, 'readonly', s => s.get(id));
+export async function listSavedTakesInRange(store, lower, upper) {
+  const rows = await run(store, 'readonly', s => s.getAll(IDBKeyRange.bound(lower, upper)));
+  return Array.isArray(rows) ? rows : [];
+}
+
 export async function listSavedTakes(store) {
   try {
     const rows = await run(store, 'readonly', (s) => s.getAll());

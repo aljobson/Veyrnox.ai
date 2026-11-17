@@ -48,13 +48,15 @@ function materialize(d, trackId, groupId) {
   track.regions.push(...pieces); track.regions.sort((a, b) => a.start - b.start);
 }
 export const materializeGroup = (doc, trackId, groupId, now = Date.now()) => edit(doc, now, d => materialize(d, trackId, groupId), { takeOp: true });
-export function recordingCapacity(doc, trackId, { start, length }) {
+// A single (cycle-off) pass never appends: its final length is only known after
+// the performance, so it always replaces the range (review P9-001).
+export function recordingCapacity(doc, trackId, { start, length, single = false }) {
   const track = doc.tracks.find(t => t.id === trackId);
   let reason = '';
   if (doc.version !== 4 || track?.kind !== 'audio') reason = 'Arm an audio track to record.';
   if (![start, length].every(n => Number.isSafeInteger(n) && n % 240 === 0) || start < 0 || length < 240 || start + length > Math.min(512 * 3840, 600 * doc.tempo.bpm * 16)) reason = 'Recording exceeds the song limit.';
   if (reason) return { lanes: 0, reason };
-  const same = track.takeGroups?.find(g => g.start === start && g.length === length);
+  const same = single ? null : track.takeGroups?.find(g => g.start === start && g.length === length);
   const groups = (track.takeGroups || []).filter(g => !overlaps(g, start, length));
   if (!same && groups.length >= 16) reason = 'Take group limit reached — 16 groups per track.';
   // Count the actual surviving fragments, including a region split around the range.
@@ -65,8 +67,8 @@ export function recordingCapacity(doc, trackId, { start, length }) {
   if (lanes <= 0) reason = same?.lanes.length === 8 ? 'Take limit reached — 8 takes per section.' : 'Asset limit reached — 64 sounds per song.';
   return { lanes: reason ? 0 : lanes, reason, appendTo: same?.id };
 }
-export function commitRecording(doc, { trackId, start, length, takes, appendTo }, now = Date.now()) {
-  const capacity = recordingCapacity(doc, trackId, { start, length });
+export function commitRecording(doc, { trackId, start, length, takes, appendTo, single = false }, now = Date.now()) {
+  const capacity = recordingCapacity(doc, trackId, { start, length, single });
   if (!takes.length) return doc;
   if (capacity.reason || takes.length > capacity.lanes) throw new BeatRefusal(capacity.reason || 'Take limit reached — 8 takes per section.');
   if (appendTo && capacity.appendTo !== appendTo) throw new BeatRefusal('The take range changed. Try again.');

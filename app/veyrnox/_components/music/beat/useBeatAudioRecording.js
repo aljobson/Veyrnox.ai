@@ -84,7 +84,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
     const availableSeconds = (BEAT_TAKE_BYTES - beatTakeBytes()) / (capture.current.context.sampleRate * 4);
     if (availableSeconds < 1) throw new Error('Recorded takes use 1 GB on this device. Free storage before recording.');
     const range = audioRecordingRange(current.current, locator);
-    const capacity = recordingCapacity(current.current, armed.current, { start: range.start, length: range.cycle ? range.length : 240 });
+    const capacity = recordingCapacity(current.current, armed.current, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle });
     if (!capacity.lanes) throw new Error(capacity.reason);
     return { ...range, maxSeconds: Math.min(600, availableSeconds) };
   }
@@ -110,8 +110,8 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
         for (const rows of groups.values()) {
           const unsaved = rows.filter(row => !documentHasTake(current.current, row)).sort((a, b) => a.pending.pass - b.pending.pass);
           if (!unsaved.length) continue;
-          const { trackId, start, length } = unsaved[0].pending;
-          if (!edit(d => commitRecording(d, { trackId, start, length, takes: unsaved.map(row => ({ asset: takeAsset(row) })) }), { recordingCommit: true, label: 'Recover recorded takes' })) throw new Error('Could not recover these takes. Make room on the original audio track and try again.');
+          const { trackId, start, length, cycle } = unsaved[0].pending;
+          if (!edit(d => commitRecording(d, { trackId, start, length, single: !cycle, takes: unsaved.map(row => ({ asset: takeAsset(row) })) }), { recordingCommit: true, label: 'Recover recorded takes' })) throw new Error('Could not recover these takes. Make room on the original audio track and try again.');
         }
       }
       setRecovery([]);

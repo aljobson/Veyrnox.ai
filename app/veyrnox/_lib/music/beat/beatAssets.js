@@ -1,5 +1,5 @@
 import { isHeldError, assetSigningPath } from './beatAssetAvailability.mjs';
-import { localTake, hydrateLocalTakes, subscribeLocalTakes } from '../localTakes.js';
+import { localTake, loadLocalTake, subscribeLocalTakes } from '../localTakes.js';
 import { makeNoise, playEvent } from '../instrumentEngine.js';
 import { soundById, soundDuration } from './beatSounds.mjs';
 import { AUDIO_RATE, MB, admitDecode, checkDecoded, validAsset } from './beatAudioRules.mjs';
@@ -100,9 +100,9 @@ export async function renderSound(ref, bpm, random) {
   return context.startRendering();
 }
 async function takeBuffer(asset) {
-  try { await hydrateLocalTakes(); }
+  let take;
+  try { take = await loadLocalTake(asset.ref); }
   catch { throw new Error("Couldn't read takes on this device — Retry"); }
-  const take = localTake(asset.ref);
   if (!take) {
     const row = cloudRow(asset.ref), config = cloudTakes;
     if (!row) throw new Error('This take was deleted');

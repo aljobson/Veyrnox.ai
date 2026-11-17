@@ -1,98 +1,109 @@
-import { listSavedTakesStrict, putSavedTake } from '../instrumentTakeDb.js';
+import { getSavedTakeStrict, listSavedTakesInRange, listSavedTakesStrict, putSavedTake } from '../instrumentTakeDb.js';
 export const BEAT_TAKE_BYTES = 1000000000;
-let rows = new Map(), partials = new Map(), hydrated;
+// `meta` holds every take's small lifecycle row (no audio). Audio is loaded lazily per take
+// into `audio` (review P9-002), so opening a beat never reads every recording on the device.
+let meta = new Map(), audio = new Map(), partials = new Map(), hydrated;
 let storage = {
-  list: () => listSavedTakesStrict('beatTakes'), put: row => putSavedTake('beatTakes', row),
   listState: () => listSavedTakesStrict('beatTakeState'), putState: row => putSavedTake('beatTakeState', row),
-  listChunks: () => listSavedTakesStrict('beatTakeChunks'), putChunk: row => putSavedTake('beatTakeChunks', row),
+  get: id => getSavedTakeStrict('beatTakes', id), put: row => putSavedTake('beatTakes', row),
+  listChunksFor: id => listSavedTakesInRange('beatTakeChunks', `${id}:`, `${id}:￿`), putChunk: row => putSavedTake('beatTakeChunks', row),
 };
 const listeners = new Set();
 export const subscribeBeatTakes = fn => { listeners.add(fn); return () => listeners.delete(fn); };
 const emit = () => listeners.forEach(fn => fn());
+const META_FIELDS = ['id', 'beatId', 'label', 'sampleRate', 'length', 'createdAt', 'state', 'pending'];
+const metaOf = row => Object.fromEntries(META_FIELDS.filter(k => row[k] !== undefined).map(k => [k, k === 'length' ? row.length ?? row.samples.length : row[k]]));
+/** Metadata plus samples when this take's audio is loaded. */
 export function getBeatTake(id) {
-  const partial = partials.get(id);
-  if (!rows.has(id) && partial) {
-    const samples = new Float32Array(partial.length);
-    for (const chunk of partial.chunks) samples.set(chunk.samples, chunk.offset);
-    rows.set(id, { ...partial.row, samples });
-  }
-  return rows.get(id) || null;
+  const m = meta.get(id);
+  if (!m) return null;
+  return audio.has(id) ? { ...m, samples: audio.get(id) } : { ...m };
 }
-export const beatTakes = () => [...new Set([...rows.keys(), ...partials.keys()])].map(getBeatTake);
-export const beatTakeBytes = () => [...rows].reduce((n, [id, row]) => n + (partials.has(id) ? 0 : row.samples.byteLength), 0)
-  + [...partials.values()].reduce((n, part) => n + part.length * 4, 0);
-export function configureBeatTakeStorage(adapter) { storage = adapter; rows = new Map(); partials = new Map(); hydrated = null; }
-function rememberChunk(chunk) {
-  const { takeId, offset, samples, ...metadata } = chunk;
-  const old = partials.get(takeId);
-  const chunks = (old?.chunks || []).filter(c => c.offset !== offset);
-  chunks.push({ offset, samples });
-  const length = Math.max(old?.length || 0, offset + samples.length);
-  const row = !old || offset + samples.length >= old.length ? { ...metadata, id: takeId } : old.row;
-  partials.set(takeId, { chunks, length, row }); rows.delete(takeId);
-}
+export const beatTakes = () => [...meta.keys()].map(getBeatTake);
+export const beatTakeBytes = () => [...meta.values()].reduce((n, m) => n + (m.length || 0) * 4, 0);
+export function configureBeatTakeStorage(adapter) { storage = adapter; meta = new Map(); audio = new Map(); partials = new Map(); hydrated = null; }
 export function hydrateBeatTakes() {
-  return hydrated ||= Promise.all([storage.list(), storage.listState?.() || [], storage.listChunks?.() || []]).then(([items, states, chunks]) => {
-    for (const row of items) if (row?.samples?.length && row.sampleRate > 0 && !rows.has(row.id)) rows.set(row.id, row);
-    for (const chunk of chunks) if (chunk?.samples?.length && chunk.sampleRate > 0) rememberChunk(chunk);
-    for (const state of states) {
-      if (rows.has(state.id)) rows.set(state.id, { ...rows.get(state.id), state: state.state });
-      if (partials.has(state.id)) partials.get(state.id).row.state = state.state;
-    }
+  return hydrated ||= Promise.resolve(storage.listState()).then(states => {
+    for (const row of states || []) if (row?.id && row.sampleRate > 0 && row.length > 0 && !meta.has(row.id)) meta.set(row.id, metaOf(row));
     emit();
   }).catch(error => { hydrated = null; throw error; });
+}
+function assemble(chunks, length) {
+  const samples = new Float32Array(length);
+  for (const chunk of chunks) samples.set(chunk.samples.subarray(0, Math.max(0, length - chunk.offset)), chunk.offset);
+  return samples;
+}
+/** Load one take's audio (a whole row, or its checkpoint chunks). Throws if the device store cannot be read. */
+export async function loadBeatTake(id) {
+  await hydrateBeatTakes();
+  const m = meta.get(id);
+  if (!m) return null;
+  if (!audio.has(id)) {
+    const row = await storage.get(id);
+    if (row?.samples?.length) audio.set(id, row.samples.length === m.length ? row.samples : row.samples.subarray(0, m.length));
+    else {
+      const chunks = (await storage.listChunksFor(id)).filter(c => c?.takeId === id && c.samples?.length);
+      if (!chunks.length) return null;
+      audio.set(id, assemble(chunks, m.length));
+    }
+  }
+  return getBeatTake(id);
 }
 let writes = Promise.resolve();
 function write(work) { const result = writes.catch(() => {}).then(work); writes = result; return result; }
 const saveError = () => new Error('Could not save recorded audio on this device. Keep this page open and try again.');
 function checkSize(bytes) { if (bytes > BEAT_TAKE_BYTES) throw new Error('Recorded takes use 1 GB on this device. Free storage before recording.'); }
-async function append(row, offset) {
-  const chunk = { ...row, id: `${row.id}:${offset}`, takeId: row.id, offset };
-  if (!await storage.putChunk(chunk)) throw saveError();
-  rememberChunk(chunk);
+async function saveMeta(next) {
+  if (!await storage.putState(next)) throw saveError();
+  meta.set(next.id, next);
 }
 export function appendBeatTake(row, offset) {
   return write(async () => {
     await hydrateBeatTakes();
-    const old = partials.get(row.id)?.length || 0;
-    checkSize(beatTakeBytes() + Math.max(0, offset + row.samples.length - old) * 4);
-    await append(row, offset); return row;
+    const old = meta.get(row.id)?.length || 0, length = Math.max(old, offset + row.samples.length);
+    checkSize(beatTakeBytes() + (length - old) * 4);
+    const { samples, ...rest } = row;
+    if (!await storage.putChunk({ ...rest, samples, id: `${row.id}:${offset}`, takeId: row.id, offset })) throw saveError();
+    partials.set(row.id, Math.max(partials.get(row.id) || 0, offset + samples.length));
+    audio.delete(row.id);
+    await saveMeta(metaOf({ ...rest, length, state: meta.get(row.id)?.state ?? row.state }));
+    return row;
   });
 }
 export function putBeatTake(row) {
   return write(async () => {
     await hydrateBeatTakes();
     if (!(row.samples instanceof Float32Array) || !row.samples.length || !(row.sampleRate > 0)) throw new Error('The recorded take has no audio.');
-    const previous = partials.get(row.id)?.length || rows.get(row.id)?.samples.length || 0;
+    const previous = meta.get(row.id)?.length || 0;
     checkSize(beatTakeBytes() - previous * 4 + row.samples.byteLength);
     // A checkpointed take already has a durable prefix. Only append its suffix,
-    // even on commit retry; assemble once at commit/recovery, never every 10 s.
-    if (partials.has(row.id)) {
-      if (row.samples.length > previous) await append({ ...row, samples: row.samples.slice(previous) }, previous);
+    // even on commit retry; never rewrite the prefix.
+    const durable = partials.get(row.id) ?? (meta.has(row.id) && !audio.has(row.id) ? previous : null);
+    if (durable !== null && durable !== undefined) {
+      if (row.samples.length > durable) {
+        const { samples, ...rest } = row;
+        if (!await storage.putChunk({ ...rest, samples: samples.slice(durable), id: `${row.id}:${durable}`, takeId: row.id, offset: durable })) throw saveError();
+        partials.set(row.id, row.samples.length);
+      }
     } else if (!await storage.put(row)) throw saveError();
-    rows.set(row.id, row); emit(); return row;
+    await saveMeta(metaOf({ ...row, length: row.samples.length, state: meta.get(row.id)?.state ?? row.state }));
+    audio.set(row.id, row.samples); emit(); return row;
   });
 }
 export function documentHasTake(doc, row) {
   return doc?.id === row.beatId && Object.values(doc.assets || {}).some(a => a.source === 'take' && a.ref === row.id);
 }
-async function setState(id, state) {
-  if (!await storage.putState({ id, state })) throw saveError();
-  if (rows.has(id)) rows.set(id, { ...rows.get(id), state });
-  if (partials.has(id)) partials.get(id).row.state = state;
-}
-// Lifecycle reconciliation only examines metadata, never assembles or rewrites audio.
-const metadata = () => [...new Map([...rows, ...[...partials].map(([id, p]) => [id, p.row])]).values()];
+// Lifecycle changes rewrite only the small metadata row, never audio.
+async function setState(id, state) { await saveMeta({ ...meta.get(id), state }); }
+/** Retire pending takes that the locally saved document references (by beat id and immutable take id). */
 export async function reconcileBeatTakes(saved) {
   await hydrateBeatTakes();
-  for (const row of metadata()) if (row.state === 'pending' && documentHasTake(saved, row)) await setState(row.id, 'committed');
+  for (const row of [...meta.values()]) if (row.state === 'pending' && documentHasTake(saved, row)) await setState(row.id, 'committed');
 }
-export const pendingBeatTakes = beatId => metadata().filter(row => row.beatId === beatId && row.state === 'pending').map(row => getBeatTake(row.id));
+/** Metadata of takes still awaiting recovery; load audio with loadBeatTake before committing. */
+export const pendingBeatTakes = beatId => [...meta.values()].filter(row => row.beatId === beatId && row.state === 'pending').map(row => ({ ...row }));
 export async function discardBeatTakes(ids) {
   if (!ids.length) return;
   await hydrateBeatTakes();
-  for (const id of ids) {
-    const row = partials.get(id)?.row || rows.get(id);
-    if (row?.state === 'pending') await setState(id, 'discarded');
-  }
+  for (const id of ids) if (meta.get(id)?.state === 'pending') await setState(id, 'discarded');
 }
