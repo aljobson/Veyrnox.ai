@@ -58,13 +58,13 @@ export function planExport(doc, { range = 'song', output = 'mix', bitDepth = 16,
   const outputBytes = 44 + size.frames * 2 * bitDepth / 8;
   let retainedAndDecode;
   try { retainedAndDecode = estimateExport(doc, 0) - 44; }
-  catch (error) { throw phone ? new Error(PHONE_EXPORT_MESSAGE) : error; }
+  catch (error) { throw phone ? Object.assign(new Error(PHONE_EXPORT_MESSAGE), { displayCode: 'recovery-r51' }) : error; }
   // Seeded procedural renders coexist with any warm live-cache sound buffers.
   // Reserve both directions conservatively, even when that cache is cold.
   retainedAndDecode += usedAssets(doc).reduce((bytes, id) => bytes + (doc.assets[id].source === 'sound' ? pcmBytes(doc.assets[id])
     * (doc.tracks.some(t => t.regions.some(r => r.assetId === id && r.reverse)) ? 2 : 1) : 0), 0);
   for (const chunk of chunks) if (retainedAndDecode + outputBytes + chunk.contextFrames * 8 > (phone ? 300 : 600) * MB) {
-    throw new Error(phone ? PHONE_EXPORT_MESSAGE : 'This song uses too much audio to export. Shorten it or remove some sounds.');
+    throw Object.assign(new Error(phone ? PHONE_EXPORT_MESSAGE : 'This song uses too much audio to export. Shorten it or remove some sounds.'), { displayCode: phone ? 'recovery-r51' : 'too-much-audio' });
   }
   return { ...size, range, output, bitDepth, sampleRate: AUDIO_RATE, channels: 2, chunks, tracks,
     filenames: output === 'mix' ? [exportFilename(doc.title)] : tracks.filter(t => t.audible).map(t => t.filename) };

@@ -128,8 +128,17 @@ export async function updateBeat(doc, expectedRevision, replacement) {
 export async function deleteBeat(id, expectedRevision) {
   return writeResult(await run('readwrite', (rows) => ({ ...decideDelete(rows.find((r) => r.id === id), expectedRevision), id })));
 }
+export async function deleteDamagedBeat(id, expectedRevision) {
+  return writeResult(await run('readwrite', rows => {
+    const existing = rows.find(row => row.id === id);
+    if (!existing) return { error: 'not_found' };
+    if (validRecord(existing) || existing.revision !== expectedRevision) return { error: 'conflict' };
+    return { action: 'delete', id };
+  }));
+}
 export async function listBeats() {
-  return run('readonly', (rows) => ({ records: rows.filter(validRecord).map((r) => ({ ...r, doc: migrateBeat(r.doc) })).sort((a, b) => b.updatedAt - a.updatedAt), count: rows.length }));
+  return run('readonly', (rows) => ({ records: rows.filter(validRecord).map((r) => ({ ...r, doc: migrateBeat(r.doc) })).sort((a, b) => b.updatedAt - a.updatedAt),
+    damaged: rows.filter(row => !validRecord(row)).map(row => ({ id: row.id, revision: row.revision })), count: rows.length }));
 }
 export async function getBeat(id) {
   if (!validBeatId(id)) return { error: 'not_found' };

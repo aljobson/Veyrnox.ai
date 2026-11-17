@@ -1,15 +1,21 @@
 'use client';
+import { beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
+import { beatText } from '../../../_lib/music/beat/beatDisplay.mjs';
+import { useI18n } from '../../../../../components/I18nProvider';
+import { actionLabel } from '../../../_lib/music/beat/beatActionLabels.mjs';
+import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { recordingEditAllowed, RECORDING_LOCK_REASON } from '../../../_lib/music/beat/beatRecordingPolicy.mjs';
+import { recordingEditAllowed } from '../../../_lib/music/beat/beatRecordingPolicy.mjs';
 import { arrangementMessage } from '../../../_lib/music/beat/beatMessages.mjs';
 import * as historyOps from '../../../_lib/music/beat/beatHistory.mjs';
 import { tryOp, selectPattern as selectPatternOp } from '../../../_lib/music/beat/beatOps.mjs';
 import { localTakeIds, hydrateLocalTakes } from '../../../_lib/music/localTakes.js';
 import { reconcileBeatTakes } from '../../../_lib/music/beat/beatTakeStore.js';
-import { createDeviceCopy, COPY_TAKES_MESSAGE, replaceAfterStash } from '../../../_lib/music/beat/beatCloudRules.mjs';
+import { createDeviceCopy, replaceAfterStash } from '../../../_lib/music/beat/beatCloudRules.mjs';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 
 export function useBeatProject(id, announce) {
+  const { t } = useI18n();
   const [doc, setDoc] = useState(null);
   const [saved, setSaved] = useState(null);
   const [error, setError] = useState('');
@@ -35,9 +41,9 @@ export function useBeatProject(id, announce) {
     blocked.current = kind;
     if (mounted.current) {
       setConflict(kind);
-      announce(kind === 'deleted' ? 'This beat was deleted in another tab' : 'This beat was changed in another tab');
+      announce(kind === 'deleted' ? t('app.music.beat.ui.this.beat.was.deleted.in.another.tab') : t('app.music.beat.ui.this.beat.was.changed.in.another.tab'));
     }
-  }, [announce]);
+  }, [announce, t]);
   const flush = useCallback(async function savePending() {
     if (replacing.current || blocked.current || !unsaved.current) return;
     // Lifecycle flushes queue behind an in-flight save and use its returned revision.
@@ -46,7 +52,7 @@ export function useBeatProject(id, announce) {
     const pendingDoc = unsaved.current;
     const token = generation.current;
     inFlight.current = store.updateBeat(pendingDoc, revision.current).then(async result => {
-      if (!result.error && result.persistent) await reconcileBeatTakes(pendingDoc).catch(() => announce('Saved beat; take recovery status will be checked again on open.'));
+      if (!result.error && result.persistent) await reconcileBeatTakes(pendingDoc).catch(() => announce(t('app.music.beat.status.s94')));
       return result;
     });
     const result = await inFlight.current;
@@ -57,18 +63,18 @@ export function useBeatProject(id, announce) {
     if (result.error === 'conflict') markConflict('changed');
     else if (result.error === 'not_found') markConflict('deleted');
     else if (result.error) {
-      if (mounted.current) { setSaveError(true); announce("Couldn't save on this device. Retry"); }
+      if (mounted.current) { setSaveError(true); announce(t('app.music.beat.status.s95')); }
     } else {
       revision.current = result.revision;
       if (unsaved.current === pendingDoc) unsaved.current = null;
       if (mounted.current) {
         setSaved(pendingDoc); setSaveError(false);
-        if (!blocked.current) announce(result.persistent ? 'Saved on this device' : 'Kept in memory for this visit');
+        if (!blocked.current) announce(result.persistent ? t('app.music.beat.ui.saved.on.this.device') : t('app.music.beat.ui.kept.in.memory.for.this.visit'));
       }
     }
     if (flushRequested.current) return savePending();
     return result.error ? null : pendingDoc;
-  }, [announce, markConflict]);
+  }, [announce, markConflict, t]);
   const reload = useCallback(async () => {
     const token = {}; generation.current = token;
     const result = await store.getBeat(id);
@@ -110,29 +116,29 @@ export function useBeatProject(id, announce) {
   }, []);
   const edit = useCallback((change, options = {}) => {
     if (!current.current || replacing.current) return null;
-    if (!recordingEditAllowed(recordingState.current(), options)) { announce(RECORDING_LOCK_REASON); return null; }
+    if (!recordingEditAllowed(recordingState.current(), options)) { announce(t('app.music.beat.status.s10')); return null; }
     try {
       const result = tryOp(current.current, change);
-      if (result.refused) { announce(result.refused); return null; }
+      if (result.refused) { announce(beatText(result.refused, t)); return null; }
       const next = result.doc;
       if (next === current.current) return null;
-      const resultMessage = arrangementMessage(current.current, next, options);
+      const resultMessage = arrangementMessage(current.current, next, options, t);
       history.current = historyOps.record(history.current, next, options);
       accept(next);
       if (options.message || !options.key) {
-        if (options.label === 'record hit') {
+        if (options.label === BEAT_ACTIONS.a41) {
           const now = Date.now();
           if (now - recordedAnnouncement.current >= 2000) {
             recordedAnnouncement.current = now;
-            announce(options.message || 'Recorded hit');
+            announce(options.message || t('app.music.beat.status.s96'));
           }
         } else {
-          announce(options.message || resultMessage || `Changed: ${options.label || 'edit beat'}`);
+          announce(options.message || resultMessage || t('app.music.beat.status.s97', { p0: actionLabel(options.label || t('app.music.beat.status.s113'), t) }));
         }
       }
       return history.current.past.at(-1)?.id;
-    } catch { announce('That change is not valid.'); return null; }
-  }, [announce, accept]);
+    } catch { announce(t('app.music.beat.status.s98')); return null; }
+  }, [announce, accept, t]);
   const selectPattern = useCallback((slot) => {
     if (replacing.current || recordingState.current()) return;
     if (!current.current || slot === current.current.currentPattern) return;
@@ -148,8 +154,8 @@ export function useBeatProject(id, announce) {
     const next = { ...history.current.present, updatedAt: Math.max(Date.now(), current.current.updatedAt) };
     history.current = historyOps.replacePresent(history.current, next);
     accept(next);
-    announce(`${direction === 'undo' ? 'Undid' : 'Redid'}: ${entry.label}`);
-  }, [accept, announce]);
+    announce(t('app.music.beat.status.s114', { p0: direction === 'undo' ? t('app.music.beat.status.s115') : t('app.music.beat.status.s116'), p1: actionLabel(entry.label, t) }));
+  }, [accept, announce, t]);
   useEffect(() => {
     if (!doc || doc === saved || conflict) return;
     const timer = setTimeout(flush, 800);
@@ -162,7 +168,7 @@ export function useBeatProject(id, announce) {
     await hydrateLocalTakes();
     const result = await createDeviceCopy(copyDoc, localTakeIds().map(id => ({ id })), store.createBeat, crypto.randomUUID(), Date.now());
     if (result.error) {
-      announce(result.error === 'cloud_only_takes' ? COPY_TAKES_MESSAGE : result.error === 'limit' ? 'This device has 50 beats. Delete one to make room for a copy.' : 'Could not save a copy.'); return null;
+      announce(result.error === 'cloud_only_takes' ? t('app.music.beat.recovery.r38') : result.error === 'limit' ? t('app.music.beat.status.s99') : t('app.music.beat.status.s100')); return null;
     }
     return result.id;
   }
@@ -171,17 +177,17 @@ export function useBeatProject(id, announce) {
     await inFlight.current;
     await flush();
     await inFlight.current;
-    if (blocked.current || unsaved.current || !durable.current) throw new Error('Local save incomplete');
+    if (blocked.current || unsaved.current || !durable.current) throw beatFailure('recovery-r31');
   }
   async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId, expected = null) {
-    if (replacing.current || blocked.current) throw new Error('Local beat is busy');
+    if (replacing.current || blocked.current) throw beatFailure('recovery-r32');
     await beforeFlush.current?.(); replacing.current = true;
     try {
       await replaceAfterStash({
         latest: async () => {
           await inFlight.current;
           if (expected && (revision.current !== expected.revision || JSON.stringify(current.current) !== JSON.stringify(expected.doc)))
-            throw Object.assign(new Error('Local beat changed'), { code: 'LOCAL_CONFLICT' });
+            throw Object.assign(beatFailure('recovery-r33'), { code: 'LOCAL_CONFLICT' });
           return { doc: current.current, revision: revision.current };
         },
         media, stash,
@@ -195,7 +201,7 @@ export function useBeatProject(id, announce) {
           await reload(); return result;
         },
       });
-      announce(expected ? 'Updated from your account' : 'Loaded the account version; your changes are saved in Versions');
+      announce(expected ? t('app.music.beat.status.s101') : t('app.music.beat.status.s102'));
     } finally { replacing.current = false; void flush(); }
   }
   return { doc, saved, flushLatest, replaceFromCloud, current, finishRecording: () => beforeFlush.current?.(), registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,

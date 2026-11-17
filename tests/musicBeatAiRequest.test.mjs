@@ -1,3 +1,4 @@
+import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
@@ -7,6 +8,7 @@ import { readPending, definitivelyRefused } from '../app/veyrnox/_lib/music/beat
 // following musicBeatCloudHooks; storage and submission logic remain real.
 let activeRunner, gateway;
 globalThis.beatAiHookFixture = {
+  useI18n: englishBeatImports['../../../../../components/I18nProvider'].useI18n,
   useRef(value) { const r = activeRunner, i = r.cursor++; return r.slots[i] ||= { current: value }; },
   useState(value) {
     const r = activeRunner, i = r.cursor++;
@@ -27,11 +29,14 @@ globalThis.beatAiHookFixture = {
   loadAiResults: () => assert.fail('No results expected in admission tests'),
 };
 const exportsByFile = {
+  'beat:i18n': ['useI18n'],
   '/react/index.js': ['useRef', 'useState', 'useEffect', 'useCallback'],
   '/gateway.js': ['gatewayFetch', 'notifyBalanceChanged'],
   '/beatAiResults.js': ['loadAiResults'],
 };
-const hooks = registerHooks({ load(url, context, next) {
+const hooks = registerHooks({ resolve(specifier, context, next) {
+  return specifier.endsWith('/components/I18nProvider') ? { url: 'beat:i18n', shortCircuit: true } : next(specifier, context);
+}, load(url, context, next) {
   for (const [suffix, names] of Object.entries(exportsByFile)) if (url.endsWith(suffix))
     return { format: 'module', shortCircuit: true, source: `export const { ${names.join(', ')} } = globalThis.beatAiHookFixture;` };
   return next(url, context);

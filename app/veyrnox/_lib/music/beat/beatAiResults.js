@@ -1,15 +1,16 @@
+import { beatEnglish } from './beatDisplay.mjs';
 import { prepareAsset } from './beatAssets.js';
 import { isHeldError } from './beatAssetAvailability.mjs';
 import { placedAlready } from './beatAiOps.mjs';
-export async function loadAiResults(record, status, doc) {
+export async function loadAiResults(record, status, doc, t = beatEnglish) {
   const results = [], messages = [];
-  if (['failed', 'refunded'].includes(status.state)) return { results, messages: ['Credits returned'] };
+  if (['failed', 'refunded'].includes(status.state)) return { results, messages: [t('app.music.beat.details.d40')] };
   const pair = !['stems', 'targetStems'].includes(record.op);
   const candidates = pair ? status.candidates || [] : [0, 1].map(ordinal => ({ ordinal: ordinal + 1, state: 'ready' }));
   for (const c of candidates) {
     const ordinal = c.ordinal - 1, label = ordinal === 0 ? 'A' : 'B';
     if (![0, 1].includes(ordinal)) continue;
-    if (['failed', 'refunded'].includes(c.state)) { messages.push(`Alternate ${label} failed — its Credits were returned`); continue; }
+    if (['failed', 'refunded'].includes(c.state)) { messages.push(t('app.music.beat.details.d41', { label })); continue; }
     if (!['ready', 'succeeded', 'stored'].includes(c.state?.toLowerCase())) continue;
     const name = record.op === 'stems' ? (ordinal === 0 ? 'Vocals' : 'Instrumental')
       : record.op === 'targetStems' ? (ordinal === 0 ? record.instrument : `Without ${record.instrument}`)
@@ -26,7 +27,7 @@ export async function loadAiResults(record, status, doc) {
       results.push({ ordinal, name, asset });
     } catch (e) {
       if (!isHeldError(e)) throw e;
-      messages.push(`Alternate ${label} is held for review. If it's released it will be in your Music library.`);
+      messages.push(t('app.music.beat.details.d42', { label }));
     }
   }
   return { results, messages };

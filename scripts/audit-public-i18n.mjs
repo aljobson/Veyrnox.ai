@@ -26,6 +26,8 @@ const privateFunctions = {
 
 // Exact public exceptions. Do not add blanket file exclusions for UI code.
 const exceptions = [
+  { file: /\/music\/beat\/beatWavetable\.js$/, pattern: /^(?:Glass keys|Warm pad|Pulse bass)$/, reason: 'built-in instrument preset names are catalog data (ADR-0107)' },
+  { file: /\/music\/beat\/(?:BeatMagicBar\.jsx|BeatsHome\.jsx|useBeatSongSeed\.js|beatAi\.mjs|beatCloudRules\.mjs|beatRecording\.mjs)$/, pattern: /^(?:loop|Magic loop|Untitled beat|My song|part|\(copy\)|Recorded take)$/, reason: 'default titles written into user-editable song, beat, copy and take documents; never translated at render time (ADR-0107)' },
   { file: /^lib\/templateClipPrompt\.mjs$/, pattern: /^@(?:video1|image1)$/, reason: 'canonical provider reference token, shared verbatim by the prompt editor and provider adapter' },
   { file: /^lib\/templateClipPrompt\.mjs$/, pattern: /^Use @video1 as the scene reference\./, reason: 'canonical generation prompt sent to the provider, not localized UI copy (ADR-0333)' },
   { file: /^app\/veyrnox\/_components\/music\/(?!MusicPublicPrompt|MusicPublicProfile|MusicPublicTrack|MusicSharedSong)[^/]+\.jsx$/, pattern: /./, reason: 'disabled-by-default private Music preview copy remains English-only until rollout localization; public Music surfaces stay audited' },
@@ -95,13 +97,14 @@ export function publicFiles({ app = false } = {}) {
       if (target) visit(target);
     }
   }
+  if (app) for (const directory of ['app/veyrnox/_components/music/beat', 'app/veyrnox/_lib/music/beat']) roots.push(...walk(directory, exclude));
   roots.forEach(visit);
   // Inventory imported helper copy as well as JSX display sites.
   return [...files].filter(file => {
     const tree = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
     let jsx = false;
     function scan(node) { if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) jsx = true; else ts.forEachChild(node, scan); }
-    scan(tree); return jsx || /^(?:app\/veyrnox\/_lib\/|lib\/|components\/)/.test(file) || /^app\/legal\/[^/]+\/page\.js$/.test(file) || (app && (/(?:^lib\/|\/_lib\/)/.test(file) || (appMetadataFile(file) && tree.statements.some(isMetadataExport))));
+    scan(tree); return (app && /\/music\/beat\//.test(file)) || jsx || /^(?:app\/veyrnox\/_lib\/|lib\/|components\/)/.test(file) || /^app\/legal\/[^/]+\/page\.js$/.test(file) || (app && (/(?:^lib\/|\/_lib\/)/.test(file) || (appMetadataFile(file) && tree.statements.some(isMetadataExport))));
   }).sort();
 }
 export const appFiles = () => publicFiles({ app: true });
@@ -168,6 +171,12 @@ export function candidates(file, source, { app = false } = {}) {
       if (file.endsWith('/tools/loading.js') && name === 'PLACEHOLDERS') return; // React skeleton keys, never displayed
     }
     if (!app && privateFunctions[file]?.has(owner(node))) return;
+    if (ts.isCallExpression(node) && node.expression.getText(tree) === 'beatErrorMessage') {
+      const fallback = node.arguments[1]?.text || 'playback';
+      const key = `app.music.beat.error.${fallback}`;
+      add(node, 'lookup', key, english[key] ? 'translated' : 'unresolved', english[key] ? 'typed error code mapped to catalog copy; raw errors are never rendered' : 'missing error fallback key');
+      return;
+    }
     if (translateCall(node, tree)) {
       const offset = node.expression.getText(tree) === 'tOr' ? 1 : 0;
       const first = node.arguments[offset];
@@ -203,8 +212,9 @@ export function candidates(file, source, { app = false } = {}) {
     }
     if (helper && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node))) {
       const returned = ts.isReturnStatement(node.parent);
+      const displayed = (ts.isCallExpression(node.parent) || ts.isNewExpression(node.parent)) && /^(?:announce|progress|tell|BeatRefusal)$/.test(node.parent.expression.getText(tree));
       const field = ts.isPropertyAssignment(node.parent) && /^(?:label|title|body|description|message|placeholder|action)$/.test(node.parent.name.getText(tree));
-      if (!returned && !field) return;
+      if (!returned && !field && !displayed) return;
     }
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateExpression(node)) {
       if (ts.isCallExpression(node.parent) && node.parent.expression.getText(tree) === 'box' && node.parent.arguments[2] === node) return;
@@ -223,7 +233,7 @@ export function candidates(file, source, { app = false } = {}) {
         p = p.parent;
       }
       if (ts.isArrayLiteralExpression(node.parent) && ['creator', 'series'].includes(node.text)) return; // Following tab ids have separately translated labels
-      const text = ts.isTemplateExpression(node) ? node.head.text + node.templateSpans.map(span => span.literal.text).join(' ') : node.text;
+      const text = ts.isTemplateExpression(node) ? node.head.text + node.templateSpans.map(span => span.literal.text).join(/\/music\/beat\//.test(file) ? '' : ' ') : node.text;
       if (!ignored && !/^(?:[/.#]|https?:|use client|use server)/.test(text) && !/(?:vx-|\b(?:px|py|mt|mb)-|=>|linear-gradient|\bBearer\b)/.test(text)
           && !/^(?:\(m(?:in|ax)-width:|(?:hidden|object-contain|text-sm|text-base|text-lg)(?:\s|$))/.test(text)
           && !/^(?:\s|[\d%+.,:;·/—−–()[\]{}-]|px|USD|ms|seconds)*$/.test(text)

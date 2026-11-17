@@ -1,4 +1,5 @@
 'use client';
+import { useI18n } from '../../../../../components/I18nProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../../_lib/gateway';
 import { loopSeconds, readLayers, writeLayers } from '../../../_lib/music/beat/magicBar.mjs';
@@ -8,6 +9,7 @@ import { loopSeconds, readLayers, writeLayers } from '../../../_lib/music/beat/m
  * exactly their bar length, started and stopped with the beat transport.
  */
 export function useBeatLoopLayers(beatId, playing) {
+  const { t } = useI18n();
   const [layers, setLayers] = useState(() => readLayers(beatId));
   const context = useRef(null);
   const buffers = useRef(new Map());
@@ -53,9 +55,9 @@ export function useBeatLoopLayers(beatId, playing) {
         }
         setError('');
       })
-      .catch(() => { if (live) setError('A Magic loop could not be loaded. The beat plays without it.'); });
+      .catch(() => { if (live) setError(t('app.music.beat.status.s82')); });
     return () => { live = false; stopAll(); };
-  }, [playing, layers, load, stopAll]);
+  }, [playing, layers, load, stopAll, t]);
 
   useEffect(() => () => { stopAll(); context.current?.close?.(); }, [stopAll]);
 

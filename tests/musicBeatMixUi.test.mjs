@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -14,6 +15,7 @@ import { PRESETS } from '../lib/musicInstruments.js';
 import { make } from './musicBeatFixtures.mjs';
 const require = createRequire(import.meta.url);
 const stubs = {
+  ...englishBeatImports,
   './beatStyles': { input: '', button: '' },
   '../../../_lib/music/beat/beatMixOps.mjs': mix,
   '../../../_lib/music/beat/beatOps.mjs': ops,

@@ -1,3 +1,4 @@
+import { beatEnglish, beatText } from './beatDisplay.mjs';
 import { edit, trackById, BeatRefusal } from './beatOps.mjs';
 import { insertMidiRegion } from './beatMidiOps.mjs';
 import { noteCount, noteKey, quantisedNote, resolveNotes } from './beatMidiRules.mjs';
@@ -13,7 +14,7 @@ export function recordingSequence(doc, locator, countIn = false) {
     endStep: recordingEndTick(doc.tempo.bpm) / 240, loop: null, recordStart: start };
 }
 function targetRegion(doc, trackId, tick) { return trackById(doc, trackId).regions.find((r) => r.start <= tick && tick < r.start + r.length); }
-export function takeAllocation(doc, take, announce = () => {}) {
+export function takeAllocation(doc, take, announce = () => {}, t = beatEnglish) {
   const existing = new Map(), empty = [];
   for (const n of take.notes) {
     const region = targetRegion(doc, take.trackId, n.start);
@@ -27,18 +28,18 @@ export function takeAllocation(doc, take, announce = () => {}) {
   for (const region of [...track.regions, { start: take.endLimit, length: 0 }]) {
     if (region.start > gapStart) {
       const notes = empty.filter((n) => n.start >= gapStart && n.start < region.start);
-      groups.push(...partitionTake(notes, gapStart, Math.min(region.start, take.endLimit), announce).map((group) => ({ ...group, gapStart })));
+      groups.push(...partitionTake(notes, gapStart, Math.min(region.start, take.endLimit), announce, t).map((group) => ({ ...group, gapStart })));
     }
     gapStart = Math.max(gapStart, region.start + region.length);
   }
   return { existing, groups };
 }
-export function commitTake(doc, take, now = Date.now(), announce = () => {}) {
+export function commitTake(doc, take, now = Date.now(), announce = () => {}, t = beatEnglish) {
   if (!take.notes.length) return doc;
   return edit(doc, now, (d) => {
     const track = trackById(d, take.trackId);
     if (track.kind !== 'midi') throw new BeatRefusal('The recording needs a MIDI track.');
-    const { existing, groups } = takeAllocation(d, take, announce);
+    const { existing, groups } = takeAllocation(d, take, announce, t);
     for (const [regionId, notes] of existing) {
       const region = track.regions.find((r) => r.id === regionId), clip = d.clips[region.clipId];
       const entries = clip.notes.map((n) => ({ note: n, selected: false, original: n[0] }));
@@ -75,7 +76,7 @@ export function takeAsNewBeat(source, take, { id, now = Date.now() }) {
   return commitTake(doc, { ...take, trackId: 't1' }, now);
 }
 // Pending state is deliberately outside the document. Capture never rebuilds a scheduler.
-export function createRecording(doc, trackId, startTick, { snap = 0, announce = () => {} } = {}) {
+export function createRecording(doc, trackId, startTick, { snap = 0, announce = () => {}, t = beatEnglish } = {}) {
   const source = doc.tracks.find((t) => t.id === trackId);
   const take = { instrument: source?.instrument, name: source?.name || 'Recorded take', trackId, startTick, endLimit: recordingEndTick(doc.tempo.bpm), snap, notes: [] };
   const held = new Map(), notices = new Set(), splitNotices = new Set();
@@ -90,11 +91,11 @@ export function createRecording(doc, trackId, startTick, { snap = 0, announce = 
   }
   let accepting = true, finalized = false, failure = null;
   const tell = (message) => { if (!notices.has(message)) { notices.add(message); announce(message); } };
-  const limit = (reason) => { accepting = false; tell(`Recording limit reached — stop to save. ${reason}`); };
+  const limit = (reason) => { accepting = false; tell(t('app.music.beat.shared.limitReason', { reason: beatText(reason, t) })); };
   function update(tick) {
     for (const [key, note] of held) {
       note.end = Math.min(take.endLimit, note.start + MAX, Math.max(note.start + 30, Math.round(tick)));
-      if (tick >= note.start + MAX) { held.delete(key); tell('Held note ended at 64 bars'); }
+      if (tick >= note.start + MAX) { held.delete(key); tell(t('app.music.beat.shared.heldNote')); }
     }
   }
   function reservationError() {
@@ -160,7 +161,7 @@ export function createRecording(doc, trackId, startTick, { snap = 0, announce = 
       update(tick);
       if (projectNotes + take.notes.length >= 5000) { limit('Project note limit reached'); return false; }
       const start = Math.max(startTick, Math.round(tick)), bar = Math.floor(start / 3840);
-      if ((barCounts.get(bar) || 0) >= 2000) { tell('Recording limit reached — stop to save. This bar has 2,000 onsets'); return false; }
+      if ((barCounts.get(bar) || 0) >= 2000) { tell(t('app.music.beat.shared.limitReason', { reason: t('app.music.beat.recovery.r71') })); return false; }
       const note = { start, end: start + 30, pitch, velocity };
       const reason = reserveNote(note);
       if (reason) { limit(reason); return false; }
@@ -174,7 +175,7 @@ export function createRecording(doc, trackId, startTick, { snap = 0, announce = 
       update(tick); held.clear(); accepting = false;
       try {
         for (const message of splitNotices) tell(message);
-        const next = commitTake(currentDoc, take, Date.now(), tell);
+        const next = commitTake(currentDoc, take, Date.now(), tell, t);
         if (next !== currentDoc && !apply(next, take.notes.length)) throw new Error('Could not commit the recorded take.');
         finalized = true; failure = null; return next;
       } catch (e) { failure = e.message; tell(e.message); return currentDoc; }

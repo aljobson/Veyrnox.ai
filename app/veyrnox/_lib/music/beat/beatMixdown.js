@@ -1,3 +1,4 @@
+import { beatEnglish } from './beatDisplay.mjs';
 import { buildMaster, buildTrackStrip } from './beatMixGraph.js';
 import { patternTailSeconds, trackHasMix } from './beatMixRules.mjs';
 import { assertNoHeldAssets } from './beatAssetAvailability.mjs';
@@ -42,7 +43,7 @@ export async function renderBeat(doc, loops, editTrackId) {
 
 export { exportRange, BeatExportError } from './beatSequence.mjs';
 import { exportSize } from './beatSequence.mjs';
-export async function loadSongBuffers(doc, progress = () => {}, range = 'song') {
+export async function loadSongBuffers(doc, progress = () => {}, range = 'song', t = beatEnglish) {
   const { frames } = exportSize(doc, AUDIO_RATE, range);
   estimateExport(doc, frames); // cold-cache refusal before any fetch, decode, or output allocation
   const ids = usedAssets(doc), buffers = new Map();
@@ -54,7 +55,7 @@ export async function loadSongBuffers(doc, progress = () => {}, range = 'song') 
   await Promise.all(Array.from({ length: Math.min(2, ids.length) }, async () => {
     while (index < ids.length) {
       const id = ids[index++], asset = doc.assets[id];
-      progress(`Loading ${++completed} of ${ids.length} sounds…`);
+      progress(t('app.music.beat.recovery.r86', { count: ++completed, total: ids.length }), completed / ids.length);
       const reversed = doc.tracks.some((t) => t.regions.some((r) => r.assetId === id && r.reverse));
       let loaded;
       if (asset.source === 'sound') {

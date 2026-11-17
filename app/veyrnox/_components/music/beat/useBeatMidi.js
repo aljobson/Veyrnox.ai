@@ -1,10 +1,13 @@
 'use client';
+import { useI18n } from '../../../../../components/I18nProvider';
+import { beatErrorMessage } from '../../../_lib/music/beat/beatErrors.mjs';
 import { useEffect, useRef, useState } from 'react';
 import { rememberTake, readPendingTake, forgetTake } from '../../../_lib/music/beat/beatPendingTake.mjs';
 import { createRecording, contextTimeToSongTick, takeAsNewBeat } from '../../../_lib/music/beat/beatRecording.mjs';
 import { inputContextTime } from '../../../_lib/music/beat/beatWebMidi.mjs';
 import { effectiveGain, editTrack } from '../../../_lib/music/beat/beatEvents.mjs';
 export function useBeatMidi(current, edit, announce, engine, active, optionsRef, audio, terminate) {
+  const { t } = useI18n();
   const pending = useRef(null), live = useRef(new Map()), mapping = useRef(null);
   const [overlay, setOverlay] = useState([]), [takeError, setTakeError] = useState('');
   const [quantise, setQuantise] = useState(false), [countIn, setCountIn] = useState(false);
@@ -16,20 +19,20 @@ export function useBeatMidi(current, edit, announce, engine, active, optionsRef,
     restored.current = doc.id;
     const saved = readPendingTake(doc.id);
     if (!saved) return;
-    const capture = createRecording(doc, saved.trackId, saved.startTick, { snap: saved.snap, announce });
+    const capture = createRecording(doc, saved.trackId, saved.startTick, { snap: saved.snap, t, announce: message => announce(message === pending.current?.error ? beatErrorMessage(null, 'save-take', t) : message) });
     Object.assign(capture.take, saved); pending.current = capture;
     mapping.current = { contextStart: 0, startTick: 0, tempo: doc.tempo.bpm };
-    queueMicrotask(() => { setOverlay(saved.notes); setTakeError('A pending recording was recovered. Try again or save it as a new beat.'); });
+    queueMicrotask(() => { setOverlay(saved.notes); setTakeError(t('app.music.beat.status.s83')); });
   });
   function finalizeRecording() {
     const capture = pending.current;
     if (!capture || !current.current) return current.current;
     const tick = contextTimeToSongTick(mapping.current, engine.current?.now() ?? mapping.current.contextStart);
-    const next = capture.finalize(current.current, tick, (doc, count) => edit(() => doc, { recordingCommit: true, label: `Recorded ${count} notes`, message: `Recorded ${count} notes` }));
+    const next = capture.finalize(current.current, tick, (doc, count) => edit(() => doc, { recordingCommit: true, label: recordedNotesLabel(count), message: t('app.music.beat.status.s84', { p0: count }) }));
     setRecordingRun(false);
     if (capture.error) {
       const saved = rememberTake(current.current.id, capture.take);
-      setTakeError(`${capture.error}${saved ? '' : ' Recovery storage is unavailable; keep this page open.'}`);
+      setTakeError(t('app.music.beat.status.s85', { p0: beatErrorMessage(null, 'save-take', t), p1: saved ? '' : t('app.music.beat.status.s86') }));
     }
     else { forgetTake(current.current.id); pending.current = null; setOverlay([]); setTakeError(''); }
     return next;
@@ -37,7 +40,7 @@ export function useBeatMidi(current, edit, announce, engine, active, optionsRef,
   function begin(map, startTick) {
     mapping.current = map;
     pending.current = createRecording(current.current, editTrack(current.current, optionsRef.current?.editTrackId).id, startTick,
-      { snap: quantise ? optionsRef.current?.snap || 240 : 0, announce });
+      { t, snap: quantise ? optionsRef.current?.snap || 240 : 0, announce: message => announce(message === pending.current?.error ? beatErrorMessage(null, 'save-take', t) : message) });
     setTakeError(''); setRecordingRun(true);
   }
   async function noteOn(key, pitch, velocity = 100, timeStamp) {
@@ -55,7 +58,7 @@ export function useBeatMidi(current, edit, announce, engine, active, optionsRef,
       await resumed;
       if (live.current.get(key) !== marker || engine.current !== instance) return;
       marker.voice = instance.playMidi(track, pitch, velocity, instance.now(), instance.live, effectiveGain(current.current, track.id, 'song'));
-    } catch (e) { announce(e.message); terminate(); }
+    } catch (e) { announce(beatErrorMessage(e, 'playback', t)); terminate(); }
   }
   function noteOff(key, timeStamp) {
     const instance = engine.current, note = live.current.get(key);

@@ -1,3 +1,4 @@
+import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
@@ -7,6 +8,7 @@ import { createBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 // revisioned store. No network, IndexedDB or React renderer is needed for these flows.
 let activeRunner, fixture;
 globalThis.beatHookFixture = {
+  useI18n: englishBeatImports['../../../../../components/I18nProvider'].useI18n,
   subscribeShelf: () => () => {},
   useRef(value) { const r = activeRunner, i = r.cursor++; return r.slots[i] ||= { current: value }; },
   useState(value) {
@@ -45,6 +47,7 @@ globalThis.beatHookFixture = {
   takeUrl: async () => {},
 };
 const exportsByFile = {
+  'beat:i18n': ['useI18n'],
   '/react/index.js': ['useRef', 'useState', 'useEffect', 'useCallback'],
   '/authClient.js': ['getStoredUserId', 'onSessionChange'],
   '/beatStore.js': ['getBeat', 'setCloudLink', 'updateBeat', 'subscribeBeats', 'createBeat'],
@@ -52,7 +55,9 @@ const exportsByFile = {
   '/beatAssets.js': ['configureCloudTakes'],
   '/instrumentShelf.js': ['getShelf', 'hydrateShelf', 'subscribeShelf'],
 };
-const hooks = registerHooks({ load(url, context, next) {
+const hooks = registerHooks({ resolve(specifier, context, next) {
+  return specifier.endsWith('/components/I18nProvider') ? { url: 'beat:i18n', shortCircuit: true } : next(specifier, context);
+}, load(url, context, next) {
   for (const [suffix, names] of Object.entries(exportsByFile)) if (url.endsWith(suffix))
     return { format: 'module', shortCircuit: true, source: `export const { ${names.join(', ')} } = globalThis.beatHookFixture;` };
   return next(url, context);

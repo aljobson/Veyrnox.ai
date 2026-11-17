@@ -1,3 +1,5 @@
+import { pluralKey } from '../../../../../lib/i18n/translate.mjs';
+import { beatEnglish } from './beatDisplay.mjs';
 import { tickSeconds } from './beatAudioSegments.mjs';
 import { sequenceFor } from './beatSequence.mjs';
 
@@ -29,16 +31,16 @@ export function lateAudioSegment(segment, when, now) {
     durationSec: segment.durationSec - elapsed, isRegionStart: segment.isRegionStart && elapsed === 0 };
 }
 
-export function audioLoopLabel(region, asset, bpm) {
+export function audioLoopLabel(region, asset, bpm, t = beatEnglish, locale = 'en') {
   const ratio = tickSeconds(region.length, bpm) / asset.durationSec;
   const full = Math.floor(ratio + 1e-9), partial = ratio - full > 1e-9;
-  if (!full) return 'partial loop';
-  return `${full} full ${full === 1 ? 'loop' : 'loops'}${partial ? ' and a partial loop' : ''}`;
+  if (!full) return t('app.music.beat.recovery.r94');
+  return t(pluralKey(t, locale, 'app.music.beat.recovery.fullLoops', full), { count: full, partial: partial ? t('app.music.beat.recovery.r97') : '' });
 }
 
-export function drumLoopLabel(region, steps) {
+export function drumLoopLabel(region, steps, t = beatEnglish) {
   const full = Math.floor(region.length / (steps * 240)), partial = region.length % (steps * 240) !== 0;
-  if (!full) return 'partial loop';
-  const label = full === 1 ? 'looped once' : full === 2 ? 'looped twice' : `looped ${full} times`;
-  return `${label}${partial ? ' and a partial loop' : ''}`;
+  if (!full) return t('app.music.beat.recovery.r94');
+  const label = full === 1 ? t('app.music.beat.recovery.r98') : full === 2 ? t('app.music.beat.recovery.r99') : t('app.music.beat.recovery.r100', { count: full });
+  return `${label}${partial ? t('app.music.beat.recovery.r97') : ''}`;
 }

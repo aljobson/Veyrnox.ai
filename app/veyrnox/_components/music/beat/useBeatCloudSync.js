@@ -1,16 +1,19 @@
 'use client';
+import { beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
+import { useI18n } from '../../../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 import { getStoredUserId, onSessionChange } from '../../../../lib/authClient.js';
 import * as api from '../../../_lib/music/beat/beatCloud.js';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 import { configureCloudTakes } from '../../../_lib/music/beat/beatAssets.js';
 import { parseCloudBeat, errorCode, errorState, maySync, needsSync, retryDelay, saveRequest, takesToUpload, takeAssets, sameAccount, isRemoved, removedLink } from '../../../_lib/music/beat/beatCloudRules.mjs';
-const messages = { synced: 'Saved to your account', syncing: 'Saving to your account…', offline: 'Only on this device — offline',
-  error: 'Not saved to your account — Retry', limit: 'Your account holds 50 beats. This one stays on this device.',
-  rate_limited: 'Saving paused. Trying again in a minute.', conflict: 'Your account has another version of this beat.',
-  removed: 'Removed from your account — Save to your account',
-  unlinked: 'Only on this device — Save to your account', other: 'Saved to another account', signed_out: 'Only on this device — Sign in to save to your account' };
+const messages = { synced: 'app.music.beat.recovery.r18', syncing: 'app.music.beat.recovery.r19', offline: 'app.music.beat.recovery.r20',
+  error: 'app.music.beat.recovery.r21', limit: 'app.music.beat.recovery.r22',
+  rate_limited: 'app.music.beat.recovery.r23', conflict: 'app.music.beat.recovery.r24',
+  removed: 'app.music.beat.recovery.r25',
+  unlinked: 'app.music.beat.recovery.r26', other: 'app.music.beat.recovery.r27', signed_out: 'app.music.beat.recovery.r28' };
 export function useBeatCloudSync({ beatId, project, cloud, announce }) {
+  const { t } = useI18n();
   const latest = useRef(project);
   useEffect(() => { latest.current = project; });
   const control = useRef(null);
@@ -23,11 +26,11 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
     let opened = false, syncedLocalRevision = null, state = '', refused = new Set(), takeRows = [], mediaRetryAt = 0;
     const capture = () => ({ userId, generation, signal: controller.signal });
     const current = token => active && sameAccount(token, { userId: getStoredUserId(), generation }) && !token.signal.aborted;
-    const check = token => { if (!current(token)) throw Object.assign(new Error('Account changed'), { code: 'account_changed' }); };
+    const check = token => { if (!current(token)) throw Object.assign(beatFailure('recovery-r29'), { code: 'account_changed' }); };
     function show(next, extra = {}, notify = true) {
       if (!active) return;
       setView(v => ({ ...v, state: next, conflict, busy, userId, ...extra }));
-      if (notify && next !== state && messages[next]) announce(messages[next]);
+      if (notify && next !== state && messages[next]) announce(t(messages[next]));
       state = next;
     }
     function schedule(delay = 10000) {
@@ -80,7 +83,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       setView(v => ({ ...v, media: missing.map(a => a.name) }));
       if (!required && missing.some(a => !refused.has(a.ref))) mediaTimer = setTimeout(() => { mediaRetryAt = 0; void cycle(); },
         mediaRetryAt ? Math.max(1000, Math.ceil((mediaRetryAt - Date.now()) / 1000) * 1000) : 60000);
-      if (required && missing.length) throw Object.assign(new Error(`Could not save these takes to your account: ${missing.map(a => a.name).join(', ')}. Retry or Keep mine.`), { code: 'MEDIA_REQUIRED', names: failures });
+      if (required && missing.length) throw Object.assign(beatFailure('details-d34', { names: missing.map(a => a.name).join(', ') }), { code: 'MEDIA_REQUIRED', names: failures });
     }
     async function markRemoved(token) {
       terminal = true; pending = null; conflict = null; paused = false;
@@ -107,7 +110,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       if (mode !== 'stash') {
         const link = { userId: token.userId, projectId: result.project.id, revision: result.project.revision, syncedUpdatedAt: record.doc.updatedAt };
         const saved = await store.setCloudLink(beatId, record.cloud, link); check(token);
-        if (saved.error) throw Object.assign(new Error('Local link changed'), { code: 'LOCAL_CONFLICT' });
+        if (saved.error) throw Object.assign(beatFailure('recovery-r30'), { code: 'LOCAL_CONFLICT' });
         syncedLocalRevision = record.revision;
       }
       return result;
@@ -178,7 +181,7 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         if (choice === 'mine') {
           await latest.current.flushLatest(); check(token);
           const { record } = await store.getBeat(beatId); check(token);
-          if (!maySync(record?.cloud, token.userId)) throw new Error('Local link changed');
+          if (!maySync(record?.cloud, token.userId)) throw beatFailure('recovery-r30');
           await write(record, token, 'checkpoint', theirs.revision);
           await media(record.doc, token);
         } else {
@@ -194,9 +197,9 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         if (!current(token)) return;
         if (errorState(error) === 'removed') await markRemoved(token);
         else if (errorCode(error) === 'VERSION_CONFLICT') {
-          try { await getTheirs(token); } catch { if (current(token)) show('conflict', { detail: 'Could not load the latest account version. Retry.' }); }
+          try { await getTheirs(token); } catch { if (current(token)) show('conflict', { detail: t('app.music.beat.status.s80') }); }
         }
-        else show('conflict', { detail: errorCode(error) === 'MEDIA_REQUIRED' ? error.message : 'Your beat is still on this device. Retry or Keep mine.' });
+        else show('conflict', { detail: t('app.music.beat.status.s81') });
       } finally { if (current(token)) { busy = false; setView(v => ({ ...v, busy: false })); } }
     }
     function session() {
@@ -228,9 +231,9 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
       document.removeEventListener('visibilitychange', hidden); window.removeEventListener('pagehide', hide);
       configureCloudTakes(null); control.current = null;
     };
-  }, [beatId, cloud, announce]);
+  }, [beatId, cloud, announce, t]);
   useEffect(() => { if (project.saved) control.current?.queue(); }, [project.saved]);
-  return { ...view, message: messages[view.state], link: () => control.current?.link(), retry: () => control.current?.retry(),
+  return { ...view, message: messages[view.state] ? t(messages[view.state]) : '', link: () => control.current?.link(), retry: () => control.current?.retry(),
     resolve: choice => control.current?.resolve(choice), later: () => control.current?.later(), checkpoint: () => control.current?.checkpoint(),
     options: () => control.current?.options(), current: token => control.current?.current(token) };
 }

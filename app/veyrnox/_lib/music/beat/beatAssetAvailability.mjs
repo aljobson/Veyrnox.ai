@@ -1,3 +1,4 @@
+import { beatEnglish } from './beatDisplay.mjs';
 import { usedAssets } from './beatAudioRules.mjs';
 import { exportRange } from './beatSequence.mjs';
 import { trackContributes } from './beatEvents.mjs';
@@ -73,11 +74,11 @@ export function exportAvailabilityGuard(doc, options) {
 
 // Observe transitions, so an already-held silent placeholder does not prevent
 // later playback of the rest of the song.
-export function playbackHoldObserver({ current, state, playing, stop, announce }) {
+export function playbackHoldObserver({ current, state, playing, stop, announce, t = beatEnglish }) {
   const held = () => new Set(current()?.tracks.flatMap(t => t.regions.filter(r => r.assetId && state(current().assets[r.assetId], current().tempo.bpm).status === 'held').map(r => r.assetId)) || []);
   let previous = held();
   return () => {
     const next = held(), changed = [...next].some(id => !previous.has(id)); previous = next;
-    if (changed && playing()) { stop(); announce('Playback stopped: a part is held for review'); }
+    if (changed && playing()) { stop(); announce(t('app.music.beat.shared.heldPlayback')); }
   };
 }
