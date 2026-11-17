@@ -14,7 +14,9 @@ import { FilmPlayer } from '../../_components/FilmPlayer';
 import { ClipBadge } from '../../_components/ClipBadge';
 import { SHOWCASE_CLIPS } from '../../_lib/showcase';
 import { presetTitle, templateModelId, MODELS } from '../../_lib/tokens';
+import { publicTemplateId } from '../../_lib/templateIds.js';
 import { ALL_TEMPLATES, templateById } from '../../_lib/templates';
+import { duplicateKeeperId } from '../../_lib/duplicateTemplateIds.js';
 import { IMAGE_TEMPLATES } from '../../_lib/imageTemplates.js';
 import { templateRecipe } from '../../_lib/templateRecipe.js';
 import { TemplateImage } from '../../_components/TemplateImage';
@@ -37,7 +39,7 @@ export async function generateMetadata({ params }) {
   const { locale, t } = await getT();
   const { id } = await params;
   await imageRequestBoundary(id);
-  const template = templateById(id);
+  const template = duplicateKeeperId(publicTemplateId(id)) ? null : templateById(id);
   if (!template) return { title: t("presets.detail.templateNotFound"), robots: { index: false } };
   const title = presetTitle(template.name);
   const description = t('presets.detail.metaDescription', { title, model: template.model });
@@ -53,6 +55,8 @@ export default async function TemplatePage({ params }) {
   const { locale, t } = await getT();
   const { id } = await params;
   await imageRequestBoundary(id);
+  const keeperId = duplicateKeeperId(publicTemplateId(id));
+  if (keeperId) permanentRedirect(localizedHref(locale, `/presets/${encodeURIComponent(keeperId)}`));
   const template = templateById(id);
   if (!template) notFound();
   if (template.id !== id) permanentRedirect(localizedHref(locale, `/presets/${encodeURIComponent(template.id)}`));
