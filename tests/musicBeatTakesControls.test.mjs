@@ -146,6 +146,9 @@ test('recorder clears ended idle inputs, retains errors across disarm and clears
   await render().arm('t2'); let recorder = render(); assert.equal(recorder.armedId, 't2');
   ended(); recorder = render(); assert.equal(recorder.armed(), null); assert.equal(recorder.capture.current, null);
   assert.equal(recorder.armedId, null); assert.match(recorder.error, /Microphone disconnected — Arm again/); assert.equal(closed, 1);
+  // REVIEW-003: choosing another input after the failure re-arms the same track with that input.
+  await recorder.selectDevice('default'); recorder = render(); assert.equal(recorder.armedId, 't2'); assert.equal(recorder.capture.current.deviceId, 'default');
+  ended(); recorder = render();
   await recorder.arm('t2'); recorder = render(); assert.equal(recorder.calibrationDisabled, false);
   playing = true; assert.equal(render().calibrationDisabled, true); playing = false;
   for (const action of ['retry', 'discard']) {

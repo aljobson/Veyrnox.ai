@@ -48,15 +48,17 @@ function materialize(d, trackId, groupId) {
   track.regions.push(...pieces); track.regions.sort((a, b) => a.start - b.start);
 }
 export const materializeGroup = (doc, trackId, groupId, now = Date.now()) => edit(doc, now, d => materialize(d, trackId, groupId), { takeOp: true });
-// A single (cycle-off) pass never appends: its final length is only known after
-// the performance, so it always replaces the range (review P9-001).
+// A single (cycle-off) pass learns its final length only after the performance. It appends
+// to an identical-range group like any recording, but replaces that group when it is full,
+// so commit never refuses audio already performed (review P9-001 / REVIEW-002).
 export function recordingCapacity(doc, trackId, { start, length, single = false }) {
   const track = doc.tracks.find(t => t.id === trackId);
   let reason = '';
   if (doc.version !== 4 || track?.kind !== 'audio') reason = 'Arm an audio track to record.';
   if (![start, length].every(n => Number.isSafeInteger(n) && n % 240 === 0) || start < 0 || length < 240 || start + length > Math.min(512 * 3840, 600 * doc.tempo.bpm * 16)) reason = 'Recording exceeds the song limit.';
   if (reason) return { lanes: 0, reason };
-  const same = single ? null : track.takeGroups?.find(g => g.start === start && g.length === length);
+  const match = track.takeGroups?.find(g => g.start === start && g.length === length);
+  const same = single && match && (match.lanes.length >= 8 || Object.keys(doc.assets).length >= 64) ? null : match;
   const groups = (track.takeGroups || []).filter(g => !overlaps(g, start, length));
   if (!same && groups.length >= 16) reason = 'Take group limit reached — 16 groups per track.';
   // Count the actual surviving fragments, including a region split around the range.

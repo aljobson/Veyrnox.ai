@@ -118,7 +118,8 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
     } catch (e) { show({ status: 'error', error: e.message }); announce(e.message); }
   }
   return { ...state, error: pendingError() || state.error, calibrationDisabled: playing || ['recording', 'finishing'].includes(state.status), armedId, capture, deviceId, devices, recovery, recover, arm,
-    selectDevice: id => { setDeviceId(id); return arm(armedId, id); },
+    // After a failed or unplugged input the track is disarmed; choosing another input re-arms it (REVIEW-003).
+    selectDevice: id => { setDeviceId(id); const target = armedId ?? lastArm.current; return target ? arm(target, id) : undefined; },
     refreshDevices, prepare, sequence, begin, window: window => session.current?.window(window),
     armed: () => armed.current, locked: () => ['recording', 'finishing'].includes(stateRef.current.status),
     finish: () => ['recording', 'finishing'].includes(stateRef.current.status) ? session.current.finish() : Promise.resolve(current.current), retry: async () => {

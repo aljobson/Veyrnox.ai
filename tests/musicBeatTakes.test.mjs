@@ -107,3 +107,9 @@ test('a single pass over a full 8-lane group of the same range replaces it inste
   assert.equal(track(d).takeGroups.length, 1); assert.equal(track(d).takeGroups[0].lanes.length, 1);
   assert.equal(d.assets[track(d).takeGroups[0].lanes[0]].ref, 'take-9');
 });
+test('a single pass with the same finalized range as a group with room appends a take (criterion 6)', () => {
+  let d = recorded(2); const id = track(d).takeGroups[0].id;
+  d = takes.commitRecording(d, { trackId: 't2', start: 0, length: 15360, single: true, takes: [{ asset: asset(9) }] });
+  assert.equal(track(d).takeGroups.length, 1); assert.equal(track(d).takeGroups[0].id, id); assert.equal(track(d).takeGroups[0].lanes.length, 3);
+  assert.deepEqual(track(d).takeGroups[0].comp, [[0, 2]]);
+});
