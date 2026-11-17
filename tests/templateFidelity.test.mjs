@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { audit, packContracts } from '../scripts/audit-template-fidelity.mjs';
+import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { templateInputs } from '../app/veyrnox/_lib/templateGenerate.js';
 import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlock.js';
 const report = audit();
@@ -46,7 +47,7 @@ test('photo quality floor and single-image guard are explicit', async () => {
 });
 test('server stores only informative safe-contract metadata', async () => {
   const { checkTemplateRequest } = await import('../lib/templateFidelity.js');
-  const c = contracts.find(c => c.class === 'like-for-like-safe' && c.requiredReferences.imageMax);
+  const c = contracts.find(c => c.class === 'like-for-like-safe' && c.requiredReferences.imageMax && !swapNeedsSourceVideo(c.sourcePrompt));
   const result = checkTemplateRequest({ template_id: c.id, model_id: c.modelId, references: [{ slot: 'image', origin: 'upload', key: 'uploads/photo.png' }], inputs: { prompt: c.photoPrompt, duration_seconds: c.duration, ...(c.aspect ? { aspect_ratio: c.aspect } : {}), ...(c.negativePrompt ? { negative_prompt: c.negativePrompt } : {}) } });
   assert.deepEqual(result.metadata, { template_id: c.id, contract_version: 1, source_hash: c.sourceHash });
 });
