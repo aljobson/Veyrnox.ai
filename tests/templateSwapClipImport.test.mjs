@@ -141,7 +141,18 @@ test('verification by hash, by id, absent record, origin exclusion and poster si
     assert.ok(none.posterSimilarity === null || (none.posterSimilarity > 0.9 && none.posterSimilarity <= 1), String(none.posterSimilarity));
     const excluded = await run([{ id, localPreviewSha256: sha, origin: 'syntx' }]);
     assert.equal(row(excluded.report).outcome, 'origin_excluded'); assert.equal(excluded.manifest[id], undefined);
-    const allowed = await importTemplateSwapClips({ decisions: [], outDir: dir, showcaseDir, records: [{ id, localPreviewSha256: sha, origin: 'syntx' }], upscale: true, reviewAll: true, includeSyntx: true, kinds: ['swap'] });
+    // Seedance metadata must survive renamed/hash-only matches and duplicate audit hashes.
+    for (const records of [
+      [{ id: 'sm-brand-new-day', localPreviewSha256: sha, origin: 'seedance' }],
+      [{ id: 'sm-brand-new-day', localPreviewSha256: sha, origin: 'seedance' }, { id: 'clean-last', localPreviewSha256: sha, origin: 'higgsfield' }],
+      [{ id, localPreviewSha256: sha, origin: 'higgsfield' }, { id: 'other', localPreviewSha256: sha, sourcePlatform: 'Syntx', origin: 'seedance' }],
+    ]) {
+      const result = await run(records);
+      assert.equal(row(result.report).outcome, 'origin_excluded');
+      assert.equal(row(result.report).origin, 'syntx');
+      assert.equal(result.manifest[id], undefined);
+    }
+    const allowed = await importTemplateSwapClips({ decisions: [], outDir: dir, showcaseDir, records: [{ id: 'sm-brand-new-day', localPreviewSha256: sha, origin: 'seedance' }], upscale: true, reviewAll: true, includeSyntx: true, kinds: ['swap'] });
     assert.equal(row(allowed.report).outcome, 'ok_for_review');
     const mismatch = row((await run([{ id, localPreviewSha256: 'b'.repeat(64), origin: 'higgsfield' }])).report);
     assert.equal(mismatch.outcome, 'showcase_hash_mismatch');

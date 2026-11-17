@@ -1,3 +1,4 @@
+import { appRuntimeFlag } from '../../../../lib/appRuntime.js';
 import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
@@ -548,5 +549,7 @@ export async function POST(req) {
         return NextResponse.json({ job_id: jobId, idempotent: true, balance_after: balanceAfter });
     }
 
-    return finishGenerationSubmit({ jobId, userId, credits, modelRow, ownRoute, offerRoutes, rawKeys, rawAssets, record, modelInputs, storedInputs, publicHost, sources, provider, providerKey, balanceAfter, debit }, cfg);
+    const submitOptions = { faceIdentity: !!templateSwap || (appRuntimeFlag('templateFaceWording')
+        && !!templateCheck.metadata && modelId === 'kling-3.0-i2v' && resolved.references.some(r => r.slot === 'image')) };
+    return finishGenerationSubmit({ submitOptions, jobId, userId, credits, modelRow, ownRoute, offerRoutes, rawKeys, rawAssets, record, modelInputs, storedInputs, publicHost, sources, provider, providerKey, balanceAfter, debit }, cfg);
 }

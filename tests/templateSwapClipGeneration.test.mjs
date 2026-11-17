@@ -241,3 +241,43 @@ test('ordinary template request remains blocked without template_swap', async t 
  const response = await post({template_swap:undefined,template_id:ID});
  assert.equal((await response.json()).error,'template_blocked'); assert.equal(net.debits.length,0);
 });
+
+// Exercise the real route, submit boundary and adapter with offline transport.
+for (const gate of [undefined, false, true]) for (const classification of ['bound', 'like-for-like-safe']) {
+  test(`photo template ${classification}: runtime gate ${gate}, stored identity and replay`, async t => {
+    const { PRESETS } = await import('../app/veyrnox/_lib/templates.js');
+    const { templateContract } = await import('../lib/templateContract.js');
+    const { swapNeedsSourceVideo } = await import('../lib/templateSwapGuard.js');
+    const { TEMPLATE_FACE_WORDING } = await import('../lib/templateFaceWording.mjs');
+    const c = PRESETS.map(p => templateContract(p.id)).find(c => c?.class === classification && c.modelId === 'kling-3.0-i2v'
+      && c.requiredReferences.imageMax && c.prompt.length < 1400 && !swapNeedsSourceVideo(c.sourcePrompt));
+    assert.ok(c);
+    if (gate === undefined) delete process.env.APP_RUNTIME_FLAGS;
+    else process.env.APP_RUNTIME_FLAGS = JSON.stringify({ templateFaceWording: gate });
+    t.after(() => { delete process.env.APP_RUNTIME_FLAGS; });
+    const net = network(t, { catalog: [{ id: c.modelId, provider: 'fal', provider_endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', modality: 'image-to-video', credits_5s: 32, active: true, gated_flag: false }] });
+    const request = { template_swap: undefined, template_id: c.id, model_id: c.modelId,
+      inputs: { prompt: c.prompt, duration_seconds: c.duration, ...(c.aspect ? { aspect_ratio: c.aspect } : {}), ...(c.negativePrompt ? { negative_prompt: c.negativePrompt } : {}) } };
+    const first = await post(request);
+    assert.equal(first.status, 200, JSON.stringify(await first.json()));
+    assert.equal(net.debits[0].p_inputs.prompt, c.prompt);
+    assert.equal(net.debits[0].p_inputs.template_fidelity.template_id, c.id);
+    assert.equal(net.submits[0].prompt, gate === true ? `${c.prompt} ${TEMPLATE_FACE_WORDING}` : c.prompt);
+    const { shapePayload, capabilityFor } = await import('../lib/modelCapabilities.js');
+    const expected = shapePayload(capabilityFor('fal-ai/kling-video/v3/pro/image-to-video'), { ...request.inputs, image_url: net.submits[0].start_image_url }, {});
+    if (gate !== true) assert.equal(JSON.stringify(net.submits[0]), JSON.stringify(expected));
+    const stored = JSON.stringify(net.debits[0].p_inputs);
+    // The runtime gate is deliberately not part of accepted request identity.
+    process.env.APP_RUNTIME_FLAGS = JSON.stringify({ templateFaceWording: gate !== true });
+    assert.equal((await post(request)).status, 200);
+    assert.equal(net.submits.length, 1); assert.equal(net.charges(), 1);
+    assert.equal(JSON.stringify(net.debits[0].p_inputs), stored);
+  });
+}
+test('runtime wording gate does not augment a custom non-template photo request', async t => {
+  process.env.APP_RUNTIME_FLAGS = '{"templateFaceWording":true}'; t.after(() => { delete process.env.APP_RUNTIME_FLAGS; });
+  const net = network(t, { catalog: [{ id: 'kling-3.0-i2v', provider: 'fal', provider_endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', modality: 'image-to-video', credits_5s: 32, active: true, gated_flag: false }] });
+  const response = await post({ template_swap: undefined, model_id: 'kling-3.0-i2v', inputs: { prompt: 'A custom portrait', duration_seconds: 5 } });
+  assert.equal(response.status, 200, JSON.stringify(await response.json()));
+  assert.equal(net.submits[0].prompt, 'A custom portrait');
+});

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Owner-run importer. No downloads. Dry run by default; never installs a revision.
+import { clipOrigin } from './lib/template-origin.mjs';
 import { readFile, writeFile, mkdir, mkdtemp, realpath, open, rm, readdir, access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,7 +31,7 @@ export async function swapCandidates({ kinds = ['swap', 'video_swap', 'motion'] 
 }
 
 // Every audit file that records a preview hash, tagged with its origin (the file-name prefix: higgsfield, seedance, syntx, ...).
-async function auditRecords() {
+export async function auditRecords() {
   const dir = path.join(repo, 'docs/product/source-audit');
   const out = [];
   for (const name of (await readdir(dir)).filter(file => file.endsWith('.json')).sort()) {
@@ -134,11 +135,11 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
         // A record found by id must match the bytes exactly; a record found only by hash proves the bytes by construction.
         if (byId && byId.localPreviewSha256 !== local.sha256) fail('showcase_hash_mismatch');
         result.verification = record ? 'audit_hash' : 'no_audit_record';
-        result.origin = record?.origin;
+        result.origin = clipOrigin(id, sourceRecords.filter(r => r.id === id || r.localPreviewSha256 === local.sha256));
         result.tier = tierFor(candidate.kind, result.verification);
         report.tiers[result.tier] = (report.tiers[result.tier] || 0) + 1;
         if (!record && local.poster) result.posterSimilarity = await posterSimilarity(input, local.poster);
-        if (EXCLUDED_ORIGINS.has(record?.origin) && !includeSyntx) { result.outcome = 'origin_excluded'; result.reason = 'origin_excluded'; continue; }
+        if (EXCLUDED_ORIGINS.has(result.origin) && !includeSyntx) { result.outcome = 'origin_excluded'; result.reason = 'origin_excluded'; continue; }
         const media = await normaliseSwapClip(input, output, { upscale });
         const bytes = await readFile(output);
         if (bytes.length > MAX_BYTES) fail('too_large');

@@ -175,3 +175,119 @@ Verification no longer depends on an id match. The importer hashes the showcase 
 Rights, stated plainly: every clip is another creator's finished video (a result), not the original input, and often shows a real person, a recognisable brand or a licensed character. Nothing is approved by the tooling. The owner decides per clip (`approved: true` with the reviewed hash), and the report labels every clip "RESULT CLIP, NOT THE ORIGINAL INPUT". Clips whose audit origin is the Syntx trend feed are excluded by default (`origin_excluded`; `--include-syntx` opts in), because ADR-0333 keeps Syntx media out of import sources.
 
 Duplicates: a normalised-prompt comparison across the 1,926 addressable video templates finds 6 pairs sharing a prompt and no two templates sharing a clip key or showcase bytes. Removing them is a catalog change (which id stays, redirects for the removed id) and is not part of this PR.
+
+## Amendment 3: token grammar, dark photo wording and hidden inventory (2026-11-17)
+
+The frozen PLAN2 work order (SHA-256
+`1421ad6b998799aca833e20e4a3afc3c6002a89ed17f353d8c760f2a59626072`)
+is implemented with the inventory corrections below. No gallery, capability,
+price, manifest, migration or activation changes are made.
+
+### Image and video references
+
+`@image` is case-insensitive and accepts digits or a single `x`/`X`, with
+optional whitespace and `_`/`-` separators and a trailing word boundary.
+`@images`, `@imagery` and `@image-xyz` are not slots. Existing triple-angle,
+image filename and capital `Image N:` labels retain their grammar. Explicit
+numbers across all forms reserve their numbers first. Each x occurrence is a
+new slot using the next unused positive number, even when the same x token
+occurs twice. Bare `@image` means slot 1 only without any numbered or x token;
+otherwise it remains unmapped and binding refuses the prompt. Binding still
+maps distinct resolved numbers by first appearance to `@Image{slot}`, retaining
+the original token bytes and offsets in the map. The shared mobile/client
+reader uses this same binder.
+
+The existing catalog uses none of the changed forms. A test regenerates the
+compressed fidelity JSON through the audit's serializer and compares the exact
+bytes, not just decoded rows. All bytes and classifications remain unchanged.
+Video forms `@video`, `@video1`, `@video_1`, `@video-1`, `@Video 1` and
+`<<<video_1>>>` remain source-clip evidence: photo admission refuses them.
+Only a registered clip, enabled swap switch and active O1 offer can admit the
+separate `template_swap` request. No video token is sent in the O1 prompt.
+
+### Submit-only face wording, dark by default
+
+`lib/templateFaceWording.mjs` owns the full amendment-1 face sentences and a
+one-sentence compact variant. The O1 constant composes the full sentences and
+remains exactly 529 characters; its existing byte pin remains unchanged.
+The photo path uses `APP_RUNTIME_FLAGS.templateFaceWording`, parsed by the
+existing `lib/appRuntime.js`. Missing, malformed or false means off. No new
+Worker binding or wrangler setting is added.
+
+After validation, source resolution, debit/storage and the replay return, the
+route passes a non-persisted `faceIdentity` submit option for audited bound or
+like-for-like-safe Kling 3.0 I2V requests carrying a photo. The adapter copies
+the shaped payload and changes only its prompt. `modelInputs`, job inputs,
+contract hashes, fingerprint and replay identity stay unchanged. Non-template
+requests are unchanged. O1 carries the full sentences regardless of this photo
+gate; the adapter does not append them twice. Its own swap switch still ships
+off. Reference video jobs do not enter the text-to-image durable outbox and
+cannot hop suppliers. The repository's `kling-3.0-i2v` offer is fal-backed;
+Kie's `kling-3.0-i2v-kie` is a different offer and is out of scope.
+
+The capability records expose 30,000 characters, while the Kling v3 I2V example
+in `docs/model-capability-registry/SPEC.md` and O1's ADR-0301 document 2,000.
+Use 2,000 as the conservative wording budget: full wording plus a space if it
+fits, otherwise compact wording plus a space, otherwise the original prompt
+unchanged and a `face_wording_omitted_length` log with job id (no prompt/photo).
+Never truncate or reject an original prompt because of this augmentation.
+The owner inventory lists all 53 bound prompts already over 2,000, including
+`jellyfish-airlines` at 5,814. Correcting the capability discrepancy or rejecting
+long prompts before debit is a separate behavior decision. This wording can
+lengthen prompts and is only a mitigation: two paid runs judged by eye on one
+photo, not a likeness guarantee. No paid tests are run for this amendment.
+
+### Offline inventory and provenance corrections
+
+`scripts/report-hidden-templates.mjs <outside-directory>` writes exclusive
+`hidden-templates.json` and `.md` files outside all checkouts. It lists every
+hidden addressable id, its class, swap wording, provenance, local preview,
+contract model/allowed models/references and route fit. Route fit follows the
+contract, not the legacy display label. It also lists all 200 origin records,
+the 238 Seedance-labelled video ids with their actual contract routes, long
+bound prompts, and the exact 447 hidden ids eligible after clip approval and
+activation. Swap A/B tiers use actual local hashes against audit records; C/D
+retain the importer's classification. This neither approves nor publishes clips.
+
+Measured totals from the current modules (pinned by tests):
+
+| Hidden class | Count |
+|---|---:|
+| blocked-needs-video | 392 (300 swap, 92 motion) |
+| unsupported | 98 (20 swap) |
+| like-for-like-safe | 232 (34 swap) |
+| bound | 12 (1 swap) |
+| no contract | 1,042 |
+
+There are 1,926 addressable templates, 150 listed and 1,776 hidden. Hidden route
+fits are O1 clip 447, Kling I2V photo 97, text-only other model 112, unsupported
+78 and no contract 1,042. Text-only recipes remain on their actual models;
+adding a photo or substituting Kling is not authorized by their contracts.
+
+**Work-order discrepancy and proposed correction:** this checkout's
+`SEEDANCE_200_TEMPLATE_METADATA` contains **121 Syntx and 79 Higgsfield**
+records, not 200 Syntx records. They resolve to **24 listed, 170 hidden and 6
+withdrawn/absent**, not 14/61/125. The hidden origin set comprises **52 O1 clip
+candidates, 34 unsupported and 84 text-only recipes**, not 40/17/4. Use these
+measured records and their actual contracts; do not manufacture ids or change
+catalog data to fit the work-order counts. The owner report records this
+deviation explicitly. No origin template is moved to another model.
+
+The importer now derives origin from metadata, audit `sourcePlatform` and the
+audit filename, including every matching hash record. Any Syntx evidence wins,
+so a duplicate clean record cannot mask an excluded hash. Syntx is excluded by
+default; `--include-syntx` is the explicit opt-in. The corrected metadata does
+not justify excluding all Higgsfield-origin records as Syntx.
+
+`sourceTemplates.js` reads `runnableModel` while constructing model, price and
+duration; this is not a display-only shared helper. Current template route
+helpers already resolve bound models through the contract. The 238 legacy
+Seedance labels need owner review against actual contracts: many label real
+text-only recipes, so replacing them all with Kling would be false. No labels,
+reference-model activation or UI are changed here.
+
+Runtime growth is limited to the pure binder, shared wording and submit-option
+plumbing. The offline inventory and provenance metadata are scripts-only; no
+new full-contract import enters `/api/catalog`. No Worker budget is changed.
+CI must measure compiled size against 60,500 KiB; source-byte accounting is not
+a bundle-size proof.

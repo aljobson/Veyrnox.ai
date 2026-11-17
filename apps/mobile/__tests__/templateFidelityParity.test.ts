@@ -155,3 +155,16 @@ test('direct Create loads only the selected detail and preserves source independ
         await expect(fetchTemplateContract(contract.id, 'https://veyrnox.test')).rejects.toThrow('template_detail_mismatch');
     } finally { spy.mockRestore(); }
 });
+
+// Pure shared contract grammar; no device interactions or native APIs.
+test('mobile selected-contract reader binds numbered, x and bare tokens exactly like the server', () => {
+    const { clientContractFor } = require('../../../lib/templateClientContractRuntime');
+    const { bind, imageSlots } = require('../../../lib/templateBinding');
+    for (const source of ['@IMAGE_1', '@Image 1', '@image-x', '@image', '@image_x @image1 @image_x', '<<<image_2>>> Image 2: image_2.png']) {
+        const slotCount = imageSlots(source).length;
+        const result = clientContractFor({ id: 'grammar', sourcePromptOrigin: 'community-source-exact', sourcePrompt: source }, { class: 'bound', slotCount, modelId: 'kling-3.0-i2v' });
+        expect(result.prompt).toBe(bind(source, slotCount).text);
+        expect(result.tokenMap).toEqual(bind(source, slotCount).map);
+    }
+    expect(clientContractFor({ id: 'mixed', sourcePromptOrigin: 'community-source-exact', sourcePrompt: '@image @image1' }, { class: 'bound', slotCount: 1, modelId: 'kling-3.0-i2v' })).toBeNull();
+});
