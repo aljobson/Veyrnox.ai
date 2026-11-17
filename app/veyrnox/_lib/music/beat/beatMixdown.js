@@ -1,7 +1,9 @@
+import { buildMaster, buildTrackStrip } from './beatMixGraph.js';
+import { patternTailSeconds, trackHasMix } from './beatMixRules.mjs';
 import { assertNoHeldAssets } from './beatAssetAvailability.mjs';
 import { startVoice, createVoicePool } from './beatVoices.js';
 import { midiNoteOnsInWindow } from './beatMidiWindow.mjs';
-import { effectiveGain } from './beatEvents.mjs';
+import { trackContributes } from './beatEvents.mjs';
 import { estimateExport, usedAssets } from './beatAudioRules.mjs';
 import { audioSegments } from './beatAudioSegments.mjs';
 import { playAudioSegment } from './beatAudioGraph.js';
@@ -10,7 +12,7 @@ import { seededRandom, exportSeed } from './beatSeed.mjs';
 import { chunkPlan } from './beatExport.mjs';
 import { SAMPLE_RATE } from '../../../../../lib/musicInstruments.js';
 import { makeNoise, playEvent } from '../instrumentEngine.js';
-import { beatOutput, connectTrackChannel } from './beatEngine.js';
+import { beatOutput } from './beatEngine.js';
 import { patternEvents, eventsAtStep, patternTrack } from './beatEvents.mjs';
 import { loopSeconds, stepTime, stepSeconds, eventTime } from './beatTime.mjs';
 import { validateBeat } from './beatDocument.mjs';
@@ -21,8 +23,12 @@ export async function renderBeat(doc, loops, editTrackId) {
   const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   if (!Offline) throw new Error("Sound isn't available in this browser");
   const length = loopSeconds(doc.tempo.bpm, doc.steps);
-  const context = new Offline(1, Math.ceil((length * loops + 1.5) * SAMPLE_RATE), SAMPLE_RATE);
-  const master = beatOutput(context);
+  const track = doc.version !== 1 && patternTrack(doc, editTrackId);
+  const mixed = track && (doc.master || trackHasMix(track));
+  const context = new Offline(1, Math.ceil((length * loops + patternTailSeconds(doc, track)) * SAMPLE_RATE), SAMPLE_RATE);
+  const section = mixed ? buildMaster(context, doc) : null;
+  const master = mixed ? buildTrackStrip(context, section, track, { doc, automationActive: false }).input : beatOutput(context);
+  if (section?.errors.length) throw new Error(section.errors[0]);
   const noise = makeNoise(context, 1, seededRandom(exportSeed(doc)));
   const events = patternEvents(doc);
   for (let loop = 0; loop < loops; loop++) {
@@ -89,12 +95,15 @@ export async function renderSong(doc, { buffers: prepared, progress, range = 'so
   const buffers = prepared || await loadSongBuffers(doc, progress, range);
   const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   if (!Offline) throw new Error("Sound isn't available in this browser");
-  const context = new Offline(2, frames, AUDIO_RATE), master = beatOutput(context);
+  const context = new Offline(2, frames, AUDIO_RATE), master = buildMaster(context, doc);
   const noise = makeNoise(context, 1, seededRandom(exportSeed(doc)));
-  const tracks = doc.tracks.filter(t => effectiveGain(doc, t.id, 'song') > 0 && (!soloTrackId || t.id === soloTrackId));
-  const channels = new Map(tracks.map(t => [t.id, connectTrackChannel(context, master, effectiveGain(doc, t.id, 'song'), t.pan).input]));
+  const tracks = doc.tracks.filter(t => trackContributes(doc, t.id, 'song') && (!soloTrackId || t.id === soloTrackId));
+  const strips = new Map(tracks.map(t => [t.id, buildTrackStrip(context, master, t, { doc, automationActive: true })]));
+  if (master.errors.length) throw new Error(master.errors[0]);
+  const channels = new Map([...strips].map(([id, strip]) => [id, strip.input]));
   const song = { ...doc, tracks, view: 'song' }, step = stepSeconds(doc.tempo.bpm);
   const from = size.startStep * step, to = size.endStep * step, origin = from + originSec;
+  for (const strip of strips.values()) strip.schedule({ fromSec: origin, toSec: Math.min(to, from + endSec), contextTime: 0 });
   // Track order is document order; voices within each track are chronological.
   for (const track of tracks) {
     const single = { ...song, tracks: [track] };

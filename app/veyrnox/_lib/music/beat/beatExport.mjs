@@ -1,6 +1,7 @@
+import { hasMixer, mixTailSeconds } from './beatMixRules.mjs';
 import { exportSize } from './beatSequence.mjs';
 import { AUDIO_RATE, estimateExport, pcmBytes, usedAssets, MB } from './beatAudioRules.mjs';
-import { effectiveGain, eventsAtStep } from './beatEvents.mjs';
+import { trackContributes, eventsAtStep } from './beatEvents.mjs';
 import { midiNoteOnsInWindow } from './beatMidiWindow.mjs';
 import { voiceTiming } from './beatVoiceTiming.mjs';
 import { stepSeconds, eventTime } from './beatTime.mjs';
@@ -16,7 +17,7 @@ export function exportFilename(title, suffix = '') {
 export function chunkPlan(doc, { range = 'song', chunkSeconds = 60 } = {}) {
   const size = exportSize(doc, AUDIO_RATE, range), step = stepSeconds(doc.tempo.bpm);
   const from = size.startStep * step, end = size.endStep * step, song = { ...doc, view: 'song' };
-  const held = [], pools = new Map();
+  const held = [], pools = new Map(), mixTail = hasMixer(doc) ? mixTailSeconds(doc) : 0;
   if (!(chunkSeconds > 0 && chunkSeconds <= 60)) throw new Error('Invalid chunk size.');
   for (const note of midiNoteOnsInWindow(song, from, end, { endSec: end })) {
     const track = doc.tracks.find(t => t.id === note.trackId), timing = voiceTiming(track.instrument, track.instrument.preset);
@@ -38,7 +39,9 @@ export function chunkPlan(doc, { range = 'song', chunkSeconds = 60 } = {}) {
     const last = Math.min(size.frames, frame + Math.round(chunkSeconds * AUDIO_RATE));
     const a = frame / AUDIO_RATE, b = last / AUDIO_RATE;
     let origin = Math.max(0, a - SETTLE);
-    for (const voice of held) if (voice.at < a && voice.end > a) origin = Math.min(origin, voice.at);
+    // A released voice may still feed an insert tail at the chunk boundary.
+    for (const voice of held) if (voice.at < a && voice.end > a - mixTail) origin = Math.min(origin, voice.at);
+    if (mixTail) origin = Math.max(0, origin - mixTail);
     if (a - origin > MAX_RECON + SETTLE) return null;
     origin = Math.floor(origin * AUDIO_RATE) / AUDIO_RATE;
     chunks.push({ startSec: a, endSec: b, originSec: origin, contextFrames: last - Math.round(origin * AUDIO_RATE) });
@@ -49,7 +52,7 @@ export function planExport(doc, { range = 'song', output = 'mix', bitDepth = 16,
   if (!['mix', 'stems'].includes(output) || ![16, 24].includes(bitDepth)) throw new Error('Invalid export options.');
   const size = exportSize(doc, AUDIO_RATE, range);
   const tracks = doc.tracks.map((t, i) => ({ id: t.id, name: t.name || `Track ${i + 1}`,
-    audible: effectiveGain(doc, t.id, 'song') > 0, filename: exportFilename(doc.title, `${i + 1} ${t.name || 'Track'}`) }));
+    audible: trackContributes(doc, t.id, 'song'), filename: exportFilename(doc.title, `${i + 1} ${t.name || 'Track'}`) }));
   const candidates = phone && CHUNKED_EXPORT ? chunkPlan(doc, { range }) : null;
   const chunks = candidates || [{ startSec: 0, endSec: size.frames / AUDIO_RATE, originSec: 0, contextFrames: size.frames }];
   const outputBytes = 44 + size.frames * 2 * bitDepth / 8;

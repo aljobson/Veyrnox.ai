@@ -60,6 +60,7 @@ export const convertDrums = (doc, regionId, now = Date.now()) => edit(doc, now, 
   if (track.kind !== 'drums') throw new BeatRefusal('Choose a drum region.');
   const notes = Object.entries(d.patterns[region.pattern].rows).flatMap(([pad, hits]) => hits.filter(([s]) => s < d.steps).map(([s, vel]) => [s * 240, 240, GM_PADS[pad], vel]));
   const midi = { id: nextId(d, 't'), name: `${track.name.slice(0, 30)} MIDI`, kind: 'midi', instrument: { engine: 'voice', id: 'drums', preset: track.kit }, mute: false, solo: track.solo, gain: track.gain, pan: track.pan, regions: [] };
+  for (const key of ['fx', 'sends', 'automation']) if (Object.hasOwn(track, key)) midi[key] = structuredClone(track[key]);
   d.tracks.push(midi);
   const added = insertMidiRegion(d, midi.id, region.start, d.steps * 240, notes, `Pattern ${region.pattern}`);
   added.length = region.length; added.phaseTicks = region.offset;

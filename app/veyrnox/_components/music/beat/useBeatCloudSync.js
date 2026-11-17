@@ -3,9 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { getStoredUserId, onSessionChange } from '../../../../lib/authClient.js';
 import * as api from '../../../_lib/music/beat/beatCloud.js';
 import * as store from '../../../_lib/music/beat/beatStore.js';
-import { migrateBeat, validateBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 import { configureCloudTakes } from '../../../_lib/music/beat/beatAssets.js';
-import { errorCode, errorState, maySync, needsSync, retryDelay, saveRequest, takesToUpload, takeAssets, sameAccount, isRemoved, removedLink } from '../../../_lib/music/beat/beatCloudRules.mjs';
+import { parseCloudBeat, errorCode, errorState, maySync, needsSync, retryDelay, saveRequest, takesToUpload, takeAssets, sameAccount, isRemoved, removedLink } from '../../../_lib/music/beat/beatCloudRules.mjs';
 const messages = { synced: 'Saved to your account', syncing: 'Saving to your account…', offline: 'Only on this device — offline',
   error: 'Not saved to your account — Retry', limit: 'Your account holds 50 beats. This one stays on this device.',
   rate_limited: 'Saving paused. Trying again in a minute.', conflict: 'Your account has another version of this beat.',
@@ -95,9 +94,8 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
     }
     async function getTheirs(token) {
       const result = await api.getCloudBeat(beatId, token); check(token);
-      const doc = JSON.parse(result.doc_json);
-      if (!validateBeat(doc).ok || doc.id !== beatId) throw new Error('Invalid account beat');
-      conflict = { doc: migrateBeat(doc), revision: result.project.revision, projectId: result.project.id, token };
+      const doc = parseCloudBeat(result.doc_json, beatId);
+      conflict = { doc: doc, revision: result.project.revision, projectId: result.project.id, token };
       paused = false; pending = null; show('conflict');
     }
     async function write(record, token, mode, expected) {
@@ -128,11 +126,10 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         let mediaDoc = record.doc, updatedFromCloud = false;
         if (!save && !opened && !lifecycle) {
           const theirs = await api.getCloudBeat(beatId, token); check(token);
-          const doc = JSON.parse(theirs.doc_json);
-          if (!validateBeat(doc).ok || doc.id !== beatId) throw new Error('Invalid account beat');
+          const doc = parseCloudBeat(theirs.doc_json, beatId);
           opened = true;
           if (theirs.project.revision > record.cloud.revision) {
-            await latest.current.replaceFromCloud(migrateBeat(doc), theirs.project.revision, null, null,
+            await latest.current.replaceFromCloud(doc, theirs.project.revision, null, null,
               () => current(token), theirs.project.id, record);
             check(token);
             const updated = await store.getBeat(beatId); check(token);
