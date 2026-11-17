@@ -17,6 +17,7 @@ import { toPublicPresets } from '../lib/publicPresets.js';
 import { fallbackCapabilitiesFor } from '../lib/fallbackModelCapabilities.js';
 import { templateInputs, submitTemplate, templateRun } from '../app/veyrnox/_lib/templateGenerate.js';
 import { checkTemplateRequest } from '../lib/templateFidelity.js';
+import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 const sha = text => createHash('sha256').update(text).digest('hex');
 for (const token of ['@image1', '@Image 1', '@IMAGE_1', '@image-1', '<<<image_1>>>', '<<< IMAGE 1 >>>', '<<<image-1>>>', 'Image 1:', 'image_1.png', 'image-1.jpeg']) {
   test(`binding grammar: ${token}`, () => {
@@ -84,7 +85,7 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
     const inputs = templateInputs(p, { ...model, kind: 'video' }, { prompt: c.sourcePrompt, aspect: c.aspect, aspectOptions: c.aspect ? [c.aspect] : [], durationSeconds: c.duration, withPhoto: true });
     let body;
     await submitTemplate({ preset: p, model, inputs, run: templateRun(null, p.id, 32, () => 'key'), quote: { ceilings: [32] }, deps: { sources: async () => ({ references: refs }), gatewayFetch: async (_, init) => { body = JSON.parse(init.body); return { job_id: 'job' }; }, onJob() {} } });
-    if (c.slotCount === 1) { assert.equal(body.template_id, c.id); assert.equal(body.inputs.prompt, c.prompt); assert.equal(checkTemplateRequest(body).ok, true); }
+    if (c.slotCount === 1) { assert.equal(body.template_id, c.id); assert.equal(body.inputs.prompt, c.prompt); assert.equal(checkTemplateRequest(body).ok, !swapNeedsSourceVideo(c.sourcePrompt)); }
     else { assert.equal(body.template_id, undefined); assert.equal(body.inputs.prompt, c.sourcePrompt); }
     assert.equal(templateRoute(p, id, c.slotCount).modelId, 'kling-3.0-i2v');
   }
