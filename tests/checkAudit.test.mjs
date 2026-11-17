@@ -120,8 +120,9 @@ const picomatchTree = () => report({
     vitest: { name: 'vitest', severity: 'high', via: ['picomatch'], fixAvailable: BREAKING_FIX },
 });
 
-test('the nested Workers-runtime lockfile waives only the picomatch advisory, and the root list stays empty', () => {
-    assert.deepEqual(ALLOWED, []);
+test('each lockfile waives only the picomatch advisory, with a reason', () => {
+    assert.deepEqual(ALLOWED.map((e) => e.id), [PICOMATCH]);
+    assert.ok(ALLOWED[0].reason.length > 20);
     assert.deepEqual(Object.keys(ALLOWED_BY_PREFIX), [NESTED]);
     assert.deepEqual(ALLOWED_BY_PREFIX[NESTED].map((e) => e.id), [PICOMATCH]);
     assert.ok(ALLOWED_BY_PREFIX[NESTED][0].reason.length > 20);
@@ -130,9 +131,13 @@ test('the nested Workers-runtime lockfile waives only the picomatch advisory, an
     assert.deepEqual(waived, [{ id: PICOMATCH, package: 'picomatch', severity: 'high' }]);
 });
 
-test('the same advisory still fails the root lockfile, so the exception cannot leak', () => {
-    const { problems } = assessAudit(picomatchTree(), ALLOWED);
-    assert.match(problems[0], new RegExp(PICOMATCH));
+test('the waiver covers that one advisory only: any other high advisory still fails each lockfile', () => {
+    const other = (extra) => report({ ...picomatchTree().vulnerabilities, undici: { name: 'undici', severity: 'high', via: [advisory('undici', 'GHSA-zzzz-zzzz-zzzz')], fixAvailable: true }, ...extra });
+    for (const list of [ALLOWED, ALLOWED_BY_PREFIX[NESTED]]) {
+        const { problems } = assessAudit(other(), list, report({}));
+        assert.equal(problems.length, 1);
+        assert.match(problems[0], /GHSA-zzzz-zzzz-zzzz/);
+    }
 });
 
 test('the exception ends itself: a fix, a production install or silence all fail the gate', () => {

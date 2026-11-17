@@ -23,7 +23,12 @@ const BLOCKING = new Set(['high', 'critical']);
 
 // Add an entry only when there is no fixed version to move to, and say where
 // the package sits and why that is tolerable. Remove it when the gate says so.
-export const ALLOWED = [];
+export const ALLOWED = [
+  // picomatch <= 4.0.7 (ReDoS through repeated extglobs, published 2026-10-19) has no patched version. In this lockfile
+  // it sits only under eslint-config-next (eslint, typescript-eslint, fast-glob, tinyglobby): lint tooling.
+  // `npm audit --omit=dev` reports 0 vulnerabilities, so nothing ships it.
+  { id: 'GHSA-fc5q-39xc-vjpf', reason: 'picomatch <= 4.0.7 has no patched version; lint tooling only (eslint-config-next chain)' },
+];
 
 // The same gate for another lockfile: `node scripts/check-audit.mjs --prefix <dir>` audits <dir> and uses that
 // directory's own list, so an exception for one lockfile can never hide, or be reported stale by, another.
