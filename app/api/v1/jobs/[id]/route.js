@@ -34,6 +34,7 @@
 import { NextResponse } from 'next/server';
 import { jobReadLimitResponse } from '../../../../../lib/jobReadLimit.js';
 import { publicJob } from '../../../../../lib/jobState.js';
+import { refreshPolledJob } from '../../../../../lib/refreshPolledJob.js';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 
 import { isUuidLoose } from '../../../../../lib/validate.js';
@@ -63,6 +64,15 @@ export async function GET(req, { params }) {
     if (limited) return limited;
     if (!row || row.ok !== true) {
         return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+
+    // Providers with no signed callback are otherwise found by the minute sweep. Settle this one job now
+    // (throttled, best effort) and read it again only when something was applied.
+    if (await refreshPolledJob({ job: { id, provider: row.provider, state: row.state, created_at: row.created_at }, cfg })) {
+        try {
+            const fresh = await rpc('get_user_job', { p_auth_id: authId, p_job_id: id }, cfg);
+            if (fresh && fresh.ok === true) row = fresh;
+        } catch { /* the first read stands */ }
     }
 
     // The mapping lives in lib/jobState.js, shared with the route that answers for a send by its key.
