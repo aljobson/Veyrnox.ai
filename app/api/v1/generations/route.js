@@ -1,3 +1,7 @@
+import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
+import { checkTemplateSwapRequest, resolveTemplateSwapVideo } from '../../../../lib/templateSwapClipGeneration.js';
+import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
+import { TEMPLATE_SWAP_CLIP_PROMPT } from '../../../../lib/templateSwapClipPrompt.mjs';
 import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
 import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
 import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
@@ -102,9 +106,11 @@ export async function POST(req) {
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
+    if (['template_swap', 'template_clip', 'swap'].filter(key => Object.hasOwn(body, key)).length > 1) return NextResponse.json({ error: 'template_source_conflict' }, { status: 400 });
+    const hasTemplateSwap = Object.hasOwn(body, 'template_swap');
     const suppliedInputKeys = Object.keys(inputs);
     // A server-held template clip has its own gate (checkTemplateClipRequest); the template_id contract does not apply to it.
-    const templateCheck = Object.hasOwn(body, 'template_clip') ? { ok: true } : checkTemplateRequest(body);
+    const templateCheck = (hasTemplateSwap || Object.hasOwn(body, 'template_clip')) ? { ok: true } : checkTemplateRequest(body);
     if (!templateCheck.ok) {
         // A revised contract cannot invalidate an accepted job after a lost response.
         // Ownership, key and the original request fingerprint prove a replay. All
@@ -139,7 +145,7 @@ export async function POST(req) {
         } catch { /* A failed read never admits a new request. */ }
         return NextResponse.json({ error: templateCheck.error }, { status: 400 });
     }
-    const inputsCheck = body.template_clip !== undefined ? { ok: true } : validateInputs(inputs);
+    const inputsCheck = (hasTemplateSwap || body.template_clip !== undefined) ? { ok: true } : validateInputs(inputs);
     if (!inputsCheck.ok) return NextResponse.json({ error: inputsCheck.error }, { status: 400 });
     if (Object.hasOwn(inputs, 'narration_text')) {
         const narration = normaliseNarration(inputs.narration_text);
@@ -201,6 +207,13 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
+    if (hasTemplateSwap && (process.env.TEMPLATE_SWAP_CLIP_ENABLED !== 'true' || typeof body.template_swap !== 'string'
+        || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_swap))) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
+    const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg) : null;
+    if (swapClipReplay) return NextResponse.json(swapClipReplay.body, { status: swapClipReplay.status });
+    const templateSwap = hasTemplateSwap ? await loadTemplateSwapClip(body.template_swap, cfg) : null;
+    if (hasTemplateSwap && !templateSwap) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
+    if (templateSwap && clientTemplateVideo(body)) return NextResponse.json({ error: 'template_swap_video_not_allowed' }, { status: 400 });
     const hasTemplateClip = Object.hasOwn(body, 'template_clip');
     if (hasTemplateClip && (process.env.TEMPLATE_CLIP_ENABLED !== 'true' || typeof body.template_clip !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_clip))) return NextResponse.json({ error: 'template_clip_not_found' }, { status: 404 });
@@ -232,6 +245,13 @@ export async function POST(req) {
         const checked = validateInputs(inputs);
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
     }
+    if (templateSwap) {
+        const error = checkTemplateSwapRequest(body, references.references, templateSwap.modelRow.id);
+        if (error) return NextResponse.json({ error }, { status: 400 });
+        inputs = { ...inputs, prompt: TEMPLATE_SWAP_CLIP_PROMPT, duration_seconds: 5 };
+        const checked = validateInputs(inputs);
+        if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
+    }
     const rawKeys = references.keys, rawAssets = references.assets;
     if (rawKeys.length || rawAssets.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
@@ -243,7 +263,7 @@ export async function POST(req) {
     const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
-        const rows = templateClip ? [templateClip.modelRow] : swap ? [swap.modelRow] : await select(
+        const rows = templateSwap ? [templateSwap.modelRow] : templateClip ? [templateClip.modelRow] : swap ? [swap.modelRow] : await select(
             'model_catalog',
             { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
@@ -290,19 +310,19 @@ export async function POST(req) {
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     // Active capabilities precede source signing/inspection. Both frames pass caller
     // ownership, expiry, MIME sniffing and bounded size/length checks before debit.
-    const r2cfg = templateClip || swap || rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
+    const r2cfg = templateSwap || templateClip || swap || rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
     if (r2cfg && !r2IsConfigured(r2cfg)) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     const resolved = await resolveGenerationSources({ authId, references: references.references, record, r2cfg, dbcfg: cfg });
     if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: sourceErrorStatus(resolved.error) });
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
-    const swapVideo = templateClip ? await resolveTemplateClipVideo(templateClip, record, r2cfg) : swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
+    const swapVideo = templateSwap ? await resolveTemplateSwapVideo(templateSwap, record, r2cfg) : templateClip ? await resolveTemplateClipVideo(templateClip, record, r2cfg) : swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
     if (swapVideo && !swapVideo.ok) return NextResponse.json({ error: swapVideo.error }, { status: sourceErrorStatus(swapVideo.error) });
     if (swapVideo) { inputs.video_url = swapVideo.url; sources.video_url = swapVideo.metadata; }
 
     // Strict records retain resolved source slots so provider preflight can
     // refuse extras. Legacy records keep the shared-control filtering path.
-    const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!templateClip });
+    const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) });
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
@@ -401,7 +421,7 @@ export async function POST(req) {
     // ADR-0072: the template this started from, recorded on the job for the Popular ranking only. It is believed only if it names a
     // real template that belongs to this model, it never reaches a provider (the provider gets storedInputs / modelInputs below),
     // and a bad or missing one is simply ignored.
-    const presetId = swap || templateClip ? null : templateStartId(body && body.preset, modelId);
+    const presetId = swap || templateClip || templateSwap ? null : templateStartId(body && body.preset, modelId);
     const jobInputs = { ...storedInputs, ...(presetId ? { preset_id: presetId } : {}),
         ...(templateCheck.metadata ? { template_fidelity: { ...templateCheck.metadata, request_hash: await templateRequestFingerprint(body) } } : {}) };
     // Only authenticated ownership + key proves a replay. Malformed reads are unknown.
