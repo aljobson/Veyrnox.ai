@@ -292,6 +292,16 @@ new full-contract import enters `/api/catalog`. No Worker budget is changed.
 CI must measure compiled size against 60,500 KiB; source-byte accounting is not
 a bundle-size proof.
 
+## Amendment 4: background clause and the price decision (2026-11-17)
+
+Background leak. The owner's first spot check (three clips, same photo, plain wall behind the person) showed the photo's background, a plain wall, appearing in two outputs instead of the clip's own scene (`community-anime-hero-swap`, `basketball-3`), and a blurry basketball frame. The face and clothing followed the photo. The wording now adds one clause and one reorder, for 642 characters in total (still under the 2,000-character budget; amendment 1's 529 characters and amendment 3's "remains 529" note describe the earlier text):
+
+> Use the reference image only for the person: ignore its background, setting and lighting completely. Keep the video's scene, background, camera, lighting, motion and timing unchanged.
+
+The face wording constant (`lib/templateFaceWording.mjs`) is unchanged and still shared with the Kling I2V path, which does not get this clause (there the photo is the start frame, so its background is wanted). The O1 prompt is a server-held constant, not a client input, so exact-only transport and every contract hash are untouched; `tests/templateSwapClipPrompt.test.mjs` pins the exact text and length. This is a mitigation judged by eye on a few clips, not a guarantee that no background will ever carry over. A second paid spot check with a busy-background photo is the intended evidence (eight clips, $6.72, hard cap $7, run by the owner with their own key); it is not part of this change.
+
+Owner decision, dated 2026-11-17. The O1 swap run is priced at 47 credits for 5 seconds, which is the existing catalog row (migration 0405, the whole-credit floor under ADR-0037 amendment 2 and migration 0366). The provider cost is about $0.84 for 5 seconds ($0.168 per output second). Two readings of that price, both recorded so the decision is not misread: at the floor credit rate the catalog uses (about $0.01796 per credit, the cheapest effective rate, which is how 47 was derived) 47 credits equal the provider cost, so the owner described it as no margin at the floor; at the pack prices in migration 0365 a credit sells for more than that, so customer revenue per run is higher than the provider cost (ADR-0037 states its own contribution-margin assumptions, which this ADR does not recompute). The owner accepted the price as it stands. No catalog or price change is made, and the 5.05-second clip cap (amendment 2) is kept. A 10-second run would be a separate priced unit and is not offered.
+
 ## Amendment 5: private content-addressed swap manifest (2026-11-17)
 
 Owner decision: keep clip entries and other creators' clip hashes out of Worker
@@ -337,10 +347,8 @@ content-addressed JSON and verifies full read-back. Only then does it emit
 for private records. No manifest entries are emitted as JavaScript. Failed
 manifest uploads/read-back and dry runs emit nothing publishable.
 
-Checkout discrepancies: Amendment 4 from the prerequisite wording PR #2389
-is not present here; its number remains reserved, and its wording/price decision
-must be integrated separately. This amendment does not duplicate that decision.
-The checked-in size script already has a 60,700 KiB budget, despite the frozen
-plan's 60,500 KiB assertion. This work leaves that script unchanged; no budget
+Amendment 4 (PR #2389) records the wording clause and the owner's price
+decision; this amendment does not repeat it. The checked-in size script already
+has a 60,700 KiB budget, despite the frozen plan's 60,500 KiB assertion. This work leaves that script unchanged; no budget
 increase is authorized or performed. Source-byte accounting cannot establish
 compiled Worker size; `worker-smoke` must measure the compiled result in CI.
