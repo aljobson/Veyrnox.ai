@@ -22,5 +22,5 @@ export function Logo({ size = 28, wordmark = true, palette = colors }: { size?: 
 
 const styles = StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    word: { fontFamily: fonts.displayHeavy, letterSpacing: -0.2 },
+    word: { fontFamily: fonts.displayBlack, letterSpacing: -0.2 },
 });

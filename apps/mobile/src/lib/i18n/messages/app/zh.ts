@@ -4644,6 +4644,8 @@ export default {
   "welcome.start.body": "用几句话描述创意即可开始，也可以拿一张照片或一段视频作为素材。",
   "welcome.start.title": "准备好就开始",
   "welcome.step": "第 {n} 步，共 {total} 步",
+  "welcome.toGo.one": "还剩一步",
+  "welcome.toGo.two": "还剩两步",
   "whenPicker.dateyearmonthday": "日期，年-月-日",
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "时间，时:分",

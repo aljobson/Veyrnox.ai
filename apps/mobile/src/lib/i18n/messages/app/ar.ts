@@ -5019,6 +5019,8 @@ export default {
   "welcome.start.body": "ابدأ من فكرة ببضع كلمات، أو أحضر صورة أو فيديو لتعمل عليه.",
   "welcome.start.title": "جاهز عندما تكون جاهزًا",
   "welcome.step": "الخطوة {n} من {total}",
+  "welcome.toGo.one": "متبقّ خطوة واحدة",
+  "welcome.toGo.two": "متبقّ خطوتان",
   "whenPicker.dateyearmonthday": "التاريخ، سنة-شهر-يوم",
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "الوقت، ساعة:دقيقة",
