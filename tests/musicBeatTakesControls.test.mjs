@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
+import * as shortcuts from '../app/veyrnox/_lib/music/beat/beatShortcuts.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -27,7 +29,7 @@ function hooks() {
 function load(name, state, extra = {}) {
   const source = readFileSync(new URL(`../app/veyrnox/_components/music/beat/${name}.${name.startsWith('use') ? 'js' : 'jsx'}`, import.meta.url), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-  const compiled = { exports: {} }, stubs = { react: state.react, './beatStyles': {},
+  const compiled = { exports: {} }, stubs = { ...englishBeatImports, '../../../_lib/music/beat/beatShortcuts.mjs': shortcuts, react: state.react, './beatStyles': {},
     './BeatTakeWaveform': { __esModule: true, default: () => null }, '../../../_lib/music/beat/beatTakeOps.mjs': takeOps, ...extra };
   new Function('require', 'module', 'exports', code)(id => stubs[id] || require(id), compiled, compiled.exports);
   return compiled.exports.default || compiled.exports[name];

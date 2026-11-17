@@ -1,3 +1,6 @@
+import messages from '../../../../../lib/i18n/messages/app/en/music-beat-time.mjs';
+import { translator, pluralKey } from '../../../../../lib/i18n/translate.mjs';
+const english = translator('en', messages);
 export const PPQ = 960;
 export const stepTicks = 240;
 export const stepSeconds = (bpm) => 60 / bpm / 4;
@@ -27,19 +30,19 @@ export function moveLocator(tick, key, snap, end) {
 export const swingDelay = (step, bpm, swing) => step % 2 ? swing * stepSeconds(bpm) * 0.5 : 0;
 export const eventTime = (straight, step, bpm, swing) => straight + swingDelay(step, bpm, swing);
 
-export function formatPosition(ticks) {
+export function formatPosition(ticks, t = english) {
   const tick = Math.max(0, Math.floor(ticks));
   const bar = Math.floor(tick / 3840) + 1, beat = Math.floor(tick % 3840 / 960) + 1;
   const step = Math.floor(tick % 960 / 240) + 1;
-  return `bar ${bar}` + (tick % 3840 ? `, beat ${beat}` : '') + (tick % 960 ? `, step ${step}` : '');
+  return t('app.music.beat.time.position.bar', { n: bar }) + (tick % 3840 ? t('app.music.beat.time.position.beat', { n: beat }) : '') + (tick % 960 ? t('app.music.beat.time.position.step', { n: step }) : '');
 }
 // Durations are rounded to the nearest 1/64 note, never decimal beats.
-export function formatNoteLength(ticks) {
+export function formatNoteLength(ticks, t = english, locale = 'en') {
   const units = Math.max(1, Math.round(ticks / 60));
   const bars = Math.floor(units / 64), beats = Math.floor(units % 64 / 16), fraction = units % 16;
   const parts = [];
-  if (bars) parts.push(`${bars} ${bars === 1 ? 'bar' : 'bars'}`);
-  if (beats) parts.push(`${beats} ${beats === 1 ? 'beat' : 'beats'}`);
+  if (bars) parts.push(t(pluralKey(t, locale, 'app.music.beat.time.bars', bars), { n: bars }));
+  if (beats) parts.push(t(pluralKey(t, locale, 'app.music.beat.time.beats', beats), { n: beats }));
   if (fraction) {
     let numerator = fraction, denominator = 64;
     while (numerator % 2 === 0) { numerator /= 2; denominator /= 2; }

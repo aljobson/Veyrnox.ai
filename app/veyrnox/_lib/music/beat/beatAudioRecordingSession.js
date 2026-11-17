@@ -1,3 +1,4 @@
+import { beatEnglish } from './beatDisplay.mjs';
 import { drainCapture } from './beatCapture.js';
 import { splitPasses } from './beatTakeCapture.mjs';
 import { tickSeconds } from './beatAudioSegments.mjs';
@@ -20,7 +21,7 @@ export function audioRecordingRange(doc, locator) {
   if (cycle && doc.cycle.end - doc.cycle.start < 3840) throw new Error('Cycle recording needs a cycle of at least 1 bar');
   return { start, length: end - start, cycle };
 }
-export function createAudioRecording({ doc, trackId, range, capture, rtt, contextStart, countIn, current, edit, announce, onState, stop, persist = putBeatTake, checkpointPersist = appendBeatTake, discard = discardBeatTakes, onSettled = () => {}, drain = drainCapture }) {
+export function createAudioRecording({ doc, trackId, range, capture, rtt, contextStart, countIn, current, edit, announce, onState, stop, persist = putBeatTake, checkpointPersist = appendBeatTake, discard = discardBeatTakes, onSettled = () => {}, drain = drainCapture, t = beatEnglish }) {
   const sr = capture.context.sampleRate, bpm = doc.tempo.bpm, recordingId = crypto.randomUUID();
   const startSec = tickSeconds(range.start, bpm), endSec = tickSeconds(range.start + range.length, bpm);
   const c0 = contextStart + (countIn ? tickSeconds(3840, bpm) : 0);
@@ -73,8 +74,8 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
       if (range.cycle ? pass > lastPassCheckpoint : time - lastCheckpoint >= 10) { checkpoint(Math.min(time, c0 + maxSeconds)); lastCheckpoint = time; lastPassCheckpoint = pass; }
       if (frames >= maxFrames || elapsed >= maxSeconds || (range.cycle && pass >= maxPasses)) {
         finishEnd = Math.min(c0 + maxSeconds, range.cycle ? c0 + maxPasses * (endSec - startSec) : Infinity);
-        stopReason = limit.cloud ? 'Take size limit reached — recording stopped before the 60 MB upload limit.'
-          : limit.passes && previousLanes + maxPasses === 8 ? 'Take limit reached — 8 takes per section.' : 'Recording limit reached — takes kept.';
+        stopReason = limit.cloud ? t('app.music.beat.details.d36')
+          : limit.passes && previousLanes + maxPasses === 8 ? t('app.music.beat.details.d27') : t('app.music.beat.details.d37');
         announce(stopReason); stop();
       }
     } catch (error) { failed(error); }
@@ -87,7 +88,7 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
     if (latest.id !== doc.id) throw new Error('Open the original beat to recover these takes.');
     const next = commitRecording(latest, { trackId, start: range.start, length, single: !range.cycle, takes: readyRows.map(row => ({ asset: takeAsset(row) })) });
     const count = next.tracks.find(t => t.id === trackId).takeGroups.find(g => g.start === range.start && g.length === length).lanes.length;
-    if (!edit(() => next, { recordingCommit: true, label: `Recorded ${readyRows.length} takes`, message: `Recorded ${readyRows.length} takes — using take ${count}` })) throw new Error('Could not commit the recorded takes. Try again.');
+    if (!edit(() => next, { recordingCommit: true, label: `Recorded ${readyRows.length} takes`, message: t('app.music.beat.details.d35', { count: readyRows.length, take: count }) })) throw new Error('Could not commit the recorded takes. Try again.');
     committed = true; failure = ''; onSettled(); return next;
   }
   return {
@@ -104,13 +105,13 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
           try { early = !await drain(capture, end, rtt); } catch { early = true; }
           unsubscribe(); await writing;
           const parts = split(end), kept = parts.filter(p => !range.cycle || p.complete || p.samples.length >= sr);
-          if (kept.length < parts.length) announce('Final pass shorter than 1 second discarded.');
+          if (kept.length < parts.length) announce(t('app.music.beat.details.d38'));
           readyRows = kept.map(p => rowFor(p, range.cycle ? range.length : Math.floor(p.samples.length / sr / tickSeconds(240, bpm)) * 240)).filter(r => r.pending.length >= 240);
           chunks.length = 0; windows.length = 0;
           await discard([...ids.values()].filter(id => !readyRows.some(r => r.id === id)));
           const result = await commit();
           if (stopReason) announce(stopReason);
-          if (early) announce(`Recording stopped early — takes kept up to bar ${Math.floor((range.start + (readyRows.at(-1)?.pending.length || 0)) / 3840) + 1}.`);
+          if (early) announce(t('app.music.beat.details.d39', { bar: Math.floor((range.start + (readyRows.at(-1)?.pending.length || 0)) / 3840) + 1 }));
           return result;
         } catch (e) { failure = e.message; announce(e.message); return current(); }
         finally { unsubscribe(); onState({ status: failure ? 'error' : 'armed', error: failure }); }

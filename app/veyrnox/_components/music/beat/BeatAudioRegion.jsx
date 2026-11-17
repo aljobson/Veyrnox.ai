@@ -1,9 +1,13 @@
 'use client';
+import { beatErrorMessage } from '../../../_lib/music/beat/beatErrors.mjs';
+import { useI18n } from '../../../../../components/I18nProvider';
+
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { assetState, subscribeAssets, loadAsset, audioPeaks, yieldAudio, retryBeatAssets } from '../../../_lib/music/beat/beatAssets';
 import { button } from './beatStyles';
 import { tickSeconds, modulo } from '../../../_lib/music/beat/beatAudioSegments.mjs';
 export default function BeatAudioRegion({ region, asset, bpm, zoom }) {
+  const { t } = useI18n();
   const canvas = useRef(null);
   const state = useSyncExternalStore(subscribeAssets, () => assetState(asset, bpm), () => assetState(asset, bpm));
   useEffect(() => {
@@ -33,16 +37,17 @@ export default function BeatAudioRegion({ region, asset, bpm, zoom }) {
     }
     void draw(); return () => { live = false; };
   }, [asset, bpm, region, zoom, state]);
-  if (state.status === 'held') return <span className="block px-3" aria-label="Held for review — this part can't be played or exported"><span aria-hidden="true">✦ </span>Held for review</span>;
-  return <><span className="block truncate px-3 font-bold">{state.status === 'missing' ? 'Missing sound' : asset.name}</span>
+  if (state.status === 'held') return <span className="block px-3" aria-label={t('app.music.beat.ui.held.for.review.this.part.can.t.be.played.or.exported')}><span aria-hidden="true">✦ </span>{t('app.music.beat.ui.held.for.review')}</span>;
+  return <><span className="block truncate px-3 font-bold">{state.status === 'missing' ? t('app.music.beat.ui.missing.sound') : asset.name}</span>
     <canvas ref={canvas} aria-hidden="true" className="h-6 w-full text-vx-hue-sky" />
-      {state.status !== 'ready' && <span className="block truncate px-3 text-xs" title={state.reason}>{state.status === 'missing' ? state.reason : 'Loading sound…'}</span>}</>;
+      {state.status !== 'ready' && <span className="block truncate px-3 text-xs" title={state.status === 'missing' ? beatErrorMessage({ displayCode: state.code, params: state.params }, 'playback', t) : undefined}>{state.status === 'missing' ? beatErrorMessage({ displayCode: state.code, params: state.params }, 'playback', t) : t('app.music.beat.ui.loading.sound')}</span>}</>;
 }
 
 // A sibling of the region button, so Retry never nests an interactive control.
 export function BeatAudioRetry({ asset, bpm, reverse }) {
+  const { t } = useI18n();
   const state = useSyncExternalStore(subscribeAssets, () => assetState(asset, bpm), () => assetState(asset, bpm));
   if (state.status !== 'missing' || state.permanent) return null;
-  return <button className={`${button} absolute left-0 top-full z-20`} aria-label={`Retry ${asset.name}`}
-    onClick={(event) => { event.stopPropagation(); retryBeatAssets(asset, bpm); void loadAsset(asset, bpm, reverse); }}>Retry</button>;
+  return <button className={`${button} absolute left-0 top-full z-20`} aria-label={t('app.music.beat.labels.l3', { p0: asset.name })}
+    onClick={(event) => { event.stopPropagation(); retryBeatAssets(asset, bpm); void loadAsset(asset, bpm, reverse); }}>{t('app.music.beat.ui.retry')}</button>;
 }

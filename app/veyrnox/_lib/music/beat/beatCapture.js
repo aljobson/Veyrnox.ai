@@ -1,9 +1,10 @@
+import { beatFailure } from './beatErrors.mjs';
 export const UNSUPPORTED_RECORDING = "This browser can't record audio in the beat editor.";
 const loaded = new WeakMap();
 export async function openBeatCapture(context, deviceId = 'default', { onEnded = () => {} } = {}) {
   const policy = document.permissionsPolicy || document.featurePolicy;
-  if (policy?.allowsFeature?.('microphone') === false) throw new Error('Reload this page to use the microphone');
-  if (!context.audioWorklet || !globalThis.AudioWorkletNode || !navigator.mediaDevices?.getUserMedia) throw new Error(UNSUPPORTED_RECORDING);
+  if (policy?.allowsFeature?.('microphone') === false) throw beatFailure('microphone-policy');
+  if (!context.audioWorklet || !globalThis.AudioWorkletNode || !navigator.mediaDevices?.getUserMedia) throw beatFailure('recording-unsupported');
   let stream;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: { ...(deviceId !== 'default' ? { deviceId: { exact: deviceId } } : {}), echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
@@ -34,8 +35,8 @@ export async function openBeatCapture(context, deviceId = 'default', { onEnded =
     };
   } catch (e) {
     stream?.getTracks().forEach(t => t.stop());
-    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') throw new Error('Microphone blocked — site settings → Microphone → Allow, then Arm again.');
-    if (e.name === 'OverconstrainedError' || e.name === 'NotFoundError') throw new Error("That microphone isn't available — choose another input, then Arm again.");
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') throw beatFailure('microphone-blocked');
+    if (e.name === 'OverconstrainedError' || e.name === 'NotFoundError') throw beatFailure('microphone-missing');
     throw e;
   }
 }

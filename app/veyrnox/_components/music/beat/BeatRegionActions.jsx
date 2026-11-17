@@ -1,32 +1,29 @@
 'use client';
+import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
+import { useI18n } from '../../../../../components/I18nProvider';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
-import { button, input } from './beatStyles';
+import { button } from './beatStyles';
 
-export default function BeatRegionActions({ region, track, locator, movePlayhead, snap, edit, selectPattern }) {
+export default function BeatRegionActions({ region, track, movePlayhead, snap, edit, tracks = [] }) {
+  const { t } = useI18n();
   const run = (change, label) => edit(change, { label, regionId: region?.id });
-  return <div className="flex flex-wrap gap-2 rounded-xl border border-vx-border bg-vx-panel p-2 lg:hidden"
-    role="group" aria-label="Region actions">
-    <button className={button} aria-label="Move playhead left" onClick={() => movePlayhead(-snap)}>◀ playhead</button>
-    <button className={button} aria-label="Move playhead right" onClick={() => movePlayhead(snap)}>playhead ▶</button>
+  return <>
+    {region && <div className="flex flex-wrap gap-2">
+      {[-1, 1].map(delta => <button key={delta} className={button} onClick={() => run(d => ops.moveRegion(d, region.id, region.start, tracks[Math.max(0, Math.min(tracks.length - 1, tracks.findIndex(item => item.id === track.id) + delta))]?.id || track.id), BEAT_ACTIONS.a42)}>{t(delta < 0 ? 'app.music.beat.control.previousTrack' : 'app.music.beat.control.nextTrack')}</button>)}
+      <button className={button} onClick={() => run(d => ops.trimRegionStart(d, region.id, region.start - snap), BEAT_ACTIONS.a43)}>{t('app.music.beat.control.extendStart')}</button>
+    </div>}
+    <div className="flex flex-wrap gap-2 rounded-xl border border-vx-border bg-vx-panel p-2 lg:hidden"
+    role="group" aria-label={t('app.music.beat.ui.region.actions')}>
+    <button className={button} aria-label={t('app.music.beat.ui.move.playhead.left')} onClick={() => movePlayhead(-snap)}>{t('app.music.beat.ui.playhead.2')}</button>
+    <button className={button} aria-label={t('app.music.beat.ui.move.playhead.right')} onClick={() => movePlayhead(snap)}>{t('app.music.beat.ui.playhead.3')}</button>
     {region && <>
       <button className={button} onClick={() => run((d) => ops.moveRegion(d, region.id,
-        Math.max(0, region.start - snap), track.id), 'move region')}>Move ◀</button>
+        Math.max(0, region.start - snap), track.id), BEAT_ACTIONS.a42)}>{t('app.music.beat.ui.move')}</button>
       <button className={button} onClick={() => run((d) => ops.moveRegion(d, region.id,
-        region.start + snap, track.id), 'move region')}>Move ▶</button>
-      <button className={button} onClick={() => run((d) => ops.resizeRegion(d, region.id, region.length - snap), 'resize region')}>Shorter</button>
-      <button className={button} onClick={() => run((d) => ops.resizeRegion(d, region.id, region.length + snap), 'resize region')}>Longer</button>
-      <button className={button} onClick={() => run((d) => ops.trimRegionStart(d, region.id, region.start + snap), 'trim region')}>Trim start</button>
-      <button className={button} onClick={() => run((d) => ops.splitRegion(d, region.id, locator), 'split region')}>Split at playhead</button>
-      <button className={button} onClick={() => run((d) => ops.duplicateRegion(d, region.id), 'duplicate region')}>Duplicate</button>
-      <button className={button} onClick={() => run((d) => ops.deleteRegion(d, region.id), 'delete region')}>Delete</button>
-      {region.pattern && <label>Pattern <select className={input} value={region.pattern}
-        onChange={(e) => {
-          const slot = e.target.value;
-          run((d) => ops.setRegionPattern(d, region.id, slot), 'change region pattern');
-          selectPattern(slot);
-        }}>
-        {['A', 'B', 'C', 'D'].map((slot) => <option key={slot}>{slot}</option>)}
-      </select></label>}
+        region.start + snap, track.id), BEAT_ACTIONS.a42)}>{t('app.music.beat.ui.move.2')}</button>
+      <button className={button} onClick={() => run((d) => ops.resizeRegion(d, region.id, region.length - snap), BEAT_ACTIONS.a44)}>{t('app.music.beat.ui.shorter')}</button>
+      <button className={button} onClick={() => run((d) => ops.resizeRegion(d, region.id, region.length + snap), BEAT_ACTIONS.a44)}>{t('app.music.beat.ui.longer')}</button>
+      <button className={button} onClick={() => run((d) => ops.trimRegionStart(d, region.id, region.start + snap), BEAT_ACTIONS.a43)}>{t('app.music.beat.ui.trim.start')}</button>
     </>}
-  </div>;
+  </div></>;
 }

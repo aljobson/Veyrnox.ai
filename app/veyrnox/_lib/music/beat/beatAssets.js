@@ -71,7 +71,7 @@ export function syncAssetTempo(bpm) {
 }
 subscribeLocalTakes(() => {
   for (const [key, entry] of cache) if (entry.source === 'take' && entry.origin === 'shelf' && !localTake(entry.ref)) {
-    remove(key); if (!cloudRow(entry.ref)) states.set(key, { status: 'missing', reason: 'This take was deleted', permanent: true });
+    remove(key); if (!cloudRow(entry.ref)) states.set(key, { status: 'missing', reason: 'This take was deleted', code: 'take-deleted', permanent: true });
   }
   emit();
 });
@@ -151,7 +151,7 @@ export async function prepareAsset(item, bpm) {
   if (!validAsset(asset, bpm)) throw new Error('Invalid sound metadata.');
   admitDecode(asset);
   const buffer = await loadAsset(asset, bpm);
-  if (!buffer) throw new Error(assetState(asset, bpm).reason);
+  if (!buffer) { const state = assetState(asset, bpm); throw Object.assign(new Error(state.reason), { displayCode: state.code, params: state.params }); }
   return asset;
 }
 export async function loadAsset(asset, bpm, reverse = false) {
@@ -212,7 +212,7 @@ export async function loadAssetBuffers(asset, bpm, reverse = false) {
     } catch (error) {
       if (isHeldError(error)) markAssetHeld(asset);
       else if (token === generation && !held() && error.name !== 'AbortError') {
-        states.set(key, { status: 'missing', reason: error.message, permanent: permanentAssetFailure(error) }); emit();
+        states.set(key, { status: 'missing', reason: error.message, ...(error.displayCode && { code: error.displayCode, params: error.params }), permanent: permanentAssetFailure(error) }); emit();
       }
       return null;
     }

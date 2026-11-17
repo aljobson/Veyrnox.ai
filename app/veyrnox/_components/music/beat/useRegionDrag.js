@@ -1,9 +1,12 @@
 'use client';
+import { useI18n } from '../../../../../components/I18nProvider';
+import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
 import { useEffect, useRef, useState } from 'react';
 import { snapTick } from '../../../_lib/music/beat/beatTime.mjs';
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 
 export default function useRegionDrag({ scroller, zoom, snap, edit, announce }) {
+  const { t } = useI18n();
   const active = useRef(null);
   const suppressClick = useRef(false);
   const [preview, setPreview] = useState(null);
@@ -11,7 +14,7 @@ export default function useRegionDrag({ scroller, zoom, snap, edit, announce }) 
     function cancel() {
       if (!active.current) return;
       active.current = null; setPreview(null); suppressClick.current = true;
-      announce('Drag cancelled');
+      announce(t('app.music.beat.status.s103'));
     }
     function move(event) {
       const drag = active.current;
@@ -45,7 +48,7 @@ export default function useRegionDrag({ scroller, zoom, snap, edit, announce }) 
       if (!drag.moved) return;
       suppressClick.current = true;
       const { value, mode, region, copy } = drag;
-      const label = mode === 'move' ? (copy ? 'copy region' : 'move region') : mode === 'trim' ? 'trim region' : 'resize region';
+      const label = mode === 'move' ? (copy ? BEAT_ACTIONS.a45 : BEAT_ACTIONS.a42) : mode === 'trim' ? BEAT_ACTIONS.a43 : BEAT_ACTIONS.a44;
       edit((d) => mode === 'resize' ? ops.resizeRegion(d, region.id, value.length)
         : mode === 'trim' ? ops.trimRegionStart(d, region.id, value.start)
           : (copy ? ops.copyRegion : ops.moveRegion)(d, region.id, value.start, value.trackId),
@@ -62,7 +65,7 @@ export default function useRegionDrag({ scroller, zoom, snap, edit, announce }) 
       window.removeEventListener('pointercancel', cancel);
       window.removeEventListener('keydown', key);
     };
-  }, [scroller, zoom, snap, edit, announce]);
+  }, [scroller, zoom, snap, edit, announce, t]);
   function begin(event, region, trackId, mode = 'move') {
     if (event.button !== 0) return;
     event.stopPropagation();

@@ -1,3 +1,4 @@
+import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
@@ -7,14 +8,16 @@ Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
 let saved, link, nextError = null, cap = false;
 const song = { id, version_id: id, job_id: id, title: 'A'.repeat(80) };
 globalThis.beatSeedFixture = {
+  useI18n: englishBeatImports['../../../../../components/I18nProvider'].useI18n,
   getStoredUserId: () => 'owner',
   gatewayFetch: async () => { if (nextError) throw nextError; return song; },
   loadSong: async base => ({ asset: { ...base, durationSec: 12, sourceChannels: 2, encodedBytes: 4000 } }),
   createBeat: async (doc, cloud) => { saved = doc; link = cloud; return cap ? { error: 'limit' } : { persistent: true }; },
 };
 const hooks = registerHooks({
-  resolve(specifier, context, next) { return next(specifier === 'next/navigation' ? 'next/navigation.js' : specifier, context); },
+  resolve(specifier, context, next) { if (specifier.endsWith('/components/I18nProvider')) return { url: 'beat:i18n', shortCircuit: true }; return next(specifier === 'next/navigation' ? 'next/navigation.js' : specifier, context); },
   load(url, context, next) {
+    if (url === 'beat:i18n') return { format: 'module', shortCircuit: true, source: 'export const { useI18n } = globalThis.beatSeedFixture;' };
     const match = Object.entries({ '/gateway.js': 'gatewayFetch', '/authClient.js': 'getStoredUserId', '/beatSongAsset.js': 'loadSong', '/beatStore.js': 'createBeat' }).find(([suffix]) => url.endsWith(suffix));
     return match ? { format: 'module', shortCircuit: true, source: `export const { ${match[1]} } = globalThis.beatSeedFixture;` } : next(url, context);
   },

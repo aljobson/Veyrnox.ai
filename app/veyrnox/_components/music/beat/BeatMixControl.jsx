@@ -1,4 +1,6 @@
 'use client';
+import { useI18n } from '../../../../../components/I18nProvider';
+import { beatLabel } from '../../../_lib/music/beat/beatLabels.mjs';
 import { useId } from 'react';
 import { input } from './beatStyles';
 export function MixRange({ label, value, min = 0, max = 1, step = 0.01, onChange, disabled = false, disabledMessage, liveMix = false, vertical = false }) {
@@ -12,8 +14,10 @@ export function MixRange({ label, value, min = 0, max = 1, step = 0.01, onChange
     {disabled && disabledMessage && <span id={descriptionId}>{disabledMessage}</span>}
   </label>;
 }
+const roomSizes = [['Small', 0.8], ['Room', 1.6], ['Hall', 2.8], ['Large', 4]];
 export function RoomSize({ label, value, onChange }) {
+  const { t } = useI18n();
   return <label className="flex flex-col gap-1 text-xs">{label}<select className={input} value={value} onChange={e => onChange(Number(e.target.value))}>
-    {[['Small', 0.8], ['Room', 1.6], ['Hall', 2.8], ['Large', 4]].map(([name, size]) => <option key={size} value={size}>{name} ({size} s)</option>)}
+    {roomSizes.map(([name, size]) => <option key={size} value={size}>{beatLabel(name, t)} ({size}{t('app.music.beat.ui.s')})</option>)}
   </select></label>;
 }

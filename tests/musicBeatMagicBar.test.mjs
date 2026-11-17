@@ -1,3 +1,4 @@
+import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -12,7 +13,7 @@ const require = createRequire(import.meta.url);
 const source = readFileSync(new URL('../app/veyrnox/_components/music/beat/BeatMagicBar.jsx', import.meta.url), 'utf8');
 const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
 const compiled = { exports: {} };
-const stubs = {
+const stubs = { ...englishBeatImports,
   '../../../_lib/gateway': { gatewayFetch: () => assert.fail('render must not make a request') },
   '../../../_lib/useMusicAudioSrc': { MusicPrivateAudio: () => null },
   '../../../_lib/music/beat/magicBar.mjs': magic,

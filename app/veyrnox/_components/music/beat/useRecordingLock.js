@@ -1,14 +1,14 @@
 'use client';
+import { beatEnglish } from '../../../_lib/music/beat/beatDisplay.mjs';
 import { useEffect } from 'react';
-import { RECORDING_LOCK_REASON } from '../../../_lib/music/beat/beatRecordingPolicy.mjs';
 export { RECORDING_LOCK_REASON } from '../../../_lib/music/beat/beatRecordingPolicy.mjs';
 // Keep native disabled semantics even for controls inside library dialogs. Live
 // channel controls and keys explicitly opt in; no editing event escapes the lock.
-export function useRecordingLock(root, locked) {
+export function useRecordingLock(root, locked, t = beatEnglish) {
   useEffect(() => {
     if (!locked || !root.current) return;
-    const element = root.current, changed = new Map();
-    const attributes = { disabled: '', title: RECORDING_LOCK_REASON, 'aria-disabled': 'true' };
+    const element = root.current, changed = new Map(), reason = t('app.music.beat.status.s10');
+    const attributes = { disabled: '', title: reason, 'aria-disabled': 'true' };
     function rememberUpdates(records) {
       for (const { target, attributeName, type } of records) {
         if (type === 'attributes' && changed.has(target)) changed.get(target)[attributeName] = target.getAttribute(attributeName);
@@ -21,7 +21,7 @@ export function useRecordingLock(root, locked) {
         if (control.closest('[data-beat-live]')) continue;
         if (!changed.has(control)) changed.set(control, Object.fromEntries(Object.keys(attributes).map((name) => [name, control.getAttribute(name)])));
         if ('disabled' in control && !control.disabled) control.disabled = true;
-        if (control.getAttribute('title') !== RECORDING_LOCK_REASON) control.setAttribute('title', RECORDING_LOCK_REASON);
+        if (control.getAttribute('title') !== reason) control.setAttribute('title', reason);
         if (control.getAttribute('aria-disabled') !== 'true') control.setAttribute('aria-disabled', 'true');
       }
       observer.observe(element, { childList: true, subtree: true, attributes: true, attributeFilter: Object.keys(attributes) });
@@ -44,5 +44,5 @@ export function useRecordingLock(root, locked) {
         }
       }
     };
-  }, [root, locked]);
+  }, [root, locked, t]);
 }

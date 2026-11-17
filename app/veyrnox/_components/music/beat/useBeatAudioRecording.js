@@ -1,4 +1,7 @@
 'use client';
+import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
+import { useI18n } from '../../../../../components/I18nProvider';
+import { beatErrorMessage, beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
 import { useEffect, useRef, useState } from 'react';
 import { openBeatCapture } from '../../../_lib/music/beat/beatCapture.js';
 import { readLatency } from '../../../_lib/music/beat/beatLatency.mjs';
@@ -7,6 +10,7 @@ import { commitRecording, recordingCapacity } from '../../../_lib/music/beat/bea
 import { BEAT_TAKE_BYTES, beatTakeBytes, hydrateBeatTakes, documentHasTake, pendingBeatTakes, reconcileBeatTakes, discardBeatTakes } from '../../../_lib/music/beat/beatTakeStore.js';
 import { tickSeconds } from '../../../_lib/music/beat/beatAudioSegments.mjs';
 export function useBeatAudioRecording(current, edit, announce, audio, stop, playing = false) {
+  const { t } = useI18n();
   const lastArm = useRef(null), recoveryFailed = useRef(false), recoveryDocument = useRef(current.current);
   const capture = useRef(null), session = useRef(null), intent = useRef(0), armed = useRef(null), mounted = useRef(true);
   const [state, setState] = useState({ status: 'idle', seconds: 0, pass: 1, error: '' });
@@ -28,7 +32,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
     function disconnected() {
       if (token !== intent.current) return;
       capture.current?.close(); capture.current = null; armed.current = null; setArmedId(null);
-      const message = 'Microphone disconnected — Arm again';
+      const message = t('app.music.beat.status.s77');
       show({ status: 'error', error: pendingError() || message }); announce(message);
     }
     try {
@@ -36,7 +40,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
       const input = await openBeatCapture(instance.context, selectedDevice, { onEnded: () => {
         if (token !== intent.current) return;
         if (['recording', 'finishing'].includes(stateRef.current.status)) {
-          announce('Input disconnected — recording stopped and audio kept.');
+          announce(t('app.music.beat.status.s78'));
           void latestStop.current().then(() => disconnected());
         } else disconnected();
       } });
@@ -44,7 +48,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
       capture.current = input; if (input.ended) { disconnected(); return; } show({ status: 'armed', error: pendingError() }); await refreshDevices();
     } catch (e) {
       if (token !== intent.current) return;
-      armed.current = null; setArmedId(null); show({ status: 'error', error: e.message }); announce(e.message);
+      armed.current = null; setArmedId(null); show({ status: 'error', error: beatErrorMessage(e, 'capture', t) }); announce(beatErrorMessage(e, 'capture', t));
     }
   }
   async function refreshRecovery(active = () => mounted.current) {
@@ -55,7 +59,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
     } catch {
       if (active()) {
         recoveryFailed.current = true;
-        const message = "Couldn't read takes on this device — Retry";
+        const message = t('app.music.beat.status.s79');
         show({ error: message }); announce(message);
       }
     }
@@ -79,10 +83,10 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
   const trackPresent = !armedId || current.current?.tracks.some(t => t.id === armedId);
   useEffect(() => { if (!trackPresent) { intent.current++; capture.current?.close(); capture.current = null; armed.current = null; queueMicrotask(() => { setArmedId(null); show({ status: 'idle' }); }); } }, [trackPresent]);
   async function prepare(locator) {
-    if (!capture.current || !armed.current) throw new Error('Arm the audio track again to enable its microphone.');
+    if (!capture.current || !armed.current) throw beatFailure('recovery-r15');
     await hydrateBeatTakes();
     const availableSeconds = (BEAT_TAKE_BYTES - beatTakeBytes()) / (capture.current.context.sampleRate * 4);
-    if (availableSeconds < 1) throw new Error('Recorded takes use 1 GB on this device. Free storage before recording.');
+    if (availableSeconds < 1) throw beatFailure('recovery-r16');
     const range = audioRecordingRange(current.current, locator);
     const capacity = recordingCapacity(current.current, armed.current, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle, preflight: !range.cycle });
     if (!capacity.lanes) throw new Error(capacity.reason);
@@ -97,8 +101,8 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
     const rtt = latency ? latency.ms / 1000 : (input.context.outputLatency || 0) + (input.context.baseLatency || 0);
     show({ status: 'recording', seconds: 0, pass: 1, error: '' });
     session.current = createAudioRecording({ doc: current.current, trackId: armed.current, range, capture: input, rtt, contextStart, countIn,
-      current: () => current.current, edit, announce, onSettled: () => { session.current = null; },
-      onState: patch => show({ ...patch, ...(patch.status === 'armed' ? { status: idleStatus() } : {}) }), stop: () => latestStop.current() });
+      current: () => current.current, edit, t, announce: message => announce(message === session.current?.error ? beatErrorMessage(null, 'save-take', t) : message), onSettled: () => { session.current = null; },
+      onState: patch => show({ ...patch, ...(patch.error ? { error: beatErrorMessage(null, 'save-take', t) } : {}), ...(patch.status === 'armed' ? { status: idleStatus() } : {}) }), stop: () => latestStop.current() });
     return contextStart + (countIn ? tickSeconds(3840, current.current.tempo.bpm) : 0);
   }
   async function recover(discard = false) {
@@ -111,13 +115,13 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
           const unsaved = rows.filter(row => !documentHasTake(current.current, row)).sort((a, b) => a.pending.pass - b.pending.pass);
           if (!unsaved.length) continue;
           const { trackId, start, length, cycle } = unsaved[0].pending;
-          if (!edit(d => commitRecording(d, { trackId, start, length, single: !cycle, takes: unsaved.map(row => ({ asset: takeAsset(row) })) }), { recordingCommit: true, label: 'Recover recorded takes' })) throw new Error('Could not recover these takes. Make room on the original audio track and try again.');
+          if (!edit(d => commitRecording(d, { trackId, start, length, single: !cycle, takes: unsaved.map(row => ({ asset: takeAsset(row) })) }), { recordingCommit: true, label: BEAT_ACTIONS.a40 })) throw beatFailure('recovery-r17');
         }
       }
       setRecovery([]);
-    } catch (e) { show({ status: 'error', error: e.message }); announce(e.message); }
+    } catch (e) { show({ status: 'error', error: beatErrorMessage(e, 'capture', t) }); announce(beatErrorMessage(e, 'capture', t)); }
   }
-  return { ...state, error: pendingError() || state.error, calibrationDisabled: playing || ['recording', 'finishing'].includes(state.status), armedId, capture, deviceId, devices, recovery, recover, arm,
+  return { ...state, error: pendingError() || state.error, displayError: session.current?.error ? beatErrorMessage(null, 'save-take', t) : state.error, calibrationDisabled: playing || ['recording', 'finishing'].includes(state.status), armedId, capture, deviceId, devices, recovery, recover, arm,
     // After a failed or unplugged input the track is disarmed; choosing another input re-arms it (REVIEW-003).
     selectDevice: id => { setDeviceId(id); const target = armedId ?? lastArm.current; return target ? arm(target, id) : undefined; },
     refreshDevices, prepare, sequence, begin, window: window => session.current?.window(window),

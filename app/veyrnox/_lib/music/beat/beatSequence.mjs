@@ -5,9 +5,9 @@ import { stepSeconds } from './beatTime.mjs';
 
 export class BeatExportError extends RangeError {}
 export function exportRange(doc, range) {
-  if (!validateBeat(doc).ok || ![2, 3, 4].includes(doc.version)) throw new BeatExportError('Invalid song or cycle range.');
-  if (range && !['song', 'cycle'].includes(range)) throw new BeatExportError('Invalid export range.');
-  if (range === 'cycle' && !doc.cycle.on) throw new BeatExportError('Turn Cycle on to export a cycle range.');
+  if (!validateBeat(doc).ok || ![2, 3, 4].includes(doc.version)) throw Object.assign(new BeatExportError('Invalid song or cycle range.'), { displayCode: 'invalid-range' });
+  if (range && !['song', 'cycle'].includes(range)) throw Object.assign(new BeatExportError('Invalid export range.'), { displayCode: 'invalid-export-range' });
+  if (range === 'cycle' && !doc.cycle.on) throw Object.assign(new BeatExportError('Turn Cycle on to export a cycle range.'), { displayCode: 'cycle-off' });
   return (range === 'cycle' || (!range && doc.cycle.on)) ? { startStep: doc.cycle.start / 240, endStep: doc.cycle.end / 240 }
     : { startStep: 0, endStep: Math.max(songEnd(doc) / 240, doc.steps) };
 }
@@ -16,7 +16,7 @@ export function exportSize(doc, sampleRate = 44100, selectedRange) {
   const seconds = (range.endStep - range.startStep) * stepSeconds(doc.tempo.bpm);
   const frames = Math.ceil((seconds + mixTailSeconds(doc)) * sampleRate);
   if (seconds > BEAT_LIMITS.seconds || frames > Math.ceil((600 + mixTailSeconds(doc)) * sampleRate)) {
-    throw new BeatExportError('Song export is limited to 600 seconds.');
+    throw Object.assign(new BeatExportError('Song export is limited to 600 seconds.'), { displayCode: 'export-limit' });
   }
   return { ...range, seconds, frames };
 }

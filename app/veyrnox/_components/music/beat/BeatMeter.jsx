@@ -1,4 +1,6 @@
 'use client';
+import { useI18n } from '../../../../../components/I18nProvider';
+
 import { useEffect, useState } from 'react';
 // One animation loop for all mounted meters. No analysers exist while Mixer is closed.
 const readers = new Set(); let frame = null, previous = -Infinity;
@@ -7,6 +9,7 @@ function animate(time) {
   frame = readers.size ? requestAnimationFrame(animate) : null;
 }
 export default function BeatMeter({ engine, trackId, name }) {
+  const { t } = useI18n();
   const [peak, setPeak] = useState(-60), [focused, setFocused] = useState(false), [reduced, setReduced] = useState(false);
   useEffect(() => {
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -29,10 +32,10 @@ export default function BeatMeter({ engine, trackId, name }) {
     readers.add(read); if (frame === null) frame = requestAnimationFrame(animate);
     return () => { readers.delete(read); detach(); motion.removeEventListener('change', preference); if (!readers.size && frame !== null) { cancelAnimationFrame(frame); frame = null; } };
   }, [engine, trackId]);
-  return <div role="meter" tabIndex={0} aria-label={`${name} peak dBFS`} aria-valuemin={-60} aria-valuemax={0}
+  return <div role="meter" tabIndex={0} aria-label={t('app.music.beat.labels.l26', { p0: name })} aria-valuemin={-60} aria-valuemax={0}
     aria-valuenow={focused ? peak : undefined} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
     className="min-h-11 rounded border border-vx-border p-2 text-xs focus-visible:outline-vx-accent">
     {!reduced && <div aria-hidden="true" className="h-2 bg-vx-base"><div className="h-2 bg-vx-accent" style={{ width: `${(peak + 60) / 60 * 100}%` }} /></div>}
-    <span aria-hidden="true">{peak <= -60 ? '−∞' : peak} dBFS</span>
+    <span aria-hidden="true">{peak <= -60 ? '−∞' : peak}{t('app.music.beat.ui.dbfs')}</span>
   </div>;
 }

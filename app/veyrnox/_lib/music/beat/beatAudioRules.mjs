@@ -47,7 +47,7 @@ export function admitScan(encodedBytes) {
 export function admitDecode(a) {
   if (!validAudioMetadata(a)) throw new Error('Invalid or missing sound metadata (maximum duration: 600 seconds).');
   const reserve = decodeReserve(a);
-  if (reserve > 300 * MB) throw new Error('This sound uses too much audio to load in this browser (over 300 MB).');
+  if (reserve > 300 * MB) throw Object.assign(new Error('This sound uses too much audio to load in this browser (over 300 MB).'), { displayCode: 'sound-too-large' });
   return reserve;
 }
 export function checkDecoded(buffer, a) {
@@ -66,7 +66,7 @@ export function estimateExport(doc, frames) {
   const retained = assets.reduce((sum, { id, a }) => sum + pcmBytes(a) * (reversed.has(id) ? 2 : 1), 0);
   const reserves = assets.map(({ a }) => decodeReserve(a)).sort((a, b) => b - a).slice(0, 2);
   const bytes = retained + reserves.reduce((a, b) => a + b, 0) + frames * 2 * (4 + 2) + 44;
-  if (bytes > 600 * MB) throw new Error(`This song uses too much audio to export in this browser (about ${Math.ceil(bytes / MB)} MB). Shorten it or remove some sounds.`);
+  if (bytes > 600 * MB) { const mb = Math.ceil(bytes / MB); throw Object.assign(new Error(`This song uses too much audio to export in this browser (about ${mb} MB). Shorten it or remove some sounds.`), { displayCode: 'song-too-large-browser', params: { mb } }); }
   return bytes;
 }
 // Reservations are acquired before starting a scan/decode and always released in finally.
