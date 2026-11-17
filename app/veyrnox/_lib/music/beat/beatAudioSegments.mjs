@@ -26,7 +26,8 @@ function segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly = f
       const duration = asset.source === 'sound' ? tickSeconds(asset.durationSec * doc.tempo.bpm / 60 * 960, tempo) : asset.durationSec;
       const phase = asset.source === 'sound' ? tickSeconds(region.phaseTicks, tempo) : region.phaseSec;
       let at = Math.max(fromSec, start);
-      const until = Math.min(endSec, end);
+      const extendedEnd = end + (region.tailSec || 0);
+      const until = Math.min(endSec, extendedEnd);
       if (startsOnly && at > Math.max(startSec, start) + 1e-9) {
         const offset = modulo(phase + at - start, duration);
         if (offset > 1e-9 && duration - offset > 1e-9) at += duration - offset;
@@ -38,7 +39,7 @@ function segments(doc, fromSec, toSec, { tempo, startSec, endSec, startsOnly = f
         segments.push({ regionId: region.id, trackId: track.id, assetId: region.assetId,
           songTimeSec: at, offsetSec: offset, durationSec: length, reverse: region.reverse,
           gain: envelopeGain(region, at - start, tempo), endGain: envelopeGain(region, at + length - start, tempo),
-          regionTimeSec: at - start, isRegionStart: Math.abs(at - start) < 1e-9, isRegionEnd: Math.abs(at + length - end) < 1e-9 });
+          regionTimeSec: at - start, isRegionStart: Math.abs(at - start) < 1e-9, isRegionEnd: Math.abs(at + length - extendedEnd) < 1e-9 });
         at += length;
       }
     }
@@ -67,10 +68,13 @@ export function audioFragment(region, start, length, asset, tempo) {
   let fadeIn = region.fadeIn && { startSec: region.fadeIn.startSec - elapsed, endSec: region.fadeIn.endSec - elapsed };
   let fadeOut = region.fadeOut && { startBeforeEndSec: region.fadeOut.startBeforeEndSec - removedEnd, endBeforeEndSec: region.fadeOut.endBeforeEndSec - removedEnd };
   if (fadeIn && fadeIn.endSec <= 0) fadeIn = null;
-  if (fadeOut && fadeOut.startBeforeEndSec <= 0) fadeOut = null;
+  if (region.tailSec) fadeOut = removedEnd > 1e-9 ? null : region.fadeOut;
+  else if (fadeOut && fadeOut.startBeforeEndSec <= 0) fadeOut = null;
   const phase = asset.source === 'sound' ? { phaseTicks: modulo(region.phaseTicks + start - region.start, Math.round(asset.durationSec * tempo / 60 * 960)) }
     : { phaseSec: modulo(region.phaseSec + elapsed, asset.durationSec) };
-  return { ...region, start, length, ...phase, fadeIn, fadeOut };
+  const result = { ...region, start, length, ...phase, fadeIn, fadeOut };
+  if (region.tailSec && removedEnd > 1e-9) delete result.tailSec;
+  return result;
 }
 export function clampFades(region, tempo) {
   const length = tickSeconds(region.length, tempo);

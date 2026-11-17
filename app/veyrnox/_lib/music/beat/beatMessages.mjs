@@ -41,6 +41,11 @@ export function arrangementMessage(before, after, { label, regionId, trackId, st
       if (track && label === `${track.solo ? 'solo' : 'unsolo'} ${track.name}`) {
         return `${track.name} solo ${track.solo ? 'on' : 'off'}`;
       }
-      return null;
+      break;
   }
+  if (before.tracks.some(t => {
+    const remaining = after.tracks.find(n => n.id === t.id);
+    return remaining && (t.takeGroups || []).some(g => !remaining.takeGroups?.some(n => n.id === g.id));
+  })) return 'Take lanes merged into regions';
+  return null;
 }

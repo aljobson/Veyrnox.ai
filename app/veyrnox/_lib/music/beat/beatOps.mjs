@@ -10,15 +10,24 @@ function equalValue(a, b) {
   return keys.length === Object.keys(b).length &&
     keys.every((key) => Object.hasOwn(b, key) && equalValue(a[key], b[key]));
 }
-export function edit(doc, now, change) {
+export function edit(doc, now, change, { takeOp = false } = {}) {
   const next = structuredClone(doc);
   change(next);
+  if (!takeOp) for (const track of next.tracks) {
+    const old = doc.tracks.find(t => t.id === track.id);
+    if (!old?.takeGroups) continue;
+    track.takeGroups = (track.takeGroups || []).filter(group => {
+      const inside = t => t.regions.filter(r => r.start < group.start + group.length && r.start + r.length > group.start);
+      return equalValue(inside(old), inside(track));
+    });
+    if (!track.takeGroups.length) delete track.takeGroups;
+  }
   if (next.clips) {
     const used = new Set(next.tracks.flatMap((t) => t.regions.map((r) => r.clipId)));
     for (const id of Object.keys(next.clips)) if (!used.has(id)) delete next.clips[id];
   }
   if (next.assets) {
-    const used = new Set(next.tracks.flatMap((t) => t.regions.map((r) => r.assetId)));
+    const used = new Set(next.tracks.flatMap((t) => [...t.regions.map((r) => r.assetId), ...(t.takeGroups || []).flatMap(g => g.lanes)]));
     for (const id of Object.keys(next.assets)) if (!used.has(id)) delete next.assets[id];
   }
   if (equalValue(next, doc)) return doc;
@@ -85,7 +94,7 @@ export function regionById(doc, id) {
   throw new BeatRefusal('That region no longer exists.');
 }
 export function nextId(doc, prefix) {
-  const ids = new Set([...Object.keys(doc.assets || {}), ...Object.keys(doc.clips || {}), ...doc.tracks.flatMap((t) => [t.id, ...t.regions.map((r) => r.id)])]);
+  const ids = new Set([...Object.keys(doc.assets || {}), ...Object.keys(doc.clips || {}), ...doc.tracks.flatMap((t) => [t.id, ...t.regions.map((r) => r.id), ...(t.takeGroups || []).map(g => g.id)])]);
   let n = 1;
   while (ids.has(prefix + n.toString(36))) n++;
   return prefix + n.toString(36);
@@ -165,7 +174,9 @@ export const splitRegion = (doc, id, atTick, now = Date.now()) => edit(doc, now,
   const { track, region } = regionById(d, id);
   if (atTick <= region.start || atTick >= region.start + region.length) throw new BeatRefusal('Place the playhead inside the region to split it.');
   const right = { ...fragment(d, region, atTick, region.start + region.length - atTick), id: nextId(d, 'r') };
-  Object.assign(region, fragment(d, region, region.start, atTick - region.start));
+  const left = fragment(d, region, region.start, atTick - region.start);
+  if (!Object.hasOwn(left, 'tailSec')) delete region.tailSec;
+  Object.assign(region, left);
   track.regions.push(right);
   track.regions.sort((a, b) => a.start - b.start);
 });

@@ -32,7 +32,8 @@ export function validRamp(r, fadeIn) {
 }
 export function validAudioRegion(r, asset) {
   const phase = asset?.source === 'sound' ? 'phaseTicks' : 'phaseSec';
-  return !!asset && exact(r, ['id', 'start', 'length', 'assetId', phase, 'gainDb', 'fadeIn', 'fadeOut', 'reverse'])
+  return !!asset && exact(r, ['id', 'start', 'length', 'assetId', phase, 'gainDb', 'fadeIn', 'fadeOut', 'reverse', ...(Object.hasOwn(r, 'tailSec') ? ['tailSec'] : [])])
+    && (!Object.hasOwn(r, 'tailSec') || (asset.source === 'take' && finite(r.tailSec, Number.MIN_VALUE, 0.05)))
     && finite(r.gainDb, -24, 6) && typeof r.reverse === 'boolean' && validRamp(r.fadeIn, true) && validRamp(r.fadeOut, false)
     && (phase === 'phaseTicks' ? Number.isInteger(r.phaseTicks) && r.phaseTicks >= 0 && r.phaseTicks < soundTicks(asset.ref)
       : finite(r.phaseSec, 0, asset.durationSec) && r.phaseSec < asset.durationSec);

@@ -7,14 +7,14 @@ export function mixdownSources(doc, { range = 'song', soloTrackId } = {}) {
   for (const track of doc.tracks) {
     if (!trackContributes(doc, track.id, 'song') || (soloTrackId && track.id !== soloTrackId)) continue;
     for (const region of track.regions) {
-      if (region.start >= endStep * 240 || region.start + region.length <= startStep * 240) continue;
+      if (region.start >= endStep * 240 || region.start + region.length + (region.tailSec || 0) * doc.tempo.bpm * 16 <= startStep * 240) continue;
       const asset = doc.assets?.[region.assetId];
       if (!asset) continue;
       // A clipped fade can leave the selected window entirely silent. Only
       // the interval where both fade envelopes are positive uses this source.
       const length = tickSeconds(region.length, doc.tempo.bpm);
       const from = Math.max(0, tickSeconds(startStep * 240 - region.start, doc.tempo.bpm), region.fadeIn?.startSec ?? 0);
-      const to = Math.min(length, tickSeconds(endStep * 240 - region.start, doc.tempo.bpm), length - (region.fadeOut?.endBeforeEndSec ?? 0));
+      const to = Math.min(length + (region.tailSec || 0), tickSeconds(endStep * 240 - region.start, doc.tempo.bpm), length - (region.fadeOut?.endBeforeEndSec ?? -(region.tailSec || 0)));
       if (from >= to) continue;
       if (asset?.source === 'take') hasTakes = true;
       if (['song', 'stem', 'target'].includes(asset?.source)) songs.set(asset.ref.versionId, { song_id: asset.ref.songId, version_id: asset.ref.versionId });

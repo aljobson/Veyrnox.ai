@@ -54,7 +54,7 @@ export function MusicLabs({ beatsEnabled = false, rankingEnabled = false }) {
         <section aria-labelledby="sequencer-title" className="mt-6 rounded-2xl border border-vx-border bg-vx-panel p-6 sm:p-8">
           <h2 id="sequencer-title" className="font-vx text-2xl font-black">Step sequencer</h2>
           <p className="mt-2 text-sm text-vx-fg-muted">Program a drum pattern on a grid and play it back. It runs in your browser and costs nothing.</p>
-          <Link href="/app/music/beats" className="mt-4 inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 font-bold">Open Beats</Link>
+          <a href="/app/music/beats" className="mt-4 inline-flex min-h-11 items-center rounded-full border border-vx-border px-5 font-bold">Open Beats</a>
         </section>
       ) : null}
     </div>

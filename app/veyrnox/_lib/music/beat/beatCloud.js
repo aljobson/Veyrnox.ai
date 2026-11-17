@@ -1,6 +1,6 @@
 import { gatewayFetch } from '../../gateway.js';
 import { getStoredUserId } from '../../../../lib/authClient.js';
-import { getShelf, hydrateShelf } from '../instrumentShelf.js';
+import { loadLocalTake } from '../localTakes.js';
 import { encodeWavChannels } from './beatWav.mjs';
 import { recoverTake } from './beatCloudRules.mjs';
 const base = '/music/beat-projects';
@@ -26,8 +26,7 @@ export async function uploadTake(id, asset, row, options) {
   const confirm = take => call(`${path(id)}/takes/${encodeURIComponent(take)}`, { method: 'POST', body: '{}' }, options);
   const ready = await recoverTake({ row, confirm,
     reserve: async () => {
-      await hydrateShelf();
-      const take = getShelf().find(t => t.id === asset.ref);
+      const take = await loadLocalTake(asset.ref);
       if (!take) throw Object.assign(new Error('Only on this device'), { code: 'TAKE_UNAVAILABLE' });
       // The upload is mono 16-bit PCM with a 44-byte header. Check before encoding or reserving.
       if (44 + take.samples.length * 2 > 60000000 || take.seconds > 600)

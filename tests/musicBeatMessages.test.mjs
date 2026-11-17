@@ -38,3 +38,14 @@ test('overlap fragments do not displace the region being announced', () => {
   assert.equal(arrangementMessage(inserted, copied,
     { label: 'copy region', regionId: 'r2', trackId: 't1', start: 0 }), 'Copied to bar 1 to bar 2');
 });
+
+test('take merge notice is a fallback for surviving tracks and does not override label announcements', () => {
+  const doc = ops.addTrack(make(), '808');
+  doc.tracks[1].takeGroups = [{ id: 'g1' }];
+  const after = structuredClone(doc); delete after.tracks[1].takeGroups;
+  assert.equal(arrangementMessage(doc, after, { label: 'change audio gain', trackId: 't2' }), 'Take lanes merged into regions');
+  assert.equal(arrangementMessage(doc, { ...doc, tracks: doc.tracks.slice(0, 1) }, { label: 'delete track', trackId: 't2' }), 'Track deleted: Drums 2');
+  assert.equal(arrangementMessage(doc, { ...doc, tracks: doc.tracks.slice(0, 1) }, { label: 'restore version' }), null);
+  assert.match(arrangementMessage(doc, after, { label: 'change cycle' }), /^Cycle /);
+  assert.equal(arrangementMessage(after, after, { label: 'change audio gain', trackId: 't2' }), null);
+});
