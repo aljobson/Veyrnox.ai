@@ -18,6 +18,7 @@ import { loadSwapScene } from '../../../lib/swapSceneGate.js';
 import { NextResponse } from 'next/server';
 import { envConfig } from '../../../packages/db/supabase-client.js';
 import { readPublicCatalog, CATALOG_TTL_SECONDS } from '../../../lib/publicCatalog.js';
+import { withPublicModelIds } from '../../../lib/publicModelIds.js';
 
 export async function GET(req) {
     const cfg = envConfig();
@@ -50,7 +51,8 @@ export async function GET(req) {
 
     let models;
     try {
-        models = await readPublicCatalog({ cfg });
+        // Ids leave here supplier-neutral (lib/publicModelIds.js); the gateway accepts both forms.
+        models = withPublicModelIds(await readPublicCatalog({ cfg }));
     } catch (err) {
         console.error('[api/catalog] select failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });

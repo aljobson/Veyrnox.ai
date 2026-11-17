@@ -19,6 +19,6 @@ test('Worker lists models without importing page catalogs directly', () => {
 
 test('modelList imports only the public catalog and slim tokens', () => {
   assert.deepEqual(imports(read('app/veyrnox/_lib/modelList.js')).sort(), [
-    '../../../lib/publicCatalog.js', './tokens.js',
+    '../../../lib/publicCatalog.js', '../../../lib/publicModelIds.js', './tokens.js',
   ].sort());
 });

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import { MODELS, modelIdForName } from '../app/veyrnox/_lib/tokens.js';
+import { internalModelId } from '../lib/publicModelIds.js';
 import { fallbackModels } from '../app/veyrnox/_lib/modelPages.js';
 import { fromFallback } from '../app/veyrnox/_lib/useCatalog.js';
 import { featuredModels } from '../app/veyrnox/_lib/modelSummaries.js';
@@ -41,7 +42,7 @@ test('staged models stay resolvable but never enter public fallback lists', asyn
     search: siteSearch.FALLBACK_MODELS,
     pricing: load(pricing, ['FALLBACK_MODELS']).FALLBACK_MODELS,
     home: await load(home, ['loadCatalog']).loadCatalog(),
-    modelPages: fallbackModels(),
+    modelPages: fallbackModels().map(model => ({ ...model, id: internalModelId(model.id) })),
     create: fromFallback(),
   })) {
     assert.deepEqual(rows.map(model => model.id), expected, name);

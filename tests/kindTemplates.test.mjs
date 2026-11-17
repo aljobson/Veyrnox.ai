@@ -4,6 +4,7 @@ import { register } from 'node:module';
 import { kindTemplates } from '../lib/clientTemplates.js';
 import { createTemplatesFor } from '../app/veyrnox/_lib/createTemplates.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { internalModelId } from '../lib/publicModelIds.js';
 
 register('data:text/javascript,' + encodeURIComponent(
     `export async function resolve(s, c, next) { return next(s === 'next/server' ? 'next/server.js' : s, c); }`,
@@ -18,7 +19,7 @@ test('audio answers the Create audio templates in the shape older mobile builds 
     assert.ok(body.templates.length > 0);
     for (const t of body.templates) {
         for (const key of ['id', 'name', 'category', 'modelId', 'prompt']) assert.equal(typeof t[key], 'string', `${t.id} ${key}`);
-        assert.ok(modelIds.has(t.modelId), `${t.id} opens a known model (${t.modelId})`);
+        assert.ok(modelIds.has(internalModelId(t.modelId)), `${t.id} opens a known model (${t.modelId})`);
     }
     assert.deepEqual(body.categories, ['MUSIC']);
 });
@@ -28,7 +29,7 @@ test('image answers only image templates, each runnable with a full prompt and a
     assert.ok(body.templates.length >= createTemplatesFor('image').length);
     for (const t of body.templates) {
         assert.ok(t.prompt.length > 0 && t.previewImage, t.id);
-        assert.ok(modelIds.has(t.modelId), `${t.id} opens a known model (${t.modelId})`);
+        assert.ok(modelIds.has(internalModelId(t.modelId)), `${t.id} opens a known model (${t.modelId})`);
         assert.equal('durationSeconds' in t, false);
     }
     assert.deepEqual(body.categories, [...new Set(body.templates.map((t) => t.category))]);

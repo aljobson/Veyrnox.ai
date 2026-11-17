@@ -205,7 +205,7 @@ test('a sound model is known by its kind from the catalog row, not by a list of 
     // Both catalog paths set the kind the helper reads.
     const catalog = read('../app/veyrnox/_lib/useCatalog.js');
     assert.match(catalog, /id: m\.id, name: m\.name, kind: m\.kind,/);
-    assert.match(catalog, /id: m\.id, name: m\.name, kind: kindOf\(m\.modality\),/);
+    assert.match(catalog, /id: internalModelId\(m\.id\), name: m\.name, kind: kindOf\(m\.modality\),/);
     // The wording lives in the helper; the page only asks for it.
     const page = read('../app/veyrnox/app/create/page.js');
     assert.match(page, /placeholder=\{helperCopy\(t, locale, promptPlaceholder\(model\)\)\}/);
