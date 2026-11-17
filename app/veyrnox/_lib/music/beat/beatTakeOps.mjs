@@ -48,17 +48,17 @@ function materialize(d, trackId, groupId) {
   track.regions.push(...pieces); track.regions.sort((a, b) => a.start - b.start);
 }
 export const materializeGroup = (doc, trackId, groupId, now = Date.now()) => edit(doc, now, d => materialize(d, trackId, groupId), { takeOp: true });
-// A single (cycle-off) pass learns its final length only after the performance. It appends
-// to an identical-range group like any recording, but replaces that group when it is full,
-// so commit never refuses audio already performed (review P9-001 / REVIEW-002).
+// A single (cycle-off) pass learns its final length only after the performance, so a full
+// identical-range group cannot be refused before recording. Commit then refuses without
+// replacing anything: the takes stay saved and pending, and Try again succeeds once a take
+// in that section is deleted (Discard also stays available).
 export function recordingCapacity(doc, trackId, { start, length, single = false }) {
   const track = doc.tracks.find(t => t.id === trackId);
   let reason = '';
   if (doc.version !== 4 || track?.kind !== 'audio') reason = 'Arm an audio track to record.';
   if (![start, length].every(n => Number.isSafeInteger(n) && n % 240 === 0) || start < 0 || length < 240 || start + length > Math.min(512 * 3840, 600 * doc.tempo.bpm * 16)) reason = 'Recording exceeds the song limit.';
   if (reason) return { lanes: 0, reason };
-  const match = track.takeGroups?.find(g => g.start === start && g.length === length);
-  const same = single && match && (match.lanes.length >= 8 || Object.keys(doc.assets).length >= 64) ? null : match;
+  const same = track.takeGroups?.find(g => g.start === start && g.length === length);
   const groups = (track.takeGroups || []).filter(g => !overlaps(g, start, length));
   if (!same && groups.length >= 16) reason = 'Take group limit reached — 16 groups per track.';
   // Count the actual surviving fragments, including a region split around the range.
@@ -66,7 +66,7 @@ export function recordingCapacity(doc, trackId, { start, length, single = false 
   for (const r of track.regions) regions += !overlaps(r, start, length) ? 1 : Number(r.start < start) + Number(r.start + r.length > start + length);
   if (regions > 400) reason = 'Region limit reached — 400 regions per song.';
   const lanes = Math.min(8 - (same?.lanes.length || 0), 64 - Object.keys(doc.assets).length);
-  if (lanes <= 0) reason = same?.lanes.length === 8 ? 'Take limit reached — 8 takes per section.' : 'Asset limit reached — 64 sounds per song.';
+  if (lanes <= 0) reason = same?.lanes.length === 8 ? `Take limit reached — 8 takes per section.${single ? ' Delete a take in that section, then Try again, or discard these takes.' : ''}` : 'Asset limit reached — 64 sounds per song.';
   return { lanes: reason ? 0 : lanes, reason, appendTo: same?.id };
 }
 export function commitRecording(doc, { trackId, start, length, takes, appendTo, single = false }, now = Date.now()) {

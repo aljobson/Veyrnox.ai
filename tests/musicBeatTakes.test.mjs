@@ -97,15 +97,15 @@ test('tail only validates on takes and within 50 ms', () => {
   const d = recorded(); track(d).regions[0].tailSec = 0.05; assert.equal(validateBeat(d).ok, true);
   assert.equal(tickSeconds(track(d).regions[0].length, 120), 8);
 });
-test('a single pass over a full 8-lane group of the same range replaces it instead of being refused after recording', () => {
-  let d = recorded(8);
-  assert.equal(takes.recordingCapacity(d, 't2', { start: 0, length: 15360 }).reason, 'Take limit reached — 8 takes per section.');
-  const capacity = takes.recordingCapacity(d, 't2', { start: 0, length: 240, single: true });
-  assert.equal(capacity.reason, ''); assert.equal(capacity.appendTo, undefined);
-  d = takes.commitRecording(d, { trackId: 't2', start: 0, length: 15360, single: true, takes: [{ asset: asset(9) }] });
-  assert.equal(validateBeat(d).ok, true);
-  assert.equal(track(d).takeGroups.length, 1); assert.equal(track(d).takeGroups[0].lanes.length, 1);
-  assert.equal(d.assets[track(d).takeGroups[0].lanes[0]].ref, 'take-9');
+test('a single pass matching a full 8-lane group is refused at commit without replacing any take', () => {
+  const d = recorded(8), before = structuredClone(track(d).takeGroups[0]);
+  assert.equal(takes.recordingCapacity(d, 't2', { start: 0, length: 240, single: true }).reason, '', 'preflight cannot know the final length');
+  assert.throws(() => takes.commitRecording(d, { trackId: 't2', start: 0, length: 15360, single: true, takes: [{ asset: asset(9) }] }),
+    /Take limit reached — 8 takes per section\. Delete a take in that section, then Try again/);
+  assert.deepEqual(track(d).takeGroups[0], before);
+  const freed = takes.deleteLane(d, 't2', before.id, 0);
+  const next = takes.commitRecording(freed, { trackId: 't2', start: 0, length: 15360, single: true, takes: [{ asset: asset(9) }] });
+  assert.equal(track(next).takeGroups[0].id, before.id); assert.equal(track(next).takeGroups[0].lanes.length, 8);
 });
 test('a single pass with the same finalized range as a group with room appends a take (criterion 6)', () => {
   let d = recorded(2); const id = track(d).takeGroups[0].id;
