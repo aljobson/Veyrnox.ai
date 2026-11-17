@@ -212,9 +212,9 @@ export async function POST(req) {
 
     if (hasTemplateSwap && (process.env.TEMPLATE_SWAP_CLIP_ENABLED !== 'true' || typeof body.template_swap !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_swap))) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
-    const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg) : null;
+    const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() }) : null;
     if (swapClipReplay) return NextResponse.json(swapClipReplay.body, { status: swapClipReplay.status });
-    const templateSwap = hasTemplateSwap ? await loadTemplateSwapClip(body.template_swap, cfg) : null;
+    const templateSwap = hasTemplateSwap ? await loadTemplateSwapClip(body.template_swap, cfg, { r2cfg: r2EnvConfig() }) : null;
     if (hasTemplateSwap && !templateSwap) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
     if (templateSwap && clientTemplateVideo(body)) return NextResponse.json({ error: 'template_swap_video_not_allowed' }, { status: 400 });
     const hasTemplateClip = Object.hasOwn(body, 'template_clip');

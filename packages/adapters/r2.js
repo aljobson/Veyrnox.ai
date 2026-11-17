@@ -248,7 +248,7 @@ export async function deleteObject(key, cfg) {
  * images). Returns { ok:false, error } on any failure or non-2xx status.
  * @returns {Promise<{ok:true, response:Response}|{ok:false, error:string}>}
  */
-export async function getObject(key, cfg, { method = 'GET' } = {}) {
+export async function getObject(key, cfg, { method = 'GET', signal, logErrors = true } = {}) {
     if (!['GET', 'HEAD'].includes(method)) throw new Error('Invalid read method');
     if (!isConfigured(cfg)) {
         return { ok: false, error: 'R2 not configured' };
@@ -278,7 +278,7 @@ export async function getObject(key, cfg, { method = 'GET' } = {}) {
     let res;
     try {
         res = await fetch(`https://${host}${canonicalUri}`, {
-            method, ...(method === 'HEAD' ? { signal: AbortSignal.timeout(10000) } : {}),
+            method, ...(signal ? { signal } : method === 'HEAD' ? { signal: AbortSignal.timeout(10000) } : {}),
             headers: {
                 host,
                 'x-amz-content-sha256': payloadHash,
@@ -287,7 +287,7 @@ export async function getObject(key, cfg, { method = 'GET' } = {}) {
             },
         });
     } catch (err) {
-        console.error('R2 GET failed:', err && err.name);
+        if (logErrors) console.error('R2 GET failed:', err && err.name);
         return { ok: false, error: `R2 GET transport: ${err && err.name}` };
     }
     if (!res.ok) {

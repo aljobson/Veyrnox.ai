@@ -9,7 +9,7 @@ const options = { env, registry, manifest, catalog };
 test('availability returns only a registered swap on the exact active catalog offer', async () => {
   const result = templateSwapAvailable(id, options);
   assert.deepEqual(result.template, { id, model: 'kling-o1-reference', credits: 47, durationSeconds: 5 });
-  assert.deepEqual(await loadTemplateSwapClip(id, {}, { ...options, read: async () => catalog }), result);
+  assert.deepEqual(await loadTemplateSwapClip(id, {}, { ...options, read: async () => catalog, readManifest: async () => manifest }), result);
   for (const value of [undefined, true, 'TRUE', 'false']) assert.equal(templateSwapAvailable(id, { ...options, env: { TEMPLATE_SWAP_CLIP_ENABLED: value } }), null);
   for (const patch of [{ active: false }, { active: 'true' }, { gated_flag: 'flag' }, { provider: 'kie' }, { provider_endpoint: 'wrong' }, { credits_5s: 0 }, { credits_5s: 1.5 }]) {
     assert.equal(templateSwapAvailable(id, { ...options, catalog: [{ ...catalog[0], ...patch }] }), null);

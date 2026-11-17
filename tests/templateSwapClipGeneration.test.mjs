@@ -2,15 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
 import { isDeepStrictEqual } from 'node:util';
-import { manifest, catalog, registry } from './fixtures/templateSwapClips.mjs';
+import { manifest, catalog, registry, manifestBytes, pin, publishManifest, signedMedia } from './fixtures/templateSwapClips.mjs';
 import { createFalWebhookHandler } from '../lib/falWebhookHandler.js';
 import { TEMPLATE_SWAP_CLIP_PROMPT } from '../lib/templateSwapClipPrompt.mjs';
 register('data:text/javascript,' + encodeURIComponent(`
 export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }
 export async function load(url,c,next) {
   const result = await next(url,c);
-  if (url.endsWith('/lib/templateSwapClipSources.js')) return { ...result, source: String(result.source).replace('Object.freeze({})', ${JSON.stringify(JSON.stringify(manifest))}) };
-  if (url.endsWith('/app/veyrnox/_lib/templateSwapClips.js')) return { ...result, source: String(result.source).replace('Object.freeze([])', ${JSON.stringify(JSON.stringify(registry))}) };
+  if (url.endsWith('/packages/adapters/r2.js')) return { ...result, source:
+    ${JSON.stringify(`import { recordSignedMedia } from '${new URL('./fixtures/templateSwapClips.mjs', import.meta.url).href}';`)} + String(result.source).replace(
+      'export async function presignGetUrl(key, expiresSeconds, cfg, { downloadFilename, responseContentType } = {}) {',
+      'export async function presignGetUrl(key, expiresSeconds, cfg, { downloadFilename, responseContentType } = {}) { recordSignedMedia(key);') };
+
+  if (url.endsWith('/app/veyrnox/_lib/templateSwapClips.js')) return { ...result, source: String(result.source).replace('Object.freeze([])', ${JSON.stringify(JSON.stringify(registry))}).replace("export const TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 = '';", ${JSON.stringify(`export { pin as TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 } from '${new URL('./fixtures/templateSwapClips.mjs', import.meta.url).href}';`)}) };
   return result;
 }`));
 Object.assign(process.env, {
@@ -21,7 +25,6 @@ Object.assign(process.env, {
 });
 const { POST } = await import('../app/api/v1/generations/route.js');
 const { GET } = await import('../app/api/catalog/route.js');
-const { TEMPLATE_SWAP_CLIP_SOURCES } = await import('../lib/templateSwapClipSources.js');
 const EFFECTIVE_PROMPT = TEMPLATE_SWAP_CLIP_PROMPT;
 const ID = 'community-action-hero-strut';
 const AUTH = '11111111-1111-4111-8111-111111111111', JOB = '22222222-2222-4222-8222-222222222222';
@@ -29,6 +32,8 @@ const PHOTO = '33333333-3333-4333-8333-333333333333';
 const photo = { slot: 'image', origin: 'asset', asset_id: PHOTO };
 const jpeg = Buffer.from([255,216,255,192,0,17,8,2,128,2,128,3,1,17,0,2,17,0,3,17,0,255,217]);
 function network(t, options = {}) {
+  publishManifest(options.manifest ?? manifest);
+  signedMedia.length = 0;
   const sourceJpeg = Buffer.from(jpeg);
   if (options.imageDimensions) {
     sourceJpeg.writeUInt16BE(options.imageDimensions.height, 7); sourceJpeg.writeUInt16BE(options.imageDimensions.width, 9);
@@ -40,6 +45,17 @@ function network(t, options = {}) {
     const url = new URL(String(target)), name = url.pathname.split('/').at(-1);
     const body = typeof init.body === 'string' ? JSON.parse(init.body) : null;
     calls.push(name);
+    if (url.pathname.includes('/template-swap-clips/manifests/')) {
+      assert.equal(name, pin + '.json');
+      options.manifestSignal = init.signal;
+      if (options.manifestFailure === 'headers') return new Promise(() => {});
+      if (['body', 'oversize'].includes(options.manifestFailure)) return new Response(new ReadableStream({
+        start(c) { if (options.manifestFailure === 'oversize') c.enqueue(new Uint8Array(1024 * 1024 + 1)); },
+        cancel() { options.cancelled = true; },
+      }));
+      if (options.manifestFailure === 'down') return new Response(null, { status: 503 });
+      return new Response(options.manifestFailure === 'hash' ? 'corrupt' : manifestBytes);
+    }
     if (name === 'runtime_switches') return Response.json([{ key: 'generation', state: 'off' }]);
     if (name === 'model_catalog') {
       if (options.catalogFailure) throw Error('offline');
@@ -113,7 +129,7 @@ test('catalog price, server prompt, signed video and one-photo list use the exis
   assert.equal(payload.prompt, EFFECTIVE_PROMPT);
   assert.equal(payload.image_urls.length, 1); assert.equal(typeof payload.video_url, 'string');
   const signed = new URL(payload.video_url);
-  assert.ok(signed.pathname.endsWith(TEMPLATE_SWAP_CLIP_SOURCES[ID].key));
+  assert.ok(signed.pathname.endsWith(manifest[ID].key));
   assert.equal(signed.searchParams.get('X-Amz-Expires'), '900');
   assert.equal(payload.duration, '5'); assert.equal(payload.keep_audio, false); assert.equal(payload.aspect_ratio, 'auto');
 });
@@ -145,8 +161,7 @@ for (const [overrides, error] of [
   assert.equal((await response.json()).error, error); assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 0);
 });
 for (const [change, error] of [[{ videoSeconds: 1 }, 'source_too_short'], [{ seconds: 11 }, 'source_too_long'], [{ seconds: 10.02 }, 'container boundary'], [{ seconds: 7 }, 'longer than the 5 s price unit'], [{ videoSeconds: 7 }, 'stream longer than the price unit'], [{ videoSeconds: 10.02 }, 'stream boundary'], [{ width: 299 }, 'source_resolution_out_of_range'], [{ height: 2161 }, 'source_resolution_out_of_range']]) test(`source ${error} never spends`, async t => {
-  const source = TEMPLATE_SWAP_CLIP_SOURCES[ID], saved = { ...source }; Object.assign(source, change);
-  t.after(() => Object.assign(source, saved)); const net = network(t);
+  const net = network(t, { manifest: { [ID]: { ...manifest[ID], ...change } } });
   assert.equal((await (await post()).json()).error, 'template_swap_not_found'); assert.equal(net.debits.length, 0);
 });
 test('replay binds effective prompt and photo, template, version and hash, surviving unpublication', async t => {
@@ -155,14 +170,13 @@ test('replay binds effective prompt and photo, template, version and hash, survi
   assert.equal((await (await post({ inputs: { prompt: TEMPLATE_SWAP_CLIP_PROMPT } })).json()).idempotent, true);
   assert.equal((await post({ references: [{ ...photo, asset_id: AUTH }] })).status, 409);
   assert.equal((await post({ template_swap: 'other-template' })).status, 409);
-  const source = TEMPLATE_SWAP_CLIP_SOURCES[ID], saved = { ...source };
-  t.after(() => { TEMPLATE_SWAP_CLIP_SOURCES[ID] = source; Object.assign(source, saved); });
-  source.version = 'v2'; assert.equal((await post()).status, 409); source.version = 'v1';
-  source.sha256 = 'b'.repeat(64); assert.equal((await post()).status, 409); Object.assign(source, saved);
-  options.active = false; delete TEMPLATE_SWAP_CLIP_SOURCES[ID];
+  publishManifest({ [ID]: { ...manifest[ID], version: 'v2' } }); assert.equal((await post()).status, 409);
+  publishManifest({ [ID]: { ...manifest[ID], sha256: 'b'.repeat(64), key: manifest[ID].key.replace('a'.repeat(64), 'b'.repeat(64)) } });
+  assert.equal((await post()).status, 409);
+  options.active = false; publishManifest({});
   const start = net.calls.length;
   assert.deepEqual(await (await post()).json(), { job_id: JOB, idempotent: true });
-  assert.deepEqual(net.calls.slice(start), ['check_generation_rate_limit', 'users', 'jobs']);
+  assert.deepEqual(net.calls.slice(start), ['check_generation_rate_limit', 'users', 'jobs', pin + '.json']);
   assert.equal((await post({ idempotency_key: 'fresh-key' })).status, 404);
   assert.equal(net.debits.length, 1); assert.equal(net.charges(), 1); assert.equal(net.submits.length, 1);
 });
@@ -280,4 +294,23 @@ test('runtime wording gate does not augment a custom non-template photo request'
   const response = await post({ template_swap: undefined, model_id: 'kling-3.0-i2v', inputs: { prompt: 'A custom portrait', duration_seconds: 5 } });
   assert.equal(response.status, 200, JSON.stringify(await response.json()));
   assert.equal(net.submits[0].prompt, 'A custom portrait');
+});
+
+for (const mode of ['down', 'hash', 'headers', 'body', 'oversize']) test(`manifest ${mode}: fresh admission fails closed; accepted job replays`, async t => {
+  const options = {}, net = network(t, options);
+  assert.equal((await post()).status, 200);
+  options.manifestFailure = mode; publishManifest();
+  const start = net.calls.length, signedBefore = signedMedia.length;
+  const [fresh, replay, projection] = await Promise.all([
+    post({ idempotency_key: 'fresh-without-manifest' }), post(), get(ID),
+  ]);
+  assert.equal(fresh.status, 404); assert.deepEqual(await fresh.json(), { error: 'template_swap_not_found' });
+  assert.equal(projection.status, 404); assert.equal(projection.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(await replay.json(), { job_id: JOB, idempotent: true });
+  assert.equal(net.calls.slice(start).filter(name => name === pin + '.json').length, 1);
+  assert.ok(net.calls.slice(start).every(name => ['check_generation_rate_limit', 'users', 'jobs', pin + '.json'].includes(name)));
+  assert.equal(net.debits.length, 1); assert.equal(net.submits.length, 1); assert.equal(net.freeAdmissions.length, 0);
+  assert.equal(signedMedia.length, signedBefore, 'no signing during failed admission or replay');
+  assert.equal(options.manifestSignal.aborted, true);
+  if (mode === 'body' || mode === 'oversize') assert.equal(options.cancelled, true);
 });

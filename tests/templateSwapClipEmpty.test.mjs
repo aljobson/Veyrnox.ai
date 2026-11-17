@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { TEMPLATE_SWAP_CLIPS } from '../app/veyrnox/_lib/templateSwapClips.js';
-import { TEMPLATE_SWAP_CLIP_SOURCES } from '../lib/templateSwapClipSources.js';
+import { TEMPLATE_SWAP_CLIPS, TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 } from '../app/veyrnox/_lib/templateSwapClips.js';
 import { templateContract } from '../lib/templateContract.js';
 import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { checkTemplateRequest } from '../lib/templateFidelity.js';
 test('ships empty and dark; every existing swap remains blocked', () => {
  assert.deepEqual(TEMPLATE_SWAP_CLIPS, []); assert.ok(Object.isFrozen(TEMPLATE_SWAP_CLIPS));
- assert.deepEqual(TEMPLATE_SWAP_CLIP_SOURCES, {}); assert.ok(Object.isFrozen(TEMPLATE_SWAP_CLIP_SOURCES));
+ assert.equal(TEMPLATE_SWAP_CLIP_MANIFEST_SHA256, '');
+ assert.equal(fs.existsSync('lib/templateSwapClipSources.js'), false);
  assert.doesNotMatch(fs.readFileSync('wrangler.jsonc', 'utf8'), /TEMPLATE_SWAP_CLIP_ENABLED/);
  const ids = Object.values(JSON.parse(fs.readFileSync('lib/publicTemplateIds.json'))).flat();
  let count = 0;
@@ -54,4 +54,9 @@ test('every id in the shipped registry is a template that needs a source clip (s
   const { swapCandidates } = await import('../scripts/import-template-swap-clips.mjs');
   const allowed = new Set((await swapCandidates()).map(c => c.id));
   for (const id of TEMPLATE_SWAP_CLIPS) assert.ok(allowed.has(id), id);
+});
+
+test('Worker budget stays at the checkout baseline (60700; frozen plan says 60500)', async () => {
+ const { WORKER_SIZE_BUDGET_KIB } = await import('../scripts/check-worker-size.mjs');
+ assert.equal(WORKER_SIZE_BUDGET_KIB, 60700);
 });

@@ -77,14 +77,34 @@ test('local-only review pack, approved-only processing, hash checks and conditio
   const reviewedDecisions = [{...decision,sha256:dry.manifest[id].sha256}];
   const r2 = {accountId:'mock',accessKeyId:'mock',secretAccessKey:'mock',bucket:'mock'}, objects = new Map();
   const storage = {
-   async putObject(key,bytes,type,cfg,options) { assert.deepEqual(options,{onlyIfAbsent:true}); assert.equal(type,'video/mp4'); assert.equal(cfg,r2); if(objects.has(key)) return {ok:false,status:412}; objects.set(key,bytes); return {ok:true}; },
+   async putObject(key,bytes,type,cfg,options) { assert.deepEqual(options,{onlyIfAbsent:true}); assert.equal(type, key.endsWith('.json') ? 'application/json' : 'video/mp4'); assert.equal(cfg,r2); if(objects.has(key)) return {ok:false,status:412}; objects.set(key,bytes); return {ok:true}; },
    async getObject(key) { return {ok:true,response:new Response(objects.get(key))}; },
   };
   for (let i=0;i<2;i++) {
    const uploaded = await importTemplateSwapClips({...base,decisions:reviewedDecisions,upload:true,confirmBucket:'mock',r2,storage});
-   assert.equal(uploaded.report.publishable,true); await access(path.join(uploaded.runDir,'publishable','templateSwapClipSources.js'));
+   assert.equal(uploaded.report.publishable,true);
+   const published = path.join(uploaded.runDir,'publishable');
+   await assert.rejects(access(path.join(published,'templateSwapClipSources.js')));
+   const bytes = await readFile(path.join(published,'manifest.json'));
+   const hash = await sha256Hex(bytes), key = `template-swap-clips/manifests/${hash}.json`;
+   assert.deepEqual(Buffer.from(objects.get(key)), bytes);
+   assert.deepEqual(JSON.parse(bytes), { version: 1, clips: uploaded.manifest });
+   const registry = await readFile(path.join(published,'templateSwapClips.js'), 'utf8');
+   assert.ok(registry.includes(hash)); assert.ok(registry.includes(id));
+   assert.ok(!registry.includes(uploaded.manifest[id].key)); assert.ok(!registry.includes(uploaded.manifest[id].sha256));
+   assert.equal([...objects.keys()].at(-1), key);
+
   }
-  assert.equal(objects.size,1);
+  assert.equal(objects.size,2);
+  for (const failure of ['put', 'readback']) {
+   let failedRun;
+   await assert.rejects(importTemplateSwapClips({...base,decisions:reviewedDecisions,upload:true,confirmBucket:'mock',r2,storage:{
+    ...storage,
+    putObject: async (...args) => args[0].endsWith('.json') && failure === 'put' ? {ok:false} : storage.putObject(...args),
+    getObject: async key => key.endsWith('.json') && failure === 'readback' ? {ok:true,response:new Response('bad')} : storage.getObject(key),
+   }}), error => { failedRun = error.runDir; return /manifest_put_failed|manifest_hash_mismatch/.test(error.message); });
+   await assert.rejects(access(path.join(failedRun,'publishable')));
+  }
   await assert.rejects(importTemplateSwapClips({...base,upload:true,confirmBucket:'mock',r2,storage}), /reviewed_hash_mismatch/);
   await assert.rejects(importTemplateSwapClips({...base,decisions:[{...decision,sha256:'c'.repeat(64)}],upload:true,confirmBucket:'mock',r2,storage}), /reviewed_hash_mismatch/);
   // Every approved clip failing is an error, not a quiet success; zero approved is refused too.
@@ -105,10 +125,10 @@ test('local-only review pack, approved-only processing, hash checks and conditio
 
 test('registry rendering replaces an empty or already populated list and rejects a malformed file', async () => {
   const { renderSwapRegistry } = await import('../scripts/import-template-swap-clips.mjs');
-  const empty = 'export const TEMPLATE_SWAP_CLIPS = Object.freeze([]);\n';
-  const first = renderSwapRegistry(empty, ['a-one']);
+  const empty = "export const TEMPLATE_SWAP_CLIPS = Object.freeze([]);\nexport const TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 = '';\n";
+  const first = renderSwapRegistry(empty, ['a-one'], 'a'.repeat(64));
   assert.match(first, /Object\.freeze\(\["a-one"\]\)/);
-  const second = renderSwapRegistry(first, ['a-two', 'a-three']);
+  const second = renderSwapRegistry(first, ['a-two', 'a-three'], 'b'.repeat(64));
   assert.match(second, /Object\.freeze\(\["a-two","a-three"\]\)/); assert.doesNotMatch(second, /a-one/);
   assert.throws(() => renderSwapRegistry('export const X = 1;\n', ['a']), /registry_render_failed/);
 });

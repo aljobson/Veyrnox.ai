@@ -11,7 +11,9 @@ import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { checkTemplateSwapVideoSource } from '../lib/templateSwapClipGeneration.js';
 import { TEMPLATE_SWAP_CLIP_ENDPOINT } from '../app/veyrnox/_lib/templateSwapClips.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
-import { envConfig, isConfigured, sha256Hex } from '../packages/adapters/r2.js';
+import { envConfig, isConfigured, sha256Hex, putObject, getObject } from '../packages/adapters/r2.js';
+import { readBoundedBody } from '../lib/boundedBody.js';
+import { TEMPLATE_SWAP_MANIFEST_MAX_BYTES } from '../lib/templateSwapClipManifest.js';
 import { MAX_BYTES, assertMp4, verifyUpload } from './import-swap-scenes.mjs';
 import { outsideRepositories, normaliseSwapClip, contactSheet, indexSheet, posterSimilarity } from './lib/swap-clip-normalise.mjs';
 const repo = fileURLToPath(new URL('../', import.meta.url));
@@ -87,17 +89,20 @@ function markdown(report) {
 }
 
 // Replace whatever list is installed (empty or populated); the emitted ids must equal the given ids exactly.
-export function renderSwapRegistry(registry, ids) {
+export function renderSwapRegistry(registry, ids, pin) {
   const pattern = /Object\.freeze\(\[[^\]]*\]\)/;
   if (!pattern.test(registry)) fail('registry_render_failed');
-  const rendered = registry.replace(pattern, `Object.freeze(${JSON.stringify(ids)})`);
+  const pinDeclaration = /export const TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 = ['"][a-f0-9]*['"];/;
+  if (!/^[a-f0-9]{64}$/.test(pin) || !pinDeclaration.test(registry)) fail('registry_render_failed');
+  const rendered = registry.replace(pattern, `Object.freeze(${JSON.stringify(ids)})`)
+    .replace(pinDeclaration, `export const TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 = '${pin}';`);
   const emitted = JSON.parse(/TEMPLATE_SWAP_CLIPS = Object\.freeze\((\[[^\]]*\])\)/.exec(rendered)?.[1] ?? 'null');
   if (JSON.stringify(emitted) !== JSON.stringify(ids)) fail('registry_render_failed');
   return rendered;
 }
 
 export async function importTemplateSwapClips({ decisions, outDir, upscale = false, upload = false, reviewAll = false, confirmBucket,
-  showcaseDir = path.join(repo, 'public/showcase'), records, kinds, includeSyntx = false, r2 = envConfig(), storage } = {}) {
+  showcaseDir = path.join(repo, 'public/showcase'), records, kinds, includeSyntx = false, r2 = envConfig(), storage = { putObject, getObject } } = {}) {
   // Validate every caller-controlled output path before any decisions or source work.
   const base = await outsideRepositories(outDir);
   if (!Array.isArray(decisions)) fail('decisions_must_be_array');
@@ -171,12 +176,22 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
       if (!approved.size || files.length !== approved.size) fail('approved_candidates_failed');
       for (const item of files) if (reviewed.get(item.id) !== manifest[item.id].sha256) fail('reviewed_hash_mismatch');
       for (const item of files) await verifyUpload(manifest[item.id], await readFile(item.file), r2, storage);
+      const ids = Object.keys(manifest).sort();
+      const manifestBytes = new TextEncoder().encode(json({ version: 1, clips: Object.fromEntries(ids.map(id => [id, manifest[id]])) }));
+      if (manifestBytes.length > TEMPLATE_SWAP_MANIFEST_MAX_BYTES) fail('manifest_too_large');
+      const pin = await sha256Hex(manifestBytes), key = `template-swap-clips/manifests/${pin}.json`;
+      const put = await storage.putObject(key, manifestBytes, 'application/json', r2, { onlyIfAbsent: true });
+      if (!put.ok && put.status !== 412) fail('manifest_put_failed');
+      const read = await storage.getObject(key, r2);
+      if (!read.ok || read.response.status !== 200) fail('manifest_readback_failed');
+      const returned = await readBoundedBody(read.response.body, manifestBytes.length, AbortSignal.timeout(3000));
+      if (returned.length !== manifestBytes.length || await sha256Hex(returned) !== pin) fail('manifest_hash_mismatch');
       report.publishable = true;
       const published = path.join(runDir, 'publishable'); await mkdir(published);
       const registry = await readFile(path.join(repo, 'app/veyrnox/_lib/templateSwapClips.js'), 'utf8');
-      const rendered = renderSwapRegistry(registry, Object.keys(manifest));
+      const rendered = renderSwapRegistry(registry, ids, pin);
       await writeFile(path.join(published, 'templateSwapClips.js'), rendered);
-      await writeFile(path.join(published, 'templateSwapClipSources.js'), `// SERVER ONLY. Owner-approved, fully verified import candidate.\nexport const TEMPLATE_SWAP_CLIP_SOURCES = Object.freeze(${JSON.stringify(manifest, null, 2)});\n`);
+      await writeFile(path.join(published, 'manifest.json'), manifestBytes);
     }
     return { runDir, manifest, files, report };
   } catch (error) {
