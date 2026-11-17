@@ -25,6 +25,17 @@ const BLOCKING = new Set(['high', 'critical']);
 // the package sits and why that is tolerable. Remove it when the gate says so.
 export const ALLOWED = [];
 
+// The same gate for another lockfile: `node scripts/check-audit.mjs --prefix <dir>` audits <dir> and uses that
+// directory's own list, so an exception for one lockfile can never hide, or be reported stale by, another.
+export const ALLOWED_BY_PREFIX = {
+  // picomatch <= 4.0.7 (ReDoS through repeated extglobs, published 2026-10-19) has no patched version. It reaches this
+  // package only through vitest and @cloudflare/vitest-plugin, which run the signed-callback Workers tests in CI;
+  // every dependency here is a devDependency, so nothing installs it in production.
+  'tests/fal-signed-retry-runtime': [
+    { id: 'GHSA-fc5q-39xc-vjpf', reason: 'picomatch <= 4.0.7 has no patched version; test-runner tooling only (vitest chain)' },
+  ],
+};
+
 const advisoryId = (via) => /\/(GHSA(?:-[0-9a-z]{4}){3})$/i.exec(via.url || '')?.[1] ?? null;
 
 function vulnerabilitiesOf(report) {
@@ -79,8 +90,8 @@ export function assessAudit(report, allowed = ALLOWED, prodReport = undefined) {
   return { problems, waived };
 }
 
-function readReport(extraArgs = []) {
-  const args = ['audit', '--json', ...extraArgs];
+function readReport(extraArgs = [], prefix = null) {
+  const args = ['audit', '--json', ...(prefix ? ['--prefix', prefix] : []), ...extraArgs];
   const run = spawnSync('npm', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (run.error) throw run.error;
   // npm exits non-zero whenever it finds anything; the report is on stdout either way.
@@ -97,7 +108,11 @@ function readReport(extraArgs = []) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   let result;
   try {
-    result = assessAudit(readReport(), ALLOWED, readReport(['--omit=dev']));
+    const at = process.argv.indexOf('--prefix');
+    const prefix = at > 0 ? (process.argv[at + 1] || '').replace(/\/+$/, '') : null;
+    if (at > 0 && !prefix) throw new Error('--prefix needs a directory');
+    const allowed = prefix ? ALLOWED_BY_PREFIX[prefix] ?? [] : ALLOWED;
+    result = assessAudit(readReport([], prefix), allowed, readReport(['--omit=dev'], prefix));
   } catch (e) {
     console.error(`[check-audit] could not read the audit report: ${e.message}`);
     process.exit(2);

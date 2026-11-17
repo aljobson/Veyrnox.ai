@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ALLOWED, assessAudit } from '../scripts/check-audit.mjs';
+import { ALLOWED, ALLOWED_BY_PREFIX, assessAudit } from '../scripts/check-audit.mjs';
 
 const WAIVED = { id: 'GHSA-aaaa-bbbb-cccc', reason: 'no fixed version; build tooling only' };
 const advisory = (name, id, severity = 'high') => ({
@@ -84,7 +84,7 @@ test('a production report that cannot be read is refused, not read as clean', ()
 
 test('the gate itself checks the production tree', () => {
     const script = readFileSync(new URL('../scripts/check-audit.mjs', import.meta.url), 'utf8');
-    assert.match(script, /assessAudit\(readReport\(\), ALLOWED, readReport\(\['--omit=dev'\]\)\)/);
+    assert.match(script, /assessAudit\(readReport\(\[\], prefix\), allowed, readReport\(\['--omit=dev'\], prefix\)\)/);
 });
 
 test('an allowed advisory that is no longer reported fails until its entry is removed', () => {
@@ -111,4 +111,39 @@ test('CI runs the gate through the script, with no bare npm audit left', () => {
     const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
     assert.match(ci, /run: node scripts\/check-audit\.mjs/);
     assert.doesNotMatch(ci, /npm audit --audit-level/);
+});
+
+const NESTED = 'tests/fal-signed-retry-runtime';
+const PICOMATCH = 'GHSA-fc5q-39xc-vjpf';
+const picomatchTree = () => report({
+    picomatch: { name: 'picomatch', severity: 'high', via: [advisory('picomatch', PICOMATCH)], fixAvailable: BREAKING_FIX },
+    vitest: { name: 'vitest', severity: 'high', via: ['picomatch'], fixAvailable: BREAKING_FIX },
+});
+
+test('the nested Workers-runtime lockfile waives only the picomatch advisory, and the root list stays empty', () => {
+    assert.deepEqual(ALLOWED, []);
+    assert.deepEqual(Object.keys(ALLOWED_BY_PREFIX), [NESTED]);
+    assert.deepEqual(ALLOWED_BY_PREFIX[NESTED].map((e) => e.id), [PICOMATCH]);
+    assert.ok(ALLOWED_BY_PREFIX[NESTED][0].reason.length > 20);
+    const { problems, waived } = assessAudit(picomatchTree(), ALLOWED_BY_PREFIX[NESTED], report({}));
+    assert.deepEqual(problems, []);
+    assert.deepEqual(waived, [{ id: PICOMATCH, package: 'picomatch', severity: 'high' }]);
+});
+
+test('the same advisory still fails the root lockfile, so the exception cannot leak', () => {
+    const { problems } = assessAudit(picomatchTree(), ALLOWED);
+    assert.match(problems[0], new RegExp(PICOMATCH));
+});
+
+test('the exception ends itself: a fix, a production install or silence all fail the gate', () => {
+    const fixable = report({ picomatch: { name: 'picomatch', severity: 'high', via: [advisory('picomatch', PICOMATCH)], fixAvailable: true } });
+    assert.match(assessAudit(fixable, ALLOWED_BY_PREFIX[NESTED], report({})).problems[0], /npm audit fix/);
+    assert.match(assessAudit(picomatchTree(), ALLOWED_BY_PREFIX[NESTED], picomatchTree()).problems[0], /production dependency/);
+    assert.match(assessAudit(report({}), ALLOWED_BY_PREFIX[NESTED], report({})).problems[0], /no longer reported/);
+});
+
+test('CI runs the gate on the nested lockfile instead of a bare npm audit', () => {
+    const ci = readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8');
+    assert.match(ci, /node scripts\/check-audit\.mjs --prefix tests\/fal-signed-retry-runtime/);
+    assert.doesNotMatch(ci, /npm audit --prefix tests\/fal-signed-retry-runtime/);
 });
