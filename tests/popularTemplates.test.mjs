@@ -81,6 +81,11 @@ test('a bad, unknown or mismatched template is ignored: the generation still run
     }
 });
 
+test('a withdrawn duplicate is ranked under its keeper, once', async () => {
+    const net = network({ rpcs: { popular_templates: ['community-club-dj-set', 'neon-alley', 'community-nightlife-dj-set'] } });
+    try { assert.deepEqual(await (await popular.GET()).json(), { templates: ['community-nightlife-dj-set', 'neon-alley'] }); } finally { net.restore(); }
+});
+
 test('the ranking route returns well-formed ids only, caches publicly, and fails closed', async () => {
     let net = network({ rpcs: { popular_templates: ['neon-alley', 'Bad Id!', 7, 'anime-hero', '../x'] } });
     try {

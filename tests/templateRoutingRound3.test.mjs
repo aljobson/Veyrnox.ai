@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { duplicateKeeperId } from '../app/veyrnox/_lib/duplicateTemplateIds.js';
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -69,7 +70,7 @@ test('Create arrival restores an edited bound-model draft without a model URL pa
 test('detail runnable verdict and /api/templates detail agree for every bound template', async () => {
   const f = fixture('en', '/presets/window-explode', { moduleMocks: { '../../_components/TemplateRecipe': { TemplateRecipe: () => null } } });
   const Page = f.load(page).default;
-  for (const preset of PRESETS.filter(p => templateContract(p.id)?.class === 'bound')) {
+  for (const preset of PRESETS.filter(p => !duplicateKeeperId(p.id) && templateContract(p.id)?.class === 'bound')) {
     const tree = await Page({ params: Promise.resolve({ id: preset.id }) });
     let actual;
     const visit = node => { if (!React.isValidElement(node)) return; if (node.props.preset?.id === preset.id && 'sourcePromptRunnable' in node.props.preset) actual = node.props.preset; React.Children.forEach(node.props.children, visit); };
@@ -85,7 +86,7 @@ test('all non-bound non-blocked recipe/detail markup is byte-identical to base',
   const old = fixture('en', '/presets', { sourceOverrides: { [page]: base(page), [recipe]: base(recipe), [framing]: base(framing), 'app/veyrnox/_components/UseTemplate.js': base('app/veyrnox/_components/UseTemplate.js') } });
   const now = fixture('en', '/presets');
   const checked = [];
-  for (const preset of PRESETS.filter(p => !['bound', 'blocked-needs-video'].includes(templateContract(p.id)?.class))) {
+  for (const preset of PRESETS.filter(p => !duplicateKeeperId(p.id) && !['bound', 'blocked-needs-video'].includes(templateContract(p.id)?.class))) {
     assert.equal(now.render(React.createElement(now.load(recipe).TemplateRecipe, { preset })), old.render(React.createElement(old.load(recipe).TemplateRecipe, { preset })), `${preset.id}: recipe`);
     const params = Promise.resolve({ id: preset.id });
     assert.equal(now.render(await now.load(page).default({ params })), old.render(await old.load(page).default({ params })), `${preset.id}: detail`);
@@ -100,7 +101,7 @@ test('bound detail differs only in model link/name and reviewed crop guidance; l
   const old = fixture('en', '/presets', { moduleMocks: controls, sourceOverrides: { [page]: base(page), [framing]: base(framing) } });
   const now = fixture('en', '/presets', { moduleMocks: controls });
   const changed = [], cropChanges = [];
-  for (const preset of PRESETS.filter(p => templateContract(p.id)?.class === 'bound')) {
+  for (const preset of PRESETS.filter(p => !duplicateKeeperId(p.id) && templateContract(p.id)?.class === 'bound')) {
     const params = Promise.resolve({ id: preset.id });
     const before = old.render(await old.load(page).default({ params }));
     const after = now.render(await now.load(page).default({ params }));
@@ -114,7 +115,7 @@ test('bound detail differs only in model link/name and reviewed crop guidance; l
     assert.match(after, /href="\/models\/kling-3.0-i2v"[^>]*>Kling 3.0 · I2V<\/a>/);
   }
   assert.deepEqual(cropChanges, []);
-  assert.deepEqual(changed, PRESETS.filter(p => templateContract(p.id)?.class === 'bound' && p.model !== 'Kling 3.0 · I2V').map(p => p.id));
+  assert.deepEqual(changed, PRESETS.filter(p => !duplicateKeeperId(p.id) && templateContract(p.id)?.class === 'bound' && p.model !== 'Kling 3.0 · I2V').map(p => p.id));
   mkdirSync('.gstack/a2-round3', { recursive: true });
   writeFileSync('.gstack/a2-round3/bound-markup-changes.json', JSON.stringify({ changed, cropChanges }, null, 2) + '\n');
 });
