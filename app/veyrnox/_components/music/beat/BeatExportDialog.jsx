@@ -32,7 +32,7 @@ export default function BeatExportDialog({ doc, editTrackId, announce, finalize,
     catch (e) { setSources(null); setError(e.message); announce(e.message); }
   }, [opened, range, announce]);
   async function open() {
-    snapshot.current = structuredClone(finalize?.() || doc);
+    snapshot.current = structuredClone(await finalize?.() || doc);
     setExportDoc(snapshot.current);
     prepared.current = null; rendered.current = null; saveAttempt.current = null;
     setTitle(snapshot.current.title); setRights(false); setSaved(null); setHasDownload(false); setRange('song'); setError('');

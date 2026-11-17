@@ -5,14 +5,17 @@ import { audioSegments, envelopeGain } from '../app/veyrnox/_lib/music/beat/beat
 import { audioDoc, audioRegion, soundAsset, takeAsset } from './musicBeatAudioFixtures.mjs';
 import { setTempo } from '../app/veyrnox/_lib/music/beat/beatOps.mjs';
 
-test('gain, fades, reverse and track mix preserve the run; structural edits change it', () => {
+test('gain, reverse and track mix preserve the run; fades and structure reschedule it', () => {
   const doc = audioDoc(), signature = arrangementStructure(doc);
   const adjusted = structuredClone(doc), region = audioRegion(adjusted);
-  Object.assign(region, { gainDb: -6, fadeIn: { startSec: 0, endSec: 1 }, fadeOut: { startBeforeEndSec: 1, endBeforeEndSec: 0 }, reverse: true });
+  Object.assign(region, { gainDb: -6, reverse: true });
   adjusted.tracks[1].mute = true; adjusted.tracks[0].solo = true;
   adjusted.tracks[1].gain = 0.5; adjusted.tracks[1].pan = -1;
   assert.equal(arrangementStructure(adjusted), signature);
   for (const change of [
+    d => { audioRegion(d).fadeIn = { startSec: 0, endSec: 1 }; },
+    d => { audioRegion(d).fadeOut = { startBeforeEndSec: 1, endBeforeEndSec: 0 }; },
+    d => { audioRegion(d).tailSec = 0.01; },
     (d) => { audioRegion(d).start += 240; }, (d) => { audioRegion(d).length += 240; },
     (d) => { d.tracks[1].regions = []; }, (d) => { d.tracks[1].regions.push({ ...audioRegion(d), id: 'rnew', start: 5000 }); },
   ]) { const next = structuredClone(doc); change(next); assert.notEqual(arrangementStructure(next), signature); }

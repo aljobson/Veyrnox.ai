@@ -1,4 +1,5 @@
 'use client';
+import dynamic from 'next/dynamic';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { songEnd } from '../../../_lib/music/beat/beatDocument.mjs';
 import { clampLocator, snapTick, formatPosition } from '../../../_lib/music/beat/beatTime.mjs';
@@ -16,10 +17,12 @@ import BeatRegionActions from './BeatRegionActions';
 import useRegionDrag from './useRegionDrag';
 import { button, input } from './beatStyles';
 
-export default function BeatArrangement({ automationLanes = {}, onAutomation, recording = false, ai, onAi, doc, edit, selectPattern, editTrackId, setEditTrackId,
+const BeatTakeLanes = dynamic(() => import('./BeatTakeLanes'), { ssr: false });
+export default function BeatArrangement({ armedId, onArm, automationLanes = {}, onAutomation, recording = false, ai, onAi, doc, edit, selectPattern, editTrackId, setEditTrackId,
   locator, setLocator, playhead, runId, announce, onSelectRegion }) {
   useEffect(() => () => clearBeatAssets(), []);
   useEffect(() => { syncAssetTempo(doc.tempo.bpm); }, [doc.tempo.bpm]);
+  const [openGroup, setOpenGroup] = useState(null);
   const [zoom, setZoom] = useState(96);
   const [snapValue, setSnapValue] = useState('240');
   const snap = snapValue === 'off' ? 240 : Number(snapValue);
@@ -90,8 +93,8 @@ export default function BeatArrangement({ automationLanes = {}, onAutomation, re
     <div className="flex min-w-0 max-w-full rounded-xl border border-vx-border">
       <div className="z-20 w-16 shrink-0 md:w-64">
         <div className="flex h-24 items-center text-xs font-bold md:px-3">Tracks</div>
-        {doc.tracks.map((track) => <Fragment key={track.id}><BeatTrackHeader recording={recording} mode={doc.view} automationLane={automationLanes[track.id]} onAutomation={lane => onAutomation(track.id, lane)} track={track} edit={edit} locator={locator}
-          last={doc.tracks.length === 1} selected={track.id === editTrackId} onSelect={() => { setEditTrackId(track.id); onSelectRegion(track.regions[0]?.id || null); }} />{automationLanes[track.id] && <div className="h-52 border-b border-vx-border bg-vx-panel" />}</Fragment>)}
+        {doc.tracks.map((track) => <Fragment key={track.id}><BeatTrackHeader recording={recording} armedId={armedId} onArm={onArm} mode={doc.view} automationLane={automationLanes[track.id]} onAutomation={lane => onAutomation(track.id, lane)} track={track} edit={edit} locator={locator}
+          last={doc.tracks.length === 1} selected={track.id === editTrackId} onSelect={() => { setEditTrackId(track.id); onSelectRegion(track.regions[0]?.id || null); }} />{track.takeGroups?.filter(g => g.id === openGroup).map(g => <div key={g.id} style={{ height: 112 + g.lanes.length * 112 }} />)}{automationLanes[track.id] && <div className="h-52 border-b border-vx-border bg-vx-panel" />}</Fragment>)}
       </div>
       <div ref={scroller} className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden" aria-label="Arrangement timeline"
         onWheel={() => { manualRun.current = runId; }}
@@ -105,7 +108,7 @@ export default function BeatArrangement({ automationLanes = {}, onAutomation, re
             setLocator={setLocator} cycle={doc.cycle} edit={edit} announce={announce} />
           {doc.tracks.map((track) => <Fragment key={track.id}><div data-track-lane={track.id}
             onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, track.id)}
-            className="relative h-48 border-b border-vx-border bg-vx-base md:h-80"
+            className="relative h-64 border-b border-vx-border bg-vx-base md:h-80"
             onClick={(event) => { if (event.target === event.currentTarget) setLocator(clampLocator(laneTick(event), end)); }}
             onDoubleClick={(event) => {
               if (event.target !== event.currentTarget || track.kind === 'audio') return;
@@ -117,12 +120,13 @@ export default function BeatArrangement({ automationLanes = {}, onAutomation, re
             {track.regions.map((region) => <BeatRegion key={region.id} region={region} track={track} doc={doc}
               zoom={zoom} snap={snap} locator={locator} selected={region.id === selectedId}
               select={() => choose(region, track)} edit={edit} drag={drag} />)}
+            {track.takeGroups?.map(g => <button key={g.id} className={`${button} absolute bottom-2`} style={{ left: g.start / 3840 * zoom }} aria-expanded={g.id === openGroup} onClick={() => setOpenGroup(g.id === openGroup ? null : g.id)}>Takes ({g.lanes.length})</button>)}
             {drag.preview?.trackId === track.id && <div aria-hidden="true"
               className="pointer-events-none absolute top-4 z-20 h-16 rounded-lg border-2 border-vx-accent bg-vx-hue-iris/60"
               style={{ left: drag.preview.start / 3840 * zoom, width: drag.preview.length / 3840 * zoom }}>
               {drag.preview.pattern}
             </div>}
-          </div>{automationLanes[track.id] && <BeatAutomationLane track={track} lane={automationLanes[track.id]} bpm={doc.tempo.bpm} zoom={zoom} width={width} snap={snap} locator={locator} edit={edit} close={() => onAutomation(track.id, null)} />}</Fragment>)}
+          </div>{track.takeGroups?.filter(g => g.id === openGroup).map(g => <BeatTakeLanes key={g.id} group={g} track={track} doc={doc} edit={edit} snap={snap} zoom={zoom} close={() => setOpenGroup(null)} />)}{automationLanes[track.id] && <BeatAutomationLane track={track} lane={automationLanes[track.id]} bpm={doc.tempo.bpm} zoom={zoom} width={width} snap={snap} locator={locator} edit={edit} close={() => onAutomation(track.id, null)} />}</Fragment>)}
           <div className="h-20 border-b border-dashed border-vx-border p-3 text-sm text-vx-fg-muted" onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, null)}>Drop a sound here to add an audio track. Use Add on touch screens.</div>
           {doc.view === 'song' && <div aria-hidden="true"
             className="pointer-events-none absolute inset-y-0 z-20 w-0.5 bg-vx-accent"

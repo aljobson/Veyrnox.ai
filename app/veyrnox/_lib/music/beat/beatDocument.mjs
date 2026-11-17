@@ -1,3 +1,4 @@
+import { takeGroupsError } from './beatTakeRules.mjs';
 import { masterError, trackMixError } from './beatMixRules.mjs';
 import { clipsError, validInstrument, validMidiRegion } from './beatMidiRules.mjs';
 import { validAsset, validAudioRegion } from './beatAudioRules.mjs';
@@ -63,13 +64,14 @@ export function arrangementError(doc) {
     const midi = doc.version === 4 && track.kind === 'midi';
     const audio = doc.version >= 3 && track.kind === 'audio';
     const trackFields = ['id', 'name', 'mute', 'solo', 'gain', 'pan', 'regions', ...(midi ? ['instrument'] : audio ? [] : ['kit']), ...(doc.version >= 3 ? ['kind'] : [])];
-    if (!(keys(track, [...trackFields, ...(doc.version === 4 ? ['fx', 'sends', 'automation'] : [])]) && trackFields.every(k => Object.hasOwn(track, k))) || (doc.version >= 3 && !(doc.version === 4 ? ['drums', 'audio', 'midi'] : ['drums', 'audio']).includes(track.kind)) ||
+    if (!(keys(track, [...trackFields, ...(doc.version === 4 ? ['fx', 'sends', 'automation', 'takeGroups'] : [])]) && trackFields.every(k => Object.hasOwn(track, k))) || (doc.version >= 3 && !(doc.version === 4 ? ['drums', 'audio', 'midi'] : ['drums', 'audio']).includes(track.kind)) ||
       typeof track.id !== 'string' || !/^t[0-9a-z]{1,12}$/.test(track.id) || ids.has(track.id) ||
       typeof track.name !== 'string' || !track.name.trim() || track.name.length > 40 ||
       (midi && !validInstrument(track.instrument)) || (!audio && !midi && !PRESETS.drums.some((kit) => kit.id === track.kit)) || typeof track.mute !== 'boolean' ||
       typeof track.solo !== 'boolean' || !finite(track.gain, 0, 1) || !finite(track.pan, -1, 1) ||
       !Array.isArray(track.regions)) return 'Invalid track.';
     if (doc.version === 4) { const reason = trackMixError(track); if (reason) return reason; }
+    { const reason = takeGroupsError(track, doc); if (reason) return reason; }
     ids.add(track.id);
     let end = 0;
     for (const region of track.regions) {

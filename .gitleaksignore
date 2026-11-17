@@ -337,3 +337,5 @@ aadccca615b1debc43a1a782e81c5d7a1649ea02:app/veyrnox/_lib/templateClips.js:gener
 bb6bfb6e59ac46f26913ad03cb45aafbc46fe00e:app/veyrnox/_lib/templateClips.js:generic-api-key:302
 # Fake caller UUID in a test request header (#2342 fix round 2); not a credential. The line now reads it from a variable.
 0c27991ea2eab3d539c0f0a0518399cfddb35bd2:tests/musicStudio.test.mjs:generic-api-key:38
+# localStorage name for beat latency calibration (#2371), not a credential. The constant is renamed in a later commit.
+bbe2476669fcda9c04129f57ab4f7f67637d0d8c:app/veyrnox/_lib/music/beat/beatLatency.mjs:generic-api-key:1

@@ -237,9 +237,9 @@ export function MusicSongActions({
             </button>
           ) : null}
           {canStudio ? (
-            <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender ? firstItemRef : undefined} role="menuitem" href={beatEditor ? `/app/music/beats/new?song=${encodeURIComponent(songId)}` : `/app/music/studio/${songId}`} className={itemClass}>
+            <a ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender ? firstItemRef : undefined} role="menuitem" href={beatEditor ? `/app/music/beats/new?song=${encodeURIComponent(songId)}` : `/app/music/studio/${songId}`} className={itemClass}>
               {beatEditor ? 'Open in Beats' : 'Open in Studio workspace'}
-            </Link>
+            </a>
           ) : null}
           {canEditor ? (
             <Link ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canExtend && !canReplace && !canAddSection && !canReuse && !canStems && !canTargetStem && !canAddTrack && !canCrop && !canRender && !canStudio ? firstItemRef : undefined} role="menuitem" href={`/app/editor?job=${encodeURIComponent(jobId)}&name=${encodeURIComponent(title)}`} className={itemClass}>

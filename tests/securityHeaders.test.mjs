@@ -17,17 +17,17 @@ const MIN_HSTS_AGE = 63072000;
 
 async function headerMap() {
     const groups = await nextConfig.headers();
-    assert.equal(groups.length, 7, 'global hardening, two microphone policies, the Photo Studio camera policy, API CSP and the two exact inference Workers are separate');
-    assert.equal(groups[0].source, '/:path*');
-    assert.equal(groups[1].source, '/app/editor/:path*');
-    assert.equal(groups[2].source, '/app/photo-studio/:path*'); // ADR-0338 S2b: the only route that may use the camera
-    assert.equal(groups[3].source, '/app/music/studio/:path*');
-    assert.equal(groups[4].source, '/api/:path*');
-    assert.equal(groups[5].source,LOCAL_SPEECH_WORKER_URL);
-    assert.deepEqual(groups[5].headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
-    assert.equal(groups[6].source,`${EDITOR_VISION_PATH}/worker.mjs`);
-    assert.deepEqual(groups[6].headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
-    return new Map([groups[0], groups[4]].flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
+    assert.equal(groups.length, 8, 'global hardening, three microphone policies, the Photo Studio camera policy, API CSP and the two exact inference Workers are separate');
+    assert.equal(groups.find(g => g.source === '/:path*').source, '/:path*');
+    assert.equal(groups.find(g => g.source === '/app/editor/:path*').source, '/app/editor/:path*');
+    assert.equal(groups.find(g => g.source === '/app/photo-studio/:path*').source, '/app/photo-studio/:path*'); // ADR-0338 S2b: the only route that may use the camera
+    assert.equal(groups.find(g => g.source === '/app/music/studio/:path*').source, '/app/music/studio/:path*');
+    assert.equal(groups.find(g => g.source === '/api/:path*').source, '/api/:path*');
+    assert.equal(groups.find(g => g.source === LOCAL_SPEECH_WORKER_URL).source,LOCAL_SPEECH_WORKER_URL);
+    assert.deepEqual(groups.find(g => g.source === LOCAL_SPEECH_WORKER_URL).headers,[{key:'Content-Security-Policy',value:localSpeechWorkerPolicy('https://veyrnox.ai')}]);
+    assert.equal(groups.find(g => g.source === `${EDITOR_VISION_PATH}/worker.mjs`).source,`${EDITOR_VISION_PATH}/worker.mjs`);
+    assert.deepEqual(groups.find(g => g.source === `${EDITOR_VISION_PATH}/worker.mjs`).headers,[{key:'Content-Security-Policy',value:editorVisionWorkerPolicy('https://veyrnox.ai')}]);
+    return new Map([groups.find(g => g.source === '/:path*'), groups.find(g => g.source === '/api/:path*')].flatMap(group => group.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 function directives(csp) {
@@ -120,6 +120,7 @@ test('microphone access remains denied globally and is allowed only for editing 
     assert.equal(globalPolicy, 'camera=(), microphone=(), geolocation=()');
     assert.equal(editorPolicy, 'camera=(), microphone=(self), geolocation=()');
     assert.equal(musicPolicy, 'camera=(), microphone=(self), geolocation=()');
+    assert.equal(groups.find(g => g.source === '/app/music/beats/:path*')?.headers.find(h => h.key === 'Permissions-Policy')?.value, 'camera=(), microphone=(self), geolocation=()');
 });
 
 test('the anon key in env is a publishable key, not a service-role key', async () => {
@@ -143,7 +144,7 @@ test('the camera is allowed on Photo Studio only; microphone and geolocation sta
     for (const group of groups) {
         const policy = policyOf(group); if (!policy) continue;
         assert.match(policy, /geolocation=\(\)/, group.source);
-        if (group.source !== '/app/editor/:path*' && group.source !== '/app/music/studio/:path*') assert.match(policy, /microphone=\(\)/, group.source);
+        if (group.source !== '/app/editor/:path*' && group.source !== '/app/music/studio/:path*' && group.source !== '/app/music/beats/:path*') assert.match(policy, /microphone=\(\)/, group.source);
         assert.doesNotMatch(policy, /\*/, group.source); // no wildcard origin delegation
     }
 });

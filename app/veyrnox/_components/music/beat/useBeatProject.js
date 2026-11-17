@@ -4,7 +4,8 @@ import { recordingEditAllowed, RECORDING_LOCK_REASON } from '../../../_lib/music
 import { arrangementMessage } from '../../../_lib/music/beat/beatMessages.mjs';
 import * as historyOps from '../../../_lib/music/beat/beatHistory.mjs';
 import { tryOp, selectPattern as selectPatternOp } from '../../../_lib/music/beat/beatOps.mjs';
-import { getShelf, hydrateShelf } from '../../../_lib/music/instrumentShelf.js';
+import { localTakeIds, hydrateLocalTakes } from '../../../_lib/music/localTakes.js';
+import { reconcileBeatTakes } from '../../../_lib/music/beat/beatTakeStore.js';
 import { createDeviceCopy, COPY_TAKES_MESSAGE, replaceAfterStash } from '../../../_lib/music/beat/beatCloudRules.mjs';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 
@@ -44,7 +45,10 @@ export function useBeatProject(id, announce) {
     saving.current = true; flushRequested.current = false;
     const pendingDoc = unsaved.current;
     const token = generation.current;
-    inFlight.current = store.updateBeat(pendingDoc, revision.current);
+    inFlight.current = store.updateBeat(pendingDoc, revision.current).then(async result => {
+      if (!result.error && result.persistent) await reconcileBeatTakes(pendingDoc).catch(() => announce('Saved beat; take recovery status will be checked again on open.'));
+      return result;
+    });
     const result = await inFlight.current;
     saving.current = false;
     if (token !== generation.current) return;
@@ -63,6 +67,7 @@ export function useBeatProject(id, announce) {
       }
     }
     if (flushRequested.current) return savePending();
+    return result.error ? null : pendingDoc;
   }, [announce, markConflict]);
   const reload = useCallback(async () => {
     const token = {}; generation.current = token;
@@ -151,18 +156,18 @@ export function useBeatProject(id, announce) {
     return () => clearTimeout(timer);
   }, [doc, saved, conflict, flush]);
   async function copy(source) {
-    const finalized = beforeFlush.current?.() || current.current;
+    const finalized = await beforeFlush.current?.() || current.current;
     const copyDoc = source || finalized;
     if (!copyDoc) return null;
-    await hydrateShelf();
-    const result = await createDeviceCopy(copyDoc, getShelf(), store.createBeat, crypto.randomUUID(), Date.now());
+    await hydrateLocalTakes();
+    const result = await createDeviceCopy(copyDoc, localTakeIds().map(id => ({ id })), store.createBeat, crypto.randomUUID(), Date.now());
     if (result.error) {
       announce(result.error === 'cloud_only_takes' ? COPY_TAKES_MESSAGE : result.error === 'limit' ? 'This device has 50 beats. Delete one to make room for a copy.' : 'Could not save a copy.'); return null;
     }
     return result.id;
   }
   async function flushLatest() {
-    beforeFlush.current?.();
+    await beforeFlush.current?.();
     await inFlight.current;
     await flush();
     await inFlight.current;
@@ -170,7 +175,7 @@ export function useBeatProject(id, announce) {
   }
   async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId, expected = null) {
     if (replacing.current || blocked.current) throw new Error('Local beat is busy');
-    beforeFlush.current?.(); replacing.current = true;
+    await beforeFlush.current?.(); replacing.current = true;
     try {
       await replaceAfterStash({
         latest: async () => {
@@ -193,7 +198,7 @@ export function useBeatProject(id, announce) {
       announce(expected ? 'Updated from your account' : 'Loaded the account version; your changes are saved in Versions');
     } finally { replacing.current = false; void flush(); }
   }
-  return { doc, saved, flushLatest, replaceFromCloud, current, registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
+  return { doc, saved, flushLatest, replaceFromCloud, current, finishRecording: () => beforeFlush.current?.(), registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
     undo: () => travel('undo'), redo: () => travel('redo'),
     canUndo: Boolean(history.current && historyOps.canUndo(history.current)),
     canRedo: Boolean(history.current && historyOps.canRedo(history.current)),

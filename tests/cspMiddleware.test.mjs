@@ -119,3 +119,13 @@ test('a language prefix followed by // never redirects off our own origin', asyn
         if (previous === undefined) delete process.env.LOCALES_ENABLED; else process.env.LOCALES_ENABLED = previous;
     }
 });
+
+test('beat capture static JavaScript passes middleware without HTML rewriting or MIME overrides', async () => {
+    const response = await middleware(new NextRequest('http://localhost:3000/audio-worklets/beat-capture-worklet.js'));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-middleware-next'), '1');
+    assert.equal(response.headers.get('x-middleware-rewrite'), null);
+    assert.equal(response.headers.get('location'), null);
+    assert.equal(response.headers.get('content-type'), null, 'Next static serving supplies the JavaScript MIME type');
+    assert.match(response.headers.get('content-security-policy'), /script-src 'self'/);
+});
