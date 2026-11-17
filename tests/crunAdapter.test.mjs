@@ -214,3 +214,16 @@ test('Wan Animate replace is a strict poll-only whole-job request', () => {
   }
   assert.equal(buildRequest(target, { ...inputs, duration_seconds: 10 }).error, 'duration_not_supported');
 });
+
+test('Kling 3.0 Standard is the same Crun model in std mode (720p); Pro and 2.6 keep pro', () => {
+  const std = { model: 'kling/v3-std' };
+  assert.deepEqual(parseEndpoint('crun:kling/v3-std'), std);
+  assert.equal(endpointKind('crun:kling/v3-std'), 'video');
+  const r = buildRequest(std, { prompt: 'x', image_url: 'https://a/b.png', duration_seconds: 10 });
+  assert.deepEqual(r.body, { model: 'kling/v3', input: { mode: 'std', prompt: 'x', duration: 10, audio: false, img_urls: ['https://a/b.png'], multi_shots: false } });
+  assert.equal(buildRequest({ model: 'kling/v3' }, { prompt: 'x', image_url: 'https://a/b.png' }).body.input.mode, 'pro');
+  assert.equal(buildRequest({ model: 'kling/v2-6' }, { prompt: 'x' }).body.input.mode, 'pro');
+  assert.equal(buildRequest(std, { prompt: 'x' }).error, 'inputs_invalid:image_url');
+  assert.equal(buildRequest(std, { prompt: 'x', image_url: 'https://a/b.png', duration_seconds: 7 }).error, 'duration_not_supported');
+  assert.equal(parseEndpoint('crun:kling/v3-4k'), null, 'only the tiers we price are accepted');
+});

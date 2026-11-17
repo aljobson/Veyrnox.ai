@@ -301,5 +301,5 @@ export const type = {
     label: { fontSize: 16, fontWeight: '600' },
 } as const;
 // Archivo (the site's display face), loaded in the root layout; headings only, body text stays on the system font.
-export const fonts = { display: 'Archivo_700Bold', displayHeavy: 'Archivo_800ExtraBold' } as const;
+export const fonts = { display: 'Archivo_700Bold', displayHeavy: 'Archivo_800ExtraBold', displayBlack: 'Archivo_900Black' } as const;
 export const disabledOpacity = 0.4;

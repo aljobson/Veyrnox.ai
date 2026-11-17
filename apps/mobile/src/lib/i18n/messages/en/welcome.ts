@@ -13,4 +13,6 @@ export default {
     'welcome.skip': 'Skip',
     'welcome.go': 'Start creating',
     'welcome.step': 'Step {n} of {total}',
+    'welcome.toGo.one': 'One to go',
+    'welcome.toGo.two': 'Two to go',
 } as const;

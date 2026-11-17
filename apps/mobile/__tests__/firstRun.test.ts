@@ -131,3 +131,22 @@ describe('where the welcome shows', () => {
         expect(screen).toContain("proceed('skip')");
     });
 });
+
+import { ONBOARDING_TOTAL, journeyTotalFor, stepsLeftKey } from '../src/lib/firstRun';
+
+describe('the bar names what is left near the end (goal gradient)', () => {
+    test('only the last two steps before the recap say how many are left', () => {
+        expect([1, 2, 3, 4].map((n) => stepsLeftKey(n, ONBOARDING_TOTAL))).toEqual([null, 'welcome.toGo.two', 'welcome.toGo.one', null]);
+    });
+    test('both strings exist in English', () => {
+        expect(en['welcome.toGo.one']).toBe('One to go');
+        expect(en['welcome.toGo.two']).toBe('Two to go');
+    });
+});
+
+test('the journey is one screen shorter when the goal has no recap', () => {
+    expect(journeyTotalFor(undefined, 0)).toBe(ONBOARDING_TOTAL);
+    expect(journeyTotalFor('video', 1)).toBe(ONBOARDING_TOTAL);
+    expect(journeyTotalFor('publish', 1)).toBe(ONBOARDING_TOTAL - 1);
+    expect(journeyTotalFor(undefined, 1)).toBe(ONBOARDING_TOTAL - 1);
+});
