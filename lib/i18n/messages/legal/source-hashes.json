@@ -1,7 +1,7 @@
 {
   "documents": {
     "terms": {
-      "translationsReviewedAgainstEnglishDated": "14 November 2026",
+      "translationsReviewedAgainstEnglishDated": "17 November 2026",
       "hashes": {
         "title": "4afa55bf7aec7ddc5dfb904271f881be278e7629ce258675bf4b62f460017abb",
         "description": "39ba81dd80f9a2120998c36d18e61a509839d1d1d23fbf5f696b555cc4f5b809",
@@ -19,7 +19,7 @@
         "b011": "39227e59227d10efd2c0eada085b363ac64a0ff11669211ef2542b3b0c006919",
         "b013": "c6bbc5c52c9159414767186da42c41ba97f52c0d04ec653fd783b23a46047ed8",
         "b014": "70dae70997dc827881fe2500919436a6e54b141d9b336373e741dcd6a5e7418e",
-        "b015": "eba6f6929ca7ffedc7cc0286066e01ffc42709befd84b7a5e93ea8154f43c6b5",
+        "b015": "69a7d97fd3b6140b91b921895a0a52b370de2223ed2bc3dee5c93927033ea177",
         "b017": "36d81c2379c2322571bc5003681665ae185eac59be8415f511b24f61ed6bda64",
         "b016": "d575d7363351f3f6635796a1651a35ccb7ce8057124faf0e89da0efb7c35772c",
         "b018": "38c5fc07ccc23ea473c619eec09a1466c1bb9212243eb3fa36532dc40a4b3585",
@@ -72,7 +72,7 @@
       "translationsReviewedAgainstEnglishDated": "17 November 2026",
       "hashes": {
         "title": "506ff394621596dd88138642eddfc1e41833b3ae92d95e5c77c94327098abd9a",
-        "description": "9a947e06da6b04c331677eb2f632b0a2a73371115df7dd1b1f5adac91972f186",
+        "description": "2daea83bdeb04f5f2dab5edebaf8f93d261b8945276b92a3bc7726eac502c3d9",
         "b002": "f748dd391e3ea103116c79a512852ffed1312bbe32f74cedc080da8a987eda27",
         "b001": "230cea9d832370e600e408868aed6b231a12d795993d576d59d57290c8311794",
         "b003": "bef04e58c3f6e2505a8e57cac0bca3c7c700952a2a4032a879bafcd2e99c9bb6",
@@ -89,7 +89,7 @@
         "b013": "ec13093a4a3bd15b43aa351e844724090573143577b6c167b4773df47beefe18",
         "b012": "012d4d8aaf6da25e1b5c660e332f6fd6134f5c99ab7ff4b1db42eeab69b0e171",
         "b017": "38fd115e41ab9977af277b57bc19fe0888c800d7896312e692d3975c3bdab3d6",
-        "b016": "37e5e5fe75eed82e8171840371530dcf63a5328a34f920b69a6ee191c2f66a8e",
+        "b016": "3397dcf140c0b8b3aa567dd338645cd55c9b082f451f2abd6ef2bc2c9e37f47c",
         "b018": "c44e23838a235428c1ac1e2029a4b5c15bcc023e6573c9dccacf4b0f687c6a36",
         "b019": "2cce3789bf44ce761389b0fc1af7ff9421671af4c4c46b1b79591344fb11b2ae",
         "b020": "cde6bf029d0a2cb59d0b13c6f618b90f631cbc5f59e691f7636a181022302d1e",
@@ -104,10 +104,10 @@
         "b033": "d8aeeae12aa72de87c4c7cea112e3bdebc97e183a7a663bbb92e371d32bbd590",
         "b046": "3b1f58d94eacf04f8a8e3b342967f79889eb28ad2472bcd3692a09dd6a9e9062",
         "b047": "8d432f4e99339f7460677af8390c3964a0eb90c56ff5d38c0ea63d24c639a0c5",
-        "b049": "ff93f1698277fcd2b6ef25f1a2f2f485c795d0b321ab50d3f39893d0a5a98a4c",
-        "b052": "1b9b2ac0ade0144b4923efb852ac5a2af398a07e2ef14e8dba552802a16f0bac",
+        "b049": "ddd44449f25f12aa16095e763427904669e375a659da7547e13e5d31bb5d4292",
+        "b052": "1d9c92c065b61887d8093b006bbca5fe34ba375385c0461412753fd9fffe4f38",
         "b055": "26a117d6f45e95e8873bb34df791c561ae199946e11dac87b10cd341b030da98",
-        "b056": "191a34d5afcdba1a6a8f7b732566a3ea21b9fe4c8aec7748fe4725b2e36e70e5",
+        "b056": "9d6011490af27c3ccf43cf4ea6127abbbc9ba7f41cc2e3712c9c10b7235f0337",
         "b057": "1dd35fad5587f316a61fc4cf16a105cc8703c95e1acba404b68d8a5ce710d714",
         "b061": "08440e966836527e8f38135621ce658a5a9dd031396b6d1af5d72fe6dccd9f15",
         "b063": "375aed7cf0b2f65aee45c38d954335d1e02d10c5419ffe3fd52bbe937a966c04",
@@ -128,7 +128,7 @@
       }
     },
     "refund": {
-      "translationsReviewedAgainstEnglishDated": "16 October 2026",
+      "translationsReviewedAgainstEnglishDated": "17 November 2026",
       "hashes": {
         "title": "36d81c2379c2322571bc5003681665ae185eac59be8415f511b24f61ed6bda64",
         "description": "71cad0a03c2420dfda841d190b12ca8b4ad3609831229bf06d161ba07a8cc9f4",
@@ -270,8 +270,6 @@
         "b016": "17f6c0d9b44ba15ece35e67731b8de912b7825eefdcb76e9889e9b1f602593d3",
         "b018": "f748dd391e3ea103116c79a512852ffed1312bbe32f74cedc080da8a987eda27",
         "b017": "575ba5da8c3e99a76a894a40a944d8de8a3e30196720b6fde51eef096fad2876",
-        "b019": "2997aebfe360acfd6de77052bf8227836a3c2c9e18a71d59a3a9bae5c91d8a50",
-        "b020": "be99d9b2571c9a23dda45cad165142b28202d063325760aac9992954ca8c2e67",
         "b021": "57786fb0a74de59b0b1611acdd402eb5924710ecbaea8fd91b9a0f7c34992e83",
         "b022": "785307eaa0e54951776ce2daa92cdcc453612200e125e977743d80f082935227",
         "b023": "db084ca4baa58f18949f9eceb5688a6166793776ee3e5b97abb46a0d3ccf61ef",
