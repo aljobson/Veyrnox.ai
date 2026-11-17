@@ -1,21 +1,25 @@
-const ticks = n => Number.isSafeInteger(n) && n >= 0 && n % 240 === 0;
+// Kept compact: this validator ships in the server bundle with the cloud route (Worker size budget).
+const tick = n => Number.isSafeInteger(n) && n >= 0 && n % 240 === 0;
+const KEYS = 'comp,id,lanes,length,start,xfadeMs';
+function groupOk(g, doc, end, ids) {
+  const stop = g?.start + g?.length, lanes = g?.lanes, comp = g?.comp;
+  if (!g || Object.keys(g).sort().join() !== KEYS || typeof g.id != 'string' || !/^g[0-9a-z]{1,12}$/.test(g.id) || ids.has(g.id) || !tick(g.start) || !tick(g.length)
+    || g.length < 240 || g.start < end || stop > Math.min(1966080, 9600 * doc.tempo.bpm) || ![0, 5, 10, 20, 50].includes(g.xfadeMs)
+    || !Array.isArray(lanes) || !lanes.length || lanes.length > 8 || new Set(lanes).size < lanes.length
+    || lanes.some(id => typeof id != 'string' || doc.assets?.[id]?.source != 'take')
+    || !Array.isArray(comp) || !comp.length || comp.length > 400 || comp[0]?.[0] !== g.start) return false;
+  return comp.every((p, i) => Array.isArray(p) && p.length == 2 && tick(p[0]) && p[0] < stop && (!i || p[0] > comp[i - 1][0])
+    && Number.isInteger(p[1]) && p[1] >= 0 && p[1] < lanes.length);
+}
+/** Error text for an audio track's optional take groups, or null when valid or absent. */
 export function takeGroupsError(track, doc) {
   if (!Object.hasOwn(track, 'takeGroups')) return null;
-  if (doc.version !== 4 || track.kind !== 'audio' || !Array.isArray(track.takeGroups) || track.takeGroups.length > 16) return 'Invalid take groups (maximum 16 per audio track).';
+  const groups = track.takeGroups;
+  if (doc.version !== 4 || track.kind !== 'audio' || !Array.isArray(groups) || groups.length > 16) return 'Invalid take groups.';
   const ids = new Set();
   let end = 0;
-  for (const g of [...track.takeGroups].sort((a, b) => a?.start - b?.start)) {
-    if (!g || Object.keys(g).length !== 6 || !['id', 'start', 'length', 'lanes', 'comp', 'xfadeMs'].every(k => Object.hasOwn(g, k)) ||
-      typeof g.id !== 'string' || !/^g[0-9a-z]{1,12}$/.test(g.id) || ids.has(g.id) || !ticks(g.start) || !ticks(g.length) || g.length < 240 || g.start < end ||
-      g.start + g.length > Math.min(512 * 3840, 600 * doc.tempo.bpm * 16) || ![0, 5, 10, 20, 50].includes(g.xfadeMs) ||
-      !Array.isArray(g.lanes) || g.lanes.length < 1 || g.lanes.length > 8 || new Set(g.lanes).size !== g.lanes.length ||
-      g.lanes.some(id => typeof id !== 'string' || doc.assets?.[id]?.source !== 'take') ||
-      !Array.isArray(g.comp) || !g.comp.length || g.comp.length > 400 || g.comp[0]?.[0] !== g.start) return 'Invalid take group.';
-    let previous = -1;
-    for (const pair of g.comp) {
-      if (!Array.isArray(pair) || pair.length !== 2 || !ticks(pair[0]) || pair[0] < g.start || pair[0] <= previous || pair[0] >= g.start + g.length || !Number.isInteger(pair[1]) || pair[1] < 0 || pair[1] >= g.lanes.length) return 'Invalid take comp.';
-      previous = pair[0];
-    }
+  for (const g of [...groups].sort((a, b) => a?.start - b?.start)) {
+    if (!groupOk(g, doc, end, ids)) return 'Invalid take group.';
     ids.add(g.id); end = g.start + g.length;
   }
   return null;

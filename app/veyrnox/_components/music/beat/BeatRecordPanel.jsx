@@ -20,7 +20,7 @@ export default function BeatRecordPanel({ recorder, playback, announce }) {
       <div className="flex flex-wrap gap-3"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={playback.record} onChange={e => playback.setRecord(e.target.checked)} />Record</label>
         <label className="flex min-h-11 items-center gap-2"><input type="checkbox" checked={playback.countIn} onChange={e => playback.setCountIn(e.target.checked)} />Count-in 1 bar</label></div>
       <p>{latency ? `Calibrated: ${latency.ms.toFixed(2)} ms round trip` : 'Not calibrated for this input. Not calibrated — takes may land a few ms late.'}</p>
-      <button className={button} disabled={recorder.calibrationDisabled} onClick={() => setCalibrating(true)}>Calibrate</button><p className="text-sm text-vx-fg-muted">Use headphones when recording to keep playback out of your microphone.</p>
+      <button className={button} disabled={recorder.calibrationDisabled} onClick={() => setCalibrating(true)}>Calibrate</button><p className="text-sm text-vx-fg-muted">Record with headphones on.</p>
     </>}
     {!!recorder.recovery.length && <div><button className={button} onClick={() => recorder.recover()}>Recover {recorder.recovery.length} unsaved takes</button><button className={button} onClick={() => recorder.recover(true)}>Discard</button></div>}
     {calibrating && capture && !recorder.calibrationDisabled && <Calibration capture={capture} announce={announce} close={() => setCalibrating(false)} />}
