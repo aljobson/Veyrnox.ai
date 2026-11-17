@@ -4,6 +4,7 @@ const SUMMARY = {
   'wan-2.5-kie': 'Balanced text-to-video for flexible cinematic shots.',
   'kling-2.6-pro-kie': 'Polished motion and controlled cinematic scenes.',
   'kling-3.0-i2v': 'Animate a source image with strong motion control.',
+  'kling-3.0-standard-i2v': 'Animate a source image faster, at a lower resolution than Kling 3.0 Pro.',
   'seedance-2.0-fast': 'Fast multi-shot concepts with image guidance.',
   'kling-avatar-v2': 'Talking avatar from a portrait and supplied audio.',
   latentsync: 'Synchronise a source video to supplied audio.',
@@ -32,6 +33,7 @@ const SUMMARY = {
 
 const BADGES = {
   'kling-3.0-i2v': ['IMAGE REF', '5 / 10S'],
+  'kling-3.0-standard-i2v': ['IMAGE REF', '5 / 10S'],
   'kling-avatar-v2': ['IMAGE + AUDIO', '5S'],
   latentsync: ['VIDEO + AUDIO', 'LIP SYNC'],
   'nano-banana-pro-edit': ['IMAGE REF', 'EDIT'],

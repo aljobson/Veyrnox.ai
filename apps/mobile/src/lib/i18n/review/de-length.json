@@ -2706,6 +2706,18 @@
     "ratio": 3
   },
   {
+    "id": "welcome.toGo.one",
+    "english": "One to go",
+    "translation": "Noch ein Schritt",
+    "ratio": 1.78
+  },
+  {
+    "id": "welcome.toGo.two",
+    "english": "Two to go",
+    "translation": "Noch zwei Schritte",
+    "ratio": 2
+  },
+  {
     "id": "publishDepth.note.add",
     "english": "Add note",
     "translation": "Notiz hinzufügen",

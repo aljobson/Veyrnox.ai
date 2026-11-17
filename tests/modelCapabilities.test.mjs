@@ -30,6 +30,8 @@ const CATALOG = [
     'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video',
     'fal-ai/wan-25-preview/text-to-video', 'fal-ai/veo3.1/fast', 'fal-ai/veo3.1',
     'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
+    // Kling 3.0 Standard image-to-video, staged inactive by migration 0556 (ADR-0350).
+    'fal-ai/kling-video/v3/standard/image-to-video',
     'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',
@@ -48,7 +50,7 @@ const CATALOG = [
     // Crun text-to-image, added with the image adapter (ADR-0256).
     'crun:google/nano-banana', 'crun:bytedance/seedream-4',
     // Crun Kling, staged standby (2026-11-03).
-    'crun:kling/v3', 'crun:kling/v2-6',
+    'crun:kling/v3', 'crun:kling/v3-std', 'crun:kling/v2-6',
     'higgsfield:kling-video/v3.0/pro/image-to-video', 'higgsfield:kling-video/v2.6/pro/text-to-video',
     // Qwen 3 TTS Voice Design, staged inactive by migration 0235.
     'fal-ai/qwen-3-tts/voice-design/1.7b', 'fal-ai/demucs',
@@ -63,7 +65,7 @@ const CATALOG = [
 
 // Endpoints the pre-registry snapshot does not cover: corrected on purpose
 // (Kling 3.0), or added after the old builder was deleted.
-const CORRECTED = new Set(['fal-ai/minimax-h3-max-recast', 'bytedance/seedance-2.0/reference-to-video', 'fal-ai/kling-video/o1/video-to-video/reference', 'fal-ai/sana/v1.5/4.8b', 'fal-ai/flux-2-pro', 'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
+const CORRECTED = new Set(['fal-ai/kling-video/v3/standard/image-to-video', 'fal-ai/minimax-h3-max-recast', 'bytedance/seedance-2.0/reference-to-video', 'fal-ai/kling-video/o1/video-to-video/reference', 'fal-ai/sana/v1.5/4.8b', 'fal-ai/flux-2-pro', 'fal-ai/kling-video/v3/pro/image-to-video', 'fal-ai/nano-banana-pro', 'fal-ai/nano-banana-pro/edit',
     'fal-ai/ace-step', 'fal-ai/elevenlabs/tts/turbo-v2.5', 'fal-ai/minimax/speech-2.6-hd', 'fal-ai/mmaudio-v2/text-to-audio', 'fal-ai/bria/background/remove',
     'fal-ai/topaz/upscale/image', 'fal-ai/bria/expand', 'fal-ai/latentsync', 'fal-ai/kling-video/ai-avatar/v2/standard',
     'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video',

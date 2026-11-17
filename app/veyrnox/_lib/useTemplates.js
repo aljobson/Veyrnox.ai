@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { internalModelId } from '../../../lib/publicModelIds.js';
 
 // Template data from /api/templates (lib/clientTemplates.js). The catalog behind it is about 2 MB; none of it is imported here, so a
 // page that shows templates downloads a card list of a few dozen KB (cached) instead of the catalog in its bundle.
@@ -47,7 +48,10 @@ export async function fetchTemplate(id) {
     const body = await response.json();
     // The route resolves an id a template was published under before (app/veyrnox/_lib/templates.js templateById), so the
     // answer's id can differ from the one asked for; it is still a template id.
-    return body && body.template && TEMPLATE_ID_RE.test(body.template.id) ? body.template : null;
+    if (!(body && body.template && TEMPLATE_ID_RE.test(body.template.id))) return null;
+    // The answer carries supplier-neutral model ids; the app works in catalog keys.
+    const { template } = body;
+    return { ...template, modelId: internalModelId(template.modelId), boundModelId: internalModelId(template.boundModelId) };
   } catch {
     return null;
   }

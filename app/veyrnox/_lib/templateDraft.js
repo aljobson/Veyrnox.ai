@@ -2,6 +2,7 @@ import { imageTemplateModelAvailable } from './imageTemplateModels.js';
 import { templateModelId } from './tokens.js';
 import { ratioOf } from '../../../lib/aspectShapes.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
+import { internalModelId } from '../../../lib/publicModelIds.js';
 
 // The longest prompt POST /api/v1/generations accepts (app/api/v1/generations/route.js).
 export const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
@@ -57,7 +58,7 @@ export function resolveTemplateDraft(preset, modelId, storedDraft, arrivalTempla
 export function templateArrival(preset, models, params, storedDraft) {
   const original = models.find(model => model.id === templateModelId(preset));
   const saved = storedDraft?.templateId === preset.id ? storedDraft : null;
-  const requested = params.get('model') || saved?.model;
+  const requested = internalModelId(params.get('model')) || saved?.model;
   const candidate = models.find(model => model.id === requested);
   const model = templateModelEligible(candidate, original) && imageTemplateModelAvailable(preset, candidate) ? candidate : original;
   const modelId = model?.id || templateModelId(preset);

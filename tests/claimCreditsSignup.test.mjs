@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { internalModelId } from '../lib/publicModelIds.js';
 
 // Acquisition CTAs must stay truthful after auth hydration. A neutral Studio
 // CTA works for signed-in people and lets the existing gateway request auth
@@ -25,7 +26,7 @@ for (const file of ['hero.js', 'footer.js']) {
         const href = tag.match(/href="([^"]+)"/)?.[1] || tag.match(/href=\{localizedHref\(locale, '([^']+)'\)\}/)?.[1];
         assert.ok(href, 'CTA has no href');
         const modelId = new URL(href, 'https://veyrnox.ai').searchParams.get('model');
-        const model = MODELS.find((row) => row.id === modelId);
+        const model = MODELS.find((row) => row.id === internalModelId(modelId));
         assert.ok(model, `CTA must preselect a real model, got ${modelId}`);
         assert.ok(model.credits <= 10, `CTA starts with ${model.credits} credits, more than a new account receives`);
         assert.equal(model.gated, undefined, 'CTA must not preselect a gated model');

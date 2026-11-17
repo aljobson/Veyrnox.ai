@@ -19,7 +19,7 @@ export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
   'the-wrong-one', 'enchanted-forest-selfie', 'community-action-hero-strut', 'community-ballroom-dance-switch',
   'pizzeria-hide-and-seek', 'theater-ceiling-horror', 'studio-ballerina-turns', 'reflection-in-the-mirror',
   'pumpkin-guardian', 'fashion-halloween', 'thrille', 'ghost-makeover',
-  'community-fur-coat-walk', 'community-action-hero-walk', 'community-midnight-fridge-feast', 'community-riverside-boat-slap',
+  'community-fur-coat-walk', 'community-action-hero-walk', 'community-riverside-boat-slap',
   'community-pigeon-head-swap', 'community-midnight-supercar-refuel', 'community-kitchen-dance-swap', 'community-cash-burner',
   'community-explosive-exit', 'community-window-snacker-swap', 'community-dinner-party-recast',
   'community-mansion-raid-swap', 'community-gallop-ride', 'community-nightclub-dj-set',

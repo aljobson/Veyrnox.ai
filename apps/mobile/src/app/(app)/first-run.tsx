@@ -26,13 +26,12 @@ import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { OnboardingChoice } from '../../components/OnboardingChoice';
 import { VeyCharacter } from '../../components/VeyCharacter';
-import { ONBOARDING_TOTAL, creditsCardKeys } from '../../lib/firstRun';
+import { creditsCardKeys, journeyTotalFor } from '../../lib/firstRun';
 import type { MenuIcon } from '../../lib/menuIcons';
 
 // Goal first: it is the one answer that changes what happens next, and the picture grid is the strongest first screen.
 // Then where it will go, then who it is for (which shapes the example), then the recap with the idea to start from.
 const STEPS = ['goal', 'destination', 'role'] as const;
-const JOURNEY_TOTAL = ONBOARDING_TOTAL;
 type Step = (typeof STEPS)[number];
 
 // Literal keys, so the translation tooling can see every string this screen uses.
@@ -74,6 +73,8 @@ export default function FirstRun() {
     const answers = useRef<{ role?: StoredRole; goal?: StoredFirstGoal; destination?: StoredDestination }>({});
     // The same answers as state, so the closing recap redraws with them.
     const [shown, setShown] = useState<{ role?: StoredRole; goal?: StoredFirstGoal; destination?: StoredDestination }>({});
+    // The bar's length follows the goal picked: a creation goal ends on the recap, anything else finishes a screen sooner.
+    const journeyTotal = journeyTotalFor(shown.goal, step);
     const leaving = useRef(false);
     const reduced = useReducedMotion();
     // Account writes go out one after another, so a quick Back and re-pick can never let an older request land last.
@@ -205,7 +206,7 @@ export default function FirstRun() {
 
     // Moving between questions swaps the whole screen, so say which one is now showing (WCAG 4.1.3).
     const spokenTitle = step === 0 ? t('create.firstGoal.title') : step === 1 ? t('create.firstRun.destTitle') : step === 2 ? t('create.firstRun.roleTitle') : t('create.firstRun.suggested');
-    useAnnouncement(asking ? `${rawText(spokenTitle)}. ${rawText(t('welcome.step', { n: step + 1, total: ONBOARDING_TOTAL }))}` : null, { everywhere: true });
+    useAnnouncement(asking ? `${rawText(spokenTitle)}. ${rawText(t('welcome.step', { n: step + 1, total: journeyTotal }))}` : null, { everywhere: true });
 
     if (!asking) return <View style={styles.screen}><Stack.Screen options={{ headerShown: false, gestureEnabled: false }} /></View>;
 
@@ -222,7 +223,7 @@ export default function FirstRun() {
             shown.destination && shown.destination !== 'skipped' ? DESTINATION_LABEL[shown.destination as (typeof FIRST_DESTINATIONS)[number]]?.() : null,
         ].filter((c): c is string => !!c);
         return (
-            <OnboardingShell step={JOURNEY_TOTAL} total={JOURNEY_TOTAL} onBack={() => goBack(STEPS.length - 1)} backLabel={t('public.vey.back')}
+            <OnboardingShell step={journeyTotal} total={journeyTotal} onBack={() => goBack(STEPS.length - 1)} backLabel={t('public.vey.back')}
                 footer={<Button label={t('welcome.go')} onPress={() => { captureEvent('onboarding_step', { step: 'recap', action: 'next' }); void finish(); }} />}>
                 <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
                 <ScrollView contentContainerStyle={styles.recap} showsVerticalScrollIndicator={false}>
@@ -255,7 +256,7 @@ export default function FirstRun() {
     const picked = key === 'role' ? shown.role : key === 'goal' ? shown.goal : shown.destination;
 
     return (
-        <OnboardingShell step={step + 1} total={JOURNEY_TOTAL}
+        <OnboardingShell step={step + 1} total={journeyTotal}
             onBack={step > 0 ? () => goBack(step - 1) : undefined} backLabel={t('public.vey.back')} onSkip={() => answer('skipped')} skipLabel={t('create.firstGoal.skip')} footer={null}>
             <Stack.Screen options={{ headerShown: false, gestureEnabled: false }} />
             <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>

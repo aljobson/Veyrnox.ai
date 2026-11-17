@@ -1,8 +1,9 @@
-import { contractData } from '../lib/expandTemplateContract.js';
+import { compressContractData, contractData } from '../lib/expandTemplateContract.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { audit, packContracts } from '../scripts/audit-template-fidelity.mjs';
+import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { templateInputs } from '../app/veyrnox/_lib/templateGenerate.js';
 import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlock.js';
 const report = audit();
@@ -12,6 +13,7 @@ test('fidelity classification totals and generated contract bytes are pinned', (
   assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":70 + 3 + 30 + 59,"blocked-needs-video":355 + 37,"unsupported":92 + 6});
   const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
   const packed = packContracts(report.contracts);
+  assert.equal(JSON.stringify(compressContractData(packed)) + '\n', readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url), 'utf8'), 'regeneration must be byte-identical; inspect class changes before accepting drift');
   // The prompts and rows are compressed on disk (Worker size budget); compare what they inflate to, not the compressed bytes.
   assert.deepEqual({ contractVersion: stored.contractVersion, prompts: contractData(stored).prompts, templates: contractData(stored).templates }, packed);
 });
@@ -46,7 +48,7 @@ test('photo quality floor and single-image guard are explicit', async () => {
 });
 test('server stores only informative safe-contract metadata', async () => {
   const { checkTemplateRequest } = await import('../lib/templateFidelity.js');
-  const c = contracts.find(c => c.class === 'like-for-like-safe' && c.requiredReferences.imageMax);
+  const c = contracts.find(c => c.class === 'like-for-like-safe' && c.requiredReferences.imageMax && !swapNeedsSourceVideo(c.sourcePrompt));
   const result = checkTemplateRequest({ template_id: c.id, model_id: c.modelId, references: [{ slot: 'image', origin: 'upload', key: 'uploads/photo.png' }], inputs: { prompt: c.photoPrompt, duration_seconds: c.duration, ...(c.aspect ? { aspect_ratio: c.aspect } : {}), ...(c.negativePrompt ? { negative_prompt: c.negativePrompt } : {}) } });
   assert.deepEqual(result.metadata, { template_id: c.id, contract_version: 1, source_hash: c.sourceHash });
 });

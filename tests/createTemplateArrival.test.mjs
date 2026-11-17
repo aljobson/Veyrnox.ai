@@ -20,6 +20,7 @@ import * as generationSlots from '../lib/generationSourceSlots.mjs';
 import * as aspectShapes from '../lib/aspectShapes.mjs';
 import * as templateStart from '../lib/templateStartCheck.js';
 import * as promptLimits from '../lib/generationPromptLimits.js';
+import * as publicModelIds from '../lib/publicModelIds.js';
 
 const jsxRuntime = {
   Fragment: Symbol('Fragment'),
@@ -92,6 +93,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     '../../_lib/imageTemplateModels.js': imageTemplateModels,
     '../../_lib/templateMediaHandoff': templateMediaHandoff,
     '../../_lib/landingDraft': landingDraft,
+    '../../../../lib/publicModelIds.js': publicModelIds,
     '../../_lib/tokens': tokens,
     '../../_lib/generationSettings': generationSettings,
     '../../_lib/imageBatch': imageBatch,

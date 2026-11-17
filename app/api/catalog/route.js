@@ -1,3 +1,4 @@
+import { loadTemplateSwapClip } from '../../../lib/templateSwapClipGate.js';
 import { loadTemplateClip } from '../../../lib/templateClipGate.js';
 /**
  * GET /api/catalog — public model catalog (active rows only).
@@ -16,9 +17,17 @@ import { loadSwapScene } from '../../../lib/swapSceneGate.js';
 import { NextResponse } from 'next/server';
 import { envConfig } from '../../../packages/db/supabase-client.js';
 import { readPublicCatalog, CATALOG_TTL_SECONDS } from '../../../lib/publicCatalog.js';
+import { withPublicModelIds } from '../../../lib/publicModelIds.js';
 
 export async function GET(req) {
     const cfg = envConfig();
+    const templateSwapId = req?.url ? new URL(req.url).searchParams.get('template_swap') : null;
+    if (templateSwapId !== null) {
+        const clip = await loadTemplateSwapClip(templateSwapId, cfg);
+        const headers = { 'cache-control': 'no-store' };
+        return clip ? NextResponse.json(clip.template, { headers })
+            : NextResponse.json({ error: 'template_swap_not_found' }, { status: 404, headers });
+    }
     // A scene lookup is public catalog data, never caller identity or source media.
     // Keep it uncached: a paused offer or removed manifest must disappear immediately.
     const templateId = req?.url ? new URL(req.url).searchParams.get('template_clip') : null;
@@ -41,7 +50,8 @@ export async function GET(req) {
 
     let models;
     try {
-        models = await readPublicCatalog({ cfg });
+        // Ids leave here supplier-neutral (lib/publicModelIds.js); the gateway accepts both forms.
+        models = withPublicModelIds(await readPublicCatalog({ cfg }));
     } catch (err) {
         console.error('[api/catalog] select failed:', err);
         return NextResponse.json({ error: 'internal' }, { status: 502 });

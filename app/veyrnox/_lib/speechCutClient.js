@@ -69,7 +69,7 @@ export const speechTotal = (credits, clipCount) => credits * clipCount;
 export const clipsOverLimit = (clips, maxSeconds) => clips.filter((clip) => !(Number(clip.duration) > 0 && Number(clip.duration) <= maxSeconds));
 
 const ERROR_KEYS = {
-  source_too_long: 'tooLong', source_unsupported: 'unsupported', source_too_large: 'unsupported', source_bitrate_too_high: 'unsupported', source_unreadable: 'unsupported', duration_mismatch: 'durationChanged', price_changed: 'priceChanged',
+  source_too_long: 'tooLong', source_unsupported: 'unsupported', source_too_large: 'unsupported', source_bitrate_too_high: 'unsupported', source_unreadable: 'unsupported', source_no_audio: 'unsupported', duration_mismatch: 'durationChanged', price_changed: 'priceChanged',
   speech_cut_unavailable: 'unavailable', provider_admission_paused: 'unavailable', source_not_admitted: 'unavailable',
   insufficient_balance: 'balance', account_frozen: 'frozen', account_on_hold: 'frozen', rate_limited: 'rateLimited', speech_gate_cooldown: 'rateLimited',
   poll_timeout: 'timeout', outcome_pending: 'timeout', idempotency_conflict: 'conflict', not_found: 'failed',

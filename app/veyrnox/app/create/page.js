@@ -79,6 +79,7 @@ import { generationSlotKind, generationMimeTypes } from '../../../../lib/generat
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
 import { swapSceneModel, applySwapScene } from '../../_lib/swapSceneForm';
+import { internalModelId } from '../../../../lib/publicModelIds.js';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
@@ -222,7 +223,7 @@ export default function CreateStudio() {
     const controller = new AbortController();
     const start = (preset) => {
       arrivalApplied.current = true;
-      const requested = params.get('model') || (preset && templateModelId(preset));
+      const requested = internalModelId(params.get('model')) || (preset && templateModelId(preset));
       let storedDraft = null;
       try { storedDraft = takeStudioDraft(window.sessionStorage, requested, Date.now(), preset?.id); } catch { /* The URL recipe still works. */ }
       const arrival = preset ? templateArrival(preset, arrivalModels || [], params, storedDraft) : null;

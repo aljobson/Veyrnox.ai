@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { manifest, catalog, kieCatalog, kieSource } from './fixtures/templateClips.mjs';
 import { createFalWebhookHandler } from '../lib/falWebhookHandler.js';
 import { TEMPLATE_CLIP_PROMPT, templateClipProviderPrompt } from '../lib/templateClipPrompt.mjs';
+import { publicModelId } from '../lib/publicModelIds.js';
 register('data:text/javascript,' + encodeURIComponent(`
 export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }
 export async function load(url,c,next) {
@@ -364,7 +365,7 @@ test('kie API catalog omits the private video slot', async t => {
   network(t, { catalog: [kieCatalog] });
   const response = await GET(new Request('https://veyrnox.test/api/catalog'));
   assert.equal(response.status, 200);
-  const model = (await response.json()).models.find(r => r.id === kieCatalog.id);
+  const model = (await response.json()).models.find(r => r.id === publicModelId(kieCatalog.id));
   assert.deepEqual(Object.keys(model.capabilities.media), ['image']);
   assert.equal(model.capabilities.media.image.maxFiles, 1);
 });

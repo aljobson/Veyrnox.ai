@@ -10,7 +10,7 @@ export default function ErrorRecovery({ retry }) {
   return (
     <Main style={{ minHeight: '100dvh', boxSizing: 'border-box', background: '#0a0a0b', color: '#fafafa', padding: '64px 24px', fontFamily: 'system-ui, sans-serif' }}>
       <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-        <a href={href('/')} style={{ ...linkStyle, fontSize: '20px', fontWeight: 800 }}>Veyrnox.ai</a>
+        <a href={href('/')} style={{ ...linkStyle, fontSize: '20px', fontWeight: 900 }}>Veyrnox.ai</a>
         <h1 style={{ fontSize: 'clamp(32px, 6vw, 48px)', lineHeight: 1.15, marginTop: '64px' }}>{t('recovery.title')}</h1>
         <p style={{ color: '#d1d1d6', fontSize: '17px', lineHeight: 1.6 }}>{t('recovery.body')}</p>
         <button type="button" onClick={() => retry()} style={{ background: '#d4e86c', color: '#10110a', border: 0, borderRadius: '999px', padding: '12px 24px', font: 'inherit', fontWeight: 700, cursor: 'pointer', margin: '16px 0 24px' }}>{t('recovery.retry')}</button>

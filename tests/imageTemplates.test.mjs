@@ -22,6 +22,7 @@ import { templateRecipe } from '../app/veyrnox/_lib/templateRecipe.js';
 import { isUnknownStaticPage } from '../lib/unknownStaticPage.js';
 import { createTemplatesFor } from '../app/veyrnox/_lib/createTemplates.js';
 import { translator } from '../lib/i18n/translate.mjs';
+import { internalModelId } from '../lib/publicModelIds.js';
 
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 const list = await import('../app/api/templates/route.js');
@@ -137,7 +138,7 @@ test('image cards are additive, have no video key and price only from the catalo
     assert.equal('prompt' in card, false);
     assert.equal(presetCredits(card, models, 10), 37);
     assert.equal(presetCredits(card, []), null);
-    assert.equal(templateDetail(p.id).modelId, p.model);
+    assert.equal(internalModelId(templateDetail(p.id).modelId), p.model);
     assert.equal('fidelity' in templateDetail(p.id), false);
   }
 }));

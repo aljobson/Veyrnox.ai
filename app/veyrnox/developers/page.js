@@ -53,7 +53,7 @@ export default async function DevelopersPage() {
         <aside className="rounded-[28px] border border-vx-border bg-vx-panel p-5 sm:p-7" aria-labelledby="install-heading">
           <p className="font-vx-mono text-[11px] font-bold tracking-[0.16em] uppercase text-vx-fg-muted">{t('dev.cli.kicker')}</p>
           <h2 id="install-heading" className="mt-3 text-2xl font-black">{t('dev.cli.title')}</h2>
-          {[INSTALL, 'veyrnox auth login', 'veyrnox models list', 'veyrnox generations create --model nano-banana-kie --prompt "A blue fox"'].map((value) =>
+          {[INSTALL, 'veyrnox auth login', 'veyrnox models list', 'veyrnox generations create --model nano-banana-a1 --prompt "A blue fox"'].map((value) =>
             <div key={value} className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-vx-border bg-vx-base px-4 py-3">
               <code className="min-w-0 overflow-x-auto whitespace-nowrap font-vx-mono text-[12px] text-vx-fg-body">{value}</code>
               <CopyButton value={value} label={t('common.copy')} copiedLabel={t('common.copied')} className="shrink-0" />

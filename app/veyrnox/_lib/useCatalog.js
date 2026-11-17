@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { MODELS, kindOf } from './tokens.js';
 import { fallbackCapabilitiesFor } from '../../../lib/fallbackModelCapabilities.js';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
+import { internalModelId } from '../../../lib/publicModelIds.js';
 
 // Normalised shape shared by every consumer:
 // { id, name, modality (full API value or null), kind ('video'|'image'|'audio'), credits, gated, durations, media? }
@@ -40,7 +41,8 @@ export function fromFallback() {
 
 export function fromApi(models) {
   return models.map((m) => ({
-    id: m.id, name: m.name, kind: kindOf(m.modality), modality: m.modality || null, credits: m.credits, gated: !!m.gated || !!m.premium, bestValue: !!m.bestValue,
+    // The API shows supplier-neutral ids; the app keeps working in catalog keys (lib/publicModelIds.js).
+    id: internalModelId(m.id), name: m.name, kind: kindOf(m.modality), modality: m.modality || null, credits: m.credits, gated: !!m.gated || !!m.premium, bestValue: !!m.bestValue,
     // An older Worker that predates `durations` omits it; 5s only is the
     // safe read, and it is what the gateway accepts everywhere.
     durations: Array.isArray(m.durations) && m.durations.length ? m.durations : FALLBACK_DURATIONS,

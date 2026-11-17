@@ -1,8 +1,22 @@
 import { emailAuthMessage, validateEmailForm } from '../src/lib/auth/emailForm';
 import { allowTurnstileNavigation, parseTurnstileMessage, turnstileHtml } from '../src/lib/auth/turnstile';
-import { signInWithPassword, signUpWithPassword } from '../src/lib/auth/supabaseAuth';
+import { resendSignupEmail, signInWithPassword, signUpWithPassword } from '../src/lib/auth/supabaseAuth';
+import { readConfirmVerifier } from '../src/lib/auth/confirmStore';
+import { OAUTH_BRIDGE_URL } from '../src/lib/config';
 
-jest.mock('expo-crypto', () => ({}));
+jest.mock('expo-crypto', () => ({
+    getRandomBytes: (n: number) => new Uint8Array(n).fill(7),
+    digestStringAsync: async () => 'ZGlnZXN0',
+    CryptoDigestAlgorithm: { SHA256: 'SHA256' },
+    CryptoEncoding: { BASE64: 'base64' },
+}));
+const mockStore = new Map<string, string>();
+jest.mock('expo-secure-store', () => ({
+    AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 1,
+    getItemAsync: async (k: string) => mockStore.get(k) ?? null,
+    setItemAsync: async (k: string, v: string) => { mockStore.set(k, v); },
+    deleteItemAsync: async (k: string) => { mockStore.delete(k); },
+}));
 
 describe('email form', () => {
     test('validates shape and password length only when creating', () => {
@@ -68,6 +82,24 @@ describe('password grants', () => {
         fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: 'u', email: 'a@b.co' }), { status: 200 }));
         await expect(signUpWithPassword('a@b.co', 'pw123456', 'cap')).resolves.toBeNull();
         expect(fetchMock.mock.calls[0][0]).toContain('/auth/v1/signup');
+    });
+    test('the confirmation link returns to the app through the site bridge, with a PKCE challenge', async () => {
+        fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: 'u' }), { status: 200 }));
+        await signUpWithPassword('a@b.co', 'pw123456', 'cap');
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(new URL(url).searchParams.get('redirect_to')).toBe(OAUTH_BRIDGE_URL);
+        const body = JSON.parse(init.body);
+        expect(body.code_challenge).toEqual(expect.any(String));
+        expect(body.code_challenge_method).toBe('s256');
+        await expect(readConfirmVerifier()).resolves.toEqual(expect.any(String));
+    });
+    test('a resend keeps the same challenge so the first email still works', async () => {
+        fetchMock.mockResolvedValue(new Response(JSON.stringify({ id: 'u' }), { status: 200 }));
+        await signUpWithPassword('a@b.co', 'pw123456', 'cap');
+        await resendSignupEmail('a@b.co', 'cap2');
+        const [first, second] = fetchMock.mock.calls.map((c) => JSON.parse(c[1].body).code_challenge);
+        expect(second).toBe(first);
+        expect(new URL(fetchMock.mock.calls[1][0]).searchParams.get('redirect_to')).toBe(OAUTH_BRIDGE_URL);
     });
     test('sign-up with autoconfirm returns a session', async () => {
         fetchMock.mockResolvedValue(new Response(JSON.stringify(tokens), { status: 200 }));

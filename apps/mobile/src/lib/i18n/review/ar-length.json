@@ -1542,6 +1542,12 @@
     "ratio": 1.92
   },
   {
+    "id": "welcome.toGo.one",
+    "english": "One to go",
+    "translation": "متبقّ خطوة واحدة",
+    "ratio": 1.78
+  },
+  {
     "id": "publishDepth.suggestions.use",
     "english": "Use",
     "translation": "استخدام",

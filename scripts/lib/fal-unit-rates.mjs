@@ -69,6 +69,7 @@ export const BASE_PRICES = {
     'fal-ai/inworld-tts': { price: 0.01, unit: '1000 characters' },
     'fal-ai/kling-video/ai-avatar/v2/standard': { price: 0.0562, unit: 'seconds' },
     'fal-ai/kling-video/v3/pro/image-to-video': { price: 0.14, unit: 'seconds' },
+    'fal-ai/kling-video/v3/standard/image-to-video': { price: 0.14, unit: 'seconds' },
     'fal-ai/latentsync': { price: 0.005, unit: 'seconds' },
     'fal-ai/minimax/speech-2.6-hd': { price: 0.1, unit: '1000 characters' },
     'fal-ai/mmaudio-v2': { price: 0.001, unit: 'seconds' },

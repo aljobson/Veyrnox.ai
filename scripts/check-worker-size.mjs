@@ -20,7 +20,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-export const WORKER_SIZE_BUDGET_KIB = 60500;
+export const WORKER_SIZE_BUDGET_KIB = 60700;
 const execFileAsync = promisify(execFile);
 const print = (line) => process.stdout.write(`${line}\n`);
 

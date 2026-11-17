@@ -16,12 +16,16 @@ export interface Pkce {
     readonly challenge: string;
 }
 
-export async function createPkce(): Promise<Pkce> {
-    const verifier = randomString(48);
+export async function toChallenge(verifier: string): Promise<string> {
     const digest = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, verifier, {
         encoding: Crypto.CryptoEncoding.BASE64,
     });
-    return { verifier, challenge: toBase64Url(digest) };
+    return toBase64Url(digest);
+}
+
+export async function createPkce(): Promise<Pkce> {
+    const verifier = randomString(48);
+    return { verifier, challenge: await toChallenge(verifier) };
 }
 
 export interface AppleNonce {
