@@ -1,4 +1,4 @@
-import { contractData } from '../lib/expandTemplateContract.js';
+import { compressContractData, contractData } from '../lib/expandTemplateContract.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -13,6 +13,7 @@ test('fidelity classification totals and generated contract bytes are pinned', (
   assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":70 + 3 + 30 + 59,"blocked-needs-video":355 + 37,"unsupported":92 + 6});
   const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
   const packed = packContracts(report.contracts);
+  assert.equal(JSON.stringify(compressContractData(packed)) + '\n', readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url), 'utf8'), 'regeneration must be byte-identical; inspect class changes before accepting drift');
   // The prompts and rows are compressed on disk (Worker size budget); compare what they inflate to, not the compressed bytes.
   assert.deepEqual({ contractVersion: stored.contractVersion, prompts: contractData(stored).prompts, templates: contractData(stored).templates }, packed);
 });
