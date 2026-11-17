@@ -6102,6 +6102,7 @@ export default {
     "editorSpeech.sourceTooLarge": "Este clip pesa {size} MB y supera el límite de {max} MB. Elige un clip más pequeño o más corto. No se gastaron créditos.",
     "editorSpeech.sourceDense": "Este clip pesa {size} MB para {seconds} segundos y supera el límite de unos 2 MB por segundo. Elige un clip más corto o más comprimido. No se gastaron créditos.",
     "editorSpeech.sourceUnreadable": "Las herramientas de voz no pudieron leer el archivo de este clip. Puede estar en un formato ilegible. Prueba con un clip guardado como MP4 o MOV. No se gastaron créditos.",
+    "editorSpeech.sourceNoAudio": "Este vídeo no tiene sonido, así que Best Cut no tiene voz que leer. Elige un clip con voz. No se gastaron créditos.",
     "editorSpeech.tooLong": "Elige un clip de origen de hasta 60 segundos.",
     "editorSpeech.durationChanged": "La duración del origen cambió. Vuelve a cargar el clip e inténtalo de nuevo.",
     "editorSpeech.price": "{n} créditos por análisis",

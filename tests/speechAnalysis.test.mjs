@@ -165,6 +165,13 @@ test('oversized or implausible bytes/second sources name the reason before debit
         assert.equal(probes, cached || size > 100 * MB ? 0 : 1);
     }
 });
+test('a video with no sound track is refused before debit as source_no_audio, not as a file problem', async () => {
+    let stored = 0;
+    const f = fixture({ probe: async () => ({ duration: 12, mime: 'video/mp4', fingerprint: 'a'.repeat(64), audio: false }) });
+    const res = await f.run(request()); assert.equal(res.status, 400); assert.deepEqual(await res.json(), { error: 'source_no_audio' });
+    assert.equal(f.debit(), 0); assert.equal(f.submissions.length, 0);
+    assert.equal(f.calls.filter(c => c.name === 'speech_source_probe_store').length, stored, 'a silent source is never cached as a probe');
+});
 test('a source with no stored size or no hash is reported unreadable with its reason, before debit', async () => {
     for (const [asset, reason] of [[{ size_bytes: 0 }, 'no_size'], [{ sha256: null }, 'no_hash']]) {
         const f = fixture({ asset, probe: async () => null });

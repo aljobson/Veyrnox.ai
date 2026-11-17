@@ -5946,6 +5946,7 @@ export default {
     "editorSpeech.sourceTooLarge": "此片段大小为 {size} MB，超过 {max} MB 的上限。请选择更小或更短的片段。未扣除任何积分。",
     "editorSpeech.sourceDense": "此片段在 {seconds} 秒内达到 {size} MB，超过每秒约 2 MB 的上限。请选择更短或压缩率更高的片段。未扣除任何积分。",
     "editorSpeech.sourceUnreadable": "语音工具无法读取此片段的文件，可能是无法读取的格式。请尝试保存为 MP4 或 MOV 的片段。未扣除任何积分。",
+    "editorSpeech.sourceNoAudio": "此视频没有声音，Best Cut 没有可读取的语音。请选择带有人声的片段。未扣除任何积分。",
     "editorSpeech.tooLong": "请选择不超过60秒的源片段。",
     "editorSpeech.durationChanged": "源文件时长已更改。请重新加载片段后重试。",
     "editorSpeech.price": "每次分析 {n} 点数",
