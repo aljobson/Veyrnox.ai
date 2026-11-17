@@ -103,7 +103,7 @@ jobs:
       - name: Signed callback retry Workers runtime tests
         run: |
           npm ci --prefix tests/fal-signed-retry-runtime --ignore-scripts --no-audit --no-fund
-          npm audit --prefix tests/fal-signed-retry-runtime --audit-level=high
+          node scripts/check-audit.mjs --prefix tests/fal-signed-retry-runtime
           npm test --prefix tests/fal-signed-retry-runtime
 
       # tsx strips types without checking them, so packages/catalog and
