@@ -5948,6 +5948,7 @@ export default {
     "editorSpeech.sourceTooLarge": "이 클립은 {size} MB로 {max} MB 한도를 초과합니다. 더 작거나 짧은 클립을 선택하세요. 크레딧은 사용되지 않았습니다.",
     "editorSpeech.sourceDense": "이 클립은 {seconds}초에 {size} MB로, 초당 약 2 MB 한도를 초과합니다. 더 짧거나 더 압축된 클립을 선택하세요. 크레딧은 사용되지 않았습니다.",
     "editorSpeech.sourceUnreadable": "음성 도구가 이 클립의 파일을 읽을 수 없었습니다. 읽을 수 없는 형식일 수 있습니다. MP4 또는 MOV로 저장된 클립을 시도해 보세요. 크레딧은 사용되지 않았습니다.",
+    "editorSpeech.sourceNoAudio": "이 영상에는 소리가 없어서 Best Cut이 읽을 음성이 없습니다. 음성이 있는 클립을 선택하세요. 크레딧은 사용되지 않았습니다.",
     "editorSpeech.tooLong": "60초 이하의 원본 클립을 선택하세요.",
     "editorSpeech.durationChanged": "원본 길이가 변경되었습니다. 클립을 다시 불러오고 재시도하세요.",
     "editorSpeech.price": "분석 1회당 {n} 크레딧",
