@@ -8,6 +8,7 @@ import { POLICIES, type CacheMeta } from './cache';
 import { ensureOnline, observe, markOnline, markOffline } from './network';
 import { ApiError, API_BASE, type ApiClient } from './api';
 import { GENERATION_PROMPT_MAX } from './promptLimits';
+import { internalModelId } from './publicModelIds';
 
 export interface CatalogModel {
     readonly id: string;
@@ -149,7 +150,7 @@ async function requestCatalog(): Promise<CatalogModel[]> {
     }
     if (!res.ok) throw new ApiError(res.status, 'catalog_unavailable');
     const body = (await res.json()) as { models?: CatalogModel[] };
-    return (body.models ?? []).filter(model => kindOf(model.modality) !== null);
+    return (body.models ?? []).filter(model => kindOf(model.modality) !== null).map(model => ({ ...model, id: internalModelId(model.id) }));
 }
 
 export interface GenerationRequest {

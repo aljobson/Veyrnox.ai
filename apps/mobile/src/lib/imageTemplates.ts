@@ -1,4 +1,5 @@
 import { API_BASE } from './api';
+import { internalModelIdOrNull } from './publicModelIds';
 
 // Image templates, read from the anonymous GET /api/templates?kind=image. Each carries the model id and the full prompt;
 // the price is read from the live catalog in Create, which is where a required photo is attached.
@@ -35,7 +36,7 @@ export function parseImageTemplates(body: unknown, base: string = API_BASE): Ima
     if (!Array.isArray(list)) return [];
     return list.flatMap((raw): ImageTemplate[] => {
         const r = (raw ?? {}) as Record<string, unknown>;
-        const id = str(r.id), name = str(r.name), category = str(r.category), modelId = str(r.modelId), prompt = str(r.prompt);
+        const id = str(r.id), name = str(r.name), category = str(r.category), modelId = internalModelIdOrNull(str(r.modelId)), prompt = str(r.prompt);
         if (!id || !name || !category || !modelId || !prompt) return [];
         return [{ id, name, category, modelId, prompt, previewUrl: previewUrl(r.previewImage, base), previewAspect: aspect(r.previewAspect), photoRequired: r.photoRequired === true }];
     });

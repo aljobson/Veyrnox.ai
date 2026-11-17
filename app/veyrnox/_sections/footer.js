@@ -155,7 +155,7 @@ export function ClosingCTA({ locale = 'en', t }) {
             {t('home.cta.title')}
           </h2>
           <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-            <Link href={localizedHref(locale, '/app/create?model=nano-banana-kie')} className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
+            <Link href={localizedHref(locale, '/app/create?model=nano-banana-a1')} className="vx-press inline-flex min-h-11 items-center rounded-full bg-vx-accent text-vx-accent-ink px-8 py-4 text-base font-extrabold hover:bg-vx-accent-hover">
               {t('home.cta.open')}
             </Link>
             <Link href={localizedHref(locale, '/pricing')} className="text-[15px] font-bold text-vx-fg-body underline decoration-vx-border decoration-2 underline-offset-[6px] hover:text-vx-fg hover:decoration-vx-accent">

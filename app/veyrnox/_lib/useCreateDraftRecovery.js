@@ -4,6 +4,7 @@ import { getStoredUserId, onSessionChange } from '../../lib/authClient';
 import { fromSharedDraft, readCreateDraft, reopenDraftSources, toSharedDraft, writeCreateDraft } from '../../../lib/createDraftRecovery';
 import { clearRemoteDraft, fetchLibrarySync, pushDraft } from './librarySync';
 import { gatewayFetch } from './gateway';
+import { internalModelId } from '../../../lib/publicModelIds.js';
 
 const actorSnapshot = () => getStoredUserId() || 'signed-out';
 // The account copy of the draft (ADR-0340) is written a moment after the last change, so typing does not send a request per key.
@@ -34,7 +35,7 @@ export default function useCreateDraftRecovery({ draft, apply, reset, incoming }
     const restore = async () => {
       let saved;
       try { saved = readCreateDraft(sessionStorage, actor); } catch { /* Storage disabled. */ }
-      const wanted = new URLSearchParams(location.search).get('model');
+      const wanted = internalModelId(new URLSearchParams(location.search).get('model'));
       if (incoming.current || (wanted && saved?.modelId !== wanted)) saved = null;
       // Nothing in this tab: the account's draft (words and settings only), if the phone or another tab left one.
       remoteOk.current = false;

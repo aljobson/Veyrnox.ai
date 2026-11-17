@@ -13,6 +13,7 @@ import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import { templateById } from '../app/veyrnox/_lib/templates.js';
 import { templateDetail } from '../lib/clientTemplates.js';
 import { templateStartId } from '../lib/templateStart.js';
+import { internalModelId } from '../lib/publicModelIds.js';
 import { LICENSED_MUSIC_BASE, LICENSED_MUSIC_TRACKS } from '../lib/licensedMusicCatalog.js';
 
 const require = createRequire(import.meta.url);
@@ -43,7 +44,8 @@ test('the curated Create catalog has three valid image and audio templates, no v
     for (const choice of choices) {
       assert.equal(models.find((model) => model.id === tokens.templateModelId(choice))?.kind, kind);
       assert.equal(templateById(choice.id), null);
-      assert.equal(templateDetail(choice.id)?.modelId, tokens.templateModelId(choice));
+      // The answer names the model by its supplier-neutral public id (lib/publicModelIds.js); it maps back to the catalog key.
+      assert.equal(internalModelId(templateDetail(choice.id)?.modelId), tokens.templateModelId(choice));
       assert.equal(templateStartId(choice.id, tokens.templateModelId(choice)), null);
       assert.equal(templateStartId(choice.id, 'wrong-model'), null);
       assert.ok(choice.prompt.length > 40);

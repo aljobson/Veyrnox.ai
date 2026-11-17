@@ -1,5 +1,6 @@
 // Catalog lists shared by public pages and background work, without page copy or templates.
 import { readPublicCatalog } from '../../../lib/publicCatalog.js';
+import { publicModelId } from '../../../lib/publicModelIds.js';
 import { MODELS, distinctShelfNames, isShelfModel, kindOf, shelfName } from './tokens.js';
 
 // Catalog ids are lowercase slugs such as `wan-2.5-kie`.
@@ -14,7 +15,8 @@ export function shelfModels(rows) {
 export function namedModels(rows) {
   // Titles head the list and each model's own page, so no two may match.
   const titleOf = distinctShelfNames(rows);
-  return rows.map((m) => ({ ...m, kind: kindOf(m.modality), title: titleOf(m) }));
+  // Public pages carry supplier-neutral ids in links and addresses (lib/publicModelIds.js).
+  return rows.map((m) => ({ ...m, id: publicModelId(m.id), kind: kindOf(m.modality), title: titleOf(m) }));
 }
 
 // Public pages must remain useful when the live catalog is unavailable (local
@@ -24,6 +26,7 @@ export function namedModels(rows) {
 export function fallbackModels() {
   return MODELS.filter((model) => !model.staged).map((model) => ({
     ...model,
+    id: publicModelId(model.id),
     modality: model.kind,
     capabilities: { inputs: {}, media: {} },
     title: shelfName(model.name),
@@ -56,6 +59,7 @@ export async function listModelsForDetails(options) {
 
 export async function findModel(id, options) {
   if (typeof id !== 'string' || !MODEL_ID_RE.test(id)) return null;
-  return (await listModelsForDetails(options)).find((m) => m.id === id) || null;
+  const wanted = publicModelId(id); // an old supplier-suffixed address still finds its page
+  return (await listModelsForDetails(options)).find((m) => m.id === wanted) || null;
 }
 

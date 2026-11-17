@@ -35,6 +35,7 @@ import { loadTemplateClip } from '../../../../lib/templateClipGate.js';
 import { replayTemplateClip } from '../../../../lib/templateClipReplay.js';
 import { templateClipProviderPrompt } from '../../../../lib/templateClipPrompt.mjs';
 import { tieredCredits } from '../../../../lib/resolutionTiers.js';
+import { internalModelId } from '../../../../lib/publicModelIds.js';
 
 // The wording version an upload consent attests to (ADR-0330: the Terms and AUP, no tick). Bump when the wording
 // at /legal/aup or on the create page changes; users re-attest under the new
@@ -83,7 +84,8 @@ export async function POST(req) {
     let body;
     try { body = JSON.parse(new TextDecoder().decode(await readBoundedBody(req.body, MAX_REQUEST_BYTES, req.signal))); }
     catch (error) { return NextResponse.json({ error: error.status === 413 ? 'body_too_large' : 'invalid_json' }, { status: error.status === 413 ? 413 : 400 }); }
-    const modelId = body && body.model_id;
+    // A supplier-neutral public id (lib/publicModelIds.js) resolves to the catalog key; any other id passes through.
+    const modelId = internalModelId(body && body.model_id);
     const idempotencyKey = body && body.idempotency_key;
     const confirmedCredits = body && body.confirmed_credits;
     const requestedMaxCharge = body?.max_charge_credits;
@@ -226,7 +228,7 @@ export async function POST(req) {
     if (templateClip) {
         const error = checkTemplateClipRequest(body, references.references, templateClip.modelRow.id);
         if (error) return NextResponse.json({ error }, { status: 400 });
-        const prompt = templateClipProviderPrompt(body.inputs?.prompt, body.model_id);
+        const prompt = templateClipProviderPrompt(body.inputs?.prompt, modelId);
         if (!prompt) return NextResponse.json({ error: 'template_clip_prompt_tags' }, { status: 400 });
         inputs = { ...inputs, prompt, duration_seconds: 5 };
         const checked = validateInputs(inputs);
