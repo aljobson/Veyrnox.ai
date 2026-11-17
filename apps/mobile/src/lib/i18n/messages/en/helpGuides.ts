@@ -67,7 +67,7 @@ export default {
     "helpGuides.content.credits.s2.title": "Free credits",
     "helpGuides.content.credits.s2.body": "The 10 sign-up credits are spent first and expire 90 days after they are granted if unused.",
     "helpGuides.content.credits.s3.title": "Buying credits",
-    "helpGuides.content.credits.s3.body": "Credit packs are bought on the Credits page through the App Store or Google Play. Purchased credits never expire.",
+    "helpGuides.content.credits.s3.body": "Credit packs are bought on the Credits page through Stripe. Purchased credits never expire.",
     "helpGuides.content.credits.s4.title": "When something fails",
     "helpGuides.content.credits.s4.body": "If a generation fails, its credits return to your balance automatically. The Library shows the failed generation and its refund.",
     "helpGuides.content.credits.s5.title": "Limits",

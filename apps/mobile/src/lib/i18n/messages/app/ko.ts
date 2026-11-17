@@ -2641,7 +2641,7 @@ export default {
   "helpGuides.content.credits.s1.title": "모든 것에 잔액 하나",
   "helpGuides.content.credits.s2.body": "가입 시 받는 크레딧 10개가 먼저 사용되고, 쓰지 않으면 지급 후 90일이 지나 만료돼요.",
   "helpGuides.content.credits.s2.title": "무료 크레딧",
-  "helpGuides.content.credits.s3.body": "크레딧 팩은 Credits 페이지에서 App Store나 Google Play로 구매해요. 구매한 크레딧은 만료되지 않아요.",
+  "helpGuides.content.credits.s3.body": "크레딧 팩은 Credits 페이지에서 Stripe로 결제해 구매해요. 구매한 크레딧은 만료되지 않아요.",
   "helpGuides.content.credits.s3.title": "크레딧 구매",
   "helpGuides.content.credits.s4.body": "생성에 실패하면 크레딧이 자동으로 잔액에 돌아와요. 라이브러리에서 실패한 생성과 환불 내역을 볼 수 있어요.",
   "helpGuides.content.credits.s4.title": "실패했을 때",

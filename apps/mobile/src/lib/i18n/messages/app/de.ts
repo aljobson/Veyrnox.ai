@@ -2694,7 +2694,7 @@ export default {
   "helpGuides.content.credits.s1.title": "Ein Guthaben für alles",
   "helpGuides.content.credits.s2.body": "Die 10 Anmelde-Credits werden zuerst verbraucht und verfallen 90 Tage nach der Gutschrift, wenn sie ungenutzt bleiben.",
   "helpGuides.content.credits.s2.title": "Kostenlose Credits",
-  "helpGuides.content.credits.s3.body": "Credit-Pakete kaufst du auf der Seite Credits über den App Store oder Google Play. Gekaufte Credits verfallen nie.",
+  "helpGuides.content.credits.s3.body": "Credit-Pakete kaufst du auf der Seite Credits über Stripe. Gekaufte Credits verfallen nie.",
   "helpGuides.content.credits.s3.title": "Credits kaufen",
   "helpGuides.content.credits.s4.body": "Schlägt eine Generierung fehl, werden ihre Credits automatisch deinem Guthaben wieder gutgeschrieben. Die Bibliothek zeigt die fehlgeschlagene Generierung und ihre Erstattung.",
   "helpGuides.content.credits.s4.title": "Wenn etwas fehlschlägt",

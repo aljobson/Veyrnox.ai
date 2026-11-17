@@ -2906,7 +2906,7 @@ export default {
   "helpGuides.content.credits.s1.title": "رصيد واحد لكل شيء",
   "helpGuides.content.credits.s2.body": "تُنفق كريدت التسجيل العشرة أولًا، وتنتهي صلاحيتها بعد 90 يومًا من منحها إن لم تُستخدم.",
   "helpGuides.content.credits.s2.title": "الكريدت المجاني",
-  "helpGuides.content.credits.s3.body": "تُشترى باقات الكريدت من صفحة Credits عبر App Store أو Google Play. الكريدت المشترى لا تنتهي صلاحيته أبدًا.",
+  "helpGuides.content.credits.s3.body": "تُشترى باقات الكريدت من صفحة Credits عبر Stripe. الكريدت المشترى لا تنتهي صلاحيته أبدًا.",
   "helpGuides.content.credits.s3.title": "شراء الكريدت",
   "helpGuides.content.credits.s4.body": "إذا فشلت عملية توليد، يعود كريدتها إلى رصيدك تلقائيًا. يعرض المكتبة عملية التوليد الفاشلة واستردادها.",
   "helpGuides.content.credits.s4.title": "عند فشل شيء ما",

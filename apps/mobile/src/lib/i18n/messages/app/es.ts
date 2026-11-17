@@ -2747,7 +2747,7 @@ export default {
   "helpGuides.content.credits.s1.title": "Un saldo para todo",
   "helpGuides.content.credits.s2.body": "Los 10 créditos de registro se gastan primero y caducan 90 días después de concederse si no se usan.",
   "helpGuides.content.credits.s2.title": "Créditos gratis",
-  "helpGuides.content.credits.s3.body": "Los paquetes de créditos se compran en la página Créditos a través de la App Store o Google Play. Los créditos comprados nunca caducan.",
+  "helpGuides.content.credits.s3.body": "Los paquetes de créditos se compran en la página Créditos a través de Stripe. Los créditos comprados nunca caducan.",
   "helpGuides.content.credits.s3.title": "Comprar créditos",
   "helpGuides.content.credits.s4.body": "Si una generación falla, sus créditos vuelven a tu saldo automáticamente. Biblioteca muestra la generación fallida y su reembolso.",
   "helpGuides.content.credits.s4.title": "Cuando algo falla",

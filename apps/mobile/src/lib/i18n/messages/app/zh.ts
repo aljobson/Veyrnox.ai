@@ -2641,7 +2641,7 @@ export default {
   "helpGuides.content.credits.s1.title": "一个余额通用",
   "helpGuides.content.credits.s2.body": "10 个注册积分会优先消耗，若未使用，将在发放 90 天后过期。",
   "helpGuides.content.credits.s2.title": "免费积分",
-  "helpGuides.content.credits.s3.body": "积分包可在“积分”页面通过 App Store 或 Google Play 购买。购买的积分永不过期。",
+  "helpGuides.content.credits.s3.body": "积分包可在“积分”页面通过 Stripe 购买。购买的积分永不过期。",
   "helpGuides.content.credits.s3.title": "购买积分",
   "helpGuides.content.credits.s4.body": "如果生成失败，积分会自动退回你的余额。素材库会显示失败的生成及其退款。",
   "helpGuides.content.credits.s4.title": "失败时",

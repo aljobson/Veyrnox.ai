@@ -2747,7 +2747,7 @@ export default {
   "helpGuides.content.credits.s1.title": "Um só saldo para tudo",
   "helpGuides.content.credits.s2.body": "Os 10 créditos de cadastro são gastos primeiro e, se não forem usados, expiram 90 dias depois de concedidos.",
   "helpGuides.content.credits.s2.title": "Créditos grátis",
-  "helpGuides.content.credits.s3.body": "Os pacotes de créditos são comprados na página Credits, pela App Store ou pelo Google Play. Créditos comprados nunca expiram.",
+  "helpGuides.content.credits.s3.body": "Os pacotes de créditos são comprados na página Credits, pela Stripe. Créditos comprados nunca expiram.",
   "helpGuides.content.credits.s3.title": "Comprar créditos",
   "helpGuides.content.credits.s4.body": "Se uma geração falhar, os créditos voltam ao seu saldo automaticamente. A Biblioteca mostra a geração que falhou e o reembolso dela.",
   "helpGuides.content.credits.s4.title": "Quando algo falha",

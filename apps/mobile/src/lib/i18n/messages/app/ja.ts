@@ -2641,7 +2641,7 @@ export default {
   "helpGuides.content.credits.s1.title": "すべてをひとつの残高で",
   "helpGuides.content.credits.s2.body": "登録時の10クレジットは最初に消費され、未使用の場合は付与から90日で失効します。",
   "helpGuides.content.credits.s2.title": "無料クレジット",
-  "helpGuides.content.credits.s3.body": "クレジットパックは、クレジットページでの購入です（App StoreまたはGoogle Playでのお支払い）。購入したクレジットに有効期限はありません。",
+  "helpGuides.content.credits.s3.body": "クレジットパックは、クレジットページでの購入です（決済はStripe）。購入したクレジットに有効期限はありません。",
   "helpGuides.content.credits.s3.title": "クレジットを購入する",
   "helpGuides.content.credits.s4.body": "生成に失敗すると、そのクレジットは自動的に残高へ戻ります。ライブラリには、失敗した生成とその返金が表示されます。",
   "helpGuides.content.credits.s4.title": "失敗したとき",
