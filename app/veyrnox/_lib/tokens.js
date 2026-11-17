@@ -1,5 +1,6 @@
 import { IMAGE_TEMPLATE_MODELS } from './imageTemplateModels.js';
 import { templateRoute } from '../../../lib/templateRoute.js';
+import { internalModelId } from '../../../lib/publicModelIds.js';
 // Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
@@ -130,7 +131,7 @@ export function modelNameForId(id) {
  * user. Cards link to templateHref; an unresolved model stays on that detail page.
  */
 export const templateModelId = (preset, referenceCount) => preset?.kind === 'image'
-  ? (IMAGE_TEMPLATE_MODELS.includes(preset.model) ? preset.model : null)
+  ? (IMAGE_TEMPLATE_MODELS.includes(internalModelId(preset.model)) ? internalModelId(preset.model) : null)
   : templateRoute(preset, modelIdForName(preset?.model), referenceCount).modelId;
 
 export function presetHref(preset, durationSeconds = preset.durationSeconds, extras = {}) {

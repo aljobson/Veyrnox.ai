@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { FEATURE_CARDS, MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { WALL_PRESETS } from '../app/veyrnox/_lib/templates.js';
+import { internalModelId } from '../lib/publicModelIds.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -22,7 +23,7 @@ test('the landing page samples its exhaustive catalogs', () => {
 
 test('the first featured option fits within the free-credit balance', () => {
   const firstModelId = new URL(FEATURE_CARDS[0].href, 'https://veyrnox.ai').searchParams.get('model');
-  const row = MODELS.find((model) => model.id === firstModelId);
+  const row = MODELS.find((model) => model.id === internalModelId(firstModelId));
   assert.ok(row, 'first feature must point to a catalog model');
   assert.ok(row.credits <= 10, `${row.name} costs more than the 10-credit starter balance`);
   assert.match(FEATURE_CARDS[0].body, new RegExp(`\\b${row.credits} credits?\\b`, 'i'));
