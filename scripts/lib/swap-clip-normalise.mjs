@@ -83,3 +83,15 @@ export async function indexSheet(files, output) {
     '-filter_complex', files.length === 1 ? '[0:v]null[out]' : `${files.map((_, i) => `[${i}:v]`).join('')}xstack=inputs=${files.length}:layout=${layout}:fill=black[out]`,
     '-map', '[out]', '-frames:v', '1', '-threads', '2', '-filter_complex_threads', '2', '-q:v', '3', output], { timeout: 120_000 });
 }
+
+// Structural similarity of a clip's first frame with its published poster (1 = identical). A review aid for clips that have no audit
+// hash; it never approves anything. Returns null when ffmpeg cannot compare (the report then says so).
+export async function posterSimilarity(clip, poster) {
+  try {
+    const { stderr } = await exec('ffmpeg', ['-v', 'info', '-i', clip, '-i', poster, '-filter_complex',
+      '[0:v]select=eq(n\\,0),scale=360:640,setsar=1[a];[1:v]scale=360:640,setsar=1[b];[a][b]ssim', '-frames:v', '1', '-f', 'null', '-'],
+    { timeout: 60_000, maxBuffer: 1024 * 1024 });
+    const value = /All:([0-9.]+)/.exec(stderr)?.[1];
+    return value === undefined ? null : Number(value);
+  } catch { return null; }
+}

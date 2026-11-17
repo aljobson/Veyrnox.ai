@@ -4,7 +4,7 @@ import { mkdtemp, readFile, writeFile, mkdir, symlink, rm, access } from 'node:f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { importTemplateSwapClips, cli } from '../scripts/import-template-swap-clips.mjs';
+import { importTemplateSwapClips, cli, swapCandidates, tierFor } from '../scripts/import-template-swap-clips.mjs';
 import { outsideRepositories, normaliseSwapClip, validateSwapMedia } from '../scripts/lib/swap-clip-normalise.mjs';
 import { measure } from '../scripts/import-swap-scenes.mjs';
 import { sha256Hex } from '../packages/adapters/r2.js';
@@ -61,12 +61,12 @@ test('local-only review pack, approved-only processing, hash checks and conditio
   const records = [{ id, sourceMainMediaUrl: 'https://never-fetch.invalid/result.mp4', localPreviewSha256: sha }];
   const base = { decisions: [decision], outDir: dir, showcaseDir, records, upscale:true };
   const dry = await importTemplateSwapClips(base);
-  assert.equal(dry.report.publishable,false); assert.equal(dry.report.results.find(r=>r.id===id).verification,'result_clip_not_original');
+  assert.equal(dry.report.publishable,false); assert.equal(dry.report.results.find(r=>r.id===id).verification,'audit_hash');
   assert.equal(dry.report.results.find(r=>r.id===id).outcome,'ok_for_review');
   assert.equal(dry.manifest[id].seconds,5);
   await access(path.join(dry.runDir,'sheets',id+'.jpg')); await access(path.join(dry.runDir,'index-1.jpg'));
   const decisions = JSON.parse(await readFile(path.join(dry.runDir,'decisions-template.json')));
-  assert.equal(decisions.length,127); assert.ok(decisions.every(d=>d.approved===false));
+  assert.equal(decisions.length,(await swapCandidates()).length); assert.ok(decisions.every(d=>d.approved===false));
   assert.equal((await measure(path.join(dry.runDir,'clips',id+'.mp4'))).audio,false);
   await assert.rejects(access(path.join(dry.runDir,'publishable')));
   const bad = await importTemplateSwapClips({...base, records:[{...records[0],localPreviewSha256:'b'.repeat(64)}]});
@@ -111,4 +111,40 @@ test('registry rendering replaces an empty or already populated list and rejects
   const second = renderSwapRegistry(first, ['a-two', 'a-three']);
   assert.match(second, /Object\.freeze\(\["a-two","a-three"\]\)/); assert.doesNotMatch(second, /a-one/);
   assert.throws(() => renderSwapRegistry('export const X = 1;\n', ['a']), /registry_render_failed/);
+});
+
+test('every video template that needs a source clip is a candidate: swap, video-blocked swap and motion kinds', async () => {
+  const all = await swapCandidates();
+  const count = kind => all.filter(c => c.kind === kind).length;
+  // Pinned so a guard or catalog change that widens or narrows the set shows up in review (hidden and Seedance-labelled templates included).
+  assert.deepEqual([count('swap'), count('video_swap'), count('motion')], [127, 300, 92]);
+  assert.equal(new Set(all.map(c => c.id)).size, all.length);
+  assert.deepEqual((await swapCandidates({ kinds: ['motion'] })).length, 92);
+  assert.deepEqual([tierFor('swap', 'audit_hash'), tierFor('swap', 'no_audit_record'), tierFor('video_swap', 'audit_hash'), tierFor('motion', 'no_audit_record')], ['A', 'B', 'C', 'D']);
+});
+
+test('verification by hash, by id, absent record, origin exclusion and poster similarity', async t => {
+  t.mock.method(globalThis,'fetch',()=>assert.fail('network is forbidden'));
+  const dir = await temp();
+  try {
+    const showcaseDir = path.join(dir,'showcase'); await mkdir(showcaseDir);
+    const previewFile = TEMPLATE_CLIPS.find(c=>c.id===id).previewFile;
+    synthetic(path.join(showcaseDir,previewFile));
+    execFileSync('ffmpeg',['-v','error','-f','lavfi','-i','color=c=blue:s=480x854','-frames:v','1',path.join(showcaseDir,previewFile.replace(/\.mp4$/,'.jpg'))]);
+    const sha = await sha256Hex(await readFile(path.join(showcaseDir,previewFile)));
+    const run = records => importTemplateSwapClips({ decisions: [], outDir: dir, showcaseDir, records, upscale: true, reviewAll: true, kinds: ['swap'] });
+    const row = report => report.results.find(r => r.id === id);
+    const byHash = row((await run([{ id: 'some-renamed-id', localPreviewSha256: sha, origin: 'higgsfield' }])).report);
+    assert.equal(byHash.verification, 'audit_hash'); assert.equal(byHash.tier, 'A'); assert.equal(byHash.origin, 'higgsfield');
+    const none = row((await run([])).report);
+    assert.equal(none.verification, 'no_audit_record'); assert.equal(none.tier, 'B'); assert.equal(none.outcome, 'ok_for_review');
+    assert.ok(none.posterSimilarity === null || (none.posterSimilarity > 0.9 && none.posterSimilarity <= 1), String(none.posterSimilarity));
+    const excluded = await run([{ id, localPreviewSha256: sha, origin: 'syntx' }]);
+    assert.equal(row(excluded.report).outcome, 'origin_excluded'); assert.equal(excluded.manifest[id], undefined);
+    const allowed = await importTemplateSwapClips({ decisions: [], outDir: dir, showcaseDir, records: [{ id, localPreviewSha256: sha, origin: 'syntx' }], upscale: true, reviewAll: true, includeSyntx: true, kinds: ['swap'] });
+    assert.equal(row(allowed.report).outcome, 'ok_for_review');
+    const mismatch = row((await run([{ id, localPreviewSha256: 'b'.repeat(64), origin: 'higgsfield' }])).report);
+    assert.equal(mismatch.outcome, 'showcase_hash_mismatch');
+    assert.match(await readFile(path.join(allowed.runDir,'report.md'),'utf8'), /RESULT CLIP, NOT THE ORIGINAL INPUT/);
+  } finally { await rm(dir,{recursive:true,force:true}); }
 });

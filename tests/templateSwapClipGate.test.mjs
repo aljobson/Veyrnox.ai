@@ -34,3 +34,14 @@ test('both lengths are bounded at the 5 s price unit (+0.05 tolerance) in gate a
     assert.equal(templateSwapAvailable(id, { ...options, manifest: { [id]: { ...manifest[id], ...patch } } }), null);
   }
 });
+
+test('a video-blocked template is available only through the clip path and still refused without it', async () => {
+  const { swapCandidates } = await import('../scripts/import-template-swap-clips.mjs');
+  const { checkTemplateRequest } = await import('../lib/templateFidelity.js');
+  const blocked = (await swapCandidates({ kinds: ['video_swap', 'motion'] }))[0];
+  const source = { ...manifest[id], key: `template-swap-clips/${blocked.id}/${manifest[id].sha256}.mp4` };
+  const open = { ...options, registry: [blocked.id], manifest: { [blocked.id]: source } };
+  assert.ok(templateSwapAvailable(blocked.id, open));
+  assert.equal(templateSwapAvailable(blocked.id, { ...open, registry: [] }), null);
+  assert.equal(checkTemplateRequest({ template_id: blocked.id, model_id: 'kling-3.0-i2v', inputs: { prompt: blocked.sourcePrompt } }).error, 'template_blocked');
+});

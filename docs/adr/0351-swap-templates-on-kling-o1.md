@@ -157,3 +157,21 @@ This is the shipped wording. It is generic (no per-user detail), is 529 characte
 Follow-ups, not built and not decided here:
 - Second reference (face crop). Two pictures need `MULTI_REFERENCE_ENABLED` and a change to the one-picture admission rule in `checkTemplateSwapRequest`. A server-side or UI face crop is a separate owner decision (privacy, cost, a face detector on the Worker).
 - A UI hint to use a close, front-facing photo, with the face large in frame, until a crop exists.
+
+## Amendment 2: every template that needs a source clip (2026-11-17)
+
+The owner asked for the same fix on all video templates that need a clip, including the hidden ones. The server path needed no change: the gate admits any id in the registry, and the route skips the template contract only when `template_swap` is present, so a video-blocked template runs through the same path once a clip is registered, and is still refused (`template_blocked`) without one or with the switch off. What widened is the importer's candidate set (`swapCandidates`), which is now every template with a preview clip that needs a source video, in three kinds:
+
+| Kind | Meaning | Count | Tier |
+|---|---|---|---|
+| `swap` | swap wording, refused by the swap guard | 127 | A (clip hash vouched for by an audit record) or B (no audit record) |
+| `video_swap` | swap wording, also refused by the video guard (`blocked-needs-video`) | 300 | C |
+| `motion` | video-dependent, no swap wording (motion transfer, "imitate the movement") | 92 | D |
+
+Total 519. The counts are pinned in `tests/templateSwapClipImport.test.mjs`. Of the 1,926 addressable video templates only 150 are listed in the gallery; the rest are hidden from it but still addressable by id. All 300 `video_swap` and all 92 `motion` templates are in the hidden set, as are 43 of the 56 tier-A and 12 of the 71 tier-B templates, and 238 templates carry the Seedance label (35 `video_swap`, 20 `motion`, 3 `swap`); the importer treats them like the rest. Tier D has the weakest fit for O1: the shipped wording asks for a character replacement, and a motion-transfer recipe may need its own wording and a paid probe before any D clip is approved.
+
+Verification no longer depends on an id match. The importer hashes the showcase file and looks the hash up in every audit file that records `localPreviewSha256` (`higgsfield`, `seedance`, `syntx`, ...); a record found by id must match the bytes exactly. A clip with no audit record is tier B/C/D `no_audit_record`: it gets the structural checks (MP4, size, 3 to 5.05 s, 720 minimum side after the explicit upscale) and a first-frame similarity score against its own published poster, and the review pack shows it for owner eyes. The score is an aid only and never approves anything.
+
+Rights, stated plainly: every clip is another creator's finished video (a result), not the original input, and often shows a real person, a recognisable brand or a licensed character. Nothing is approved by the tooling. The owner decides per clip (`approved: true` with the reviewed hash), and the report labels every clip "RESULT CLIP, NOT THE ORIGINAL INPUT". Clips whose audit origin is the Syntx trend feed are excluded by default (`origin_excluded`; `--include-syntx` opts in), because ADR-0333 keeps Syntx media out of import sources.
+
+Duplicates: a normalised-prompt comparison across the 1,926 addressable video templates finds 6 pairs sharing a prompt and no two templates sharing a clip key or showcase bytes. Removing them is a catalog change (which id stays, redirects for the removed id) and is not part of this PR.
