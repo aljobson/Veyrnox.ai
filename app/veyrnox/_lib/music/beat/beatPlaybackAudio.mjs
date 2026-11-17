@@ -3,7 +3,7 @@ import { sequenceFor } from './beatSequence.mjs';
 
 export const arrangementStructure = (doc) => JSON.stringify(doc.tracks.map((track) =>
   [track.id, track.kind, track.regions.map((region) =>
-    [region.id, region.start, region.length, region.assetId, region.clipId, region.pattern, region.phaseTicks, region.phaseSec])]));
+    [region.id, region.start, region.length, region.assetId, region.clipId, region.pattern, region.phaseTicks, region.phaseSec, region.fadeIn, region.fadeOut, region.tailSec])]));
 
 export function playbackAssets(doc, locator) {
   if (doc.view !== 'song') return [];
@@ -13,7 +13,7 @@ export function playbackAssets(doc, locator) {
   for (const track of doc.tracks) {
     if (track.kind !== 'audio') continue;
     for (const region of track.regions) {
-      if (region.start >= to || region.start + region.length <= from) continue;
+      if (region.start >= to || region.start + region.length + (region.tailSec || 0) * doc.tempo.bpm * 16 <= from) continue;
       assets.set(`${region.assetId}:${region.reverse}`, { asset: doc.assets[region.assetId], reverse: region.reverse });
     }
   }

@@ -1,5 +1,5 @@
 import { isHeldError, assetSigningPath } from './beatAssetAvailability.mjs';
-import { getShelf, hydrateShelf, subscribeShelf } from '../instrumentShelf.js';
+import { localTake, loadLocalTake, subscribeLocalTakes } from '../localTakes.js';
 import { makeNoise, playEvent } from '../instrumentEngine.js';
 import { soundById, soundDuration } from './beatSounds.mjs';
 import { AUDIO_RATE, MB, admitDecode, checkDecoded, validAsset } from './beatAudioRules.mjs';
@@ -69,9 +69,8 @@ export function syncAssetTempo(bpm) {
   for (const [key, entry] of cache) if (entry.source === 'sound' && entry.bpm !== bpm) remove(key);
   emit();
 }
-subscribeShelf(() => {
-  const ids = new Set(getShelf().map((t) => t.id));
-  for (const [key, entry] of cache) if (entry.source === 'take' && entry.origin !== 'cloud' && !ids.has(entry.ref)) {
+subscribeLocalTakes(() => {
+  for (const [key, entry] of cache) if (entry.source === 'take' && entry.origin === 'shelf' && !localTake(entry.ref)) {
     remove(key); if (!cloudRow(entry.ref)) states.set(key, { status: 'missing', reason: 'This take was deleted', permanent: true });
   }
   emit();
@@ -101,8 +100,9 @@ export async function renderSound(ref, bpm, random) {
   return context.startRendering();
 }
 async function takeBuffer(asset) {
-  await hydrateShelf();
-  const take = getShelf().find((t) => t.id === asset.ref);
+  let take;
+  try { take = await loadLocalTake(asset.ref); }
+  catch { throw new Error("Couldn't read takes on this device — Retry"); }
   if (!take) {
     const row = cloudRow(asset.ref), config = cloudTakes;
     if (!row) throw new Error('This take was deleted');
@@ -129,7 +129,7 @@ async function takeBuffer(asset) {
   const context = offline(1, Math.round(asset.durationSec * AUDIO_RATE));
   const input = context.createBuffer(1, take.samples.length, take.sampleRate); input.copyToChannel(take.samples, 0);
   const source = context.createBufferSource(); source.buffer = input; source.connect(context.destination); source.start();
-  return { buffer: await context.startRendering(), origin: 'shelf' };
+  return { buffer: await context.startRendering(), origin: take.origin };
 }
 export async function prepareAsset(item, bpm) {
   if (suspended) throw new DOMException('Audio load cancelled', 'AbortError');

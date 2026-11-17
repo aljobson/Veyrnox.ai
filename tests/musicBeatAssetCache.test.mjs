@@ -1,3 +1,4 @@
+import { memoryBeatTakeStorage } from './musicBeatTakeStorageFixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
@@ -34,6 +35,8 @@ const hooks = registerHooks({ load(url, context, next) {
     source: 'export const { offline, decodes, loadSong, cancelSongLoads } = globalThis.beatCacheFixture;' };
   return next(url, context);
 } });
+const store = await import('../app/veyrnox/_lib/music/beat/beatTakeStore.js');
+store.configureBeatTakeStorage(memoryBeatTakeStorage().adapter);
 const assets = await import('../app/veyrnox/_lib/music/beat/beatAssets.js');
 const { loadSongBuffers } = await import('../app/veyrnox/_lib/music/beat/beatMixdown.js');
 hooks.deregister();
@@ -153,4 +156,29 @@ test('hold drops both cache directions and a late reverse load cannot restore re
   assert.equal(assets.assetState(asset, 60).status, 'held');
   assert.equal(await assets.loadAssetBuffers(asset, 60), null);
   beforeReverse = async () => {}; assets.clearBeatAssets();
+});
+
+test('recorded take cache survives shelf removals and keeps beat provenance', async () => {
+  const store = await import('../app/veyrnox/_lib/music/beat/beatTakeStore.js');
+  const shelf = await import('../app/veyrnox/_lib/music/instrumentShelf.js');
+  store.configureBeatTakeStorage(memoryBeatTakeStorage().adapter);
+  shelf.configureShelfStorage({ list: async () => [], put: async () => true, remove: async () => true });
+  const row = { id: 'beat-recorded', label: 'Recorded', samples: new Float32Array(48000), sampleRate: 48000, beatId: uuid(1), state: 'pending' };
+  await store.putBeatTake(row); assets.clearBeatAssets();
+  const asset = { source: 'take', ref: row.id, name: row.label, durationSec: 1, sourceChannels: 1, encodedBytes: 0, bpm: null };
+  const buffer = await assets.loadAsset(asset, 120); assert.ok(buffer);
+  assert.equal((await assets.loadAssetBuffers(asset, 120)).origin, 'beat');
+  shelf.removeShelfTake('unrelated'); assert.equal(assets.cachedAsset(asset, 120), buffer); assert.equal(assets.assetState(asset, 120).status, 'ready');
+  assets.clearBeatAssets();
+});
+
+test('a device read failure is retryable and never poisons a take as permanently deleted', async () => {
+  assets.clearBeatAssets();
+  const row = { id: 'retry-take', label: 'Recorded', samples: new Float32Array(48000), sampleRate: 48000 };
+  const disk = memoryBeatTakeStorage([row], { failListState: 1 }); store.configureBeatTakeStorage(disk.adapter);
+  const asset = { source: 'take', ref: row.id, name: row.label, durationSec: 1, sourceChannels: 1, encodedBytes: 0, bpm: null };
+  assert.equal(await assets.loadAsset(asset, 120), null);
+  assert.deepEqual(assets.assetState(asset, 120), { status: 'missing', reason: "Couldn't read takes on this device — Retry", permanent: false });
+  assets.retryBeatAssets(asset, 120); assert.ok(await assets.loadAsset(asset, 120)); assert.equal(disk.stateReads, 2);
+  assert.equal(assets.assetState(asset, 120).status, 'ready'); assets.clearBeatAssets();
 });

@@ -23,6 +23,7 @@ export default function BeatVersionsPanel({ beatId, project, sync }) {
   async function restore(row) {
     const token = sync.options(); setBusy(true); setError('');
     try {
+      await project.finishRecording();
       const result = await getVersion(beatId, row.id, token);
       if (!sync.current(token)) return;
       const doc = JSON.parse(result.doc_json);
