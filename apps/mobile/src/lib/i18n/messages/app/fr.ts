@@ -6305,4 +6305,6 @@ export default {
   "audioHub.home.hint": "Ouvre le menu Audio",
   "audioHub.loading": "Chargement des modèles",
   "audioHub.unavailable": "Indisponible pour le moment.",
+  "chat.pinFailed": "Impossible de modifier l'épinglage. Réessayez.",
+  "oddlings.saved.deleteShort": "Supprimer",
 } as const;

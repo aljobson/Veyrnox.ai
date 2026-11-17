@@ -6226,4 +6226,6 @@ export default {
   "audioHub.home.hint": "Öffnet das Audio-Menü",
   "audioHub.loading": "Modelle werden geladen",
   "audioHub.unavailable": "Derzeit nicht verfügbar.",
+  "chat.pinFailed": "Das Anheften konnte nicht geändert werden. Versuche es erneut.",
+  "oddlings.saved.deleteShort": "Löschen",
 } as const;

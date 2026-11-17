@@ -133,9 +133,8 @@ export function SwipeRow({ children, actions, fullSwipe = false, disabled = fals
                     <Pressable
                         key={action.key}
                         accessibilityRole="button"
-                        accessibilityLabel={action.label}
-                        // Hidden from screen readers while closed: the row's own accessibility actions carry the full name. Keeping the
-                        // long name off the button also leaves the row's existing labelled button the only match for it.
+                        // Hidden from screen readers while closed: the row's own accessibility actions carry the full name. The button is
+                        // named by its visible text, so it never duplicates the label of the row's own existing button.
                         accessibilityElementsHidden={!open}
                         importantForAccessibility={open ? 'yes' : 'no-hide-descendants'}
                         style={[s.action, s[action.tone ?? 'neutral']]}

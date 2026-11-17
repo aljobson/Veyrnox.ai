@@ -6147,4 +6147,6 @@ export default {
   "audioHub.home.hint": "오디오 메뉴를 엽니다",
   "audioHub.loading": "모델 불러오는 중",
   "audioHub.unavailable": "지금은 사용할 수 없습니다.",
+  "chat.pinFailed": "고정을 변경하지 못했습니다. 다시 시도해 주세요.",
+  "oddlings.saved.deleteShort": "삭제",
 } as const;

@@ -6147,4 +6147,6 @@ export default {
   "audioHub.home.hint": "打开音频菜单",
   "audioHub.loading": "正在加载模型",
   "audioHub.unavailable": "暂时不可用。",
+  "chat.pinFailed": "无法更改置顶。请重试。",
+  "oddlings.saved.deleteShort": "删除",
 } as const;
