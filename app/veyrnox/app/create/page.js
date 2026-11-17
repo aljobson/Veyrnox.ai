@@ -79,7 +79,7 @@ import { generationSlotKind, generationMimeTypes } from '../../../../lib/generat
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
 import { swapSceneModel, applySwapScene } from '../../_lib/swapSceneForm';
-import { internalModelId } from '../../../lib/publicModelIds.js';
+import { internalModelId } from '../../../../lib/publicModelIds.js';
 // Auto Short stays hidden until launch unless this browser opts in
 // (CLAUDE.md "Delivery": new user paths behind localStorage.veyrnox_*).
 const AUTO_SHORT_FLAG = 'veyrnox_auto_short';
