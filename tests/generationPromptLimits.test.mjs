@@ -36,6 +36,7 @@ test('positive generation capabilities use 30,000 or an explicit verified provid
     ['market:hailuo/02-text-to-video-standard', 1500],
     ['market:nano-banana-pro', 10000],
     ['crun:kling/v3', 2500],
+    ['crun:kling/v3-std', 2500],
     ['crun:kling/v2-6', 2500],
     ['higgsfield:kling-video/v3.0/pro/image-to-video', 2500],
     ['higgsfield:kling-video/v2.6/pro/text-to-video', 2500],
