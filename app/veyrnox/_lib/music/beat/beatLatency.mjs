@@ -1,4 +1,4 @@
-export const LATENCY_KEY = 'veyrnox.beat.latency.v1';
+export const LATENCY_STORAGE_NAME = 'veyrnox.beat.latency.v1';
 export const CALIBRATION_INTERVALS = [700, 950, 800, 1100, 750, 1000, 850];
 export const CALIBRATION_UNCLEAR = 'Calibration was unclear — try again in a quieter room, or with the volume up.';
 const median = values => { const a = [...values].sort((x, y) => x - y); return (a[Math.floor(a.length / 2)] + a[Math.floor((a.length - 1) / 2)]) / 2; };
@@ -52,14 +52,14 @@ export function matchCalibration(onsets, scheduledFrames, sr) {
 }
 export function readLatency(deviceId = 'default', storage, now = Date.now()) {
   try {
-    const row = JSON.parse((storage || globalThis.localStorage).getItem(LATENCY_KEY) || '{}')[deviceId || 'default'];
+    const row = JSON.parse((storage || globalThis.localStorage).getItem(LATENCY_STORAGE_NAME) || '{}')[deviceId || 'default'];
     return row && Number.isFinite(row.ms) && row.ms >= 0 && row.ms <= 400 && Number.isFinite(row.measuredAt) && now - row.measuredAt < 90 * 86400000 && now >= row.measuredAt ? row : null;
   } catch { return null; }
 }
 export function writeLatency(deviceId, ms, storage, now = Date.now()) {
   try {
     if (!Number.isFinite(ms) || ms < 0 || ms > 400) return false;
-    const target = storage || globalThis.localStorage, previous = JSON.parse(target.getItem(LATENCY_KEY) || '{}');
-    target.setItem(LATENCY_KEY, JSON.stringify({ ...previous, [deviceId || 'default']: { ms, measuredAt: now } })); return true;
+    const target = storage || globalThis.localStorage, previous = JSON.parse(target.getItem(LATENCY_STORAGE_NAME) || '{}');
+    target.setItem(LATENCY_STORAGE_NAME, JSON.stringify({ ...previous, [deviceId || 'default']: { ms, measuredAt: now } })); return true;
   } catch { return false; }
 }
