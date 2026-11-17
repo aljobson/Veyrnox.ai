@@ -4644,6 +4644,8 @@ export default {
   "welcome.start.body": "몇 마디 아이디어로 시작하거나, 바탕이 될 사진이나 영상을 가져오세요.",
   "welcome.start.title": "준비되면 시작하세요",
   "welcome.step": "{total}단계 중 {n}단계",
+  "welcome.toGo.one": "1단계 남음",
+  "welcome.toGo.two": "2단계 남음",
   "whenPicker.dateyearmonthday": "날짜, 연-월-일",
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "시간, 시:분",

@@ -2478,6 +2478,12 @@
     "ratio": 2.25
   },
   {
+    "id": "welcome.toGo.two",
+    "english": "Two to go",
+    "translation": "Faltan dos pasos",
+    "ratio": 1.78
+  },
+  {
     "id": "publishDepth.bluesky.handle",
     "english": "Bluesky handle",
     "translation": "Identificador de Bluesky",

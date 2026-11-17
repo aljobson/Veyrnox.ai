@@ -6,6 +6,7 @@ import { EASE_OUT } from '../lib/motionCurves';
 import { MIN_TARGET, touchTarget } from '../lib/a11y';
 import { rawText } from '../lib/i18n/translate';
 import { t } from '../lib/i18n';
+import { stepsLeftKey } from '../lib/firstRun';
 import { ds } from '../theme';
 import { Icon, Text, themedStyles, useThemedStyles } from './ui';
 import { useReducedMotion } from './ui/useReducedMotion';
@@ -32,7 +33,8 @@ export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, backLa
     useEffect(() => {
         Animated.timing(fill, { toValue: step / total, duration: reduced ? 0 : ds.motion.sheet, easing: EASE_OUT, useNativeDriver: true }).start();
     }, [fill, reduced, step, total]);
-    const label = rawText(t('welcome.step', { n: step, total }));
+    const leftKey = stepsLeftKey(step, total);
+    const label = rawText(leftKey ? t(leftKey) : t('welcome.step', { n: step, total }));
     return (
         <View style={[s.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
             <View style={s.glowWrap} pointerEvents="none"><BrandGlow shown reduced={reduced} /></View>
@@ -56,6 +58,7 @@ export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, backLa
                     ) : null}
                 </View>
             </View>
+            {leftKey ? <Text variant="caption" tone="secondary" style={s.left} numberOfLines={1}>{t(leftKey)}</Text> : null}
             <View style={s.body}>{children}</View>
             <View style={s.footer}>{footer}</View>
         </View>
@@ -72,6 +75,7 @@ const sheets = themedStyles((p) => ({
     track: { flex: 1, height: 6, borderRadius: 3, backgroundColor: p.borderSubtle, overflow: 'hidden' },
     // Full width, shrunk by scaleX from the start edge (set at render, for RTL), so only the transform animates.
     bar: { height: 6, borderRadius: 3, backgroundColor: p.accent },
+    left: { textAlign: 'center', paddingHorizontal: ds.space.gutter, paddingTop: ds.space.xs },
     body: { flex: 1, paddingHorizontal: ds.space.gutter },
     footer: { paddingHorizontal: ds.space.gutter, paddingVertical: ds.space.lg, gap: ds.space.sm },
 }));

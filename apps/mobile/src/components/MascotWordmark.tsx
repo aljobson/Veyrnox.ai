@@ -289,6 +289,6 @@ export function MascotWordmark({ fontSize = 36, palette = colors, onDone, leap =
 const styles = StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     letters: { flexDirection: 'row', alignItems: 'flex-start' },
-    word: { color: colors.text, fontWeight: '800', letterSpacing: -0.8 },
+    word: { color: colors.text, fontWeight: '900', letterSpacing: -0.8 },
     mascot: { position: 'absolute', left: 0, top: 0 },
 });

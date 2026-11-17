@@ -4869,6 +4869,8 @@ export default {
   "welcome.start.body": "Начните с идеи в нескольких словах или возьмите фото или видео за основу.",
   "welcome.start.title": "Готов, когда вы готовы",
   "welcome.step": "Шаг {n} из {total}",
+  "welcome.toGo.one": "Остался один шаг",
+  "welcome.toGo.two": "Осталось два шага",
   "whenPicker.dateyearmonthday": "Дата, год-месяц-день",
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "Время, часы:минуты",

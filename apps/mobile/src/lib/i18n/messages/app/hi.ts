@@ -4719,6 +4719,8 @@ export default {
   "welcome.start.body": "कुछ शब्दों के विचार से शुरू करें, या आधार के लिए कोई फ़ोटो या वीडियो लाएँ।",
   "welcome.start.title": "आपके तैयार होते ही तैयार",
   "welcome.step": "{total} में से चरण {n}",
+  "welcome.toGo.one": "बस एक चरण बाकी",
+  "welcome.toGo.two": "बस दो चरण बाकी",
   "whenPicker.dateyearmonthday": "तारीख, वर्ष-महीना-दिन",
   "whenPicker.hHMM": "HH:MM",
   "whenPicker.timehourminute": "समय, घंटा:मिनट",

@@ -14,7 +14,7 @@ export function Logo({ size = 30, wordmark = false, className = '' }) {
         <path d="M8 12 L38 12 L60 62 L82 12 L112 12 L60 112 Z" fill="rgb(var(--vx-accent))" />
       </svg>
       {wordmark && (
-        <span className="font-vx font-extrabold tracking-[-0.01em] text-[15px] leading-none">
+        <span className="font-vx font-black tracking-[-0.01em] text-[15px] leading-none">
           <span>VEYRNOX</span>
           <span className="text-vx-accent">.ai</span>
         </span>
