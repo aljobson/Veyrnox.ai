@@ -21,9 +21,9 @@ const PROVIDERS = {
     fal: {
         key: () => process.env.FAL_KEY,
         check: (record, _modelRow, inputs) => checkInputs(record, inputs),
-        submit: (job, record, apiKey, publicHost, sources) => submitJob(
+        submit: (job, record, apiKey, publicHost, sources, options) => submitJob(
             { ...job, inputs: shapePayload(record, job.inputs, sources) },
-            { falKey: apiKey, webhookBaseUrl: new URL('/api/webhook/fal', publicHost).toString() },
+            { ...options, falKey: apiKey, webhookBaseUrl: new URL('/api/webhook/fal', publicHost).toString() },
         ),
     },
     kie: {

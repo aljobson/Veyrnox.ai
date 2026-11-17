@@ -1,3 +1,4 @@
+import { loadTemplateSwapClip } from '../../../lib/templateSwapClipGate.js';
 import { loadTemplateClip } from '../../../lib/templateClipGate.js';
 /**
  * GET /api/catalog — public model catalog (active rows only).
@@ -20,6 +21,13 @@ import { withPublicModelIds } from '../../../lib/publicModelIds.js';
 
 export async function GET(req) {
     const cfg = envConfig();
+    const templateSwapId = req?.url ? new URL(req.url).searchParams.get('template_swap') : null;
+    if (templateSwapId !== null) {
+        const clip = await loadTemplateSwapClip(templateSwapId, cfg);
+        const headers = { 'cache-control': 'no-store' };
+        return clip ? NextResponse.json(clip.template, { headers })
+            : NextResponse.json({ error: 'template_swap_not_found' }, { status: 404, headers });
+    }
     // A scene lookup is public catalog data, never caller identity or source media.
     // Keep it uncached: a paused offer or removed manifest must disappear immediately.
     const templateId = req?.url ? new URL(req.url).searchParams.get('template_clip') : null;

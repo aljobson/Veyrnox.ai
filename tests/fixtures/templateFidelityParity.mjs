@@ -8,10 +8,11 @@ import { modelIdForName, templateModelId } from '../../app/veyrnox/_lib/tokens.j
 import { templateInputs, submitTemplate, templateRun } from '../../app/veyrnox/_lib/templateGenerate.js';
 import data from '../../lib/templateFidelityContracts.json' with { type: 'json' };
 import { checkTemplateRequest } from '../../lib/templateFidelity.js';
+import { swapNeedsSourceVideo } from '../../lib/templateSwapGuard.js';
 import { auditTemplate, packContracts, audit } from '../../scripts/audit-template-fidelity.mjs';
 const { contracts } = audit();
 const output = [];
-const negativeSource = PRESETS.find(p => contracts[p.id]?.class === 'like-for-like-safe' && fallbackCapabilitiesFor(modelIdForName(p.model))?.inputs.negative_prompt);
+const negativeSource = PRESETS.find(p => contracts[p.id]?.class === 'like-for-like-safe' && !swapNeedsSourceVideo(contracts[p.id].sourcePrompt) && fallbackCapabilitiesFor(modelIdForName(p.model))?.inputs.negative_prompt);
 const longNegative = { ...negativeSource, id: 'fix4-long-negative', negativePrompt: '  ' + 'blur '.repeat(600) + '  ' };
 const longContract = auditTemplate(longNegative);
 contracts[longNegative.id] = longContract;
@@ -38,7 +39,8 @@ for (const original of [...PRESETS, longNegative]) {
   output.push({ feed, model, body, contract: c, serverCheck: original === longNegative ? checkTemplateRequest(body) : undefined });
 }
 const boundInventory = [];
-for (const p of PRESETS.filter(p => contracts[p.id]?.class === 'bound')) {
+// Swap recipes are refused before debit on the photo route (template_blocked); their admission is covered by tests/templateSwapGuard and the O1 swap tests.
+for (const p of PRESETS.filter(p => contracts[p.id]?.class === 'bound' && !swapNeedsSourceVideo(contracts[p.id].sourcePrompt))) {
   const c = contracts[p.id];
   // Use default navigation, with no model injected from the contract.
   const modelId = templateModelId(p);
