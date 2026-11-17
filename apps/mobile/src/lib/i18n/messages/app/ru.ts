@@ -2800,7 +2800,7 @@ export default {
   "helpGuides.content.credits.s1.title": "Один баланс на всё",
   "helpGuides.content.credits.s2.body": "Сначала тратятся 10 кредитов за регистрацию; если не использовать, они сгорают через 90 дней после начисления.",
   "helpGuides.content.credits.s2.title": "Бесплатные кредиты",
-  "helpGuides.content.credits.s3.body": "Пакеты кредитов покупаются на странице Credits через Stripe. Купленные кредиты не сгорают.",
+  "helpGuides.content.credits.s3.body": "Пакеты кредитов покупаются на странице Credits через App Store или Google Play. Купленные кредиты не сгорают.",
   "helpGuides.content.credits.s3.title": "Покупка кредитов",
   "helpGuides.content.credits.s4.body": "Если генерация не удалась, кредиты автоматически возвращаются на баланс. В библиотеке видны неудачная генерация и её возврат.",
   "helpGuides.content.credits.s4.title": "Если что-то пошло не так",

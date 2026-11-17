@@ -2694,7 +2694,7 @@ export default {
   "helpGuides.content.credits.s1.title": "सबके लिए एक बैलेंस",
   "helpGuides.content.credits.s2.body": "साइन-अप के 10 क्रेडिट पहले खर्च होते हैं, और इस्तेमाल न हों तो मिलने के 90 दिन बाद खत्म हो जाते हैं।",
   "helpGuides.content.credits.s2.title": "मुफ़्त क्रेडिट",
-  "helpGuides.content.credits.s3.body": "क्रेडिट पैक Credits पेज पर Stripe के ज़रिए खरीदे जाते हैं। खरीदे गए क्रेडिट कभी खत्म नहीं होते।",
+  "helpGuides.content.credits.s3.body": "क्रेडिट पैक Credits पेज पर App Store या Google Play के ज़रिए खरीदे जाते हैं। खरीदे गए क्रेडिट कभी खत्म नहीं होते।",
   "helpGuides.content.credits.s3.title": "क्रेडिट खरीदना",
   "helpGuides.content.credits.s4.body": "अगर कोई जनरेशन फेल हो जाए, तो उसके क्रेडिट अपने-आप आपके बैलेंस में लौट आते हैं। लाइब्रेरी में फेल हुई जनरेशन और उसका रिफंड दिखता है।",
   "helpGuides.content.credits.s4.title": "जब कुछ फेल हो जाए",

@@ -2747,7 +2747,7 @@ export default {
   "helpGuides.content.credits.s1.title": "Un seul solde pour tout",
   "helpGuides.content.credits.s2.body": "Les 10 crédits gratuits d’inscription sont dépensés en premier et expirent 90 jours après leur attribution s’ils ne sont pas utilisés.",
   "helpGuides.content.credits.s2.title": "Crédits gratuits",
-  "helpGuides.content.credits.s3.body": "Les packs de crédits s’achètent sur la page Credits via Stripe. Les crédits achetés n’expirent jamais.",
+  "helpGuides.content.credits.s3.body": "Les packs de crédits s’achètent sur la page Credits via l’App Store ou Google Play. Les crédits achetés n’expirent jamais.",
   "helpGuides.content.credits.s3.title": "Acheter des crédits",
   "helpGuides.content.credits.s4.body": "Si une génération échoue, ses crédits reviennent automatiquement sur votre solde. La bibliothèque affiche la génération échouée et son remboursement.",
   "helpGuides.content.credits.s4.title": "En cas d’échec",
