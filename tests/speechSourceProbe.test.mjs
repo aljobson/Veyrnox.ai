@@ -14,7 +14,7 @@ test('trusted WAV measured using server-signed URL, capped exact range and no re
     const bytes = wav(), calls = [], asset = { size_bytes: bytes.length, sha256: 'a'.repeat(64), mime_type: 'audio/wav', r2_key: 'owned' };
     const probe = await probeSpeechSource(asset, r2, { sign: async (key, ttl) => { assert.equal(key, 'owned'); assert.equal(ttl, 300); return { url: 'https://r2.test/owned' }; },
         fetcher: async (url, init, timeout, cap) => { calls.push({ url, init, cap }); assert.ok(timeout <= 5000); return new Response(bytes, { status: 206 }); } });
-    assert.deepEqual(probe, { duration: 1, mime: 'audio/wav', fingerprint: 'a'.repeat(64) });
+    assert.deepEqual(probe, { duration: 1, mime: 'audio/wav', fingerprint: 'a'.repeat(64), audio: true });
     assert.equal(calls[0].url, 'https://r2.test/owned'); assert.equal(calls[0].init.redirect, 'error'); assert.equal(calls[0].init.headers.Range, `bytes=0-${bytes.length - 1}`); assert.ok(calls[0].cap <= SPEECH_PROBE_MAX_BYTES);
 });
 test('unsupported container, forged fingerprint, malformed/range-ignoring response fail closed', async () => {
@@ -56,4 +56,24 @@ test('source size is capped before signing and measured bytes/second rejects an 
         });
         if (seconds === 2) assert.equal(result.duration, 2); else assert.equal(result, null);
     }
+});
+
+// A movie as the probe reads it: each track names its handler, so a picture-only video is known before any charge.
+const mbox = (type, content) => { const b = Buffer.alloc(8 + content.length); b.writeUInt32BE(b.length); b.write(type, 4); content.copy(b, 8); return b; };
+const mtrak = handler => {
+    const tkhd = Buffer.alloc(84), mdhd = Buffer.alloc(24), hdlr = Buffer.alloc(24), stts = Buffer.alloc(16);
+    mdhd.writeUInt32BE(1000, 12); hdlr.write(handler, 8); stts.writeUInt32BE(1, 4); stts.writeUInt32BE(100, 8); stts.writeUInt32BE(40, 12);
+    return mbox('trak', Buffer.concat([mbox('tkhd', tkhd), mbox('mdia', Buffer.concat([mbox('mdhd', mdhd), mbox('hdlr', hdlr), mbox('minf', mbox('stbl', mbox('stts', stts)))]))]));
+};
+const movie = (...handlers) => {
+    const mvhd = Buffer.alloc(100); mvhd.writeUInt32BE(1000, 12); mvhd.writeUInt32BE(4000, 16);
+    return Buffer.concat([mbox('ftyp', Buffer.from('isom0000')), mbox('moov', Buffer.concat([mbox('mvhd', mvhd), ...handlers.map(mtrak)])), mbox('mdat', Buffer.alloc(1024))]);
+};
+const probeMovie = bytes => probeSpeechSource({ size_bytes: bytes.length, sha256: 'b'.repeat(64), mime_type: 'video/mp4', r2_key: 'owned' }, r2, {
+    sign: async () => ({ url: 'https://r2.test/owned' }),
+    fetcher: async (_url, init) => { const [a, b] = init.headers.Range.replace('bytes=', '').split('-').map(Number); return new Response(new Uint8Array(bytes.subarray(a, b + 1)), { status: 206 }); },
+});
+test('a video whose only track is picture is reported with no audio; one with a sound track is not', async () => {
+    assert.equal((await probeMovie(movie('vide'))).audio, false);
+    assert.equal((await probeMovie(movie('vide', 'soun'))).audio, true);
 });
