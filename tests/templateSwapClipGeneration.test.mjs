@@ -283,6 +283,8 @@ for (const gate of [undefined, false, true]) for (const classification of ['boun
     const stored = JSON.stringify(net.debits[0].p_inputs);
     // The runtime gate is deliberately not part of accepted request identity.
     process.env.APP_RUNTIME_FLAGS = JSON.stringify({ templateFaceWording: gate !== true });
+    // A retry seconds later re-signs the photo URL; the accepted request's identity must not change.
+    t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 2000 });
     assert.equal((await post(request)).status, 200);
     assert.equal(net.submits.length, 1); assert.equal(net.charges(), 1);
     assert.equal(JSON.stringify(net.debits[0].p_inputs), stored);
