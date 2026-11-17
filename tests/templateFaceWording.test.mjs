@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildPayload } from '../packages/adapters/fal.js';
-import { TEMPLATE_FACE_WORDING as full, TEMPLATE_FACE_WORDING_COMPACT as compact } from '../lib/templateFaceWording.mjs';
+import { TEMPLATE_FACE_WORDING as full, TEMPLATE_FACE_WORDING_COMPACT as compact, templateFacePrompt } from '../lib/templateFaceWording.mjs';
 import { TEMPLATE_SWAP_CLIP_PROMPT } from '../lib/templateSwapClipPrompt.mjs';
 const endpoint = 'fal-ai/kling-video/v3/pro/image-to-video';
 function payload(prompt, faceIdentity = true, provider_endpoint = endpoint) {
@@ -30,6 +30,6 @@ test('O1 wording stays byte-identical and is not appended twice', () => {
 });
 
 test('an empty prompt gets the wording without a leading space', () => {
-  assert.equal(templateFacePrompt(''), TEMPLATE_FACE_WORDING);
-  assert.equal(templateFacePrompt('   '), TEMPLATE_FACE_WORDING);
+  assert.equal(templateFacePrompt(''), full);
+  assert.equal(templateFacePrompt('   '), full);
 });
