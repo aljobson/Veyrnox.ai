@@ -114,6 +114,8 @@ export async function POST(req) {
     const suppliedInputKeys = Object.keys(inputs);
     // A server-held template clip has its own gate (checkTemplateClipRequest); the template_id contract does not apply to it.
     const templateCheck = (hasTemplateSwap || Object.hasOwn(body, 'template_clip')) ? { ok: true } : checkTemplateRequest(body);
+    // Hash the request as sent: source resolution later writes 15-minute signed URLs into inputs.
+    const requestHash = templateCheck.metadata ? await templateRequestFingerprint(body) : null;
     if (!templateCheck.ok) {
         // A revised contract cannot invalidate an accepted job after a lost response.
         // Ownership, key and the original request fingerprint prove a replay. All
@@ -426,7 +428,7 @@ export async function POST(req) {
     // and a bad or missing one is simply ignored.
     const presetId = swap || templateClip || templateSwap ? null : templateStartId(body && body.preset, modelId);
     const jobInputs = { ...storedInputs, ...(presetId ? { preset_id: presetId } : {}),
-        ...(templateCheck.metadata ? { template_fidelity: { ...templateCheck.metadata, request_hash: await templateRequestFingerprint(body) } } : {}) };
+        ...(templateCheck.metadata ? { template_fidelity: { ...templateCheck.metadata, request_hash: requestHash } } : {}) };
     // Only authenticated ownership + key proves a replay. Malformed reads are unknown.
     async function existingJob() {
         const rows = await select('jobs', {
