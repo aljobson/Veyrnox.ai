@@ -73,9 +73,9 @@ exposes no source key, URL, hash or version.
 
 ## Prompt decision and deviation from the earlier brief
 
-The effective prompt is always the paid-proven constant:
+The effective prompt is always this constant (amendment 1 below replaced the first probe's wording):
 
-> Replace the main character in the video with the person in the reference image. Keep the same motion, camera, scene, lighting and timing. Keep the new person's face, hair, clothing and body exactly as in the image.
+> Replace the main character in the video with the person in the reference image or images. The new person's face must match the reference exactly: same face shape, jawline, forehead, nose, lips, eye shape, skin tone, hairline, hair and facial hair, and the same natural expression character. Do not slim, smooth, retouch, beautify or idealise the face, and do not change the person's age or features. Keep the same body build and clothing as in the reference. Keep the video's motion, camera, scene, lighting and timing unchanged.
 
 It contains no `@Video1` or `@Image1` tags. Extending `templateBinding.js` with
 unproven tagged wording would change the proven behavior; that earlier brief
@@ -147,3 +147,13 @@ The supplied checkout's Worker-size script uses 60,500 KiB, whereas the work
 order mentions 59,000 KiB. No budget is changed; a size check needs compiled
 OpenNext output, and absence of that output must be reported rather than
 claiming a bundle-size proof.
+
+## Amendment 1: face-fidelity wording (2026-11-17)
+
+The first probe's wording ("Keep the new person's face, hair, clothing and body exactly as in the image") returned a face that was slimmer, smoother and wide-eyed against the owner's photo. Two paid fal tests (5 s each, $0.84 each, on the owner's account, same clip and photo) compared alternatives. A: the wording above with the single full photo kept the squint, brow furrow and face shape much more closely. B: the same wording plus a second reference, a close head-and-shoulders crop, was closest and also kept the smirk and ears. The face is a small part of a full photo, which is why the crop helps.
+
+This is the shipped wording. It is generic (no per-user detail), is 529 characters against a 2000-character prompt limit, and `tests/templateSwapClipPrompt.test.mjs` pins the exact text and length. Evidence is two clips judged by eye on one photo: it improves likeness, it is not a pixel or identity guarantee, and results will vary by photo and clip.
+
+Follow-ups, not built and not decided here:
+- Second reference (face crop). Two pictures need `MULTI_REFERENCE_ENABLED` and a change to the one-picture admission rule in `checkTemplateSwapRequest`. A server-side or UI face crop is a separate owner decision (privacy, cost, a face detector on the Worker).
+- A UI hint to use a close, front-facing photo, with the face large in frame, until a crop exists.
