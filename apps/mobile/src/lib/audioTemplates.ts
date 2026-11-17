@@ -1,4 +1,5 @@
 import { API_BASE } from './api';
+import { internalModelIdOrNull } from './publicModelIds';
 
 // Audio templates (music, voice-over, sound effects), read from the anonymous GET /api/templates?kind=audio.
 // They carry a model id and a prompt only; the price is read from the live catalog in Create.
@@ -18,7 +19,7 @@ export function parseAudioTemplates(body: unknown): AudioTemplate[] {
     if (!Array.isArray(list)) return [];
     return list.flatMap((raw): AudioTemplate[] => {
         const r = (raw ?? {}) as Record<string, unknown>;
-        const id = str(r.id), name = str(r.name), category = str(r.category), modelId = str(r.modelId), prompt = str(r.prompt);
+        const id = str(r.id), name = str(r.name), category = str(r.category), modelId = internalModelIdOrNull(str(r.modelId)), prompt = str(r.prompt);
         if (!id || !name || !category || !modelId || !prompt) return [];
         const negativePrompt = str(r.negativePrompt);
         return [{ id, name, category, modelId, prompt, ...(negativePrompt ? { negativePrompt } : {}) }];

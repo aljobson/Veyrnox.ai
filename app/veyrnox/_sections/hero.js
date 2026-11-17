@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MediaTile } from '../_components/MediaTile';
 import { SHOWCASE_CLIPS } from '../_lib/showcase';
 import { FEATURE_CARDS, shelfName } from '../_lib/tokens';
+import { internalModelId } from '../../../lib/publicModelIds.js';
 import { GALLERY_PRESETS } from '../_lib/templates';
 import { FilmPlayer } from '../_components/FilmPlayer';
 import { BREAKTHROUGH_FILM } from '../_lib/film';
@@ -66,7 +67,7 @@ const PORTRAIT_FRAME = '9 / 16';
 
 export async function FeaturedHeroCards({ catalog }) {
   const { t } = await getT();
-  const rowOf = (id) => catalog.find((m) => m.id === id);
+  const rowOf = (id) => catalog.find((m) => m.id === internalModelId(id));
   return (
     <section id="explore" data-vey-perch className="px-4 sm:px-6 max-w-[1300px] mx-auto">
       <h2 id="featured-title" className="sr-only">{t('home.cards.heading')}</h2>

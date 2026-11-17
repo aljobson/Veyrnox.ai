@@ -1,5 +1,6 @@
 import { IMAGE_TEMPLATE_MODELS } from './imageTemplateModels.js';
 import { templateRoute } from '../../../lib/templateRoute.js';
+import { internalModelId } from '../../../lib/publicModelIds.js';
 // Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
@@ -130,7 +131,7 @@ export function modelNameForId(id) {
  * user. Cards link to templateHref; an unresolved model stays on that detail page.
  */
 export const templateModelId = (preset, referenceCount) => preset?.kind === 'image'
-  ? (IMAGE_TEMPLATE_MODELS.includes(preset.model) ? preset.model : null)
+  ? (IMAGE_TEMPLATE_MODELS.includes(internalModelId(preset.model)) ? internalModelId(preset.model) : null)
   : templateRoute(preset, modelIdForName(preset?.model), referenceCount).modelId;
 
 export function presetHref(preset, durationSeconds = preset.durationSeconds, extras = {}) {
@@ -180,7 +181,7 @@ export const SUPPORT_EMAIL = 'legal@veyrnox.com';
 // from any other page it opens the home page at that section.
 export const PRIMARY_NAV_CATEGORIES = [
   { href: '/models', label: 'Models', group: 'Discover' },
-  { href: '/app/create?model=nano-banana-kie', label: 'Create', group: 'Product' },
+  { href: '/app/create?model=nano-banana-a1', label: 'Create', group: 'Product' },
   { href: '/tools', label: 'Tools', group: 'Product' },
   { href: '/publish', label: 'Publish', group: 'Product' },
   { href: '/pricing', label: 'Pricing', group: 'Product' },
@@ -243,7 +244,7 @@ export const FEATURE_CARDS = [
     title: 'Photoreal stills, priced up front.',
     body: 'Photoreal images for product shots and stills, at 2 credits each.',
     cta: 'Open Nano Banana',
-    href: '/app/create?model=nano-banana-kie',
+    href: '/app/create?model=nano-banana-a1',
     bg: 'linear-gradient(160deg,#2b1a0a 0%,#7a4a1e 60%,#f0b060 100%)' },
   { key: 'ace-step',
     kicker: 'ACE STEP',
@@ -257,14 +258,14 @@ export const FEATURE_CARDS = [
     title: 'Cinematic video, priced up front.',
     body: '5 seconds of 720p motion for 19 credits. The workhorse, priced on the button before you press it.',
     cta: 'Open Wan 2.5',
-    href: '/app/create?model=wan-2.5-kie',
+    href: '/app/create?model=wan-2.5-a1',
     bg: 'linear-gradient(135deg,#0a1a2c 0%,#144a7a 55%,#3ec1e8 100%)' },
   { key: 'kling-26',
     kicker: 'KLING 2.6 PRO',
     title: 'Cinematic video, cost visible.',
     body: 'The go-to for narrative video work. 17 credits per 5-second shot, priced on the button.',
     cta: 'Open Kling',
-    href: '/app/create?model=kling-2.6-pro-kie',
+    href: '/app/create?model=kling-2.6-pro-a1',
     bg: 'linear-gradient(135deg,#1b0632 0%,#5a0e6a 55%,#e4318f 100%)' },
   { key: 'presets',
     kicker: 'PRESETS',
@@ -332,8 +333,8 @@ export const MORE_FEATURES = [
     { label: 'Developers', href: '/developers' },
   ] },
   { group: 'Tools',     items: [
-    { label: 'Image Generator', href: '/app/create?model=nano-banana-kie' },
-    { label: 'Video Generator', href: '/app/create?model=wan-2.5-kie' },
+    { label: 'Image Generator', href: '/app/create?model=nano-banana-a1' },
+    { label: 'Video Generator', href: '/app/create?model=wan-2.5-a1' },
     { label: 'Image-to-Video',  href: '/app/create?model=kling-3.0-i2v' },
     { label: 'Audio',           href: '/app/create?model=ace-step' },
     { label: 'Lip Sync',        href: '/app/create?model=latentsync' },

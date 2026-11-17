@@ -12,6 +12,7 @@ import { templateModelId, MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { templateSourceAspect } from '../lib/templateFraming.js';
 import { templateDetail } from '../lib/clientTemplates.js';
 import { writeStudioDraft, takeStudioDraft } from '../app/veyrnox/_lib/landingDraft.js';
+import { internalModelId } from '../lib/publicModelIds.js';
 import { templateArrival } from '../app/veyrnox/_lib/templateDraft.js';
 const page = 'app/veyrnox/presets/[id]/page.js';
 const recipe = 'app/veyrnox/_components/TemplateRecipe.js';
@@ -54,7 +55,7 @@ test('Create arrival restores an edited bound-model draft without a model URL pa
   const source = readFileSync('app/veyrnox/app/create/page.js', 'utf8');
   const requestedExpression = source.match(/const requested = (.*);/)[1];
   const params = new URLSearchParams({ preset: preset.id });
-  const requested = new Function('params', 'preset', 'templateModelId', `return ${requestedExpression}`)(params, preset, templateModelId);
+  const requested = new Function('params', 'preset', 'templateModelId', 'internalModelId', `return ${requestedExpression}`)(params, preset, templateModelId, internalModelId);
   const values = new Map();
   const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
   const prompt = 'Edited draft: keep these exact words.  ';
