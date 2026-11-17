@@ -10,6 +10,7 @@ import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { SwipeRow } from '../../../components/SwipeRow';
 import { accountStatusLabel, fetchAccounts, publishErrorMessage, type PublishAccount, type PublishAccountsState } from '../../../lib/publish';
 import { disconnectAccount, disconnectErrorKey } from '../../../lib/publishAccounts';
 import { touchTarget } from '../../../lib/a11y';
@@ -99,6 +100,9 @@ export default function Accounts() {
                         </View> : undefined
                     }
                     renderItem={({ item }) => (
+                        <SwipeRow fullSwipe actions={data.brandRole === 'owner' ? [
+                            { key: 'disconnect', label: t('accounts.disconnectAction'), accessibilityLabel: rawText(t('accounts.disconnect', { name: item.displayName })), tone: 'danger', onPress: () => confirmDisconnect(item) },
+                        ] : []}>
                         <Card style={rowStyles.row}>
                             {item.avatarUrl ? <Image source={{ uri: item.avatarUrl }} style={rowStyles.avatar} contentFit="cover" accessibilityElementsHidden importantForAccessibility="no" /> : <View style={rowStyles.avatar}><NetworkLogo network={item.network} size={24} /></View>}
                             <View style={rowStyles.text}>
@@ -109,6 +113,7 @@ export default function Accounts() {
                                 {data.brandRole === 'owner' ? <Button variant="tertiary" tone="danger" label={t('accounts.disconnectAction')} accessibilityLabel={rawText(t('accounts.disconnect', { name: item.displayName }))} onPress={() => confirmDisconnect(item)} /> : null}
                             </View>
                         </Card>
+                        </SwipeRow>
                     )}
                 />
             )}

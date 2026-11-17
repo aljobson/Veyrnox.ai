@@ -6384,4 +6384,6 @@ export default {
   "audioHub.home.hint": "Открывает меню «Аудио»",
   "audioHub.loading": "Загрузка моделей",
   "audioHub.unavailable": "Сейчас недоступно.",
+  "chat.pinFailed": "Не удалось изменить закрепление. Повторите попытку.",
+  "oddlings.saved.deleteShort": "Удалить",
 } as const;

@@ -6147,4 +6147,6 @@ export default {
   "audioHub.home.hint": "オーディオメニューを開きます",
   "audioHub.loading": "モデルを読み込み中",
   "audioHub.unavailable": "現在ご利用いただけません。",
+  "chat.pinFailed": "ピン留めを変更できませんでした。もう一度お試しください。",
+  "oddlings.saved.deleteShort": "削除",
 } as const;

@@ -6305,4 +6305,6 @@ export default {
   "audioHub.home.hint": "Abre el menú de audio",
   "audioHub.loading": "Cargando modelos",
   "audioHub.unavailable": "No disponible en este momento.",
+  "chat.pinFailed": "No se pudo cambiar el anclaje. Inténtalo de nuevo.",
+  "oddlings.saved.deleteShort": "Eliminar",
 } as const;

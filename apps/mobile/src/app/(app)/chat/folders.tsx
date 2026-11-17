@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-nati
 import { useAuth } from '../../../auth/AuthProvider';
 import { chatLibraryErrorMessage, createFolder, deleteFolder, fetchFolders, renameFolder, validateFolderName, type Folder } from '../../../lib/chatLibrary';
 import { Text, TextField, Button, Card, themedStyles, useThemedStyles } from '../../../components/ui';
+import { SwipeRow } from '../../../components/SwipeRow';
 
 export default function Folders() {
     const styles = useThemedStyles(sheets);
@@ -82,6 +83,10 @@ export default function Folders() {
                     keyExtractor={(f) => f.id}
                     ListEmptyComponent={folders ? <Text style={styles.muted}>{t('chat.nofoldersyet')}</Text> : undefined}
                     renderItem={({ item }) => (
+                        <SwipeRow fullSwipe actions={[
+                            { key: 'delete', label: t('chat.delete3'), accessibilityLabel: rawText(t('chat.delete2', { value1: item.name })), tone: 'danger', onPress: () => remove(item) },
+                            { key: 'rename', label: t('chat.rename3'), accessibilityLabel: rawText(t('chat.rename4', { value1: item.name })), tone: 'accent', onPress: () => { setEditing(item); setName(item.name); } },
+                        ]}>
                         <Card style={styles.row}>
                             <View style={styles.text}>
                                 <Text variant="body" style={styles.name}>{item.name}</Text>
@@ -90,6 +95,7 @@ export default function Folders() {
                             <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.rename4', { value1: item.name }))} containerStyle={styles.action} onPress={() => { setEditing(item); setName(item.name); }} variant="tertiary" size="md" label={t('chat.rename4', { value1: item.name })}><Text style={styles.link}>{t('chat.rename3')}</Text></Button>
                             <Button accessibilityRole="button" accessibilityLabel={rawText(t('chat.delete2', { value1: item.name }))} containerStyle={styles.action} onPress={() => remove(item)} variant="tertiary" size="md" label={t('chat.delete2', { value1: item.name })}><Text style={styles.danger}>{t('chat.delete3')}</Text></Button>
                         </Card>
+                        </SwipeRow>
                     )}
                 />
             )}

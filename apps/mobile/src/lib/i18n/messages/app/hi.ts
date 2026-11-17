@@ -6226,4 +6226,6 @@ export default {
   "audioHub.home.hint": "ऑडियो मेनू खोलता है",
   "audioHub.loading": "मॉडल लोड हो रहे हैं",
   "audioHub.unavailable": "अभी उपलब्ध नहीं है।",
+  "chat.pinFailed": "पिन बदला नहीं जा सका। फिर कोशिश करें।",
+  "oddlings.saved.deleteShort": "हटाएँ",
 } as const;

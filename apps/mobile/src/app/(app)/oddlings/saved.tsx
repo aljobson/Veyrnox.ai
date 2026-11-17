@@ -3,6 +3,7 @@ import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SwipeRow } from '../../../components/SwipeRow';
 import { Button } from '../../../components/ui';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
@@ -75,6 +76,9 @@ export default function SavedPassports() {
                 renderItem={({ item }) => {
                     const phoneOnly = !record?.projectId || record.ops.some(o => o.kind === 'upsert' && o.id === item.id);
                     return (
+                        <SwipeRow fullSwipe actions={[
+                            { key: 'delete', label: t('oddlings.saved.deleteShort'), accessibilityLabel: rawText(t('oddlings.saved.delete', { name: item.name })), tone: 'danger', onPress: () => confirmDelete(item) },
+                        ]}>
                         <View style={styles.card}>
                             <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('oddlings.saved.edit', { name: item.name }))}
                                 accessibilityValue={phoneOnly ? { text: t('oddlingsProjects.phoneOnly') } : undefined}
@@ -89,6 +93,7 @@ export default function SavedPassports() {
                                 <Text style={styles.delText}>✕</Text>
                             </Pressable>
                         </View>
+                        </SwipeRow>
                     );
                 }}
             />

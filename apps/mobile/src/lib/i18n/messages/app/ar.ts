@@ -6542,4 +6542,6 @@ export default {
   "audioHub.home.hint": "يفتح قائمة الصوت",
   "audioHub.loading": "جارٍ تحميل النماذج",
   "audioHub.unavailable": "غير متاح الآن.",
+  "chat.pinFailed": "تعذّر تغيير التثبيت. حاول مجددًا.",
+  "oddlings.saved.deleteShort": "حذف",
 } as const;

@@ -4,6 +4,7 @@ import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SwipeRow } from '../SwipeRow';
 import { useAuth } from '../../auth/AuthProvider';
 import { MIN_TARGET } from '../../lib/a11y';
 import { createRetentionLifecycle, createRetentionList, emptyRetentionList, retentionDisabled, setRetention, socialErrorKey, type FollowKind, type RetentionItem } from '../../lib/cinemaSocial';
@@ -64,6 +65,9 @@ export function SavedList({ kind }: { readonly kind: FollowKind }) {
             onEndReachedThreshold={0.6}
             ListHeaderComponent={message ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{message}</StatusText> : undefined}
             renderItem={({ item }) => (
+                <SwipeRow disabled={removing} actions={[
+                    { key: 'remove', label: t(`cinemaSocial.removeShort.${kind}`), accessibilityLabel: rawText(t(`cinemaSocial.remove.${kind}`, { name: kind === 'creator' ? item.creator : item.title })), tone: 'danger', onPress: () => { void remove(item); } },
+                ]}>
                 <View style={styles.row}>
                     <Pressable accessibilityRole="button" style={styles.main} onPress={() => router.push({ pathname: '/cinema/[id]', params: { id: item.contentId } })}>
                         <Text style={styles.name} numberOfLines={2}>{kind === 'creator' ? item.creator : item.title}</Text>
@@ -74,6 +78,7 @@ export function SavedList({ kind }: { readonly kind: FollowKind }) {
                         <Text style={styles.removeText}>{t(`cinemaSocial.removeShort.${kind}`)}</Text>
                     </Pressable>
                 </View>
+                </SwipeRow>
             )}
         />
     );
