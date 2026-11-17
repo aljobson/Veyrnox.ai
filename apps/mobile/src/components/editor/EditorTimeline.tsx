@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from '
 import { Pressable, ScrollView, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 import { t } from '../../lib/i18n';
 import { playSelection } from '../../lib/haptics';
+import { hiddenLabelIds, trimHandleWidth } from '../../lib/editorTimelineLayout';
 import { canTrim, formatTimecode, frameAtX, moveItems, movingSelections, snapTo, trimItem } from '../../lib/editorTimeline';
 import { clipAt, type Clip, type Selection, type TextClip, type Timeline } from '../../lib/nativeEditorModel';
 import { colors } from '../../theme';
@@ -135,6 +136,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                 </View>
                 {timeline.tracks.map((track, row) => {
                     const items = timeline[track.kind].filter(item => item.trackId === track.id);
+                    const coveredLabels = hiddenLabelIds(items);
                     return <View key={track.id} testID={`lane-${track.id}`} style={local.row}
                         onStartShouldSetResponder={() => true} onResponderGrant={event => { emptyTap.current = { x: event.nativeEvent.locationX, page: event.nativeEvent.pageX, y: event.nativeEvent.pageY }; }}
                         onResponderTerminationRequest={() => true} onResponderTerminate={() => { emptyTap.current = null; }}
@@ -153,14 +155,21 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                                 onAccessibilityAction={event => { if (['moveEarlier', 'moveLater'].includes(event.nativeEvent.actionName)) commit(moveItems(timeline, selections, selection, (event.nativeEvent.actionName === 'moveLater' ? 1 : -1) * timeline.fps, undefined, snap, frame)); }}
                                 onStartShouldSetResponder={() => true} onResponderGrant={event => begin(event, selection, row)} onResponderMove={move} onResponderRelease={release}
                                 onResponderTerminationRequest={() => !gesture.current?.active} onResponderTerminate={cancel}>
-                                <View pointerEvents="none" style={local.clipBody}>{track.kind === 'text' || !(item as Clip).mediaId || size < 96 ? null : clipThumb?.((item as Clip).mediaId as string)}<View style={local.clipText}><Text style={styles.clipTitle} numberOfLines={1}>{name}</Text><Text style={styles.clipMeta} numberOfLines={1}>{formatTimecode(item.len, timeline.fps)}</Text></View></View>
-                                {active && !track.locked && canTrim(item) ? (['in', 'out'] as const).map(edge => <View key={edge} testID={`trim-${item.id}-${edge}`} style={[local.handle, edge === 'in' ? { left: 0 } : { right: 0 }]} hitSlop={{ top: 0, bottom: 0, left: 14, right: 14 }}
-                                    accessibilityRole="adjustable" accessibilityLabel={rawText(edge === 'in' ? t('editorCore.trimStart', { name }) : t('editorCore.trimEnd', { name }))}
-                                    accessibilityValue={{ text: formatTimecode(edge === 'in' ? item.start : item.start + item.len, timeline.fps) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                                    onAccessibilityAction={event => commit(trimItem(timeline, selection, edge, event.nativeEvent.actionName === 'increment' ? 1 : -1, false, frame, ripple))}
-                                    onStartShouldSetResponder={() => true} onResponderGrant={event => begin(event, selection, row, edge)} onResponderMove={move} onResponderRelease={release}
-                                    onResponderTerminationRequest={() => false} onResponderTerminate={cancel}><View pointerEvents="none" style={local.handleLine} /></View>) : null}
+                                <View pointerEvents="none" style={local.clipBody}>{track.kind === 'text' || !(item as Clip).mediaId || size < 96 ? null : clipThumb?.((item as Clip).mediaId as string)}{coveredLabels.has(item.id) ? null : <View style={local.clipText}><Text style={styles.clipTitle} numberOfLines={1}>{name}</Text><Text style={styles.clipMeta} numberOfLines={1}>{formatTimecode(item.len, timeline.fps)}</Text></View>}</View>
                             </View>;
+                        })}
+                        {items.map(item => {
+                            const selection: Selection = { track: track.kind, id: item.id };
+                            if (!selections.some(s => s.track === track.kind && s.id === item.id) || track.locked || !canTrim(item)) return null;
+                            const name = track.kind === 'text' ? (item as TextClip).text : timeline.media[(item as Clip).mediaId ?? '']?.name || item.id;
+                            const body = Math.max(8, item.len * ppf - 2), handleWidth = trimHandleWidth(body);
+                            return (['in', 'out'] as const).map(edge => <View key={`${item.id}-${edge}`} testID={`trim-${item.id}-${edge}`}
+                                style={[local.handle, { width: handleWidth, left: item.start * ppf + (edge === 'in' ? 0 : body - handleWidth) }]}
+                                accessibilityRole="adjustable" accessibilityLabel={rawText(edge === 'in' ? t('editorCore.trimStart', { name }) : t('editorCore.trimEnd', { name }))}
+                                accessibilityValue={{ text: formatTimecode(edge === 'in' ? item.start : item.start + item.len, timeline.fps) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+                                onAccessibilityAction={event => commit(trimItem(timeline, selection, edge, event.nativeEvent.actionName === 'increment' ? 1 : -1, false, frame, ripple))}
+                                onStartShouldSetResponder={() => true} onResponderGrant={event => begin(event, selection, row, edge)} onResponderMove={move} onResponderRelease={release}
+                                onResponderTerminationRequest={() => false} onResponderTerminate={cancel}><View pointerEvents="none" style={local.handleLine} /></View>);
                         })}
                     </View>;
                 })}
@@ -177,5 +186,5 @@ const local = StyleSheet.create({
     tick: { position: 'absolute', top: 0, height: 32, borderLeftWidth: 1, borderColor: colors.border, paddingLeft: 3 },
     marker: { position: 'absolute', top: 22, width: 8, height: 8, backgroundColor: colors.accent, transform: [{ rotate: '45deg' }] },
     playhead: { position: 'absolute', top: 0, width: 2, backgroundColor: colors.accent }, ghost: { opacity: 0.6, borderColor: colors.accent, borderWidth: 2 },
-    handle: { position: 'absolute', width: 16, height: 44, top: -1, alignItems: 'center', justifyContent: 'center' }, handleLine: { width: 3, height: 24, borderRadius: 2, backgroundColor: colors.accent },
+    handle: { position: 'absolute', height: 44, top: 6, zIndex: 2, alignItems: 'center', justifyContent: 'center' }, handleLine: { width: 3, height: 24, borderRadius: 2, backgroundColor: colors.accent },
 });
