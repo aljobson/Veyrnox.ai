@@ -201,7 +201,7 @@ export default [
     "inbox.you", "inbox.attachment", "inbox.notes", "inbox.replyOnWeb", "inbox.err.network", "inbox.err.plan",
     "inbox.err.role", "inbox.err.notOpen", "inbox.err.gone", "inbox.err.rate", "inbox.err.later", "welcome.hello.title",
     "welcome.hello.body", "welcome.credits.title", "welcome.credits.free.one", "welcome.credits.free.other", "welcome.credits.generic", "welcome.credits.price",
-    "welcome.start.title", "welcome.start.body", "welcome.next", "welcome.skip", "welcome.go", "welcome.step", "welcome.toGo.one", "welcome.toGo.two",
+    "welcome.start.title", "welcome.start.body", "welcome.next", "welcome.skip", "welcome.go", "welcome.step",
     "libsrc.choose", "libsrc.chooseLabel", "libsrc.title", "libsrc.older", "libsrc.empty", "libsrc.emptyMore",
     "libsrc.kind.image", "libsrc.kind.video", "libsrc.kind.audio", "libsrc.ready", "char.title", "char.help",
     "chat.resume.saved", "chat.resume.unsaved", "chat.resume.nothing", "chat.resume.pending", "explore.oddlings.title", "explore.oddlings.body",
