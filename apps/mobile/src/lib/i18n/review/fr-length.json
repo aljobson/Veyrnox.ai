@@ -5184,6 +5184,12 @@
     "ratio": 1.7
   },
   {
+    "id": "audioHub.dub.title",
+    "english": "Lip sync and dubbing",
+    "translation": "Synchronisation labiale et doublage",
+    "ratio": 1.75
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

@@ -205,5 +205,7 @@
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
   "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
-  "prov.prompt": "\"Prompt\" is the established loan word for the text instruction given to an AI model, used as is in this language."
+  "prov.prompt": "\"Prompt\" is the established loan word for the text instruction given to an AI model, used as is in this language.",
+  "menu.audio": "Common loanword or label identical to English in this language: Audio.",
+  "audioHub.title": "Common loanword or label identical to English in this language: Audio."
 }

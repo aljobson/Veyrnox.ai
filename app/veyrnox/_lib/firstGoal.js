@@ -28,7 +28,7 @@ export function firstGoalTarget(goal) {
 // The home start options are the first-goal answer, so Create never asks a second time. Film and Smart Cut name an area;
 // Create and Chat do not, so they hold the lowest word ("skipped"), which any real goal later outranks.
 // Keep in step with apps/mobile/src/lib/firstGoal.ts.
-export const HOME_START_GOALS = { create: 'skipped', chat: 'skipped', film: 'video', 'smart-cut': 'edit' };
+export const HOME_START_GOALS = { create: 'skipped', chat: 'skipped', film: 'video', audio: 'audio', 'smart-cut': 'edit' };
 export const homeStartGoal = (key) => (Object.hasOwn(HOME_START_GOALS, key) ? HOME_START_GOALS[key] : null);
 
 export function serializeFirstGoal(goal) {

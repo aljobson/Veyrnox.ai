@@ -18,7 +18,7 @@ describe('grouped menu', () => {
     test('matches the web sidebar: same groups, same order, Help at the foot', () => {
         expect(MENU_SECTIONS.map((s) => s.id)).toEqual(['tools', 'assets']);
         expect(MENU_SECTIONS.map((s) => [s.id, s.items.map((i) => i.key)])).toEqual([
-            ['tools', ['create', 'editor', 'publish', 'cinema']],
+            ['tools', ['create', 'audio', 'editor', 'publish', 'cinema']],
             ['assets', ['library', 'brandKit', 'credits', 'chat']],
         ]);
         expect(MENU_FOOTER.map((i) => i.key)).toEqual(['help']);
@@ -26,13 +26,13 @@ describe('grouped menu', () => {
 
     test('each drawer item opens its mobile screen', () => {
         expect(Object.fromEntries(ALL_ITEMS.map((i) => [i.key, i.href]))).toEqual({
-            create: '/create', editor: '/editor', publish: '/publish', cinema: '/cinema',
+            create: '/create', audio: '/audio', editor: '/editor', publish: '/publish', cinema: '/cinema',
             library: '/library', brandKit: '/brand-kit', credits: '/credits', chat: '/chat', help: '/help',
         });
     });
 
     test('keeps the web key order inside each group', () => {
-        // Web (studioNavigation.js) lists Audio between Create and Video editor; the phone has no Audio screen yet.
+        // Web (studioNavigation.js) lists Audio between Create and Video editor, and so does the phone.
         const web = { tools: ['create', 'audio', 'editor', 'publish', 'cinema'], assets: ['library', 'brandKit', 'credits', 'chat'] };
         for (const section of MENU_SECTIONS) {
             const keys = section.items.map((i) => i.key);

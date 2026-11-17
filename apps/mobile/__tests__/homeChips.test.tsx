@@ -28,7 +28,8 @@ const feed = parsePresets({ presets: [
 ].map(p => ({ ...p, category: 'CINEMATIC', modelId: 'model', modelName: 'Model', prompt: 'original', credits: 3 })) });
 let root: Root;
 const buttons = () => root.container.queryAll(n => n.props.accessibilityRole === 'button');
-const control = (label: string) => buttons().find(n => n.props.accessibilityLabel === label);
+// The Audio start option shares a label with the Audio filter chip; the chip is the one that carries selected state.
+const control = (label: string) => buttons().filter(n => n.props.accessibilityLabel === label).sort((a, b) => Number(b.props.accessibilityState?.selected !== undefined) - Number(a.props.accessibilityState?.selected !== undefined))[0];
 const cards = () => buttons().filter(n => feed.some(p => String(n.props.accessibilityLabel).startsWith(`${p.title},`)));
 const titles = () => cards().map(n => String(n.props.accessibilityLabel).split(',')[0]);
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };

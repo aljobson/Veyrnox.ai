@@ -41,21 +41,22 @@ describe('the first-run answers (role, destination)', () => {
         expect(needsFirstRun({ goal: null, role: 'skipped' })).toBe(false);
     });
 
-    test('start options: all kept, once; a role and a goal move one first; the phone shows create, chat and film', () => {
+    test('start options: all kept, once; a role and a goal move one first; the phone shows create, audio, chat and film', () => {
         for (const role of [...FIRST_ROLES, 'skipped', null]) {
             for (const goal of [null, 'image', 'video', 'audio', 'edit', 'publish', 'unsure', 'skipped']) {
-                expect([...orderStarts(role, goal)].sort()).toEqual(['chat', 'create', 'film', 'smart-cut']);
-                expect([...phoneStarts(role, goal)].sort()).toEqual(['chat', 'create']); // Film Studio is hidden (ADR-0344)
+                expect([...orderStarts(role, goal)].sort()).toEqual(['audio', 'chat', 'create', 'film', 'smart-cut']);
+                expect([...phoneStarts(role, goal)].sort()).toEqual(['audio', 'chat', 'create']); // Film Studio is hidden (ADR-0344)
             }
         }
-        expect(orderStarts(null, null)).toEqual(['create', 'chat', 'film', 'smart-cut']);
+        for (const role of [...FIRST_ROLES, null]) expect(orderStarts(role, 'audio')[0]).toBe('audio');
+        expect(orderStarts(null, null)).toEqual(['create', 'audio', 'chat', 'film', 'smart-cut']);
         expect(phoneStarts('pro', null)[0]).toBe('create');
         expect(phoneStarts('creator', 'video')).not.toContain('film');
         expect(phoneStarts('creator', 'edit')[0]).toBe('create');
     });
 
     test('orders and aspect ratios match the web tables word for word', () => {
-        for (const row of ["creator: ['create', 'smart-cut', 'film', 'chat']", "business: ['create', 'film', 'chat', 'smart-cut']", "pro: ['film', 'create', 'smart-cut', 'chat']", "hobbyist: ['create', 'film', 'chat', 'smart-cut']", "beginner: ['create', 'chat', 'film', 'smart-cut']"]) {
+        for (const row of ["creator: ['create', 'audio', 'smart-cut', 'film', 'chat']", "business: ['create', 'film', 'audio', 'chat', 'smart-cut']", "pro: ['film', 'create', 'audio', 'smart-cut', 'chat']", "hobbyist: ['create', 'audio', 'film', 'chat', 'smart-cut']", "beginner: ['create', 'audio', 'chat', 'film', 'smart-cut']"]) {
             expect(web).toContain(row);
         }
         expect(web).toContain("{ tiktok: '9:16', reels: '9:16', youtube: '16:9' }");
