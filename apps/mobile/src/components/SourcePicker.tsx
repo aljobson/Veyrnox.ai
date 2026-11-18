@@ -12,6 +12,7 @@ import type { ApiClient } from '../lib/api';
 import { JobThumb, useAssetLinks } from './JobThumb';
 import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
+import { frameRatio } from '../lib/aspectFrame';
 import { discardFramed, reframePicked } from '../lib/reframePicked';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
@@ -85,9 +86,13 @@ function ReferencePicker(props: SourcePickerProps) {
     const max = props.slot.maxFiles ?? 1;
     // References that arrive from outside (files attached from the device) join as new rows; rows being edited stay mounted.
     const refId = (r: GenerationReference) => r.origin === 'upload' ? `u:${r.key}` : `a:${r.asset_id}`;
+    // Keys a row dropped or replaced itself. The form still holds them for a render, so they are not "from outside".
+    const dropped = useRef(new Set<string>());
     useEffect(() => {
+        const present = new Set((props.references ?? []).map(refId));
+        dropped.current.forEach(id => { if (!present.has(id)) dropped.current.delete(id); });
         const have = new Set(current.current.flatMap(row => row.reference ? [refId(row.reference)] : []));
-        const incoming = (props.references ?? []).filter(r => !have.has(refId(r)));
+        const incoming = (props.references ?? []).filter(r => !have.has(refId(r)) && !dropped.current.has(refId(r)));
         if (!incoming.length) return;
         const kept = current.current.filter(row => row.reference || busy.current.has(row.id));
         const next = [...kept, ...incoming.map(reference => ({ id: serial.current++, reference }))];
@@ -99,7 +104,11 @@ function ReferencePicker(props: SourcePickerProps) {
         props.onReferences?.(next.flatMap(row => row.reference ? [row.reference] : []));
     }
     function reference(id: number, value: GenerationReference | undefined, origin: 'upload' | 'asset') {
-        change(current.current.map(row => row.id !== id ? row : { ...row, reference: value || (row.reference?.origin === origin ? undefined : row.reference) }));
+        const before = current.current.find(row => row.id === id)?.reference;
+        const next = current.current.map(row => row.id !== id ? row : { ...row, reference: value || (row.reference?.origin === origin ? undefined : row.reference) });
+        const after = next.find(row => row.id === id)?.reference;
+        if (before && (!after || refId(after) !== refId(before))) dropped.current.add(refId(before));
+        change(next);
     }
     function move(index: number, target: number) {
         const next = [...current.current]; next.splice(target, 0, next.splice(index, 1)[0]); change(next);
@@ -317,7 +326,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                 <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label }))} onPress={pick} icon="paperclip" label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
             ) : (
                 <View style={styles.row}>
-                    {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : libraryJob ? <JobThumb links={links} jobId={libraryJob} size={64} /> : <View style={[styles.thumb, styles.thumbPlain]} />}
+                    {preview ? <Image source={{ uri: preview }} style={frame ? [styles.thumb, { width: Math.round(64 * frameRatio(frame)) }] : styles.thumb} contentFit="cover" /> : libraryJob ? <JobThumb links={links} jobId={libraryJob} size={64} /> : <View style={[styles.thumb, styles.thumbPlain]} />}
                     <View style={styles.grow}>
                         {status.step === 'uploading' ? (
                             <View style={styles.status}>

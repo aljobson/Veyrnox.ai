@@ -1,4 +1,4 @@
-import { cropRect, takesFrame } from '../src/lib/aspectFrame';
+import { cropRect, frameRatio, takesFrame } from '../src/lib/aspectFrame';
 import { reframePicked } from '../src/lib/reframePicked';
 import type { ManipulatorLib } from '../src/lib/chatResizer';
 
@@ -13,6 +13,11 @@ describe('frame crop', () => {
         expect(cropRect(1920, 1080, '16:9')).toBeNull();
         expect(cropRect(1000, 1000, '')).toBeNull();
         expect(cropRect(1000, 1000, '21:9')).toBeNull();
+    });
+    test('the thumbnail ratio is width over height of the chosen frame', () => {
+        expect(frameRatio('1:1')).toBe(1);
+        expect(frameRatio('16:9')).toBeCloseTo(1.778, 3);
+        expect(frameRatio('9:16')).toBeCloseTo(0.5625, 4);
     });
     test('only the two Kling 3.0 image-to-video models take it', () => {
         expect(takesFrame('kling-3.0-i2v')).toBe(true);
