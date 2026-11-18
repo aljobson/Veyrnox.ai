@@ -32,7 +32,7 @@ test('stand-alone brand labels print as bold VEYRNOX.ai, running text is untouch
     assert.doesNotMatch(read(p), />Veyrnox\.ai (Publish|Music)</, p);
   }
   assert.match(read('app/veyrnox/_components/music/MusicPublicPrompt.jsx'), /withBrandName\(t\('music\.brand'\)\)/);
-  assert.match(read('apps/mobile/src/components/BrandText.tsx'), /displayBlack[^]*VEYRNOX\.ai/);
+  assert.match(read('apps/mobile/src/components/BrandText.tsx'), /displayBlack[^]*logo\.vEYRNOX/);
   assert.match(read('apps/mobile/src/app/(app)/developers.tsx'), /brandText\(t\('developers\.kicker'\)\)/);
   assert.match(read('apps/mobile/src/app/(app)/mcp.tsx'), /brandText\(t\('mcp\.kicker'\)\)/);
 });
