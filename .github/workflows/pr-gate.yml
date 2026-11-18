@@ -122,7 +122,9 @@ jobs:
       # The action hides why a review run failed (display_report is off on purpose: the repo is public).
       # When the CLI stopped after at most one turn, its result text is an API or setup error, not review
       # content, so print that short text only.
+      # It also names a billing failure (out of credit, quota or spend limit) so Post result can say so plainly.
       - name: Why the review failed
+        id: why
         if: always() && steps.review.outcome == 'failure'
         run: |
           f="$RUNNER_TEMP/claude-execution-output.json"
@@ -132,6 +134,10 @@ jobs:
               then "pr gate review error: is_error=\(.is_error) subtype=\(.subtype) api_status=\(.api_error_status // "none") turns=\(.num_turns) result=\((.result // "") | tostring | .[0:300])"
               else "pr gate review stopped after \(.num_turns) turns (no error text printed)" end' "$f" \
             | while IFS= read -r line; do echo "::warning::${line}"; done
+          if jq -e '[.[] | select(.type == "result")] | last | (.num_turns // 0) <= 1
+              and ((.result // "") | tostring | test("credit balance|billing|quota|spend limit|insufficient"; "i"))' "$f" > /dev/null; then
+            echo "billing=true" >> "$GITHUB_OUTPUT"
+          fi
 
       # Fallback: the same instructions and schema on OpenAI Codex, read-only (it cannot
       # write files or reach the network beyond the model). Runs only when Claude did not
@@ -159,6 +165,8 @@ jobs:
           CLAUDE_RESULT: ${{ steps.review.outputs.structured_output }}
           CODEX_RESULT: ${{ steps.codex.outputs.final-message }}
           PROTECTED_COUNT: ${{ steps.paths.outputs.count }}
+          CLAUDE_BILLING: ${{ steps.why.outputs.billing }}
+          CODEX_OUTCOME: ${{ steps.codex.outcome }}
         run: |
           set -euo pipefail
           RESULT="$CLAUDE_RESULT"; REVIEWER="Claude"
@@ -166,7 +174,16 @@ jobs:
             RESULT="$CODEX_RESULT"; REVIEWER="Codex (fallback)"
           fi
           if ! printf '%s' "$RESULT" | jq -e '.verdict' > /dev/null 2>&1; then
-            echo "::error::pr gate: no reviewer returned a structured result"
+            # Say why in plain words: a billing stop needs a top-up, not a code fix.
+            why=""
+            if [ "${CLAUDE_BILLING:-}" = "true" ]; then
+              why="Claude: the Anthropic API account behind ANTHROPIC_API_KEY is out of credit; top it up."
+            fi
+            if [ "${CODEX_OUTCOME:-}" = "failure" ]; then
+              why="${why:+$why }Codex fallback: failed; if its log says 'Quota exceeded', raise the quota or billing for OPENAI_API_KEY."
+            fi
+            echo "::error::pr gate: no reviewer returned a structured result.${why:+ $why}"
+            if [ -n "$why" ]; then printf '### pr gate: no review\n\n%s\n' "$why" >> "$GITHUB_STEP_SUMMARY"; fi
             exit 1
           fi
           verdict=$(printf '%s' "$RESULT" | jq -r '.verdict')
