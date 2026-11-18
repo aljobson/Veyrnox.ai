@@ -22,6 +22,8 @@ import { NextResponse } from 'next/server';
 import { jobReadLimitResponse } from '../../../../../../lib/jobReadLimit.js';
 import { rpc, select, envConfig } from '../../../../../../packages/db/supabase-client.js';
 
+import { publicModelName } from '../../../../../../lib/publicCatalog.js';
+import { publicModelId } from '../../../../../../lib/publicModelIds.js';
 import { isUuidLoose } from '../../../../../../lib/validate.js';
 
 // A job only has meaningful provenance once its output is actually stored.
@@ -101,11 +103,15 @@ export async function GET(req, { params }) {
         console.error('[jobs/provenance] asset read failed:', err);
     }
 
+    // The catalog name and key can carry the wholesale supplier ("Kling 3.0 Pro I2V (kie, no audio)",
+    // "...-kie"). Nothing public may name it, so both leave here in their supplier-neutral form.
+    const publicModel = { ...model, id: publicModelId(model.id), name: publicModelName(model.name) || publicModelId(model.id) };
+
     return NextResponse.json({
         job_id: id,
         platform: 'Veyrnox.ai',
         generated: true,
-        model,
+        model: publicModel,
         credits: row.credits,
         created_at: row.created_at,
         completed_at: row.updated_at,

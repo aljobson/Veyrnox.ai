@@ -1,5 +1,6 @@
 import { formatNumber } from './i18n';
 import { POLICIES, type Cache } from './cache';
+import { publicModelId, publicModelName } from './publicModelIds';
 import { kindOf, type CatalogModel, type Job, type JobState, type Kind } from './media';
 
 // ADR-0156: what the Library screen shows and how it is filtered. Mirrors app/veyrnox/_lib/{libraryFilter,favourites}.js.
@@ -120,9 +121,10 @@ export function parseProvenance(body: unknown): Provenance | null {
     const content = isObject(body.content) ? body.content : {};
     const name = typeof model.name === 'string' && model.name ? model.name : typeof model.id === 'string' ? model.id : null;
     if (!name) return null;
+    const shown = publicModelName(name) || publicModelId(name);
     const sha = typeof content.sha256 === 'string' && /^[0-9a-f]{64}$/i.test(content.sha256) ? content.sha256.toLowerCase() : null;
     return {
-        model: name,
+        model: shown,
         madeAt: typeof body.completed_at === 'string' ? body.completed_at : typeof body.created_at === 'string' ? body.created_at : null,
         credits: typeof body.credits === 'number' && Number.isFinite(body.credits) ? body.credits : null,
         mime: typeof content.mime_type === 'string' ? content.mime_type : null,
