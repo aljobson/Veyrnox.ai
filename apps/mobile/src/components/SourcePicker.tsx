@@ -85,9 +85,16 @@ function ReferencePicker(props: SourcePickerProps) {
     const max = props.slot.maxFiles ?? 1;
     // References that arrive from outside (files attached from the device) join as new rows; rows being edited stay mounted.
     const refId = (r: GenerationReference) => r.origin === 'upload' ? `u:${r.key}` : `a:${r.asset_id}`;
+    // The form passes a new array on every render, so only a change in what it holds counts as references arriving. Otherwise a
+    // row cleared a moment ago (a photo being replaced for a new frame) would come straight back from the form's stale copy as a second row.
+    const seen = useRef<string | null>(null);
     useEffect(() => {
+        const held = props.references ?? [];
+        const signature = held.map(refId).join('|');
+        if (seen.current === signature) return;
+        seen.current = signature;
         const have = new Set(current.current.flatMap(row => row.reference ? [refId(row.reference)] : []));
-        const incoming = (props.references ?? []).filter(r => !have.has(refId(r)));
+        const incoming = held.filter(r => !have.has(refId(r)));
         if (!incoming.length) return;
         const kept = current.current.filter(row => row.reference || busy.current.has(row.id));
         const next = [...kept, ...incoming.map(reference => ({ id: serial.current++, reference }))];
