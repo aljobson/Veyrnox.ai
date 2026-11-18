@@ -5,7 +5,7 @@ import { useI18n } from '../../../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../../_lib/gateway';
 import { MusicPrivateAudio } from '../../../_lib/useMusicAudioSrc';
-import { EXAMPLE_PROMPT_KEYS, EXAMPLE_ROTATE_MS, MAGIC_LAYER_LIMIT, MAGIC_PROMPT_MAX, barChoices, magicQuoteBody, nextExampleIndex } from '../../../_lib/music/beat/magicBar.mjs';
+import { EXAMPLE_PROMPT_KEYS, MAGIC_LAYER_LIMIT, MAGIC_PROMPT_MAX, barChoices, magicQuoteBody, startExampleRotation } from '../../../_lib/music/beat/magicBar.mjs';
 import { action, button, input } from './beatStyles';
 
 const TERMINAL = new Set(['succeeded', 'partial', 'failed', 'refunded']);
@@ -37,11 +37,7 @@ export default function BeatMagicBar({ doc, loops, announce, hidePrompt = false 
   // The placeholder rotates through example parts while the field is empty; people who ask for
   // reduced motion get the first example and nothing changes under them.
   const [example, setExample] = useState(0);
-  useEffect(() => {
-    if (prompt || typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const timer = window.setInterval(() => setExample((index) => nextExampleIndex(index)), EXAMPLE_ROTATE_MS);
-    return () => window.clearInterval(timer);
-  }, [prompt]);
+  useEffect(() => (prompt ? undefined : startExampleRotation({ win: typeof window === 'undefined' ? null : window, onIndex: setExample })), [prompt]);
 
   async function refresh(id) {
     const next = await gatewayFetch(`/music/generations/${id}`);

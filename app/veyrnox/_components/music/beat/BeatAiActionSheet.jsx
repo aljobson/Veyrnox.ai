@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { gatewayFetch } from '../../../_lib/gateway.js';
 import { assetState, subscribeAssets } from '../../../_lib/music/beat/beatAssets.js';
-import { AI_LABELS, AI_INSTRUMENTS, BEAT_AI_KEYS, EXAMPLE_PROMPT_KEYS, EXAMPLE_ROTATE_MS, nextExampleIndex, actionEligibility, aiText, actionBody, aiPaths, generateBody, trackCapacity, aiError } from '../../../_lib/music/beat/beatAi.mjs';
+import { AI_LABELS, AI_INSTRUMENTS, BEAT_AI_KEYS, EXAMPLE_PROMPT_KEYS, startExampleRotation, actionEligibility, aiText, actionBody, aiPaths, generateBody, trackCapacity, aiError } from '../../../_lib/music/beat/beatAi.mjs';
 import { tickSeconds } from '../../../_lib/music/beat/beatAudioSegments.mjs';
 import { action, button, input } from './beatStyles';
 const idle = Object.freeze({ status: 'ready' });
@@ -17,11 +17,7 @@ export default function BeatAiActionSheet({ request, doc, afterTrackId }) {
   const [prompt, setPrompt] = useState(() => { try { return record?.prompt || selection.prompt || localStorage.getItem(draftKey)?.slice(0, 400) || ''; } catch { return ''; } }), [key, setKey] = useState('');
   // The placeholder rotates through example parts while the field is empty; reduced motion keeps the first.
   const [example, setExample] = useState(0);
-  useEffect(() => {
-    if (prompt || typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const timer = window.setInterval(() => setExample(index => nextExampleIndex(index)), EXAMPLE_ROTATE_MS);
-    return () => window.clearInterval(timer);
-  }, [prompt]);
+  useEffect(() => (prompt ? undefined : startExampleRotation({ win: typeof window === 'undefined' ? null : window, onIndex: setExample })), [prompt]);
   const [instrument, setInstrument] = useState(record?.instrument || selection.instrument || 'drums'), [rights, setRights] = useState(false);
   const [discardKey, setDiscardKey] = useState(null), [promptTouched, setPromptTouched] = useState(false);
   const source = selection.source, asset = source?.asset;

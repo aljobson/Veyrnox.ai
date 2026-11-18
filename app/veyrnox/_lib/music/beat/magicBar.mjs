@@ -3,7 +3,7 @@
 // /music/generation-quotes (ACE-Step 1.5, priced by model_catalog) and
 // /music/generations. Nothing is charged until the person presses Confirm.
 
-export { EXAMPLE_PROMPT_KEYS, EXAMPLE_ROTATE_MS, nextExampleIndex } from './beatExamples.mjs';
+export { EXAMPLE_PROMPT_KEYS, startExampleRotation } from './beatExamples.mjs';
 
 export const MAGIC_BARS = Object.freeze([4, 8, 16]);
 export const MAGIC_PROMPT_MAX = 400;
