@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "mobileSwap.permission": "사진 접근이 거부되었어요. 설정에서 사진 보관함 접근을 허용한 뒤 다시 시도하세요.",
+  "mobileSwap.photoTooLarge": "사진이 너무 커요. 한 변이 8192픽셀 이하이고 24메가픽셀 이하인 사진을 선택하세요.",
+  "mobileSwap.invalidImage": "크기를 확인할 수 있는 읽기 가능한 사진을 선택하세요.",
   "brand.swatch.teal": "청록",
   "brand.swatch.blue": "파랑",
   "brand.swatch.purple": "보라",

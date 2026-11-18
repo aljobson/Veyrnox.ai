@@ -157,6 +157,7 @@ export interface GenerationRequest {
     readonly templateId?: string;
     readonly swap?: string;
     readonly templateClip?: string;
+    readonly template_swap?: string;
     readonly preset?: string;
     readonly analyticsKind?: Kind | null;
     // Explicit per-run rights for curated source flows; undefined preserves existing Create behavior.
@@ -193,6 +194,7 @@ export const mediaApi = (api: ApiClient) => ({
             body: JSON.stringify({
                 model_id: r.modelId,
                 ...(r.templateClip !== undefined ? { template_clip: r.templateClip } : {}),
+                ...(r.template_swap !== undefined ? { template_swap: r.template_swap } : {}),
                 ...(r.swap !== undefined ? { swap: r.swap } : {}),
                 ...(r.templateId ? { template_id: r.templateId } : {}),
                 ...(r.preset && /^[a-z0-9-]{1,40}$/.test(r.preset) ? { preset: r.preset } : {}),

@@ -3454,5 +3454,17 @@
     "english": "Reset prompt",
     "translation": "Redefinir instruções",
     "ratio": 1.67
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "presets.swap.check",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
   }
 ]

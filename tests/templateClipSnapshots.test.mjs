@@ -68,6 +68,7 @@ test('mobile template: flag-off render tree matches the frozen checkout', () => 
       '../../../lib/i18n': { t }, '../../../lib/i18n/translate': { rawText: value => value },
       '../../../components/ui': { Button: 'button', Card: 'card', Chip: 'chip', Text: 'text', TextField: 'field', themedStyles: () => ({}), useThemedStyles: () => ({}) },
       '../../../lib/templateClips': { useTemplateClipAvailable: () => null },
+      '../../../lib/templateSwap/availability': { useSwapAvailability: () => null },
       '../../../lib/templateFidelity': { templateContract: () => undefined, templatePhotosUnavailable: () => false, templatePhotoHints: () => [] },
       '../../../lib/templateChoices': { templateModelEligible: () => true, templateOptions: () => ({ aspects: [], durations: [5], duration: 5 }) },
       '../../../lib/templateGenerate': { sourceUnsupported: () => false, photoSlot: () => null, inlineBlockReason: () => null, templateRequest: () => ({}) },

@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "mobileSwap.permission": "Fotozugriff verweigert. Erlaube den Zugriff auf die Fotomediathek in den Einstellungen und versuche es erneut.",
+  "mobileSwap.photoTooLarge": "Dieses Foto ist zu groß. Wähle eines mit höchstens 8192 Pixeln pro Seite und 24 Megapixeln.",
+  "mobileSwap.invalidImage": "Wähle ein lesbares Foto mit überprüfbaren Abmessungen.",
   "brand.swatch.teal": "Türkis",
   "brand.swatch.blue": "Blau",
   "brand.swatch.purple": "Violett",

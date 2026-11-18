@@ -1,0 +1,18 @@
+export type Size = { width: number; height: number };
+export type Box = Size & { x: number; y: number };
+export type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
+export type Alpha = Size & { data: Float32Array };
+export type Masks = Size & { background?: Float32Array; body?: Float32Array; face?: Float32Array; hair?: Float32Array; clothes?: Float32Array };
+export type Transform = Size & { ok: true; original: Size; rotation: number; scaleX: number; scaleY: number };
+export function personAlpha(masks: Masks): Alpha;
+export function resampleAlpha(alpha: Alpha, size: Size, feather?: number): Alpha;
+export function matteQuality(alpha: Alpha): Result<{ coverage: number; raggedness: number }>;
+export const coverageOk: typeof matteQuality;
+export function checkFaces(faces: Box[], size: Size): Result<{ faceBox: Box }>;
+export function outputSize(size: Size, kind?: 'frontal' | 'crop'): Result<Size>;
+export function checkOutputSize(size: Size, kind?: 'frontal' | 'crop'): Result;
+export function headShouldersBox(face: Box, body: Box | null, size: Size): Result<{ box: Box; output: Size }>;
+export function inputTransform(size: Size, rotation?: number): Result<Transform>;
+export function mapPoint(point: { x: number; y: number }, transform: Transform, direction?: 'toOriginal' | 'toInput'): { x: number; y: number };
+export function mapBox(box: Box, transform: Transform, direction?: 'toOriginal' | 'toInput'): Box;
+export const MATTE_FEATHER_PX: number;

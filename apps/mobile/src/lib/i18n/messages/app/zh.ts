@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "mobileSwap.permission": "照片访问被拒绝。请在设置中允许访问照片图库，然后重试。",
+  "mobileSwap.photoTooLarge": "照片太大。请选择每边不超过8192像素且不超过24百万像素的照片。",
+  "mobileSwap.invalidImage": "请选择可读取且能验证尺寸的照片。",
   "brand.swatch.teal": "青绿色",
   "brand.swatch.blue": "蓝色",
   "brand.swatch.purple": "紫色",

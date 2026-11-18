@@ -3424,5 +3424,23 @@
     "english": "Reset prompt",
     "translation": "Restablecer instrucciones",
     "ratio": 2.08
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "presets.swap.signin",
+    "english": "Sign in",
+    "translation": "Iniciar sesión",
+    "ratio": 2
+  },
+  {
+    "id": "presets.swap.check",
+    "english": "Check again",
+    "translation": "Comprobar de nuevo",
+    "ratio": 1.64
   }
 ]

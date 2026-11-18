@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "mobileSwap.permission": "تم رفض الوصول إلى الصور. اسمح بالوصول إلى مكتبة الصور في الإعدادات وحاول مجدداً.",
+  "mobileSwap.photoTooLarge": "هذه الصورة كبيرة جداً. اختر صورة لا تتجاوز 8192 بكسل لكل جانب و24 ميغابكسل.",
+  "mobileSwap.invalidImage": "اختر صورة قابلة للقراءة يمكن التحقق من أبعادها.",
   "brand.swatch.teal": "فيروزي",
   "brand.swatch.blue": "أزرق",
   "brand.swatch.purple": "بنفسجي",

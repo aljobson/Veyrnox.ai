@@ -24,6 +24,7 @@ const domains: Record<string, readonly string[]> = {
     'start.continue.{}': ['photo', 'video', 'reference', 'prompt'],
     'credits.plan.{}': ['lite', 'starter', 'plus', 'ultra'],
     'presets.cat.{}': ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'KIDS BIRTHDAY', 'CINEMATIC', 'ANIME', 'CARTOONS', 'MOVIES', 'FANTASY', 'REALISTIC', 'FASHION', 'PRODUCTS', 'VFX', 'UGC', 'ADS'],
+    'presets.swap.{}': ['submitting', 'unknown', 'unresolved', 'not_charged', 'refund_pending', 'refunded', 'queued', 'running', 'succeeded'],
     "publishTiming.move.{}": ["done", "serverHas", "started", "canceled", "unscheduled", "sending", "stillPending", "pending"],
     "publishOps.priority.{}": ["normal", "high", "urgent"],
     "publishOps.queue.reason.{}": ["publishingOff", "disconnected"],
