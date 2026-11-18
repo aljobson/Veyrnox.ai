@@ -1,8 +1,19 @@
 # Music on the phone: inventory, phone fit and owner decisions
 
 **Status:** Proposed 2026-11-18, against `main` at `b7dec3457`. Read-only audit; nothing was run on a device or against production.
-**Companion to:** `MUSIC-PLAN-2026-11-18.md` (open PR 2406, the phase order the owner chose) and the beat-engine spike (open PR 2407). This doc does not change that order. It adds the web inventory, the phone/web split, price and store rules, and the decisions the owner still owes. If the plan and this doc disagree, the plan's order wins and this doc's details feed it.
+**Companion to:** `MUSIC-PLAN-2026-11-18.md` (open PR 2406, the phase order the owner chose) and `docs/adr/0352-mobile-music.md` (draft, same PR) and the beat-engine spike (open PR 2407). This doc does not change that order. It adds the web inventory, the phone/web split, price and store rules, and the decisions the owner still owes. If the plan and this doc disagree, the plan's order wins and this doc's details feed it.
 **No supplier names in anything a user sees.** Copy says "music model", "stems", "beat". Model ids stay in the catalog and in code.
+
+## Decisions the owner still owes (one page)
+
+1. **Where Music lives in the navigation.** An entry inside the Audio hub ("Your music") is the plan's default. A top-level Music tab is bigger and changes the tab bar. Recommend the hub entry for P1 and revisit after P2.
+2. **P2b first or after P2?** A template-to-quote shortcut gives the quickest answer to "where are the audio templates". Recommend building it with P2, not before.
+3. **Beat editor on the phone: web view or native?** Spike B1's early read favours native; decide after the device run. Until then, P5 is unscheduled.
+4. **Paid-plan model on the phone.** Show it locked with an in-app upgrade, or hide it? Recommend show locked, with plain wording.
+5. **Public features timing.** P4 needs report and block on every surface. Ship P1 to P3 (private) first, or hold for P4? Recommend ship private first.
+6. **Beat cloud, library save and mixdown.** Off in production. Does the owner want them on for web before the phone gets a beat editor? The phone cannot save beats to the account until they are.
+7. **Privacy export for beat data.** ADR-0345 needs it before `beatCloud` is on. Owner to decide to add the export section or accept an explicit exclusion.
+8. **Reviewer account.** Which seeded account holds a few songs for store review?
 
 ## 1. What the web Music section contains today
 
@@ -46,21 +57,21 @@ Test used: a person can do it one-handed, in short sessions, with a 6-inch scree
 
 The phone already has Instruments (`instruments.tsx`), the audio hub (`audioHub.ts`) and audio templates (`audioTemplates.ts`, read from `GET /api/templates?kind=audio`). The audio hub's music card opens a generic create form for a music model. That form does not call any `/api/v1/music/*` route, so songs made there are not in the web Music library. This is the root of the "the phone has no Music" finding and the reason P1 and P2 come first.
 
-## 3. Build order, smallest slice first
+## 3. Endpoints and switches per phase
 
-Same phases as the plan; this adds the exact endpoints, switches and exit checks.
+The phase list and order live in `MUSIC-PLAN-2026-11-18.md` and ADR-0352 (draft, PR 2406); they are not repeated here. This only adds what each phase calls and which switch must be on. Routes are under `/api/v1/music`.
 
-| Phase | Slice | Endpoints | Switches it needs | Done when |
-|---|---|---|---|---|
-| **P0** | Typed client, probe helper, shared pure modules (PR 2406) | `entitlements`, `library-tabs` | none | Answers against staging; Metro bundles the shared modules |
-| **P1 (smallest useful)** | "Your music" entry in the audio hub. List songs, play one in a background-safe player, open detail, trash and restore | `GET songs`, `GET songs/[id]`, `PATCH songs/[id]`, `library-tabs` | `ui`, `schema`, `library` (`libraryTabs` for tabs) | A song made on the web plays on the phone with the screen locked; the list pages; a 404 shows "Music is not available right now" |
-| **P2** | Create. Prompt, then custom lyrics and styles. Quote, show total, confirm, then two candidate cards, then they land in the library | `entitlements`, `generation-quotes`, `generations`, `generations/[id]`, `drafts/custom` | `generation`, `dispatch` | Price on screen before spend; replay with the same idempotency key charges once; failed candidate refunds on its own |
-| **P2b (cheap win)** | "Make a beat from a template": audio template card opens P2 with the prompt filled and the option set | same as P2, plus `GET /api/templates?kind=audio` | as P2 | The templates the owner counts as missing are browsable by category and one tap from a quote |
-| **P3** | Song actions, one PR each: stems, target stems, extend, cover, crop, tempo and key, export | the `*-quotes` route then its commit route | each action's own flag (`stems`, `targetStems`, `extend`, `cover`, `editing`) | Each shows the quote first; the balance moves once |
-| **P4** | Playlists, Discover, publication, comments, reactions, follows, reports, app links | `playlists`, `social`, `comments`, `songs/[id]/publication`, `share-links`, `feedback` | `playlists`, `rails`, `publication`, `comments`, `reactions`, `follows`, `songReports` | Report and block reach every user-made surface; links open the app |
-| **P5** | Beat editor, after the spike | `beat-projects` family, `mixdowns`, AI parts | `beatEditor` (+ `beatAi`; `beatCloud` and mixdown only once on) | Decided after PR 2407's device run |
+| Phase | Endpoints | Switches |
+|---|---|---|
+| P0 | `entitlements`, `library-tabs` | none |
+| P1 library and player | `songs`, `songs/[id]` (GET, PATCH), `library-tabs` | `ui`, `schema`, `library`, `libraryTabs` |
+| P2 create | `entitlements`, `generation-quotes`, `generations[/id]`, `drafts/custom` | `generation`, `dispatch` |
+| P2b template to quote (suggested addition) | as P2, plus `GET /api/templates?kind=audio` | as P2 |
+| P3 song actions | each action's `*-quotes` route, then its commit route | `stems`, `targetStems`, `extend`, `cover`, `editing` |
+| P4 social | `playlists`, `social`, `comments`, `songs/[id]/publication`, `share-links`, `feedback` | `playlists`, `rails`, `publication`, `comments`, `reactions`, `follows`, `songReports` |
+| P5 beat editor | `beat-projects` family, `mixdowns` | `beatEditor`, `beatAi`; `beatCloud` and mixdown only once on |
 
-Server work needed before P1 to P4: none found. The routes accept a Bearer token like the rest of `/api/v1`; confirm the phone token is accepted (the plan lists this as unverified) in P0.
+Smallest first slice: P1 (list, play, open detail, trash and restore) needs no server change. Confirm the phone token is accepted in P0.
 
 ## 4. Price and credit handling
 
@@ -97,17 +108,6 @@ Server work needed before P1 to P4: none found. The routes accept a Bearer token
 | Drift between the ADR "pending" status and the live flags (`beatAi`) | Re-read `wrangler.jsonc` and the ADR headers at the start of P5 |
 | Canonical native build is a single checkout | Build only in the `veyrnox-mobile-app-f52c2f` worktree; no second install |
 
-## 7. Decisions the owner still owes
-
-1. **Where Music lives in the navigation.** An entry inside the Audio hub ("Your music") is the plan's default. A top-level Music tab is bigger and changes the tab bar. Recommend the hub entry for P1 and revisit after P2.
-2. **P2b first or after P2?** A template-to-quote shortcut gives the quickest answer to "where are the audio templates". Recommend building it with P2, not before.
-3. **Beat editor on the phone: web view or native?** Spike B1's early read favours native; decide after the device run. Until then, P5 is unscheduled.
-4. **Paid-plan model on the phone.** Show it locked with an in-app upgrade, or hide it? Recommend show locked, with plain wording.
-5. **Public features timing.** P4 needs report and block on every surface. Ship P1 to P3 (private) first, or hold for P4? Recommend ship private first.
-6. **Beat cloud, library save and mixdown.** Off in production. Does the owner want them on for web before the phone gets a beat editor? The phone cannot save beats to the account until they are.
-7. **Privacy export for beat data.** ADR-0345 needs it before `beatCloud` is on. Owner to decide to add the export section or accept an explicit exclusion.
-8. **Reviewer account.** Which seeded account holds a few songs for store review?
-
-## 8. Unverified
+## 7. Unverified
 
 Component depth (read by file names, route headers and ADRs, not run); whether `entitlements`, `songs` and `generation-quotes` accept the phone token (the plan's P0 checks it); live production flags (read from `wrangler.jsonc`, not the deployed Worker); beat editor phase merge state after 2026-11-17; real audio latency and background behaviour on a device.
