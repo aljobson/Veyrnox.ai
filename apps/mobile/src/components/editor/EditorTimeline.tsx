@@ -164,7 +164,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                             const name = track.kind === 'text' ? (item as TextClip).text : timeline.media[(item as Clip).mediaId ?? '']?.name || item.id;
                             const body = Math.max(8, item.len * ppf - 2), handleWidth = trimHandleWidth(body);
                             return (['in', 'out'] as const).map(edge => <View key={`${item.id}-${edge}`} testID={`trim-${item.id}-${edge}`}
-                                style={[local.handle, { width: handleWidth, left: item.start * ppf + (edge === 'in' ? 0 : body - handleWidth) }]}
+                                style={[local.handle, { width: handleWidth, left: item.start * ppf + (edge === 'in' ? 0 : body - handleWidth), alignItems: edge === 'in' ? 'flex-start' : 'flex-end' }]}
                                 accessibilityRole="adjustable" accessibilityLabel={rawText(edge === 'in' ? t('editorCore.trimStart', { name }) : t('editorCore.trimEnd', { name }))}
                                 accessibilityValue={{ text: formatTimecode(edge === 'in' ? item.start : item.start + item.len, timeline.fps) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
                                 onAccessibilityAction={event => commit(trimItem(timeline, selection, edge, event.nativeEvent.actionName === 'increment' ? 1 : -1, false, frame, ripple))}

@@ -31,6 +31,8 @@ const GLYPH = { video: '▶', audio: '♫', image: '▧' } as const;
 export function JobThumb({ links, jobId, size = 56 }: Props) {
     const [link, setLink] = useState<AssetLink | undefined>(() => links.peek(jobId));
     const [poster, setPoster] = useState<VideoThumbnail | null>(null);
+    // A video whose frame could not be made keeps the play glyph; it must not spin for ever.
+    const [posterTried, setPosterTried] = useState(false);
 
     useEffect(() => {
         let live = true;
@@ -38,7 +40,10 @@ export function JobThumb({ links, jobId, size = 56 }: Props) {
             if (!live) return;
             setLink(result);
             if (result.kind === 'file' && is(result.mime, 'video/')) {
-                void posterFor(jobId, result.url).then((frame) => { if (live) setPoster(frame); });
+                void posterFor(jobId, result.url).then(
+                    (frame) => { if (live) { setPoster(frame); setPosterTried(true); } },
+                    () => { if (live) setPosterTried(true); },
+                );
             }
         });
         return () => { live = false; };
@@ -50,7 +55,7 @@ export function JobThumb({ links, jobId, size = 56 }: Props) {
         <View style={[styles.frame, box]} accessible={false} importantForAccessibility="no-hide-descendants">
             {is(file?.mime, 'image/') ? <Image source={{ uri: file?.url }} cachePolicy="memory" contentFit="cover" style={styles.fill} />
                 : is(file?.mime, 'video/') && poster ? <Image source={poster} cachePolicy="memory" contentFit="cover" style={styles.fill} />
-                : !link || (is(file?.mime, 'video/') && !poster) ? <ActivityIndicator testID="job-thumb-loading" color={colors.muted} />
+                : !link || (is(file?.mime, 'video/') && !poster && !posterTried) ? <ActivityIndicator testID="job-thumb-loading" color={colors.muted} />
                 : <Text style={styles.glyph}>{is(file?.mime, 'audio/') ? GLYPH.audio : is(file?.mime, 'video/') ? GLYPH.video : GLYPH.image}</Text>}
             {is(file?.mime, 'video/') ? <View style={styles.play}><Text style={styles.playText}>▶</Text></View> : null}
         </View>

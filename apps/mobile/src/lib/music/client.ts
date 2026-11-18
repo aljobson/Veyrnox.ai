@@ -1,9 +1,9 @@
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
-import { isMusicEntitlements, isMusicGeneration, isMusicQuote } from './validate';
+import { isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle } from './validate';
 import type {
     MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
-    MusicRow, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery,
+    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery,
 } from './types';
 
 // Typed client over /api/v1/music/*. Request and response shapes come from the route handlers
@@ -24,8 +24,13 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
 export async function getLibraryTab(api: ApiClient, tab: MusicLibraryTab): Promise<MusicLibraryTabData> {
     const v = await api.request<unknown>(`${BASE}/library-tabs?tab=${tab}`);
     if (!isRecord(v)) throw bad();
-    if (tab === 'history') { const songs = rows(v.songs); if (!songs) throw bad(); return { tab, songs }; }
-    if (tab === 'hooks') { const hooks = rows(v.hooks); if (!hooks) throw bad(); return { tab, hooks }; }
+    if (tab === 'history') { const songs = v.songs; if (!Array.isArray(songs) || !songs.every(isMusicSongRow)) throw bad(); return { tab, songs }; }
+    if (tab === 'hooks') {
+        if (!Array.isArray(v.hooks)) throw bad();
+        // Preserve usable rows and tell the screen when this is only a partial result.
+        const hooks = v.hooks.filter(isPlayableMusicHook);
+        return { tab, hooks, dropped: v.hooks.length - hooks.length };
+    }
     const images = rows(v.images); const covers = rows(v.covers);
     if (!images || !covers) throw bad();
     return { tab, images, covers };
@@ -39,29 +44,29 @@ export async function recordListen(api: ApiClient, songId: string): Promise<void
 
 // Songs list. `workspace`, `q` and `collection: 'trash'` need the library switch; without it the
 // server answers 404 music_library_unavailable.
-export async function listSongs(api: ApiClient, query: MusicSongsQuery = {}): Promise<readonly MusicRow[]> {
+export async function listSongs(api: ApiClient, query: MusicSongsQuery = {}): Promise<readonly MusicSongRow[]> {
     const params = new URLSearchParams();
     if (query.limit !== undefined) params.set('limit', String(query.limit));
     if (query.workspace) params.set('workspace', query.workspace);
-    if (query.q) params.set('q', query.q);
+    if (query.q !== undefined) params.set('q', query.q);
     if (query.collection) params.set('collection', query.collection);
     const qs = params.toString();
     const v = await api.request<unknown>(`${BASE}/songs${qs ? `?${qs}` : ''}`);
-    const songs = isRecord(v) ? rows(v.songs) : null;
-    if (!songs) throw bad();
+    const songs = isRecord(v) ? v.songs : null;
+    if (!Array.isArray(songs) || !songs.every(isMusicSongRow)) throw bad();
     return songs;
 }
 
 export async function getSong(api: ApiClient, id: string): Promise<MusicSong> {
     const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(id)}`);
-    if (!isRecord(v) || !Array.isArray(v.actions) || !v.actions.every((a) => typeof a === 'string')) throw bad();
-    return v as MusicSong;
+    if (!isMusicSongDetail(v)) throw bad();
+    return v;
 }
 
 // PATCH trash | restore, with the song's current revision (a stale one answers a revision conflict).
-export async function setSongLifecycle(api: ApiClient, id: string, action: 'trash' | 'restore', revision: number): Promise<{ song: MusicRow; idempotent: boolean }> {
+export async function setSongLifecycle(api: ApiClient, id: string, action: 'trash' | 'restore', revision: number): Promise<{ song: MusicLifecycle; idempotent: boolean }> {
     const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(id)}`, { ...post({ action, revision }), method: 'PATCH' });
-    if (!isRecord(v) || !isRecord(v.song)) throw bad();
+    if (!isRecord(v) || !isMusicLifecycle(v.song) || typeof v.idempotent !== 'boolean') throw bad();
     return { song: v.song, idempotent: v.idempotent === true };
 }
 

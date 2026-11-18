@@ -1,3 +1,4 @@
+import { song, version, hook } from './fixtures/music';
 import { ApiError, type ApiClient } from '../src/lib/api';
 import {
     createQuote, getEntitlements, getLibraryTab, getSong, isMusicOff, listSongs, probeMusic, recordListen,
@@ -53,17 +54,25 @@ describe('entitlements', () => {
 
 describe('library tabs', () => {
     test('each tab reads its own key', async () => {
-        request.mockResolvedValueOnce({ songs: [{ id: 'a' }] });
-        expect(await getLibraryTab(api, 'history')).toEqual({ tab: 'history', songs: [{ id: 'a' }] });
+        request.mockResolvedValueOnce({ songs: [{ id: 'a', title: 'A' }] });
+        expect(await getLibraryTab(api, 'history')).toEqual({ tab: 'history', songs: [{ id: 'a', title: 'A' }] });
         expect(request).toHaveBeenLastCalledWith('/api/v1/music/library-tabs?tab=history');
         request.mockResolvedValueOnce({ hooks: [] });
-        expect(await getLibraryTab(api, 'hooks')).toEqual({ tab: 'hooks', hooks: [] });
+        expect(await getLibraryTab(api, 'hooks')).toEqual({ tab: 'hooks', hooks: [], dropped: 0 });
         request.mockResolvedValueOnce({ images: [{ id: 'i' }], covers: [] });
         expect(await getLibraryTab(api, 'covers')).toEqual({ tab: 'covers', images: [{ id: 'i' }], covers: [] });
     });
-    test.each([['history', { hooks: [] }], ['covers', { images: [] }], ['hooks', { hooks: [1] }]] as const)('%s rejects %p', async (tab, v) => {
+    test.each([['history', { hooks: [] }], ['covers', { images: [] }], ['hooks', { hooks: {} }]] as const)('%s rejects %p', async (tab, v) => {
         request.mockResolvedValue(v);
         await expect(getLibraryTab(api, tab)).rejects.toMatchObject({ code: 'bad_response' });
+    });
+    test.each([{ ...hook, end_seconds: hook.start_seconds }, { ...hook, audio_url: '/invalid' }, { ...hook, title: 1 }])('drops invalid hooks without discarding valid rows: %p', async bad => {
+        request.mockResolvedValue({ hooks: [bad, hook] });
+        expect(await getLibraryTab(api, 'hooks')).toEqual({ tab: 'hooks', hooks: [hook], dropped: 1 });
+    });
+    test('reports every dropped row when no hook is playable', async () => {
+        request.mockResolvedValue({ hooks: [null, { ...hook, audio_url: '/invalid' }, { ...hook, end_seconds: 0 }] });
+        expect(await getLibraryTab(api, 'hooks')).toEqual({ tab: 'hooks', hooks: [], dropped: 3 });
     });
     test('recordListen posts the action and wants recorded:true', async () => {
         request.mockResolvedValue({ recorded: true });
@@ -87,15 +96,15 @@ describe('songs', () => {
         await expect(listSongs(api)).rejects.toMatchObject({ code: 'bad_response' });
     });
     test('detail encodes the id and needs actions', async () => {
-        request.mockResolvedValue({ id: 'x', actions: ['crop'] });
+        request.mockResolvedValue({ ...song, id: 'x', actions: ['crop'] });
         expect((await getSong(api, 'a/b')).actions).toEqual(['crop']);
         expect(request).toHaveBeenLastCalledWith('/api/v1/music/songs/a%2Fb');
         request.mockResolvedValue({ id: 'x' });
         await expect(getSong(api, 'x')).rejects.toMatchObject({ code: 'bad_response' });
     });
     test('lifecycle sends PATCH with action and revision', async () => {
-        request.mockResolvedValue({ song: { id: 'x' }, idempotent: true });
-        expect(await setSongLifecycle(api, UUID, 'trash', 3)).toEqual({ song: { id: 'x' }, idempotent: true });
+        request.mockResolvedValue({ song: { id: 'x', revision: 4, lifecycle_status: 'trashed', updated_at: version.created_at }, idempotent: true });
+        expect(await setSongLifecycle(api, UUID, 'trash', 3)).toEqual({ song: { id: 'x', revision: 4, lifecycle_status: 'trashed', updated_at: version.created_at }, idempotent: true });
         expect(request.mock.calls[0][1].method).toBe('PATCH');
         expect(sentBody()).toEqual({ action: 'trash', revision: 3 });
     });
@@ -140,7 +149,7 @@ describe('probeMusic (feature flags are server-side)', () => {
     test('on', async () => {
         expect(await probeMusic(async () => 7)).toEqual({ state: 'on', data: 7 });
     });
-    test.each(['music_unavailable', 'music_library_unavailable', 'music_library_tabs_unavailable', 'music_remix_unavailable', 'music_future_unavailable'])('404 %s is off', async (code) => {
+    test.each(['music_unavailable', 'music_library_unavailable', 'music_library_tabs_unavailable', 'music_remix_unavailable', 'music_future_unavailable', 'music_distribution_unavailable'])('404 %s is off', async (code) => {
         expect(await probeMusic(async () => { throw new ApiError(404, code); })).toEqual({ state: 'off', code });
     });
     test('getEntitlements 404 music_unavailable gives off, not a throw', async () => {
@@ -150,7 +159,7 @@ describe('probeMusic (feature flags are server-side)', () => {
     test('a missing song is an error, not off', async () => {
         expect(await probeMusic(async () => { throw new ApiError(404, 'not_found'); })).toEqual({ state: 'error', code: 'not_found', status: 404 });
     });
-    test.each([[new ApiError(502, 'temporarily_unavailable'), 502], [new ApiError(401, 'not_authenticated'), 401], [new ApiError(0, 'network'), 0], [new Error('boom'), 0]])('%p is an error', async (err, status) => {
+    test.each([[new ApiError(500, 'internal'), 500], [new ApiError(502, 'temporarily_unavailable'), 502], [new ApiError(401, 'not_authenticated'), 401], [new ApiError(0, 'network'), 0], [new Error('boom'), 0]])('%p is an error', async (err, status) => {
         const r = await probeMusic(async () => { throw err; });
         expect(r.state).toBe('error');
         expect((r as { status: number }).status).toBe(status);

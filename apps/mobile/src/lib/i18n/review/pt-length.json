@@ -3246,6 +3246,66 @@
     "ratio": 1.78
   },
   {
+    "id": "music.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.play",
+    "english": "Play",
+    "translation": "Reproduzir",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.player.idle",
+    "english": "Ready to play",
+    "translation": "Pronto para reproduzir",
+    "ratio": 1.69
+  },
+  {
+    "id": "music.player.playing",
+    "english": "Playing",
+    "translation": "Reproduzindo",
+    "ratio": 1.71
+  },
+  {
+    "id": "music.share",
+    "english": "Share links",
+    "translation": "Links de compartilhamento",
+    "ratio": 2.27
+  },
+  {
+    "id": "music.createShare",
+    "english": "Create share link",
+    "translation": "Criar link de compartilhamento",
+    "ratio": 1.76
+  },
+  {
+    "id": "music.openShare",
+    "english": "Open share sheet",
+    "translation": "Abrir menu de compartilhamento",
+    "ratio": 1.88
+  },
+  {
+    "id": "music.shareRevoked",
+    "english": "Share link revoked.",
+    "translation": "Link de compartilhamento revogado.",
+    "ratio": 1.79
+  },
+  {
+    "id": "music.shareSheetError",
+    "english": "The share sheet could not open. Tap Open share sheet to try again.",
+    "translation": "Não foi possível abrir o menu de compartilhamento. Toque em “Abrir menu de compartilhamento” para tentar novamente.",
+    "ratio": 1.74
+  },
+  {
+    "id": "music.noShares",
+    "english": "No share links yet.",
+    "translation": "Ainda não há links de compartilhamento.",
+    "ratio": 2.05
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
