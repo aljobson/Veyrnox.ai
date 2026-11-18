@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { plural, t } from '../../lib/i18n';
 import type { AudioTemplate } from '../../lib/audioTemplates';
+import { categoryLabel } from '../../lib/presetCategoryLabel';
 
 // An audio template has no picture or clip, so the card is text: a badge that says it is a sound,
 // its category, its name, the start of its prompt and, like video cards, its price. Video cards show a preview instead.
@@ -13,7 +14,7 @@ export function AudioTemplateCard({ template, credits, onOpen }: AudioTemplateCa
     return <Card onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${t('templates.kind.audio')}, ${template.name}${price ? `, ${price}` : ''}`} style={styles.card}>
         <View style={styles.meta}>
             <View style={styles.badge}><Text variant="caption">{t('templates.kind.audio')}</Text></View>
-            <Text variant="caption" tone="secondary">{t(`audioTemplates.cat.${template.category}`)}</Text>
+            <Text variant="caption" tone="secondary">{categoryLabel(template.category)}</Text>
         </View>
         <Text variant="bodyStrong">{template.name}</Text>
         <Text variant="caption" tone="secondary" numberOfLines={3}>{template.prompt}</Text>

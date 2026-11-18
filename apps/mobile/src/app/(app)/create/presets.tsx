@@ -14,6 +14,7 @@ import { priceLines } from '../../../lib/catalogPages';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
 import { plural, t } from '../../../lib/i18n';
 import { templateCountLabel } from '../../../lib/templateCountLabel';
+import { categoryLabel } from '../../../lib/presetCategoryLabel';
 import { fetchPresets, searchPresets, themeTitle, type Preset } from '../../../lib/presets';
 import { fetchPopularIds, templateChips, templatesFor, previewRatio, templatePageHref } from '../../../lib/templateFilters';
 import { rankPresets } from '../../../lib/creatorTaste';
@@ -115,7 +116,7 @@ export default function Templates() {
             : audio === null ? <ActivityIndicator /> : <FlatList key="audio" data={audioShown} keyExtractor={a => a.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
-                    <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(templatesWithCatalogModel(audio ?? [], known))].map(c => <Chip key={c} selected={audioCategory === c} accessibilityState={{ selected: audioCategory === c }} label={c === 'ALL' ? t('audioTemplates.all') : t(`audioTemplates.cat.${c}`)} onPress={() => setAudioChip(c)} />)}</ScrollView>
+                    <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(templatesWithCatalogModel(audio ?? [], known))].map(c => <Chip key={c} selected={audioCategory === c} accessibilityState={{ selected: audioCategory === c }} label={c === 'ALL' ? t('audioTemplates.all') : categoryLabel(c)} onPress={() => setAudioChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
                 renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} onOpen={() => openAudio(item)} />} />)
