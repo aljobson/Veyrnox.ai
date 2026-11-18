@@ -17,7 +17,7 @@
     "check:vey-knowledge": "node scripts/sync-vey-knowledge.mjs --check",
     "predev": "npm run sync:vey-knowledge",
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint app components lib middleware.js packages/security packages/provider-sdk packages/db/tenant-client.js",
     "setup": "npm install",
