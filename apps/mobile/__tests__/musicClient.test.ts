@@ -13,9 +13,17 @@ let api: ApiClient;
 beforeEach(() => { request = jest.fn(); api = { request } as unknown as ApiClient; });
 const sentBody = () => JSON.parse(request.mock.calls[request.mock.calls.length - 1][1].body);
 
+const controls = {
+    description: true, seed: false, variety: false, style_influence: false, exclude_styles: false, tempo_key_meter: false,
+    duration_seconds: { min: 10, max: 60, default: 60 }, lyrics: false, styles: false, instrumental: 'required',
+};
+const model = {
+    id: 'ace-step', name: 'ACE-Step', generation_modes: ['simple'], controls, credits_per_candidate: 5, total_credits: 10,
+    instrumental_only: true, requires_paid_plan: false, available: true,
+};
 const entitlements = {
     available: true, mode: 'simple', output_count: 2, concurrency_limit: 4, balance: 40, free_credits: 0, free_expires_at: null,
-    models: [{ id: 'ace-step', name: 'ACE-Step', credits_per_candidate: 5, total_credits: 10, available: true }],
+    models: [model],
     custom_drafts: { available: true, autosave: true, generation_supported: false, lyrics_max: 3000, styles_max: 500, title_max: 80 },
     policy: { version: 'music-prompt-v1', pre_debit: true },
 };
@@ -26,7 +34,18 @@ describe('entitlements', () => {
         expect((await getEntitlements(api)).models[0].id).toBe('ace-step');
         expect(request).toHaveBeenCalledWith('/api/v1/music/entitlements');
     });
-    test.each([null, {}, { ...entitlements, models: 'x' }, { ...entitlements, balance: '40' }, { ...entitlements, custom_drafts: null }])('rejects malformed %p', async (v) => {
+    const without = (o: Record<string, unknown>, k: string) => { const { [k]: _drop, ...rest } = o; return rest; };
+    test.each([
+        null, {}, { ...entitlements, models: 'x' }, { ...entitlements, balance: '40' }, { ...entitlements, custom_drafts: null },
+        without(entitlements, 'policy'), { ...entitlements, policy: { version: 'v' } },
+        { ...entitlements, custom_drafts: without(entitlements.custom_drafts, 'lyrics_max') },
+        { ...entitlements, models: [without(model, 'controls')] },
+        { ...entitlements, models: [without(model, 'generation_modes')] },
+        { ...entitlements, models: [{ ...model, controls: without(controls, 'duration_seconds') }] },
+        { ...entitlements, models: [{ ...model, controls: { ...controls, instrumental: 'maybe' } }] },
+        { ...entitlements, models: [{ ...model, available: 'yes' }] },
+        { ...entitlements, free_expires_at: 5 },
+    ])('rejects malformed %j', async (v) => {
         request.mockResolvedValue(v);
         await expect(getEntitlements(api)).rejects.toMatchObject({ code: 'bad_response' });
     });
@@ -91,8 +110,9 @@ describe('quote and generation', () => {
         await createQuote(api, { mode: 'custom', draft_revision: 2, instrumental: false, rights_confirmed: true });
         expect(parseMusicQuote(sentBody()).ok).toBe(true);
     });
-    test('quote rejects a malformed answer', async () => {
-        request.mockResolvedValue({ ...quote, affordable: 'yes' });
+    test.each([{ ...quote, affordable: 'yes' }, { ...quote, mode: 'other' }, { ...quote, policy_version: undefined },
+        { ...quote, model_id: undefined }, { ...quote, output_count: '2' }, { ...quote, balance: undefined }])('quote rejects malformed %j', async (v) => {
+        request.mockResolvedValue(v);
         await expect(createQuote(api, { prompt: 'x' })).rejects.toMatchObject({ code: 'bad_response' });
     });
     test('generation body passes the server parser and a replay is returned as-is', async () => {
@@ -104,8 +124,14 @@ describe('quote and generation', () => {
         expect((await startGeneration(api, UUID, KEY)).idempotent).toBe(true);
         expect(request.mock.calls[0][1].body).toBe(request.mock.calls[1][1].body); // same key both times
     });
-    test('generation rejects candidates without a job id', async () => {
-        request.mockResolvedValue({ generation_id: UUID, state: 'queued', candidates: [{ ordinal: 1 }], balance_after: 1 });
+    const cand = { ordinal: 1, label: 'A', job_id: 'j1', state: 'queued' };
+    const base = { generation_id: UUID, state: 'queued', candidates: [cand], balance_after: 1 };
+    test.each([
+        { ...base, candidates: [{ ordinal: 1 }] }, { ...base, candidates: [{ ...cand, label: undefined }] },
+        { ...base, candidates: [{ ...cand, state: 5 }] }, { ...base, candidates: [{ ...cand, job_id: undefined }] },
+        { ...base, state: undefined }, { ...base, idempotent: false }, { ...base, balance_after: 'x' },
+    ])('generation rejects malformed %j', async (v) => {
+        request.mockResolvedValue(v);
         await expect(startGeneration(api, UUID, KEY)).rejects.toMatchObject({ code: 'bad_response' });
     });
 });

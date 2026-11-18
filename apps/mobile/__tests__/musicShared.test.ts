@@ -56,3 +56,10 @@ test('wav crop runs in the phone runtime', () => {
     expect(out.ok).toBe(true);
     if (out.ok) expect(out.seconds).toBeCloseTo(0.5, 3);
 });
+
+test('pcmWavSeconds answers null for unreadable or unsupported audio', () => {
+    expect(pcmWavSeconds(new Uint8Array(0))).toBeNull();
+    expect(pcmWavSeconds(new Uint8Array(64).fill(7))).toBeNull(); // not RIFF/WAVE
+    const mp3ish = new Uint8Array([0x49, 0x44, 0x33, 4, 0, 0, 0, 0, 0, 0]);
+    expect(pcmWavSeconds(mp3ish)).toBeNull();
+});

@@ -1,5 +1,6 @@
 import { ApiError, type ApiClient } from '../api';
-import { isRecord, isFiniteNumber } from '../responseShapes';
+import { isRecord } from '../responseShapes';
+import { isMusicEntitlements, isMusicGeneration, isMusicQuote } from './validate';
 import type {
     MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
     MusicRow, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery,
@@ -15,11 +16,8 @@ const post = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Cont
 
 export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements> {
     const v = await api.request<unknown>(`${BASE}/entitlements`);
-    if (!isRecord(v) || typeof v.available !== 'boolean' || !Array.isArray(v.models) || !isFiniteNumber(v.balance)
-        || !isRecord(v.custom_drafts) || !v.models.every((m) => isRecord(m) && typeof m.id === 'string' && isFiniteNumber(m.credits_per_candidate))) {
-        throw bad();
-    }
-    return v as unknown as MusicEntitlements;
+    if (!isMusicEntitlements(v)) throw bad();
+    return v;
 }
 
 // GET ?tab=history|hooks|covers. The key in the answer depends on the tab.
@@ -70,11 +68,8 @@ export async function setSongLifecycle(api: ApiClient, id: string, action: 'tras
 // Step 1 of create: an exact, short-lived price for two candidates. No credits move.
 export async function createQuote(api: ApiClient, input: ({ mode?: 'simple' } & MusicSimpleQuoteInput) | ({ mode: 'custom' } & MusicCustomQuoteInput)): Promise<MusicQuote> {
     const v = await api.request<unknown>(`${BASE}/generation-quotes`, post(input));
-    if (!isRecord(v) || typeof v.quote_id !== 'string' || !isFiniteNumber(v.total_credits) || !isFiniteNumber(v.balance_after)
-        || !isFiniteNumber(v.credits_per_candidate) || typeof v.affordable !== 'boolean' || typeof v.expires_at !== 'string') {
-        throw bad();
-    }
-    return v as unknown as MusicQuote;
+    if (!isMusicQuote(v)) throw bad();
+    return v;
 }
 
 // Step 2 of create: spends the quote. Reuse the SAME idempotency key (8-120 chars of A-Za-z0-9._-)
@@ -82,9 +77,6 @@ export async function createQuote(api: ApiClient, input: ({ mode?: 'simple' } & 
 // `pair_acceptance_unknown` means "replay the same key", never "make a new one".
 export async function startGeneration(api: ApiClient, quoteId: string, idempotencyKey: string): Promise<MusicGeneration> {
     const v = await api.request<unknown>(`${BASE}/generations`, post({ quote_id: quoteId, idempotency_key: idempotencyKey }));
-    if (!isRecord(v) || typeof v.generation_id !== 'string' || !Array.isArray(v.candidates) || !isFiniteNumber(v.balance_after)
-        || !v.candidates.every((c) => isRecord(c) && typeof c.job_id === 'string' && isFiniteNumber(c.ordinal))) {
-        throw bad();
-    }
-    return v as unknown as MusicGeneration;
+    if (!isMusicGeneration(v)) throw bad();
+    return v;
 }

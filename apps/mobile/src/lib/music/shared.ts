@@ -60,7 +60,8 @@ const w = wav as unknown as {
     renderPcmWavSpeed: (source: Uint8Array, ratio: number) => WavResult;
     renderPcmWavReverse: (source: Uint8Array) => WavResult;
     renderPcmWavMix: (first: Uint8Array, second: Uint8Array, maxSeconds?: number) => WavResult;
-    pcmWavSeconds: (source: Uint8Array) => number;
+    // null when the audio is unreadable or not PCM WAV (lib/musicWavRender.js).
+    pcmWavSeconds: (source: Uint8Array) => number | null;
 };
 
 export const { MUSIC_HOOK_SECONDS_MIN, MUSIC_HOOK_SECONDS_MAX, parseMusicLibraryTabAction } = t;

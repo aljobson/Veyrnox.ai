@@ -57,6 +57,8 @@ const PAID_ACTIONS: readonly RegExp[] = [
     /^\/api\/v1\/editor\/speech-analyses\/?(\?|$)/,
     /^\/api\/v1\/editor\/ai-edit\/?(\?|$)/,
     /^\/api\/v1\/generations\/?$/,
+    // Music: only the confirm step spends credits; quotes and reads stay open.
+    /^\/api\/v1\/music\/generations\/?$/,
     /^\/api\/v1\/chat\/threads\/[^/]+\/messages\/?$/,
     /^\/api\/v1\/editor\/server-render\/?$/,
     /^\/api\/v1\/montage(\/|$)/,
