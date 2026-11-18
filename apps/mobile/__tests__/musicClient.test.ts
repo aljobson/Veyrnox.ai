@@ -114,15 +114,15 @@ describe('quote and generation', () => {
     const quote = { quote_id: UUID, mode: 'simple', model_id: 'ace-step', output_count: 2, credits_per_candidate: 5, total_credits: 10, balance: 40, balance_after: 30, affordable: true, expires_at: '2026-11-18T10:00:00Z', policy_version: 'music-prompt-v1' };
     test('simple and custom quote bodies pass the server parser', async () => {
         request.mockResolvedValue(quote);
-        await createQuote(api, { prompt: 'lofi beat', duration_seconds: 30 });
+        await createQuote(api, { mode: 'simple', prompt: 'lofi beat', instrumental: true, model_id: 'ace-step', duration_seconds: 30 });
         expect(parseMusicQuote(sentBody()).ok).toBe(true);
-        await createQuote(api, { mode: 'custom', draft_revision: 2, instrumental: false, rights_confirmed: true });
+        await createQuote(api, { mode: 'custom', draft_revision: 2, instrumental: false, rights_confirmed: true, duration_seconds: 30 });
         expect(parseMusicQuote(sentBody()).ok).toBe(true);
     });
     test.each([{ ...quote, affordable: 'yes' }, { ...quote, mode: 'other' }, { ...quote, policy_version: undefined },
         { ...quote, model_id: undefined }, { ...quote, output_count: '2' }, { ...quote, balance: undefined }])('quote rejects malformed %j', async (v) => {
         request.mockResolvedValue(v);
-        await expect(createQuote(api, { prompt: 'x' })).rejects.toMatchObject({ code: 'bad_response' });
+        await expect(createQuote(api, { mode: 'simple', prompt: 'x', instrumental: true, model_id: 'ace-step', duration_seconds: 30 })).rejects.toMatchObject({ code: 'bad_response' });
     });
     test('generation body passes the server parser and a replay is returned as-is', async () => {
         const gen = { generation_id: UUID, state: 'queued', candidates: [{ ordinal: 1, label: 'A', job_id: 'j1', state: 'queued' }], balance_after: 30 };

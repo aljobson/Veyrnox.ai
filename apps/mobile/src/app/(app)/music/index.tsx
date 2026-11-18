@@ -65,6 +65,7 @@ export default function MusicLibrary() {
     return <ScrollView style={s.screen} contentContainerStyle={s.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}>
         <Stack.Screen options={{ title: t('music.title') }} />
+        {results.songs?.state === 'on' ? <Button label={t('music.create.title')} onPress={() => router.push('/music/create' as never)} /> : null}
         {off ? <EmptyState title={t('music.off')} body={t('music.offBody')} actionLabel={t('music.back')} href="/audio" /> : <>
             <SegmentedControl value={currentTab} onChange={value => { setTab(value); setHook(null); }}
                 options={(['songs', 'history', 'hooks'] as const).filter(value => value === 'songs' || results[value]?.state === 'on' || (results[value]?.state === 'error' && previous[value] !== undefined))

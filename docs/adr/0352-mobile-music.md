@@ -65,3 +65,26 @@ probe permits it, search. True paging needs a server cursor. Hooks/covers writes
 Share tokens are chosen by the client (32 random bytes, base64url). An ambiguous share failure
 retries the identical song/version/token/idempotency-key tuple. Listen, reversible trash/restore,
 and share create/revoke send no content to AI providers and spend no credits.
+
+## P2 amendment (2026-11-18)
+
+The native create screen offers simple instrumental prompts and saved custom drafts, then a
+separate quote and confirm step. Quotes show candidate cost, total cost, balance after spending,
+and expiry. Confirm uses the authenticated client's real consent and hard-paywall guards.
+Credits remain store-only: this screen spends existing credits and offers no purchase or web link.
+Locked models, insufficient balance and occupied concurrency slots block new submissions.
+
+A memory-only account session retains one quote, immutable submitted input and idempotency key.
+An ambiguous confirmation survives screen remounts and quote expiry; Check the result replays
+that key through the same guards. A definitive rejection clears it, while network failures,
+429s and server failures preserve it. Edits invalidate unsubmitted quotes and the shared revision
+gate discards delayed draft saves and quotes. Draft conflicts offer server or local text explicitly.
+
+The newest twenty accepted generations are tracked in memory, with foreground-only polling,
+terminal stop, backoff and an off-state circuit breaker. Replay acknowledgements merge by id.
+Candidates use the P1 player, with one player mounted at a time; result lyrics come from the
+submitted snapshot. A failed candidate does not claim its refund has completed; refunded does.
+
+Attempts and the queue are lost when the process is killed. The server still owns acceptance,
+refunds and library songs. Cross-device concurrency remains enforced by the server. Jest proofs
+use mocked clients and fixtures; no real generation is submitted during validation.

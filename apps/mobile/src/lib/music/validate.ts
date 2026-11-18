@@ -1,5 +1,5 @@
 import { isFiniteNumber, isRecord } from '../responseShapes';
-import type { MusicEntitlements, MusicGeneration, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle } from './types';
+import type { MusicDraft, MusicCandidateView, MusicGenerationView, MusicEntitlements, MusicGeneration, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle } from './types';
 
 // Boundary checks: every field the exported types promise is verified, so a screen never meets a
 // missing nested field as a throw on access (the caller gets `bad_response` instead).
@@ -68,3 +68,14 @@ export const isShareLink = (v: unknown): v is MusicShareLink => isRecord(v)
     && all(v, ['id', 'version_id', 'created_at'], str) && nullableString(v.revoked_at);
 export const isMusicLifecycle = (v: unknown): v is MusicLifecycle => isRecord(v)
     && all(v, ['id', 'lifecycle_status', 'updated_at'], str) && isFiniteNumber(v.revision);
+
+export const isMusicDraft = (v: unknown): v is MusicDraft => isRecord(v)
+    && nullableString(v.id) && nullableString(v.updated_at)
+    && isFiniteNumber(v.revision) && Number.isInteger(v.revision) && v.revision >= 0
+    && all(v, ['model_id', 'lyrics', 'styles', 'title'], str);
+export const isMusicCandidateView = (v: unknown): v is MusicCandidateView => isRecord(v)
+    && isFiniteNumber(v.ordinal) && all(v, ['label', 'state'], str)
+    && all(v, ['job_id', 'song_id', 'version_id', 'error_code', 'audio_url'], nullableString);
+export const isMusicGenerationView = (v: unknown): v is MusicGenerationView => isRecord(v)
+    && all(v, ['id', 'state', 'model_id', 'prompt', 'created_at'], str) && nullableString(v.title)
+    && isFiniteNumber(v.total_credits) && Array.isArray(v.candidates) && v.candidates.every(isMusicCandidateView);
