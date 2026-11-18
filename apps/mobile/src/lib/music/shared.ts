@@ -14,6 +14,9 @@ import * as remix from '../../../../../lib/musicRemix.js';
 // @ts-ignore see above
 import * as wav from '../../../../../lib/musicWavRender.js';
 
+// @ts-ignore plain JS shared gate; this seam is the mobile contract.
+import { createQuoteGate as sharedQuoteGate } from '../../../../../lib/quoteRevisionGate.js';
+
 type Parsed<T> = ({ ok: true } & T) | { ok: false; error: string };
 export type TimeSignature = { value: string; label?: string };
 
@@ -75,3 +78,8 @@ export const {
     MUSIC_SAMPLE_SECONDS_MAX, MUSIC_SAMPLE_EXTEND_MIN, MUSIC_SAMPLE_EXTEND_MAX, parseMusicRemixQuote, mashupSeconds,
 } = r;
 export const { renderPcmWavCrop, renderPcmWavFade, renderPcmWavSpeed, renderPcmWavReverse, renderPcmWavMix, pcmWavSeconds } = w;
+
+export const createQuoteGate = sharedQuoteGate as () => {
+    current(): number; start(): number; invalidate(): void;
+    unchanged(revision: number): boolean; isCurrent(token: number): boolean; isLatestStart(token: number): boolean;
+};

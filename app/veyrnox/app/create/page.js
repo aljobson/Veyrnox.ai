@@ -1,4 +1,5 @@
 'use client';
+import { SwapCreateEntry } from '../../_components/SwapCreateEntry.js';
 import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../../_lib/imageTemplateModels.js';
 import { templatePhotoHints, templatePhotosUnavailable, templateContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId, templatePhotoError } from '../../../../lib/templateClientContract';
 import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource, sourcesForModel } from '../../../../lib/generationSourceSlots.mjs';
@@ -112,7 +113,11 @@ const autoShortFlag = () => readFlag(AUTO_SHORT_FLAG);
 const off = () => false;
 const ready = () => true;
 
-export default function CreateStudio() {
+export default function CreateStudioEntry() {
+  return <SwapCreateEntry><CreateStudio /></SwapCreateEntry>;
+}
+
+function CreateStudio() {
   const router = useRouter();
   const { t, locale } = useI18n();
   const translation = useRef(t);

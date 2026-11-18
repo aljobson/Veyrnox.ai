@@ -2,6 +2,8 @@
 import { useI18n } from '../../../components/I18nProvider.jsx';
 
 import { presetStep } from '../../../lib/i18n/presetSteps.mjs';
+import { useResolvedSwap } from './TemplateSwapBoundary.js';
+import { SwapAttemptStatus } from './SwapAttemptStatus.js';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSwapSceneAvailable } from '../_lib/useSwapSceneAvailable';
@@ -31,6 +33,7 @@ function CopyPrompt({ text, label }) {
 
 export function TemplateRecipe({ preset, generatedPreview = false }) {
   const { t } = useI18n();
+  const resolvedSwap = useResolvedSwap();
   const hasExactSourcePrompt = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
   // One community prompt, shown and handed to Create unchanged unless edited.
   const [prompt, setPrompt] = useState(hasExactSourcePrompt ? preset.sourcePrompt : preset.prompt);
@@ -40,14 +43,16 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const templateClip = useTemplateClipAvailable(preset.id);
   const displayPrompt = templateClip ? (hasExactSourcePrompt ? preset.sourcePrompt : preset.prompt) : prompt;
   const sourceUnsupported = templateSourceUnsupported(preset) && !templateClip;
-  const swapSceneAvailable = useSwapSceneAvailable(sourceUnsupported ? preset.id : null);
+  const swapSceneAvailable = useSwapSceneAvailable(sourceUnsupported && !resolvedSwap?.loading ? preset.id : null);
   const sourcePromptUnavailable = preset.sourcePromptStatus === 'unavailable';
   const sourcePromptNotRecorded = preset.sourcePromptStatus === 'adaptation-only';
   const sourcePromptTruncated = preset.sourcePromptStatus === 'exact-truncated';
   const sourcePromptDuplicate = typeof preset.sourcePromptDuplicateOf === 'string' && preset.sourcePromptDuplicateOf.length > 0;
   const promptLabel = hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPrompt") : t("public.TemplateRecipe.prompt");
+  if (resolvedSwap?.offer) return <><SwapAttemptStatus templateId={preset.id} /><UseTemplate preset={preset} templateSwap={resolvedSwap.offer} /></>;
   return (
     <>
+      <SwapAttemptStatus templateId={preset.id} />
       {(sourcePromptUnavailable || sourcePromptNotRecorded) && (
         <div role="note" data-source-prompt-status={preset.sourcePromptStatus} className="mt-8 rounded-xl border border-vx-warn/40 bg-vx-warn/[0.07] px-4 py-3 text-[13px] text-vx-fg-body">
           {t(sourcePromptUnavailable ? "public.TemplateRecipe.sourcePromptUnavailable" : "public.TemplateRecipe.sourcePromptNotRecorded")}

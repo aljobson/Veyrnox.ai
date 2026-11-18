@@ -34,6 +34,15 @@ test('P1: changing models carries template, workflow metadata, closest settings 
     expect(nearestDuration(model, 8)).toBe(10);
     expect(acceptedSettings({ ...model, capabilities: { inputs: { aspect_ratio: { values: ['1:1', '16:9'] } } } }, snapshot).opts.aspect).toBe('1:1');
 });
+// QA: switching 720p/1080p on Kling 3.0 image-to-video reset the frame chip to Original while the held photo was still cropped.
+test('a model switch keeps the frame choice for models that take one, and drops it for others', () => {
+    const kling: CatalogModel = { ...model, id: 'kling-3.0-standard-i2v', modality: 'image-to-video' };
+    expect(acceptedSettings(kling, { ...snapshot, frame: '9:16' }).frame).toBe('9:16');
+    expect(acceptedSettings(kling, { ...snapshot, frame: '' }).frame).toBeUndefined();
+    expect(acceptedSettings(kling, { ...snapshot, frame: 'not-a-ratio' }).frame).toBeUndefined();
+    expect(acceptedSettings(model, { ...snapshot, frame: '9:16' }).frame).toBeUndefined();
+    expect(read(createHandoff(kling, carry, { ...snapshot, frame: '1:1' }, refs)).settings?.frame).toBe('1:1');
+});
 test.each([false, true])('P2: attaching with model change=%s preserves a settings snapshot and Faceless sound continuation', changed => {
     const target = changed ? { ...model, id: 'different', modality: 'text-to-image' } : model;
     const href = createHandoff(target, carry, snapshot, [...refs, refs[0], { slot: 'image', origin: 'upload', key: 'new-file' }], { followup: 'generated-sound' });

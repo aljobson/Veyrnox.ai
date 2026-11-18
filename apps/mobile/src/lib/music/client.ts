@@ -1,8 +1,8 @@
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
-import { isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle } from './validate';
+import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle } from './validate';
 import type {
-    MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
+    MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
     MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery,
 } from './types';
 
@@ -71,7 +71,7 @@ export async function setSongLifecycle(api: ApiClient, id: string, action: 'tras
 }
 
 // Step 1 of create: an exact, short-lived price for two candidates. No credits move.
-export async function createQuote(api: ApiClient, input: ({ mode?: 'simple' } & MusicSimpleQuoteInput) | ({ mode: 'custom' } & MusicCustomQuoteInput)): Promise<MusicQuote> {
+export async function createQuote(api: ApiClient, input: MusicSimpleQuoteInput | MusicCustomQuoteInput): Promise<MusicQuote> {
     const v = await api.request<unknown>(`${BASE}/generation-quotes`, post(input));
     if (!isMusicQuote(v)) throw bad();
     return v;
@@ -83,5 +83,28 @@ export async function createQuote(api: ApiClient, input: ({ mode?: 'simple' } & 
 export async function startGeneration(api: ApiClient, quoteId: string, idempotencyKey: string): Promise<MusicGeneration> {
     const v = await api.request<unknown>(`${BASE}/generations`, post({ quote_id: quoteId, idempotency_key: idempotencyKey }));
     if (!isMusicGeneration(v)) throw bad();
+    return v;
+}
+
+export async function getCustomDraft(api: ApiClient): Promise<MusicDraft> {
+    const v = await api.request<unknown>(`${BASE}/drafts/custom`);
+    if (!isRecord(v) || !isMusicDraft(v.draft)) throw bad();
+    return v.draft;
+}
+export async function saveCustomDraft(api: ApiClient, input: MusicDraftInput): Promise<MusicDraft> {
+    const { revision, model_id, lyrics, styles, title } = input;
+    const v = await api.request<unknown>(`${BASE}/drafts/custom`, {
+        ...post({ revision, model_id, lyrics, styles, title }), method: 'PUT',
+    });
+    if (!isRecord(v) || !isMusicDraft(v.draft)) throw bad();
+    return v.draft;
+}
+export function conflictDraft(err: unknown): MusicDraft | null {
+    return err instanceof ApiError && err.status === 409 && err.code === 'revision_conflict'
+        && isMusicDraft(err.body.draft) ? err.body.draft : null;
+}
+export async function getGeneration(api: ApiClient, id: string): Promise<MusicGenerationView> {
+    const v = await api.request<unknown>(`${BASE}/generations/${encodeURIComponent(id)}`);
+    if (!isMusicGenerationView(v) || v.id !== id) throw bad();
     return v;
 }

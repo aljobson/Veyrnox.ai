@@ -3276,6 +3276,24 @@
     "ratio": 1.79
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "music.create.songTitle",
+    "english": "Song title",
+    "translation": "Título de la canción",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.keepMine",
+    "english": "Keep mine",
+    "translation": "Conservar la mía",
+    "ratio": 1.78
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

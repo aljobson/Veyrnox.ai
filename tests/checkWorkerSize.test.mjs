@@ -4,7 +4,7 @@ import { builtinModules } from 'node:module';
 import { checkWorkerSize, checkWrapper, forbiddenWrapperInput, parseUploadKiB, WORKER_SIZE_BUDGET_KIB } from '../scripts/check-worker-size.mjs';
 
 test('size parser reads uncompressed KiB and fails closed for missing or invalid output', () => {
-  assert.equal(WORKER_SIZE_BUDGET_KIB, 60700);
+  assert.equal(WORKER_SIZE_BUDGET_KIB, 48500);
   assert.equal(parseUploadKiB('Total Upload: 60490 KiB / gzip: 12290 KiB'), 60490);
   assert.equal(parseUploadKiB('Total Upload: 54,321.50 KiB / gzip: 9000 KiB'), 54321.5);
   assert.equal(parseUploadKiB('Total Upload: 10 KiB\nTotal Upload: 20 KiB'), 20);
@@ -19,13 +19,15 @@ test('size guard uses the larger measurement and rejects either over-budget resu
     run: async () => `Total Upload: ${upload} KiB / gzip: 1 KiB`,
     measure: async () => disk * 1024, report: (line) => lines.push(line),
   });
-  assert.equal(await checkWorkerSize(options(54000, 55000)), 55000);
-  assert.equal(await checkWorkerSize(options(60700, 55000)), 60700);
-  await assert.rejects(checkWorkerSize(options(60800, 55000)), /exceeds/);
-  await assert.rejects(checkWorkerSize(options(54000, 60700.01)), /exceeds/);
-  await assert.rejects(checkWorkerSize(options(54000, 0)), /no measurable/);
+  const budget = WORKER_SIZE_BUDGET_KIB;
+  assert.equal(await checkWorkerSize(options(budget - 2000, budget - 1000)), budget - 1000);
+  assert.equal(await checkWorkerSize(options(budget, budget - 1000)), budget);
+  assert.equal(await checkWorkerSize(options(budget - 1000, budget)), budget);
+  await assert.rejects(checkWorkerSize(options(budget + 0.01, budget - 1000)), /exceeds/);
+  await assert.rejects(checkWorkerSize(options(budget - 1000, budget + 0.01)), /exceeds/);
+  await assert.rejects(checkWorkerSize(options(budget - 1000, 0)), /no measurable/);
   await assert.rejects(checkWorkerSize({ ...options(1, 1), run: async () => { throw new Error('dry-run failed'); } }), /dry-run failed/);
-  assert.match(lines[0], /55000.00 KiB/);
+  assert.ok(lines[0].includes(`${(budget - 1000).toFixed(2)} KiB`));
 });
 
 test('wrapper input policy rejects every forbidden family and permits only English public catalogs', () => {

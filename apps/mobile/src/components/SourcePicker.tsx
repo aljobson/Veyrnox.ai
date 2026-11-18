@@ -1,5 +1,5 @@
 import { rawText } from '../lib/i18n/translate';
-import { Text, Button, themedStyles, useThemedStyles } from './ui';
+import { Text, Button, Icon, themedStyles, useThemedStyles } from './ui';
 import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -53,6 +53,8 @@ type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonl
 
 const TOKEN = { image: 'Image', video: 'Video', audio: 'Audio' } as const;
 const NOUN = { image: 'image', video: 'video', audio: 'audio file' } as const;
+// A held file with no picture of its own (a draft or a model switch kept the upload, not the local copy) shows its kind, never a blank box.
+const KIND_ICON = { image: 'image', video: 'video', audio: 'audio' } as const;
 
 export async function choose(kind: Slot['kind'], onConverting?: () => void): Promise<PickedFile | null> {
     if (kind === 'audio') {
@@ -325,7 +327,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                 <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label }))} onPress={pick} icon="paperclip" label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
             ) : (
                 <View style={styles.row}>
-                    {preview ? <Image source={{ uri: preview }} style={frame ? [styles.thumb, { width: Math.round(64 * frameRatio(frame)) }] : styles.thumb} contentFit="cover" /> : libraryJob ? <JobThumb links={links} jobId={libraryJob} size={64} /> : <View style={[styles.thumb, styles.thumbPlain]} />}
+                    {preview ? <Image source={{ uri: preview }} style={frame ? [styles.thumb, { width: Math.round(64 * frameRatio(frame)) }] : styles.thumb} contentFit="cover" /> : libraryJob ? <JobThumb links={links} jobId={libraryJob} size={64} /> : <View style={[styles.thumb, styles.thumbPlain, styles.thumbGlyph]} accessible={false} importantForAccessibility="no-hide-descendants"><Icon name={KIND_ICON[slot.kind]} size={24} /></View>}
                     <View style={styles.grow}>
                         {status.step === 'uploading' ? (
                             <View style={styles.status}>
@@ -374,6 +376,7 @@ const sheets = themedStyles((p) => ({
     row: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
     thumb: { width: 64, height: 64, borderRadius: ds.radius.sm, backgroundColor: p.bgElevated1 },
     thumbPlain: { borderColor: p.borderSubtle, borderWidth: 1 },
+    thumbGlyph: { alignItems: 'center', justifyContent: 'center' },
     grow: { flex: 1 },
     status: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     body: { color: p.textSecondary },

@@ -47,7 +47,7 @@ test('template pages expose Recreate only on staging and when a preview video ex
   assert.equal(templateRecreateEnabled('development'), false);
   assert.match(page, /templateRecreateEnabled\(\)/);
   assert.match(page, /await import\('\.\.\/\.\.\/_components\/TemplateRecreate'\)/);
-  assert.match(page, /\{clip && TemplateRecreate && <TemplateRecreate/);
+  assert.match(page, /\{clip && TemplateRecreate && <TemplateSwapLegacy><TemplateRecreate/);
   assert.doesNotMatch(page, /^import .*TemplateRecreate/m);
   assert.match(component, /data-testid="template-recreate"/);
   assert.match(component, /writeStudioDraft/);

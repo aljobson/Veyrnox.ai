@@ -39,6 +39,8 @@ const SIGNED_OUT_KEY = 'veyrnox_session_signed_out';
 const REFRESH_AHEAD_SEC = 60;
 const listeners = new Set();
 let refreshInFlight = null;
+let signoutInFlight = false;
+let signoutAccountId = null;
 let memorySession = null;
 // A failed storage write must not let a readable stale record override a
 // completed local sign-in/logout. A later cross-tab session event resets this.
@@ -181,7 +183,7 @@ export async function getFreshAccessToken() {
                 const status = err && err.status;
                 const code = err && err.code;
                 if ((status === 400 || status === 401) && (code === "invalid_grant" || code === "no_session")) {
-                    if (sessionEpoch === epoch && s) setSession(null);
+                    if (sessionEpoch === epoch && s) setSession(null, { reason: 'expired' });
                     return null;
                 }
                 return getAccessToken();
@@ -212,7 +214,7 @@ function persistMetadata(operation) {
     }
 }
 
-function setSession(s, { broadcast = true } = {}) {
+function setSession(s, { broadcast = true, reason } = {}) {
     const previous = readStored();
     // Session ended or a different user: nothing the last one left in this
     // browser (job history, unsent chat text, starred replies) is kept.
@@ -245,13 +247,14 @@ function setSession(s, { broadcast = true } = {}) {
         }
     }
     storageFallback = !persisted;
-    for (const cb of listeners) cb(memorySession);
+    const signingOutOwner = signoutInFlight && (!memorySession || memorySession.user?.id === signoutAccountId);
+    for (const cb of listeners) cb(signingOutOwner ? null : memorySession, { reason: signingOutOwner ? 'signout' : reason });
 }
 
 /**
  * Subscribe to session changes (sign-in, sign-out, expiry). Fires with the
  * new session (or null) whenever setSession is called from any code path.
- * @param {(session: VeyrnoxSession|null) => void} cb
+ * @param {(session: VeyrnoxSession|null, event?: {reason?: string}) => void} cb
  * @returns {() => boolean} unsubscribe
  */
 export function onSessionChange(cb) {
@@ -503,8 +506,8 @@ export async function completeFromFragment() {
     return null;
 }
 /** Drop local state immediately and expire the HttpOnly credential. */
-export function clearSession() {
-    setSession(null);
+export function clearSession(reason = 'signout') {
+    setSession(null, { reason });
     if (typeof window !== 'undefined') void browserSessionRequest({ action: 'clear' }).catch(() => {});
 }
 
@@ -518,9 +521,18 @@ export function clearSession() {
  * everywhere" on /app/account ends the others (accountSecurity.js).
  */
 export async function signOut() {
+    // Suspend/purge local drafts immediately, even if revocation first needs a refresh.
+    signoutInFlight = true;
+    signoutAccountId = getStoredUserId();
+    const owner = signoutAccountId;
+    for (const cb of listeners) cb(null, { reason: 'signout' });
     let token = null;
     try { token = await getFreshAccessToken(); } catch { /* still sign out here */ }
-    setSession(null);
+    // A later sign-in belongs to its new owner, not this pending sign-out.
+    if (getStoredUserId() && getStoredUserId() !== owner) { signoutInFlight = false; return; }
+    setSession(null, { reason: 'signout' });
+    signoutInFlight = false;
+    signoutAccountId = null;
     await browserSessionRequest({ action: 'clear' }).catch(() => {});
     if (!token) return;
     const { url, anonKey } = ensureCfg();

@@ -27,3 +27,8 @@ test('Your music opens the library regardless of generation catalog', () => {
     expect(audioTarget('yourMusic', null)).toEqual({ pathname: '/music' });
     expect(audioTarget('yourMusic', [])).toEqual({ pathname: '/music' });
 });
+
+test('available music opens native create; unavailable retains generic target', () => {
+    expect(audioTarget('music', null, true)).toEqual({ pathname: '/music/create' });
+    expect(audioTarget('music', null, false)).toEqual({ pathname: '/create' });
+});

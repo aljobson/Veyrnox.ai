@@ -36,10 +36,11 @@ function harness({ models = [other, original], live = true, template = preset, p
     '../../../components/I18nProvider.jsx': { useI18n: () => ({ t: (key, values) => values ? `${key}:${JSON.stringify(values)}` : key }) },
     '../_lib/useCatalog': { useCatalog: () => ({ models, live, loading: !live }) },
     'next/navigation': { useRouter: () => ({ push: href => pushed.push(href) }) },
+    './TemplateSwapBoundary.js': { useResolvedSwap: () => null, TemplateSwapBoundary: ({ children }) => children, TemplateSwapSummary: ({ children }) => children, TemplateSwapLegacy: ({ children }) => children },
     ...(prepare ? { '../_lib/uploadConvert.mjs': { prepareUpload: prepare } } : {}),
   } });
-  const { UseTemplate } = f.load('app/veyrnox/_components/UseTemplate.js');
-  return { render: () => { index = 0; return UseTemplate({ preset: template, prompt, templateClip }); }, pushed };
+  const { LegacyUseTemplate } = f.load('app/veyrnox/_components/UseTemplate.js');
+  return { render: () => { index = 0; return LegacyUseTemplate({ preset: template, prompt, templateClip }); }, pushed };
 }
 
 test('UseTemplate renders an enabled button and defaults for a non-runnable exact prompt', () => {
