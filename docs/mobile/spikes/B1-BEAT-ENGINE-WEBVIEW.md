@@ -10,7 +10,7 @@
 
 ## Owner direction (2026-11-18)
 
-The owner said the beat engine "needs to be mobile view": the phone gets a phone-shaped editor, not the desktop page shrunk into a web view. This agrees with recommendation item 4 below and points to the phone-scoped path for P5. It does not yet settle whether the audio engine is native or the web engine in a hidden audio-only web view; the device checklist answers that.
+The owner's decision: the beat engine is a **native mobile view**: a phone-shaped editor built in the app's own screens, not the desktop page in a web view. This settles the P5 shape in favour of the phone-scoped native editor and matches the recommendation below. Still open: whether its audio runs on a native audio engine or reuses the web engine (voices, mix graph, mixdown) in a hidden audio-only web view behind native screens. The device checklist (sections B and C) decides that, and the answer only affects the audio layer, not the screens.
 
 ## Recommendation (a recommendation only)
 
