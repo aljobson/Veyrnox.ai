@@ -11,20 +11,19 @@
  * never from the request, so this is not an open redirect.
  */
 
+import { publicAuthOrigin } from '../../../../lib/publicAuthHost.js';
+
 const PUBLIC_ORIGIN = process.env.PUBLIC_HOST || 'https://veyrnox.ai';
 const PROVIDERS = new Set(['google', 'apple']);
 const CHALLENGE_RE = /^[A-Za-z0-9_-]{43,128}$/;
 
-// Supabase custom domains, keyed by project URL. A constant, not a var: the
-// production Worker is at its var budget (tests/workerBindingBudget.test.mjs).
-const AUTH_HOSTS = new Map([['https://xdxdzmsztyzbnzeforxx.supabase.co', 'https://auth.veyrnox.ai']]);
 
 const headers = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' };
 
 export function GET(req) {
     const projectUrl = process.env.SUPABASE_URL?.replace(/\/$/, '');
     if (!projectUrl) return Response.json({ error: 'oauth_not_configured' }, { status: 503, headers });
-    const authUrl = AUTH_HOSTS.get(projectUrl) || projectUrl;
+    const authUrl = publicAuthOrigin(projectUrl);
     const params = new URL(req.url).searchParams;
     const provider = params.get('provider');
     const challenge = params.get('code_challenge');
