@@ -77,6 +77,11 @@ describe('a refused source names its real reason', () => {
         const message = speechMessage(new ApiError(400, 'source_unreadable', { reason: 'probe_failed' }));
         expect(message).toBe(t('editorSpeech.sourceUnreadable')); expect(message).not.toContain('100 MB');
     });
+    test.each([['fragmented', 'editorSpeech.sourceFragmented'], ['no_hash', 'editorSpeech.sourceNoHash'], ['unsupported_type', 'editorSpeech.sourceBadType'], ['read_failed', 'editorSpeech.sourceUnreadable'], ['movie_box_too_large', 'editorSpeech.sourceUnreadable']])(
+        'an unreadable clip names its reason: %s', (reason, key) => {
+            const message = speechMessage(new ApiError(400, 'source_unreadable', { reason }));
+            expect(message).toBe(t(key)); expect(message).not.toMatch(/save[d]? as MP4 or MOV/i);
+        });
     test('a video with no sound says so, and is not the generic or the no-speech-refund text', () => {
         const message = speechMessage(new ApiError(400, 'source_no_audio'));
         expect(message).toBe(t('editorSpeech.sourceNoAudio')); expect(message).toMatch(/sound|audio/i);

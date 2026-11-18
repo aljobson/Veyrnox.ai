@@ -1,4 +1,5 @@
 'use client';
+import { publicModelId } from '../../../../../lib/publicModelIds.js';
 import LegalLink from '../../../../../components/LegalLink';
 import { localeTag } from '../../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../../lib/i18n/translate.mjs';
@@ -94,7 +95,7 @@ function Sanction({ sanction: s, onDone }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-bold">{tOr(t, `app.account.appeals.action.${s.action}`, s.action)}</h2>
-          <div className="text-xs text-vx-fg-muted mt-1">{when(s.created_at)}{s.model_id ? ` · ${s.model_id}` : ''}{s.hold_until && new Date(s.hold_until) > new Date() ? t('app.account.appeals.pausedUntil', { date: when(s.hold_until) }) : ''}</div>
+          <div className="text-xs text-vx-fg-muted mt-1">{when(s.created_at)}{s.model_id ? ` · ${publicModelId(s.model_id)}` : ''}{s.hold_until && new Date(s.hold_until) > new Date() ? t('app.account.appeals.pausedUntil', { date: when(s.hold_until) }) : ''}</div>
         </div>
         {s.appeal_status === 'open' && <Chip tone="neutral" noGlyph><span data-testid="appeal-under-review">{t("app.account.appeals.open")}</span></Chip>}
         {s.appeal_status === 'upheld' && <Chip tone="accent" noGlyph>{t("app.account.appeals.upheld")}</Chip>}

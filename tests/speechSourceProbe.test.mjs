@@ -77,3 +77,25 @@ test('a video whose only track is picture is reported with no audio; one with a 
     assert.equal((await probeMovie(movie('vide'))).audio, false);
     assert.equal((await probeMovie(movie('vide', 'soun'))).audio, true);
 });
+
+test('a probe refusal reports which check fired', async () => {
+    const reasons = [], onRefusal = r => reasons.push(r);
+    const base = { size_bytes: 100000, sha256: 'a'.repeat(64), mime_type: 'video/mp4', r2_key: 'owned' };
+    const deps = { sign: async () => ({ url: 'https://r2.test/owned' }), onRefusal, fetcher: async () => new Response(new Uint8Array(0), { status: 200 }) };
+    await probeSpeechSource({ ...base, size_bytes: 0 }, r2, deps);
+    await probeSpeechSource({ ...base, sha256: null }, r2, deps);
+    await probeSpeechSource({ ...base, mime_type: 'video/webm' }, r2, deps);
+    await probeSpeechSource(base, r2, { ...deps, sign: async () => { throw Error('x'); } });
+    await probeSpeechSource(base, r2, { ...deps, fetcher: async () => { throw Error('net'); } });
+    assert.deepEqual(reasons, ['no_size', 'no_hash', 'unsupported_type', 'sign_failed', 'read_failed']);
+});
+test('a fragmented MP4 is refused with reason fragmented; a movie box with a real length is not', async () => {
+    const moof = mbox('moof', Buffer.alloc(16)), mvhd = Buffer.alloc(100); mvhd.writeUInt32BE(1000, 12); mvhd.writeUInt32BE(4000, 16);
+    const fragmented = Buffer.concat([mbox('ftyp', Buffer.from('isom0000')), mbox('moov', mbox('mvhd', mvhd)), moof, mbox('mdat', Buffer.alloc(64))]);
+    const reasons = [];
+    const probe = await probeSpeechSource({ size_bytes: fragmented.length, sha256: 'c'.repeat(64), mime_type: 'video/mp4', r2_key: 'owned' }, r2, {
+        sign: async () => ({ url: 'https://r2.test/owned' }), onRefusal: r => reasons.push(r),
+        fetcher: async (_u, init) => { const [a, b] = init.headers.Range.replace('bytes=', '').split('-').map(Number); return new Response(new Uint8Array(fragmented.subarray(a, b + 1)), { status: 206 }); },
+    });
+    assert.equal(probe, null); assert.deepEqual(reasons, ['fragmented']);
+});

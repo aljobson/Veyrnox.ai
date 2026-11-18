@@ -172,6 +172,16 @@ test('a video with no sound track is refused before debit as source_no_audio, no
     assert.equal(f.debit(), 0); assert.equal(f.submissions.length, 0);
     assert.equal(f.calls.filter(c => c.name === 'speech_source_probe_store').length, stored, 'a silent source is never cached as a probe');
 });
+test('the probe reason reaches the response: a fragmented MP4 is source_unreadable/fragmented', async () => {
+    const f = fixture({ probe: async (_asset, _cfg, deps) => { deps.onRefusal('fragmented'); return null; } });
+    const res = await f.run(request()); assert.equal(res.status, 400); assert.deepEqual(await res.json(), { error: 'source_unreadable', reason: 'fragmented' });
+    assert.equal(f.debit(), 0); assert.equal(f.submissions.length, 0);
+});
+test('a probe that reports too_dense with its length is answered as bytes per second, not unreadable', async () => {
+    const f = fixture({ asset: { size_bytes: 25 * 1024 * 1024 }, probe: async (_a, _c, deps) => { deps.onRefusal('too_dense', { duration: 12 }); return null; } });
+    const res = await f.run(request()); assert.equal(res.status, 400);
+    assert.deepEqual(await res.json(), { error: 'source_bitrate_too_high', size_mb: 25, seconds: 12 });
+});
 test('a source with no stored size or no hash is reported unreadable with its reason, before debit', async () => {
     for (const [asset, reason] of [[{ size_bytes: 0 }, 'no_size'], [{ sha256: null }, 'no_hash']]) {
         const f = fixture({ asset, probe: async () => null });
