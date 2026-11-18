@@ -8,6 +8,8 @@ const files = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: tr
 // Dev-only WebView probe reports browser/native diagnostic strings, never production navigation.
 const exceptions = new Set([
     'components/dev/EditorSpikeHarness.tsx',
+    'components/dev/BeatEngineSpikeHarness.tsx',
+    'app/(app)/dev-b1-beat.tsx',
     'lib/cinemaEditorialData.ts', // Imported film/episode names are creator content, not app copy.
 ]);
 // Generated legal documents have their own translation/parity guard and must remain verbatim.
