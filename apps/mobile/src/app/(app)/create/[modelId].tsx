@@ -13,7 +13,6 @@ import { Image } from 'expo-image';
 import { CostTick, CreateResult, type ResultBatch } from '../../../components/create/CreateResult';
 import { refreshBalance } from '../../../lib/createResult';
 import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import type { SubmitRequest } from '../../../lib/generationSubmit';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { CreateStatusNotes, costLine } from '../../../components/create/CreateStatusNotes';
@@ -22,6 +21,7 @@ import { ModelUnavailable } from '../../../components/create/ModelUnavailable';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { useModelSwitch } from '../../../components/create/useModelSwitch';
+import { ResolutionVariantChips, hasResolutionVariants } from '../../../components/create/ResolutionVariantChips';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -32,7 +32,7 @@ import { ActivityIndicator, Platform, Pressable, ScrollView, View } from 'react-
 import { useAuth } from '../../../auth/AuthProvider';
 import { API_BASE, ApiError } from '../../../lib/api';
 import { canDraw } from '../../../lib/drawOnImage';
-import { createGenerationSubmit, generationSignature, unknownGenerationOutcome, type ChargeSnapshot, generationMessage } from '../../../lib/generationSubmit';
+import { createGenerationSubmit, generationSignature, unknownGenerationOutcome, type ChargeSnapshot, generationMessage, type SubmitRequest } from '../../../lib/generationSubmit';
 import { CameraPanel } from '../../../components/CameraPanel';
 import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
@@ -446,7 +446,7 @@ export default function CreateWithModel() {
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('opt.draftClear')} onPress={discardDraft} label={t('opt.draftClear')} />
                     </View>
                 ) : null}
-                {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
+                {((isVideo && model.durations.length > 1) || hasResolutionVariants(model, catalog) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
                     <View style={styles.settingsSection}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.settings')}</SectionLabel>
@@ -459,6 +459,7 @@ export default function CreateWithModel() {
                                 ))}
                             </View>
                         ) : null}
+                        <ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
                         {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} tier={tier} tierLabel={(id) => `${id === '4k' ? '4K' : id} · ${estimateCredits(model, duration, id)}`} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                         {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
