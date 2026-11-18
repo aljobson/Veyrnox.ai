@@ -5,17 +5,18 @@ import { clipOrigin } from '../scripts/lib/template-origin.mjs';
 import { swapCandidates, auditRecords } from '../scripts/import-template-swap-clips.mjs';
 import { templateContract } from '../lib/templateContract.js';
 // 17 Nov 2026: withdrawing the duplicate community-midnight-fridge-feast (PR 2379) took it out of the gallery: listed 150 -> 149, hidden +1.
+// 18 Nov 2026: hiding the 71 swap recipes the server refuses (owner) took them out of the gallery: listed 149 -> 73, hidden +76 (71 refused by the guard + 5 it missed; the guard now also reads 14 hidden templates as video swaps).
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
-    addressable: 1926, listed: 149, hidden: 1777,
-    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 98, 'like-for-like-safe': 232, bound: 13, none: 1042 },
-    hiddenRouteFits: { o1_clip: 448, none_unsupported: 78, text_only_other_model: 112, kling_i2v_photo: 97, none_no_contract: 1042 },
-    hiddenKinds: { video_swap: 300, none: 1329, motion: 92, swap: 56 },
-    seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 24, withdrawn_or_absent: 6, hidden: 170 },
-    seedanceHiddenRouteFits: { none_unsupported: 34, o1_clip: 52, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
+    addressable: 1926, listed: 73, hidden: 1853,
+    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 98, 'like-for-like-safe': 232, bound: 89, none: 1042 },
+    hiddenRouteFits: { o1_clip: 524, none_unsupported: 78, text_only_other_model: 112, kling_i2v_photo: 97, none_no_contract: 1042 },
+    hiddenKinds: { video_swap: 314, none: 1329, motion: 78, swap: 132 },
+    seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 23, withdrawn_or_absent: 6, hidden: 171 },
+    seedanceHiddenRouteFits: { none_unsupported: 34, o1_clip: 53, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
   });
-  assert.equal(report.becomesRunnableAfterClipApproval.length, 448);
+  assert.equal(report.becomesRunnableAfterClipApproval.length, 524);
   assert.equal(report.overBudget.find(r => r.id === 'jellyfish-airlines').length, 5814);
 });
 test('hidden clip list matches importer candidates; plain photo fit follows allowed models and references', async () => {
