@@ -40,6 +40,8 @@ import { loadTemplateClip } from '../../../../lib/templateClipGate.js';
 import { replayTemplateClip } from '../../../../lib/templateClipReplay.js';
 import { templateClipProviderPrompt } from '../../../../lib/templateClipPrompt.mjs';
 import { tieredCredits } from '../../../../lib/resolutionTiers.js';
+// Constrain idempotency keys to a safe printable range, shared with job lookup.
+import { IDEMPOTENCY_RE } from '../../../../lib/validate.js';
 import { internalModelId } from '../../../../lib/publicModelIds.js';
 
 // The wording version an upload consent attests to (ADR-0330: the Terms and AUP, no tick). Bump when the wording
@@ -47,8 +49,6 @@ import { internalModelId } from '../../../../lib/publicModelIds.js';
 // name on their next upload (attest_upload_rights, migration 0146).
 export const RIGHTS_ATTESTATION_VERSION = 'terms-2026-11-07';
 
-// Constrain idempotency keys to a safe printable range.
-const IDEMPOTENCY_RE = /^[A-Za-z0-9._-]{8,128}$/;
 // Catalog ids are lowercase slugs ('wan-2.5', 'veo-3.1-fast-kie'). Bounded
 // here so an unbounded string never reaches the PostgREST query string.
 const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
@@ -319,7 +319,11 @@ export async function POST(req) {
     const r2cfg = templateSwap || templateClip || swap || rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
     if (r2cfg && !r2IsConfigured(r2cfg)) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     const resolved = await resolveGenerationSources({ authId, references: references.references, record, r2cfg, dbcfg: cfg });
-    if (!resolved.ok) return NextResponse.json({ error: templateSwap && resolved.error === 'upload_unreadable' ? 'template_swap_image_size' : resolved.error }, { status: sourceErrorStatus(resolved.error) });
+    if (!resolved.ok) {
+        const error = templateSwap && ['upload_unreadable', 'upload_dimensions_too_large'].includes(resolved.error) ? 'template_swap_image_size'
+            : templateSwap && ['upload_type_mismatch', 'source_type_unsupported'].includes(resolved.error) ? 'template_swap_image_type' : resolved.error;
+        return NextResponse.json({ error }, { status: sourceErrorStatus(resolved.error) });
+    }
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
     if (templateSwap) {
@@ -565,5 +569,5 @@ export async function POST(req) {
 
     const submitOptions = { faceIdentity: !templateSwap && (appRuntimeFlag('templateFaceWording')
         && !!templateCheck.metadata && modelId === 'kling-3.0-i2v' && resolved.references.some(r => r.slot === 'image')) };
-    return finishGenerationSubmit({ submitOptions, jobId, userId, credits, modelRow, ownRoute, offerRoutes, rawKeys, rawAssets, record, modelInputs, storedInputs, publicHost, sources, provider, providerKey, balanceAfter, debit }, cfg);
+    return finishGenerationSubmit({ templateSwap: !!templateSwap, submitOptions, jobId, userId, credits, modelRow, ownRoute, offerRoutes, rawKeys, rawAssets, record, modelInputs, storedInputs, publicHost, sources, provider, providerKey, balanceAfter, debit }, cfg);
 }

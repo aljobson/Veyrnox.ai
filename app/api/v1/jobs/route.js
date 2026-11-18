@@ -16,6 +16,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { lookupJobByKey } from '../../../../lib/jobLookup.js';
 import { jobReadLimitResponse } from '../../../../lib/jobReadLimit.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { jobCursorTimestamp } from '../../../../lib/jobListCursor.js';
@@ -53,9 +54,10 @@ function publicErrorCode(code) {
 
 export async function GET(req) {
     const authId = req.headers.get('x-veyrnox-auth-id');
-    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
+    if (!authId) return NextResponse.json({ error: 'not_authenticated' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
 
     const url = new URL(req.url);
+    if (url.searchParams.has('idempotency_key')) return lookupJobByKey(authId, url.searchParams.get('idempotency_key'), envConfig());
     const rawLimit = url.searchParams.get('limit');
     const limit = rawLimit === null ? DEFAULT_LIMIT : Number(rawLimit);
     if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
