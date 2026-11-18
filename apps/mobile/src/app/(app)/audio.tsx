@@ -42,7 +42,7 @@ export default function AudioHub() {
                             accessibilityLabel={rawText(text[id].title)}
                             title={<Text variant="bodyStrong">{text[id].title}</Text>}
                             subtitle={text[id].blurb}
-                            onPress={() => router.push(audioTarget(id, models) as never)}
+                            onPress={() => router.push(audioTarget(id, models, musicAvailable) as never)}
                         />
                     ))}
                 </View>

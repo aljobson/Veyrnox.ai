@@ -3306,6 +3306,12 @@
     "ratio": 2.05
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

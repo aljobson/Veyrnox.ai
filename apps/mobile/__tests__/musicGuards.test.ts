@@ -62,7 +62,7 @@ test('a locked account is blocked before any request leaves; quotes stay open', 
     await expect(startGeneration(makeApi(), UUID, KEY)).rejects.toMatchObject({ status: 402, code: 'subscription_required' });
     expect(fetchMock).not.toHaveBeenCalled();
     fetchMock.mockResolvedValue({ ok: true, status: 201, headers: new Headers(), json: async () => quote });
-    await createQuote(makeApi(), { prompt: 'lofi' });
+    await createQuote(makeApi(), { mode: 'simple', prompt: 'lofi', instrumental: true, model_id: 'ace-step', duration_seconds: 30 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 

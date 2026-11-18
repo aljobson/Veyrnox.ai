@@ -1878,6 +1878,24 @@
     "ratio": 2
   },
   {
+    "id": "music.create.lyrics",
+    "english": "Lyrics",
+    "translation": "كلمات الأغنية",
+    "ratio": 2.17
+  },
+  {
+    "id": "music.create.keepMine",
+    "english": "Keep mine",
+    "translation": "الاحتفاظ بنسختي",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.create.queued",
+    "english": "Queued",
+    "translation": "في الانتظار",
+    "ratio": 1.83
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

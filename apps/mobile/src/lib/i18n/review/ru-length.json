@@ -3486,6 +3486,18 @@
     "ratio": 1.62
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Свой вариант",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
