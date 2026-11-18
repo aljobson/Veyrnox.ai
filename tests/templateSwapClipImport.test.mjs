@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile, mkdir, symlink, rm, access } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, mkdir, symlink, rm, access, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { importTemplateSwapClips, cli, swapCandidates, tierFor } from '../scripts/import-template-swap-clips.mjs';
+import { importTemplateSwapClips, cli, swapCandidates, tierFor, reviewFingerprint } from '../scripts/import-template-swap-clips.mjs';
 import { outsideRepositories, normaliseSwapClip, validateSwapMedia } from '../scripts/lib/swap-clip-normalise.mjs';
 import { measure } from '../scripts/import-swap-scenes.mjs';
 import { sha256Hex } from '../packages/adapters/r2.js';
@@ -74,7 +74,9 @@ test('local-only review pack, approved-only processing, hash checks and conditio
   const ignored = await importTemplateSwapClips({...base,decisions:[{id,approved:false}],showcaseDir:'/does-not-exist'});
   assert.deepEqual(ignored.manifest,{});
   for (const decisions of [[decision,decision],[decision,{id:'unknown',approved:false}]]) await assert.rejects(importTemplateSwapClips({...base,decisions}), /duplicate_template_id|unknown_template_swap/);
-  const reviewedDecisions = [{...decision,sha256:dry.manifest[id].sha256}];
+  const reviewedDecisions = [{ ...decisions.find(d => d.id === id), approved: true }];
+  assert.equal(reviewedDecisions[0].role, dry.manifest[id].role);
+  assert.equal(reviewedDecisions[0].reviewFingerprint, await reviewFingerprint(dry.manifest[id].sha256, dry.manifest[id].role));
   const r2 = {accountId:'mock',accessKeyId:'mock',secretAccessKey:'mock',bucket:'mock'}, objects = new Map();
   const storage = {
    async putObject(key,bytes,type,cfg,options) { assert.deepEqual(options,{onlyIfAbsent:true}); assert.equal(type, key.endsWith('.json') ? 'application/json' : 'video/mp4'); assert.equal(cfg,r2); if(objects.has(key)) return {ok:false,status:412}; objects.set(key,bytes); return {ok:true}; },
@@ -96,6 +98,18 @@ test('local-only review pack, approved-only processing, hash checks and conditio
 
   }
   assert.equal(objects.size,2);
+  for (const patch of [{ role: undefined }, { role: 'the other character' }, { reviewFingerprint: 'f'.repeat(64) }, { sha256: 'f'.repeat(64) }]) {
+   await assert.rejects(importTemplateSwapClips({ ...base, decisions: [{ ...reviewedDecisions[0], ...patch }], upload: true, confirmBucket: 'mock', r2,
+    storage: { putObject: () => assert.fail('unreviewed role must never upload'), getObject: () => assert.fail('unreviewed role must never read back') } }), /reviewed_role_mismatch/);
+  }
+  const override = await importTemplateSwapClips({ ...base, decisions: [{ ...decision, role: '  The CAR  ' }] });
+  assert.equal(override.manifest[id].role, 'the car');
+  const overrideRow = override.report.results.find(r => r.id === id);
+  assert.equal(overrideRow.object_role_suspected, true);
+  assert.deepEqual(overrideRow.roles, [{ slot: 1, role: 'the main character' }]);
+  assert.equal(overrideRow.reviewFingerprint, await reviewFingerprint(override.manifest[id].sha256, 'the car'));
+  assert.notEqual(overrideRow.reviewFingerprint, reviewedDecisions[0].reviewFingerprint);
+  await assert.rejects(importTemplateSwapClips({ ...base, decisions: [{ ...decision, role: '@Element2' }] }), /template_swap_role_invalid/);
   for (const failure of ['put', 'readback']) {
    let failedRun;
    await assert.rejects(importTemplateSwapClips({...base,decisions:reviewedDecisions,upload:true,confirmBucket:'mock',r2,storage:{
@@ -105,8 +119,15 @@ test('local-only review pack, approved-only processing, hash checks and conditio
    }}), error => { failedRun = error.runDir; return /manifest_put_failed|manifest_hash_mismatch/.test(error.message); });
    await assert.rejects(access(path.join(failedRun,'publishable')));
   }
-  await assert.rejects(importTemplateSwapClips({...base,upload:true,confirmBucket:'mock',r2,storage}), /reviewed_hash_mismatch/);
-  await assert.rejects(importTemplateSwapClips({...base,decisions:[{...decision,sha256:'c'.repeat(64)}],upload:true,confirmBucket:'mock',r2,storage}), /reviewed_hash_mismatch/);
+  await assert.rejects(importTemplateSwapClips({...base,upload:true,confirmBucket:'mock',r2,storage}), /reviewed_role_mismatch/);
+  await assert.rejects(importTemplateSwapClips({...base,decisions:[{...decision,sha256:'c'.repeat(64)}],upload:true,confirmBucket:'mock',r2,storage}), /reviewed_role_mismatch/);
+  // A five-plus-slot candidate remains in the all-approved invariant, even when unavailable.
+  await assert.rejects(importTemplateSwapClips({ ...base, decisions: [...reviewedDecisions, { id: 'freestyle', approved: true }], upload: true, confirmBucket: 'mock', r2,
+   storage: { putObject: () => assert.fail('partial approved set must never upload') } }), /approved_candidates_failed/);
+  await copyFile(file, path.join(showcaseDir, TEMPLATE_CLIPS.find(c => c.id === 'freestyle').previewFile));
+  const manySlots = await importTemplateSwapClips({ ...base, decisions: [{ id: 'freestyle', approved: true }] });
+  assert.ok(manySlots.manifest.freestyle.role);
+  assert.equal(manySlots.report.results.find(r => r.id === 'freestyle').roles.length, 7);
   // Every approved clip failing is an error, not a quiet success; zero approved is refused too.
   await assert.rejects(importTemplateSwapClips({...base,decisions:reviewedDecisions,records:[{...records[0],localPreviewSha256:'b'.repeat(64)}],upload:true,confirmBucket:'mock',r2,storage}), /approved_candidates_failed/);
   await assert.rejects(importTemplateSwapClips({...base,decisions:[{id,approved:false}],upload:true,confirmBucket:'mock',r2,storage}), /approved_candidates_failed/);

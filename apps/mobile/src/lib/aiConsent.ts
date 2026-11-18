@@ -32,6 +32,7 @@ const CONTENT_POSTS: readonly RegExp[] = [
     /^\/api\/v1\/editor\/speech-analyses(?:\/preflight)?\/?(\?|$)/,
     /^\/api\/v1\/editor\/ai-edit\/?(\?|$)/,
     /^\/api\/v1\/generations(\?|$)/,
+    /^\/api\/v1\/music\/generations(\?|$)/,
     /^\/api\/v1\/uploads(\/|\?|$)/,
     /^\/api\/v1\/montage\/plan(\?|$)/,
     /^\/api\/v1\/chat\/threads\/[^/?]+\/messages(\?|$)/,

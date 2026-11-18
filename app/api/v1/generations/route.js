@@ -1,8 +1,8 @@
 import { appRuntimeFlag } from '../../../../lib/appRuntime.js';
 import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
-import { checkTemplateSwapRequest, resolveTemplateSwapVideo } from '../../../../lib/templateSwapClipGeneration.js';
+import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
-import { TEMPLATE_SWAP_CLIP_PROMPT } from '../../../../lib/templateSwapClipPrompt.mjs';
+import { templateSwapPrompt } from '../../../../lib/templateSwapClipPrompt.mjs';
 import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
 import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
 import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
@@ -253,7 +253,7 @@ export async function POST(req) {
     if (templateSwap) {
         const error = checkTemplateSwapRequest(body, references.references, templateSwap.modelRow.id);
         if (error) return NextResponse.json({ error }, { status: 400 });
-        inputs = { ...inputs, prompt: TEMPLATE_SWAP_CLIP_PROMPT, duration_seconds: 5 };
+        inputs = { ...inputs, prompt: templateSwapPrompt(templateSwap.source.role), duration_seconds: 5 };
         const checked = validateInputs(inputs);
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
     }
@@ -294,7 +294,8 @@ export async function POST(req) {
     const { own: ownRoute, routes: offerRoutes } = await resolveRouteSet(modelRow, cfg);
     // No capability record = no known contract for this endpoint: refuse rather
     // than forward inputs the provider may bill differently for.
-    const record = capabilityFor(modelRow.provider_endpoint);
+    const publicRecord = capabilityFor(modelRow.provider_endpoint);
+    const record = templateSwap && publicRecord ? templateSwapCapability(publicRecord, templateSwap) : publicRecord;
     if (!record || record.provider !== modelRow.provider) {
         console.error('[generations] no capability record for', modelRow.id, modelRow.provider_endpoint);
         return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
@@ -318,15 +319,24 @@ export async function POST(req) {
     const r2cfg = templateSwap || templateClip || swap || rawKeys.length || rawAssets.length ? r2EnvConfig() : null;
     if (r2cfg && !r2IsConfigured(r2cfg)) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     const resolved = await resolveGenerationSources({ authId, references: references.references, record, r2cfg, dbcfg: cfg });
-    if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: sourceErrorStatus(resolved.error) });
+    if (!resolved.ok) return NextResponse.json({ error: templateSwap && resolved.error === 'upload_unreadable' ? 'template_swap_image_size' : resolved.error }, { status: sourceErrorStatus(resolved.error) });
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
+    if (templateSwap) {
+        const imageCheck = checkTemplateSwapImages(sources);
+        if (!imageCheck.ok) return NextResponse.json({ error: imageCheck.error }, { status: 400 });
+        const [frontal, crop] = resolved.inputs.image_url;
+        inputs.elements = [{ frontal_image_url: frontal, reference_image_urls: [crop] }];
+        delete inputs.image_url;
+    }
     const swapVideo = templateSwap ? await resolveTemplateSwapVideo(templateSwap, record, r2cfg) : templateClip ? await resolveTemplateClipVideo(templateClip, record, r2cfg) : swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
     if (swapVideo && !swapVideo.ok) return NextResponse.json({ error: swapVideo.error }, { status: sourceErrorStatus(swapVideo.error) });
     if (swapVideo) { inputs.video_url = swapVideo.url; sources.video_url = swapVideo.metadata; }
 
     // Strict records retain resolved source slots so provider preflight can
     // refuse extras. Legacy records keep the shared-control filtering path.
+    // Photo-to-video records that require a prompt while the create page calls it optional: fill an empty one.
+    if (record.defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: record.defaultPrompt };
     const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) });
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
@@ -346,7 +356,7 @@ export async function POST(req) {
     // Library sources are recorded by job id under their own name, so the
     // upload sweep (lib/uploadSweep.js), which deletes source_keys, never sees them.
     let storedInputs = resolved.references.length ? {
-        ...Object.fromEntries(Object.entries(modelInputs).filter(([key]) => !Object.hasOwn(sources, key))),
+        ...Object.fromEntries(Object.entries(modelInputs).filter(([key]) => !Object.hasOwn(sources, key) && !(templateSwap && key === 'elements'))),
         references: resolved.references,
     } : modelInputs;
     if (swapVideo) storedInputs = { ...storedInputs, template_source: swapVideo.identity };
@@ -553,7 +563,7 @@ export async function POST(req) {
         return NextResponse.json({ job_id: jobId, idempotent: true, balance_after: balanceAfter });
     }
 
-    const submitOptions = { faceIdentity: !!templateSwap || (appRuntimeFlag('templateFaceWording')
+    const submitOptions = { faceIdentity: !templateSwap && (appRuntimeFlag('templateFaceWording')
         && !!templateCheck.metadata && modelId === 'kling-3.0-i2v' && resolved.references.some(r => r.slot === 'image')) };
     return finishGenerationSubmit({ submitOptions, jobId, userId, credits, modelRow, ownRoute, offerRoutes, rawKeys, rawAssets, record, modelInputs, storedInputs, publicHost, sources, provider, providerKey, balanceAfter, debit }, cfg);
 }
