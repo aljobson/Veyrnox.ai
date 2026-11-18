@@ -16,6 +16,7 @@ import { AppNav } from '../../_components/NavBar';
 import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { clipCredits, modelAspectRatios, templateModelId } from '../../_lib/tokens';
+import { ResolutionVariantChoice } from '../../_components/ResolutionVariantChoice';
 import { TemplateOpening, useTemplateOpening } from '../../_components/TemplateOpening';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
@@ -952,6 +953,7 @@ export default function CreateStudio() {
                   formatValue={(id) => (id === '4k' ? '4K' : id)}
                   formatOption={(id) => { const m = tierOptions.find((o) => o.id === id).multiplier; const c = Math.max(model.credits, Math.ceil(model.credits * m - 1e-9)); return `${id === '4k' ? '4K' : id} · ${model.kind === 'video' ? clipCredits(c, Number(duration.replace('s', ''))) : c}`; }} />
               )}
+              {model?.kind === 'video' && <ResolutionVariantChoice model={model} models={models} seconds={Number(duration.replace('s', ''))} onChoose={chooseModel} ariaLabel={t('app.create.resolutionHeading')} />}
               {takesImageCount(model) && <ChipSelect assistantTarget="create.count" aria-label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
               <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />
               <EnhanceButton disabled={!hydrated} text={prompt} />
