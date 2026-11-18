@@ -25,6 +25,7 @@ export async function reframePicked(
     ratio: string,
     load: () => ManipulatorLib = loadManipulator,
     sizeOf: (uri: string) => number | undefined = (uri) => new File(uri).size,
+    discard: (uri: string | undefined) => void = discardFramed,
 ): Promise<PickedFile & { readonly framed: boolean }> {
     const lib = load();
     const manipulate = lib.ImageManipulator.manipulate as unknown as (uri: string) => Cropping;
@@ -38,8 +39,9 @@ export async function reframePicked(
     try {
         const saved = await out.saveAsync({ compress: JPEG_QUALITY, format: lib.SaveFormat.JPEG });
         // The upload declares the byte size to the server (POST /api/v1/uploads size_bytes): a copy without one is refused.
-        const size = sizeOf(saved.uri);
-        if (!(typeof size === 'number' && size > 0)) { discardFramed(saved.uri); return { ...file, framed: false }; }
+        let size: number | undefined;
+        try { size = sizeOf(saved.uri); } catch { size = undefined; }
+        if (!(typeof size === 'number' && size > 0)) { discard(saved.uri); return { ...file, framed: false }; }
         return { uri: saved.uri, size, mimeType: 'image/jpeg', width: saved.width, height: saved.height, framed: true };
     } finally { out.release?.(); }
 }
