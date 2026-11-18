@@ -31,6 +31,8 @@ test('the gateway fills a blank prompt before the provider check and the debit',
   const fill = route.indexOf('record.defaultPrompt');
   assert.ok(fill > 0);
   assert.ok(fill < route.indexOf('provider.check(record, modelRow, modelInputs)'));
-  assert.ok(fill < route.indexOf("rpc('ledger_debit'") || route.indexOf("rpc('ledger_debit'") === -1 || true);
+  const debit = route.indexOf("'ledger_debit'", route.indexOf('const providerCheck'));
+  assert.ok(debit > 0, 'the debit call is found after the provider check');
+  assert.ok(fill < debit, 'the prompt is filled before the debit')
   assert.match(route, /!\(typeof inputs\.prompt === 'string' && inputs\.prompt\.trim\(\)\)/);
 });
