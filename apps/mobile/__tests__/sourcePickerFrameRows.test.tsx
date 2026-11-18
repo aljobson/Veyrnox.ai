@@ -57,3 +57,11 @@ test('a second frame change still leaves one file', async () => {
     expect(uploads()).toEqual(['key-wide']);
     expect(rows()).toHaveLength(1);
 });
+
+// QA: after a model switch the held start photo showed an empty grey box that said "Ready".
+test('a held photo with no local picture shows its kind, not a blank box', async () => {
+    await act(async () => root.render(<SourcePicker slot={slot} api={{} as any} references={[{ slot: 'image', origin: 'upload', key: 'held' }]}
+        onReferences={() => {}} onChange={() => {}} onLibrary={() => {}} onBusy={() => {}} />));
+    const text = root.container.queryAll(n => typeof n.props.children === 'string').map(n => n.props.children as string);
+    expect(text).toContain('▧');
+});

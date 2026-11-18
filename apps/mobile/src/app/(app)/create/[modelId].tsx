@@ -178,6 +178,8 @@ export default function CreateWithModel() {
                     const saved = acceptedSettings(found, handedSources.settings);
                     setPrompt(typeof presetPrompt === 'string' ? presetPrompt : '');
                     setOpts({ ...saved.opts, aspect: handedAspect ?? saved.opts.aspect ?? aspect });
+                    // The held start photo was already cropped to this frame; the chip must keep saying so.
+                    frame.set(saved.frame ?? '');
                     setCameraOn(saved.cameraOn); setCinema(saved.cinema); setCharacterOn(saved.characterOn); setCharacter(saved.character);
                     draftReady.current = true;
                     return;
@@ -380,7 +382,7 @@ export default function CreateWithModel() {
             <KeyboardFormScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <RevealOnFirstLayout scroll={scrollRef}><CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /></RevealOnFirstLayout> : undefined}
                     onChangeModel={changeModel} onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
-                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character, frame: frame.value }, references, handedSources ?? undefined))} />
                 {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>} {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
                 {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
@@ -416,7 +418,7 @@ export default function CreateWithModel() {
                         </View>
                     </View>
                 ) : null}
-                {!swapScene && !boundCount && <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>}
+                {!swapScene && !boundCount && <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character, frame: frame.value }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>}
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
@@ -459,7 +461,7 @@ export default function CreateWithModel() {
                                 ))}
                             </View>
                         ) : null}
-                        {frame.node}<ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                        {frame.node}<ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character, frame: frame.value }, references, handedSources ?? undefined))} />
                         {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} tier={tier} tierLabel={(id) => `${id === '4k' ? '4K' : id} · ${estimateCredits(model, duration, id)}`} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                         {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
