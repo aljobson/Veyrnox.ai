@@ -18,7 +18,7 @@ test('ships empty and dark; every existing swap remains blocked', () => {
   if (!c || c.class === 'blocked-needs-video' || !swapNeedsSourceVideo(c.sourcePrompt)) continue;
   count++; assert.equal(checkTemplateRequest({ template_id: id, model_id: 'kling-o1-reference', inputs: {} }).error, 'template_blocked');
  }
- assert.equal(count, 127);
+ assert.equal(count, 132); // 127 until the guard learned three more swap wordings (18 Nov 2026)
 });
 test('fidelity dependency graph never imports new swap clip modules', () => {
  const seen = new Set();

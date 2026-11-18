@@ -491,3 +491,13 @@ meant to stay as in the template, but generated details can change. Neither scen
 nor other people, motion or timing are guaranteed unchanged. B0 is matte-quality
 evidence only, not proof of generated-video fidelity. B1 has no UI; all web/mobile
 layout, type, accessibility and screen-state criteria are not applicable here.
+
+## Amendment 8: the guard reads three more swap wordings (2026-11-18)
+
+`lib/templateSwapGuard.js` now also treats these as swap recipes: "replaces"/"replaced by" next to the photo, "... in the video" next to the
+photo, and a clause that starts with "Swap". Five listed templates (`community-coastal-driver-swap`, `-dinner-party-recast`,
+`-forest-umbrella-shift`, `-stage-dance-sync`, `-urban-stride`) are refused before any charge and leave the gallery. The importer's candidate set
+grows from 519 to 524 (the five, which have no clip yet and cannot be approved until one is made), and 14 already-hidden video-edit
+templates move from kind `motion` to `video_swap` (127/300/92 becomes 132/314/78). The 519-candidate counts and the 411 approved v3 ids in the
+earlier amendments describe the frozen plan and are unchanged. Narrative uses ("the filter is replaced by", "no text may be replaced") stay allowed;
+this was checked across all 884 templates that have a contract.

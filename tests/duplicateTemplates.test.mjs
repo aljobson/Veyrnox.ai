@@ -62,5 +62,5 @@ test('a keeper that sat in the gallery stays in it, and nothing is backfilled', 
         const inGallery = VIDEO_GALLERY_TEMPLATE_IDS.includes(keeper);
         assert.equal(GALLERY_PRESETS.some((t) => t.id === keeper), inGallery);
     }
-    assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.length, 149, '150 minus the one gallery duplicate removed (community-midnight-fridge-feast)');
+    assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.length, 73, '150, minus the gallery duplicate (community-midnight-fridge-feast), minus 76 swap recipes the server refuses (2026-11-18)');
 });
