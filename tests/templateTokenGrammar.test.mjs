@@ -51,7 +51,7 @@ for (const token of ['@video', '@video1', '@video_1', '@video-1', '@Video 1', '<
     assert.equal(bind(prompt, 1).error, token.startsWith('<<<') ? 'unmapped-placeholder' : undefined);
     const id = 'community-driver-portrait';
     assert.equal(checkTemplateRequest({ template_id: id, model_id: 'kling-3.0-i2v', inputs: { prompt } }).error, 'template_blocked');
-    const options = { env: { TEMPLATE_SWAP_CLIP_ENABLED: 'true' }, catalog, registry: [id], manifest: { [id]: { ...source, key: `template-swap-clips/${id}/${source.sha256}.mp4` } } };
+    const options = { env: { MULTI_REFERENCE_ENABLED: 'true', TEMPLATE_SWAP_CLIP_ENABLED: 'true' }, catalog, registry: [id], manifest: { [id]: { ...source, key: `template-swap-clips/${id}/${source.sha256}.mp4` } } };
     assert.ok(templateSwapAvailable(id, options));
     for (const patch of [{ registry: [] }, { manifest: {} }, { env: {} }, { catalog: [{ ...catalog[0], active: false }] }]) {
       assert.equal(templateSwapAvailable(id, { ...options, ...patch }), null);

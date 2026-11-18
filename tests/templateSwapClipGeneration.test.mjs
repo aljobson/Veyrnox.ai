@@ -4,7 +4,7 @@ import { register } from 'node:module';
 import { isDeepStrictEqual } from 'node:util';
 import { manifest, catalog, registry, manifestBytes, pin, publishManifest, signedMedia } from './fixtures/templateSwapClips.mjs';
 import { createFalWebhookHandler } from '../lib/falWebhookHandler.js';
-import { TEMPLATE_SWAP_CLIP_PROMPT } from '../lib/templateSwapClipPrompt.mjs';
+import { templateSwapPrompt, TEMPLATE_SWAP_CLIP_PROMPT } from '../lib/templateSwapClipPrompt.mjs';
 register('data:text/javascript,' + encodeURIComponent(`
 export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }
 export async function load(url,c,next) {
@@ -21,20 +21,21 @@ Object.assign(process.env, {
   TEMPLATE_SWAP_CLIP_ENABLED: 'true', SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service', FAL_KEY: 'test-fal', KIE_API_KEY: 'test-kie',
   PUBLIC_HOST: 'https://veyrnox.test', R2_ACCOUNT_ID: 'test', R2_ACCESS_KEY_ID: 'test', R2_SECRET_ACCESS_KEY: 'test', R2_BUCKET: 'test',
   FREE_ALLOWANCE_ENABLED: 'false', FAL_DURABLE_DISPATCH_ENABLED: 'false', FAL_DISPATCH_SCHEMA_ENABLED: 'false',
-  SUPPLIER_ROUTES_ENABLED: 'false', MAX_CHARGE_ENABLED: 'false', MULTI_REFERENCE_ENABLED: 'false',
+  SUPPLIER_ROUTES_ENABLED: 'false', MAX_CHARGE_ENABLED: 'false', MULTI_REFERENCE_ENABLED: 'true',
 });
 const { POST } = await import('../app/api/v1/generations/route.js');
 const { GET } = await import('../app/api/catalog/route.js');
-const EFFECTIVE_PROMPT = TEMPLATE_SWAP_CLIP_PROMPT;
+const EFFECTIVE_PROMPT = templateSwapPrompt('the main character');
 const ID = 'community-action-hero-strut';
 const AUTH = '11111111-1111-4111-8111-111111111111', JOB = '22222222-2222-4222-8222-222222222222';
 const PHOTO = '33333333-3333-4333-8333-333333333333';
 const photo = { slot: 'image', origin: 'asset', asset_id: PHOTO };
+const crop = { ...photo, asset_id: '44444444-4444-4444-8444-444444444444' };
 const jpeg = Buffer.from([255,216,255,192,0,17,8,2,128,2,128,3,1,17,0,2,17,0,3,17,0,255,217]);
 function network(t, options = {}) {
   publishManifest(options.manifest ?? manifest);
   signedMedia.length = 0;
-  const sourceJpeg = Buffer.from(jpeg);
+  const sourceJpeg = Buffer.from(options.missingDimensions ? [255,216,255,224,0,8,0,0,0,0,0,0,255,217] : jpeg);
   if (options.imageDimensions) {
     sourceJpeg.writeUInt16BE(options.imageDimensions.height, 7); sourceJpeg.writeUInt16BE(options.imageDimensions.width, 9);
   }
@@ -72,7 +73,7 @@ function network(t, options = {}) {
       if (name === 'check_generation_rate_limit' && options.throttled) return Response.json({ ok: false, code: 'RATE_LIMITED' });
       if (name === 'get_user_asset') {
         assert.equal(body.p_auth_id, AUTH);
-        return Response.json({ ok: true, state: 'STORED', mime_type: 'image/jpeg', r2_key: `jobs/${PHOTO}/output.jpg` });
+        return Response.json({ ok: true, state: 'STORED', mime_type: 'image/jpeg', r2_key: `jobs/${body.p_job_id || PHOTO}/output.jpg` });
       }
       if (name === 'submit_free_job') {
         freeAdmissions.push(body); const value = identity(body), previous = identities.get(body.p_idempotency_key);
@@ -91,7 +92,7 @@ function network(t, options = {}) {
     }
     if (url.hostname.endsWith('.r2.cloudflarestorage.com')) {
       assert.ok(!url.pathname.includes('template-swap-clips/'), 'trusted shared clips are never sniffed or downloaded');
-      assert.ok(url.pathname.endsWith(`jobs/${PHOTO}/output.jpg`));
+      assert.ok([PHOTO, crop.asset_id].some(id => url.pathname.endsWith(`jobs/${id}/output.jpg`)));
       const [, a, b] = /bytes=(\d+)-(\d+)/.exec(init.headers.Range);
       const start = Number(a), end = Math.min(Number(b), sourceJpeg.length - 1);
       return new Response(sourceJpeg.subarray(start, end + 1), { status: 206, headers: { 'content-type': 'image/jpeg', 'content-range': `bytes ${start}-${end}/${sourceJpeg.length}` } });
@@ -107,27 +108,32 @@ function network(t, options = {}) {
 }
 function post(overrides = {}) {
   return POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH }, body: JSON.stringify({ model_id: 'kling-o1-reference', template_swap: 'community-action-hero-strut',
-    inputs: {}, consent: true, references: [photo], idempotency_key: 'scene-proof-key', ...overrides }) }));
+    inputs: {}, consent: true, references: [photo, crop], idempotency_key: 'scene-proof-key', ...overrides }) }));
 }
 function get(id, auth = true) {
   return GET(new Request('https://veyrnox.test/api/catalog?template_swap=' + encodeURIComponent(id), { headers: auth ? { 'x-veyrnox-auth-id': AUTH } : {} }));
 }
 
-test('catalog price, server prompt, signed video and one-photo list use the existing admission', async t => {
+test('catalog price, server prompt, signed video and ordered element use the existing admission', async t => {
+  process.env.APP_RUNTIME_FLAGS = '{"templateFaceWording":true}';
+  t.after(() => { delete process.env.APP_RUNTIME_FLAGS; });
   const net = network(t);
   const response = await get(ID), view = await response.json();
-  assert.deepEqual(view, { id: ID, model: 'kling-o1-reference', credits: 47, durationSeconds: 5 });
+  assert.deepEqual(view, { id: ID, model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: 'the main character', images: 2 });
   assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.equal((await post({ preset: ID, inputs: { prompt: 'Ignored client wording' } })).status, 200);
   assert.equal(net.debits[0].p_credits, 47);
-  assert.deepEqual(net.debits[0].p_inputs.template_source, { template: ID, version: 'v1', sha256: 'a'.repeat(64) });
+  assert.deepEqual(net.debits[0].p_inputs.template_source, { template: ID, version: 'v1', sha256: 'a'.repeat(64), role: 'the main character' });
   assert.equal(net.debits[0].p_inputs.prompt, EFFECTIVE_PROMPT);
-  assert.deepEqual(net.debits[0].p_inputs.references, [photo]);
+  assert.deepEqual(net.debits[0].p_inputs.references, [photo, crop]);
   assert.equal(Object.hasOwn(net.debits[0].p_inputs, 'preset_id'), false);
   assert.doesNotMatch(JSON.stringify(net.debits[0].p_inputs), /https:|template-swap-clips\//);
   const payload = net.submits[0];
   assert.equal(payload.prompt, EFFECTIVE_PROMPT);
-  assert.equal(payload.image_urls.length, 1); assert.equal(typeof payload.video_url, 'string');
+  assert.equal(payload.image_urls, undefined); assert.equal(payload.image_url, undefined);
+  assert.equal(payload.elements.length, 1);
+  assert.ok(new URL(payload.elements[0].frontal_image_url).pathname.endsWith(`jobs/${PHOTO}/output.jpg`));
+  assert.ok(new URL(payload.elements[0].reference_image_urls[0]).pathname.endsWith(`jobs/${crop.asset_id}/output.jpg`)); assert.equal(typeof payload.video_url, 'string');
   const signed = new URL(payload.video_url);
   assert.ok(signed.pathname.endsWith(manifest[ID].key));
   assert.equal(signed.searchParams.get('X-Amz-Expires'), '900');
@@ -143,7 +149,7 @@ for (const flag of [undefined, 'false', 'TRUE', '1']) test(`flag ${flag} refuses
 for (const [overrides, error] of [
   [{ model_id: 'kling-3.0-i2v' }, 'template_swap_model_mismatch'],
   [{ references: [] }, 'template_swap_photo_count'],
-  [{ references: [photo, photo] }, 'template_swap_photo_count'],
+  [{ references: [photo] }, 'template_swap_photo_count'],
   [{ references: [{ ...photo, slot: 'video' }] }, 'template_swap_video_not_allowed'],
   [{ references: [{ origin: 'upload', slot: 'image', key: `uploads/${AUTH}/${PHOTO}.mp4` }] }, 'template_swap_video_not_allowed'],
   [{ video: null }, 'template_swap_video_not_allowed'],
@@ -168,12 +174,15 @@ test('replay binds effective prompt and photo, template, version and hash, survi
   const options = {}, net = network(t, options);
   assert.equal((await post()).status, 200);
   assert.equal((await (await post({ inputs: { prompt: TEMPLATE_SWAP_CLIP_PROMPT } })).json()).idempotent, true);
-  assert.equal((await post({ references: [{ ...photo, asset_id: AUTH }] })).status, 409);
+  assert.equal((await post({ references: [crop, photo] })).status, 409);
   assert.equal((await post({ template_swap: 'other-template' })).status, 409);
   publishManifest({ [ID]: { ...manifest[ID], version: 'v2' } }); assert.equal((await post()).status, 409);
   publishManifest({ [ID]: { ...manifest[ID], sha256: 'b'.repeat(64), key: manifest[ID].key.replace('a'.repeat(64), 'b'.repeat(64)) } });
   assert.equal((await post()).status, 409);
+  publishManifest({ [ID]: { ...manifest[ID], role: 'the other character' } }); assert.equal((await post()).status, 409);
   options.active = false; publishManifest({});
+  process.env.MULTI_REFERENCE_ENABLED = 'false';
+  t.after(() => { process.env.MULTI_REFERENCE_ENABLED = 'true'; });
   const start = net.calls.length;
   assert.deepEqual(await (await post()).json(), { job_id: JOB, idempotent: true });
   assert.deepEqual(net.calls.slice(start), ['check_generation_rate_limit', 'users', 'jobs', pin + '.json']);
@@ -222,13 +231,12 @@ test('accepted template job follows job_failed and exactly one provider-failure 
 
 
 
-for (const flag of [undefined, 'true']) test(`exactly one photo with multi-reference ${flag}`, async t => {
+for (const flag of [undefined, 'false', 'TRUE', '1', 'true']) test(`paired photos require exact multi-reference flag ${flag}`, async t => {
   if (flag === undefined) delete process.env.MULTI_REFERENCE_ENABLED; else process.env.MULTI_REFERENCE_ENABLED = flag;
-  t.after(() => { delete process.env.MULTI_REFERENCE_ENABLED; });
+  t.after(() => { process.env.MULTI_REFERENCE_ENABLED = 'true'; });
   const net = network(t);
-  assert.equal((await post()).status, 200);
-  assert.equal((await (await post({ idempotency_key: 'two-photo-key', references: [photo, photo] })).json()).error, 'template_swap_photo_count');
-  assert.equal(net.debits.length, 1);
+  assert.equal((await post()).status, flag === 'true' ? 200 : 404);
+  assert.equal(net.debits.length, flag === 'true' ? 1 : 0);
 });
 for (const extra of [{ swap: 'a' }, { template_clip: 'a' }, { swap: null }, { template_clip: null }]) test('source conflict ' + JSON.stringify(extra), async t => {
   const net = network(t);
@@ -270,7 +278,7 @@ for (const gate of [undefined, false, true]) for (const classification of ['boun
     else process.env.APP_RUNTIME_FLAGS = JSON.stringify({ templateFaceWording: gate });
     t.after(() => { delete process.env.APP_RUNTIME_FLAGS; });
     const net = network(t, { catalog: [{ id: c.modelId, provider: 'fal', provider_endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', modality: 'image-to-video', credits_5s: 32, active: true, gated_flag: false }] });
-    const request = { template_swap: undefined, template_id: c.id, model_id: c.modelId,
+    const request = { references: [photo], template_swap: undefined, template_id: c.id, model_id: c.modelId,
       inputs: { prompt: c.prompt, duration_seconds: c.duration, ...(c.aspect ? { aspect_ratio: c.aspect } : {}), ...(c.negativePrompt ? { negative_prompt: c.negativePrompt } : {}) } };
     const first = await post(request);
     assert.equal(first.status, 200, JSON.stringify(await first.json()));
@@ -293,7 +301,7 @@ for (const gate of [undefined, false, true]) for (const classification of ['boun
 test('runtime wording gate does not augment a custom non-template photo request', async t => {
   process.env.APP_RUNTIME_FLAGS = '{"templateFaceWording":true}'; t.after(() => { delete process.env.APP_RUNTIME_FLAGS; });
   const net = network(t, { catalog: [{ id: 'kling-3.0-i2v', provider: 'fal', provider_endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', modality: 'image-to-video', credits_5s: 32, active: true, gated_flag: false }] });
-  const response = await post({ template_swap: undefined, model_id: 'kling-3.0-i2v', inputs: { prompt: 'A custom portrait', duration_seconds: 5 } });
+  const response = await post({ references: [photo], template_swap: undefined, model_id: 'kling-3.0-i2v', inputs: { prompt: 'A custom portrait', duration_seconds: 5 } });
   assert.equal(response.status, 200, JSON.stringify(await response.json()));
   assert.equal(net.submits[0].prompt, 'A custom portrait');
 });
@@ -315,4 +323,43 @@ for (const mode of ['down', 'hash', 'headers', 'body', 'oversize']) test(`manife
   assert.equal(signedMedia.length, signedBefore, 'no signing during failed admission or replay');
   assert.equal(options.manifestSignal.aborted, true);
   if (mode === 'body' || mode === 'oversize') assert.equal(options.cancelled, true);
+});
+
+for (const [width, height, ok] of [[299, 300, false], [300, 300, true], [399, 1000, false], [400, 1000, true], [1000, 400, true], [2501, 1000, false]]) {
+  test(`element dimensions ${width}/${height} checked before debit`, async t => {
+    const net = network(t, { imageDimensions: { width, height } });
+    const response = await post();
+    assert.equal(response.status, ok ? 200 : 400);
+    if (!ok) assert.deepEqual(await response.json(), { error: 'template_swap_image_size' });
+    assert.equal(net.debits.length, ok ? 1 : 0);
+    assert.equal(net.submits.length, ok ? 1 : 0);
+  });
+}
+test('missing image dimensions refuse before debit', async t => {
+  const net = network(t, { missingDimensions: true });
+  assert.deepEqual(await (await post()).json(), { error: 'template_swap_image_size' });
+  assert.equal(net.debits.length, 0);
+});
+test('client elements and role cannot enter the server-held structured input', async t => {
+  const net = network(t);
+  for (const key of ['elements', 'role']) {
+    const response = await post({ inputs: { [key]: 'client supplied' } });
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).error, `inputs_key_not_allowed:${key}`);
+  }
+  assert.equal(net.debits.length, 0);
+});
+test('re-signing and concurrent admission preserve SQL input identity without nested URLs', async t => {
+  const net = network(t);
+  assert.equal((await post({ idempotency_key: 'first-signature' })).status, 200);
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 2000 });
+  assert.equal((await post({ idempotency_key: 'second-signature' })).status, 200);
+  assert.notEqual(net.submits[0].elements[0].frontal_image_url, net.submits[1].elements[0].frontal_image_url);
+  assert.deepEqual(net.debits[0].p_inputs, net.debits[1].p_inputs);
+  assert.doesNotMatch(JSON.stringify(net.debits[1].p_inputs), /https:|frontal_image_url|reference_image_urls|elements/);
+  const responses = await Promise.all([post({ idempotency_key: 'concurrent' }), post({ idempotency_key: 'concurrent' })]);
+  assert.ok(responses.every(r => r.status === 200));
+  assert.equal(net.charges(), 3);
+  assert.equal(net.submits.length, 3);
+  assert.ok(net.debits.every(d => isDeepStrictEqual(d.p_inputs, net.debits[0].p_inputs)));
 });
