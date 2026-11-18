@@ -11,6 +11,7 @@ import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
 import { deleteSocialInboxWorkflow, listSocialInboxWorkflows, saveSocialInboxWorkflow } from '../../../../lib/socialInboxClient';
 import BrandSwitcher from '../BrandSwitcher';
+import { BrandName } from '../../../_components/BrandName';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -23,7 +24,7 @@ export default function InboxWorkflowsPage() {
   const { t } = useI18n();
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="mx-auto max-w-[980px] px-4 py-10 sm:px-8">
-    <nav aria-label={t("label.Publish")} className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link><Link href="/app/publish/inbox" className="text-vx-accent underline">{t("app.publish.inbox.title")}</Link></nav>
+    <nav aria-label={t("label.Publish")} className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link><Link href="/app/publish/inbox" className="text-vx-accent underline">{t("app.publish.inbox.title")}</Link></nav>
     <h1 data-testid="publish-workflows-title" className="text-3xl font-black">{t("app.publish.workflows.title")}</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.workflows.intro")}</p>
     {account && <BrandSwitcher />}{account ? <WorkflowManager key={account} /> : <p className="text-sm text-vx-fg-muted">{t("app.publish.workflows.signIn")}</p>}

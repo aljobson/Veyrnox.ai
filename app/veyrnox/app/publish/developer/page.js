@@ -11,6 +11,7 @@ import { Main } from '../../../_components/Main';
 import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { createSocialApiKey, createSocialWebhook, listSocialApiKeys, listSocialApiLogs, listSocialWebhooks, revokeSocialApiKey, revokeSocialWebhook } from '../../../../lib/socialDeveloperClient';
 import BrandSwitcher from '../BrandSwitcher';
+import { BrandName } from '../../../_components/BrandName';
 
 const currentAccount=()=>getSession()?.user?.id||'';
 const noAccount=()=>'';
@@ -25,7 +26,7 @@ export default function Developer(){
   const { t } = useI18n();
   const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);
   return <><AppNav/><Main className="mx-auto max-w-[900px] px-4 py-10 sm:px-8">
-    <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link>
+    <Link href="/app/publish" className="text-sm text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link>
     <h1 data-testid="publish-developer-title" className="mt-3 text-3xl font-black">{t("app.publish.developer.title")}</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.developer.intro")}</p>
     {account&&<BrandSwitcher/>}

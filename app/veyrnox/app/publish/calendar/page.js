@@ -13,6 +13,7 @@ import { getSession, onSessionChange } from '../../../../lib/authClient';
 import { listSocialAccounts, NETWORKS } from '../../../../lib/socialConnectClient';
 import { cancelSocialPost, listSocialCalendar, rescheduleSocialPost, restoreSocialPost } from '../../../../lib/socialPostsClient';
 import { calendarWindow, shiftCalendar, dateKey, droppedSchedule, localInput, localSchedule, POST_STATUSES } from '../../../../../lib/social/calendar.js';
+import { BrandName } from '../../../_components/BrandName';
 
 const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vx-accent';
 const input='rounded-lg border border-vx-border bg-vx-panel px-3 py-2 text-sm';
@@ -33,7 +34,7 @@ export default function Calendar() {
     const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);
     const date=useSyncExternalStore(noSubscription,today,noAccount);
     return <><AppNav/><Main className="max-w-[1100px] mx-auto px-4 sm:px-8 py-10">
-        <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link>
+        <Link href="/app/publish" className="text-sm text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link>
         <h1 data-testid="publish-calendar-title" className="text-3xl font-black mt-3 mb-2">{t("label.Publishing calendar")}</h1>
         <p className="text-sm text-vx-fg-muted mb-4">{t("app.publish.calendar.intro")}</p>
         {account && <BrandSwitcher />}

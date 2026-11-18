@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
 import { getSession } from '../../../lib/authClient';
 import { nextMusicPrompt } from './musicWriting';
+import { withBrandName } from '../BrandName';
 
 export const MUSIC_PUBLIC_DRAFT_KEY = 'veyrnox.music.public-draft.v1';
 
@@ -32,7 +33,7 @@ export function MusicPublicPrompt({ available = false }) {
   return (
     <div className="min-h-dvh bg-vx-base text-vx-fg">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6">
-        <Link href="/" className="font-vx text-xl font-black tracking-tight">{t('music.brand')}</Link>
+        <Link href="/" className="font-vx text-xl font-black tracking-tight">{withBrandName(t('music.brand'))}</Link>
         <Link href="/app/music/library" className="min-h-11 rounded-full border border-vx-border px-4 py-3 text-sm font-bold text-vx-fg-body hover:border-vx-border-boost">{t('music.openLibrary')}</Link>
       </header>
       <div>

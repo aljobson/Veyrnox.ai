@@ -10,6 +10,7 @@ import { archiveSocialCommerceProduct,listSocialCommerceProducts,saveSocialComme
 import { localeTag } from '../../../../../lib/i18n/locales.mjs';
 import { pluralKey } from '../../../../../lib/i18n/translate.mjs';
 import BrandSwitcher from '../BrandSwitcher';
+import { BrandName } from '../../../_components/BrandName';
 
 const currentAccount=()=>getSession()?.user?.id||'',noAccount=()=>'';
 const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
@@ -18,7 +19,7 @@ const empty={id:null,title:'',description:'',currency:'GBP',price:'',compareAtPr
 const editable=new Set(['owner','manager','editor']);
 
 export default function Commerce(){
-  const { t } = useI18n();const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);return <><AppNav/><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8"><Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link><h1 data-testid="publish-commerce-title" className="mt-3 text-3xl font-black">{t("app.publish.nav.commerce")}</h1><p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.commerce.intro")}</p>{account&&<BrandSwitcher/>}{account?<CommerceWorkspace key={account}/>:<p>{t("app.publish.commerce.signIn")}</p>}</Main></>}
+  const { t } = useI18n();const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);return <><AppNav/><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8"><Link href="/app/publish" className="text-sm text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link><h1 data-testid="publish-commerce-title" className="mt-3 text-3xl font-black">{t("app.publish.nav.commerce")}</h1><p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.commerce.intro")}</p>{account&&<BrandSwitcher/>}{account?<CommerceWorkspace key={account}/>:<p>{t("app.publish.commerce.signIn")}</p>}</Main></>}
 
 export function CommerceWorkspace(){
   const { t, locale } = useI18n();const[products,setProducts]=useState(null),[role,setRole]=useState('viewer'),[form,setForm]=useState(empty),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[archiveTarget,setArchiveTarget]=useState(null);

@@ -12,6 +12,7 @@ import BrandSwitcher from '../BrandSwitcher';
 import { ReportScheduleFields } from './ReportScheduleFields';
 import { pluralKey, tOr } from '../../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../../lib/i18n/locales.mjs';
+import { BrandName } from '../../../_components/BrandName';
 
 const currentAccount=()=>getSession()?.user?.id||'';
 const noAccount=()=>'';
@@ -25,7 +26,7 @@ export default function Reports(){
   const { t } = useI18n();
   const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);
   return <><AppNav/><Main className="mx-auto max-w-[900px] px-4 py-10 sm:px-8">
-    <Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link>
+    <Link href="/app/publish" className="text-sm text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link>
     <h1 data-testid="publish-reports-title" className="mt-3 text-3xl font-black">{t("app.publish.nav.reports")}</h1>
     <p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.reports.intro")}</p>
     {account&&<BrandSwitcher/>}

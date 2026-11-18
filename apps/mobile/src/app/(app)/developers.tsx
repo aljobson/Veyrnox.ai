@@ -5,6 +5,7 @@ import { AddressText } from '../../components/AddressText';
 import { Button, Card, Chip, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
+import { brandText } from '../../components/BrandText';
 const API = 'https://veyrnox.ai/api/v1/developer';
 const OAUTH_METADATA = 'https://veyrnox.ai/.well-known/oauth-protected-resource/api/v1/developer';
 const OPENAPI = 'https://veyrnox.ai/api/developer/openapi';
@@ -21,7 +22,7 @@ export default function Developers() {
     const s = useThemedStyles(sheets);
     return <ScrollView style={s.screen} contentContainerStyle={s.content}>
         <Stack.Screen options={{ title: t('developers.row') }} />
-        <Text variant="micro" tone="accent">{t('developers.kicker')}</Text>
+        <Text variant="micro" tone="accent">{brandText(t('developers.kicker'))}</Text>
         <Text variant="display" accessibilityRole="header">{t('developers.title')}</Text>
         <Text variant="body" tone="secondary">{t('developers.lead')}</Text>
         <Card style={s.section}>

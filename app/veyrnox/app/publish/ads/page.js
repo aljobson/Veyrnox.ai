@@ -13,6 +13,7 @@ import { localeTag } from '../../../../../lib/i18n/locales.mjs';
 const NETWORKS = ['meta', 'google', 'tiktok', 'linkedin', 'twitter'];
 const OBJECTIVES = ['awareness', 'traffic', 'engagement', 'leads', 'sales'];
 import BrandSwitcher from '../BrandSwitcher';
+import { BrandName } from '../../../_components/BrandName';
 
 const currentAccount=()=>getSession()?.user?.id||'',noAccount=()=>'';
 const button='rounded-full border border-vx-border px-4 py-2 text-sm font-bold disabled:opacity-50';
@@ -21,7 +22,7 @@ function empty() { return {id:null,name:'',network:'meta',mode:'standalone',sour
 const editable=new Set(['owner','manager','editor']);
 
 export default function Ads(){
-  const { t } = useI18n();const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);return <><AppNav/><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8"><Link href="/app/publish" className="text-sm text-vx-accent underline">Veyrnox.ai Publish</Link><h1 data-testid="publish-ads-title" className="mt-3 text-3xl font-black">{t("presets.cat.ADS")}</h1><p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.ads.intro")}</p>{account&&<BrandSwitcher/>}{account?<AdsWorkspace key={account}/>:<p>{t("app.publish.ads.signIn")}</p>}</Main></>}
+  const { t } = useI18n();const account=useSyncExternalStore(onSessionChange,currentAccount,noAccount);return <><AppNav/><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8"><Link href="/app/publish" className="text-sm text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link><h1 data-testid="publish-ads-title" className="mt-3 text-3xl font-black">{t("presets.cat.ADS")}</h1><p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.ads.intro")}</p>{account&&<BrandSwitcher/>}{account?<AdsWorkspace key={account}/>:<p>{t("app.publish.ads.signIn")}</p>}</Main></>}
 
 function AdsWorkspace(){
   const { t, locale } = useI18n();const[campaigns,setCampaigns]=useState(null),[posts,setPosts]=useState([]),[role,setRole]=useState('viewer'),[form,setForm]=useState(()=>empty()),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[removeTarget,setRemoveTarget]=useState(null);
