@@ -35,12 +35,12 @@ const models = fromFallback();
 const renderPicker = (goal, catalog = models) => renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models: catalog, goal, onPick() {}, onClose() {} }));
 const templateButtons = (html) => [...html.matchAll(/data-testid="create-template-(?!picker)[^"]+"/g)].length;
 
-test('the curated Create catalog has three valid image and audio templates, no video, and bundled previews', () => {
-  assert.equal(createTemplates.CREATE_TEMPLATES.length, 6);
-  assert.equal(new Set(createTemplates.CREATE_TEMPLATES.map((item) => item.id)).size, 6);
+test('the curated Create catalog has valid image and audio templates, no video, and bundled previews', () => {
+  assert.equal(createTemplates.CREATE_TEMPLATES.length, 23);
+  assert.equal(new Set(createTemplates.CREATE_TEMPLATES.map((item) => item.id)).size, 23);
   for (const kind of createTemplates.CREATE_TEMPLATE_KINDS) {
     const choices = createTemplates.createTemplatesFor(kind);
-    assert.equal(choices.length, kind === 'video' ? 0 : 3);
+    assert.equal(choices.length, { video: 0, image: 3, audio: 20 }[kind]);
     for (const choice of choices) {
       assert.equal(models.find((model) => model.id === tokens.templateModelId(choice))?.kind, kind);
       assert.equal(templateById(choice.id), null);
@@ -85,11 +85,11 @@ test('Create offers exactly three image templates using bundled Veyrnox images',
   for (const source of ['cinematic-portrait.webp', 'hotel-corridor.webp', 'ripple-light-portrait.webp']) assert.match(html, new RegExp(source));
 });
 
-test('Create offers exactly three audio templates with real licensed song previews', () => {
+test('Create offers twenty audio templates with real licensed song previews', () => {
   const html = renderPicker('audio');
-  assert.match(html, /TEMPLATES · 3/);
-  assert.equal(templateButtons(html), 3);
-  assert.equal([...html.matchAll(/<audio /g)].length, 3);
+  assert.match(html, /TEMPLATES · 20/);
+  assert.equal(templateButtons(html), 20);
+  assert.equal([...html.matchAll(/<audio /g)].length, 20);
   for (const source of ['midnight-theme-cdk-mix.mp3', 'scott-buckley-amberlight.mp3', 'scott-buckley-rise-above.mp3']) assert.match(html, new RegExp(source));
   assert.match(html, /CC BY 3\.0/);
   assert.match(html, /CC BY 4\.0/);
@@ -114,8 +114,8 @@ test('template metadata keeps human model names and grammatically correct credit
 
 test('the all-goal picker follows the currently selected model kind', () => {
   const html = renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models, goal: 'all', selectedKind: 'audio', onPick() {}, onClose() {} }));
-  assert.equal(templateButtons(html), 3);
-  assert.equal([...html.matchAll(/<audio /g)].length, 3);
+  assert.equal(templateButtons(html), 20);
+  assert.equal([...html.matchAll(/<audio /g)].length, 20);
 });
 
 test('Create loads every medium through the same template handoff', () => {

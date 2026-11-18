@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Owner-run importer. No downloads. Dry run by default; never installs a revision.
+import { templateSwapRoles, normaliseSwapRole } from '../lib/templateSwapClipRoles.mjs';
 import { clipOrigin } from './lib/template-origin.mjs';
 import { readFile, writeFile, mkdir, mkdtemp, realpath, open, rm, readdir, access } from 'node:fs/promises';
 import path from 'node:path';
@@ -18,6 +19,7 @@ import { MAX_BYTES, assertMp4, verifyUpload } from './import-swap-scenes.mjs';
 import { outsideRepositories, normaliseSwapClip, contactSheet, indexSheet, posterSimilarity } from './lib/swap-clip-normalise.mjs';
 const repo = fileURLToPath(new URL('../', import.meta.url));
 const fail = code => { throw new Error(code); };
+export const reviewFingerprint = (sha256, role) => sha256Hex(new TextEncoder().encode(`${sha256}\n${normaliseSwapRole(role)}`));
 const json = value => JSON.stringify(value, null, 2) + '\n';
 const likenessNote = 'This is a community creator result, not the original input. It may contain third-party likenesses. Owner approval of rights and moderation is required before publication.';
 
@@ -81,11 +83,11 @@ const EXCLUDED_ORIGINS = new Set(['syntx']);
 
 function markdown(report) {
   return '# Template swap clip review\n\n' + likenessNote + '\n\n' +
-    'Workflow: 1) run with --review-all and review every sheet; 2) copy decisions-template.json outside the repo, set approved:true on clips you accept (keep their sha256); 3) upload run refuses any clip whose fresh hash differs from the reviewed one.\n\n' +
+    'Workflow: 1) run with --review-all and review every sheet; 2) copy decisions-template.json outside the repo, correct roles, regenerate --review-all with those overrides, and set approved:true on clips you accept (keep sha256, role and reviewFingerprint); 3) upload refuses changed clip bytes or roles.\n\n' +
     `Dry run: ${report.dryRun}. Publishable: ${report.publishable}. Candidates: ${report.total}. By tier: ${JSON.stringify(report.tiers)}.\n\n` +
     report.results.map(r => `## ${r.id}\n\nOutcome: ${r.outcome}${r.reason ? ' (' + r.reason + ')' : ''}. Kind: ${r.kind}. Tier: ${r.tier || 'not reviewed'}. Origin: ${r.origin || 'none on record'}. Verification: ${r.verification}${r.posterSimilarity === undefined ? '' : ', first-frame vs poster similarity ' + r.posterSimilarity}.\n\nRESULT CLIP, NOT THE ORIGINAL INPUT.\n\n` +
       (r.media ? `Measured: ${r.media.width}×${r.media.height}; container ${r.media.seconds}s; video ${r.media.videoSeconds}s; ${r.media.frameRate} fps; ${r.media.sizeBytes} bytes; SHA-256 ${r.media.sha256}.\n\n![Six frames](sheets/${r.id}.jpg)\n\n` : '') +
-      `Template prompt: ${r.prompt}\n\n${likenessNote}\n`).join('\n');
+      `Role: ${r.role}. object_role_suspected: ${r.object_role_suspected}. Slot roles: ${JSON.stringify(r.roles)}.\n\nTemplate prompt: ${r.prompt}\n\n${likenessNote}\n`).join('\n');
 }
 
 // Replace whatever list is installed (empty or populated); the emitted ids must equal the given ids exactly.
@@ -110,13 +112,15 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
   // Two steps: --review-all builds the pack for every candidate; only approved entries carrying the reviewed sha256 can be uploaded.
   if (reviewAll && upload) fail('review_all_not_with_upload');
   if (upload && (!isConfigured(r2) || !confirmBucket || confirmBucket !== r2.bucket)) fail('confirmed_r2_bucket_required');
-  const candidates = await swapCandidates({ kinds }), byId = new Map(candidates.map(c => [c.id, c])), approved = new Set(), seen = new Set(), reviewed = new Map();
+  const candidates = await swapCandidates({ kinds }), byId = new Map(candidates.map(c => [c.id, c])), approved = new Set(), seen = new Set(), reviewed = new Map(), roleReviews = new Map();
   for (const entry of decisions) {
     if (!byId.has(entry?.id)) fail('unknown_template_swap');
     if (seen.has(entry.id)) fail('duplicate_template_id');
     seen.add(entry.id);
     if (entry.approved === true) approved.add(entry.id);
     if (typeof entry.sha256 === 'string') reviewed.set(entry.id, entry.sha256);
+    if (entry.role !== undefined && !normaliseSwapRole(entry.role)) fail('template_swap_role_invalid');
+    roleReviews.set(entry.id, entry);
   }
   const sourceRecords = records ?? await auditRecords();
   const recordById = new Map(sourceRecords.map(r => [r.id, r])), recordByHash = new Map(sourceRecords.map(r => [r.localPreviewSha256, r]));
@@ -129,7 +133,8 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
   try {
     for (const candidate of candidates) {
       const { id } = candidate;
-      const result = { id, kind: candidate.kind, outcome: 'not_reviewed', verification: 'not_checked', prompt: candidate.sourcePrompt, likenessNote,
+      const roleInfo = templateSwapRoles(candidate.sourcePrompt, roleReviews.get(id)?.role);
+      const result = { ...roleInfo, id, kind: candidate.kind, outcome: 'not_reviewed', verification: 'not_checked', prompt: candidate.sourcePrompt, likenessNote,
         approved: approved.has(id) };
       report.results.push(result);
       if (!approved.has(id) && !reviewAll) { result.reason = 'rights_not_approved'; continue; }
@@ -149,13 +154,14 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
         const bytes = await readFile(output);
         if (bytes.length > MAX_BYTES) fail('too_large');
         const sha256 = await sha256Hex(bytes);
-        const source = { key: `template-swap-clips/${id}/${sha256}.mp4`, version: sha256.slice(0, 12),
+        const source = { role: roleInfo.role, key: `template-swap-clips/${id}/${sha256}.mp4`, version: sha256.slice(0, 12),
           seconds: media.seconds, videoSeconds: media.videoSeconds, width: media.width, height: media.height,
           frameRate: media.frameRate, contentType: 'video/mp4', sha256, sizeBytes: bytes.length };
         const checked = checkTemplateSwapVideoSource(id, source, capabilityFor(TEMPLATE_SWAP_CLIP_ENDPOINT));
         if (!checked.ok) fail(checked.error);
         await contactSheet(output, sheet, media);
         manifest[id] = source; files.push({ id, file: output }); sheets.push({ id, file: sheet });
+        result.reviewFingerprint = await reviewFingerprint(sha256, source.role);
         result.outcome = 'ok_for_review'; result.media = { ...media, sha256, sizeBytes: bytes.length };
       } catch (error) {
         const reason = /^[a-z][a-z0-9_]+$/.test(error.message) ? error.message : 'clip_processing_failed';
@@ -170,11 +176,15 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
       await indexSheet(group.map(item => item.file), path.join(runDir, filename));
       report.indexSheets.push({ file: filename, ids: group.map(item => item.id) });
     }
-    await writeFile(path.join(runDir, 'decisions-template.json'), json(candidates.map(({ id }) => ({ id, approved: false, ...(manifest[id] ? { sha256: manifest[id].sha256 } : {}) }))));
+    await writeFile(path.join(runDir, 'decisions-template.json'), json(report.results.map(result => ({ id: result.id, approved: false, role: result.role, ...(manifest[result.id] ? { sha256: manifest[result.id].sha256, reviewFingerprint: result.reviewFingerprint } : {}) }))));
     if (upload) {
       // Any failed (or zero) approved candidate fails the run, never a quiet success without a revision.
       if (!approved.size || files.length !== approved.size) fail('approved_candidates_failed');
-      for (const item of files) if (reviewed.get(item.id) !== manifest[item.id].sha256) fail('reviewed_hash_mismatch');
+      for (const item of files) {
+        const decision = roleReviews.get(item.id), source = manifest[item.id];
+        if (!normaliseSwapRole(decision?.role) || reviewed.get(item.id) !== source.sha256
+            || decision.reviewFingerprint !== await reviewFingerprint(source.sha256, source.role)) fail('reviewed_role_mismatch');
+      }
       for (const item of files) await verifyUpload(manifest[item.id], await readFile(item.file), r2, storage);
       const ids = Object.keys(manifest).sort();
       const manifestBytes = new TextEncoder().encode(json({ version: 1, clips: Object.fromEntries(ids.map(id => [id, manifest[id]])) }));

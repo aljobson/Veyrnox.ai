@@ -4,11 +4,11 @@ import { templateSwapAvailable, loadTemplateSwapClip } from '../lib/templateSwap
 import { resolveTemplateSwapVideo } from '../lib/templateSwapClipGeneration.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
 import { id, registry, manifest, catalog } from './fixtures/templateSwapClips.mjs';
-const env = { TEMPLATE_SWAP_CLIP_ENABLED: 'true' };
+const env = { MULTI_REFERENCE_ENABLED: 'true', TEMPLATE_SWAP_CLIP_ENABLED: 'true' };
 const options = { env, registry, manifest, catalog };
 test('availability returns only a registered swap on the exact active catalog offer', async () => {
   const result = templateSwapAvailable(id, options);
-  assert.deepEqual(result.template, { id, model: 'kling-o1-reference', credits: 47, durationSeconds: 5 });
+  assert.deepEqual(result.template, { id, model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: 'the main character', images: 2 });
   assert.deepEqual(await loadTemplateSwapClip(id, {}, { ...options, read: async () => catalog, readManifest: async () => manifest }), result);
   for (const value of [undefined, true, 'TRUE', 'false']) assert.equal(templateSwapAvailable(id, { ...options, env: { TEMPLATE_SWAP_CLIP_ENABLED: value } }), null);
   for (const patch of [{ active: false }, { active: 'true' }, { gated_flag: 'flag' }, { provider: 'kie' }, { provider_endpoint: 'wrong' }, { credits_5s: 0 }, { credits_5s: 1.5 }]) {
