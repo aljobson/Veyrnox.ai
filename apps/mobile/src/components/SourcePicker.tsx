@@ -12,6 +12,7 @@ import type { ApiClient } from '../lib/api';
 import { JobThumb, useAssetLinks } from './JobThumb';
 import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
+import { frameRatio } from '../lib/aspectFrame';
 import { discardFramed, reframePicked } from '../lib/reframePicked';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
@@ -324,7 +325,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
                 <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('sourcePicker.choosefor', { value1: NOUN[slot.kind], value2: slot.label }))} onPress={pick} icon="paperclip" label={t('sourcePicker.choose', { value1: NOUN[slot.kind] })} />
             ) : (
                 <View style={styles.row}>
-                    {preview ? <Image source={{ uri: preview }} style={styles.thumb} contentFit="cover" /> : libraryJob ? <JobThumb links={links} jobId={libraryJob} size={64} /> : <View style={[styles.thumb, styles.thumbPlain]} />}
+                    {preview ? <Image source={{ uri: preview }} style={frame ? [styles.thumb, { width: Math.round(64 * frameRatio(frame)) }] : styles.thumb} contentFit="cover" /> : libraryJob ? <JobThumb links={links} jobId={libraryJob} size={64} /> : <View style={[styles.thumb, styles.thumbPlain]} />}
                     <View style={styles.grow}>
                         {status.step === 'uploading' ? (
                             <View style={styles.status}>
