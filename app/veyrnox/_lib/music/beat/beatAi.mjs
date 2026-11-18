@@ -2,6 +2,7 @@ import { aiText, aiFailure, aiFailureText, aiEnglish } from './beatAiMessages.mj
 import { MUSIC_KEY_SCALES } from '../../../../../lib/musicTempoControls.js';
 import { tickSeconds, modulo } from './beatAudioSegments.mjs';
 export { MUSIC_KEY_SCALES as BEAT_AI_KEYS };
+export { EXAMPLE_PROMPT_KEYS, EXAMPLE_ROTATE_MS, nextExampleIndex } from './beatExamples.mjs';
 export const AI_INSTRUMENTS = ['vocals', 'drums', 'bass', 'guitar', 'piano', 'strings', 'synthesizer', 'brass', 'woodwinds'];
 export const AI_LABELS = { generate: 'Generate a part', stems: 'Split stems', targetStems: 'Target stem', extend: 'Extend', replace: 'Replace section' };
 export const AI_TERMINAL = new Set(['succeeded', 'partial', 'failed', 'refunded', 'ready']);
