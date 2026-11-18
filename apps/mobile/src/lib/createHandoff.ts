@@ -1,6 +1,7 @@
 import type { OptionValues } from '../components/CreateOptions';
 import { sanitizeCinema, type Cinema } from './cinemaCamera';
 import { sanitizePicks, type Picks } from './oddlingsBuilder';
+import { FRAME_RATIOS, takesFrame } from './aspectFrame';
 import { imageCount, optionsFor, resolveAudio, resolveResolution, seedIsInvalid } from './createOptions';
 import { kindOf, textInput, type CatalogModel } from './media';
 import { kindCap, slotsFor, type GenerationReference } from './sources';
@@ -13,6 +14,8 @@ export interface FormSnapshot {
     cinema: Cinema;
     characterOn: boolean;
     character: Picks;
+    // The frame ratio chosen for an image-to-video start photo ('' or absent: as it is), so a model switch keeps it.
+    frame?: string;
 }
 export function acceptedSettings(model: CatalogModel, saved: FormSnapshot): FormSnapshot {
     const o = optionsFor(model), v = saved.opts, kind = kindOf(model.modality);
@@ -24,6 +27,7 @@ export function acceptedSettings(model: CatalogModel, saved: FormSnapshot): Form
             resolution: resolveResolution(model, o, v.resolution), audio: resolveAudio(model, o, v.audio) },
         cameraOn: !!prompt && (kind === 'image' || kind === 'video') && saved.cameraOn, cinema: sanitizeCinema(saved.cinema),
         characterOn: !!prompt && kind === 'image' && saved.characterOn, character: sanitizePicks(saved.character),
+        ...(saved.frame && takesFrame(model.id) && FRAME_RATIOS.includes(saved.frame) ? { frame: saved.frame } : {}),
     };
 }
 export function nearestDuration(model: CatalogModel, wanted: number): number | null {

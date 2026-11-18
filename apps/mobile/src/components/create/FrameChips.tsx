@@ -11,9 +11,10 @@ import { Chip } from '../ui';
  * The frame choice for image-to-video models that take no ratio of their own: '' keeps the photo as it is, a ratio
  * crops it to that shape before upload. `node` is the chip row (null for other models); the choice follows the model.
  */
-export function useFrameChoice(modelId: string | undefined): { readonly value: string; readonly node: React.ReactNode } {
+export function useFrameChoice(modelId: string | undefined): { readonly value: string; readonly set: (value: string) => void; readonly node: React.ReactNode } {
     const [state, setState] = useState({ value: '' });
-    if (!takesFrame(modelId)) return { value: '', node: null };
+    const set = (value: string) => setState({ value });
+    if (!takesFrame(modelId)) return { value: '', set, node: null };
     const value = state.value;
     const options = ['', ...FRAME_RATIOS];
     const node = (
@@ -24,5 +25,5 @@ export function useFrameChoice(modelId: string | undefined): { readonly value: s
             })}
         </View>
     );
-    return { value, node };
+    return { value, set, node };
 }

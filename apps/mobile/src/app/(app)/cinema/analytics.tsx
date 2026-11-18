@@ -50,9 +50,9 @@ export default function CreatorAnalytics() {
     return (
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('cinemaCreator.analytics.title') }} />
-            {listError === 'closed' ? <Text style={styles.muted}>{t('cinemaCreator.analytics.closed')}</Text>
+            {listError === 'closed' ? <Text style={[styles.muted, styles.notice]}>{t('cinemaCreator.analytics.closed')}</Text>
                 : listError === 'error' ? <Button variant="tertiary" label={t('recovery.retry')} onPress={() => setRetry(n => n + 1)} />
-                : titles?.length === 0 ? <Text style={styles.body}>{t('cinema.creatorAnalytics.publishATitleToStartSeeing')}</Text> : null}
+                : titles?.length === 0 ? <Text style={[styles.body, styles.notice]}>{t('cinema.creatorAnalytics.publishATitleToStartSeeing')}</Text> : null}
             {titles?.length ? <View style={{ padding: 16, gap: 8 }}>
                 <Text accessibilityRole="header" style={styles.label}>{t('cinema.creatorAnalytics.publishedTitle')}</Text>
                 <ScrollView horizontal contentContainerStyle={{ gap: 8 }} accessibilityLabel={t('cinema.creatorAnalytics.publishedTitle')}>
@@ -87,5 +87,6 @@ const styles = StyleSheet.create({
     value: { color: colors.text, fontSize: 20, fontWeight: '700' },
     body: { color: colors.body, fontSize: 16 },
     muted: { color: colors.muted },
+    notice: { padding: 16 },
     error: { color: colors.danger },
 });
