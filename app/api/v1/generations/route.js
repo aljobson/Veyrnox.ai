@@ -327,6 +327,8 @@ export async function POST(req) {
 
     // Strict records retain resolved source slots so provider preflight can
     // refuse extras. Legacy records keep the shared-control filtering path.
+    // Photo-to-video records that require a prompt while the create page calls it optional: fill an empty one.
+    if (record.defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: record.defaultPrompt };
     const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) });
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
