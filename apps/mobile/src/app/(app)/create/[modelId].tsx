@@ -22,6 +22,7 @@ import { ModelUnavailable } from '../../../components/create/ModelUnavailable';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { useModelSwitch } from '../../../components/create/useModelSwitch';
+import { ResolutionVariantChips, hasResolutionVariants } from '../../../components/create/ResolutionVariantChips';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -369,6 +370,7 @@ export default function CreateWithModel() {
     const missing = complete ? 0 : shortfall(balance, payable);
     const disabled = busy || waiting || inProgress || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
     // A swap scene, a Tools recipe or a bound template is made for one model; anywhere else the model row opens the picker.
+    const pickModel = (id: string) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined));
     const choices = modelChoices(catalog, model, references.length > 0), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
     const needKey = complete || busy || waiting || inProgress || missing > 0 ? null : missingNeedKey(model, references, !!startFile, promptRequired(model) && !text.trim());
     const needText = needKey ? t(needKey) : null;
@@ -380,7 +382,7 @@ export default function CreateWithModel() {
             <KeyboardFormScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <RevealOnFirstLayout scroll={scrollRef}><CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /></RevealOnFirstLayout> : undefined}
                     onChangeModel={changeModel} onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
-                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={pickModel} />
                 {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>} {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
                 {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
@@ -446,7 +448,7 @@ export default function CreateWithModel() {
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('opt.draftClear')} onPress={discardDraft} label={t('opt.draftClear')} />
                     </View>
                 ) : null}
-                {((isVideo && model.durations.length > 1) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
+                {((isVideo && model.durations.length > 1) || hasResolutionVariants(model, catalog) || hasAnyOption(options) || takesImageCount(model) || takesCharacter || takesCamera) ? (
                     <View style={styles.settingsSection}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.settings')}</SectionLabel>
@@ -459,6 +461,7 @@ export default function CreateWithModel() {
                                 ))}
                             </View>
                         ) : null}
+                        <ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={pickModel} />
                         {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} tier={tier} tierLabel={(id) => `${id === '4k' ? '4K' : id} · ${estimateCredits(model, duration, id)}`} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                         {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
