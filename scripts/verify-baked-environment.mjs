@@ -8,7 +8,7 @@
 // and then calls the local-development address from the Worker, which Cloudflare refuses (error 1003). On 2026-10-17 that left staging's
 // top_up_backfill red for 21 hours (#908). Run this between `npm run build:worker` and `wrangler deploy`. Exit 0 = matches, 1 = does not
 // match or cannot be verified (it fails closed), 2 = bad usage.
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { closeSync, constants, existsSync, fstatSync, openSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AI_ENVIRONMENTS } from '../packages/security/environments.js';
@@ -18,7 +18,15 @@ const LOCAL_KEY = 'sb_publishable_local_development_unconfigured';
 const quoted = (text) => `"${text}"`;
 // The middleware bundle carries the identity function with the baked APP_ENV as its default argument:
 //   (..., r = "staging") { let a = "development" === r ? "http://127.0.0.1:54321" : ...
-const MIDDLEWARE_DEFAULT_ENV = /(\w+)\s*=\s*"(development|staging|production)"\s*\)\s*\{\s*let\s+\w+\s*=\s*"development"\s*===\s*\1\s*\?\s*"http:\/\/127\.0\.0\.1:54321"/;
+// Start at a parameter delimiter, so long bundled strings cannot cause quadratic
+// retries at each character of an apparent identifier.
+const MIDDLEWARE_DEFAULT_ENV = /[(,]\s*([A-Za-z_$][\w$]*)\s*=\s*"(development|staging|production)"\s*\)\s*\{\s*let\s+[\w$]+\s*=\s*"development"\s*===\s*\1\s*\?\s*"http:\/\/127\.0\.0\.1:54321"\s*:/g;
+
+// Webpack retains this unused CSP branch, including copies under server-functions.
+// Remove only the matched URL with the requested default; inspect every other occurrence.
+const hasForbiddenLocalUrl = (text, target) => text.includes(LOCAL_URL) && text.replace(MIDDLEWARE_DEFAULT_ENV,
+    (match, _parameter, baked) => baked === target ? match.replace(LOCAL_URL, '') : match,
+).includes(LOCAL_URL);
 
 const countIn = (files, needle) => files.filter((f) => f.text.includes(needle)).length;
 const where = (files, needle) => files.filter((f) => f.text.includes(needle)).slice(0, 3).map((f) => f.path).join(', ');
@@ -40,27 +48,52 @@ export function checkBakedEnvironment(target, { assets, server, middleware }) {
     }
     add('browser code holds no local-development address or key', countIn(assets, LOCAL_URL) + countIn(assets, LOCAL_KEY) === 0, where(assets, LOCAL_URL) || where(assets, LOCAL_KEY));
     add(`server code holds the ${target} Supabase URL`, countIn(server, quoted(expected.supabaseUrl)) > 0, `${countIn(server, quoted(expected.supabaseUrl))} server files`);
-    add('no server file has the local-development address baked in', countIn(server, quoted(LOCAL_URL)) === 0, where(server, quoted(LOCAL_URL)));
+    const forbidden = [...server, ...middleware].filter((f) => hasForbiddenLocalUrl(f.text, target));
+    add('no server file has the local-development address baked in', forbidden.length === 0, forbidden.slice(0, 3).map((f) => f.path).join(', '));
 
-    const found = middleware.map((f) => f.text.match(MIDDLEWARE_DEFAULT_ENV)).find(Boolean);
-    if (!found) add('middleware reports its baked environment', false, 'pattern not found: the bundle layout changed, so this cannot be verified; update scripts/verify-baked-environment.mjs');
-    else add(`middleware was built for ${target}`, found[2] === target, `built for "${found[2]}"`);
+    const found = middleware.flatMap((f) => [...f.text.matchAll(MIDDLEWARE_DEFAULT_ENV)]);
+    if (!found.length) add('middleware reports its baked environment', false, 'pattern not found: the bundle layout changed, so this cannot be verified; update scripts/verify-baked-environment.mjs');
+    else add(`middleware was built for ${target}`, found.every((match) => match[2] === target), `built for ${[...new Set(found.map((match) => match[2]))].join(', ')}`);
     return { ok: checks.every((c) => c.ok), checks };
 }
 
-const TEXT = /\.(?:m?js|json|html|txt)$/;
-const MAX_FILE_BYTES = 25 * 1024 * 1024;
-// Each file is opened once: the directory listing says what is a directory, the file is read in one call, and its size is judged from what
-// was read, so nothing can change between a check and the read (CodeQL js/file-system-race).
-function walk(dir, out = []) {
+const TEXT = /\.(?:[cm]?js|json|html|txt)$/;
+// Read complete files, including the large OpenNext handler. Missing top-level groups
+// are checked below; a disappearing subtree or unreadable file must fail inspection.
+// Inspect and read through one open handle (CodeQL js/file-system-race). Descriptor
+// reads also avoid the slow UTF-8 pathname read observed on this checkout's runtime.
+function walk(dir, buildDir, out = [], optional = true) {
     let entries;
-    try { entries = readdirSync(dir, { withFileTypes: true }); } catch (err) { if (err.code === 'ENOENT') return out; throw err; }
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch (err) {
+        if (optional && err.code === 'ENOENT') return out;
+        throw new Error(`cannot inspect ${dir}: ${err.message}`, { cause: err });
+    }
     for (const entry of entries) {
         const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) walk(full, out);
-        else if (entry.isFile() && TEXT.test(entry.name)) {
-            const text = readFileSync(full, 'utf8');
-            if (text.length < MAX_FILE_BYTES) out.push({ path: full, text });
+        if (entry.isDirectory()) walk(full, buildDir, out, false);
+        else if (TEXT.test(entry.name)) {
+            try {
+                let readable = full;
+                if (entry.isSymbolicLink()) {
+                    readable = realpathSync(full);
+                    const relative = path.relative(realpathSync(buildDir), readable);
+                    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+                        // Outside directory links are skipped, never opened or traversed.
+                        if (statSync(readable).isDirectory()) continue;
+                        throw new Error('symbolic link points outside the build directory');
+                    }
+                } else if (!entry.isFile()) throw new Error('not a regular file');
+                // NOFOLLOW refuses a last-component link swap; NONBLOCK lets fstat
+                // reject a FIFO without waiting for a writer.
+                const fd = openSync(readable, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+                try {
+                    const target = fstatSync(fd);
+                    if (entry.isSymbolicLink() && target.isDirectory()) continue;
+                    if (!target.isFile()) throw new Error('not a regular file');
+                    out.push({ path: full, text: readFileSync(fd, 'utf8') });
+                } finally { closeSync(fd); }
+            }
+            catch (err) { throw new Error(`cannot inspect ${full}: ${err.message}`, { cause: err }); }
         }
     }
     return out;
@@ -68,16 +101,18 @@ function walk(dir, out = []) {
 
 export function readBundle(dir) {
     return {
-        assets: walk(path.join(dir, 'assets', '_next', 'static')),
-        server: walk(path.join(dir, 'server-functions')),
-        middleware: walk(path.join(dir, 'middleware')),
+        assets: walk(path.join(dir, 'assets', '_next', 'static'), dir),
+        server: walk(path.join(dir, 'server-functions'), dir),
+        middleware: walk(path.join(dir, 'middleware'), dir),
     };
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${path.resolve(process.argv[1])}`).href) {
     const [target, dir = '.open-next'] = process.argv.slice(2);
     if (!target || !AI_ENVIRONMENTS[target]) { console.error('usage: node scripts/verify-baked-environment.mjs <staging|production> [.open-next]'); process.exit(2); }
-    const bundle = readBundle(dir);
+    let bundle;
+    try { bundle = readBundle(dir); }
+    catch (err) { console.error(`Build inspection failed: ${err.message}`); process.exit(1); }
     if (!bundle.assets.length || !bundle.server.length) {
         // Only now, to pick the message and exit code: 2 = nothing there at all, 1 = there but empty or incomplete.
         if (!existsSync(dir)) { console.error(`no build output at ${dir}: run npm run build:worker first`); process.exit(2); }

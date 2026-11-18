@@ -1,3 +1,8 @@
+// Production Worker builds use webpack (ADR-0353).
+// 2026-11-18: the host measured one production-environment webpack build on this
+// checkout (not CI): 47,373.23 KiB upload, 47,373.34 KiB on disk. The 48,500 KiB
+// budget leaves 1,126.66 KiB headroom; CI must confirm these results.
+// The following describes the earlier Turbopack-era 60,500-60,700 KiB budgets and is kept as history.
 // On 2026-10-31 upload was 60,490 KiB / 12,290 KiB gzip against a 65,536 KiB limit.
 // Cold requests spent 1.1–1.3 s before fetch; the separate wrapper added 6.9 MB.
 // Cap uploads at 60,500 KiB (see the 2026-11-15 note below), retaining about 4.9 MiB below the platform limit, and keep
@@ -20,7 +25,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
-export const WORKER_SIZE_BUDGET_KIB = 60700;
+export const WORKER_SIZE_BUDGET_KIB = 48500;
 const execFileAsync = promisify(execFile);
 const print = (line) => process.stdout.write(`${line}\n`);
 

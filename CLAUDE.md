@@ -18,6 +18,11 @@ data safe under real load. Break any of them only with an ADR that explains why.
 
 ## Bundler traps — the three libraries that break Cloudflare Workers Builds
 
+Production builds now select webpack; `next dev` still uses Turbopack (ADR-0353).
+The dependency/import audit found none of the three libraries below in root
+dependencies or application SSR imports. Their historical restrictions remain;
+switching bundlers does not establish that adding them is safe.
+
 Tripwires from PRs #25, #27, #38, #40:
 
 - **`tsx`** in root `devDependencies` -> build fails. Install ad-hoc in CI.
