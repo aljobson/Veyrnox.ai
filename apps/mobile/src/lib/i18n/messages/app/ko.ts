@@ -1415,6 +1415,7 @@ export default {
   "create.workspace.promptWriter": "프롬프트 작성",
   "create.workspace.references": "참고 자료",
   "create.workspace.referencesMeta": "사진, 영상 또는 오디오",
+  "create.frameOriginal": "원본",
   "create.workspace.addSeveral": "여러 파일 한 번에 추가",
   "create.workspace.addSeveralHide": "여러 파일 선택 닫기",
   "create.workspace.refund": "실패 시 항상 환불",

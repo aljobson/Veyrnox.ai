@@ -1550,6 +1550,7 @@ export default {
   "create.workspace.promptWriter": "كاتب الموجّهات",
   "create.workspace.references": "المراجع",
   "create.workspace.referencesMeta": "صورة أو فيديو أو صوت",
+  "create.frameOriginal": "الأصلية",
   "create.workspace.addSeveral": "إضافة عدة ملفات دفعة واحدة",
   "create.workspace.addSeveralHide": "إخفاء اختيار عدة ملفات",
   "create.workspace.refund": "استرداد عند الفشل · دائمًا",

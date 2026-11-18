@@ -31,12 +31,13 @@ const pill = 'font-vx-mono text-[11px] font-bold rounded-full px-3.5 py-1.5 bord
  * @param {string} [props.resetKey]  changes when the model or account changes: every conversion still running is dropped
  * @param {{current:number}} [props.epochRef]  the caller bumps it at the moment the model or account changes; a conversion started under an older value never lands
  * @param {boolean} [props.tokens]  name each file @Image1, @Video1 ... beside it, in order, when the prompt refers to files that way
+ * @param {string} [props.frame]  a "w:h" ratio the start image is cropped to before upload: the single-image thumbnails show that crop
  * @param {boolean} [props.locked]  another conversion (the paperclip) is running: every source control waits
  */
 // How a prompt names an attached file: @Image1, @Video1, @Audio1 (a model-facing token, not UI copy).
 const promptToken = (kind, n) => ['@', { image: 'Image', video: 'Video' }[kind] || 'Audio', n].join('');
 
-export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder, onConvertingChange, resetKey = '', epochRef, locked = false, tokens: showTokens = false }) {
+export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReorder, onConvertingChange, resetKey = '', epochRef, locked = false, tokens: showTokens = false, frame = '' }) {
   const { t, locale } = useI18n();
   // HEIC, AVIF, GIF, MOV and WebM are converted here before they reach onPick.
   // Each pick or removal bumps the slot's token, so a conversion that finishes
@@ -105,7 +106,7 @@ export function SourcePickers({ media, sources, onPick, onDraw, onLibrary, onReo
     return (
       <div key={slot} className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-vx-border bg-vx-panel p-3">
         {picked && kind === 'image' && picked.previewUrl ? (
-          <img src={picked.previewUrl} alt={slot === 'endImage' ? t("app.create.sources.endAlt") : t("app.create.sources.startAlt")} className="w-16 h-16 rounded-sm object-cover bg-black shrink-0" />
+          <img src={picked.previewUrl} alt={slot === 'endImage' ? t("app.create.sources.endAlt") : t("app.create.sources.startAlt")} className="w-16 h-16 rounded-sm object-cover bg-black shrink-0" style={frame ? { width: 'auto', aspectRatio: frame.replace(':', ' / ') } : undefined} />
         ) : (
           <div className="w-16 h-16 rounded-sm border border-dashed border-vx-border shrink-0 flex items-center justify-center text-vx-fg-faint" aria-hidden="true">
             {picked ? '✓' : ''}

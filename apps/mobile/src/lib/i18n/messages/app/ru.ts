@@ -1496,6 +1496,7 @@ export default {
   "create.workspace.promptWriter": "Автор промптов",
   "create.workspace.references": "Референсы",
   "create.workspace.referencesMeta": "Фото, видео или аудио",
+  "create.frameOriginal": "Исходное",
   "create.workspace.addSeveral": "Добавить несколько файлов сразу",
   "create.workspace.addSeveralHide": "Скрыть выбор нескольких файлов",
   "create.workspace.refund": "Возврат при сбое · всегда",
