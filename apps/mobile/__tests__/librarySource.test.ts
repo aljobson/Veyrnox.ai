@@ -21,6 +21,13 @@ describe('Library creations offered as a file', () => {
         expect(libraryChoices([job({ asset_expires_at: '2026-10-01T00:00:00Z' })], models, 'image', NOW)).toEqual([]);
         expect(libraryChoices([job({ model_id: 'gone' })], models, 'image', NOW)).toEqual([]);
     });
+    test('an Editor export is offered as a video, and only as a video', () => {
+        const edited = job({ job_id: 'e', model_id: 'editor-server-render', output_type: 'editor-render' });
+        expect(libraryChoices([edited], models, 'video', NOW).map((c) => c.jobId)).toEqual(['e']);
+        expect(libraryChoices([edited], models, 'image', NOW)).toEqual([]);
+        expect(libraryChoices([edited], models, 'audio', NOW)).toEqual([]);
+        expect(libraryChoices([edited, { ...edited, job_id: 'h', held: true }], models, 'video', NOW).map((c) => c.jobId)).toEqual(['e']);
+    });
     test('a future or unknown expiry is offered, and the name is the label else the model', () => {
         expect(libraryChoices([job({ asset_expires_at: '2027-01-01T00:00:00Z', label: 'My cat' })], models, 'image', NOW)[0].name).toBe('My cat');
         expect(libraryChoices([job({ asset_expires_at: null })], models, 'image', NOW)[0].name).toBe('Name img');
