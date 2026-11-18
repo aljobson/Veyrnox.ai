@@ -8,6 +8,10 @@
 - **The iPhone 17 Pro simulator run is NOT done.** Blocker: that simulator is in use by another session's paid-row QA (Release build, mid-flow on the Create screen), and the installed app is a Release build with an embedded bundle, so my harness cannot reach it without replacing the app or foregrounding Safari on that simulator. Either would wreck the other session's run. The canonical checkout (`veyrnox-mobile-app-f52c2f`) is also on an older branch with uncommitted work from another session, and its `node_modules` do not match main. See "Simulator run: what is needed" below.
 - What **was** measured: the real engine, bundled unmodified, running in a desktop Chromium page (the Browser pane). That proves the harness page and the engine code work; it says nothing about WebKit-on-iOS timing.
 
+## Owner direction (2026-11-18)
+
+The owner said the beat engine "needs to be mobile view": the phone gets a phone-shaped editor, not the desktop page shrunk into a web view. This agrees with recommendation item 4 below and points to the phone-scoped path for P5. It does not yet settle whether the audio engine is native or the web engine in a hidden audio-only web view; the device checklist answers that.
+
 ## Recommendation (a recommendation only)
 
 **Build a phone-scoped native editor for P5; do not wrap the web editor in a web view as the main path.** Reasons, in order of weight:
