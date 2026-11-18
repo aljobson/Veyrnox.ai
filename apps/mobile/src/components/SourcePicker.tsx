@@ -12,6 +12,7 @@ import type { ApiClient } from '../lib/api';
 import { JobThumb, useAssetLinks } from './JobThumb';
 import { LibraryChooser } from './LibraryChooser';
 import { t, plural } from '../lib/i18n';
+import { discardFramed, reframePicked } from '../lib/reframePicked';
 import type { LibraryChoice } from '../lib/librarySource';
 import { checkPicked, pickedProblem, type PickedFile, type Slot, type GenerationReference } from '../lib/sources';
 import { pickedImageFile } from '../lib/pickedImage';
@@ -43,6 +44,8 @@ interface SourcePickerProps {
     readonly initialReady?: boolean;
     // Human-readable state for a preselected Library creation. The route never carries its asset URL.
     readonly initialReadyLabel?: string;
+    // A "w:h" ratio the photo is cropped to before it is uploaded (image-to-video models that take no ratio): '' sends it as it is.
+    readonly frame?: string;
 }
 
 type Status = { readonly step: 'empty' } | { readonly step: 'uploading'; readonly fraction: number } | { readonly step: 'ready' };
@@ -121,7 +124,7 @@ function ReferencePicker(props: SourcePickerProps) {
     </View>;
 }
 
-function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, replaceable = false, hint, initialReady = false, initialReadyLabel, initialAssetId }: SourcePickerProps & { readonly initialAssetId?: string }) {
+function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, drawable = false, replaceable = false, hint, initialReady = false, initialReadyLabel, initialAssetId, frame = '' }: SourcePickerProps & { readonly initialAssetId?: string }) {
     const styles = useThemedStyles(sheets);
     const links = useAssetLinks(api);
     // The Library creation in this slot, so its picture shows beside it (nothing is uploaded for it).
@@ -141,12 +144,16 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
     // Conversions holding busy, and whether an upload does: busy clears only when neither is left.
     const converting = useRef(0);
     const uploading = useRef(false);
+    // The photo as picked (to crop again when the frame changes) and the cropped copy in the cache, if any.
+    const source = useRef<PickedFile | null>(null);
+    const framed = useRef<string | null>(null);
 
     useEffect(
         () => {
             mounted.current = true;
             return () => {
                 mounted.current = false;
+                discardFramed(framed.current ?? undefined);
                 pickRun.current++;
                 drawEpoch.current++;
                 releaseOwned();
@@ -209,6 +216,7 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         controller.current?.abort();
         const current = new AbortController();
         controller.current = current;
+        source.current = file;
         setPreview(slot.kind === 'image' ? file.uri : null);
         // An upload replaces a Library file chosen earlier for this slot.
         setLibraryName(null);
@@ -219,7 +227,17 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
         onBusy(true);
         uploading.current = true;
         try {
-            const key = await uploadSource(api, file, checked.contentType, (fraction) => { if (!current.signal.aborted) setStatus({ step: 'uploading', fraction }); }, current.signal);
+            let sent = file;
+            if (slot.kind === 'image' && frame) {
+                try {
+                    const cropped = await reframePicked(file, frame);
+                    if (current.signal.aborted || !mounted.current) { if (cropped.framed) discardFramed(cropped.uri); return; }
+                    if (cropped.framed) sent = cropped;
+                } catch { /* Cannot crop here: the photo goes as it is and the server's own checks decide. */ }
+            }
+            if (framed.current !== sent.uri) { discardFramed(framed.current ?? undefined); framed.current = sent === file ? null : sent.uri; }
+            if (sent !== file) setPreview(sent.uri);
+            const key = await uploadSource(api, sent, sent === file ? checked.contentType : 'image/jpeg', (fraction) => { if (!current.signal.aborted) setStatus({ step: 'uploading', fraction }); }, current.signal);
             if (current.signal.aborted || !mounted.current) return;
             setStatus({ step: 'ready' });
             onChange(key);
@@ -235,6 +253,15 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
             setError(isConsentDeclined(err) ? null : uploadMessage(err));
         }
     }
+
+    // Choosing another frame crops the photo already picked again; the new upload replaces the old key.
+    const shownFrame = useRef(frame);
+    useEffect(() => {
+        if (shownFrame.current === frame) return;
+        shownFrame.current = frame;
+        if (source.current && slot.kind === 'image' && status.step === 'ready' && !libraryJob) void accept(source.current);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to the frame only
+    }, [frame]);
 
     // The given file is sent once; choosing or removing something afterwards is the person's own call.
     const sentInitial = useRef<string | null>(null);
@@ -262,6 +289,8 @@ function SourceFilePicker({ slot, api, onChange, onLibrary, onBusy, initial, dra
     }
 
     function remove() {
+        source.current = null;
+        discardFramed(framed.current ?? undefined); framed.current = null;
         releaseOwned();
         drawEpoch.current++;
         setDrawing(null);

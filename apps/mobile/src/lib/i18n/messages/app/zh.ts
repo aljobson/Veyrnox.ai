@@ -1415,6 +1415,7 @@ export default {
   "create.workspace.promptWriter": "提示词编写助手",
   "create.workspace.references": "参考素材",
   "create.workspace.referencesMeta": "照片、视频或音频",
+  "create.frameOriginal": "原始比例",
   "create.workspace.addSeveral": "一次添加多个文件",
   "create.workspace.addSeveralHide": "收起多文件选择",
   "create.workspace.refund": "失败自动退还 · 始终如此",

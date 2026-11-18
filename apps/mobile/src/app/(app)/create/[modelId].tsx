@@ -21,7 +21,7 @@ import { ModelUnavailable } from '../../../components/create/ModelUnavailable';
 import { FormHeader } from '../../../components/create/FormHeader';
 import { ModelPickerSheet } from '../../../components/create/ModelPickerSheet';
 import { useModelSwitch } from '../../../components/create/useModelSwitch';
-import { ResolutionVariantChips, hasResolutionVariants } from '../../../components/create/ResolutionVariantChips';
+import { ResolutionVariantChips, hasResolutionVariants, useFrameChoice } from '../../../components/create/ResolutionVariantChips';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -76,7 +76,7 @@ export default function CreateWithModel() {
     const scrollRef = useRef<ComponentRef<typeof ScrollView> | null>(null);
     useEffect(() => { sceneServices.current = { api, router }; }, [api, router]);
     const loadedEntry = useRef<{ swap?: string; modelId: string } | null>(null);
-    const [model, setModel] = useState<CatalogModel | null>(null);
+    const [model, setModel] = useState<CatalogModel | null>(null); const frame = useFrameChoice(model?.id);
     const [swapScene, setSwapScene] = useState<SwapScene | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
     const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
@@ -401,7 +401,7 @@ export default function CreateWithModel() {
                                 key={s.slot}
                                 slot={s}
                                 drawable={canDraw(model) && s.slot === 'image'}
-                                tokens={model.id === 'seedance-2.0-reference' || /@(Image|Video|Audio)\d/i.test(prompt)}
+                                frame={frame.value} tokens={model.id === 'seedance-2.0-reference' || /@(Image|Video|Audio)\d/i.test(prompt)}
                                 api={api}
                                 references={references.filter(ref => ref.slot === s.slot)}
                                 onReferences={files => { setReferences(all => replaceSlotReferences(all, s.slot, files)); }}
@@ -459,7 +459,7 @@ export default function CreateWithModel() {
                                 ))}
                             </View>
                         ) : null}
-                        <ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                        {frame.node}<ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
                         {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} tier={tier} tierLabel={(id) => `${id === '4k' ? '4K' : id} · ${estimateCredits(model, duration, id)}`} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                         {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}

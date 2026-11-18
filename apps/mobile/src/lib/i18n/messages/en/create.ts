@@ -61,6 +61,7 @@ export default {
     'create.workspace.stageHelp': 'Your result opens as soon as the job starts. You can leave while it is being made.',
     'create.workspace.references': 'References',
     'create.workspace.referencesMeta': 'Photo, video or audio',
+    'create.frameOriginal': 'Original',
     'create.workspace.referencesLimit.one': 'Up to {count} file',
     'create.workspace.referencesLimit.other': 'Up to {count} files',
     'create.needs.image': 'Add a photo to continue',

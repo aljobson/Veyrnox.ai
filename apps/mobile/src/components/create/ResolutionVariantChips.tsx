@@ -31,3 +31,5 @@ export function ResolutionVariantChips({ model, catalog, duration, onPick }: Pro
         </View>
     );
 }
+
+export { useFrameChoice } from './FrameChips';
