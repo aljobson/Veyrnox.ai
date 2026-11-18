@@ -76,7 +76,7 @@ export default function CreateWithModel() {
     const scrollRef = useRef<ComponentRef<typeof ScrollView> | null>(null);
     useEffect(() => { sceneServices.current = { api, router }; }, [api, router]);
     const loadedEntry = useRef<{ swap?: string; modelId: string } | null>(null);
-    const [model, setModel] = useState<CatalogModel | null>(null); const frame = useFrameChoice(model?.id);
+    const [model, setModel] = useState<CatalogModel | null>(null); const frame = useFrameChoice(model?.id, typeof sourceHandoff === 'string' ? sourceHandoff : undefined);
     const [swapScene, setSwapScene] = useState<SwapScene | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
     const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
@@ -380,7 +380,7 @@ export default function CreateWithModel() {
             <KeyboardFormScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <RevealOnFirstLayout scroll={scrollRef}><CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /></RevealOnFirstLayout> : undefined}
                     onChangeModel={changeModel} onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
-                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => frame.carry(createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined)))} />
                 {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>} {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
                 {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
@@ -459,7 +459,7 @@ export default function CreateWithModel() {
                                 ))}
                             </View>
                         ) : null}
-                        {frame.node}<ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                        {frame.node}<ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => frame.carry(createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined)))} />
                         {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} tier={tier} tierLabel={(id) => `${id === '4k' ? '4K' : id} · ${estimateCredits(model, duration, id)}`} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                         {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}
