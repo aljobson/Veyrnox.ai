@@ -152,3 +152,24 @@ test('the gateway counts a whole MP3 from a stream, never a full-object buffer',
     assert.match(source, /streamWithTimeout\(/, 'the tail is streamed, not read into one buffer');
     assert.doesNotMatch(source, /readRange\(0, size - 1\)/, 'the whole-object MP3 read is gone');
 });
+
+// A refused MP4 says which check fired, so an app can name the true reason instead of guessing.
+const refusal = async (...top) => {
+    const file = Buffer.concat([box('ftyp', Buffer.from('isom0000')), ...top]), why = {};
+    const info = await mp4Info(async (s, e) => new Uint8Array(file.subarray(s, e + 1)), file.length, why);
+    return { info, reason: why.reason };
+};
+test('MP4 refusal reasons: fragmented (moof, or mvex in the movie box), no movie box, oversized movie box, too many boxes', async () => {
+    assert.equal((await refusal(box('moov', mvhdOf(1000, 4000)), box('moof', Buffer.alloc(16)))).reason, 'fragmented');
+    assert.equal((await refusal(box('moov', Buffer.concat([mvhdOf(1000, 4000), trak({ headerTicks: 4000, samples: [[100, 40]] }), box('mvex', Buffer.alloc(8))])))).reason, 'fragmented');
+    assert.equal((await refusal(box('mdat', Buffer.alloc(64)))).reason, 'no_movie_box');
+    assert.equal((await refusal(...Array.from({ length: 70 }, () => box('free', Buffer.alloc(4))))).reason, 'too_many_boxes');
+    const bigMoov = Buffer.alloc(8); bigMoov.writeUInt32BE(5 * 1024 * 1024); bigMoov.write('moov', 4);
+    const file = Buffer.concat([box('ftyp', Buffer.from('isom0000')), bigMoov, Buffer.alloc(16)]), why = {};
+    assert.equal(await mp4Info(async (s, e) => new Uint8Array(file.subarray(s, e + 1)), 6 * 1024 * 1024, why), null);
+    assert.equal(why.reason, 'movie_box_too_large');
+});
+test('MP4 refusal: an ordinary movie is accepted and leaves no reason', async () => {
+    const ok = await refusal(box('moov', Buffer.concat([mvhdOf(1000, 4000), trak({ headerTicks: 4000, samples: [[100, 40]] })])));
+    assert.equal(ok.info.seconds, 4); assert.equal(ok.reason, undefined);
+});
