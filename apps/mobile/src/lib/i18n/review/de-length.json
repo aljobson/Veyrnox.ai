@@ -3582,6 +3582,30 @@
     "ratio": 1.64
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Individuell",
+    "ratio": 1.83
+  },
+  {
+    "id": "music.create.locked_plan",
+    "english": "This model requires a paid plan.",
+    "translation": "Dieses Modell erfordert einen kostenpflichtigen Tarif.",
+    "ratio": 1.69
+  },
+  {
+    "id": "music.create.paidModel",
+    "english": "{model} · Paid plan",
+    "translation": "{model} · Kostenpflichtiger Tarif",
+    "ratio": 1.74
+  },
+  {
+    "id": "music.create.queued",
+    "english": "Queued",
+    "translation": "In Warteschlange",
+    "ratio": 2.67
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

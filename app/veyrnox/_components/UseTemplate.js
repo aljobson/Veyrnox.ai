@@ -22,9 +22,24 @@ import { TemplateClipComposer } from './TemplateClipComposer';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt } from '../../../lib/templateClipPrompt.mjs';
 import { inlineBlockReason, clipInlineEligible, templateInputs } from '../_lib/templateGenerate';
 import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../_lib/imageTemplateModels.js';
+import { SwapComposer } from './SwapComposer.js';
+import { SwapAttemptStatus } from './SwapAttemptStatus.js';
+import { useResolvedSwap, TemplateSwapBoundary, TemplateSwapSummary } from './TemplateSwapBoundary.js';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
-export function UseTemplate({ preset, prompt = preset.prompt, generationBlocked: sourceGenerationBlocked = false, templateClip = null }) {
+// All standalone callers resolve availability; TemplateRecipe passes its shared result.
+export function UseTemplate(props) {
+  const shared = useResolvedSwap();
+  if (props.templateSwap || shared?.offer) return <SwapComposer offer={props.templateSwap || shared.offer} />;
+  if (shared?.loading) return <div aria-busy="true" className="min-h-48" />;
+  if (shared) return <LegacyUseTemplate {...props} />;
+  return <TemplateSwapBoundary id={props.preset.id}><StandaloneUseTemplate {...props} /></TemplateSwapBoundary>;
+}
+function StandaloneUseTemplate(props) {
+  const shared = useResolvedSwap();
+  return <><SwapAttemptStatus templateId={props.preset.id} />{shared?.loading ? <div aria-busy="true" className="min-h-48" /> : shared?.offer ? <><TemplateSwapSummary /><SwapComposer offer={shared.offer} /></> : <LegacyUseTemplate {...props} />}</>;
+}
+export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBlocked: sourceGenerationBlocked = false, templateClip = null }) {
   const { t } = useI18n();
   const router = useRouter();
   const { models, live } = useCatalog();

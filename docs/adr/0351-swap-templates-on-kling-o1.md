@@ -349,8 +349,9 @@ manifest uploads/read-back and dry runs emit nothing publishable.
 
 Amendment 4 (PR #2389) records the wording clause and the owner's price
 decision; this amendment does not repeat it. The checked-in size script already
-has a 60,700 KiB budget, despite the frozen plan's 60,500 KiB assertion. This work leaves that script unchanged; no budget
-increase is authorized or performed. Source-byte accounting cannot establish
+had a higher budget than the frozen plan's 60,500 KiB assertion. ADR-0353 now
+sets the webpack budget. This amendment left that script unchanged; no budget
+increase was authorized or performed. Source-byte accounting cannot establish
 compiled Worker size; `worker-smoke` must measure the compiled result in CI.
 
 ## Amendment 6: one reviewed character through an O1 element (2026-11-17)
@@ -421,7 +422,7 @@ permit an identical accepted job to replay. The pre-existing template-swap kill
 switch behavior remains. Public catalog projection adds only `role` and `images: 2`.
 Registry and pin remain empty; no migration, price, gallery, deployment, upload
 or switch changes are included. Worker size still requires CI `worker-smoke`
-against the unchanged 60,700 KiB budget.
+against the active budget in `scripts/check-worker-size.mjs` (now governed by ADR-0353).
 
 Inventory correction to the frozen plan: shared `imageSlots` finds four
 `@image2`-only clips among the 411 approved v3 ids, and five among all 519

@@ -5262,6 +5262,42 @@
     "ratio": 1.79
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Personnalisé",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.useServer",
+    "english": "Use server version",
+    "translation": "Utiliser la version du serveur",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.create.keepMine",
+    "english": "Keep mine",
+    "translation": "Garder ma version",
+    "ratio": 1.89
+  },
+  {
+    "id": "music.create.copy",
+    "english": "Copy lyrics",
+    "translation": "Copier les paroles",
+    "ratio": 1.64
+  },
+  {
+    "id": "music.create.queued",
+    "english": "Queued",
+    "translation": "En attente",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.create.openSong",
+    "english": "Open song",
+    "translation": "Ouvrir le morceau",
+    "ratio": 1.89
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
