@@ -102,7 +102,7 @@ test('Social callback synthetic success returns to the real Publish UI with no p
   const fixture = await callbackFixture(page, ({ json }) => json({ ok: true }));
   await openReal(fixture, '/social/connect/callback/facebook?code=synthetic-code&state=synthetic-state');
   await expect(page).toHaveURL(/\/app\/publish$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Veyrnox.ai Publish', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'VEYRNOX.ai Publish', exact: true })).toBeVisible();
   expect(productWrites(fixture).map(r => r.path)).toEqual(['/api/v1/social/accounts/facebook/callback']);
 });
 
