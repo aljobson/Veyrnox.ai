@@ -34,9 +34,26 @@ describe('reframePicked', () => {
     }
     test('crops to the chosen ratio and returns a new JPEG', async () => {
         const { lib: fake, crops } = lib(1600, 900);
-        const out = await reframePicked({ uri: 'file:///pick.jpg' }, '1:1', () => fake);
+        const out = await reframePicked({ uri: 'file:///pick.jpg' }, '1:1', () => fake, () => 123456);
         expect(crops).toEqual([{ originX: 350, originY: 0, width: 900, height: 900 }]);
         expect(out).toMatchObject({ uri: 'file:///cache/framed.jpg', mimeType: 'image/jpeg', framed: true });
+    });
+    test('the cropped copy carries its byte size, which the upload declares to the server', async () => {
+        const { lib: fake } = lib(1600, 900);
+        const out = await reframePicked({ uri: 'file:///pick.jpg' }, '1:1', () => fake, () => 123456);
+        expect(out.size).toBe(123456);
+    });
+    test('a copy whose size cannot be read is not sent: the photo goes as it is', async () => {
+        const { lib: fake } = lib(1600, 900);
+        const file = { uri: 'file:///pick.jpg', size: 4000 };
+        const unreadable: Array<() => number | undefined> = [() => undefined, () => 0, () => { throw new Error('locked'); }];
+        for (const sizeOf of unreadable) {
+            const discard = jest.fn();
+            const out = await reframePicked(file, '1:1', () => fake, sizeOf, discard);
+            expect(out).toMatchObject({ uri: file.uri, size: 4000, framed: false });
+            // The cropped copy is deleted, not left in the cache.
+            expect(discard).toHaveBeenCalledWith('file:///cache/framed.jpg');
+        }
     });
     test('hands the photo back untouched when it already has the shape', async () => {
         const { lib: fake, crops } = lib(1000, 1000);
