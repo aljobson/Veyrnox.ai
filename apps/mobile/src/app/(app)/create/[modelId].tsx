@@ -177,9 +177,7 @@ export default function CreateWithModel() {
                 if (handedSources?.settings) {
                     const saved = acceptedSettings(found, handedSources.settings);
                     setPrompt(typeof presetPrompt === 'string' ? presetPrompt : '');
-                    setOpts({ ...saved.opts, aspect: handedAspect ?? saved.opts.aspect ?? aspect });
-                    // The held start photo was already cropped to this frame; the chip must keep saying so.
-                    frame.set(saved.frame ?? '');
+                    setOpts({ ...saved.opts, aspect: handedAspect ?? saved.opts.aspect ?? aspect }); frame.set(saved.frame ?? '');
                     setCameraOn(saved.cameraOn); setCinema(saved.cinema); setCharacterOn(saved.characterOn); setCharacter(saved.character);
                     draftReady.current = true;
                     return;
