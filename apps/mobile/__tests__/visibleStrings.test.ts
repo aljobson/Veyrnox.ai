@@ -9,7 +9,9 @@ const files = (dir: string): string[] => fs.readdirSync(dir, { withFileTypes: tr
 const exceptions = new Set([
     'components/dev/EditorSpikeHarness.tsx',
     'components/dev/BeatEngineSpikeHarness.tsx',
+    'components/dev/NativeBeatEngineHarness.tsx',
     'app/(app)/dev-b1-beat.tsx',
+    'app/(app)/dev-n0-beat.tsx',
     'lib/cinemaEditorialData.ts', // Imported film/episode names are creator content, not app copy.
 ]);
 // Generated legal documents have their own translation/parity guard and must remain verbatim.
