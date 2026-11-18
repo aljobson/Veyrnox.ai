@@ -3,10 +3,10 @@
 import { audioFamily, starterModel } from './createOptions';
 import { kindOf, type CatalogModel } from './media';
 
-export type AudioStudioId = 'music' | 'speech' | 'dialogue' | 'dub';
+export type AudioStudioId = 'yourMusic' | 'music' | 'speech' | 'dialogue' | 'dub';
 export const AUDIO_STUDIOS: readonly AudioStudioId[] = ['music', 'speech', 'dialogue', 'dub'];
 
-export type AudioTarget = { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
+export type AudioTarget = { pathname: '/music' } | { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
 
 // A catalog name like "ACE-Step (music/SFX)" trips the effects heuristic in audioFamily, so music is matched by name first.
 const isMusic = (m: CatalogModel): boolean => {
@@ -23,6 +23,7 @@ const dialogue = (models: readonly CatalogModel[]): CatalogModel | null =>
 
 // Where a card goes. Before the catalog arrives (or when no open model fits) it falls back to Create, never a dead end.
 export function audioTarget(id: AudioStudioId, models: readonly CatalogModel[] | null): AudioTarget {
+    if (id === 'yourMusic') return { pathname: '/music' };
     if (id === 'dub') return { pathname: '/features/[slug]', params: { slug: 'lip-sync' } };
     const model = !models ? null : id === 'music' ? byFamily(models, 'music') : id === 'speech' ? byFamily(models, 'speech') : dialogue(models);
     return model ? { pathname: '/create/[modelId]', params: { modelId: model.id } } : { pathname: '/create' };

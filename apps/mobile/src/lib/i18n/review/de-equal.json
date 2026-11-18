@@ -208,5 +208,9 @@
   "prov.prompt": "\"Prompt\" is the established loan word for the text instruction given to an AI model, used as is in this language.",
   "menu.audio": "Common loanword or label identical to English in this language: Audio.",
   "audioHub.title": "Common loanword or label identical to English in this language: Audio.",
-  "create.frameOriginal": "Common loanword or label identical to English in this language: Original."
+  "create.frameOriginal": "Common loanword or label identical to English in this language: Original.",
+  "music.tab.songs": "Songs is an established German musical loanword, also used in the Audio hub.",
+  "music.tab.hooks": "Hooks is the established German term for memorable musical phrases.",
+  "music.pause": "Pause is the standard German playback control label.",
+  "music.version": "Version is the standard German noun; the number placeholder is unchanged."
 }

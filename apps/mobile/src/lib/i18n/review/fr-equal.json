@@ -224,5 +224,8 @@
   "menu.audio": "Common loanword or label identical to English in this language: Audio.",
   "audioHub.title": "Common loanword or label identical to English in this language: Audio.",
   "audioHub.dialogue.title": "Common loanword or label identical to English in this language: Audio.",
-  "create.frameOriginal": "Common loanword or label identical to English in this language: Original."
+  "create.frameOriginal": "Common loanword or label identical to English in this language: Original.",
+  "music.pause": "Pause is the standard French playback control label.",
+  "music.versions": "Versions is the standard French plural noun, identical to English.",
+  "music.version": "Version is the standard French noun; the number placeholder is unchanged."
 }

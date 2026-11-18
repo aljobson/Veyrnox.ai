@@ -130,6 +130,7 @@ import area_mobile from './en/mobile';
 import area_model from './en/model';
 import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
+import area_music from './en/music';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
 import area_network from './en/network';
@@ -349,6 +350,7 @@ const catalog = {
     ...area_model,
     ...area_modelPage,
     ...area_montage,
+    ...area_music,
     ...area_nativeEditorModel,
     ...area_net,
     ...area_network,

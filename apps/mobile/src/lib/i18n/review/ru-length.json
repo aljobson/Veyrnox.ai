@@ -3438,6 +3438,54 @@
     "ratio": 1.92
   },
   {
+    "id": "music.retry",
+    "english": "Try again",
+    "translation": "Повторить попытку",
+    "ratio": 1.89
+  },
+  {
+    "id": "music.play",
+    "english": "Play",
+    "translation": "Воспроизвести",
+    "ratio": 3.25
+  },
+  {
+    "id": "music.foreground",
+    "english": "Playback pauses when you leave the app or this screen.",
+    "translation": "Воспроизведение приостанавливается, когда вы выходите из приложения или с этого экрана.",
+    "ratio": 1.61
+  },
+  {
+    "id": "music.player.idle",
+    "english": "Ready to play",
+    "translation": "Готово к воспроизведению",
+    "ratio": 1.85
+  },
+  {
+    "id": "music.player.playing",
+    "english": "Playing",
+    "translation": "Воспроизводится",
+    "ratio": 2.14
+  },
+  {
+    "id": "music.share",
+    "english": "Share links",
+    "translation": "Ссылки для доступа",
+    "ratio": 1.64
+  },
+  {
+    "id": "music.shareVersion",
+    "english": "Choose a version to share",
+    "translation": "Выберите версию, которой хотите поделиться",
+    "ratio": 1.68
+  },
+  {
+    "id": "music.trash",
+    "english": "Move to trash",
+    "translation": "Переместить в корзину",
+    "ratio": 1.62
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

@@ -1,6 +1,7 @@
+import { useMusicAvailable } from '../../lib/music/useMusicAvailable';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { rawText } from '../../lib/i18n/translate';
 import { AUDIO_STUDIOS, audioTarget, type AudioStudioId } from '../../lib/audioHub';
 import { t } from '../../lib/i18n';
@@ -9,8 +10,9 @@ import { ds } from '../../theme';
 import { Card, ListRow, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import type { MenuIcon } from '../../lib/menuIcons';
 
-const ICON: Record<AudioStudioId, MenuIcon> = { music: 'audio', speech: 'audio', dialogue: 'chat', dub: 'video' };
+const ICON: Record<AudioStudioId, MenuIcon> = { yourMusic: 'audio', music: 'audio', speech: 'audio', dialogue: 'chat', dub: 'video' };
 const copy = (): Record<AudioStudioId, { title: string; blurb: string }> => ({
+    yourMusic: { title: t('music.title'), blurb: t('music.entryBody') },
     music: { title: t('audioHub.music.title'), blurb: t('audioHub.music.blurb') },
     speech: { title: t('audioHub.speech.title'), blurb: t('audioHub.speech.blurb') },
     dialogue: { title: t('audioHub.dialogue.title'), blurb: t('audioHub.dialogue.blurb') },
@@ -22,6 +24,7 @@ export default function AudioHub() {
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     const text = copy();
+    const musicAvailable = useMusicAvailable();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     useEffect(() => { void fetchCatalogCached((list) => setModels(list)).catch(() => {}); }, []);
     return (
@@ -31,7 +34,7 @@ export default function AudioHub() {
             <Text variant="body" tone="secondary">{t('audioHub.intro')}</Text>
             <Card>
                 <View>
-                    {AUDIO_STUDIOS.map((id) => (
+                    {(musicAvailable ? ['yourMusic' as const, ...AUDIO_STUDIOS] : AUDIO_STUDIOS).map((id) => (
                         <ListRow
                             key={id}
                             icon={ICON[id]}
