@@ -5202,6 +5202,66 @@
     "ratio": 1.75
   },
   {
+    "id": "music.tab.hooks",
+    "english": "Hooks",
+    "translation": "Accroches",
+    "ratio": 1.8
+  },
+  {
+    "id": "music.search",
+    "english": "Search songs",
+    "translation": "Rechercher des chansons",
+    "ratio": 1.92
+  },
+  {
+    "id": "music.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.refresh",
+    "english": "Refresh music",
+    "translation": "Actualiser la musique",
+    "ratio": 1.62
+  },
+  {
+    "id": "music.player.playing",
+    "english": "Playing",
+    "translation": "Lecture en cours",
+    "ratio": 2.29
+  },
+  {
+    "id": "music.noShares",
+    "english": "No share links yet.",
+    "translation": "Pas encore de liens de partage.",
+    "ratio": 1.63
+  },
+  {
+    "id": "music.trash",
+    "english": "Move to trash",
+    "translation": "Déplacer dans la corbeille",
+    "ratio": 2
+  },
+  {
+    "id": "music.trashed",
+    "english": "Song moved to trash.",
+    "translation": "Chanson déplacée dans la corbeille.",
+    "ratio": 1.75
+  },
+  {
+    "id": "music.restore",
+    "english": "Restore song",
+    "translation": "Restaurer la chanson",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.saving",
+    "english": "Saving your change…",
+    "translation": "Enregistrement de la modification…",
+    "ratio": 1.79
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

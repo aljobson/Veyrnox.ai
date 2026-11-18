@@ -1968,6 +1968,24 @@
     "ratio": 1.64
   },
   {
+    "id": "music.player.paused",
+    "english": "Paused",
+    "translation": "रुका हुआ है",
+    "ratio": 1.83
+  },
+  {
+    "id": "music.shareRevoked",
+    "english": "Share link revoked.",
+    "translation": "साझा करने का लिंक निरस्त कर दिया गया।",
+    "ratio": 1.95
+  },
+  {
+    "id": "music.noShares",
+    "english": "No share links yet.",
+    "translation": "अभी साझा करने के कोई लिंक नहीं हैं।",
+    "ratio": 1.84
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

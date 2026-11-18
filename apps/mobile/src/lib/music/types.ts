@@ -53,8 +53,8 @@ export type MusicLibraryTab = 'history' | 'hooks' | 'covers';
 export type MusicRow = Readonly<Record<string, unknown>>;
 
 export type MusicLibraryTabData =
-    | { readonly tab: 'history'; readonly songs: readonly MusicRow[] }
-    | { readonly tab: 'hooks'; readonly hooks: readonly MusicRow[] }
+    | { readonly tab: 'history'; readonly songs: readonly MusicSongRow[] }
+    | { readonly tab: 'hooks'; readonly hooks: readonly MusicHook[]; readonly dropped: number }
     | { readonly tab: 'covers'; readonly images: readonly MusicRow[]; readonly covers: readonly MusicRow[] };
 
 export type MusicSongsCollection = 'active' | 'trash';
@@ -67,7 +67,54 @@ export type MusicSongsQuery = {
 };
 
 // GET /api/v1/music/songs/:id adds a server-built `actions` list to the song row.
-export type MusicSong = MusicRow & { readonly actions: readonly string[] };
+export type MusicSongRow = {
+    readonly id: string;
+    readonly title: string;
+    readonly job_id?: string;
+    readonly version_id?: string;
+    readonly lifecycle_status?: string;
+    readonly workspace_name?: string;
+    readonly audio_url?: string | null;
+    readonly revision?: number;
+};
+export type MusicVersion = {
+    readonly id: string;
+    readonly version_number: number;
+    readonly operation: string;
+    readonly parent_version_id: string | null;
+    readonly created_at: string;
+};
+export type MusicSongDetail = MusicSongRow & {
+    readonly job_id: string;
+    readonly version_id: string;
+    readonly current_version: MusicVersion;
+    readonly versions: readonly (MusicVersion & { readonly is_current: boolean })[];
+    readonly actions: readonly string[];
+    readonly provenance: Readonly<Record<string, unknown>>;
+};
+export type MusicSong = MusicSongDetail;
+export type MusicHook = {
+    readonly id: string;
+    readonly song_id: string;
+    readonly song_title: string;
+    readonly title: string;
+    readonly start_seconds: number;
+    readonly end_seconds: number;
+    readonly created_at: string;
+    readonly audio_url: string;
+};
+export type MusicShareLink = {
+    readonly id: string;
+    readonly version_id: string;
+    readonly revoked_at: string | null;
+    readonly created_at: string;
+};
+export type MusicLifecycle = {
+    readonly id: string;
+    readonly revision: number;
+    readonly lifecycle_status: string;
+    readonly updated_at: string;
+};
 
 export type MusicQuoteMode = 'simple' | 'custom';
 

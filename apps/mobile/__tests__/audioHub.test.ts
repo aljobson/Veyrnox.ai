@@ -22,3 +22,8 @@ describe('audio hub targets', () => {
         expect(audioTarget('dialogue', [model('market:elevenlabs/text-to-dialogue-v3', 'Dialogue v3', 4)])).toEqual({ pathname: '/create/[modelId]', params: { modelId: 'market:elevenlabs/text-to-dialogue-v3' } });
     });
 });
+
+test('Your music opens the library regardless of generation catalog', () => {
+    expect(audioTarget('yourMusic', null)).toEqual({ pathname: '/music' });
+    expect(audioTarget('yourMusic', [])).toEqual({ pathname: '/music' });
+});

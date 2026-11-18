@@ -1854,6 +1854,30 @@
     "ratio": 2.6
   },
   {
+    "id": "music.tab.hooks",
+    "english": "Hooks",
+    "translation": "المقاطع المميزة",
+    "ratio": 3
+  },
+  {
+    "id": "music.retry",
+    "english": "Try again",
+    "translation": "المحاولة مجددًا",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.pause",
+    "english": "Pause",
+    "translation": "إيقاف مؤقت",
+    "ratio": 2
+  },
+  {
+    "id": "music.player.paused",
+    "english": "Paused",
+    "translation": "متوقف مؤقتًا",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
