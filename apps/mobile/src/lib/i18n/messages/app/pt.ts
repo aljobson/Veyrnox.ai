@@ -1469,6 +1469,7 @@ export default {
   "create.workspace.promptWriter": "Redator de prompts",
   "create.workspace.references": "Referências",
   "create.workspace.referencesMeta": "Foto, vídeo ou áudio",
+  "create.frameOriginal": "Original",
   "create.workspace.addSeveral": "Adicionar vários ficheiros de uma vez",
   "create.workspace.addSeveralHide": "Ocultar seletor de vários ficheiros",
   "create.workspace.refund": "Reembolso em caso de falha · sempre",

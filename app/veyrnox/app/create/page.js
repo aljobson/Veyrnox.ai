@@ -17,6 +17,9 @@ import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { clipCredits, modelAspectRatios, templateModelId } from '../../_lib/tokens';
 import { ResolutionVariantChoice } from '../../_components/ResolutionVariantChoice';
+import { takesFrame } from '../../../../lib/aspectFrame.mjs';
+import { FrameChoice } from '../../_components/FrameChoice';
+import { frameUploader } from '../../_lib/reframeImage';
 import { TemplateOpening, useTemplateOpening } from '../../_components/TemplateOpening';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged, GatewayError } from '../../_lib/gateway';
 import { failedCreationCopy } from '../../../../lib/i18n/createCopy.mjs';
@@ -145,6 +148,7 @@ export default function CreateStudio() {
   const [duration, setDuration] = useState('5s');
   const [audioDurations, setAudioDurations] = useState({});
   const [aspect, setAspect] = useState('16:9');
+  const [frame, setFrame] = useState('');
   // Output tier (720p … 4k) for models whose provider offers more than the catalog tier; '' = the model's base tier.
   const [resolution, setResolution] = useState('');
   const [recoveredPrompt, setRecoveredPrompt] = useState(null); // Recovery has no template provenance; preserve its unedited bytes.
@@ -433,7 +437,7 @@ export default function CreateStudio() {
   const n = imageCount(model, count);
   // The server decides what is free; the first `freeLeft` jobs of a batch are, the rest cost the catalog price.
   const freeLeft = freeLeftFor(freeMap, modelId);
-  const formIdentity = useMemo(() => ({}), [swapId, modelId, prompt, duration, aspect, resolution, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
+  const formIdentity = useMemo(() => ({}), [swapId, modelId, prompt, duration, aspect, frame, resolution, n, seed, negative, voice, audioDuration, cinemaOn, cinema, characterOn, character, sources, consent, presetParam, accountEpoch]);
   const continuation = useRef(null);
   const [batchView, setBatchView] = useState(null);
   const activeBatch = batchView?.identity === formIdentity ? batchView : null;
@@ -590,7 +594,7 @@ export default function CreateStudio() {
     pickSource('image', file, null, 0);
   }
 
-  const uploadSource = uploadSourceFile;
+  const uploadSource = frameUploader(modelId, frame, uploadSourceFile);
 
   useEffect(() => {
     if (catalogLoading || !model) return;
@@ -954,6 +958,7 @@ export default function CreateStudio() {
                   formatOption={(id) => { const m = tierOptions.find((o) => o.id === id).multiplier; const c = Math.max(model.credits, Math.ceil(model.credits * m - 1e-9)); return `${id === '4k' ? '4K' : id} · ${model.kind === 'video' ? clipCredits(c, Number(duration.replace('s', ''))) : c}`; }} />
               )}
               {model?.kind === 'video' && <ResolutionVariantChoice model={model} models={models} seconds={Number(duration.replace('s', ''))} onChoose={chooseModel} ariaLabel={t('app.create.resolutionHeading')} />}
+              <FrameChoice modelId={model?.id} value={frame} onChange={setFrame} />
               {takesImageCount(model) && <ChipSelect assistantTarget="create.count" aria-label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
               <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />
               <EnhanceButton disabled={!hydrated} text={prompt} />
@@ -1023,7 +1028,7 @@ export default function CreateStudio() {
                 if (old?.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(old.previewUrl);
                 return file ? { file, previewUrl: URL.createObjectURL(file) } : {};
               }) })); setConsent(true);
-            }} /> : <SourcePickers tokens={/@(Image|Video|Audio)\d/i.test(prompt)} media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
+            }} /> : <SourcePickers frame={takesFrame(modelId) ? frame : ''} tokens={/@(Image|Video|Audio)\d/i.test(prompt)} media={media} sources={sources} onPick={pickSource} onConvertingChange={setSourcesConverting} resetKey={`${modelId}|${accountEpoch}`} epochRef={sourceEpoch} locked={attachConverting} onReorder={(slot, from, to) => { setConsent(true); setSources(prev => moveSlotSource(prev, slot, from, to)); }}
               onDraw={model?.kind === 'image' ? () => setDrawing(true) : null} onLibrary={setLibraryFor} />}
           </div>
           {Object.values(sources).flatMap(sourceList).some(source => source.file) && <p className="mt-2 text-xs text-vx-fg-muted">{t("app.create.reattach")}</p>}

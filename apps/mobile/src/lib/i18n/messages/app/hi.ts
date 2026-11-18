@@ -1442,6 +1442,7 @@ export default {
   "create.workspace.promptWriter": "प्रॉम्प्ट लेखक",
   "create.workspace.references": "रेफ़रेंस",
   "create.workspace.referencesMeta": "फ़ोटो, वीडियो या ऑडियो",
+  "create.frameOriginal": "मूल",
   "create.workspace.addSeveral": "एक साथ कई फ़ाइलें जोड़ें",
   "create.workspace.addSeveralHide": "एक साथ कई फ़ाइलें चुनना छिपाएँ",
   "create.workspace.refund": "फेल होने पर रिफंड · हमेशा",

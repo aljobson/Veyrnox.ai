@@ -1415,6 +1415,7 @@ export default {
   "create.workspace.promptWriter": "プロンプト作成",
   "create.workspace.references": "参考素材",
   "create.workspace.referencesMeta": "写真、動画、音声",
+  "create.frameOriginal": "元の比率",
   "create.workspace.addSeveral": "複数のファイルをまとめて追加",
   "create.workspace.addSeveralHide": "複数選択を閉じる",
   "create.workspace.refund": "失敗時は必ず返金",
