@@ -16,6 +16,14 @@ test('pinned speech delivery fits static limits and retains original/conversion/
     assert.deepEqual(models[inventory.decoder.path].chunks,inventory.decoder.chunks);
     assert.ok(!Object.values(models).some(spec=>spec.source));
 });
+test('onnxruntime notices are vendored in the repo and match the pinned size and hash',async()=>{
+    const { readFile } = await import('node:fs/promises');
+    for (const path of ['notices/onnxruntime-LICENSE.txt','notices/onnxruntime-ThirdPartyNotices.txt']) {
+        const file=inventory.files.find(entry=>entry.path===path);
+        assert.ok(file.local&&!file.source,path);
+        verifyBytes(await readFile(new URL(`../${file.local}`,import.meta.url)),file);
+    }
+});
 test('build verification catches corruption, unexpected assets and incorrect model reassembly',async()=>{
     const base=await mkdtemp(join(tmpdir(),'speech-assets-test-')),target=join(base,'editor-speech','fixture');
     const fragments=[Buffer.from('abc'),Buffer.from('def')],files=fragments.map((data,i)=>({path:`models/tiny/decoder.part${i}`,bytes:data.length,sha256:sha256(data),fragmentOf:'decoder'}));
