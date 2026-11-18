@@ -1,3 +1,4 @@
+import { swapRequest } from './templateSwapClient.mjs';
 import { templateContract, fidelityTemplateId, templateBoundPrompt } from '../../../lib/templateClientContract.js';
 // Generate from the template page itself (ADR-0120 amendment 1). Pure pieces, so they are unit-tested without React.
 // Everything sent is what Create sends for the same template with nothing attached: same body, same per-request
@@ -104,8 +105,9 @@ export function templateRun(previous, identity, unit, makeKey) {
  * Send the one request. Returns { error, confirm }: error is the banner object (null on success). Never retried under a
  * new key; the run keeps its key until the caller decides the batch is dead (templateRunDead).
  */
-export async function submitTemplate({ run, quote, model, preset, inputs, templateClip = null, makeKey, deps }) {
+export async function submitTemplate({ run, quote, model, preset, inputs, templateClip = null, templateSwap = null, makeKey, deps }) {
   const { gatewayFetch, onJob, freeAllowance } = deps;
+  if (templateClip && templateSwap) return { error: { code: 'template_source_conflict' } };
   run.quote = quote;
   run.confirm = false;
   try {
@@ -117,7 +119,7 @@ export async function submitTemplate({ run, quote, model, preset, inputs, templa
     const { error: failure } = await sendInOrder(1, async (i) => {
       const submitted = await gatewayFetch('/generations', {
         method: 'POST',
-        body: JSON.stringify({
+        body: JSON.stringify(templateSwap ? swapRequest(templateSwap, run.keys[i], references) : {
           ...(templateClip ? { template_clip: preset.id } : {}),
           template_id: !templateClip && auditedInputs.has(inputs) && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, boundInputs.prompt, model.id, boundInputs) : undefined,
           model_id: templateClip ? templateClip.model : model.id, idempotency_key: run.keys[i], inputs: templateClip ? inputs : boundInputs,

@@ -87,7 +87,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
   if (res.status === 401) {
     // The gateway rejected our token: drop it so a revoked session cannot linger.
     if (getSession()?.access_token === token) {
-      clearSession();
+      clearSession('expired');
       dispatchAuthRequired();
     }
     throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' });
@@ -209,7 +209,7 @@ export async function gatewayDownload(path) {
   if (selectedBrand) headers['x-publish-brand-id'] = selectedBrand;
   const res = await fetch(`/api/v1${path}`, { headers });
   if (!getSession() || getSession()?.user?.id !== account) throw new GatewayError('account changed', { status: 409, code: 'account_changed' });
-  if (res.status === 401) { clearSession(); dispatchAuthRequired(); throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' }); }
+  if (res.status === 401) { clearSession('expired'); dispatchAuthRequired(); throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' }); }
   if (!res.ok) {
     let body = null; try { body = await res.json(); } catch { /* binary failures are not expected */ }
     const failure = apiErrorDetails(body, res.status);

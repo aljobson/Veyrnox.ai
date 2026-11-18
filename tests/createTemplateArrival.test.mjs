@@ -126,7 +126,8 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     navigations,
     async settle() {
       for (let i = 0; i < 20; i++) {
-        if (dirty) { cursor = 0; dirty = false; tree = output.exports.default(); }
+        if (dirty) { cursor = 0; dirty = false; // The availability boundary is covered by templateSwapRender; this harness exercises its legacy child.
+          const entry = output.exports.default(); tree = entry.props.children.type(entry.props.children.props); }
         while (effects.length) effects.shift()();
         await new Promise(resolve => setImmediate(resolve));
         if (!dirty && !effects.length) return tree;
