@@ -66,7 +66,8 @@ function harness(initialJobs, selected = audio) {
     return new Proxy({}, { get: () => () => null });
   }, output, output.exports);
   return {
-    render() { cursor = 0; return output.exports.default(); },
+    // Gate behavior is covered by templateSwapRender; keep this harness focused on the legacy job UI.
+    render() { cursor = 0; const entry = output.exports.default(); return entry.props.children.type(entry.props.children.props); },
     settle() { jobs = jobs.map(job => ({ ...job, state: 'succeeded' })); },
     cleared: () => cleared, submitted: () => submitted,
   };

@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const root = path.resolve(import.meta.dirname, '../..');
 export function fixture(locale, route, { consentReady = false, states = {}, signedIn = false, preview = false, expose = {}, journey = null, messages, moduleMocks = {}, sourceOverrides = {} } = {}) {
   const cache = new Map();
-  const navigate = { useRouter: () => ({ push() {} }), usePathname: () => localizedHref(locale, route), useParams: () => ({ token: 'test', network: 'facebook' }), redirect: url => { throw new Error(`redirect:${url}`); } };
+  const navigate = { useSearchParams: () => new URLSearchParams(route.split('?')[1] || ''), useRouter: () => ({ push() {} }), usePathname: () => localizedHref(locale, route), useParams: () => ({ token: 'test', network: 'facebook' }), redirect: url => { throw new Error(`redirect:${url}`); } };
   const auth = { getSession: () => signedIn ? { user: { id: 'test-user' } } : null, onSessionChange: () => () => {}, getStoredUserId: () => signedIn ? 'test-user' : '', getStoredSession: () => signedIn ? { user: { id: 'test-user' } } : null, getOAuthAuthorizationDetails() {}, respondToOAuthAuthorization() {} };
   function load(relative) {
     const absolute = path.resolve(root, relative);
@@ -26,6 +26,8 @@ export function fixture(locale, route, { consentReady = false, states = {}, sign
     const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
     const localRequire = id => {
       if (Object.hasOwn(moduleMocks, id)) return moduleMocks[id];
+      // Existing public render fixtures model the dark catalog response; dedicated swap tests override this.
+      if (id.endsWith('/useTemplateSwapAvailable.js')) return { useTemplateSwapAvailable: () => ({ offer: null, loading: false }) };
       if (id === 'react' && stateValues) return { ...React, useState: initial => React.useState(stateIndex < stateValues.length ? stateValues[stateIndex++] : initial), useSyncExternalStore: (subscribe, snapshot) => snapshot() };
       if (id.endsWith('/preview') && preview) return { useCinemaPreview: () => true };
       if (id.endsWith('/veyJourneyStore') && journey) return { getJourney: () => journey, subscribeJourney: () => () => {}, initialiseJourney() {}, publishJourneyView() {}, beginJourney() {}, updateJourney() {} };
