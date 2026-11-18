@@ -48,14 +48,14 @@ Test used: a person can do it one-handed, in short sessions, with a 6-inch scree
 
 | Verdict | Items | Why |
 |---|---|---|
-| **Phone, first** | Library and player; song detail and versions; trash and restore; Create (simple, then custom); candidates A/B with price shown first; share link | The "my music is missing" gap. Short sessions, background listening, push when a song finishes (push infrastructure already exists, ADR-0113) |
+| **Phone, first** | Library and player; song detail and versions; trash and restore; Create (simple, then custom); candidates A/B with price shown first; share link | The songs-library gap. Short sessions, background listening, push when a song finishes (push infrastructure already exists, ADR-0113) |
 | **Phone, next** | Stems, extend, cover, crop, tempo and key, export; playlists; audio templates and "make a beat from a template" using the existing create path | Each is quote, confirm, poll, so one reusable sheet |
 | **Phone, with App Store work** | Discover, public pages, comments, reactions, follows, publication, reports | Needs report and block on every user-made surface (guideline 1.2) and app links for `/music/tracks/`, `/music/creators/`, `/listen/` |
 | **Phone, decided by the spike** | Beat editor: pads, step grid, a small mixer, record a take, save to Music | Needs low-latency audio and memory headroom. Spike B1 decides web view or native |
 | **Web-only for now** | Arrangement timeline with many tracks, piano roll, automation lanes, MIDI, latency calibration, workspaces and collaboration, Labs ranking, lyricist profiles, distribution dialogs | Dense, precision-pointer editing; the design doc already scoped the editor "web only for phases 1 to 10" (D8). Show a "continue on the web" card, never a dead end |
 | **Skip until the switch is on** | Beat cloud save, beat library save, mixdown, magic bar, reference links | Off in production (and references reversed by ADR-0335). Do not build screens for off features |
 
-The phone already has Instruments (`instruments.tsx`), the audio hub (`audioHub.ts`) and audio templates (`audioTemplates.ts`, read from `GET /api/templates?kind=audio`). The audio hub's music card opens a generic create form for a music model. That form does not call any `/api/v1/music/*` route, so songs made there are not in the web Music library. This is the root of the "the phone has no Music" finding and the reason P1 and P2 come first.
+**Today the phone has prompt-to-song through the Audio hub; the Music studio is web-only.** The side menu's Audio entry (`audio.tsx`, `audioHub.ts`) has four rows: Music ("Songs and instrumentals from a prompt"), Text to speech, Dialogue, and Lip sync and dubbing. Music opens the normal Create page with a music model preselected, priced from the live catalog. The phone also has Instruments (`instruments.tsx`) and audio templates (`audioTemplates.ts`, `GET /api/templates?kind=audio`). What it lacks is everything in the web studio: a songs library, playlists, remix, lyrics, best-of, stems and the beat editor. That create path does not call any `/api/v1/music/*` route, so songs made there are not in the web Music library. That gap is why P1 and P2 come first.
 
 ## 3. Endpoints and switches per phase
 
