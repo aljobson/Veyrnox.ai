@@ -63,12 +63,12 @@ test('scoped derived capability keeps public O1 unchanged and elements server-on
 test('both element images need known dimensions and inclusive frontal bounds', () => {
   for (const [width, height, ok] of [[299, 300, false], [300, 300, true], [399, 1000, false], [400, 1000, true], [1000, 400, true], [2501, 1000, false]]) {
     for (const index of [0, 1]) {
-      const images = [{ dimensions: { width: 600, height: 600 } }, { dimensions: { width: 600, height: 600 } }];
-      images[index] = { dimensions: { width, height } };
+      const images = [{ contentType: 'image/png', dimensions: { width: 600, height: 600 } }, { contentType: 'image/png', dimensions: { width: 600, height: 600 } }];
+      images[index] = { contentType: 'image/png', dimensions: { width, height } };
       assert.equal(checkTemplateSwapImages({ image_url: images }).ok, ok, `${index}: ${width}/${height}`);
     }
   }
-  assert.deepEqual(checkTemplateSwapImages({ image_url: [{}, {}] }), { ok: false, error: 'template_swap_image_size' });
+  assert.deepEqual(checkTemplateSwapImages({ image_url: [{ contentType: 'image/png' }, { contentType: 'image/png' }] }), { ok: false, error: 'template_swap_image_size' });
 });
 
 test('all 411 v3 reviewed ids support one role, including 15 five-plus-slot clips; brixton stays unapproved', async () => {
@@ -101,4 +101,18 @@ test('ordinary O1 shaping and public projection remain byte-identical after priv
   assert.equal(JSON.stringify(shapePayload(record, declaredInputs(record, ordinary))), before);
   assert.equal(before, JSON.stringify({ prompt: ordinary.prompt, video_url: ordinary.video_url, image_urls: ordinary.image_url, duration: '5', keep_audio: false, aspect_ratio: 'auto' }));
   assert.equal(JSON.stringify(publicCapabilities(record)), view);
+});
+
+test('both element types must be verified PNG; other image types fail closed', () => {
+  for (const contentType of ['image/jpeg', 'image/webp', 'image/gif', undefined]) for (const index of [0, 1]) {
+    const images = Array.from({ length: 2 }, () => ({ contentType: 'image/png', dimensions: { width: 600, height: 600 } }));
+    images[index].contentType = contentType;
+    assert.deepEqual(checkTemplateSwapImages({ image_url: images }), { ok: false, error: 'template_swap_image_type' });
+  }
+});
+test('a non-PNG is always a type refusal even if its dimensions are invalid', () => {
+  assert.deepEqual(checkTemplateSwapImages({ image_url: [
+    { contentType: 'image/jpeg', dimensions: { width: 100, height: 100 } },
+    { contentType: 'image/png', dimensions: { width: 600, height: 600 } },
+  ] }), { ok: false, error: 'template_swap_image_type' });
 });
