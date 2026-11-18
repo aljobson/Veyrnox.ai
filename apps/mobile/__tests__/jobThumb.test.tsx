@@ -24,6 +24,13 @@ test('shows a note for audio and a play mark for video, never a blank box', asyn
     expect(text()).toContain('▶');
 });
 
+// QA 8.2: a video whose frame could not be made spun for ever in the Library picker.
+test('a video with no poster frame stops spinning and keeps its play glyph', async () => {
+    await act(async () => root.render(<JobThumb links={links({ kind: 'file', url: 'u', mime: 'video/mp4', expiresAt: null })} jobId="v2" />));
+    expect(root.container.queryAll(n => n.props.testID === 'job-thumb-loading')).toHaveLength(0);
+    expect(text()).toContain('▶');
+});
+
 test('falls back to a plain glyph when the file cannot be reached', async () => {
     await act(async () => root.render(<JobThumb links={links({ kind: 'none' })} jobId="x" />));
     expect(text()).toContain('▧');

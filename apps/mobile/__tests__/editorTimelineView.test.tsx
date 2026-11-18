@@ -52,6 +52,12 @@ test.each([[56, false, 'video-0'], [168, false, 'video-2'], [168, true, 'video-0
     await call('clip-v1', 'onResponderMove', event(20, dy)); await call('clip-v1', 'onResponderRelease', event(20, dy));
     expect(onApply.mock.calls[0][0].video[0]).toMatchObject({ start: 70, trackId: expected });
 });
+// QA 8.7: the 3 pt bar was centred in its 44 pt touch area, so it sat over the first letter of the caption.
+test('each trim bar sits on its own edge of the clip, not 20 pt inside it', async () => {
+    await render();
+    expect(StyleSheet.flatten(node('trim-v1-in').props.style)).toMatchObject({ alignItems: 'flex-start' });
+    expect(StyleSheet.flatten(node('trim-v1-out').props.style)).toMatchObject({ alignItems: 'flex-end' });
+});
 test('trim gestures commit once and cancel discards the ghost', async () => {
     await render(); await call('trim-v1-in', 'onResponderGrant'); await call('trim-v1-in', 'onResponderMove', event(20));
     expect(onApply).not.toHaveBeenCalled(); await call('trim-v1-in', 'onResponderRelease', event(20));
