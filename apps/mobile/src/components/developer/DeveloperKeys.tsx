@@ -17,22 +17,27 @@ export function DeveloperKeys() {
     const [secret, setSecret] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [note, setNote] = useState<{ text: string; error: boolean } | null>(null);
+    // The list was refused because this brand has no plan, the person's role cannot use it, or the feature is off:
+    // creating a key would be refused the same way, so the form is not shown.
+    const [locked, setLocked] = useState(false);
 
     const running = useRef(false);
     const { guard, nextRead, scopeTick } = usePublishScope(api, () => {
         running.current = false; setKeys(null); setNote(null); setBusy(false); setLabel(''); setSecret(null);
-        setScopes(['accounts:read']); setDays(90);
+        setScopes(['accounts:read']); setDays(90); setLocked(false);
     });
 
     const load = useCallback(async () => {
         const valid = nextRead('list');
         try {
             const next = await fetchKeys(api);
-            if (valid()) { setKeys(next); setNote(null); }
+            if (valid()) { setKeys(next); setNote(null); setLocked(false); }
         } catch (err) {
             if (!valid()) return;
+            const key = devErrorKey(err);
             setKeys(null);
-            setNote({ text: t(devErrorKey(err)), error: true });
+            setLocked(key === 'dev.err.plan' || key === 'dev.err.role' || key === 'dev.err.off');
+            setNote({ text: t(key), error: true });
         }
     }, [api, nextRead, scopeTick]);
 
@@ -97,7 +102,7 @@ export function DeveloperKeys() {
                 ))}
                 <Status text={note?.text ?? null} error={note?.error} />
             </Card>
-            <Card title={t('dev.keys.createTitle')}>
+            {locked ? null : <Card title={t('dev.keys.createTitle')}>
                 <Text style={styles.label}>{t('dev.label')}</Text>
                 <TextInput accessibilityLabel={t('dev.label')} style={styles.input} maxLength={LABEL_MAX} value={label} onChangeText={setLabel} placeholderTextColor={colors.muted} />
                 <Text style={styles.label}>{t('dev.keys.scopes')}</Text>
@@ -109,7 +114,7 @@ export function DeveloperKeys() {
                     <Choice key={d} label={t('dev.keys.days', { days: d })} on={days === d} onPress={() => setDays(d)} />
                 ))}
                 <Action label={t('dev.keys.create')} disabled={busy} onPress={() => void create()} />
-            </Card>
+            </Card>}
         </>
     );
 }

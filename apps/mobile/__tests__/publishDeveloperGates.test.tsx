@@ -33,6 +33,13 @@ test('role loading shows a spinner and sends nothing', async () => {
     const pending = deferred<unknown>(); mockRequest.mockReturnValue(pending.promise); await render(); expect(tabs()).toHaveLength(0); expect(requests()).toHaveLength(0);
     expect(root.container.queryAll(n => n.type === 'ActivityIndicator').length).toBeGreaterThan(0); await act(async () => pending.resolve({ brandRole: 'viewer' }));
 });
+// QA 9.17: a brand with no Publish Plan saw the red plan line and the full Create-a-key form that would be refused.
+test.each([[402, 'plan_required', 'dev.err.plan'], [404, 'customer_api_not_open', 'dev.err.off']] as const)('refused keys list (%s) shows the message and no create form', async (status, code, key) => {
+    mockRequest.mockImplementation(async (path: string) => { if (path.endsWith('/accounts')) return { brandRole: 'owner' }; throw new ApiError(status, code); });
+    await render(DeveloperKeys);
+    expect(textOf(root.container)).toContain(t(key)); expect(textOf(root.container)).not.toContain(t('dev.keys.createTitle'));
+    expect(buttons(root, t('dev.keys.create'))).toHaveLength(0);
+});
 test.each(['owner', 'manager'])('%s loads keys', async r => { role = r; await render(); expect(tabs()).toHaveLength(3); expect(requests()[0][0]).toBe('/api/v1/social/developer/keys'); });
 const components: [string, ComponentType, string, string][] = [
     ['key', DeveloperKeys, 'dev.keys.create', 'private-key-secret'], ['webhook', DeveloperWebhooks, 'dev.hooks.create', 'private-signing-secret'],
