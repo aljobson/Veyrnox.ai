@@ -3742,5 +3742,23 @@
     "english": "Add",
     "translation": "Hinzufügen",
     "ratio": 3.33
+  },
+  {
+    "id": "presets.swap.terms",
+    "english": "Terms",
+    "translation": "Bedingungen",
+    "ratio": 2.2
+  },
+  {
+    "id": "presets.swap.aup",
+    "english": "Acceptable Use Policy",
+    "translation": "Richtlinie zur akzeptablen Nutzung",
+    "ratio": 1.62
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
   }
 ]

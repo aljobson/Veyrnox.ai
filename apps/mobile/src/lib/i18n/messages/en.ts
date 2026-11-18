@@ -127,6 +127,7 @@ import area_mdl from './en/mdl';
 import area_mediaKind from './en/mediaKind';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
+import area_mobileSwap from './en/mobileSwap';
 import area_model from './en/model';
 import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
@@ -347,6 +348,7 @@ const catalog = {
     ...area_mediaKind,
     ...area_menu,
     ...area_mobile,
+    ...area_mobileSwap,
     ...area_model,
     ...area_modelPage,
     ...area_montage,

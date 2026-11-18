@@ -1,6 +1,9 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "mobileSwap.permission": "O acesso às fotos foi negado. Permita o acesso à biblioteca de fotos nas Definições e tente novamente.",
+  "mobileSwap.photoTooLarge": "Esta foto é grande demais. Escolha uma com até 8192 píxeis por lado e 24 megapíxeis.",
+  "mobileSwap.invalidImage": "Escolha uma foto legível com dimensões verificáveis.",
   "brand.swatch.teal": "Turquesa",
   "brand.swatch.blue": "Azul",
   "brand.swatch.purple": "Roxo",

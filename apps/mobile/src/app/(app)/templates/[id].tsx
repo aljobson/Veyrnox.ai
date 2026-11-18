@@ -1,3 +1,7 @@
+import { SwapComposer } from '../../../components/templates/SwapComposer';
+import { SwapAttemptStatus } from '../../../components/templates/SwapAttemptStatus';
+import { useSwapAvailability } from '../../../lib/templateSwap/availability';
+import { TEMPLATE_SWAP_RUNTIME } from '../../../lib/templateSwap/runtimeFlag';
 import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
 import { TemplateClipComposer } from '../../../components/templates/TemplateClipComposer';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
@@ -50,6 +54,7 @@ export default function TemplatePage() {
     const [catalog, setCatalog] = useState<CatalogModel[] | undefined>();
     const [choices, setChoices] = useState<TemplateChoices>({});
     const templateClip = useTemplateClipAvailable(id);
+    const swapOffer = useSwapAvailability(id);
     const displayPrompt = templateClip && preset ? (hasExactSourcePrompt ? preset.sourcePrompt! : preset.prompt) : prompt;
     const catalogModel = catalog?.find(model => model.id === (templateClip?.model ?? preset?.modelId));
     const original = templateClip && catalogModel ? templateClipModel(catalogModel, templateClip) : catalogModel;
@@ -92,7 +97,12 @@ export default function TemplatePage() {
     }, []);
     return <ScrollView contentContainerStyle={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
-        {loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
+        {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
+        {swapOffer ? <>
+            {preset && <Text variant="title1" accessibilityRole="header">{preset.title}</Text>}
+            {preset?.previewUrl && <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} />}
+            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} />
+        </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>
             <Text variant="title1" accessibilityRole="header">{preset.title}</Text>
             <Text>{t('libraryCreate.runsOn', { model: model?.name ?? preset.modelName })}</Text>

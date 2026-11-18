@@ -1,3 +1,5 @@
+import state from './live-edit-build-state.cjs';
+if (!state.readEnabled()) { state.writeDarkStub(); process.exit(0); }
 // Run from any directory before Expo bundles. No binaries are committed.
 import { readFile, writeFile, mkdir, access, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -63,7 +65,7 @@ for (const name of (await readdir(new URL('public/photo-studio/wigs/', root))).f
 const runtime = await readFile(new URL('./live-edit-webview.js', import.meta.url), 'utf8');
 // data: WASM fetches work from an opaque/file origin; no file:// fetch or HTTP origin needed.
 // Only this isolated hidden document permits WASM. No website CSP is changed.
-const html = `<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' data:; connect-src data:; img-src data:; style-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'"><script type="application/json" id="licenses">${JSON.stringify(notices).replaceAll('<', '\\u003c')}</script><script>${bundle.replaceAll('</script', '<\\/script')}</script><script>${liveBundleText.replaceAll('</script', '<\\/script')}</script><script>const WIG_FILES=${JSON.stringify(wigFiles)};globalThis.__veyrnoxAssetUrl=path=>WIG_FILES[path];\nconst LIVE_ASSETS=${JSON.stringify(assets)};\n${runtime}</script>`;
+const html = `<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'wasm-unsafe-eval' data:; connect-src data:; img-src data:; style-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'"><script type="application/json" id="licenses">${JSON.stringify(notices).replaceAll('<', '\\u003c')}</script><script>${bundle.replaceAll('</script', '<\\/script')}</script><script>${liveBundleText.replaceAll('</script', '<\\/script')}</script><script>const WIG_FILES=${JSON.stringify(wigFiles)};globalThis.__veyrnoxAssetUrl=path=>WIG_FILES[path];\nconst PHOTO_STUDIO_RUNTIME=${state.readPhotoStudio()}; const LIVE_ASSETS=${JSON.stringify(assets)};\n${runtime}</script>`;
 await mkdir(output, { recursive: true });
 await writeFile(new URL('runtime.html', output), html);
 await writeFile(new URL('THREE-LICENSE.txt', output), threeLicense);
@@ -75,5 +77,5 @@ for (const [target, source] of [['NOTICE.txt', 'NOTICE.txt'], ['FACE-NOTICE.txt'
 const inputs = {};
 for (const relative of [...Object.keys(liveBundle.metafile.inputs), ...wigSources, 'node_modules/three/LICENSE'])
     inputs[relative] = createHash('sha256').update(await readFile(new URL(relative, root))).digest('hex');
-await writeFile(new URL('manifest.json', output), JSON.stringify({ assets: required, inputs, inventorySha256: createHash('sha256').update(await readFile(new URL('scripts/editor-vision-assets.mjs', root))).digest('hex'), runnerSha256: createHash('sha256').update(runtime).digest('hex'), prepareSha256: createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex'), htmlBytes: Buffer.byteLength(html), htmlSha256: createHash('sha256').update(html).digest('hex') }, null, 2));
+await writeFile(new URL('manifest.json', output), JSON.stringify({ photoStudioEnabled: state.readPhotoStudio(), assets: required, inputs, inventorySha256: createHash('sha256').update(await readFile(new URL('scripts/editor-vision-assets.mjs', root))).digest('hex'), runnerSha256: createHash('sha256').update(runtime).digest('hex'), prepareSha256: createHash('sha256').update(await readFile(fileURLToPath(import.meta.url))).digest('hex'), htmlBytes: Buffer.byteLength(html), htmlSha256: createHash('sha256').update(html).digest('hex') }, null, 2));
 console.log(`Prepared offline mobile vision: ${Buffer.byteLength(html)} bytes HTML; all ${required.length} pinned inputs verified.`);

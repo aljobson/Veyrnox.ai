@@ -81,16 +81,17 @@ export function userIdFromToken(accessToken: string): string | null {
 
 let ownerTicket = 0;
 let activeUser: string | null = null;
-const userListeners = new Set<() => void>();
+export type SessionLossReason = 'expired' | 'signout';
+const userListeners = new Set<(user?: string | null, reason?: SessionLossReason) => void>();
 // Face filters holds sensitive local photo state outside the cache. Notify it before
 // switching accounts so that it can abort work and discard that state immediately.
-export function subscribeCacheUser(listener: () => void): () => void {
+export function subscribeCacheUser(listener: (user?: string | null, reason?: SessionLossReason) => void): () => void {
     userListeners.add(listener);
     return () => { userListeners.delete(listener); };
 }
-function setCacheUser(userId: string | null) {
+function setCacheUser(userId: string | null, reason?: SessionLossReason) {
     activeUser = userId;
-    userListeners.forEach(listener => listener());
+    userListeners.forEach(listener => listener(userId, reason));
 }
 
 export const getCacheUser = (): string | undefined => activeUser ?? undefined;
@@ -113,10 +114,10 @@ export async function bindCacheUser(userId: string | null, cache: Cache = appCac
 }
 
 // Called when the session is dropped: sign-out, a lost session, or account deletion (which signs out).
-export async function wipeCache(cache: Cache = appCache, docs: CacheStorage = userDocStorage): Promise<void> {
+export async function wipeCache(cache: Cache = appCache, docs: CacheStorage = userDocStorage, reason?: SessionLossReason): Promise<void> {
     const ticket = ++ownerTicket;
     const live = () => ticket === ownerTicket;
-    setCacheUser(null);
+    setCacheUser(null, reason);
     clearExportFiles();
     clearInstrumentTakeFiles();
     await Promise.all([cache.clear(live), docs.keys().then(keys => Promise.all(keys.map(key => live() ? docs.remove(key) : undefined)))]);

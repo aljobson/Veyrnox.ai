@@ -1,3 +1,4 @@
+import { useSwapRedirect } from '../../../lib/templateSwap/availability';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, AppState, FlatList, ScrollView, View } from 'react-native';
@@ -79,6 +80,7 @@ export default function Templates() {
     const chips = useMemo(() => templateChips(presets ?? [], popular), [presets, popular]);
     const shown = useMemo(() => searchPresets(templatesFor(rankPresets(presets ?? [], vibe), chip, popular), query), [presets, vibe, chip, popular, query]);
     const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
+    useSwapRedirect(unavailableId);
     const unavailablePreset = presets?.find(p => p.id === unavailableId);
     const known = useMemo(() => catalog && catalogConfirmed ? new Map(catalog.map(m => [m.id, m])) : null, [catalog, catalogConfirmed]);
     const audioListed = useMemo(() => templatesWithCatalogModel(audio ?? [], known), [audio, known]);

@@ -3604,5 +3604,17 @@
     "english": "Image",
     "translation": "Изображение",
     "ratio": 2.2
+  },
+  {
+    "id": "presets.swap.aup",
+    "english": "Acceptable Use Policy",
+    "translation": "Политика допустимого использования",
+    "ratio": 1.62
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
   }
 ]
