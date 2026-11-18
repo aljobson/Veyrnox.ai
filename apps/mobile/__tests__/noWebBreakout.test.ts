@@ -6,6 +6,7 @@ const { join } = require('path');
 const root = join(__dirname, '../src');
 // Exact files AND arguments: another browser call in an allowed file still fails.
 const allowed: Record<string, { call: string; reason: string }[]> = {
+    'app/(app)/music/stems.tsx': [{ call: 'openURL(archive.url)', reason: 'P3a explicitly opens a freshly fetched, validated HTTPS stem ZIP in the browser; the app does not download or persist the archive.' }],
     'auth/AuthProvider.tsx': [{ call: 'openAuthSessionAsync', reason: 'System OAuth login must use the provider authentication session.' }],
     'app/(app)/publish/connect.tsx': [{ call: 'openAuthSessionAsync', reason: 'Social providers require an external OAuth session.' }],
     'app/(app)/oauth-consent.tsx': [{ call: 'openURL(target)', reason: 'OAuth hands the authorization result back to the requesting app.' }],

@@ -3294,6 +3294,30 @@
     "ratio": 1.78
   },
   {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "Volver a cargar la canción",
+    "ratio": 2.36
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Pistas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Archivo de pistas separadas",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

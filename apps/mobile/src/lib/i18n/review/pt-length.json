@@ -3312,6 +3312,30 @@
     "ratio": 2.17
   },
   {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Faixas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Arquivo de faixas separadas",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicActions.stems.ready",
+    "english": "Your stem archive is ready.",
+    "translation": "Seu arquivo de faixas separadas está pronto.",
+    "ratio": 1.63
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

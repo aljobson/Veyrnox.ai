@@ -1,3 +1,5 @@
+import type { MusicActionQuote, StemStart, StemRequest, StemArchive, CropInput, CropResult } from './actionTypes';
+import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropResult } from './validateActions';
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
 import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle } from './validate';
@@ -106,5 +108,33 @@ export function conflictDraft(err: unknown): MusicDraft | null {
 export async function getGeneration(api: ApiClient, id: string): Promise<MusicGenerationView> {
     const v = await api.request<unknown>(`${BASE}/generations/${encodeURIComponent(id)}`);
     if (!isMusicGenerationView(v) || v.id !== id) throw bad();
+    return v;
+}
+
+// Song actions have a different quote/acceptance contract from P2 generation.
+export async function createStemQuote(api: ApiClient, songId: string, versionId: string): Promise<MusicActionQuote> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/stem-quotes`, post({ version_id: versionId, rights_confirmed: true }));
+    if (!isMusicActionQuote(v)) throw bad();
+    return v;
+}
+export async function startStems(api: ApiClient, songId: string, quoteId: string, key: string): Promise<StemStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/stems`, post({ quote_id: quoteId, idempotency_key: key }));
+    if (!isStemStart(v)) throw bad();
+    return v;
+}
+export async function getStemRequest(api: ApiClient, id: string): Promise<StemRequest> {
+    const v = await api.request<unknown>(`${BASE}/stem-requests/${encodeURIComponent(id)}`, {}, { timeoutMs: 15000 });
+    if (!isStemRequest(v) || v.id !== id) throw bad();
+    return v;
+}
+export async function getStemArchive(api: ApiClient, id: string): Promise<StemArchive> {
+    const v = await api.request<unknown>(`${BASE}/stem-requests/${encodeURIComponent(id)}/archive`);
+    if (!isStemArchive(v)) throw bad();
+    return v;
+}
+export async function cropSong(api: ApiClient, songId: string, input: CropInput, key: string): Promise<CropResult> {
+    const { version_id, start_seconds, end_seconds } = input;
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/crop`, post({ version_id, start_seconds, end_seconds, idempotency_key: key }));
+    if (!isCropResult(v)) throw bad();
     return v;
 }

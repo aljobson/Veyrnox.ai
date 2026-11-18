@@ -1896,6 +1896,30 @@
     "ratio": 1.83
   },
   {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "إعادة تحميل الأغنية",
+    "ratio": 1.73
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "المسارات المنفصلة",
+    "ratio": 3.4
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "أرشيف المسارات المنفصلة",
+    "ratio": 1.92
+  },
+  {
+    "id": "musicActions.stems.zip",
+    "english": "Get ZIP",
+    "translation": "الحصول على ZIP",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
