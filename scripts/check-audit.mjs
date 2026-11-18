@@ -23,13 +23,7 @@ const BLOCKING = new Set(['high', 'critical']);
 
 // Add an entry only when there is no fixed version to move to, and say where
 // the package sits and why that is tolerable. Remove it when the gate says so.
-export const ALLOWED = [
-  {
-    id: 'GHSA-fc5q-39xc-vjpf',
-    reason: 'picomatch ReDoS via repeated extglobs; every published version (<= 4.0.7) is affected, so there is nothing to upgrade to. '
-      + 'Reached only through lint and test tooling (eslint-config-next, vitest), never a production dependency. Remove when a patched picomatch ships.',
-  },
-];
+export const ALLOWED = [];
 
 const advisoryId = (via) => /\/(GHSA(?:-[0-9a-z]{4}){3})$/i.exec(via.url || '')?.[1] ?? null;
 
