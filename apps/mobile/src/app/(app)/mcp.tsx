@@ -4,6 +4,7 @@ import { Share, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { GrantsCard } from '../../components/account/GrantsCard';
 import { t } from '../../lib/i18n';
 import { colors, fonts, noticeColor } from '../../theme';
+import { brandText } from '../../components/BrandText';
 
 export const MCP_ENDPOINT = 'https://veyrnox.ai/api/v1/mcp';
 
@@ -19,7 +20,7 @@ export default function Mcp() {
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
             <Stack.Screen options={{ title: t('mcp.title') }} />
             <View style={styles.hero}>
-                <Text style={styles.kicker}>{t('mcp.kicker')}</Text>
+                <Text style={styles.kicker}>{brandText(t('mcp.kicker'))}</Text>
                 <Text style={styles.title} accessibilityRole="header">{t('mcp.title')}</Text>
                 <Text style={styles.lead}>{t('mcp.lead')}</Text>
             </View>

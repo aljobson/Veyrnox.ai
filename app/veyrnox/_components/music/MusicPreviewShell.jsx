@@ -7,6 +7,7 @@ import { AppNav } from '../NavBar';
 import { Main } from '../Main';
 import { MUSIC_PREVIEW_FLAG } from '../../_lib/music/previewStore';
 import { useI18n } from '../../../../components/I18nProvider';
+import { BrandName } from '../BrandName';
 
 const LINKS = [
   { href: '/app/music/create', label: 'Create', key: 'create' },
@@ -81,7 +82,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
           <div className="border-b border-vx-border bg-vx-panel/80">
             <div className="mx-auto flex max-w-7xl flex-col items-start gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <p className="font-vx text-lg font-black tracking-tight">Veyrnox.ai Music</p>
+                <p className="font-vx text-lg font-black tracking-tight"><BrandName>Veyrnox.ai</BrandName> Music</p>
                 <p className="text-xs text-vx-fg-muted">{shell(libraryMode ? 'subtitleLibrary' : serverMode ? 'subtitleServer' : 'subtitleLocal')}</p>
               </div>
               <nav aria-label={shell('nav')} className="flex max-w-full overflow-x-auto rounded-full border border-vx-border bg-vx-base p-1 text-sm font-bold">

@@ -15,6 +15,7 @@ import { FollowersChart } from './FollowersChart';
 import { PostingInsights } from './PostingInsights';
 import NetworkLogo from '../NetworkLogo';
 import BrandSwitcher from '../BrandSwitcher';
+import { BrandName } from '../../../_components/BrandName';
 
 const currentAccount = () => getSession()?.user?.id || '';
 const noAccount = () => '';
@@ -71,7 +72,7 @@ export default function PublishAnalytics() {
   const { t } = useAnalyticsFormats();
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
-    <p className="text-sm mb-2"><Link href="/app/publish" className="text-vx-accent underline">Veyrnox.ai Publish</Link></p>
+    <p className="text-sm mb-2"><Link href="/app/publish" className="text-vx-accent underline"><BrandName>Veyrnox.ai</BrandName> Publish</Link></p>
     <h1 className="text-3xl font-black mb-2">{t("publish.f7.name")}</h1>
     <p className="text-sm text-vx-fg-muted mb-4">{t("app.publish.analytics.intro")}</p>
     {account && <BrandSwitcher />}
