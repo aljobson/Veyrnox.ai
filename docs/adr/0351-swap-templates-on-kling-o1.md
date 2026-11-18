@@ -433,3 +433,60 @@ A job stored before this amendment has no `role`, so a replay of it answers
 `idempotency_conflict`. None exists, because the path has been dark throughout.
 Element swaps also need `MULTI_REFERENCE_ENABLED` (an existing var), so switching
 swaps on later means setting that flag as well as `TEMPLATE_SWAP_CLIP_ENABLED`.
+
+## Amendment 7: dark B1 cut-out and reconciliation contracts (2026-11-18)
+
+Frozen PLAN-B1 (`277e4e600bef5f19ab59f0af492265ab6a1c3eb385bd738f003a7d9dcbd8243a`)
+implements only shared pure math and server contracts. No UI, translations,
+activation, migration, Worker variable, upload, price or provider call is added.
+`templateSwapCutout.mjs` stays outside the server/Worker import graph. Adapters
+in B2/B3 will own orientation-aware decode, face detection, grey compositing and
+PNG encoding; this module alone does not process or upload a photograph.
+
+The matte applies named 0.4–0.6 smoothstep thresholds before bilinear upsampling
+and a 2-output-pixel feather. Quality is checked on a nearest-neighbour 256-long-
+side grid: 4–90% coverage, largest 8-connected component, other components each
+below 1% of its area and together below 2%. Exposed 4-neighbour edges after
+outside-flood hole filling are divided by the convex hull perimeter of boundary
+pixel squares; a rectangle is exactly 1. The provisional maximum is 1.55.
+Strays return `busy_background`; a single ragged component returns
+`ragged_matte`. Synthetic fixtures cover holes and 128/256/384 grid consistency;
+private real-photo masks are not committed. B2 must recheck calibration on real
+adapter output. Face count is separate: every second face blocks, including
+small background/poster faces, and a single face below 5% of the shorter image
+side blocks. The accepted face anchors the specified 2.6-width / 0.8-above /
+2.2-below-chin crop; body extent guides added aspect-padding placement.
+
+The owner adopted the PNG tripwire. Both inspected element images must be PNG;
+other types return `template_swap_image_type`. Frontal/crop longest sides are
+capped at 1536/1024; minimum 300 and aspect 0.40–2.50 remain inclusive, with
+`template_swap_image_size` on failure, all before debit. The existing resolver
+already retains MIME verified against magic bytes, so no shared resolver field
+or contract change is needed. Ordinary generation callers retain their behavior.
+This cannot prove a grey background: the Worker has no image decoder and is at
+its size cap. A decoder/border-pixel check is refused. A PNG original can pass;
+this is an accidental-raw-photo tripwire, not a security control.
+
+Synchronous post-debit provider refusals now include `job_id` only for template
+swaps, retaining existing error codes/statuses and refund calls. This is a
+reconciliation handle, never proof of a refund. Ordinary error bodies retain
+their exact bytes. An unsuccessful refund can leave the job DEBITED.
+
+`GET /api/v1/jobs?idempotency_key=<key>` is authenticated, no-store and independent
+of swap gates, catalog and manifest. It validates the shared generation key regex
+before queries, resolves `users.auth_id` to the distinct internal `users.id`,
+excludes tombstoned users, consumes `consume_job_read_request` with that internal
+id, then queries the exact key/owner with `jobs.deleted_at IS NULL`. The existing
+list does this mapping inside SQL, not a reusable JavaScript helper; B1 uses its
+same predicate and quota RPC without changing the list or adding a migration.
+Missing/unowned/deleted jobs and unknown/tombstoned users return `{ job: null }`.
+Only `{ id, state, refunded, refund_state }` is exposed for a found job. `state`
+uses `publicJobState`; only REFUNDED means `refunded: true` / `confirmed`, FAILED
+means `pending`, delivered public success means `none`, and every other state
+means `unknown`. No inputs, prompts, references, keys or URLs leave this lookup.
+
+B-006 qualification remains mandatory for future UI: the rest of the video is
+meant to stay as in the template, but generated details can change. Neither scene
+nor other people, motion or timing are guaranteed unchanged. B0 is matte-quality
+evidence only, not proof of generated-video fidelity. B1 has no UI; all web/mobile
+layout, type, accessibility and screen-state criteria are not applicable here.

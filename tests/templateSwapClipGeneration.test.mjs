@@ -35,10 +35,20 @@ const jpeg = Buffer.from([255,216,255,192,0,17,8,2,128,2,128,3,1,17,0,2,17,0,3,1
 function network(t, options = {}) {
   publishManifest(options.manifest ?? manifest);
   signedMedia.length = 0;
-  const sourceJpeg = Buffer.from(options.missingDimensions ? [255,216,255,224,0,8,0,0,0,0,0,0,255,217] : jpeg);
-  if (options.imageDimensions) {
-    sourceJpeg.writeUInt16BE(options.imageDimensions.height, 7); sourceJpeg.writeUInt16BE(options.imageDimensions.width, 9);
-  }
+  const imageType = options.imageType || 'image/png';
+  const sourceBytes = (index = 0) => {
+    if (options.missingDimensions) return Buffer.from([255,216,255,224,0,8,0,0,0,0,0,0,255,217]);
+    const dims = options.pairDimensions?.[index] || options.imageDimensions || { width: 640, height: 640 };
+    if (imageType === 'image/jpeg') {
+      const bytes = Buffer.from(jpeg); bytes.writeUInt16BE(dims.height, 7); bytes.writeUInt16BE(dims.width, 9); return bytes;
+    }
+    if (imageType === 'image/webp') {
+      const bytes = Buffer.alloc(30); bytes.write('RIFF', 0); bytes.write('WEBP', 8); bytes.write('VP8X', 12);
+      bytes.writeUIntLE(dims.width - 1, 24, 3); bytes.writeUIntLE(dims.height - 1, 27, 3); return bytes;
+    }
+    const bytes = Buffer.alloc(32); Buffer.from([137,80,78,71,13,10,26,10]).copy(bytes);
+    bytes.write('IHDR', 12); bytes.writeUInt32BE(dims.width, 16); bytes.writeUInt32BE(dims.height, 20); return bytes;
+  };
   const freeAdmissions = [], debits = [], submits = [], calls = [], refunds = [], identities = new Map(); let charges = 0;
   // Mirrors migration 0399's non-chat identity; SQL itself is not run here.
   const identity = body => ({ model: body.p_model_id, inputs: Object.fromEntries(Object.entries(body.p_inputs).filter(([k]) => !['preset_id','source_keys','source_assets'].includes(k))) });
@@ -73,7 +83,7 @@ function network(t, options = {}) {
       if (name === 'check_generation_rate_limit' && options.throttled) return Response.json({ ok: false, code: 'RATE_LIMITED' });
       if (name === 'get_user_asset') {
         assert.equal(body.p_auth_id, AUTH);
-        return Response.json({ ok: true, state: 'STORED', mime_type: 'image/jpeg', r2_key: `jobs/${body.p_job_id || PHOTO}/output.jpg` });
+        return Response.json({ ok: true, state: 'STORED', mime_type: options.missingDimensions ? 'image/jpeg' : imageType, r2_key: `jobs/${body.p_job_id || PHOTO}/output.jpg` });
       }
       if (name === 'submit_free_job') {
         freeAdmissions.push(body); const value = identity(body), previous = identities.get(body.p_idempotency_key);
@@ -93,9 +103,10 @@ function network(t, options = {}) {
     if (url.hostname.endsWith('.r2.cloudflarestorage.com')) {
       assert.ok(!url.pathname.includes('template-swap-clips/'), 'trusted shared clips are never sniffed or downloaded');
       assert.ok([PHOTO, crop.asset_id].some(id => url.pathname.endsWith(`jobs/${id}/output.jpg`)));
+      const sourceJpeg = sourceBytes(url.pathname.includes(crop.asset_id) ? 1 : 0);
       const [, a, b] = /bytes=(\d+)-(\d+)/.exec(init.headers.Range);
       const start = Number(a), end = Math.min(Number(b), sourceJpeg.length - 1);
-      return new Response(sourceJpeg.subarray(start, end + 1), { status: 206, headers: { 'content-type': 'image/jpeg', 'content-range': `bytes ${start}-${end}/${sourceJpeg.length}` } });
+      return new Response(sourceJpeg.subarray(start, end + 1), { status: 206, headers: { 'content-type': imageType, 'content-range': `bytes ${start}-${end}/${sourceJpeg.length}` } });
     }
     if (['queue.fal.run', 'api.crun.ai', 'api.kie.ai'].includes(url.hostname)) {
       submits.push(body);
@@ -250,7 +261,10 @@ test('clip and swap conflict without template_swap', async t => {
 });
 test('submit failure retains the existing refund path', async t => {
   const net = network(t, { providerFailure: true });
-  assert.equal((await post()).status, 502); assert.equal(net.refunds.length, 1);
+  const response = await post();
+  assert.equal(response.status, 502);
+  assert.deepEqual(await response.json(), { error: 'provider_submit_failed', job_id: JOB });
+  assert.equal(net.refunds.length, 1);
   assert.equal(net.refunds[0].p_credits, 47);
 });
 
@@ -362,4 +376,29 @@ test('re-signing and concurrent admission preserve SQL input identity without ne
   assert.equal(net.charges(), 3);
   assert.equal(net.submits.length, 3);
   assert.ok(net.debits.every(d => isDeepStrictEqual(d.p_inputs, net.debits[0].p_inputs)));
+});
+
+for (const [front, cropSize, ok] of [[1536, 1024, true], [1537, 1024, false], [1536, 1025, false]]) test(`PNG pair caps ${front}/${cropSize}`, async t => {
+  const net = network(t, { pairDimensions: [{ width: front, height: 800 }, { width: 800, height: cropSize }] });
+  const response = await post(); assert.equal(response.status, ok ? 200 : 400);
+  if (!ok) assert.deepEqual(await response.json(), { error: 'template_swap_image_size' });
+  assert.equal(net.debits.length, ok ? 1 : 0);
+});
+test('a byte-sniffed JPEG is refused before debit for swap only', async t => {
+  const net = network(t, { imageType: 'image/jpeg' });
+  assert.deepEqual(await (await post()).json(), { error: 'template_swap_image_type' });
+  assert.equal(net.debits.length, 0); assert.equal(net.submits.length, 0);
+});
+test('ordinary JPEG submission refusal retains its original response bytes', async t => {
+  const net = network(t, { imageType: 'image/jpeg', providerFailure: true,
+    catalog: [{ id: 'kling-3.0-i2v', provider: 'fal', provider_endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', modality: 'image-to-video', credits_5s: 32, active: true, gated_flag: false }] });
+  const response = await post({ template_swap: undefined, model_id: 'kling-3.0-i2v', references: [photo], inputs: { prompt: 'A portrait', duration_seconds: 5 } });
+  assert.equal(response.status, 502); assert.equal(await response.text(), '{"error":"provider_submit_failed"}');
+  assert.equal(net.debits.length, 1); assert.equal(net.refunds.length, 1);
+});
+for (const options of [{ imageType: 'image/gif' }, { imageType: 'image/webp' }, { imageDimensions: { width: 20000, height: 800 } }]) test(`resolver refusal is swap typed: ${JSON.stringify(options)}`, async t => {
+  const net = network(t, options), response = await post();
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: options.imageType ? 'template_swap_image_type' : 'template_swap_image_size' });
+  assert.equal(net.debits.length, 0);
 });
