@@ -1,0 +1,54 @@
+# ADR-0352: Music in the mobile app
+
+Status: Proposed (P0 groundwork only; no screen ships with this ADR)
+Date: 2026-11-18
+
+## Decision
+
+Bring the web Music product to the phone in phases (plan: `docs/mobile/MUSIC-PLAN-2026-11-18.md`).
+P0 adds only `apps/mobile/src/lib/music/`: a typed client over `/api/v1/music/*`, typed seams over
+the shared web modules, and a probe-by-call helper. No server route, flag or migration is added.
+
+## Feature switches are probed, not read
+
+`lib/musicRuntime.js` evaluates `MUSIC_RUNTIME_FLAGS` inside each route; no route returns the flag
+set, and the Worker is at its binding cap, so none is added. The phone calls and reads the answer:
+a 404 whose code is `music_unavailable`, `music_library_unavailable`, `music_library_tabs_unavailable`,
+`music_remix_unavailable` (or any `music_*_unavailable`) means the feature is off. `probeMusic()`
+turns that into `{ state: 'off' }` and never throws. A 404 `not_found` (missing song or hook) and every
+other failure is `{ state: 'error' }`, never "off". Each screen needs an off empty state and a
+test with a mocked 404.
+
+## Client surface (shapes read from the route handlers)
+
+`entitlements` (GET), `library-tabs` (GET `?tab=history|hooks|covers`; POST `listen`), `songs` (GET list),
+`songs/:id` (GET detail with a server-built `actions` list; PATCH `trash`/`restore` with a revision),
+`generation-quotes` (POST, 201), `generations` (POST, 202 new or 200 replay). Responses are validated
+at the boundary and answer `bad_response` when malformed. Create is quote, then confirm: the same
+idempotency key is reused on every retry, so a replay charges once; 503 `pair_acceptance_unknown`
+means replay that key.
+
+## Shared modules
+
+`musicLibraryTabs`, `musicLyrics`, `musicPlaylists`, `musicTempoControls`, `musicRemix` and
+`musicWavRender` are imported through `src/lib/music/shared.ts` (as `instrumentShared.ts` does for
+instruments). Only pure parsers and constants are used. The `*Enabled` helpers read server env and
+are always false on a phone; the phone must never call them. The seam bundles under Metro for iOS and
+Android, and the web Node tests are unchanged.
+
+## Rules kept
+
+Credits follow the store-only rule; Music spends credits only, with no web link-out. A price is
+shown before any spend (quote first). Features that are off in production (`beatCloud`,
+`beatLibrarySave`, `magicBar`, `references`, mixdown) get no screen until their switch is on.
+
+## Not decided here
+
+Beat editor shape (web view or native), decided after Spike B1. Phases P1 to P5 each need their own
+amendment.
+
+## Verification
+
+Jest with mocked responses including the off case; request bodies are checked against the server's own
+`parseMusicQuote` and `parseMusicGeneration`. Not yet proved against staging: the phone's token on
+the music routes, and each parser against a live answer.
