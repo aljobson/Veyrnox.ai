@@ -11,6 +11,7 @@ const temporary = await mkdtemp(join(tmpdir(), 'veyrnox-local-speech-'));
 const DOWNLOAD_ATTEMPTS = 4;
 const pause = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 async function download(spec) {
+    if (spec.local) { const bytes = await readFile(new URL(spec.local, root)); verifyBytes(bytes, spec); return bytes; }
     let lastError;
     for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
         try {
