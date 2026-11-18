@@ -50,3 +50,18 @@ test('Copy prompt copies the saved prompt', async () => {
     await press('Copy prompt');
     expect(copyText).toHaveBeenCalledWith('a red fox');
 });
+
+test.each([
+    ['Kling 3.0 Pro I2V (kie, no audio)', 'Kling 3.0 Pro I2V'],
+    ['Seedance 2.0 Mini (kie, 720p)', 'Seedance 2.0 Mini'],
+    ['Nano Banana Pro (grsai)', 'Nano Banana Pro'],
+])('older servers still send %s: the supplier is not shown', async (name, shown) => {
+    mockGetProvenance.mockResolvedValue({ ...body('video/mp4'), model: { id: 'kling-3.0-i2v-kie', name } });
+    mockList.mockResolvedValue([]);
+    await act(async () => root.render(<JobProvenance api={{} as any} jobId="job1" />));
+    await press('Show how this was made');
+    await press('Show technical details');
+    const s = texts();
+    expect(s).toContain(shown);
+    expect(s).not.toMatch(/\b(kie|fal|grsai|crun|higgsfield|byteplus|openrouter|replicate)\b/i);
+});

@@ -1,4 +1,5 @@
 'use client';
+import { publicModelId } from '../../../../lib/publicModelIds.js';
 import { useI18n } from '../../../../components/I18nProvider';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
@@ -240,7 +241,7 @@ export default function Credits() {
                   </div>
                   <div className="order-1 min-w-0 sm:order-none">
                     <div className="text-sm truncate">
-                      {model?.name || l.model_id} · {l.name || l.prompt || l.job_id.slice(0, 8)}
+                      {model?.name || publicModelId(l.model_id)} · {l.name || l.prompt || l.job_id.slice(0, 8)}
                     </div>
                   </div>
                   <div className="order-3 flex items-center justify-between gap-3 sm:order-none sm:justify-start">
