@@ -341,5 +341,5 @@ bb6bfb6e59ac46f26913ad03cb45aafbc46fe00e:app/veyrnox/_lib/templateClips.js:gener
 bbe2476669fcda9c04129f57ab4f7f67637d0d8c:app/veyrnox/_lib/music/beat/beatLatency.mjs:generic-api-key:1
 # Fake idempotency key in the job-lookup test (PR B1); not a credential. Fixture value only.
 3d1816425a7f48e70ed3092fe596c98a37edc345:tests/jobsLookup.test.mjs:generic-api-key:10
-# Same job-lookup test fixture after PR B1 (#2418) was squash-merged; not a credential. Fixture value only.
+# The same fake idempotency key fixture, under the squash commit on main (#2418). The entry above names the pre-squash commit, which no longer exists, so history failed on every PR. Fixture value only; not a credential.
 d720f7b2fb2f85d66b9aa98047ee3b3a58dff50b:tests/jobsLookup.test.mjs:generic-api-key:10
