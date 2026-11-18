@@ -25,4 +25,9 @@ export function cropRect(width: number, height: number, ratio: string): CropRect
 }
 
 /** Width over height of a "w:h" frame, for a thumbnail that shows the shape the photo is cropped to. */
-export const frameRatio = (ratio: string): number => { const [w, h] = ratio.split(':').map(Number) as [number, number]; return w / h; };
+export const frameRatio = (ratio: string): number => {
+    const [w, h] = ratio.split(':').map(Number) as [number, number];
+    const value = w / h;
+    // A malformed value gives a square thumbnail, never NaN or Infinity in a style.
+    return Number.isFinite(value) && value > 0 ? value : 1;
+};

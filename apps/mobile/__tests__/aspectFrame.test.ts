@@ -18,6 +18,7 @@ describe('frame crop', () => {
         expect(frameRatio('1:1')).toBe(1);
         expect(frameRatio('16:9')).toBeCloseTo(1.778, 3);
         expect(frameRatio('9:16')).toBeCloseTo(0.5625, 4);
+        for (const bad of ['', 'wide', '16', '16:0', '0:9', ':', 'a:b']) expect(frameRatio(bad)).toBe(1);
     });
     test('only the two Kling 3.0 image-to-video models take it', () => {
         expect(takesFrame('kling-3.0-i2v')).toBe(true);
