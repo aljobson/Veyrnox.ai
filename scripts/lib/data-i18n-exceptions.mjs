@@ -2,6 +2,7 @@ import { helperExceptions } from './helper-i18n-exceptions.mjs';
 
 // Named data fields only. New prose in these modules is still inventoried.
 export function dataException({ file, owner, field, text, templateFile }) {
+  if (file === 'lib/additionalModelCapabilities.js' && text === 'Animate the photo with natural, subtle motion.') return 'Model input the gateway sends when a photo-to-video prompt is left empty; never shown to people.';
   if (file === 'app/veyrnox/_lib/performanceStudio.js') return 'Canonical workflow and provider capability catalog; localized labels are applied by the consuming UI.';
   if (file === 'lib/featureTours.js' && owner === 'FEATURE_TOURS' && ['title','message'].includes(field)) return 'First-run tour step copy is English-only for now; the tour chrome uses app.tours.* keys.';
   if (file === 'app/veyrnox/_lib/guides.js' && owner === 'GUIDES' && field === 'answer') return 'English-only lead: guides/[id]/page.js renders it only when the locale is en, so no other language shows untranslated text; translating it is a separate follow-up.';
