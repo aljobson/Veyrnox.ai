@@ -86,13 +86,9 @@ function ReferencePicker(props: SourcePickerProps) {
     const max = props.slot.maxFiles ?? 1;
     // References that arrive from outside (files attached from the device) join as new rows; rows being edited stay mounted.
     const refId = (r: GenerationReference) => r.origin === 'upload' ? `u:${r.key}` : `a:${r.asset_id}`;
-    // Keys a row dropped or replaced itself. The form still holds them for a render, so they are not "from outside".
-    const dropped = useRef(new Set<string>());
     useEffect(() => {
-        const present = new Set((props.references ?? []).map(refId));
-        dropped.current.forEach(id => { if (!present.has(id)) dropped.current.delete(id); });
         const have = new Set(current.current.flatMap(row => row.reference ? [refId(row.reference)] : []));
-        const incoming = (props.references ?? []).filter(r => !have.has(refId(r)) && !dropped.current.has(refId(r)));
+        const incoming = (props.references ?? []).filter(r => !have.has(refId(r)));
         if (!incoming.length) return;
         const kept = current.current.filter(row => row.reference || busy.current.has(row.id));
         const next = [...kept, ...incoming.map(reference => ({ id: serial.current++, reference }))];
@@ -104,11 +100,7 @@ function ReferencePicker(props: SourcePickerProps) {
         props.onReferences?.(next.flatMap(row => row.reference ? [row.reference] : []));
     }
     function reference(id: number, value: GenerationReference | undefined, origin: 'upload' | 'asset') {
-        const before = current.current.find(row => row.id === id)?.reference;
-        const next = current.current.map(row => row.id !== id ? row : { ...row, reference: value || (row.reference?.origin === origin ? undefined : row.reference) });
-        const after = next.find(row => row.id === id)?.reference;
-        if (before && (!after || refId(after) !== refId(before))) dropped.current.add(refId(before));
-        change(next);
+        change(current.current.map(row => row.id !== id ? row : { ...row, reference: value || (row.reference?.origin === origin ? undefined : row.reference) }));
     }
     function move(index: number, target: number) {
         const next = [...current.current]; next.splice(target, 0, next.splice(index, 1)[0]); change(next);
