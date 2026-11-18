@@ -3234,6 +3234,48 @@
     "ratio": 1.67
   },
   {
+    "id": "music.tab.songs",
+    "english": "Songs",
+    "translation": "Canciones",
+    "ratio": 1.8
+  },
+  {
+    "id": "music.play",
+    "english": "Play",
+    "translation": "Reproducir",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.player.idle",
+    "english": "Ready to play",
+    "translation": "Listo para reproducir",
+    "ratio": 1.62
+  },
+  {
+    "id": "music.player.playing",
+    "english": "Playing",
+    "translation": "Reproduciendo",
+    "ratio": 1.86
+  },
+  {
+    "id": "music.share",
+    "english": "Share links",
+    "translation": "Enlaces para compartir",
+    "ratio": 2
+  },
+  {
+    "id": "music.shareRevoked",
+    "english": "Share link revoked.",
+    "translation": "Enlace para compartir revocado.",
+    "ratio": 1.63
+  },
+  {
+    "id": "music.noShares",
+    "english": "No share links yet.",
+    "translation": "Aún no hay enlaces para compartir.",
+    "ratio": 1.79
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

@@ -3534,6 +3534,54 @@
     "ratio": 2.05
   },
   {
+    "id": "music.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.play",
+    "english": "Play",
+    "translation": "Abspielen",
+    "ratio": 2.25
+  },
+  {
+    "id": "music.player.idle",
+    "english": "Ready to play",
+    "translation": "Bereit zur Wiedergabe",
+    "ratio": 1.62
+  },
+  {
+    "id": "music.player.playing",
+    "english": "Playing",
+    "translation": "Wird abgespielt",
+    "ratio": 2.14
+  },
+  {
+    "id": "music.trash",
+    "english": "Move to trash",
+    "translation": "In den Papierkorb verschieben",
+    "ratio": 2.23
+  },
+  {
+    "id": "music.trashed",
+    "english": "Song moved to trash.",
+    "translation": "Song in den Papierkorb verschoben.",
+    "ratio": 1.7
+  },
+  {
+    "id": "music.restore",
+    "english": "Restore song",
+    "translation": "Song wiederherstellen",
+    "ratio": 1.75
+  },
+  {
+    "id": "music.restored",
+    "english": "Song restored.",
+    "translation": "Song wiederhergestellt.",
+    "ratio": 1.64
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

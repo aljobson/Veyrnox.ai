@@ -65,3 +65,24 @@ test('a locked account is blocked before any request leaves; quotes stay open', 
     await createQuote(makeApi(), { prompt: 'lofi' });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 });
+
+test('listen, reads, trash/restore and share create/revoke pass real guards with paywall locked and no consent', async () => {
+    setHardPaywallLocked(true);
+    const ask = jest.fn(async () => false); aiConsent.setPrompter(ask);
+    const api = makeApi();
+    for (const [path, method, body] of [
+        ['/api/v1/music/songs?limit=50', 'GET', undefined],
+        ['/api/v1/music/library-tabs', 'POST', { action: 'listen', song_id: UUID }],
+        [`/api/v1/music/songs/${UUID}`, 'PATCH', { action: 'trash', revision: 2 }],
+        [`/api/v1/music/songs/${UUID}`, 'PATCH', { action: 'restore', revision: 3 }],
+        [`/api/v1/music/songs/${UUID}/share-links`, 'GET', undefined],
+        [`/api/v1/music/songs/${UUID}/share-links`, 'POST', { version_id: UUID, token: 'a'.repeat(43), idempotency_key: KEY }],
+        [`/api/v1/music/share-links/${UUID}`, 'DELETE', { idempotency_key: KEY }],
+    ] as const) {
+        expect(sendsContent(path, method)).toBe(false); expect(isPaidAction(path, method)).toBe(false);
+        await api.request(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
+    }
+    expect(ask).not.toHaveBeenCalled(); expect(fetchMock).toHaveBeenCalledTimes(7);
+    await expect(startGeneration(api, UUID, KEY)).rejects.toMatchObject({ code: 'subscription_required' });
+    expect(fetchMock).toHaveBeenCalledTimes(7);
+});

@@ -52,3 +52,16 @@ amendment.
 Jest with mocked responses including the off case; request bodies are checked against the server's own
 `parseMusicQuote` and `parseMusicGeneration`. Not yet proved against staging: the phone's token on
 the music routes, and each parser against a live answer.
+
+## P1 amendment (2026-11-18)
+
+P1 adds the phone library and a foreground-only player. Playback resolves a signed asset URL,
+pauses on app background or screen exit, and releases the native player. Native background/lock-screen
+configuration is unchanged. Preview crops and saved hooks play only their saved bounds; canonical
+renders start at zero. Song versions are display-only (their payload has no job id).
+
+There is no server cursor: Songs shows at most the newest 50 with refresh and, when the library
+probe permits it, search. True paging needs a server cursor. Hooks/covers writes remain deferred.
+Share tokens are chosen by the client (32 random bytes, base64url). An ambiguous share failure
+retries the identical song/version/token/idempotency-key tuple. Listen, reversible trash/restore,
+and share create/revoke send no content to AI providers and spend no credits.
