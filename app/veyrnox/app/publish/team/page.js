@@ -22,7 +22,7 @@ export default function PublishTeamPage() {
   const { t } = useI18n();
     const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
     return <><AppNav /><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8">
-        <nav aria-label={t("label.Publish")} className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline"><BrandName>Veyrnox.ai</BrandName> Publish</Link><Link href="/app/publish/analytics" className="text-vx-accent underline">{t("publish.f7.name")}</Link><Link href="/app/publish/activity" className="text-vx-accent underline">{t("app.publish.nav.activity")}</Link></nav>
+        <nav aria-label={t("label.Publish")} className="mb-2 flex flex-wrap gap-4 text-sm"><Link href="/app/publish" className="text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link><Link href="/app/publish/analytics" className="text-vx-accent underline">{t("publish.f7.name")}</Link><Link href="/app/publish/activity" className="text-vx-accent underline">{t("app.publish.nav.activity")}</Link></nav>
         <h1 data-testid="publish-team-title" className="text-3xl font-black">{t("app.publish.nav.team")}</h1>
         <p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.team.intro")}</p>
         {account && <BrandSwitcher />}

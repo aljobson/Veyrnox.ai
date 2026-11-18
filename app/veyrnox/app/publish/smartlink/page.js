@@ -19,7 +19,7 @@ const empty={slug:'',title:'',bio:'',avatarUrl:'',theme:'midnight',published:fal
 
 export default function SmartLinkEditor(){
   const { t } = useI18n();const auth=useSyncExternalStore(onSessionChange,account,none);return <><AppNav/><Main className="mx-auto max-w-[1000px] px-4 py-10 sm:px-8">
-  <nav className="mb-2 flex gap-4 text-sm" aria-label={t("label.Publish")}><Link href="/app/publish" className="text-vx-accent underline"><BrandName>Veyrnox.ai</BrandName> Publish</Link><Link href="/app/publish/analytics" className="text-vx-accent underline">{t("publish.f7.name")}</Link></nav>
+  <nav className="mb-2 flex gap-4 text-sm" aria-label={t("label.Publish")}><Link href="/app/publish" className="text-vx-accent underline"><BrandName>Veyrnox.ai Publish</BrandName></Link><Link href="/app/publish/analytics" className="text-vx-accent underline">{t("publish.f7.name")}</Link></nav>
   <h1 className="text-3xl font-black">{t("publish.f8.name")}</h1><p className="mt-2 mb-4 text-sm text-vx-fg-muted">{t("app.publish.smartlink.intro")}</p>
   {auth && <BrandSwitcher/>}
   {auth?<Editor/>:<button type="button" className={button} onClick={()=>window.dispatchEvent(new CustomEvent('veyrnox:auth-required'))}>{t("oauth.signIn")}</button>}

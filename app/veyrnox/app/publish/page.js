@@ -37,7 +37,7 @@ export default function Publish() {
   const initialUploadId = useSyncExternalStore(subscribeLocation, currentUpload, noJob);
   const account = useSyncExternalStore(onSessionChange, currentAccount, noAccount);
   return <><AppNav /><Main className="max-w-[900px] mx-auto px-4 sm:px-8 py-10">
-    <h1 className="text-3xl font-black mb-2"><BrandName>Veyrnox.ai</BrandName> Publish</h1>
+    <h1 className="text-3xl font-black mb-2"><BrandName>Veyrnox.ai Publish</BrandName></h1>
     <p className="text-sm text-vx-fg-muted mb-4">{t("app.publish.lead")}{' '}<Link href="/app/publish/analytics" className="text-vx-accent underline">{t("app.publish.analytics")}</Link>.</p>
     {account && <BrandSwitcher />}
     <ul data-assistant-target="publish.accounts" aria-label={t("app.publish.platforms")} className="flex flex-wrap gap-3 mb-6">

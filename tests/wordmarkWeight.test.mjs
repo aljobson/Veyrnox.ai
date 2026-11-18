@@ -26,10 +26,10 @@ test('mobile intro lockup letters are weight 900', () => {
 
 test('stand-alone brand labels print as bold VEYRNOX.ai, running text is untouched', () => {
   const web = read('app/veyrnox/_components/BrandName.js');
-  assert.match(web, /font-black[^`]*`[^>]*>VEYRNOX\.ai</);
+  assert.match(web, /font-black[^>]*>VEYRNOX<span>\.ai<\/span>/);
   for (const p of ['app/veyrnox/app/publish/page.js', 'app/veyrnox/app/publish/inbox/page.js', 'app/veyrnox/_components/music/MusicPreviewShell.jsx']) {
-    assert.match(read(p), /<BrandName>Veyrnox\.ai<\/BrandName>/, p);
-    assert.doesNotMatch(read(p), />Veyrnox\.ai (Publish|Music)</, p);
+    assert.match(read(p), /<BrandName>Veyrnox\.ai (Publish|Music)<\/BrandName>/, p);
+    assert.doesNotMatch(read(p), /(?<!BrandName)>Veyrnox\.ai (Publish|Music)</, p);
   }
   assert.match(read('app/veyrnox/_components/music/MusicPublicPrompt.jsx'), /withBrandName\(t\('music\.brand'\)\)/);
   assert.match(read('apps/mobile/src/components/BrandText.tsx'), /displayBlack[^]*logo\.vEYRNOX/);
