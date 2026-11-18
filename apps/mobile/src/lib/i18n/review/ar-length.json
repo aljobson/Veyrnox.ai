@@ -1954,5 +1954,23 @@
     "english": " Retry in {seconds}s.",
     "translation": " أعد المحاولة بعد {seconds} ثوانٍ.",
     "ratio": 1.62
+  },
+  {
+    "id": "presets.swap.frontal",
+    "english": "Full photo cut-out",
+    "translation": "الصورة الكاملة بعد إزالة الخلفية",
+    "ratio": 1.78
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "presets.swap.signin",
+    "english": "Sign in",
+    "translation": "تسجيل الدخول",
+    "ratio": 1.71
   }
 ]

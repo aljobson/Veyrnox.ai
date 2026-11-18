@@ -2098,5 +2098,17 @@
     "english": "Reset prompt",
     "translation": "प्रॉम्प्ट रीसेट करें",
     "ratio": 1.67
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "presets.swap.signin",
+    "english": "Sign in",
+    "translation": "साइन इन करें",
+    "ratio": 1.71
   }
 ]

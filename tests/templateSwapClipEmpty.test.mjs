@@ -56,7 +56,7 @@ test('every id in the shipped registry is a template that needs a source clip (s
   for (const id of TEMPLATE_SWAP_CLIPS) assert.ok(allowed.has(id), id);
 });
 
-test('Worker budget stays at the checkout baseline (60700; frozen plan says 60500)', async () => {
+test('Worker budget follows the webpack production build decision (ADR-0353)', async () => {
  const { WORKER_SIZE_BUDGET_KIB } = await import('../scripts/check-worker-size.mjs');
- assert.equal(WORKER_SIZE_BUDGET_KIB, 60700);
+ assert.equal(WORKER_SIZE_BUDGET_KIB, 48500);
 });

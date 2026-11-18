@@ -26,16 +26,17 @@ export function validateResult(data: unknown, expected: FrameId): Inference {
 }
 // Native/WebView isolation boundary. Closing must unmount the WebView to terminate WASM work.
 export interface VisionTransport { send(message: string): void; close(): void }
-export function createVisionJob(transport: VisionTransport, timeoutMs = 15_000) {
+export const createVisionJob = (transport: VisionTransport, timeoutMs = 15_000) => createProtocolJob(transport, timeoutMs, 'detect', validateResult);
+export function createProtocolJob<T>(transport: VisionTransport, timeoutMs: number, operation: string, validate: (data: unknown, frame: Frame) => T) {
     let closed = false, sequence = 0;
-    let pending: { id: number; frame?: FrameId; resolve(value: Inference | null): void; reject(error: Error): void; timer: ReturnType<typeof setTimeout> } | undefined;
+    let pending: { id: number; frame?: Frame; resolve(value: T | null): void; reject(error: Error): void; timer: ReturnType<typeof setTimeout> } | undefined;
     const close = (reason = Error('inference-cancelled')) => {
         if (closed) return;
         closed = true;
         if (pending) { clearTimeout(pending.timer); pending.reject(reason); pending = undefined; }
         transport.close();
     };
-    function request(frame?: Frame): Promise<Inference | null> {
+    function request(frame?: Frame): Promise<T | null> {
         if (closed) return Promise.reject(Error('inference-cancelled'));
         if (pending) return Promise.reject(Error('inference-busy'));
         if (frame) { try { validateFrame(frame); } catch (e) { return Promise.reject(e); } }
@@ -43,12 +44,12 @@ export function createVisionJob(transport: VisionTransport, timeoutMs = 15_000) 
             const requestId = ++sequence;
             const timer = setTimeout(() => close(Error('inference-timeout')), frame ? timeoutMs : 60_000);
             pending = { id: requestId, frame, resolve, reject, timer };
-            try { transport.send(JSON.stringify({ op: frame ? 'detect' : 'init', id: requestId, ...frame })); }
+            try { transport.send(JSON.stringify({ op: frame ? operation : 'init', id: requestId, ...frame })); }
             catch { close(Error('inference-unavailable')); }
         });
     }
     return {
-        init: () => request(), detect: (frame: Frame) => request(frame) as Promise<Inference>, close,
+        init: () => request(), detect: (frame: Frame) => request(frame) as Promise<T>, close,
         receive(message: string) {
             if (closed || !pending) return;
             try {
@@ -56,7 +57,7 @@ export function createVisionJob(transport: VisionTransport, timeoutMs = 15_000) 
                 const d = JSON.parse(message);
                 if (d?.id !== pending.id) return;
                 if (d.error) throw Error('inference-unavailable');
-                const value = pending.frame ? validateResult(d, pending.frame) : null;
+                const value = pending.frame ? validate(d, pending.frame) : null;
                 if (!pending.frame && d.ready !== true) throw Error('inference-unavailable');
                 const p = pending; pending = undefined; clearTimeout(p.timer); p.resolve(value);
             } catch { close(Error('invalid-inference')); }

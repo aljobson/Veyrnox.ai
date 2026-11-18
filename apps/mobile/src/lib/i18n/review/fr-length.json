@@ -5470,5 +5470,47 @@
     "english": "Reset prompt",
     "translation": "Réinitialiser les instructions",
     "ratio": 2.5
+  },
+  {
+    "id": "presets.swap.terms",
+    "english": "Terms",
+    "translation": "Conditions",
+    "ratio": 2
+  },
+  {
+    "id": "presets.swap.aup",
+    "english": "Acceptable Use Policy",
+    "translation": "Politique d’utilisation acceptable",
+    "ratio": 1.62
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "presets.swap.signin",
+    "english": "Sign in",
+    "translation": "Se connecter",
+    "ratio": 1.71
+  },
+  {
+    "id": "presets.swap.check",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
+    "id": "presets.swap.library",
+    "english": "Open Library",
+    "translation": "Ouvrir la bibliothèque",
+    "ratio": 1.83
+  },
+  {
+    "id": "presets.swap.unknown",
+    "english": "We could not confirm this run; checking.",
+    "translation": "Nous n’avons pas pu confirmer cette génération ; vérification en cours.",
+    "ratio": 1.77
   }
 ]

@@ -3,7 +3,7 @@ const path = require('node:path');
 const STUB = '<!doctype html><script>window.liveEditReceive=function(raw){window.ReactNativeWebView.postMessage(JSON.stringify({id:JSON.parse(raw).id,error:true}))}</script>';
 // Accept only the audited literal declaration, with optional boolean annotation/comments.
 // Expressions, extra declarations and ambiguous comments must fail the build, not enable it.
-function readEnabled(appRoot = path.resolve(__dirname, '..')) {
+function readPhotoStudio(appRoot = path.resolve(__dirname, '..')) {
     const source = fs.readFileSync(path.join(appRoot, 'src/lib/photoStudioFlag.ts'), 'utf8');
     const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').trim();
     const match = /^export\s+const\s+PHOTO_STUDIO_ENABLED\s*(?::\s*boolean\s*)?=\s*(true|false)\s*;?$/.exec(code);
@@ -22,4 +22,14 @@ function writeDarkStub(appRoot = path.resolve(__dirname, '..')) {
     if (current !== STUB) fs.writeFileSync(file, STUB);
     fs.rmSync(path.join(folder, 'manifest.json'), { force: true });
 }
-module.exports = { readEnabled, writeDarkStub, STUB };
+function readSwap(appRoot = path.resolve(__dirname, '..')) {
+    let source;
+    try { source = fs.readFileSync(path.join(appRoot, 'src/lib/templateSwap/runtimeFlag.ts'), 'utf8'); }
+    catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').trim();
+    const match = /^export\s+const\s+TEMPLATE_SWAP_RUNTIME\s*(?::\s*boolean\s*)?=\s*(true|false)\s*;?$/.exec(code);
+    if (!match) throw Error('TEMPLATE_SWAP_RUNTIME must be a literal boolean');
+    return match[1] === 'true';
+}
+function readEnabled(appRoot) { return readPhotoStudio(appRoot) || readSwap(appRoot); }
+module.exports = { readEnabled, readPhotoStudio, readSwap, writeDarkStub, STUB };
