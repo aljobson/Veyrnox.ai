@@ -3,7 +3,7 @@ import { previewUrl } from './imageTemplates';
 import { internalModelIdOrNull } from './publicModelIds';
 
 // Audio templates (music, voice-over, sound effects), read from the anonymous GET /api/templates?kind=audio.
-// They carry a model id, a prompt and the licensed track's artwork; the price is read from the live catalog in Create.
+// They carry a model id, a prompt and the licensed track's artwork and sample; the price is read from the live catalog in Create.
 export interface AudioTemplate {
     readonly id: string;
     readonly name: string;
@@ -12,6 +12,7 @@ export interface AudioTemplate {
     readonly prompt: string;
     readonly negativePrompt?: string;
     readonly previewUrl: string | null;
+    readonly previewAudioUrl: string | null;
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
@@ -24,7 +25,7 @@ export function parseAudioTemplates(body: unknown, base: string = API_BASE): Aud
         const id = str(r.id), name = str(r.name), category = str(r.category), modelId = internalModelIdOrNull(str(r.modelId)), prompt = str(r.prompt);
         if (!id || !name || !category || !modelId || !prompt) return [];
         const negativePrompt = str(r.negativePrompt);
-        return [{ id, name, category, modelId, prompt, ...(negativePrompt ? { negativePrompt } : {}), previewUrl: previewUrl(r.previewImage, base) }];
+        return [{ id, name, category, modelId, prompt, ...(negativePrompt ? { negativePrompt } : {}), previewUrl: previewUrl(r.previewImage, base), previewAudioUrl: previewUrl(r.previewAudio, base) }];
     });
 }
 
