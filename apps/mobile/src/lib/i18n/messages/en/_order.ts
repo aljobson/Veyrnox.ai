@@ -228,7 +228,7 @@ export default [
     "dev.revoke", "dev.revoked", "dev.secret.once", "dev.secret.spoken", "dev.secret.share", "dev.secret.saved",
     "dev.keys.title", "dev.keys.help", "dev.keys.none", "dev.keys.expires", "dev.keys.used", "dev.keys.neverUsed",
     "dev.keys.revokeNamed", "dev.keys.revokeTitle", "dev.keys.revokeBody", "dev.keys.createTitle", "dev.keys.scopes", "dev.keys.expiry",
-    "dev.keys.days", "dev.scope.accountsRead", "dev.scope.postsRead", "dev.scope.postsWrite", "dev.keys.create", "dev.keys.newTitle", "dev.hooks.title", "dev.hooks.help", "dev.hooks.none",
+    "dev.keys.days", "dev.keys.create", "dev.keys.newTitle", "dev.hooks.title", "dev.hooks.help", "dev.hooks.none",
     "dev.hooks.deliveries", "dev.hooks.attempts.one", "dev.hooks.attempts.other", "dev.hooks.revokeNamed", "dev.hooks.revokeTitle", "dev.hooks.revokeBody",
     "dev.hooks.createTitle", "dev.hooks.urlHelp", "dev.hooks.url", "dev.hooks.events", "dev.hooks.create", "dev.hooks.newTitle",
     "dev.logs.title", "dev.logs.help", "dev.logs.search", "dev.logs.none", "dev.logs.s.all", "dev.logs.s.success",
