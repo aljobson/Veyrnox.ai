@@ -113,3 +113,23 @@ test('a clip longer than its media is shortened with a report; bidi controls are
     assert.ok(r.draft.video[0].len<=900);
     assert.equal(safeText('a‮b c',20),'abc');
 });
+test('audio frame_hold is dropped with a report, neutral defaults are not reported, and a huge report is bounded',()=>{
+    const tl=fixture();tl.media.music={id:'music',kind:'audio',frames:600,name:'music.wav',sourceName:'music.wav',width:0,height:0,hasAudio:true};
+    tl.audio=[{id:'a1',mediaId:'music',start:0,len:90,in:0,volume:.5,trackId:'audio-0'}];
+    const e=exportProInterchange(tl);assert.equal(e.ok,true,JSON.stringify(e.error));
+    const doc=JSON.parse(new TextDecoder().decode(e.bytes));
+    const aItem=sequence(doc).audio_tracks.flatMap(t=>t.items).find(i=>i.item===Object.values(doc.project.items).find(x=>x.name==='music.wav').id);
+    aItem.frame_hold=F*5;aItem.group=null;aItem.markers=[];
+    const r=importProInterchange(new TextEncoder().encode(JSON.stringify(doc)),{manifest:e.manifest});
+    assert.equal(r.ok,true,JSON.stringify(r.error));
+    assert.ok(r.report.some(x=>x.feature==='dropped:frame_hold'));
+    assert.ok(!r.report.some(x=>x.feature==='group'||x.feature==='markers'),'neutral defaults are not reported');
+    assert.equal(r.draft.audio[0].freezeFrame,undefined);
+    // Bound: 400 unknown non-neutral fields on one item.
+    const big=structuredClone(doc);const target=Object.values(big.project.items).find(x=>x.kind.Media);
+    for(let i=0;i<400;i++)target['extra'+i]=i+1;
+    const b=importProInterchange(new TextEncoder().encode(JSON.stringify(big)),{manifest:e.manifest});
+    assert.equal(b.ok,true,JSON.stringify(b.error));
+    assert.equal(b.report.length,201);
+    assert.equal(b.report.at(-1).feature,'report_truncated');assert.ok(b.report.at(-1).omitted>=200);
+});

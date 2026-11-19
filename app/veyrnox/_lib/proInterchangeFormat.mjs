@@ -47,8 +47,17 @@ export function assertCounts(counts, refuse) {
     }
 }
 export const sequenceCounts = tl => ({media:Object.keys(tl.media).length,video:tl.video.length,audio:tl.audio.length,text:tl.text.length,tracks:tl.tracks.length,markers:tl.markers?.length || 0,frames:Math.max(0,...[...tl.video,...tl.audio,...tl.text].map(c=>c.start+c.len)),bytes:new TextEncoder().encode(JSON.stringify(tl)).length});
+// A neutral default (null, false, 0, empty text, empty list or object) carries no information, so dropping it is not a loss worth reporting.
+const neutral = v => v === null || v === false || v === 0 || v === '' || (Array.isArray(v) && !v.length) || (typeof v === 'object' && v !== null && !Array.isArray(v) && !Object.keys(v).length);
 export function reportUnknown(object, allowed, path, report) {
-    for (const key of Object.keys(object)) if (!allowed.includes(key)) loss(report,`${path}.${key}`,key,'dropped','Unsupported FilmCraft field.');
+    for (const key of Object.keys(object)) if (!allowed.includes(key) && !neutral(object[key])) loss(report,`${path}.${key}`,key,'dropped','Unsupported FilmCraft field.');
+}
+export const MAX_REPORT_ENTRIES = 200;
+/** Bounded report: the first entries are kept and the rest are counted, never silently lost. */
+export function boundReport(report) {
+    if (report.length <= MAX_REPORT_ENTRIES) return report;
+    const omitted = report.length - MAX_REPORT_ENTRIES;
+    return [...report.slice(0, MAX_REPORT_ENTRIES), { path: 'report', feature: 'report_truncated', severity: 'approximated', note: 'More changes were found than the report lists.', omitted }];
 }
 
 // FilmCraft item colour names: file-format values, never shown to a user.

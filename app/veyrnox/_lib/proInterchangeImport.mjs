@@ -3,7 +3,7 @@ import { validateSequence, TEXT_DEFAULTS } from './editorSequenceValidation.mjs'
 import { emptySequence } from './editorSequence.mjs';
 import { assertManifest, manifestMedia, manifestEntry, safeSourceName, safeText } from './proMediaManifest.mjs';
 import { result, refuse, loss, checkedTicks, rationalRate, ticksToFrames, sourceFirstTick, dbToVolume, MAX_SEQUENCE_TICKS, TICKS_PER_FRAME } from './proInterchangeTime.mjs';
-import { assertCounts, sequenceCounts, reportUnknown, LABELS } from './proInterchangeFormat.mjs';
+import { assertCounts, sequenceCounts, reportUnknown, boundReport, LABELS } from './proInterchangeFormat.mjs';
 const obj = v => v && typeof v==='object' && !Array.isArray(v);
 const array = (v,path) => {if(!Array.isArray(v))refuse('invalid_array',{path});return v;};
 const number = (v,path) => {if(typeof v!=='number'||!Number.isFinite(v))refuse('invalid_number',{path});return v;};
@@ -192,7 +192,8 @@ export function importProInterchange(input, options = {}) {
                 const db=number(c.gain_db??0,`${cp}.gain_db`)+level+gain+number(seq.master_volume_db??0,'master_volume_db');
                 const volume=kind==='video'?0:bounded(dbToVolume(db),0,2,`${cp}.volume`,report);
                 const draft={id:fresh(kind[0]),mediaId,start,len,in:from,trackId:dest.id,volume,rate:speed,reverse:c.reverse,...(kind==='video'?{transition:0}:{}),...(pan?{pan}:{})};
-                if(c.frame_hold!=null){draft.freezeFrame=quantize([checkedTicks(c.frame_hold)],`${cp}.frame_hold`,report)[0];draft.volume=0;
+                if(c.frame_hold!=null&&kind==='audio')loss(report,`${cp}.frame_hold`,'dropped:frame_hold','dropped','v3 audio clips cannot hold a frame.');
+                else if(c.frame_hold!=null){draft.freezeFrame=quantize([checkedTicks(c.frame_hold)],`${cp}.frame_hold`,report)[0];draft.volume=0;
                     if(draft.freezeFrame>=m.frames){loss(report,cp,'approximated:clamped_source','approximated','Rounded held frame clamped to media.');draft.freezeFrame=m.frames-1;}
                 }
                 if(!['image','graphic'].includes(m.kind) && draft.freezeFrame===undefined) {
@@ -240,6 +241,6 @@ export function importProInterchange(input, options = {}) {
         if(p.root.children?.some(c=>c.Bin))loss(report,'project.root','bins');
         tl.seq=counter;assertCounts(sequenceCounts(tl),refuse);assertManifest(manifest);
         const problem=validateSequence(tl);if(problem)refuse('invalid_sequence',{message:problem});
-        return {draft:tl,manifest,report};
+        return {draft:tl,manifest,report:boundReport(report)};
     });
 }
