@@ -77,3 +77,51 @@ exceeds 3 minutes. Where a 222 s song's Stems and Cover requests fail today.
 If rights are never confirmed the code stays dark at a small carrying cost. If MiniMax is retired the row is
 swapped. Songs are far longer than anything Music stores now, so R2 storage and the 120 s edit rule (D6) are
 the first things to watch after activation.
+
+## Amendment 1 (2026-11-19, spike rounds 2-3)
+
+Status: Proposed. Changes the order of work, not the dark-by-default rule. Nothing here is built or priced.
+
+**New evidence.** The spike's first baseline was the wrong model: it ran base `fal-ai/ace-step`, not the paid
+`ace-step-1.5` that Music sells. The owner then rated `ace-step-1.5` by ear (FLAC results converted to MP3 to
+play; one listener, five files generated, two rated):
+
+| Model | Scored files | Scores | Cost per song at list |
+|---|---|---|---|
+| Lyria 3 Pro | rock, instrumental dance | 4.5, 4.25 | $0.08 |
+| ACE-Step 1.5 | pop 60 s, ballad 180 s | 4.0, 4.0 | $0.036 at 60 s, $0.108 at 180 s (0.0003/s, doubled for thinking) |
+| MiniMax Music 2.0 | pop, rock, rap | 4.0, 4.0, 4.0 | $0.03 |
+| ACE-Step base | 3-minute ballad | 2.5 | $0.036 at 180 s |
+
+`ace-step-1.5` returned a full 180 s song when asked, scored the same as MiniMax, and is already sold,
+quoted, refunded and webhook-handled. The 60 s ceiling is ours (`fixed: { duration: 60 }` in
+`modelCapabilities.js`, the `'duration', 60` payload in 0469, and the 60 s label in `tokens.js`), not the
+model's. Three of the five 1.5 files (rock, rap, instrumental dance) are unrated, so this is still two data
+points, not a measurement.
+
+**Revised decisions** (D1, D3 and D5-D8 stand unchanged; D2 and D4 are replaced):
+
+- **D2' Lead with longer `ace-step-1.5`.** Phase one lifts the 60 s cap for `ace-step-1.5` instead of adding a
+  supplier: a duration input at quote time, validated against a stated ceiling (the spike proved 180 s), a
+  quote and submit path that carries the duration instead of the literal 60, and the UI and capability entries
+  updated. No new catalog model row, no new provider endpoint, no new licence question beyond what Music
+  already carries for ACE-Step. A later migration may already carry a duration for `ace-step-1.5` (0531 shows
+  Custom quotes for it); verify before writing the first one.
+- **D2'' MiniMax Music 2.0 is the cheaper long-form option, built second** and only if the price per minute
+  matters: $0.03 a song against $0.108 for 180 s of ACE-Step 1.5, a 3.6 times gap at list price. Lyria 3 Pro
+  stays the premium tier after the content-checker refusals are understood.
+- **D4' Price per second, not per take.** Credits for a longer take scale with duration at the existing
+  ratio (3 Credits at 60 s covers $0.036), so a 180 s take is about 9 Credits and a pair about 18, before any
+  change to margin. The price is set only after a STAGING probe and a read of the fal bill; the
+  `ace-step-loop` probe billed above list (ADR-0347 amendment 1), so the list rate is a floor.
+- **D6 sharpens.** A 180 s ACE-Step 1.5 song is above the 120 s edit cap for Extend, Cover and Stems. Decide per
+  action whether to trim on store or disable with a reason; the free local actions are unaffected.
+
+**What this removes from the plan.** The new catalog row, the new provider endpoint branch in
+`music_create_quote` and `music_submit_pair`, and the new `lib/musicFullSong.js` validation module move to the
+MiniMax phase. The first phase is a duration change on an existing path, which still touches the money spine
+(quote total, debit amount, refund per take) and still needs the same inspection and acceptance tests.
+
+**Not decided / not verified.** The duration ceiling to ship (180 s proven, longer untested). Price. Whether
+pair debits of 18 Credits suit the current plans. Quality of the three unrated 1.5 files, and of 1.5 across
+more prompts. Resale rights (D1) are unchanged: unconfirmed, and the owner declined to ask fal in writing.
