@@ -510,3 +510,12 @@ The Worker is at its variable cap, so the swap switch is now the `templateSwap` 
 generations route both call that one helper. An absent, false, malformed or string `"true"` key is off. `MULTI_REFERENCE_ENABLED` is still required. This change
 edits neither `wrangler.jsonc` nor `APP_RUNTIME_FLAGS`; turning the swap on is a later owner-approved edit of that one JSON value after the upload, ids-and-pin PR
 and activation migration. Removing the key (or setting it false) is the rollback.
+
+## Amendment 10 (2026-11-19): the registry carries 410 of the 411 uploaded ids and the confirmed pin
+
+`app/veyrnox/_lib/templateSwapClips.js` lists 410 ids and the manifest pin `a795629b7397a570a10a838499c6c6e76d4f765408369e1cfe0d48170d2bf28b`. The owner's
+R2 upload (run `swap-upload-run-3`, publishable true) verified 411 clips and printed the identical SHA-256, so the pin is confirmed, not provisional. The owner
+dropped `community-brand-billboard-swap` from the registry as a near-duplicate of `community-billboard-product-swap` (same base shot plus a third-party brand
+and truck). It stays in the manifest only: the gate needs the id in both, so the pin is unchanged and the clip is refused. The manifest is not in source. The
+switch is untouched, so nothing is reachable: the gate needs the `templateSwap` key, and the model row stays inactive until the activation migration. Three
+tests that replaced the empty literals match the declarations by pattern; the registry test pins 410 sorted unique ids.
