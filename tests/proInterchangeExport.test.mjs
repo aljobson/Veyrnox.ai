@@ -65,3 +65,19 @@ test('freeze frames use the held source time and stay silent',()=>{
     const tl=fixture();tl.video[0].freezeFrame=75;tl.video[0].volume=0;
     const e=exportProInterchange(tl);assert.equal(e.ok,true,JSON.stringify(e));const r=importProInterchange(e.bytes,{manifest:e.manifest});assert.equal(r.ok,true,JSON.stringify(r));assert.equal(r.draft.video[0].freezeFrame,75);assert.equal(r.draft.video[0].volume,0);
 });
+
+test('unused graphic media is skipped with a report; a manifest with extra or renamed media is refused',()=>{
+    const tl=fixture();tl.media.g1={id:'g1',kind:'graphic',frames:30,width:100,height:100,hasAudio:false,name:'card.png',sourceName:'card.png',graphic:{shape:'circle',color:'#ff0000'}};
+    const e=exportProInterchange(tl);assert.equal(e.ok,true,JSON.stringify(e.error));
+    assert.ok(e.report.some(x=>x.feature==='unused_graphic_media'));
+    const base=exportProInterchange(fixture());
+    const extra=structuredClone(e.manifest);
+    assert.equal(exportProInterchange(fixture(),{manifest:extra}).error.code,'manifest_media_mismatch');
+    const renamed=structuredClone(base.manifest);renamed.entries[0].name='other.mp4';renamed.entries[0].sourceName='other.mp4';renamed.entries[0].virtualPath=renamed.entries[0].virtualPath;
+    assert.equal(exportProInterchange(fixture(),{manifest:renamed}).ok,false);
+});
+test('track pan ignores silent clips',()=>{
+    const tl=fixture();tl.video[0].pan=0.5;tl.video.push({...tl.video[0],id:'v9',start:100,volume:0,pan:0});
+    const e=exportProInterchange(tl);assert.equal(e.ok,true,JSON.stringify(e.error));
+    assert.ok(!e.report.some(x=>x.feature==='pan'&&x.severity==='dropped'));
+});

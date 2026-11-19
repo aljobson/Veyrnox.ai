@@ -1,5 +1,5 @@
 import { validateSequence } from './editorSequenceValidation.mjs';
-import { createMediaManifest, assertManifest, safeText } from './proMediaManifest.mjs';
+import { createMediaManifest, assertManifest, safeText, safeSourceName } from './proMediaManifest.mjs';
 import { result, refuse, loss, framesToTicks, sourceInClamped, volumeToDb, checkedTicks, MAX_SEQUENCE_TICKS } from './proInterchangeTime.mjs';
 import { reportDispositions } from './proInterchangeDispositions.mjs';
 import { mediaInfo, projectSettings, sequenceSettings, nearestLabel, visualEffects, textEffects, stackingLanes, assertCounts, sequenceCounts } from './proInterchangeFormat.mjs';
@@ -13,10 +13,15 @@ export function exportProInterchange(tl, options = {}) {
         const report = []; reportDispositions(tl,'document','sequence',report);
         const manifest = options.manifest ? structuredClone(assertManifest(options.manifest)) : createMediaManifest(tl.media,report);
         const byMedia = new Map(manifest.entries.map(e=>[e.mediaId,e]));
+        if (manifest.entries.length !== Object.keys(tl.media).length) refuse('manifest_media_mismatch',{reason:'entry_count'});
+        const used = new Set([...tl.video,...tl.audio].map(c=>c.mediaId)), skipped = new Set();
         for (const m of Object.values(tl.media)) {
             const entry = byMedia.get(m.id);
-            if (!entry || ['kind','frames','width','height','hasAudio'].some(k=>entry[k]!==m[k])) refuse('manifest_media_mismatch',{mediaId:m.id});
-            if (m.kind === 'graphic') refuse('unsupported_graphic_media',{mediaId:m.id});
+            if (!entry || ['kind','frames','width','height','hasAudio'].some(k=>entry[k]!==m[k]) || entry.name!==safeSourceName(m.name).name) refuse('manifest_media_mismatch',{mediaId:m.id});
+            if (m.kind === 'graphic') {
+                if (used.has(m.id)) refuse('unsupported_graphic_media',{mediaId:m.id});
+                skipped.add(m.id); loss(report,`media.${m.id}`,'unused_graphic_media','dropped','Unused graphic media is not exported.'); continue;
+            }
             reportDispositions(m,'media',`media.${m.id}`,report);
             if(m.kind!=='audio' && (!m.width||!m.height))loss(report,`media.${m.id}`,'dimensions','approximated','Unknown dimensions use the neutral MediaInfo defaults.');
         }
@@ -26,7 +31,7 @@ export function exportProInterchange(tl, options = {}) {
         if (!width || !height) refuse('source_dimensions_missing');
         let next = 1; const allocate = () => next++;
         const items = {}, mediaIds = new Map();
-        for (const e of manifest.entries) {
+        for (const e of manifest.entries.filter(e=>!skipped.has(e.mediaId))) {
             const id = allocate(); mediaIds.set(e.mediaId,id);
             items[id] = {id,name:e.name,label:'Iris',kind:{Media:{media:{File:{path:e.virtualPath}},info:mediaInfo(e),interpret:{frame_rate:null,par:null,ignore_alpha:false,invert_alpha:false},mark_in:null,mark_out:null,markers:[],offline:true,proxy:null}}};
         }
@@ -63,7 +68,8 @@ export function exportProInterchange(tl, options = {}) {
                 const ft=track(t,kind,laneIndex?`${t.name} lane ${laneIndex+1}`:t.name);if(kind==='audio')ft.enabled=true;
                 sourceTracks.push(ft);
                 const entries=order.get(t.id)||[];entries.push(`${ft.id}:${kind}`);order.set(t.id,entries);
-                const pans=new Set(lane.map(c=>c.pan??0));
+                const audible=lane.filter(c=>c.volume>0&&(kind!=='video'||tl.media[c.mediaId]?.hasAudio));
+                const pans=new Set(audible.map(c=>c.pan??0));
                 if(pans.size===1) ft.pan=[...pans][0]*100;
                 else if(pans.size>1) loss(report,`tracks.${t.id}.pan`,'pan','dropped','Nonuniform clip pan cannot be represented by one track pan.');
                 const sounds=kind==='video'?lane.filter(c=>tl.media[c.mediaId].hasAudio && c.volume>0):[];
