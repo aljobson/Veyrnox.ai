@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { randomUUID } from 'expo-crypto';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Chip, Text } from '../ui';
+import { brandText } from '../BrandText';
 import { colors } from '../../theme';
 import { ApiError, type ApiClient } from '../../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -139,7 +140,7 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
         <Text>{t('bestCut.notes')}</Text><TextInput multiline editable={!busy} accessibilityLabel={t('bestCut.notes')} style={inputStyle} value={notes} onChangeText={setNotes} maxLength={2000} /><Text>{t('bestCut.localNotes')}</Text>
         <ScrollView horizontal contentContainerStyle={{ gap: 8 }}>{(['balanced', 'vlog', 'educational', 'punchy', 'steps'] as const).map(p => <Chip key={p} label={t(`bestCut.${p}`)} selected={p === preset} onPress={() => { if (!busy) { setPreset(p); setResult(null); } }} />)}</ScrollView>
         <BestCutSettings disabled={busy} onChange={onSettingsChange} />
-        <Text>{t('bestCut.consent')}</Text><Text>{t('bestCut.metadata')}</Text><Text>{t('bestCut.agree')}</Text><Switch accessibilityLabel={rawText(t('bestCut.agree'))} disabled={busy} value={consent} onValueChange={setConsent} />
+        <Text>{brandText(t('bestCut.consent'))}</Text><Text>{t('bestCut.metadata')}</Text><Text>{t('bestCut.agree')}</Text><Switch accessibilityLabel={rawText(t('bestCut.agree'))} disabled={busy} value={consent} onValueChange={setConsent} />
         {busy ? <><Text accessibilityLiveRegion="polite">{t(`bestCut.${progress.phase}`, { n: progress.index + 1, percent: Math.round(progress.fraction * 100) })}</Text><Button label={t('bestCut.cancel')} onPress={() => abort.current.abort()} /></> : null}
         {progress.refunded > 0 ? <Text>{t('bestCut.refunded', { n: progress.refunded })}</Text> : null}
         {message ? <Text accessibilityLiveRegion="polite">{message}</Text> : null}
