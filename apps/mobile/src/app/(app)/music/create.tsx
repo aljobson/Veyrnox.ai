@@ -56,9 +56,11 @@ export default function MusicCreate() {
                         <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => flow.edit({ title })} />
                         <Text>{t('music.create.duration', { seconds: input.duration })}</Text>
                         <View style={s.row}>
-                            <Button variant="secondary" label={t('music.create.shorter')} onPress={() => flow.edit({ duration: input.duration - 5 })} />
-                            <Button variant="secondary" label={t('music.create.longer')} onPress={() => flow.edit({ duration: input.duration + 5 })} />
+                            <Button variant="secondary" label={t('music.create.shorter')} disabled={!model || input.duration <= model.controls.duration_seconds.min} onPress={() => flow.edit({ duration: input.duration - 5 })} />
+                            <Button variant="secondary" label={t('music.create.longer')} disabled={!model || input.duration >= model.controls.duration_seconds.max} onPress={() => flow.edit({ duration: input.duration + 5 })} />
                         </View>
+                        {model?.controls.duration_price_block_seconds !== undefined ? <Text>{t('music.create.durationPriceHint')}</Text> : null}
+                        {input.duration > 60 ? <Text>{t('music.create.longerGenerationHint')}</Text> : null}
                         {state.conflict ? <View style={s.content}>
                             <Text>{t('music.create.conflict')}</Text>
                             <Text selectable>{state.conflict.title}</Text><Text selectable>{state.conflict.lyrics}</Text><Text selectable>{state.conflict.styles}</Text>
