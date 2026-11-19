@@ -239,3 +239,62 @@ test('timing quality follows the provider and phrase-level timing adds a plan wa
   const { timingQuality, ...stored } = word.analysis;
   assert.equal(parseSmartCutAnalysis(stored, { assetId: clip.job_id }).analysis.timingQuality, 'word');
 });
+
+const fillerWords = {
+  language_code: 'eng',
+  text: 'so um we go',
+  words: [
+    { type: 'word', text: 'so', start: 0.5, end: 0.8 },
+    { type: 'word', text: 'um', start: 1.0, end: 1.3 },
+    { type: 'word', text: 'we', start: 1.4, end: 1.7 },
+    { type: 'word', text: 'go', start: 1.8, end: 2.1 },
+  ],
+};
+
+test('reviewed removals cut a filler out of the middle of a section and keep both halves', () => {
+  const analysis = normaliseScribeResult({ assetId: clip.job_id, duration: clip.duration, result: fillerWords }).analysis;
+  const base = { clips: [clip], analyses: { [clip.job_id]: analysis } };
+  const without = buildSpeechAwareCutPlan(base);
+  assert.equal(without.segments.length, 1);
+  const withRemoval = buildSpeechAwareCutPlan({ ...base, removals: [{ takeId: clip.job_id, start: 0.97, end: 1.33 }] });
+  assert.equal(withRemoval.segments.length, 2);
+  assert.ok(withRemoval.segments[0].end <= 0.97 && withRemoval.segments[1].start >= 1.33);
+  assert.ok(withRemoval.totalDuration < without.totalDuration);
+  assert.equal(withRemoval.removalsApplied, 1);
+  assert.deepEqual(without.warnings, withRemoval.warnings);
+});
+
+test('a standalone filler between long pauses disappears and malformed removals are ignored', () => {
+  const alone = normaliseScribeResult({ assetId: clip.job_id, duration: clip.duration, result: {
+    language_code: 'eng', text: 'hello um goodbye',
+    words: [
+      { type: 'word', text: 'hello', start: 0.5, end: 0.9 },
+      { type: 'word', text: 'um', start: 2.5, end: 2.8 },
+      { type: 'word', text: 'goodbye', start: 5.0, end: 5.5 },
+    ] } }).analysis;
+  const base = { clips: [clip], analyses: { [clip.job_id]: alone } };
+  assert.equal(buildSpeechAwareCutPlan(base).segments.length, 3);
+  const removed = buildSpeechAwareCutPlan({ ...base, removals: [{ takeId: clip.job_id, start: 2.47, end: 2.83 }] });
+  assert.equal(removed.segments.length, 2);
+  const ignored = buildSpeechAwareCutPlan({ ...base, removals: [null, { takeId: 5, start: 1, end: 2 }, { takeId: clip.job_id, start: 3, end: 2 }, { takeId: 'other-take', start: 2.4, end: 2.9 }] });
+  assert.deepEqual(ignored.segments, buildSpeechAwareCutPlan(base).segments);
+  assert.equal(ignored.removalsApplied, 0);
+});
+
+test('a removal the ten-section limit merges back is reported, not hidden', () => {
+  const words = [
+    { type: 'word', text: 'hello', start: 0, end: 1 },
+    { type: 'word', text: 'um', start: 1.05, end: 1.35 },
+    { type: 'word', text: 'there', start: 1.4, end: 2 },
+    ...Array.from({ length: 9 }, (_, i) => ({ type: 'word', text: `w${i}`, start: 5 + i * 5, end: 6 + i * 5 })),
+  ];
+  const analysis = normaliseScribeResult({ assetId: clip.job_id, duration: 60, result: { language_code: 'eng', text: 'many', words } }).analysis;
+  const longClip = { ...clip, duration: 60, out_s: 60 };
+  const base = { clips: [longClip], analyses: { [clip.job_id]: analysis } };
+  assert.equal(buildSpeechAwareCutPlan(base).segments.length, 10);
+  // Splitting the first section makes 11; the smallest gap is the one just made, so the limit rejoins it.
+  const plan = buildSpeechAwareCutPlan({ ...base, removals: [{ takeId: clip.job_id, start: 1.02, end: 1.38 }] });
+  assert.equal(plan.segments.length, 10);
+  assert.equal(plan.removalsApplied, 0);
+  assert.ok(plan.warnings.some((warning) => /limited to 10 sections/.test(warning)));
+});
