@@ -6104,6 +6104,8 @@ export default {
     "editorAi.step.insertMedia": "Insertar {id} en el fotograma {frame}",
     "editorSpeech.silences": "Eliminar silencios",
     "editorSpeech.retakes": "Eliminar errores y conservar la mejor toma",
+    "editorSpeech.fillers": "Quitar muletillas (eh, em)",
+    "editorSpeech.fillersLanguages": "Detecta muletillas en inglés, español, alemán, francés, portugués y ruso. En otros idiomas se analiza el clip, pero puede que no se encuentre nada.",
     "editorSpeech.clip": "Elige un clip",
     "editorSpeech.uploadFirst": "Sube este clip primero",
     "editorSpeech.unsupported": "Aún no está disponible para este clip",

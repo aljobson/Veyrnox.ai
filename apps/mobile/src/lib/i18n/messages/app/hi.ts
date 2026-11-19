@@ -6026,6 +6026,8 @@ export default {
     "editorAi.step.insertMedia": "फ़्रेम {frame} पर {id} डालें",
     "editorSpeech.silences": "खामोशी हटाएँ",
     "editorSpeech.retakes": "गलतियाँ हटाकर सबसे अच्छा टेक रखें",
+    "editorSpeech.fillers": "उम, अं जैसी आवाज़ें हटाएं",
+    "editorSpeech.fillersLanguages": "अंग्रेज़ी, स्पेनिश, जर्मन, फ़्रेंच, पुर्तगाली और रूसी में हिचकिचाहट की आवाज़ें ढूँढता है। अन्य भाषाओं का भी विश्लेषण होता है, लेकिन हो सकता है कुछ न मिले।",
     "editorSpeech.clip": "क्लिप चुनें",
     "editorSpeech.uploadFirst": "पहले यह क्लिप अपलोड करें",
     "editorSpeech.unsupported": "इस क्लिप के लिए अभी उपलब्ध नहीं है",

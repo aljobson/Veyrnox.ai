@@ -5948,6 +5948,8 @@ export default {
     "editorAi.step.insertMedia": "{frame} 프레임에 {id} 삽입",
     "editorSpeech.silences": "무음 제거",
     "editorSpeech.retakes": "실수를 제거하고 가장 좋은 테이크 유지",
+    "editorSpeech.fillers": "군말 제거 (음, 어)",
+    "editorSpeech.fillersLanguages": "영어, 스페인어, 독일어, 프랑스어, 포르투갈어, 러시아어의 군말을 찾습니다. 다른 언어도 분석하지만 아무것도 찾지 못할 수 있습니다.",
     "editorSpeech.clip": "클립 선택",
     "editorSpeech.uploadFirst": "먼저 이 클립을 업로드하세요",
     "editorSpeech.unsupported": "이 클립에서는 아직 사용할 수 없습니다",

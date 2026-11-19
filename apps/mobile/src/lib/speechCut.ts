@@ -7,7 +7,7 @@ export const SILENCE_PRESETS: Record<SilencePreset, { minimumSeconds: number; ed
     snappy: { minimumSeconds: .4, edgePaddingSeconds: .08 }, natural: { minimumSeconds: .75, edgePaddingSeconds: .12 }, relaxed: { minimumSeconds: 1.2, edgePaddingSeconds: .18 } };
 export const silencePreset = (name?: string): SilencePreset => { const key = name === 'balanced' ? 'natural' : name; return key === 'snappy' || key === 'relaxed' ? key : 'natural'; };
 export type SpeechRange = { start: number; end: number; label: string };
-export type SpeechMode = 'silences' | 'retakes';
+export type SpeechMode = 'silences' | 'retakes' | 'fillers';
 const languages = ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];
 const iso3: Record<string, string> = { eng: 'en', spa: 'es', zho: 'zh', cmn: 'zh', chi: 'zh', hin: 'hi', ara: 'ar', fra: 'fr', fre: 'fr', por: 'pt', rus: 'ru', jpn: 'ja', deu: 'de', ger: 'de', kor: 'ko' };
 const clean = (v: unknown) => String(v || '').replace(/\s+/g, ' ').trim();

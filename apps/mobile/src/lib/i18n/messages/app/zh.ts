@@ -5948,6 +5948,8 @@ export default {
     "editorAi.step.insertMedia": "在第{frame}帧插入{id}",
     "editorSpeech.silences": "移除静音",
     "editorSpeech.retakes": "移除失误并保留最佳片段",
+    "editorSpeech.fillers": "移除语气停顿词（嗯、呃）",
+    "editorSpeech.fillersLanguages": "可识别英语、西班牙语、德语、法语、葡萄牙语和俄语中的语气停顿词。其他语言也会分析，但可能找不到结果。",
     "editorSpeech.clip": "选择片段",
     "editorSpeech.uploadFirst": "请先上传此片段",
     "editorSpeech.unsupported": "此片段暂不支持此功能",

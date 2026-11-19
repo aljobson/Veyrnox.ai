@@ -6182,6 +6182,8 @@ export default {
     "editorAi.step.insertMedia": "Вставить {id} на кадре {frame}",
     "editorSpeech.silences": "Удалить паузы",
     "editorSpeech.retakes": "Удалить ошибки и оставить лучший дубль",
+    "editorSpeech.fillers": "Убрать запинки (э, эм)",
+    "editorSpeech.fillersLanguages": "Находит запинки на английском, испанском, немецком, французском, португальском и русском. Для других языков клип анализируется, но результатов может не быть.",
     "editorSpeech.clip": "Выберите клип",
     "editorSpeech.uploadFirst": "Сначала загрузите этот клип",
     "editorSpeech.unsupported": "Для этого клипа пока недоступно",
