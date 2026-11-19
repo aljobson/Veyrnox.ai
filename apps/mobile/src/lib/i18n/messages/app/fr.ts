@@ -6104,6 +6104,8 @@ export default {
     "editorAi.step.insertMedia": "Insérer {id} à l’image {frame}",
     "editorSpeech.silences": "Supprimer les silences",
     "editorSpeech.retakes": "Supprimer les erreurs et garder la meilleure prise",
+    "editorSpeech.fillers": "Retirer les « euh »",
+    "editorSpeech.fillersLanguages": "Repère les hésitations en anglais, espagnol, allemand, français, portugais et russe. Pour les autres langues, le clip est analysé mais il se peut que rien ne soit trouvé.",
     "editorSpeech.clip": "Choisir un clip",
     "editorSpeech.uploadFirst": "Importez d’abord ce clip",
     "editorSpeech.unsupported": "Pas encore disponible pour ce clip",

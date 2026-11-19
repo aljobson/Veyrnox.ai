@@ -5948,6 +5948,8 @@ export default {
     "editorAi.step.insertMedia": "{id}をフレーム{frame}に挿入",
     "editorSpeech.silences": "無音を削除",
     "editorSpeech.retakes": "ミスを削除して最良のテイクを残す",
+    "editorSpeech.fillers": "つなぎ言葉を削除（えー、あー）",
+    "editorSpeech.fillersLanguages": "英語、スペイン語、ドイツ語、フランス語、ポルトガル語、ロシア語のつなぎ言葉を検出します。その他の言語も分析されますが、何も見つからない場合があります。",
     "editorSpeech.clip": "クリップを選択",
     "editorSpeech.uploadFirst": "先にこのクリップをアップロードしてください",
     "editorSpeech.unsupported": "このクリップではまだ利用できません",

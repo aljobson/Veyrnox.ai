@@ -6104,6 +6104,8 @@ export default {
     "editorAi.step.insertMedia": "Inserir {id} no fotograma {frame}",
     "editorSpeech.silences": "Remover silêncios",
     "editorSpeech.retakes": "Remover erros e manter a melhor tomada",
+    "editorSpeech.fillers": "Remover hesitações",
+    "editorSpeech.fillersLanguages": "Encontra hesitações em inglês, espanhol, alemão, francês, português e russo. Em outros idiomas o clipe é analisado, mas pode não haver resultados.",
     "editorSpeech.clip": "Escolha um clipe",
     "editorSpeech.uploadFirst": "Envie este clipe primeiro",
     "editorSpeech.unsupported": "Ainda não disponível para este clipe",

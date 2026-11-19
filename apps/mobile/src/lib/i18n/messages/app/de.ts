@@ -6026,6 +6026,8 @@ export default {
     "editorAi.step.insertMedia": "{id} bei Frame {frame} einfügen",
     "editorSpeech.silences": "Pausen entfernen",
     "editorSpeech.retakes": "Fehler entfernen und den besten Take behalten",
+    "editorSpeech.fillers": "Äh und Ähm entfernen",
+    "editorSpeech.fillersLanguages": "Findet Füllgeräusche auf Englisch, Spanisch, Deutsch, Französisch, Portugiesisch und Russisch. Bei anderen Sprachen findet die Analyse möglicherweise nichts.",
     "editorSpeech.clip": "Clip auswählen",
     "editorSpeech.uploadFirst": "Lade diesen Clip zuerst hoch",
     "editorSpeech.unsupported": "Für diesen Clip noch nicht verfügbar",

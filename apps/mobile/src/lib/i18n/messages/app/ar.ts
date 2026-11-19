@@ -6338,6 +6338,8 @@ export default {
     "editorAi.step.insertMedia": "إدراج {id} عند الإطار {frame}",
     "editorSpeech.silences": "إزالة الصمت",
     "editorSpeech.retakes": "إزالة الأخطاء والاحتفاظ بأفضل لقطة",
+    "editorSpeech.fillers": "إزالة أصوات التردد (آه، ممم)",
+    "editorSpeech.fillersLanguages": "يكتشف أصوات التردد في الإنجليزية والإسبانية والألمانية والفرنسية والبرتغالية والروسية. تُحلَّل اللغات الأخرى أيضًا لكن قد لا يُعثر على شيء.",
     "editorSpeech.clip": "اختر مقطعًا",
     "editorSpeech.uploadFirst": "ارفع هذا المقطع أولًا",
     "editorSpeech.unsupported": "غير متاح لهذا المقطع بعد",

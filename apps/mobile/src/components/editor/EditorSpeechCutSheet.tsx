@@ -8,6 +8,7 @@ import { sameRevision, type Freshness } from '../../lib/editorAgentPlan';
 import { subscribeCacheUser } from '../../lib/appCache';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { type Timeline, type Selection } from '../../lib/nativeEditorModel';
+import { fillerRanges } from '../../lib/speechFillers';
 import { applySpeechRanges, keptAfterRemovals, retakeRanges, silenceRanges, speechClip, parseSmartCutAnalysis, type SpeechMode, type SpeechRange } from '../../lib/speechCut';
 import { fetchSpeechQuote, forgetSpeechKey, pollSpeech, recoverSpeech, speechKeyFor, speechMessage, startSpeech, type SpeechOutcome, type SpeechQuote } from '../../lib/speechAnalysis';
 import { useReducedMotion } from '../ui/useReducedMotion';
@@ -26,7 +27,7 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
     const duration = Number(media?.frames) / opening.timeline.fps;
     const supported = !!jobId && ['audio', 'video'].includes(media?.kind || '') && Number.isFinite(duration) && duration >= .5 && duration <= 60;
     const unresolved = ['queued', 'transcribing', 'planning', 'pending'].includes(phase);
-    const heading = t(mode === 'silences' ? 'editorSpeech.silences' : 'editorSpeech.retakes');
+    const heading = t(`editorSpeech.${mode}`);
     const progressText = ['quoting', 'queued', 'transcribing', 'planning'].includes(phase) ? t(`editorSpeech.${phase}`) : null;
     useAnnouncement(progressText || (phase === 'preview' ? t('editorSpeech.preview') : message || null));
     useEffect(() => {
@@ -50,7 +51,7 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
         setPhase('planning');
         const start = (target.clip.in || 0) / current.timeline.fps, end = Math.min(duration, start + target.clip.len * (target.clip.rate || 1) / current.timeline.fps);
         const proposals = mode === 'silences' ? keptAfterRemovals(silenceRanges(parsed.analysis, start, end), start, end)
-            : retakeRanges(parsed.analysis).filter(r => r.end > start && r.start < end);
+            : (mode === 'fillers' ? fillerRanges(parsed.analysis) : retakeRanges(parsed.analysis)).filter(r => r.end > start && r.start < end);
         setRemovals(proposals); setChecked(proposals.map(() => true)); setPhase('preview');
         setMessage(proposals.length ? '' : t('editorSpeech.noChanges'));
     };
@@ -100,7 +101,7 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
                     accessibilityState={{ checked: target?.clip.id === clip.id && target.track === track, disabled: unresolved }} accessibilityLabel={rawText(opening.timeline.media[clip.mediaId || '']?.name || clip.id)}
                     onPress={() => { setSelected({ track, id: clip.id }); setMessage(''); setRefunded(false); }}><Text style={styles.body}>{opening.timeline.media[clip.mediaId || '']?.name || clip.id}</Text></Pressable>))}
                 {!supported && <Text style={styles.body}>{t(jobId && duration > 60 ? 'editorSpeech.tooLong' : /^([fe])-/.test(media?.id || '') ? 'editorSpeech.uploadFirst' : 'editorSpeech.unsupported')}</Text>}
-                {supported && <><Text style={styles.price}>{t('editorSpeech.price', { n: quote.credits })}</Text><Text style={styles.muted}>{t('editorSpeech.privacy')}</Text></>}
+                {supported && <><Text style={styles.price}>{t('editorSpeech.price', { n: quote.credits })}</Text>{mode === 'fillers' && <Text style={styles.muted}>{t('editorSpeech.fillersLanguages')}</Text>}<Text style={styles.muted}>{t('editorSpeech.privacy')}</Text></>}
                 {progressText && <Text accessibilityLiveRegion="polite" style={styles.body}>{progressText}</Text>}
                 {phase === 'pending' ? button(t('editorSpeech.checkStatus'), () => void recover()) : button(t('editorSpeech.start'), () => void send(), !supported || unresolved || phase === 'quoting')}
             </> : <>
