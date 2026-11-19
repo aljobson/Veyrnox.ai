@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { parseJsonc } from '../scripts/check-migration-ledger.mjs';
 import { templateSwapSwitchOn } from '../lib/appRuntime.js';
 import { templateSwapAvailable } from '../lib/templateSwapClipGate.js';
 import { id as fixtureId, registry as fixtureRegistry, manifest as fixtureManifest, catalog as fixtureCatalog } from './fixtures/templateSwapClips.mjs';
@@ -22,7 +23,14 @@ test('the clip gate and the generations route read the one helper, and wrangler 
   assert.match(gate, /templateSwapSwitchOn\(env\)/);
   assert.match(route, /!templateSwapSwitchOn\(process\.env\)/);
   assert.doesNotMatch(gate + route, /TEMPLATE_SWAP_CLIP_ENABLED/);
-  assert.doesNotMatch(fs.readFileSync('wrangler.jsonc', 'utf8'), /templateSwap/);
+});
+
+test('production APP_RUNTIME_FLAGS turns the swap on beside checkin and push, with no separate var (ADR-0351 amendment 11)', () => {
+  const text = fs.readFileSync('wrangler.jsonc', 'utf8');
+  const config = parseJsonc(text);
+  assert.deepEqual(JSON.parse(config.vars.APP_RUNTIME_FLAGS), { checkin: true, push: true, templateSwap: true });
+  assert.equal(Object.hasOwn(config.vars, 'TEMPLATE_SWAP_CLIP_ENABLED'), false);
+  assert.equal(templateSwapSwitchOn({ APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }), true);
 });
 
 test('the gate stays closed with the runtime key absent and still needs MULTI_REFERENCE_ENABLED', () => {
