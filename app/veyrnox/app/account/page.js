@@ -12,6 +12,7 @@ import { ReferralPanel } from '../../_components/ReferralPanel';
 import { YourWinsCard } from '../../_components/YourWinsCard';
 import { VibeAccountPanel } from '../../_components/VibeAccountPanel';
 import { OAuthGrantsPanel } from '../../_components/OAuthGrantsPanel';
+import { DevicesPanel } from '../../_components/DevicesPanel';
 import { ConfirmDialog } from '../../_components/ConfirmDialog';
 import { DeleteAccountPanel } from '../../_components/DeleteAccountPanel';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
@@ -76,6 +77,7 @@ function AccountControls() {
     <section className="rounded-2xl border border-vx-border p-5">
       <h2 className="font-bold mb-2">{t("app.account.devices")}</h2>
       <p className="text-sm text-vx-fg-muted mb-4">{t("app.account.devicesHelp")}</p>
+      <DevicesPanel refreshKey={message} />
       <div className="flex flex-wrap gap-3">
         <button data-testid="account-sign-out-others" type="button" disabled={busy} className={button} onClick={() => setConfirm('others')}>{t("app.account.signOutOthers")}</button>
         <button type="button" disabled={busy} className={button} onClick={() => setConfirm('global')}>{t("app.account.signOutEverywhere")}</button>

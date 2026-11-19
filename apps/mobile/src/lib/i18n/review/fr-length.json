@@ -138,6 +138,18 @@
     "ratio": 2.31
   },
   {
+    "id": "acct.dev.lastUsed",
+    "english": "Last used {date}",
+    "translation": "Dernière utilisation {date}",
+    "ratio": 1.69
+  },
+  {
+    "id": "acct.dev.signOut",
+    "english": "Sign out",
+    "translation": "Se déconnecter",
+    "ratio": 1.75
+  },
+  {
     "id": "acct.mfa.cancelSetup",
     "english": "Cancel setup",
     "translation": "Annuler la configuration",
