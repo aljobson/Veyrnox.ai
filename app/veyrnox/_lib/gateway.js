@@ -41,10 +41,10 @@ export class GatewayError extends Error {
  * On 5xx or shape error → throws with .code = 'gateway_error'.
  *
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
- * @param {RequestInit & {preserveUploadErrors?: boolean}} [init]
+ * @param {RequestInit & {preserveUploadErrors?: boolean, beforeSend?: () => void}} [init]
  */
 export async function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot, mfaRetried = false) {
-  const { preserveUploadErrors, ...requestInit } = init;
+  const { preserveUploadErrors, beforeSend, ...requestInit } = init;
   const assertCurrentBrand = () => { if (brandSnapshot !== undefined) assertSocialBrandSnapshot(brandSnapshot); };
   assertCurrentBrand();
   const token = await getFreshAccessToken();
@@ -72,6 +72,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     headers['content-type'] = 'application/json';
   }
   let res;
+  beforeSend?.();
   try {
     res = await fetch(`/api/v1${path}`, { ...requestInit, headers });
   } catch {

@@ -5,7 +5,7 @@ import { stepSeconds } from './beatTime.mjs';
 
 export class BeatExportError extends RangeError {}
 export function exportRange(doc, range) {
-  if (!validateBeat(doc).ok || ![2, 3, 4].includes(doc.version)) throw Object.assign(new BeatExportError('Invalid song or cycle range.'), { displayCode: 'invalid-range' });
+  if (!validateBeat(doc).ok || ![2, 3, 4, 5].includes(doc.version)) throw Object.assign(new BeatExportError('Invalid song or cycle range.'), { displayCode: 'invalid-range' });
   if (range && !['song', 'cycle'].includes(range)) throw Object.assign(new BeatExportError('Invalid export range.'), { displayCode: 'invalid-export-range' });
   if (range === 'cycle' && !doc.cycle.on) throw Object.assign(new BeatExportError('Turn Cycle on to export a cycle range.'), { displayCode: 'cycle-off' });
   return (range === 'cycle' || (!range && doc.cycle.on)) ? { startStep: doc.cycle.start / 240, endStep: doc.cycle.end / 240 }

@@ -1,4 +1,4 @@
-import { BEAT_WRITE_VERSION } from '../../../../../veyrnox/_lib/music/beat/beatCompatibility.mjs';
+import { musicBeatV5WritesEnabled } from '../../../../../../lib/musicBackend.js';
 import { beatRoute, bodyOf, revision, rpc, projectRow, uuid, fail } from '../../../../../../lib/musicBeatCloudRoute.js';
 import { idempotencyKey } from '../../../../../../packages/security/input.js';
 import { validateBeat } from '../../../../../veyrnox/_lib/music/beat/beatDocument.mjs';
@@ -17,10 +17,18 @@ export async function PUT(request, { params }) {
     try { doc = JSON.parse(body.doc_json); } catch { fail(400, 'INVALID_BEAT'); }
     if (typeof body.doc_json !== 'string' || new TextEncoder().encode(body.doc_json).length > 262144 ||
         !validateBeat(doc).ok || doc.id !== beatId || !['autosave', 'checkpoint', 'stash'].includes(body.mode)) fail(400, 'INVALID_BEAT');
-    if (doc.version > BEAT_WRITE_VERSION) fail(409, 'BEAT_CLIENT_OUTDATED');
+    const declared = clientVersion(body);
+    if (doc.version > declared) fail(409, 'BEAT_CLIENT_OUTDATED');
+    if (doc.version === 5 && !musicBeatV5WritesEnabled()) fail(409, 'BEAT_WRITES_DISABLED');
+    const key = idempotencyKey(request);
+    if (!musicBeatV5WritesEnabled()) {
+      const stored = await projectRow(request, context, beatId, false, true);
+      if (stored?.doc_version > declared) fail(409, 'BEAT_CLIENT_OUTDATED');
+      if (stored?.doc_version === 5) fail(409, 'BEAT_WRITES_DISABLED');
+    }
     const project = await rpc(request, context, 'save_music_beat_project', { p_beat_id: beatId,
       p_expected_revision: body.expected_revision, p_doc: body.doc_json, p_title: doc.title,
-      p_client_beat_version: clientVersion(body), p_mode: body.mode, p_idempotency_key: idempotencyKey(request) });
+      p_client_beat_version: declared, p_mode: body.mode, p_idempotency_key: key });
     return Response.json({ project }, { status: body.expected_revision === 0 && !project.idempotent ? 201 : 200 });
   });
 }

@@ -1,3 +1,4 @@
+import { assertBeatWritable, beatReadOnly, BEAT_READ_ONLY_MESSAGE, capabilityGeneration, assertBeatGeneration, subscribeBeatWrites } from './beatCompatibility.mjs';
 import { beatEnglish } from './beatDisplay.mjs';
 import { drainCapture } from './beatCapture.js';
 import { splitPasses } from './beatTakeCapture.mjs';
@@ -22,11 +23,17 @@ export function audioRecordingRange(doc, locator) {
   return { start, length: end - start, cycle };
 }
 export function createAudioRecording({ doc, trackId, range, capture, rtt, contextStart, countIn, current, edit, announce, onState, stop, persist = putBeatTake, checkpointPersist = appendBeatTake, discard = discardBeatTakes, onSettled = () => {}, drain = drainCapture, t = beatEnglish }) {
+  assertBeatWritable(doc);
+  const generation = capabilityGeneration();
+  const writable = () => { if (current().version === 5) assertBeatGeneration(generation); assertBeatWritable(current()); };
+  let revoked = false;
+  const revoke = () => { if (beatReadOnly(current())) { revoked = true; announce(t(BEAT_READ_ONLY_MESSAGE)); void stop(); } };
   const sr = capture.context.sampleRate, bpm = doc.tempo.bpm, recordingId = crypto.randomUUID();
   const startSec = tickSeconds(range.start, bpm), endSec = tickSeconds(range.start + range.length, bpm);
   const c0 = contextStart + (countIn ? tickSeconds(3840, bpm) : 0);
   const capacity = recordingCapacity(doc, trackId, { start: range.start, length: range.cycle ? range.length : 240, single: !range.cycle, preflight: !range.cycle });
   if (!capacity.lanes) throw new Error(capacity.reason);
+  const unsubscribeWrites = subscribeBeatWrites(revoke);
   const previousLanes = doc.tracks.find(t => t.id === trackId).takeGroups?.find(g => g.id === capacity.appendTo)?.lanes.length || 0;
   const maxPasses = capacity.lanes, limit = recordingDurationLimit(range, bpm, sr, maxPasses), maxSeconds = limit.seconds;
   const firstFrame = Math.round((c0 + rtt) * sr), lastFrame = firstFrame + Math.floor(maxSeconds * sr);
@@ -52,7 +59,7 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
     for (const part of parts) {
       const length = range.cycle ? range.length : Math.floor((part.offset + part.samples.length) / sr / tickSeconds(240, bpm)) * 240;
       const row = rowFor(part, length);
-      writing = writing.then(() => { if (!failure) return checkpointPersist(row, part.offset); }).catch(failed);
+      writing = writing.then(() => { if (!failure && !revoked) { writable(); return checkpointPersist(row, part.offset, writable); } }).catch(failed);
     }
     checkpointFrame = Math.round((until + rtt) * sr);
     while (checkpointIndex < chunks.length && chunks[checkpointIndex].frame + chunks[checkpointIndex].samples.length <= checkpointFrame) checkpointIndex++;
@@ -67,7 +74,7 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
         const samples = chunk.samples.slice(from - chunk.frame, Math.min(to - chunk.frame, from - chunk.frame + maxFrames - frames));
         chunks.push({ frame: from, samples }); frames += samples.length;
       }
-      if (stopped) return;
+      if (stopped || revoked) return;
       const time = (chunk.frame + chunk.samples.length) / sr - rtt;
       const elapsed = Math.max(0, time - c0), pass = range.cycle ? Math.floor(elapsed / (endSec - startSec)) : 0;
       onState({ status: 'recording', seconds: elapsed, pass: previousLanes + Math.min(maxPasses, pass + 1) });
@@ -82,7 +89,21 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
   });
   async function commit() {
     if (committed || !readyRows?.length) { failure = ''; onSettled(); return current(); }
-    for (const row of readyRows) await persist(row);
+    for (const row of readyRows) {
+      // Revocation can race an IndexedDB open. Retry preservation under the new
+      // generation, without ever attaching the audio to the read-only document.
+      let saved = false;
+      while (!saved) {
+        const captured = capabilityGeneration();
+        const check = () => { if (current().version === 5) assertBeatGeneration(captured); if (!revoked) assertBeatWritable(current()); };
+        try { await persist(row, check); saved = true; }
+        catch (error) { if (captured === capabilityGeneration()) throw error; revoked ||= beatReadOnly(current()); }
+      }
+    }
+    if (revoked || beatReadOnly(current())) {
+      committed = true; failure = ''; onSettled(); announce(t(BEAT_READ_ONLY_MESSAGE)); return current();
+    }
+    writable();
     const length = range.cycle ? range.length : readyRows[0].pending.length;
     const latest = current();
     if (latest.id !== doc.id) throw new Error('Open the original beat to recover these takes.');
@@ -103,23 +124,24 @@ export function createAudioRecording({ doc, trackId, range, capture, rtt, contex
         let early = false;
         try {
           try { early = !await drain(capture, end, rtt); } catch { early = true; }
-          unsubscribe(); await writing;
+          unsubscribe(); unsubscribeWrites(); await writing;
           const parts = split(end), kept = parts.filter(p => !range.cycle || p.complete || p.samples.length >= sr);
           if (kept.length < parts.length) announce(t('app.music.beat.details.d38'));
           readyRows = kept.map(p => rowFor(p, range.cycle ? range.length : Math.floor(p.samples.length / sr / tickSeconds(240, bpm)) * 240)).filter(r => r.pending.length >= 240);
           chunks.length = 0; windows.length = 0;
           await discard([...ids.values()].filter(id => !readyRows.some(r => r.id === id)));
           const result = await commit();
-          if (stopReason) announce(stopReason);
-          if (early) announce(t('app.music.beat.details.d39', { bar: Math.floor((range.start + (readyRows.at(-1)?.pending.length || 0)) / 3840) + 1 }));
+          if (stopReason && !revoked) announce(stopReason);
+          if (early && !revoked) announce(t('app.music.beat.details.d39', { bar: Math.floor((range.start + (readyRows.at(-1)?.pending.length || 0)) / 3840) + 1 }));
           return result;
         } catch (e) { failure = e.message; announce(e.message); return current(); }
-        finally { unsubscribe(); onState({ status: failure ? 'error' : 'armed', error: failure }); }
+        finally { unsubscribe(); unsubscribeWrites(); onState({ status: failure ? 'error' : 'armed', error: failure }); }
       })();
       return finishPromise;
     },
     async discard() {
       try {
+        unsubscribeWrites();
         await writing;
         await discard([...ids.values()]);
         failure = ''; readyRows = []; chunks.length = 0; windows.length = 0; onSettled();

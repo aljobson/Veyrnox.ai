@@ -1,4 +1,4 @@
-import { beatRoute, tenant, rpc, bodyOf, projectRow, uuid, fail } from '../../../../../../../lib/musicBeatCloudRoute.js';
+import { assertBeatMediaWritable, beatRoute, tenant, rpc, bodyOf, projectRow, uuid, fail } from '../../../../../../../lib/musicBeatCloudRoute.js';
 import { envConfig, isConfigured, presignPutUrl } from '../../../../../../../packages/adapters/r2.js';
 export async function GET(request, { params }) {
   return beatRoute(request, async context => {
@@ -13,6 +13,7 @@ export async function POST(request, { params }) {
     if (typeof body.take_ref !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(body.take_ref) ||
       !Number.isSafeInteger(body.byte_size) || body.byte_size < 44 || body.byte_size > 60000000 ||
       !Number.isFinite(body.duration_sec) || body.duration_sec <= 0 || body.duration_sec > 600) fail(400, 'INVALID_REQUEST');
+    await assertBeatMediaWritable(request, context, beatId);
     const cfg = envConfig(); if (!isConfigured(cfg)) fail(503, 'storage_not_configured');
     const take = await rpc(request, context, 'reserve_music_beat_take', { p_beat_id: beatId, p_take_ref: body.take_ref, p_byte_size: body.byte_size, p_duration_sec: body.duration_sec });
     if (take.status === 'ready') return Response.json({ take_id: take.take_id, status: 'ready' });

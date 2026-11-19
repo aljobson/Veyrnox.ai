@@ -1,4 +1,4 @@
-import { assertBeatWritable, unsupportedBeatVersion } from './beatCompatibility.mjs';
+import { assertBeatWritable, unsupportedBeatVersion, withBeatVersionFloor } from './beatCompatibility.mjs';
 import { validateBeat, validBeatId } from './beatDocument.mjs';
 export function validCloudLink(link) {
   return Boolean(link && (Object.keys(link).sort().join(',') === 'projectId,revision,syncedUpdatedAt,userId' ||
@@ -23,6 +23,7 @@ export function validRecord(record) {
 export function decideCreate(existing) { return existing ? { error: 'conflict' } : { action: 'put' }; }
 export function decideUpdate(existing, doc, expectedRevision) {
   if (unsupportedBeatVersion(existing?.doc?.version)) return { error: 'unsupported_version' };
+  doc = withBeatVersionFloor(doc, existing?.doc?.version || 4);
   try { assertBeatWritable(doc); assertBeatWritable(existing?.doc); } catch (error) { return { error: error.code }; }
   if (!validateBeat(doc).ok) return { error: 'invalid' };
   if (!existing) return { error: 'not_found' };

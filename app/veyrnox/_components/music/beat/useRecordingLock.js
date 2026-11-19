@@ -4,10 +4,11 @@ import { useEffect } from 'react';
 export { RECORDING_LOCK_REASON } from '../../../_lib/music/beat/beatRecordingPolicy.mjs';
 // Keep native disabled semantics even for controls inside library dialogs. Live
 // channel controls and keys explicitly opt in; no editing event escapes the lock.
-export function useRecordingLock(root, locked, t = beatEnglish) {
+export function useRecordingLock(root, locked, t = beatEnglish, readOnly = false) {
   useEffect(() => {
     if (!locked || !root.current) return;
-    const element = root.current, changed = new Map(), reason = t('app.music.beat.status.s10');
+    const element = root.current, changed = new Map(), reason = t(readOnly ? 'app.music.beat.compat.readOnly' : 'app.music.beat.status.s10');
+    const live = readOnly ? '[data-beat-read]' : '[data-beat-live]';
     const attributes = { disabled: '', title: reason, 'aria-disabled': 'true' };
     function rememberUpdates(records) {
       for (const { target, attributeName, type } of records) {
@@ -18,7 +19,7 @@ export function useRecordingLock(root, locked, t = beatEnglish) {
       rememberUpdates(records);
       observer.disconnect();
       for (const control of element.querySelectorAll('button, input, select, textarea, a, [tabindex], summary')) {
-        if (control.closest('[data-beat-live]')) continue;
+        if (control.closest(live)) continue;
         if (!changed.has(control)) changed.set(control, Object.fromEntries(Object.keys(attributes).map((name) => [name, control.getAttribute(name)])));
         if ('disabled' in control && !control.disabled) control.disabled = true;
         if (control.getAttribute('title') !== reason) control.setAttribute('title', reason);
@@ -28,7 +29,7 @@ export function useRecordingLock(root, locked, t = beatEnglish) {
     }
     function block(e) {
       if (e.type === 'keydown' && !['Enter', ' ', 'Delete', 'Backspace', '+', '-', '=', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
-      if (!e.target.closest('[data-beat-live]')) { e.preventDefault(); e.stopPropagation(); } }
+      if (!e.target.closest(live)) { e.preventDefault(); e.stopPropagation(); } }
     const observer = new MutationObserver(lock);
     lock();
     for (const type of ['click', 'keydown', 'pointerdown', 'dblclick', 'drop']) element.addEventListener(type, block, true);
@@ -44,5 +45,5 @@ export function useRecordingLock(root, locked, t = beatEnglish) {
         }
       }
     };
-  }, [root, locked, t]);
+  }, [root, locked, t, readOnly]);
 }
