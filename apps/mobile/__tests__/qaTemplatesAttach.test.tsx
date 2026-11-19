@@ -7,13 +7,20 @@ import { chooseLocale } from '../src/lib/i18n';
 import type { CatalogModel } from '../src/lib/media';
 
 jest.mock('expo-image', () => ({ Image: 'ArtImage' }));
+const mockPlay = jest.fn();
+let mockFinished = false;
+jest.mock('expo-audio', () => ({
+    setAudioModeAsync: jest.fn(() => Promise.resolve()),
+    useAudioPlayer: () => ({ play: mockPlay }),
+    useAudioPlayerStatus: () => ({ didJustFinish: mockFinished }),
+}));
 
 void [RN.View, RN.Text, RN.Pressable];
 let root: Root;
 const text = () => root.container.queryAll(n => typeof n.props.children === 'string').map(n => n.props.children).join('\n');
 const all = () => root.container.queryAll(n => Array.isArray(n.props.children) || typeof n.props.children === 'string')
     .map(n => [n.props.children].flat().filter(c => typeof c === 'string' || typeof c === 'number').join('')).join('\n');
-const template = { id: 'a1', name: 'Lo-fi loop', category: 'music', modelId: 'music-model', prompt: 'A calm lo-fi loop', previewUrl: null };
+const template = { id: 'a1', name: 'Lo-fi loop', category: 'music', modelId: 'music-model', prompt: 'A calm lo-fi loop', previewUrl: null, previewAudioUrl: null };
 const imageModel = (maxFiles: number): CatalogModel => ({
     id: 'm', name: 'M', modality: 'image-to-image', credits: 3, gated: false, durations: [],
     capabilities: { inputs: {}, media: { image: { required: true, maxFiles } } },
@@ -47,4 +54,35 @@ test('an audio template card shows its artwork when the server sends one', async
     const art = 'https://veyrnox.ai/music-licensed/a.jpg';
     await act(async () => root.render(<AudioTemplateCard template={{ ...template, previewUrl: art }} onOpen={jest.fn()} />));
     expect(root.container.queryAll(n => n.props.source?.uri === art).length).toBeGreaterThan(0);
+});
+
+test('an audio template card plays its sample from the thumbnail and opens from the rest of the row', async () => {
+    const onPlay = jest.fn(), onOpen = jest.fn();
+    const withSample = { ...template, previewUrl: 'https://veyrnox.ai/a.jpg', previewAudioUrl: 'https://veyrnox.ai/a.mp3' };
+    mockPlay.mockClear(); mockFinished = false;
+    await act(async () => root.render(<AudioTemplateCard template={withSample} onPlay={onPlay} onOpen={onOpen} />));
+    const play = root.container.queryAll(n => n.props.accessibilityLabel === 'Play, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
+    await act(async () => play.props.onClick());
+    expect(onPlay).toHaveBeenCalledTimes(1);
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(mockPlay).not.toHaveBeenCalled();
+    await act(async () => root.render(<AudioTemplateCard template={withSample} playing onPlay={onPlay} onOpen={onOpen} />));
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Pause, Lo-fi loop').length).toBeGreaterThan(0);
+    expect(mockPlay).toHaveBeenCalledTimes(1);
+    const openRow = root.container.queryAll(n => n.props.accessibilityLabel === 'Audio, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
+    await act(async () => openRow.props.onClick());
+    expect(onOpen).toHaveBeenCalledTimes(1);
+});
+
+test('a finished sample stops its card', async () => {
+    const onPlay = jest.fn();
+    mockFinished = true;
+    await act(async () => root.render(<AudioTemplateCard template={{ ...template, previewAudioUrl: 'https://veyrnox.ai/a.mp3' }} playing onPlay={onPlay} onOpen={jest.fn()} />));
+    expect(onPlay).toHaveBeenCalled();
+    mockFinished = false;
+});
+
+test('a template without a sample shows no play button', async () => {
+    await act(async () => root.render(<AudioTemplateCard template={template} onPlay={jest.fn()} onOpen={jest.fn()} />));
+    expect(root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Play,')).length).toBe(0);
 });

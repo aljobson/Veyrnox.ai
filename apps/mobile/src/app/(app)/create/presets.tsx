@@ -76,7 +76,7 @@ export default function Templates() {
     }, [kind, attempt]);
     useFocusEffect(useCallback(() => () => setPlaying(null), []));
     useEffect(() => { const sub = AppState.addEventListener('change', state => { if (state !== 'active') setPlaying(null); }); return () => sub.remove(); }, []);
-    useEffect(() => { setLimit(50); setPlaying(null); }, [chip, query]);
+    useEffect(() => { setLimit(50); setPlaying(null); }, [chip, query, kind, audioChip]);
     const chips = useMemo(() => templateChips(presets ?? [], popular), [presets, popular]);
     const shown = useMemo(() => searchPresets(templatesFor(rankPresets(presets ?? [], vibe), chip, popular), query), [presets, vibe, chip, popular, query]);
     const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
@@ -121,7 +121,7 @@ export default function Templates() {
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(templatesWithCatalogModel(audio ?? [], known))].map(c => <Chip key={c} selected={audioCategory === c} accessibilityState={{ selected: audioCategory === c }} label={c === 'ALL' ? t('audioTemplates.all') : categoryLabel(c)} onPress={() => setAudioChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
-                renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} onOpen={() => openAudio(item)} />} />)
+                renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} playing={playing === `audio:${item.id}`} onPlay={() => setPlaying(id => id === `audio:${item.id}` ? null : `audio:${item.id}`)} onOpen={() => { setPlaying(null); openAudio(item); }} />} />)
         : failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
             : presets === null ? <ActivityIndicator /> : <FlatList key="video" data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
