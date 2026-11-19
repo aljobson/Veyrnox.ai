@@ -46,7 +46,8 @@ export async function pickVideoFrames(room: number, deps = { pick: ImagePicker.l
     const cancel = { cancelled: false };
     try {
         const result = await deps.pick({ mediaTypes: ['videos'], allowsMultipleSelection: false });
-        if (result.canceled) return { images: [], problem: null };
+        // A cancelled picker and an empty library look the same to the app, so both get the neutral 'No video was chosen' note.
+        if (result.canceled) return { images: [], problem: 'video_none' };
         const uri = result.assets?.[0]?.uri;
         if (!uri) return { images: [], problem: 'video_none' };
         onReading?.();
