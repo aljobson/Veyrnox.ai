@@ -22,16 +22,16 @@ export function EditorIntentBox({ tl, flags, disabled, onOpen }) {
         if (!dispatchEditorIntent(intent, onOpen)) { setMessage(t(`app.editor.simple.${intent.reason}`)); return; }
         setMessage(t(intent.paid ? 'app.editor.simple.paid' : intent.analysisOnly ? 'app.editor.simple.analysis' : 'app.editor.simple.opened'));
     }
-    return <section aria-label={t('app.editor.simple.ask')} className="shrink-0 space-y-2 border-b border-vx-border bg-vx-panel p-3">
+    return <section aria-label={t('app.editor.simple.ask')} className="shrink-0 space-y-2 border-b border-vx-border bg-vx-panel p-3 lg:space-y-1.5 lg:px-3 lg:py-2 lg:[@media(min-height:1000px)]:space-y-2 lg:[@media(min-height:1000px)]:p-3">
         <form className="flex flex-wrap gap-2" onSubmit={event => { event.preventDefault(); open(prompt); }}>
             <label className="min-w-0 flex-1 text-sm font-bold">{t('app.editor.simple.ask')}
-                <input className="mt-2 min-h-11 w-full rounded-xl border border-vx-border bg-vx-base px-3 text-sm focus-visible:outline-2 focus-visible:outline-vx-accent" value={prompt} maxLength={500} onChange={event => setPrompt(event.target.value)} placeholder={t('app.editor.simple.describe')} disabled={disabled} />
+                <input className="mt-2 min-h-11 w-full lg:mt-1 lg:min-h-10 rounded-xl border border-vx-border bg-vx-base px-3 text-sm focus-visible:outline-2 focus-visible:outline-vx-accent" value={prompt} maxLength={500} onChange={event => setPrompt(event.target.value)} placeholder={t('app.editor.simple.describe')} disabled={disabled} />
             </label>
-            <Button type="submit" className="min-h-11 self-end" disabled={disabled || !prompt.trim()}>{t('app.editor.simple.open')}</Button>
+            <Button type="submit" className="min-h-11 self-end lg:min-h-10" disabled={disabled || !prompt.trim()}>{t('app.editor.simple.open')}</Button>
         </form>
         <p className="text-xs text-vx-fg-muted">{t('app.editor.simple.honest')}</p>
-        <div className="flex flex-wrap gap-2">{available.map(id => <button key={id} type="button" disabled={disabled} className="min-h-11 rounded-xl border border-vx-border px-3 text-xs focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={() => open(EDITOR_INTENT_EXAMPLES[id])}>{t(`app.editor.simple.intent.${id}`)}</button>)}</div>
-        {!!unavailable.length && <p className="text-xs text-vx-fg-muted">{t('app.editor.simple.unavailableList', { tools: unavailable.map(id => t(`app.editor.simple.intent.${id}`)).join(', ') })}</p>}
+        <div className="flex flex-wrap gap-2 lg:flex-nowrap lg:overflow-x-auto lg:pb-0.5 lg:[@media(min-height:1000px)]:flex-wrap">{available.map(id => <button key={id} type="button" disabled={disabled} className="min-h-11 shrink-0 rounded-xl lg:min-h-9 border border-vx-border px-3 text-xs focus-visible:outline-2 focus-visible:outline-vx-accent" onClick={() => open(EDITOR_INTENT_EXAMPLES[id])}>{t(`app.editor.simple.intent.${id}`)}</button>)}</div>
+        {!!unavailable.length && <p className="text-xs text-vx-fg-muted lg:hidden lg:[@media(min-height:1000px)]:block">{t('app.editor.simple.unavailableList', { tools: unavailable.map(id => t(`app.editor.simple.intent.${id}`)).join(', ') })}</p>}
         {message && <p role="status" className="text-sm">{message}</p>}
     </section>;
 }
