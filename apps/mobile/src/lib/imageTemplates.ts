@@ -17,7 +17,7 @@ export interface ImageTemplate {
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 
 // The server sends site-relative pictures ("/showcase/..."); only those and https addresses are shown.
-function previewUrl(v: unknown, base: string): string | null {
+export function previewUrl(v: unknown, base: string): string | null {
     const s = str(v);
     if (!s) return null;
     if (s.startsWith('https://')) return s;
