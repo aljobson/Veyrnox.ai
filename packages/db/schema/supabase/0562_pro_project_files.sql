@@ -1,4 +1,4 @@
--- ADR-0361: immutable JSON project files, revision heads and fenced physical cleanup.
+-- ADR-0362: immutable JSON project files, revision heads and fenced physical cleanup.
 BEGIN;
 CREATE TABLE IF NOT EXISTS public.project_files (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

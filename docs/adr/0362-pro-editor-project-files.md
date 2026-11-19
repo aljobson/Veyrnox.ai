@@ -1,4 +1,4 @@
-# ADR-0361 — Durable Pro editor project files
+# ADR-0362 — Durable Pro editor project files
 
 Status: Proposed. Implementation for review, flag absent/off. No production migration or UI wiring; the migration must not be applied before the owner decisions below.
 Date: 2026-11-19. Extends ADR-0358. Frozen work order: PLAN-P2b.md, SHA256
@@ -82,7 +82,7 @@ retaining the 30-day grace without claiming an existing undo UI or modifying med
   connector after CLI networking failed. Main has 0561; PR #2452 reserves 0560.
   Migration 0562 is free. All overlapping migration blobs match main, including
   the latest audit-action definition (0141). ADR-0359 is already used by Music and
-  PR #2461 reserves ADR-0360, hence ADR-0361 here.
+  PR #2461 reserves ADR-0360 and PR #2469 reserves ADR-0361, hence ADR-0362 here.
 - **OWNER DECISION NEEDED before 0562 is applied or the flag is enabled: the quota can
   stall saving.** Every Save, Save a Copy and upgrade backup is a stored file. With
   100 non-purged files and 200 MiB per organisation, unpromoted files kept 30 days
