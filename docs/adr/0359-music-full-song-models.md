@@ -125,3 +125,14 @@ MiniMax phase. The first phase is a duration change on an existing path, which s
 **Not decided / not verified.** The duration ceiling to ship (180 s proven, longer untested). Price. Whether
 pair debits of 18 Credits suit the current plans. Quality of the three unrated 1.5 files, and of 1.5 across
 more prompts. Resale rights (D1) are unchanged: unconfirmed, and the owner declined to ask fal in writing.
+
+## Amendment 2 (2026-11-19, C3 web price display)
+
+Status: Accepted by the owner ("go with recommendation"). Applies to the web Create form for long songs.
+
+The duration slider does not show credit figures. When the server advertises 60-second price steps
+(`controls.duration_price_block_seconds`), the form says in words that the price grows in 60-second steps and
+that the quote shows the exact price before any Credits move. The reviewed quote, priced in SQL from the catalog
+(0563), is the only price shown and the only one that moves Credits. Showing per-length credit figures in the
+browser would mean computing a price in the app layer, which the project rules forbid; if figures are wanted
+later, they must come from the database (for example a quote or a SQL-projected tier list), not from client math.

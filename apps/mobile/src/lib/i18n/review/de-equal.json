@@ -218,5 +218,6 @@
   "musicTargetStems.quoteInstrument": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
   "musicTargetStems.instrument.bass": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
   "musicTargetStems.instrument.synthesizer": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
-  "musicSectionActions.position": "Shared musical or interface term in this locale; machine translation. Native review pending."
+  "musicSectionActions.position": "Shared musical or interface term in this locale; machine translation. Native review pending.",
+  "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language."
 }
