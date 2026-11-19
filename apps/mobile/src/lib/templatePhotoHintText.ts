@@ -1,11 +1,11 @@
+import type { FidelityUIContract } from '../../../../lib/templateFidelityRuntime';
+
 // The photo-slot reference line on a template. The shared helper cuts 40 characters either side of the token,
 // which ends mid-word on the phone. Here the line is the whole sentence the token sits in; only a very long one
 // is shortened, at word boundaries and with an ellipsis, so nothing is ever cut mid-word.
 const SENTENCE_END = /[.!?\n]/;
 export const PHOTO_HINT_MAX = 220;
 const BEFORE = 80;
-
-interface HintContract { class?: string; slotCount: number; sourcePrompt: string; tokenMap: readonly { slot: number; offset: number; token: string }[] }
 
 export function photoHintAround(source: string, offset: number, tokenLength: number): string {
     let start = offset;
@@ -24,9 +24,10 @@ export function photoHintAround(source: string, offset: number, tokenLength: num
     return `${head}${text}${tail}`;
 }
 
-export function phonePhotoHints(contract: HintContract | null | undefined): string[] {
-    if (contract?.class !== 'bound') return [];
-    return Array.from({ length: contract.slotCount }, (_, index) => {
+export function phonePhotoHints(contract: FidelityUIContract | null | undefined): string[] {
+    const slotCount = contract?.slotCount;
+    if (contract?.class !== 'bound' || typeof slotCount !== 'number' || slotCount <= 0 || !contract.tokenMap) return [];
+    return Array.from({ length: slotCount }, (_, index) => {
         const item = contract.tokenMap.find(entry => entry.slot === index + 1);
         return item ? photoHintAround(contract.sourcePrompt, item.offset, item.token.length) : '';
     });
