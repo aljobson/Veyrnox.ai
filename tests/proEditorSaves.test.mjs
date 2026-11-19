@@ -26,17 +26,17 @@ test('real validation: envelope, integer schema and an object project; truncated
     assert.deepEqual(validateProjectBytes(project(17)).ok, true);
     assert.equal(validateProjectBytes(project(17)).schemaVersion, 17);
     const truncated = enc('{"format":"filmcraft.project","schema_version":17,"project":');
-    assert.deepEqual(validateProjectBytes(truncated), { ok: false, reason: 'not-json' });
-    assert.equal(validateProjectBytes(enc('{"format":"other","schema_version":17,"project":{}}')).reason, 'format');
-    assert.equal(validateProjectBytes(enc('{"format":"filmcraft.project","schema_version":"17","project":{}}')).reason, 'schema');
-    assert.equal(validateProjectBytes(enc('{"format":"filmcraft.project","schema_version":1.5,"project":{}}')).reason, 'schema');
-    assert.equal(validateProjectBytes(enc('{"format":"filmcraft.project","schema_version":17,"project":[]}')).reason, 'project');
-    assert.equal(validateProjectBytes(enc('[1]')).reason, 'shape');
-    assert.equal(validateProjectBytes(new ArrayBuffer(0)).reason, 'size');
-    assert.equal(validateProjectBytes(Object.setPrototypeOf({ byteLength: PROJECT_MAX_BYTES + 1 }, ArrayBuffer.prototype)).reason, 'size');
-    assert.equal(validateProjectBytes(new Uint8Array([0xff, 0xfe, 0xfd]).buffer).reason, 'not-json');
+    assert.deepEqual(validateProjectBytes(truncated), { ok: false, reason: 'invalid_json' });
+    assert.equal(validateProjectBytes(enc('{"format":"other","schema_version":17,"project":{}}')).reason, 'invalid_format');
+    assert.equal(validateProjectBytes(enc('{"format":"filmcraft.project","schema_version":"17","project":{}}')).reason, 'invalid_schema');
+    assert.equal(validateProjectBytes(enc('{"format":"filmcraft.project","schema_version":1.5,"project":{}}')).reason, 'invalid_schema');
+    assert.equal(validateProjectBytes(enc('{"format":"filmcraft.project","schema_version":17,"project":[]}')).reason, 'invalid_project');
+    assert.equal(validateProjectBytes(enc('[1]')).reason, 'invalid_shape');
+    assert.equal(validateProjectBytes(new ArrayBuffer(0)).reason, 'invalid_json');
+    assert.equal(validateProjectBytes(new Uint8Array(PROJECT_MAX_BYTES + 1)).reason, 'too_large');
+    assert.equal(validateProjectBytes(new Uint8Array([0xff, 0xfe, 0xfd]).buffer).reason, 'invalid_shape');
     // The content fingerprint ignores envelope metadata, whitespace-free key order of the envelope and view state.
-    assert.equal(validateProjectBytes(project(17, '"n":1', ',"view":{"x":1}')).content, validateProjectBytes(project(17, '"n":1')).content);
+    assert.deepEqual(validateProjectBytes(project(17, '"n":1', ',"view":{"x":1}')).projectBytes, validateProjectBytes(project(17, '"n":1')).projectBytes);
 });
 
 test('every .fcproj payload becomes an immutable candidate; backups are labelled, bytes are released once durable', async () => {

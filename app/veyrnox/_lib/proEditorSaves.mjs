@@ -6,9 +6,9 @@
 // Storage is injected (`persist`, `commitHead`): this module holds the state machine, the leave
 // guard and the selection rules, and is tested with fakes. It stores nothing itself.
 
-export const CURRENT_SCHEMA = 17; // FilmCraft 0.20.1 (pro-editor/pins.json)
-export const EXPORT_LIBRARY_MAX_BYTES = 25 * 1024 * 1024; // lib/editorRenderApi.js cap
-export const PROJECT_MAX_BYTES = 32 * 1024 * 1024; // bounded parse: a project file is JSON, ~1.4 MB for 2,000 clips
+import { scanProProject, CURRENT_SCHEMA, PROJECT_MAX_BYTES } from '../../../lib/proProjectScan.mjs';
+export { CURRENT_SCHEMA, PROJECT_MAX_BYTES };
+export const EXPORT_LIBRARY_MAX_BYTES = 25 * 1024 * 1024;
 
 /** Library only for what the existing Library path can take (H.264 MP4 within its upload cap). */
 export function classifyExport({ name, byteLength }) {
@@ -17,26 +17,8 @@ export function classifyExport({ name, byteLength }) {
     return { route: 'download', reason: isMp4 ? 'over-library-cap' : 'not-a-library-format' };
 }
 
-/**
- * Bounded, real validation (not header sniffing): UTF-8, JSON, the FilmCraft envelope, an integer
- * schema version and an object `project`. Returns { ok, schemaVersion, content } where `content`
- * is the serialized `project` field (the identity of the edit, independent of envelope metadata,
- * view state and whitespace). The eventual storage API must validate again.
- */
-export function validateProjectBytes(bytes) {
-    if (!bytes || bytes.byteLength === 0 || bytes.byteLength > PROJECT_MAX_BYTES) return { ok: false, reason: 'size' };
-    let doc;
-    try {
-        doc = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
-    } catch {
-        return { ok: false, reason: 'not-json' };
-    }
-    if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) return { ok: false, reason: 'shape' };
-    if (doc.format !== 'filmcraft.project') return { ok: false, reason: 'format' };
-    if (!Number.isSafeInteger(doc.schema_version) || doc.schema_version < 1 || doc.schema_version > 10000) return { ok: false, reason: 'schema' };
-    if (doc.project === null || typeof doc.project !== 'object' || Array.isArray(doc.project)) return { ok: false, reason: 'project' };
-    return { ok: true, schemaVersion: doc.schema_version, content: JSON.stringify(doc.project) };
-}
+/** Shared envelope and resource validation; content identity uses the raw project byte range. */
+export const validateProjectBytes = scanProProject;
 
 /**
  * deps: persist(candidate) -> Promise<{assetId}> (stores the bytes; rejects on failure),
@@ -44,9 +26,19 @@ export function validateProjectBytes(bytes) {
  *       error.code 'revision-conflict' on a stale head), sha256(bytes) -> Promise<hex>,
  *       now(), onChange(snapshot)
  */
+function trackerNonce(deps) {
+    // Candidate ids restart at c1 in every tracker; `uid` is what stays unique across trackers
+    // (a remount, two editors in one session), so storage keys never collide.
+    if (typeof deps.randomHex === 'function') return deps.randomHex();
+    const bytes = new Uint8Array(4);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function createSaveTracker(deps) {
     const candidates = [];
     const exportsUndelivered = new Set();
+    const trackerId = trackerNonce(deps);
     const state = { editorDirty: false, headContent: null, headRevision: null, nextId: 1, chain: Promise.resolve(), pendingHead: null, disposed: false };
 
     const snapshot = () => ({
@@ -87,7 +79,7 @@ export function createSaveTracker(deps) {
                 }
                 candidate.valid = true;
                 candidate.schemaVersion = checked.schemaVersion;
-                candidate.content = await deps.sha256(new TextEncoder().encode(checked.content));
+                candidate.content = await deps.sha256(checked.projectBytes);
                 if (state.disposed) return;
                 candidate.backup = checked.schemaVersion < CURRENT_SCHEMA;
                 candidate.newer = checked.schemaVersion > CURRENT_SCHEMA;
@@ -115,9 +107,10 @@ export function createSaveTracker(deps) {
         async receive(msg) {
             if (state.disposed) return null;
             const kind = /\.fcproj$/i.test(msg.name) ? 'project' : 'export';
-            const id = 'c' + state.nextId++;
+            const n = state.nextId++;
+            const id = 'c' + n;
             const base = {
-                id, kind, name: msg.name, saveAs: msg.saveAs === true, seq: msg.seq, engine: msg.engine, sessionId: msg.sessionId,
+                id, uid: trackerId + '-c' + n, kind, name: msg.name, saveAs: msg.saveAs === true, seq: msg.seq, engine: msg.engine, sessionId: msg.sessionId,
                 bytes: msg.bytes, byteLength: msg.bytes.byteLength, receivedAt: deps.now(), sha256: null,
             };
             if (kind === 'export') {
