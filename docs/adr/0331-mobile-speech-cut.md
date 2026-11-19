@@ -1,6 +1,6 @@
 # ADR-0331: Speech analysis and reviewable phone cuts
 
-Status: Implementation with regression suites; OFF, migrations unapplied, database execution unverified.
+Status: Implementation with regression suites; ON in production since 2026-11-07 (see Amendment 1). The text below is the original pre-activation record.
 Host assigns the permanent ADR number. Frozen plan SHA256:
 `d0c177d18d2993fa9e52d99d7036e0630b698ae9af153f1c78e84f07a87b6c18`.
 
@@ -202,3 +202,13 @@ ten video/audio sections and sixty seconds.
   retake behavior, apply the reviewed migrations, then activate the catalog row.
 - Provision the Worker webhook secret and enable server/mobile flags only after
   those checks. Local/project clips remain unsupported.
+
+## Amendment 1 (2026-11-19): activation state
+
+The sections above were written before activation and describe the feature as off. Current repo state:
+
+- `speechCut` is `"true"` in the production `EDITOR_RUNTIME_FLAGS` in `wrangler.jsonc` (PR #1997, 2026-11-07, with the typed AI edit).
+- Migration 0453 activates `elevenlabs-scribe-v2` at **3 credits** per clip up to 60 s (the owner's price; the 2-credit figure in "Price and reusable results" was a proposal).
+- Migrations 0451, 0452 and 0453 are on `main`. The apply-migrations workflow succeeded for every later migration through about 0558, which applies pending files in order, so these are very likely applied. This was read from workflow history, not from the live database.
+- Not confirmed from the repo: whether fal reserved-only admission is off in production (if it is on, the quote hides the feature and `ledger_debit` refuses with `provider_admission_paused`), whether the phone store builds set `EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED`, and the live probes listed under "Outstanding evidence" (15/60 s latency, signed failure webhooks, other languages and codecs).
+- Pacing presets and the `timingQuality` flag (PR #2454) are part of the planner and so are live wherever Speech Cut is.

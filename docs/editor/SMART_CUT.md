@@ -1,6 +1,6 @@
 # Smart Cut — timed transcription and silence removal
 
-**Status:** server and phone implementation draft built; flags OFF, model inactive, migrations unapplied. Regression suites are added; database execution and reserved fal admission integration remain unverified; see [speech-cut ADR](../adr/0331-mobile-speech-cut.md).
+**Status:** on in production since 2026-11-07 (#1997: `speechCut` in the production `EDITOR_RUNTIME_FLAGS`, catalog row `elevenlabs-scribe-v2` activated at 3 credits by migration 0453). Migrations 0451-0453 are on `main` and the apply-migrations workflow has since applied later ones in order; this was not confirmed against the live database. Still unverified from the repo: fal reserved-only admission policy in production, the phone build flag, and the live probes listed in the ADR. See [speech-cut ADR](../adr/0331-mobile-speech-cut.md).
 **Extends:** [Clip Editor PRD](./PRD.md) and [captions addendum](./CAPTIONS.md).
 
 ## Product slice
