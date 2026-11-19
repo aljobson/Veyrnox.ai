@@ -26,12 +26,16 @@ export function loadTemplateCards() {
   return cardsPromise;
 }
 
-/** The cards once loaded: { templates: [], categories: ['ALL', 'NEW'], ready: false } until then. */
+/** The cards once loaded: { templates: [], categories: ['ALL', 'NEW'], ready: false } until then; failed: true when the read failed. */
 export function useTemplateCards() {
   const [state, setState] = useState({ templates: [], categories: ['ALL', 'NEW'], ready: false });
   useEffect(() => {
     let live = true;
-    loadTemplateCards().then((result) => { if (live && result) setState({ ...result, ready: true }); });
+    loadTemplateCards().then((result) => {
+      if (!live) return;
+      if (result) setState({ ...result, ready: true });
+      else setState((current) => ({ ...current, failed: true }));
+    });
     return () => { live = false; };
   }, []);
   return state;

@@ -60,6 +60,8 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
     timeline.media = Object.fromEntries(Object.entries(timeline.media).filter(([id]) => used.has(id)));
     for (const clip of [...clips, ...timeline.text]) {
         if ('rate' in clip && clip.rate === 1) delete clip.rate;
+        // Neutral defaults (written by trim and fit-to-file) mean "no edit"; the server only accepts keys that carry one.
+        for (const key of ['fadeIn', 'fadeOut', 'pan', 'reverse'] as const) if (key in clip && !(clip as Record<string, unknown>)[key]) delete (clip as Record<string, unknown>)[key];
         delete clip.groupId;
     }
     for (const text of timeline.text) if (documentIdentity(text.style) === documentIdentity(DEFAULT_TEXT_STYLE)) delete text.style;
