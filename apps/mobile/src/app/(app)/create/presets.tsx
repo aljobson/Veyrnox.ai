@@ -125,7 +125,7 @@ export default function Templates() {
         : failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
             : presets === null ? <ActivityIndicator /> : <FlatList key="video" data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
-                    <Text>{templateCountLabel({ t, plural }, shown.length, new Set(shown.map(p => p.modelId)).size)}</Text>
+                    <Text>{templateCountLabel({ t, plural }, shown.length)}</Text>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{chips.map(c => <Chip key={c} selected={chip === c} accessibilityState={{ selected: chip === c }} label={c === 'ALL' ? t('explore.type.all') : c === 'NEW' ? t('explore.new') : c === 'POPULAR' ? t('libraryCreate.popular') : themeTitle(c)} onPress={() => setChip(c)} />)}</ScrollView>
                     {chip === 'ALL' && !query.trim() ? <TemplateCollage presets={shown.filter(p => p.posterUrl).slice(0, 24)} isTall={p => previewRatio(p) < 1} onOpen={open} /> : null}

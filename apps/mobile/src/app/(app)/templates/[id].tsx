@@ -5,7 +5,8 @@ import { TEMPLATE_SWAP_RUNTIME } from '../../../lib/templateSwap/runtimeFlag';
 import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
 import { TemplateClipComposer } from '../../../components/templates/TemplateClipComposer';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
-import { templatePhotoHints, templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
+import { phonePhotoHints } from '../../../lib/templatePhotoHintText';
+import { templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
@@ -134,7 +135,7 @@ export default function TemplatePage() {
             </View></> : null}
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {photosUnavailable ? <Card><Text accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text></Card> : unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
-                {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={templatePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : !templateClip && slot && model ? <View style={{ gap: 12 }}>
+                {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={phonePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : !templateClip && slot && model ? <View style={{ gap: 12 }}>
                     <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />
                 </View> : null}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
