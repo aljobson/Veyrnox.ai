@@ -1938,6 +1938,12 @@
     "ratio": 2.33
   },
   {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "مزامنة الشفاه",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

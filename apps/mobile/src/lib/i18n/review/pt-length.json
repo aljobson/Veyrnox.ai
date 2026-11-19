@@ -3354,6 +3354,12 @@
     "ratio": 2
   },
   {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Sincronização labial",
+    "ratio": 2.5
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
