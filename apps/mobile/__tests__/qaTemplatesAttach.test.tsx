@@ -6,12 +6,14 @@ import { UploadLimitNote } from '../src/components/create/AttachMore';
 import { chooseLocale } from '../src/lib/i18n';
 import type { CatalogModel } from '../src/lib/media';
 
+jest.mock('expo-image', () => ({ Image: 'ArtImage' }));
+
 void [RN.View, RN.Text, RN.Pressable];
 let root: Root;
 const text = () => root.container.queryAll(n => typeof n.props.children === 'string').map(n => n.props.children).join('\n');
 const all = () => root.container.queryAll(n => Array.isArray(n.props.children) || typeof n.props.children === 'string')
     .map(n => [n.props.children].flat().filter(c => typeof c === 'string' || typeof c === 'number').join('')).join('\n');
-const template = { id: 'a1', name: 'Lo-fi loop', category: 'music', modelId: 'music-model', prompt: 'A calm lo-fi loop' };
+const template = { id: 'a1', name: 'Lo-fi loop', category: 'music', modelId: 'music-model', prompt: 'A calm lo-fi loop', previewUrl: null };
 const imageModel = (maxFiles: number): CatalogModel => ({
     id: 'm', name: 'M', modality: 'image-to-image', credits: 3, gated: false, durations: [],
     capabilities: { inputs: {}, media: { image: { required: true, maxFiles } } },
@@ -39,4 +41,10 @@ test('the upload limit uses each language’s plural forms', async () => {
     chooseLocale('ru');
     await act(async () => root.render(<UploadLimitNote model={imageModel(2)} />));
     expect(all()).toContain('До 2 файлов');
+});
+
+test('an audio template card shows its artwork when the server sends one', async () => {
+    const art = 'https://veyrnox.ai/music-licensed/a.jpg';
+    await act(async () => root.render(<AudioTemplateCard template={{ ...template, previewUrl: art }} onOpen={jest.fn()} />));
+    expect(root.container.queryAll(n => n.props.source?.uri === art).length).toBeGreaterThan(0);
 });
