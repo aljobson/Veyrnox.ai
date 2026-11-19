@@ -89,7 +89,7 @@ The source fingerprint must change when the stored object changes, preventing a 
 3. Extended provider probe for long clips, additional languages/codecs and signed webhook failures.
 4. Phone quote/confirmation, progress, reviewable silence/retake suggestions and atomic Apply remain flag-off, with planner parity and installed test-renderer coverage. The host waived ARTEMIS exploration; device layout/accessibility checks remain unperformed.
 5. Script-to-transcript alignment and alternate-take comparison.
-6. Optional filler-word suggestions; never remove uncertain words without review.
+6. Optional filler-word suggestions; never remove uncertain words without review. **Detection is built, review screens are not:** `app/veyrnox/_lib/smartCutFillers.js` (phone twin `apps/mobile/src/lib/speechFillers.ts`) proposes padded removals for pure hesitation sounds (en um/uh/er/hmm, es, de, fr, pt, ru lists) from a word-level analysis. It returns nothing for phrase-level timing, an unknown language, or a script without a lexicon (zh, ja, ko, hi, ar), and never proposes meaningful words such as "like" or "so". Nothing calls it yet; the web and phone review screens, with per-suggestion checkboxes and one Undo, are the next PR.
 
 ## Create Best Cut (disabled implementation, ADR-0334)
 
