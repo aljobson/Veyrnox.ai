@@ -60,6 +60,18 @@
     "ratio": 1.7
   },
   {
+    "id": "acct.dev.unknown",
+    "english": "Unknown device",
+    "translation": "Dispositivo desconocido",
+    "ratio": 1.64
+  },
+  {
+    "id": "acct.dev.signOut",
+    "english": "Sign out",
+    "translation": "Cerrar sesión",
+    "ratio": 1.63
+  },
+  {
     "id": "acct.dev.othersTitle",
     "english": "Sign out other devices?",
     "translation": "¿Cerrar sesión en otros dispositivos?",

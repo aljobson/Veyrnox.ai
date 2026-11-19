@@ -28,7 +28,9 @@ export function DevicesCard() {
     const load = useCallback(async () => {
         setLoadFailed(false);
         try {
-            setCurrent(sessionIdOf(await getAccessToken()));
+            const token = await getAccessToken();
+            if (!token) { setRows([]); return; }
+            setCurrent(sessionIdOf(token));
             setRows(await listDevices(api));
         } catch {
             setRows([]);
