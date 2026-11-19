@@ -519,3 +519,16 @@ dropped `community-brand-billboard-swap` from the registry as a near-duplicate o
 and truck). It stays in the manifest only: the gate needs the id in both, so the pin is unchanged and the clip is refused. The manifest is not in source. The
 switch is untouched, so nothing is reachable: the gate needs the `templateSwap` key, and the model row stays inactive until the activation migration. Three
 tests that replaced the empty literals match the declarations by pattern; the registry test pins 410 sorted unique ids.
+
+## Amendment 11 (2026-11-19): production switch on, after the staging proof
+
+`wrangler.jsonc` sets `"templateSwap":true` in the production `APP_RUNTIME_FLAGS` (`{"checkin":true,"push":true,"templateSwap":true}`). No Worker var is added. This
+is the last step of the activation order: the upload (done), the ids-and-pin PR (merged), the activation migration 0569 (PR 2492, applied by the owner-approved
+apply run), then this edit, merged only on the owner's word.
+
+Staging proof (2026-11-19, project `yrqzwqywxfesmbvhzjgj`): one real swap, job `8bbd8c9e`, state STORED, one `debit:generation` of -47 (Subscription bucket only), no
+refund, completed by the fal webhook. Not live-proven: the short-clip refusal does not apply to swaps (the video is the server-held 5 s clip), the image-type refusal
+and the failed-submit refund are covered by `tests/templateSwapClipGeneration.test.mjs` only, and immediate-versus-sweep refund timing is unverified.
+
+Rollback: set `templateSwap` to `false` (or remove the key) in `APP_RUNTIME_FLAGS` and deploy. The gate then refuses every swap request, the catalog answers 404 and
+accepted jobs still settle through the existing webhook and refund paths.

@@ -1,5 +1,6 @@
 'use client';
-import { assertBeatWritable, BEAT_UPDATE_REQUIRED, BEAT_WRITE_VERSION } from '../../../_lib/music/beat/beatCompatibility.mjs';
+import { assertBeatWritable, beatReadOnly, BEAT_READ_ONLY_MESSAGE, capabilityGeneration, assertBeatGeneration, subscribeBeatWrites, withBeatVersionFloor } from '../../../_lib/music/beat/beatCompatibility.mjs';
+import { validateBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 import { beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
 import { beatText } from '../../../_lib/music/beat/beatDisplay.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
@@ -18,6 +19,9 @@ import * as store from '../../../_lib/music/beat/beatStore.js';
 export function useBeatProject(id, announce) {
   const { t } = useI18n();
   const [doc, setDoc] = useState(null);
+  const [capability, setCapability] = useState(capabilityGeneration());
+  useEffect(() => subscribeBeatWrites(() => setCapability(capabilityGeneration())), []);
+  const floor = useRef(4);
   const [saved, setSaved] = useState(null);
   const [error, setError] = useState('');
   const [persistent, setPersistent] = useState(true);
@@ -38,6 +42,16 @@ export function useBeatProject(id, announce) {
   const mounted = useRef(false);
   const generation = useRef(0);
   const recordedAnnouncement = useRef(-Infinity);
+  const writable = useCallback(() => {
+    try { assertBeatWritable(current.current); return true; }
+    catch { announce(t(BEAT_READ_ONLY_MESSAGE)); return false; }
+  }, [announce, t]);
+  const normalize = useCallback((next) => {
+    const normalized = withBeatVersionFloor(next, floor.current);
+    assertBeatWritable(normalized);
+    if (!validateBeat(normalized).ok) throw new Error('invalid');
+    return normalized;
+  }, []);
   const markConflict = useCallback((kind) => {
     blocked.current = kind;
     if (mounted.current) {
@@ -49,6 +63,7 @@ export function useBeatProject(id, announce) {
     if (replacing.current || blocked.current || !unsaved.current) return;
     // Lifecycle flushes queue behind an in-flight save and use its returned revision.
     if (saving.current) { flushRequested.current = true; return; }
+    if (!writable()) return;
     saving.current = true; flushRequested.current = false;
     const pendingDoc = unsaved.current;
     const token = generation.current;
@@ -64,7 +79,7 @@ export function useBeatProject(id, announce) {
     if (result.error === 'conflict') markConflict('changed');
     else if (result.error === 'not_found') markConflict('deleted');
     else if (result.error) {
-      if (mounted.current) { setSaveError(true); announce(t(['v5_write_disabled', 'unsupported_version'].includes(result.error) ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s95')); }
+      if (mounted.current) { setSaveError(true); announce(t(['v5_write_disabled', 'capability_changed'].includes(result.error) ? BEAT_READ_ONLY_MESSAGE : result.error === 'unsupported_version' ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s95')); }
     } else {
       revision.current = result.revision;
       if (unsaved.current === pendingDoc) unsaved.current = null;
@@ -75,7 +90,7 @@ export function useBeatProject(id, announce) {
     }
     if (flushRequested.current) return savePending();
     return result.error ? null : pendingDoc;
-  }, [announce, markConflict, t]);
+  }, [announce, markConflict, t, writable]);
   const reload = useCallback(async () => {
     const token = {}; generation.current = token;
     const result = await store.getBeat(id);
@@ -86,8 +101,8 @@ export function useBeatProject(id, announce) {
       else setError(result.error);
       return;
     }
-    // A valid record newer than this app can write is readable but cannot be saved; never open it as editable.
-    if (result.record.doc?.version > BEAT_WRITE_VERSION) { setError(BEAT_UPDATE_REQUIRED); return; }
+    floor.current = Math.max(floor.current, result.record.doc.version);
+    result.record.doc = withBeatVersionFloor(result.record.doc, floor.current);
     revision.current = result.record.revision; current.current = result.record.doc; blocked.current = null;
     history.current = historyOps.createHistory(result.record.doc);
     unsaved.current = null; flushRequested.current = false;
@@ -115,16 +130,17 @@ export function useBeatProject(id, announce) {
     };
   }, [id, reload, markConflict, flush]);
   const accept = useCallback((next) => {
+    next = normalize(next); floor.current = Math.max(floor.current, next.version);
     unsaved.current = next;
     current.current = next; setDoc(next); setSaveError(false);
-  }, []);
+  }, [normalize]);
   const edit = useCallback((change, options = {}) => {
-    if (!current.current || replacing.current) return null;
+    if (!current.current || replacing.current || !writable()) return null;
     if (!recordingEditAllowed(recordingState.current(), options)) { announce(t('app.music.beat.status.s10')); return null; }
     try {
       const result = tryOp(current.current, change);
       if (result.refused) { announce(beatText(result.refused, t)); return null; }
-      const next = result.doc;
+      const next = normalize(result.doc);
       if (next === current.current) return null;
       const resultMessage = arrangementMessage(current.current, next, options, t);
       history.current = historyOps.record(history.current, next, options);
@@ -142,34 +158,38 @@ export function useBeatProject(id, announce) {
       }
       return history.current.past.at(-1)?.id;
     } catch { announce(t('app.music.beat.status.s98')); return null; }
-  }, [announce, accept, t]);
+  }, [announce, accept, t, normalize, writable]);
   const selectPattern = useCallback((slot) => {
-    if (replacing.current || recordingState.current()) return;
+    if (replacing.current || recordingState.current() || !writable()) return;
     if (!current.current || slot === current.current.currentPattern) return;
-    const next = selectPatternOp(current.current, slot);
+    const next = normalize(selectPatternOp(current.current, slot));
     history.current = historyOps.replacePresent(history.current, next);
     accept(next);
-  }, [accept]);
+  }, [accept, normalize, writable]);
   const travel = useCallback((direction) => {
-    if (replacing.current || !history.current || recordingState.current()) return;
+    if (replacing.current || !history.current || recordingState.current() || !writable()) return;
     const entry = (direction === 'undo' ? history.current.past : history.current.future).at(-1);
     if (!entry) return;
-    history.current = historyOps[direction](history.current);
-    const next = { ...history.current.present, updatedAt: Math.max(Date.now(), current.current.updatedAt) };
+    const travelled = historyOps[direction](history.current);
+    const next = normalize({ ...travelled.present, updatedAt: Math.max(Date.now(), current.current.updatedAt) });
+    history.current = travelled;
     history.current = historyOps.replacePresent(history.current, next);
     accept(next);
     announce(t('app.music.beat.status.s114', { p0: direction === 'undo' ? t('app.music.beat.status.s115') : t('app.music.beat.status.s116'), p1: actionLabel(entry.label, t) }));
-  }, [accept, announce, t]);
+  }, [accept, announce, t, normalize, writable]);
   useEffect(() => {
-    if (!doc || doc === saved || conflict) return;
+    if (!doc || doc === saved || conflict || beatReadOnly(doc)) return;
     const timer = setTimeout(flush, 800);
     return () => clearTimeout(timer);
-  }, [doc, saved, conflict, flush]);
+  }, [doc, saved, conflict, flush, capability]);
   async function copy(source) {
+    const captured = capabilityGeneration();
+    if (!writable()) return null;
     const finalized = await beforeFlush.current?.() || current.current;
     const copyDoc = source || finalized;
     if (!copyDoc) return null;
     await hydrateLocalTakes();
+    try { assertBeatGeneration(captured); assertBeatWritable(copyDoc); } catch { announce(t(BEAT_READ_ONLY_MESSAGE)); return null; }
     const result = await createDeviceCopy(copyDoc, localTakeIds().map(id => ({ id })), store.createBeat, crypto.randomUUID(), Date.now());
     if (result.error) {
       announce(result.error === 'cloud_only_takes' ? t('app.music.beat.recovery.r38') : result.error === 'limit' ? t('app.music.beat.status.s99') : t('app.music.beat.status.s100')); return null;
@@ -177,14 +197,19 @@ export function useBeatProject(id, announce) {
     return result.id;
   }
   async function flushLatest() {
+    const captured = capabilityGeneration();
+    if (unsaved.current) assertBeatWritable(current.current);
     await beforeFlush.current?.();
     await inFlight.current;
+    assertBeatGeneration(captured);
     await flush();
     await inFlight.current;
     if (blocked.current || unsaved.current || !durable.current) throw beatFailure('recovery-r31');
   }
   async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId, expected = null) {
-    assertBeatWritable(theirsDoc);
+    const capturedGeneration = capabilityGeneration();
+    assertBeatWritable(current.current);
+    theirsDoc = normalize(withBeatVersionFloor(theirsDoc, current.current.version));
     if (replacing.current || blocked.current) throw beatFailure('recovery-r32');
     await beforeFlush.current?.(); replacing.current = true;
     try {
@@ -195,11 +220,12 @@ export function useBeatProject(id, announce) {
             throw Object.assign(beatFailure('recovery-r33'), { code: 'LOCAL_CONFLICT' });
           return { doc: current.current, revision: revision.current };
         },
-        media, stash,
+        media, stash: stash && (doc => stash(normalize(withBeatVersionFloor(doc, theirsDoc.version)))),
         current: captured => isCurrent() && !blocked.current && current.current === captured.doc && revision.current === captured.revision,
         replace: async captured => {
           const record = await store.getBeat(id);
           if (!record.record?.cloud || !isCurrent()) return { error: 'account_changed' };
+          assertBeatGeneration(capturedGeneration);
           const result = await store.updateBeat(theirsDoc, captured.revision, { current: isCurrent,
             link: { ...record.record.cloud, projectId: cloudProjectId || record.record.cloud.projectId, revision: theirsRevision, syncedUpdatedAt: theirsDoc.updatedAt } });
           if (result.error) return result;
@@ -209,9 +235,23 @@ export function useBeatProject(id, announce) {
       announce(expected ? t('app.music.beat.status.s101') : t('app.music.beat.status.s102'));
     } finally { replacing.current = false; void flush(); }
   }
-  return { doc, saved, flushLatest, replaceFromCloud, current, finishRecording: () => beforeFlush.current?.(), registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
+  function raiseVersionFloor(version) {
+    const next = normalize(withBeatVersionFloor(current.current, version));
+    floor.current = Math.max(floor.current, version);
+    if (next !== current.current) { history.current = historyOps.replacePresent(history.current, next); accept(next); }
+  }
+  async function loadReadOnlyCloud(theirs, cloud, expected, isCurrent, captured) {
+    if (unsaved.current || current.current !== expected.doc && JSON.stringify(current.current) !== JSON.stringify(expected.doc))
+      throw Object.assign(beatFailure('recovery-r33'), { code: 'LOCAL_CONFLICT' });
+    const before = current.current;
+    const unchanged = () => isCurrent() && !unsaved.current && current.current === before && revision.current === expected.revision;
+    const result = await store.loadCloudBeat(theirs, cloud, { expectedRevision: expected.revision, current: unchanged, generation: captured });
+    if (result.error) throw Object.assign(new Error(result.error), { code: result.error });
+    await reload();
+  }
+  return { readOnly: beatReadOnly(doc), raiseVersionFloor, loadReadOnlyCloud, doc, saved, flushLatest, replaceFromCloud, current, finishRecording: () => beforeFlush.current?.(), registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
     undo: () => travel('undo'), redo: () => travel('redo'),
-    canUndo: Boolean(history.current && historyOps.canUndo(history.current)),
-    canRedo: Boolean(history.current && historyOps.canRedo(history.current)),
+    canUndo: !beatReadOnly(doc) && Boolean(history.current && historyOps.canUndo(history.current)),
+    canRedo: !beatReadOnly(doc) && Boolean(history.current && historyOps.canRedo(history.current)),
     undoId: history.current?.past.at(-1)?.id, dirty: doc !== saved };
 }

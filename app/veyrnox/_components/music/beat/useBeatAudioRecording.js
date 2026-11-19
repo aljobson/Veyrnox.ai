@@ -1,4 +1,5 @@
 'use client';
+import { assertBeatWritable, beatReadOnly, BEAT_READ_ONLY_MESSAGE, capabilityGeneration, assertBeatGeneration, subscribeBeatWrites } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
 import { beatErrorMessage, beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
@@ -24,6 +25,8 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
   const pendingError = () => session.current?.error || '';
   const idleStatus = () => capture.current ? 'armed' : 'idle';
   async function arm(trackId, selectedDevice = deviceId) {
+    const generation = capabilityGeneration();
+    if (trackId) try { assertBeatWritable(current.current); } catch { const message = t(BEAT_READ_ONLY_MESSAGE); show({ error: message }); announce(message); return; }
     if (session.current && !session.current.finishing) await latestStop.current();
     const token = ++intent.current;
     capture.current?.close(); capture.current = null; armed.current = null; setArmedId(null);
@@ -37,6 +40,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
     }
     try {
       const { instance, resumed } = audio(); await resumed;
+      assertBeatGeneration(generation); assertBeatWritable(current.current);
       const input = await openBeatCapture(instance.context, selectedDevice, { onEnded: () => {
         if (token !== intent.current) return;
         if (['recording', 'finishing'].includes(stateRef.current.status)) {
@@ -44,6 +48,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
           void latestStop.current().then(() => disconnected());
         } else disconnected();
       } });
+      if (generation !== capabilityGeneration() || beatReadOnly(current.current)) { input.close(); assertBeatGeneration(generation); assertBeatWritable(current.current); }
       if (token !== intent.current || !mounted.current) { input.close(); return; }
       capture.current = input; if (input.ended) { disconnected(); return; } show({ status: 'armed', error: pendingError() }); await refreshDevices();
     } catch (e) {
@@ -64,6 +69,13 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
       }
     }
   }
+  useEffect(() => subscribeBeatWrites(() => {
+    if (!beatReadOnly(current.current)) return;
+    intent.current++;
+    const close = () => { capture.current?.close(); capture.current = null; armed.current = null; setArmedId(null); };
+    if (session.current) void latestStop.current().finally(close); else close();
+    const message = t(BEAT_READ_ONLY_MESSAGE); show({ error: message }); announce(message);
+  }), [current, announce, t]);
   const projectId = current.current?.id;
   useEffect(() => {
     if (!projectId) return;
@@ -83,8 +95,10 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
   const trackPresent = !armedId || current.current?.tracks.some(t => t.id === armedId);
   useEffect(() => { if (!trackPresent) { intent.current++; capture.current?.close(); capture.current = null; armed.current = null; queueMicrotask(() => { setArmedId(null); show({ status: 'idle' }); }); } }, [trackPresent]);
   async function prepare(locator) {
+    const generation = capabilityGeneration(); assertBeatWritable(current.current);
     if (!capture.current || !armed.current) throw beatFailure('recovery-r15');
     await hydrateBeatTakes();
+    assertBeatGeneration(generation); assertBeatWritable(current.current);
     const availableSeconds = (BEAT_TAKE_BYTES - beatTakeBytes()) / (capture.current.context.sampleRate * 4);
     if (availableSeconds < 1) throw beatFailure('recovery-r16');
     const range = audioRecordingRange(current.current, locator);
@@ -97,6 +111,7 @@ export function useBeatAudioRecording(current, edit, announce, audio, stop, play
       endStep: (range.start + range.length) / 240, loop: range.cycle ? { start: range.start / 240, end: (range.start + range.length) / 240 } : null, recordStart: range.start };
   }
   function begin(range, contextStart, countIn) {
+    assertBeatWritable(current.current);
     const input = capture.current, latency = readLatency(input.deviceId);
     const rtt = latency ? latency.ms / 1000 : (input.context.outputLatency || 0) + (input.context.baseLatency || 0);
     show({ status: 'recording', seconds: 0, pass: 1, error: '' });

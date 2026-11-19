@@ -267,7 +267,7 @@ test('the rendered image card and picker use the real resolver and catalog price
   let picked;
   const t = translator('en');
   const f = fixture('en', '/', { moduleMocks: {
-    react: { ...React, useState: initial => [initial, () => {}], useMemo: fn => fn(), useRef: initial => ({ current: initial }) },
+    react: { ...React, useState: initial => [initial, () => {}], useMemo: fn => fn(), useRef: initial => ({ current: initial }), useEffect: () => {} },
     '../../../components/I18nProvider.jsx': { useI18n: () => ({ t, locale: 'en' }) },
     '../../../components/I18nProvider': { useI18n: () => ({ t, locale: 'en' }) },
   } });

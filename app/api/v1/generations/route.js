@@ -11,6 +11,7 @@ import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
 import { checkSwapRequest, resolveSwapVideo } from '../../../../lib/swapSceneGeneration.js';
 import { hasRuntimeReplay } from '../../../../lib/runtimeReplay.js';
 import { validateInputs } from '../../../../lib/generationInputValidation.js';
+import { SPEECH_CONTROL_KEYS } from '../../../../lib/speechInputs.js';
 import { isFeatureKilled } from '../../../../lib/runtimeSwitchCache.js';
 import { featurePaused } from '../../../../lib/runtimeAdmission.js';
 import { readBoundedBody } from '../../../../lib/boundedBody.js';
@@ -307,7 +308,7 @@ export async function POST(req) {
     }
     if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
-    for (const key of ['output_resolution', 'audio_enabled']) {
+    for (const key of ['output_resolution', 'audio_enabled', ...SPEECH_CONTROL_KEYS]) {
         if (inputs[key] !== undefined && !Object.hasOwn(record.inputs, key)) {
             return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
         }

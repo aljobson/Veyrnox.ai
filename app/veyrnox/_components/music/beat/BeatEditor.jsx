@@ -1,4 +1,5 @@
 'use client';
+import { configureBeatWrites, BEAT_READ_ONLY_MESSAGE } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
 import { beatErrorMessage } from '../../../_lib/music/beat/beatErrors.mjs';
 import dynamic from 'next/dynamic';
@@ -11,7 +12,7 @@ import BeatAiActionSheet from './BeatAiActionSheet';
 import { useBeatAiRequest } from './useBeatAiRequest';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useEffect, useRef, useState } from 'react';
 import { useBeatCloudSync } from './useBeatCloudSync';
 import BeatCloudConflictDialog from './BeatCloudConflictDialog';
 import BeatVersionsPanel from './BeatVersionsPanel';
@@ -42,7 +43,8 @@ function MixerLoading() {
   return <div role="status" aria-busy="true" className="min-h-64 rounded-xl bg-vx-panel p-4">{t('app.music.beat.details.d31')}</div>;
 }
 
-export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = false, librarySave = false }) {
+export default function BeatEditor({ ai = {}, id, magicBar = false, v5Writes = false, cloud = false, librarySave = false }) {
+  useLayoutEffect(() => { configureBeatWrites(v5Writes); }, [v5Writes]);
   const router = useRouter();
   const { t } = useI18n();
   const [shortcutsOpen, setShortcutsOpen] = useState(false), [tipReplay, setTipReplay] = useState(0);
@@ -66,12 +68,12 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
   const [locatorDraft, setLocator] = useState(0);
   const locator = project.doc ? clampLocator(locatorDraft, songEnd(project.doc)) : 0;
   const playback = useBeatPlayback(project.current, project.edit, announce, { editTrackId, locator, snap, selectedRegionId });
-  useRecordingLock(root, playback.recordingRun, t);
+  useRecordingLock(root, playback.recordingRun || project.readOnly, t, project.readOnly);
   const registerFinalizer = project.registerFinalizer, finalizeAndStop = playback.stop;
   const registerRecordingState = project.registerRecordingState, isRecording = playback.isRecording;
   useEffect(() => { registerRecordingState(isRecording); }, [registerRecordingState, isRecording]);
   useEffect(() => { registerFinalizer(finalizeAndStop); }, [registerFinalizer, finalizeAndStop]);
-  const loops = useBeatLoopLayers(id, magicBar && Boolean(playback.runId));
+  const loops = useBeatLoopLayers(id, magicBar && Boolean(playback.runId), project.current);
   const [titleDraft, setTitleDraft] = useState(null);
   const [undo, setUndo] = useState(null);
   const undoTimer = useRef(null);
@@ -138,7 +140,19 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
     if (nextId) { playback.stop(); router.push(`/app/music/beats/${nextId}`); }
     else setCopying(false);
   }
-  const back = <Link data-beat-live onClick={async e => { if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); await playback.finishRecording(); await project.flushLatest(); router.push('/app/music/beats'); }} className={`${button} inline-flex items-center`} href="/app/music/beats">{t('app.music.beat.ui.my.beats')}</Link>;
+  async function goBack(e) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    try { await playback.finishRecording(); await project.flushLatest(); }
+    catch (error) {
+      if (!['v5_write_disabled', 'BEAT_WRITES_DISABLED', 'capability_changed'].includes(error.code)) { announce(t('app.music.beat.recovery.r31')); return; }
+      const warning = t('app.music.beat.compat.writesDisabled');
+      announce(warning);
+      if (!window.confirm(warning)) return;
+    }
+    router.push('/app/music/beats');
+  }
+  const back = <Link data-beat-live onClick={goBack} className={`${button} inline-flex items-center`} data-beat-read href="/app/music/beats">{t('app.music.beat.ui.my.beats')}</Link>;
   if (project.error) return <div className="space-y-4 p-6"><h1 className="text-2xl font-bold">{project.error === 'blocked' ? t('app.music.beat.compat.blocked') : project.error === 'unsupported_version' ? t('app.music.beat.compat.unsupported') : project.error === 'update_required' ? t('app.music.beat.compat.updateRequired') : project.error === 'storage' ? t('app.music.beat.device.readError') : project.error === 'damaged' ? t('app.music.beat.device.damaged') : t('app.music.beat.ui.this.beat.isn.t.on.this.device')}</h1>{['storage', 'blocked'].includes(project.error) && <button className={button} onClick={project.reload}>{t('app.music.beat.ui.retry')}</button>}{back}</div>;
   if (!doc) return <p className="p-6" aria-busy="true">{t('app.music.beat.ui.loading.beat')}</p>;
   const title = titleDraft ?? doc.title;
@@ -160,11 +174,11 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
         onClick={() => { project.undo(); setTitleDraft(null); }}>{t('app.music.beat.shortcut.undo')}</button>
       <button className={button} aria-disabled={!project.canRedo}
         onClick={() => { project.redo(); setTitleDraft(null); }}>{t('app.music.beat.shortcut.redo')}</button>
-      <button data-beat-live className={button} aria-expanded={mixerOpen} onClick={() => setMixerOpen(value => !value)}>{t('app.music.beat.ui.mixer')}</button>
-      <button data-beat-live data-beat-tip="shortcuts" className={button} onClick={() => setShortcutsOpen(true)}>{t('app.music.beat.shortcuts')}</button>
+      <button data-beat-read data-beat-live className={button} aria-expanded={mixerOpen} onClick={() => setMixerOpen(value => !value)}>{t('app.music.beat.ui.mixer')}</button>
+      <button data-beat-read data-beat-live data-beat-tip="shortcuts" className={button} onClick={() => setShortcutsOpen(true)}>{t('app.music.beat.shortcuts')}</button>
       <button className={button} disabled={copying} onClick={copy}>{t('app.music.beat.ui.save.as.copy')}</button>
       {ai.generate && <button className={action} onClick={() => aiRequest.open({ op: 'generate' })}><span aria-hidden="true">✦ </span>{t('app.music.beat.ui.generate')}</button>}
-      {Object.values(ai).some(Boolean) && aiRequest.pending.map(r => <button className={button} key={r.key} onClick={() => aiRequest.resume(r)}>{t('app.music.beat.ui.resume')}{r.prompt.slice(0, 24) || t('app.music.beat.ui.ai.parts')}</button>)}
+      {Object.values(ai).some(Boolean) && aiRequest.pending.map(r => <button data-beat-read className={button} key={r.key} onClick={() => aiRequest.resume(r)}>{t('app.music.beat.ui.resume')}{r.prompt.slice(0, 24) || t('app.music.beat.ui.ai.parts')}</button>)}
     </header>
     {aiRequest.selection && (aiRequest.selection.op === 'generate' ? <BeatGenerateSheet key="generate" request={aiRequest} doc={doc} afterTrackId={track.id} /> : <BeatAiActionSheet key={aiRequest.selection.op} request={aiRequest} doc={doc} afterTrackId={track.id} />)}
     <div className="flex flex-wrap items-end justify-between gap-3"><label className="flex min-w-0 flex-1 flex-col gap-1">{t('app.music.beat.ui.title')}<input className={`${input} w-full text-xl font-bold`} value={title} aria-invalid={titleInvalid} aria-describedby={titleInvalid ? 'title-error' : undefined} onChange={(e) => {
@@ -173,17 +187,17 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
       if (value.trim() && value.length <= 80 && edit((d) => ops.rename(d, value), { key: 'title', label: BEAT_ACTIONS.a17 })) {
         setStoredTitle(value);
       }
-    }} onBlur={() => { if (!titleInvalid) setTitleDraft(null); }} />{titleInvalid && <span id="title-error" className="text-sm text-vx-danger">{!title.trim() ? t('app.music.beat.ui.give.your.beat.a.title') : t('app.music.beat.error.beat-title')}</span>}</label><BeatExportDialog librarySave={librarySave} finalize={() => playback.isRecording() || playback.pending.current ? playback.finishRecording() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></div>
-    <p className="text-sm text-vx-fg-muted">{project.conflict ? t('app.music.beat.ui.autosave.paused') : project.saveError ? <>{t('app.music.beat.ui.couldn.t.save.on.this.device')} <button className={button} onClick={project.retry}>{t('app.music.beat.ui.retry')}</button></> : !project.persistent ? t('app.music.beat.ui.kept.in.memory.for.this.visit') : project.dirty ? t('app.music.beat.ui.saving') : t('app.music.beat.ui.saved.on.this.device')}</p>
+    }} onBlur={() => { if (!titleInvalid) setTitleDraft(null); }} />{titleInvalid && <span id="title-error" className="text-sm text-vx-danger">{!title.trim() ? t('app.music.beat.ui.give.your.beat.a.title') : t('app.music.beat.error.beat-title')}</span>}</label><span data-beat-read><BeatExportDialog librarySave={librarySave} finalize={() => playback.isRecording() || playback.pending.current ? playback.finishRecording() : project.current.current} doc={doc} editTrackId={track.id} announce={announce} /></span></div>
+    <p role={project.readOnly ? "status" : undefined} className="text-sm text-vx-fg-muted">{project.readOnly ? (project.dirty && sync.state === 'read_only' ? sync.message : t(BEAT_READ_ONLY_MESSAGE)) : project.conflict ? t('app.music.beat.ui.autosave.paused') : project.saveError ? <>{t('app.music.beat.ui.couldn.t.save.on.this.device')} <button className={button} onClick={project.retry}>{t('app.music.beat.ui.retry')}</button></> : !project.persistent ? t('app.music.beat.ui.kept.in.memory.for.this.visit') : project.dirty ? t('app.music.beat.ui.saving') : t('app.music.beat.ui.saved.on.this.device')}</p>
     {!project.persistent && <p className="rounded-xl border border-vx-border bg-vx-panel p-3">{t('app.music.beat.recovery.r11')}</p>}
-    {project.conflict && <section className="space-y-3 rounded-xl border border-vx-border bg-vx-panel p-4" aria-label={t('app.music.beat.ui.beat.changed.elsewhere')}><h2 className="font-bold">{project.conflict === 'deleted' ? t('app.music.beat.ui.this.beat.was.deleted.in.another.tab') : t('app.music.beat.ui.this.beat.was.changed.in.another.tab')}</h2><div className="flex flex-wrap gap-2">{project.conflict !== 'deleted' && <button className={button} onClick={async () => { await playback.finishRecording(); setTitleDraft(null); setUndo(null); setLocator(0); setEditTrackId(null); setReloadKey((value) => value + 1); project.reload(); }}>{t('app.music.beat.ui.reload')}</button>}<button className={action} disabled={copying} onClick={copy}>{project.conflict === 'deleted' ? t('app.music.beat.ui.save.as.a.new.beat') : t('app.music.beat.ui.save.my.version.as.a.copy')}</button></div></section>}
+    {project.conflict && <section className="space-y-3 rounded-xl border border-vx-border bg-vx-panel p-4" aria-label={t('app.music.beat.ui.beat.changed.elsewhere')}><h2 className="font-bold">{project.conflict === 'deleted' ? t('app.music.beat.ui.this.beat.was.deleted.in.another.tab') : t('app.music.beat.ui.this.beat.was.changed.in.another.tab')}</h2><div className="flex flex-wrap gap-2">{project.conflict !== 'deleted' && <button data-beat-read className={button} onClick={async () => { await playback.finishRecording(); setTitleDraft(null); setUndo(null); setLocator(0); setEditTrackId(null); setReloadKey((value) => value + 1); project.reload(); }}>{t('app.music.beat.ui.reload')}</button>}<button className={action} disabled={copying} onClick={copy}>{project.conflict === 'deleted' ? t('app.music.beat.ui.save.as.a.new.beat') : t('app.music.beat.ui.save.my.version.as.a.copy')}</button></div></section>}
     {playback.audioError && <p className="rounded-xl border border-vx-border p-3">{playback.audioError}</p>}
     {playback.recordingRun && <p role="status">{t('app.music.beat.ui.stop.recording.to.edit')}{playback.overlay.length}{t('app.music.beat.ui.pending.notes')}</p>}
     {playback.takeError && <div role="alert" className="rounded-xl border border-vx-border p-3">{playback.takeError}<button className={button} onClick={playback.finalizeRecording}>{t('app.music.beat.ui.try.again')}</button><button className={button} onClick={async () => { try { const take = playback.takeAsBeat(); const id = take && await project.copy(take); if (id) { playback.discardSavedTake(); router.push(`/app/music/beats/${id}`); } } catch (e) { announce(beatErrorMessage(e, 'save-take', t)); } }}>{t('app.music.beat.ui.save.take.as.a.new.beat')}</button></div>}
     {cloud && <section className="flex flex-wrap items-center gap-3" aria-label={t('app.music.beat.ui.account.save')}>
-      <p>{sync.message}</p>
+      {!(project.readOnly && sync.state === 'read_only') && <p>{sync.message}</p>}
       {['unlinked', 'removed'].includes(sync.state) && <button className={button} onClick={sync.link}>{t('app.music.beat.ui.save.to.your.account')}</button>}
-      {sync.state === 'signed_out' && <Link className={button} href="/app/account">{t('app.music.beat.ui.sign.in')}</Link>}
+      {sync.state === 'signed_out' && <Link data-beat-read className={button} href="/app/account">{t('app.music.beat.ui.sign.in')}</Link>}
       {['error', 'offline', 'limit', 'rate_limited', 'conflict'].includes(sync.state) && <button className={button} onClick={sync.retry}>{t('app.music.beat.ui.retry')}</button>}
       <BeatVersionsPanel beatId={id} project={project} sync={sync} />
       {sync.media.length > 0 && <p className="w-full text-sm text-vx-fg-muted">{t('app.music.beat.ui.only.on.this.device')}{sync.media.join(', ')}</p>}
@@ -205,7 +219,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
         <label className="flex min-h-11 items-center gap-2"><input className="size-5 accent-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent" type="checkbox" checked={playback.record} onChange={(e) => playback.setRecord(e.target.checked)} />{t('app.music.beat.ui.record')}</label>
         <label className="flex min-h-11 items-center gap-2"><input className="size-5 accent-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent" type="checkbox" checked={playback.quantise} onChange={(e) => playback.setQuantise(e.target.checked)} />{t('app.music.beat.ui.quantise.while.recording')}</label>
         <label className="flex min-h-11 items-center gap-2"><input className="size-5 accent-vx-accent focus-visible:outline-2 focus-visible:outline-vx-accent" type="checkbox" checked={playback.countIn} onChange={(e) => playback.setCountIn(e.target.checked)} />{t('app.music.beat.ui.count.in.1.bar')}</label>
-        {track.regions.length > 0 && (!midiRegion || !rollOpen) && <button className={button} onClick={() => { setSelectedRegionId(track.regions[0].id); setRollOpen(true); }}>{t('app.music.beat.ui.open.piano.roll')}</button>}
+        {track.regions.length > 0 && (!midiRegion || !rollOpen) && <button data-beat-read className={button} onClick={() => { setSelectedRegionId(track.regions[0].id); setRollOpen(true); }}>{t('app.music.beat.ui.open.piano.roll')}</button>}
       </div>
       {midiRegion && rollOpen && !playback.recordingRun && <BeatPianoRoll playback={playback} key={midiRegion.clipId} doc={doc} region={midiRegion} edit={lockedEdit} snap={snap} setSnap={setSnap} close={() => setRollOpen(false)} />}
       <div data-beat-live><BeatKeyboard key={track.id} playback={playback} octave={octave} setOctave={setOctave} velocity={velocity} setVelocity={setVelocity} /></div>
