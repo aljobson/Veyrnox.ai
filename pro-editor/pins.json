@@ -1,0 +1,13 @@
+{
+  "release": "v0.20.1",
+  "upstream": "https://github.com/storytold/filmcraft",
+  "zip": {
+    "name": "filmcraft-web-0.20.1.zip",
+    "sha256": "1cf3072e3f3b6535fcd024d6f6ab2a16cf7776345d868037dc630de0ad0dbbb8"
+  },
+  "files": {
+    "filmcraft_web_bg.wasm": "4359872b821396d3eea0573d267d53804277155db4a6d5a5370195cf43b10ff5",
+    "filmcraft_web.js": "0d069d8280405639c34f673f7664e40af5913d40ceb17b3f3dcef114dbb61905"
+  },
+  "signature": "release SHA256SUMS.txt.asc not verified (no publisher key obtained)"
+}
