@@ -274,7 +274,7 @@ export default function Library() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Library') }} />
             <Text variant="title2" tone="primary" style={styles.heading} accessibilityRole="header">{t('label.Library')}</Text>
-            {musicAvailable ? <ListRow icon="audio" title={t('music.title')} accessibilityLabel={t('music.title')} onPress={() => router.push('/music' as never)} /> : null}
+            {musicAvailable ? <ListRow icon="vinylRecord" title={t('music.title')} accessibilityLabel={t('music.title')} onPress={() => router.push('/music' as never)} /> : null}
             <View style={styles.headerActions}>
             <Button variant="primary" accessibilityRole="button" accessibilityLabel={t('app.library.openSmartCut')} accessibilityHint={t('app.explore.smartCutStart')} onPress={() => router.push('/smart-cut')} label={t('app.library.openSmartCut')} />
             <Button variant="secondary" accessibilityRole="button" accessibilityLabel={t('library.videoFilesLabel')} onPress={() => router.push('/library/files')} label={t('library.videoFiles')} />

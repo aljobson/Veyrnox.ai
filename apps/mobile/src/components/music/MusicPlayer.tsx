@@ -25,11 +25,11 @@ export function MusicPlayer({ input, onDuration, autoPlay = false }: { input: Pl
         {state.state === 'loading' ? <VeyLoader label={message} showLabel /> : null}
         {state.retryAt ? <Text variant="footnote">{t('music.cooldown')}</Text> : null}
         <Text variant="footnote" tone="secondary">{t('music.progress', { position: Math.floor(Math.max(0, state.position - input.start)), duration: Math.floor(Math.max(0, (input.end ?? state.duration) - input.start)) })}</Text>
-        <Button label={t(state.state === 'playing' ? 'music.pause' : state.state === 'error' || state.state === 'held' ? 'music.retry' : 'music.play')}
+        <Button icon={state.state === 'playing' ? 'pauseCircle' : state.state === 'error' || state.state === 'held' ? undefined : 'play'} label={t(state.state === 'playing' ? 'music.pause' : state.state === 'error' || state.state === 'held' ? 'music.retry' : 'music.play')}
             disabled={state.state === 'loading'} onPress={() => state.state === 'playing' ? player.pause() : void player.play(input)} />
         <View style={s.controls}>
-            <Button variant="secondary" label={t('music.back10')} onPress={() => void player.seek(state.position - 10)} disabled={state.state === 'idle' || state.state === 'loading'} />
-            <Button variant="secondary" label={t('music.forward10')} onPress={() => void player.seek(state.position + 10)} disabled={state.state === 'idle' || state.state === 'loading'} />
+            <Button variant="secondary" icon="seekBack" label={t('music.back10')} onPress={() => void player.seek(state.position - 10)} disabled={state.state === 'idle' || state.state === 'loading'} />
+            <Button variant="secondary" icon="seekForward" label={t('music.forward10')} onPress={() => void player.seek(state.position + 10)} disabled={state.state === 'idle' || state.state === 'loading'} />
         </View>
         <Text variant="footnote" tone="secondary">{t('music.foreground')}</Text>
     </View>;

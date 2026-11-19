@@ -14,4 +14,14 @@ export default {
     'audioHub.home.hint': 'Opens the Audio menu',
     'audioHub.loading': 'Loading models',
     'audioHub.unavailable': 'Not available right now.',
-};
+    'audioHub.groups.musicVoice': 'Music and voice',
+    'audioHub.groups.performance': 'Lip sync and dubbing',
+    'audioHub.lipSync.title': 'Lip sync',
+    'audioHub.lipSync.blurb': 'Match a video to your speech track.',
+    'audioHub.dubbing.title': 'Video dubbing',
+    'audioHub.dubbing.blurb': 'Dub a video with replacement speech.',
+    'audioHub.talkingPhoto.title': 'Talking photo',
+    'audioHub.talkingPhoto.blurb': 'Animate a portrait with your speech.',
+    'audioHub.singingPhoto.title': 'Singing photo',
+    'audioHub.singingPhoto.blurb': 'Make a portrait sing your vocal track.',
+} as const;

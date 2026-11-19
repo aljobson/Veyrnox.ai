@@ -284,8 +284,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'library-video', icon: '▣', label: t('editor.libraryvideo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
         { id: 'library-image', icon: '▧', label: t('editor.libraryimage'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
         { id: 'library-audio', icon: '♫', label: t('editor.libraryaudio'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
-        { id: 'photos', icon: '▤', label: t('editor.photosvideos'), disabled: replacing, onPress: () => void choosePhotos() },
-        { id: 'files', icon: '▥', label: t('editor.files'), disabled: replacing, onPress: () => void chooseFiles() },
+        { id: 'photos', icon: '▤', label: t('editor.photosvideos'), disabled: replacing, afterClose: true, onPress: () => void choosePhotos() },
+        { id: 'files', icon: '▥', label: t('editor.files'), disabled: replacing, afterClose: true, onPress: () => void chooseFiles() },
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
     ];
     const aiRows: SheetRow[] = [
