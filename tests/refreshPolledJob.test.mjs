@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { refreshPolledJob, resetRefreshThrottle, THROTTLE_MS, MIN_AGE_MS, MAX_CONCURRENT } from '../lib/refreshPolledJob.js';
+import { refreshPolledJob, resetRefreshThrottle, THROTTLE_MS, JITTER_MS, MIN_AGE_MS, MAX_CONCURRENT, MAX_TRACKED, cacheThrottle } from '../lib/refreshPolledJob.js';
 import { catalogSelect, resetCatalogCache, CATALOG_CACHE_MS } from '../lib/catalogReadCache.js';
 import { sweepByteplus } from '../lib/byteplusSweep.js';
 
@@ -128,4 +128,72 @@ test('catalog reads are cached for check-on-read only, never on the cron path', 
         await catalogSelect('', 'model_catalog', q, cfg, CATALOG_CACHE_MS);
         assert.equal(n, 4);
     } finally { globalThis.fetch = real; }
+});
+
+const claims = () => { const seen = []; return { seen, shared: { claim: async (id, seconds) => { seen.push([id, seconds]); return true; } } }; };
+
+test('the shared throttle is asked before the provider, with a window of THROTTLE_MS plus jitter in whole seconds', async () => {
+    resetRefreshThrottle();
+    const calls = [];
+    const { seen, shared } = claims();
+    const sweeps = fakeSweeps(calls);
+    assert.equal(await refreshPolledJob({ ...base, random: () => 0.99, job: sub(), sweeps, shared }), true);
+    assert.equal(seen.length, 1);
+    assert.equal(seen[0][0], ID);
+    assert.equal(seen[0][1], Math.ceil((THROTTLE_MS + Math.floor(0.99 * JITTER_MS)) / 1000));
+    assert.equal(calls.length, 1);
+});
+
+test('another isolate that already claimed the job stops this one, and the slot is released', async () => {
+    resetRefreshThrottle();
+    const calls = [];
+    const denied = { claim: async () => false };
+    for (let i = 0; i < MAX_CONCURRENT + 2; i++) {
+        assert.equal(await refreshPolledJob({ ...base, job: sub({ id: `00000000-0000-0000-0000-${String(i).padStart(12, '0')}` }), sweeps: fakeSweeps(calls), shared: denied }), false);
+    }
+    assert.equal(calls.length, 0, 'no provider read');
+    assert.equal(await refreshPolledJob({ ...base, job: sub({ id: ID }), sweeps: fakeSweeps(calls), shared: { claim: async () => true } }), true, 'denied claims did not use up the concurrency slots');
+});
+
+test('the shared claim is made after the slot is taken, so a burst cannot pass the cap while claims wait', async () => {
+    resetRefreshThrottle();
+    let waiting = 0, peak = 0;
+    const slow = { claim: async () => { waiting += 1; peak = Math.max(peak, waiting); await new Promise((r) => setTimeout(r, 20)); waiting -= 1; return true; } };
+    const calls = [];
+    const ids = Array.from({ length: MAX_CONCURRENT * 3 }, (_, i) => `00000000-0000-0000-0000-${String(i).padStart(12, '0')}`);
+    await Promise.all(ids.map((id) => refreshPolledJob({ ...base, job: sub({ id }), sweeps: fakeSweeps(calls), shared: slow })));
+    assert.ok(peak <= MAX_CONCURRENT, `peak ${peak}`);
+});
+
+test('a full per-isolate map forgets only the oldest entries, not every job at once', async () => {
+    resetRefreshThrottle();
+    const calls = [];
+    const sweeps = fakeSweeps(calls, 0);
+    const id = (i) => `00000000-0000-0000-0000-${String(i).padStart(12, '0')}`;
+    for (let i = 0; i <= MAX_TRACKED; i++) await refreshPolledJob({ ...base, job: sub({ id: id(i) }), sweeps });
+    const before = calls.length;
+    await refreshPolledJob({ ...base, job: sub({ id: id(MAX_TRACKED - 10) }), sweeps });
+    assert.equal(calls.length, before, 'a recent job is still throttled after the map filled');
+});
+
+test('without the Cache API the shared throttle allows the check, so the per-isolate map is the only limit', async () => {
+    assert.equal(typeof caches, 'undefined');
+    assert.equal(await cacheThrottle.claim(ID, 12), true);
+});
+
+test('with the Cache API the first claim wins and a second one inside the window is refused', async () => {
+    const store = new Map();
+    globalThis.caches = { default: { match: async (k) => store.get(k), put: async (k, v) => { store.set(k, v); } } };
+    try {
+        assert.equal(await cacheThrottle.claim(ID, 12), true);
+        assert.equal(await cacheThrottle.claim(ID, 12), false);
+        assert.equal(await cacheThrottle.claim('00000000-0000-0000-0000-000000000009', 12), true);
+        const [res] = [...store.values()];
+        assert.equal(res.headers.get('Cache-Control'), 'max-age=12');
+    } finally { delete globalThis.caches; }
+});
+
+test('a Cache API that throws does not stop the check', async () => {
+    globalThis.caches = { default: { match: async () => { throw new Error('cache down'); }, put: async () => {} } };
+    try { assert.equal(await cacheThrottle.claim(ID, 12), true); } finally { delete globalThis.caches; }
 });

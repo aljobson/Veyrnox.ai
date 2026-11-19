@@ -28,7 +28,7 @@ async function isolateModule(i) {
     return import(`${pathToFileURL(new URL('../lib/refreshPolledJob.js', import.meta.url).pathname).href}?iso=${i}`);
 }
 
-async function partA({ jobs, isolates }) {
+async function partA({ jobs, isolates, shared: sharedOn }) {
     const mods = await Promise.all(Array.from({ length: isolates }, (_, i) => isolateModule(i)));
     let reached = 0, inflight = 0, peakInflight = 0;
     const perSecond = new Map();
@@ -41,6 +41,11 @@ async function partA({ jobs, isolates }) {
         return { applied: 0 };
     }, 'BYTEPLUS_API_KEY', null] };
     const env = { BYTEPLUS_API_KEY: 'k' };
+    // One fake Cache API for every isolate (one data centre), with the claim's own time-to-live.
+    const cache = new Map();
+    const shared = sharedOn
+        ? { claim: async (id, seconds) => { const until = cache.get(id); if (until && until > Date.now()) return false; cache.set(id, Date.now() + seconds * 1000); return true; } }
+        : { claim: async () => true };
     const start = Date.now();
     // Steady state: ages spread over 0 to 120 s, so about three quarters are past the 30 s minimum age.
     const list = Array.from({ length: jobs }, (_, n) => ({
@@ -57,7 +62,7 @@ async function partA({ jobs, isolates }) {
             polls += 1;
             const mod = mods[Math.floor(Math.random() * isolates)];
             mod.refreshPolledJob({ job: { id: j.id, provider: 'byteplus', state: 'SUBMITTED', created_at: new Date(j.createdAt).toISOString() },
-                cfg: {}, env, sweeps, r2cfg: {}, now });
+                cfg: {}, env, sweeps, r2cfg: {}, now, shared });
         }
         await sleep(50);
     }
@@ -75,7 +80,8 @@ function fakeDatabase(rows) {
         if (u.pathname.endsWith('/jobs')) {
             const limit = Number(u.searchParams.get('limit') || 50);
             const only = u.searchParams.get('id');
-            const picked = rows.filter((r) => r.open && (!only || only === `eq.${r.id}`)).sort((a, b) => a.created_at.localeCompare(b.created_at)).slice(0, limit);
+            const offset = Number(u.searchParams.get('offset') || 0);
+            const picked = rows.filter((r) => r.open && (!only || only === `eq.${r.id}`)).sort((a, b) => a.created_at.localeCompare(b.created_at)).slice(offset, offset + limit);
             return Response.json(picked);
         }
         return Response.json([]);
@@ -109,24 +115,33 @@ async function partB({ total, stuck, sweeps }) {
 }
 
 async function main() {
-    console.log('PART A  check-on-read (the real refreshPolledJob, a fake provider that answers in 150 ms)');
-    console.log('  jobs  isolates  polls/s  provider checks/s (avg, peak)  checks per job per min  peak in flight  checks/polls');
-    const cases = [
-        { jobs: 1000, isolates: 1 }, { jobs: 1000, isolates: 20 }, { jobs: 1000, isolates: 100 },
-        { jobs: num('jobs', 10000), isolates: 1 }, { jobs: num('jobs', 10000), isolates: 20 }, { jobs: num('jobs', 10000), isolates: num('isolates', 100) },
-    ];
+    if (!args.includes('--part=b')) await runPartA();
+    await runPartB();
+}
+
+async function runPartA() {
+    console.log('PART A  check-on-read (the real refreshPolledJob, a fake provider that answers in 150 ms), each job polled every 2 s');
+    console.log('  jobs  isolates  shared throttle  polls/s  provider checks/s (avg, peak)  checks per job per min  peak in flight  checks/polls');
+    const big = num('jobs', 10000);
+    const cases = [];
+    for (const [jobs, isolates] of [[1000, 100], [big, 1], [big, 20], [big, num('isolates', 100)]]) {
+        cases.push({ jobs, isolates, shared: false }, { jobs, isolates, shared: true });
+    }
     for (const c of cases) {
         const r = await partA(c);
-        console.log(`  ${String(c.jobs).padStart(5)}  ${String(c.isolates).padStart(8)}  ${String(r.pollsPerSec).padStart(7)}  ${String(r.perSecAvg).padStart(10)}, ${String(r.perSecPeak).padStart(6)}`
+        console.log(`  ${String(c.jobs).padStart(5)}  ${String(c.isolates).padStart(8)}  ${(c.shared ? 'on' : 'off').padStart(15)}  ${String(r.pollsPerSec).padStart(7)}  ${String(r.perSecAvg).padStart(10)}, ${String(r.perSecPeak).padStart(6)}`
             + `                ${(r.perSecAvg * 60 / c.jobs).toFixed(1).padStart(8)}                 ${String(r.peakInflight).padStart(6)}      ${((r.reached / Math.max(1, r.polls)) * 100).toFixed(0)}%`);
     }
     const eligible = 0.75;
     console.log(`  Design target (throttle works): about ${Math.round(10000 * eligible / 13.5)} checks/s at 10,000 jobs; ${Math.round(100000 * eligible / 13.5)} at 100,000.`);
+}
+
+async function runPartB() {
     console.log('');
-    console.log(`PART B  minute sweep, batch of ${BATCH} oldest jobs, the real sweepByteplus with a fake database`);
+    console.log(`PART B  minute sweep (half the batch oldest, half a moving window), the real sweepByteplus with a fake database`);
     for (const c of [{ total: 300, stuck: 30 }, { total: 300, stuck: 60 }, { total: 1000, stuck: 200 }]) {
-        const r = await partB({ ...c, sweeps: 5 });
-        console.log(`  ${c.total} pending, oldest ${c.stuck} still rendering: finished ${r.finished}; settled after each of 5 sweeps = ${r.settledAfter.join(', ')}; still waiting ${r.waiting}`);
+        const r = await partB({ ...c, sweeps: 12 });
+        console.log(`  ${c.total} pending, oldest ${c.stuck} still rendering: finished ${r.finished}; settled after sweeps 3, 6, 9, 12 = ${[2, 5, 8, 11].map((i) => r.settledAfter[i]).join(', ')}; still waiting ${r.waiting}`);
     }
 }
 
