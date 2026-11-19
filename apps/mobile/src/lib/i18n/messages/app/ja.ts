@@ -4151,6 +4151,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "コードが正しくありません。英数字10文字です。",
   "referrals.usethiscode": "このコードを使用",
   "referrals.whenafriendyoureferbuystheir": "紹介した友達が初めてクレジットパックを購入すると、そのパックの 10% 相当のクレジットを獲得できます。購入が返金や異議申し立ての対象でなければ、14 日後に残高に追加されます。報酬は有効期限のないクレジットのみで、現金の支払いはありません。",
+  "referrals.afriendwhousesyourcodegetsno": "あなたのコードを使った友達には、紹介による追加ボーナスはありません。",
   "referrals.youcannotuseyourowncode": "自分のコードは使用できません。",
   "referrals.yourcode": "自分のコード",
   "referrals.yourreferralcode": "自分の紹介コード {value1}",

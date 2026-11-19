@@ -4516,6 +4516,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "هذا الرمز لا يبدو صحيحًا. يتكون من 10 أحرف وأرقام.",
   "referrals.usethiscode": "استخدام هذا الرمز",
   "referrals.whenafriendyoureferbuystheir": "عندما يشتري صديق دعوتَه أول حزمة أرصدة، تكسب أرصدة بقيمة 10% من الحزمة تُضاف إلى رصيدك بعد 14 يومًا إن لم تُسترد قيمة الشراء أو يُعترض عليه. أرصدة فقط لا تنتهي صلاحيتها. لا تُدفع أي مبالغ نقدية.",
+  "referrals.afriendwhousesyourcodegetsno": "الصديق الذي يستخدم رمزك لا يحصل على أي مكافأة إضافية من الإحالة.",
   "referrals.youcannotuseyourowncode": "لا يمكنك استخدام رمزك الخاص.",
   "referrals.yourcode": "رمزك",
   "referrals.yourreferralcode": "رمز إحالتك {value1}",
