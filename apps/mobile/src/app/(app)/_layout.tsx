@@ -84,6 +84,7 @@ export default function AppLayout() {
                     <Stack.Screen name="job/[id]" options={{ title: t('job.title') }} />
                     <Stack.Screen name="legal/[doc]" options={{ title: t('label.Terms') }} />
                     <Stack.Screen name="model/[id]" options={{ title: t('mdl.title') }} />
+                    <Stack.Screen name="model/compare" options={{ title: t('modelCompare.title') }} />
                     <Stack.Screen name="music/create" options={{ title: t('music.create.title') }} />
                     <Stack.Screen name="music/[id]" options={{ title: t('music.title') }} />
                     <Stack.Screen name="oddlings/[id]" options={{ title: t('oddlings.title') }} />

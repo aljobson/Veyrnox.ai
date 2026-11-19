@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "modelCompare.title": "比较模型",
+  "modelCompare.pair": "{a} 与 {b}",
+  "modelCompare.price": "价格",
+  "modelCompare.value": "{name}：{value}",
+  "modelCompare.unavailable": "这些模型无法比较。请选择两个类型相同、可用且只需文字提示即可生成内容的模型。",
+  "modelCompare.choose": "比较对象...",
+  "modelCompare.picker": "选择要比较的模型",
   "mobileSwap.permission": "照片访问被拒绝。请在设置中允许访问照片图库，然后重试。",
   "mobileSwap.photoTooLarge": "照片太大。请选择每边不超过8192像素且不超过24百万像素的照片。",
   "mobileSwap.invalidImage": "请选择可读取且能验证尺寸的照片。",

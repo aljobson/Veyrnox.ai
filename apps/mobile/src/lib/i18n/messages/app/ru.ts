@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "modelCompare.title": "Сравнение моделей",
+  "modelCompare.pair": "{a} и {b}",
+  "modelCompare.price": "Цена",
+  "modelCompare.value": "{name}: {value}",
+  "modelCompare.unavailable": "Эти модели нельзя сравнить. Выберите два доступных генератора одного типа, которым требуется только текстовый запрос.",
+  "modelCompare.choose": "Сравнить с...",
+  "modelCompare.picker": "Выберите модель для сравнения",
   "mobileSwap.permission": "Доступ к фото запрещён. Разрешите доступ к медиатеке в настройках и повторите попытку.",
   "mobileSwap.photoTooLarge": "Фото слишком большое. Выберите фото до 8192 пикселей по каждой стороне и 24 мегапикселей.",
   "mobileSwap.invalidImage": "Выберите читаемое фото, размеры которого можно проверить.",

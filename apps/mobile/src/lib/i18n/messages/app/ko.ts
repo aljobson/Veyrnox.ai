@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "modelCompare.title": "모델 비교",
+  "modelCompare.pair": "{a} 대 {b}",
+  "modelCompare.price": "가격",
+  "modelCompare.value": "{name}: {value}",
+  "modelCompare.unavailable": "이 모델들은 비교할 수 없습니다. 텍스트 지시만으로 생성할 수 있는 동일한 유형의 사용 가능한 모델 두 개를 선택하세요.",
+  "modelCompare.choose": "비교할 모델 선택...",
+  "modelCompare.picker": "비교할 모델을 선택하세요",
   "mobileSwap.permission": "사진 접근이 거부되었어요. 설정에서 사진 보관함 접근을 허용한 뒤 다시 시도하세요.",
   "mobileSwap.photoTooLarge": "사진이 너무 커요. 한 변이 8192픽셀 이하이고 24메가픽셀 이하인 사진을 선택하세요.",
   "mobileSwap.invalidImage": "크기를 확인할 수 있는 읽기 가능한 사진을 선택하세요.",

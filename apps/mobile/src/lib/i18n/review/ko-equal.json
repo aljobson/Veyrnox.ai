@@ -26,6 +26,7 @@
   "menu.cinema": "Brand or product name, retained as on the Korean website.",
   "menu.mcp": "Brand or product name, retained as on the Korean website.",
   "menu.oddlings": "Brand or product name, retained as on the Korean website.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.title": "Brand or product name, retained as on the Korean website.",
   "oddlingsProjects.defaultName": "Brand or product name, retained as on the Korean website.",
   "opt.countOption": "Placeholders and technical units/notation only; no translatable prose.",
