@@ -160,3 +160,32 @@ Pricing remains `credits_5s * ceil(duration_seconds / 60)` per take, authoritati
 3-Credit catalog unit, the tiers are 10-60 s = 3 Credits per take (6 per pair), 61-120 s = 6 (12 per pair),
 and 121-135 s = 9 (18 per pair). Submit and refund behavior are unchanged. This amendment does not raise
 the WAV cap, change the 120 s paid-edit rules, add mobile behavior, enable the switch or authorize fal spend.
+
+## Amendment 4 (2026-11-19, STAGING probe at 135 s)
+
+Status: Measured. Records the pre-activation probe; the production `longSongs` switch stays off until the owner
+turns it on.
+
+**Setup.** Staging database: 0563 and 0567 applied by hand (names = file stems). Staging Worker built from `main`
+with `"longSongs": true` in the staging `MUSIC_RUNTIME_FLAGS` only. One Simple pair (instrumental) and one Custom
+pair (original lyrics, vocal) at 135 s on `ace-step-1.5`, from a paid-plan staging account.
+
+| Measure | Result |
+|---|---|
+| Quote, both modes | 2 versions x 9 Credits = 18 per pair, as 0563/0567 price it |
+| Debits | Four ledger rows of -9; balance 995 -> 959; `reconcile_balances`, `reconcile_free_credits`, `reconcile_subscription_credits` returned zero rows |
+| Payload sent to fal | `duration: 135` (set by the dispatch trigger from the prompt snapshot); Custom carries the lyrics |
+| fal turnaround | 2 min 51 s to 3 min 43 s from dispatch to webhook (staging's dispatch sweep added about 3.5 min before that) |
+| Webhook | Four HTTP 200s, 5.6-12.8 s wall time and 1.8-2.8 s CPU each, FLAC -> WAV included |
+| Stored file | `audio/wav`, 25,920,044 bytes each (44-byte header + 135 s x 192,000 bytes), under the 25 MiB conversion cap |
+| Playback | Plays in the library at 2:15 |
+| Edit actions | Cover, Isolate one instrument, Add a section and Extend disabled with "up to 2 min"; Replace "up to 60 s"; Crop refused with "too large to crop here (files over 20 MB)"; whole-song Stems is not offered |
+| fal bill | Each request 270 units x $0.0003 = $0.081 (135 s, doubled for thinking): list price, nothing above it |
+
+**Price.** The bill equals the list rate, so the 0563 tiers stand: 9 Credits a take covers $0.081 at 135 s and
+$0.0726 at 121 s, the same or better margin than 3 Credits at 60 s ($0.036). No price change is proposed.
+
+**Known limits, unchanged.** Songs over about 109 s cannot be cropped or rendered (20 MiB WAV inspection cap) and
+paid edits stop at 120 s, as accepted in Amendment 3. Whole-song Stems (`mureka-stems-v3`) accepts only MP3 up to
+10 MiB in SQL (0480/0551), so it never runs on any `ace-step-1.5` take, at any length; this predates long songs.
+Resale rights (D1) remain unconfirmed.
