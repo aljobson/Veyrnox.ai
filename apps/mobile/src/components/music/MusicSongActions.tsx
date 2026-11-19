@@ -9,5 +9,8 @@ export function MusicSongActions({ song }: { song: MusicSongDetail }) {
         <Button key={name} variant="secondary" label={t(`musicActions.${name}.title`)}
             onPress={() => router.push({ pathname: `/music/${name}`, params: { id: song.id } } as never)} />)}
         {song.actions.includes('target_stem') ? <Button variant="secondary" label={t('musicTargetStems.title')}
-            onPress={() => router.push({ pathname: '/music/target-stems', params: { id: song.id } } as never)} /> : null}</>;
+            onPress={() => router.push({ pathname: '/music/target-stems', params: { id: song.id } } as never)} /> : null}
+        {(['extend', 'cover'] as const).filter(name => song.actions.includes(name)).map(name =>
+            <Button key={name} variant="secondary" label={t(`musicGenerationActions.${name}.title`)}
+                onPress={() => router.push({ pathname: `/music/${name}`, params: { id: song.id } } as never)} />)}</>;
 }

@@ -16,7 +16,7 @@ export function createActionAttempts<R extends { balance_after?: number }, S>(ap
         prepare(quote: MusicActionQuote, input: ActionInput) {
             if (pending?.quote.quote_id === quote.quote_id) return pending;
             if (pending?.phase === 'AMBIGUOUS' || flight) throw new Error('pending_result');
-            pending = Object.freeze({ quote: Object.freeze({ ...quote, outputs: Object.freeze([...quote.outputs]) }),
+            pending = Object.freeze({ quote: Object.freeze({ ...quote, ...(quote.outputs ? { outputs: Object.freeze([...quote.outputs]) } : {}) }),
                 input: Object.freeze({ ...input }), key: `${spec.keyPrefix}.${mintKey()}`, phase: 'UNSUBMITTED' });
             emit(); return pending;
         },
@@ -42,7 +42,7 @@ export function createActionAttempts<R extends { balance_after?: number }, S>(ap
                     else if (error instanceof ApiError && (
                         ([400, 402, 404, 409, 413].includes(error.status) && DEFINITIVE_REJECTIONS.has(error.code))
                         // The stem RPC maps explicit model/plan/format rejections to 503.
-                        || ([400, 402, 404, 409, 413, 503].includes(error.status) && spec.definitiveCodes.has(error.code))
+                        || ([400, 402, 404, 409, 413, 422, 503].includes(error.status) && spec.definitiveCodes.has(error.code))
                     )) pending = null;
                     // Unknown outcomes, including stem_acceptance_unknown, retain the original key.
                     emit();

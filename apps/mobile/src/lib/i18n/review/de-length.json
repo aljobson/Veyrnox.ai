@@ -3654,6 +3654,12 @@
     "ratio": 2.2
   },
   {
+    "id": "musicGenerationActions.state.queued",
+    "english": "Queued",
+    "translation": "In der Warteschlange",
+    "ratio": 3.33
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

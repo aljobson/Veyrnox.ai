@@ -1,3 +1,5 @@
+import type { MusicExtendQuote, MusicCoverQuote, GenerationActionStart } from './generationActionTypes';
+import { isMusicExtendQuote, isMusicCoverQuote, parseGenerationActionStart, validActionPrompt, validSourceInfluence } from './validateGenerationActions';
 import type { TargetStemInstrument } from './shared';
 import type { MusicTargetStemQuote, TargetStemStart, TargetStemRequest, TargetStemAsset, TargetStemKind } from './targetStemTypes';
 import { isMusicTargetStemQuote, isTargetStemStart, isTargetStemRequest, isTargetStemAsset } from './validateTargetStems';
@@ -161,3 +163,25 @@ export async function getTargetStemAsset(api: ApiClient, id: string, kind: Targe
     if (!isTargetStemAsset(v, kind)) throw bad();
     return v;
 }
+
+export async function createExtendQuote(api: ApiClient, songId: string, versionId: string, prompt: string): Promise<MusicExtendQuote> {
+    if (!validActionPrompt(prompt)) throw new ApiError(400, 'prompt_invalid');
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/extend-quotes`, post({ version_id: versionId, prompt: prompt.trim(), rights_confirmed: true }));
+    if (!isMusicExtendQuote(v)) throw bad();
+    return v;
+}
+export async function createCoverQuote(api: ApiClient, songId: string, versionId: string, prompt: string, sourceInfluence: number): Promise<MusicCoverQuote> {
+    if (!validActionPrompt(prompt)) throw new ApiError(400, 'prompt_invalid');
+    if (!validSourceInfluence(sourceInfluence)) throw new ApiError(400, 'source_influence_invalid');
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/cover-quotes`, post({ version_id: versionId, prompt: prompt.trim(), source_influence: sourceInfluence, rights_confirmed: true }));
+    if (!isMusicCoverQuote(v) || v.source_influence !== sourceInfluence) throw bad();
+    return v;
+}
+async function startPairAction(api: ApiClient, songId: string, route: 'extends' | 'covers', quoteId: string, key: string): Promise<GenerationActionStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/${route}`, post({ quote_id: quoteId, idempotency_key: key }));
+    const result = parseGenerationActionStart(v);
+    if (!result) throw bad();
+    return result;
+}
+export const startExtend = (api: ApiClient, songId: string, quoteId: string, key: string) => startPairAction(api, songId, 'extends', quoteId, key);
+export const startCover = (api: ApiClient, songId: string, quoteId: string, key: string) => startPairAction(api, songId, 'covers', quoteId, key);

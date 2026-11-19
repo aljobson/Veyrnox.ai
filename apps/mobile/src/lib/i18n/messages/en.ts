@@ -133,6 +133,7 @@ import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
 import area_music from './en/music';
 import area_musicActions from './en/musicActions';
+import area_musicGenerationActions from './en/musicGenerationActions';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
@@ -356,6 +357,7 @@ const catalog = {
     ...area_montage,
     ...area_music,
     ...area_musicActions,
+    ...area_musicGenerationActions,
     ...area_musicTargetStems,
     ...area_nativeEditorModel,
     ...area_net,
