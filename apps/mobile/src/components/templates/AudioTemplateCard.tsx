@@ -1,7 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { Card, Icon, Text, themedStyles, useThemedStyles } from '../ui';
 import { plural, t } from '../../lib/i18n';
 import type { AudioTemplate } from '../../lib/audioTemplates';
@@ -41,25 +39,10 @@ export function AudioTemplateCard({ template, credits, playing = false, onPlay, 
     </Card>;
 }
 
-// Mounted only while its card is playing, so leaving the screen or choosing another sample releases the player.
-function SamplePlayer({ url, onEnd }: { readonly url: string; onEnd(): void }) {
-    const player = useAudioPlayer({ uri: url });
-    const status = useAudioPlayerStatus(player);
-    useEffect(() => {
-        setAudioModeAsync({ playsInSilentMode: true }).catch(() => { /* Playback still works with the default mode. */ });
-        player.play();
-    }, [player]);
-    // onEnd toggles the card, so it must run once per playback: a new onEnd from a re-render while didJustFinish is
-    // still true would otherwise toggle the sample back on.
-    const latestOnEnd = useRef(onEnd);
-    latestOnEnd.current = onEnd;
-    const ended = useRef(false);
-    useEffect(() => {
-        if (!status.didJustFinish || ended.current) return;
-        ended.current = true;
-        latestOnEnd.current();
-    }, [status.didJustFinish]);
-    return null;
+// Loaded on first play so a screen that only lists templates never loads expo-audio (see AudioSamplePlayer).
+function SamplePlayer(props: { readonly url: string; onEnd(): void }) {
+    const { SamplePlayer: Player } = require('./AudioSamplePlayer') as typeof import('./AudioSamplePlayer');
+    return <Player {...props} />;
 }
 
 const THUMB = 72;
