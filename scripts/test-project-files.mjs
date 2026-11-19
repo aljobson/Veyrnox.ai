@@ -38,7 +38,7 @@ const fixture=async({state='inspected',age='31 days',size=100,cleanup='live'}={}
 };
 try {
  await q('BEGIN');
- const sql=(await readFile(new URL('../packages/db/schema/supabase/0562_pro_project_files.sql',import.meta.url),'utf8')).replace(/^BEGIN;$/m,'').replace(/^COMMIT;$/m,'');
+ const sql=(await readFile(new URL('../packages/db/schema/supabase/0568_pro_project_files.sql',import.meta.url),'utf8')).replace(/^BEGIN;$/m,'').replace(/^COMMIT;$/m,'');
  await q(sql); await q(sql);
  await q('GRANT USAGE ON SCHEMA auth TO authenticated');
  for(const id of [owner,editor,viewer,reviewer,stranger]) await q('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())',[id,`file-${id}@example.invalid`]);
