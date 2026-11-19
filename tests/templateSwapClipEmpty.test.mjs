@@ -37,8 +37,14 @@ test('the latest O1 catalog migration and fallback keep the offer inactive', asy
  const migrations = fs.readdirSync(directory).filter(name=>name.endsWith('.sql')).sort()
   .map(name=>fs.readFileSync(path.join(directory,name),'utf8')).filter(sql=>sql.includes("'kling-o1-reference'"));
  assert.ok(migrations.length);
- assert.match(migrations.at(-1), /'video-to-video',47,0\.8400,'per_second',5,false,false/);
- assert.match(migrations.at(-1), /active=EXCLUDED\.active/);
+ const inserts = migrations.filter(sql=>/INSERT INTO public\.model_catalog/.test(sql));
+ assert.equal(inserts.length, 1);
+ assert.match(inserts[0], /'video-to-video',47,0\.8400,'per_second',5,false,false/);
+ assert.match(inserts[0], /active=EXCLUDED\.active/);
+ // The one activation migration is guarded by an exact row count and leaves the price alone.
+ const activations = migrations.filter(sql=>/SET active = true/.test(sql));
+ assert.ok(activations.length <= 1);
+ for (const sql of activations) { assert.match(sql, /affected <> 1/); assert.doesNotMatch(sql, /SET[^;]*credits_5s/); }
  const { MODELS } = await import('../app/veyrnox/_lib/tokens.js');
  assert.equal(MODELS.find(row=>row.id==='kling-o1-reference').staged,true);
 });
