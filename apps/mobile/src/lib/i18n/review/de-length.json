@@ -3636,6 +3636,24 @@
     "ratio": 2.75
   },
   {
+    "id": "musicTargetStems.target",
+    "english": "Get isolated {instrument}",
+    "translation": "Isoliertes Instrument abrufen: {instrument}",
+    "ratio": 1.72
+  },
+  {
+    "id": "musicTargetStems.instrument.drums",
+    "english": "Drums",
+    "translation": "Schlagzeug",
+    "ratio": 2
+  },
+  {
+    "id": "musicTargetStems.instrument.brass",
+    "english": "Brass",
+    "translation": "Blechbläser",
+    "ratio": 2.2
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

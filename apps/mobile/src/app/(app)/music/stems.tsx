@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Linking, ScrollView } from 'react-native';
-import { useAuth } from '../../../auth/AuthProvider';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicActionQuoteCard } from '../../../components/music/MusicActionQuoteCard';
-import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
-import { createSongActionFlow } from '../../../lib/music/actionFlow';
+import { getCacheUser } from '../../../lib/appCache';
+import { useSongActionScreen } from '../../../components/music/useSongActionScreen';
 import { stemsAction } from '../../../lib/music/stemsAction';
 import { getStemArchive } from '../../../lib/music/client';
 import { actionMessage } from '../../../lib/music/actionMessages';
@@ -14,19 +13,11 @@ import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { ds } from '../../../theme';
 export default function Stems() {
-    const { id } = useLocalSearchParams<{ id: string }>(); const { api } = useAuth();
-    const user = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
-    // A disposed flow never revives, so every effect cleanup asks for a fresh one (StrictMode, Fast Refresh).
-    const [generation, setGeneration] = useState(0);
-    const flow = useMemo(() => createSongActionFlow(api, stemsAction(id), id), [api, id, user, generation]);
-    const state = useSyncExternalStore(flow.subscribe, flow.snapshot, flow.snapshot);
-    const pending = useSyncExternalStore(flow.attempts.subscribe, flow.attempts.snapshot, flow.attempts.snapshot);
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const { api, user, flow, state, pending } = useSongActionScreen(id, stemsAction);
     const [opening, setOpening] = useState(false); const zipLock = useRef(false); const s = useThemedStyles(sheets);
     useEffect(() => {
-        if (!flow.isLive()) { setGeneration(g => g + 1); return; }
         zipLock.current = false; setOpening(false);
-        if (user) void flow.load();
-        return flow.dispose;
     }, [flow, user]);
     const status = state.poll?.value?.state ?? (state.result ? 'queued' : null);
     useAnnouncement(status ? t(`musicActions.stems.${status}`) : null, { everywhere: true });

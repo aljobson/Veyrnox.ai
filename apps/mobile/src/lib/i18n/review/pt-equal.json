@@ -160,5 +160,6 @@
   "job.elapsedMinutes": "Standard abbreviations for minutes and seconds in this language: min and s.",
   "prov.prompt": "\"Prompt\" is the established loan word for the text instruction given to an AI model, used as is in this language.",
   "create.frameOriginal": "Common loanword or label identical to English in this language: Original.",
-  "music.create.instrumental": "Standard musical or interface term with the same spelling in this language."
+  "music.create.instrumental": "Standard musical or interface term with the same spelling in this language.",
+  "musicTargetStems.instrument.piano": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending."
 }

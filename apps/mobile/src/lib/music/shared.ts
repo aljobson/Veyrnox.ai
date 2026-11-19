@@ -90,3 +90,11 @@ import { parseMusicCrop as parseCrop } from '../../../../../lib/musicEditing.js'
 export const parseMusicCrop = parseCrop as (value: unknown) => Parsed<{
     versionId: string; start: number; end: number; idempotencyKey: string;
 }>;
+
+// Target-stem limits and identifiers are server-owned constants, not mobile feature flags.
+// @ts-ignore plain JS shared constants, typed only at this seam.
+import * as backend from '../../../../../lib/musicBackend.js';
+export type TargetStemInstrument = 'vocals' | 'drums' | 'bass' | 'guitar' | 'piano' | 'strings' | 'synthesizer' | 'brass' | 'woodwinds';
+export const { MUSIC_TARGET_STEM_INSTRUMENTS, MUSIC_TARGET_STEM_DURATION_MAX } = backend as unknown as {
+    MUSIC_TARGET_STEM_INSTRUMENTS: readonly TargetStemInstrument[]; MUSIC_TARGET_STEM_DURATION_MAX: number;
+};
