@@ -65,5 +65,6 @@
   "bestCut.language.ko": "Native language name, intentionally shared across locales.",
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
-  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube."
+  "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
+  "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language."
 }
