@@ -60,8 +60,8 @@ test('an image or audio card opens Create with the template prompt, like Create 
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: { modelId: 'suno', prompt: 'Soulful' } });
 });
 test('the header counts every kind', async () => {
-    const text = root.container.queryAll(n => typeof n.props.children === 'string' && /templates? on/.test(n.props.children)).map(n => n.props.children).join(' ');
-    expect(text).toMatch(/9 templates on 3 models/);
+    const text = root.container.queryAll(n => typeof n.props.children === 'string' && /^\d+ templates?$/.test(n.props.children)).map(n => n.props.children).join(' ');
+    expect(text).toBe('9 templates');
 });
 test('Explore still lists video when the image and audio lists fail to load', async () => {
     mockImages.mockRejectedValue(new Error('x')); mockAudio.mockRejectedValue(new Error('x'));

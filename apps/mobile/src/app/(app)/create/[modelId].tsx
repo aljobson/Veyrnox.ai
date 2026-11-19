@@ -1,6 +1,5 @@
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
-import { phonePhotoHints } from '../../../lib/templatePhotoHintText';
-import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
+import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
 import { fetchFreeAllowance } from '../../../lib/freeAllowance';
 import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
