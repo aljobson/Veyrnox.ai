@@ -1,6 +1,6 @@
 /**
  * Host-only proof on a disposable database already migrated through main.
- * Applies only 0563, twice, and rolls back all DDL, fixtures and dispatch rows.
+ * Applies 0563 then 0567, each twice, and rolls back all DDL, fixtures and dispatch rows.
  * No provider calls or migration replay of older quote/submit implementations.
  */
 import { after, before, describe, it } from 'node:test';
@@ -10,7 +10,7 @@ import { readFile } from 'node:fs/promises';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
-describe('music long-song pricing (0563)', { skip: !DATABASE_URL && 'DATABASE_URL not set', concurrency: false }, () => {
+describe('music long-song pricing and ceiling (0563, 0567)', { skip: !DATABASE_URL && 'DATABASE_URL not set', concurrency: false }, () => {
   let client;
   const rows = async (sql: string, params: unknown[] = []) => (await client.query(sql, params)).rows;
   const one = async (sql: string, params: unknown[] = []) => (await rows(sql, params))[0];
@@ -21,9 +21,11 @@ describe('music long-song pricing (0563)', { skip: !DATABASE_URL && 'DATABASE_UR
     await client.connect();
     await client.query('BEGIN');
     await client.query("SET LOCAL TIME ZONE 'UTC'");
-    const sql = await readFile(new URL('./schema/supabase/0563_music_long_song_duration_price.sql', import.meta.url), 'utf8');
-    await client.query(sql);
-    await client.query(sql);
+    for (const migration of ['0563_music_long_song_duration_price.sql', '0567_music_long_song_ceiling_135.sql']) {
+      const sql = await readFile(new URL(`./schema/supabase/${migration}`, import.meta.url), 'utf8');
+      await client.query(sql);
+      await client.query(sql);
+    }
     const updated = await client.query(`UPDATE public.model_catalog
       SET active=true, gated_flag=false, credits_5s=3
       WHERE id='ace-step-1.5' RETURNING provider, provider_endpoint, modality`);
@@ -133,18 +135,18 @@ describe('music long-song pricing (0563)', { skip: !DATABASE_URL && 'DATABASE_UR
 
   it('quotes every 60-second block boundary from the catalog unit', async () => {
     const owner = await user();
-    for (const [duration, unit] of [[10, 3], [59, 3], [61, 6], [120, 6], [121, 9], [180, 9]]) {
+    for (const [duration, unit] of [[10, 3], [59, 3], [60, 3], [61, 6], [120, 6], [121, 9], [135, 9]]) {
       await assertPrice(await quote(owner.authId, duration), duration, unit);
     }
   });
 
-  it('180 seconds debits 9 twice and replaying the pair key adds no debit or dispatch', async () => {
+  it('135 seconds debits 9 twice and replaying the pair key adds no debit or dispatch', async () => {
     const owner = await user();
-    const q = await quote(owner.authId, 180);
-    await assertPrice(q, 180, 9);
+    const q = await quote(owner.authId, 135);
+    await assertPrice(q, 135, 9);
     const key = `long.${randomUUID()}`;
     const made = await submit(owner.authId, q.quote_id, key);
-    await assertPair(made, 9, 180);
+    await assertPair(made, 9, 135);
     assert.equal(made.balance_after, q.balance_after);
     const beforeCounts = await counts(owner.id);
     const replay = await submit(owner.authId, q.quote_id, key);
@@ -153,13 +155,14 @@ describe('music long-song pricing (0563)', { skip: !DATABASE_URL && 'DATABASE_UR
     assert.deepEqual(replay.job_ids, made.job_ids);
     assert.equal(replay.balance_after, made.balance_after);
     assert.deepEqual(await counts(owner.id), beforeCounts);
-    await assertPair(replay, 9, 180);
+    await assertPair(replay, 9, 135);
   });
 
   it('invalid durations create no prompt, quote, job or debit', async () => {
     const owner = await user();
     const beforeCounts = await counts(owner.id);
     for (const [model, duration] of [
+      ['ace-step-1.5', 136], ['ace-step-1.5', 140], ['ace-step-1.5', 180],
       ['ace-step-1.5', 181], ['ace-step-1.5', 9], ['ace-step-1.5', null],
       ['ace-step', 61], ['ace-step-loop', 61],
     ] as [string, number | null][]) {
@@ -171,7 +174,7 @@ describe('music long-song pricing (0563)', { skip: !DATABASE_URL && 'DATABASE_UR
   it('rejects a changed catalog price or timestamp without debiting', async () => {
     const owner = await user();
     for (const change of ['price', 'timestamp', 'both']) {
-      const q = await quote(owner.authId, 180);
+      const q = await quote(owner.authId, 135);
       const beforeCounts = await counts(owner.id);
       const beforeBalance = (await one('SELECT balance FROM public.credit_balances WHERE user_id=$1', [owner.id])).balance;
       await client.query('SAVEPOINT stale_catalog');
@@ -191,27 +194,34 @@ describe('music long-song pricing (0563)', { skip: !DATABASE_URL && 'DATABASE_UR
     }
   });
 
-  it('custom vocal and instrumental quotes inherit 180-second pricing', async () => {
+  it('custom vocal and instrumental quotes inherit 135-second pricing', async () => {
     const owner = await user();
     assert.equal((await one('SELECT public.music_get_custom_draft($1) AS r', [owner.authId])).r.ok, true);
     const saved = (await one('SELECT public.music_save_custom_draft($1,0,$2,$3,$4,$5) AS r',
       [owner.authId, 'ace-step-1.5', '[Verse]\nHarbour lights', 'warm piano', 'Harbour'])).r;
     assert.equal(saved.ok, true);
     for (const instrumental of [false, true]) {
-      const q = (await one('SELECT public.music_create_custom_quote($1,$2,$3,$4,180) AS r',
+      const q = (await one('SELECT public.music_create_custom_quote($1,$2,$3,$4,135) AS r',
         [owner.authId, saved.draft.revision, instrumental, !instrumental])).r;
-      await assertPrice(q, 180, 9);
+      await assertPrice(q, 135, 9);
       assert.equal(q.mode, 'custom');
       assert.equal(q.instrumental, instrumental);
       assert.equal(q.draft_revision, saved.draft.revision);
+      const beforeCounts = await counts(owner.id);
+      for (const duration of [136, 140, 180]) {
+        const invalid = (await one('SELECT public.music_create_custom_quote($1,$2,$3,$4,$5::integer) AS r',
+          [owner.authId, saved.draft.revision, instrumental, !instrumental, duration])).r;
+        assert.deepEqual(invalid, { ok: false, code: 'INVALID_INPUTS' });
+        assert.deepEqual(await counts(owner.id), beforeCounts);
+      }
     }
   });
 
   it('the webhook refund RPC returns the long take’s recorded 9 Credits exactly once', async () => {
     const owner = await user();
-    const q = await quote(owner.authId, 180);
+    const q = await quote(owner.authId, 135);
     const made = await submit(owner.authId, q.quote_id);
-    await assertPair(made, 9, 180);
+    await assertPair(made, 9, 135);
     const job = await one('SELECT id,user_id,credits FROM public.jobs WHERE id=$1', [made.job_ids[0]]);
     // lib/falWebhookHandler.js passes these same persisted fields to ledger_refund.
     const refund = async () => (await one("SELECT public.ledger_refund($1,$2,$3,'refund:provider_failed') AS r",
@@ -254,9 +264,9 @@ describe('music long-song pricing (0563)', { skip: !DATABASE_URL && 'DATABASE_UR
 
   it('the paid-plan gate remains enforced at quote and submit', async () => {
     const unpaid = await user(false);
-    assert.deepEqual(await quote(unpaid.authId, 180), { ok: false, code: 'PLAN_UNAVAILABLE' });
+    assert.deepEqual(await quote(unpaid.authId, 135), { ok: false, code: 'PLAN_UNAVAILABLE' });
     const owner = await user();
-    const q = await quote(owner.authId, 180);
+    const q = await quote(owner.authId, 135);
     assert.equal(q.ok, true);
     await client.query("UPDATE public.credit_subscriptions SET current_period_end=now()-interval '1 second' WHERE user_id=$1", [owner.id]);
     const beforeCounts = await counts(owner.id);

@@ -101,27 +101,27 @@ for (const paid of [false, true]) {
 
   test(`flag on changes only premium duration controls for ${paid ? 'paid' : 'unpaid'} entitlements`, () => {
     const expected = previousEntitlements(paid);
-    expected.models[1].controls.duration_seconds.max = 180;
+    expected.models[1].controls.duration_seconds.max = 135;
     expected.models[1].controls.duration_price_block_seconds = 60;
     assert.deepEqual(musicEntitlementProjection({ ...fixture(paid), longSongs: true }), expected);
   });
 }
 
-test('flag on accepts integer 10..180 seconds for premium Simple and Custom only', () => {
+test('flag on accepts integer 10..135 seconds for premium Simple and Custom only', () => {
   const options = { longSongs: true };
   for (const body of [simple('ace-step-1.5'), custom, customInstrumental]) {
     assert.equal(parseMusicQuote(body, options).durationSeconds, 60);
-    for (const seconds of [10, 60, 61, 180]) {
+    for (const seconds of [10, 60, 61, 120, 121, 135]) {
       const result = parseMusicQuote({ ...body, duration_seconds: seconds }, options);
       assert.equal(result.ok, true);
       assert.equal(result.durationSeconds, seconds);
     }
-    for (const seconds of [9, 181, 120.5, '120']) {
+    for (const seconds of [9, 136, 140, 180, 181, 120.5, '120']) {
       assert.deepEqual(parseMusicQuote({ ...body, duration_seconds: seconds }, options), { ok: false, error: 'duration_invalid' });
     }
   }
   for (const modelId of ['ace-step', 'ace-step-loop']) {
-    for (const seconds of [61, 180]) {
+    for (const seconds of [61, 120, 121, 135, 136, 140, 180]) {
       assert.deepEqual(parseMusicQuote({ ...simple(modelId), duration_seconds: seconds }, options), { ok: false, error: 'duration_invalid' });
     }
     assert.equal(parseMusicQuote({ ...simple(modelId), duration_seconds: 60 }, options).ok, true);
@@ -129,19 +129,19 @@ test('flag on accepts integer 10..180 seconds for premium Simple and Custom only
 });
 
 test('duration bounds widen only for premium with a boolean enabled flag', () => {
-  assert.equal(MUSIC_LONG_SONG_MAX, 180);
+  assert.equal(MUSIC_LONG_SONG_MAX, 135);
   for (const modelId of [...modelIds, 'unknown']) {
     assert.deepEqual(musicDurationBounds(modelId), { min: 10, max: 60, default: 60 });
     for (const longSongs of [false, 'false', 'true', true]) {
       assert.deepEqual(musicDurationBounds(modelId, { longSongs }), {
-        min: 10, max: modelId === 'ace-step-1.5' && longSongs === true ? 180 : 60, default: 60,
+        min: 10, max: modelId === 'ace-step-1.5' && longSongs === true ? 135 : 60, default: 60,
       });
     }
   }
 });
 
 test('display price blocks mirror SQL at each minute boundary and never scale other models', () => {
-  for (const [seconds, blocks] of [[10, 1], [60, 1], [61, 2], [120, 2], [121, 3], [180, 3]]) {
+  for (const [seconds, blocks] of [[10, 1], [60, 1], [61, 2], [120, 2], [121, 3], [135, 3]]) {
     assert.equal(musicDurationPriceBlocks('ace-step-1.5', seconds), blocks);
     for (const modelId of ['ace-step', 'ace-step-loop', 'unknown']) {
       assert.equal(musicDurationPriceBlocks(modelId, seconds), 1);
