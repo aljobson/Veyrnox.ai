@@ -72,11 +72,11 @@ function runner(render) {
   };
   return r;
 }
-async function setup(t, { edited = false, newer = false, assets = {} } = {}) {
+async function setup(t, { edited = false, newer = false, assets = {}, localVersion } = {}) {
   const id = crypto.randomUUID(), userId = crypto.randomUUID(), projectId = crypto.randomUUID();
   const doc = { ...createBeat({ id, now: 1 }), assets };
   const cloud = { userId, projectId, revision: 1, syncedUpdatedAt: 1 };
-  fixture = { userId, record: { id, doc: { ...doc, updatedAt: edited ? 2 : 1 }, updatedAt: edited ? 2 : 1, revision: 1, cloud },
+  fixture = { userId, record: { id, doc: { ...doc, ...(localVersion ? { version: localVersion } : {}), updatedAt: edited ? 2 : 1 }, updatedAt: edited ? 2 : 1, revision: 1, cloud },
     calls: [], announcements: [], rows: [],
     get: async () => ({ project: { id: projectId, revision: newer ? 2 : 1 }, doc_json: JSON.stringify({ ...doc, title: newer ? 'From account' : doc.title, updatedAt: newer ? 3 : 1 }) }),
     save: async body => ({ project: { id: projectId, revision: body.expected_revision + 1 } }),
@@ -107,6 +107,14 @@ async function setup(t, { edited = false, newer = false, assets = {} } = {}) {
   return { project, sync, run, settle, timers };
 }
 const saves = () => fixture.calls.filter(call => Array.isArray(call) && call[0] === 'save');
+test('a valid version-5 local record opens in an update-required state, never as an editable document', async t => {
+  const h = await setup(t, { edited: true, localVersion: 5 });
+  assert.equal(h.project.output.error, 'update_required');
+  assert.ok(!h.project.output.doc, 'the editor must not receive the v5 document');
+  assert.equal(fixture.record.doc.version, 5);
+  assert.equal(fixture.calls.includes('local-write'), false);
+  assert.equal(saves().length, 0);
+});
 test('unchanged open reads once, never writes or lists absent takes', async t => {
   const h = await setup(t); await h.run();
   assert.deepEqual(fixture.calls, ['get']);
@@ -262,4 +270,33 @@ test('a transient upload failure is not retried by a document save before its de
   assert.deepEqual(h.sync.output.media, ['one']);
   await h.run(60000);
   assert.equal(uploads(), 2); assert.deepEqual(h.sync.output.media, []);
+});
+
+test('BEAT_CLIENT_OUTDATED stops automatic retries and announces update required', async t => {
+  const h = await setup(t, { edited: true });
+  fixture.save = async () => { throw { code: 'BEAT_CLIENT_OUTDATED', status: 409 }; };
+  await h.run();
+  assert.equal(h.sync.output.state, 'update_required');
+  assert.match(h.sync.output.message, /Update the app/);
+  assert.equal(h.timers.size, 0);
+  const count = saves().length;
+  await h.sync.output.checkpoint(); await h.settle();
+  assert.equal(saves().length, count); assert.equal(h.timers.size, 0);
+});
+for (const version of [5, 6, 999]) test(`cloud open v${version} refuses persistence without writes, stash or retry`, async t => {
+  const h = await setup(t, { newer: true });
+  const raw = JSON.stringify({ ...fixture.record.doc, version, ...(version === 5 ? { markers: [{ id: 'a', name: 'Intro', tick: 3 }] } : {}) });
+  const before = JSON.stringify(fixture.record);
+  fixture.get = async () => ({ project: { id: fixture.record.cloud.projectId, revision: 2 }, doc_json: raw });
+  await h.run();
+  assert.equal(h.sync.output.state, 'update_required'); assert.equal(h.timers.size, 0);
+  assert.equal(JSON.stringify(fixture.record), before); assert.deepEqual(fixture.calls, ['get']);
+});
+test('outdated response while resolving a conflict clears the conflict and never retries', async t => {
+  const h = await setup(t, { edited: true, newer: true });
+  fixture.save = async () => { throw { code: 'VERSION_CONFLICT', status: 409 }; };
+  await h.run();
+  fixture.save = async () => { throw { code: 'BEAT_CLIENT_OUTDATED', status: 409 }; };
+  await h.sync.output.resolve('mine'); await h.settle();
+  assert.equal(h.sync.output.state, 'update_required'); assert.equal(h.sync.output.conflict, null); assert.equal(h.timers.size, 0);
 });

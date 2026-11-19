@@ -72,7 +72,7 @@ try {
     await query('ROLLBACK TO SAVEPOINT title_cases');
   });
   await check('invalid document, keys, track count, mode and size are refused', async () => {
-    for (const content of ['{', 'null', '[]', '{}', JSON.stringify({ ...doc, id: other }), JSON.stringify({ ...doc, version: 5 }), JSON.stringify({ ...doc, tracks: Array(17).fill({}) }), raw + ' '.repeat(262144)])
+    for (const content of ['{', 'null', '[]', '{}', JSON.stringify({ ...doc, id: other }), JSON.stringify({ ...doc, version: 6 }), JSON.stringify({ ...doc, tracks: Array(17).fill({}) }), raw + ' '.repeat(262144)])
       await rejects(save, [beatId, 1, content, doc.title, 'autosave', 'invalid-doc'], 'PT400');
     await rejects(save, [beatId, 1, raw, 'Other title', 'autosave', 'invalid-doc'], 'PT400');
     await rejects(save, [beatId, 1, raw, doc.title, 'unknown', 'invalid-mode'], 'PT400');

@@ -1,3 +1,4 @@
+import { BEAT_READ_VERSION, assertBeatWritable } from './beatCompatibility.mjs';
 import { gatewayFetch } from '../../gateway.js';
 import { getStoredUserId } from '../../../../lib/authClient.js';
 import { loadLocalTake } from '../localTakes.js';
@@ -16,8 +17,11 @@ async function call(url, init = {}, options = {}) {
 }
 export const listCloudBeats = options => call(base, {}, options);
 export const getCloudBeat = (id, options) => call(path(id), {}, options);
-export const saveCloudBeat = (id, body, key, options) => call(path(id), { method: 'PUT', body: JSON.stringify(body), headers: { 'Idempotency-Key': key } }, options);
-export const removeCloudBeat = (id, revision, options) => call(path(id), { method: 'DELETE', body: JSON.stringify({ expected_revision: revision }) }, options);
+export const saveCloudBeat = (id, body, key, options) => {
+  assertBeatWritable(JSON.parse(body.doc_json));
+  return call(path(id), { method: 'PUT', body: JSON.stringify({ ...body, client_beat_version: BEAT_READ_VERSION }), headers: { 'Idempotency-Key': key } }, options);
+};
+export const removeCloudBeat = (id, revision, options) => call(path(id), { method: 'DELETE', body: JSON.stringify({ expected_revision: revision, client_beat_version: BEAT_READ_VERSION }) }, options);
 export const listVersions = (id, options) => call(`${path(id)}/versions`, {}, options);
 export const getVersion = (id, version, options) => call(`${path(id)}/versions/${encodeURIComponent(version)}`, {}, options);
 export const listTakes = (id, options) => call(`${path(id)}/takes`, {}, options);

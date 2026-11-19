@@ -183,13 +183,13 @@ test('damaged rows count toward the cap and can be deleted without deleting a re
   const isolated = await import('../app/veyrnox/_lib/music/beat/beatStore.js?damaged-delete');
   const doc = createBeat({ id: randomUUID(), now: 1 });
   await isolated.createBeat(doc);
-  fake.rows.get(doc.id).doc.version = 999;
+  fake.rows.get(doc.id).doc.title = '';
   const listing = await isolated.listBeats();
   assert.equal(listing.count, 1); assert.equal(listing.records.length, 0);
   assert.deepEqual(listing.damaged, [{ id: doc.id, revision: 1 }]);
   fake.rows.get(doc.id).doc = doc;
   assert.equal((await isolated.deleteDamagedBeat(doc.id, 1)).error, 'conflict');
-  fake.rows.get(doc.id).doc = { ...doc, version: 999 };
+  fake.rows.get(doc.id).doc = { ...doc, title: '' };
   assert.equal((await isolated.deleteDamagedBeat(doc.id, 2)).error, 'conflict');
   assert.equal((await isolated.deleteDamagedBeat(doc.id, 1)).action, 'delete');
   assert.equal((await isolated.listBeats()).count, 0);
