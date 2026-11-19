@@ -5,7 +5,9 @@ import type { MusicSongDetail } from '../../lib/music/types';
 export function MusicSongActions({ song }: { song: MusicSongDetail }) {
     const router = useRouter();
     if (song.lifecycle_status === 'trashed') return null;
-    return <>{(['stems', 'crop'] as const).filter(name => song.actions.includes(name)).map(name =>
+    return <>{(['add_section', 'replace_section'] as const).filter(name => song.actions.includes(name)).map(name =>
+        <Button key={name} variant="secondary" label={t(`musicSectionActions.${name}.title`)}
+            onPress={() => router.push({ pathname: name === 'add_section' ? '/music/add-section' : '/music/replace-section', params: { id: song.id } } as never)} />)}{(['stems', 'crop'] as const).filter(name => song.actions.includes(name)).map(name =>
         <Button key={name} variant="secondary" label={t(`musicActions.${name}.title`)}
             onPress={() => router.push({ pathname: `/music/${name}`, params: { id: song.id } } as never)} />)}
         {song.actions.includes('target_stem') ? <Button variant="secondary" label={t('musicTargetStems.title')}

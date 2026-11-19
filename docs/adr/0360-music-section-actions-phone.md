@@ -1,0 +1,39 @@
+# ADR-0360: Add and replace music sections on the phone
+
+Status: Built; independently inspected and host-bundled for iOS and Android.
+
+## Decision
+
+P3d1 adds Add a section and Replace a section only when the active song advertises `add_section` or `replace_section`. P3d2 track add remains pending. Both screens extend `MusicGenerationActionBody` with section forms and quote details, and reuse P3c's attempts, flow, confirmation lock, polling, candidate playback and P2 queue adoption. The section specs compose the P3c lifecycle rather than introducing another generation framework. Each candidate plays its own validated job, even when both share a song.
+
+The add-section and replace quote/confirm handlers, commit handler, parsers in `lib/musicBackend.js`, and commit RPC in migration 0483 were read in this checkout. All handlers set `Cache-Control: no-store`. Shared constants supply lyrics, styles, source and range limits. Beginning/end and 10/20/30 seconds are mirrored closed lists because the server parser does not export lists; executable parity tests call that parser. Add-section lyrics may be omitted or sent as a trimmed string; empty means instrumental. One discrepancy in the frozen server facts: the actual parser treats a non-string lyrics value as empty rather than rejecting it. The phone follows the stricter work-order contract and rejects non-string lyrics before transport. No server change is proposed.
+
+Replace start/end are stored as integer half-seconds and serialized by dividing by two. The server's floating-point `end - start < 1` comparison blocks finer decimal steps: for example, 0.4..1.4 can be rejected even though its displayed span is one second. All selectable ranges on the 0..60-second grid are checked against the server arithmetic and parser. The UI shows live range validation and uses a finite known song duration as an upper-bound hint when available. Today's song detail projection and screen-local player expose no transferable duration hint; otherwise the UI uses the shared 60-second maximum. Server measurement remains authoritative.
+
+`actionFlow` now retains only a validated projection of finite non-negative `source_duration_seconds` and `max_duration_seconds`, beside the error code. No other response metadata is retained. Edits, new reviews, reloads and disposal clear it. A screen test exercises a server `range_invalid` response through the flow to the rendered measured-duration message and clears it with an edit.
+
+## Spending, guards and recovery
+
+Only `/sections` and `/replacements` confirm a paid pair. Anchored patterns register these endpoints in both central guards. Quote endpoints stay free and outside content consent, matching P3c's existing quote policy despite their text fields. The commit endpoint sends only identifiers and an idempotency key, moves no credits, and submits no generation content. It therefore remains outside both guards. Real-client tests explicitly prove `/replacements/commit` cannot match the confirmation patterns and can run while consent is declined and the paywall is locked.
+
+One `addsection` or `replace` prefixed key belongs to each quote. Unknown pair acceptance remains ambiguous and replays that key after expiry or a balance drop. Only unsubmitted attempts are blocked by expiry or affordability. Form and rights edits invalidate unsubmitted quotes; ambiguous attempts lock editing. Replay displays only its own finite balance. Definitive source, rights, policy, duration, position, styles, lyrics and range errors clear attempts. Accepted generations enter the existing account-scoped P2 queue. No new status route, persistence, background retry or paid server call is introduced.
+
+## Choosing a replacement
+
+Ready candidates with UUID version IDs offer an explicit Keep action. Nothing commits automatically. A synchronous lock prevents double taps across both candidates. Commit uses `replace-commit.<generation_id>.<version_id>` on every attempt, including unknown outcomes. While an outcome is unknown, only that same take can be retried by a user tap. Success marks the chosen take, disables both Keep controls and notifies `songChanges`.
+
+`take_commit_conflict` reports that another take was already chosen and disables further selection while auditioning remains usable. `revision_conflict` is definitive: the RPC rejects a source advanced by another writer or a later operation. It disables Keep for the pair, preserves both Play controls and offers current-song navigation. A mocked competing writer verifies this branch. Account disposal blocks late success handling, notifications and later commits, as well as generation polling.
+
+The pair and selection state are memory-only. Leaving before keeping loses the ability to select an uncommitted take from this screen. The P2 queue retains playback/current-song navigation, not selection. The web replace dialog cannot accept an existing generation ID either. **Neither surface recovers an abandoned uncommitted pair.** Persistent result copy warns before navigation and repeats beside ready Keep controls. No web recovery is claimed.
+
+## Localization and validation
+
+`musicSectionActions.*` has an English area and machine translations in all ten app catalogs, with generated registry, dynamic key fixtures and equality/expanded-copy review records. Native language review is pending. Existing P2/P3a/P3b/P3c tests are unchanged. New mocked tests cover response fields, exact bodies, every range on the half-second grid, form edits, guards, ambiguous replay, polling, candidate playback, commit locking, conflicts, account disposal and metadata rendering.
+
+The frozen order prohibits devices, simulators and ADB and requests mocked tests. That specific instruction takes precedence over the general ARTEMIS exploration rule; no device exploration is claimed. The host's separate P3d waiver confirmation was not supplied. Heavy proof uses the build-slot serialization rather than presuming that waiver.
+
+The canonical mobile installation path exists and this checkout's existing node_modules symlink points to it. No dependencies were installed or shared with a different lockfile. The owner wrapper was denied write access to its shared lock outside the writable sandbox. A temporary adapter executes that same wrapper with read-only access to the existing lock inode and the same exclusive flock, omitting its write-only chmod. It does not create a second lock, modify the wrapper, weaken serialization or stop another session. Process inventory via `ps` was also denied. No source outside this checkout was edited, and no commit, push or publication was performed.
+
+Completed agreed proof from `apps/mobile`: `npx tsc --noEmit` exits 2 with 22 diagnostics, all in untouched files and identical to the initial baseline; `npx jest --ci` exits 1 with 603 passing suites, 15 known missing-dependency load failures and one timeout in untouched `editorVersionsSheet.test.tsx` (619 suites total). It reports 13,103 passing tests and one failing test. The unchanged editor suite then passes in isolation: 18/18 tests, exit 0. The focused section/P3c/i18n run passes 429/429 tests in eight suites. Registry check exits 0 (`English registry is current.`), and `git diff --check` passes. Changed-file lint cannot load `eslint-config-expo/flat` (exit 2).
+
+The full run took 1134.457 seconds while observed host load averages were approximately 22–30. Contention is a plausible cause of the timeout, not a proven one. The work-order requirement of zero executed test failures was **not met in that full run**; the proposed validation deviation is to retain the unchanged test and have the host re-run full proof under lower load. No test timeout was raised or failure suppressed. Host iOS/Android bundles and native validation remain outside this build's scope.

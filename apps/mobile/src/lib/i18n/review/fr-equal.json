@@ -231,5 +231,6 @@
   "music.create.simple": "Standard musical or interface term with the same spelling in this language.",
   "music.create.styles": "Standard musical or interface term with the same spelling in this language.",
   "music.create.instrumental": "Standard musical or interface term with the same spelling in this language.",
-  "musicTargetStems.instrument.piano": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending."
+  "musicTargetStems.instrument.piano": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
+  "musicSectionActions.position": "Shared musical or interface term in this locale; machine translation. Native review pending."
 }

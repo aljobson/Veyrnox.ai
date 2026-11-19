@@ -1,3 +1,5 @@
+import type { AddSectionParameters, ReplaceParameters, MusicAddSectionQuote, MusicReplaceQuote, ReplaceCommit } from './sectionActionTypes';
+import { validSectionPosition, validSectionDuration, validSectionStyles, validSectionLyrics, validReplaceRange, isMusicAddSectionQuote, isMusicReplaceQuote, isReplaceCommit, isSectionUuid } from './validateSectionActions';
 import type { MusicExtendQuote, MusicCoverQuote, GenerationActionStart } from './generationActionTypes';
 import { isMusicExtendQuote, isMusicCoverQuote, parseGenerationActionStart, validActionPrompt, validSourceInfluence } from './validateGenerationActions';
 import type { TargetStemInstrument } from './shared';
@@ -185,3 +187,45 @@ async function startPairAction(api: ApiClient, songId: string, route: 'extends' 
 }
 export const startExtend = (api: ApiClient, songId: string, quoteId: string, key: string) => startPairAction(api, songId, 'extends', quoteId, key);
 export const startCover = (api: ApiClient, songId: string, quoteId: string, key: string) => startPairAction(api, songId, 'covers', quoteId, key);
+
+export async function createAddSectionQuote(api: ApiClient, songId: string, versionId: string, input: AddSectionParameters): Promise<MusicAddSectionQuote> {
+    if (!validSectionPosition(input.position)) throw new ApiError(400, 'section_position_invalid');
+    if (!validSectionDuration(input.duration_seconds)) throw new ApiError(400, 'section_duration_invalid');
+    if (!validSectionStyles(input.styles)) throw new ApiError(400, 'styles_invalid');
+    if (!validSectionLyrics(input.lyrics)) throw new ApiError(400, 'lyrics_invalid');
+    const { position, duration_seconds } = input;
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/add-section-quotes`, post({
+        version_id: versionId, position, duration_seconds, styles: input.styles.trim(),
+        ...(input.lyrics === undefined ? {} : { lyrics: input.lyrics.trim() }), rights_confirmed: true,
+    }));
+    if (!isMusicAddSectionQuote(v) || v.position !== position || v.duration_seconds !== duration_seconds || v.instrumental !== !input.lyrics?.trim()) throw bad();
+    return v;
+}
+export async function createReplaceQuote(api: ApiClient, songId: string, versionId: string, input: ReplaceParameters): Promise<MusicReplaceQuote> {
+    if (!validActionPrompt(input.prompt)) throw new ApiError(400, 'prompt_invalid');
+    if (!validReplaceRange(input.start_seconds, input.end_seconds)) throw new ApiError(400, 'range_invalid');
+    const { start_seconds, end_seconds } = input;
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/replace-quotes`, post({
+        version_id: versionId, prompt: input.prompt.trim(), start_seconds, end_seconds, rights_confirmed: true,
+    }));
+    if (!isMusicReplaceQuote(v) || v.start_seconds !== start_seconds || v.end_seconds !== end_seconds) throw bad();
+    return v;
+}
+export async function startAddSection(api: ApiClient, songId: string, quoteId: string, key: string): Promise<GenerationActionStart> {
+    return startSectionPair(api, songId, 'sections', quoteId, key);
+}
+export async function startReplace(api: ApiClient, songId: string, quoteId: string, key: string): Promise<GenerationActionStart> {
+    return startSectionPair(api, songId, 'replacements', quoteId, key);
+}
+async function startSectionPair(api: ApiClient, songId: string, route: string, quoteId: string, key: string): Promise<GenerationActionStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/${route}`, post({ quote_id: quoteId, idempotency_key: key }));
+    const result = parseGenerationActionStart(v); if (!result) throw bad(); return result;
+}
+export const replaceCommitKey = (generationId: string, versionId: string) => `replace-commit.${generationId}.${versionId}`;
+export async function commitReplaceTake(api: ApiClient, songId: string, generationId: string, versionId: string): Promise<ReplaceCommit> {
+    if (!isSectionUuid(generationId) || !isSectionUuid(versionId)) throw new ApiError(400, 'invalid_request');
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/replacements/commit`, post({
+        generation_id: generationId, version_id: versionId, idempotency_key: replaceCommitKey(generationId, versionId),
+    }));
+    if (!isReplaceCommit(v) || v.version_id !== versionId) throw bad(); return v;
+}

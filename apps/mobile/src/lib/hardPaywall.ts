@@ -58,6 +58,7 @@ const PAID_ACTIONS: readonly RegExp[] = [
     /^\/api\/v1\/music\/songs\/[^/?]+\/stems\/?$/,
     /^\/api\/v1\/music\/songs\/[^/?]+\/extends\/?$/,
     /^\/api\/v1\/music\/songs\/[^/?]+\/covers\/?$/,
+    /^\/api\/v1\/music\/songs\/[^/?]+\/(sections|replacements)\/?$/,
     /^\/api\/v1\/editor\/speech-analyses\/?(\?|$)/,
     /^\/api\/v1\/editor\/ai-edit\/?(\?|$)/,
     /^\/api\/v1\/generations\/?$/,
