@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View } from 'react-native';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 import { VeyLoader } from '../VeyLoader';
@@ -8,10 +8,15 @@ import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 
-export function MusicPlayer({ input, onDuration }: { input: PlaybackInput; onDuration?: (seconds: number) => void }) {
+export function MusicPlayer({ input, onDuration, autoPlay = false }: { input: PlaybackInput; onDuration?: (seconds: number) => void; autoPlay?: boolean }) {
     const s = useThemedStyles(sheets);
     const player = useMusicPlayer();
     const { state } = player;
+    const play = useRef(player.play);
+    play.current = player.play;
+    useEffect(() => {
+        if (autoPlay) void play.current(input);
+    }, [autoPlay, input]);
     useEffect(() => { if (state.duration > 0) onDuration?.(state.duration); }, [onDuration, state.duration]);
     const message = t(`music.player.${state.state}`);
     useAnnouncement(message, { everywhere: true });

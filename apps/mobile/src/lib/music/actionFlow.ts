@@ -77,7 +77,11 @@ export function createSongActionFlow<R extends { balance_after?: number }, S>(ap
                 if (disposed) return;
                 const result = await attempts.confirm(pending.quote);
                 if (disposed) return;
-                update({ result, balance: result.balance_after ?? (spec.balanceOnReplay === 'omit' ? null : pending.quote.balance_after) });
+                update({ result, balance: spec.resultBalanceOnly
+                    ? (Number.isFinite(result.balance_after) ? result.balance_after! : null)
+                    : result.balance_after ?? (spec.balanceOnReplay === 'omit' ? null : pending.quote.balance_after) });
+                // Adoption by a tracker must never block polling or report a false failure after an accepted spend.
+                try { spec.accepted?.(api, result, pending.input, pending.quote); } catch { /* polling continues */ }
                 poll?.dispose();
                 poll = pollUntil({ ...options.poll, read: () => spec.status(api, result), terminal: spec.terminal,
                     onChange(value) { if (value.state === 'off') off(); else update({ poll: value }); } });

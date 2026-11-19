@@ -98,3 +98,7 @@ export type TargetStemInstrument = 'vocals' | 'drums' | 'bass' | 'guitar' | 'pia
 export const { MUSIC_TARGET_STEM_INSTRUMENTS, MUSIC_TARGET_STEM_DURATION_MAX } = backend as unknown as {
     MUSIC_TARGET_STEM_INSTRUMENTS: readonly TargetStemInstrument[]; MUSIC_TARGET_STEM_DURATION_MAX: number;
 };
+
+export const { MUSIC_COVER_PROMPT_MAX, MUSIC_EXTEND_SECONDS, MUSIC_EXTEND_DURATION_MAX, MUSIC_COVER_DURATION_MAX } = backend as unknown as {
+    MUSIC_COVER_PROMPT_MAX: number; MUSIC_EXTEND_SECONDS: number; MUSIC_EXTEND_DURATION_MAX: number; MUSIC_COVER_DURATION_MAX: number;
+};

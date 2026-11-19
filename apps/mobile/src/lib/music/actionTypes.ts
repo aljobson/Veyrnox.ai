@@ -1,7 +1,7 @@
 import type { ApiClient } from '../api';
 export type MusicActionQuote = Readonly<{
     quote_id: string; model_id: string; total_credits: number; balance: number; balance_after: number;
-    affordable: boolean; expires_at: string; outputs: readonly string[];
+    affordable: boolean; expires_at: string; outputs?: readonly string[];
 }>;
 export type StemStart = Readonly<{
     request_id: string; job_id: string; state: string; balance_after?: number; idempotent?: true;
@@ -21,9 +21,11 @@ export type ActionInput = Readonly<{
 export type ActionSpec<R extends { balance_after?: number }, S> = Readonly<{
     name: string; keyPrefix: string; definitiveCodes: ReadonlySet<string>;
     balanceOnReplay?: 'omit';
+    resultBalanceOnly?: boolean;
     quote(api: ApiClient, input: ActionInput): Promise<MusicActionQuote>;
     confirm(api: ApiClient, quoteId: string, key: string): Promise<R>;
     beforeConfirm?(): Promise<void>;
+    accepted?(api: ApiClient, result: R, input: ActionInput, quote: MusicActionQuote): void;
     status(api: ApiClient, result: R): Promise<S>;
     terminal(status: S): boolean;
 }>;

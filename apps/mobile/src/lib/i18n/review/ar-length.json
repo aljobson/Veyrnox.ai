@@ -1926,6 +1926,12 @@
     "ratio": 3
   },
   {
+    "id": "musicGenerationActions.state.queued",
+    "english": "Queued",
+    "translation": "في قائمة الانتظار",
+    "ratio": 2.83
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
