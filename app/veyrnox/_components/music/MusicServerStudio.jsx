@@ -5,6 +5,8 @@ import { getStoredUserId } from '../../../lib/authClient';
 import { addToDraft, NEW_CHAT, readDraft } from '../../_lib/chatLocal';
 import { Modal } from '../Modal';
 import { useMusicServerState } from './useMusicServerState';
+import { MusicDurationField } from './MusicDurationField';
+import { useMusicDuration } from './useMusicDuration';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 import { MusicTempoKeyControls, tempoKeyInvalid, tempoKeyQuoteFields } from './MusicTempoKeyControls';
 import { useMusicCustomDraft } from './useMusicCustomDraft';
@@ -186,11 +188,11 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
   const [lyricistProfileId, setLyricistProfileId] = useState('');
   const [instrumental, setInstrumental] = useState(false);
   const [rightsConfirmed, setRightsConfirmed] = useState(false);
-  const [durationSeconds, setDurationSeconds] = useState(60);
   const [generationError, setGenerationError] = useState('');
   const limits = entitlements?.custom_drafts || { lyrics_max: 3000, styles_max: 500, title_max: 80 };
   const selectedModel = entitlements?.models?.find((item) => item.id === custom.draft.model_id) || entitlements?.models?.[0];
   const controls = selectedModel?.controls || {};
+  const [durationSeconds, setDurationSeconds] = useMusicDuration(controls.duration_seconds, clearQuote);
   const customSupported = selectedModel?.generation_modes?.includes('custom') && selectedModel?.available !== false;
   const canQuoteCustom = Boolean(customSupported && custom.draft.styles.trim()
     && (instrumental || (custom.draft.lyrics.trim() && rightsConfirmed))
@@ -422,10 +424,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
             <span><strong className="block">Instrumental</strong><span className="mt-1 block text-vx-fg-muted">Use the saved style direction without sending draft lyrics.</span></span>
             <input aria-label="Create an instrumental" type="checkbox" checked={instrumental} onChange={(event) => { setInstrumental(event.target.checked); setRightsConfirmed(false); clearQuote(); }} className="mt-1 h-5 w-5 shrink-0 accent-vx-accent" />
           </label>
-          <label className="block text-sm font-bold text-vx-fg-body">
-            <span className="flex items-center justify-between gap-3"><span>Song duration</span><output htmlFor="custom-music-duration" className="font-vx-mono text-xs text-vx-accent">{durationSeconds} seconds</output></span>
-            <input id="custom-music-duration" aria-label="Custom song duration" type="range" min="10" max="60" step="5" value={durationSeconds} onChange={(event) => { setDurationSeconds(Number(event.target.value)); clearQuote(); }} className="mt-3 w-full accent-vx-accent" />
-          </label>
+          <MusicDurationField id="custom-music-duration" ariaLabel="Custom song duration" value={durationSeconds} onChange={(event) => { setDurationSeconds(Number(event.target.value)); clearQuote(); }} bounds={controls.duration_seconds} blockSeconds={controls.duration_price_block_seconds} />
           {!instrumental ? (
             <label className="flex items-start gap-3 text-sm text-vx-fg-body">
               <input type="checkbox" checked={rightsConfirmed} onChange={(event) => { setRightsConfirmed(event.target.checked); clearQuote(); }} className="mt-1 h-5 w-5 shrink-0 accent-vx-accent" />
@@ -466,10 +465,10 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const [styleInfluence, setStyleInfluence] = useState(0);
   const [excludeStyles, setExcludeStyles] = useState('');
   const [tempoKey, setTempoKey] = useState({ bpm: '', keyScale: '', timeSignature: '' });
-  const [durationSeconds, setDurationSeconds] = useState(60);
   const [instrumental, setInstrumental] = useState(true);
   const [sourceId, setSourceId] = useState(null);
   const model = useMemo(() => entitlements?.models?.find((item) => item.id === modelId) || entitlements?.models?.[0], [entitlements, modelId]);
+  const [durationSeconds, setDurationSeconds] = useMusicDuration(model?.controls?.duration_seconds, clearQuote, { active: mode === 'simple' });
   const custom = useMusicCustomDraft({ active: mode === 'custom', defaultModelId: model?.id || modelId });
   const customSelectedModel = entitlements?.models?.find((item) => item.id === custom.draft.model_id);
   const customReady = Boolean(customSelectedModel?.generation_modes?.includes('custom') && customSelectedModel?.available !== false);
@@ -582,11 +581,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
             </label>
             {model?.available === false ? <p role="status" className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-muted">This higher-quality model requires an active paid plan. Choose ACE-Step or open Credits &amp; billing to upgrade.</p> : null}
             {model?.controls?.duration_seconds ? (
-              <label className="block rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm font-bold text-vx-fg-body">
-                <span className="flex items-center justify-between gap-3"><span>Song duration</span><output htmlFor="music-duration" className="font-vx-mono text-xs text-vx-accent">{durationSeconds} seconds</output></span>
-                <input id="music-duration" aria-label="Song duration" type="range" min={model.controls.duration_seconds.min} max={model.controls.duration_seconds.max} step="5" value={durationSeconds} onChange={change((value) => setDurationSeconds(Number(value)))} className="mt-3 w-full accent-vx-accent" />
-                <span className="mt-2 block font-normal leading-5 text-vx-fg-muted">The quoted candidate price covers any selected length from 10 to 60 seconds.</span>
-              </label>
+              <MusicDurationField id="music-duration" ariaLabel="Song duration" value={durationSeconds} onChange={change((value) => setDurationSeconds(Number(value)))} bounds={model.controls.duration_seconds} blockSeconds={model.controls.duration_price_block_seconds} />
             ) : null}
             {model?.controls?.variety ? (
               <details className="rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg-body">
