@@ -1,5 +1,6 @@
 import { envConfig as r2EnvConfig } from '../../../packages/adapters/r2.js';
-import { loadTemplateSwapClip } from '../../../lib/templateSwapClipGate.js';
+import { loadTemplateSwapClip, loadTemplateSwapRow } from '../../../lib/templateSwapClipGate.js';
+import { TEMPLATE_SWAP_ROW } from '../../../app/veyrnox/_lib/templateSwapRow.js';
 import { loadTemplateClip } from '../../../lib/templateClipGate.js';
 /**
  * GET /api/catalog — public model catalog (active rows only).
@@ -22,6 +23,12 @@ import { withPublicModelIds } from '../../../lib/publicModelIds.js';
 
 export async function GET(req) {
     const cfg = envConfig();
+    // The curated swap row: the row's live cards ({ id, credits }), [] while the swap switch is off. Discovery only, so it may sit in the
+    // edge cache briefly; opening a card still runs the uncached per-template check above.
+    if (req?.url && new URL(req.url).searchParams.has('template_swap_row')) {
+        const items = await loadTemplateSwapRow(TEMPLATE_SWAP_ROW.map(row => row.id), cfg, { r2cfg: r2EnvConfig() });
+        return NextResponse.json({ items }, { headers: { 'cache-control': 'public, max-age=30, s-maxage=60' } });
+    }
     const templateSwapId = req?.url ? new URL(req.url).searchParams.get('template_swap') : null;
     if (templateSwapId !== null) {
         const clip = await loadTemplateSwapClip(templateSwapId, cfg, { r2cfg: r2EnvConfig() });
