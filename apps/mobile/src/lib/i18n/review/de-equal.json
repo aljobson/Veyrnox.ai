@@ -213,5 +213,16 @@
   "music.tab.hooks": "Hooks is the established German term for memorable musical phrases.",
   "music.pause": "Pause is the standard German playback control label.",
   "music.version": "Version is the standard German noun; the number placeholder is unchanged.",
-  "music.create.instrumental": "Standard musical or interface term with the same spelling in this language."
+  "music.create.instrumental": "Standard musical or interface term with the same spelling in this language.",
+  "beat.home.untitled": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.home.loaded": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempo": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempoValue": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.snare": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.clap": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.tom": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.crash": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.mixer": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.solo.short": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language."
 }

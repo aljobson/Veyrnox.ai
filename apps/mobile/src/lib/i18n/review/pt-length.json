@@ -3312,6 +3312,48 @@
     "ratio": 2.17
   },
   {
+    "id": "beat.play",
+    "english": "Play",
+    "translation": "Reproduzir",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.playing",
+    "english": "Playing",
+    "translation": "Reproduzindo",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.tempo",
+    "english": "Tempo",
+    "translation": "Andamento",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.pads",
+    "english": "Drum pads",
+    "translation": "Pads de bateria",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.pad.openhat",
+    "english": "Open hat",
+    "translation": "Chimbal aberto",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.pad.crash",
+    "english": "Crash",
+    "translation": "Prato de ataque",
+    "ratio": 3
+  },
+  {
+    "id": "beat.track.add",
+    "english": "Add a track",
+    "translation": "Adicionar uma faixa",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

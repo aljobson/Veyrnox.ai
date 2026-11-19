@@ -3294,6 +3294,54 @@
     "ratio": 1.78
   },
   {
+    "id": "beat.play",
+    "english": "Play",
+    "translation": "Reproducir",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.stop",
+    "english": "Stop",
+    "translation": "Detener",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.playing",
+    "english": "Playing",
+    "translation": "Reproduciendo",
+    "ratio": 1.86
+  },
+  {
+    "id": "beat.pads",
+    "english": "Drum pads",
+    "translation": "Pads de batería",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.pad.openhat",
+    "english": "Open hat",
+    "translation": "Hi-hat abierto",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.mixer",
+    "english": "Mixer",
+    "translation": "Mezclador",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.soloOff",
+    "english": "{track} solo off",
+    "translation": "Solo desactivado en {track}",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.mute.short",
+    "english": "Mute",
+    "translation": "Silenciar",
+    "ratio": 2.25
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

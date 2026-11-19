@@ -3498,6 +3498,48 @@
     "ratio": 1.83
   },
   {
+    "id": "beat.transport",
+    "english": "Transport",
+    "translation": "Воспроизведение",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.playing",
+    "english": "Playing",
+    "translation": "Воспроизводится",
+    "ratio": 2.14
+  },
+  {
+    "id": "beat.pad.snare",
+    "english": "Snare",
+    "translation": "Малый барабан",
+    "ratio": 2.6
+  },
+  {
+    "id": "beat.pad.openhat",
+    "english": "Open hat",
+    "translation": "Открытый хай-хэт",
+    "ratio": 2
+  },
+  {
+    "id": "beat.mute",
+    "english": "Mute {track}",
+    "translation": "Выключить звук: {track}",
+    "ratio": 1.92
+  },
+  {
+    "id": "beat.muted",
+    "english": "{track} muted",
+    "translation": "{track}: звук выключен",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.mute.short",
+    "english": "Mute",
+    "translation": "Без звука",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

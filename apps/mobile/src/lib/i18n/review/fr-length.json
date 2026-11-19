@@ -5298,6 +5298,84 @@
     "ratio": 1.89
   },
   {
+    "id": "beat.title",
+    "english": "Beat maker",
+    "translation": "Créateur de beats",
+    "ratio": 1.7
+  },
+  {
+    "id": "beat.home.empty",
+    "english": "No beats yet",
+    "translation": "Aucun beat pour l’instant",
+    "ratio": 2.08
+  },
+  {
+    "id": "beat.stop",
+    "english": "Stop",
+    "translation": "Arrêter",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.playing",
+    "english": "Playing",
+    "translation": "Lecture en cours",
+    "ratio": 2.29
+  },
+  {
+    "id": "beat.pads",
+    "english": "Drum pads",
+    "translation": "Pads de batterie",
+    "ratio": 1.78
+  },
+  {
+    "id": "beat.pad.kick",
+    "english": "Kick",
+    "translation": "Grosse caisse",
+    "ratio": 3.25
+  },
+  {
+    "id": "beat.pad.snare",
+    "english": "Snare",
+    "translation": "Caisse claire",
+    "ratio": 2.6
+  },
+  {
+    "id": "beat.pad.hat",
+    "english": "Hi-hat",
+    "translation": "Charleston",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.pad.openhat",
+    "english": "Open hat",
+    "translation": "Charleston ouvert",
+    "ratio": 2.13
+  },
+  {
+    "id": "beat.step.now",
+    "english": "playing now",
+    "translation": "en cours de lecture",
+    "ratio": 1.73
+  },
+  {
+    "id": "beat.pan",
+    "english": "Pan, {track}",
+    "translation": "Panoramique, {track}",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.mute",
+    "english": "Mute {track}",
+    "translation": "Couper le son de {track}",
+    "ratio": 2
+  },
+  {
+    "id": "beat.soloOff",
+    "english": "{track} solo off",
+    "translation": "Solo désactivé sur {track}",
+    "ratio": 1.63
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

@@ -152,5 +152,16 @@
   "menu.audio": "Common loanword or label identical to English in this language: Audio.",
   "audioHub.title": "Common loanword or label identical to English in this language: Audio.",
   "create.frameOriginal": "Common loanword or label identical to English in this language: Original.",
-  "music.create.instrumental": "Standard musical or interface term with the same spelling in this language."
+  "music.create.instrumental": "Standard musical or interface term with the same spelling in this language.",
+  "beat.home.untitled": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.home.loaded": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempo": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempoValue": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.hat": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.tom": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.rim": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.crash": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.solo.short": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.808": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.lofi": "Same in es: a loanword, brand-style name or number used unchanged in this language."
 }
