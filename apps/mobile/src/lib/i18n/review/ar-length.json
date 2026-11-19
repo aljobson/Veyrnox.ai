@@ -1932,6 +1932,12 @@
     "ratio": 2.83
   },
   {
+    "id": "musicSectionActions.position.end",
+    "english": "End",
+    "translation": "النهاية",
+    "ratio": 2.33
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

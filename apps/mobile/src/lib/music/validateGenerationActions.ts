@@ -5,7 +5,7 @@ import type { MusicExtendQuote, MusicCoverQuote, GenerationActionStart } from '.
 const str = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
 export const validActionPrompt = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0 && v.trim().length <= MUSIC_COVER_PROMPT_MAX;
 export const validSourceInfluence = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 10 && v <= 90;
-const pairQuote = (v: unknown): v is Record<string, unknown> => isRecord(v)
+export const pairQuote = (v: unknown): v is Record<string, unknown> => isRecord(v)
     && ['quote_id', 'model_id', 'policy_version'].every(k => str(v[k]))
     && str(v.expires_at) && Number.isFinite(Date.parse(v.expires_at)) && v.output_count === 2
     && ['credits_per_candidate', 'total_credits', 'balance', 'balance_after'].every(k => isFiniteNumber(v[k]))

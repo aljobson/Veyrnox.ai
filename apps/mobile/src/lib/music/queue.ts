@@ -1,4 +1,4 @@
-import type { GenerationActionKind } from './generationActionTypes';
+import type { AnyGenerationActionKind as GenerationActionKind } from './sectionActionTypes';
 import { ApiError, type ApiClient } from '../api';
 import { getGeneration } from './client';
 import { isMusicOff } from './probe';

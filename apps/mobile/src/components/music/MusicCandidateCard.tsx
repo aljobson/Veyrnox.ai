@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Card, Text } from '../ui';
@@ -12,7 +13,7 @@ export function candidatePlayback(candidate: MusicCandidateView): PlaybackInput 
         ? { songId: candidate.song_id, jobId: candidate.job_id, start: 0 } : null;
 }
 const validSongId = (id: string | null) => !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$(?![\s\S])/i.test(id);
-export function MusicCandidateCard({ candidate, onPlay, openSongLabel, requireValidSongId = false }: { candidate: MusicCandidateView; onPlay: (input: PlaybackInput) => void; openSongLabel?: string; requireValidSongId?: boolean }) {
+export function MusicCandidateCard({ candidate, onPlay, openSongLabel, requireValidSongId = false, children }: { candidate: MusicCandidateView; onPlay: (input: PlaybackInput) => void; openSongLabel?: string; requireValidSongId?: boolean; children?: ReactNode }) {
     const router = useRouter(), input = candidatePlayback(candidate);
     const terminal = ['ready', 'failed', 'refunded', 'cancelled'].includes(candidate.state);
     const state = terminal ? candidate.state : candidate.state === 'queued' ? 'queued' : 'running';
@@ -25,5 +26,6 @@ export function MusicCandidateCard({ candidate, onPlay, openSongLabel, requireVa
                 : <Text>{t('music.create.unplayable')}</Text>}
             {candidate.song_id && (!requireValidSongId || validSongId(candidate.song_id)) ? <Button variant="secondary" label={openSongLabel ?? t('music.create.openSong')} onPress={() => router.push({ pathname: '/music/[id]', params: { id: candidate.song_id! } })} /> : null}
         </View> : null}
+        {children}
     </Card>;
 }

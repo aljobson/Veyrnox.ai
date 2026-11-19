@@ -3546,6 +3546,12 @@
     "ratio": 2
   },
   {
+    "id": "musicSectionActions.position.end",
+    "english": "End",
+    "translation": "Конец",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

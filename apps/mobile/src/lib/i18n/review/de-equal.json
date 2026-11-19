@@ -217,5 +217,6 @@
   "musicActions.action.price": "Credits is the billing unit retained in the German P2 catalog; the numeric placeholder and unit label are unchanged.",
   "musicTargetStems.quoteInstrument": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
   "musicTargetStems.instrument.bass": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
-  "musicTargetStems.instrument.synthesizer": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending."
+  "musicTargetStems.instrument.synthesizer": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
+  "musicSectionActions.position": "Shared musical or interface term in this locale; machine translation. Native review pending."
 }
