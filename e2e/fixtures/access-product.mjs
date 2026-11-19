@@ -74,6 +74,7 @@ export async function installAccessFixtures(page, options = {}) {
       if (url.pathname === '/auth/v1/oauth/authorizations/synthetic-request/consent' && method === 'POST') return json({ msg: `Synthetic ${body.action} decision unavailable` }, 503, cors);
       return false;
     }
+    if (url.pathname === '/api/v1/account/sessions' && method === 'GET') return json({ sessions: [] });
     const path = url.pathname.replace(/^\/api\/v1/, '');
     if (method === 'GET' && Object.hasOwn(ADMIN_READS, path)) {
       if (scenario.adminFailures > 0) { scenario.adminFailures--; return json({ error: 'temporarily_unavailable' }, 503); }
