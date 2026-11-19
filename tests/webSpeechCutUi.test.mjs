@@ -48,3 +48,13 @@ test('the price copy never claims a verified price and other locales inherit Eng
   }
   assert.ok(Array.isArray(LOCALES) || typeof LOCALES === 'object');
 });
+
+test('the planner shows filler suggestions only after analysis, opt-in, and passes the ticked ones as removals', () => {
+  const planner = read('app/veyrnox/_components/SmartCutPlanner.js');
+  assert.match(planner, /smartCutFillerRanges/);
+  assert.match(planner, /useState\(false\)/); // removeFillers starts off
+  assert.match(planner, /removals: removeFillers/);
+  assert.match(planner, /!skippedFillers\.includes\(row\.key\)/);
+  for (const key of ['title', 'toggle', 'none']) assert.ok(messages[`app.smartCut.fillers.${key}`], key);
+  assert.match(messages['app.smartCut.fillers.toggle'], /\{count\}/);
+});

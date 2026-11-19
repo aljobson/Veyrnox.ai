@@ -169,6 +169,39 @@ function padAndMerge(groups, clipById, padding) {
   return merged;
 }
 
+const MIN_PIECE_SECONDS = 0.1;
+
+// Cut reviewed removal ranges (for example filler sounds) out of the kept groups. A piece that no
+// longer holds any transcript entry, or is shorter than 0.1 s, is dropped rather than kept as a stub.
+function subtractRemovals(groups, removals) {
+  if (!removals.length) return groups;
+  const out = [];
+  for (const group of groups) {
+    const cuts = removals
+      .filter((cut) => cut.takeId === group.takeId && cut.end > group.start && cut.start < group.end)
+      .sort((a, b) => a.start - b.start);
+    if (!cuts.length) {
+      out.push(group);
+      continue;
+    }
+    const pieces = [];
+    let cursor = group.start;
+    for (const cut of cuts) {
+      if (cut.start > cursor) pieces.push([cursor, Math.min(cut.start, group.end)]);
+      cursor = Math.max(cursor, cut.end);
+    }
+    if (cursor < group.end) pieces.push([cursor, group.end]);
+    for (const [from, to] of pieces) {
+      const start = ceilHundredth(from);
+      const end = floorHundredth(to);
+      if (end - start < MIN_PIECE_SECONDS) continue;
+      const entries = group.entries.filter((entry) => entry.end > start && entry.start < end);
+      if (entries.length) out.push({ ...group, start, end, entries });
+    }
+  }
+  return out;
+}
+
 function mergeToSegmentLimit(groups) {
   const reduced = groups.map((group) => ({ ...group, entries: [...group.entries] }));
   while (reduced.length > MAX_SEGMENTS) {
@@ -199,7 +232,9 @@ function labelFor(group, end = group.end) {
 }
 
 /** Build the first production planner slice from normalized timed speech. */
-export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimumSilenceSeconds, edgePaddingSeconds } = {}) {
+export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimumSilenceSeconds, edgePaddingSeconds, removals = [] } = {}) {
+  const reviewedRemovals = (Array.isArray(removals) ? removals : [])
+    .filter((cut) => cut && typeof cut.takeId === 'string' && finite(cut.start) && finite(cut.end) && cut.end > cut.start);
   const presetName = smartCutSilencePreset(silencePreset);
   const preset = SMART_CUT_SILENCE_PRESETS[presetName];
   const takes = sourceClips(clips);
@@ -221,7 +256,8 @@ export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimu
 
   const rawGroups = takes.flatMap((take) => transcriptGroups(parsed.get(take.id), take, minimumSeconds));
   if (!rawGroups.length) throw new Error('No timed speech was found inside the selected clip ranges.');
-  const groups = mergeToSegmentLimit(padAndMerge(rawGroups, clipById, padding));
+  const knownRemovals = reviewedRemovals.filter((cut) => clipById.has(cut.takeId));
+  const groups = mergeToSegmentLimit(subtractRemovals(padAndMerge(rawGroups, clipById, padding), knownRemovals));
   const segments = [];
   let outputOffset = 0;
   for (const [index, group] of groups.entries()) {
@@ -253,6 +289,12 @@ export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimu
   const selectedDuration = round(takes.reduce((sum, take) => sum + take.rangeEnd - take.rangeStart, 0));
   const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];
   if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warnings.push('This transcript has phrase-level timing, so pauses inside a phrase cannot be removed.');
+  // The 10-section limit can merge a removed range back into a kept section; say so instead of hiding it.
+  const keptAnyway = knownRemovals.filter((cut) => {
+    const middle = (cut.start + cut.end) / 2;
+    return segments.some((segment) => segment.takeId === cut.takeId && segment.start <= middle && middle < segment.end);
+  });
+  if (keptAnyway.length) warnings.push('Some removals were kept because the plan is limited to 10 sections.');
   if (rawGroups.length > MAX_SEGMENTS) warnings.push('Some short pauses were retained to fit the Clip Editor’s 10-section limit.');
   if (outputOffset >= MAX_OUTPUT_SECONDS - 0.01) warnings.push('The speech-aware plan stopped at the Clip Editor’s 60-second output limit.');
 
@@ -267,6 +309,7 @@ export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimu
     segments,
     totalDuration,
     silenceRemoved: round(Math.max(0, selectedDuration - totalDuration)),
+    removalsApplied: knownRemovals.length - keptAnyway.length,
     analysisProviders: [...new Set([...parsed.values()].map((analysis) => analysis.provider))],
     warnings,
   };
