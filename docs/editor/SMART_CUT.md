@@ -8,7 +8,7 @@
 The first speech-aware slice is intentionally narrow:
 
 1. Analyse each selected clip into a versioned, provider-neutral timed transcript.
-2. Keep transcript-backed ranges and remove pauses of at least 0.75 seconds.
+2. Keep transcript-backed ranges and remove pauses of at least 0.75 seconds (the Balanced pacing; Snappy and Relaxed use other lengths, see below).
 3. Add 120 ms of context at each kept edge, merge overlaps, and reintroduce the shortest pauses when needed to stay inside the existing 10-section limit.
 4. Stop at the Clip Editor's existing 60-second output limit.
 5. Let the user preview every boundary and apply the resulting ranges to the existing trim/stitch renderer.
