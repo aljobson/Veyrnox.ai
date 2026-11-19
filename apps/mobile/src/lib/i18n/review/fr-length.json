@@ -1446,6 +1446,18 @@
     "ratio": 1.81
   },
   {
+    "id": "dev.scope.postsRead",
+    "english": "View posts",
+    "translation": "Voir les publications",
+    "ratio": 2.1
+  },
+  {
+    "id": "dev.scope.postsWrite",
+    "english": "Create and edit posts",
+    "translation": "Créer et modifier des publications",
+    "ratio": 1.62
+  },
+  {
     "id": "dev.keys.none",
     "english": "No keys yet.",
     "translation": "Aucune clé pour le moment.",

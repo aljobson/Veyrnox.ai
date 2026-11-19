@@ -798,6 +798,18 @@
     "ratio": 1.79
   },
   {
+    "id": "dev.scope.postsRead",
+    "english": "View posts",
+    "translation": "Просмотр публикаций",
+    "ratio": 1.9
+  },
+  {
+    "id": "dev.scope.postsWrite",
+    "english": "Create and edit posts",
+    "translation": "Создание и редактирование публикаций",
+    "ratio": 1.71
+  },
+  {
     "id": "dev.keys.revokeTitle",
     "english": "Revoke {name}?",
     "translation": "Отозвать доступ у {name}?",

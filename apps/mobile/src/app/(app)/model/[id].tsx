@@ -6,6 +6,7 @@ import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../.
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { fetchPremiumModels } from '../../../lib/premiumModels';
 import { modelFacts, priceUnit } from '../../../lib/modelFacts';
+import { internalModelId } from '../../../lib/publicModelIds';
 import { plural, t } from '../../../lib/i18n';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { LIST_END_PADDING } from '../../../theme';
@@ -27,7 +28,7 @@ export default function ModelDetail() {
         );
         return () => { live = false; };
     }, [attempt]);
-    const model = typeof id === 'string' ? models?.find(m => m.id === id) : undefined;
+    const model = typeof id === 'string' ? models?.find(m => m.id === internalModelId(id)) : undefined;
     const all = <Button variant="secondary" label={t('modelPage.all')} onPress={() => router.push('/models')} style={styles.target} />;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>

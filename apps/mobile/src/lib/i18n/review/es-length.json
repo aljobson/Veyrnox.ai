@@ -720,6 +720,12 @@
     "ratio": 1.61
   },
   {
+    "id": "dev.scope.postsRead",
+    "english": "View posts",
+    "translation": "Ver publicaciones",
+    "ratio": 1.7
+  },
+  {
     "id": "dev.logs.none",
     "english": "No requests match.",
     "translation": "No hay solicitudes que coincidan.",
