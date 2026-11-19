@@ -1,4 +1,4 @@
-import { appRuntimeFlag } from '../../../../lib/appRuntime.js';
+import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
 import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
@@ -212,7 +212,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
-    if (hasTemplateSwap && (process.env.TEMPLATE_SWAP_CLIP_ENABLED !== 'true' || typeof body.template_swap !== 'string'
+    if (hasTemplateSwap && (!templateSwapSwitchOn(process.env) || typeof body.template_swap !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_swap))) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
     const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() }) : null;
     if (swapClipReplay) return NextResponse.json(swapClipReplay.body, { status: swapClipReplay.status });
