@@ -196,8 +196,8 @@ export function importProInterchange(input, options = {}) {
                     if(draft.freezeFrame>=m.frames){loss(report,cp,'approximated:clamped_source','approximated','Rounded held frame clamped to media.');draft.freezeFrame=m.frames-1;}
                 }
                 if(!['image','graphic'].includes(m.kind) && draft.freezeFrame===undefined) {
-                    const span=(len-1)*speed;
-                    if(span>=m.frames)refuse('source_window_too_long',{path:cp,frames:m.frames,span});
+                    let span=(len-1)*speed;
+                    if(span>=m.frames){const fit=Math.max(1,Math.floor((m.frames-1)/speed)+1);loss(report,cp,'approximated:clamped_length','approximated','Clip longer than its media was shortened to the media length.',{from:len,to:fit});draft.len=fit;span=(fit-1)*speed;}
                     const adjusted=Math.max(c.reverse?span:0,Math.min(m.frames-1-(c.reverse?0:span),draft.in));
                     if(adjusted!==draft.in){loss(report,cp,'approximated:clamped_source','approximated','Rounded source window clamped to available media.',{from:draft.in,to:adjusted});draft.in=adjusted;}
                 }

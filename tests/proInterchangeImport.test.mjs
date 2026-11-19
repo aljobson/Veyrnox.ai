@@ -5,6 +5,7 @@ import {exportProInterchange} from '../app/veyrnox/_lib/proInterchangeExport.mjs
 import {importProInterchange} from '../app/veyrnox/_lib/proInterchangeImport.mjs';
 import {validateSequence} from '../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import {TICKS_PER_FRAME as F} from '../app/veyrnox/_lib/proInterchangeTime.mjs';
+import {safeText} from '../app/veyrnox/_lib/proMediaManifest.mjs';
 import {fixture,sequence,bytes} from './helpers/proInterchange.mjs';
 const exported=()=>{const e=exportProInterchange(fixture());return {...e,doc:JSON.parse(new TextDecoder().decode(e.bytes))};};
 const read=e=>importProInterchange(bytes(e.doc),{manifest:e.manifest});
@@ -100,4 +101,15 @@ test('a whole-clip reverse exports with a clamped source and a report; reverse i
     Object.assign(v,{source_in:0,duration:10*8467200000,speed:1,reverse:true});
     const r=importProInterchange(new TextEncoder().encode(JSON.stringify(doc)),{manifest:e.manifest});
     assert.equal(r.ok,true,JSON.stringify(r.error));assert.equal(r.draft.video[0].in,9);
+});
+test('a clip longer than its media is shortened with a report; bidi controls are stripped from names',()=>{
+    const tl=fixture();const e=exportProInterchange(tl);assert.equal(e.ok,true);
+    const doc=JSON.parse(new TextDecoder().decode(e.bytes));
+    const v=Object.values(doc.project.items).find(i=>i.kind.Sequence).kind.Sequence.video_tracks[0].items[0];
+    v.source_in=0;v.duration=1200*8467200000;v.speed=1;v.reverse=false;
+    const r=importProInterchange(new TextEncoder().encode(JSON.stringify(doc)),{manifest:e.manifest});
+    assert.equal(r.ok,true,JSON.stringify(r.error));
+    assert.ok(r.report.some(x=>x.feature==='approximated:clamped_length'));
+    assert.ok(r.draft.video[0].len<=900);
+    assert.equal(safeText('a‮b c',20),'abc');
 });

@@ -1,7 +1,7 @@
 import { refuse, loss, result } from './proInterchangeTime.mjs';
 const idOK = v => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v) && !['__proto__', 'constructor', 'prototype'].includes(v);
 const object = v => v && typeof v === 'object' && !Array.isArray(v);
-export const safeText = (value, max, fallback = '', keepLines = false) => typeof value === 'string' ? value.replace(keepLines ? /[\u0000-\u0008\u000b-\u001f\u007f]/g : /[\u0000-\u001f\u007f]/g, '').slice(0, max) || fallback : fallback;
+export const safeText = (value, max, fallback = '', keepLines = false) => typeof value === 'string' ? value.replace(keepLines ? /[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g : /[\u0000-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, '').slice(0, max) || fallback : fallback;
 export function safeSourceName(value) {
     const original = typeof value === 'string' ? value : '';
     const base = original.split(/[\\/]/).at(-1);

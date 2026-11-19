@@ -49,7 +49,7 @@ export function exportProInterchange(tl, options = {}) {
         // Text is drawn above ALL video in our renderer, regardless of the track array order.
         for (const kind of ['video','text','audio']) for (const t of tl.tracks.filter(t=>t.kind===kind)) {
             reportDispositions(t,'track',`tracks.${t.id}`,report);
-            if(kind==='audio' && t.hidden) loss(report,`tracks.${t.id}.hidden`,'hidden','approximated','FilmCraft disabling an audio track silences it; v3 hidden is visual only.');
+            if(kind==='audio' && t.hidden) loss(report,`tracks.${t.id}.hidden`,'hidden','dropped','v3 hidden is visual only; the exported audio track stays enabled so it is not silenced.');
             const sourceClips=tl[kind].filter(c=>c.trackId===t.id);
             const lanes=stackingLanes(sourceClips);
             if(lanes.length>1) loss(report,`tracks.${t.id}`,'overlap_lanes','approximated','Overlaps become separate tracks; lane splitting is not reversible.',{lanes:lanes.length});
@@ -60,7 +60,7 @@ export function exportProInterchange(tl, options = {}) {
             }
             const sourceTracks=[]; let audioBearing=false;
             for(const [laneIndex,lane] of lanes.entries()) {
-                const ft=track(t,kind,laneIndex?`${t.name} lane ${laneIndex+1}`:t.name);
+                const ft=track(t,kind,laneIndex?`${t.name} lane ${laneIndex+1}`:t.name);if(kind==='audio')ft.enabled=true;
                 sourceTracks.push(ft);
                 const entries=order.get(t.id)||[];entries.push(`${ft.id}:${kind}`);order.set(t.id,entries);
                 const pans=new Set(lane.map(c=>c.pan??0));
