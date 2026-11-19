@@ -58,3 +58,10 @@ test('the planner shows filler suggestions only after analysis, opt-in, and pass
   for (const key of ['title', 'toggle', 'none']) assert.ok(messages[`app.smartCut.fillers.${key}`], key);
   assert.match(messages['app.smartCut.fillers.toggle'], /\{count\}/);
 });
+
+test('the speech-ready notice does not name a pause length, because the pacing buttons change it', () => {
+  const notice = messages['app.smartCut.speechReady'];
+  assert.ok(notice);
+  assert.doesNotMatch(notice, /\d/);
+  assert.match(notice, /pacing/i);
+});
