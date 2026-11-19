@@ -4151,6 +4151,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "코드가 올바르지 않습니다. 영문과 숫자 10자리입니다.",
   "referrals.usethiscode": "이 코드 사용",
   "referrals.whenafriendyoureferbuystheir": "추천한 친구가 첫 크레딧 팩을 구매하면 해당 팩의 10%에 해당하는 크레딧을 받습니다. 구매가 환불되거나 이의 제기되지 않은 경우 14일 후 잔액에 추가됩니다. 만료되지 않는 크레딧만 지급되며 현금으로 지급되지 않습니다.",
+  "referrals.afriendwhousesyourcodegetsno": "회원님의 코드를 사용한 친구는 추천에 따른 추가 보너스를 받지 않습니다.",
   "referrals.youcannotuseyourowncode": "자신의 코드는 사용할 수 없습니다.",
   "referrals.yourcode": "내 코드",
   "referrals.yourreferralcode": "내 추천 코드 {value1}",

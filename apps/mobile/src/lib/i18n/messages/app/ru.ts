@@ -4370,6 +4370,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "Код выглядит неверно. В нём должно быть 10 букв и цифр.",
   "referrals.usethiscode": "Использовать код",
   "referrals.whenafriendyoureferbuystheir": "Когда приглашённый друг купит свой первый пакет кредитов, вы получите кредиты стоимостью 10% пакета. Они поступят через 14 дней, если покупка не возвращена и не оспорена. Только кредиты без срока действия. Денежных выплат нет.",
+  "referrals.afriendwhousesyourcodegetsno": "Друг, который использует ваш код, не получает дополнительного бонуса за приглашение.",
   "referrals.youcannotuseyourowncode": "Нельзя использовать собственный код.",
   "referrals.yourcode": "Ваш код",
   "referrals.yourreferralcode": "Ваш реферальный код: {value1}",

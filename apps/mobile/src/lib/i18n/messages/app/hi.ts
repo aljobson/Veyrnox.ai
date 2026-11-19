@@ -4224,6 +4224,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "वह कोड सही नहीं लगता। इसमें 10 अक्षर और अंक होते हैं।",
   "referrals.usethiscode": "यह कोड इस्तेमाल करें",
   "referrals.whenafriendyoureferbuystheir": "जब आपका आमंत्रित मित्र अपना पहला क्रेडिट पैक खरीदता है, तो आपको उस पैक के 10% के बराबर क्रेडिट मिलते हैं, जो 14 दिन बाद बैलेंस में जुड़ते हैं, बशर्ते खरीद रिफ़ंड या विवादित न हुई हो। केवल क्रेडिट; वे कभी समाप्त नहीं होते। नकद भुगतान नहीं होता।",
+  "referrals.afriendwhousesyourcodegetsno": "आपका कोड इस्तेमाल करने वाले मित्र को रेफ़रल से कोई अतिरिक्त बोनस नहीं मिलता।",
   "referrals.youcannotuseyourowncode": "आप अपना कोड इस्तेमाल नहीं कर सकते।",
   "referrals.yourcode": "आपका कोड",
   "referrals.yourreferralcode": "आपका रेफ़रल कोड {value1}",
