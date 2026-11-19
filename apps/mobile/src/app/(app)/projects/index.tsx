@@ -1,6 +1,6 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Crypto from 'expo-crypto';
@@ -84,6 +84,18 @@ export default function Projects() {
             cancelled = true;
         };
     }, [api, workspaceId, projectsAttempt]);
+
+    // Coming back from a project (renamed or deleted there) refreshes the list quietly, without the spinner.
+    const firstFocus = useRef(true);
+    useFocusEffect(
+        useCallback(() => {
+            if (firstFocus.current) { firstFocus.current = false; return; }
+            if (!workspaceId) return;
+            let live = true;
+            fetchProjects(api, workspaceId).then((list) => live && setProjects(list), () => undefined);
+            return () => { live = false; };
+        }, [api, workspaceId]),
+    );
 
     return (
         <View style={styles.screen}>

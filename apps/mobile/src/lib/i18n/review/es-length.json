@@ -3466,5 +3466,11 @@
     "english": "Check again",
     "translation": "Comprobar de nuevo",
     "ratio": 1.64
+  },
+  {
+    "id": "dev.scope.postsRead",
+    "english": "View posts",
+    "translation": "Ver publicaciones",
+    "ratio": 1.7
   }
 ]

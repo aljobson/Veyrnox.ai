@@ -86,3 +86,11 @@ test('a premium-list failure still renders a supported model', async () => {
     await click(plural('modelPage.generateLabel', 7, { title: model.name }));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: { modelId: model.id } });
 });
+test.each([['nano-banana-a1', 'nano-banana-kie'], ['nano-banana-pro-a2', 'nano-banana-pro-grsai'], ['nano-banana-pro-edit-a2', 'nano-banana-pro-edit-grsai']])('a link with the public id %s opens the model keyed %s', async (publicId, key) => {
+    jest.mocked(fetchCatalog).mockResolvedValue([{ ...model, id: key, name: 'Nano' }]);
+    mockId = publicId; await render();
+    expect(hasText(t('modelPage.unavailable'))).toBe(false);
+    expect(hasText('7 cr')).toBe(true);
+    await click(plural('modelPage.generateLabel', 7, { title: 'Nano' }));
+    expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/create/[modelId]', params: { modelId: key } });
+});
