@@ -251,5 +251,16 @@ GRANT EXECUTE ON FUNCTION private.reserve_project_file(uuid,text,bigint,text),pu
  private.consume_project_file_inspection(uuid,uuid),public.consume_project_file_inspection(uuid,uuid),
  private.set_pro_project_head(uuid,integer,uuid,text),public.set_pro_project_head(uuid,integer,uuid,text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.record_project_file_inspection(uuid,text,bigint,integer,text,text),public.claim_project_file_cleanup(uuid),public.finish_project_file_cleanup(uuid,uuid,text) TO service_role;
+-- Admin telemetry may record these route patterns (same wrapper pattern as 0546; tests/adminTelemetry).
+DO $$ BEGIN
+ IF to_regprocedure('public.telemetry_path_allowed_pre_0562(text)') IS NULL THEN
+  ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0562;
+ END IF;
+END $$;
+CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path='' AS $$
+ SELECT p_path IN ('/api/v1/projects/:id/pro/files','/api/v1/projects/:id/pro/files/:id/download','/api/v1/projects/:id/pro/files/:id/inspect','/api/v1/projects/:id/pro/head') OR public.telemetry_path_allowed_pre_0562(p_path)
+$$;
+REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC,anon,authenticated,service_role;
 NOTIFY pgrst,'reload schema';
 COMMIT;
