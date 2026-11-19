@@ -118,6 +118,8 @@ const nextConfig = {
       // Template ids no longer name a source platform (app/veyrnox/_lib/templateIds.js).
       { source: '/presets/seedance-:platform(higgs|syntx)-:rest([a-z0-9-]+)', destination: '/presets/seedance-:rest', permanent: true },
       { source: '/:locale([a-z][a-z])/presets/seedance-:platform(higgs|syntx)-:rest([a-z0-9-]+)', destination: '/:locale/presets/seedance-:rest', permanent: true },
+      // Short legal addresses people type or guess; the pages live under /legal.
+      { source: '/:doc(terms|privacy|refund|gdpr|aup)', destination: '/legal/:doc', permanent: true },
       { source: '/veyrnox', destination: '/', permanent: true },
       { source: '/veyrnox/music', destination: '/music', permanent: true },
       { source: '/veyrnox/music/:path*', destination: '/music/:path*', permanent: true },

@@ -7,22 +7,19 @@ import { templateCountLabel } from '../src/lib/templateCountLabel';
 describe('Explore templates header count line', () => {
     const en = createTranslator('en', CATALOGS);
     it.each([
-        [0, 0, '0 templates'],
-        [1, 1, '1 template on 1 model'],
-        [150, 1, '150 templates on 1 model'],
-        [1, 3, '1 template on 3 models'],
-        [150, 12, '150 templates on 12 models'],
-    ])('%i templates, %i models -> "%s"', (templates, models, text) => {
-        expect(templateCountLabel(en, templates, models)).toBe(text);
+        [0, '0 templates'],
+        [1, '1 template'],
+        [73, '73 templates'],
+    ])('%i templates -> "%s" (no model count: it never matched what a template runs on)', (templates, text) => {
+        expect(templateCountLabel(en, templates)).toBe(text);
     });
     const locales = Object.keys(CATALOGS) as LocaleCode[];
-    it.each(locales)('%s fills both counts, no placeholder left', (locale) => {
+    it.each(locales)('%s fills the count, no placeholder left', (locale) => {
         const tr = createTranslator(locale, CATALOGS);
-        for (const [t, m] of [[0, 0], [1, 1], [2, 2], [5, 1], [21, 21], [150, 12]]) {
-            const text = templateCountLabel(tr, t!, m!);
+        for (const t of [0, 1, 2, 5, 21, 150]) {
+            const text = templateCountLabel(tr, t);
             expect(text).not.toMatch(/\{\w+\}/);
             expect(text).toContain(String(t));
-            if (t) expect(text).toContain(String(m));
         }
     });
 });
