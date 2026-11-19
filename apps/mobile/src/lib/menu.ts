@@ -1,5 +1,5 @@
 // The drawer, in the web sidebar's groups and order (app/veyrnox/_lib/studioNavigation.js): Home, then Tools (Create,
-// Video editor, Publish, Social Cinema), then Assets (Library, Brand kit, Credits, LLM Chat), and Help at the foot like
+// Smart Cut, Professional, Publish, Social Cinema), then Assets (Library, Brand kit, Credits, LLM Chat), and Help at the foot like
 // the web's "?" button. The drawer repeats the bottom tabs on purpose, so the two apps list the same destinations.
 // Audio opens the four-card Audio hub (src/app/(app)/audio.tsx), as on the web. Every href is an existing route; the
 // drawer only navigates, it owns no screens.
@@ -17,7 +17,9 @@ export const MENU_SECTIONS: MenuSection[] = [
         items: [
             { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
             { key: 'audio', label: 'menu.audio', href: '/audio', icon: 'headphones' },
-            { key: 'editor', label: 'menu.videoEditor', href: '/editor', icon: 'video' },
+            // Two editors: Smart Cut picks clips and cuts speech for you; Professional is the full timeline.
+            { key: 'smartCut', label: 'menu.smartCut', hint: 'menu.smartCutHint', href: '/smart-cut', icon: 'sparkle' },
+            { key: 'editor', label: 'menu.professional', hint: 'menu.professionalHint', href: '/editor', icon: 'video' },
             { key: 'publish', label: 'menu.publish', href: '/publish', icon: 'send' },
             { key: 'cinema', label: 'menu.cinema', href: '/cinema', icon: 'slate' },
         ],
