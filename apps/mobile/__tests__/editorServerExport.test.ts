@@ -77,3 +77,15 @@ test('a transport retry sends an identical immutable key and body only once', as
     request.mockReset().mockRejectedValue(new ApiError(503, 'runner_submit_failed', { job_id: id }));
     await expect(sendExportAttempt({ request } as unknown as ApiClient, attempt)).rejects.toMatchObject({ status: 503 }); expect(request).toHaveBeenCalledTimes(1);
 });
+test('neutral fade, pan and reverse defaults written by trim/fit are not sent, real ones are', () => {
+    const saved = fixture(); const clip = (saved.timeline as Timeline).video[0];
+    Object.assign(clip, { fadeIn: 0, fadeOut: 0, pan: 0, reverse: false });
+    const clean = exportCopy(saved, { [`l-${id}`]: file }).document.timeline as Timeline;
+    expect(Object.keys(clean.video[0]).sort()).toEqual(['id', 'in', 'len', 'mediaId', 'start', 'trackId'].sort());
+    Object.assign(clip, { fadeIn: 6 });
+    expect((exportCopy(saved, { [`l-${id}`]: file }).document.timeline as Timeline).video[0].fadeIn).toBe(6);
+});
+test('the unsupported message names the audio setting', () => {
+    const error = new ApiError(422, 'editor_render_unsupported', { feature: 'fadeIn' });
+    expect(exportError(error)).toMatch(/Audio$/);
+});
