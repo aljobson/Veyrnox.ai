@@ -47,7 +47,14 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
   const { t } = useI18n();
   const [shortcutsOpen, setShortcutsOpen] = useState(false), [tipReplay, setTipReplay] = useState(0);
   const [message, setMessage] = useState('');
+  const [ripple, setRipple] = useState(false);
   const announce = useCallback((text) => setMessage(text), []);
+  const rippleRef = useRef(false);
+  const toggleRipple = useCallback(() => {
+    rippleRef.current = !rippleRef.current;
+    setRipple(rippleRef.current);
+    announce(t(rippleRef.current ? 'app.music.beat.ripple.on' : 'app.music.beat.ripple.off'));
+  }, [announce, t]);
   const project = useBeatProject(id, announce);
   const aiRequest = useBeatAiRequest({ beatId: id, project, announce, enabled: Object.values(ai).some(Boolean) });
   const sync = useBeatCloudSync({ beatId: id, project, cloud, announce });
@@ -80,10 +87,10 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
   // This state belongs to the displayed history entry, not to an effect or timer replay.
   if (undo && undo.id !== project.undoId) setUndo(null);
   const keyState = useRef(null);
-  useEffect(() => { keyState.current = { doc, playback, project, editTrackId, octave, velocity }; });
+  useEffect(() => { keyState.current = { doc, playback, project, editTrackId, octave, velocity, toggleRipple }; });
   useEffect(() => {
     function key(event) {
-      const { doc, playback, project, editTrackId, octave, velocity } = keyState.current;
+      const { doc, playback, project, editTrackId, octave, velocity, toggleRipple } = keyState.current;
       if (event.defaultPrevented || event.repeat || !doc || document.querySelector('dialog[open]')) return;
       const target = event.target;
       const textInput = target.isContentEditable || target.closest('textarea, [role="textbox"]') ||
@@ -100,6 +107,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
         return;
       }
       if (command || target.closest('select')) return;
+      if (event.key.toLowerCase() === BEAT_KEYS.ripple) { event.preventDefault(); toggleRipple(); return; }
       if (event.code === BEAT_KEYS.play && (inPianoRoll || !target.closest('input, button, a, [role="button"]'))) { event.preventDefault(); playback.toggle(); return; }
       if (inPianoRoll) return;
       const route = routeBeatKey({ key: event.key, repeat: event.repeat, command, textInput, kind: editTrack(doc, editTrackId)?.kind, octave, velocity });
@@ -190,7 +198,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, cloud = fals
     </div>}
     <BeatArrangement recording={playback.recordingRun} armedId={playback.audioRecorder.armedId} onArm={playback.audioRecorder.arm} automationLanes={automationLanes} onAutomation={showAutomation} ai={ai} onAi={aiRequest.open} key={`arrangement-${reloadKey}`} doc={doc} edit={edit} selectPattern={project.selectPattern} editTrackId={track.id}
       onSelectRegion={(id) => { setSelectedRegionId(id); setRollOpen(true); }} setEditTrackId={setEditTrackId} locator={locator} setLocator={setLocator}
-      playhead={playback.playhead} runId={playback.runId} announce={announce} />
+      playhead={playback.playhead} runId={playback.runId} announce={announce} ripple={ripple} setRipple={toggleRipple} />
     {(playback.audioRecorder.armedId || playback.audioRecorder.hasPending() || playback.audioRecorder.error || playback.audioRecorder.recovery.length > 0) && <BeatRecordPanel recorder={playback.audioRecorder} playback={playback} announce={announce} />}
     {mixerOpen ? <BeatMixer recording={playback.recordingRun} doc={doc} edit={edit} engine={playback.engine} close={() => setMixerOpen(false)} onAutomation={showAutomation} /> : track.kind === 'midi' ? <>
       <div className="flex flex-wrap items-center gap-2">
