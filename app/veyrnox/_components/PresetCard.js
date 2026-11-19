@@ -2,7 +2,10 @@
 import { useI18n } from '../../../components/I18nProvider';
 import { TemplateImage } from './TemplateImage';
 import { MediaTile } from './MediaTile';
+import { FILM_STUDIO_ENABLED } from '../_lib/filmStudioSwitch';
 import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
+
+const DURATION_KEY = FILM_STUDIO_ENABLED ? 'mobile.templateDuration' : 'mobile.templateDurationNoFilm';
 
 // Preset card: credited viral preview, monochrome chrome around it.
 //
@@ -45,7 +48,7 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
             <span aria-hidden className="vx-leader flex-1 text-vx-fg-muted" />
             <div className="shrink-0 font-vx-mono text-[14px] font-bold text-vx-money vx-num">{presetCredits(preset, catalog) ?? '—'} cr</div>
           </div>
-          <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : ''}</div>
+          <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{preset.model}{preset.durationSeconds ? t(DURATION_KEY, { n: preset.durationSeconds }) : ''}</div>
           <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
         </div>
       }
@@ -63,7 +66,7 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
             <span className="block truncate text-[12px] font-extrabold tracking-tight">{title}</span>
             <span className="mt-0.5 block truncate font-vx-mono text-[11px] text-white/70">
               {preset.isNew && <span className="me-1.5 font-bold tracking-[0.12em] text-white">{t('mobile.new')}</span>}
-              {preset.durationSeconds ? t('mobile.templateDuration', { n: preset.durationSeconds }) : preset.model}
+              {preset.durationSeconds ? t(DURATION_KEY, { n: preset.durationSeconds }) : preset.model}
             </span>
           </span>
           <span className="shrink-0 font-vx-mono text-[11px] font-bold text-vx-money">{presetCredits(preset, catalog) ?? '—'} cr</span>
