@@ -4,9 +4,9 @@ export const BEAT_TAKE_BYTES = 1000000000;
 // into `audio` (review P9-002), so opening a beat never reads every recording on the device.
 let meta = new Map(), audio = new Map(), partials = new Map(), hydrated;
 let storage = {
-  listState: () => listSavedTakesStrict('beatTakeState'), putState: row => putSavedTake('beatTakeState', row),
-  get: id => getSavedTakeStrict('beatTakes', id), put: row => putSavedTake('beatTakes', row),
-  listChunksFor: id => listSavedTakesInRange('beatTakeChunks', `${id}:`, `${id}:￿`), putChunk: row => putSavedTake('beatTakeChunks', row),
+  listState: () => listSavedTakesStrict('beatTakeState'), putState: (row, check) => putSavedTake('beatTakeState', row, check),
+  get: id => getSavedTakeStrict('beatTakes', id), put: (row, check) => putSavedTake('beatTakes', row, check),
+  listChunksFor: id => listSavedTakesInRange('beatTakeChunks', `${id}:`, `${id}:￿`), putChunk: (row, check) => putSavedTake('beatTakeChunks', row, check),
 };
 const listeners = new Set();
 export const subscribeBeatTakes = fn => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -53,26 +53,27 @@ let writes = Promise.resolve();
 function write(work) { const result = writes.catch(() => {}).then(work); writes = result; return result; }
 const saveError = () => new Error('Could not save recorded audio on this device. Keep this page open and try again.');
 function checkSize(bytes) { if (bytes > BEAT_TAKE_BYTES) throw new Error('Recorded takes use 1 GB on this device. Free storage before recording.'); }
-async function saveMeta(next) {
-  if (!await storage.putState(next)) throw saveError();
+async function saveMeta(next, check = () => {}) {
+  check();
+  if (!await storage.putState(next, check)) throw saveError();
   meta.set(next.id, next);
 }
-export function appendBeatTake(row, offset) {
+export function appendBeatTake(row, offset, check = () => {}) {
   return write(async () => {
-    await hydrateBeatTakes();
+    await hydrateBeatTakes(); check();
     const old = meta.get(row.id)?.length || 0, length = Math.max(old, offset + row.samples.length);
     checkSize(beatTakeBytes() + (length - old) * 4);
     const { samples, ...rest } = row;
-    if (!await storage.putChunk({ ...rest, samples, id: `${row.id}:${offset}`, takeId: row.id, offset })) throw saveError();
+    if (!await storage.putChunk({ ...rest, samples, id: `${row.id}:${offset}`, takeId: row.id, offset }, check)) throw saveError();
     partials.set(row.id, Math.max(partials.get(row.id) || 0, offset + samples.length));
     audio.delete(row.id);
-    await saveMeta(metaOf({ ...rest, length, state: meta.get(row.id)?.state ?? row.state }));
+    await saveMeta(metaOf({ ...rest, length, state: meta.get(row.id)?.state ?? row.state }), check);
     return row;
   });
 }
-export function putBeatTake(row) {
+export function putBeatTake(row, check = () => {}) {
   return write(async () => {
-    await hydrateBeatTakes();
+    await hydrateBeatTakes(); check();
     if (!(row.samples instanceof Float32Array) || !row.samples.length || !(row.sampleRate > 0)) throw new Error('The recorded take has no audio.');
     const previous = meta.get(row.id)?.length || 0;
     checkSize(beatTakeBytes() - previous * 4 + row.samples.byteLength);
@@ -82,11 +83,11 @@ export function putBeatTake(row) {
     if (durable !== null && durable !== undefined) {
       if (row.samples.length > durable) {
         const { samples, ...rest } = row;
-        if (!await storage.putChunk({ ...rest, samples: samples.slice(durable), id: `${row.id}:${durable}`, takeId: row.id, offset: durable })) throw saveError();
+        if (!await storage.putChunk({ ...rest, samples: samples.slice(durable), id: `${row.id}:${durable}`, takeId: row.id, offset: durable }, check)) throw saveError();
         partials.set(row.id, row.samples.length);
       }
-    } else if (!await storage.put(row)) throw saveError();
-    await saveMeta(metaOf({ ...row, length: row.samples.length, state: meta.get(row.id)?.state ?? row.state }));
+    } else if (!await storage.put(row, check)) throw saveError();
+    await saveMeta(metaOf({ ...row, length: row.samples.length, state: meta.get(row.id)?.state ?? row.state }), check);
     audio.set(row.id, row.samples); emit(); return row;
   });
 }

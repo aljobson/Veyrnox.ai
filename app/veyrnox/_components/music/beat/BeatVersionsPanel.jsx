@@ -1,5 +1,5 @@
 'use client';
-import { assertBeatWritable } from '../../../_lib/music/beat/beatCompatibility.mjs';
+import { assertBeatWritable, BEAT_READ_ONLY_MESSAGE } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { parseCloudBeat, errorState } from '../../../_lib/music/beat/beatCloudRules.mjs';
 import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
@@ -28,26 +28,27 @@ export default function BeatVersionsPanel({ beatId, project, sync }) {
   async function restore(row) {
     const token = sync.options(); setBusy(true); setError('');
     try {
+      assertBeatWritable(project.current?.current || project.doc);
       await project.finishRecording();
       const result = await getVersion(beatId, row.id, token);
       if (!sync.current(token)) return;
       const doc = parseCloudBeat(result.doc_json, beatId);
       assertBeatWritable(doc);
       if (project.edit(current => restoreVersion(current, doc), { label: BEAT_ACTIONS.a38 })) dialog.current.close();
-    } catch (error) { if (sync.current(token)) setError(t(errorState(error) === 'update_required' ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s60')); }
+    } catch (error) { if (sync.current(token)) setError(t(errorState(error) === 'read_only' ? BEAT_READ_ONLY_MESSAGE : errorState(error) === 'update_required' ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s60')); }
     finally { setBusy(false); }
   }
   return <>
-    <button className={button} onClick={() => { dialog.current.showModal(); void load(); }}>{t('app.music.beat.ui.versions')}</button>
+    <button data-beat-read className={button} onClick={() => { dialog.current.showModal(); void load(); }}>{t('app.music.beat.ui.versions')}</button>
     <dialog ref={dialog} aria-labelledby="beat-versions-title" className="m-auto max-h-[80vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-6 text-vx-fg backdrop:bg-vx-base/80">
-      <header className="flex items-center justify-between gap-4"><h2 id="beat-versions-title" className="text-xl font-bold">{t('app.music.beat.ui.versions')}</h2><button className={button} onClick={() => dialog.current.close()}>{t('app.music.beat.close')}</button></header>
-      <button className={action} disabled={busy || sync.busy || !sync.userId || Boolean(sync.conflict)} onClick={async () => { await sync.checkpoint(); await load(); }}>{t('app.music.beat.ui.save.version.now')}</button>
+      <header className="flex items-center justify-between gap-4"><h2 id="beat-versions-title" className="text-xl font-bold">{t('app.music.beat.ui.versions')}</h2><button data-beat-read className={button} onClick={() => dialog.current.close()}>{t('app.music.beat.close')}</button></header>
+      <button className={action} title={project.readOnly ? t(BEAT_READ_ONLY_MESSAGE) : undefined} disabled={project.readOnly || busy || sync.busy || !sync.userId || Boolean(sync.conflict)} onClick={async () => { await sync.checkpoint(); await load(); }}>{t('app.music.beat.ui.save.version.now')}</button>
       {busy && <p role="status">{t('app.music.beat.ui.loading.versions')}</p>}
       {error && <p role="alert">{error} <button className={button} onClick={load}>{t('app.music.beat.ui.retry')}</button></p>}
       {!busy && !error && !rows.length && <p>{t('app.music.beat.ui.no.saved.versions.yet')}</p>}
       <ul className="space-y-3">{rows.map(row => <li key={row.id} className="space-y-2 border-b border-vx-border py-3">
         <p>{row.title}</p><p className="text-sm text-vx-fg-muted">{versionTime(row.saved_at, new Date(), t, locale === 'en' ? undefined : locale)}{t('app.music.beat.ui.revision')}{row.revision} · {versionReason(row.reason, t)}</p>
-        <button className={button} disabled={busy} onClick={() => restore(row)}>{t('app.music.beat.ui.restore')}</button>
+        <button className={button} title={project.readOnly ? t(BEAT_READ_ONLY_MESSAGE) : undefined} disabled={project.readOnly || busy} onClick={() => restore(row)}>{t('app.music.beat.ui.restore')}</button>
       </li>)}</ul>
     </dialog>
   </>;

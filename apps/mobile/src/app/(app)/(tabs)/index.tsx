@@ -323,8 +323,7 @@ export default function Explore() {
                     <VeyLoader />
                 ) : (
                     <>
-                        <SwapRow />
-                        {searchShown ? (
+                        <SwapRow />{searchShown ? (
                             <TextField
                                 label={t('explore.search')}
                                 accessibilityLabel={t('explore.search')}

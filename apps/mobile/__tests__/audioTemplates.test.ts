@@ -18,9 +18,10 @@ test('categories keep first-seen order and the ALL chip returns every template',
 });
 test('parse keeps the artwork as an absolute address and refuses other schemes', () => {
     const list = parseAudioTemplates({ templates: [
-        { id: 'a', name: 'A', category: 'MUSIC', modelId: 'm', prompt: 'p', previewImage: '/music-licensed/a.svg' },
+        { id: 'a', name: 'A', category: 'MUSIC', modelId: 'm', prompt: 'p', previewImage: '/music-licensed/a.svg', previewAudio: '/music-licensed/a.mp3' },
         { id: 'b', name: 'B', category: 'MUSIC', modelId: 'm', prompt: 'p', previewImage: 'javascript:alert(1)' },
         { id: 'c', name: 'C', category: 'MUSIC', modelId: 'm', prompt: 'p' },
     ] }, 'https://veyrnox.ai');
     expect(list.map(t => t.previewUrl)).toEqual(['https://veyrnox.ai/music-licensed/a.svg', null, null]);
+    expect(list.map(t => t.previewAudioUrl)).toEqual(['https://veyrnox.ai/music-licensed/a.mp3', null, null]);
 });

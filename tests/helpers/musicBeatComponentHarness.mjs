@@ -19,7 +19,7 @@ export function harness() {
     },
     useEffect(fn, deps) {
       const i = cursor++, old = slots[i];
-      if (!old || deps.some((d, n) => d !== old.deps[n])) {
+      if (!old || !deps || deps.some((d, n) => d !== old.deps?.[n])) {
         slots[i] = { deps, cleanup: old?.cleanup };
         pending.push(() => { slots[i].cleanup?.(); slots[i].cleanup = fn(); });
       }
@@ -32,6 +32,7 @@ export function harness() {
     useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
     useId: () => 'beat-test',
   };
+  react.useLayoutEffect = react.useEffect;
   function load(name, stubs = {}, extension = 'jsx') {
     const source = readFileSync(`app/veyrnox/_components/music/beat/${name}.${extension}`, 'utf8');
     const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
