@@ -3570,6 +3570,24 @@
     "ratio": 2.13
   },
   {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Воспроизвести всё",
+    "ratio": 2.13
+  },
+  {
+    "id": "musicPlaylists.next",
+    "english": "Next song",
+    "translation": "Следующая песня",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.up",
+    "english": "Move {title} up",
+    "translation": "Переместить {title} вверх",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

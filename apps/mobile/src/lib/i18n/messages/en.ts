@@ -133,7 +133,9 @@ import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
 import area_music from './en/music';
 import area_musicActions from './en/musicActions';
+import area_musicDiscover from './en/musicDiscover';
 import area_musicGenerationActions from './en/musicGenerationActions';
+import area_musicPlaylists from './en/musicPlaylists';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_nativeEditorModel from './en/nativeEditorModel';
@@ -358,7 +360,9 @@ const catalog = {
     ...area_montage,
     ...area_music,
     ...area_musicActions,
+    ...area_musicDiscover,
     ...area_musicGenerationActions,
+    ...area_musicPlaylists,
     ...area_musicSectionActions,
     ...area_musicTargetStems,
     ...area_nativeEditorModel,

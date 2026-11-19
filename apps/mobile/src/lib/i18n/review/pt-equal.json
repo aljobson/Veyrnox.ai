@@ -165,5 +165,9 @@
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "explore.templateTotal.many": "Established Brazilian Portuguese term or loanword: template.",
   "explore.templateTotal.one": "Established Brazilian Portuguese term or loanword: template.",
-  "explore.templateTotal.other": "Established Brazilian Portuguese term or loanword: template."
+  "explore.templateTotal.other": "Established Brazilian Portuguese term or loanword: template.",
+  "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicDiscover.mood.Hip-hop": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicDiscover.mood.Jazz": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending."
 }

@@ -14,7 +14,7 @@ import { JOB } from './fixtures/music';
 const mockApi = { request: jest.fn() }, mockPush = jest.fn();
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
-    useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
+    useLocalSearchParams: () => ({}), useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/components/music/MusicPlayer', () => ({ MusicPlayer: () => require('react').createElement(require('react-native').View, { testID: 'music-player' }) }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView];
