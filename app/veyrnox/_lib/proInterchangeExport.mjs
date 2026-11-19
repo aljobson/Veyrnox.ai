@@ -2,7 +2,7 @@ import { validateSequence } from './editorSequenceValidation.mjs';
 import { createMediaManifest, assertManifest, safeText, safeSourceName } from './proMediaManifest.mjs';
 import { result, refuse, loss, framesToTicks, sourceInClamped, volumeToDb, checkedTicks, MAX_SEQUENCE_TICKS } from './proInterchangeTime.mjs';
 import { reportDispositions } from './proInterchangeDispositions.mjs';
-import { mediaInfo, projectSettings, sequenceSettings, nearestLabel, visualEffects, textEffects, stackingLanes, assertCounts, sequenceCounts } from './proInterchangeFormat.mjs';
+import { FC_ITEM_COLOUR, mediaInfo, projectSettings, sequenceSettings, nearestLabel, visualEffects, textEffects, stackingLanes, assertCounts, sequenceCounts } from './proInterchangeFormat.mjs';
 import { importProInterchange } from './proInterchangeImport.mjs';
 import { scanProProject } from '../../../lib/proProjectScan.mjs';
 export { stackingLanes } from './proInterchangeFormat.mjs';
@@ -33,18 +33,18 @@ export function exportProInterchange(tl, options = {}) {
         const items = {}, mediaIds = new Map();
         for (const e of manifest.entries.filter(e=>!skipped.has(e.mediaId))) {
             const id = allocate(); mediaIds.set(e.mediaId,id);
-            items[id] = {id,name:e.name,label:'Iris',kind:{Media:{media:{File:{path:e.virtualPath}},info:mediaInfo(e),interpret:{frame_rate:null,par:null,ignore_alpha:false,invert_alpha:false},mark_in:null,mark_out:null,markers:[],offline:true,proxy:null}}};
+            items[id] = {id,name:e.name,label:FC_ITEM_COLOUR.media,kind:{Media:{media:{File:{path:e.virtualPath}},info:mediaInfo(e),interpret:{frame_rate:null,par:null,ignore_alpha:false,invert_alpha:false},mark_in:null,mark_out:null,markers:[],offline:true,proxy:null}}};
         }
         const sequenceId = allocate();
         const sequence = {settings:sequenceSettings(width,height),video_tracks:[],audio_tracks:[],markers:[],mark_in:null,mark_out:null,work_area:null,start_timecode:0};
         const track = (t, kind, name = t.name) => ({id:allocate(),kind:kind==='audio'?'Audio':'Video',name,items:[],transitions:[],locked:t.locked,sync_lock:true,enabled:!t.hidden,muted:t.muted,solo:!!t.solo,channels:'Stereo',volume_db:0,pan:0});
         const clip = (c,t,kind) => {
-            const base = {id:allocate(),item:mediaIds.get(c.mediaId),name:safeText(tl.media[c.mediaId]?.name,120,'Title'),label:'Iris',start:framesToTicks(c.start),duration:framesToTicks(c.len),source_in:0,speed:c.rate ?? 1,reverse:!!c.reverse,enabled:!t.hidden,effects:[],gain_db:kind==='audio'?volumeToDb(c.volume):-96};
+            const base = {id:allocate(),item:mediaIds.get(c.mediaId),name:safeText(tl.media[c.mediaId]?.name,120,'Title'),label:FC_ITEM_COLOUR.media,start:framesToTicks(c.start),duration:framesToTicks(c.len),source_in:0,speed:c.rate ?? 1,reverse:!!c.reverse,enabled:!t.hidden,effects:[],gain_db:kind==='audio'?volumeToDb(c.volume):-96};
             if(kind!=='text'){const s=sourceInClamped(c);base.source_in=s.value;if(s.clamped)loss(report,`${kind}.${c.id}`,'approximated:clamped_source','approximated','Reversed window starts before source frame 0; source_in clamped to 0.');}
             checkedTicks(base.start+base.duration,'end',MAX_SEQUENCE_TICKS);
             if(c.freezeFrame!==undefined) base.frame_hold = framesToTicks(c.freezeFrame);
             if(kind==='text') {
-                const id=allocate(); items[id]={id,name:safeText(c.text,120,'Title'),label:'Lavender',kind:{Graphic:{width,height,rate:{num:30,den:1}}}};
+                const id=allocate(); items[id]={id,name:safeText(c.text,120,'Title'),label:FC_ITEM_COLOUR.graphic,kind:{Graphic:{width,height,rate:{num:30,den:1}}}};
                 base.item=id; base.effects=textEffects(c,width,height);
             } else if(kind==='video') {base.effects=visualEffects(c,width,height);base.scale_to_frame=true;}
             return base;
@@ -94,7 +94,7 @@ export function exportProInterchange(tl, options = {}) {
             sequence.markers.push({id:allocate(),start:framesToTicks(m.frame),duration:0,name:m.label,comment:'',kind:'Comment',color:nearestLabel(m.color),custom_color:m.color});
         }
         assertCounts({...counts,audio:counts.audio+companions,tracks:sequence.video_tracks.length+sequence.audio_tracks.length},refuse);
-        items[sequenceId]={id:sequenceId,name:safeText(options.name,120,'Sequence'),label:'Forest',kind:{Sequence:sequence},metadata:{'veyrnox.tracks.v1':tl.tracks.flatMap(t=>order.get(t.id)||[]).join(',')}};
+        items[sequenceId]={id:sequenceId,name:safeText(options.name,120,'Sequence'),label:FC_ITEM_COLOUR.sequence,kind:{Sequence:sequence},metadata:{'veyrnox.tracks.v1':tl.tracks.flatMap(t=>order.get(t.id)||[]).join(',')}};
         const project={name:safeText(options.name,120,'Veyrnox sequence'),settings:projectSettings(),root:{id:0,name:'Root',children:Object.keys(items).map(id=>({Item:Number(id)}))},items,next_id:next};
         const bytes=new TextEncoder().encode(JSON.stringify({format:'filmcraft.project',schema_version:17,generator:'Veyrnox P3 interchange (experimental)',project}));
         const scan=scanProProject(bytes,{duplicateKeys:'all'});if(!scan.ok)refuse(scan.reason);
