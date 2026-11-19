@@ -54,6 +54,7 @@ export const hasIntroSteps = (trialDays: number, step: number): boolean => trial
 // costs credits runs until they subscribe. The check sits in the API client's beforeSend, so every create, chat, editor
 // export and montage path goes through it. It is an app-side guard (ADR-0108 amendment 2, "Limits").
 const PAID_ACTIONS: readonly RegExp[] = [
+    /^\/api\/v1\/music\/songs\/[^/?]+\/target-stems\/?$/,
     /^\/api\/v1\/music\/songs\/[^/?]+\/stems\/?$/,
     /^\/api\/v1\/editor\/speech-analyses\/?(\?|$)/,
     /^\/api\/v1\/editor\/ai-edit\/?(\?|$)/,

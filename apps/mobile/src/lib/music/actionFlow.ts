@@ -77,7 +77,7 @@ export function createSongActionFlow<R extends { balance_after?: number }, S>(ap
                 if (disposed) return;
                 const result = await attempts.confirm(pending.quote);
                 if (disposed) return;
-                update({ result, balance: result.balance_after ?? pending.quote.balance_after });
+                update({ result, balance: result.balance_after ?? (spec.balanceOnReplay === 'omit' ? null : pending.quote.balance_after) });
                 poll?.dispose();
                 poll = pollUntil({ ...options.poll, read: () => spec.status(api, result), terminal: spec.terminal,
                     onChange(value) { if (value.state === 'off') off(); else update({ poll: value }); } });

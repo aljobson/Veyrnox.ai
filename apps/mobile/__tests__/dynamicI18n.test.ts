@@ -10,6 +10,8 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'musicTargetStems.state.{}': ['queued', 'running', 'ready', 'failed', 'refunded'],
+    'musicTargetStems.instrument.{}': ['vocals', 'drums', 'bass', 'guitar', 'piano', 'strings', 'synthesizer', 'brass', 'woodwinds'],
     'musicActions.stems.{}': ['queued', 'running', 'ready', 'failed', 'refunded'],
     'musicActions.{}.title': ['stems', 'crop'],
     'musicActions.action.{}': ['rights', 'format', 'plan', 'model', 'notAffordable', 'expired', 'changed', 'consent', 'range', 'short', 'busy', 'source', 'recovery', 'network', 'error'],

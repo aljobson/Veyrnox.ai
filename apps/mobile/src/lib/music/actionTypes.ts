@@ -20,6 +20,7 @@ export type ActionInput = Readonly<{
 }>;
 export type ActionSpec<R extends { balance_after?: number }, S> = Readonly<{
     name: string; keyPrefix: string; definitiveCodes: ReadonlySet<string>;
+    balanceOnReplay?: 'omit';
     quote(api: ApiClient, input: ActionInput): Promise<MusicActionQuote>;
     confirm(api: ApiClient, quoteId: string, key: string): Promise<R>;
     beforeConfirm?(): Promise<void>;

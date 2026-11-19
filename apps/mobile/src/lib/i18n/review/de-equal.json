@@ -214,5 +214,8 @@
   "music.pause": "Pause is the standard German playback control label.",
   "music.version": "Version is the standard German noun; the number placeholder is unchanged.",
   "music.create.instrumental": "Standard musical or interface term with the same spelling in this language.",
-  "musicActions.action.price": "Credits is the billing unit retained in the German P2 catalog; the numeric placeholder and unit label are unchanged."
+  "musicActions.action.price": "Credits is the billing unit retained in the German P2 catalog; the numeric placeholder and unit label are unchanged.",
+  "musicTargetStems.quoteInstrument": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
+  "musicTargetStems.instrument.bass": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
+  "musicTargetStems.instrument.synthesizer": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending."
 }

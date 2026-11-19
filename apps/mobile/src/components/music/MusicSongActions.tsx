@@ -7,5 +7,7 @@ export function MusicSongActions({ song }: { song: MusicSongDetail }) {
     if (song.lifecycle_status === 'trashed') return null;
     return <>{(['stems', 'crop'] as const).filter(name => song.actions.includes(name)).map(name =>
         <Button key={name} variant="secondary" label={t(`musicActions.${name}.title`)}
-            onPress={() => router.push({ pathname: `/music/${name}`, params: { id: song.id } } as never)} />)}</>;
+            onPress={() => router.push({ pathname: `/music/${name}`, params: { id: song.id } } as never)} />)}
+        {song.actions.includes('target_stem') ? <Button variant="secondary" label={t('musicTargetStems.title')}
+            onPress={() => router.push({ pathname: '/music/target-stems', params: { id: song.id } } as never)} /> : null}</>;
 }
