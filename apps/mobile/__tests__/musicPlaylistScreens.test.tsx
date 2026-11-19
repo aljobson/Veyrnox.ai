@@ -167,12 +167,15 @@ test('pending create survives navigation and refocus and can only replay its ori
     expect(field(t('musicPlaylists.name')).props.editable).toBe(true);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Evening')).toHaveLength(1);
 });
-test('untouched create draft survives blur and a flow change without a successful attempt', async () => {
+test('create draft survives same-account refocus but clears on account change', async () => {
     await mount(<Playlists />); await edit(t('musicPlaylists.name'), 'Keep my draft');
     await focus(false); await focus(true);
     expect(field(t('musicPlaylists.name')).props.value).toBe('Keep my draft');
     await act(async () => bindCacheUser('different-user'));
-    expect(field(t('musicPlaylists.name')).props.value).toBe('Keep my draft');
+    expect(field(t('musicPlaylists.name')).props.value).toBe('');
+    expect(text(t('musicPlaylists.pending'))).toHaveLength(0);
+    await click(t('musicPlaylists.create'));
+    expect(mockApi.request.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(0);
 });
 test('account change while blurred cancels a pending create and ignores its late result', async () => {
     await mount(<Playlists />); await edit(t('musicPlaylists.name'), 'Evening');
@@ -183,8 +186,20 @@ test('account change while blurred cancels a pending create and ignores its late
     await act(async () => wait.resolve({ playlist: created })); await focus(true);
     expect(text(t('musicPlaylists.saved'))).toHaveLength(0);
     expect(field(t('musicPlaylists.name')).props.editable).toBe(true);
-    expect(field(t('musicPlaylists.name')).props.value).toBe('Evening');
+    expect(field(t('musicPlaylists.name')).props.value).toBe('');
     expect(button(t('musicPlaylists.create'))).toBeDefined();
+    expect(text(t('musicPlaylists.pending'))).toHaveLength(0);
+    await click(t('musicPlaylists.create'));
+    expect(mockApi.request.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
+});
+
+test.each(['account change', 'sign-out'])('%s clears draft validation', async change => {
+    await mount(<Playlists />); await edit(t('musicPlaylists.name'), '   ');
+    await click(t('musicPlaylists.create'));
+    expect(text(t('musicPlaylists.titleInvalid')).length).toBeGreaterThan(0);
+    await act(async () => { if (change === 'account change') await bindCacheUser('different-user'); else resetCacheUser(); });
+    expect(field(t('musicPlaylists.name')).props.value).toBe('');
+    expect(text(t('musicPlaylists.titleInvalid'))).toHaveLength(0);
 });
 
 test('detail cleanup uses the singular label and loses its scan on blur', async () => {

@@ -45,6 +45,24 @@ test('ends advance in order and unavailable songs have visible skipped ids', asy
     const other = setup(); other.request.mockRejectedValueOnce(new ApiError(404, 'not_found')); await other.playback.start(0);
     expect(other.playback.snapshot().skipped).toEqual([songId]); expect(other.playback.snapshot().index).toBe(1); other.playback.dispose();
 });
+test('Play all clears transient skips before resolving and plays the recovered song', async () => {
+    const s = setup(); s.request.mockRejectedValueOnce(new Error('offline'));
+    await s.playback.start(0); expect(s.playback.snapshot().skipped).toEqual([songId]);
+    const wait = deferred<typeof song>(); s.request.mockReturnValueOnce(wait.promise);
+    const replay = s.playback.start(0);
+    expect(s.playback.snapshot().skipped).toEqual([]);
+    wait.resolve({ ...song, id: songId }); await replay;
+    expect(s.playback.snapshot().skipped).toEqual([]);
+    expect(s.playback.snapshot().index).toBe(0);
+    expect(s.ports.at(-1)!.play).toHaveBeenCalledTimes(1); s.playback.dispose();
+});
+test('successfully reloading a skipped track removes only its id without restarting Play all', async () => {
+    const s = setup(); s.request.mockRejectedValueOnce(new Error('offline')).mockRejectedValueOnce(new Error('offline'));
+    await s.playback.start(0); expect(s.playback.snapshot().skipped).toEqual([songId, secondId]);
+    await s.playback.start(1);
+    expect(s.playback.snapshot().skipped).toEqual([songId]);
+    expect(s.ports[0].play).toHaveBeenCalledTimes(1); s.playback.dispose();
+});
 test.each(['inactive', 'background', null])('no audio starts if app becomes %p during initial audio load', async state => {
     const s = setup(), wait = deferred<{ url: string; mime_type: string }>(); s.getAsset.mockReturnValueOnce(wait.promise);
     const playing = s.playback.start(0); await flush(); s.change(state); wait.resolve({ url: 'https://signed.test', mime_type: 'audio/wav' }); await playing;

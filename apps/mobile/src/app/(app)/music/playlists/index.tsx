@@ -13,7 +13,7 @@ import { ds } from '../../../../theme';
 export default function Playlists() {
     const { flow, state } = usePlaylists(), router = useRouter(), s = useThemedStyles(sheets);
     const [title, setTitle] = useState(''), [invalid, setInvalid] = useState(false);
-    useEffect(() => { setInvalid(false); }, [flow]);
+    useEffect(() => { setTitle(''); setInvalid(false); }, [flow]);
     useEffect(() => { if (state.notice === 'saved') setTitle(''); }, [state.notice]);
     const pending = flow.attempts.snapshot();
     const pendingTitle = pending?.write.kind === 'create' ? pending.write.title : undefined;

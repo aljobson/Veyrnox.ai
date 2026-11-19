@@ -40,6 +40,7 @@ export function createPlaylistPlayback(o: {
     async function start(index: number, explicit = true) {
         const valid = begin(explicit);
         if (!valid) return;
+        if (explicit && index === 0) emit({ skipped: [] });
         loadedIndex = -1;
         for (let i = Math.max(0, index); i < o.songs.length; i++) {
             if (!valid()) return;
@@ -53,6 +54,7 @@ export function createPlaylistPlayback(o: {
                 if (!valid()) return;
                 if (!loaded) { emit({ skipped: [...new Set([...state.skipped, o.songs[i].id])] }); continue; }
                 loadedIndex = i;
+                emit({ skipped: state.skipped.filter(id => id !== o.songs[i].id) });
                 await player.play();
                 return;
             } catch {
