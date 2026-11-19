@@ -511,10 +511,11 @@ generations route both call that one helper. An absent, false, malformed or stri
 edits neither `wrangler.jsonc` nor `APP_RUNTIME_FLAGS`; turning the swap on is a later owner-approved edit of that one JSON value after the upload, ids-and-pin PR
 and activation migration. Removing the key (or setting it false) is the rollback.
 
-## Amendment 10 (2026-11-19): the registry carries the 411 approved ids and a provisional pin
+## Amendment 10 (2026-11-19): the registry carries 410 of the 411 uploaded ids and the confirmed pin
 
-`app/veyrnox/_lib/templateSwapClips.js` now lists the 411 ids approved in the v3 review and a manifest pin. The pin comes from an offline importer run over the
-same approved clips (same machine, same ffmpeg, no upload, no paid call), so it is provisional: the real upload reads the manifest back from R2 and must print
-the identical SHA-256. If it differs, the pin is replaced before this merges. The manifest itself is not in source. The switch is untouched, so nothing is
-reachable: the gate needs the `templateSwap` key, and the model row stays inactive until the activation migration. Three tests that replaced the empty
-literals now match the declarations by pattern.
+`app/veyrnox/_lib/templateSwapClips.js` lists 410 ids and the manifest pin `a795629b7397a570a10a838499c6c6e76d4f765408369e1cfe0d48170d2bf28b`. The owner's
+R2 upload (run `swap-upload-run-3`, publishable true) verified 411 clips and printed the identical SHA-256, so the pin is confirmed, not provisional. The owner
+dropped `community-brand-billboard-swap` from the registry as a near-duplicate of `community-billboard-product-swap` (same base shot plus a third-party brand
+and truck). It stays in the manifest only: the gate needs the id in both, so the pin is unchanged and the clip is refused. The manifest is not in source. The
+switch is untouched, so nothing is reachable: the gate needs the `templateSwap` key, and the model row stays inactive until the activation migration. Three
+tests that replaced the empty literals match the declarations by pattern; the registry test pins 410 sorted unique ids.
