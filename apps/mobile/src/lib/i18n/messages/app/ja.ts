@@ -6459,4 +6459,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "音声に合わせて肖像写真を動かします。",
   "audioHub.singingPhoto.title": "歌う写真",
   "audioHub.singingPhoto.blurb": "ボーカルトラックに合わせて肖像写真を歌わせます。",
+    "music.create.durationPriceHint": "料金は長さに応じて60秒単位で上がります。クレジットが引き落とされる前に、見積もりで正確な料金を確認してください。",
+    "music.create.longerGenerationHint": "長い曲ほど生成に時間がかかります。",
+    "musicActions.action.tooLarge": "この曲はサイズが大きすぎるため、ここでは編集できません。",
 } as const;

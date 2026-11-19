@@ -11,7 +11,8 @@ const all = (r: Rec, keys: readonly string[], test: (v: unknown) => boolean): bo
 const isControls = (v: unknown): boolean => isRecord(v)
     && all(v, ['description', 'seed', 'variety', 'style_influence', 'exclude_styles', 'tempo_key_meter', 'lyrics', 'styles'], bool)
     && (v.instrumental === 'optional' || v.instrumental === 'required')
-    && isRecord(v.duration_seconds) && all(v.duration_seconds, ['min', 'max', 'default'], isFiniteNumber);
+    && isRecord(v.duration_seconds) && all(v.duration_seconds, ['min', 'max', 'default'], isFiniteNumber)
+    && (v.duration_price_block_seconds === undefined || (isFiniteNumber(v.duration_price_block_seconds) && v.duration_price_block_seconds > 0));
 
 export const isMusicModel = (v: unknown): v is MusicModel => isRecord(v)
     && str(v.id) && str(v.name)

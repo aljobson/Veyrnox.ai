@@ -49,4 +49,5 @@ export default {
     'musicActions.crop.saved': 'Saved version {number}.',
     'musicActions.crop.preview': 'This range is a preview version.',
     'musicActions.crop.recovery': 'The save is not confirmed. Retry the same range to check it. Editing the range starts a separate attempt.',
+    "musicActions.action.tooLarge": "This song is too large to edit here.",
 } as const;

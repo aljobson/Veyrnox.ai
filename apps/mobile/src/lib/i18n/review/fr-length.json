@@ -5394,6 +5394,12 @@
     "ratio": 2.88
   },
   {
+    "id": "musicActions.action.tooLarge",
+    "english": "This song is too large to edit here.",
+    "translation": "Cette chanson est trop volumineuse pour être modifiée ici.",
+    "ratio": 1.61
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

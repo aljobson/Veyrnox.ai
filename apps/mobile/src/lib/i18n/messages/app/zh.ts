@@ -6459,4 +6459,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "让人像照片随你的语音说话。",
   "audioHub.singingPhoto.title": "唱歌照片",
   "audioHub.singingPhoto.blurb": "让人像照片演唱你的声乐轨道。",
+    "music.create.durationPriceHint": "价格随时长按每60秒一档递增。扣除任何积分前，请查看报价以确认确切价格。",
+    "music.create.longerGenerationHint": "歌曲越长，生成所需的时间越长。",
+    "musicActions.action.tooLarge": "这首歌曲太大，无法在此编辑。",
 } as const;

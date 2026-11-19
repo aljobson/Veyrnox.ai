@@ -9,6 +9,7 @@ export type MusicModelControls = {
     readonly exclude_styles: boolean;
     readonly tempo_key_meter: boolean;
     readonly duration_seconds: { readonly min: number; readonly max: number; readonly default: number };
+    readonly duration_price_block_seconds?: number;
     readonly lyrics: boolean;
     readonly styles: boolean;
     readonly instrumental: 'optional' | 'required';

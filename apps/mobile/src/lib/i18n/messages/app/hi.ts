@@ -6539,4 +6539,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "अपनी आवाज़ से तस्वीर को बोलने दें।",
   "audioHub.singingPhoto.title": "गाती तस्वीर",
   "audioHub.singingPhoto.blurb": "अपनी गायकी पर तस्वीर को गाने दें।",
+    "music.create.durationPriceHint": "अवधि बढ़ने पर कीमत 60 सेकंड के चरणों में बढ़ती है। कोई भी क्रेडिट कटने से पहले सटीक कीमत जानने के लिए मूल्य प्रस्ताव देखें।",
+    "music.create.longerGenerationHint": "लंबे गाने बनाने में अधिक समय लगता है।",
+    "musicActions.action.tooLarge": "यह गाना यहाँ संपादित करने के लिए बहुत बड़ा है।",
 } as const;

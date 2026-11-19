@@ -129,4 +129,6 @@ export default {
     "music.create.model_unavailable": "This model is currently unavailable. Try again later or choose another model.",
     "music.create.plan_unavailable": "Your plan cannot use this model right now. Choose another available model.",
     "music.create.rights_required": "Confirm that you have the rights to these lyrics before reviewing the price.",
+    "music.create.durationPriceHint": "The price grows with length in 60-second steps. Review the quote to see the exact price before any credits move.",
+    "music.create.longerGenerationHint": "Longer songs take longer to generate.",
 } as const;

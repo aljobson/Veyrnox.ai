@@ -6619,4 +6619,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "Anime um retrato com sua voz.",
   "audioHub.singingPhoto.title": "Foto cantando",
   "audioHub.singingPhoto.blurb": "Faça um retrato cantar sua faixa vocal.",
+    "music.create.durationPriceHint": "O preço aumenta com a duração em blocos de 60 segundos. Confira o orçamento para ver o preço exato antes de qualquer débito de créditos.",
+    "music.create.longerGenerationHint": "Músicas mais longas levam mais tempo para serem geradas.",
+    "musicActions.action.tooLarge": "Esta música é grande demais para ser editada aqui.",
 } as const;

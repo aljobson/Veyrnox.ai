@@ -6459,4 +6459,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "음성에 맞춰 인물 사진을 움직입니다.",
   "audioHub.singingPhoto.title": "노래하는 사진",
   "audioHub.singingPhoto.blurb": "보컬 트랙에 맞춰 인물 사진이 노래하게 합니다.",
+    "music.create.durationPriceHint": "길이에 따라 60초 단위로 가격이 올라갑니다. 크레딧이 차감되기 전에 견적에서 정확한 가격을 확인하세요.",
+    "music.create.longerGenerationHint": "노래가 길수록 생성 시간이 더 오래 걸립니다.",
+    "musicActions.action.tooLarge": "이 노래는 크기가 너무 커서 여기에서 편집할 수 없습니다.",
 } as const;

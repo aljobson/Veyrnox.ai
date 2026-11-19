@@ -6859,4 +6859,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "حرّك صورة شخصية باستخدام كلامك.",
   "audioHub.singingPhoto.title": "صورة تغني",
   "audioHub.singingPhoto.blurb": "اجعل صورة شخصية تغني مسارك الصوتي.",
+    "music.create.durationPriceHint": "يزداد السعر مع المدة على مراحل من 60 ثانية. راجع عرض السعر لمعرفة السعر الدقيق قبل خصم أي أرصدة.",
+    "music.create.longerGenerationHint": "تستغرق الأغاني الأطول وقتًا أطول لإنشائها.",
+    "musicActions.action.tooLarge": "هذه الأغنية كبيرة جدًا بحيث لا يمكن تعديلها هنا.",
 } as const;

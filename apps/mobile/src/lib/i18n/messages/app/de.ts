@@ -6539,4 +6539,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "Animiere ein Porträt mit deiner Stimme.",
   "audioHub.singingPhoto.title": "Singendes Foto",
   "audioHub.singingPhoto.blurb": "Lass ein Porträt deine Gesangsspur singen.",
+    "music.create.durationPriceHint": "Der Preis steigt mit der Länge in Schritten von 60 Sekunden. Prüfe das Angebot, um den genauen Preis zu sehen, bevor Credits abgebucht werden.",
+    "music.create.longerGenerationHint": "Längere Songs brauchen länger zum Generieren.",
+    "musicActions.action.tooLarge": "Dieser Song ist zu groß, um ihn hier zu bearbeiten.",
 } as const;

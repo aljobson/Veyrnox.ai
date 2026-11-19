@@ -6699,4 +6699,7 @@ export default {
   "audioHub.talkingPhoto.blurb": "Оживите портрет с помощью вашей речи.",
   "audioHub.singingPhoto.title": "Поющее фото",
   "audioHub.singingPhoto.blurb": "Заставьте портрет петь вашу вокальную партию.",
+    "music.create.durationPriceHint": "Цена растёт с длительностью шагами по 60 секунд. Проверьте расчёт, чтобы узнать точную цену до списания кредитов.",
+    "music.create.longerGenerationHint": "Создание более длинных песен занимает больше времени.",
+    "musicActions.action.tooLarge": "Эта песня слишком велика для редактирования здесь.",
 } as const;
