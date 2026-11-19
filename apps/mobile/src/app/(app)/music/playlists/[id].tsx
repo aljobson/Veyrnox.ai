@@ -8,7 +8,7 @@ import { PlaylistPlayer } from '../../../../components/music/PlaylistPlayer';
 import { usePlaylists } from '../../../../lib/music/usePlaylists';
 import { playlistMessage } from '../../../../lib/music/playlistMessages';
 import { addPlaylistSongs, removePlaylistSong, movePlaylistSong, playlistIds, playlistReplace } from '../../../../lib/music/playlistEdits';
-import { t } from '../../../../lib/i18n';
+import { plural, t } from '../../../../lib/i18n';
 import { ds } from '../../../../theme';
 export default function PlaylistDetail() {
     const { id } = useLocalSearchParams<{ id: string }>(), { flow, state } = usePlaylists(id), s = useThemedStyles(sheets);
@@ -53,7 +53,7 @@ export default function PlaylistDetail() {
                     <Button variant="tertiary" label={t('musicPlaylists.closePicker')} onPress={flow.closePicker} />
                 </View> : null}
                 <Button variant="secondary" label={t('musicPlaylists.checkUnavailable')} disabled={disabled} onPress={() => void flow.scan()} />
-                {state.scan?.unavailable.length ? <Button variant="secondary" label={t('musicPlaylists.removeUnavailable', { count: state.scan.unavailable.length })}
+                {state.scan?.unavailable.length ? <Button variant="secondary" label={plural('musicPlaylists.removeUnavailable', state.scan.unavailable.length)}
                     disabled={disabled} onPress={() => void flow.removeUnavailable()} /> : null}
             </> : null}
         </>}

@@ -8,15 +8,22 @@ import MusicCreate from '../src/app/(app)/music/create';
 import MusicLibrary from '../src/app/(app)/music';
 import { ApiError } from '../src/lib/api';
 import { bindCacheUser, resetCacheUser } from '../src/lib/appCache';
-import { t } from '../src/lib/i18n';
+import { plural, t } from '../src/lib/i18n';
 import { DISCOVER_SEEDS, buildSamplePrompt } from '../src/lib/music/discoverSeeds';
 import { playlist, created, playlistId, songId, secondId, deferred } from './fixtures/musicPlaylists';
 import { entitlements } from './fixtures/musicCreate';
 const mockApi = { request: jest.fn() }, mockPush = jest.fn();
+let mockFocused = true;
+const mockFocusListeners = new Set<(focused: boolean) => void>();
 let mockParams: { id?: string; sample?: string } = { id: playlistId };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
-    useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
+    useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void | (() => void)) => require('react').useEffect(() => {
+        let cleanup: void | (() => void);
+        const change = (focused: boolean) => { cleanup?.(); cleanup = focused ? cb() : undefined; };
+        mockFocusListeners.add(change); change(mockFocused);
+        return () => { cleanup?.(); mockFocusListeners.delete(change); };
+    }, [cb]) }));
 jest.mock('../src/components/music/PlaylistPlayer', () => ({ PlaylistPlayer: ({ playlist: p }: { playlist: unknown }) => require('react').createElement(require('react-native').View, { testID: 'playlist-player', playlist: p }) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => jest.requireActual('node:crypto').randomUUID() }));
 jest.mock('../src/components/music/MusicPlayer', () => ({ MusicPlayer: () => null }));
@@ -30,7 +37,7 @@ const field = (s: string) => root.container.queryAll(n => n.props.accessibilityL
 const edit = async (label: string, value: string) => { await act(async () => field(label).props.onChangeText(value)); };
 const mount = async (component: React.ReactElement) => { await act(async () => root.render(component)); };
 beforeEach(async () => {
-    resetCacheUser(); await bindCacheUser('p4-screen-user'); jest.clearAllMocks(); mockParams = { id: playlistId };
+    mockFocused = true; resetCacheUser(); await bindCacheUser('p4-screen-user'); jest.clearAllMocks(); mockParams = { id: playlistId };
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot();
     mockApi.request.mockImplementation(async (path: string) => path.endsWith('/entitlements') ? entitlements : { playlists: [playlist] });
 });
@@ -128,4 +135,69 @@ test('Music entry rows appear only when the songs probe is on and navigate nativ
     expect(mockPush.mock.calls).toEqual([['/music/playlists'], ['/music/discover']]);
     await act(async () => root.unmount()); root = createRoot(); mockApi.request.mockRejectedValue(new ApiError(404, 'music_unavailable'));
     await mount(<MusicLibrary />); expect(button(t('musicPlaylists.title'))).toBeUndefined(); expect(button(t('musicDiscover.title'))).toBeUndefined();
+});
+
+const focus = async (focused: boolean) => {
+    await act(async () => { mockFocused = focused; mockFocusListeners.forEach(change => change(focused)); });
+};
+test('pending create survives navigation and refocus and can only replay its original title/key', async () => {
+    const accepted = { ...playlist, title: 'Evening' };
+    let posts = 0;
+    mockApi.request.mockImplementation(async (_path: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+            if (++posts === 1) throw new Error('response lost after server accepted');
+            return { playlist: created };
+        }
+        return { playlists: [accepted] };
+    });
+    await mount(<Playlists />); await edit(t('musicPlaylists.name'), 'Evening');
+    await click(t('musicPlaylists.create'));
+    await click('Evening'); expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/playlists/[id]', params: { id: playlistId } });
+    await focus(false); await focus(true); await focus(false); await focus(true);
+    expect(posts).toBe(1);
+    expect(field(t('musicPlaylists.name')).props.value).toBe('Evening');
+    expect(field(t('musicPlaylists.name')).props.editable).toBe(false);
+    expect(button(t('musicPlaylists.create'))).toBeUndefined();
+    const retry = button(t('music.retry'));
+    await act(async () => { retry.props.onClick({ nativeEvent: {} }); retry.props.onClick({ nativeEvent: {} }); });
+    const bodies = mockApi.request.mock.calls.filter(([, init]) => init?.method === 'POST').map(([, init]) => JSON.parse(init.body));
+    expect(bodies).toHaveLength(2); expect(bodies[0]).toEqual(bodies[1]);
+    expect(bodies[0].title).toBe('Evening');
+    expect(field(t('musicPlaylists.name')).props.value).toBe('');
+    expect(field(t('musicPlaylists.name')).props.editable).toBe(true);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Evening')).toHaveLength(1);
+});
+test('untouched create draft survives blur and a flow change without a successful attempt', async () => {
+    await mount(<Playlists />); await edit(t('musicPlaylists.name'), 'Keep my draft');
+    await focus(false); await focus(true);
+    expect(field(t('musicPlaylists.name')).props.value).toBe('Keep my draft');
+    await act(async () => bindCacheUser('different-user'));
+    expect(field(t('musicPlaylists.name')).props.value).toBe('Keep my draft');
+});
+test('account change while blurred cancels a pending create and ignores its late result', async () => {
+    await mount(<Playlists />); await edit(t('musicPlaylists.name'), 'Evening');
+    const wait = deferred<unknown>(); mockApi.request.mockReturnValueOnce(wait.promise);
+    await click(t('musicPlaylists.create')); await focus(false);
+    mockApi.request.mockResolvedValue({ playlists: [] });
+    await act(async () => bindCacheUser('different-user'));
+    await act(async () => wait.resolve({ playlist: created })); await focus(true);
+    expect(text(t('musicPlaylists.saved'))).toHaveLength(0);
+    expect(field(t('musicPlaylists.name')).props.editable).toBe(true);
+    expect(field(t('musicPlaylists.name')).props.value).toBe('Evening');
+    expect(button(t('musicPlaylists.create'))).toBeDefined();
+});
+
+test('detail cleanup uses the singular label and loses its scan on blur', async () => {
+    await mount(<PlaylistDetail />);
+    mockApi.request.mockRejectedValueOnce(new ApiError(404, 'not_found'))
+        .mockRejectedValueOnce(new ApiError(404, 'not_found'));
+    await click(t('musicPlaylists.checkUnavailable'));
+    expect(button(plural('musicPlaylists.removeUnavailable', 2))).toBeDefined();
+    await focus(false); expect(button(plural('musicPlaylists.removeUnavailable', 2))).toBeUndefined();
+    await focus(true);
+    mockApi.request.mockRejectedValueOnce(new ApiError(404, 'not_found'))
+        .mockResolvedValueOnce({ ...jest.requireActual('./fixtures/music').song, id: secondId });
+    await click(t('musicPlaylists.checkUnavailable'));
+    expect(button(plural('musicPlaylists.removeUnavailable', 1))).toBeDefined();
+    expect(button(plural('musicPlaylists.removeUnavailable', 2))).toBeUndefined();
 });

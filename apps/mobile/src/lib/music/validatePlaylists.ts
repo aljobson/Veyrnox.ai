@@ -7,9 +7,10 @@ export const playlistTitle = (v: unknown): v is string => typeof v === 'string'
 export const playlistRevision = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 export const playlistKey = (v: string) => /^[A-Za-z0-9._-]{8,120}$/.test(v) && !/\s/.test(v);
 const iso = (v: unknown) => {
-    if (typeof v !== 'string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(v) || !Number.isFinite(Date.parse(v))) return false;
+    if (typeof v !== 'string' || !/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(v) || /\s/.test(v)) return false;
     const [year, month, day] = v.slice(0, 10).split('-').map(Number);
-    return month >= 1 && month <= 12 && day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    return day <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
 };
 export function isPlaylistSong(v: unknown): v is PlaylistSong {
     return isRecord(v) && playlistUuid(v.id) && playlistUuid(v.version_id) && typeof v.title === 'string'

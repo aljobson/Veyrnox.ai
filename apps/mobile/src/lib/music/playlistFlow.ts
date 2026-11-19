@@ -54,6 +54,7 @@ export function createPlaylistFlow(api: ApiClient, id?: string, mint?: () => str
         snapshot: () => state, selected, attempts,
         subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
         load,
+        invalidateScan() { ++scanEpoch; update({ scan: null }); },
         create: (title: string) => write({ kind: 'create', title }),
         edit: (edit: PlaylistEdit) => id ? write({ kind: 'patch', id, edit }) : Promise.resolve(),
         retry: () => { const pending = attempts.snapshot(); return pending ? write(pending.write) : load(); },

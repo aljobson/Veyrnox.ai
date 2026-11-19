@@ -4,14 +4,16 @@ import { createPlaylistPlayback } from '../src/lib/music/playlistPlayback';
 import { playlist, deferred, songId, secondId } from './fixtures/musicPlaylists';
 import { song, JOB } from './fixtures/music';
 const flush = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
-function setup() {
+function setup(initial: string | null = 'active') {
+    let current = initial;
+    const getAppState = jest.fn(() => current);
     const request = jest.fn(async (path: string) => ({ ...song, id: path.split('/').at(-1) }));
     const getAsset = jest.fn(async () => ({ url: 'https://signed.test/private', mime_type: 'audio/wav' }));
     const callbacks: ((value: string | null) => void)[] = [];
     const subscribe = (cb: (value: string | null) => void) => { callbacks.push(cb); return jest.fn(); };
     const ports: { play: jest.Mock; pause: jest.Mock; seekTo: jest.Mock; emit(s: Partial<PlaybackStatus>): void }[] = [];
     let onState!: (state: PlayerState) => void;
-    const playback = createPlaylistPlayback({ api: { request } as unknown as ApiClient, songs: playlist.songs, initialAppState: 'active',
+    const playback = createPlaylistPlayback({ api: { request } as unknown as ApiClient, songs: playlist.songs, getAppState,
         subscribeAppState: subscribe, onState: jest.fn(), makePlayer: callback => {
             onState = callback;
             return createMusicPlayer({ getAsset, recordListen: jest.fn(async () => {}), setAudioMode: jest.fn(async () => {}),
@@ -26,7 +28,8 @@ function setup() {
             });
         },
     });
-    return { playback, request, getAsset, ports, change: (s: string | null) => callbacks.forEach(cb => cb(s)), emit: (s: PlayerState) => onState(s) };
+    return { playback, request, getAsset, ports, getAppState, setCurrent: (s: string | null) => { current = s; },
+        change: (s: string | null) => { current = s; callbacks.forEach(cb => cb(s)); }, emit: (s: PlayerState) => onState(s) };
 }
 test.each([false, true])('song resolution preserves crop provenance; canonical=%p', async canonical => {
     const s = setup(); s.request.mockResolvedValue({ ...song, id: songId, provenance: { crop: { start_seconds: 2, end_seconds: 7 }, ...(canonical ? { render_state: 'canonical' } : {}) } });
@@ -68,4 +71,55 @@ test('an old ended event during a new track resolve cannot advance past the requ
     const next = s.playback.next(); await flush(); s.ports[0].emit({ didJustFinish: true }); await flush();
     wait.resolve({ ...song, id: secondId }); await next;
     expect(s.playback.snapshot().index).toBe(1); expect(s.ports[1].play).toHaveBeenCalledTimes(1); s.playback.dispose();
+});
+
+test.each(['inactive', 'background'])('start re-reads %s without a delivered event and reports refusal', async current => {
+    const s = setup(); s.setCurrent(current); await s.playback.start(0);
+    expect(s.request).not.toHaveBeenCalled(); expect(s.playback.snapshot().refused).toBe(true);
+    s.setCurrent('active'); await s.playback.start(0);
+    expect(s.playback.snapshot().refused).toBe(false); expect(s.ports[0].play).toHaveBeenCalledTimes(1); s.playback.dispose();
+});
+test.each([null, 'unknown'])('explicit start tolerates initial %p but automatic advance requires active', async current => {
+    const s = setup(current); await s.playback.start(0); expect(s.ports[0].play).toHaveBeenCalledTimes(1);
+    s.ports[0].emit({ didJustFinish: true }); await flush(); expect(s.request).toHaveBeenCalledTimes(1); s.playback.dispose();
+});
+test('start re-reads active after an initial unknown state without requiring an event', async () => {
+    const s = setup(null); s.setCurrent('active'); await s.playback.start(0);
+    expect(s.ports[0].play).toHaveBeenCalledTimes(1); s.playback.dispose();
+});
+test('resume plays the paused current track without reloading or seeking', async () => {
+    const s = setup(); await s.playback.start(0); s.ports[0].emit({ currentTime: 5 }); s.playback.pause();
+    await s.playback.resume(); expect(s.request).toHaveBeenCalledTimes(1);
+    expect(s.ports[0].play).toHaveBeenCalledTimes(2); expect(s.ports[0].seekTo).toHaveBeenCalledTimes(1);
+    expect(s.playback.snapshot().player.position).toBe(5);
+    s.change('inactive'); await s.playback.resume(); expect(s.playback.snapshot().refused).toBe(true);
+    expect(s.ports[0].play).toHaveBeenCalledTimes(2);
+    s.change('active'); await s.playback.resume(); expect(s.ports[0].play).toHaveBeenCalledTimes(3); s.playback.dispose();
+});
+test('resume during delayed resolution is invalidated by a later pause', async () => {
+    const s = setup(), first = deferred<typeof song>(), second = deferred<typeof song>();
+    s.request.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const start = s.playback.start(0); await flush(); s.playback.pause();
+    const resume = s.playback.resume(); await flush(); s.playback.pause();
+    first.resolve(song); second.resolve(song); await Promise.all([start, resume]);
+    expect(s.getAsset).not.toHaveBeenCalled(); s.playback.dispose();
+});
+test.each(['resolve', 'load'])('current app state is re-read after awaited %s even without events', async step => {
+    const s = setup(), wait = deferred<any>();
+    if (step === 'resolve') s.request.mockReturnValueOnce(wait.promise); else s.getAsset.mockReturnValueOnce(wait.promise);
+    const start = s.playback.start(0); await flush(); s.setCurrent('inactive');
+    wait.resolve(step === 'resolve' ? song : { url: 'https://signed.test', mime_type: 'audio/wav' }); await start;
+    expect(s.ports.every(port => port.play.mock.calls.length === 0)).toBe(true); s.playback.dispose();
+});
+test('inactive during resume URL renewal cancels playback', async () => {
+    let now = 0;
+    const clock = jest.spyOn(Date, 'now').mockImplementation(() => now);
+    const s = setup();
+    try {
+        await s.playback.start(0); s.playback.pause(); now = 13 * 60_000;
+        const wait = deferred<{ url: string; mime_type: string }>(); s.getAsset.mockReturnValueOnce(wait.promise);
+        const resume = s.playback.resume(); await flush(); s.change('inactive');
+        wait.resolve({ url: 'https://signed.test/renewed', mime_type: 'audio/wav' }); await resume;
+        expect(s.ports[1].play).not.toHaveBeenCalled();
+    } finally { s.playback.dispose(); clock.mockRestore(); }
 });

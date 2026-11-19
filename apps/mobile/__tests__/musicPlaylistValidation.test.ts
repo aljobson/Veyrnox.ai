@@ -8,7 +8,8 @@ test('complete list, create without created_at, and patch receipts validate', ()
 test.each([
     ['id', 'bad'], ['title', ''], ['title', 'x'.repeat(81)], ['title', '\n'], ['pinned', 1],
     ['revision', -1], ['revision', 0.5], ['revision', Number.MAX_SAFE_INTEGER + 1],
-    ['created_at', 'today'], ['created_at', '2026-02-30T00:00:00Z'], ['created_at', null], ['songs', undefined],
+    ['created_at', 'today'], ['created_at', '2026-02-30T00:00:00Z'], ['created_at', '2026-11-19T24:00:00Z'], ['created_at', '2026-11-19T12:60:00Z'],
+    ['created_at', '2026-11-19T12:00:00+25:00'], ['created_at', '2026-11-19T12:00:00Z\n'], ['created_at', null], ['songs', undefined],
 ])('rejects playlist %s = %p', (key, value) => expect(isPlaylist({ ...playlist, [key]: value })).toBe(false));
 test('list must include created_at; create may omit it', () => {
     expect(isPlaylist(created)).toBe(true); expect(isPlaylistList({ playlists: [created] })).toBe(false);
@@ -32,4 +33,14 @@ test.each(['id', 'title', 'pinned', 'revision', 'songs'])('missing promised play
 });
 test.each(['id', 'title', 'version_id', 'audio_url', 'position'])('missing promised song field %s fails', key => {
     const row: Record<string, unknown> = { ...playlist.songs[0] }; delete row[key]; expect(isPlaylistSong(row)).toBe(false);
+});
+
+test('Postgres microsecond timestamps validate without Date.parse (including on Hermes)', () => {
+    const parse = jest.spyOn(Date, 'parse').mockReturnValue(NaN);
+    try {
+        expect(isPlaylistList({ playlists: [{ ...playlist, created_at: '2026-11-19T12:34:56.123456+00:00' }] })).toBe(true);
+        expect(isPlaylist({ ...playlist, created_at: '2024-02-29T12:34:56.123456Z' })).toBe(true);
+        expect(isPlaylist({ ...playlist, created_at: '2026-02-29T12:34:56.123456Z' })).toBe(false);
+        expect(parse).not.toHaveBeenCalled();
+    } finally { parse.mockRestore(); }
 });

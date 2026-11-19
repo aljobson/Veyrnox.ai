@@ -13,9 +13,11 @@ import { ds } from '../../../../theme';
 export default function Playlists() {
     const { flow, state } = usePlaylists(), router = useRouter(), s = useThemedStyles(sheets);
     const [title, setTitle] = useState(''), [invalid, setInvalid] = useState(false);
-    useEffect(() => { setTitle(''); setInvalid(false); }, [flow]);
+    useEffect(() => { setInvalid(false); }, [flow]);
     useEffect(() => { if (state.notice === 'saved') setTitle(''); }, [state.notice]);
     const pending = flow.attempts.snapshot();
+    const pendingTitle = pending?.write.kind === 'create' ? pending.write.title : undefined;
+    useEffect(() => { if (pendingTitle !== undefined) setTitle(pendingTitle); }, [pendingTitle]);
     useAnnouncement(state.notice ? playlistMessage(state.notice) : state.busy ? t('musicPlaylists.working') : state.status === 'on' ? t('music.loaded', { count: state.playlists.length }) : null, { everywhere: true });
     return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={state.refreshing} onRefresh={() => { if (!state.busy) void flow.load(); }} />}>
@@ -26,7 +28,7 @@ export default function Playlists() {
             {state.notice ? <Text accessibilityLiveRegion="polite">{playlistMessage(state.notice)}</Text> : null}
             {state.status === 'on' && !state.playlists.length ? <EmptyState title={t('musicPlaylists.empty')} body={t('musicPlaylists.emptyBody')} /> : null}
             {state.status === 'on' || pending ? <>
-                <TextField label={t('musicPlaylists.name')} value={title} error={invalid} maxLength={80} editable={!state.busy && !pending}
+                <TextField label={t('musicPlaylists.name')} value={pendingTitle ?? title} error={invalid} maxLength={80} editable={!state.busy && !pending}
                     onChangeText={value => { setTitle(value); setInvalid(false); }} onBlur={() => setInvalid(!playlistTitle(title))} />
                 {invalid ? <Text tone="danger" accessibilityRole="alert">{t('musicPlaylists.titleInvalid')}</Text> : null}
                 <Button label={t(pending ? 'music.retry' : 'musicPlaylists.create')} disabled={state.busy || state.refreshing}

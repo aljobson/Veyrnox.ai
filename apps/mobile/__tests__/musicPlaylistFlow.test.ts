@@ -118,3 +118,14 @@ test.each([new ApiError(401, 'not_authenticated'), new ApiError(403, 'account_fr
     await expect(attempts.run(write)).rejects.toBe(error); expect(attempts.snapshot()).toEqual(pending);
     await attempts.run(write); expect(request.mock.calls.map(([, init]) => JSON.parse(init.body).idempotency_key)).toEqual(Array(3).fill(pending!.key));
 });
+test('leaving invalidates completed and in-flight cleanup scans without disposing the flow', async () => {
+    const { flow } = setup(); await flow.load(); request.mockRejectedValueOnce(new ApiError(404, 'not_found'));
+    await flow.scan(); expect(flow.snapshot().scan?.unavailable).toEqual([songId]);
+    flow.invalidateScan(); await flow.removeUnavailable();
+    expect(flow.snapshot().scan).toBeNull(); expect(flow.snapshot().error).toBe('scan_stale');
+    const wait = deferred<unknown>(); request.mockReturnValueOnce(wait.promise);
+    const scanning = flow.scan(); flow.invalidateScan(); wait.reject(new ApiError(404, 'not_found')); await scanning;
+    expect(flow.snapshot().scan).toBeNull(); await flow.removeUnavailable();
+    expect(request.mock.calls.filter(([, init]) => init)).toHaveLength(0);
+    await flow.load(); expect(flow.snapshot().status).toBe('on'); flow.dispose();
+});
