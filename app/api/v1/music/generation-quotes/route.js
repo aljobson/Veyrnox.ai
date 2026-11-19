@@ -1,4 +1,5 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
+import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
 import {
     musicGenerationEnabled, musicPromptPolicy, musicRpcStatus, parseMusicQuote, publicMusicError,
     readMusicJson, validMusicAuthId,
@@ -16,7 +17,7 @@ export async function POST(request) {
 
     const decoded = await readMusicJson(request);
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
-    const input = parseMusicQuote(decoded.value);
+    const input = parseMusicQuote(decoded.value, { longSongs: musicRuntimeFlag('longSongs') });
     if (!input.ok) return reply({ error: input.error }, 400);
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
