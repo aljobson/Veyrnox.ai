@@ -59,6 +59,7 @@ export function MusicRenderDialog({ song, onClose, onSaved, initialOperation = '
     } catch (reason) {
       const copy = {
         render_format_unsupported: 'Fade and speed rendering currently require a fixed-frame PCM WAV master.',
+        source_too_large: 'This recording is too large to edit here (files over 20 MB). The original version is unchanged.',
         fade_range_invalid: 'The fades must fit inside the measured recording.',
         speed_ratio_invalid: 'Choose a speed from 0.5× to 2×, other than the original 1×.',
         reorder_range_invalid: 'Choose a split that leaves at least one second in each section.',
