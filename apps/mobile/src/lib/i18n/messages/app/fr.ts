@@ -4281,6 +4281,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "Ce code ne semble pas correct. Il doit contenir 10 lettres et chiffres.",
   "referrals.usethiscode": "Utiliser ce code",
   "referrals.whenafriendyoureferbuystheir": "Lorsqu’un ami parrainé achète son premier pack de crédits, vous gagnez des crédits valant 10% de ce pack, ajoutés à votre solde 14 jours plus tard si l’achat n’a été ni remboursé ni contesté. Uniquement des crédits, sans expiration. Aucun versement en argent.",
+  "referrals.afriendwhousesyourcodegetsno": "Un ami qui utilise votre code ne reçoit aucun bonus supplémentaire grâce au parrainage.",
   "referrals.youcannotuseyourowncode": "Vous ne pouvez pas utiliser votre propre code.",
   "referrals.yourcode": "Votre code",
   "referrals.yourreferralcode": "Votre code de parrainage {value1}",

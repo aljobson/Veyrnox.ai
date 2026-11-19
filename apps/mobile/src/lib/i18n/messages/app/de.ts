@@ -4209,6 +4209,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "Dieser Code sieht nicht richtig aus. Er hat 10 Buchstaben und Zahlen.",
   "referrals.usethiscode": "Diesen Code verwenden",
   "referrals.whenafriendyoureferbuystheir": "Kauft ein von dir empfohlener Freund sein erstes Credit-Paket, erhältst du Credits im Wert von 10% dieses Pakets. Sie werden nach 14 Tagen gutgeschrieben, sofern der Kauf nicht erstattet oder angefochten wurde. Nur Credits, die nie verfallen. Keine Auszahlung in Geld.",
+  "referrals.afriendwhousesyourcodegetsno": "Ein Freund, der deinen Code verwendet, erhält durch die Empfehlung keinen zusätzlichen Bonus.",
   "referrals.youcannotuseyourowncode": "Du kannst deinen eigenen Code nicht verwenden.",
   "referrals.yourcode": "Dein Code",
   "referrals.yourreferralcode": "Dein Empfehlungscode {value1}",

@@ -4281,6 +4281,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "Ese código no parece correcto. Tiene 10 letras y números.",
   "referrals.usethiscode": "Usar este código",
   "referrals.whenafriendyoureferbuystheir": "Cuando un amigo que invites compre su primer pack de créditos, recibirás créditos por valor del 10% de ese pack, añadidos a tu saldo 14 días después si la compra no ha sido reembolsada ni disputada. Solo créditos; no caducan. No se paga dinero.",
+  "referrals.afriendwhousesyourcodegetsno": "Un amigo que use tu código no recibe ninguna bonificación extra por la invitación.",
   "referrals.youcannotuseyourowncode": "No puedes usar tu propio código.",
   "referrals.yourcode": "Tu código",
   "referrals.yourreferralcode": "Tu código de recomendación {value1}",

@@ -4137,6 +4137,7 @@ export default {
   "referrals.thatcodedoesnotlookrightIt": "推荐码似乎不正确。应为 10 位字母和数字。",
   "referrals.usethiscode": "使用此推荐码",
   "referrals.whenafriendyoureferbuystheir": "你推荐的好友购买第一个积分包后，你会获得相当于该积分包 10% 的积分。如果购买未被退款或发生争议，积分将在 14 天后加入你的余额。奖励仅为积分，永不过期，不会以现金支付。",
+  "referrals.afriendwhousesyourcodegetsno": "使用你的代码的好友不会因推荐获得额外奖励。",
   "referrals.youcannotuseyourowncode": "你不能使用自己的推荐码。",
   "referrals.yourcode": "你的推荐码",
   "referrals.yourreferralcode": "你的推荐码 {value1}",
