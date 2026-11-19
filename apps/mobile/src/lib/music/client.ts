@@ -1,3 +1,6 @@
+import type { TargetStemInstrument } from './shared';
+import type { MusicTargetStemQuote, TargetStemStart, TargetStemRequest, TargetStemAsset, TargetStemKind } from './targetStemTypes';
+import { isMusicTargetStemQuote, isTargetStemStart, isTargetStemRequest, isTargetStemAsset } from './validateTargetStems';
 import type { MusicActionQuote, StemStart, StemRequest, StemArchive, CropInput, CropResult } from './actionTypes';
 import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropResult } from './validateActions';
 import { ApiError, type ApiClient } from '../api';
@@ -136,5 +139,25 @@ export async function cropSong(api: ApiClient, songId: string, input: CropInput,
     const { version_id, start_seconds, end_seconds } = input;
     const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/crop`, post({ version_id, start_seconds, end_seconds, idempotency_key: key }));
     if (!isCropResult(v)) throw bad();
+    return v;
+}
+export async function createTargetStemQuote(api: ApiClient, songId: string, versionId: string, instrument: TargetStemInstrument): Promise<MusicTargetStemQuote> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/target-stem-quotes`, post({ version_id: versionId, instrument, rights_confirmed: true }));
+    if (!isMusicTargetStemQuote(v) || v.instrument !== instrument) throw bad();
+    return v;
+}
+export async function startTargetStems(api: ApiClient, songId: string, quoteId: string, key: string): Promise<TargetStemStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/target-stems`, post({ quote_id: quoteId, idempotency_key: key }));
+    if (!isTargetStemStart(v)) throw bad();
+    return v;
+}
+export async function getTargetStemRequest(api: ApiClient, id: string): Promise<TargetStemRequest> {
+    const v = await api.request<unknown>(`${BASE}/target-stem-requests/${encodeURIComponent(id)}`, {}, { timeoutMs: 15000 });
+    if (!isTargetStemRequest(v) || v.id !== id) throw bad();
+    return v;
+}
+export async function getTargetStemAsset(api: ApiClient, id: string, kind: TargetStemKind): Promise<TargetStemAsset> {
+    const v = await api.request<unknown>(`${BASE}/target-stem-requests/${encodeURIComponent(id)}/${kind}`);
+    if (!isTargetStemAsset(v, kind)) throw bad();
     return v;
 }

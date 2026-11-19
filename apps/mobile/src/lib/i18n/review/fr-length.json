@@ -5340,6 +5340,12 @@
     "ratio": 2
   },
   {
+    "id": "musicTargetStems.state.refunded",
+    "english": "The provider did not produce stems. The job was refunded.",
+    "translation": "Le fournisseur n’a pas produit de pistes séparées. Les crédits de la tâche ont été remboursés.",
+    "ratio": 1.65
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

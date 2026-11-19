@@ -3516,6 +3516,24 @@
     "ratio": 2
   },
   {
+    "id": "musicTargetStems.instrument.piano",
+    "english": "Piano",
+    "translation": "Фортепиано",
+    "ratio": 2
+  },
+  {
+    "id": "musicTargetStems.instrument.brass",
+    "english": "Brass",
+    "translation": "Медные духовые",
+    "ratio": 2.8
+  },
+  {
+    "id": "musicTargetStems.instrument.woodwinds",
+    "english": "Woodwinds",
+    "translation": "Деревянные духовые",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

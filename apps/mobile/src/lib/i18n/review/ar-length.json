@@ -1920,6 +1920,12 @@
     "ratio": 2
   },
   {
+    "id": "musicTargetStems.instrument.brass",
+    "english": "Brass",
+    "translation": "آلات نفخ نحاسية",
+    "ratio": 3
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

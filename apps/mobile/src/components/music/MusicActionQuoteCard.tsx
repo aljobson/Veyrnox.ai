@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Card, Text } from '../ui';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import type { MusicActionQuote } from '../../lib/music/actionTypes';
-export function MusicActionQuoteCard({ quote, ambiguous, busy, onConfirm }: {
-    quote: MusicActionQuote; ambiguous: boolean; busy: boolean; onConfirm(): void;
+export function MusicActionQuoteCard({ quote, ambiguous, busy, onConfirm, children }: {
+    quote: MusicActionQuote; ambiguous: boolean; busy: boolean; onConfirm(): void; children?: ReactNode;
 }) {
     const [now, setNow] = useState(Date.now);
     useEffect(() => {
@@ -16,6 +16,7 @@ export function MusicActionQuoteCard({ quote, ambiguous, busy, onConfirm }: {
     const message = ambiguous ? t('musicActions.action.recovery') : !quote.affordable ? t('musicActions.action.notAffordable') : expired ? t('musicActions.action.expired') : null;
     useAnnouncement(message, { onMount: true, everywhere: true });
     return <Card>
+        {children}
         <Text variant="title3" accessibilityRole="header">{t('musicActions.action.price', { credits: quote.total_credits })}</Text>
         <Text>{t('musicActions.action.balance', { balance: quote.balance, after: quote.balance_after })}</Text>
         <Text>{t('musicActions.action.expires', { time: new Date(quote.expires_at).toLocaleTimeString() })}</Text>
