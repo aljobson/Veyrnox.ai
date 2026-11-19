@@ -77,18 +77,18 @@ async function rerender(models: any[] | null) {
     await act(async () => root.unmount()); mockCatalog = models; root = createRoot();
     await act(async () => root.render(<Home />));
 }
-const countText = () => root.container.queryAll(n => typeof n.props.children === 'string' && /templates? on/.test(n.props.children)).map(n => n.props.children).join(' ');
+const countText = () => root.container.queryAll(n => typeof n.props.children === 'string' && /^\d+ templates?$/.test(n.props.children)).map(n => n.props.children).join(' ');
 test('image and audio templates whose model is not in the catalog are not listed, and the count stays honest', async () => {
     mockImages.mockResolvedValue([...images, { id: 'red-light', name: 'RED LIGHT FILTER', category: 'REALISTIC', modelId: 'nano-banana-pro-edit-grsai', prompt: 'p', previewUrl: null, previewAspect: 1, photoRequired: true }]);
     await rerender([entry('nano'), entry('suno')]);
     expect(titles()).toEqual(expect.arrayContaining(['Forest Light', 'Midnight Soul']));
     expect(root.container.queryAll(n => String(n.props.accessibilityLabel).startsWith('RED LIGHT FILTER'))).toHaveLength(0);
-    expect(countText()).toMatch(/9 templates on 3 models/);
+    expect(countText()).toBe('9 templates');
 });
 test('a loaded but empty catalog hides every image and audio template', async () => {
     await rerender([]);
     expect(titles().filter(x => IDS.slice(1).includes(x))).toEqual([]);
-    expect(countText()).toMatch(/6 templates on 1 model/);
+    expect(countText()).toBe('6 templates');
 });
 test('while the catalog is unknown (fetch failed) nothing is hidden', async () => {
     await rerender(null);
