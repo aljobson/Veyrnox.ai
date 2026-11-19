@@ -50,5 +50,17 @@ END $$;
 REVOKE ALL ON FUNCTION public.revoke_account_session(TEXT, TEXT) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.revoke_account_session(TEXT, TEXT) TO service_role;
 
+-- Keep the admin endpoint inventory and the database telemetry allowlist in lockstep.
+DO $$ BEGIN
+  IF to_regprocedure('public.telemetry_path_allowed_pre_0565(text)') IS NULL THEN
+    ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0565;
+  END IF;
+END $$;
+CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path='' AS $$
+  SELECT p_path = '/api/v1/account/sessions' OR public.telemetry_path_allowed_pre_0565(p_path)
+$$;
+REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC,anon,authenticated,service_role;
+
 NOTIFY pgrst,'reload schema';
 COMMIT;
