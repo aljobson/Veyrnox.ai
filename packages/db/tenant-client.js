@@ -31,7 +31,7 @@ export async function tenantRequest(request, context, path, { method = 'GET', bo
             try { code = JSON.parse(new TextDecoder().decode(await readBody(response, 4096)))?.message; }
             catch { /* Unknown errors stay generic. */ }
             finally { await response.body?.cancel().catch(() => {}); }
-            if (['VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'SIZE_MISMATCH', 'TAKE_CHANGED'].includes(code))
+            if (['BEAT_CLIENT_OUTDATED', 'VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'SIZE_MISMATCH', 'TAKE_CHANGED'].includes(code))
                 throw new ApiError(409, code, 'The request conflicts with the saved state.');
         } else if (removalAware && [403, 409].includes(response.status)) {
             const removalErrors = {

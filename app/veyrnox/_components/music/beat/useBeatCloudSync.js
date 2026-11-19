@@ -7,7 +7,7 @@ import * as api from '../../../_lib/music/beat/beatCloud.js';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 import { configureCloudTakes } from '../../../_lib/music/beat/beatAssets.js';
 import { parseCloudBeat, errorCode, errorState, maySync, needsSync, retryDelay, saveRequest, takesToUpload, takeAssets, sameAccount, isRemoved, removedLink } from '../../../_lib/music/beat/beatCloudRules.mjs';
-const messages = { synced: 'app.music.beat.recovery.r18', syncing: 'app.music.beat.recovery.r19', offline: 'app.music.beat.recovery.r20',
+const messages = { update_required: 'app.music.beat.compat.updateRequired', synced: 'app.music.beat.recovery.r18', syncing: 'app.music.beat.recovery.r19', offline: 'app.music.beat.recovery.r20',
   error: 'app.music.beat.recovery.r21', limit: 'app.music.beat.recovery.r22',
   rate_limited: 'app.music.beat.recovery.r23', conflict: 'app.music.beat.recovery.r24',
   removed: 'app.music.beat.recovery.r25',
@@ -85,6 +85,10 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         mediaRetryAt ? Math.max(1000, Math.ceil((mediaRetryAt - Date.now()) / 1000) * 1000) : 60000);
       if (required && missing.length) throw Object.assign(beatFailure('details-d34', { names: missing.map(a => a.name).join(', ') }), { code: 'MEDIA_REQUIRED', names: failures });
     }
+    function updateRequired() {
+      terminal = true; pending = null; conflict = null;
+      clearTimeout(timer); clearTimeout(mediaTimer); show('update_required');
+    }
     async function markRemoved(token) {
       terminal = true; pending = null; conflict = null; paused = false;
       clearTimeout(timer); clearTimeout(mediaTimer);
@@ -150,12 +154,14 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         if (!current(token)) return;
         if (errorCode(error) === 'LOCAL_CONFLICT') { schedule(); return; }
         const next = errorState(error);
-        if (next === 'removed') {
+        if (next === 'update_required') { updateRequired();
+        } else if (next === 'removed') {
           await markRemoved(token);
         } else if (next === 'conflict') {
           try { await getTheirs(token); } catch (readError) {
             if (current(token)) {
-              if (errorState(readError) === 'removed') await markRemoved(token);
+              if (errorState(readError) === 'update_required') updateRequired();
+              else if (errorState(readError) === 'removed') await markRemoved(token);
               else { show('offline'); retryAt = Date.now() + 10000; schedule(); }
             }
           }
@@ -195,7 +201,8 @@ export function useBeatCloudSync({ beatId, project, cloud, announce }) {
         check(token); conflict = null; paused = false; show('synced'); schedule();
       } catch (error) {
         if (!current(token)) return;
-        if (errorState(error) === 'removed') await markRemoved(token);
+        if (errorState(error) === 'update_required') updateRequired();
+        else if (errorState(error) === 'removed') await markRemoved(token);
         else if (errorCode(error) === 'VERSION_CONFLICT') {
           try { await getTheirs(token); } catch { if (current(token)) show('conflict', { detail: t('app.music.beat.status.s80') }); }
         }

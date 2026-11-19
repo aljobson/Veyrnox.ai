@@ -1,12 +1,12 @@
 'use client';
-import { beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
+import { assertBeatWritable } from '../../../_lib/music/beat/beatCompatibility.mjs';
+import { parseCloudBeat, errorState } from '../../../_lib/music/beat/beatCloudRules.mjs';
 import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
 
 import { useEffect, useRef, useState } from 'react';
 import { onSessionChange } from '../../../../lib/authClient.js';
 import { listVersions, getVersion } from '../../../_lib/music/beat/beatCloud.js';
-import { validateBeat, migrateBeat } from '../../../_lib/music/beat/beatDocument.mjs';
 import { restoreVersion } from '../../../_lib/music/beat/beatOps.mjs';
 import { versionReason, versionTime } from '../../../_lib/music/beat/beatVersionLabels.mjs';
 import { action, button } from './beatStyles';
@@ -31,10 +31,10 @@ export default function BeatVersionsPanel({ beatId, project, sync }) {
       await project.finishRecording();
       const result = await getVersion(beatId, row.id, token);
       if (!sync.current(token)) return;
-      const doc = JSON.parse(result.doc_json);
-      if (!validateBeat(doc).ok || doc.id !== beatId) throw beatFailure('recovery-r10');
-      if (project.edit(current => restoreVersion(current, migrateBeat(doc)), { label: BEAT_ACTIONS.a38 })) dialog.current.close();
-    } catch { if (sync.current(token)) setError(t('app.music.beat.status.s60')); }
+      const doc = parseCloudBeat(result.doc_json, beatId);
+      assertBeatWritable(doc);
+      if (project.edit(current => restoreVersion(current, doc), { label: BEAT_ACTIONS.a38 })) dialog.current.close();
+    } catch (error) { if (sync.current(token)) setError(t(errorState(error) === 'update_required' ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s60')); }
     finally { setBusy(false); }
   }
   return <>

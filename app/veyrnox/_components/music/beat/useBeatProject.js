@@ -1,4 +1,5 @@
 'use client';
+import { assertBeatWritable, BEAT_UPDATE_REQUIRED, BEAT_WRITE_VERSION } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
 import { beatText } from '../../../_lib/music/beat/beatDisplay.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
@@ -63,7 +64,7 @@ export function useBeatProject(id, announce) {
     if (result.error === 'conflict') markConflict('changed');
     else if (result.error === 'not_found') markConflict('deleted');
     else if (result.error) {
-      if (mounted.current) { setSaveError(true); announce(t('app.music.beat.status.s95')); }
+      if (mounted.current) { setSaveError(true); announce(t(['v5_write_disabled', 'unsupported_version'].includes(result.error) ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s95')); }
     } else {
       revision.current = result.revision;
       if (unsaved.current === pendingDoc) unsaved.current = null;
@@ -85,6 +86,8 @@ export function useBeatProject(id, announce) {
       else setError(result.error);
       return;
     }
+    // A valid record newer than this app can write is readable but cannot be saved; never open it as editable.
+    if (result.record.doc?.version > BEAT_WRITE_VERSION) { setError(BEAT_UPDATE_REQUIRED); return; }
     revision.current = result.record.revision; current.current = result.record.doc; blocked.current = null;
     history.current = historyOps.createHistory(result.record.doc);
     unsaved.current = null; flushRequested.current = false;
@@ -94,6 +97,7 @@ export function useBeatProject(id, announce) {
     mounted.current = true;
     Promise.resolve().then(() => { if (mounted.current) reload(); });
     const unsubscribe = store.subscribeBeats((message) => {
+      if (message.storageReady && !current.current) { void reload(); return; }
       if (message.cloud || message.id !== id || !current.current) return;
       if (message.deleted) markConflict('deleted');
       else if (message.revision > revision.current) markConflict('changed');
@@ -180,6 +184,7 @@ export function useBeatProject(id, announce) {
     if (blocked.current || unsaved.current || !durable.current) throw beatFailure('recovery-r31');
   }
   async function replaceFromCloud(theirsDoc, theirsRevision, stash, media, isCurrent, cloudProjectId, expected = null) {
+    assertBeatWritable(theirsDoc);
     if (replacing.current || blocked.current) throw beatFailure('recovery-r32');
     await beforeFlush.current?.(); replacing.current = true;
     try {
