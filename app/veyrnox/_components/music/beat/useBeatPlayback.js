@@ -1,4 +1,5 @@
 'use client';
+import { beatReadOnly, BEAT_READ_ONLY_MESSAGE } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
 import { beatErrorMessage } from '../../../_lib/music/beat/beatErrors.mjs';
@@ -74,6 +75,7 @@ export function useBeatPlayback(current, edit, announce, options) {
   async function toggle() {
     if (active.current || starting.current) { stop(); return; }
     if (audioRecorderRef.current?.locked() || (record.current && audioRecorderRef.current?.hasPending())) { announce(t('app.music.beat.status.s89')); return; }
+    if (beatReadOnly(current.current)) { record.current = false; setRecording(false); }
     const audioRecording = record.current && !!audioRecorderRef.current?.armed();
     const isRecording = audioRecording || (record.current && editTrack(current.current, optionsRef.current?.editTrackId).kind === 'midi');
     let audioRange, recordContextStart;
@@ -216,7 +218,7 @@ export function useBeatPlayback(current, edit, announce, options) {
       instance.playPad(pad, 100 / 127, instance.now(), instance.master, patternTrack(current.current, optionsRef.current?.editTrackId)?.kit || '808');
     } catch (failure) { setAudioError(beatErrorMessage(failure, 'playback', t)); announce(beatErrorMessage(failure, 'playback', t)); }
   }
-  function setRecord(value) { record.current = value; setRecording(value); }
+  function setRecord(value) { if (value && beatReadOnly(current.current)) { announce(t(BEAT_READ_ONLY_MESSAGE)); return; } record.current = value; setRecording(value); }
   useEffect(() => {
     mounted.current = true;
     const ringing = tails.current;

@@ -1,4 +1,4 @@
-import { beatRoute, rpc, bodyOf, uuid, fail } from '../../../../../../../../lib/musicBeatCloudRoute.js';
+import { assertBeatMediaWritable, beatRoute, rpc, bodyOf, uuid, fail } from '../../../../../../../../lib/musicBeatCloudRoute.js';
 import { envConfig, isConfigured, presignGetUrl, headObject, deleteObject } from '../../../../../../../../packages/adapters/r2.js';
 async function read(request, context, params) {
   const ids = await params;
@@ -17,6 +17,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   return beatRoute(request, async context => {
     await bodyOf(request, []);
+    await assertBeatMediaWritable(request, context, uuid((await params).beatId));
     const { take, args, cfg } = await read(request, context, params);
     if (take.status === 'ready') return Response.json({ status: 'ready', idempotent: true });
     const head = await headObject(take.r2_key, cfg);

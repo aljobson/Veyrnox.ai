@@ -96,7 +96,7 @@ test('cloud readers distinguish unsupported from damaged without mutating bytes;
   }
   assert.equal(classifyCloudBeat('{', 'x'), 'damaged');
   for (const code of ['BEAT_CLIENT_OUTDATED', 'unsupported_version', 'v5_write_disabled']) {
-    assert.equal(errorState({ code, status: 409 }), 'update_required'); assert.equal(retryDelay(0, { code }), null);
+    assert.equal(errorState({ code, status: 409 }), code === 'v5_write_disabled' ? 'read_only' : 'update_required'); assert.equal(retryDelay(0, { code }), null);
   }
 });
 

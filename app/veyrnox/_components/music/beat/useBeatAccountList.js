@@ -1,6 +1,6 @@
 'use client';
-import { unsupportedBeatVersion } from '../../../_lib/music/beat/beatCompatibility.mjs';
-import { parseCloudBeat, errorState } from '../../../_lib/music/beat/beatCloudRules.mjs';
+import { unsupportedBeatVersion, capabilityGeneration, assertBeatGeneration, beatReadOnly, BEAT_READ_ONLY_MESSAGE } from '../../../_lib/music/beat/beatCompatibility.mjs';
+import { parseCloudBeat, errorState, errorCode } from '../../../_lib/music/beat/beatCloudRules.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getStoredUserId, onSessionChange } from '../../../../lib/authClient.js';
@@ -37,15 +37,19 @@ export function useBeatAccountList(cloud, router, announce, refreshDevice) {
   }, [cloud, refresh, t]);
   async function open(row) {
     if (row.unsupported || unsupportedBeatVersion(row.doc_version)) { announce(t('app.music.beat.compat.unsupported')); return; }
-    const token = lifetime.current;
+    const token = lifetime.current, generation = capabilityGeneration();
+    let doc;
     try {
       const result = await getCloudBeat(row.beat_id, token);
       if (lifetime.current !== token || token.signal.aborted) return;
-      const doc = parseCloudBeat(result.doc_json, row.beat_id), saved = await store.createBeat(doc, { userId: token.userId, projectId: result.project.id, revision: result.project.revision, syncedUpdatedAt: doc.updatedAt });
+      doc = parseCloudBeat(result.doc_json, row.beat_id);
+      assertBeatGeneration(generation);
+      const saved = await store.loadCloudBeat(doc, { userId: token.userId, projectId: result.project.id, revision: result.project.revision, syncedUpdatedAt: doc.updatedAt }, { generation, current: () => lifetime.current === token && !token.signal.aborted });
       if (lifetime.current !== token || token.signal.aborted) return;
       if (saved.error) { announce(errorState({ code: saved.error }) === 'update_required' ? t('app.music.beat.compat.updateRequired') : saved.error === 'limit' ? t('app.music.beat.ui.this.device.has.50.beats.delete.one.to.make.room') : t('app.music.beat.status.s69')); await refreshDevice(); return; }
+      if (beatReadOnly(doc)) announce(t(BEAT_READ_ONLY_MESSAGE));
       router.push(`/app/music/beats/${doc.id}`);
-    } catch (error) { if (lifetime.current === token) announce(t(errorState(error) === 'update_required' ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s70')); }
+    } catch (error) { if (lifetime.current === token) announce(t((errorState(error) === 'read_only' || (errorCode(error) === 'CAPABILITY_CHANGED' && beatReadOnly(doc))) ? BEAT_READ_ONLY_MESSAGE : errorState(error) === 'update_required' ? 'app.music.beat.compat.updateRequired' : 'app.music.beat.status.s70')); }
   }
   async function remove(row) {
     if (row.unsupported || unsupportedBeatVersion(row.doc_version)) { announce(t('app.music.beat.compat.unsupported')); return; }

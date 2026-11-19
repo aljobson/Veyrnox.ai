@@ -34,10 +34,10 @@ export default function BeatRuler({ onHeight, bars, zoom, snap, locator, end, se
   const positionControls = [['start', 0], ['previousBar', Math.max(0, locator - 3840)], ['nextBar', Math.min(end, locator + 3840)], ['end', end]];
   return <div ref={root} dir="ltr" className="relative min-h-40 border-b border-vx-border bg-vx-panel">
     <div className="sticky start-0 flex min-h-16 w-fit max-w-[calc(100vw-6rem)] flex-wrap gap-1">
-      {positionControls.map(([label, at]) => <button key={label} className={button} onClick={() => setLocator(at)}>{t(`app.music.beat.control.${label}`)}</button>)}
+      {positionControls.map(([label, at]) => <button data-beat-read key={label} className={button} onClick={() => setLocator(at)}>{t(`app.music.beat.control.${label}`)}</button>)}
       {preview && <button className={button} onClick={() => { drag.current = null; setPreview(null); announce(t('app.music.beat.status.s48')); }}>{t('app.music.beat.control.cancelDrag')}</button>}
     </div>
-    <div data-beat-ruler-position role="slider" tabIndex={0} aria-label={t('app.music.beat.ui.playhead.position')} aria-valuemin={0}
+    <div data-beat-read data-beat-ruler-position role="slider" tabIndex={0} aria-label={t('app.music.beat.ui.playhead.position')} aria-valuemin={0}
       aria-valuemax={end / 240} aria-valuenow={locator / 240}
       aria-valuetext={formatPosition(locator, t)}
       className="relative h-11 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-vx-accent"
