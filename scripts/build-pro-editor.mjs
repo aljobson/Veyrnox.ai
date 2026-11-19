@@ -126,7 +126,7 @@ export function buildProEditor({ zip, out: requestedOut, parents }) {
     const files = {};
     for (const file of listFiles(out)) files[file] = sha256File(join(out, file));
     writeFileSync(join(out, 'manifest.json'), JSON.stringify({
-      release: pins.release, zipSha256: zipSha, parents: allowed, signature: pins.signature, files,
+      release: pins.release, zipSha256: zipSha, parents: allowed, styleHashes: transformed.styleHashes, signature: pins.signature, files,
     }, null, 2) + '\n');
     writeFileSync(join(out, MARKER), 'built by scripts/build-pro-editor.mjs; safe to replace\n');
     const old = existsSync(finalOut) ? finalOut + '.old-' + process.pid : null;

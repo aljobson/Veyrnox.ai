@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transformIndexHtml } from '../pro-editor/src/transform.mjs';
 import { buildHeadersFile, hostCsp, innerCsp } from '../pro-editor/src/headers.mjs';
-import { parseHeadersFile } from '../pro-editor/dev/serve.mjs';
+import { headersFor, parseHeadersFile } from '../pro-editor/src/headerRules.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const upstream = readFileSync(join(HERE, '..', 'pro-editor', 'fixtures', 'upstream-index-0.20.1.html'), 'utf8');
@@ -108,4 +108,12 @@ test('the fatal overlay no longer promises recovery that a host restart would er
   assert.match(html, /Restarting the editor clears its local recovery data/);
   assert.match(html, /<button id="fatal-reload" type="button">Restart editor<\/button>/);
   assert.throws(() => transformIndexHtml(upstream.replace('come back when you reload', 'come back later')), /recovery copy/);
+});
+
+test('headersFor merges every matching rule and never matches across unrelated paths', () => {
+  const rules = parseHeadersFile(buildHeadersFile({ parents: ['https://veyrnox.ai'], styleHashes: ["'sha256-abc='"] }));
+  assert.equal(headersFor(rules, '/fc/filmcraft_web_bg.wasm')['Content-Type'], 'application/wasm');
+  assert.ok(headersFor(rules, '/host.html')['Content-Security-Policy'].includes("frame-src 'self'"));
+  assert.equal(headersFor(rules, '/pro/hostCore.mjs')['Content-Type'], 'text/javascript');
+  assert.deepEqual(headersFor(rules, '/elsewhere.txt'), {});
 });

@@ -8,30 +8,15 @@ import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { headersFor, parseHeadersFile } from '../src/headerRules.mjs';
+
+export { parseHeadersFile };
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript',
   '.wasm': 'application/wasm', '.json': 'application/json', '.png': 'image/png', '.md': 'text/markdown',
 };
-
-export function parseHeadersFile(text) {
-  const rules = [];
-  let current = null;
-  for (const line of text.split('\n')) {
-    if (!line.trim()) continue;
-    if (!line.startsWith(' ')) { current = { path: line.trim(), headers: {} }; rules.push(current); continue; }
-    const i = line.indexOf(':');
-    if (current && i > 0) current.headers[line.slice(0, i).trim()] = line.slice(i + 1).trim();
-  }
-  return rules;
-}
-
-function matches(pattern, path) {
-  if (!pattern.includes('*')) return pattern === path;
-  const re = new RegExp('^' + pattern.split('*').map((s) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$');
-  return re.test(path);
-}
 
 function args() {
   const out = {};
@@ -52,7 +37,7 @@ function serveStatic(dist, rules, req, res) {
   }
   console.log(logSafe(req.method) + ' ' + logSafe(url.pathname + url.search));
   const headers = { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream' };
-  for (const rule of rules) if (matches(rule.path, url.pathname === '/' ? '/host.html' : url.pathname)) Object.assign(headers, rule.headers);
+  Object.assign(headers, headersFor(rules, url.pathname === '/' ? '/host.html' : url.pathname));
   // Dev-only media for manual checks (the apex page fetches it cross-origin).
   if (url.pathname.startsWith('/dev-media/')) headers['Access-Control-Allow-Origin'] = '*';
   res.writeHead(200, headers);
