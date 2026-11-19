@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
@@ -49,7 +49,16 @@ function SamplePlayer({ url, onEnd }: { readonly url: string; onEnd(): void }) {
         setAudioModeAsync({ playsInSilentMode: true }).catch(() => { /* Playback still works with the default mode. */ });
         player.play();
     }, [player]);
-    useEffect(() => { if (status.didJustFinish) onEnd(); }, [status.didJustFinish, onEnd]);
+    // onEnd toggles the card, so it must run once per playback: a new onEnd from a re-render while didJustFinish is
+    // still true would otherwise toggle the sample back on.
+    const latestOnEnd = useRef(onEnd);
+    latestOnEnd.current = onEnd;
+    const ended = useRef(false);
+    useEffect(() => {
+        if (!status.didJustFinish || ended.current) return;
+        ended.current = true;
+        latestOnEnd.current();
+    }, [status.didJustFinish]);
     return null;
 }
 

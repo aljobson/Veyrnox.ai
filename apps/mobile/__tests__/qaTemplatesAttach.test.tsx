@@ -86,3 +86,14 @@ test('a template without a sample shows no play button', async () => {
     await act(async () => root.render(<AudioTemplateCard template={template} onPlay={jest.fn()} onOpen={jest.fn()} />));
     expect(root.container.queryAll(n => typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.startsWith('Play,')).length).toBe(0);
 });
+
+test('a finished sample stops its card once even when the card re-renders with a new handler', async () => {
+    const first = jest.fn(), second = jest.fn();
+    const withSample = { ...template, previewAudioUrl: 'https://veyrnox.ai/a.mp3' };
+    mockFinished = true;
+    await act(async () => root.render(<AudioTemplateCard template={withSample} playing onPlay={first} onOpen={jest.fn()} />));
+    await act(async () => root.render(<AudioTemplateCard template={withSample} playing onPlay={second} onOpen={jest.fn()} />));
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(second).not.toHaveBeenCalled();
+    mockFinished = false;
+});
