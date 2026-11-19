@@ -3,6 +3,10 @@ import { TEMPLATE_SWAP_ROW } from './templateSwapRow.js';
 /**
  * The row's live cards, joined to their static name and poster, in the row's order. [] on any failure, a switch that is off or a
  * malformed answer, so the row simply does not render. `origin` is '' on the web and the API origin on the phone.
+ * @param {typeof fetch} [fetcher]
+ * @param {string} [origin]
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Array<{ id: string, name: string, poster: string, aspectRatio: string, credits: number }>>}
  */
 export async function fetchSwapRow(fetcher = fetch, origin = '', signal) {
   try {
