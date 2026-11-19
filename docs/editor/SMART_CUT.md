@@ -13,6 +13,10 @@ The first speech-aware slice is intentionally narrow:
 4. Stop at the Clip Editor's existing 60-second output limit.
 5. Let the user preview every boundary and apply the resulting ranges to the existing trim/stitch renderer.
 
+Pause length is chosen with the pacing buttons (ADR-0331 follow-on S1): **Snappy** removes pauses of 0.40 s or more and keeps 80 ms at each edge, **Balanced** (the default, same as before) 0.75 s and 120 ms, **Relaxed** 1.20 s and 180 ms. These values are Veyrnox's own starting points to be tuned on real recordings, not figures taken from another product. The planner records the preset on the plan (`silencePreset`). The phone planner has the same presets in `silenceRanges` and keeps Balanced until its sheet gets a selector.
+
+Each analysis record carries a derived `timingQuality`: `word` for Scribe (a cut can fall between any two words) and `phrase` for Wizper (pauses inside a phrase cannot be seen). A phrase-level analysis adds a review warning to the plan. The contract stays at version 1; stored records without the field get it from their provider.
+
 This slice does not score faces, delivery, framing, or technical quality. It does not align alternate takes to a script, so a transcript-backed section cannot be swapped onto an unanalysed take.
 
 ## Boundary contract

@@ -31,7 +31,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
     if (disabled) return;
     try {
       setPlan(analysisReady
-        ? buildSpeechAwareCutPlan({ clips, analyses })
+        ? buildSpeechAwareCutPlan({ clips, analyses, silencePreset: pacing })
         : buildSmartCutPlan({ clips, script, notes, pacing }));
       setView('cut');
       setNotice(t(analysisReady ? 'app.smartCut.notice.speechCreated' : 'app.smartCut.notice.localCreated'));
@@ -119,6 +119,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
           <label className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.notes')}
             <textarea disabled={disabled} value={notes} onChange={(event) => setNotes(event.target.value)} rows="2" placeholder={t('app.smartCut.notesPlaceholder')} className={`${inputClass} resize-y disabled:opacity-50`} />
           </label>
+          </>}
           <fieldset>
             <legend className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.pacing')}</legend>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -127,7 +128,6 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
               ))}
             </div>
           </fieldset>
-          </>}
           {!ready && <p role="status" className="text-xs text-vx-fg-muted">{t('app.smartCut.reading')}</p>}
           <button type="button" disabled={disabled || !ready} onClick={createPlan} className="min-h-11 justify-self-start rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t(analysisReady ? 'app.smartCut.action.removePauses' : 'app.smartCut.action.createPreview')}</button>
         </div>

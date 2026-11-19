@@ -3,6 +3,19 @@ export const SMART_CUT_ANALYSIS_VERSION = 1;
 export const SMART_CUT_PRIMARY_ANALYSIS_PROVIDER = 'fal-scribe-v2';
 export const SMART_CUT_ANALYSIS_PROVIDERS = Object.freeze([SMART_CUT_PRIMARY_ANALYSIS_PROVIDER, 'fal-wizper']);
 export const SMART_CUT_SILENCE_DEFAULTS = Object.freeze({ minimumSeconds: 0.75, edgePaddingSeconds: 0.12 });
+// Pause-removal presets for the speech-aware planner. `natural` is the long-standing default;
+// `balanced` is accepted as its alias so the planner can share the demo planner's pacing names.
+export const SMART_CUT_SILENCE_PRESETS = Object.freeze({
+  snappy: Object.freeze({ minimumSeconds: 0.4, edgePaddingSeconds: 0.08 }),
+  natural: SMART_CUT_SILENCE_DEFAULTS,
+  relaxed: Object.freeze({ minimumSeconds: 1.2, edgePaddingSeconds: 0.18 }),
+});
+export function smartCutSilencePreset(name) {
+  const key = name === 'balanced' ? 'natural' : name;
+  return Object.hasOwn(SMART_CUT_SILENCE_PRESETS, key) ? key : 'natural';
+}
+// Word-level providers can be cut between any two words; phrase-level providers hide pauses inside a phrase.
+export const SMART_CUT_TIMING_QUALITY = Object.freeze({ 'fal-scribe-v2': 'word', 'fal-wizper': 'phrase' });
 
 const MAX_ANALYSIS_CHUNKS = 10_000;
 const MAX_TRANSCRIPT_CHARS = 100_000;
@@ -52,6 +65,7 @@ export function parseSmartCutAnalysis(value, { assetId, duration } = {}) {
       provider: value.provider,
       transcript: cleanText(value.transcript),
       language: speechCutLanguage(value.language),
+      timingQuality: SMART_CUT_TIMING_QUALITY[value.provider],
       chunks,
     },
   };
@@ -185,16 +199,18 @@ function labelFor(group, end = group.end) {
 }
 
 /** Build the first production planner slice from normalized timed speech. */
-export function buildSpeechAwareCutPlan({ clips, analyses, minimumSilenceSeconds, edgePaddingSeconds } = {}) {
+export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimumSilenceSeconds, edgePaddingSeconds } = {}) {
+  const presetName = smartCutSilencePreset(silencePreset);
+  const preset = SMART_CUT_SILENCE_PRESETS[presetName];
   const takes = sourceClips(clips);
   if (!takes.length) throw new Error('Speech-aware Smart Cut needs at least one loaded video clip.');
   if (takes.length > MAX_SEGMENTS) throw new Error('Speech-aware Smart Cut supports at most 10 source clips.');
   const minimumSeconds = Number.isFinite(minimumSilenceSeconds)
     ? Math.min(3, Math.max(0.3, minimumSilenceSeconds))
-    : SMART_CUT_SILENCE_DEFAULTS.minimumSeconds;
+    : preset.minimumSeconds;
   const padding = Number.isFinite(edgePaddingSeconds)
     ? Math.min(0.5, Math.max(0, edgePaddingSeconds))
-    : SMART_CUT_SILENCE_DEFAULTS.edgePaddingSeconds;
+    : preset.edgePaddingSeconds;
   const clipById = new Map(takes.map((take) => [take.id, take]));
   const parsed = new Map();
   for (const take of takes) {
@@ -236,6 +252,7 @@ export function buildSpeechAwareCutPlan({ clips, analyses, minimumSilenceSeconds
   const totalDuration = round(segments.reduce((sum, segment) => sum + segment.end - segment.start, 0));
   const selectedDuration = round(takes.reduce((sum, take) => sum + take.rangeEnd - take.rangeStart, 0));
   const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];
+  if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warnings.push('This transcript has phrase-level timing, so pauses inside a phrase cannot be removed.');
   if (rawGroups.length > MAX_SEGMENTS) warnings.push('Some short pauses were retained to fit the Clip Editor’s 10-section limit.');
   if (outputOffset >= MAX_OUTPUT_SECONDS - 0.01) warnings.push('The speech-aware plan stopped at the Clip Editor’s 60-second output limit.');
 
@@ -243,6 +260,7 @@ export function buildSpeechAwareCutPlan({ clips, analyses, minimumSilenceSeconds
     mode: 'transcript-silence',
     pacing: 'speech',
     pacingLabel: 'Speech aware',
+    silencePreset: presetName,
     notes: '',
     scriptProvided: true,
     takes,
