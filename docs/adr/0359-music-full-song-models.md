@@ -136,3 +136,27 @@ that the quote shows the exact price before any Credits move. The reviewed quote
 (0563), is the only price shown and the only one that moves Credits. Showing per-length credit figures in the
 browser would mean computing a price in the app layer, which the project rules forbid; if figures are wanted
 later, they must come from the database (for example a quote or a SQL-projected tier list), not from client math.
+
+## Amendment 3 (2026-11-19, C4b editable long-song ceiling)
+
+Status: Accepted by the owner. The requested "Cap at 140 s" meant the longest duration that fits the
+existing WAV conversion limit; review corrected that ceiling to **135 s**. The `longSongs` runtime switch
+stays off. Migration 0563 is already applied to production; migration 0567 lowers its ceiling when applied.
+
+All five ACE-Step 1.5 spike files report **48,000 Hz, stereo, 16-bit** in FLAC STREAMINFO, not 44.1 kHz.
+The webhook converts FLAC to WAV through `lib/flacToWav.js`, whose `FLAC_TO_WAV_MAX_OUTPUT_BYTES` is
+25 MiB (26,214,400 bytes). Music's edit and render paths read WAV only. At 192,000 PCM bytes per second,
+140 s needs 26,880,000 bytes before the WAV header and exceeds the cap. A measured 180 s take
+(18.1 MB FLAC, 34.6 MB WAV) is refused by the converter; `r2Copy.js` then stores the original FLAC,
+which those edit and render paths cannot read. A 60 s take converts in 0.84 s.
+
+135 s needs 25,920,000 PCM bytes plus the 44-byte WAV header, below the cap, and fits the slider's
+5 s step. With `longSongs` enabled, Simple and Custom accept 10..135 s for `ace-step-1.5`; 136..180 s
+is rejected in both the app and SQL. Other models and every request of 60 s or less are unchanged.
+The new migration fails loudly before replacing the CHECK if any prompt snapshot already exceeds 135 s;
+it never truncates or rewrites such snapshots.
+
+Pricing remains `credits_5s * ceil(duration_seconds / 60)` per take, authoritative in SQL. At the current
+3-Credit catalog unit, the tiers are 10-60 s = 3 Credits per take (6 per pair), 61-120 s = 6 (12 per pair),
+and 121-135 s = 9 (18 per pair). Submit and refund behavior are unchanged. This amendment does not raise
+the WAV cap, change the 120 s paid-edit rules, add mobile behavior, enable the switch or authorize fal spend.
