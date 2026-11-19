@@ -80,10 +80,10 @@ retaining the 30-day grace without claiming an existing undo UI or modifying med
 
 - Main and open-PR metadata were checked read-only on 2026-11-19 using the GitHub
   connector after CLI networking failed. Main has 0561; PR #2452 reserves 0560.
-  Migration 0562 is free. All overlapping migration blobs match main, including
+  Migration 0562 was free then (renumbered to 0568, see the note below). All overlapping migration blobs match main, including
   the latest audit-action definition (0141). ADR-0359 is already used by Music and
   PR #2461 reserves ADR-0360 and PR #2469 reserves ADR-0361, hence ADR-0362 here.
-- **OWNER DECISION NEEDED before 0562 is applied or the flag is enabled: the quota can
+- **OWNER DECISION NEEDED before 0568 is applied or the flag is enabled: the quota can
   stall saving.** Every Save, Save a Copy and upgrade backup is a stored file. With
   100 non-purged files and 200 MiB per organisation, unpromoted files kept 30 days
   and promoted files never freed while their project lives, an active organisation
@@ -105,7 +105,7 @@ retaining the 30-day grace without claiming an existing undo UI or modifying med
 
 `node --test tests/proEditor*.test.mjs` is the agreed proof. Additional targeted
 project/tenant suites exercise existing behavior. `scripts/test-project-files.mjs`
-runs against the local full migration replay, replays 0562 twice inside rollback,
+runs against the local full migration replay, replays 0568 twice inside rollback,
 checks roles/RLS/grants/guards/caps/replays/reaping and no user FKs, then runs three
 real two-session races from `test-project-files-concurrency.mjs`. The first race
 uses a session-local copy of the actual cleanup function with one advisory barrier
@@ -119,9 +119,13 @@ apply-migrations workflow. No staging probe, publication, or rollout is part of
 this implementation.
 
 Executed (2026-11-19): `node --test tests/proEditor*.test.mjs` (127 tests); on a
-throwaway local PostgreSQL 18.6 the full migration replay including 0562, and the
+throwaway local PostgreSQL 18.6 the full migration replay including 0568, and the
 project documents, project assets, privileges and account-deletion suites and the
 concurrency script; `scripts/test-project-files.mjs` after a corrected truncate
 assertion (see the SQL run notes in the PR). NOT executed: `npm run build`, the
 Worker size budget, the full `npm test` and lint, PostgreSQL 16 (CI), and any
 staging or production probe.
+
+## Amendment 1 (2026-11-19): migration renumbered 0562 to 0568
+
+The production plan refused to run (`out of order: 0562_pro_project_files.sql not applied, but production has migration 0564`) because 0563 and 0564 were applied first. 0562 had never been applied, so the file was renamed to `0568_pro_project_files.sql`; the SQL is unchanged. The internal function name `telemetry_path_allowed_pre_0562` stays as written: it is a stored identifier, not a file reference.
