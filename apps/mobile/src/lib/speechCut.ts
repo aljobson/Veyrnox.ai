@@ -1,6 +1,6 @@
 import { type Timeline, type Selection, type Clip, framesIn } from './nativeEditorModel';
 export type SpeechChunk = { start: number; end: number; text: string };
-export type SpeechAnalysis = { version: 1; assetId: string; duration: number; provider: 'fal-scribe-v2' | 'fal-wizper'; transcript: string; language: string; timingQuality: 'word' | 'phrase'; chunks: SpeechChunk[] };
+export type SpeechAnalysis = { version: 1; assetId: string; duration: number; provider: 'fal-scribe-v2' | 'fal-wizper'; transcript: string; language: string; timingQuality?: 'word' | 'phrase'; chunks: SpeechChunk[] };
 export type SilencePreset = 'snappy' | 'natural' | 'relaxed';
 /** Same presets as web SMART_CUT_SILENCE_PRESETS; `balanced` is the demo planner's name for `natural`. */
 export const SILENCE_PRESETS: Record<SilencePreset, { minimumSeconds: number; edgePaddingSeconds: number }> = {
