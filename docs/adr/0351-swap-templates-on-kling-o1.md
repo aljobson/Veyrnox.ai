@@ -501,3 +501,12 @@ grows from 519 to 524 (the five, which have no clip yet and cannot be approved u
 templates move from kind `motion` to `video_swap` (127/300/92 becomes 132/314/78). The 519-candidate counts and the 411 approved v3 ids in the
 earlier amendments describe the frozen plan and are unchanged. Narrative uses ("the filter is replaced by", "no text may be replaced") stay allowed;
 this was checked across all 884 templates that have a contract.
+
+## Amendment 9 (2026-11-19): one swap switch in the runtime flags
+
+The Worker is at its variable cap, so the swap switch is now the `templateSwap` key of the existing `APP_RUNTIME_FLAGS` JSON binding
+(precedent: `push`, `checkin`, `templateFaceWording`). `lib/appRuntime.js` exports `templateSwapSwitchOn(env)`, true only for the key `true` or the older
+`TEMPLATE_SWAP_CLIP_ENABLED` var being exactly `"true"` (still honoured if present). The clip gate, and through it `/api/catalog?template_swap=`, and the
+generations route both call that one helper. An absent, false, malformed or string `"true"` key is off. `MULTI_REFERENCE_ENABLED` is still required. This change
+edits neither `wrangler.jsonc` nor `APP_RUNTIME_FLAGS`; turning the swap on is a later owner-approved edit of that one JSON value after the upload, ids-and-pin PR
+and activation migration. Removing the key (or setting it false) is the rollback.
