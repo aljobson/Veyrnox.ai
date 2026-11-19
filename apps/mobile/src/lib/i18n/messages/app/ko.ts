@@ -2214,6 +2214,7 @@ export default {
   "explore.start.film.hint": "Film Studio를 엽니다.",
   "explore.start.title": "만들기 시작",
   "explore.templateCount.other": "{models}의 템플릿 {count}개",
+  "explore.templateTotal.other": "템플릿 {count}개",
   "explore.modelCount.other": "모델 {count}개",
   "explore.templateCountNone": "템플릿 0개",
   "explore.templates": "템플릿",

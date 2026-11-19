@@ -2214,6 +2214,7 @@ export default {
   "explore.start.film.hint": "打开 Film Studio。",
   "explore.start.title": "开始创作",
   "explore.templateCount.other": "{models}，共 {count} 个模板",
+  "explore.templateTotal.other": "{count} 个模板",
   "explore.modelCount.other": "{count} 个模型",
   "explore.templateCountNone": "0 个模板",
   "explore.templates": "模板",

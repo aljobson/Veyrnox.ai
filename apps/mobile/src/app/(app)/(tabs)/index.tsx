@@ -184,7 +184,6 @@ export default function Explore() {
     }, [typedPresets, type, activeCategory, popularIds, query, vibe]);
     useEffect(() => setLimit(PAGE), [type, activeCategory, query]);
     const shown = useMemo(() => matching.slice(0, limit), [matching, limit]);
-    const modelCount = useMemo(() => new Set((allTemplates ?? []).map((preset) => preset.modelId)).size, [allTemplates]);
 
     function pickType(next: TypeFilter) {
         setType(next);
@@ -297,7 +296,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length, modelCount)}
+                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length)}
                             </Text>
                         ) : null}
                     </View>

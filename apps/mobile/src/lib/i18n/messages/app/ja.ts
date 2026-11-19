@@ -2214,6 +2214,7 @@ export default {
   "explore.start.film.hint": "Film Studioを開きます。",
   "explore.start.title": "作成を始める",
   "explore.templateCount.other": "{models}に対応するテンプレート{count}件",
+  "explore.templateTotal.other": "テンプレート{count}件",
   "explore.modelCount.other": "{count}モデル",
   "explore.templateCountNone": "テンプレート0件",
   "explore.templates": "テンプレート",
