@@ -39,15 +39,18 @@ function args() {
   return out;
 }
 
+// Request data is untrusted: log it quoted and length-capped so it cannot forge log lines.
+const logSafe = (text) => JSON.stringify(String(text)).slice(0, 200);
+
 function serveStatic(dist, rules, req, res) {
   const url = new URL(req.url, 'http://x');
   const path = normalize(decodeURIComponent(url.pathname));
   const file = join(dist, path === '/' ? 'host.html' : path);
   if (!resolve(file).startsWith(resolve(dist) + sep) || !existsSync(file) || !statSync(file).isFile()) {
-    console.log('404 ' + url.pathname);
+    console.log('404 ' + logSafe(url.pathname));
     res.writeHead(404); res.end('not found'); return;
   }
-  console.log(req.method + ' ' + url.pathname + (url.search ? url.search : ''));
+  console.log(logSafe(req.method) + ' ' + logSafe(url.pathname + url.search));
   const headers = { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream' };
   for (const rule of rules) if (matches(rule.path, url.pathname === '/' ? '/host.html' : url.pathname)) Object.assign(headers, rule.headers);
   // Dev-only media for manual checks (the apex page fetches it cross-origin).
