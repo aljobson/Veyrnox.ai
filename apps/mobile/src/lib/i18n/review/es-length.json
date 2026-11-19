@@ -3336,6 +3336,12 @@
     "ratio": 1.67
   },
   {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Sincronización labial",
+    "ratio": 2.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

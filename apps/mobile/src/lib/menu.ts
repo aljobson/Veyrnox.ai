@@ -16,7 +16,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         label: 'menu.tools',
         items: [
             { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
-            { key: 'audio', label: 'menu.audio', href: '/audio', icon: 'audio' },
+            { key: 'audio', label: 'menu.audio', href: '/audio', icon: 'headphones' },
             { key: 'editor', label: 'menu.videoEditor', href: '/editor', icon: 'video' },
             { key: 'publish', label: 'menu.publish', href: '/publish', icon: 'send' },
             { key: 'cinema', label: 'menu.cinema', href: '/cinema', icon: 'slate' },
