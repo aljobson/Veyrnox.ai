@@ -126,6 +126,18 @@
     "ratio": 1.92
   },
   {
+    "id": "acct.dev.lastUsed",
+    "english": "Last used {date}",
+    "translation": "Последнее использование: {date}",
+    "ratio": 1.94
+  },
+  {
+    "id": "acct.dev.confirm",
+    "english": "Sign out {name}?",
+    "translation": "Выйти на устройстве «{name}»?",
+    "ratio": 1.81
+  },
+  {
     "id": "acct.mfa.unlock",
     "english": "Unlock",
     "translation": "Открыть доступ",
