@@ -36,7 +36,7 @@ test('queries only unfinished GrsAI jobs whose catalog endpoint matches', async 
         assert.equal(q.get('provider_job_id'), 'not.is.null');
         assert.equal(q.get('model_id'), 'in.(nano-banana-pro-grsai)');
         assert.equal(q.get('state'), 'in.(SUBMITTED,SUCCEEDED,FAILED)');
-        assert.equal(q.get('limit'), String(BATCH));
+        assert.equal(q.get('limit'), String(Math.ceil(BATCH / 2)), 'the first read is the oldest half of the batch (lib/sweepRows.js)');
         assert.equal(q.get('order'), 'created_at.asc');
     });
 });
