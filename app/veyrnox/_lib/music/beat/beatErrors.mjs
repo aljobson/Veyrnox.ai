@@ -1,13 +1,16 @@
+import shared from '../../../../../lib/i18n/messages/app/en/music-beat-shared.mjs';
 import details from '../../../../../lib/i18n/messages/app/en/music-beat-details.mjs';
 import { beatEnglish } from './beatDisplay.mjs';
 import recovery from '../../../../../lib/i18n/messages/app/en/music-beat-recovery.mjs';
 import baseMessages from '../../../../../lib/i18n/messages/app/en/music-beat-errors.mjs';
 import { translator } from '../../../../../lib/i18n/translate.mjs';
-const messages = { ...baseMessages, ...recovery, ...details, 'app.music.beat.ui.this.device.has.50.beats.delete.one.to.make.room': beatEnglish('app.music.beat.ui.this.device.has.50.beats.delete.one.to.make.room') };
+const READ_ONLY = 'app.music.beat.compat.readOnly';
+const messages = { [READ_ONLY]: shared[READ_ONLY], ...baseMessages, ...recovery, ...details, 'app.music.beat.ui.this.device.has.50.beats.delete.one.to.make.room': beatEnglish('app.music.beat.ui.this.device.has.50.beats.delete.one.to.make.room') };
 const english = translator('en', messages);
 const keys = Object.fromEntries(Object.keys(messages).map(key => [key.includes('.recovery.') ? `recovery-${key.split('.').at(-1)}` : key.includes('.details.') ? `details-${key.split('.').at(-1)}` : key.split('.').at(-1), key]));
 keys['recovery-r87'] = 'app.music.beat.recovery.missingSounds.one';
 keys['recovery-r88'] = 'app.music.beat.recovery.missingSounds.other';
+for (const code of ['v5_write_disabled', 'BEAT_WRITES_DISABLED', 'capability_changed']) keys[code] = READ_ONLY;
 keys['device-limit'] = 'app.music.beat.ui.this.device.has.50.beats.delete.one.to.make.room';
 // Only application-owned codes select copy. Never expose browser, storage or HTTP text.
 export function beatErrorMessage(error, fallback = 'playback', t = english) {

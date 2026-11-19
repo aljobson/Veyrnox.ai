@@ -166,7 +166,8 @@ test('recorder clears ended idle inputs, retains errors across disarm and clears
 
 test('My beats only finalizes a plain left-click, preserving browser modified-click behavior', async () => {
   const source = readFileSync(new URL('../app/veyrnox/_components/music/beat/BeatEditor.jsx', import.meta.url), 'utf8');
-  const handler = /const back = <Link data-beat-live onClick=\{(async e => .*?)\} className/.exec(source)[1];
+  // The warning flow moved the same click handler into a named function.
+  const handler = /async function goBack\(e\) \{[\s\S]*?\n  \}/.exec(source)[0];
   const events = [], playback = { finishRecording: async () => events.push('finish') }, project = { flushLatest: async () => events.push('save') }, router = { push: () => events.push('navigate') };
   const click = new Function('playback', 'project', 'router', `return (${handler});`)(playback, project, router);
   for (const patch of [{ button: 1 }, { button: 2 }, { metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }]) {

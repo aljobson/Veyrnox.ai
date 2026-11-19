@@ -122,9 +122,9 @@ export default function BeatArrangement({ armedId, onArm, automationLanes = {}, 
         <option value={3840}>{t('app.music.beat.ui.bar')}</option><option value={960}>1/4</option><option value={480}>1/8</option>
         <option value="240">1/16</option><option value="off">{t('app.music.beat.ui.off.1.16')}</option>
       </select></label>
-      <button className={button} aria-label={t('app.music.beat.ui.zoom.out')} disabled={zoom === 32} onClick={() => setZoom(Math.max(32, zoom - 32))}>−</button>
+      <button data-beat-read className={button} aria-label={t('app.music.beat.ui.zoom.out')} disabled={zoom === 32} onClick={() => setZoom(Math.max(32, zoom - 32))}>−</button>
       <span className="text-xs">{zoom}{t('app.music.beat.ui.px.bar')}</span>
-      <button className={button} aria-label={t('app.music.beat.ui.zoom.in')} disabled={zoom === 256} onClick={() => setZoom(Math.min(256, zoom + 32))}>+</button>
+      <button data-beat-read className={button} aria-label={t('app.music.beat.ui.zoom.in')} disabled={zoom === 256} onClick={() => setZoom(Math.min(256, zoom + 32))}>+</button>
       <span className="text-xs">{t('app.music.beat.ui.playhead')}{formatPosition(locator, t)}</span>
       <button className={`${button} ${ripple ? 'bg-vx-accent text-vx-accent-ink' : ''}`} aria-pressed={ripple}
         onClick={() => setRipple(value => !value)}>{t('app.music.beat.shortcut.ripple')}</button>
@@ -164,7 +164,7 @@ export default function BeatArrangement({ armedId, onArm, automationLanes = {}, 
             {track.regions.map((region) => <BeatRegion key={region.id} region={region} track={track} doc={doc}
               zoom={zoom} snap={snap} locator={locator} selected={region.id === selectedId}
               select={() => choose(region, track)} edit={edit} drag={drag} onDelete={() => deleteRegion(region, track)} />)}
-            {track.takeGroups?.map(g => <button key={g.id} className={`${button} absolute bottom-2`} style={{ left: g.start / 3840 * zoom }} aria-expanded={g.id === openGroup} onClick={() => setOpenGroup(g.id === openGroup ? null : g.id)}>{t('app.music.beat.ui.takes')}{g.lanes.length})</button>)}
+            {track.takeGroups?.map(g => <button data-beat-read key={g.id} className={`${button} absolute bottom-2`} style={{ left: g.start / 3840 * zoom }} aria-expanded={g.id === openGroup} onClick={() => setOpenGroup(g.id === openGroup ? null : g.id)}>{t('app.music.beat.ui.takes')}{g.lanes.length})</button>)}
             {drag.preview?.trackId === track.id && <div aria-hidden="true"
               className="pointer-events-none absolute top-4 z-20 h-16 rounded-lg border-2 border-vx-accent bg-vx-hue-iris/60"
               style={{ left: drag.preview.start / 3840 * zoom, width: drag.preview.length / 3840 * zoom }}>

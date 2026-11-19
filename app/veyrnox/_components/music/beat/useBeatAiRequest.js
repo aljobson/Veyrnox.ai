@@ -1,4 +1,5 @@
 'use client';
+import { assertBeatWritable, beatReadOnly, BEAT_READ_ONLY_MESSAGE, capabilityGeneration, assertBeatGeneration } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { tOr } from '../../../../../lib/i18n/translate.mjs';
 import { beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
 import { BEAT_ACTIONS } from '../../../_lib/music/beat/beatActionLabels.mjs';
@@ -28,7 +29,7 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
     return () => { live.current = false; window.removeEventListener('online', network); window.removeEventListener('offline', network); };
   }, [beatId, enabled, refreshPending]);
   const say = useCallback(text => { if (live.current) { setMessage(text); current.current.announce(text); } }, []);
-  const fail = useCallback((e, op = recordRef.current?.op) => { if (live.current) { const text = aiError(e, op, t); setError(text); current.current.announce(text); } }, [t]);
+  const fail = useCallback((e, op = recordRef.current?.op) => { if (live.current) { const text = e?.code === 'v5_write_disabled' ? t(BEAT_READ_ONLY_MESSAGE) : aiError(e, op, t); setError(text); current.current.announce(text); } }, [t]);
   function keep(next) { writePending(beatId, next); recordRef.current = next; if (live.current) setRecord(next); refreshPending(); }
   function clearRequest(r) {
     retirePending(beatId, r.key); refreshPending();
@@ -50,16 +51,17 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
       say((status.candidates || []).map(c => t('app.music.beat.status.s105', { p0: c.ordinal === 1 ? 'A' : 'B', p1: tOr(t, `app.music.beat.shared.state.${c.state}`, t('app.music.beat.shared.state.unknown')) })).join(' · ') || t('app.music.beat.status.s106')); return;
     }
     const { project } = current.current;
-    const { results, messages } = await loadAiResults(r, status, project.current.current, t);
+    const { results, messages } = await loadAiResults(r, status, project.current?.current, t);
     if (!live.current || recordRef.current?.key !== r.key) return;
+    if (results.length && beatReadOnly(project.current?.current)) { say(t(BEAT_READ_ONLY_MESSAGE)); return; }
     if (results.length) {
-      const sourceGone = r.placement.sourceTrackId && !project.current.current.tracks.some(t => t.id === r.placement.sourceTrackId && t.regions.some(region => region.id === r.placement.regionId));
-      const already = results.every(item => placedAlready(project.current.current, r, item.ordinal));
+      const sourceGone = r.placement.sourceTrackId && !project.current?.current.tracks.some(t => t.id === r.placement.sourceTrackId && t.regions.some(region => region.id === r.placement.regionId));
+      const already = results.every(item => placedAlready(project.current?.current, r, item.ordinal));
       if (!already && !project.edit(d => placeAiResults(d, r, results), { label: BEAT_ACTIONS.a39, message: r.source && !sourceGone ? t('app.music.beat.status.s74') : t('app.music.beat.status.s75') }))
         throw beatFailure('recovery-r13');
-      const placed = project.current.current;
+      const placed = project.current?.current;
       await project.flushLatest();
-      if (!live.current || project.current.current !== placed || !results.every(item => placedAlready(placed, r, item.ordinal)))
+      if (!live.current || project.current?.current !== placed || !results.every(item => placedAlready(placed, r, item.ordinal)))
         throw beatFailure('recovery-r14');
       say([t('app.music.beat.status.s107', { p0: r.prompt.slice(0, 24) || t('app.music.beat.details.d43'), p1: Number.isFinite(r.credits) ? t('app.music.beat.status.s108', { p0: r.credits }) : '', p2: Number.isFinite(r.balanceAfter) ? t('app.music.beat.status.s109', { p0: r.balanceAfter }) : '' }),
         r.source && !sourceGone ? t('app.music.beat.status.s74') : '', sourceGone ? t('app.music.beat.status.s110') : '', ...messages].filter(Boolean).join('. '));
@@ -93,6 +95,7 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
       if (!online || recordRef.current) return;
       setBusy(t('app.music.beat.ui.pricing')); setElapsed(0); setError('');
       try {
+        assertBeatWritable(current.current.project.current?.current);
         const result = await gatewayFetch(path, { method: 'POST', body: JSON.stringify(body) });
         if (!live.current) return;
         const key = `beat-ai.${crypto.randomUUID()}`;
@@ -109,15 +112,18 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
       if (r.requestId) { setError(''); try { await refresh(r); } catch (e) { fail(e); } return; }
       setBusy(t('app.music.beat.shared.sending')); setElapsed(0); setError('');
       try {
+        assertBeatWritable(current.current.project.current?.current);
         keep(r); // If durable storage fails, there is no POST.
+        const generation = capabilityGeneration();
+        const beforeSend = () => { assertBeatGeneration(generation); assertBeatWritable(current.current.project.current?.current); };
         let result;
-        try { result = await submitPending(r, gatewayFetch); }
+        try { result = await submitPending(r, (path, init) => gatewayFetch(path, { ...init, beforeSend })); }
         catch (e) { if (definitivelyRefused(e)) clearRequest(r); throw e; }
         const next = { ...r, requestId: result.generation_id || result.request_id, state: 'accepted', balanceAfter: result.balance_after };
         keep(next); notifyBalanceChanged(); say(t('app.music.beat.status.s106'));
       } catch (e) { fail(e, r.op); } finally { if (live.current) setBusy(''); }
     });
   }
-  return { selection, record, pending, quote, busy, error, message, online, elapsed: busy || record?.requestId ? elapsed : 0, open, resume, reset, price, send, discard,
+  return { readOnly: beatReadOnly(project.current?.current), selection, record, pending, quote, busy, error, message, online, elapsed: busy || record?.requestId ? elapsed : 0, open, resume, reset, price, send, discard,
     close: () => { if (!busy) setSelection(null); } };
 }

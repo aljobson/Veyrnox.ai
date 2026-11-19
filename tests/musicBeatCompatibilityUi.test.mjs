@@ -12,8 +12,8 @@ const doc = documentModule.upgradeBeatToV5(documentModule.createBeat({ id: crypt
 doc.markers = [{ id: 'm', name: 'Intro', tick: 10 }];
 const raw = JSON.stringify(doc), userId = crypto.randomUUID();
 const project = { id: crypto.randomUUID(), beat_id: doc.id, revision: 1, doc_version: 5 };
-test('account open reads v5 exactly and explicitly refuses local persistence; delete displays server update message', async t => {
-  const h = harness(), announced = []; let captured, account;
+test('account open loads v5 read-only without write-gated create; delete displays server update message', async t => {
+  const h = harness(), announced = []; let captured, account, navigated;
   const oldWindow = globalThis.window; globalThis.window = { confirm: () => true };
   t.after(() => { globalThis.window = oldWindow; h.close(); });
   const { useBeatAccountList } = h.load('useBeatAccountList', {
@@ -22,11 +22,11 @@ test('account open reads v5 exactly and explicitly refuses local persistence; de
       listCloudBeats: async () => ({ projects: [project] }), getCloudBeat: async () => ({ project, doc_json: raw }),
       removeCloudBeat: async () => { throw { code: 'BEAT_CLIENT_OUTDATED', status: 409 }; },
     },
-    '../../../_lib/music/beat/beatStore.js': { createBeat: async value => { captured = value; try { compatibility.assertBeatWritable(value); } catch (error) { return { error: error.code }; } assert.fail('v5 must be refused'); } },
+    '../../../_lib/music/beat/beatStore.js': { loadCloudBeat: async value => { captured = value; return {}; }, createBeat: async () => assert.fail('read-only open must not create') },
   }, 'js');
-  h.render(() => { account = useBeatAccountList(true, { push() { assert.fail('must not navigate after refusal'); } }, text => announced.push(text), async () => {}); });
+  h.render(() => { account = useBeatAccountList(true, { push(path) { navigated = path; } }, text => announced.push(text), async () => {}); });
   await h.settle(); await account.open(project); await h.settle();
-  assert.equal(JSON.stringify(captured), raw); assert.match(announced.at(-1), /Update the app/);
+  assert.equal(JSON.stringify(captured), raw); assert.equal(navigated, `/app/music/beats/${doc.id}`); assert.match(announced.at(-1), /read-only/);
   await account.remove(project); assert.match(announced.at(-1), /Update the app/);
 });
 test('version restore reads v5 without changing it and refuses before editing or saving', async t => {
@@ -42,7 +42,7 @@ test('version restore reads v5 without changing it and refuses before editing or
   button(h.tree, 'Versions').props.onClick(); await h.settle();
   await button(h.tree, 'Restore').props.onClick(); await h.settle();
   assert.equal(edits, 0); assert.equal(JSON.stringify(doc), raw);
-  assert.match(find(h.tree, n => n.props.role === 'alert').props.children[0], /Update the app/);
+  assert.match(find(h.tree, n => n.props.role === 'alert').props.children[0], /read-only/);
 });
 test('unsupported device and account rows show newer-app messages with no open/delete controls', async t => {
   const h = harness(); t.after(() => h.close());

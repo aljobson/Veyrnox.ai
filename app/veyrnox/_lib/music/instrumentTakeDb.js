@@ -66,8 +66,8 @@ export async function listSavedTakes(store) {
   } catch { return []; }
 }
 
-export async function putSavedTake(store, item) {
-  try { await run(store, 'readwrite', (s) => s.put(item)); return true; } catch { return false; }
+export async function putSavedTake(store, item, check = () => {}) {
+  try { await run(store, 'readwrite', (s) => { check(); return s.put(item); }); return true; } catch { return false; }
 }
 
 export async function deleteSavedTake(store, id) {

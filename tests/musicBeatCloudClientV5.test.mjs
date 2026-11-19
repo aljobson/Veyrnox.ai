@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
+import { configureBeatWrites, capabilityGeneration } from '../app/veyrnox/_lib/music/beat/beatWriteVersion.mjs';
 import { createBeat, upgradeBeatToV5 } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 const calls = [], userId = crypto.randomUUID();
 globalThis.beatV5ClientFixture = {
@@ -27,4 +28,25 @@ test('every actual cloud save/delete declares reader 5 while document payloads s
   for (const version of [5, 6, 999]) assert.throws(() => api.saveCloudBeat(doc.id, { doc_json: JSON.stringify({ ...upgradeBeatToV5(doc), version }) }, 'client-test-key', { userId }),
     error => error.code === (version === 5 ? 'v5_write_disabled' : 'unsupported_version'));
   assert.equal(calls.length, count);
+});
+test('rollback invalidates writes but existing take playback downloads remain readable', async () => {
+  configureBeatWrites(true); const writeGeneration = capabilityGeneration();
+  configureBeatWrites(false);
+  const before = calls.length;
+  await api.listTakes('beat', { userId, writeGeneration });
+  await api.takeUrl('beat', 'take', { userId, writeGeneration });
+  assert.equal(calls.length, before + 2);
+  assert.equal(calls.at(-1).url, '/music/beat-projects/beat/takes/take');
+});
+
+test('in-flight PUT returns the committed response after a capability change', async t => {
+  for (const version of [4, 5]) {
+    configureBeatWrites(true);
+    const doc = { ...createBeat({ id: crypto.randomUUID(), now: 1 }), version };
+    const pending = api.saveCloudBeat(doc.id, { doc_json: JSON.stringify(doc) }, 'in-flight', { userId });
+    configureBeatWrites(false);
+    const result = await pending;
+    assert.deepEqual(result, {});
+  }
+  t.after(() => { configureBeatWrites(false); });
 });

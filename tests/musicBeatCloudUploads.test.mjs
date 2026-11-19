@@ -81,3 +81,16 @@ test('a reservation whose body failed mid-read is a transient NETWORK_ERROR, the
   assert.equal((await uploadTake('beat', { ref: 'local', durationSec: 10 / 48000 }, null, { userId: 'owner' })).status, 'ready');
   gatewayAnswer = () => ({ take_id: 'take', status: 'ready' });
 });
+test('read-only v5 refuses reserve, confirm and signed PUT; rollback during reserve prevents PUT', async t => {
+  const { configureBeatWrites } = await import('../app/veyrnox/_lib/music/beat/beatWriteVersion.mjs');
+  t.after(() => { configureBeatWrites(false); gatewayAnswer = () => ({ take_id: 'take', status: 'ready' }); });
+  calls = []; const options = { userId: 'owner', doc: { version: 5 } };
+  t.mock.method(globalThis, 'fetch', async () => assert.fail('must not upload'));
+  for (const row of [null, { id: 'take', status: 'pending' }]) await assert.rejects(uploadTake('beat', { ref: 'local' }, row, options), { code: 'v5_write_disabled' });
+  assert.equal(calls.length, 0);
+  configureBeatWrites(true);
+  shelf = [{ id: 'local', samples: new Float32Array(10), sampleRate: 48000, seconds: 10 / 48000 }];
+  gatewayAnswer = () => { configureBeatWrites(false); return { take_id: 'take', status: 'pending', upload_url: 'https://r2.example.invalid/put', upload_headers: {} }; };
+  await assert.rejects(uploadTake('beat', { ref: 'local' }, null, options), { code: 'capability_changed' });
+  assert.equal(calls.length, 1);
+});

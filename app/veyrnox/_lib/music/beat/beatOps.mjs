@@ -1,3 +1,4 @@
+import { assertBeatWritable, withBeatVersionFloor } from './beatCompatibility.mjs';
 import { soundDuration, soundTicks } from './beatSounds.mjs';
 import { audioFragment, clampFades, tickSeconds } from './beatAudioSegments.mjs';
 import { BEAT_LIMITS, validateBeat } from './beatDocument.mjs';
@@ -226,8 +227,9 @@ export const setAudioRegion = (doc, id, patch, now = Date.now()) => edit(doc, no
 });
 
 export function restoreVersion(doc, versionDoc, now = Date.now()) {
-  if (doc.version >= 5 && versionDoc.version < doc.version) throw new BeatRefusal('v5_write_disabled', 'v5_write_disabled');
-  const next = { ...structuredClone(versionDoc), id: doc.id, createdAt: doc.createdAt, updatedAt: Math.max(now, doc.updatedAt, doc.createdAt) };
+  assertBeatWritable(doc);
+  const next = { ...withBeatVersionFloor(structuredClone(versionDoc), doc.version), id: doc.id, createdAt: doc.createdAt, updatedAt: Math.max(now, doc.updatedAt, doc.createdAt) };
+  assertBeatWritable(next);
   if (!validateBeat(next).ok) throw new Error('invalid');
   return next;
 }
