@@ -22,7 +22,7 @@ export function ProInterchangeControls({ tl, onLoadTimeline, disabled = false, o
     if (disabled || running.current) return;
     setError(''); setStatus('');
     const result = exportProInterchange(tl, manifest.current ? { manifest: manifest.current } : {});
-    if (!result.ok) { setError(t('app.editor.proInterchange.failed')); return; }
+    if (!result.ok) { console.error('pro interchange export failed', result.error?.code); setError(t('app.editor.proInterchange.failed')); return; }
     manifest.current = result.manifest;
     const url = URL.createObjectURL(new Blob([result.bytes], { type: 'application/octet-stream' }));
     urls.current.set(url, setTimeout(() => { URL.revokeObjectURL(url); urls.current.delete(url); }, 1000));
@@ -38,11 +38,11 @@ export function ProInterchangeControls({ tl, onLoadTimeline, disabled = false, o
       const bytes = new Uint8Array(await file.arrayBuffer());
       if (!alive.current) return;
       const result = importProInterchange(bytes, manifest.current ? { manifest: manifest.current } : {});
-      if (!result.ok) throw new Error(result.error.code);
+      if (!result.ok) throw new Error(result.error?.code || 'unknown');
       if (onLoadTimeline(result.draft) === false) throw new Error('load_failed');
       manifest.current = result.manifest;
       setStatus(t('app.editor.proInterchange.imported', { count: result.report.length }));
-    } catch { if (alive.current) setError(t('app.editor.proInterchange.failed')); }
+    } catch (e) { console.error('pro interchange import failed', e?.message || e); if (alive.current) setError(t('app.editor.proInterchange.failed')); }
     finally { running.current = false; if (alive.current) setBusy(false); }
   }
   return <section data-testid="pro-interchange" aria-label={t('app.editor.proInterchange.title')} className="space-y-2">
