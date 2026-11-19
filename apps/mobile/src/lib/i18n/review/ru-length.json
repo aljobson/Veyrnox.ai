@@ -3498,6 +3498,24 @@
     "ratio": 1.83
   },
   {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "Загрузить песню заново",
+    "ratio": 2
+  },
+  {
+    "id": "musicActions.stems.zip",
+    "english": "Get ZIP",
+    "translation": "Получить ZIP",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Обрезать",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

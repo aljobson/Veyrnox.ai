@@ -3606,6 +3606,36 @@
     "ratio": 2.67
   },
   {
+    "id": "musicActions.action.network",
+    "english": "Could not connect. Check your connection and try again.",
+    "translation": "Die Verbindung konnte nicht hergestellt werden. Prüfe deine Verbindung und versuche es erneut.",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Einzelspuren",
+    "ratio": 2.4
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Archiv der Einzelspuren",
+    "ratio": 1.92
+  },
+  {
+    "id": "musicActions.stems.queued",
+    "english": "Your stem request is queued.",
+    "translation": "Deine Anfrage zur Spurtrennung befindet sich in der Warteschlange.",
+    "ratio": 2.36
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Zuschneiden",
+    "ratio": 2.75
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

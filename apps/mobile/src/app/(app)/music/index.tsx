@@ -1,5 +1,6 @@
+import { subscribeSongChanges } from '../../../lib/music/songChanges';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, ListRow, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -53,6 +54,7 @@ export default function MusicLibrary() {
         setLoading(false);
     }, [api, applied]);
     useFocusEffect(useCallback(() => { void load(); return () => { epoch.current++; setHook(null); }; }, [load]));
+    useEffect(() => subscribeSongChanges(() => { void load(); }), [load]);
     const currentTab = tab !== 'songs' && results[tab]?.state === 'off' ? 'songs' : tab;
     const result = results[currentTab];
     const rows = result?.state === 'on' ? result.data : previous[currentTab] ?? [];

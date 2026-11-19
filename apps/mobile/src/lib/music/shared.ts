@@ -83,3 +83,10 @@ export const createQuoteGate = sharedQuoteGate as () => {
     current(): number; start(): number; invalidate(): void;
     unchanged(revision: number): boolean; isCurrent(token: number): boolean; isLatestStart(token: number): boolean;
 };
+
+// Use the server's pure crop parser for its range limits and exact request shape.
+// @ts-ignore plain JS parser, typed only at this seam.
+import { parseMusicCrop as parseCrop } from '../../../../../lib/musicEditing.js';
+export const parseMusicCrop = parseCrop as (value: unknown) => Parsed<{
+    versionId: string; start: number; end: number; idempotencyKey: string;
+}>;

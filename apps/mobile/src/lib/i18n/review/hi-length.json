@@ -1998,6 +1998,36 @@
     "ratio": 1.89
   },
   {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "गाना फिर से लोड करें",
+    "ratio": 1.82
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "अलग ट्रैक",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "अलग ट्रैक का आर्काइव",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicActions.stems.zip",
+    "english": "Get ZIP",
+    "translation": "ZIP प्राप्त करें",
+    "ratio": 2.29
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "क्रॉप करें",
+    "ratio": 2.5
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

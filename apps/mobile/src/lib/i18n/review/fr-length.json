@@ -5298,6 +5298,48 @@
     "ratio": 1.89
   },
   {
+    "id": "musicActions.action.model",
+    "english": "The stem provider is unavailable right now.",
+    "translation": "Le fournisseur de séparation des pistes est indisponible pour le moment.",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "Recharger le morceau",
+    "ratio": 1.82
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Pistes séparées",
+    "ratio": 3
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Archive des pistes séparées",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicActions.stems.queued",
+    "english": "Your stem request is queued.",
+    "translation": "Votre demande de séparation est dans la file d’attente.",
+    "ratio": 1.96
+  },
+  {
+    "id": "musicActions.stems.zip",
+    "english": "Get ZIP",
+    "translation": "Obtenir le ZIP",
+    "ratio": 2
+  },
+  {
+    "id": "musicActions.crop.save",
+    "english": "Save new version",
+    "translation": "Enregistrer une nouvelle version",
+    "ratio": 2
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
