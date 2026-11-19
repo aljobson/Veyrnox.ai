@@ -16,7 +16,7 @@ export const MENU_SECTIONS: MenuSection[] = [
         label: 'menu.tools',
         items: [
             { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
-            { key: 'audio', label: 'menu.audio', href: '/audio', icon: 'audio' },
+            { key: 'audio', label: 'menu.audio', href: '/audio', icon: 'headphones' },
             // Two editors: Smart Cut picks clips and cuts speech for you; Professional is the full timeline.
             { key: 'smartCut', label: 'menu.smartCut', hint: 'menu.smartCutHint', href: '/smart-cut', icon: 'sparkle' },
             { key: 'editor', label: 'menu.professional', hint: 'menu.professionalHint', href: '/editor', icon: 'video' },

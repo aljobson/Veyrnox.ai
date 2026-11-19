@@ -3660,6 +3660,18 @@
     "ratio": 3.33
   },
   {
+    "id": "audioHub.groups.performance",
+    "english": "Lip sync and dubbing",
+    "translation": "Lippensynchronisation und Vertonung",
+    "ratio": 1.75
+  },
+  {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Lippensynchronisation",
+    "ratio": 2.63
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

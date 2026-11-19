@@ -99,3 +99,51 @@ test('cloud readers distinguish unsupported from damaged without mutating bytes;
     assert.equal(errorState({ code, status: 409 }), 'update_required'); assert.equal(retryDelay(0, { code }), null);
   }
 });
+
+// P2a guards must run before the immutable ripple helpers, which otherwise prune takes.
+const { guardRipple } = await import('../app/veyrnox/_lib/music/beat/beatRippleGuard.mjs');
+const { rippleFixture, takeRippleFixture } = await import('./musicBeatRippleFixtures.mjs');
+test('ripple guard refuses strictly inside a clip, allows adjacent boundary, and detects no later clips', () => {
+  const doc = rippleFixture(), bytes = JSON.stringify(doc);
+  const request = atTick => ({ type: 'insert', trackId: 't1', atTick });
+  assert.deepEqual(guardRipple(doc, request(240)), { ok: false, reason: 'ripple_inside_region' });
+  assert.deepEqual(guardRipple(doc, request(3840)), { ok: true });
+  assert.deepEqual(rippleInsertGap(doc, 't1', 3840, 3840, 1).tracks[0].regions.map(r => [r.start, r.start + r.length]),
+    [[0, 3840], [7680, 11520], [11520, 15360]]);
+  assert.deepEqual(guardRipple(doc, request(11520)), { ok: false, reason: 'ripple_nothing_to_move' });
+  assert.equal(JSON.stringify(doc), bytes);
+});
+test('temporal guard protects downstream and empty take groups and alternate assets', () => {
+  for (const empty of [false, true]) {
+    const doc = takeRippleFixture(empty), bytes = JSON.stringify(doc);
+    assert.equal(validateBeat(doc).ok, true);
+    assert.equal(doc.tracks[1].regions.filter(r => r.start >= 3840 && r.start < 7680).length, empty ? 0 : 1);
+    for (const request of [
+      { type: 'delete', trackId: 't2', regionId: 'before' },
+      { type: 'insert', trackId: 't2', atTick: empty ? 0 : 3840 },
+    ]) {
+      assert.deepEqual(guardRipple(doc, request), { ok: false, reason: 'ripple_take_group' });
+      assert.equal(JSON.stringify(doc), bytes);
+    }
+    // A different track and edits strictly after the protected range are safe.
+    assert.equal(guardRipple(doc, { type: 'insert', trackId: 't2', atTick: 7680 }).ok, true);
+    assert.equal(guardRipple(doc, { type: 'delete', trackId: 't2', regionId: 'after' }).ok, true);
+  }
+});
+test('guard rejects movement within a take range, independent of region or asset membership', () => {
+  const doc = takeRippleFixture(true), track = doc.tracks[1];
+  track.regions = [{ ...track.regions[0], id: 'unrelated', start: 3840, length: 240 }];
+  assert.deepEqual(guardRipple(doc, { type: 'insert', trackId: 't2', atTick: 3840, lengthTicks: 240 }),
+    { ok: false, reason: 'ripple_take_group' });
+  doc.tracks[0].regions = [{ id: 'r0', start: 3840, length: 3840, offset: 0, pattern: 'A' }];
+  assert.equal(guardRipple(doc, { type: 'delete', trackId: 't1', regionId: 'r0' }).ok, true);
+});
+test('guard exposes stable missing-target and invalid-operation reasons without mutation', () => {
+  const doc = rippleFixture();
+  for (const [request, reason] of [
+    [{ type: 'insert', trackId: 'missing', atTick: 0 }, 'track_not_found'],
+    [{ type: 'delete', trackId: 't1', regionId: 'missing' }, 'region_not_found'],
+    [{ type: 'insert', trackId: 't1', atTick: NaN }, 'invalid_ticks'],
+    [{ type: 'unknown', trackId: 't1' }, 'invalid_ripple'],
+  ]) assert.deepEqual(guardRipple(doc, request), { ok: false, reason });
+});

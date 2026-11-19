@@ -106,3 +106,33 @@ Manual checklist, not run in P0:
   retry requests. Confirm newly created and saved application documents are v4.
 
 No mobile files or Metro/native environments are part of this work order.
+
+## P2a work order A: web ripple and clip search
+
+Ripple is editor component state, off on opening, toggled by the toolbar or R.
+Delete and Backspace share the toolbar deletion path; each successful ripple
+operation records one history entry. Only later regions on the chosen track move;
+other tracks, the loop range and future markers stay in place. Insert gap adds
+3840 ticks at the snapped playhead. Strictly interior positions are refused;
+a boundary moves every region starting there or later. No later region means
+an announced no-op without a history entry.
+
+The pure guard previews the region transformation before invoking the existing
+ripple helpers. For every take group it compares overlapping regions using the
+same temporal condition as generic edit pruning, including changed region values
+within the range and regions entering an empty range. A mismatch refuses the edit
+before pruning can discard a group or its alternate assets. Region and asset ids
+are not used to infer take membership. Documents and the write version remain v4.
+
+Search renders at most 20 results and announces the total and displayed counts.
+Choosing a result selects it, clamps the playhead to its start and scrolls its
+lane into view. Escape clears the query. Regions have exact key sets and no name
+field: drum regions match only by track name; audio and MIDI regions also match
+their asset and clip names. No region-name field or search shortcut is introduced.
+
+Keyboard decision (owner, 2026-11-19): `R` toggles ripple edit, and the toggle is
+announced ("Ripple edit on" / "Ripple edit off") from both the key and the
+toolbar button. The product design (docs/product/music-beat-editor-design-2026-11-15.md
+section 4.8) reserved `R` for Record. Record is not built, so there is no clash
+today. When Record ships it must take a different key, and the design document
+should be updated then.

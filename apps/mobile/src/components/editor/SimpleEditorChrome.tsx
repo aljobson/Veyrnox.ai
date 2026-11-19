@@ -5,14 +5,16 @@ import { mobileEditorAction } from '../../lib/editorIntentRouter';
 import { Text as UiText, TextField, Button as UiButton } from '../ui';
 import { Modal, Pressable, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
+import { runAfterSheetCloses } from './runAfterSheetCloses';
 import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
 import { colors, fonts } from '../../theme';
 
-export interface SheetRow { id: string; icon: string; label: string; hint?: string; disabled?: boolean; onPress(): void }
+export interface SheetRow { id: string; icon: string; label: string; hint?: string; disabled?: boolean; afterClose?: boolean; onPress(): void }
 export type SimpleSheetName = 'add' | 'ai' | 'more';
 
-// One bottom sheet for all three entries. Choosing a row closes the sheet first, then runs the action.
+// One bottom sheet for all three entries. Choosing a row closes the sheet first, then runs the action;
+// a row marked afterClose (a native picker) waits until the sheet has finished closing.
 export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDescribe }: { title: string; rows: readonly SheetRow[]; onClose(): void; describe?: boolean; onDescribe?(id: string, prompt: string): void }) {
     const reduced = useReducedMotion();
     const [prompt, setPrompt] = useState('');
@@ -40,7 +42,7 @@ export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDe
                 {problem ? <UiText variant="footnote" accessibilityRole="alert" accessibilityLiveRegion="polite">{problem}</UiText> : null}
                 <UiButton label={t('editorSimple.openTool')} accessibilityLabel={rawText(t('editorSimple.openTool'))} disabled={!prompt.trim()} onPress={openDescribed} />
             </View> : null}
-            {rows.map((row) => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={rawText(row.label)} accessibilityState={{ disabled: !!row.disabled }} disabled={row.disabled} onPress={() => { onClose(); row.onPress(); }} style={({ pressed }) => [styles.row, row.disabled && styles.rowDisabled, pressed && styles.rowPressed]}>
+            {rows.map((row) => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={rawText(row.label)} accessibilityState={{ disabled: !!row.disabled }} disabled={row.disabled} onPress={() => { onClose(); if (row.afterClose) runAfterSheetCloses(row.onPress); else row.onPress(); }} style={({ pressed }) => [styles.row, row.disabled && styles.rowDisabled, pressed && styles.rowPressed]}>
                 <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.rowIcon, row.icon.length > 1 && styles.rowIconWide]}>{row.icon}</Text>
                 <View style={styles.rowCopy}><Text style={styles.rowLabel}>{row.label}</Text>{row.hint ? <Text style={styles.rowHint}>{row.hint}</Text> : null}</View>
             </Pressable>)}
