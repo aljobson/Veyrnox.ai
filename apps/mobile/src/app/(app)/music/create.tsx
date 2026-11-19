@@ -59,7 +59,7 @@ export default function MusicCreate() {
                             <Button variant="secondary" label={t('music.create.shorter')} disabled={!model || input.duration <= model.controls.duration_seconds.min} onPress={() => flow.edit({ duration: input.duration - 5 })} />
                             <Button variant="secondary" label={t('music.create.longer')} disabled={!model || input.duration >= model.controls.duration_seconds.max} onPress={() => flow.edit({ duration: input.duration + 5 })} />
                         </View>
-                        {model?.controls.duration_price_block_seconds !== undefined ? <Text>{t('music.create.durationPriceHint')}</Text> : null}
+                        {model?.controls.duration_price_block_seconds === 60 ? <Text>{t('music.create.durationPriceHint')}</Text> : null}
                         {input.duration > 60 ? <Text>{t('music.create.longerGenerationHint')}</Text> : null}
                         {state.conflict ? <View style={s.content}>
                             <Text>{t('music.create.conflict')}</Text>

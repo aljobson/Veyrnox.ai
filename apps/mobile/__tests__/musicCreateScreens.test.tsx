@@ -5,14 +5,16 @@ import MusicCreate from '../src/app/(app)/music/create';
 import { MusicQueue } from '../src/components/music/MusicQueue';
 import { MusicCandidateCard, candidatePlayback } from '../src/components/music/MusicCandidateCard';
 import { MusicLyricsPanel, insertLyricsLabel } from '../src/components/music/MusicLyricsPanel';
-import { ApiError } from '../src/lib/api';
+import { ApiError, type ApiClient } from '../src/lib/api';
 import { bindCacheUser, resetCacheUser } from '../src/lib/appCache';
+import { getMusicCreateSession } from '../src/lib/music/createSession';
 import { t } from '../src/lib/i18n';
 import { entitlements, draft, quote, generation, view, custom } from './fixtures/musicCreate';
 import { JOB } from './fixtures/music';
 const mockApi = { request: jest.fn() }, mockPush = jest.fn();
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
+    useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/components/music/MusicPlayer', () => ({ MusicPlayer: () => require('react').createElement(require('react-native').View, { testID: 'music-player' }) }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView];
@@ -40,7 +42,75 @@ beforeEach(async () => {
     resetCacheUser(); await bindCacheUser('music-create-user'); jest.clearAllMocks(); mockApi.request.mockImplementation(baseResponse);
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot();
 });
-afterEach(async () => { await act(async () => { root.unmount(); resetCacheUser(); }); jest.useRealTimers(); });
+afterEach(async () => { await act(async () => { root.unmount(); resetCacheUser(); }); jest.restoreAllMocks(); jest.useRealTimers(); });
+const longEntitlements = { ...entitlements, models: entitlements.models.map(model => ({ ...model, controls: {
+    ...model.controls, duration_seconds: { ...model.controls.duration_seconds, max: 135, default: 135 }, duration_price_block_seconds: 60,
+} })) };
+test.each([undefined, 30, 60])('duration price hint is shown only for a 60-second block, received %p', async block => {
+    const response = { ...entitlements, models: entitlements.models.map(model => ({ ...model,
+        controls: { ...model.controls, ...(block === undefined ? {} : { duration_price_block_seconds: block }) },
+    })) };
+    mockApi.request.mockImplementation((path, init) => path.endsWith('/entitlements') ? response : baseResponse(path, init));
+    await mount();
+    const hint = t('music.create.durationPriceHint');
+    if (block === 60) {
+        expect(text(hint).length).toBeGreaterThan(0);
+        expect(hint).toContain('60-second steps');
+        expect(hint.replace('60-second', '')).not.toMatch(/\d/);
+        expect(hint).not.toMatch(/\d+\s*credits?|credits?\s*[:=]?\s*\d+/i);
+    } else expect(text(hint)).toHaveLength(0);
+});
+test.each(['foreground', 'focus'])('%s refreshes entitlements for an already-loaded session without losing the form', async trigger => {
+    let appStateChanged!: (state: RN.AppStateStatus) => void;
+    jest.spyOn(RN.AppState, 'addEventListener').mockImplementation((_event, callback) => {
+        appStateChanged = callback; return { remove: jest.fn() };
+    });
+    mockApi.request.mockImplementation((path, init) => path.endsWith('/entitlements') ? longEntitlements : baseResponse(path, init));
+    await mount(); await edit('prompt', 'Quiet piano'); await edit('songTitle', 'Evening');
+    const flow = getMusicCreateSession(mockApi as unknown as ApiClient), refresh = jest.spyOn(flow, 'refreshEntitlements');
+    expect(flow.snapshot().status).toBe('on');
+    expect(text(t('music.create.duration', { seconds: 135 })).length).toBeGreaterThan(0);
+    mockApi.request.mockClear(); mockApi.request.mockImplementation(baseResponse);
+    if (trigger === 'foreground') {
+        await act(async () => appStateChanged('active'));
+        await act(async () => appStateChanged('background'));
+        expect(refresh).not.toHaveBeenCalled(); expect(mockApi.request).not.toHaveBeenCalled();
+        await act(async () => appStateChanged('active'));
+    } else await remount();
+    expect(getMusicCreateSession(mockApi as unknown as ApiClient)).toBe(flow);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(mockApi.request.mock.calls).toEqual([['/api/v1/music/entitlements']]);
+    expect(field(t('music.create.prompt')).props.value).toBe('Quiet piano');
+    expect(field(t('music.create.songTitle')).props.value).toBe('Evening');
+    expect(text(t('music.create.duration', { seconds: 60 })).length).toBeGreaterThan(0);
+    expect(text(t('music.create.durationPriceHint'))).toHaveLength(0);
+});
+test('a deferred submit cannot restore the old duration maximum or hint after a refresh', async () => {
+    let finish!: (value: typeof generation) => void;
+    const submitted = new Promise<typeof generation>(resolve => { finish = resolve; });
+    mockApi.request.mockImplementation((path, init) => path.endsWith('/entitlements') ? longEntitlements
+        : path.endsWith('/generations') ? submitted : baseResponse(path, init));
+    await mount(); await edit('prompt', 'Quiet piano'); await click(t('music.create.review'));
+    expect(text(t('music.create.durationPriceHint')).length).toBeGreaterThan(0);
+    const flow = getMusicCreateSession(mockApi as unknown as ApiClient);
+    let confirming!: Promise<void>;
+    await act(async () => { confirming = flow.confirm(); });
+    expect(flow.snapshot().busy).toBe(true);
+    expect(flow.attempts.snapshot()?.input.duration).toBe(135);
+    mockApi.request.mockImplementation(baseResponse);
+    await act(async () => { await flow.refreshEntitlements(); });
+    expect(text(t('music.create.duration', { seconds: 60 })).length).toBeGreaterThan(0);
+    expect(button(t('music.create.longer')).props.accessibilityState.disabled).toBe(true);
+    expect(text(t('music.create.durationPriceHint'))).toHaveLength(0);
+    expect(flow.attempts.snapshot()?.input.duration).toBe(135);
+    const refreshed = flow.snapshot().entitlements;
+    await act(async () => { finish(generation); await confirming; });
+    expect(flow.snapshot().entitlements).toEqual({ ...refreshed, balance: generation.balance_after });
+    expect(text(t('music.create.duration', { seconds: 60 })).length).toBeGreaterThan(0);
+    expect(button(t('music.create.longer')).props.accessibilityState.disabled).toBe(true);
+    expect(text(t('music.create.durationPriceHint'))).toHaveLength(0);
+    expect(field(t('music.create.prompt')).props.value).toBe('Quiet piano');
+});
 test.each([new ApiError(404, 'music_unavailable'), { ...entitlements, available: false }])('off does not request drafts or quotes: %p', async response => {
     mockApi.request.mockImplementation(async () => { if (response instanceof Error) throw response; return response; });
     await mount(); expect(text(t('music.off')).length).toBeGreaterThan(0); expect(mockApi.request).toHaveBeenCalledTimes(1);
@@ -179,8 +249,10 @@ test('F1 Discard forgets an ambiguous attempt without sending a cancellation and
     await edit('prompt', 'Piano'); await click(t('music.create.review')); await click(t('music.create.confirm', { credits: 10 }));
     expect(text(t('music.create.discardBody')).length).toBeGreaterThan(0);
     const requests = mockApi.request.mock.calls.length;
-    await click(t('music.create.discard')); await remount();
+    await click(t('music.create.discard'));
     expect(mockApi.request).toHaveBeenCalledTimes(requests);
+    await remount();
+    expect(mockApi.request.mock.calls.slice(requests)).toEqual([['/api/v1/music/entitlements']]);
     expect(button(t('music.create.check'))).toBeUndefined(); expect(button(t('music.create.discard'))).toBeUndefined();
     expect(button(t('music.create.review')).props.accessibilityState.disabled).toBe(false);
     await click(t('music.create.review')); expect(button(t('music.create.confirm', { credits: 10 }))).toBeDefined();
