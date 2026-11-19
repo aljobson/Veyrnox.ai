@@ -50,3 +50,6 @@ export const sequenceCounts = tl => ({media:Object.keys(tl.media).length,video:t
 export function reportUnknown(object, allowed, path, report) {
     for (const key of Object.keys(object)) if (!allowed.includes(key)) loss(report,`${path}.${key}`,key,'dropped','Unsupported FilmCraft field.');
 }
+
+// FilmCraft item colour names: file-format values, never shown to a user.
+export const FC_ITEM_COLOUR = Object.freeze({ media: 'Iris', graphic: 'Lavender', sequence: 'Forest' });
