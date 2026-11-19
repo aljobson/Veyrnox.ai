@@ -43,7 +43,7 @@ function videoPick(result: unknown = { canceled: false, assets: [{ uri: 'clip' }
 afterEach(() => { jest.useRealTimers(); });
 
 test.each([
-    [{ canceled: true, assets: null }, null],
+    [{ canceled: true, assets: null }, 'video_none'],
     [{ canceled: false, assets: [] }, 'video_none'],
     [{ canceled: false }, 'video_none'],
     [{ canceled: false, assets: [{}] }, 'video_none'],

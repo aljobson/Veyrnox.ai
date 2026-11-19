@@ -73,11 +73,13 @@ export const rename = (doc, title, now = Date.now()) => edit(doc, now, (d) => { 
 export const setMetronome = (doc, enabled, now = Date.now()) => edit(doc, now, (d) => { d.metronome = enabled; });
 export const restorePattern = (doc, slot, pattern, now = Date.now()) => edit(doc, now, (d) => { d.patterns[slot] = structuredClone(pattern); });
 
-export class BeatRefusal extends Error {}
+export class BeatRefusal extends Error {
+  constructor(message, code) { super(message); if (code) this.code = code; }
+}
 export function tryOp(doc, operation) {
   try { return { doc: operation(doc) }; }
   catch (error) {
-    if (error instanceof BeatRefusal) return { doc, refused: error.message };
+    if (error instanceof BeatRefusal) return { doc, refused: error.message, ...(error.code ? { code: error.code } : {}) };
     throw error;
   }
 }
@@ -224,6 +226,7 @@ export const setAudioRegion = (doc, id, patch, now = Date.now()) => edit(doc, no
 });
 
 export function restoreVersion(doc, versionDoc, now = Date.now()) {
+  if (doc.version >= 5 && versionDoc.version < doc.version) throw new BeatRefusal('v5_write_disabled', 'v5_write_disabled');
   const next = { ...structuredClone(versionDoc), id: doc.id, createdAt: doc.createdAt, updatedAt: Math.max(now, doc.updatedAt, doc.createdAt) };
   if (!validateBeat(next).ok) throw new Error('invalid');
   return next;

@@ -18,7 +18,7 @@ describe('grouped menu', () => {
     test('matches the web sidebar: same groups, same order, Help at the foot', () => {
         expect(MENU_SECTIONS.map((s) => s.id)).toEqual(['tools', 'assets']);
         expect(MENU_SECTIONS.map((s) => [s.id, s.items.map((i) => i.key)])).toEqual([
-            ['tools', ['create', 'audio', 'editor', 'publish', 'cinema']],
+            ['tools', ['create', 'audio', 'smartCut', 'editor', 'publish', 'cinema']],
             ['assets', ['library', 'brandKit', 'credits', 'chat']],
         ]);
         expect(MENU_FOOTER.map((i) => i.key)).toEqual(['help']);
@@ -26,14 +26,14 @@ describe('grouped menu', () => {
 
     test('each drawer item opens its mobile screen', () => {
         expect(Object.fromEntries(ALL_ITEMS.map((i) => [i.key, i.href]))).toEqual({
-            create: '/create', audio: '/audio', editor: '/editor', publish: '/publish', cinema: '/cinema',
+            create: '/create', audio: '/audio', smartCut: '/smart-cut', editor: '/editor', publish: '/publish', cinema: '/cinema',
             library: '/library', brandKit: '/brand-kit', credits: '/credits', chat: '/chat', help: '/help',
         });
     });
 
     test('keeps the web key order inside each group', () => {
         // Web (studioNavigation.js) lists Audio between Create and Video editor, and so does the phone.
-        const web = { tools: ['create', 'audio', 'editor', 'publish', 'cinema'], assets: ['library', 'brandKit', 'credits', 'chat'] };
+        const web = { tools: ['create', 'audio', 'smartCut', 'editor', 'publish', 'cinema'], assets: ['library', 'brandKit', 'credits', 'chat'] };
         for (const section of MENU_SECTIONS) {
             const keys = section.items.map((i) => i.key);
             expect(web[section.id as 'tools' | 'assets'].filter((k) => keys.includes(k))).toEqual(keys);
@@ -48,9 +48,18 @@ describe('grouped menu', () => {
         }
         for (const item of MENU_FOOTER) expect(catalog[item.label]).toEqual(expect.any(String));
         expect(catalog['menu.videoEditor']).toBe('Video editor');
+        expect(catalog['menu.smartCut']).toBe('Smart Cut');
+        expect(catalog['menu.professional']).toBe('Professional');
+        for (const key of ['menu.smartCutHint', 'menu.professionalHint']) expect(catalog[key]).toEqual(expect.any(String));
         for (const key of ['menu.open', 'menu.close', 'menu.home', 'menu.sectionOpen', 'menu.sectionClosed']) {
             expect(catalog[key]).toEqual(expect.any(String));
         }
+    });
+
+    test('the two editors are named in the drawer with a one-line description each', () => {
+        const tools = MENU_SECTIONS.find((section) => section.id === 'tools')?.items ?? [];
+        expect(tools).toContainEqual(expect.objectContaining({ key: 'smartCut', href: '/smart-cut', label: 'menu.smartCut', hint: 'menu.smartCutHint' }));
+        expect(tools).toContainEqual(expect.objectContaining({ key: 'editor', href: '/editor', label: 'menu.professional', hint: 'menu.professionalHint' }));
     });
 
     test('every entry opens a screen that exists', () => {

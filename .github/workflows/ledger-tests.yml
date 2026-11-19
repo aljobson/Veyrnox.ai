@@ -22,6 +22,8 @@ on:
       - "scripts/test-project-documents.mjs"
       - "scripts/test-film-studio-cloud.mjs"
       - "scripts/test-music-beat-cloud.mjs"
+      - "scripts/test-music-beat-v5.mjs"
+      - "scripts/test-music-beat-v5-rest.mjs"
       - "scripts/test-music-beat-ai.mjs"
       - "scripts/test-music-beat-ai-concurrency.mjs"
       - "scripts/test-music-mixdowns.mjs"
@@ -252,6 +254,14 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-film-studio-cloud.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-cloud.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-v5.mjs
+          # PostgREST overload parity needs a running PostgREST and its test JWT secret, which this job does not provide.
+          # It runs wherever MUSIC_BEAT_TEST_REST_URL and MUSIC_BEAT_TEST_JWT_SECRET are set (see ADR 0361); here it is reported as skipped, never silently.
+          if [ -n "${MUSIC_BEAT_TEST_REST_URL:-}" ] && [ -n "${MUSIC_BEAT_TEST_JWT_SECRET:-}" ]; then
+            DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-v5-rest.mjs
+          else
+            echo "test-music-beat-v5-rest SKIPPED: no PostgREST configured in CI; run it locally per ADR 0361."
+          fi
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-ai.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-ai-concurrency.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-mixdowns.mjs
@@ -265,6 +275,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tiktok-submission-fence.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tenant-write-caps.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-assets.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-files.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-content.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-uploads.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-upload-recovery.mjs

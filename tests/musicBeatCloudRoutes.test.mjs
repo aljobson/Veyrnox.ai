@@ -107,3 +107,35 @@ test('PUT preserves trailing space, tab and newline titles exactly', async () =>
     assert.equal((await PUT(req('PUT', { ...body, doc_json: text }), params)).status, 201);
   }
 });
+
+test('declared version defaults to 4 for old clients and passes 5 for new saves and deletes', async () => {
+  for (const declared of [undefined, 5]) {
+    globalThis.fetch = async (_url, init) => {
+      const sent = JSON.parse(init.body);
+      assert.equal(sent.p_client_beat_version, declared ?? 4);
+      if (sent.p_doc) assert.equal(JSON.parse(sent.p_doc).version, 4);
+      return Response.json(metadata);
+    };
+    const declaration = declared === undefined ? {} : { client_beat_version: declared };
+    assert.equal((await PUT(req('PUT', { ...body, ...declaration }), params)).status, 201);
+    assert.equal((await DELETE(req('DELETE', { expected_revision: 1, ...declaration }), params)).status, 200);
+  }
+});
+test('old-client replace/delete preserve BEAT_CLIENT_OUTDATED from PostgREST and expose no upstream detail', async () => {
+  let calls = 0;
+  globalThis.fetch = async (_url, init) => {
+    calls++; assert.equal(JSON.parse(init.body).p_client_beat_version, 4);
+    return Response.json({ message: 'BEAT_CLIENT_OUTDATED', details: 'private database detail' }, { status: 409 });
+  };
+  await error(await PUT(req('PUT', body), params), 409, 'BEAT_CLIENT_OUTDATED');
+  await error(await DELETE(req('DELETE', { expected_revision: 1 }), params), 409, 'BEAT_CLIENT_OUTDATED');
+  assert.equal(calls, 2);
+});
+test('route cannot write v5 and rejects invalid declarations before any upstream mutation', async () => {
+  globalThis.fetch = async () => { assert.fail('no RPC may be called'); };
+  await error(await PUT(req('PUT', { ...body, client_beat_version: 5, doc_json: JSON.stringify({ ...doc, version: 5 }) }), params), 409, 'BEAT_CLIENT_OUTDATED');
+  for (const client_beat_version of [null, 0, 6, 999, '5', 1.5]) {
+    await error(await PUT(req('PUT', { ...body, client_beat_version }), params), 400, 'INVALID_BEAT_CLIENT_VERSION');
+    await error(await DELETE(req('DELETE', { expected_revision: 1, client_beat_version }), params), 400, 'INVALID_BEAT_CLIENT_VERSION');
+  }
+});

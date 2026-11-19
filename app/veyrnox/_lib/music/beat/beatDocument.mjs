@@ -1,3 +1,5 @@
+import { markersError } from './beatMarkerRules.mjs';
+import { BEAT_WRITE_VERSION } from './beatCompatibility.mjs';
 import { takeGroupsError } from './beatTakeRules.mjs';
 import { masterError, trackMixError } from './beatMixRules.mjs';
 import { clipsError, validInstrument, validMidiRegion } from './beatMidiRules.mjs';
@@ -40,7 +42,7 @@ export function createBeat({ id, title = 'Untitled beat 1', now = Date.now() }) 
   patterns.A.rows.kick = [[0, 100], [8, 100]];
   patterns.A.rows.snare = [[4, 100], [12, 100]];
   patterns.A.rows.hat = Array.from({ length: 8 }, (_, i) => [i * 2, 100]);
-  const doc = { kind: 'veyrnox.music.beat', version: 4, assets: {}, clips: {}, id, title, createdAt: now, updatedAt: now,
+  const doc = { kind: 'veyrnox.music.beat', version: BEAT_WRITE_VERSION, assets: {}, clips: {}, id, title, createdAt: now, updatedAt: now,
     tempo: { bpm: 92 }, signature: [4, 4], swing: 0, metronome: false, steps: 16, currentPattern: 'A', patterns,
     view: 'song', tracks: [{ id: 't1', kind: 'drums', name: 'Drums', kit: '808', mute: false, solo: false, gain: 1, pan: 0,
       regions: [{ id: 'r1', start: 0, length: 4 * 3840, offset: 0, pattern: 'A' }] }],
@@ -96,6 +98,13 @@ export function arrangementError(doc) {
   return null;
 }
 export function validateBeat(doc) {
+  if (doc?.version === 5) {
+    const { markers, ...base } = doc;
+    const reason = markersError(markers);
+    if (reason) return { ok: false, error: 'invalid', reason };
+    const result = validateBeat({ ...base, version: 4 });
+    return result.ok ? { ok: true, doc } : result;
+  }
   if (doc?.version === 1) return validateBeatV1(doc);
   const invalid = { ok: false, error: 'invalid' };
   const v2Fields = [...fields.filter((field) => field !== 'kit'), 'view', 'tracks', 'cycle'];
@@ -109,13 +118,18 @@ export function validateBeat(doc) {
 }
 export function migrateBeat(doc) {
   if (!validateBeat(doc).ok) throw new Error('invalid');
-  if (doc.version === 4) return doc;
-  if (doc.version === 3) return { ...structuredClone(doc), version: 4, clips: {} };
-  if (doc.version === 2) return { ...structuredClone(doc), version: 4, assets: {}, clips: {}, tracks: doc.tracks.map((t) => ({ ...structuredClone(t), kind: 'drums' })) };
+  if (doc.version === 4 || doc.version === 5) return doc;
+  if (doc.version === 3) return { ...structuredClone(doc), version: BEAT_WRITE_VERSION, clips: {} };
+  if (doc.version === 2) return { ...structuredClone(doc), version: BEAT_WRITE_VERSION, assets: {}, clips: {}, tracks: doc.tracks.map((t) => ({ ...structuredClone(t), kind: 'drums' })) };
   const { kit, ...common } = structuredClone(doc);
   const length = doc.steps * 240;
-  return { ...common, version: 4, assets: {}, clips: {}, view: 'pattern',
+  return { ...common, version: BEAT_WRITE_VERSION, assets: {}, clips: {}, view: 'pattern',
     tracks: [{ id: 't1', kind: 'drums', name: 'Drums', kit, mute: false, solo: false, gain: 1, pan: 0,
       regions: [{ id: 'r1', start: 0, length, offset: 0, pattern: doc.currentPattern }] }],
     cycle: { on: false, start: 0, end: length } };
+}
+
+export function upgradeBeatToV5(doc) {
+  const migrated = migrateBeat(doc);
+  return migrated.version === 5 ? migrated : { ...structuredClone(migrated), version: 5 };
 }
