@@ -54,10 +54,18 @@ test('custom quote differs from 0478 only in its duration ceiling', async () => 
   assert.equal(custom, previous.replace('p_duration_seconds NOT BETWEEN 10 AND 60', 'p_duration_seconds NOT BETWEEN 10 AND 180'));
 });
 
-test('submit differs from 0550 only in the duration-aware stale-price check', async () => {
+test('submit differs from 0550 only in the stale-price check and the priced duration in the payload', async () => {
   const previous = functionBody(await migration('0550_music_beat_loop_dispatch.sql'), 'private.music_submit_pair_unbounded');
-  assert.equal(submit, previous.replace('v_model.credits_5s <> v_quote.unit_credits',
-    'v_model.credits_5s *\n           private.music_duration_price_blocks(v_quote.model_id, v_prompt.duration_seconds) <> v_quote.unit_credits'));
+  const expected = previous
+    .replace('v_model.credits_5s <> v_quote.unit_credits',
+      'v_model.credits_5s *\n           private.music_duration_price_blocks(v_quote.model_id, v_prompt.duration_seconds) <> v_quote.unit_credits')
+    .replace("jsonb_build_object('tags', v_prompt.prompt, 'duration', 60)",
+      "jsonb_build_object('tags', v_prompt.prompt, 'duration', v_prompt.duration_seconds)")
+    .replace("WHEN 'ace-step-1.5' THEN jsonb_build_object(\n                'prompt', v_prompt.prompt, 'duration', 60,",
+      "WHEN 'ace-step-1.5' THEN jsonb_build_object(\n                'prompt', v_prompt.prompt, 'duration', v_prompt.duration_seconds,");
+  assert.equal(submit, expected);
+  // ace-step-loop keeps its own fixed payload; the dispatch trigger still applies its frozen duration.
+  assert.match(submit, /WHEN 'ace-step-loop' THEN jsonb_build_object\(\n\s+'prompt', v_prompt\.prompt, 'duration', 60,/);
 });
 
 test('all four functions explicitly revoke; only public wrappers and price helper grant service_role execution', () => {

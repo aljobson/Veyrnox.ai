@@ -274,9 +274,9 @@ BEGIN
         INSERT INTO public.music_generation_candidates(user_id, generation_request_id, ordinal, job_id)
         VALUES (v_user, v_request.id, 1, v_job_one), (v_user, v_request.id, 2, v_job_two);
         v_payload := CASE v_model.id
-            WHEN 'ace-step' THEN jsonb_build_object('tags', v_prompt.prompt, 'duration', 60)
+            WHEN 'ace-step' THEN jsonb_build_object('tags', v_prompt.prompt, 'duration', v_prompt.duration_seconds)
             WHEN 'ace-step-1.5' THEN jsonb_build_object(
-                'prompt', v_prompt.prompt, 'duration', 60, 'thinking', true, 'num_outputs', 1)
+                'prompt', v_prompt.prompt, 'duration', v_prompt.duration_seconds, 'thinking', true, 'num_outputs', 1)
             WHEN 'ace-step-loop' THEN jsonb_build_object(
                 'prompt', v_prompt.prompt, 'duration', 60, 'thinking', true, 'num_outputs', 1)
         END;
