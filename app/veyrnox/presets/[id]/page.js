@@ -1,4 +1,5 @@
 import { TemplateSwapBoundary, TemplateSwapSummary, TemplateSwapLegacy } from '../../_components/TemplateSwapBoundary.js';
+import { publicModelId } from '../../../../lib/publicModelIds.js';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { templateSourceAspect } from '../../../../lib/templateFraming.js';
 import { getT } from '../../../../lib/i18n/server';
@@ -89,7 +90,7 @@ export default async function TemplatePage({ params }) {
             </p>
             <h1 className="mt-2 vx-display vx-title-detail">{presetTitle(template.name)}</h1>
             <TemplateSwapSummary><p className="mt-4 text-vx-fg-body">
-              {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{modelName}</Link> : <span className="font-bold">{template.model}</span> })}
+              {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(publicModelId(modelId))}`)} className="font-bold underline underline-offset-4">{modelName}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
             {template.needs && (sourceAspect ? (
               <div className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
