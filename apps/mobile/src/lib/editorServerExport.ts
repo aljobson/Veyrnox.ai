@@ -68,6 +68,9 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
         for (const key of ['fadeIn', 'fadeOut', 'pan', 'reverse'] as const) if (key in clip && !(clip as Record<string, unknown>)[key]) delete (clip as Record<string, unknown>)[key];
         delete clip.groupId;
     }
+    for (const text of timeline.text) if (!text.words?.length) {
+        delete text.caption; delete text.words; delete text.wordStyle; delete text.wordsEstimated;
+    }
     for (const text of timeline.text) if (documentIdentity(text.style) === documentIdentity(SERVER_PLAIN_TEXT_STYLE)) delete text.style;
     for (const [id, media] of Object.entries(timeline.media)) {
         const block = (reason: BlockReason) => blocked.push({ id, name: media.name, reason });

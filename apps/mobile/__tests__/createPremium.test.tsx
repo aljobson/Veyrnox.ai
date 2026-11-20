@@ -16,7 +16,6 @@ jest.mock('expo-router', () => ({ Link: ({ href, children }: any) => require('re
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [mockOpen], fetchAllCatalog: async () => [mockOpen, mockPremium, mockVideo], fetchCatalogCached: async (cb: any) => { cb([mockOpen, mockPrompt]); return [mockOpen, mockPrompt]; } }));
 jest.mock('../src/lib/premiumModels');
 jest.mock('../src/lib/useFreeLeft', () => ({ useFreeLeft: () => ({}) }));
-jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => false }));
 jest.mock('../src/lib/montage', () => ({ fetchAgentListing: async () => null }));
 jest.mock('../src/lib/firstGoalStore', () => ({ readFirstGoal: async () => 'skipped', writeFirstGoal: async () => undefined, homeStartRecorded: () => false })); // the first-goal question is already answered
 jest.mock('../src/auth/AuthProvider', () => { const api = {}; return { useAuth: () => ({ api }) }; }); // a stable client, so the first-goal effect runs once

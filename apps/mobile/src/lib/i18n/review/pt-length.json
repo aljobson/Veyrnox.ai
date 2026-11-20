@@ -1,5 +1,65 @@
 [
   {
+    "id": "editorCaptionTools.correctChoose",
+    "english": "Choose one timed word to correct.",
+    "translation": "Escolha uma palavra com tempo definido para corrigir.",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorCaptionTools.shareSrt",
+    "english": "Share SRT",
+    "translation": "Compartilhar SRT",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorCaptionTools.shareVtt",
+    "english": "Share VTT",
+    "translation": "Compartilhar VTT",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorCaptionTools.wordTiming",
+    "english": "Word timing",
+    "translation": "Tempos das palavras",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCaptionTools.mode",
+    "english": "Word display",
+    "translation": "Exibição das palavras",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.word",
+    "english": "Word",
+    "translation": "Palavra",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.spread",
+    "english": "Spread words evenly",
+    "translation": "Distribuir palavras uniformemente",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorCaptionTools.start",
+    "english": "Word start",
+    "translation": "Início da palavra",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorCaptionTools.length",
+    "english": "Word length",
+    "translation": "Duração da palavra",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCaptionTools.allTracks",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
     "id": "editorTools.speed",
     "english": "Speed",
     "translation": "Velocidade",
@@ -3546,6 +3606,12 @@
     "ratio": 1.73
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Ainda não salvo. Este beat é perdido quando o app é fechado.",
+    "ratio": 3.16
+  },
+  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Desfazer",
@@ -3586,6 +3652,66 @@
     "english": "Checkpoint",
     "translation": "Ponto de controle",
     "ratio": 1.7
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Ajuste à grelha",
+    "ratio": 3.75
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatPiano.zoomIn",
+    "english": "Zoom in",
+    "translation": "Aumentar zoom",
+    "ratio": 1.86
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Mover para a esquerda",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Mover para a direita",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.resized",
+    "english": "Resized notes",
+    "translation": "Duração das notas alterada",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.hint",
+    "english": "Tap to add or select. Hold a note before dragging to move it. Hold a selected note’s right edge before dragging to resize. Hold a velocity bar before dragging vertically to adjust velocity. Pinch to zoom.",
+    "translation": "Toque para adicionar ou selecionar. Mantenha uma nota premida antes de a arrastar para a mover. Mantenha a margem direita de uma nota selecionada premida antes de a arrastar para alterar a duração. Mantenha uma barra de velocidade premida antes de a arrastar verticalmente para ajustar a velocidade. Use dois dedos para ampliar.",
+    "ratio": 1.61
+  },
+  {
+    "id": "beatPiano.library.title",
+    "english": "Instruments",
+    "translation": "Biblioteca de instrumentos",
+    "ratio": 2.36
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Kits de bateria",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatTakes.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
   },
   {
     "id": "speech.speed",

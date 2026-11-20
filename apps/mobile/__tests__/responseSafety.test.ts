@@ -67,11 +67,9 @@ test('check-in guards reject missing fields, non-finite numbers and non-array re
 
 test('bad_response uses existing generic display messages', () => {
     const { generationMessage } = require('../src/lib/generationSubmit');
-    const { faceFilterUploadMessage } = require('../src/lib/faceFilters');
     const { checkinErrorKey } = require('../src/lib/checkin');
     const { t } = require('../src/lib/i18n');
     const error = new ApiError(200, 'bad_response');
     expect(generationMessage(error)).toBe(t('form.err.default'));
-    expect(faceFilterUploadMessage(error)).toBe(t('common.error'));
     expect(checkinErrorKey(error)).toBe('checkin.error');
 });

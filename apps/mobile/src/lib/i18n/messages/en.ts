@@ -25,6 +25,8 @@ import area_audioTemplates from './en/audioTemplates';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
 import area_beat from './en/beat';
+import area_beatPiano from './en/beatPiano';
+import area_beatTakes from './en/beatTakes';
 import area_bestCut from './en/bestCut';
 import area_billing from './en/billing';
 import area_blocks from './en/blocks';
@@ -77,6 +79,7 @@ import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
+import area_editorCaptionTools from './en/editorCaptionTools';
 import area_editorCore from './en/editorCore';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
@@ -262,6 +265,8 @@ const catalog = {
     ...area_authGate,
     ...area_autolists,
     ...area_beat,
+    ...area_beatPiano,
+    ...area_beatTakes,
     ...area_bestCut,
     ...area_billing,
     ...area_blocks,
@@ -314,6 +319,7 @@ const catalog = {
     ...area_edit,
     ...area_editor,
     ...area_editorAi,
+    ...area_editorCaptionTools,
     ...area_editorCore,
     ...area_editorEditGate,
     ...area_editorExportRefusal,

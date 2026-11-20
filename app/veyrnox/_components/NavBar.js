@@ -12,7 +12,6 @@ import { getStoredSession, onSessionChange } from '../../lib/authClient';
 import { accountLabel } from '../_lib/account';
 import { useProjectsEnabled } from './ProjectsFlag';
 import { usePublishEnabled } from './PublishFlag';
-import { useVideoEnhancePreview } from '../_lib/useVideoEnhancePreview';
 import { useEditorEnabled } from './EditorFlag';
 import { NAV_CATEGORIES, PRIMARY_NAV_CATEGORIES } from '../_lib/tokens';
 import { AnnouncementBar } from './AnnouncementBar';
@@ -364,9 +363,8 @@ export function AppNav({ balance, active, readAccount = true }) {
   const pathname = usePathname();
   const projectsEnabled = useProjectsEnabled();
   const publishEnabled = usePublishEnabled();
-  const enhanceEnabled = useVideoEnhancePreview();
   const editorEnabled = useEditorEnabled();
-  const flags = { projects: projectsEnabled, publish: publishEnabled, enhance: enhanceEnabled, editor: editorEnabled };
+  const flags = { projects: projectsEnabled, publish: publishEnabled, editor: editorEnabled };
   const activeCandidates = studioActiveCandidates(flags);
   const activeKey = active ?? activeStudioDestination(pathname, activeCandidates);
   // The public taxonomy intentionally mentions some destinations in more
