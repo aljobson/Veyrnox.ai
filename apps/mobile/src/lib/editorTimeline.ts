@@ -105,6 +105,11 @@ export function trimItem(timeline: Timeline, selection: Selection, edge: 'in' | 
     const fromStart = edge === 'in';
     let low = fromStart ? -item.start : 1 - item.len;
     let high = fromStart ? item.len - 1 : SEQUENCE_MAX - item.start - item.len;
+    if (fromStart && clip.speedCurve?.length) {
+        // Retained curve keys shift by -delta; speedProblem requires every key within +/-18000.
+        low = Math.max(low, ...clip.speedCurve.map(key => Math.ceil(key.frame - 18_000)));
+        high = Math.min(high, ...clip.speedCurve.map(key => Math.floor(key.frame + 18_000)));
+    }
     // Even still media must retain a nonnegative source offset for the shared save validator.
     if (!nonlinear && fromStart && selection.track !== 'text') {
         if (clip.reverse) high = Math.min(high, Math.floor(sourceIn / rate));

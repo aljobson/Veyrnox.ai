@@ -4,12 +4,12 @@ const decimals = (step: number) => {
 };
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const round = (value: number, step: number) => Number((Math.round(value / step) * step).toFixed(decimals(step)));
-export function sliderValue(x: number, width: number, min: number, max: number, step: number, snaps: number[] = [], snapDistance = step,
+export function sliderValue(x: number, width: number, min: number, max: number, step: number, snaps: number[] = [], snapDistance = step / 2,
     motion?: { value: number; delta: number }): number {
     // Imported values may be outside the track: an outward drag must not clamp them backwards.
     if (motion && ((motion.value > max && motion.delta >= 0) || (motion.value < min && motion.delta <= 0))) return motion.value;
     const value = clamp(round(clamp(min + (width > 0 ? x / width : 0) * (max - min), min, max), step), min, max);
-    const nearest = snaps.filter(point => point >= min && point <= max && Math.abs(point - value) <= snapDistance + 1e-10)
+    const nearest = snaps.filter(point => point >= min && point <= max && Math.abs(point - value) < snapDistance)
         .sort((a, b) => Math.abs(a - value) - Math.abs(b - value))[0];
     return nearest ?? value;
 }

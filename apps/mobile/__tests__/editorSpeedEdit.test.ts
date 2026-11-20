@@ -63,3 +63,23 @@ test('freeze extends beyond the source and ripples only its lane even when rippl
         expect(next.video[1]).toEqual(tl.video[1]); expect(validateSequence(next)).toBeNull();
     }
 });
+
+test.each([false, true])('long curve in-trims keep shifted keys within the save bounds (reverse %s)', reverse => {
+    const tl = webSequenceV3(); tl.media.m.frames = 1_000_000;
+    tl.video[0] = { id: 'v1', mediaId: 'm', trackId: 'video-0', start: 2000, len: 16000, in: 100_000,
+        volume: 1, transition: 0, reverse, speedCurve: [{ frame: -17989.5, rate: .5 }, { frame: 17989.5, rate: 1.5 }] };
+    expect(validateSequence(tl)).toBeNull();
+    const before = JSON.stringify(tl), original = tl.video[0];
+    for (const requested of [-2000, 15999]) {
+        const delta = requested < 0 ? -10 : 10;
+        const next = trimItem(tl, sel, 'in', requested, false, 0)!;
+        expect(next.video[0].start).toBe(original.start + delta);
+        expect(next.video[0].len).toBe(original.len - delta);
+        expect(next.video[0].speedCurve).toEqual(shiftedSpeedKeys(original, delta));
+        expect(validateSequence(next)).toBeNull();
+        for (const offset of [0, 50, next.video[0].len - 1]) {
+            expect(sourceFrame(next.video[0], offset)).toBeCloseTo(sourceFrame(original, offset + delta), 8);
+        }
+    }
+    expect(JSON.stringify(tl)).toBe(before);
+});

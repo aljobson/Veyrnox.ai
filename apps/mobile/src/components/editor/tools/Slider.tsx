@@ -22,20 +22,20 @@ export function Slider(props: SliderProps) {
             const p = current.current;
             if (p.disabled) return;
             active.current = true; lastDx.current = gesture.dx; origin.current = event.nativeEvent.locationX - gesture.dx;
-            dragged.current = sliderValue(event.nativeEvent.locationX, width.current, p.min, p.max, p.step, p.snaps, p.step,
+            dragged.current = sliderValue(event.nativeEvent.locationX, width.current, p.min, p.max, p.step, p.snaps, p.step / 2,
                 { value: p.value, delta: gesture.dx });
             setLive(dragged.current);
         },
         onPanResponderMove: (_, gesture) => {
             const p = current.current;
             if (!active.current || p.disabled) return;
-            dragged.current = sliderValue(origin.current + gesture.dx, width.current, p.min, p.max, p.step, p.snaps, p.step,
+            dragged.current = sliderValue(origin.current + gesture.dx, width.current, p.min, p.max, p.step, p.snaps, p.step / 2,
                 { value: dragged.current, delta: gesture.dx - lastDx.current });
             lastDx.current = gesture.dx; setLive(dragged.current);
         },
         onPanResponderTerminationRequest: () => !active.current,
         onPanResponderRelease: () => {
-            if (active.current && !current.current.disabled) current.current.onChange(dragged.current);
+            if (active.current && !current.current.disabled && dragged.current !== current.current.value) current.current.onChange(dragged.current);
             active.current = false; setLive(current.current.value);
         },
         onPanResponderTerminate: () => { active.current = false; setLive(current.current.value); },

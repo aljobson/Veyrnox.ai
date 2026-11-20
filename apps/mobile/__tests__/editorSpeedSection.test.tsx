@@ -1,6 +1,6 @@
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
 import { act } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { SpeedSection } from '../src/components/editor/tools/SpeedSection';
 import type { Clip } from '../src/lib/nativeEditorModel';
@@ -205,4 +205,77 @@ test('a 400-frame freeze fits the drag range and can shorten by one frame', asyn
     const next = await saved();
     expect(next.video[0].len).toBe(399);
     expect(next.video.find((c: any) => c.id === 'v9').start).toBe(399);
+});
+
+test.each([
+    ['Constant', undefined], ['slider', undefined], ['Constant', 2], ['slider', 2],
+] as const)('%s at the current rate %s leaves saves, undo and keyframes untouched', async (entry, rate) => {
+    const spy = jest.spyOn(PanResponder, 'create');
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility');
+    try {
+        await setup('video', false, false, { rate });
+        const original = serverDocument.timeline.video[0];
+        for (const key of ['keyframes', 'parameterKeyframes', 'maskKeyframes']) expect(original[key].length).toBeGreaterThan(0);
+        expect(labelled('Constant')[0].props.accessibilityState.selected).toBe(true);
+        announce.mockClear();
+        if (entry === 'Constant') await press('Constant');
+        else {
+            const node = labelled('Constant rate')[0];
+            const index = spy.mock.results.findIndex(result => result.value.panHandlers.onResponderRelease === node.props.onResponderRelease);
+            expect(index).toBeGreaterThanOrEqual(0);
+            const callbacks = spy.mock.calls[index][0];
+            await act(async () => node.props.onLayout({ nativeEvent: { layout: { width: 790 } } }));
+            const event = { nativeEvent: { locationX: ((rate ?? 1) - .1) * 100 } } as any;
+            await act(async () => callbacks.onPanResponderGrant!(event, { dx: 0 } as any));
+            await act(async () => callbacks.onPanResponderMove!(event, { dx: 10 } as any));
+            await act(async () => callbacks.onPanResponderMove!(event, { dx: 0 } as any));
+            expect(node.props.accessibilityValue.now).toBe(rate ?? 1);
+            await act(async () => callbacks.onPanResponderRelease!(event, {} as any));
+        }
+        await act(async () => jest.advanceTimersByTimeAsync(900));
+        expect(puts()).toHaveLength(0);
+        expect(labelled('Undo')[0].props.accessibilityState.disabled).toBe(true);
+        expect(visible('Speed edit applied.')).toBe(false);
+        expect(announce).not.toHaveBeenCalled();
+        // Persist an unrelated edit to inspect the actual screen state after the no-op.
+        await press('Decrease Volume');
+        const next = await saved();
+        for (const key of ['keyframes', 'parameterKeyframes', 'maskKeyframes']) expect(next.video[0][key]).toEqual(original[key]);
+    } finally { spy.mockRestore(); announce.mockRestore(); }
+});
+
+test('Constant on a curve at the same base rate is still a saved, undoable change', async () => {
+    await setup('video', false, false, { rate: 1, speedCurve: [{ frame: 0, rate: .5 }, { frame: 90, rate: 2 }] });
+    const original = serverDocument.timeline.video[0];
+    await press('Constant');
+    const next = await saved();
+    expect(puts()).toHaveLength(1);
+    expect(next.video[0].speedCurve).toEqual([]);
+    expect(next.video[0].rate).toBe(1);
+    expect(labelled('Undo')[0].props.accessibilityState.disabled).toBe(false);
+    await press('Constant');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    expect(puts()).toHaveLength(1);
+    await press('Undo');
+    expect((await saved()).video[0]).toEqual(original);
+});
+
+test.each(['Remove freeze frame', 'Remove'])('%s prunes the last freeze extra track in one undo step', async label => {
+    const tl = webSequenceV3();
+    Object.assign(tl.video[1], { freezeFrame: 100, volume: 0 });
+    serverDocument = { ...document, schema_version: 3, timeline: tl };
+    await render();
+    await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v2')[0].props.onAccessibilityTap());
+    await press('Adjust'); await press(label);
+    const next = await saved();
+    expect(puts()).toHaveLength(1);
+    expect(next.video.some((clip: Clip) => clip.id === 'v2')).toBe(false);
+    expect(next.tracks).toEqual(tl.tracks.filter(track => track.id !== 'video-1'));
+    expect(next.video[0]).toEqual(tl.video[0]);
+    expect(labelled('Delete')[0].props.accessibilityState.disabled).toBe(true);
+    await press('Undo');
+    const restored = await saved();
+    expect(restored.tracks).toEqual(tl.tracks);
+    expect(restored.video).toEqual(tl.video);
+    expect(labelled('Undo')[0].props.accessibilityState.disabled).toBe(true);
 });

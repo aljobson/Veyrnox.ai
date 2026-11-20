@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
-import { TextInput } from 'react-native';
+import { PanResponder, TextInput } from 'react-native';
 import { Slider } from '../src/components/editor/tools/Slider';
 import { ColourField } from '../src/components/editor/tools/ColourField';
 import { sliderValue, stepValue } from '../src/components/editor/tools/sliderMath';
@@ -9,7 +9,10 @@ test('slider clamps, rounds without drift and snaps only within distance', () =>
     expect(sliderValue(-20, 100, 0, 8, .1)).toBe(0);
     expect(sliderValue(200, 100, 0, 8, .1)).toBe(8);
     expect(sliderValue(30, 100, 0, 1, .1)).toBe(.3);
-    expect(sliderValue(11, 100, 0, 10, .1, [1])).toBe(1);
+    expect(sliderValue(11, 100, 0, 10, .1, [1])).toBe(1.1);
+    expect(sliderValue(10.4, 100, 0, 10, .1, [1])).toBe(1);
+    expect(sliderValue(31, 100, 0, 100, 1, [30])).toBe(31);
+    expect(sliderValue(1, 1, 0, 1, 1, [.5])).toBe(1);
     expect(sliderValue(12, 100, 0, 10, .1, [1])).toBe(1.2);
     expect(stepValue(.2, 1, .1, 8, .1)).toBe(.3);
     expect(stepValue(8, 1, .1, 8, .1)).toBe(8);
@@ -91,10 +94,47 @@ test.each([[400, 10], [-10, -10]] as const)('out-of-range value %s never drags i
         await act(async () => callbacks.onPanResponderGrant({ nativeEvent: { locationX: dx > 0 ? 100 : 0 } }, { dx }));
         await act(async () => callbacks.onPanResponderMove({}, { dx: dx * 2 }));
         await act(async () => callbacks.onPanResponderRelease());
-        expect(onChange).toHaveBeenCalledTimes(1);
-        expect((onChange.mock.calls[0][0] - value) * Math.sign(dx)).toBeGreaterThanOrEqual(0);
+        expect(node.props.accessibilityValue.now).toBe(value);
+        expect(onChange).not.toHaveBeenCalled();
     } finally { spy.mockRestore(); }
 });
+
+test('dragging away and back to the controlled value releases without a change', async () => {
+    const spy = jest.spyOn(PanResponder, 'create'), onChange = jest.fn();
+    try {
+        await act(async () => root.render(<Slider label="Speed" value={1} min={0} max={8} step={.1} format={String} onChange={onChange} />));
+        const callbacks = spy.mock.calls[0][0] as any;
+        const node = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0];
+        await act(async () => node.props.onLayout({ nativeEvent: { layout: { width: 80 } } }));
+        await act(async () => callbacks.onPanResponderGrant({ nativeEvent: { locationX: 10 } }, { dx: 0 }));
+        await act(async () => callbacks.onPanResponderMove({}, { dx: 10 }));
+        expect(node.props.accessibilityValue.now).toBe(2);
+        await act(async () => callbacks.onPanResponderMove({}, { dx: 0 }));
+        expect(node.props.accessibilityValue.now).toBe(1);
+        await act(async () => callbacks.onPanResponderRelease());
+        expect(onChange).not.toHaveBeenCalled();
+    } finally { spy.mockRestore(); }
+});
+
+test.each([[1.1, .1, 1, 1.1], [1.04, .1, 1, 1], [31, 1, 30, 31]])(
+    'slider gesture at %s uses a strict half-step snap distance', async (position, step, snap, expected) => {
+        const spy = jest.spyOn(PanResponder, 'create'), onChange = jest.fn();
+        try {
+            await act(async () => root.render(<Slider label="Value" value={0} min={0} max={100} step={step} snaps={[snap]}
+                format={String} onChange={onChange} />));
+            const callbacks = spy.mock.calls[0][0] as any;
+            const node = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0];
+            await act(async () => node.props.onLayout({ nativeEvent: { layout: { width: 100 } } }));
+            await act(async () => callbacks.onPanResponderGrant({ nativeEvent: { locationX: position } }, { dx: 0 }));
+            expect(node.props.accessibilityValue.now).toBe(expected);
+            await act(async () => callbacks.onPanResponderMove({}, { dx: 0 }));
+            expect(node.props.accessibilityValue.now).toBe(expected);
+            await act(async () => callbacks.onPanResponderRelease());
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange).toHaveBeenCalledWith(expected);
+        } finally { spy.mockRestore(); }
+    },
+);
 
 test.each([[2, 1], [1, 1]])('empty slider interval %s..%s blocks drag and accessibility edits', async (min, max) => {
     const { PanResponder } = require('react-native');
