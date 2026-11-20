@@ -6,12 +6,12 @@ import { NativeVision } from '../src/components/liveEdit/NativeVision';
 import { SwapVisionHost } from '../src/components/templates/SwapVisionHost';
 import { detection } from '../src/lib/templateSwap/detection';
 import { createInferenceLifecycle } from '../src/lib/liveEdit/lifecycle';
-const mockCalls: { token: string; op: string; resolve(value: object): void }[] = [];
+const mockCalls: { owner: string; token: string; op: string; resolve(value: object): void }[] = [];
 const mockListeners = new Set<(event: { token: string }) => void>();
 const mockCancel = jest.fn();
 jest.mock('expo', () => ({ requireOptionalNativeModule: () => ({
     init: async () => {}, cancel: mockCancel,
-    detect: (token: string, op: string) => new Promise(resolve => { mockCalls.push({ token, op, resolve }); }),
+    detect: (owner: string, token: string, op: string) => new Promise(resolve => { mockCalls.push({ owner, token, op, resolve }); }),
     addListener: (_: string, listener: (event: { token: string }) => void) => {
         mockListeners.add(listener); return { remove: () => mockListeners.delete(listener) };
     },
@@ -26,8 +26,9 @@ test('still-photo lifecycle unmounts on background, then remounts with fresh own
         await act(async () => render(true));
         expect(mockCalls[0].op).toBe('detect');
         expect(lifecycle.transition('background')).toBe('suspend'); await act(async () => render(false));
-        expect(mockCancel).toHaveBeenCalledWith(mockCalls[0].token);
+        expect(mockCancel).toHaveBeenCalledWith(mockCalls[0].owner, mockCalls[0].token);
         expect(lifecycle.transition('active')).toBe('refresh'); await act(async () => render(true));
+        expect(mockCalls[1].owner).not.toBe(mockCalls[0].owner);
         await act(async () => mockCalls[0].resolve(empty)); expect(result).not.toHaveBeenCalled();
         await act(async () => { mockListeners.forEach(fn => fn({ token: mockCalls[1].token })); mockCalls[1].resolve(empty); });
         expect(result).toHaveBeenCalledTimes(1); expect(error).not.toHaveBeenCalled();
@@ -44,10 +45,11 @@ test('account abort clears swap pending slot and cancels old token before replac
         await act(async () => { old = detection.detect(frame, oldAccount.signal); });
         const cancelled = expect(old).rejects.toThrow('cancelled');
         await act(async () => oldAccount.abort()); await cancelled;
-        expect(detection.snapshot()).toBeNull(); expect(mockCancel).toHaveBeenCalledWith(mockCalls[0].token);
+        expect(detection.snapshot()).toBeNull(); expect(mockCancel).toHaveBeenCalledWith(mockCalls[0].owner, mockCalls[0].token);
         let replacement!: Promise<unknown>;
         await act(async () => { replacement = detection.detect(frame, newAccount.signal); });
         expect(mockCalls[1].op).toBe('swapDetect');
+        expect(mockCalls[1].owner).not.toBe(mockCalls[0].owner);
         await act(async () => mockCalls[0].resolve(empty)); expect(detection.snapshot()).not.toBeNull();
         await act(async () => { mockListeners.forEach(fn => fn({ token: mockCalls[1].token })); mockCalls[1].resolve({ count: 0, landmarks: [], width: 8, height: 8 }); });
         await expect(replacement).resolves.toMatchObject({ count: 0 }); expect(detection.snapshot()).toBeNull();

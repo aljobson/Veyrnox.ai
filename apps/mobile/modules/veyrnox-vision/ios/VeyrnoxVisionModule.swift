@@ -10,15 +10,16 @@ private final class VisionWorker {
   private var initialized = false
   private var waiters: [Promise] = []
   private var running: Job?
-  private var queued: Job?
+  // One slot per owner, in arrival order; replacement retains the owner's position.
+  private var queued: [Job] = []
   private final class Job {
-    let token: String, op: String, jpeg: String
+    let owner: String, token: String, op: String, jpeg: String
     let width: Int, height: Int, promise: Promise
     let admitted: () -> Void
     var cancelled = false
-    init(_ token: String, _ op: String, _ jpeg: String, _ width: Int, _ height: Int,
+    init(_ owner: String, _ token: String, _ op: String, _ jpeg: String, _ width: Int, _ height: Int,
          _ promise: Promise, _ admitted: @escaping () -> Void) {
-      self.token = token; self.op = op; self.jpeg = jpeg; self.width = width
+      self.owner = owner; self.token = token; self.op = op; self.jpeg = jpeg; self.width = width
       self.height = height; self.promise = promise; self.admitted = admitted
     }
   }
@@ -42,26 +43,31 @@ private final class VisionWorker {
       }
     }
   }
-  func submit(_ token: String, _ op: String, _ jpeg: String, _ width: Int, _ height: Int,
+  func submit(_ owner: String, _ token: String, _ op: String, _ jpeg: String, _ width: Int, _ height: Int,
               _ promise: Promise, _ admitted: @escaping () -> Void) {
     lock.lock()
-    guard initialized, token.count <= 100, jpeg.utf8.count <= 900_000 else {
+    guard initialized, !owner.isEmpty, owner.count <= 100, token.count <= 100, jpeg.utf8.count <= 900_000 else {
       lock.unlock(); promise.resolve(["error": "inference-unavailable"]); return
     }
-    let job = Job(token, op, jpeg, width, height, promise, admitted)
+    let job = Job(owner, token, op, jpeg, width, height, promise, admitted)
     if running != nil {
-      let old = queued; queued = job
-      lock.unlock(); old?.promise.resolve(["cancelled": true]); return
+      if let index = queued.firstIndex(where: { $0.owner == owner }) {
+        let old = queued[index]; queued[index] = job
+        lock.unlock(); old.promise.resolve(["cancelled": true]); return
+      }
+      let overflow = queued.count == 4 ? queued.removeFirst() : nil
+      queued.append(job)
+      lock.unlock(); overflow?.promise.resolve(["error": "inference-busy"]); return
     }
     running = job
     lock.unlock()
     execute(job)
   }
-  func cancel(_ token: String) {
+  func cancel(_ owner: String, _ token: String) {
     lock.lock()
-    if running?.token == token { running?.cancelled = true }
-    let dropped = queued?.token == token ? queued : nil
-    if dropped != nil { queued = nil }
+    if running?.owner == owner && running?.token == token { running?.cancelled = true }
+    let index = queued.firstIndex(where: { $0.owner == owner && $0.token == token })
+    let dropped = index.map { queued.remove(at: $0) }
     lock.unlock()
     dropped?.promise.resolve(["cancelled": true])
   }
@@ -78,7 +84,7 @@ private final class VisionWorker {
       }
       self.lock.lock()
       if job.cancelled { result = ["cancelled": true] }
-      let next = self.queued; self.queued = nil; self.running = next
+      let next = self.queued.isEmpty ? nil : self.queued.removeFirst(); self.running = next
       self.lock.unlock()
       job.promise.resolve(result)
       if let next = next { self.execute(next) }
@@ -90,11 +96,11 @@ public final class VeyrnoxVisionModule: Module {
     Name("VeyrnoxVision")
     Events("admitted")
     AsyncFunction("init") { (promise: Promise) in VisionWorker.shared.initialize(promise) }
-    AsyncFunction("detect") { (token: String, op: String, jpeg: String, width: Int, height: Int, promise: Promise) in
-      VisionWorker.shared.submit(token, op, jpeg, width, height, promise) { [weak self] in
+    AsyncFunction("detect") { (owner: String, token: String, op: String, jpeg: String, width: Int, height: Int, promise: Promise) in
+      VisionWorker.shared.submit(owner, token, op, jpeg, width, height, promise) { [weak self] in
         self?.sendEvent("admitted", ["token": token])
       }
     }
-    Function("cancel") { (token: String) in VisionWorker.shared.cancel(token) }
+    Function("cancel") { (owner: String, token: String) in VisionWorker.shared.cancel(owner, token) }
   }
 }

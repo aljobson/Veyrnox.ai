@@ -63,6 +63,7 @@ export function createProtocolJob<T>(transport: VisionTransport, timeoutMs: numb
                 const d = JSON.parse(message);
                 if (d?.id !== pending.id) return;
                 if (d.cancelled === true) { close(Error('inference-cancelled')); return; }
+                if (d.error === 'inference-busy') { close(Error('inference-busy')); return; }
                 if (d.error) { close(Error('inference-unavailable')); return; }
                 const value = pending.frame ? validate(d, pending.frame) : null;
                 if (!pending.frame && d.ready !== true) throw Error('inference-unavailable');

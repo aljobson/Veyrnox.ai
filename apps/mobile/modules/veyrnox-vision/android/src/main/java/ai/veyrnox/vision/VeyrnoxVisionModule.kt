@@ -6,7 +6,7 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import java.util.concurrent.Executors
 
-// One running inference and at most one replacement, shared across React owners.
+// One running inference overall; at most four queued owners, one job per owner.
 private object VisionWorker {
   private val lock = Any()
   private val executor = Executors.newSingleThreadExecutor()
@@ -14,10 +14,10 @@ private object VisionWorker {
   private var initialized = false
   private var initializing = false
   private val waiters = mutableListOf<Promise>()
-  private data class Job(val token: String, val op: String, val jpeg: String, val width: Int,
+  private data class Job(val owner: String, val token: String, val op: String, val jpeg: String, val width: Int,
     val height: Int, val promise: Promise, val admitted: () -> Unit, var cancelled: Boolean = false)
   private var running: Job? = null
-  private var queued: Job? = null
+  private val queued = mutableListOf<Job>()
   fun initialize(context: Context?, promise: Promise) {
     synchronized(lock) {
       if (initialized) { promise.resolve(null); return }
@@ -37,24 +37,33 @@ private object VisionWorker {
       }
     }
   }
-  fun submit(token: String, op: String, jpeg: String, width: Int, height: Int, promise: Promise, admitted: () -> Unit) {
-    val job = Job(token, op, jpeg, width, height, promise, admitted)
+  fun submit(owner: String, token: String, op: String, jpeg: String, width: Int, height: Int, promise: Promise, admitted: () -> Unit) {
+    val job = Job(owner, token, op, jpeg, width, height, promise, admitted)
     synchronized(lock) {
-      if (!initialized || token.length > 100 || jpeg.length > 900_000) {
+      if (!initialized || owner.isEmpty() || owner.length > 100 || token.length > 100 || jpeg.length > 900_000) {
         promise.resolve(mapOf("error" to "inference-unavailable")); return
       }
       if (running != null) {
-        queued?.promise?.resolve(mapOf("cancelled" to true)); queued = job; return
+        val index = queued.indexOfFirst { it.owner == owner }
+        if (index >= 0) {
+          // Keep the owner's FIFO position when replacing its queued job.
+          val old = queued.set(index, job)
+          old.promise.resolve(mapOf("cancelled" to true)); return
+        }
+        val overflow = if (queued.size == 4) queued.removeAt(0) else null
+        queued.add(job)
+        overflow?.promise?.resolve(mapOf("error" to "inference-busy")); return
       }
       running = job
     }
     execute(job)
   }
-  fun cancel(token: String) {
+  fun cancel(owner: String, token: String) {
     synchronized(lock) {
-      running?.takeIf { it.token == token }?.cancelled = true
-      if (queued?.token == token) {
-        queued?.promise?.resolve(mapOf("cancelled" to true)); queued = null
+      running?.takeIf { it.owner == owner && it.token == token }?.cancelled = true
+      val index = queued.indexOfFirst { it.owner == owner && it.token == token }
+      if (index >= 0) {
+        queued.removeAt(index).promise.resolve(mapOf("cancelled" to true))
       }
     }
   }
@@ -69,7 +78,7 @@ private object VisionWorker {
       }
       val next = synchronized(lock) {
         if (job.cancelled) result = mapOf("cancelled" to true)
-        val next = queued; queued = null; running = next; next
+        val next = if (queued.isEmpty()) null else queued.removeAt(0); running = next; next
       }
       job.promise.resolve(result)
       if (next != null) execute(next)
@@ -81,9 +90,9 @@ class VeyrnoxVisionModule : Module() {
     Name("VeyrnoxVision")
     Events("admitted")
     AsyncFunction("init") { promise: Promise -> VisionWorker.initialize(appContext.reactContext, promise) }
-    AsyncFunction("detect") { token: String, op: String, jpeg: String, width: Int, height: Int, promise: Promise ->
-      VisionWorker.submit(token, op, jpeg, width, height, promise) { sendEvent("admitted", mapOf("token" to token)) }
+    AsyncFunction("detect") { owner: String, token: String, op: String, jpeg: String, width: Int, height: Int, promise: Promise ->
+      VisionWorker.submit(owner, token, op, jpeg, width, height, promise) { sendEvent("admitted", mapOf("token" to token)) }
     }
-    Function("cancel") { token: String -> VisionWorker.cancel(token) }
+    Function("cancel") { owner: String, token: String -> VisionWorker.cancel(owner, token) }
   }
 }
