@@ -17,6 +17,8 @@ const domains: Record<string, readonly string[]> = {
     'speech.{}': Object.entries(TTS_INPUT_RULES).filter(([, rule]) => rule.type !== 'enum').map(([key]) => key.slice('tts_'.length)),
     'speech.example.{}': TTS_EXAMPLES.map((_, index) => String(index)),
     'speech.gender.{}': ['all', ...voiceGenderOptions()],
+    'editorEditGate.{}': ['invalid', 'tooLarge'],
+    'editorExportRefusal.{}': ['speed', 'audio', 'motion', 'animation', 'colour', 'crop', 'effects', 'blend', 'background', 'masks', 'smart', 'transitions', 'text', 'captions', 'position', 'fonts', 'images', 'originalAudio', 'assets', 'groups', 'unknown'],
     'musicDiscover.mood.{}': ['all', 'Hip-hop', 'Rock', 'Jazz'],
     'musicPlaylists.{}': ['titleInvalid', 'conflict', 'invalidSongs', 'offline', 'scanStale', 'saved', 'noneUnavailable', 'pending', 'signIn', 'denied', 'error'],
     'musicSectionActions.{}.title': ['add_section', 'replace_section'],

@@ -1,5 +1,53 @@
 [
   {
+    "id": "editorExportRefusal.speed",
+    "english": "Phone export can't include speed changes yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir alterações de velocidade.",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorExportRefusal.audio",
+    "english": "Phone export can't include audio settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de áudio.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorExportRefusal.motion",
+    "english": "Phone export can't include motion settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de movimento.",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorExportRefusal.crop",
+    "english": "Phone export can't include crop or fit settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de corte ou ajuste.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorExportRefusal.blend",
+    "english": "Phone export can't include blend settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de mesclagem.",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorExportRefusal.masks",
+    "english": "Phone export can't include masks yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir máscaras.",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorExportRefusal.smart",
+    "english": "Phone export can't include smart picture settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de imagem inteligente.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorExportRefusal.fonts",
+    "english": "Phone export can't include custom fonts yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir fontes personalizadas.",
+    "ratio": 1.68
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Turquesa",
@@ -3496,6 +3544,30 @@
     "english": "Rich",
     "translation": "Encorpada",
     "ratio": 2.25
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Usar para sincronizar lábios",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirar publicação",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.handle",
+    "english": "Creator handle",
+    "translation": "Identificador de criador",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.listen",
+    "english": "Shared song",
+    "translation": "Música compartilhada",
+    "ratio": 1.82
   },
   {
     "id": "chrome.privacyPolicy",

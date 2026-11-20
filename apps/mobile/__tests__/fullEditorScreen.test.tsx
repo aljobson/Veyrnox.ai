@@ -258,14 +258,14 @@ test('a backup completing after another edit survives undo and redo without inse
     editorDeviceMedia.backup.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///device/clip.mp4', fileName: 'Clip', mimeType: 'video/mp4', duration: 2000, width: 1920, height: 1080 }] });
     await render(); await press('Photos & videos'); await press('Add text');
-    await act(async () => finish({ projectId, assetId: 'backup-asset' }));
+    await act(async () => finish({ projectId, assetId: '22222222-2222-4222-8222-222222222222' }));
     const saved = async () => { await act(async () => jest.advanceTimersByTimeAsync(900)); return JSON.parse(puts().at(-1)![1].body).document; };
     const backedUp = await saved(); expect(backedUp.timeline.text).toHaveLength(1);
-    expect(backedUp.timeline.media['l-native-save-key'].assetSource).toEqual({ projectId, assetId: 'backup-asset' });
-    await press('Undo'); expect((await saved()).timeline.media['l-native-save-key'].assetSource.assetId).toBe('backup-asset');
+    expect(backedUp.timeline.media['l-native-save-key'].assetSource).toEqual({ projectId, assetId: '22222222-2222-4222-8222-222222222222' });
+    await press('Undo'); expect((await saved()).timeline.media['l-native-save-key'].assetSource.assetId).toBe('22222222-2222-4222-8222-222222222222');
     await press('Undo'); expect((await saved()).timeline?.media?.['l-native-save-key']).toBeUndefined();
-    await press('Redo'); expect((await saved()).timeline.media['l-native-save-key'].assetSource.assetId).toBe('backup-asset');
-    await press('Redo'); const restored = await saved(); expect(restored.timeline.text).toHaveLength(1); expect(restored.timeline.media['l-native-save-key'].assetSource.assetId).toBe('backup-asset');
+    await press('Redo'); expect((await saved()).timeline.media['l-native-save-key'].assetSource.assetId).toBe('22222222-2222-4222-8222-222222222222');
+    await press('Redo'); const restored = await saved(); expect(restored.timeline.text).toHaveLength(1); expect(restored.timeline.media['l-native-save-key'].assetSource.assetId).toBe('22222222-2222-4222-8222-222222222222');
 });
 
 test.each([4, 20])('Files import probes %s seconds before adding its media and clip', async seconds => {
@@ -357,10 +357,16 @@ test('Adjust length uses source bounds, clamps fades, and offers a fine frame st
 });
 test('protected clips disable Adjust length steppers and explain web trimming', async () => {
     const { emptyTimeline } = require('../src/lib/nativeEditorModel');
-    serverDocument = { ...document, schema_version: 3, timeline: { ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 90 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 0, in: 0, len: 90, words: [] }] } };
+    serverDocument = { ...document, schema_version: 3, timeline: { ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 90 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 0, in: 0, len: 90, speedCurve: [] }] } };
     await render(); await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap()); await press('Adjust');
     expect(visible('Trim this clip on the web editor.')).toBe(true);
     for (const label of ['Decrease Duration: 3.0 seconds', 'Increase Duration: 3.0 seconds', 'Length +1 frame', 'Length −1 frame']) expect(root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.accessibilityState?.disabled)).toHaveLength(1);
+    for (const fields of [{ freezeFrame: 0 }, { words: [], keyframes: [] }]) {
+        await act(async () => root.unmount()); root = createRoot();
+        const clip = serverDocument.timeline.video[0]; delete clip.speedCurve; delete clip.freezeFrame; Object.assign(clip, fields);
+        await render(); await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap()); await press('Adjust');
+        expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Length −1 frame' && n.props.accessibilityState?.disabled)).toHaveLength('freezeFrame' in fields ? 1 : 0);
+    }
 });
 test('a track locked while Library length resolves is rechecked at completion', async () => {
     const finish = deferLength(); await render(); await press('Library video'); await press('Choose Library item'); await press('Adjust');
