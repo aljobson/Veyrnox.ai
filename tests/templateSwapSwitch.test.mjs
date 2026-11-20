@@ -28,7 +28,7 @@ test('the clip gate and the generations route read the one helper, and wrangler 
 test('production APP_RUNTIME_FLAGS turns the swap on beside checkin and push, with no separate var (ADR-0351 amendment 11)', () => {
   const text = fs.readFileSync('wrangler.jsonc', 'utf8');
   const config = parseJsonc(text);
-  assert.deepEqual(JSON.parse(config.vars.APP_RUNTIME_FLAGS), { checkin: true, push: true, templateSwap: true });
+  assert.deepEqual(JSON.parse(config.vars.APP_RUNTIME_FLAGS), { checkin: true, push: true, templateSwap: true, seedanceLongTemplates: true });
   assert.equal(Object.hasOwn(config.vars, 'TEMPLATE_SWAP_CLIP_ENABLED'), false);
   assert.equal(templateSwapSwitchOn({ APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }), true);
 });

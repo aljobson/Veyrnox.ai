@@ -211,3 +211,13 @@ test('themes: every long-prompt gallery template has a theme; the new theme chip
     const offThemes = new Set(GALLERY_PRESETS.map(p => videoTemplateTheme(p.id)));
     for (const theme of ['HORROR', 'MAGIC', 'FILM']) assert.equal(offThemes.has(theme), false, `${theme} would show empty while off`);
 });
+
+test('production APP_RUNTIME_FLAGS turns the long templates on beside the existing keys, with no separate var (ADR-0309 amendment 4)', async () => {
+    const { parseJsonc } = await import('../scripts/check-migration-ledger.mjs');
+    const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+    const flags = JSON.parse(config.vars.APP_RUNTIME_FLAGS);
+    assert.deepEqual(flags, { checkin: true, push: true, templateSwap: true, seedanceLongTemplates: true });
+    assert.equal(seedanceLongModelOpen(SEEDANCE_LONG_MODEL_ID, { APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }), true);
+    assert.equal(galleryVideoPresets({ APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }).length, GALLERY_PRESETS.length + 42);
+    assert.equal(Object.keys(config.vars).some(k => /SEEDANCE_LONG/i.test(k)), false);
+});
