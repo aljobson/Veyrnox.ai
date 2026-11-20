@@ -249,22 +249,6 @@
           "enableBackgroundRecording": false,
           "enableBackgroundPlayback": false
         }
-      ],
-      [
-        "react-native-audio-api",
-        {
-          "iosBackgroundMode": true,
-          "iosMicrophonePermission": "Veyrnox.ai uses the microphone only while you record: a voiceover in the editor or a take in the beat maker.",
-          "androidPermissions": [
-            "android.permission.MODIFY_AUDIO_SETTINGS",
-            "android.permission.FOREGROUND_SERVICE",
-            "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-          ],
-          "androidForegroundService": true,
-          "androidFSTypes": [
-            "mediaPlayback"
-          ]
-        }
       ]
     ],
     "scheme": "ai.veyrnox.app",

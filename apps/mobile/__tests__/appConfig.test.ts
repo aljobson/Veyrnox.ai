@@ -50,15 +50,6 @@ describe('permissions', () => {
         expect(expo.android.blockedPermissions).toEqual(['android.permission.RECORD_AUDIO']);
     });
 
-    test('the native beat audio plugin (slice N0) allows iOS background audio, names both microphone uses, and never asks for Android recording', () => {
-        const entry = plugin('react-native-audio-api') as [string, Record<string, unknown>];
-        expect(entry[1].iosBackgroundMode).toBe(true);
-        expect(entry[1].iosMicrophonePermission).toBe('Veyrnox.ai uses the microphone only while you record: a voiceover in the editor or a take in the beat maker.');
-        expect(entry[1].androidPermissions).not.toContain('android.permission.RECORD_AUDIO');
-        // It writes the same iOS key as expo-image-picker and expo-audio, so it must come last to be the one that sticks.
-        expect((expo.plugins as unknown[]).at(-1)).toBe(entry);
-    });
-
     test('no other usage strings are set by hand', () => {
         expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption', 'UIViewControllerBasedStatusBarAppearance', 'CFBundleName']);
     });
