@@ -66,5 +66,6 @@
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "beat.kit.808": "Same in ar: a loanword, brand-style name or number used unchanged in this language.",
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
-  "editorTools.positionValue": "Standard mathematical notation shared across languages."
+  "editorTools.positionValue": "Standard mathematical notation shared across languages.",
+  "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending."
 }

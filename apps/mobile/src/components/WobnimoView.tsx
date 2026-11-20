@@ -1,74 +1,116 @@
-import { useCallback, useEffect, useMemo, useRef, type ComponentRef } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
-import { WOBNIMO_SCRIPT } from '../lib/wobnimoBundle.generated';
+import { Canvas, Image, Skia, type SkImage } from '@shopify/react-native-skia';
+import { NavigationContext } from 'expo-router/react-navigation';
+import { useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useCallback } from 'react';
+import { AccessibilityInfo, AppState, PixelRatio, StyleSheet, View } from 'react-native';
+import { createWobnimoRenderer, WobnimoEngine, WobnimoQuality, wobnimoTarget } from '../lib/wobnimoNative';
 import type { WobnimoId, WobnimoState } from '../lib/veyCharacterChoice';
 
-// A wobnimo mascot drawn by the engine inside a WebView. The page is built here and the CSP below allows nothing but
-// its own inline engine and styles: no network, frames, forms or outside resources. Navigation is refused outright.
-// The art is decorative; the button around it carries semantics.
-const CSP = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; "
-    + "connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'";
-
-function page(character: WobnimoId, state: WobnimoState): string {
-    return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${CSP}">`
-        + `<meta name="viewport" content="width=device-width,initial-scale=1">`
-        + `<style>html,body{margin:0;height:100%;background:transparent;overflow:hidden}`
-        + `wobnimo-mascot{display:block;width:100%;height:100%}</style></head><body>`
-        + `<wobnimo-mascot id="m" character="${character}" state="${state}"></wobnimo-mascot>`
-        + `<script>var post=function(s){window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(s)};`
-        + `window.addEventListener('error',function(){post('failed')});`
-        + `try{${WOBNIMO_SCRIPT};window.__wobnimo.defineWobnimoElement();post('ready')}catch(e){post('failed')}</script>`
-        + `</body></html>`;
-}
-
-const setState = (state: WobnimoState) =>
-    `var m=document.getElementById('m');m&&m.setAttribute('state',${JSON.stringify(state)});true;`;
-
-// `onFailure` fires when the engine cannot start (for example no WebGL), so the caller can show the robot instead.
 export function WobnimoView({ character, state, width, onFailure }: {
     character: WobnimoId; state: WobnimoState; width: number; onFailure?: () => void;
 }) {
-    const ref = useRef<ComponentRef<typeof WebView>>(null);
-    const latest = useRef(state);
-    // Only the page's own first load may happen; once it reports in, every further navigation is refused.
-    const loading = useRef(true);
-    latest.current = state;
-    // Each page starts in the state wanted when it was built; later changes go into the running page.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const html = useMemo(() => { loading.current = true; return page(character, latest.current); }, [character]);
-    useEffect(() => { ref.current?.injectJavaScript(setState(state)); }, [state]);
-    const onMessage = useCallback((event: WebViewMessageEvent) => {
-        // The page may have been told something new while it loaded: replay the latest state once it is ready.
-        loading.current = false;
-        if (event.nativeEvent.data === 'ready') ref.current?.injectJavaScript(setState(latest.current));
-        else if (event.nativeEvent.data === 'failed') onFailure?.();
-    }, [onFailure]);
+    const navigation = useContext(NavigationContext);
+    const subscribeFocus = useCallback((notify: () => void) => {
+        if (!navigation) return () => {};
+        const focus = navigation.addListener('focus', notify);
+        const blur = navigation.addListener('blur', notify);
+        return () => { focus(); blur(); };
+    }, [navigation]);
+    const readFocus = useCallback(() => navigation?.isFocused() ?? true, [navigation]);
+    const focused = useSyncExternalStore(subscribeFocus, readFocus, readFocus);
+    const [active, setActive] = useState(AppState.currentState === 'active');
+    const [reduced, setReduced] = useState(true);
+    const [image, setImage] = useState<SkImage | null>(null);
+    const snapshots = useRef(new Set<SkImage>());
+    const latest = useRef({ state, onFailure });
+    useLayoutEffect(() => { latest.current = { state, onFailure }; }, [state, onFailure]);
+    const session = useRef<{
+        engine: WobnimoEngine; renderer: ReturnType<typeof createWobnimoRenderer>; density: number;
+        quality: WobnimoQuality; failed: boolean;
+    } | null>(null);
+
+    useEffect(() => {
+        let alive = true;
+        let preferenceChanged = false;
+        // Stay still until the preference is known; a rejected query preserves that choice.
+        AccessibilityInfo.isReduceMotionEnabled().then(value => {
+            if (alive && !preferenceChanged) setReduced(value);
+        }).catch(() => {});
+        const motion = AccessibilityInfo.addEventListener('reduceMotionChanged', value => {
+            preferenceChanged = true;
+            if (alive) setReduced(value);
+        });
+        const app = AppState.addEventListener('change', value => setActive(value === 'active'));
+        return () => { alive = false; motion.remove(); app.remove(); };
+    }, []);
+
+    useEffect(() => {
+        try {
+            const density = PixelRatio.get();
+            const { size } = wobnimoTarget(width, density);
+            const engine = new WobnimoEngine(character, latest.current.state);
+            const renderer = createWobnimoRenderer(Skia, character, size);
+            session.current = { engine, renderer, density, quality: new WobnimoQuality(), failed: false };
+            return () => { session.current = null; renderer.dispose(); };
+        } catch {
+            session.current = null;
+            latest.current.onFailure?.();
+        }
+    }, [character, width]);
+
+    useEffect(() => {
+        const current = session.current;
+        if (!current || current.failed || !active || !focused) return;
+        let frame = 0;
+        let stopped = false;
+        let last: number | null = null;
+        let previousFrame: number | null = null;
+        const fail = () => {
+            current.failed = true;
+            latest.current.onFailure?.();
+        };
+        try { current.engine.configure(state, reduced); } catch { fail(); return; }
+        const tick = (now: number) => {
+            if (stopped) return;
+            try {
+                if (previousFrame !== null) current.quality.adapt(Math.max(0, now - previousFrame));
+                previousFrame = now;
+                if (last === null || now - last >= 1000 / 30 - 0.5) {
+                    const dt = last === null ? 1 / 30 : (now - last) / 1000;
+                    last = now;
+                    const { size } = wobnimoTarget(width, current.density, current.quality.value);
+                    current.renderer.resize(size);
+                    const snapshot = current.renderer.draw(current.engine.frame(size, dt));
+                    snapshots.current.add(snapshot);
+                    setImage(snapshot);
+                }
+                if (!current.engine.settled) frame = requestAnimationFrame(tick);
+            } catch { fail(); }
+        };
+        frame = requestAnimationFrame(tick);
+        return () => { stopped = true; cancelAnimationFrame(frame); };
+    }, [character, width, state, reduced, active, focused]);
+
+    // Release replaced snapshots after React has committed the new image, and on unmount.
+    useEffect(() => {
+        for (const old of snapshots.current) if (old !== image) {
+            old.dispose(); snapshots.current.delete(old);
+        }
+    }, [image]);
+    useEffect(() => {
+        const owned = snapshots.current;
+        return () => { owned.forEach(snapshot => snapshot.dispose()); owned.clear(); };
+    }, []);
     return (
         <View style={[styles.box, { width, height: width }]} pointerEvents="none"
             accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-            <WebView
-                ref={ref}
-                source={{ html }}
-                // '*' only so the library never hands a URL to the system browser; the callback below refuses them all.
-                originWhitelist={['*']}
-                onShouldStartLoadWithRequest={(request) => loading.current && (request.url === 'about:blank' || request.url.startsWith('data:'))}
-                onMessage={onMessage}
-                onError={() => onFailure?.()}
-                javaScriptEnabled
-                scrollEnabled={false}
-                bounces={false}
-                overScrollMode="never"
-                setSupportMultipleWindows={false}
-                allowsLinkPreview={false}
-                style={styles.web}
-                containerStyle={styles.web}
-            />
+            <Canvas style={styles.canvas} colorSpace="srgb">
+                {image ? <Image image={image} x={0} y={0} width={width} height={width} fit="fill" /> : null}
+            </Canvas>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     box: { overflow: 'hidden' },
-    web: { flex: 1, backgroundColor: 'transparent' },
+    canvas: { flex: 1, backgroundColor: 'transparent' },
 });
