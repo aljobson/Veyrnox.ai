@@ -77,7 +77,7 @@ export function BeatArrangement({ doc, apply, playing, step, announce, onHold, m
                     <BeatRuler bars={bars} zoom={zoom} snap={Number(snap)} locator={locator} end={end} setLocator={setPosition}
                         cycle={doc.cycle} apply={apply} lock={lock} announce={announce} />
                     {doc.tracks.map((track, index) => <View key={track.id} testID={`track-lane-${track.id}`} style={[s.lane, { height: laneHeights[index] }]}>
-                        <Pressable testID={`lane-${track.id}`} accessible={false} style={s.emptyLane}
+                        <Pressable testID={`lane-${track.id}`} accessible={false} accessibilityRole="none" style={s.emptyLane}
                             onPress={event => setPosition(snapTick(xToTick(event.nativeEvent.locationX, zoom), Number(snap)))} />
                         {track.regions.map(region => <BeatRegionView key={region.id} doc={doc} track={track} region={region}
                             zoom={zoom} snap={Number(snap)} locator={locator} selected={selectedId === region.id} copy={copy} apply={apply}
