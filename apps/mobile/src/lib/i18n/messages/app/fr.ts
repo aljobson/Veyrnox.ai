@@ -7644,4 +7644,5 @@ export default {
     "app.smartCut.native.fillers.wordTimingRequired": "Filler-sound review needs word-level timing. Only long pauses can be removed for: {names}.",
     "app.smartCut.native.analyse.failedConfirmed": "{name}: analysis is still failed and no refund is confirmed. Contact support before trying this clip again.",
     "app.smartCut.native.analyse.ineligibleBlocked": "Remove or trim these clips to 0.5–60 seconds before using speech-aware Smart Cut: {names}. Local preview remains available.",
+    "app.smartCut.fillers.row": "{label} · {start}–{end} s",
 } as const;

@@ -350,7 +350,6 @@ const de = {
     'app.smartCut.removed': ' · {duration} s removed',
     'app.smartCut.fillers.title': 'FILLER SOUNDS',
     'app.smartCut.fillers.toggle': 'Also remove ums and uhs ({count} found)',
-    'app.smartCut.fillers.row': '{label} · {start}–{end} s',
     'app.smartCut.fillers.none': 'No ums or uhs found. This looks for English, Spanish, German, French, Portuguese and Russian.',
     'app.explore.smartCutStart': 'Turn finished clips into a reviewed first cut.',
     'app.library.openSmartCut': 'Open Smart Cut',
