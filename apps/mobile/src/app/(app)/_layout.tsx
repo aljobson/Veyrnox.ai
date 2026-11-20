@@ -89,6 +89,7 @@ export default function AppLayout() {
                     <Stack.Screen name="music/playlists/[id]" options={{ title: t('musicPlaylists.title') }} />
                     <Stack.Screen name="music/[id]" options={{ title: t('music.title') }} />
                     <Stack.Screen name="beats/[id]" options={{ title: t('beat.title') }} />
+                    <Stack.Screen name="beats/piano/[id]" options={{ title: t('beatPiano.title') }} />
                     <Stack.Screen name="oddlings/[id]" options={{ title: t('oddlings.title') }} />
                     <Stack.Screen name="projects/[id]" options={{ title: t('projects.project') }} />
                     <Stack.Screen name="publish/post/[id]" options={{ title: t('publish.post') }} />

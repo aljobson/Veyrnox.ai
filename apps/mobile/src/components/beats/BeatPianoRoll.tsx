@@ -38,7 +38,7 @@ export function BeatPianoRoll(p: { clip: MidiClip; selected: string[]; toggle(ke
                     <View style={{ width: KEYS_WIDTH }}>{Array.from({ length: high - low + 1 }, (_, i) => high - i).map(n => <View key={n} style={[s.gridRow, { height: ROW, justifyContent: 'center' }, n % 12 === 0 && s.cRow]}><Text variant={n % 12 === 0 ? 'bodyStrong' : 'caption'}>{noteLabel(n)}</Text></View>)}</View>
                     <ScrollView horizontal nestedScrollEnabled scrollEnabled={!active}>
                         <View style={{ width, height }}>
-                            <Pressable accessible={false} disabled={p.disabled} style={{ width, height, position: 'absolute' }} onPress={e => p.add(xToTick(e.nativeEvent.locationX, p.scale, p.snap, p.clip.lengthTicks), yToPitch(e.nativeEvent.locationY, high, low))}>
+                            <Pressable accessible={false} accessibilityRole="none" disabled={p.disabled} style={{ width, height, position: 'absolute' }} onPress={e => p.add(xToTick(e.nativeEvent.locationX, p.scale, p.snap, p.clip.lengthTicks), yToPitch(e.nativeEvent.locationY, high, low))}>
                                 {Array.from({ length: high - low + 1 }, (_, i) => <View pointerEvents="none" key={i} style={[s.gridRow, { height: ROW }, (high - i) % 12 === 0 && s.cRow]} />)}
                                 {Array.from({ length: Math.ceil(p.clip.lengthTicks / lineUnit) }, (_, i) => i * lineUnit).map(n => <View pointerEvents="none" key={n} style={[s.gridLine, { left: n * p.scale, opacity: n % 960 ? 0.4 : 1 }, n % 3840 === 0 && s.barLine]} />)}
                             </Pressable>
