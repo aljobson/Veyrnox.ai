@@ -24,7 +24,7 @@ export const isMusicTrackAddQuote = (v: unknown): v is MusicTrackAddQuote => isR
     && ['upload_credits', 'track_credits', 'total_credits', 'balance'].every(k => nonnegative(v[k]))
     && isFiniteNumber(v.balance_after) && isFiniteNumber(v.source_duration_seconds)
     && v.source_duration_seconds > 0 && v.source_duration_seconds <= MUSIC_TRACK_ADD_SOURCE_MAX
-    && Number(v.upload_credits) + Number(v.track_credits) === v.total_credits;
+    && Math.abs(Number(v.upload_credits) + Number(v.track_credits) - Number(v.total_credits)) < 1e-9;
 export const isTrackAddStart = (v: unknown): v is TrackAddStart => isRecord(v)
     && ['request_id', 'upload_job_id', 'track_job_id'].every(k => str(v[k])) && state(v.state)
     && (v.idempotent === undefined || v.idempotent === true)

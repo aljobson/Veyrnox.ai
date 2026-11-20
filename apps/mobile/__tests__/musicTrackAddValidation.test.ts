@@ -119,3 +119,8 @@ test('choosing the mode that is already selected keeps the typed lyrics and righ
     expect(switchTrackAddMode(params, 'vocals')).toBe(params);
     expect(switchTrackAddMode(params, 'instrumental')).toEqual({ ...params, mode: 'instrumental', lyrics: '', vocal_gender: 'auto', lyrics_rights_confirmed: false });
 });
+
+test('the quote credit sum tolerates floating point rounding but not a real mismatch', () => {
+    expect(isMusicTrackAddQuote({ ...trackQuote, upload_credits: 1.1, track_credits: 5.9, total_credits: 7 })).toBe(true);
+    expect(isMusicTrackAddQuote({ ...trackQuote, upload_credits: 1, track_credits: 5, total_credits: 7 })).toBe(false);
+});
