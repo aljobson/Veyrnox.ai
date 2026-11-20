@@ -1,5 +1,5 @@
 import type { Size, Box, Result } from '../../../lib/templateSwapCutout.mjs';
-export interface SwapOffer { id: string; model: 'kling-o1-reference'; credits: number; durationSeconds: 5; images: 2; role: string; name?: string }
+export interface SwapOffer { id: string; model: 'kling-o1-reference'; credits: number; durationSeconds: 5; images: 2 | 4; role: string; people?: 2; roles?: [string, string]; name?: string }
 export interface SwapFile { uri: string; size: number; type: 'image/png'; width: number; height: number }
 export interface Reference { slot: 'image'; origin: 'upload'; key: string }
 export interface SwapBody { template_swap: string; model_id: string; idempotency_key: string; inputs: Record<string, never>; max_charge_credits: number; references: Reference[]; consent: true }

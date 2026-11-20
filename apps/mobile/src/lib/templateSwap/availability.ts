@@ -22,7 +22,10 @@ export async function fetchSwapAvailability(id: string, options: { enabled?: boo
             if (response.status === 404) return { kind: 'absent' };
             if (response.status !== 200) return { kind: 'transient' };
             const c = await response.json();
-            if (c?.id !== id || c.model !== 'kling-o1-reference' || !Number.isInteger(c.credits) || c.credits <= 0 || c.durationSeconds !== 5 || c.images !== 2 || typeof c.role !== 'string' || !c.role.trim()) return { kind: 'transient' };
+            if (c?.id !== id || c.model !== 'kling-o1-reference' || !Number.isInteger(c.credits) || c.credits <= 0 || c.durationSeconds !== 5 || typeof c.role !== 'string' || !c.role.trim()) return { kind: 'transient' };
+            const onePerson = c.images === 2 && c.people === undefined;
+            const twoPeople = c.images === 4 && c.people === 2 && Array.isArray(c.roles) && c.roles.length === 2 && c.roles.every((r: unknown) => typeof r === 'string' && r.trim());
+            if (!onePerson && !twoPeople) return { kind: 'transient' };
             return { kind: 'offer', offer: c };
         } catch { return { kind: 'transient' }; }
     };
