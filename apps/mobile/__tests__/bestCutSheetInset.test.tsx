@@ -32,7 +32,7 @@ function expectFixedInset() {
 }
 test('clip picker keeps the safe-area padding outside scrolling content', async () => {
     const api = { getBalance: jest.fn().mockResolvedValue({ balance: 100 }) } as unknown as ApiClient;
-    await act(async () => root.render(<BestCutSheet api={api} projectId="project" quote={{ credits: 1, max_seconds: 60, languages: ['en'] }} onClose={jest.fn()} onApply={() => true} />));
+    await act(async () => root.render(<BestCutSheet api={api} projectId="project" quote={{ credits: 1, max_seconds: 60, languages: ['en'] }} onClose={jest.fn()} onApply={() => ({ status: 'accepted' })} />));
     expectFixedInset();
 });
 test('entry consent keeps the safe-area padding outside scrolling content', async () => {

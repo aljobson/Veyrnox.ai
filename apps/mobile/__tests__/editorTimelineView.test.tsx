@@ -14,7 +14,8 @@ const selected = { track: 'video' as const, id: 'v1' };
 const event = (pageX = 0, pageY = 0, locationX = 0, locationY = 10) => ({ nativeEvent: { pageX, pageY, locationX, locationY } });
 const node = (id: string) => root.container.queryAll(n => n.props.testID === id)[0];
 async function render(selections = [selected], snap = false, ripple?: 'none' | 'lane' | 'all') {
-    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={selections} ppf={2} total={300} frame={0} playing={false} snap={snap} ripple={ripple} onSeek={onSeek} onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
+    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={selections} ppf={2} total={300} frame={0} playing={false} snap={snap} ripple={ripple} onSeek={onSeek}
+        onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
 }
 async function call(id: string, prop: string, value = event()) { await act(async () => node(id).props[prop](value)); }
 beforeEach(() => {
@@ -62,22 +63,25 @@ test('trim gestures commit once and cancel discards the ghost', async () => {
     await render(); await call('trim-v1-in', 'onResponderGrant'); await call('trim-v1-in', 'onResponderMove', event(20));
     expect(onApply).not.toHaveBeenCalled(); await call('trim-v1-in', 'onResponderRelease', event(20));
     expect(onApply).toHaveBeenCalledTimes(1); expect(onApply.mock.calls[0][0].video[0]).toMatchObject({ start: 70, in: 40, len: 80 });
-    onApply.mockClear(); await call('trim-v1-out', 'onResponderGrant'); await call('trim-v1-out', 'onResponderMove', event(20)); await call('trim-v1-out', 'onResponderTerminate'); expect(onApply).not.toHaveBeenCalled();
+    onApply.mockClear(); await call('trim-v1-out', 'onResponderGrant'); await call('trim-v1-out', 'onResponderMove', event(20)); await call('trim-v1-out', 'onResponderTerminate');
+        expect(onApply).not.toHaveBeenCalled();
 });
 test('locked tracks can select but have no trim handles or hold move', async () => {
     timeline.tracks[0].locked = true; await render(); expect(node('trim-v1-in')).toBeUndefined();
     await call('clip-v1', 'onResponderGrant'); await act(async () => jest.advanceTimersByTime(300)); await call('clip-v1', 'onResponderRelease');
     expect(onSelect).toHaveBeenCalledWith(selected); expect(onApply).not.toHaveBeenCalled(); expect(playSelection).not.toHaveBeenCalled();
 });
-test('accessibility actions move one second and trim one frame, protected clips hide handles', async () => {
+test('accessibility actions move one second and trim one frame, including freezes', async () => {
     await render(); await call('clip-v1', 'onAccessibilityAction', { nativeEvent: { actionName: 'moveLater' } } as any);
     expect(onApply.mock.calls[0][0].video[0].start).toBe(90);
     await call('trim-v1-out', 'onAccessibilityAction', { nativeEvent: { actionName: 'increment' } } as any);
     expect(onApply.mock.calls[1][0].video[0].len).toBe(91);
-    Object.assign(timeline.video[0], { words: [] }); await render(); expect(node('trim-v1-out')).toBeUndefined();
+    Object.assign(timeline.video[0], { words: [] }); await render(); expect(node('trim-v1-out')).toBeDefined();
+    Object.assign(timeline.video[0], { freezeFrame: 0 }); await render(); expect(node('trim-v1-out')).toBeDefined();
 });
 test('tapping empty lane space seeks without an edit', async () => {
-    await render(); await call('lane-audio-0', 'onResponderGrant', event(10, 10, 120)); await call('lane-audio-0', 'onResponderRelease', event(10, 10)); expect(onSeek).toHaveBeenCalledWith(60); expect(onApply).not.toHaveBeenCalled();
+    await render(); await call('lane-audio-0', 'onResponderGrant', event(10, 10, 120)); await call('lane-audio-0', 'onResponderRelease', event(10, 10)); expect(onSeek).toHaveBeenCalledWith(60);
+        expect(onApply).not.toHaveBeenCalled();
 });
 
 test('dragging the right trim handle left closes the gap for the next clip when ripple is on, and leaves it when off', async () => {
@@ -89,7 +93,8 @@ test('dragging the right trim handle left closes the gap for the next clip when 
 });
 test('tapping a track name reports that track so an empty extra track can be removed', async () => {
     const onTrackPress = jest.fn();
-    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={[]} ppf={2} total={300} frame={0} playing={false} snap={false} onSeek={onSeek} onSelect={onSelect} onApply={onApply} onViewport={onViewport} onTrackPress={onTrackPress} />));
+    await act(async () => root.render(<EditorTimeline timeline={timeline} selections={[]} ppf={2} total={300} frame={0} playing={false} snap={false} onSeek={onSeek} onSelect={onSelect}
+        onApply={onApply} onViewport={onViewport} onTrackPress={onTrackPress} />));
     await act(async () => node('track-header-video-2').props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     expect(onTrackPress).toHaveBeenCalledWith('video-2');
 });

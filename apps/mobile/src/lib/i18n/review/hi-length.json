@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorExportRefusal.position",
+    "english": "Phone export can't include text positioning yet.",
+    "translation": "फ़ोन से एक्सपोर्ट में टेक्स्ट की स्थिति तय करने की सुविधा अभी उपलब्ध नहीं है।",
+    "ratio": 1.6
+  },
+  {
+    "id": "editorExportRefusal.groups",
+    "english": "Phone export can't include grouped clips yet.",
+    "translation": "फ़ोन से एक्सपोर्ट में समूह में रखी गई क्लिप की सुविधा अभी उपलब्ध नहीं है।",
+    "ratio": 1.62
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "फ़िरोज़ी",
@@ -2088,6 +2100,12 @@
     "ratio": 2.33
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",
+    "ratio": 2.58
+  },
+  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "पहले जैसा करें",
@@ -2152,6 +2170,12 @@
     "english": "Use {name}",
     "translation": "{name} उपयोग करें",
     "ratio": 1.7
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "लिप सिंक के लिए उपयोग करें",
+    "ratio": 1.63
   },
   {
     "id": "musicPublication.comments",

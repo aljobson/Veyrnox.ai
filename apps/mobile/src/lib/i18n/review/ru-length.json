@@ -1,5 +1,23 @@
 [
   {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "Шестнадцатеричный цвет: {label}",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorTools.pulse",
+    "english": "Pulse",
+    "translation": "Пульсация",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Длительность стоп-кадра",
+    "ratio": 1.77
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Бирюзовый",
@@ -3678,6 +3696,12 @@
     "ratio": 2.25
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
+    "ratio": 3.21
+  },
+  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Отменить",
@@ -3736,6 +3760,18 @@
     "english": "Use {name}",
     "translation": "Использовать {name}",
     "ratio": 1.9
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Использовать для синхронизации губ",
+    "ratio": 2.13
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "Использовать {name} для синхронизации губ",
+    "ratio": 1.78
   },
   {
     "id": "musicPublication.unpublish",

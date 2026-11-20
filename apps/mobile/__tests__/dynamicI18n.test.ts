@@ -10,6 +10,8 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'editorEditGate.{}': ['invalid', 'tooLarge'],
+    'editorExportRefusal.{}': ['speed', 'audio', 'motion', 'animation', 'colour', 'crop', 'effects', 'blend', 'background', 'masks', 'smart', 'transitions', 'text', 'captions', 'position', 'fonts', 'images', 'originalAudio', 'assets', 'groups', 'unknown'],
     'musicDiscover.mood.{}': ['all', 'Hip-hop', 'Rock', 'Jazz'],
     'musicPlaylists.{}': ['titleInvalid', 'conflict', 'invalidSongs', 'offline', 'scanStale', 'saved', 'noneUnavailable', 'pending', 'signIn', 'denied', 'error'],
     'musicSectionActions.{}.title': ['add_section', 'replace_section'],

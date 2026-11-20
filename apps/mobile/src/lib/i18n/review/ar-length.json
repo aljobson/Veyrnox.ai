@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "لون {label} بالنظام الست عشري",
+    "ratio": 1.61
+  },
+  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "المحاولة على أي حال",
@@ -2008,6 +2014,12 @@
     "english": "{track} solo off",
     "translation": "إيقاف العزف المنفرد لـ {track}",
     "ratio": 1.88
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "لم يُحفظ بعد. سيضيع هذا الإيقاع عند إغلاق التطبيق.",
+    "ratio": 2.63
   },
   {
     "id": "beat.retry",

@@ -1,5 +1,59 @@
 [
   {
+    "id": "editorTools.speed",
+    "english": "Speed",
+    "translation": "Geschwindigkeit",
+    "ratio": 3
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Geschwindigkeitsvorlage",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Benutzerdefiniert",
+    "ratio": 2.83
+  },
+  {
+    "id": "editorTools.pointRate",
+    "english": "Speed point {n} rate",
+    "translation": "Rate von Geschwindigkeitspunkt {n}",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorTools.updated",
+    "english": "Speed edit applied.",
+    "translation": "Geschwindigkeitsänderung angewendet.",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Geschwindigkeitspunkt hinzufügen",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorTools.curveApply",
+    "english": "Apply speed curve",
+    "translation": "Geschwindigkeitskurve anwenden",
+    "ratio": 1.76
+  },
+  {
+    "id": "editorExportRefusal.speed",
+    "english": "Phone export can't include speed changes yet.",
+    "translation": "Der Export auf dem Handy unterstützt Geschwindigkeitsänderungen noch nicht.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorExportRefusal.crop",
+    "english": "Phone export can't include crop or fit settings yet.",
+    "translation": "Der Export auf dem Handy unterstützt Zuschnitt- oder Einpassungseinstellungen noch nicht.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.navy",
     "english": "Navy",
     "translation": "Dunkelblau",
@@ -3828,6 +3882,12 @@
     "ratio": 1.77
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Noch nicht gespeichert. Dieser Beat geht verloren, wenn die App geschlossen wird.",
+    "ratio": 4.26
+  },
+  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Rückgängig",
@@ -3904,6 +3964,18 @@
     "english": "Close",
     "translation": "Schließen",
     "ratio": 1.8
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Für Lippensynchronisation verwenden",
+    "ratio": 2.19
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "{name} für Lippensynchronisation verwenden",
+    "ratio": 1.83
   },
   {
     "id": "musicPublication.title",
