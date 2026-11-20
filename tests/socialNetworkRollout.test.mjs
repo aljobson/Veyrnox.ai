@@ -33,6 +33,18 @@ test('unset preserves existing releases; explicit empty or unknown lists fail cl
     assert.equal(networkEnabled('bluesky', { PUBLISH_RELEASED_NETWORKS: '*' }), false);
     assert.equal(networkEnabled('bluesky', { PUBLISH_RELEASED_NETWORKS: '*', PUBLISH_EXTENDED_NETWORKS_ENABLED: 'true' }), true);
 });
+test('Facebook can be released without enabling other extended networks', () => {
+    const flags = { PUBLISH_RELEASED_NETWORKS: 'facebook,instagram', PUBLISH_RUNTIME_FLAGS: '{"facebook":"true"}' };
+    assert.equal(networkEnabled('facebook', flags), true);
+    assert.equal(networkEnabled('instagram', flags), true);
+    for (const key of ['threads', 'pinterest', 'bluesky', 'twitch', 'gmb']) {
+        assert.equal(networkEnabled(key, { ...flags, PUBLISH_RELEASED_NETWORKS: '*' }), false, key);
+    }
+    assert.equal(networkEnabled('facebook', { ...flags, PUBLISH_RUNTIME_FLAGS: '{"facebook":"false"}' }), false);
+    assert.equal(networkEnabled('facebook', { ...flags, PUBLISH_FACEBOOK_ENABLED: 'false' }), false);
+    assert.equal(networkEnabled('facebook', { ...flags, PUBLISH_RELEASED_NETWORKS: 'instagram' }), false);
+    assert.equal(networkReadiness(flags).find(n => n.key === 'facebook').status, 'setup_required');
+});
 test('direct connect and callback requests cannot bypass the release list or contact providers', async () => {
     const saved = process.env.PUBLISH_RELEASED_NETWORKS;
     const fetcher = globalThis.fetch;
