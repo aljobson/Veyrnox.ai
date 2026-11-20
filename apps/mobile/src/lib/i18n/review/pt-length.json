@@ -3756,6 +3756,36 @@
     "ratio": 1.82
   },
   {
+    "id": "beatAi.magic",
+    "english": "Magic Bar",
+    "translation": "Compasso mágico",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalidade",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calcular preço de dois loops",
+    "ratio": 1.87
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

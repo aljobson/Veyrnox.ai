@@ -4140,6 +4140,72 @@
     "ratio": 3.22
   },
   {
+    "id": "beatAi.extend",
+    "english": "Extend",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonart",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Preis für zwei Loops ermitteln",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatAi.waiting",
+    "english": "Working…",
+    "translation": "Wird bearbeitet…",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.failed",
+    "english": "A result failed or was refunded.",
+    "translation": "Ein Ergebnis ist fehlgeschlagen oder wurde erstattet.",
+    "ratio": 1.66
+  },
+  {
+    "id": "beatAi.mute",
+    "english": "Mute {name}",
+    "translation": "{name} stummschalten",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatAi.a29",
+    "english": "AI parts need an active paid plan.",
+    "translation": "KI-Parts benötigen einen aktiven kostenpflichtigen Tarif.",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatAi.a37",
+    "english": "This price changed. Get a new price.",
+    "translation": "Dieser Preis hat sich geändert. Hole einen neuen Preis ein.",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.a41",
+    "english": "Extend",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

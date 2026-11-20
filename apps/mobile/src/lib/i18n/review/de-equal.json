@@ -253,5 +253,8 @@
   "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
   "speech.gender.neutral": "Neutral is the German adjective for a neutral voice; capitalization follows a standalone interface label.",
   "speech.emotion.neutral": "Neutral is the German adjective for neutral delivery; capitalization follows a standalone interface label.",
-  "speech.tone.Neutral": "Neutral is the German adjective for a neutral vocal tone; the standalone label has the same spelling as English."
+  "speech.tone.Neutral": "Neutral is the German adjective for a neutral vocal tone; the standalone label has the same spelling as English.",
+  "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
+  "beatAi.priceValue": "Credits is the product currency name; the amount is a localized placeholder.",
+  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
 }

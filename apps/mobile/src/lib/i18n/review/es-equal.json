@@ -185,5 +185,7 @@
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "editorText.preset2": "Standard notation or established style name, retained in this locale.",
-  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose."
+  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
+  "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
+  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
 }

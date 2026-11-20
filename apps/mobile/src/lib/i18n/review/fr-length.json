@@ -6030,6 +6030,66 @@
     "ratio": 1.62
   },
   {
+    "id": "beatAi.stems",
+    "english": "Split stems",
+    "translation": "Séparer les pistes",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalité",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calculer le prix de deux boucles",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatAi.buy",
+    "english": "Buy Credits",
+    "translation": "Acheter des Crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatAi.retry",
+    "english": "Send again",
+    "translation": "Envoyer à nouveau",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.waiting",
+    "english": "Working…",
+    "translation": "Traitement en cours…",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.mute",
+    "english": "Mute {name}",
+    "translation": "Couper le son de {name}",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatAi.unmute",
+    "english": "Unmute {name}",
+    "translation": "Réactiver le son de {name}",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.a1",
+    "english": "Split stems",
+    "translation": "Séparer les pistes",
+    "ratio": 1.64
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
