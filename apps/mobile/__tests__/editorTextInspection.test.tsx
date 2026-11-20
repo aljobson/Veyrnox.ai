@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { I18nManager, StyleSheet, Text, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { TITLE_STYLES } from '../../../app/veyrnox/_lib/editorPresets.mjs';
 import { EditorTextOverlay } from '../src/components/editor/EditorTextOverlay';
@@ -62,6 +62,21 @@ test.each([
     expect(StyleSheet.flatten(caption.parent!.props.style)).toMatchObject({
         position: 'absolute', bottom: 17, width: '84%', alignItems,
     });
+});
+
+test('left-aligned overlay keeps a fixed LTR wrapper in an RTL app', async () => {
+    const rtl = jest.replaceProperty(I18nManager, 'isRTL', true);
+    try {
+        const item = { ...webSequenceV3().text[0], style: { align: 'left' } };
+        await act(async () => root.render(<EditorTextOverlay item={item} />));
+        const caption = root.container.queryAll(n => n.children.includes(item.text) && !!n.props.style)[0];
+        expect(StyleSheet.flatten(caption.parent!.props.style)).toMatchObject({
+            direction: 'ltr', alignItems: 'flex-start',
+        });
+        expect(StyleSheet.flatten(caption.props.style).writingDirection).toBeUndefined();
+    } finally {
+        rtl.restore();
+    }
 });
 
 test('left-aligned overlay keeps its background off the full-width wrapper', async () => {
