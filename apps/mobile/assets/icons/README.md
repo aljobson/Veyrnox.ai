@@ -32,3 +32,5 @@ Instruments card: piano-keys.png is drawn in the same 96 x 96 white, 6 px stroke
 Audio parity additions (Phosphor regular 2.1.1, same render steps: replace `currentColor` with `#ffffff`, then `rsvg-convert -w 96 -h 96`): vinyl-record, microphone, headphones, chats-circle, swap, crosshair, scissors, arrows-horizontal, pause-circle, arrow-counter-clockwise, arrow-clockwise.
 
 Music P4a additions: playlist, compass (Phosphor regular 2.1.1, same white 96 × 96 render steps). Reused locally cached package SVGs; no dependency install.
+
+Music P4b Explore: users-three (Phosphor regular 2.1.1, same white 96 × 96 render steps). Reused the cached package SVG; no dependency install. The icon identifies the public Music community, distinct from the Discover compass.

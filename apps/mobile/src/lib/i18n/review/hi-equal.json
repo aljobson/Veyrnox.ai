@@ -77,5 +77,6 @@
   "job.percent": "Percent sign directly after the number is the standard form in this language.",
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending.",
   "beat.kit.808": "Same in hi: a loanword, brand-style name or number used unchanged in this language."
 }

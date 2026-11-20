@@ -1,6 +1,6 @@
 import { MAX_MESSAGE } from './protocol';
 import { normalizeStack, type Stack } from './engine';
-import { jpegSize, pngSize } from './imageHeader';
+import { jpegSize } from './imageHeader';
 
 // Live camera boundary (ADR-0338 S8). The WebView page runs the camera, the face tracker and the web live engine; this side only
 // sends settings and commands and validates every reply as untrusted data (strict allowlists, size caps, no pass-through).
@@ -74,35 +74,4 @@ export function liveErrorKey(code: LiveError): 'denied' | 'missing' | 'busy' | '
     case 'camera-lost': case 'camera-hidden': case 'graphics-lost': return 'lost';
     default: return 'failed';
     }
-}
-
-// ---- 3D wig overlay (S9): one request, one reply, matched by id. The reply is untrusted data like every other message. ----
-export type Wig3dReply = { id: number; status: 'ready' | 'angle' | 'face-required' | 'unavailable'; fade: number; png?: string };
-const PNG_PREFIX = 'data:image/png;base64,';
-const MAX_OVERLAY_BASE64 = 5_000_000;
-export function wig3dRequest(request: { id: number; style: string; size: number; offset: number; landmarks: Float32Array; width: number; height: number }): string {
-    if (!Number.isSafeInteger(request.id) || request.landmarks.length !== 1434 || !dimension(request.width) || !dimension(request.height)) throw Error('invalid-wig3d-request');
-    return JSON.stringify({ op: 'wig3d', id: request.id, style: request.style, size: request.size, offset: request.offset, width: request.width, height: request.height, landmarks: Array.from(request.landmarks) });
-}
-const MAX_OVERLAY_SIDE = 1024;
-/** The size of the overlay the page renders for a photo of w x h: its longer side is capped at 1024 (the same rule the page uses). */
-export function overlaySize(width: number, height: number): { width: number; height: number } {
-    const ratio = Math.min(1, MAX_OVERLAY_SIDE / Math.max(width, height));
-    return { width: Math.max(1, Math.round(width * ratio)), height: Math.max(1, Math.round(height * ratio)) };
-}
-/** `expected` is the overlay size of the photo the request was for; a reply of any other size (or an inconsistent header) is dropped. */
-export function parseWig3dReply(raw: unknown, expectedId: number, expected?: { width: number; height: number }): Wig3dReply | null {
-    if (typeof raw !== 'string' || raw.length > MAX_MESSAGE) return null;
-    let d: Record<string, unknown>;
-    try { const parsed: unknown = JSON.parse(raw); if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null; d = parsed as Record<string, unknown>; } catch { return null; }
-    if (d.wig3d !== true || d.id !== expectedId) return null;
-    if (!oneOf(['ready', 'angle', 'face-required', 'unavailable'] as const, d.status)) return null;
-    if (d.status !== 'ready') return { id: expectedId, status: d.status, fade: d.status === 'angle' ? 0 : 1 };
-    const png = d.png;
-    if (typeof d.fade !== 'number' || !(d.fade >= 0 && d.fade <= 1) || !dimension(d.width) || !dimension(d.height) || typeof png !== 'string' || !png.startsWith(PNG_PREFIX)) return null;
-    const base64 = png.slice(PNG_PREFIX.length);
-    if (base64.length < 100 || base64.length > MAX_OVERLAY_BASE64 || base64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) return null;
-    const size = pngSize(base64);
-    if (!size || size.width !== d.width || size.height !== d.height || Math.max(size.width, size.height) > MAX_OVERLAY_SIDE || (expected && (size.width !== expected.width || size.height !== expected.height))) return null;
-    return { id: expectedId, status: 'ready', fade: d.fade, png: base64 };
 }

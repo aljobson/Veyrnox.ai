@@ -2,7 +2,7 @@ import {
     DEFAULT_VEY_CHARACTER, VEY_CHARACTER_IDS, WOBNIMO_CHARACTERS, isWobnimoCharacter, normaliseVeyCharacter,
     parseVeyCharacter, wobnimoStateForMood,
 } from '../src/lib/veyCharacterChoice';
-import { WOBNIMO_SCRIPT } from '../src/lib/wobnimoBundle.generated';
+import { WOBNIMO_PROGRAMS } from '../src/lib/wobnimoPrograms.generated';
 
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => null), setItemAsync: jest.fn(async () => undefined) }));
 
@@ -27,9 +27,7 @@ describe('Vey character choice', () => {
         expect(wobnimoStateForMood('working')).toBe('working');
         expect(wobnimoStateForMood(undefined)).toBe('idle');
     });
-    it('inlines an engine that cannot reach the network or close its own script tag', () => {
-        expect(WOBNIMO_SCRIPT).not.toContain('</script');
-        expect(WOBNIMO_SCRIPT).not.toMatch(/fetch\(|XMLHttpRequest|https?:\/\//);
-        expect(WOBNIMO_SCRIPT).toContain('window.__wobnimo={');
+    it('has a native shader for every selectable mascot', () => {
+        expect(Object.keys(WOBNIMO_PROGRAMS).sort()).toEqual([...WOBNIMO_CHARACTERS].sort());
     });
 });
