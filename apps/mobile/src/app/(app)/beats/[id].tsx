@@ -1,3 +1,6 @@
+import { BeatLabsBar } from '../../../components/beats/BeatLabsBar';
+import { PHONE_CAPABILITIES } from '../../../lib/beatNative/controls';
+import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -92,6 +95,7 @@ export default function BeatEditor() {
         <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: doc.title }} />
             <BeatSaveControls id={doc.id} apply={apply} />
+            <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
             <Button label={t('beat.undo')} disabled={!history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
             <Button label={t('beat.redo')} disabled={!history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
             {notice ? <MusicNotice message={notice} /> : null}
@@ -118,7 +122,7 @@ export default function BeatEditor() {
                     onPan={v => mix(track.id, d => setTrackPan(d, track.id, v))}
                     onMute={v => mix(track.id, d => setTrackMute(d, track.id, v), t(v ? 'beat.muted' : 'beat.unmuted', { track: nameOf(i) }))}
                     onSolo={v => mix(track.id, d => setTrackSolo(d, track.id, v), t(v ? 'beat.soloOn' : 'beat.soloOff', { track: nameOf(i) }))}
-                    onKit={kit => apply(d => setTrackKit(d, track.id, kit))}
+                    onKit={track.kind === 'audio' || track.kind === 'midi' ? undefined : kit => apply(d => setTrackKit(d, track.id, kit))}
                     onRemove={() => apply(d => removeTrack(d, track.id))} />
             ))}
             <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}

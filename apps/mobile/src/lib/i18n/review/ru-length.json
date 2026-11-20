@@ -1,5 +1,95 @@
 [
   {
+    "id": "beatLabs.stop",
+    "english": "Stop",
+    "translation": "Остановить",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatLabs.touch.help",
+    "english": "Tap Controls.",
+    "translation": "Нажмите «Управление».",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatLabs.touch.play",
+    "english": "Tap Play or Stop.",
+    "translation": "Нажмите «Играть» или «Стоп».",
+    "ratio": 1.65
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "Нажмите «Отменить».",
+    "ratio": 2.11
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "Нажмите «Повторить».",
+    "ratio": 2.22
+  },
+  {
+    "id": "beatLabs.sound.bells",
+    "english": "Music box",
+    "translation": "Музыкальная шкатулка",
+    "ratio": 2.22
+  },
+  {
+    "id": "beatLabs.skip",
+    "english": "Skip",
+    "translation": "Пропустить",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatLabs.category.Keys",
+    "english": "Keys",
+    "translation": "Клавиши",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.category.Synth",
+    "english": "Synth",
+    "translation": "Синтезатор",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.category.FX",
+    "english": "FX",
+    "translation": "Эффекты",
+    "ratio": 3.5
+  },
+  {
+    "id": "beatLabs.control.play",
+    "english": "Play / Stop",
+    "translation": "Воспроизведение / Стоп",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Повторить",
+    "ratio": 2.25
+  },
+  {
+    "id": "beatLabs.control.rulerCancel",
+    "english": "Cancel cycle drag",
+    "translation": "Отменить перетаскивание цикла",
+    "ratio": 1.71
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "Шестнадцатеричный цвет: {label}",

@@ -11,6 +11,15 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'beatLabs.seed.error.{}': ['r34', 'r35', 'r36', 'r37', 'unsupported'],
+    'beatLabs.touch.{}': ['help', 'play', 'undo', 'redo', 'gridMove', 'gridToggle', 'pads'],
+    'beatLabs.template.{}': ['hiphop', 'lofi', 'house', 'blank'],
+    'beatLabs.template.{}.description': ['hiphop', 'lofi', 'house', 'blank'],
+    'beatLabs.sound.{}': ['sub-one', 'pluck-two', 'acid', 'deep', 'stabs', 'electric', 'bells', 'organ', 'arp', 'pad', 'lead', 'sweep'],
+    'beatLabs.category.{}': ['All', 'Bass', 'Keys', 'Synth', 'FX'],
+    'beatLabs.tip.{}': ['grid', 'library', 'play', 'arrangement', 'export', 'shortcuts'],
+    'beatLabs.context.{}': ['global', 'grid', 'regions', 'ruler', 'piano', 'automation', 'takes', 'typing'],
+    'beatLabs.control.{}': ['help', 'play', 'ripple', 'undo', 'redo', 'gridMove', 'gridToggle', 'gridVelocity', 'regionMove', 'regionResize', 'regionTrim', 'regionDuplicate', 'regionSplit', 'regionDelete', 'regionEdit', 'rulerMove', 'rulerCancel', 'pianoSelectAll', 'pianoMove', 'pianoResize', 'pianoToggle', 'pianoDelete', 'pianoVelocity', 'automationMove', 'automationDelete', 'takeMove', 'takeAssign', 'takeClear', 'pads', 'notes', 'octave', 'velocity'],
     'speech.tone.{}': [...new Set(TTS_VOICES.map(voice => voice.tone))],
     'speech.cue.{}': TTS_INTERJECTIONS.map(([, cue]) => cue.slice(1, -1)),
     'speech.emotion.{}': TTS_EMOTIONS,

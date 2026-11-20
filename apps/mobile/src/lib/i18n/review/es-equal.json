@@ -185,5 +185,11 @@
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "editorText.preset2": "Standard notation or established style name, retained in this locale.",
-  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose."
+  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
+  "beatLabs.template.hiphop": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.template.lofi": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.template.house": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.category.FX": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.context.global": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.context.piano": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog."
 }
