@@ -2040,12 +2040,6 @@
     "ratio": 2.22
   },
   {
-    "id": "library.useForLipSync",
-    "english": "Use for lip sync",
-    "translation": "लिप सिंक के लिए उपयोग करें",
-    "ratio": 1.63
-  },
-  {
     "id": "musicPublic.unblock",
     "english": "Unblock",
     "translation": "अनब्लॉक करें",
@@ -2092,6 +2086,12 @@
     "english": "Hot",
     "translation": "जबरदस्त",
     "ratio": 2.33
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "लिप सिंक के लिए उपयोग करें",
+    "ratio": 1.63
   },
   {
     "id": "musicPublication.comments",
