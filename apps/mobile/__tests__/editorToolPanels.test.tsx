@@ -21,16 +21,20 @@ const mockStackOptions = jest.fn();
 
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
+jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup:
+    jest.fn().mockResolvedValue(null) } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
-jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockStackOptions(options); return options?.headerRight?.() ?? null; } }, usePreventRemove: () => () => {}, useRouter: () => mockRouter }));
+jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockStackOptions(options); return options?.headerRight?.() ?? null; } }, usePreventRemove: () => () => {}, useRouter:
+    () => mockRouter }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => { mockScreenRender(); return { api: mockApi, beginSessionTask: mockBeginSessionTask }; } }));
-jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: ({ media, localUri }: any) => require('react').createElement(require('react-native').View, { accessibilityLabel: `Real preview ${media.name}`, testID: localUri }) }));
-jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot', createdAt: '2026-10-23T00:00:00Z' }) }) }));
+jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: ({ media, localUri }: any) => require('react').createElement(require('react-native').View, {
+    accessibilityLabel: `Real preview ${media.name}`, testID: localUri }) }));
+jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable, { accessibilityRole: 'button',
+    accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot', createdAt: '2026-10-23T00:00:00Z' }) }) }));
 
 let root: Root;
 const visible = (text: string) => root.container.queryAll((node) => node.children.includes(text)).length > 0;
@@ -80,8 +84,8 @@ test.each(['normal', 'left'])('style-less web text accepts %s with complete web 
 test('animation edits keep combo and timing extras', async () => {
     const tl = webSequenceV3(); serverDocument = { ...envelope(tl), project_id: projectId }; await render();
     await press('Captions'); await press('00:00:00:00 Hello world'); await press('Animation');
-    const zoom = root.container.queryAll(n => n.props.accessibilityLabel === 'zoom' && typeof n.props.onClick === 'function');
-    await act(async () => zoom[0].props.onClick({ nativeEvent: {} }));
+    const zoom = root.container.queryAll(n => n.props.accessibilityLabel === 'Zoom' && typeof n.props.onClick === 'function');
+    await act(async () => zoom[0].props.onClick({ nativeEvent: {} })); await press('Apply');
     const next = await savedTimeline(); expect(next.text[0].animation).toEqual({ ...tl.text[0].animation, in: 'zoom' }); expect(validateSequence(next)).toBeNull();
 });
 test('changing caption text clears stale word timing', async () => {
@@ -114,7 +118,7 @@ const panelCases = [
     [TextPanel, 'Text', 'Add text'], [CaptionsPanel, 'Captions', 'Add caption at playhead'],
     [TranscriptPanel, 'Transcript', '00:00:00:00 Hello world'], [EffectsPanel, 'Effects', 'None'],
     [TransitionsPanel, 'Transitions', 'Dissolve'], [FiltersPanel, 'Filters', 'Increase brightness'],
-    [AnimationPanel, 'Animation', 'zoom'], [MarkersPanel, 'Markers', 'Add marker'], [AdjustPanel, 'Source', 'Move left'],
+    [AnimationPanel, 'Animation', 'Zoom'], [MarkersPanel, 'Markers', 'Add marker'], [AdjustPanel, 'Source', 'Move left'],
 ] as const;
 function panelFixture(): ToolPanelProps {
     const timeline = webSequenceV3(), noop = () => {};
@@ -125,7 +129,8 @@ function panelFixture(): ToolPanelProps {
         openGenerate: noop, addTimelineTrack: noop, addText: noop, addCaption: noop, updateSelectedText: noop,
         setFrame: noop, setPlaying: noop, addTimelineMarker: noop, currentDocument: () => envelope(timeline), document: envelope(timeline),
         markDocument: () => ({ status: 'accepted' }), canvas: { aspect_ratio: '16:9', frame_rate: 30 }, updateCanvas: noop, updateTrack: noop,
-        canMove: () => true, moveSelection: noop, removeSelection: noop, adjustStart: noop, adjustLength: noop, changeSpeed: noop, toggleReverse: noop };
+        canMove: () => true, moveSelection: noop, removeSelection: noop, adjustStart: noop, adjustLength: noop,
+        speedActions: { changeSpeed: noop, toggleReverse: noop, changeCurve: noop, insertFreeze: noop, freezeLength: noop, removeFreeze: noop } };
 }
 test.each(panelCases)('%s retains its accessible heading and a representative control', async (Panel, header, label) => {
     await act(async () => root.render(<Panel {...panelFixture()} />));

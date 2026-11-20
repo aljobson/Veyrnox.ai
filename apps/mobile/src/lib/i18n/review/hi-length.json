@@ -2112,6 +2112,84 @@
     "ratio": 2
   },
   {
+    "id": "speech.volume",
+    "english": "Volume",
+    "translation": "आवाज़ की मात्रा",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.pitch",
+    "english": "Pitch",
+    "translation": "स्वर की ऊँचाई",
+    "ratio": 2.6
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "साँस छोड़ना",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "चकित साँस",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "नाक सुड़कना",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "नाक से फुँफकार",
+    "ratio": 2.8
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "गुनगुनाना",
+    "ratio": 3
+  },
+  {
+    "id": "speech.cue.emm",
+    "english": "Um",
+    "translation": "उम्म",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "छाया का क्षैतिज स्थानांतरण",
+    "ratio": 3.25
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "छाया का लंबवत स्थानांतरण",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.apply",
+    "english": "Apply",
+    "translation": "लागू करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.animationName0",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName0",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
     "id": "library.useForLipSync",
     "english": "Use for lip sync",
     "translation": "लिप सिंक के लिए उपयोग करें",

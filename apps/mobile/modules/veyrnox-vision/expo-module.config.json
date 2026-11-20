@@ -1,0 +1,5 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["VeyrnoxVisionModule"] },
+  "android": { "modules": ["ai.veyrnox.vision.VeyrnoxVisionModule"] }
+}

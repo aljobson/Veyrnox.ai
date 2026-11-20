@@ -86,6 +86,8 @@ import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
 import area_editorSpike from './en/editorSpike';
+import area_editorText from './en/editorText';
+import area_editorTools from './en/editorTools';
 import area_editorVoiceover from './en/editorVoiceover';
 import area_email from './en/email';
 import area_empty from './en/empty';
@@ -209,6 +211,7 @@ import area_sourceDuration from './en/sourceDuration';
 import area_sourceLimits from './en/sourceLimits';
 import area_sourcePicker from './en/sourcePicker';
 import area_sources from './en/sources';
+import area_speech from './en/speech';
 import area_srch from './en/srch';
 import area_start from './en/start';
 import area_stem from './en/stem';
@@ -320,6 +323,8 @@ const catalog = {
     ...area_editorSimple,
     ...area_editorSpeech,
     ...area_editorSpike,
+    ...area_editorText,
+    ...area_editorTools,
     ...area_editorVoiceover,
     ...area_email,
     ...area_empty,
@@ -443,6 +448,7 @@ const catalog = {
     ...area_sourceLimits,
     ...area_sourcePicker,
     ...area_sources,
+    ...area_speech,
     ...area_srch,
     ...area_start,
     ...area_stem,

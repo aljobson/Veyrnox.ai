@@ -224,3 +224,15 @@ test('song-action buttons pin the seven semantic icons without changing their la
         environment.IS_REACT_ACT_ENVIRONMENT = previous;
     }
 });
+
+test('speech studio takes priority and prices its actual catalog model; missing or gated keeps generic fallback', () => {
+    const studio = model('minimax-speech-2.6-hd', 'MiniMax Speech 2.6 HD', 6);
+    const cheaper = model('other-speech', 'Speech', 2);
+    expect(audioTarget('speech', [cheaper, studio])).toEqual({ pathname: '/speech' });
+    expect(fromCredits([cheaper, studio], 'speech', false, true)).toBe(6);
+    expect(fromCredits([cheaper, studio], 'speech', false, false)).toBeNull();
+    for (const models of [[cheaper], [cheaper, { ...studio, gated: true }]]) {
+        expect(audioTarget('speech', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: cheaper.id } });
+        expect(fromCredits(models, 'speech', false, true)).toBe(2);
+    }
+});

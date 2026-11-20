@@ -1,0 +1,6 @@
+# Local module sources are not generated app-level native projects.
+!/ios/
+!/android/
+/ios/Models/
+/android/src/main/assets/veyrnox-vision/
+/android/build/

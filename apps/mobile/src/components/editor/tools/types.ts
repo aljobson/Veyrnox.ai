@@ -1,3 +1,5 @@
+import type { TextActions } from './useTextActions';
+import type { SpeedActions } from './useSpeedActions';
 import type { DocumentCommitResult } from '../../../lib/editorDocumentGate';
 import type { Canvas, Clip, EditorTrack, Media, Selection, TextClip, Timeline, TrackKind } from '../../../lib/nativeEditorModel';
 import type { ProjectDocument } from '../../../lib/editorBridge';
@@ -5,6 +7,7 @@ import type { SlotKind } from '../../../lib/sources';
 import type { Kind } from '../../../lib/media';
 
 export type ToolPanelProps = {
+    textActions?: TextActions;
     timeline: Timeline; selection: Selection | null; selected: Clip | TextClip | undefined;
     selections: Selection[]; selectedMedia: Media | undefined; selectedTrack: EditorTrack | undefined;
     patchSelected(patch: Partial<Clip & TextClip>): void; applyTimeline(timeline: Timeline): boolean;
@@ -18,5 +21,5 @@ export type ToolPanelProps = {
     markDocument(doc: ProjectDocument): DocumentCommitResult; canvas: Canvas; updateCanvas(patch: Partial<Canvas>): void;
     updateTrack(track: EditorTrack, patch: Partial<EditorTrack>): unknown;
     canMove(direction: -1 | 1): boolean; moveSelection(direction: -1 | 1): void; removeSelection(): void;
-    adjustStart(delta: number): void; adjustLength(delta: number): void; changeSpeed(rate: number): void; toggleReverse(): void;
+    adjustStart(delta: number): void; adjustLength(delta: number): void; speedActions: SpeedActions;
 };

@@ -1,5 +1,53 @@
 [
   {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "Couleur hexadécimale de {label}",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Préréglage de vitesse",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorTools.pulse",
+    "english": "Pulse",
+    "translation": "Pulsation",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Personnalisé",
+    "ratio": 2
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Durée de l’image figée",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorTools.updated",
+    "english": "Speed edit applied.",
+    "translation": "Modification de vitesse appliquée.",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Ajouter un point de vitesse",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.curveApply",
+    "english": "Apply speed curve",
+    "translation": "Appliquer la courbe de vitesse",
+    "ratio": 1.76
+  },
+  {
     "id": "editorExportRefusal.speed",
     "english": "Phone export can't include speed changes yet.",
     "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les changements de vitesse.",
@@ -5662,6 +5710,228 @@
     "english": "Check again",
     "translation": "Vérifier à nouveau",
     "ratio": 1.64
+  },
+  {
+    "id": "speech.addCredits",
+    "english": "Add credits",
+    "translation": "Ajouter des crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculine",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
+    "ratio": 2
+  },
+  {
+    "id": "speech.emotion.angry",
+    "english": "Angry",
+    "translation": "En colère",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.groans",
+    "english": "Groan",
+    "translation": "Gémissement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Halètement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.inhale",
+    "english": "Inhale",
+    "translation": "Inspiration",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "Expiration",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "Sursaut",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Reniflement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "Ébrouement",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Claquement de lèvres",
+    "ratio": 2.22
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Fredonnement",
+    "ratio": 4
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Sifflement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.sneezes",
+    "english": "Sneeze",
+    "translation": "Éternuement",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.tone.Warm",
+    "english": "Warm",
+    "translation": "Chaleureuse",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Avec empattement",
+    "ratio": 3.2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Police personnalisée",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Décalage horizontal de l’ombre",
+    "ratio": 3.75
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Décalage vertical de l’ombre",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Entrée",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Sortie",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.apply",
+    "english": "Apply",
+    "translation": "Appliquer",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "Citation avec empattement",
+    "ratio": 2.27
+  },
+  {
+    "id": "editorText.preset7",
+    "english": "Warm label",
+    "translation": "Étiquette chaleureuse",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Glisser vers la gauche",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Glisser vers la droite",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Glisser vers le haut",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Glisser vers le bas",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName9",
+    "english": "Wipe from left",
+    "translation": "Balayage depuis la gauche",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorText.animationName10",
+    "english": "Wipe from right",
+    "translation": "Balayage depuis la droite",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.animationName11",
+    "english": "Wipe from top",
+    "translation": "Balayage depuis le haut",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorText.loopName1",
+    "english": "Float",
+    "translation": "Flottement",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName2",
+    "english": "Pulse",
+    "translation": "Pulsation",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.loopName3",
+    "english": "Turn",
+    "translation": "Rotation",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Balancement",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.loopName6",
+    "english": "Wobble",
+    "translation": "Oscillation",
+    "ratio": 1.83
   },
   {
     "id": "library.useForLipSync",

@@ -1,7 +1,8 @@
 import { canTrim, fitPpf, formatTimecode, frameAtX, moveItems, parseTimecode, SEQUENCE_MAX, snapTo, trimItem } from '../src/lib/editorTimeline';
 import { emptyTimeline, framesIn, type Clip, type Timeline } from '../src/lib/nativeEditorModel';
 const selected = { track: 'video' as const, id: 'v1' };
-const fixture = (patch: Partial<Clip> = {}): Timeline => ({ ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 300 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 30, in: 30, len: 90, ...patch }] });
+const fixture = (patch: Partial<Clip> = {}): Timeline => ({ ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 300 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0',
+    start: 30, in: 30, len: 90, ...patch }] });
 
 test('formats actual hours and parses every supported timecode form', () => {
     expect(formatTimecode(111694, 30)).toBe('01:02:03:04');
@@ -79,10 +80,11 @@ test('audio trims bound the file and snap only the moved edge', () => {
     expect(trimItem(tl, selection, 'out', 500, false, 0)?.audio[0].len).toBe(270);
 });
 test.each(['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve', 'freezeFrame', 'offset', 'span'])('web timed field %s trims safely or stays protected', field => {
-    const tl = fixture(); Object.assign(tl.video[0], ['offset', 'span'].includes(field) ? { animation: { in: 'none', out: 'none', duration: 15, [field]: 90 } } : { [field]: field === 'freezeFrame' ? 0 : [] });
-    const protectedField = ['speedCurve', 'freezeFrame'].includes(field); expect(canTrim(tl.video[0])).toBe(!protectedField);
+    const tl = fixture(); Object.assign(tl.video[0], ['offset', 'span'].includes(field) ? { animation: { in: 'none', out: 'none', duration: 15, [field]: 90 } } : { [field]: field ===
+        'freezeFrame' ? 0 : [] });
+    expect(canTrim(tl.video[0])).toBe(true);
     const trimmed = trimItem(tl, selected, 'in', 1, false, 0);
-    if (protectedField) expect(trimmed).toBeNull(); else expect(trimmed?.video[0]).toMatchObject({ start: 31, in: 31, len: 89 });
+    expect(trimmed?.video[0]).toMatchObject({ start: 31, in: field === 'freezeFrame' ? 0 : 31, len: 89 });
     expect(moveItems(tl, [], selected, 1, undefined, false, 0)?.video[0]).toEqual({ ...tl.video[0], start: 31 });
 });
 
