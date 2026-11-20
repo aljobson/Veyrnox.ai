@@ -12,9 +12,15 @@ export function waitForPoll(ms, signal) {
     signal.addEventListener('abort', abort, { once: true });
   });
 }
-export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), revokeURL = url => URL.revokeObjectURL(url), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {} }) {
+export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), revokeURL = url => URL.revokeObjectURL(url), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {}, jobStarted = () => {} }) {
   const active = new Map();
   const current = (template, key) => store.get(template).find(a => a.key === key);
+  // An accepted job joins the same job history every other generation writes, so the
+  // site's progress bar and background watcher see it. Only ever after acceptance.
+  function started(a, label) {
+    if (!a?.job_id || !a.body) return;
+    try { jobStarted({ job_id: a.job_id, model_id: a.body.model_id, credits: a.spent ?? a.body.max_charge_credits, templateId: a.templateId, name: label }); } catch { /* display only */ }
+  }
   function start(a, kind) {
     const operation = `${a.accountId}:${a.key}:${kind}`;
     if (active.has(operation) && !active.get(operation).signal.aborted) return null;
@@ -86,6 +92,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
       if (!op.valid()) return;
       if (!accepted?.job_id) throw Error('invalid_response');
       store.update(op.ticket, reduceAttempt(current(templateId, a.key), { accepted }));
+      started(current(templateId, a.key), offer.name);
       for (const old of store.get(templateId)) store.dropFiles(old.key);
       balanceChanged();
     } catch (error) {
@@ -115,6 +122,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
               if (!op.valid()) return;
               if (accepted?.job_id) {
                 store.update(op.ticket, reduceAttempt(current(templateId, key), { accepted }));
+                started(current(templateId, key));
                 store.dropFiles(key);
                 balanceChanged();
               }
