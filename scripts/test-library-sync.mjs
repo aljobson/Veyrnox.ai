@@ -113,8 +113,12 @@ try {
     assert.equal((await one('SELECT count(*)::int AS n FROM public.create_drafts WHERE user_id = $1', [bob.userId])).n, 0);
 
     // The telemetry allowlist admits the three routes and keeps the earlier ones.
-    for (const p of ['/api/v1/library-sync', '/api/v1/library-sync/favourites', '/api/v1/library-sync/draft', '/api/v1/first-goal', '/app/photo-studio']) {
+    for (const p of ['/api/v1/library-sync', '/api/v1/library-sync/favourites', '/api/v1/library-sync/draft', '/api/v1/first-goal']) {
         assert.equal((await one('SELECT public.telemetry_path_allowed($1) AS ok', [p])).ok, true, p);
+    }
+    // 0572 retired the removed Photo Studio and Video Enhance pages.
+    for (const p of ['/app/photo-studio', '/app/enhance']) {
+        assert.equal((await one('SELECT public.telemetry_path_allowed($1) AS ok', [p])).ok, false, p);
     }
     assert.equal((await one('SELECT public.telemetry_path_allowed($1) AS ok', ['/api/v1/library-sync/other'])).ok, false);
 
