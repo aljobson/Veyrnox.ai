@@ -2040,52 +2040,52 @@
     "ratio": 2.22
   },
   {
-    "id": "speech.volume",
-    "english": "Volume",
-    "translation": "आवाज़ की मात्रा",
-    "ratio": 2.5
+    "id": "musicPublic.unblock",
+    "english": "Unblock",
+    "translation": "अनब्लॉक करें",
+    "ratio": 1.71
   },
   {
-    "id": "speech.pitch",
-    "english": "Pitch",
-    "translation": "स्वर की ऊँचाई",
-    "ratio": 2.6
+    "id": "musicPublic.blockNamed",
+    "english": "Block {name}",
+    "translation": "{name} को ब्लॉक करें",
+    "ratio": 1.67
   },
   {
-    "id": "speech.cue.exhale",
-    "english": "Exhale",
-    "translation": "साँस छोड़ना",
-    "ratio": 1.83
+    "id": "musicPublic.follow",
+    "english": "Follow",
+    "translation": "फ़ॉलो करें",
+    "ratio": 1.67
   },
   {
-    "id": "speech.cue.gasps",
-    "english": "Gasp",
-    "translation": "चकित साँस",
-    "ratio": 2.25
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "फ़ॉलो करना बंद करें",
+    "ratio": 2.38
   },
   {
-    "id": "speech.cue.sniffs",
-    "english": "Sniff",
-    "translation": "नाक सुड़कना",
-    "ratio": 2.2
+    "id": "musicPublic.lyrics",
+    "english": "Lyrics",
+    "translation": "गीत के बोल",
+    "ratio": 1.67
   },
   {
-    "id": "speech.cue.snorts",
-    "english": "Snort",
-    "translation": "नाक से फुँफकार",
-    "ratio": 2.8
+    "id": "musicPublic.saved",
+    "english": "Saved.",
+    "translation": "सहेजा गया।",
+    "ratio": 1.67
   },
   {
-    "id": "speech.cue.humming",
-    "english": "Hum",
-    "translation": "गुनगुनाना",
-    "ratio": 3
+    "id": "musicPublic.reportTrack",
+    "english": "Report track",
+    "translation": "ट्रैक की रिपोर्ट करें",
+    "ratio": 1.75
   },
   {
-    "id": "speech.cue.emm",
-    "english": "Um",
-    "translation": "उम्म",
-    "ratio": 2
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "जबरदस्त",
+    "ratio": 2.33
   },
   {
     "id": "oauth.signIn",
@@ -2200,5 +2200,53 @@
     "english": "Sign in",
     "translation": "साइन इन करें",
     "ratio": 1.71
+  },
+  {
+    "id": "speech.volume",
+    "english": "Volume",
+    "translation": "आवाज़ की मात्रा",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.pitch",
+    "english": "Pitch",
+    "translation": "स्वर की ऊँचाई",
+    "ratio": 2.6
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "साँस छोड़ना",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "चकित साँस",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "नाक सुड़कना",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "नाक से फुँफकार",
+    "ratio": 2.8
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "गुनगुनाना",
+    "ratio": 3
+  },
+  {
+    "id": "speech.cue.emm",
+    "english": "Um",
+    "translation": "उम्म",
+    "ratio": 2
   }
 ]

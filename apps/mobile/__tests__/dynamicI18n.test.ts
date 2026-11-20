@@ -38,6 +38,8 @@ const domains: Record<string, readonly string[]> = {
     'beat.kit.{}': ['acoustic', '808', 'lofi'],
     'music.tab.{}': ['songs', 'history', 'hooks'],
     'music.empty.{}': ['songs', 'history', 'hooks'],
+    'musicPublic.reaction.{}': ['fire', 'love', 'wow', 'praise', 'like', 'cool', 'hot'],
+    'musicPublic.genre.{}': ['pop', 'hip-hop', 'rock', 'electronic', 'house', 'lo-fi', 'jazz', 'rnb-soul', 'ambient', 'cinematic', 'country-folk', 'latin'],
     'music.player.{}': ['idle', 'loading', 'playing', 'paused', 'error', 'held', 'ended', 'background'],
     'templates.kind.{}': ['video', 'audio'],
     'audioTemplates.cat.{}': ['MUSIC', 'VOICE-OVER', 'SOUND FX'],
