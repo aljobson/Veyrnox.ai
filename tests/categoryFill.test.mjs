@@ -47,7 +47,7 @@ test('category fill preserves the 800 surviving baseline templates and their vis
       Object.assign(original, reviewed[id].before);
       for (const key of reviewed[id].absentBefore) delete original[key];
     }
-    assert.equal(sha(JSON.stringify(original)), hash, id);
+    assert.equal('sha256:' + sha(JSON.stringify(original)), hash, id);
   }
   assert.equal(baseline.visualPlacementIds.length, 890);
   const oldPlacements = Object.fromEntries(baseline.visualPlacementIds.map(id => [id, visual.placements[baseline.publicIdRenames[id]?.id || id] || baseline.rejectedVisualPlacements[id]]));

@@ -2,14 +2,14 @@
 
 Offline structural audit, contract version 1. Reproduce with `node scripts/audit-template-fidelity.mjs`; regenerate with `--write`.
 
-- like-for-like-safe: 232
-- bound: 162
+- like-for-like-safe: 220
+- bound: 113
 - blocked-needs-video: 392
-- unsupported: 98
+- unsupported: 159
 
 Original source hashes remain unchanged. Only recognized image tokens change in bound text; bound hashes and occurrence maps are recorded in `lib/templateFidelityContracts.json`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
 
-A2-3 routes all 162 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
+A2-3 routes all 113 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
 
 Structurally validated, not output-verified. No paid provider call, migration, flag or price configuration change. TemplateRecipe and detail markup remain unchanged for non-bound, non-blocked recipes; bound detail model links/names and obsolete crop hints follow the effective model; prose-only video-blocked recipes now show the existing source-video note. Edited-prompt PHOTO_CHARACTER_LINE is preserved.
 
@@ -21,6 +21,7 @@ Owner decision, 7 November 2026: higher Seedance-reference quotes for token-bear
 - multi-photo-needs-people-model: 180
 - unsupported-aspect: 12
 - source-audio-not-audited: 71
+- prompt-limit: 280
 - unmapped-image-reference: 27
 - unmapped-placeholder: 122
 - too-many-image-slots: 2
@@ -31,6 +32,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 
 - multi-photo-needs-people-model: 96
 - unsupported-aspect: 9
+- prompt-limit: 115
 
 ## Remaining unbound templates
 
@@ -40,148 +42,167 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - epic-train-doorway-scene: multi-photo-needs-people-model, unsupported-aspect
 - fat-parkour: reference-video-required, source-audio-not-audited
 - crazy-frog-race: reference-video-required, multi-photo-needs-people-model
-- the-push: multi-photo-needs-people-model, unsupported-aspect
-- dreamworks-castle: unsupported-aspect
-- a-moment-between-strangers: multi-photo-needs-people-model, unsupported-aspect
-- who-was-that-business: multi-photo-needs-people-model
-- rap-takeover: reference-video-required
-- urban-broomstick-flight: reference-video-required, source-audio-not-audited
-- hotel-window-watch: multi-photo-needs-people-model
-- broomstick-flight: reference-video-required
-- money-flex: reference-video-required, multi-photo-needs-people-model
-- epic-slap-knockout: reference-video-required, multi-photo-needs-people-model
-- curtain-reveal: multi-photo-needs-people-model, unsupported-aspect
-- event-character-swap: reference-video-required, unsupported-aspect
-- character-takeover: reference-video-required, source-audio-not-audited, unsupported-aspect
-- escalator-loop: multi-photo-needs-people-model, unsupported-aspect
-- sheep-kingdom: unsupported-aspect
+- the-push: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
+- dreamworks-castle: unsupported-aspect, prompt-limit
+- a-moment-between-strangers: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
+- jellyfish-airlines: prompt-limit
+- dandelion-ball: prompt-limit
+- sm-brand-new-day: prompt-limit
+- who-was-that-business: multi-photo-needs-people-model, prompt-limit
+- trick-or-skin: prompt-limit
+- the-wrong-one: prompt-limit
+- enchanted-forest-selfie: prompt-limit
+- rap-takeover: reference-video-required, prompt-limit
+- urban-broomstick-flight: reference-video-required, source-audio-not-audited, prompt-limit
+- hotel-window-watch: multi-photo-needs-people-model, prompt-limit
+- broomstick-flight: reference-video-required, prompt-limit
+- money-flex: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- epic-slap-knockout: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- curtain-reveal: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
+- event-character-swap: reference-video-required, unsupported-aspect, prompt-limit
+- character-takeover: reference-video-required, source-audio-not-audited, unsupported-aspect, prompt-limit
+- escalator-loop: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
+- sheep-kingdom: unsupported-aspect, prompt-limit
 - pumpkin-night: reference-video-required, multi-photo-needs-people-model, unsupported-aspect
 - fashion-catch: multi-photo-needs-people-model, unsupported-aspect
-- desert-train-heist: multi-photo-needs-people-model, unsupported-aspect
+- desert-train-heist: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
 - identity-locked-performance: reference-video-required, source-audio-not-audited, unmapped-image-reference
 - studio-rap-duo: reference-video-required, unmapped-placeholder
 - football-character-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder
-- k9-dance-groove: reference-video-required
+- k9-dance-groove: reference-video-required, prompt-limit
 - twilight-field-memory: reference-video-required
-- community-street-dance-ensemble: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- community-driver-portrait: reference-video-required
+- community-street-dance-ensemble: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- community-driver-portrait: reference-video-required, prompt-limit
 - community-foggy-street-dance: reference-video-required, unmapped-placeholder
 - community-noir-leading-role: reference-video-required, source-audio-not-audited
-- community-candle-wish-drift: multi-photo-needs-people-model
+- community-candle-wish-drift: multi-photo-needs-people-model, prompt-limit
 - community-convertible-joyride: reference-video-required, unmapped-placeholder
 - community-portrait-performance-recast: reference-video-required, source-audio-not-audited, unmapped-image-reference
 - community-meadow-duo-dance: reference-video-required, unmapped-image-reference
-- community-night-pop-trio: multi-photo-needs-people-model
+- community-night-pop-trio: multi-photo-needs-people-model, prompt-limit
+- community-rotating-wardrobe-wipe: prompt-limit
 - community-supercar-getaway: reference-video-required
 - community-truck-stop-celebration: multi-photo-needs-people-model
 - community-kitchen-duo: reference-video-required, unmapped-placeholder
 - community-court-character-run: multi-photo-needs-people-model
 - community-canine-recording-session: reference-video-required
-- community-streetwear-intersection: reference-video-required, unmapped-placeholder
+- community-streetwear-intersection: reference-video-required, unmapped-placeholder, prompt-limit
 - community-stone-arcade-pose: reference-video-required
 - community-star-power-trio: multi-photo-needs-people-model
 - community-balcony-club-encounter: reference-video-required
 - community-street-dance-trio: reference-video-required
-- community-layered-suit-transition: multi-photo-needs-people-model
+- community-layered-suit-transition: multi-photo-needs-people-model, prompt-limit
 - community-giant-city-stride: multi-photo-needs-people-model
 - community-lounge-group-performance: reference-video-required
 - community-car-selfie-performance: reference-video-required
 - community-feline-dance-duo: reference-video-required
-- community-liquid-truck-assembly: reference-video-required, multi-photo-needs-people-model
+- community-liquid-truck-assembly: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- community-supercar-streetwear-exit: prompt-limit
 - community-dual-character-performance: multi-photo-needs-people-model
 - community-marble-hallway-pose: reference-video-required
 - community-urban-street-pose: reference-video-required
-- beyond-gravity: reference-video-required, source-audio-not-audited
-- chasing-you: reference-video-required
-- cinematic-showcase-2: reference-video-required, multi-photo-needs-people-model
-- cinematic-showcase: reference-video-required, multi-photo-needs-people-model
-- basketball-3: reference-video-required, multi-photo-needs-people-model
-- reality-shift: reference-video-required
-- live-stage-performance: reference-video-required, source-audio-not-audited
-- football: reference-video-required, multi-photo-needs-people-model
-- brixton: reference-video-required, multi-photo-needs-people-model
-- unforgettable: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- natural-viral-makeover: multi-photo-needs-people-model
-- freestyle: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
+- beyond-gravity: reference-video-required, source-audio-not-audited, prompt-limit
+- chasing-you: reference-video-required, prompt-limit
+- cinematic-showcase-2: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- cinematic-showcase: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- basketball-3: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- reality-shift: reference-video-required, prompt-limit
+- live-stage-performance: reference-video-required, source-audio-not-audited, prompt-limit
+- football: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- brixton: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- unforgettable: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- natural-viral-makeover: multi-photo-needs-people-model, prompt-limit
+- freestyle: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - the-lost-chase: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- burning-bridges: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- retro-hip-hop-spotlight: reference-video-required, source-audio-not-audited
-- wheelie-rider: reference-video-required, source-audio-not-audited
-- mystery-unboxing: reference-video-required, multi-photo-needs-people-model
-- whiskey-gun-trick: reference-video-required
-- cyber-mask-transformation: reference-video-required, multi-photo-needs-people-model
-- god-of-war: reference-video-required
-- basketball-2: reference-video-required, multi-photo-needs-people-model
-- tesla-object-replace: reference-video-required
-- playing-chess-with-tesla: reference-video-required, source-audio-not-audited
-- tesla-lose-control: reference-video-required, multi-photo-needs-people-model
-- fly-over-the-teslas: reference-video-required, source-audio-not-audited
-- desire-mode: reference-video-required, multi-photo-needs-people-model
-- license-registration-liftoff: reference-video-required, multi-photo-needs-people-model
-- tesla-started-something: reference-video-required
-- coliseum-drift: multi-photo-needs-people-model
-- and-i-need-you: reference-video-required, multi-photo-needs-people-model
-- just-a-lit-bit: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- i-am-here: reference-video-required, multi-photo-needs-people-model
-- somebody: reference-video-required, multi-photo-needs-people-model
-- sega: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- little-storm-knight: multi-photo-needs-people-model
-- wear-the-moment: multi-photo-needs-people-model
+- burning-bridges: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- retro-hip-hop-spotlight: reference-video-required, source-audio-not-audited, prompt-limit
+- wheelie-rider: reference-video-required, source-audio-not-audited, prompt-limit
+- mystery-unboxing: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- whiskey-gun-trick: reference-video-required, prompt-limit
+- cyber-mask-transformation: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- pizzeria-hide-and-seek: prompt-limit
+- god-of-war: reference-video-required, prompt-limit
+- basketball-2: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- tesla-object-replace: reference-video-required, prompt-limit
+- playing-chess-with-tesla: reference-video-required, source-audio-not-audited, prompt-limit
+- tesla-lose-control: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- fly-over-the-teslas: reference-video-required, source-audio-not-audited, prompt-limit
+- desire-mode: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- license-registration-liftoff: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- tesla-started-something: reference-video-required, prompt-limit
+- coliseum-drift: multi-photo-needs-people-model, prompt-limit
+- and-i-need-you: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- just-a-lit-bit: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- i-am-here: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- somebody: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- sega: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- theater-ceiling-horror: prompt-limit
+- studio-ballerina-turns: prompt-limit
+- little-storm-knight: multi-photo-needs-people-model, prompt-limit
+- wear-the-moment: multi-photo-needs-people-model, prompt-limit
 - wassup-freestyle: reference-video-required
 - piano-vibe: reference-video-required
-- you-good-max: reference-video-required, source-audio-not-audited
-- car-blows-up: multi-photo-needs-people-model
-- saved-by-darkness: multi-photo-needs-people-model
+- you-good-max: reference-video-required, source-audio-not-audited, prompt-limit
+- reflection-in-the-mirror: prompt-limit
+- car-blows-up: multi-photo-needs-people-model, prompt-limit
+- saved-by-darkness: multi-photo-needs-people-model, prompt-limit
+- pumpkin-guardian: prompt-limit
+- fashion-halloween: prompt-limit
+- thrille: prompt-limit
+- ghost-makeover: prompt-limit
 - cash-flow: reference-video-required
-- cliffside-silence: reference-video-required, source-audio-not-audited
+- cliffside-silence: reference-video-required, source-audio-not-audited, prompt-limit
 - icon-duet: reference-video-required, multi-photo-needs-people-model
 - raindance: reference-video-required, multi-photo-needs-people-model
-- kieza-dance-flow: reference-video-required, multi-photo-needs-people-model
+- kieza-dance-flow: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - call-the-car: reference-video-required, multi-photo-needs-people-model
-- haunted-motion: reference-video-required
+- haunted-motion: reference-video-required, prompt-limit
 - my-other-hobby: reference-video-required
-- one-last-embrace: multi-photo-needs-people-model
-- lil-yachti-coffin: reference-video-required, source-audio-not-audited
-- birthday-drift: multi-photo-needs-people-model
-- community-parking-lot-recast: reference-video-required, source-audio-not-audited
+- one-last-embrace: multi-photo-needs-people-model, prompt-limit
+- lil-yachti-coffin: reference-video-required, source-audio-not-audited, prompt-limit
+- birthday-drift: multi-photo-needs-people-model, prompt-limit
+- community-parking-lot-recast: reference-video-required, source-audio-not-audited, prompt-limit
 - community-showroom-car-reveal: reference-video-required
-- community-urban-orbit-fashion: reference-video-required, unmapped-placeholder
+- community-urban-orbit-fashion: reference-video-required, unmapped-placeholder, prompt-limit
 - community-black-trench: reference-video-required, unmapped-placeholder
 - community-urban-fashion-stroll: reference-video-required
 - community-rugside-wardrobe-swaps: multi-photo-needs-people-model
-- community-urban-suit-swap: reference-video-required
-- community-athlete-dance-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-urban-suit-swap: reference-video-required, prompt-limit
+- community-athlete-dance-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
 - community-truck-jump-reveal: reference-video-required, unmapped-placeholder
 - community-vocalist-outfit-swap: reference-video-required, unmapped-placeholder
 - community-escalator-outfit-swap: multi-photo-needs-people-model
 - community-street-style-swap: reference-video-required, unmapped-placeholder
 - community-supercar-showreel-spin: reference-video-required, too-many-image-slots
 - community-party-dancer-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-spinning-wardrobe-swap: prompt-limit
 - community-orbital-truck-morph: reference-video-required, unmapped-placeholder
 - community-evening-party-recast: reference-video-required
 - community-sunset-rider: reference-video-required, unmapped-placeholder
 - community-urban-crosswalk-walk: reference-video-required, unmapped-placeholder
 - community-festival-stage-swap: reference-video-required
 - community-trio-urban-groove: reference-video-required, unmapped-placeholder
-- community-elevator-mirror-selfie: reference-video-required
-- community-pink-studio-recast: reference-video-required
+- community-elevator-mirror-selfie: reference-video-required, prompt-limit
+- community-pink-studio-recast: reference-video-required, prompt-limit
+- community-luxury-sedan-arrival: prompt-limit
 - community-marble-vanity-mirror: reference-video-required, unmapped-placeholder
-- community-stadium-orbit-rush: reference-video-required, unmapped-placeholder
+- community-stadium-orbit-rush: reference-video-required, unmapped-placeholder, prompt-limit
 - community-convertible-outfit-swap: reference-video-required, unmapped-placeholder
 - community-nightclub-balcony-observer: multi-photo-needs-people-model
 - community-cliffside-rescue: reference-video-required, unmapped-placeholder
-- community-retro-seoul-strut: reference-video-required, unmapped-image-reference
+- community-retro-seoul-strut: reference-video-required, unmapped-image-reference, prompt-limit
 - community-courtyard-fashion-spin: reference-video-required, unmapped-placeholder
 - community-sidewalk-groove-duo: reference-video-required
 - community-manor-bridge-blast: reference-video-required
 - community-times-square-shuffle: multi-photo-needs-people-model
-- community-suit-walk: reference-video-required
-- community-vehicle-swap-drift: reference-video-required, source-audio-not-audited
+- community-suit-walk: reference-video-required, prompt-limit
+- community-vehicle-swap-drift: reference-video-required, source-audio-not-audited, prompt-limit
+- community-locker-room-duet: prompt-limit
 - community-supercar-garage-swap: reference-video-required, unmapped-placeholder
 - community-neon-selfie-swap: reference-video-required, unmapped-placeholder
 - community-convertible-singalong-duo: reference-video-required, unmapped-placeholder
 - community-grey-coat-swap: reference-video-required, unmapped-placeholder
-- community-shopping-bag-unpack: reference-video-required
+- community-shopping-bag-unpack: reference-video-required, prompt-limit
 - community-studio-product-showcase: reference-video-required, unmapped-image-reference
 - community-smoke-show-spotlight: reference-video-required
 - community-desert-truck-leap: reference-video-required, unmapped-placeholder
@@ -192,20 +213,21 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-soccer-dribble: reference-video-required, source-audio-not-audited, unmapped-placeholder
 - community-suit-duo-dance: reference-video-required, multi-photo-needs-people-model
 - community-elevator-recast: multi-photo-needs-people-model
-- community-ceiling-fan-transition: reference-video-required
+- community-ceiling-fan-transition: reference-video-required, prompt-limit
 - community-skyline-supercar-drive: reference-video-required, source-audio-not-audited, unmapped-image-reference
-- community-pampered-spa-feline: reference-video-required, unmapped-image-reference
+- community-pampered-spa-feline: reference-video-required, unmapped-image-reference, prompt-limit
 - community-street-corner-dance: reference-video-required, multi-photo-needs-people-model
 - community-chandelier-lounge-performance: reference-video-required
-- community-ballroom-portrait-shift: reference-video-required, unmapped-placeholder
+- community-ballroom-portrait-shift: reference-video-required, unmapped-placeholder, prompt-limit
 - community-kitchen-coffee-swap: reference-video-required, unmapped-placeholder
-- community-offroad-flyover: reference-video-required
+- community-offroad-flyover: reference-video-required, prompt-limit
 - community-subway-landmark-swap: reference-video-required, unmapped-placeholder
 - community-midnight-wheelie: reference-video-required, unmapped-placeholder
 - community-burgundy-stride: reference-video-required, unmapped-placeholder
-- community-warrior-standoff: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-warrior-standoff: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
 - community-locker-room-swap: reference-video-required, unmapped-placeholder
-- community-character-swap: reference-video-required, multi-photo-needs-people-model
+- community-character-swap: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- community-global-zoom-ambassador: prompt-limit
 - community-studio-rap-performance: multi-photo-needs-people-model
 - community-wellness-drink-prep: reference-video-required, unmapped-placeholder
 - community-style-swap-rhythm: reference-video-required
@@ -214,7 +236,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-rooftop-dj-swap: reference-video-required, unmapped-placeholder
 - community-music-video-recast: reference-video-required
 - community-athlete-identity-swap: reference-video-required
-- community-showroom-customizer: reference-video-required, unmapped-image-reference
+- community-showroom-customizer: reference-video-required, unmapped-image-reference, prompt-limit
 - community-smoothie-walk: reference-video-required, unmapped-placeholder
 - community-duo-character-swap: reference-video-required
 - community-elevator-dance-swap: multi-photo-needs-people-model
@@ -233,66 +255,69 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-nightlife-style-swap: multi-photo-needs-people-model
 - community-pink-studio-groove: reference-video-required, unmapped-placeholder
 - community-architectural-blueprint-rise: reference-video-required
-- community-living-room-duo: reference-video-required, unmapped-placeholder
-- community-skydiving-cat-swap: reference-video-required
+- community-living-room-duo: reference-video-required, unmapped-placeholder, prompt-limit
+- community-skydiving-cat-swap: reference-video-required, prompt-limit
 - community-sofa-portrait-swap: multi-photo-needs-people-model
-- community-drive-thru-pup: reference-video-required
+- community-drive-thru-pup: reference-video-required, prompt-limit
 - community-firelit-combat-duel: reference-video-required, unmapped-placeholder
 - community-musician-swap-performance: reference-video-required, unmapped-placeholder
-- community-highway-truck-rescue: reference-video-required, unmapped-image-reference
+- community-highway-truck-rescue: reference-video-required, unmapped-image-reference, prompt-limit
 - community-cart-fall-reaction: reference-video-required, unmapped-placeholder
-- community-mint-suite-grooves: reference-video-required, unmapped-placeholder
+- community-mint-suite-grooves: reference-video-required, unmapped-placeholder, prompt-limit
+- community-dragon-summoner: prompt-limit
 - community-tactical-range-swap: reference-video-required, multi-photo-needs-people-model
 - community-kitchen-coffee-prep: multi-photo-needs-people-model
-- community-boombox-street-groove: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-boombox-street-groove: reference-video-required, source-audio-not-audited, unmapped-image-reference, prompt-limit
 - community-news-desk-recast: reference-video-required
-- community-pizza-slice: multi-photo-needs-people-model
-- community-flying-cake-ride: reference-video-required
+- community-pizza-slice: multi-photo-needs-people-model, prompt-limit
+- community-flying-cake-ride: reference-video-required, prompt-limit
 - community-kitchen-character-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
 - community-lobby-couple-walk: reference-video-required, multi-photo-needs-people-model
 - community-vaulted-temple-walk: multi-photo-needs-people-model
-- community-hidden-wardrobe-swaps: reference-video-required, unmapped-placeholder
+- community-hidden-wardrobe-swaps: reference-video-required, unmapped-placeholder, prompt-limit
 - community-street-dance-recast: reference-video-required
 - community-kitchen-feline-barista: reference-video-required, unmapped-image-reference
 - community-cliffside-recast: reference-video-required, unmapped-placeholder
 - community-duet-exchange: reference-video-required, unmapped-placeholder
+- community-stellar-arrival-sequence: prompt-limit
 - community-toy-car-swap: multi-photo-needs-people-model
-- community-automotive-symbiote-forge: reference-video-required, multi-photo-needs-people-model
+- community-automotive-symbiote-forge: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - community-tactical-sword-ambush: reference-video-required, unmapped-placeholder
-- community-garden-path-tea: reference-video-required
+- community-garden-path-tea: reference-video-required, prompt-limit
 - community-cabin-rhythm-duo: reference-video-required, unmapped-placeholder
-- community-dapper-animal-duet: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-dapper-animal-duet: reference-video-required, source-audio-not-audited, unmapped-image-reference, prompt-limit
 - community-street-dance-swap: reference-video-required, unmapped-placeholder
 - community-muddy-leap-tumble: multi-photo-needs-people-model
 - community-studio-car-showcase: reference-video-required, unmapped-placeholder
 - community-card-reveal-swap: reference-video-required
-- community-feline-karate-cat: reference-video-required
+- community-feline-karate-cat: reference-video-required, prompt-limit
 - community-drift-curve-replacement: reference-video-required, multi-photo-needs-people-model
 - community-western-crowds-standstill: reference-video-required
 - community-athletic-pose-check: reference-video-required, unmapped-placeholder
-- community-fairy-tale-walk: reference-video-required, source-audio-not-audited
+- community-fairy-tale-walk: reference-video-required, source-audio-not-audited, prompt-limit
 - community-stadium-ball-control: multi-photo-needs-people-model
 - community-sofa-outfit-swap: reference-video-required, unmapped-image-reference
 - community-streetball-cross-over: reference-video-required, source-audio-not-audited
 - community-manor-character-recast: reference-video-required
+- community-party-entrance-swap: prompt-limit
 - community-car-snack-swap: reference-video-required
 - community-passenger-seat-serenade: reference-video-required, unmapped-placeholder
 - community-armored-duo-recast: reference-video-required, multi-photo-needs-people-model
-- community-pet-dance-swapping: reference-video-required
+- community-pet-dance-swapping: reference-video-required, prompt-limit
 - community-urban-dance-squad: reference-video-required
 - community-showroom-vehicle-reveal: reference-video-required
-- community-mirror-flip-transition: reference-video-required, unmapped-placeholder
+- community-mirror-flip-transition: reference-video-required, unmapped-placeholder, prompt-limit
 - community-urban-style-walk: reference-video-required, unmapped-placeholder
 - community-tactical-range-drill: reference-video-required
 - community-tactical-hallway-brawl: reference-video-required
-- community-faux-fur-lift: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-faux-fur-lift: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
 - community-blossom-supercar-showcase: multi-photo-needs-people-model
-- community-street-coffee-stir: reference-video-required, unmapped-placeholder
+- community-street-coffee-stir: reference-video-required, unmapped-placeholder, prompt-limit
 - community-chic-leather-pose: reference-video-required, unmapped-placeholder
 - community-crowd-leader-pivot: reference-video-required, unmapped-image-reference
 - community-retro-gangster-exchange: multi-photo-needs-people-model
 - community-periscope-chase: reference-video-required
-- community-character-motion-swap: reference-video-required
+- community-character-motion-swap: reference-video-required, prompt-limit
 - community-mafia-boss-montage: reference-video-required
 - community-chaos-cabin-drift: multi-photo-needs-people-model
 - community-boxing-identity-swap: reference-video-required, source-audio-not-audited
@@ -300,24 +325,24 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-bathroom-duo: reference-video-required, source-audio-not-audited
 - community-orange-case-spin: reference-video-required
 - community-rainy-street-encounter: reference-video-required
-- community-trolley-crash-billboard: reference-video-required, unmapped-placeholder
-- community-streetwear-dance-swap: reference-video-required, source-audio-not-audited
-- community-custom-drift-car-swap: reference-video-required, unmapped-placeholder
+- community-trolley-crash-billboard: reference-video-required, unmapped-placeholder, prompt-limit
+- community-streetwear-dance-swap: reference-video-required, source-audio-not-audited, prompt-limit
+- community-custom-drift-car-swap: reference-video-required, unmapped-placeholder, prompt-limit
 - community-convertible-duo-swap: reference-video-required, unmapped-placeholder
 - community-trio-dance-swap: reference-video-required, unmapped-placeholder
 - community-showroom-car-swap: reference-video-required, unmapped-placeholder
 - community-cafe-crowd-swap: reference-video-required, unmapped-placeholder
 - community-gentleman-branch-chop: reference-video-required
 - community-street-squat-duo: reference-video-required, unmapped-placeholder
-- community-skincare-routine: reference-video-required, unmapped-image-reference
-- community-winter-streetwear-film: reference-video-required, unmapped-image-reference
-- community-graphic-hoodie-swap: reference-video-required
+- community-skincare-routine: reference-video-required, unmapped-image-reference, prompt-limit
+- community-winter-streetwear-film: reference-video-required, unmapped-image-reference, prompt-limit
+- community-graphic-hoodie-swap: reference-video-required, prompt-limit
 - community-elevator-style-swap: reference-video-required, unmapped-placeholder
 - community-synchronized-group-formation: reference-video-required, multi-photo-needs-people-model
 - community-streetball-rivalry-swaps: multi-photo-needs-people-model
-- community-kitchen-feline-reveal: reference-video-required
-- community-alleyway-identity-swap: reference-video-required, source-audio-not-audited
-- community-apocalypse-lounge: reference-video-required, unmapped-placeholder
+- community-kitchen-feline-reveal: reference-video-required, prompt-limit
+- community-alleyway-identity-swap: reference-video-required, source-audio-not-audited, prompt-limit
+- community-apocalypse-lounge: reference-video-required, unmapped-placeholder, prompt-limit
 - community-urban-recast-suit: reference-video-required
 - community-costume-basketball-swap: reference-video-required, source-audio-not-audited
 - community-grooving-driver-dog: reference-video-required
@@ -326,39 +351,39 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-hillside-dance-swap: reference-video-required
 - community-playful-animal-duel: reference-video-required, unmapped-placeholder
 - community-skyline-luxury-reveal: reference-video-required, multi-photo-needs-people-model
-- community-skyscraper-ledge-spin: reference-video-required
-- community-pitch-pitch-sprint: reference-video-required, unmapped-placeholder
-- community-urban-orbit-runway: reference-video-required, unmapped-placeholder
+- community-skyscraper-ledge-spin: reference-video-required, prompt-limit
+- community-pitch-pitch-sprint: reference-video-required, unmapped-placeholder, prompt-limit
+- community-urban-orbit-runway: reference-video-required, unmapped-placeholder, prompt-limit
 - community-birthday-car-swap: reference-video-required, unmapped-placeholder
-- community-garden-duo-swap: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-garden-duo-swap: reference-video-required, source-audio-not-audited, unmapped-image-reference, prompt-limit
 - community-night-crosswalk: reference-video-required
-- community-city-night-trio: reference-video-required, unmapped-placeholder
-- community-sportbike-rider-swap: reference-video-required, unmapped-placeholder
+- community-city-night-trio: reference-video-required, unmapped-placeholder, prompt-limit
+- community-sportbike-rider-swap: reference-video-required, unmapped-placeholder, prompt-limit
 - community-street-character-swap: reference-video-required
-- community-nightclub-duo-recast: reference-video-required, source-audio-not-audited
+- community-nightclub-duo-recast: reference-video-required, source-audio-not-audited, prompt-limit
 - community-white-outfit-swirl: reference-video-required, unmapped-placeholder
 - community-animated-duo-toast: multi-photo-needs-people-model
 - community-convertible-driver-swap: reference-video-required
-- community-symbiote-supercar-shift: reference-video-required
-- community-street-rap-collective: reference-video-required, multi-photo-needs-people-model
+- community-symbiote-supercar-shift: reference-video-required, prompt-limit
+- community-street-rap-collective: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - community-skyline-rhythm-walk: reference-video-required
 - community-urban-sedan-pursuit: reference-video-required
 - community-vibrant-outfit-swap: reference-video-required, unmapped-placeholder
 - community-kitchen-cartoon-duo: multi-photo-needs-people-model
-- community-object-swap: reference-video-required, unmapped-image-reference
+- community-object-swap: reference-video-required, unmapped-image-reference, prompt-limit
 - community-chicken-bucket-swap: reference-video-required
 - community-suit-synchronized-dance: reference-video-required, multi-photo-needs-people-model
-- community-leather-jacket-duo: reference-video-required, unmapped-placeholder
-- community-tunnel-drift-transformation: reference-video-required, unmapped-placeholder
+- community-leather-jacket-duo: reference-video-required, unmapped-placeholder, prompt-limit
+- community-tunnel-drift-transformation: reference-video-required, unmapped-placeholder, prompt-limit
 - community-cliffside-rescue-hero: reference-video-required, unmapped-placeholder
 - community-suit-workout-swap: multi-photo-needs-people-model
 - community-cinematic-face-swap: reference-video-required, source-audio-not-audited
 - community-reptilian-fridge-raid: reference-video-required, unmapped-placeholder
 - community-courtside-slam-dunk: multi-photo-needs-people-model
-- community-clubside-observation: multi-photo-needs-people-model
+- community-clubside-observation: multi-photo-needs-people-model, prompt-limit
 - community-formal-groove: reference-video-required, unmapped-placeholder
 - community-balcony-trio-dance: multi-photo-needs-people-model
-- community-nightclub-sway: reference-video-required
+- community-nightclub-sway: reference-video-required, prompt-limit
 - community-zombie-dance: reference-video-required, unmapped-placeholder
 - community-puppy-city-stroll: reference-video-required
 - community-kitchen-trombone-duo: reference-video-required, unmapped-placeholder
@@ -367,38 +392,40 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-tracksuit-groove: reference-video-required, unmapped-placeholder
 - community-championship-knockout-swaps: reference-video-required, unmapped-placeholder
 - community-rap-battle-duo: reference-video-required, unmapped-placeholder
-- community-hotel-room-orbit: reference-video-required, unmapped-placeholder
+- community-gothic-duelist-descent: prompt-limit
+- community-hotel-room-orbit: reference-video-required, unmapped-placeholder, prompt-limit
 - community-keyboard-jam: reference-video-required, unmapped-placeholder
-- community-dystopian-lobby-firefight: reference-video-required, unmapped-image-reference
+- community-dystopian-lobby-firefight: reference-video-required, unmapped-image-reference, prompt-limit
 - community-streetwear-apparel-showcase: reference-video-required, unmapped-image-reference
 - community-explosion-runway-walk: multi-photo-needs-people-model
 - community-bedroom-dance-groove: multi-photo-needs-people-model
-- community-spooky-dog-groove: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-spooky-dog-groove: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
 - community-courtyard-character-swap: reference-video-required, multi-photo-needs-people-model
 - community-double-character-swap: reference-video-required, multi-photo-needs-people-model
-- community-mummy-persona-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-mummy-persona-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
 - community-soccer-star-swap: reference-video-required
 - community-minimalist-cafe-swap: reference-video-required
 - community-protest-speaker-swap: reference-video-required, unmapped-placeholder
 - community-car-trio-swap: reference-video-required, unmapped-placeholder
 - community-chic-wardrobe-swap: reference-video-required, too-many-image-slots
 - community-kitchen-percussion-pet: reference-video-required
-- community-chore-payment-comedy: multi-photo-needs-people-model
+- community-chore-payment-comedy: multi-photo-needs-people-model, prompt-limit
 - community-urban-transit-swap: reference-video-required, unmapped-placeholder
 - community-model-vehicle-swap: reference-video-required
-- community-boutique-hoodie-reveal: reference-video-required, source-audio-not-audited
+- community-boutique-hoodie-reveal: reference-video-required, source-audio-not-audited, prompt-limit
 - community-kitchen-canine-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
 - community-midnight-drive-party: reference-video-required, unmapped-placeholder
 - community-summit-lounge-style: reference-video-required, unmapped-placeholder
+- community-ceiling-fan-wipe: prompt-limit
 - community-street-vendor-swap: reference-video-required, unmapped-placeholder
-- community-pampered-pet-spa: reference-video-required, unmapped-image-reference
+- community-pampered-pet-spa: reference-video-required, unmapped-image-reference, prompt-limit
 - community-gala-trophy-walk: reference-video-required
 - community-camera-knock-swap: reference-video-required, unmapped-placeholder
 - community-ceiling-fan-switch: reference-video-required
-- community-elevator-entrance-interaction: reference-video-required, source-audio-not-audited, unmapped-image-reference
+- community-elevator-entrance-interaction: reference-video-required, source-audio-not-audited, unmapped-image-reference, prompt-limit
 - community-treadmill-style-swap: reference-video-required, unmapped-placeholder
 - community-flight-case-macro: multi-photo-needs-people-model
-- community-stage-performance-recast: reference-video-required
+- community-stage-performance-recast: reference-video-required, prompt-limit
 - community-burgundy-fur-stroll: reference-video-required, unmapped-placeholder
 - community-office-orbit-sequence: reference-video-required, unmapped-placeholder
 - community-feline-street-style: multi-photo-needs-people-model
@@ -412,115 +439,151 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-natural-face-swap: reference-video-required, unmapped-placeholder
 - community-kitten-dance-challenge: reference-video-required, unmapped-placeholder
 - community-kitchen-cleaver-swing: multi-photo-needs-people-model
-- community-rug-fashion-rotation: reference-video-required, unmapped-placeholder
+- community-rug-fashion-rotation: reference-video-required, unmapped-placeholder, prompt-limit
 - community-elevator-style-shift: multi-photo-needs-people-model
-- community-lavish-cash-flow: reference-video-required, unmapped-placeholder
-- community-money-mobile-recast: reference-video-required, unmapped-placeholder
-- community-action-hero-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder
-- community-retro-housewife-dance: reference-video-required
+- community-lavish-cash-flow: reference-video-required, unmapped-placeholder, prompt-limit
+- community-money-mobile-recast: reference-video-required, unmapped-placeholder, prompt-limit
+- community-action-hero-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
+- community-retro-housewife-dance: reference-video-required, prompt-limit
 - fancy-cafe: reference-video-required, multi-photo-needs-people-model
 - morning-coffee: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- crowd-choreography-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- vampire-voyage: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
+- crowd-choreography-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- vampire-voyage: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - tilted-melody: reference-video-required, source-audio-not-audited
-- the-giant-caretaker: multi-photo-needs-people-model
-- neon-city-freefall: reference-video-required
-- edge-of-victory: multi-photo-needs-people-model
-- what-falls-next: multi-photo-needs-people-model
-- catch-of-the-day: multi-photo-needs-people-model
-- the-beast-awakens: multi-photo-needs-people-model
-- grab-heist: multi-photo-needs-people-model
-- office-escape: multi-photo-needs-people-model
+- the-giant-caretaker: multi-photo-needs-people-model, prompt-limit
+- ocean-car-sinking: prompt-limit
+- neon-city-freefall: reference-video-required, prompt-limit
+- edge-of-victory: multi-photo-needs-people-model, prompt-limit
+- what-falls-next: multi-photo-needs-people-model, prompt-limit
+- office-kitchen: prompt-limit
+- catch-of-the-day: multi-photo-needs-people-model, prompt-limit
+- the-beast-awakens: multi-photo-needs-people-model, prompt-limit
+- grab-heist: multi-photo-needs-people-model, prompt-limit
+- office-escape: multi-photo-needs-people-model, prompt-limit
 - sketch-to-real-car: multi-photo-needs-people-model
-- split-jump: multi-photo-needs-people-model
-- sculptural-sunglasses-ad: multi-photo-needs-people-model
-- edit-the-sky: multi-photo-needs-people-model
-- community-anime-passenger-glow: reference-video-required
+- underground-lab-transformation: prompt-limit
+- the-spirit: prompt-limit
+- the-crown: prompt-limit
+- dragon-lord: prompt-limit
+- noir-film: prompt-limit
+- split-jump: multi-photo-needs-people-model, prompt-limit
+- impact: prompt-limit
+- ruins-escape-run: prompt-limit
+- curious-garden-journey: prompt-limit
+- born-from-sand: prompt-limit
+- freefall: prompt-limit
+- sculptural-sunglasses-ad: multi-photo-needs-people-model, prompt-limit
+- dont-touch-the-braids: prompt-limit
+- last-supper: prompt-limit
+- x-ray-matter: prompt-limit
+- edit-the-sky: multi-photo-needs-people-model, prompt-limit
+- sea-snakes: prompt-limit
+- rooftop-agent-pursuit: prompt-limit
+- community-anime-passenger-glow: reference-video-required, prompt-limit
 - community-chibi-monster-dance: reference-video-required, unmapped-placeholder
+- community-macro-product-montage: prompt-limit
+- community-chic-accessory-rotation: prompt-limit
 - community-glossy-hair-flip: reference-video-required
-- community-coastal-car-showcase: reference-video-required
+- community-coastal-car-showcase: reference-video-required, prompt-limit
 - community-beverage-brand-swap: reference-video-required, unmapped-placeholder
 - community-aloe-drink-swap: reference-video-required, unmapped-placeholder
-- community-brand-billboard-swap: reference-video-required, source-audio-not-audited, unmapped-image-reference
-- community-billboard-product-swap: reference-video-required, unmapped-image-reference
+- community-brand-billboard-swap: reference-video-required, source-audio-not-audited, unmapped-image-reference, prompt-limit
+- community-billboard-product-swap: reference-video-required, unmapped-image-reference, prompt-limit
 - community-cafeteria-hero-recast: reference-video-required, source-audio-not-audited
 - community-convertible-car-talk: reference-video-required
 - community-supercar-arrival: reference-video-required, unmapped-placeholder
 - community-showroom-handover: reference-video-required
 - community-supercar-night-drive: reference-video-required, source-audio-not-audited, unmapped-image-reference
 - community-actor-recast: reference-video-required
-- community-apocalypse-terrace: reference-video-required
+- community-apocalypse-terrace: reference-video-required, prompt-limit
 - community-canine-expression-swap: reference-video-required
-- community-pampered-spa-day: reference-video-required
-- seedance-birthday-morning: multi-photo-needs-people-model
+- community-pampered-spa-day: reference-video-required, prompt-limit
+- community-dragon-awakening: prompt-limit
+- community-subway-combat-strike: prompt-limit
+- community-dragon-rider-encounter: prompt-limit
+- community-shockwave-horizon-shift: prompt-limit
+- community-parkour-vault-shift: prompt-limit
+- window-explode: prompt-limit
+- seedance-birthday-morning: multi-photo-needs-people-model, prompt-limit
 - seedance-jean-phil: reference-video-required, multi-photo-needs-people-model
-- seedance-burning-stage: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- seedance-off-duty: multi-photo-needs-people-model
+- seedance-burning-stage: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- seedance-off-duty: multi-photo-needs-people-model, prompt-limit
 - seedance-motion-authority: reference-video-required, multi-photo-needs-people-model
-- seedance-hero-drive: multi-photo-needs-people-model
-- seedance-cinematic-car-drop: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
+- seedance-hero-drive: multi-photo-needs-people-model, prompt-limit
+- seedance-cinematic-car-drop: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - seedance-big-stepper: reference-video-required
 - seedance-rooftop-shepherd: reference-video-required, source-audio-not-audited
-- seedance-riding-the-bear: reference-video-required
-- seedance-spider-dance: reference-video-required, multi-photo-needs-people-model
-- seedance-matrix-bullet-dodge: reference-video-required
+- seedance-riding-the-bear: reference-video-required, prompt-limit
+- seedance-spider-dance: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- seedance-matrix-bullet-dodge: reference-video-required, prompt-limit
 - seedance-xp-daydream: multi-photo-needs-people-model
 - seedance-toy-to-torque: multi-photo-needs-people-model
-- seedance-groovy-golf-shot: multi-photo-needs-people-model
-- seedance-morning-parking-vibe: reference-video-required, multi-photo-needs-people-model
-- seedance-frozen-getaway: multi-photo-needs-people-model
-- seedance-midair-photo: multi-photo-needs-people-model
-- seedance-fan-change: multi-photo-needs-people-model
+- seedance-groovy-golf-shot: multi-photo-needs-people-model, prompt-limit
+- seedance-morning-parking-vibe: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- seedance-frozen-getaway: multi-photo-needs-people-model, prompt-limit
+- seedance-midair-photo: multi-photo-needs-people-model, prompt-limit
+- seedance-fan-change: multi-photo-needs-people-model, prompt-limit
 - seedance-hotel-lobby-2: reference-video-required, multi-photo-needs-people-model
 - seedance-hotel-lobby: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- seedance-through-the-cloudline: multi-photo-needs-people-model
-- seedance-best-friend: multi-photo-needs-people-model
-- seedance-butterfly-effect: multi-photo-needs-people-model
-- seedance-rain-rider: multi-photo-needs-people-model
-- seedance-midnight-run: multi-photo-needs-people-model
-- seedance-birthday-shot: multi-photo-needs-people-model
-- seedance-still-my-friend: multi-photo-needs-people-model
-- seedance-the-train-rushes-by: multi-photo-needs-people-model
-- london-london: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- hand-frame-switch: reference-video-required, multi-photo-needs-people-model
-- blow-and-throw: reference-video-required
-- light-and-blow: reference-video-required, multi-photo-needs-people-model
-- one-breath-wish: reference-video-required, multi-photo-needs-people-model
-- flaming-candle-blowout: reference-video-required, multi-photo-needs-people-model
-- make-a-wish: reference-video-required, multi-photo-needs-people-model
-- stage-performer-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- ride-the-beat: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- epic-arrival: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- football-duo-recast: reference-video-required, source-audio-not-audited
-- retro-groove: reference-video-required, multi-photo-needs-people-model
-- kick-and-run: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- surprise-knockout-kick: reference-video-required, multi-photo-needs-people-model
-- fans-go-wild: reference-video-required, source-audio-not-audited
+- seedance-through-the-cloudline: multi-photo-needs-people-model, prompt-limit
+- seedance-bunny-taxi: prompt-limit
+- seedance-best-friend: multi-photo-needs-people-model, prompt-limit
+- seedance-blocked-light: prompt-limit
+- seedance-butterfly-effect: multi-photo-needs-people-model, prompt-limit
+- seedance-rain-rider: multi-photo-needs-people-model, prompt-limit
+- seedance-midnight-run: multi-photo-needs-people-model, prompt-limit
+- seedance-birthday-shot: multi-photo-needs-people-model, prompt-limit
+- seedance-popcorn-eruption: prompt-limit
+- seedance-rescue-myself: prompt-limit
+- seedance-quick-change-2: prompt-limit
+- seedance-roof-jump: prompt-limit
+- seedance-glass-cube: prompt-limit
+- seedance-still-my-friend: multi-photo-needs-people-model, prompt-limit
+- seedance-the-train-rushes-by: multi-photo-needs-people-model, prompt-limit
+- seedance-subway-fight: prompt-limit
+- london-london: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- hand-frame-switch: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- blow-and-throw: reference-video-required, prompt-limit
+- light-and-blow: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- cake-in-the-fridge: prompt-limit
+- one-breath-wish: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- flaming-candle-blowout: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- make-a-wish: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- stage-performer-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- ride-the-beat: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- epic-arrival: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- football-duo-recast: reference-video-required, source-audio-not-audited, prompt-limit
+- retro-groove: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- kick-and-run: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- surprise-knockout-kick: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- fans-go-wild: reference-video-required, source-audio-not-audited, prompt-limit
 - outfit-transition-gone-crazy: reference-video-required, multi-photo-needs-people-model
 - carousel: reference-video-required
 - wish-a-merry-christmas: reference-video-required, multi-photo-needs-people-model
-- desert-chase: reference-video-required, multi-photo-needs-people-model
-- storybook-reality-recast: multi-photo-needs-people-model
-- street-phantom: reference-video-required, multi-photo-needs-people-model
-- on-the-winter-roof: multi-photo-needs-people-model
+- desert-chase: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- storybook-reality-recast: multi-photo-needs-people-model, prompt-limit
+- street-phantom: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- on-the-winter-roof: multi-photo-needs-people-model, prompt-limit
 - new-year-on-the-nose: reference-video-required, multi-photo-needs-people-model
-- holiday-home-recast: reference-video-required
-- the-winning-gift: multi-photo-needs-people-model
+- game-character-rig: prompt-limit
+- holiday-heist-run: prompt-limit
+- holiday-home-recast: reference-video-required, prompt-limit
+- the-winning-gift: multi-photo-needs-people-model, prompt-limit
 - dance-in-the-snow: reference-video-required, multi-photo-needs-people-model
-- the-bigger-gift: multi-photo-needs-people-model
-- one-more-dance: multi-photo-needs-people-model
-- snowball-revenge: multi-photo-needs-people-model
-- drift-therapy: reference-video-required, multi-photo-needs-people-model
-- dj-performance: reference-video-required
-- summer-romance-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
-- athlete-flex: reference-video-required
-- 3-friends: reference-video-required, multi-photo-needs-people-model
-- helicopter-jump-two: reference-video-required
-- landing: reference-video-required
-- fridge-down: reference-video-required
+- the-bigger-gift: multi-photo-needs-people-model, prompt-limit
+- one-more-dance: multi-photo-needs-people-model, prompt-limit
+- snowball-revenge: multi-photo-needs-people-model, prompt-limit
+- drift-therapy: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- dj-performance: reference-video-required, prompt-limit
+- summer-romance-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
+- athlete-flex: reference-video-required, prompt-limit
+- 3-friends: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- helicopter-jump-two: reference-video-required, prompt-limit
+- landing: reference-video-required, prompt-limit
+- fridge-down: reference-video-required, prompt-limit
 - hyenas-run: reference-video-required, source-audio-not-audited
-- burn-it-to-ashes: reference-video-required, multi-photo-needs-people-model
-- taxi-chase: reference-video-required
-- helicopter-jump: reference-video-required
-- rope-swing: reference-video-required
-- fairytale-villain-recast: reference-video-required, multi-photo-needs-people-model
+- burn-it-to-ashes: reference-video-required, multi-photo-needs-people-model, prompt-limit
+- taxi-chase: reference-video-required, prompt-limit
+- helicopter-jump: reference-video-required, prompt-limit
+- rope-swing: reference-video-required, prompt-limit
+- fairytale-villain-recast: reference-video-required, multi-photo-needs-people-model, prompt-limit

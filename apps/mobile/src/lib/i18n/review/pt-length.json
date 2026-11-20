@@ -3384,6 +3384,24 @@
     "ratio": 1.67
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Deixar de seguir",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reply",
+    "english": "Reply",
+    "translation": "Responder",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Quente",
+    "ratio": 2
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproduzir",
@@ -3472,6 +3490,24 @@
     "english": "Try again",
     "translation": "Tentar novamente",
     "ratio": 1.78
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirar publicação",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.handle",
+    "english": "Creator handle",
+    "translation": "Identificador de criador",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.listen",
+    "english": "Shared song",
+    "translation": "Música compartilhada",
+    "ratio": 1.82
   },
   {
     "id": "chrome.privacyPolicy",

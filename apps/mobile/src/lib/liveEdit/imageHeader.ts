@@ -7,14 +7,6 @@ const bytes = (base64: string, count: number): Uint8Array | null => {
     } catch { return null; }
 };
 export type Size = { width: number; height: number };
-const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-/** PNG: signature, then the IHDR chunk (length 13, "IHDR", width, height). */
-export function pngSize(base64: string): Size | null {
-    const b = bytes(base64, 24);
-    if (!b || b.length < 24 || PNG_SIGNATURE.some((v, i) => b[i] !== v) || b[11] !== 13 || String.fromCharCode(b[12], b[13], b[14], b[15]) !== 'IHDR') return null;
-    const u32 = (i: number) => ((b[i] << 24) | (b[i + 1] << 16) | (b[i + 2] << 8) | b[i + 3]) >>> 0;
-    return { width: u32(16), height: u32(20) };
-}
 /** JPEG: walk the marker segments until a start-of-frame (SOF) marker, which carries the height and width. */
 export function jpegSize(base64: string): Size | null {
     const b = bytes(base64, 65536);

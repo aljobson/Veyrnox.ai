@@ -5424,6 +5424,30 @@
     "ratio": 2.22
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Ne plus suivre",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublic.saved",
+    "english": "Saved.",
+    "translation": "Enregistré.",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicPublic.reaction.wow",
+    "english": "Wow",
+    "translation": "Waouh",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Chaud",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.title",
     "english": "Beat maker",
     "translation": "Créateur de beats",
@@ -5602,6 +5626,24 @@
     "english": "Recording saved",
     "translation": "Enregistrement sauvegardé",
     "ratio": 1.67
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirer la publication",
+    "ratio": 2.44
+  },
+  {
+    "id": "musicPublication.comments",
+    "english": "Allow comments",
+    "translation": "Autoriser les commentaires",
+    "ratio": 1.86
+  },
+  {
+    "id": "musicPublication.remixes",
+    "english": "Allow remixes",
+    "translation": "Autoriser les remixes",
+    "ratio": 1.62
   },
   {
     "id": "label.Terms",

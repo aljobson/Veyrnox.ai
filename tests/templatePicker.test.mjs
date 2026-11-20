@@ -72,7 +72,7 @@ test('Create lists the gallery video templates, each with its poster and a link 
   const cards = templateCards();
   const video = cards.filter((card) => card.kind !== 'image');
   const runnable = runnableTemplates.runnableTemplates(video, models, 'video');
-  assert.ok(runnable.length >= 50, `only ${runnable.length} runnable video templates`);
+  assert.ok(runnable.length >= 25, `only ${runnable.length} runnable video templates`);
   const html = renderPicker('video', models, cards);
   assert.match(html, /<dialog[^>]*aria-labelledby="create-template-picker-title"/);
   assert.equal(templateButtons(html), runnable.length);
