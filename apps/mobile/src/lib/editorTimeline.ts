@@ -71,12 +71,13 @@ export function changeItemSpeed(timeline: Timeline, selection: Selection, rate: 
     return 'timeline' in result ? result.timeline : null;
 }
 // Longest length (frames) a video or audio clip may have so it never reads past the end of its source file; null when
-// the file's length is unknown or the media is unbounded (images, graphics). Never below 1 frame and `in` never below 0.
+// the file's length is unknown or the media is unbounded (images, graphics, freezes).
+// Always returns at least 1 frame, even when the source in-point is invalid. That floor is not a source-validity guarantee.
 export function maxClipLength(media: Media | undefined, clip: Pick<Clip, 'in' | 'rate' | 'reverse' | 'speedCurve' | 'freezeFrame'>): number | null {
     if (clip.freezeFrame !== undefined || !media?.frames || media.kind === 'image' || media.kind === 'graphic') return null;
     if (clip.speedCurve?.length) {
         const candidate = { ...clip, id: '', start: 0, len: 1 };
-        return 1 + speedSourceBounds(candidate, media, 'out', 0, SEQUENCE_MAX - 1).high;
+        return Math.max(1, 1 + speedSourceBounds(candidate, media, 'out', 0, SEQUENCE_MAX - 1).high);
     }
     const rate = Math.max(0.1, clip.rate ?? 1), sourceIn = Math.max(0, clip.in ?? 0);
     return Math.max(1, clip.reverse ? Math.floor(sourceIn / rate) + 1 : Math.floor((media.frames - sourceIn) / rate));

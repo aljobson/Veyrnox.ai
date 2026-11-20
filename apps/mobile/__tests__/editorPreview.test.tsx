@@ -131,7 +131,7 @@ test('pulse source time follows the shared integral at each offset', () => {
     const pulse = { ...clip, speedCurve: SPEED_PRESETS.pulse.map((p: any) => ({ frame: p.position * 90, rate: p.rate })) };
     for (const offset of [0, 37, 89]) expect(editorSourceTimeSeconds(pulse, pulse.start + offset, 30)).toBe(sourceFrame(pulse, offset) / 30);
 });
-test('playing ramps use timeline offset and pitch setting; freezes seek and pause', async () => {
+test.each([false, true])('ramps use timeline offset and pitch; freezes seek and pause (playing=%s)', async playing => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     const root = createRoot(), store = createFrameStore();
     const media: Media = { id: 'm', kind: 'video', frames: 900 };
@@ -145,14 +145,15 @@ test('playing ramps use timeline offset and pitch setting; freezes seek and paus
             expect(mockPlayer.playbackRate).toBe(speedAt(ramp, 37));
             expect((mockPlayer as any).preservesPitch).toBe(preservePitch);
         }
-        mockPlayer.play.mockClear();
+        mockPlayer.play.mockClear(); mockPlayer.pause.mockClear();
         const freeze = { ...ramp, freezeFrame: 895, volume: 0, preservePitch: undefined };
         await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={freeze}
-            media={media} frameStore={store} fps={30} playing localUri="file:///ramp.mp4" />));
+            media={media} frameStore={store} fps={30} playing={playing} localUri="file:///ramp.mp4" />));
         for (const frame of [100, 137, 189]) {
             await act(async () => store.set(frame));
             expect(editorSourceTimeSeconds(freeze, frame, 30)).toBe(895 / 30);
             expect(mockPlayer.currentTime).toBe(895 / 30);
+            expect(mockPlayer.playbackRate).toBeGreaterThanOrEqual(.1);
         }
         expect(mockPlayer.play).not.toHaveBeenCalled(); expect(mockPlayer.pause).toHaveBeenCalled();
         expect((mockPlayer as any).preservesPitch).toBe(false);

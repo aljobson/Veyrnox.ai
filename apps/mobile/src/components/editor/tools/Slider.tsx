@@ -9,10 +9,11 @@ export type SliderProps = {
     format(value: number): string; disabled?: boolean; onChange(value: number): void;
 };
 export function Slider(props: SliderProps) {
-    const { label, value, min, max, step, snaps, format, disabled = false, onChange } = props;
+    const { label, value, min, max, step, format, onChange } = props;
+    const disabled = !!props.disabled || min >= max;
     const [live, setLive] = useState(value);
-    const current = useRef(props); current.current = props;
-    const width = useRef(0), dragged = useRef(value), origin = useRef(0), active = useRef(false);
+    const current = useRef(props); current.current = { ...props, disabled };
+    const width = useRef(0), dragged = useRef(value), origin = useRef(0), active = useRef(false), lastDx = useRef(0);
     useEffect(() => { if (!active.current) { setLive(value); dragged.current = value; } }, [value]);
     const [responder] = useState(() => PanResponder.create({
         onStartShouldSetPanResponder: () => false,
@@ -20,15 +21,17 @@ export function Slider(props: SliderProps) {
         onPanResponderGrant: (event, gesture) => {
             const p = current.current;
             if (p.disabled) return;
-            active.current = true; origin.current = event.nativeEvent.locationX - gesture.dx;
-            dragged.current = sliderValue(event.nativeEvent.locationX, width.current, p.min, p.max, p.step, p.snaps);
+            active.current = true; lastDx.current = gesture.dx; origin.current = event.nativeEvent.locationX - gesture.dx;
+            dragged.current = sliderValue(event.nativeEvent.locationX, width.current, p.min, p.max, p.step, p.snaps, p.step,
+                { value: p.value, delta: gesture.dx });
             setLive(dragged.current);
         },
         onPanResponderMove: (_, gesture) => {
             const p = current.current;
             if (!active.current || p.disabled) return;
-            dragged.current = sliderValue(origin.current + gesture.dx, width.current, p.min, p.max, p.step, p.snaps);
-            setLive(dragged.current);
+            dragged.current = sliderValue(origin.current + gesture.dx, width.current, p.min, p.max, p.step, p.snaps, p.step,
+                { value: dragged.current, delta: gesture.dx - lastDx.current });
+            lastDx.current = gesture.dx; setLive(dragged.current);
         },
         onPanResponderTerminationRequest: () => !active.current,
         onPanResponderRelease: () => {

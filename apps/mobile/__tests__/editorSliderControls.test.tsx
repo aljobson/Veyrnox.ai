@@ -73,3 +73,44 @@ test('horizontal drag keeps a live value, refuses termination and commits once o
         await act(async () => callbacks.onPanResponderRelease()); expect(onChange).toHaveBeenCalledTimes(1);
     } finally { spy.mockRestore(); }
 });
+
+test.each([[-10, -1], [400, 1]] as const)('out-of-range value %s never steps in the opposite direction', (value, dir) => {
+    expect((stepValue(value, dir, 1, 300, 1) - value) * dir).toBeGreaterThanOrEqual(0);
+});
+test.each([[400, -1], [-10, 1]] as const)('out-of-range value %s can step back toward the range', (value, dir) => {
+    expect(stepValue(value, dir, 1, 300, 1)).toBe(value + dir);
+});
+test.each([[400, 10], [-10, -10]] as const)('out-of-range value %s never drags in the opposite direction', async (value, dx) => {
+    const { PanResponder } = require('react-native');
+    const spy = jest.spyOn(PanResponder, 'create'), onChange = jest.fn();
+    try {
+        await act(async () => root.render(<Slider label="Length" value={value} min={1} max={300} step={1} format={String} onChange={onChange} />));
+        const callbacks = spy.mock.calls[0][0] as any;
+        const node = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0];
+        await act(async () => node.props.onLayout({ nativeEvent: { layout: { width: 100 } } }));
+        await act(async () => callbacks.onPanResponderGrant({ nativeEvent: { locationX: dx > 0 ? 100 : 0 } }, { dx }));
+        await act(async () => callbacks.onPanResponderMove({}, { dx: dx * 2 }));
+        await act(async () => callbacks.onPanResponderRelease());
+        expect(onChange).toHaveBeenCalledTimes(1);
+        expect((onChange.mock.calls[0][0] - value) * Math.sign(dx)).toBeGreaterThanOrEqual(0);
+    } finally { spy.mockRestore(); }
+});
+
+test.each([[2, 1], [1, 1]])('empty slider interval %s..%s blocks drag and accessibility edits', async (min, max) => {
+    const { PanResponder } = require('react-native');
+    const spy = jest.spyOn(PanResponder, 'create'), onChange = jest.fn();
+    try {
+        await act(async () => root.render(<Slider label="Position" value={1} min={min} max={max} step={.1} format={String} onChange={onChange} />));
+        const callbacks = spy.mock.calls[0][0] as any;
+        const node = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0];
+        expect(node.props.accessibilityState.disabled).toBe(true);
+        expect(callbacks.onMoveShouldSetPanResponder({}, { dx: 10, dy: 0 })).toBe(false);
+        await act(async () => {
+            node.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } });
+            callbacks.onPanResponderGrant({ nativeEvent: { locationX: 20 } }, { dx: 10 });
+            callbacks.onPanResponderMove({}, { dx: 30 });
+            callbacks.onPanResponderRelease();
+        });
+        expect(onChange).not.toHaveBeenCalled();
+    } finally { spy.mockRestore(); }
+});

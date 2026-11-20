@@ -88,3 +88,11 @@ test('freeze holds the final source frame freely and curve maximum matches brute
     expect(maxClipLength(media(), curved.video[0])).toBe(valid.at(-1));
     expect(fitToMedia(curved)).toEqual(curved);
 });
+
+// A one-frame floor is a length API contract, not proof that an invalid source in-point is playable.
+test.each([false, true])('curve maximum keeps its one-frame floor with an out-of-source in-point (reverse=%s)', reverse => {
+    for (const sourceIn of [-1, FILE, FILE + 50]) {
+        expect(maxClipLength(media(), { in: sourceIn, reverse,
+            speedCurve: [{ frame: 0, rate: .5 }, { frame: 90, rate: 2 }] })).toBe(1);
+    }
+});

@@ -2,6 +2,8 @@ jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false })
 import { act } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
+import { SpeedSection } from '../src/components/editor/tools/SpeedSection';
+import type { Clip } from '../src/lib/nativeEditorModel';
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -74,10 +76,11 @@ const labelled = (label: string) => root.container.queryAll((node) => node.props
 
 import { webSequenceV3 } from './fixtures/webSequenceV3';
 import { SPEED_PRESETS } from '../../../app/veyrnox/_lib/editorSpeed.mjs';
-async function setup(kind = 'video', freeze = false, locked = false) {
+async function setup(kind = 'video', freeze = false, locked = false, patch: Partial<Clip> = {}) {
     const tl = webSequenceV3(); tl.media.m.kind = kind; tl.tracks[0].locked = locked;
     if (freeze) Object.assign(tl.video[0], { freezeFrame: 100, volume: 0 });
-    tl.video.push({ id: 'v9', mediaId: 'm', start: 90, in: 0, len: 30, trackId: 'video-0' });
+    Object.assign(tl.video[0], patch);
+    tl.video.push({ id: 'v9', mediaId: 'm', start: tl.video[0].len, in: 0, len: 30, trackId: 'video-0' });
     serverDocument = { ...document, schema_version: 3, timeline: tl };
     await render();
     await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
@@ -163,4 +166,43 @@ test.each(['Remove freeze frame', 'Remove'])('%s closes the freeze gap and clear
     expect(next.video.find((c: any) => c.id === 'v2')).toEqual(serverDocument.timeline.video[1]);
     expect(labelled('Remove freeze frame')).toHaveLength(0);
     expect(labelled('Delete')[0].props.accessibilityState.disabled).toBe(true);
+});
+
+test.each([0, 100])('freeze at source frame %s hides volume while moving clips retain it', async freezeFrame => {
+    await setup('video', true, false, { freezeFrame });
+    expect(labelled('Increase Volume')).toHaveLength(0);
+    expect(labelled('Decrease Volume')).toHaveLength(0);
+    expect(visible('Volume')).toBe(false);
+    expect(labelled('Increase Fade in').length).toBeGreaterThan(0);
+});
+test('moving clips retain the Volume stepper', async () => {
+    await setup();
+    expect(labelled('Increase Volume')).toHaveLength(1);
+    expect(labelled('Decrease Volume')).toHaveLength(1);
+});
+test.each([.1, .2])('speed-point position is disabled when neighbouring bounds collide (span %s)', async span => {
+    const timeline = webSequenceV3();
+    Object.assign(timeline.video[0], { len: 100, speedCurve: [
+        { frame: 0, rate: 1 }, { frame: span / 2, rate: 1 }, { frame: span, rate: 1 }, { frame: 100, rate: 1 },
+    ] });
+    const changeCurve = jest.fn(), noop = () => {};
+    await act(async () => root.render(<SpeedSection timeline={timeline} selection={{ track: 'video', id: 'v1' }}
+        actions={{ changeCurve, changeSpeed: noop, toggleReverse: noop, insertFreeze: noop, freezeLength: noop, removeFreeze: noop }} />));
+    const node = labelled('Speed point 2 position')[0];
+    expect(node.props.accessibilityState.disabled).toBe(true);
+    for (const actionName of ['increment', 'decrement']) {
+        await act(async () => node.props.onAccessibilityAction({ nativeEvent: { actionName } }));
+    }
+    await press('Apply speed curve');
+    expect(changeCurve.mock.calls[0][0][1].position).toBe(span / 200);
+});
+
+test('a 400-frame freeze fits the drag range and can shorten by one frame', async () => {
+    await setup('video', true, false, { len: 400 });
+    const node = labelled('Freeze length')[0];
+    expect(node.props.accessibilityValue).toMatchObject({ min: 1, max: 400, now: 400 });
+    await act(async () => node.props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
+    const next = await saved();
+    expect(next.video[0].len).toBe(399);
+    expect(next.video.find((c: any) => c.id === 'v9').start).toBe(399);
 });

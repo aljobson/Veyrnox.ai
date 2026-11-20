@@ -37,7 +37,7 @@ function SpeedControls({ clip, fps, video, actions }: { clip: Clip; fps: number;
         <Text accessibilityRole="header" style={styles.heading}>{t('editorTools.speed')}</Text>
         {clip.freezeFrame !== undefined ? <>
             <Text style={styles.body}>{t('editorTools.freezeHelp')}</Text>
-            <Slider label={t('editorTools.freezeLength')} value={clip.len} min={1} max={300} step={1} snaps={[30, 60, 90]}
+            <Slider label={t('editorTools.freezeLength')} value={clip.len} min={1} max={Math.max(300, clip.len)} step={1} snaps={[30, 60, 90]}
                 format={value => t('editorTools.secondsValue', { value: formatNumber(value / fps, 1) })} onChange={actions.freezeLength} />
             <Action label={t('editorTools.freezeRemove')} danger onPress={actions.removeFreeze} />
         </> : <>

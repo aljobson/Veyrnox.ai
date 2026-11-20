@@ -1,7 +1,7 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
-  "editorTools.secondsValue": "{value} secondes",
+  "editorTools.secondsValue": "{value} s",
   "editorTools.colourHex": "Couleur hexadécimale de {label}",
   "editorTools.colourSwatch": "Couleur {hex}",
   "editorTools.colourError": "Utilisez une couleur comme #1a2b3c.",

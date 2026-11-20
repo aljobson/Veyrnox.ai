@@ -36,8 +36,8 @@ export function AdjustPanel({ timeline, selection, selected, selectedMedia, sele
                 /><Action label={t('editorCore.lengthenFrame')} disabled={!canTrim(selected) || !!selectedTrack?.locked} onPress={() => adjustLength(1)} /></View>
             {!canTrim(selected) ? <Text style={styles.body}>{t('editorCore.trimOnWeb')}</Text> : null}
             <SpeedSection timeline={timeline} selection={selection} actions={speedActions} />
-            {selection.track !== 'text' ? <><Stepper label={t('editor.volume')} value={((selected as
-                Clip).volume ?? 1) * 100} min={0} max={200} step={5} suffix="%" onChange={(volume) => patchSelected({ volume: volume / 100 })} /><Stepper label={t('editor.fadein')}
+            {selection.track !== 'text' ? <>{(selected as Clip).freezeFrame === undefined ? <Stepper label={t('editor.volume')} value={((selected as
+                Clip).volume ?? 1) * 100} min={0} max={200} step={5} suffix="%" onChange={(volume) => patchSelected({ volume: volume / 100 })} /> : null}<Stepper label={t('editor.fadein')}
                 value={(selected as Clip).fadeIn ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeIn) => patchSelected({ fadeIn })} /><Stepper
                 label={t('editor.fadeout')} value={(selected as Clip).fadeOut ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeOut) => patchSelected({
                 fadeOut })} /><Stepper label={t('editor.pan')} value={(selected as Clip).pan ?? 0} min={-1} max={1} step={0.1} onChange={(pan) => patchSelected({ pan })} /></> : null}

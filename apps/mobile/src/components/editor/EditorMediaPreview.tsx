@@ -81,7 +81,8 @@ function EditorVideo({ source, clip, frameStore, fps, playing, label }: { source
 function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number, rate: number) {
     const still = clip.freezeFrame !== undefined;
     if (Math.abs(player.currentTime - wanted) > (playing ? 0.2 : 0.5 * rate / fps) || clip.reverse || still) player.currentTime = wanted;
-    player.playbackRate = rate;
+    // Freeze is represented by pausing; native playback parameters require a positive rate.
+    player.playbackRate = still ? 1 : Math.max(.1, rate);
     player.preservesPitch = clip.preservePitch === true;
     player.volume = Math.max(0, Math.min(1, clip.volume ?? 1));
     if (playing && !clip.reverse && !still) player.play(); else player.pause();
