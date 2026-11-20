@@ -231,6 +231,18 @@ function mergeToSegmentLimit(groups) {
   return reduced.slice(0, MAX_SEGMENTS);
 }
 
+function removedSecondsWithinOutput(takes, candidateGroups, segments) {
+  return takes.reduce((total, take) => {
+    const kept = segments.filter((segment) => segment.takeId === take.id).sort((a, b) => a.start - b.start);
+    if (!kept.length) return total;
+    const candidates = candidateGroups.filter((group) => group.takeId === take.id);
+    const complete = candidates.every((group) => kept.some((segment) => segment.start <= group.start + 0.01 && segment.end >= group.end - 0.01));
+    const windowEnd = complete ? take.rangeEnd : Math.max(...kept.map((segment) => segment.end));
+    const keptSeconds = kept.reduce((sum, segment) => sum + Math.max(0, Math.min(windowEnd, segment.end) - Math.max(take.rangeStart, segment.start)), 0);
+    return total + Math.max(0, windowEnd - take.rangeStart - keptSeconds);
+  }, 0);
+}
+
 function labelFor(group, end = group.end) {
   const label = cleanText(group.entries.filter((entry) => entry.start < end).map((entry) => entry.text).join(' '));
   if (!label) return 'Timed speech section';
@@ -263,7 +275,9 @@ export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimu
   const rawGroups = takes.flatMap((take) => transcriptGroups(parsed.get(take.id), take, minimumSeconds));
   if (!rawGroups.length) throw new Error('No timed speech was found inside the selected clip ranges.');
   const knownRemovals = reviewedRemovals.filter((cut) => clipById.has(cut.takeId));
-  const groups = mergeToSegmentLimit(subtractRemovals(padAndMerge(rawGroups, clipById, padding), knownRemovals));
+  const paddedGroups = padAndMerge(rawGroups, clipById, padding);
+  const candidateGroups = subtractRemovals(paddedGroups, knownRemovals);
+  const groups = mergeToSegmentLimit(candidateGroups);
   const segments = [];
   let outputOffset = 0;
   for (const [index, group] of groups.entries()) {
@@ -292,14 +306,16 @@ export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimu
   if (!segments.length) throw new Error('No usable speech sections fit inside the Clip Editor limits.');
 
   const totalDuration = round(segments.reduce((sum, segment) => sum + segment.end - segment.start, 0));
-  const selectedDuration = round(takes.reduce((sum, take) => sum + take.rangeEnd - take.rangeStart, 0));
   const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];
   if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warnings.push('This transcript has phrase-level timing, so pauses inside a phrase cannot be removed.');
   // The 10-section limit can merge a removed range back into a kept section; say so instead of hiding it.
-  const keptAnyway = knownRemovals.filter((cut) => {
+  const relevantRemovals = knownRemovals.filter((cut) => paddedGroups.some((group) => group.takeId === cut.takeId && cut.end > group.start && cut.start < group.end));
+  const keptAnyway = relevantRemovals.filter((cut) => {
     const middle = (cut.start + cut.end) / 2;
     return segments.some((segment) => segment.takeId === cut.takeId && segment.start <= middle && middle < segment.end);
   });
+  const appliedRemovals = relevantRemovals.filter((cut) => !keptAnyway.includes(cut) && segments.some((segment) =>
+    segment.takeId === cut.takeId && segment.end >= cut.start - 0.02 && segment.start <= cut.end + 0.02));
   if (keptAnyway.length) warnings.push('Some removals were kept because the plan is limited to 10 sections.');
   if (rawGroups.length > MAX_SEGMENTS) warnings.push('Some short pauses were retained to fit the Clip Editor’s 10-section limit.');
   if (outputOffset >= MAX_OUTPUT_SECONDS - 0.01) warnings.push('The speech-aware plan stopped at the Clip Editor’s 60-second output limit.');
@@ -314,8 +330,8 @@ export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimu
     takes,
     segments,
     totalDuration,
-    silenceRemoved: round(Math.max(0, selectedDuration - totalDuration)),
-    removalsApplied: knownRemovals.length - keptAnyway.length,
+    silenceRemoved: round(removedSecondsWithinOutput(takes, candidateGroups, segments)),
+    removalsApplied: appliedRemovals.length,
     analysisProviders: [...new Set([...parsed.values()].map((analysis) => analysis.provider))],
     warnings,
   };

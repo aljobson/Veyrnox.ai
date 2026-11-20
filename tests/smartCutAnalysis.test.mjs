@@ -173,7 +173,23 @@ test('speech-aware planning stops at sixty seconds without extending past source
   const plan = buildSpeechAwareCutPlan({ clips: [{ job_id: 'long', duration }], analyses: { long: normalized } });
   assert.equal(plan.totalDuration, 60);
   assert.equal(plan.segments[0].end, 60);
+  assert.equal(plan.silenceRemoved, 0, 'speech and silence beyond the rendered cap are not reported as removed');
+  assert.equal(buildSpeechAwareCutPlan({
+    clips: [{ job_id: 'long', duration }], analyses: { long: normalized },
+    removals: [{ takeId: 'long', start: 70, end: 71 }, { takeId: 'long', start: 85, end: 86 }],
+  }).removalsApplied, 0, 'removals beyond the rendered cap or transcript range are not reported as applied');
   assert.ok(plan.warnings.some((warning) => /60-second/i.test(warning)));
+});
+
+test('pauses in a later take beyond the output cap are not reported as removed', () => {
+  const clips = [{ job_id: 'first', duration: 59 }, { job_id: 'later', duration: 40 }];
+  const analyses = {
+    first: { version: 1, assetId: 'first', duration: 59, provider: 'fal-wizper', transcript: 'first', language: 'en', chunks: [{ start: 0, end: 59, text: 'first' }] },
+    later: { version: 1, assetId: 'later', duration: 40, provider: 'fal-wizper', transcript: 'later', language: 'en', chunks: Array.from({ length: 10 }, (_, index) => ({ start: index * 3, end: index * 3 + 1, text: `later ${index}` })) },
+  };
+  const plan = buildSpeechAwareCutPlan({ clips, analyses });
+  assert.equal(plan.totalDuration, 60);
+  assert.equal(plan.silenceRemoved, 0);
 });
 
 test('missing analysis and speech-free ranges fail before a plan is produced', () => {

@@ -82,7 +82,7 @@ test('confirmation is disabled until agreement; reopening starts with no agreeme
     expect(confirm().props.accessibilityState.disabled).toBe(true);
 });
 
-test('agree and confirm create exactly one project in the default workspace and open Best Cut', async () => {
+test('the Editor-home entry consent creates exactly one project and routes into Best Cut', async () => {
     await show(); await agree(); await press(confirm());
     expect(creates()).toHaveLength(1);
     expect(JSON.parse(creates()[0][1].body)).toEqual({ workspace_id: 'workspace', name: t('bestCut.title') });

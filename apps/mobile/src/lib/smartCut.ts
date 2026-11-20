@@ -1,3 +1,5 @@
+import { parseSmartCutAnalysis, type SpeechAnalysis } from './speechCut';
+
 export const SMART_CUT_MAX_SEGMENTS = 10;
 
 export const SMART_CUT_PACING = Object.freeze({
@@ -29,8 +31,8 @@ export interface SmartCutSegment {
     readonly reason: string;
 }
 export interface SmartCutPlan {
-    readonly mode: 'local-demo';
-    readonly pacing: SmartCutPacing;
+    readonly mode: 'local-demo' | 'transcript-silence';
+    readonly pacing: SmartCutPacing | 'speech';
     readonly pacingLabel: string;
     readonly notes: string;
     readonly scriptProvided: boolean;
@@ -38,6 +40,19 @@ export interface SmartCutPlan {
     readonly segments: readonly SmartCutSegment[];
     readonly totalDuration: number;
     readonly warnings: readonly string[];
+    readonly silencePreset?: 'snappy' | 'natural' | 'relaxed';
+    readonly silenceRemoved?: number;
+    readonly removalsApplied?: number;
+    readonly analysisProviders?: readonly SpeechAnalysis['provider'][];
+}
+
+export interface SmartCutRemoval { readonly takeId: string; readonly start: number; readonly end: number }
+type SpeechAnalyses = ReadonlyMap<string, SpeechAnalysis> | readonly SpeechAnalysis[] | Readonly<Record<string, SpeechAnalysis>>;
+type SpeechEntry = { readonly start: number; readonly end: number; readonly text: string };
+type SpeechGroup = { readonly takeId: string; start: number; end: number; entries: SpeechEntry[] };
+
+export function validSmartCutAnalysis(analysis: SpeechAnalysis | undefined, assetId: string, duration: number): analysis is SpeechAnalysis {
+    return parseSmartCutAnalysis(analysis, { assetId, duration }).ok;
 }
 
 const round = (value: number) => Math.round(value * 100) / 100;
@@ -155,6 +170,10 @@ export function buildSmartCutPlan({ clips, script = '', notes = '', pacing = 'ba
 }
 
 export function swapSmartCutTake(plan: SmartCutPlan, segmentId: string, takeId: string): SmartCutPlan {
+    if (plan.mode === 'transcript-silence') return {
+        ...plan,
+        warnings: [...new Set([...plan.warnings, 'Transcript-backed sections stay on their analysed source take.'])],
+    };
     const take = plan.takes.find((item) => item.id === takeId);
     if (!take) return plan;
     const proposed = plan.segments.map((segment) => segment.id === segmentId ? {
@@ -173,4 +192,168 @@ export function swapSmartCutTake(plan: SmartCutPlan, segmentId: string, takeId: 
     });
     const totalDuration = round(positioned.reduce((sum, segment) => sum + segment.end - segment.start, 0));
     return positioned.length > SMART_CUT_MAX_SEGMENTS || totalDuration > 60 ? plan : { ...plan, segments: positioned, totalDuration };
+}
+
+const SILENCE_PRESETS = Object.freeze({
+    snappy: Object.freeze({ minimumSeconds: 0.4, edgePaddingSeconds: 0.08 }),
+    natural: Object.freeze({ minimumSeconds: 0.75, edgePaddingSeconds: 0.12 }),
+    relaxed: Object.freeze({ minimumSeconds: 1.2, edgePaddingSeconds: 0.18 }),
+});
+
+const silencePreset = (value: SmartCutPacing): keyof typeof SILENCE_PRESETS => value === 'balanced' ? 'natural' : value;
+const analysisFor = (analyses: SpeechAnalyses, assetId: string): SpeechAnalysis | undefined => {
+    if (analyses instanceof Map) return analyses.get(assetId);
+    if (Array.isArray(analyses)) return analyses.find((analysis) => analysis.assetId === assetId);
+    return (analyses as Readonly<Record<string, SpeechAnalysis>>)[assetId];
+};
+
+function transcriptGroups(analysis: SpeechAnalysis, clip: SmartCutTake, minimumSeconds: number): SpeechGroup[] {
+    const entries = analysis.chunks.filter((chunk) => chunk.end > clip.rangeStart && chunk.start < clip.rangeEnd).map((chunk) => ({
+        start: Math.max(clip.rangeStart, chunk.start), end: Math.min(clip.rangeEnd, chunk.end), text: chunk.text,
+    }));
+    const groups: SpeechGroup[] = [];
+    for (const entry of entries) {
+        const previous = groups.at(-1);
+        if (!previous || entry.start - previous.end >= minimumSeconds) groups.push({ takeId: clip.id, start: entry.start, end: entry.end, entries: [entry] });
+        else { previous.end = Math.max(previous.end, entry.end); previous.entries.push(entry); }
+    }
+    return groups;
+}
+
+function padAndMerge(groups: readonly SpeechGroup[], clipById: ReadonlyMap<string, SmartCutTake>, padding: number): SpeechGroup[] {
+    const padded = groups.map((group) => {
+        const clip = clipById.get(group.takeId)!;
+        const start = Math.min(clip.rangeEnd, Math.max(clip.rangeStart, ceilHundredth(group.start - padding)));
+        return { ...group, start, end: Math.max(start, Math.min(floorHundredth(clip.rangeEnd), floorHundredth(group.end + padding))), entries: [...group.entries] };
+    });
+    const merged: SpeechGroup[] = [];
+    for (const group of padded) {
+        const previous = merged.at(-1);
+        if (previous && previous.takeId === group.takeId && group.start <= previous.end) {
+            previous.end = Math.max(previous.end, group.end); previous.entries.push(...group.entries);
+        } else merged.push({ ...group, entries: [...group.entries] });
+    }
+    return merged;
+}
+
+function subtractRemovals(groups: readonly SpeechGroup[], removals: readonly SmartCutRemoval[]): SpeechGroup[] {
+    const out: SpeechGroup[] = [];
+    for (const group of groups) {
+        const cuts = removals.filter((cut) => cut.takeId === group.takeId && cut.end > group.start && cut.start < group.end).sort((a, b) => a.start - b.start);
+        if (!cuts.length) { out.push({ ...group, entries: [...group.entries] }); continue; }
+        const pieces: (readonly [number, number])[] = [];
+        let cursor = group.start;
+        for (const cut of cuts) {
+            if (cut.start > cursor) pieces.push([cursor, Math.min(cut.start, group.end)]);
+            cursor = Math.max(cursor, cut.end);
+        }
+        if (cursor < group.end) pieces.push([cursor, group.end]);
+        for (const [from, to] of pieces) {
+            const start = ceilHundredth(from), end = floorHundredth(to);
+            if (end - start < 0.1) continue;
+            const entries = group.entries.filter((entry) => entry.end > start && entry.start < end);
+            if (entries.length) out.push({ ...group, start, end, entries });
+        }
+    }
+    return out;
+}
+
+function mergeToSegmentLimit(groups: readonly SpeechGroup[]): SpeechGroup[] {
+    const reduced = groups.map((group) => ({ ...group, entries: [...group.entries] }));
+    while (reduced.length > SMART_CUT_MAX_SEGMENTS) {
+        let candidate: { index: number; gap: number } | null = null;
+        for (let index = 0; index < reduced.length - 1; index += 1) {
+            const left = reduced[index], right = reduced[index + 1];
+            if (left.takeId !== right.takeId) continue;
+            const gap = Math.max(0, right.start - left.end);
+            if (!candidate || gap < candidate.gap) candidate = { index, gap };
+        }
+        if (!candidate) break;
+        const left = reduced[candidate.index], right = reduced[candidate.index + 1];
+        reduced.splice(candidate.index, 2, { ...left, end: right.end, entries: [...left.entries, ...right.entries] });
+    }
+    return reduced.slice(0, SMART_CUT_MAX_SEGMENTS);
+}
+
+function removedSecondsWithinOutput(takes: readonly SmartCutTake[], candidateGroups: readonly SpeechGroup[], segments: readonly SmartCutSegment[]): number {
+    return takes.reduce((total, take) => {
+        const kept = segments.filter((segment) => segment.takeId === take.id).sort((a, b) => a.start - b.start);
+        if (!kept.length) return total;
+        const candidates = candidateGroups.filter((group) => group.takeId === take.id);
+        const complete = candidates.every((group) => kept.some((segment) => segment.start <= group.start + 0.01 && segment.end >= group.end - 0.01));
+        const windowEnd = complete ? take.rangeEnd : Math.max(...kept.map((segment) => segment.end));
+        const keptSeconds = kept.reduce((sum, segment) => sum + Math.max(0, Math.min(windowEnd, segment.end) - Math.max(take.rangeStart, segment.start)), 0);
+        return total + Math.max(0, windowEnd - take.rangeStart - keptSeconds);
+    }, 0);
+}
+
+const speechLabel = (group: SpeechGroup, end = group.end) => {
+    const value = cleanText(group.entries.filter((entry) => entry.start < end).map((entry) => entry.text).join(' '));
+    if (!value) return 'Timed speech section';
+    return value.length > 120 ? `${value.slice(0, 117).trimEnd()}…` : value;
+};
+
+/** Multi-take parity port of the web transcript-silence planner. */
+export function buildSpeechAwareCutPlan({ clips, analyses, pacing = 'balanced', removals = [] }: {
+    readonly clips: readonly SmartCutSource[];
+    readonly analyses: SpeechAnalyses;
+    readonly pacing?: SmartCutPacing;
+    readonly removals?: readonly SmartCutRemoval[];
+}): SmartCutPlan {
+    const takes = normaliseClips(clips);
+    if (!takes.length) throw new Error('Speech-aware Smart Cut needs at least one loaded video clip.');
+    if (takes.length > SMART_CUT_MAX_SEGMENTS) throw new Error('Speech-aware Smart Cut supports at most 10 source clips.');
+    const presetName = silencePreset(pacing), preset = SILENCE_PRESETS[presetName];
+    const parsed = new Map<string, SpeechAnalysis>(), clipById = new Map(takes.map((take) => [take.id, take]));
+    for (const take of takes) {
+        const result = parseSmartCutAnalysis(analysisFor(analyses, take.assetId), { assetId: take.assetId, duration: take.duration });
+        if (!result.ok) throw new Error(`Speech analysis for ${take.name} is unavailable or invalid (${result.error}).`);
+        parsed.set(take.id, result.analysis);
+    }
+    const reviewed = removals.filter((cut) => {
+        const take = clipById.get(cut.takeId);
+        return take && Number.isFinite(cut.start) && Number.isFinite(cut.end) && cut.end > cut.start
+            && cut.end > take.rangeStart && cut.start < take.rangeEnd;
+    });
+    const rawGroups = takes.flatMap((take) => transcriptGroups(parsed.get(take.id)!, take, preset.minimumSeconds));
+    if (!rawGroups.length) throw new Error('No timed speech was found inside the selected clip ranges.');
+    const paddedGroups = padAndMerge(rawGroups, clipById, preset.edgePaddingSeconds);
+    const candidateGroups = subtractRemovals(paddedGroups, reviewed);
+    const groups = mergeToSegmentLimit(candidateGroups);
+    const segments: SmartCutSegment[] = [];
+    let outputOffset = 0;
+    for (const [index, group] of groups.entries()) {
+        const remaining = 60 - outputOffset;
+        if (remaining <= 0.01) break;
+        const cappedEnd = group.start + remaining;
+        const end = group.end <= cappedEnd + 1e-9 ? group.end : floorHundredth(cappedEnd);
+        if (end <= group.start) break;
+        const start = ceilHundredth(group.start), length = round(end - start);
+        if (length <= 0) continue;
+        segments.push({
+            id: `speech-${index + 1}`, label: speechLabel(group, end), takeId: group.takeId, start, end,
+            outputOffset: round(outputOffset), plannedLength: length, matchStatus: 'Matched to timed transcript.', alternates: [],
+            reason: `Kept transcript-backed speech from ${clipById.get(group.takeId)!.name}; pauses of at least ${preset.minimumSeconds.toFixed(2)} seconds were eligible for removal.`,
+        });
+        outputOffset = round(outputOffset + length);
+    }
+    if (!segments.length) throw new Error('No usable speech sections fit inside the Clip Editor limits.');
+    const totalDuration = round(segments.reduce((sum, segment) => sum + segment.end - segment.start, 0));
+    const knownRemovals = reviewed.filter((cut) => paddedGroups.some((group) => group.takeId === cut.takeId && cut.end > group.start && cut.start < group.end));
+    const keptAnyway = knownRemovals.filter((cut) => {
+        const middle = (cut.start + cut.end) / 2;
+        return segments.some((segment) => segment.takeId === cut.takeId && segment.start <= middle && middle < segment.end);
+    });
+    const appliedRemovals = knownRemovals.filter((cut) => !keptAnyway.includes(cut) && segments.some((segment) =>
+        segment.takeId === cut.takeId && segment.end >= cut.start - 0.02 && segment.start <= cut.end + 0.02));
+    const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];
+    if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warnings.push('This transcript has phrase-level timing, so pauses inside a phrase cannot be removed.');
+    if (keptAnyway.length) warnings.push('Some removals were kept because the plan is limited to 10 sections.');
+    if (rawGroups.length > SMART_CUT_MAX_SEGMENTS) warnings.push('Some short pauses were retained to fit the Clip Editor’s 10-section limit.');
+    if (outputOffset >= 59.99) warnings.push('The speech-aware plan stopped at the Clip Editor’s 60-second output limit.');
+    return {
+        mode: 'transcript-silence', pacing: 'speech', pacingLabel: 'Speech aware', silencePreset: presetName,
+        notes: '', scriptProvided: true, takes, segments, totalDuration, silenceRemoved: round(removedSecondsWithinOutput(takes, candidateGroups, segments)),
+        removalsApplied: appliedRemovals.length, analysisProviders: [...new Set([...parsed.values()].map((analysis) => analysis.provider))], warnings,
+    };
 }
