@@ -137,3 +137,15 @@ text is never trimmed or summarised. No active model took a real-person photo wi
 **Not established.** One template proven on kie (one sample); others may be refused by kie's copyright filter or follow their prompt
 less well. kie labels its Seedance 2 price beta. Real-person acceptance rests on one photo. While the key is off, a direct link to one
 of the 49 now asks for the photo and is refused before any charge, where it used to fall back to the template's own model.
+
+## Amendment 4 (2026-11-20): production switch on
+
+The owner turned it on ("turn on seedanceLongTemplates", 2026-11-20). Migration 0573 was applied to production first by the
+owner-approved apply run (44824809656: the Apply step ran, the ledger check passed). `wrangler.jsonc` now sets
+`"seedanceLongTemplates":true` in the production `APP_RUNTIME_FLAGS`, beside `checkin`, `push` and `templateSwap`, with no new binding.
+From the deploy on, the offer is listed at 58 credits per 5 s, the gateway sells it, and the 42 long-prompt templates join the gallery
+under their themes (70 video cards).
+
+Rollback: set `seedanceLongTemplates` to `false` (or remove the key) in `APP_RUNTIME_FLAGS` and deploy. The catalog stops listing the
+offer, the gateway refuses new requests before any debit, the templates leave the gallery, and accepted jobs settle through the
+existing kie callback and refund paths. The catalog row can stay active.
