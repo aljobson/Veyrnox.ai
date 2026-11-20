@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getCacheUser } from '../../../lib/appCache';
 import { t, plural } from '../../../lib/i18n';
 import { timelineOf, type Timeline, type Selection, type TextClip } from '../../../lib/nativeEditorModel';
-import { documentIdentity, type ProjectDocument } from '../../../lib/editorBridge';
+import type { ProjectDocument } from '../../../lib/editorBridge';
 import type { FrameStore } from '../editorFrameStore';
 import { pickCaptionFile, shareCaptionFile } from '../../../lib/editorCaptionFiles';
 import { captionTextEdit, treatAsCaptions, importCaptionText, captionExport, wordEdit, wordStyleEdit, wordsDistribute, wordsClear, transcriptCut,
@@ -37,9 +37,8 @@ export function useCaptionActions({ timeline, selection, applyTimeline, setProbl
     async function share(format: 'srt' | 'vtt' | 'txt', trackId = 'all') {
         if (shareRunning.current || !mounted.current) return;
         const document = latest.current.currentDocument(); if (!document) return;
-        const owner = getCacheUser(), epoch = latest.current.getEpoch(), identity = documentIdentity(document);
-        const live = () => mounted.current && owner === getCacheUser() && epoch === latest.current.getEpoch()
-            && identity === documentIdentity(latest.current.currentDocument());
+        const owner = getCacheUser(), epoch = latest.current.getEpoch();
+        const live = () => mounted.current && owner === getCacheUser() && epoch === latest.current.getEpoch();
         const file = captionExport(timelineOf(document.timeline), format, trackId); if (!file) return;
         shareRunning.current = true; setSharing(true);
         try {
@@ -49,7 +48,7 @@ export function useCaptionActions({ timeline, selection, applyTimeline, setProbl
         finally { shareRunning.current = false; if (mounted.current) setSharing(false); }
     }
     return {
-        busy: busy || sharing, select, share,
+        busy, sharing, select, share,
         treatAsCaptions: (ids: string[]) => commit(treatAsCaptions(current(), ids)),
         text: (text: string) => selection?.track === 'text' && commit(captionTextEdit(current(), selection.id, text)),
         pick: () => io(async live => {

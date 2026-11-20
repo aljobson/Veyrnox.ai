@@ -54,6 +54,6 @@ export function TranscriptSection({ timeline, actions }: { timeline: Timeline; a
             style={[styles.input, touchTarget]} onEndEditing={event => {
                 if (event.nativeEvent.text !== single.text) actions.correct(single.key, event.nativeEvent.text);
             }} /> : null}
-        {entries.length ? <Action label={t('editorCaptionTools.shareText')} disabled={actions.busy} onPress={() => actions.share('txt', trackId)} /> : null}
+        {entries.length ? <Action label={t('editorCaptionTools.shareText')} disabled={actions.busy || actions.sharing} onPress={() => actions.share('txt', trackId)} /> : null}
     </>;
 }

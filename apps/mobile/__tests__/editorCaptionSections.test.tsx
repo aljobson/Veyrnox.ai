@@ -162,7 +162,7 @@ test('busy share guard prevents overlapping writes', async () => {
     await act(async () => root.render(<Harness />)); let pending!: Promise<void>;
     await act(async () => { pending = actions.share('srt'); });
     await act(async () => actions.share('vtt')); expect(mockShare).toHaveBeenCalledTimes(1);
-    await act(async () => { resolve(); await pending; }); expect(actions.busy).toBe(false);
+    await act(async () => { resolve(); await pending; }); expect(actions.busy).toBe(false); expect(actions.sharing).toBe(false);
 });
 
 test('multiword lyric refusal displays the actual token in a translated sentence', async () => {
@@ -184,21 +184,78 @@ test('share takes no import lock and a save completes while sharing is pending',
     expect(mockSession.dirty).toBe(false); expect(mockSession.revision).toBe(5);
     expect(snapshot).toContain('Hello world'); expect(snapshot).not.toContain('Changed during share');
     expect(mockShare.mock.calls[0][0].body).toBe(snapshot);
+    expect(mockShare.mock.calls[0][1]()).toBe(true);
     await act(async () => { resolve(); });
     expect(mockSession.problem).toBeNull(); expect(mockSession.sync.imports).toBe(0);
 });
-test.each(['owner', 'unmount', 'document', 'epoch'])('share silently drops a stale %s without importDropped', async change => {
+test.each(['owner', 'unmount', 'epoch'])('share silently drops a stale %s without importDropped', async change => {
     timed(); let resolve!: (status: string) => void; mockShare.mockReturnValue(new Promise(r => { resolve = r; }));
     await act(async () => root.render(<Harness />)); let pending!: Promise<void>;
     await act(async () => { pending = actions.share('srt'); });
     const live = mockShare.mock.calls[0][1]; expect(live()).toBe(true);
     if (change === 'owner') mockOwner = 'another';
     if (change === 'unmount') await act(async () => root.unmount());
-    if (change === 'document') doc = { ...doc, brief: 'changed' };
     if (change === 'epoch') epoch++;
     expect(live()).toBe(false);
     await act(async () => { resolve('unavailable'); await pending; });
     expect(message).toBeNull();
+});
+test('share guard permits document edits while keeping the captured caption text', async () => {
+    timed(); let resolve!: () => void; mockShare.mockReturnValue(new Promise<void>(r => { resolve = r; }));
+    await act(async () => root.render(<Harness />)); let pending!: Promise<void>;
+    await act(async () => { pending = actions.share('srt'); });
+    const [file, live] = mockShare.mock.calls[0], snapshot = file.body;
+    doc = { ...doc, brief: 'Changed during share', timeline: { ...(doc.timeline as Timeline), text: [] } };
+    await act(async () => refresh());
+    expect(live()).toBe(true);
+    expect(file.body).toBe(snapshot); expect(file.body).toContain('Hello world');
+    await act(async () => { resolve(); await pending; });
+});
+test('sharing disables Share and Import while caption editing controls remain enabled', async () => {
+    timed();
+    const timeline = doc.timeline as Timeline;
+    timeline.text.push(legacyPhoneCaptions().text[1]); timeline.seq = Math.max(timeline.seq, 2);
+    expect(documentProblem(doc)).toBeNull();
+    let resolve!: () => void; mockShare.mockReturnValue(new Promise<void>(r => { resolve = r; }));
+    await act(async () => root.render(<Harness />));
+    const lyrics = root.container.queryAll(n => n.props.accessibilityLabel === 'Lyrics' && typeof n.props.onChangeText === 'function')[0];
+    await act(async () => lyrics.props.onChangeText('Hello world'));
+    let pending!: Promise<void>;
+    await act(async () => { pending = actions.share('srt'); });
+    for (const label of ['Share SRT', 'Share VTT', 'Import captions']) expect(button(label).props.accessibilityState.disabled).toBe(true);
+    for (const label of ['Align lyrics', 'Caption style for all']) expect(button(label).props.accessibilityState.disabled).toBe(false);
+    expect(actions.sharing).toBe(true); expect(actions.busy).toBe(false);
+    await act(async () => root.render(<Harness transcript />)); await press('Word 1: Hello');
+    expect(button('Share transcript (.txt)').props.accessibilityState.disabled).toBe(true);
+    expect(button('Cut selected words').props.accessibilityState.disabled).toBe(false);
+    await press('00:00:02:00 Legacy second line');
+    expect(button('Treat as captions').props.accessibilityState.disabled).toBe(false);
+    await press('Treat as captions');
+    expect((doc.timeline as Timeline).text.find(c => c.id === 't2')?.caption).toBe(true);
+    await act(async () => { resolve(); await pending; });
+    expect(actions.sharing).toBe(false);
+    expect(button('Share transcript (.txt)').props.accessibilityState.disabled).toBe(false);
+    await act(async () => root.render(<Harness />));
+    for (const label of ['Share SRT', 'Share VTT', 'Import captions']) expect(button(label).props.accessibilityState.disabled).toBe(false);
+});
+test.each([undefined, false])('legacy rows with caption=%s can be converted one at a time alongside caption entries', async caption => {
+    const timeline = legacyPhoneCaptions(); timeline.text = timeline.text.slice(0, 2).map(c => ({ ...c, caption }));
+    await screen(timeline); await press('Transcript');
+    await press('00:00:00:00 Legacy first line'); await press('Treat as captions');
+    expect((mockSession.currentDocument()!.timeline as Timeline).text.map(c => c.caption)).toEqual([true, caption]);
+    expect(button('Word 1: Legacy first line')).toBeDefined();
+    expect(button('00:00:00:00 Legacy first line')).toBeUndefined();
+    expect(button('00:00:02:00 Legacy second line')).toBeDefined();
+    expect(button('Treat as captions')).toBeDefined();
+    await press('00:00:02:00 Legacy second line'); await press('Treat as captions');
+    expect((mockSession.currentDocument()!.timeline as Timeline).text.map(c => c.caption)).toEqual([true, true]);
+    expect(button('Word 2: Legacy second line')).toBeDefined();
+    expect(button('00:00:02:00 Legacy second line')).toBeUndefined();
+    expect(button('Treat as captions')).toBeUndefined();
+    await press('Undo');
+    expect((mockSession.currentDocument()!.timeline as Timeline).text.map(c => c.caption)).toEqual([true, caption]);
+    expect(button('00:00:02:00 Legacy second line')).toBeDefined();
+    await press('Undo'); expect(mockSession.currentDocument()!.timeline).toEqual(timeline);
 });
 test('pre-S4 phone rows stay visible and chosen captions convert in one undo step', async () => {
     const timeline = legacyPhoneCaptions(); await screen(timeline); await press('Transcript');
