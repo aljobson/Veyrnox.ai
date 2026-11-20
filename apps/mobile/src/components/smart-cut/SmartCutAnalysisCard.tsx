@@ -166,6 +166,17 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
         return true;
     }
 
+    function settleBadResponse(current: Recovery) {
+        const credits = creditsByKey.current.get(current.key);
+        const message = credits === 0
+            ? t('app.smartCut.native.analyse.mismatchNoCharge', { name: current.clip.label, reason: 'bad_response' })
+            : credits !== undefined
+                ? t('app.smartCut.native.analyse.mismatchCharged', { name: current.clip.label, reason: 'bad_response', credits })
+                : t('app.smartCut.native.analyse.clipMaximum', { name: current.clip.label, credits: activeQuote.credits });
+        setTerminalMessages((messages) => new Map(messages).set(current.clip.jobId, message));
+        setRecovery(null);
+    }
+
     async function analyse() {
         if (running || !actionable.length || ineligible.length) return;
         const startedFor = signature;
@@ -207,6 +218,8 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                         setQuote((current) => current ? { ...current, credits: Number(error.body.credits) } : current);
                         setRecovery(null);
                         setMessages((current) => [...current, speechMessage(error)]);
+                    } else if (error instanceof ApiError && error.code === 'bad_response' && attempted) {
+                        settleBadResponse(attempted);
                     } else {
                         const canRecover = error instanceof ApiError && ['outcome_pending', 'poll_timeout'].includes(error.code);
                         if (!canRecover) setRecovery(null);
@@ -255,6 +268,8 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                         creditsByKey.current.delete(recovery.key);
                         setRecovery(null);
                         setMessages((current) => [...current, speechMessage(error)]);
+                    } else if (error instanceof ApiError && error.code === 'bad_response') {
+                        settleBadResponse(recovery);
                     } else {
                         setMessages((current) => [...current, speechMessage(error)]);
                     }

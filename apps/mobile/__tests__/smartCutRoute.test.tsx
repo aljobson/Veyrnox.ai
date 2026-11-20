@@ -4,12 +4,13 @@ import SmartCutRoute from '../src/app/(app)/smart-cut';
 import { rawText, t } from '../src/lib/i18n';
 
 jest.setTimeout(30000);
-const mockPush = jest.fn(), mockReplace = jest.fn(), mockListJobs = jest.fn(), mockFetchCatalog = jest.fn();
+const mockPush = jest.fn(), mockReplace = jest.fn(), mockListJobs = jest.fn(), mockFetchCatalog = jest.fn(), mockQuoteEdit = jest.fn();
 let mockOwner: string, mockOwnerListeners: Set<() => void>;
 const mockApi = {};
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush, replace: mockReplace }) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'route-key' }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, beginSessionTask: () => ({ current: () => true }) }) }));
+jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: jest.fn().mockResolvedValue(undefined) } }));
 jest.mock('../src/lib/appCache', () => {
     mockOwner = 'owner'; mockOwnerListeners = new Set();
     return { getCacheUser: () => mockOwner, subscribeCacheUser: (listener: () => void) => { mockOwnerListeners.add(listener); return () => mockOwnerListeners.delete(listener); } };
@@ -21,7 +22,7 @@ jest.mock('../src/lib/librarySource', () => ({ libraryChoices: (jobs: unknown[])
     { jobId: '22222222-2222-4222-8222-222222222222', name: 'Take Two', createdAt: '2026-11-20T11:00:00Z' },
 ] : [] }));
 jest.mock('../src/lib/editorLibraryLength', () => ({ libraryMedia: async () => ({ frames: 360, kind: 'video', id: 'media' }) }));
-jest.mock('../src/lib/clipEdit', () => ({ ...jest.requireActual('../src/lib/clipEdit'), fetchClipShape: async () => 16 / 9 }));
+jest.mock('../src/lib/clipEdit', () => ({ ...jest.requireActual('../src/lib/clipEdit'), fetchClipShape: async () => 16 / 9, quoteEdit: (...args: unknown[]) => mockQuoteEdit(...args) }));
 jest.mock('../src/components/JobThumb', () => ({ JobThumb: () => null, useAssetLinks: () => ({}) }));
 jest.mock('../src/components/smart-cut/SmartCutPreview', () => ({ SmartCutPreview: () => null }));
 jest.mock('../src/components/smart-cut/SmartCutAnalysisCard', () => {
@@ -31,14 +32,18 @@ jest.mock('../src/components/smart-cut/SmartCutAnalysisCard', () => {
         version: 1, assetId: clip.jobId, duration: clip.duration, provider: 'fal-scribe-v2', transcript: 'hello um there', language: 'en', timingQuality: 'word',
         chunks: [{ start: 1, end: 1.5, text: 'hello' }, { start: 2, end: 2.2, text: 'um' }, { start: 3, end: 3.5, text: 'there' }],
     });
-    return { SmartCutAnalysisCard: ({ clips, onAnalysed, onBusyChange }: { clips: { jobId: string; duration: number }[]; onAnalysed: (id: string, value: unknown) => void; onBusyChange?: (busy: boolean) => void }) => React.createElement(React.Fragment, null,
+    return { SmartCutAnalysisCard: ({ clips, onAnalysed, onBusyChange }: { clips: { jobId: string; duration: number }[]; onAnalysed: (id: string, value: unknown) => void; onBusyChange?: (busy: boolean) => void }) => {
+        const [recovery, setRecovery] = React.useState(false);
+        return React.createElement(React.Fragment, null,
         React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Analyse first', onPress: () => clips[0] && onAnalysed(clips[0].jobId, analyse(clips[0])) }, React.createElement(Text, null, 'Analyse first')),
         React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Analyse first phrase', onPress: () => clips[0] && onAnalysed(clips[0].jobId, { ...analyse(clips[0]), provider: 'fal-wizper', timingQuality: 'phrase' }) }, React.createElement(Text, null, 'Analyse first phrase')),
         React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Analyse second', onPress: () => clips[1] && onAnalysed(clips[1].jobId, analyse(clips[1])) }, React.createElement(Text, null, 'Analyse second')),
         React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Analyse all', onPress: () => clips.forEach(clip => onAnalysed(clip.jobId, analyse(clip))) }, React.createElement(Text, null, 'Analyse all')),
         React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Analysis busy', onPress: () => onBusyChange?.(true) }, React.createElement(Text, null, 'Analysis busy')),
         React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Analysis idle', onPress: () => onBusyChange?.(false) }, React.createElement(Text, null, 'Analysis idle')),
-    ) };
+        React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Set recovery', onPress: () => setRecovery(true) }, React.createElement(Text, null, 'Set recovery')),
+        recovery ? React.createElement(Text, null, 'Recovery retained') : null,
+    ); } };
 });
 
 let root: Root;
@@ -56,6 +61,7 @@ beforeEach(() => {
     jest.clearAllMocks(); mockOwner = 'owner'; root = createRoot();
     mockListJobs.mockResolvedValue({ jobs: [{ id: 'one' }, { id: 'two' }], next: null });
     mockFetchCatalog.mockResolvedValue([]);
+    mockQuoteEdit.mockResolvedValue({ kind: 'quote', credits: 12 });
 });
 afterEach(async () => { await act(async () => root.unmount()); });
 
@@ -99,6 +105,18 @@ test('a running paid analysis cannot unmount its recovery and billing state', as
     expect(buttons(t('edit.remove'))[0].props.accessibilityState.disabled).toBe(true);
     await press(buttons('Analysis idle')[0]);
     expect(buttons(t('app.smartCut.action.apply'))[0].props.accessibilityState.disabled).toBe(false);
+});
+
+test('reviewing the edit price keeps paid-analysis recovery state mounted', async () => {
+    await act(async () => { root.render(<SmartCutRoute />); await Promise.resolve(); await Promise.resolve(); });
+    await press(buttons(t('edit.add'))[0]);
+    await press(buttons('Set recovery')[0]);
+    await press(buttons(t('app.smartCut.action.createPreview'))[0]);
+    await press(buttons(t('app.smartCut.action.apply'))[0]);
+    await press(buttons(t('edit.review'))[0]);
+    expect(text()).toContain('Recovery retained');
+    await press(buttons(t('edit.backToEditing'))[0]);
+    expect(text()).toContain('Recovery retained');
 });
 
 test('mixed timing names clips that cannot be checked for filler sounds', async () => {

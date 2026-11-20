@@ -316,10 +316,10 @@ export default function SmartCutRoute() {
         } finally { if (alive.current) setBusy(false); }
     }
 
-    if (stage === 'quote' && credits !== null) {
-        return (
+    const quoteOpen = stage === 'quote' && credits !== null;
+
+    const quoteView = quoteOpen ? (
             <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-                <Stack.Screen options={{ title: t('edit.reviewTitle') }} />
                 <Text variant="display" accessibilityRole="header">{t('edit.reviewTitle')}</Text>
                 <Card style={styles.stack}>
                     {clips.map((clip, index) => <Text key={`${clip.jobId}-${index}`} tone="secondary">{t('edit.stos', { value1: index + 1, value2: clip.label, value3: seconds(clip.start), value4: seconds(clip.end) })}</Text>)}
@@ -331,12 +331,12 @@ export default function SmartCutRoute() {
                 <Button label={t('edit.confirm')} loading={busy} disabled={busy} onPress={() => void confirmCreate()} />
                 <Button label={t('edit.backToEditing')} variant="tertiary" disabled={busy} onPress={() => { setStage('edit'); setCredits(null); setProblem(null); }} />
             </ScrollView>
-        );
-    }
+        ) : null;
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <Stack.Screen options={{ title: t('app.smartCut.name') }} />
+            <Stack.Screen options={{ title: t(quoteOpen ? 'edit.reviewTitle' : 'app.smartCut.name') }} />
+            <View style={quoteOpen ? styles.hidden : styles.routeBody} accessibilityElementsHidden={quoteOpen} importantForAccessibility={quoteOpen ? 'no-hide-descendants' : 'auto'}>
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <View style={styles.hero}>
                     <Text variant="caption" tone="accent">{t('app.smartCut.name')}</Text>
@@ -431,7 +431,9 @@ export default function SmartCutRoute() {
                 </>}
                 {problem ? <Text tone="danger" accessibilityRole="alert">{problem}</Text> : null}
             </ScrollView>
-            {preview ? <SmartCutPreview {...preview} onClose={() => setPreview(null)} /> : null}
+            </View>
+            {quoteView}
+            {!quoteOpen && preview ? <SmartCutPreview {...preview} onClose={() => setPreview(null)} /> : null}
         </KeyboardAvoidingView>
     );
 }
@@ -455,6 +457,7 @@ function RangeStepper({ label, value, lessLabel, moreLabel, onLess, onMore }: { 
 const sheets = themedStyles((p) => ({
     placeholder: { color: p.textTertiary },
     screen: { flex: 1, backgroundColor: p.bg },
+    routeBody: { flex: 1 },
     hidden: { display: 'none' },
     content: { padding: ds.space.lg, paddingBottom: LIST_END_PADDING, gap: ds.space.md },
     hero: { gap: ds.space.sm, paddingBottom: ds.space.sm },

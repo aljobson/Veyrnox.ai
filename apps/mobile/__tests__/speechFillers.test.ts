@@ -32,4 +32,5 @@ test('the selected range is applied before the fifty-suggestion cap', () => {
 
     expect(fillerRanges(ranged)).toHaveLength(50);
     expect(fillerRanges(ranged, { start: 54, end: 56 })).toEqual([{ start: 54.97, end: 55.23, label: 'um' }]);
+    expect(fillerRanges(ranged, { start: 54, end: 56 })).toEqual(webFillers.smartCutFillerRanges(ranged, { start: 54, end: 56 }));
 });

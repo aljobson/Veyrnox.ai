@@ -192,6 +192,16 @@ test('a repeatedly confirmed non-refunded failure becomes terminal instead of lo
     expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
 });
 
+test('a repeatedly malformed accepted result becomes terminal instead of looping forever', async () => {
+    mockStart.mockRejectedValue(new ApiError(503, 'outcome_pending'));
+    mockRecover.mockRejectedValue(new ApiError(200, 'bad_response'));
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+    await press(t('app.smartCut.native.analyse.checkStatus'));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: 7 }));
+    expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeUndefined();
+    expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
+});
+
 test('an ineligible clip is named in the blocker and cannot expose a paid confirmation', async () => {
     const long = { ...clip, label: 'Long interview', duration: 61 };
     await render([long]);
