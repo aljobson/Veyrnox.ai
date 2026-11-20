@@ -224,5 +224,16 @@
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "musicDiscover.mood.Jazz": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
-  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending."
+  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "beat.home.untitled": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.home.loaded": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempo": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempoValue": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.snare": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.clap": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.tom": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.crash": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.mixer": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.solo.short": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language."
 }

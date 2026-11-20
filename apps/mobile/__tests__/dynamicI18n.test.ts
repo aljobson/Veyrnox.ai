@@ -27,6 +27,8 @@ const domains: Record<string, readonly string[]> = {
     'musicActions.{}.title': ['stems', 'crop'],
     'musicActions.action.{}': ['rights', 'format', 'plan', 'model', 'notAffordable', 'expired', 'changed', 'consent', 'range', 'short', 'busy', 'source', 'recovery', 'network', 'error'],
     'music.create.{}': ['simple', 'custom', 'empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable', 'rights_required', 'error', 'queued', 'running', 'ready', 'failed', 'refunded', 'cancelled'],
+    'beat.pad.{}': ['kick', 'snare', 'hat', 'openhat', 'clap', 'tom', 'rim', 'crash'],
+    'beat.kit.{}': ['acoustic', '808', 'lofi'],
     'music.tab.{}': ['songs', 'history', 'hooks'],
     'music.empty.{}': ['songs', 'history', 'hooks'],
     'music.player.{}': ['idle', 'loading', 'playing', 'paused', 'error', 'held', 'ended', 'background'],

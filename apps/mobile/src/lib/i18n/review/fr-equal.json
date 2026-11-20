@@ -239,5 +239,16 @@
   "musicDiscover.mood.Hip-hop": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "musicDiscover.mood.Jazz": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
-  "musicPlaylists.title": "Playlists is an established English loanword used in French music apps; machine translation, native review pending."
+  "musicPlaylists.title": "Playlists is an established English loanword used in French music apps; machine translation, native review pending.",
+  "beat.home.untitled": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempo": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempoValue": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.clap": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.tom": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.rim": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.crash": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.gain": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.solo.short": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.808": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.lofi": "Same in fr: a loanword, brand-style name or number used unchanged in this language."
 }
