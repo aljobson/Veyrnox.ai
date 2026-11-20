@@ -6347,7 +6347,7 @@ export default {
     "musicActions.stems.failed": "제공업체가 분리 트랙 압축 파일을 만들지 못했습니다.",
     "musicActions.stems.refunded": "제공업체가 압축 파일을 생성하지 못했습니다. 작업에 사용된 크레딧이 환불되었습니다.",
     "musicActions.stems.zip": "ZIP 받기",
-    "musicActions.stems.external": "브라우저에서 비공개 링크를 엽니다. 링크는 5분 후 만료됩니다.",
+    "musicActions.stems.external": "파일을 다운로드하고 저장하거나 보낼 수 있도록 공유 메뉴를 엽니다.",
     "musicActions.stems.session": "이 요청의 진행 상황을 보려면 화면을 열어 두세요. 화면을 떠나거나 앱을 다시 시작하면 상태가 저장되지 않습니다.",
     "musicActions.crop.title": "자르기",
     "musicActions.crop.body": "새 버전으로 저장하며 원본은 유지됩니다.",

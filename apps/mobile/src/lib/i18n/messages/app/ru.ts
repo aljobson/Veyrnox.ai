@@ -6587,7 +6587,7 @@ export default {
     "musicActions.stems.failed": "Сервис не смог создать архив стемов.",
     "musicActions.stems.refunded": "Сервис не создал архив. Кредиты за задачу возвращены.",
     "musicActions.stems.zip": "Получить ZIP",
-    "musicActions.stems.external": "Открывает приватную ссылку в браузере. Ссылка действует пять минут.",
+    "musicActions.stems.external": "Скачивает файл и открывает меню отправки, чтобы вы могли сохранить или отправить его.",
     "musicActions.stems.session": "Оставьте этот экран открытым, чтобы следить за запросом. Его статус не сохраняется после выхода с экрана или перезапуска приложения.",
     "musicActions.crop.title": "Обрезать",
     "musicActions.crop.body": "Сохраняет новую версию; оригинал остаётся.",

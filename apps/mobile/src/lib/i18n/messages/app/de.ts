@@ -6427,7 +6427,7 @@ export default {
     "musicActions.stems.failed": "Der Anbieter konnte das Archiv der Einzelspuren nicht erstellen.",
     "musicActions.stems.refunded": "Der Anbieter hat kein Archiv erstellt. Die Kosten für den Auftrag wurden erstattet.",
     "musicActions.stems.zip": "ZIP abrufen",
-    "musicActions.stems.external": "Öffnet einen privaten Link in deinem Browser. Der Link läuft nach fünf Minuten ab.",
+    "musicActions.stems.external": "Lädt die Datei herunter und öffnet das Teilen-Menü, damit du sie speichern oder senden kannst.",
     "musicActions.stems.session": "Lass diesen Bildschirm geöffnet, um die Anfrage zu verfolgen. Ihr Status wird nach dem Verlassen oder einem Neustart der App nicht gespeichert.",
     "musicActions.crop.title": "Zuschneiden",
     "musicActions.crop.body": "Speichert eine neue Version; das Original bleibt erhalten.",

@@ -6507,7 +6507,7 @@ export default {
     "musicActions.stems.failed": "El proveedor no pudo crear el archivo de pistas separadas.",
     "musicActions.stems.refunded": "El proveedor no produjo un archivo. Se devolvieron los créditos del trabajo.",
     "musicActions.stems.zip": "Obtener ZIP",
-    "musicActions.stems.external": "Abre un enlace privado en tu navegador. El enlace vence en cinco minutos.",
+    "musicActions.stems.external": "Descarga el archivo y abre el menú para compartir, donde puedes guardarlo o enviarlo.",
     "musicActions.stems.session": "Mantén esta pantalla abierta para seguir la solicitud. Su estado no se guarda al salir ni al reiniciar la app.",
     "musicActions.crop.title": "Recortar",
     "musicActions.crop.body": "Guarda una versión nueva; el original se conserva.",

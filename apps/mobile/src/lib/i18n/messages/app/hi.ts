@@ -6427,7 +6427,7 @@ export default {
     "musicActions.stems.failed": "प्रदाता अलग ट्रैक का आर्काइव नहीं बना सका।",
     "musicActions.stems.refunded": "प्रदाता ने आर्काइव नहीं बनाया। इस काम के क्रेडिट वापस कर दिए गए हैं।",
     "musicActions.stems.zip": "ZIP प्राप्त करें",
-    "musicActions.stems.external": "आपके ब्राउज़र में एक निजी लिंक खोलता है। लिंक पाँच मिनट में समाप्त हो जाएगा।",
+    "musicActions.stems.external": "फ़ाइल डाउनलोड करता है और शेयर मेन्यू खोलता है, ताकि आप उसे सहेज या भेज सकें।",
     "musicActions.stems.session": "इस अनुरोध की स्थिति देखने के लिए यह स्क्रीन खुली रखें। स्क्रीन छोड़ने या ऐप दोबारा शुरू करने के बाद इसकी स्थिति सेव नहीं रहती।",
     "musicActions.crop.title": "क्रॉप करें",
     "musicActions.crop.body": "नया संस्करण सेव होता है; मूल बना रहता है।",

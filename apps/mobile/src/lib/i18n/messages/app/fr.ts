@@ -6507,7 +6507,7 @@ export default {
     "musicActions.stems.failed": "Le fournisseur n’a pas pu créer l’archive des pistes séparées.",
     "musicActions.stems.refunded": "Le fournisseur n’a pas produit d’archive. Les crédits de la tâche ont été remboursés.",
     "musicActions.stems.zip": "Obtenir le ZIP",
-    "musicActions.stems.external": "Ouvre un lien privé dans votre navigateur. Le lien expire dans cinq minutes.",
+    "musicActions.stems.external": "Télécharge le fichier et ouvre le menu de partage pour l’enregistrer ou l’envoyer.",
     "musicActions.stems.session": "Gardez cet écran ouvert pour suivre cette demande. Son état n’est pas conservé si vous quittez l’écran ou redémarrez l’application.",
     "musicActions.crop.title": "Rogner",
     "musicActions.crop.body": "Enregistre une nouvelle version ; l’original est conservé.",
