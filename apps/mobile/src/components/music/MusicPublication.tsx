@@ -20,7 +20,7 @@ function PublicationBody({ song }: { song: MusicSongDetail }) {
     const flow = useMemo(() => createPublicationFlow(api, song.id), [api, song.id, round]);
     const state = useSyncExternalStore(flow.subscribe, flow.snapshot, flow.snapshot);
     const [open, setOpen] = useState(false), [handle, setHandle] = useState(''), [name, setName] = useState('');
-    const [comments, setComments] = useState(true), [remixes, setRemixes] = useState(false), [rights, setRights] = useState(false);
+    const [comments, setComments] = useState(false), [remixes, setRemixes] = useState(false), [rights, setRights] = useState(false);
     useEffect(() => {
         if (!flow.isLive()) { setRound(n => n + 1); return; }
         void flow.load();

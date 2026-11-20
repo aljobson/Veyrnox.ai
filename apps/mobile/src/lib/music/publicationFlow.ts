@@ -1,6 +1,7 @@
 import { ApiError, type ApiClient } from '../api';
 import { getPublication } from './publicationClient';
 import { createPublicationAttempts } from './publicationAttempts';
+import { isDefinitivePublicError } from './publicAttempts';
 import { probeMusic, type MusicProbe } from './probe';
 import type { Publication, PublishInput } from './validatePublication';
 export interface PublicationState {
@@ -32,7 +33,7 @@ export function createPublicationFlow(api: ApiClient, song: string) {
             if (!live) return;
             const code = error instanceof ApiError ? error.code : '';
             emit({ issue: code === 'publication_not_allowed' ? 'policy' : code === 'handle_taken' ? 'handleTaken'
-                : !input ? 'checkUnpublish' : attempts.snapshot() ? 'retryPublish' : 'writeError' });
+                : !input ? (isDefinitivePublicError(error) ? 'writeError' : 'checkUnpublish') : attempts.snapshot() ? 'retryPublish' : 'writeError' });
         } finally {
             if (live) {
                 emit({ pending: attempts.snapshot()?.input ?? null, read: null });

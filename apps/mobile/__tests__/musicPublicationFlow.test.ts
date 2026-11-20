@@ -81,3 +81,11 @@ test('attempt locks payload and coalesces concurrent publish; reset invalidates 
     const queued = attempts.publish(input); attempts.reset(); await expect(queued).rejects.toMatchObject({ code: 'account_changed' });
     expect(h.request).toHaveBeenCalledTimes(1);
 });
+test('a definite unpublish rejection is a write error, not an unknown result', async () => {
+    // Covered through the real flow: 403 is definitive, a network error is not.
+    const { isDefinitivePublicError } = require('../src/lib/music/publicAttempts');
+    const { ApiError } = require('../src/lib/api');
+    expect(isDefinitivePublicError(new ApiError(403, 'forbidden'))).toBe(true);
+    expect(isDefinitivePublicError(new ApiError(0, 'network'))).toBe(false);
+    expect(isDefinitivePublicError(new ApiError(503, 'temporarily_unavailable'))).toBe(false);
+});

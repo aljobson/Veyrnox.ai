@@ -31,7 +31,7 @@ test('rights unchecked blocks submit; permissions and rights review are visible'
     expect(texts(t('musicPublication.rights')).length).toBeGreaterThan(0); expect(texts(t('musicPublication.permissions')).length).toBeGreaterThan(0);
     expect(writes()).toHaveLength(0); await check(2);
     expect(buttons('musicPublication.confirm')[0].props.accessibilityState.disabled).toBe(false);
-    await check(0); await check(1); mockApi.request.mockResolvedValueOnce(receipt).mockResolvedValueOnce({ publication });
+    await check(1); mockApi.request.mockResolvedValueOnce(receipt).mockResolvedValueOnce({ publication });
     await click('musicPublication.confirm');
     expect(JSON.parse(writes()[0][1].body)).toEqual({ ...input, allow_comments: false, allow_remixes: true, idempotency_key: expect.any(String) });
     expect(mockApi.request.mock.calls.map(([, init]) => init?.method ?? 'GET')).toEqual(['GET', 'POST', 'GET']);
