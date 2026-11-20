@@ -1,3 +1,4 @@
+import { MusicLinkShare } from '../../../../components/music/MusicLinkShare';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View } from 'react-native';
@@ -23,6 +24,7 @@ export default function PublicTrackScreen() {
         {data ? <>
             <ListRow title={creatorName(data.track)} subtitle={`@${data.track.handle}`} accessibilityLabel={creatorName(data.track)}
                 onPress={() => router.push({ pathname: '/music/creator/[handle]', params: { handle: data.track.handle } } as never)} />
+            <MusicLinkShare slug={slug} />
             <PublicPlayer key={`player:${slug}:${session.snapshot().account}`} slug={slug} creatorId={data.track.creator_id} session={session} onPosition={setPosition} />
             {data.plays ? <Text>{t('musicPublic.plays', { count: data.plays.count })}</Text> : null}
             {data.lyrics ? <View style={s.group}><Text variant="title3">{t('musicPublic.lyrics')}</Text><Text>{data.lyrics}</Text></View> : null}

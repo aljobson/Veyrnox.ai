@@ -3696,6 +3696,12 @@
     "ratio": 2.25
   },
   {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Снять с публикации",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

@@ -83,3 +83,11 @@ test('passkey relying parties are associated without extra native permissions or
     ]);
     expect(expo.plugins).not.toContain('react-native-passkeys');
 });
+
+test('Music links have verified HTTPS Android filters and the existing iOS associated domain', () => {
+    expect(expo.ios.associatedDomains).toContain('applinks:veyrnox.ai');
+    for (const prefix of ['/music/tracks/', '/music/creators/', '/listen/']) {
+        expect(expo.android.intentFilters.some(filter => filter.autoVerify && filter.data.some(data =>
+            data.scheme === 'https' && data.host === 'veyrnox.ai' && data.pathPrefix === prefix))).toBe(true);
+    }
+});

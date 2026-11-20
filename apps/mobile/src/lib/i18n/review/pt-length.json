@@ -3528,6 +3528,24 @@
     "ratio": 1.73
   },
   {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirar publicação",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.handle",
+    "english": "Creator handle",
+    "translation": "Identificador de criador",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.listen",
+    "english": "Shared song",
+    "translation": "Música compartilhada",
+    "ratio": 1.82
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

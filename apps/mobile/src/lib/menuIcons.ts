@@ -1,6 +1,9 @@
 // The menu's icons: Phosphor (regular), rendered to white PNGs in assets/icons and tinted by the image component, so no
 // icon package or native module is needed. See assets/icons/README.md for the source and licence.
 export const MENU_ICONS = {
+    broadcast: require('../../assets/icons/broadcast.png'),
+    broadcastOff: require('../../assets/icons/globe-x.png'),
+    shareNetwork: require('../../assets/icons/share-network.png'),
     house: require('../../assets/icons/house.png'),
     chat: require('../../assets/icons/chat-circle.png'),
     sparkle: require('../../assets/icons/sparkle.png'),

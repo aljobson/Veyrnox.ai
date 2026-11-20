@@ -142,6 +142,7 @@ import area_musicDiscover from './en/musicDiscover';
 import area_musicGenerationActions from './en/musicGenerationActions';
 import area_musicPlaylists from './en/musicPlaylists';
 import area_musicPublic from './en/musicPublic';
+import area_musicPublication from './en/musicPublication';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_nativeEditorModel from './en/nativeEditorModel';
@@ -375,6 +376,7 @@ const catalog = {
     ...area_musicGenerationActions,
     ...area_musicPlaylists,
     ...area_musicPublic,
+    ...area_musicPublication,
     ...area_musicSectionActions,
     ...area_musicTargetStems,
     ...area_nativeEditorModel,
