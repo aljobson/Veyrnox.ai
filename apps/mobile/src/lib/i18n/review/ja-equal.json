@@ -27,6 +27,7 @@
   "menu.cinema": "Product name retained by the Japanese website.",
   "menu.mcp": "Standard protocol abbreviation used by the website.",
   "menu.oddlings": "Product name retained by the Japanese website.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.title": "Product name retained by the Japanese website.",
   "oddlingsProjects.defaultName": "Product name retained by the Japanese website.",
   "opt.countOption": "Placeholder-only numeric option; no prose.",

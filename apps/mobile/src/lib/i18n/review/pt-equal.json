@@ -79,6 +79,8 @@
   "menu.mcp": "Brand or product name retained as in the Portuguese website catalog.",
   "menu.oddlings": "Brand or product name retained as in the Portuguese website catalog.",
   "menu.title": "Established Brazilian Portuguese term or loanword: Menu.",
+  "modelCompare.pair": "Standard comparison notation between unchanged model-name placeholders; vs is conventional in this locale.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.title": "Brand or product name retained as in the Portuguese website catalog.",
   "oddlingsProjects.defaultName": "Brand or product name retained as in the Portuguese website catalog.",
   "opt.countOption": "Technical notation, unit, format example or typeface specimen; no translatable prose.",

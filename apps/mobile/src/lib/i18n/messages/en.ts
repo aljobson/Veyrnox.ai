@@ -129,6 +129,7 @@ import area_menu from './en/menu';
 import area_mobile from './en/mobile';
 import area_mobileSwap from './en/mobileSwap';
 import area_model from './en/model';
+import area_modelCompare from './en/modelCompare';
 import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
 import area_music from './en/music';
@@ -356,6 +357,7 @@ const catalog = {
     ...area_mobile,
     ...area_mobileSwap,
     ...area_model,
+    ...area_modelCompare,
     ...area_modelPage,
     ...area_montage,
     ...area_music,
