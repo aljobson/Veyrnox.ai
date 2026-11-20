@@ -234,6 +234,9 @@ test('the existing Clip Editor owns Smart Cut apply and the caption/export hando
   assert.match(editor, /app\.smartCut\.price\.review/);
   assert.match(editor, /app\.smartCut\.price\.title/);
   assert.match(editor, /Object\.entries\(patch\)\.every/);
+  assert.match(editor, /if \(nextItems === state\.items\) return state;/);
+  assert.match(editor, /if \(continuesGroup\) return \{ \.\.\.state, items: nextItems, editFuture: \[\] \};/);
+  assert.match(editor, /onBlur=\{onEditEnd\}/);
   assert.match(editor, /confirmCreate && \(cost == null \|\| blocked\)/);
   assert.match(editor, /\{\(showCaptions \|\| smartCut\) && <div id=\{smartCut \? 'clip-text-controls' : undefined\}/);
   assert.match(editor, /\{smartCut && <div id="smart-cut-panel"/);
@@ -253,6 +256,9 @@ test('Smart Cut workbench exposes playback, timeline tools and accessible zoom',
   assert.match(workbench, /\[activeUid, start, end\]/);
   assert.match(workbench, /!event\.currentTarget\.paused && current >= end/);
   assert.match(workbench, /\[start\]/);
+  assert.match(workbench, /previewRef\.current\.playbackRate = playbackRate/);
+  assert.match(workbench, /role="region"[\s\S]*thumbnailTimeline/);
+  assert.match(workbench, /aria-current=\{activeTool === tool \? 'location' : undefined\}/);
   for (const label of ['Portrait edit preview', 'Clip timeline', 'Smart Cut editing tools', 'Undo manual edit', 'Redo manual edit']) assert.match(messages, new RegExp(label));
 });
 

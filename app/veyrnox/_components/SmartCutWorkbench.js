@@ -30,6 +30,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
   const activeUid = active?.uid;
   const start = clipStart(active);
   const end = clipEnd(active);
+  const playbackRate = showSlow && Number(active?.slow) > 1 ? 1 / Number(active.slow) : 1;
   const asset = useAssetUrl(active?.job_id, active?.asset_url);
 
   useEffect(() => {
@@ -43,6 +44,10 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
     setPlaying(false);
     if (previewRef.current) previewRef.current.currentTime = next;
   }, [activeUid, start, end]);
+
+  useEffect(() => {
+    if (previewRef.current) previewRef.current.playbackRate = playbackRate;
+  }, [playbackRate]);
 
   function chooseClip(index) {
     setActiveIndex(index);
@@ -101,6 +106,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
               onLoadedMetadata={(event) => {
                 asset.onLoad();
                 event.currentTarget.currentTime = start;
+                event.currentTarget.playbackRate = playbackRate;
               }}
               onPlay={() => setPlaying(true)}
               onPause={() => setPlaying(false)}
@@ -139,7 +145,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
             </div>
           </div>
 
-          <div className="mt-3 overflow-x-auto rounded-xl border border-vx-border bg-vx-base p-2" aria-label={t('app.smartCut.workbench.thumbnailTimeline')}>
+          <div role="region" className="mt-3 overflow-x-auto rounded-xl border border-vx-border bg-vx-base p-2" aria-label={t('app.smartCut.workbench.thumbnailTimeline')}>
             <div className="flex min-w-max gap-2">
               {items.map((item, index) => {
                 const duration = clipOutputDuration(item, showSlow);
@@ -161,7 +167,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
           </div>
 
           <nav className="mt-4 grid grid-cols-5 gap-1 rounded-xl border border-vx-border bg-vx-base p-1" aria-label={t('app.smartCut.workbench.tools')}>
-            {TOOLS.map(([tool, labelKey, targetId]) => <button key={tool} type="button" disabled={disabled} aria-pressed={activeTool === tool} onClick={() => openTool(tool, targetId)} className="min-h-12 rounded-lg px-1 text-[10px] font-extrabold text-vx-fg-muted hover:text-vx-fg aria-pressed:bg-vx-accent aria-pressed:text-vx-accent-ink disabled:opacity-40">{t(labelKey)}</button>)}
+            {TOOLS.map(([tool, labelKey, targetId]) => <button key={tool} type="button" disabled={disabled} aria-current={activeTool === tool ? 'location' : undefined} data-active={activeTool === tool} onClick={() => openTool(tool, targetId)} className="min-h-12 rounded-lg px-1 text-[10px] font-extrabold text-vx-fg-muted hover:text-vx-fg data-[active=true]:bg-vx-accent data-[active=true]:text-vx-accent-ink disabled:opacity-40">{t(labelKey)}</button>)}
           </nav>
           <p className="mt-3 rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5 text-vx-fg-muted">
             {t(`app.smartCut.workbench.help.${activeTool === 'smart-cut' ? 'smartCut' : activeTool}`)}

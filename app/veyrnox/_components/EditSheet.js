@@ -84,17 +84,26 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const [pendingSmartCutApply, setPendingSmartCutApply] = useState(null);
   const [smartCutApplyRevision, setSmartCutApplyRevision] = useState(0);
   const [confirmCreate, setConfirmCreate] = useState(false);
+  const editGroupRef = useRef(null);
 
-  const commitItems = (change) => {
-    setEditState((state) => commitSmartCutEditState(state, change(state.items)));
+  const commitItems = (change, group = null) => {
+    setEditState((state) => {
+      const nextItems = change(state.items);
+      if (nextItems === state.items) return state;
+      const continuesGroup = group && editGroupRef.current === group;
+      editGroupRef.current = group;
+      if (continuesGroup) return { ...state, items: nextItems, editFuture: [] };
+      return commitSmartCutEditState(state, nextItems);
+    });
   };
-  const update = (i, patch) => {
+  const update = (i, patch, group = null) => {
     commitItems((current) => {
       const item = current[i];
       if (!item || Object.entries(patch).every(([key, value]) => Object.is(item[key], value))) return current;
       return current.map((x, k) => (k === i ? { ...x, ...patch } : x));
-    });
+    }, group);
   };
+  const finishEditGroup = () => { editGroupRef.current = null; };
   const updateMetadata = (uid, patch) => {
     setEditState((state) => patchSmartCutMetadataState(state, uid, patch));
   };
@@ -179,7 +188,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
 
   const clipRows = items.map((x, i) => (
     <ClipRow key={x.uid} item={x} index={i} count={items.length}
-      showSlow={showSlow} onChange={(p) => update(i, p)} onMetadata={(p) => updateMetadata(x.uid, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
+      showSlow={showSlow} onChange={(p, group) => update(i, p, group)} onEditEnd={finishEditGroup} onMetadata={(p) => updateMetadata(x.uid, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
   ));
 
   return (<>
@@ -319,13 +328,16 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   </>);
 }
 
-function ClipRow({ item, index, count, showSlow, onChange, onMetadata, onMove, onRemove }) {
+function ClipRow({ item, index, count, showSlow, onChange, onEditEnd, onMetadata, onMove, onRemove }) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const asset = useAssetUrl(item.job_id, item.asset_url);
   const ref = useRef(null);
   const d = item.duration;
-  const setPoint = (key, v) => onChange({ [key]: Math.max(0, Math.min(d ?? 0, Number(v) || 0)) });
+  const setPoint = (key, v, grouped = false) => onChange(
+    { [key]: Math.max(0, Math.min(d ?? 0, Number(v) || 0)) },
+    grouped ? `${item.uid}:${key}` : null,
+  );
   return (
     <li className="rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-col sm:flex-row gap-3">
       <div className="relative w-full sm:w-44 shrink-0">
@@ -352,7 +364,7 @@ function ClipRow({ item, index, count, showSlow, onChange, onMetadata, onMove, o
             <label className="flex items-center gap-2">
               <span className="w-8">{key === 'in_s' ? t("app.editor.sheet.in") : t("app.editor.sheet.out")}</span>
               <input type="number" min={0} max={d ?? undefined} step={0.1} disabled={d == null}
-                value={item[key] == null ? '' : round(item[key])} onChange={(e) => setPoint(key, e.target.value)}
+                value={item[key] == null ? '' : round(item[key])} onChange={(e) => setPoint(key, e.target.value, true)} onBlur={onEditEnd}
                 className="min-h-11 w-24 rounded-lg bg-vx-base border border-vx-field px-2 py-1.5 text-sm text-vx-fg" />
             </label>
             <button disabled={d == null} onClick={() => setPoint(key, ref.current ? ref.current.currentTime : 0)}
