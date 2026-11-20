@@ -6359,7 +6359,7 @@ export default {
     "musicActions.stems.failed": "プロバイダーはステムアーカイブを作成できませんでした。",
     "musicActions.stems.refunded": "プロバイダーはアーカイブを作成しませんでした。ジョブのクレジットは返金されました。",
     "musicActions.stems.zip": "ZIPを取得",
-    "musicActions.stems.external": "ブラウザーで非公開リンクを開きます。リンクは5分後に期限切れになります。",
+    "musicActions.stems.external": "ファイルをダウンロードし、保存や送信ができる共有メニューを開きます。",
     "musicActions.stems.session": "このリクエストを追跡するには、この画面を開いたままにしてください。画面を離れたりアプリを再起動したりすると、状態は保存されません。",
     "musicActions.crop.title": "切り抜き",
     "musicActions.crop.body": "新しいバージョンとして保存し、元の録音は保持します。",
