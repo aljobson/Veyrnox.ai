@@ -160,7 +160,7 @@ test('post-save listener failures cannot undo a durable flush or replacement', a
     } finally { warning.mockRestore(); }
 });
 
-test('failed reconciliation retries every durable document without rewriting the beat', async () => {
+test('failed reconciliation coalesces identical take sets without rewriting the beat', async () => {
     const warning = jest.spyOn(console, 'warn').mockImplementation(() => {});
     try {
         const files = memoryFiles(), store = createBeatStore(files), doc = store.newBeat('First saved take');
@@ -175,12 +175,12 @@ test('failed reconciliation retries every durable document without rewriting the
         const writes = jest.mocked(files.write).mock.calls.length;
         unavailable = false;
         await jest.advanceTimersByTimeAsync(5000);
-        expect(reconciled).toEqual(['First saved take', 'Cloud revision']);
+        expect(reconciled).toEqual(['Cloud revision']);
         expect(files.write).toHaveBeenCalledTimes(writes);
         expect(store.getBeat(doc.id)).toEqual(replacement);
         expect(store.saveState(doc.id)).toBe('saved');
         await jest.advanceTimersByTimeAsync(5000);
-        expect(reconciled).toHaveLength(2);
+        expect(reconciled).toHaveLength(1);
     } finally { warning.mockRestore(); }
 });
 

@@ -1,9 +1,9 @@
 import * as recordingHook from '../src/lib/beatNative/useTakeRecording';
 import { beforeReplace } from '../src/lib/beatNative/recordingFinalizers';
 import type { RecordingEdit } from '../src/lib/beatNative/takeShared';
-import { configureBeatTakeStorage } from '../src/lib/beatNative/takeShared';
+import { addAudioTrack, commitRecording, putBeatTake, takeAsset, configureBeatTakeStorage } from '../src/lib/beatNative/takeShared';
 import { createTakeFiles } from '../src/lib/beatNative/takeFiles';
-import { takeIO } from './beatNativeTakeFixtures';
+import { takeIO, takeRow } from './beatNativeTakeFixtures';
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
@@ -365,4 +365,34 @@ test('recording history and announcements use the localized message or fallback,
         await act(async () => { edit(d => ({ ...d, title: 'Second' }), { recordingCommit: true, label: 'Recorded 2 takes' }); });
         expect(announce).toHaveBeenCalledWith(t('beatTakes.recordingSaved'));
     } finally { hook.mockRestore(); announce.mockRestore(); }
+});
+
+test('a linked beat with a local-only take offers Retry and usable Versions', async () => {
+    const original = newBeat('Local take'), row = takeRow('local-only', original.id);
+    await putBeatTake(row);
+    const audioDoc = addAudioTrack(original);
+    beatStore.putBeat(commitRecording(audioDoc, { trackId: audioDoc.tracks.at(-1)!.id, start: 0, length: 1920, takes: [{ asset: takeAsset(row) }] }));
+    const doc = getBeat(original.id)!;
+    beatStore.setCloudLink(doc.id, { userId: USER, projectId: project(doc.id).id, revision: 1, syncedUpdatedAt: doc.updatedAt });
+    mockApi.request.mockImplementation(async (path: string, init: RequestInit) => {
+        if (init.method === 'POST') throw new ApiError(400, 'LIMIT_REACHED');
+        if (path.endsWith('/versions')) return { versions: [version()] };
+        if (path.endsWith('/takes')) return { takes: [] };
+        if (path.endsWith(doc.id)) return { project: project(doc.id), doc_json: JSON.stringify(doc) };
+        return { projects: [] };
+    });
+    const retry = jest.spyOn(BeatCloudSync.prototype, 'retry');
+    try {
+        mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />));
+        expect(text(t('beat.cloud.takes')).length).toBeGreaterThan(0);
+        expect(byLabel(t('beat.retry'))).toBeDefined();
+        expect(mockApi.request.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(1);
+        await press(t('beat.retry')); expect(retry).toHaveBeenCalledTimes(1);
+        expect(mockApi.request.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(2);
+        await press(t('beat.versions.title'));
+        expect(text(t('beat.versions.linkFirst'))).toHaveLength(0);
+        expect(byLabel(t('beat.versions.save'))).toBeDefined();
+        expect(byLabel(t('beat.versions.restoreNamed', { title: version().title, revision: 1 }))).toBeDefined();
+        expect(mockApi.request.mock.calls.some(([path]) => path.endsWith('/versions'))).toBe(true);
+    } finally { retry.mockRestore(); }
 });

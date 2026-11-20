@@ -6681,7 +6681,7 @@ export default {
     "beat.cloud.rate_limited": "Die Cloud-Speicherung wartet wegen zu vieler Anfragen. Sie versucht es bald erneut.",
     "beat.cloud.offline": "Offline. Deine Änderungen bleiben auf diesem Telefon und werden bei Verbindung synchronisiert.",
     "beat.cloud.error": "Die Cloud-Speicherung konnte nicht abgeschlossen werden. Versuche es erneut, wenn du bereit bist.",
-    "beat.cloud.takes": "Dieser Beat enthält aufgenommene Takes. Sie können auf diesem Telefon noch nicht in der Cloud gespeichert werden.",
+    "beat.cloud.takes": "Beat in deinem Konto gespeichert. Einige Takes werden noch übertragen oder bleiben nur auf diesem Gerät.",
     "beat.cloud.link": "In meinem Konto speichern",
     "beat.cloud.linkAgain": "Erneut in meinem Konto speichern",
     "beat.cloud.paused_conflict": "Die Cloud-Speicherung pausiert, bis du eine Version auswählst. Deine Änderungen werden weiterhin auf diesem Telefon gespeichert.",

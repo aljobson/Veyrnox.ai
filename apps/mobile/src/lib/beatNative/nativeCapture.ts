@@ -41,9 +41,10 @@ export async function openNativeCapture(context: EngineContext, { onEnded = () =
     try {
         const ready = recorder.onAudioReady({ sampleRate: context.sampleRate, channelCount: 1, bufferLength: 1024 }, event => {
             if (closed || ended) return;
-            // `when` is recorder-relative. Anchor it once to the context timeline. Calibration
-            // absorbs the residual constant callback/delivery offset; never re-anchor mid-take.
-            anchor ??= context.currentTime - event.when - event.numFrames / context.sampleRate;
+            // `when` is recorder-relative. While idle, prefer the least delayed delivery.
+            // Freeze the anchor for recording/calibration subscribers so their timeline cannot move.
+            const offset = context.currentTime - event.when - event.numFrames / context.sampleRate;
+            if (anchor === undefined || !listeners.size) anchor = Math.min(anchor ?? offset, offset);
             const chunk = { frame: Math.round((anchor + event.when) * context.sampleRate), samples: event.buffer.getChannelData(0).slice(0, event.numFrames) };
             capturedFrame = Math.max(capturedFrame, chunk.frame + chunk.samples.length);
             listeners.forEach(fn => fn(chunk));

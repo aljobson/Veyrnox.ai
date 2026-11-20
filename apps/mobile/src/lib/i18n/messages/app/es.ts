@@ -6762,7 +6762,7 @@ export default {
     "beat.cloud.rate_limited": "El guardado en la nube está en espera por exceso de solicitudes. Se reintentará en breve.",
     "beat.cloud.offline": "Sin conexión. Tus cambios quedan en este teléfono y se sincronizarán al conectarte.",
     "beat.cloud.error": "No se pudo completar el guardado en la nube. Reinténtalo cuando puedas.",
-    "beat.cloud.takes": "Este beat contiene tomas grabadas. Guardarlas en la nube aún no está disponible en este teléfono.",
+    "beat.cloud.takes": "Beat guardado en tu cuenta. Algunas tomas aún se están transfiriendo o permanecen solo en este dispositivo.",
     "beat.cloud.link": "Guardar en mi cuenta",
     "beat.cloud.linkAgain": "Volver a guardar en mi cuenta",
     "beat.cloud.paused_conflict": "El guardado en la nube está pausado hasta que elijas qué versión conservar. Tus cambios se siguen guardando en este teléfono.",

@@ -6600,7 +6600,7 @@ export default {
     "beat.cloud.rate_limited": "请求过多，云端保存正在等待。稍后会自动重试。",
     "beat.cloud.offline": "当前离线。修改会保留在此手机上，联网后同步。",
     "beat.cloud.error": "未能完成云端保存。准备好后请重试。",
-    "beat.cloud.takes": "此节拍包含录音片段。此手机暂不支持将录音片段保存到云端。",
+    "beat.cloud.takes": "节拍已保存到你的账户。部分录音片段仍在传输中，或仅保存在此设备上。",
     "beat.cloud.link": "保存到我的账户",
     "beat.cloud.linkAgain": "再次保存到我的账户",
     "beat.cloud.paused_conflict": "云端保存已暂停，等待你选择要保留的版本。修改仍会保存在此手机上。",

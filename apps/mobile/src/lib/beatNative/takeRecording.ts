@@ -45,7 +45,7 @@ export function createTakeRecording(deps: RecordingDeps) {
         subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
         locked, capture: () => input,
         async refreshRecovery(saved = deps.saved?.()) {
-            try { if (saved) await reconcileBeatTakes(saved); else await hydrateBeatTakes(); show({ recovery: pendingBeatTakes(deps.current().id), recoveryFailed: false, error: '' }); }
+            try { if (saved) await reconcileBeatTakes(saved); else await hydrateBeatTakes(); show({ recovery: pendingBeatTakes(deps.current().id).filter(row => !documentHasTake(deps.current(), row)), recoveryFailed: false, error: '' }); }
             catch { show({ recoveryFailed: true }); fail('beatTakes.recoveryError'); }
         },
         async arm(trackId: string | null) {
@@ -128,11 +128,12 @@ export function createTakeRecording(deps: RecordingDeps) {
         async recover(discard = false) {
             if (locked() || replacementUnderway(deps.current().id)) return;
             try {
-                if (discard) await discardBeatTakes(state.recovery.map(r => r.id));
+                const recovery = state.recovery.filter(row => !documentHasTake(deps.current(), row));
+                if (discard) await discardBeatTakes(recovery.map(r => r.id));
                 else {
                     assertBeatWritable(deps.current());
                     const groups = new Map<string, TakeRow[]>();
-                    for (const row of state.recovery) if (row.pending && !documentHasTake(deps.current(), row)) {
+                    for (const row of recovery) if (row.pending) {
                         const key = row.pending.recordingId; groups.set(key, [...(groups.get(key) ?? []), row]);
                     }
                     for (const rows of groups.values()) {

@@ -26,3 +26,25 @@ test('denial is rechecked and only undetermined permission requests the prompt',
     takeAudioSession(true, n.api); takeAudioSession(false, n.api);
     expect(n.manager.setSystemOptions.mock.calls).toEqual([[{ ios: { category: 'playAndRecord', options: ['defaultToSpeaker'] } }], [{ ios: { category: 'playback', options: [] } }]]);
 });
+
+test('idle jitter converges to the minimum offset and subscribers freeze the anchor', async () => {
+    const n = native(), { context } = fakeContext();
+    const input = await openNativeCapture(context, { native: n.api });
+    // Buffer duration is 100 ms; callback jitter adds 40, 10, then 30 ms.
+    context.currentTime = 10.14; n.send(0, 100);
+    context.currentTime = 10.21; n.send(0.1, 100);
+    context.currentTime = 10.33; n.send(0.2, 100);
+    const frames: number[] = [], off = input.subscribe(c => frames.push(c.frame));
+    const offCalibration = input.subscribe(() => {});
+    context.currentTime = 10.4; n.send(0.3, 100); // Lower offset must not move an active timeline.
+    context.currentTime = 10.56; n.send(0.4, 100);
+    offCalibration();
+    context.currentTime = 10.6; n.send(0.5, 100); // One remaining subscriber still freezes it.
+    expect(frames).toEqual([10310, 10410, 10510]);
+    off(); context.currentTime = 10.7; n.send(0.6, 100); // Idle estimation resumes.
+    input.subscribe(c => frames.push(c.frame));
+    context.currentTime = 10.84; n.send(0.7, 100);
+    expect(frames.at(-1)).toBe(10700);
+    expect(input.capturedFrame).toBe(10800);
+    await input.close();
+});

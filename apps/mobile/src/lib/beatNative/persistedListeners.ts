@@ -1,20 +1,26 @@
 import type { BeatDoc } from './doc';
 
+type Delivery = { id: string; doc: BeatDoc };
+const deliveryKey = (id: string, doc: BeatDoc) => JSON.stringify([id, [...new Set(
+    Object.values(doc.assets ?? {}).filter(asset => asset.source === 'take').map(asset => asset.ref),
+)].sort()]);
+
 type Listener = (id: string, doc: BeatDoc) => void | Promise<void>;
 
 /** Reconciliation can fail independently of a successful document write. */
 export function createPersistedListeners() {
     const listeners = new Set<Listener>();
-    const failed = new Map<Listener, Map<BeatDoc, string>>();
+    const failed = new Map<Listener, Map<string, Delivery>>();
     let timer: ReturnType<typeof setTimeout> | undefined, generation = 0;
     async function deliver(listener: Listener, id: string, doc: BeatDoc, epoch: number) {
         if (epoch !== generation || !listeners.has(listener)) return;
-        try { await listener(id, doc); failed.get(listener)?.delete(doc); }
+        const key = deliveryKey(id, doc);
+        try { await listener(id, doc); failed.get(listener)?.delete(key); }
         catch (error) {
             if (epoch !== generation || !listeners.has(listener)) return;
-            // Keep every durable document: a later undo must not hide a take that was saved.
-            const rows = failed.get(listener) ?? new Map<BeatDoc, string>();
-            rows.set(doc, id); failed.set(listener, rows);
+            // Keep distinct durable take sets across undo, but coalesce ordinary edits to the same set.
+            const rows = failed.get(listener) ?? new Map<string, Delivery>();
+            rows.set(key, { id, doc }); failed.set(listener, rows);
             console.warn('Beat post-save reconciliation failed', error);
             schedule();
         }
@@ -26,7 +32,7 @@ export function createPersistedListeners() {
             const batch = [...failed], epoch = generation;
             failed.clear();
             void (async () => {
-                for (const [listener, rows] of batch) for (const [doc, id] of rows) await deliver(listener, id, doc, epoch);
+                for (const [listener, rows] of batch) for (const { doc, id } of rows.values()) await deliver(listener, id, doc, epoch);
             })();
         }, 5000);
     }

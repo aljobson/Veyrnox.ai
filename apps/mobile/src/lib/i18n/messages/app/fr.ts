@@ -6762,7 +6762,7 @@ export default {
     "beat.cloud.rate_limited": "La sauvegarde dans le cloud attend : trop de demandes. Elle réessaiera bientôt.",
     "beat.cloud.offline": "Hors ligne. Tes modifications restent sur ce téléphone et seront synchronisées à la reconnexion.",
     "beat.cloud.error": "La sauvegarde dans le cloud n’a pas abouti. Réessaie quand tu veux.",
-    "beat.cloud.takes": "Ce beat contient des prises enregistrées. Leur sauvegarde dans le cloud n’est pas encore disponible sur ce téléphone.",
+    "beat.cloud.takes": "Beat enregistré dans votre compte. Certaines prises sont encore en cours de transfert ou restent uniquement sur cet appareil.",
     "beat.cloud.link": "Enregistrer dans mon compte",
     "beat.cloud.linkAgain": "Enregistrer à nouveau dans mon compte",
     "beat.cloud.paused_conflict": "La sauvegarde dans le cloud est en pause jusqu’à ton choix de version. Tes modifications restent enregistrées sur ce téléphone.",

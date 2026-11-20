@@ -101,7 +101,8 @@ export function createTakeCloud(api: ApiClient, fetcher: typeof fetch = fetch, i
         for (const asset of missing) {
             const key = `${doc.id}:download:${asset.ref}`;
             check(token); const row = rows.find(r => r.take_ref === asset.ref && r.status === 'ready');
-            if (!row) { all = false; failures.refuse(key); continue; }
+            // Documents arrive before media is reserved or confirmed on the recording device.
+            if (!row) { all = false; failures.defer(key); continue; }
             try {
                 const signed = await call<{ url: string }>(`${path(doc.id)}/${encodeURIComponent(row.id)}`, token);
                 if (typeof signed?.url !== 'string') throw new ApiError(200, 'bad_response');

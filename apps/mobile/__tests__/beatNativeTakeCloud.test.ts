@@ -179,10 +179,37 @@ test.each(['fetch', 'body'])('a download %s network failure backs off for 60 s w
     } finally { sync.dispose(); download.mockRestore(); }
 });
 
-test('a refused download clears when the take becomes available on the device', async () => {
+test('a deferred download clears when the take becomes available on the device', async () => {
     const api = { request: jest.fn(async () => ({ takes: [] })) };
     const cloud = createTakeCloud(api as unknown as ApiClient, jest.fn() as never, () => {}), doc = docWithTake();
     expect(await cloud.download(doc, token)).toBe(false);
     await putBeatTake(takeRow());
     expect(await cloud.download(doc, token)).toBe(true);
+});
+
+test.each(['absent', 'pending'])('an initially %s take downloads automatically when ready 60 seconds later', async initial => {
+    const store = createBeatStore(memoryFiles()), doc = store.newBeat('Incoming take');
+    store.putBeat({ ...docWithTake(), id: doc.id });
+    const saved = store.getBeat(doc.id)!;
+    store.setCloudLink(doc.id, { userId: USER, projectId: project(doc.id).id, revision: 1, syncedUpdatedAt: saved.updatedAt });
+    let ready = false;
+    const api = { request: jest.fn(async (path: string) => {
+        if (path.endsWith('/takes')) return { takes: ready || initial === 'pending' ? [{ id: 'server-take', take_ref: 'take-1', status: ready ? 'ready' : 'pending' }] : [] };
+        if (path.endsWith('/server-take')) return { url: 'https://signed.test/download' };
+        if (path.endsWith(doc.id)) return { project: project(doc.id, 1), doc_json: JSON.stringify(saved) };
+        return { projects: [] };
+    }) };
+    const download = jest.spyOn(global, 'fetch').mockResolvedValue({ ok: true, arrayBuffer: async () => encodeWav(takeRow().samples, 1000) } as Response);
+    download.mockClear();
+    const sync = new BeatCloudSync(api as unknown as ApiClient, store, doc.id);
+    try {
+        const now = Date.now(); await sync.start(USER);
+        expect(sync.snapshot().state).toBe('takes'); expect(sync.takes.nextRetryAt(doc.id)).toBe(now + 60000);
+        ready = true; await jest.advanceTimersByTimeAsync(59999);
+        expect(download).not.toHaveBeenCalled();
+        await jest.advanceTimersByTimeAsync(1);
+        expect(download).toHaveBeenCalledTimes(1); expect(sync.snapshot().state).toBe('synced');
+        expect(sync.takes.nextRetryAt(doc.id)).toBe(0);
+        expect((await loadBeatTake('take-1'))?.state).toBe('committed');
+    } finally { sync.dispose(); download.mockRestore(); }
 });

@@ -6762,7 +6762,7 @@ export default {
     "beat.cloud.rate_limited": "O salvamento na nuvem está aguardando por excesso de solicitações. Tentará novamente em breve.",
     "beat.cloud.offline": "Sem conexão. Suas alterações ficam neste telefone e serão sincronizadas quando houver conexão.",
     "beat.cloud.error": "Não foi possível concluir o salvamento na nuvem. Tente novamente quando puder.",
-    "beat.cloud.takes": "Este beat contém tomadas gravadas. Salvá-las na nuvem ainda não está disponível neste telefone.",
+    "beat.cloud.takes": "Beat salvo na sua conta. Algumas tomadas ainda estão sendo transferidas ou permanecem apenas neste dispositivo.",
     "beat.cloud.link": "Salvar na minha conta",
     "beat.cloud.linkAgain": "Salvar na minha conta novamente",
     "beat.cloud.paused_conflict": "O salvamento na nuvem está pausado até você escolher uma versão. Suas alterações continuam sendo salvas neste telefone.",

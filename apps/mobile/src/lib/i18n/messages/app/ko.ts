@@ -6600,7 +6600,7 @@ export default {
     "beat.cloud.rate_limited": "요청이 너무 많아 클라우드 저장이 대기 중입니다. 곧 다시 시도합니다.",
     "beat.cloud.offline": "오프라인입니다. 변경 사항은 이 휴대폰에 남아 있다가 연결되면 동기화됩니다.",
     "beat.cloud.error": "클라우드 저장을 완료하지 못했습니다. 준비되면 다시 시도하세요.",
-    "beat.cloud.takes": "이 비트에는 녹음된 테이크가 있습니다. 이 휴대폰에서는 테이크의 클라우드 저장을 아직 지원하지 않습니다.",
+    "beat.cloud.takes": "비트가 계정에 저장되었습니다. 일부 테이크는 아직 전송 중이거나 이 기기에만 저장되어 있습니다.",
     "beat.cloud.link": "내 계정에 저장",
     "beat.cloud.linkAgain": "내 계정에 다시 저장",
     "beat.cloud.paused_conflict": "유지할 버전을 선택할 때까지 클라우드 저장이 중지됩니다. 변경 사항은 이 휴대폰에 계속 저장됩니다.",

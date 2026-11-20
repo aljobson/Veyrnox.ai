@@ -82,7 +82,7 @@ export default {
     'beat.cloud.rate_limited': 'Cloud saving is waiting. Too many requests; it will retry shortly.',
     'beat.cloud.offline': 'Offline. Your edits stay on this phone and will sync when connected.',
     'beat.cloud.error': 'Cloud saving could not finish. Retry when ready.',
-    'beat.cloud.takes': 'This beat contains take recordings. Cloud saving of takes is not available on this phone yet.',
+    'beat.cloud.takes': 'Beat saved to your account. Some takes are still transferring or remain only on this device.',
     'beat.cloud.link': 'Save to my account',
     'beat.cloud.linkAgain': 'Save to my account again',
     'beat.cloud.paused_conflict': 'Cloud saving is paused until you choose which version to keep. Your edits still save on this phone.',

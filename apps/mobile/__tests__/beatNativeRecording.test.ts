@@ -2,7 +2,7 @@ import { createTakeRecording } from '../src/lib/beatNative/takeRecording';
 import { createBeatStore } from '../src/lib/beatNative/store';
 import { createHistory, record, travel } from '../src/lib/beatNative/history';
 import { createTakeFiles } from '../src/lib/beatNative/takeFiles';
-import { addAudioTrack, appendBeatTake, configureBeatTakeStorage, hydrateBeatTakes, loadBeatTake, pendingBeatTakes, reconcileBeatTakes, type SongWindow } from '../src/lib/beatNative/takeShared';
+import { addAudioTrack, appendBeatTake, configureBeatTakeStorage, hydrateBeatTakes, loadBeatTake, pendingBeatTakes, reconcileBeatTakes, takeAsset, type SongWindow } from '../src/lib/beatNative/takeShared';
 import { createRecordingTransport } from '../src/lib/beatNative/transport';
 import { beforeReplace, registerRecordingFinalizer, replacementUnderway } from '../src/lib/beatNative/recordingFinalizers';
 import { fakeCapture, takeIO, takeRow } from './beatNativeTakeFixtures';
@@ -55,7 +55,8 @@ test('checkpoint-only recovery groups recording ids, reads audio, and discard re
     await h.controller.refreshRecovery(); expect(h.controller.snapshot().recovery).toHaveLength(1);
     await h.controller.recover(); expect(h.edits).toHaveBeenCalledTimes(1); expect(h.controller.snapshot().recovery).toEqual([]);
     const another = { ...row, id: 'discard-me' }; await appendBeatTake(another, 0); await h.controller.refreshRecovery(); await h.controller.recover(true);
-    expect(pendingBeatTakes(h.id)).toEqual([]); await h.controller.dispose();
+    expect(pendingBeatTakes(h.id).map(row => row.id)).toEqual(['recovery']);
+    await h.store.flushBeat(h.id); expect(pendingBeatTakes(h.id)).toEqual([]); await h.controller.dispose();
 });
 test('read-only refuses permission and replacement lease finalizes before any replacement starts', async () => {
     jest.useFakeTimers(); const h = harness(); const unreg = registerRecordingFinalizer(h.id, h.controller.beforeReplace);
@@ -117,4 +118,34 @@ test('replacement cancels a pending recording start and releases the recording l
     expect(h.controller.snapshot()).toMatchObject({ status: 'armed', armedId: h.trackId });
     release(); expect(h.controller.locked()).toBe(false);
     unregister(); await h.controller.dispose();
+});
+
+test('failed save, recovery refresh and Discard leave a live take pending until a successful save', async () => {
+    jest.useFakeTimers(); const h = harness(); await h.store.flushBeat(h.id);
+    await h.controller.arm(h.trackId); await h.controller.record(false);
+    h.window({ fromSec: 0, toSec: 2, contextTime: 0 });
+    h.input.send({ frame: 0, samples: new Float32Array(2000).fill(0.3) }); await h.controller.finish();
+    const ref = Object.values(h.store.getBeat(h.id)!.assets!)[0].ref;
+    jest.mocked(h.files.write).mockRejectedValueOnce(new Error('disk_full'));
+    await expect(h.store.flushBeat(h.id)).rejects.toThrow('disk_full');
+    await h.controller.refreshRecovery(h.store.getPersistedBeat(h.id));
+    expect(h.controller.snapshot().recovery).toEqual([]);
+    await h.controller.recover(true);
+    expect((await loadBeatTake(ref))?.state).toBe('pending');
+    await h.store.flushBeat(h.id);
+    configureBeatTakeStorage(createTakeFiles(h.io)); await hydrateBeatTakes();
+    expect((await loadBeatTake(ref))?.state).toBe('committed');
+    expect((await loadBeatTake(ref))?.samples.length).toBe(2000);
+    await h.controller.dispose();
+});
+
+test('Discard rechecks a recovery row that became referenced after the panel refreshed', async () => {
+    jest.useFakeTimers(); const h = harness(); const row = takeRow('stale-recovery', h.id);
+    await appendBeatTake(row, 0); await h.controller.refreshRecovery();
+    expect(h.controller.snapshot().recovery).toHaveLength(1);
+    expect(h.store.putBeat({ ...h.store.getBeat(h.id)!, assets: { a1: takeAsset(row) } })).toBe(true);
+    await h.controller.recover(true);
+    expect((await loadBeatTake(row.id))?.state).toBe('pending');
+    await h.store.flushBeat(h.id); expect((await loadBeatTake(row.id))?.state).toBe('committed');
+    await h.controller.dispose();
 });
