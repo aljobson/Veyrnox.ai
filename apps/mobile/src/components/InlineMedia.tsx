@@ -4,10 +4,10 @@ import { AppState, Pressable, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { VideoView, useVideoPlayer, type VideoPlayer, type VideoThumbnail } from 'expo-video';
 import { Image } from 'expo-image';
-import { Icon, Text, themedStyles, useThemedStyles } from './ui';
+import { Icon, themedStyles, useThemedStyles } from './ui';
 import { ds } from '../theme';
-import { t, tAccessibility } from '../lib/i18n';
-import { MIN_TARGET } from '../lib/a11y';
+import { t } from '../lib/i18n';
+import { AudioSeekBar } from './AudioSeekBar';
 import { CassetteReels } from './CassetteReels';
 
 export function InlineMedia({ url, label, audio = false, onReady }: { url: string; label: string; audio?: boolean; onReady?: () => void }) {
@@ -76,16 +76,10 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
 }
 const POSTER_AT_S = 0.5;
 export const MEDIA_HEIGHT = 260;
-const SKIP_S = 10;
-const clock = (seconds: number) => {
-    const whole = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
-    return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
-};
 function AudioControls({ player, playing, label }: { player: VideoPlayer; playing: boolean; label: string }) {
     const styles = useThemedStyles(sheets);
     const [position, setPosition] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [width, setWidth] = useState(0);
     useEffect(() => {
         const time = player.addListener('timeUpdate', ({ currentTime }) => { setPosition(currentTime); setDuration(player.duration); });
         const loaded = player.addListener('sourceLoad', ({ duration: length }) => setDuration(length));
@@ -102,25 +96,13 @@ function AudioControls({ player, playing, label }: { player: VideoPlayer; playin
         if (duration > 0 && player.currentTime >= duration - 0.05) seek(0);
         player.play();
     };
-    const share = duration > 0 ? Math.min(1, position / duration) : 0;
-    const where = tAccessibility('cinema.position', { position: clock(position), duration: clock(duration) });
     return (
         <View style={styles.controls}>
             <Pressable testID="inline-audio-toggle" accessibilityRole="button" accessibilityLabel={t(playing ? 'editor.pause' : 'editor.play')} accessibilityHint={rawText(label)}
                 accessibilityState={{ selected: playing }} onPress={toggle} style={styles.toggle}>
                 {playing ? <View style={styles.pauseGlyph}><View style={styles.pauseBar} /><View style={styles.pauseBar} /></View> : <Icon name="play" />}
             </Pressable>
-            <View style={styles.timeline}>
-                <Pressable testID="inline-audio-position" accessibilityRole="adjustable" accessibilityLabel={rawText(label)} accessibilityValue={{ text: where }}
-                    accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-                    onAccessibilityAction={({ nativeEvent }) => seek(position + (nativeEvent.actionName === 'increment' ? SKIP_S : -SKIP_S))}
-                    onLayout={({ nativeEvent }) => setWidth(nativeEvent.layout.width)}
-                    onPress={({ nativeEvent }) => { if (width > 0 && duration > 0) seek((nativeEvent.locationX / width) * duration); }}
-                    style={styles.track}>
-                    <View style={styles.rail}><View style={[styles.fillBar, { width: `${share * 100}%` }]} /></View>
-                </Pressable>
-                <Text variant="caption" tone="secondary" accessibilityElementsHidden importantForAccessibility="no">{clock(position)} / {clock(duration)}</Text>
-            </View>
+            <AudioSeekBar position={position} duration={duration} label={label} onSeek={seek} />
         </View>
     );
 }
@@ -137,9 +119,5 @@ const sheets = themedStyles(p => ({
     toggle: { width: 56, height: 56, borderRadius: ds.radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: p.bgElevated2, borderWidth: 1, borderColor: p.borderStrong },
     pauseGlyph: { flexDirection: 'row', gap: ds.space.xs },
     pauseBar: { width: 4, height: 16, borderRadius: ds.radius.pill, backgroundColor: p.textSecondary },
-    timeline: { flex: 1, gap: ds.space.xs },
-    track: { minHeight: MIN_TARGET, justifyContent: 'center' },
-    rail: { height: 4, borderRadius: ds.radius.pill, backgroundColor: p.borderSubtle, overflow: 'hidden' },
-    fillBar: { height: 4, backgroundColor: p.accent },
     deck: { gap: ds.space.md },
 }));

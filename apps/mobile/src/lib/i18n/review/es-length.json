@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorExportRefusal.assets",
+    "english": "Phone export can't include project media yet.",
+    "translation": "La exportación desde el móvil aún no admite archivos multimedia del proyecto.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Turquesa",
@@ -3460,6 +3466,30 @@
     "english": "Mute",
     "translation": "Silenciar",
     "ratio": 2.25
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Usar para sincronizar labios",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirar publicación",
+    "ratio": 2.11
+  },
+  {
+    "id": "musicPublication.handle",
+    "english": "Creator handle",
+    "translation": "Identificador de creador",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.listen",
+    "english": "Shared song",
+    "translation": "Canción compartida",
+    "ratio": 1.64
   },
   {
     "id": "oauth.signIn",

@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorExportRefusal.speed",
+    "english": "Phone export can't include speed changes yet.",
+    "translation": "Der Export auf dem Handy unterstützt Geschwindigkeitsänderungen noch nicht.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorExportRefusal.crop",
+    "english": "Phone export can't include crop or fit settings yet.",
+    "translation": "Der Export auf dem Handy unterstützt Zuschnitt- oder Einpassungseinstellungen noch nicht.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.navy",
     "english": "Navy",
     "translation": "Dunkelblau",
@@ -3826,6 +3838,36 @@
     "english": "{track} muted",
     "translation": "{track} stummgeschaltet",
     "ratio": 1.77
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Für Lippensynchronisation verwenden",
+    "ratio": 2.19
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "{name} für Lippensynchronisation verwenden",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicPublication.title",
+    "english": "Public release",
+    "translation": "Öffentliche Veröffentlichung",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.publish",
+    "english": "Publish song",
+    "translation": "Song veröffentlichen",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Veröffentlichung zurückziehen",
+    "ratio": 3.22
   },
   {
     "id": "recovery.retry",

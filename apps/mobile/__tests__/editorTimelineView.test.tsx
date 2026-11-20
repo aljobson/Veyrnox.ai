@@ -74,7 +74,8 @@ test('accessibility actions move one second and trim one frame, protected clips 
     expect(onApply.mock.calls[0][0].video[0].start).toBe(90);
     await call('trim-v1-out', 'onAccessibilityAction', { nativeEvent: { actionName: 'increment' } } as any);
     expect(onApply.mock.calls[1][0].video[0].len).toBe(91);
-    Object.assign(timeline.video[0], { words: [] }); await render(); expect(node('trim-v1-out')).toBeUndefined();
+    Object.assign(timeline.video[0], { words: [] }); await render(); expect(node('trim-v1-out')).toBeDefined();
+    Object.assign(timeline.video[0], { freezeFrame: 0 }); await render(); expect(node('trim-v1-out')).toBeUndefined();
 });
 test('tapping empty lane space seeks without an edit', async () => {
     await render(); await call('lane-audio-0', 'onResponderGrant', event(10, 10, 120)); await call('lane-audio-0', 'onResponderRelease', event(10, 10)); expect(onSeek).toHaveBeenCalledWith(60); expect(onApply).not.toHaveBeenCalled();

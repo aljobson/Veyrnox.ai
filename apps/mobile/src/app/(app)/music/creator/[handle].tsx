@@ -1,3 +1,4 @@
+import { MusicLinkShare } from '../../../../components/music/MusicLinkShare';
 import { useLocalSearchParams } from 'expo-router';
 import { Button, Text } from '../../../../components/ui';
 import { PublicShell } from '../../../../components/music/PublicShell';
@@ -17,6 +18,7 @@ export default function PublicCreatorScreen() {
         {blocked ? <PublicBlocked blocked={blocked} busy={state.busy} unblock={() => void flow.block(blocked.creator_id, false)} /> : null}
         {data ? <>
             <Text>{`@${data.profile.handle}`}</Text>
+            <MusicLinkShare handle={handle} />
             <PublicSocial counts={data.social} social={state.social} handle={handle} flow={flow} busy={state.busy} />
             {state.social && !state.social.is_own ? <Button variant="tertiary" label={t('musicPublic.blockNamed', { name: creatorName(data.profile) })}
                 disabled={state.busy} onPress={() => void flow.block(data.profile.creator_id, true, creatorName(data.profile))} /> : null}
