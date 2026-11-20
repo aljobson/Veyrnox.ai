@@ -6642,6 +6642,7 @@ export default {
     "beatMix.fx.empty": "无效果",
     "beatMix.fx.add": "添加{effect}",
     "beatMix.fx.limit": "每条音轨最多可添加4个效果。",
+    "beatMix.fx.unavailable": "有一个效果无法在此手机上启动，已跳过。混音的其余部分会继续播放。",
     "beatMix.fx.eq": "均衡器",
     "beatMix.fx.compressor": "压缩器",
     "beatMix.fx.distortion": "失真",

@@ -6642,6 +6642,7 @@ export default {
     "beatMix.fx.empty": "エフェクトなし",
     "beatMix.fx.add": "{effect}を追加",
     "beatMix.fx.limit": "1トラックに追加できるエフェクトは最大4つです。",
+    "beatMix.fx.unavailable": "このスマートフォンでは開始できないエフェクトがあったため、スキップしました。ミックスの残りは再生されます。",
     "beatMix.fx.eq": "EQ",
     "beatMix.fx.compressor": "コンプレッサー",
     "beatMix.fx.distortion": "ディストーション",

@@ -76,7 +76,7 @@ export default function BeatEditor() {
     if (!doc) return <EmptyState title={t('beat.missing')} body={t('beat.missingBody')} actionLabel={t('beat.back')} href="/beats" />;
     const play = async () => {
         const a = engine(); if (!a) return;
-        try { let failed = false; await a.play(() => docRef.current as BeatDoc, n => setStep(n), () => { failed = true; setPlaying(false); setStep(null); setNotice(t('beat.audioError')); }); if (!failed) { setPlaying(true); setSaid(t('beat.playing')); } } catch { setNotice(t('beat.audioError')); }
+        try { let failed = false; await a.play(() => docRef.current as BeatDoc, n => setStep(n), () => { failed = true; setPlaying(false); setStep(null); setNotice(t('beat.audioError')); }, () => setNotice(t('beatMix.fx.unavailable'))); if (!failed) { setPlaying(true); setSaid(t('beat.playing')); } } catch { setNotice(t('beat.audioError')); }
     };
     const stop = () => { audio.current?.stop(); setPlaying(false); setStep(null); setSaid(t('beat.stopped')); };
     const hit = (p: PadId) => { setPad(p); engine()?.hitPad(p, doc.tracks[0]?.kit ?? DRUM_KITS[0].id); };

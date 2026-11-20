@@ -4,6 +4,7 @@ import * as RN from 'react-native';
 import BeatEditor from '../src/app/(app)/beats/[id]';
 import { BeatAutomationLane } from '../src/components/beats/BeatAutomationLane';
 import { BeatMeter } from '../src/components/beats/BeatMeter';
+import { MixSlider } from '../src/components/beats/MixSlider';
 import { t } from '../src/lib/i18n';
 import { newBeat, getBeat, putBeat, resetBeats } from '../src/lib/beatNative/store';
 import { tryOp, validateBeat } from '../src/lib/beatNative/doc';
@@ -158,4 +159,10 @@ test('meter exposes accessible text and hides the bar for reduced motion', async
     expect(root.container.queryAll(n => n.props.importantForAccessibility === 'no-hide-descendants')).toHaveLength(0);
     mockReduced = false; await act(async () => root.render(<BeatMeter audio={null} trackId="master" name="Master" />));
     expect(root.container.queryAll(n => n.props.importantForAccessibility === 'no-hide-descendants').length).toBeGreaterThan(0);
+});
+test('mixer sliders read their own value and unit to the screen reader', async () => {
+    await act(async () => root.render(<MixSlider label="Threshold" value={-24} min={-60} max={0} step={1} unit="db" onChange={() => undefined} />));
+    expect(slider('Threshold').props.accessibilityValue.text).toBe(t('beatMix.unit.db', { value: -24 }));
+    await act(async () => root.render(<MixSlider label="Pan" value={0} min={-1} max={1} onChange={() => undefined} />));
+    expect(slider('Pan').props.accessibilityValue.text).toBe(t('beatMix.unit.percent', { value: 0 }));
 });

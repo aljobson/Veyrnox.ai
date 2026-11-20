@@ -137,3 +137,24 @@ test.each(['sync', 'destination', 'schedule', 'playPad'])('timer errors in %s st
     expect(timer).toHaveBeenCalledTimes(scheduled); expect(b.stop).toHaveBeenCalledWith(old);
     await audio.close();
 });
+test('an effect the native context cannot build is reported once per run, never hidden', async () => {
+    const b = build(); const onEffectError = jest.fn();
+    const mix = createMixRun(b.engine, onEffectError);
+    (b.context as unknown as Record<string, unknown>).createConvolver = () => { throw new Error('no convolver'); };
+    let doc = addEffect(addEffect(make(), 't1', 'reverb'), 't1', 'reverb');
+    expect(() => mix.sync(doc)).not.toThrow();
+    expect(onEffectError).toHaveBeenCalledTimes(1);
+    doc = addEffect(doc, 't1', 'eq'); mix.sync(doc);
+    expect(onEffectError).toHaveBeenCalledTimes(2);
+    mix.stop(); await b.engine.close();
+});
+test('a UI stop or close never throws when a run fails to release', async () => {
+    const b = build(); const onError = jest.fn(), error = new Error('release failed');
+    const audio = createBeatAudioFromEngine({ engine: b.engine, setTimer: jest.fn(() => 1), clearTimer: jest.fn() });
+    await audio.play(() => make(), undefined, onError);
+    b.stop.mockImplementation(() => { throw error; });
+    expect(() => audio.stop()).not.toThrow();
+    expect(audio.isPlaying()).toBe(false); expect(onError).toHaveBeenCalledWith(error);
+    await audio.play(() => make(), undefined, onError);
+    await expect(audio.close()).resolves.toBeUndefined();
+});

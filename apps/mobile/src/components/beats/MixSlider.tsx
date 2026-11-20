@@ -11,9 +11,10 @@ export function MixSlider({ label, value, min = 0, max = 1, step = 0.01, unit = 
     disabled?: boolean; reason?: string; onChange(value: number): void;
 }) {
     const shown = unit === 'percent' ? Math.round(value * 100) : Number(value.toFixed(2));
+    const valueText = t(`beatMix.unit.${unit}`, { value: shown });
     return <View>
-        <Text>{t('beatMix.slider.value', { label, value: t(`beatMix.unit.${unit}`, { value: shown }) })}</Text>
-        <StrengthSlider tone="surface" label={label} value={toUnit(value, min, max)} disabled={disabled}
+        <Text>{t('beatMix.slider.value', { label, value: valueText })}</Text>
+        <StrengthSlider tone="surface" label={label} value={toUnit(value, min, max)} valueText={valueText} disabled={disabled}
             onChange={v => onChange(fromUnit(v, min, max, step))} />
         {disabled && reason ? <Text variant="footnote" tone="secondary">{reason}</Text> : null}
     </View>;

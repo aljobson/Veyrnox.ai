@@ -3,7 +3,7 @@ import { runKey } from './mix';
 import type { BeatEngine, Run } from './shared';
 
 type Active = { run: Run; key: string; lastOnset: number };
-export function createMixRun(engine: BeatEngine) {
+export function createMixRun(engine: BeatEngine, onEffectError: (message: string) => void = () => undefined) {
     let current: Active | null = null;
     const retired = new Set<Active>();
     function collect() {
@@ -18,7 +18,10 @@ export function createMixRun(engine: BeatEngine) {
             const key = runKey(doc);
             if (!current || current.key !== key) {
                 if (current) { retired.add(current); current = null; }
-                current = { run: engine.startRun(doc), key, lastOnset: -Infinity };
+                let reported = false;
+                // The web graph skips an effect it cannot build (EFFECT_UNAVAILABLE); say so once per run, never hide it.
+                const onError = (message: string) => { if (!reported) { reported = true; onEffectError(message); } };
+                current = { run: engine.startRun(doc, { onError }), key, lastOnset: -Infinity };
                 return { restarted: true };
             }
             for (const t of doc.tracks) engine.setTrackMix(current.run, t.id, audibleGain(doc, t), t.pan, doc);

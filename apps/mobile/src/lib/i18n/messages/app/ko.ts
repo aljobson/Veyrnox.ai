@@ -6642,6 +6642,7 @@ export default {
     "beatMix.fx.empty": "이펙트 없음",
     "beatMix.fx.add": "{effect} 추가",
     "beatMix.fx.limit": "트랙당 이펙트는 최대 4개입니다.",
+    "beatMix.fx.unavailable": "이 휴대폰에서 시작할 수 없는 효과가 있어 건너뛰었습니다. 나머지 믹스는 계속 재생됩니다.",
     "beatMix.fx.eq": "이퀄라이저",
     "beatMix.fx.compressor": "컴프레서",
     "beatMix.fx.distortion": "디스토션",

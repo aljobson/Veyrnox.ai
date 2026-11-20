@@ -37,7 +37,7 @@ export const { addEffect, removeEffect, moveEffect, setEffectBypass, setEffectPa
     clearAutomation(d: BeatDoc, id: string, lane: Lane): MixDoc;
     removeAutomationPoint(d: BeatDoc, id: string, lane: Lane, index: number): MixDoc;
 };
-export const { REVERB_SIZES, DEFAULT_FX_PARAMS, DEFAULT_MASTER, FX_RANGES, trackHasMix, hasMixer } = rules as {
+export const { REVERB_SIZES, DEFAULT_FX_PARAMS, DEFAULT_MASTER, FX_RANGES, trackHasMix, hasMixer } = rules as unknown as {
     REVERB_SIZES: readonly number[]; DEFAULT_FX_PARAMS: Readonly<Record<FxType, Readonly<Record<string, number>>>>;
     DEFAULT_MASTER: MixMaster; FX_RANGES: Readonly<Record<string, readonly [number, number]>>;
     trackHasMix(t: MixTrack): boolean; hasMixer(d: BeatDoc): boolean;
@@ -47,7 +47,7 @@ export const { effectParamLive, sendLevelLive, masterPatchLive, automationContro
     masterPatchLive(d: BeatDoc, patch: MasterPatch): boolean;
     automationControl(t: MixTrack, lane: Lane, view: MixDoc['view'], recording?: boolean): { disabled: boolean; message: string };
 };
-export const { automationEnvelope, envelopeAt } = automation as {
+export const { automationEnvelope, envelopeAt } = automation as unknown as {
     automationEnvelope(points: AutomationPoint[], bpm: number): [number, number][];
     envelopeAt(envelope: [number, number][], sec: number): number;
 };

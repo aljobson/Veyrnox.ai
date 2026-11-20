@@ -7047,6 +7047,7 @@ export default {
     "beatMix.fx.empty": "لا توجد مؤثرات",
     "beatMix.fx.add": "إضافة {effect}",
     "beatMix.fx.limit": "يمكن أن يحتوي المسار على 4 مؤثرات كحد أقصى.",
+    "beatMix.fx.unavailable": "تعذّر تشغيل أحد المؤثرات على هذا الهاتف، لذلك تم تخطيه. يستمر باقي المزج في التشغيل.",
     "beatMix.fx.eq": "معادل الصوت",
     "beatMix.fx.compressor": "ضاغط",
     "beatMix.fx.distortion": "تشويه",

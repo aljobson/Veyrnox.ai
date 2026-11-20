@@ -15,7 +15,7 @@ import { mixSignature } from '../../../app/veyrnox/_lib/music/beat/beatMixGraph.
 const make = () => createBeat({ id: '00000000-0000-4000-8000-000000000051' });
 test('seams retain identity with all web functions and constants', () => {
     for (const source of [ops, rules, controls, automation]) for (const key of Object.keys(mix)) {
-        if (key in source) expect(mix[key as keyof typeof mix]).toBe(source[key]);
+        if (key in source) expect(mix[key as keyof typeof mix]).toBe((source as Record<string, unknown>)[key]);
     }
     expect(mix.mixSignature).toBe(mixSignature);
 });

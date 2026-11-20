@@ -12,6 +12,7 @@ export default {
     "beatMix.fx.empty": "No effects",
     "beatMix.fx.add": "Add {effect}",
     "beatMix.fx.limit": "A track can have at most 4 effects.",
+    "beatMix.fx.unavailable": "An effect couldn't start on this phone, so it is skipped. The rest of the mix still plays.",
     "beatMix.fx.eq": "EQ",
     "beatMix.fx.compressor": "Compressor",
     "beatMix.fx.distortion": "Distortion",

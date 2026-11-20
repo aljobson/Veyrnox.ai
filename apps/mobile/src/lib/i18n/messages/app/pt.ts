@@ -6804,6 +6804,7 @@ export default {
     "beatMix.fx.empty": "Sem efeitos",
     "beatMix.fx.add": "Adicionar {effect}",
     "beatMix.fx.limit": "Uma faixa pode ter no máximo 4 efeitos.",
+    "beatMix.fx.unavailable": "Um efeito não pôde ser iniciado neste telefone e foi ignorado. O restante da mixagem continua tocando.",
     "beatMix.fx.eq": "Equalizador",
     "beatMix.fx.compressor": "Compressor",
     "beatMix.fx.distortion": "Distorção",

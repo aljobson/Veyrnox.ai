@@ -6723,6 +6723,7 @@ export default {
     "beatMix.fx.empty": "Keine Effekte",
     "beatMix.fx.add": "{effect} hinzufügen",
     "beatMix.fx.limit": "Eine Spur kann höchstens 4 Effekte haben.",
+    "beatMix.fx.unavailable": "Ein Effekt konnte auf diesem Telefon nicht starten und wird übersprungen. Der Rest des Mixes spielt weiter.",
     "beatMix.fx.eq": "EQ",
     "beatMix.fx.compressor": "Kompressor",
     "beatMix.fx.distortion": "Verzerrung",

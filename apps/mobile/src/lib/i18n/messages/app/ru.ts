@@ -6885,6 +6885,7 @@ export default {
     "beatMix.fx.empty": "Нет эффектов",
     "beatMix.fx.add": "Добавить {effect}",
     "beatMix.fx.limit": "На дорожке может быть не более 4 эффектов.",
+    "beatMix.fx.unavailable": "Один эффект не удалось запустить на этом телефоне, поэтому он пропущен. Остальной микс продолжает играть.",
     "beatMix.fx.eq": "Эквалайзер",
     "beatMix.fx.compressor": "Компрессор",
     "beatMix.fx.distortion": "Искажение",

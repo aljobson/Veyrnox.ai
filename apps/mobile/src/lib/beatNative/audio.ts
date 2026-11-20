@@ -8,7 +8,7 @@ import { eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type Pad
 export type TrackMix = { gain: number; pan: number };
 export interface BeatAudio {
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc, onStep?: (step: number) => void, onError?: (error: unknown) => void): Promise<void>;
+    play(getDoc: () => BeatDoc, onStep?: (step: number) => void, onError?: (error: unknown) => void, onEffectError?: (message: string) => void): Promise<void>;
     readonly context: EngineContext;
     meterTap(trackId: string | 'master'): unknown | null;
     stop(): void;
@@ -30,7 +30,8 @@ export type AudioDeps = {
 };
 
 export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTimeout(fn, ms), clearTimer = h => clearTimeout(h as never) }: AudioDeps): BeatAudio {
-    const mixRun = createMixRun(engine);
+    let onEffectError: ((message: string) => void) | undefined;
+    const mixRun = createMixRun(engine, message => { try { onEffectError?.(message); } catch { /* A consumer callback cannot escape the timer. */ } });
     let playing = false;
     let timer: unknown = null;
     let cursor = 0;
@@ -78,14 +79,15 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     return {
         context: engine.context,
         meterTap: trackId => playing ? mixRun.meterTap(trackId) : null,
-        async play(read, step, error) {
+        async play(read, step, error, effectError) {
             if (playing) return;
             await engine.resume();
-            getDoc = read; onStep = step; onError = error; cursor = 0; nextTime = engine.now() + 0.1;
+            getDoc = read; onStep = step; onError = error; onEffectError = effectError; cursor = 0; nextTime = engine.now() + 0.1;
             playing = true;
             tick();
         },
-        stop,
+        // A UI stop or close never throws: the player is already stopped when a node fails to release.
+        stop() { try { stop(); } catch (error) { try { onError?.(error); } catch { /* ignore */ } } },
         isPlaying: () => playing,
         hitPad(pad, kit, velocity = PAD_VELOCITY) {
             void engine.resume();
@@ -94,7 +96,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
         setTrackMix(_trackId, _mix) {
             if (playing && getDoc) { try { mixRun.sync(getDoc()); } catch (error) { fail(error); } }
         },
-        async close() { try { stop(); } finally { await engine.close(); } },
+        async close() { try { stop(); } catch { /* Released below with the context. */ } await engine.close(); },
     };
 }
 

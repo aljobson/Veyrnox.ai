@@ -6723,6 +6723,7 @@ export default {
     "beatMix.fx.empty": "कोई इफ़ेक्ट नहीं",
     "beatMix.fx.add": "{effect} जोड़ें",
     "beatMix.fx.limit": "एक ट्रैक में अधिकतम 4 इफ़ेक्ट हो सकते हैं।",
+    "beatMix.fx.unavailable": "इस फ़ोन पर एक इफ़ेक्ट शुरू नहीं हो सका, इसलिए उसे छोड़ दिया गया है। बाकी मिक्स चलता रहेगा।",
     "beatMix.fx.eq": "ईक्यू",
     "beatMix.fx.compressor": "कंप्रेसर",
     "beatMix.fx.distortion": "डिस्टॉर्शन",
