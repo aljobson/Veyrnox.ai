@@ -3708,6 +3708,48 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Повторить",
+    "ratio": 2.25
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Попробовать снова",
+    "ratio": 3.4
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "Сохранение",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.cloud.error",
+    "english": "Cloud saving could not finish. Retry when ready.",
+    "translation": "Не удалось завершить сохранение в облаке. Попробуй снова, когда будешь готов.",
+    "ratio": 1.6
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Автосохранение",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.versions.checkpoint",
+    "english": "Checkpoint",
+    "translation": "Контрольная точка",
+    "ratio": 1.7
+  },
+  {
     "id": "speech.pitch",
     "english": "Pitch",
     "translation": "Высота тона",

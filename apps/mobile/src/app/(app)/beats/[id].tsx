@@ -12,10 +12,14 @@ import {
     addKitTrack, audibleGain, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, removeTrack, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp,
     type BeatDoc, type Edit, type PadId,
 } from '../../../lib/beatNative/doc';
-import { getBeat, listBeats, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
+import { beatStore, getBeat, listBeats, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
 import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { ds } from '../../../theme';
+
+import { createHistory, record, replacePresent, travel, canUndo, canRedo, type History } from '../../../lib/beatNative/history';
+import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
+import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 
@@ -24,6 +28,8 @@ export default function BeatEditor() {
     useSyncExternalStore(subscribeBeats, listBeats, listBeats);
     const doc = getBeat(String(id));
     const s = useThemedStyles(sheets);
+    const history = useRef<History | null>(null);
+    if (doc && history.current?.present !== doc) history.current = createHistory(doc);
     const audio = useRef<BeatAudio | null>(null);
     const docRef = useRef<BeatDoc | undefined>(doc);
     docRef.current = doc;
@@ -33,6 +39,7 @@ export default function BeatEditor() {
     const [notice, setNotice] = useState<string | null>(null);
     const [said, setSaid] = useState<string | null>(null);
     useAnnouncement(notice ?? said, { everywhere: true });
+    useLocalBeatLifecycle();
     useEffect(() => () => { void audio.current?.close(); audio.current = null; }, []);
 
     // The native module is touched only when the person first asks for sound.
@@ -42,14 +49,27 @@ export default function BeatEditor() {
     }, []);
     const apply = useCallback((operation: Edit, announce?: string) => {
         const current = docRef.current;
-        if (!current) return;
+        if (!current) return false;
         let result;
-        try { result = tryOp(current, operation); } catch { setNotice(t('beat.refused', { reason: '' })); return; }
-        if (result.refused) { setNotice(t('beat.refused', { reason: result.refused })); return; }
-        if (result.doc !== current) putBeat(result.doc);
-        setNotice(null); setSaid(announce ?? null);
+        try { result = tryOp(current, operation); } catch { setNotice(t('beat.refused', { reason: '' })); return false; }
+        if (result.refused) { setNotice(t('beat.refused', { reason: result.refused })); return false; }
+        if (result.doc !== current) {
+            if (!putBeat(result.doc)) { setNotice(t('beat.local.busy')); return false; }
+            docRef.current = getBeat(current.id)!;
+            history.current = record(history.current ?? createHistory(current), docRef.current, { label: announce });
+        }
+        setNotice(null); setSaid(announce ?? null); return true;
     }, []);
 
+    const navigateHistory = (direction: 'undo' | 'redo') => {
+        if (!history.current) return;
+        const next = travel(history.current, direction);
+        if (next === history.current) return;
+        if (!putBeat(next.present)) { setNotice(t('beat.local.busy')); return; }
+        docRef.current = getBeat(next.present.id)!;
+        history.current = replacePresent(next, docRef.current);
+    };
+    if (!doc && beatStore.hydrationState() !== 'ready') return <><Text accessibilityLiveRegion="polite">{t(beatStore.hydrationState() === 'error' ? 'beat.local.loadError' : 'beat.home.checking')}</Text><Button label={t('beat.retry')} onPress={() => void beatStore.hydrateBeats().catch(() => undefined)} /></>;
     if (!doc) return <EmptyState title={t('beat.missing')} body={t('beat.missingBody')} actionLabel={t('beat.back')} href="/beats" />;
     const play = async () => {
         const a = engine(); if (!a) return;
@@ -71,6 +91,9 @@ export default function BeatEditor() {
     return (
         <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: doc.title }} />
+            <BeatSaveControls id={doc.id} apply={apply} />
+            <Button label={t('beat.undo')} disabled={!history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
+            <Button label={t('beat.redo')} disabled={!history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
             {notice ? <MusicNotice message={notice} /> : null}
             <View style={s.transport} accessibilityLabel={t('beat.transport')}>
                 <Button label={playing ? t('beat.stop') : t('beat.play')} onPress={() => void (playing ? stop() : play())} containerStyle={s.play} />
@@ -101,7 +124,6 @@ export default function BeatEditor() {
             <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
                 onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
             {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
-            <Text variant="footnote" tone="secondary">{t('beat.saveNote')}</Text>
         </ScrollView>
     );
 }

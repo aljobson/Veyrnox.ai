@@ -5712,6 +5712,84 @@
     "ratio": 1.64
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Annuler",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Rétablir",
+    "ratio": 2
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "Enregistrement",
+    "ratio": 2.33
+  },
+  {
+    "id": "beat.local.error",
+    "english": "Could not save on this phone. Retry saving.",
+    "translation": "Impossible d’enregistrer sur ce téléphone. Réessaie l’enregistrement.",
+    "ratio": 1.6
+  },
+  {
+    "id": "beat.local.loadError",
+    "english": "Could not load saved beats. Retry loading.",
+    "translation": "Impossible de charger les beats enregistrés. Réessaie le chargement.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.cloud.checking",
+    "english": "Checking cloud saving…",
+    "translation": "Vérification de la sauvegarde dans le cloud…",
+    "ratio": 2
+  },
+  {
+    "id": "beat.conflict.mine",
+    "english": "Keep mine",
+    "translation": "Garder la mienne",
+    "ratio": 1.78
+  },
+  {
+    "id": "beat.versions.title",
+    "english": "Versions",
+    "translation": "Versions enregistrées",
+    "ratio": 2.63
+  },
+  {
+    "id": "beat.versions.save",
+    "english": "Save version now",
+    "translation": "Enregistrer une version maintenant",
+    "ratio": 2.13
+  },
+  {
+    "id": "beat.versions.today",
+    "english": "Today",
+    "translation": "Aujourd’hui",
+    "ratio": 2.2
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Sauvegarde automatique",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.versions.checkpoint",
+    "english": "Checkpoint",
+    "translation": "Point de sauvegarde",
+    "ratio": 1.9
+  },
+  {
     "id": "speech.addCredits",
     "english": "Add credits",
     "translation": "Ajouter des crédits",
