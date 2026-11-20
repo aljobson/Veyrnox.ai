@@ -1,4 +1,9 @@
 export default {
+    "musicPublic.exploreUnavailable": "Explore is not available right now.",
+    "musicPublic.socialUnavailable": "Reactions and follows are not available right now. Refresh to check again.",
+    "musicPublic.commentGone": "This comment no longer exists or is unavailable.",
+    "musicPublic.actions": "Actions for {title}",
+
     "musicPublic.explore": "Explore",
     "musicPublic.track": "Public track",
     "musicPublic.creator": "Creator",

@@ -12,7 +12,7 @@ export function publicDate(v: unknown): v is string {
     const [y, m, d] = v.slice(0, 10).split('-').map(Number);
     return d <= [31, y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
 }
-export const isCreator = (v: unknown) => isRecord(v) && publicUuid(v.creator_id) && publicHandle(v.handle) && publicText(v.display_name, 80, 1);
+export const isCreator = (v: unknown) => isRecord(v) && publicUuid(v.creator_id) && publicHandle(v.handle) && (!('display_name' in v) || publicText(v.display_name, 80));
 const commercial = (v: unknown) => v === 'personal_use_only' || v === 'plan_eligible_terms_apply';
 export function isRailTrack(v: unknown): v is RailTrack { return isRecord(v) && isCreator(v) && publicSlug(v.slug) && publicText(v.title, 120); }
 export function isCounts(v: unknown): v is Counts {
@@ -59,4 +59,14 @@ export function isBestOf(v: unknown): v is BestOf {
     return isRecord(v) && Array.isArray(v.playlists) && v.playlists.length <= 12
         && new Set(v.playlists.map(p => p?.genre)).size === v.playlists.length
         && v.playlists.every(p => isRecord(p) && GENRES.includes(p.genre as never) && Array.isArray(p.tracks) && p.tracks.length <= 8 && p.tracks.every(isRailTrack));
+}
+
+// Drop individual invalid discovery rows, but keep envelopes and comment pages strict.
+export function cleanPublicRows(value: unknown): unknown {
+    if (!isRecord(value)) return value;
+    const rows = (v: unknown, limit: number) => Array.isArray(v) && v.length <= limit ? v.filter(isRailTrack) : v;
+    return { ...value,
+        ...(Array.isArray(value.playlists) ? { playlists: value.playlists.map(p => isRecord(p) ? { ...p, tracks: rows(p.tracks, 8) } : p) } : {}),
+        ...(isRecord(value.rails) ? { rails: { ...value.rails, by_creator: rows(value.rails.by_creator, 6), similar: rows(value.rails.similar, 6) } } : {}),
+    };
 }

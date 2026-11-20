@@ -95,3 +95,47 @@ test('reaction clear and follow/unfollow reuse ambiguous attempt; account change
     request.mockResolvedValueOnce({ social, idempotent: false }); await f.write({ kind: 'follow', handle: 'creator_one', following: false }); expect(f.snapshot().social?.following).toBe(false);
     session.reset(); expect(f.snapshot()).toMatchObject({ data: null, social: null, reply: null }); expect(f.attempts.snapshot()).toBeNull();
 });
+
+test.each([
+    [{ kind: 'reaction', slug, reaction: 'fire' }, 'not_found', 'public_social_unavailable'],
+    [{ kind: 'follow', handle: 'creator_one', following: true }, 'not_found', 'public_social_unavailable'],
+    [{ kind: 'withdraw', comment_id: commentId }, 'not_found', 'public_comment_gone'],
+    [{ kind: 'report_song', slug, category: 'other', details: 'Reason' }, 'music_song_reports_unavailable', 'public_reporting_unavailable'],
+] as const)('definitive $1 unlocks the attempt and refreshes controls', async (write, code, message) => {
+    const f = flowFor(); await f.load(); request.mockClear();
+    request.mockRejectedValueOnce(new ApiError(404, code));
+    expect(await f.write(write)).toBe(false);
+    expect(f.attempts.snapshot()).toBeNull(); expect(f.snapshot()).toMatchObject({ busy: false, error: { code: message } });
+    expect(request.mock.calls.map(([p]) => p)).toEqual([
+        `/api/v1/music/${write.kind === 'reaction' || write.kind === 'follow' ? 'social' : 'comments'}`,
+        `/api/v1/music/explore/tracks/${slug}`, `/api/v1/music/social?slug=${slug}`,
+    ]);
+});
+test('block filters discovery locally and only revalidates an affected comment thread, without social fan-out', async () => {
+    const f = flowFor(), explore = flowFor('explore'); f.focus(); explore.focus(); await flush(); request.mockClear();
+    session.acknowledge(commenter, true); await flush();
+    expect(request.mock.calls.map(([p]) => p)).toEqual([`/api/v1/music/explore/tracks/${slug}`]);
+    request.mockClear(); session.acknowledge('99999999-9999-4999-8999-999999999999', true); await flush();
+    expect(request).not.toHaveBeenCalled();
+    session.acknowledge(actor, true); await flush(); expect(request).not.toHaveBeenCalled();
+    expect(f.snapshot().data).toHaveProperty('blocked');
+    expect(explore.snapshot().data).toEqual({ playlists: [{ genre: 'pop', tracks: [] }] });
+    session.acknowledge(actor, false); await flush();
+    expect(request.mock.calls.map(([p]) => p).sort()).toEqual([
+        '/api/v1/music/explore/best-of', `/api/v1/music/explore/tracks/${slug}`, `/api/v1/music/social?slug=${slug}`,
+    ].sort());
+});
+test('paged comment retains its exact cursor for the report route', async () => {
+    const f = flowFor(); await f.load();
+    request.mockResolvedValueOnce(track).mockResolvedValueOnce({ comments: { ...comments, comments: [{ ...comments.comments[0], id: nextId }], next_cursor: null } });
+    await f.more(); expect(f.commentCursor(commentId)).toBeUndefined(); expect(f.commentCursor(nextId)).toBe(comments.next_cursor);
+});
+
+test('unblock revalidates a mirror-blocked creator even if the block-list read never succeeded', async () => {
+    request.mockResolvedValueOnce({ blocked: { creator_id: actor, display_name: 'Creator' } });
+    const f = flowFor(); f.focus(); await flush();
+    expect(f.snapshot().data).toHaveProperty('blocked'); expect(session.snapshot().blocks).toEqual([]);
+    request.mockClear(); session.acknowledge(actor, false); await flush();
+    expect(f.snapshot().data).toHaveProperty('track');
+    expect(request.mock.calls.map(([p]) => p)).toEqual([`/api/v1/music/explore/tracks/${slug}`, `/api/v1/music/social?slug=${slug}`]);
+});

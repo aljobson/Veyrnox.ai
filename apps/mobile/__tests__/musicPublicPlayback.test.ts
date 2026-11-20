@@ -88,3 +88,19 @@ test('blocking an unrelated commenter keeps already-playing creator audio runnin
     expect(h.controller.snapshot().state).toBe('playing'); expect(h.native.remove).toHaveBeenCalledTimes(removals);
     expect(h.request.mock.calls.filter(([p]) => p.endsWith('/comments'))).toHaveLength(1); h.controller.dispose();
 });
+
+test('loaded track is reused for every listen and recovery while its revision is current', async () => {
+    const h = setup(); h.session.rememberTrack(slug, track);
+    await h.controller.start(); h.controller.pause(); await h.controller.start();
+    h.status({ error: 'failed' }); await flush();
+    expect(h.request.mock.calls.filter(([p]) => p.includes('/explore/'))).toHaveLength(0);
+    expect(h.request.mock.calls.filter(([p]) => p.endsWith('/comments'))).toHaveLength(2);
+    h.controller.pause(); h.session.acknowledge(commenter, true); await h.controller.start();
+    expect(h.request.mock.calls.filter(([p]) => p.includes('/explore/'))).toHaveLength(1);
+    h.controller.dispose();
+});
+test('cached track cannot start audio after a block during audio-mode setup', async () => {
+    const h = setup(), wait = deferred<void>(); h.session.rememberTrack(slug, track); h.mode.mockReturnValueOnce(wait.promise);
+    const play = h.controller.start(); h.session.acknowledge(actor, true); wait.resolve(); await play;
+    expect(h.factory).not.toHaveBeenCalled(); expect(h.request).not.toHaveBeenCalled(); h.controller.dispose();
+});

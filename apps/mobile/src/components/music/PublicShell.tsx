@@ -7,8 +7,8 @@ import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { publicMessage } from '../../lib/music/publicMessages';
-export function PublicShell({ title, status, refreshing, error, refresh, children }: {
-    title: string; status: string; refreshing: boolean; error: unknown; refresh(): void; children?: ReactNode;
+export function PublicShell({ title, status, refreshing, error, refresh, goneMessage, children }: {
+    title: string; status: string; refreshing: boolean; error: unknown; refresh(): void; children?: ReactNode; goneMessage?: string;
 }) {
     const s = useThemedStyles(sheets);
     useAnnouncement(error ? publicMessage(error) : status === 'loading' ? t('music.loading') : status === 'on' ? t('musicPublic.loaded') : t('music.off'), { everywhere: true });
@@ -17,7 +17,7 @@ export function PublicShell({ title, status, refreshing, error, refresh, childre
         <Stack.Screen options={{ title }} />
         {status === 'loading' ? <Text accessibilityLiveRegion="polite">{t('music.loading')}</Text> : null}
         {status === 'off' || status === 'gone' ? <>
-            <Text accessibilityLiveRegion="polite">{t(status === 'off' ? 'musicPublic.unavailable' : 'musicPublic.gone')}</Text>
+            <Text accessibilityLiveRegion="polite">{status === 'gone' && goneMessage ? goneMessage : t(status === 'off' ? 'musicPublic.unavailable' : 'musicPublic.gone')}</Text>
             <Button label={t('music.refresh')} onPress={refresh} />
         </> : <>
             {error ? <MusicNotice message={publicMessage(error)} retry={refresh} /> : null}

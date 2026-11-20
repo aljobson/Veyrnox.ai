@@ -3,7 +3,7 @@ export type Reaction = typeof REACTIONS[number];
 export const REPORT_CATEGORIES = ['spam', 'abuse', 'privacy', 'rights', 'other'] as const;
 export type ReportCategory = typeof REPORT_CATEGORIES[number];
 export const GENRES = ['pop', 'hip-hop', 'rock', 'electronic', 'house', 'lo-fi', 'jazz', 'rnb-soul', 'ambient', 'cinematic', 'country-folk', 'latin'] as const;
-export type Creator = { creator_id: string; handle: string; display_name: string };
+export type Creator = { creator_id: string; handle: string; display_name?: string };
 export type RailTrack = Creator & { slug: string; title: string };
 export type CommercialStatus = 'personal_use_only' | 'plan_eligible_terms_apply';
 export type PublicTrack = Creator & { title: string; version_number: number; published_at: string;
@@ -32,3 +32,5 @@ export type PublicWrite =
     | { kind: 'report_song'; slug: string; category: ReportCategory; details: string };
 export type CommentReceipt = { id: string; status: 'pending' | 'withdrawn' | 'reported'; idempotent: boolean };
 export type WriteReceipt = CommentReceipt | { status: 'reported'; idempotent?: boolean } | { social: Social; idempotent: boolean };
+
+export const creatorName = (creator: Creator) => creator.display_name?.trim() || creator.handle;

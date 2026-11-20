@@ -8,7 +8,7 @@ import { t } from '../../../lib/i18n';
 export default function Explore() {
     const { api, flow, state } = usePublicMusic({ kind: 'explore' }), router = useRouter(), s = useThemedStyles(publicSheets);
     const data = state.data && 'playlists' in state.data ? state.data : null;
-    return <PublicShell title={t('musicPublic.explore')} {...state} refresh={() => void flow.load()}>
+    return <PublicShell title={t('musicPublic.explore')} {...state} goneMessage={t('musicPublic.exploreUnavailable')} refresh={() => void flow.load()}>
         {state.status === 'on' ? <>
             <ListRow title={t('musicPublic.blockedCreators')} accessibilityLabel={t('musicPublic.blockedCreators')} onPress={() => router.push('/music/blocked' as never)} />
             {!data?.playlists.some(p => p.tracks.length) ? <Text>{t('musicPublic.empty')}</Text> : null}

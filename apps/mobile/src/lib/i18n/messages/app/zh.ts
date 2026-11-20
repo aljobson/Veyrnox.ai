@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "musicPublic.exploreUnavailable": "探索暂时不可用。",
+    "musicPublic.socialUnavailable": "暂时无法发送回应或关注。请刷新后重试。",
+    "musicPublic.commentGone": "此评论已不存在或不可用。",
+    "musicPublic.actions": "{title}的操作",
+
   "modelCompare.title": "比较模型",
   "modelCompare.pair": "{a} 与 {b}",
   "modelCompare.price": "价格",

@@ -11,9 +11,9 @@ import { bindCacheUser, resetCacheUser } from '../src/lib/appCache';
 import { publicSessionFor } from '../src/lib/music/usePublicMusic';
 import { ApiError, type ApiClient } from '../src/lib/api';
 import { plural, t } from '../src/lib/i18n';
-import { actor, commenter, slug, commentId, creator, social, track, comments, best, profile, clone, deferred } from './fixtures/musicPublic';
+import { actor, commenter, slug, commentId, nextId, creator, social, track, comments, best, profile, clone, deferred } from './fixtures/musicPublic';
 const mockApi = { request: jest.fn() }, mockPush = jest.fn();
-let mockParams: { slug?: string; handle?: string; commentId?: string } = { slug };
+let mockParams: { slug?: string; handle?: string; commentId?: string; before?: string } = { slug };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => mockParams,
     useFocusEffect: (cb: () => void | (() => void)) => require('react').useEffect(cb, [cb]) }));
@@ -85,7 +85,9 @@ test('comment submit shows pending and withdraws own comment', async () => {
 });
 test('blocking a commenter removes loaded comment and reply without navigation', async () => {
     await mount(<Track />); await click(t('musicPublic.reply')); expect(texts(t('musicPublic.replyTo', { name: 'Listener' })).length).toBeGreaterThan(0);
+    mockApi.request.mockClear();
     await click(t('musicPublic.blockNamed', { name: 'Listener' }));
+    expect(mockApi.request.mock.calls.map(([p]) => p).sort()).toEqual(['/api/v1/music/blocks', '/api/v1/music/blocks', `/api/v1/music/explore/tracks/${slug}`].sort());
     expect(texts('Lovely music')).toHaveLength(0); expect(texts(t('musicPublic.replyTo', { name: 'Listener' }))).toHaveLength(0);
     expect(texts(t('musicPublic.replyRemoved')).length).toBeGreaterThan(0); expect(player()).toHaveLength(1);
     expect(mockPush).not.toHaveBeenCalled();
@@ -121,4 +123,67 @@ test('a timestamp can be removed even after playback moves beyond the comment ti
     const remove = plural('musicPublic.removeTimestamp', 0);
     expect(buttons(remove)[0].props.accessibilityState.disabled).toBe(false); await click(remove);
     expect(buttons(t('musicPublic.addTimestamp'))[0].props.accessibilityState.disabled).toBe(true);
+});
+
+test('Explore opens with two reads, lazy actions share one ownership read per creator and account', async () => {
+    const two = clone(best); two.playlists[0].tracks.push({ ...two.playlists[0].tracks[0], slug: 'abcdefabcdefabcdefabcdef', title: 'Second track' });
+    mockApi.request.mockImplementation((path, init) => path.endsWith('best-of') ? two : defaultRequest(path, init));
+    await mount(<Explore />);
+    expect(mockApi.request.mock.calls.map(([p]) => p).sort()).toEqual(['/api/v1/music/blocks', '/api/v1/music/explore/best-of']);
+    await click(t('musicPublic.actions', { title: 'First track' }));
+    await click(t('musicPublic.actions', { title: 'Second track' }));
+    const socialReads = () => mockApi.request.mock.calls.filter(([p]) => p.includes('/social?'));
+    expect(socialReads()).toHaveLength(1);
+    const calls = mockApi.request.mock.calls.length;
+    await act(async () => publicSessionFor(mockApi as unknown as ApiClient).acknowledge(commenter, true));
+    expect(mockApi.request).toHaveBeenCalledTimes(calls);
+    await act(async () => bindCacheUser('new-actions-account'));
+    expect(buttons(t('musicPublic.reportTrack'))).toHaveLength(0);
+    await click(t('musicPublic.actions', { title: 'First track' })); expect(socialReads()).toHaveLength(2);
+});
+test('Explore not_found uses Explore-specific copy and drops one bad row while retaining handle fallback', async () => {
+    mockApi.request.mockImplementation((path, init) => path.endsWith('best-of') ? Promise.reject(new ApiError(404, 'not_found')) : defaultRequest(path, init));
+    await mount(<Explore />); expect(texts(t('musicPublic.exploreUnavailable')).length).toBeGreaterThan(0);
+    const data = clone(best); data.playlists[0].tracks[0].display_name = '';
+    data.playlists[0].tracks.push({ ...data.playlists[0].tracks[0], slug: 'invalid', title: 'Bad row' });
+    mockApi.request.mockImplementation((path, init) => path.endsWith('best-of') ? data : defaultRequest(path, init));
+    await click(t('music.refresh')); expect(texts(creator.handle)).toHaveLength(1); expect(texts('Bad row')).toHaveLength(0);
+});
+test('comment reporting requests only the supplied page cursor and never scans later pages', async () => {
+    mockParams = { slug, commentId: '55555555-5555-4555-8555-555555555555', before: nextId };
+    mockApi.request.mockImplementation((path, init) => path.includes('/comments?') ? { comments } : defaultRequest(path, init));
+    await mount(<ReportComment />);
+    const pages = mockApi.request.mock.calls.filter(([p]) => p.includes('/comments?'));
+    expect(pages.map(([p]) => p)).toEqual([`/api/v1/music/comments?slug=${slug}&before=${nextId}`]);
+    expect(texts(t('musicPublic.reportUnavailable')).length).toBeGreaterThan(0);
+});
+test('comment reporting without a cursor does not scan when a comment is missing', async () => {
+    mockParams = { slug, commentId: nextId }; await mount(<ReportComment />);
+    expect(mockApi.request.mock.calls.filter(([p]) => p.includes('/comments?'))).toHaveLength(0);
+});
+test.each([
+    ['reaction', 'not_found', 'musicPublic.socialUnavailable'],
+    ['withdraw', 'not_found', 'musicPublic.commentGone'],
+    ['report_song', 'music_song_reports_unavailable', 'musicPublic.reportUnavailable'],
+])('definitive %s rejection removes replay and unlocks controls', async (action, code, message) => {
+    await mount(action === 'report_song' ? <ReportTrack /> : <Track />);
+    mockApi.request.mockImplementation((path, init) => init?.method === 'POST' ? Promise.reject(new ApiError(404, code)) : defaultRequest(path, init));
+    if (action === 'report_song') { await edit(t('comments.reportDetails'), 'Please review'); await click(t('comments.send')); }
+    else await click(action === 'withdraw' ? t('comments.withdraw') : t('musicPublic.reactionCount', { reaction: t('musicPublic.reaction.fire'), count: 1 }));
+    expect(texts(t(message)).length).toBeGreaterThan(0);
+    expect(texts(t('musicPlaylists.pending'))).toHaveLength(0);
+    if (action === 'report_song') expect(field(t('comments.reportDetails')).props.editable).toBe(true);
+    else expect(buttons(t('musicPublic.submit'))[0].props.accessibilityState.disabled).toBe(false);
+});
+
+test('reporting a later-page comment routes its cursor and loads it directly', async () => {
+    mockApi.request.mockImplementation((path, init) => path.includes('/comments?') ? { comments: { ...comments, comments: [{ ...comments.comments[0], id: nextId }], next_cursor: null } } : defaultRequest(path, init));
+    await mount(<Track />); await click(t('comments.more'));
+    const report = buttons(t('comments.reportBy', { name: 'Listener' }));
+    await act(async () => report[1].props.onClick({ nativeEvent: {} }));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/report-comment', params: { slug, commentId: nextId, before: nextId } });
+    await act(async () => root.unmount()); root = createRoot(); mockParams = { slug, commentId: nextId, before: nextId };
+    mockApi.request.mockClear(); await mount(<ReportComment />);
+    expect(field(t('comments.reportDetails'))).toBeDefined();
+    expect(mockApi.request.mock.calls.filter(([p]) => p.includes('/comments?'))).toHaveLength(1);
 });

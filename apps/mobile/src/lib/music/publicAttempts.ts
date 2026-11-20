@@ -2,10 +2,8 @@ import { randomUUID } from 'expo-crypto';
 import { ApiError, type ApiClient } from '../api';
 import { writePublic } from './publicClient';
 import type { PublicWrite, WriteReceipt } from './publicTypes';
-const DEFINITIVE = new Set(['invalid_request', 'invalid_inputs', 'idempotency_key_invalid', 'idempotency_conflict',
-    'slug_invalid', 'handle_invalid', 'reaction_invalid', 'following_invalid', 'body_invalid', 'at_seconds_invalid',
-    'parent_id_invalid', 'comment_id_invalid', 'category_invalid', 'details_invalid', 'comments_closed', 'self_review',
-    'own_song', 'already_reviewed', 'limit_reached', 'source_removed']);
+export const isDefinitivePublicError = (error: unknown): error is ApiError => error instanceof ApiError
+    && error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429;
 export function createPublicAttempts(api: ApiClient, mint = randomUUID) {
     let pending: Readonly<{ key: string; write: PublicWrite }> | null = null, flight: Promise<WriteReceipt> | null = null, epoch = 0;
     return {
@@ -23,7 +21,7 @@ export function createPublicAttempts(api: ApiClient, mint = randomUUID) {
                 if (ticket !== epoch) throw new ApiError(401, 'account_changed');
                 pending = null; return v;
             }).catch(e => {
-                if (ticket === epoch && e instanceof ApiError && e.status >= 400 && e.status < 500 && DEFINITIVE.has(e.code)) pending = null;
+                if (ticket === epoch && isDefinitivePublicError(e)) pending = null;
                 throw e;
             }).finally(() => { if (ticket === epoch) flight = null; });
             return flight;

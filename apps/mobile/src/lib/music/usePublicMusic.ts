@@ -20,8 +20,8 @@ export function usePublicSession() {
 export function usePublicMusic(target: PublicTarget) {
     const { api, session } = usePublicSession();
     const key = target.kind === 'track' ? target.slug : target.kind === 'creator' ? target.handle : '';
-    const kind = target.kind;
-    const flow = useMemo(() => createPublicFlow(api, session, kind === 'track' ? { kind, slug: key } : kind === 'creator' ? { kind, handle: key } : { kind }), [api, session, kind, key]);
+    const kind = target.kind, before = target.kind === 'track' ? target.before : undefined;
+    const flow = useMemo(() => createPublicFlow(api, session, kind === 'track' ? { kind, slug: key, before } : kind === 'creator' ? { kind, handle: key } : { kind }), [api, session, kind, key, before]);
     const state = useSyncExternalStore(flow.subscribe, flow.snapshot, flow.snapshot);
     useEffect(() => () => flow.dispose(), [flow]);
     useFocusEffect(useCallback(() => { flow.focus(); void getBlocks(api, session).catch(() => {}); return () => flow.blur(); }, [flow, api, session]));

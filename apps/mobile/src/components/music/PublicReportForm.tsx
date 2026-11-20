@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { Button, Text, TextField } from '../ui';
 import { PublicShell } from './PublicShell';
 import { PublicBlocked } from './PublicBlocked';
 import { usePublicMusic } from '../../lib/music/usePublicMusic';
-import { REPORT_CATEGORIES, type ReportCategory } from '../../lib/music/publicTypes';
+import { creatorName, REPORT_CATEGORIES, type ReportCategory } from '../../lib/music/publicTypes';
 import { t } from '../../lib/i18n';
 export function PublicReportForm({ kind }: { kind: 'report' | 'report_song' }) {
-    const params = useLocalSearchParams<{ slug: string; commentId?: string }>();
+    const params = useLocalSearchParams<{ slug: string; commentId?: string; before?: string }>();
     const slug = typeof params.slug === 'string' ? params.slug : '';
-    const context = usePublicMusic({ kind: 'track', slug });
+    const context = usePublicMusic({ kind: 'track', slug, before: kind === 'report' && typeof params.before === 'string' ? params.before : undefined });
     return <ReportBody key={`${slug}:${params.commentId ?? ''}:${context.session.snapshot().account}`} kind={kind} commentId={params.commentId} slug={slug} {...context} />;
 }
 function ReportBody({ kind, commentId, slug, flow, state }: ReturnType<typeof usePublicMusic> & { kind: 'report' | 'report_song'; commentId?: string; slug: string }) {
@@ -19,11 +19,8 @@ function ReportBody({ kind, commentId, slug, flow, state }: ReturnType<typeof us
     const blocked = state.data && 'blocked' in state.data ? state.data.blocked : null;
     const comment = data?.comments?.comments.find(c => c.id === commentId);
     const target = kind === 'report_song' ? data && state.social && !state.social.is_own && data.reports
-        ? { id: data.track.creator_id, name: data.track.display_name } : null : comment && !comment.own ? { id: comment.author_id, name: comment.author } : null;
+        ? { id: data.track.creator_id, name: creatorName(data.track) } : null : comment && !comment.own ? { id: comment.author_id, name: comment.author } : null;
     const pending = flow.attempts.snapshot(), locked = state.busy || !!pending;
-    useEffect(() => {
-        if (kind === 'report' && !comment && data?.comments?.next_cursor && !state.error && !state.refreshing) void flow.more();
-    }, [kind, comment, data?.comments?.next_cursor, state.error, state.refreshing, flow]);
     async function send() {
         if (!target || state.busy) return;
         if (details.trim().length < 3) { setInvalid(true); return; }

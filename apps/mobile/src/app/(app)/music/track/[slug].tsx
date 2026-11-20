@@ -10,6 +10,7 @@ import { PublicComments } from '../../../../components/music/PublicComments';
 import { PublicPlayer } from '../../../../components/music/PublicPlayer';
 import { PublicAttemptNotice } from '../../../../components/music/PublicAttemptNotice';
 import { usePublicMusic } from '../../../../lib/music/usePublicMusic';
+import { creatorName } from '../../../../lib/music/publicTypes';
 import { t } from '../../../../lib/i18n';
 export default function PublicTrackScreen() {
     const params = useLocalSearchParams<{ slug: string }>(), slug = typeof params.slug === 'string' ? params.slug : '';
@@ -20,7 +21,7 @@ export default function PublicTrackScreen() {
     return <PublicShell title={data?.track.title ?? t('musicPublic.track')} {...state} refresh={() => void flow.load()}>
         {blocked ? <PublicBlocked blocked={blocked} busy={state.busy} unblock={() => void flow.block(blocked.creator_id, false)} /> : null}
         {data ? <>
-            <ListRow title={data.track.display_name} subtitle={`@${data.track.handle}`} accessibilityLabel={data.track.display_name}
+            <ListRow title={creatorName(data.track)} subtitle={`@${data.track.handle}`} accessibilityLabel={creatorName(data.track)}
                 onPress={() => router.push({ pathname: '/music/creator/[handle]', params: { handle: data.track.handle } } as never)} />
             <PublicPlayer key={`${slug}:${session.snapshot().account}`} slug={slug} creatorId={data.track.creator_id} session={session} onPosition={setPosition} />
             {data.plays ? <Text>{t('musicPublic.plays', { count: data.plays.count })}</Text> : null}
@@ -28,8 +29,8 @@ export default function PublicTrackScreen() {
             <PublicSocial counts={data.social} social={state.social} slug={slug} handle={data.track.handle} flow={flow} busy={state.busy} />
             {state.social && !state.social.is_own ? <>
                 {data.reports ? <Button variant="secondary" label={t('musicPublic.reportTrack')} onPress={() => router.push({ pathname: '/music/report-track', params: { slug } } as never)} /> : null}
-                <Button variant="tertiary" label={t('musicPublic.blockNamed', { name: data.track.display_name })} disabled={state.busy}
-                    onPress={() => void flow.block(data.track.creator_id, true, data.track.display_name)} />
+                <Button variant="tertiary" label={t('musicPublic.blockNamed', { name: creatorName(data.track) })} disabled={state.busy}
+                    onPress={() => void flow.block(data.track.creator_id, true, creatorName(data.track))} />
             </> : null}
             <PublicAttemptNotice flow={flow} state={state} />
             {data.comments ? <PublicComments key={`${slug}:${session.snapshot().account}`} comments={data.comments} flow={flow} state={state} slug={slug} position={position} /> : null}

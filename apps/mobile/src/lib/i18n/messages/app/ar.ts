@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "musicPublic.exploreUnavailable": "الاستكشاف غير متاح الآن.",
+    "musicPublic.socialUnavailable": "التفاعلات والمتابعة غير متاحة الآن. حدّث للتحقق مرة أخرى.",
+    "musicPublic.commentGone": "هذا التعليق لم يعد موجودًا أو غير متاح.",
+    "musicPublic.actions": "إجراءات {title}",
+
   "modelCompare.title": "مقارنة النماذج",
   "modelCompare.pair": "{a} مقابل {b}",
   "modelCompare.price": "السعر",

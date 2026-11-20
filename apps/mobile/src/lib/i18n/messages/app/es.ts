@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "musicPublic.exploreUnavailable": "Explorar no está disponible ahora.",
+    "musicPublic.socialUnavailable": "Las reacciones y el seguimiento no están disponibles ahora. Actualiza para volver a comprobar.",
+    "musicPublic.commentGone": "Este comentario ya no existe o no está disponible.",
+    "musicPublic.actions": "Acciones para {title}",
+
   "modelCompare.title": "Comparar modelos",
   "modelCompare.pair": "{a} vs {b}",
   "modelCompare.price": "Precio",

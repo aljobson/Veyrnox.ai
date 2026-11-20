@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "musicPublic.exploreUnavailable": "지금은 둘러보기를 이용할 수 없습니다.",
+    "musicPublic.socialUnavailable": "지금은 반응과 팔로우를 이용할 수 없습니다. 새로고침하여 다시 확인하세요.",
+    "musicPublic.commentGone": "이 댓글은 더 이상 존재하지 않거나 이용할 수 없습니다.",
+    "musicPublic.actions": "{title} 작업",
+
   "modelCompare.title": "모델 비교",
   "modelCompare.pair": "{a} 대 {b}",
   "modelCompare.price": "가격",

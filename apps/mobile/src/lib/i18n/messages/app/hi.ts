@@ -1,6 +1,11 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+    "musicPublic.exploreUnavailable": "अभी एक्सप्लोर उपलब्ध नहीं है।",
+    "musicPublic.socialUnavailable": "अभी प्रतिक्रियाएँ और फ़ॉलो उपलब्ध नहीं हैं। फिर जाँचने के लिए रीफ़्रेश करें।",
+    "musicPublic.commentGone": "यह टिप्पणी अब मौजूद नहीं है या उपलब्ध नहीं है।",
+    "musicPublic.actions": "{title} के लिए कार्रवाइयाँ",
+
   "modelCompare.title": "मॉडल की तुलना करें",
   "modelCompare.pair": "{a} बनाम {b}",
   "modelCompare.price": "कीमत",

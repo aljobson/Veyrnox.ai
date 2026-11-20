@@ -34,7 +34,8 @@ export function createPublicPlayback(o: { api: ApiClient; session: PublicSession
         if (!recovery) counted = false;
         release(); emit({ state: 'loading' });
         try {
-            const page = await getPublicTrack(o.api, o.session, o.slug);
+            const cached = o.session.track(o.slug);
+            const page = cached ? { state: 'on' as const, data: cached } : await getPublicTrack(o.api, o.session, o.slug);
             if (!valid()) return;
             if (page.state !== 'on' || 'blocked' in page.data || page.data.track.creator_id !== o.creatorId) { pause(); return; }
             await o.setAudioMode({ playsInSilentMode: true, shouldPlayInBackground: false });

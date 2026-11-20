@@ -3,7 +3,7 @@ import { isRecord } from '../responseShapes';
 import { blocksOff } from './blocksClient';
 import type { PublicSession } from './publicSession';
 import { isBlocked } from './validateBlocks';
-import { isBestOf, isComments, isProfilePage, isSocial, isTrackPage, publicHandle, publicKey, publicSlug, publicText, publicUuid } from './validatePublic';
+import { cleanPublicRows, isBestOf, isComments, isProfilePage, isSocial, isTrackPage, publicHandle, publicKey, publicSlug, publicText, publicUuid } from './validatePublic';
 import { REACTIONS, REPORT_CATEGORIES, type BestOf, type Blocked, type Comments, type ProfilePage, type PublicRead, type PublicWrite, type Social, type TrackPage, type WriteReceipt } from './publicTypes';
 const BASE = '/api/v1/music';
 const json = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -12,7 +12,7 @@ const check = (ok: boolean) => { if (!ok) throw new ApiError(400, 'invalid_reque
 async function mirror<T>(api: ApiClient, session: PublicSession, path: string, valid: (v: unknown) => v is T): Promise<PublicRead<T>> {
     const { revision, account } = session.snapshot();
     try {
-        const value = await api.request<unknown>(`${BASE}/explore/${path}`);
+        const value = cleanPublicRows(await api.request<unknown>(`${BASE}/explore/${path}`));
         if (revision !== session.snapshot().revision) throw new ApiError(409, 'stale_read');
         if (!valid(value)) throw bad();
         session.available(); return { state: 'on', data: value };
@@ -27,9 +27,17 @@ export const getBestOf = (api: ApiClient, session: PublicSession) => mirror<Best
 export async function getPublicTrack(api: ApiClient, session: PublicSession, slug: string): Promise<PublicRead<TrackPage | Blocked>> {
     check(publicSlug(slug));
     const read = () => mirror<TrackPage | Blocked>(api, session, `tracks/${encodeURIComponent(slug)}`, (v): v is TrackPage | Blocked => isBlocked(v) || isTrackPage(v, slug));
-    try { return await read(); } catch (e) {
+    const revision = session.snapshot().revision;
+    try {
+        const result = await read();
+        if (result.state === 'on' && revision !== session.snapshot().revision) throw new ApiError(409, 'stale_read');
+        if (result.state === 'on' && 'track' in result.data) session.rememberTrack(slug, result.data);
+        else if (revision === session.snapshot().revision) session.forgetTrack(slug);
+        return result;
+    } catch (e) {
         // A malformed comment page can signal blocks being switched off. Revalidate once, without ever displaying it.
         if (!(e instanceof ApiError) || e.code !== 'bad_response') throw e;
+        if (revision === session.snapshot().revision) session.forgetTrack(slug);
         const result = await read();
         if (result.state !== 'on' || 'blocked' in result.data) return result;
         throw e;
@@ -59,10 +67,9 @@ export async function getComments(api: ApiClient, session: PublicSession, slug: 
     const v = await api.request<unknown>(`${BASE}/comments?slug=${encodeURIComponent(slug)}${before ? `&before=${encodeURIComponent(before)}` : ''}`)
         .catch(e => { if (account === session.snapshot().account && blocksOff(e)) session.unavailable(); throw e; });
     if (revision !== session.snapshot().revision) throw new ApiError(409, 'stale_read');
-    // Validate the entire page AND revalidate the mirror after it, including malformed pages.
-    const valid = isRecord(v) && isComments(v.comments);
-    await revalidate();
-    if (!valid || !isRecord(v) || !isComments(v.comments)) throw bad();
+    // A valid author_id on EVERY approved comment proves this is the filtered projection.
+    // Only rejected pages need another mirror read to detect a switch-off mid-request.
+    if (!isRecord(v) || !isComments(v.comments)) { await revalidate(); throw bad(); }
     return v.comments;
 }
 export async function writePublic(api: ApiClient, w: PublicWrite, key: string): Promise<WriteReceipt> {

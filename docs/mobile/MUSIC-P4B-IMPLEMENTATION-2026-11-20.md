@@ -1,45 +1,176 @@
 # Music P4b implementation advisory
 
-Status: Implemented and locally verified; independent and native review pending. No commit, push or publication.
+Status: R1/R3/R4 implemented; current TypeScript/Jest proof blocked by the shared build slot. Independent and native review pending. No commit, push or publication.
 
 Frozen work order SHA-256: `2f5f81115be3a4d0bae18894a889390ac7e9cb0ae008028788c8c30ad163d8e8`.
 The supplied plan file matched that hash. All edits are relative to the current
 `mobile-music-p4-a075ab` checkout. No commit, push, publication, migration, server
 change, dependency install or native configuration change was performed.
 
+## Fix round 1 advisory (R1, R3, R4)
+
+R2 was already resolved by the host and was left alone. This round edits only
+P4b source, tests, locale copy and this advisory, within the current checkout.
+No product requirement was dropped or replaced. The behavior changes are
+recorded below; earlier proof totals are historical, not proof of these fixes.
+
+- R1: every definitive 4xx clears its pending attempt (408 and 429 retain it).
+  Typed action messages survive the required track/social refresh. Report and
+  comment inputs unlock; a definitive rejection offers no same-key replay.
+- R3: Explore opens with only its mirror and block-list reads, with no row social
+  fan-out. Actions fetch ownership lazily and cache successful checks by opaque
+  actor/account. Valid comment paging costs one mirror plus one page read.
+  Playback reuses the validated track within the same revision. Comment reports
+  load the passed page cursor and never scan subsequent pages. Blocks filter
+  discovery locally and revalidate affected threads, without unrelated social
+  reads. Unblock/focus still revalidate and all late-content fences remain.
+  Acknowledged unblock events also refresh a mirror-blocked page when the block
+  list was never successfully populated.
+- R4: creator display names may be empty or absent, with handle fallback. Invalid
+  Best of and rail rows are individually discarded; malformed comment pages
+  still fail closed. Explore-specific unavailable copy and action messages are
+  translated in all eleven locales.
+
+Current proof: **TypeScript and touched Jest suites did not run.** Both were
+queued through the existing same-inode build-slot adapter for over 30 minutes,
+while other checkouts held the shared slot. The only output from each was:
+
+```text
+Waiting for the other heavy build to finish; existing work is preserved.
+```
+
+The two queued wrappers were interrupted through their command sessions and
+exited **130**. This is the wrapper interruption status, not a TypeScript or
+Jest result. No passing compiler/test result is claimed for this fix round.
+Proposed validation deviation: the host runs the following commands when the
+shared slot is available, before accepting these changes. Run from `apps/mobile`
+with the owner’s `with-build-slot` wrapper (or the existing same-inode adapter
+where the sandbox requires it):
+
+```sh
+npx tsc --noEmit
+npx jest --ci --maxWorkers=2 --runTestsByPath \
+  __tests__/musicPublicClient.test.ts __tests__/musicPublicFlow.test.ts \
+  __tests__/musicPublicPlayback.test.ts __tests__/musicPublicValidation.test.ts \
+  __tests__/musicPublicScreens.test.tsx __tests__/appTranslations.test.ts \
+  __tests__/dynamicI18n.test.ts __tests__/visibleStrings.test.ts
+```
+
+Completed checks:
+
+```text
+node scripts/gen-en-registry.mjs --check: English registry is current. (exit 0)
+node scripts/check-app-i18n.mjs: all ten locale review files current. (exit 0)
+Scoped ESLint: 0 errors, 4 warnings on unchanged lines. (exit 0)
+Focused unblock-fix ESLint rerun: 0 errors, 0 warnings. (exit 0)
+git diff --check: no output (exit 0)
+```
+
+The four lint warnings are three require-style test-mock imports and the
+existing comment-composer effect. Generated registry/review contents did not
+need changes. The added regression tests are authored but unexecuted.
+
+Environment constraints in this round: ARTEMIS tools were absent; the prescribed
+`uv run artemis doctor` fallback was denied access to its existing uv cache.
+The explicit mocked-test work proceeded without device exploration. Direct
+`with-build-slot` access was denied on the existing lock file; the pre-existing
+same-inode, read-only adapter preserves exclusive flock and waits for the other
+build without signalling it. Process listing (`ps`) was also denied; read-only
+`lsof` confirmed the slot was held in another checkout. These are validation
+deviations, not product
+fallbacks. Attempting to signal this task’s queued wrapper through the shell was
+also denied (`PermissionError: Operation not permitted`); interrupting the two
+owned command sessions succeeded. No queued proof remains and no other build
+was stopped. No dependency install or native build was created. Full Jest, Metro
+and device review remain host checks. Other chats' checkouts/previews were
+preserved; none was established to be unused or archived.
+
+Files changed in this fix round (relative to this checkout):
+
+```text
+apps/mobile/__tests__/musicPublicClient.test.ts
+apps/mobile/__tests__/musicPublicFlow.test.ts
+apps/mobile/__tests__/musicPublicPlayback.test.ts
+apps/mobile/__tests__/musicPublicScreens.test.tsx
+apps/mobile/__tests__/musicPublicValidation.test.ts
+apps/mobile/src/app/(app)/music/creator/[handle].tsx
+apps/mobile/src/app/(app)/music/explore.tsx
+apps/mobile/src/app/(app)/music/track/[slug].tsx
+apps/mobile/src/components/music/PublicComments.tsx
+apps/mobile/src/components/music/PublicRailRow.tsx
+apps/mobile/src/components/music/PublicReportForm.tsx
+apps/mobile/src/components/music/PublicShell.tsx
+apps/mobile/src/lib/i18n/messages/app/ar.ts
+apps/mobile/src/lib/i18n/messages/app/de.ts
+apps/mobile/src/lib/i18n/messages/app/es.ts
+apps/mobile/src/lib/i18n/messages/app/fr.ts
+apps/mobile/src/lib/i18n/messages/app/hi.ts
+apps/mobile/src/lib/i18n/messages/app/ja.ts
+apps/mobile/src/lib/i18n/messages/app/ko.ts
+apps/mobile/src/lib/i18n/messages/app/pt.ts
+apps/mobile/src/lib/i18n/messages/app/ru.ts
+apps/mobile/src/lib/i18n/messages/app/zh.ts
+apps/mobile/src/lib/i18n/messages/en/musicPublic.ts
+apps/mobile/src/lib/music/publicAttempts.ts
+apps/mobile/src/lib/music/publicClient.ts
+apps/mobile/src/lib/music/publicFlow.ts
+apps/mobile/src/lib/music/publicMessages.ts
+apps/mobile/src/lib/music/publicPlayback.ts
+apps/mobile/src/lib/music/publicSession.ts
+apps/mobile/src/lib/music/publicTypes.ts
+apps/mobile/src/lib/music/usePublicMusic.ts
+apps/mobile/src/lib/music/validatePublic.ts
+docs/mobile/MUSIC-P4B-IMPLEMENTATION-2026-11-20.md
+```
+
 ## Implemented behavior
 
 - Native Explore, public track, creator, track/comment report and blocked-creators
   screens. Explore is linked from the Music hub with a distinct Phosphor
   `users-three` icon. Tracks are reachable through genre rows, rails and creators.
+  Empty/absent creator names fall back to handles. Invalid individual Best of/rail
+  rows are dropped while envelope validation stays strict. Explore has its own
+  not-found copy in all eleven locales.
 - Content reads use only authenticated explore mirrors. `blocks_unavailable`
   clears every mounted public surface and cancels playback. `not_found` is a
   route-specific gone/unavailable result, not a global Music-off signal.
 - Separate authenticated social reads establish ownership. Until they succeed,
   creator Report/Block/Follow controls remain hidden. Reaction toggling/clearing,
-  follows and unfollows use immutable idempotent attempts.
+  follows and unfollows use immutable idempotent attempts. Rail ownership is
+  checked only on opening Actions, once per creator/account on success; failed
+  checks can be retried by reopening. Concurrent requests share that check.
 - Approved comments require a valid opaque `author_id` on every row. A malformed
-  page is rejected whole. Paging revalidates the mirror before and after the page,
-  including a rejected page; malformed initial track responses revalidate once.
+  page is rejected whole. Paging revalidates the mirror before each page; a valid
+  page needs no second mirror read. A rejected page revalidates again to detect
+  switch-off during paging; malformed initial track responses revalidate once.
   Pending/rejected own comments are exempt from the author identity requirement.
 - Comments support replies, a 1–1000 character composer, an optional current
   playback timestamp in 0–600 seconds, moderation-pending feedback, withdrawal,
   reports and paging. Report details are 3–500 characters with the five server
-  categories. Successful reports offer block and then unblock.
+  categories. Successful reports offer block and then unblock. Comment report
+  navigation passes the known page cursor; the report screen reads that page
+  directly and never auto-scans subsequent pages.
 - One account-scoped in-memory block revision fences content, comment pages,
-  ownership reads and playback. Every acknowledged block/unblock increments it.
+  playback and comment reads. Ownership is cached per actor/account, independent
+  of block revisions. Every acknowledged block/unblock increments it.
   Blocks synchronously remove affected rows from all mounted flows, replace an
   affected track/profile with its blocked state, remove the actor's comments
   from every loaded page of other tracks, and clear a reply target with a notice.
-  Focus and block changes revalidate, preserving the depth of already-loaded comment pages. Prior-revision content is discarded; a
+  Focus revalidates. Blocks refetch only affected comment threads or interrupted
+  reads, without re-reading social on an already-owned thread. Discovery rows
+  are removed locally; blocked creator pages need no fetch. Unblock revalidates
+  affected pages (including potentially hidden discovery/comments), preserving
+  the depth of already-loaded comment pages. Prior-revision content is discarded; a
   same-account off response still closes the surface. Prior-account results
   cannot change the new account's state.
 - Block/unblock use only opaque actor UUIDs and the naturally idempotent API.
   Every acknowledgement refreshes the block list. The list is an ephemeral
   server projection, not a device-local substitute for server enforcement.
 - Public playback uses the established native PlayerPort, a monotonic intent
-  token, and active-state checks after the mirror, audio-mode setup, native load
-  and seek, including recovery. It pauses/releases on every non-active state,
+  token, and active-state checks after any mirror read, audio-mode setup, native load
+  and seek, including recovery. Validated track pages are reused for listen
+  starts/recovery only while their session revision is current. Revision/account
+  changes clear that memory-only cache. It pauses/releases on every non-active state,
   a block of the playing creator, account change and screen blur. Pending starts are
   invalidated by any block revision; blocking an unrelated commenter leaves
   already-playing creator audio running. It sends the anonymous relative
@@ -48,7 +179,9 @@ change, dependency install or native configuration change was performed.
   Automatic recovery does not add a play count. A plays-off response disables further count attempts
   throughout the mounted screen visit, including blur/refocus.
 - Network, malformed-success, 5xx and 429 write outcomes retain the original key
-  and payload. Known definitive rejections clear them. Retry-After gates report
+  and payload. HTTP 408 also retains them; every other 4xx clears them, regardless
+  of error code, and refreshes the track/social controls. Reactions/follows off,
+  missing comments and unavailable reporting have specific localized messages. Retry-After gates report
   replay. Attempts survive blur while mounted and clear on account change.
 - New copy is present in English and ten machine-translated catalogs. Time and
   retry copy uses the existing plural helper and each locale's CLDR forms.
@@ -65,7 +198,7 @@ the real ApiClient and guardedBeforeSend with consent refused and the hard
 paywall locked, and verifies that these calls send without a consent prompt or
 paywall rejection. No real server or paid call is used in tests.
 
-## Proof
+## Original implementation proof (before fix round 1)
 
 The agreed command ran from this checkout's `apps/mobile`, serialized through
 with-build-slot using the same-inode adapter described below:
@@ -250,5 +383,6 @@ docs/mobile/MUSIC-P4B-IMPLEMENTATION-2026-11-20.md
 - Web layout/keyboard, marketing visuals and price displays: not applicable.
   There are no paid actions or new credit prices in this slice.
 - No blocked actor's loaded comments or stale audio intent survives an acknowledged
-  block, and unfiltered comment pages are never displayed: mocked regression proof;
-  test counts above are the local evidence, not production or device proof.
+  block, and unfiltered comment pages are never displayed: source reviewed and
+  regression cases authored; **not checked by execution in this fix round**.
+  Historical counts above apply only to the original implementation.

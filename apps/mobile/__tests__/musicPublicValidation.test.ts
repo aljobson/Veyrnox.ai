@@ -18,7 +18,7 @@ test.each([
     ['reports.open', false], ['social.reactions.fire', 0.1], ['social.follower_count', -1], ['rails.by_creator', null],
     ['rails.similar', [null]], ['comments', null], ['track.job_id', actor],
 ])('rejects malformed promised track field %s', (path, value) => expect(isTrackPage(corrupt(track, path, value), slug)).toBe(false));
-test.each(['creator_id', 'handle', 'display_name', 'title', 'version_number', 'published_at', 'allow_comments', 'allow_remixes', 'commercial_status', 'audio_url'])('requires track.%s', field => {
+test.each(['creator_id', 'handle', 'title', 'version_number', 'published_at', 'allow_comments', 'allow_remixes', 'commercial_status', 'audio_url'])('requires track.%s', field => {
     const v = clone(track) as any; delete v.track[field]; expect(isTrackPage(v, slug)).toBe(false);
 });
 test.each([
@@ -51,4 +51,11 @@ test('validates every block list and receipt field, including replay', () => {
         const receipt = { actor_id: actor, blocked, already }; expect(isBlockReceipt(receipt, actor, blocked)).toBe(true);
         for (const field of ['actor_id', 'blocked', 'already']) expect(isBlockReceipt({ ...receipt, [field]: null }, actor, blocked)).toBe(false);
     }
+});
+
+test.each(['', undefined])('creator display name may be empty or absent: %s', name => {
+    const t = clone(track), p = clone(profile), b = clone(best);
+    if (name === undefined) { delete t.track.display_name; delete p.profile.display_name; delete b.playlists[0].tracks[0].display_name; }
+    else { t.track.display_name = name; p.profile.display_name = name; b.playlists[0].tracks[0].display_name = name; }
+    expect(isTrackPage(t, slug)).toBe(true); expect(isProfilePage(p)).toBe(true); expect(isBestOf(b)).toBe(true);
 });
