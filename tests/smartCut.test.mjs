@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { applySmartCutState, buildSmartCutPlan, SMART_CUT_MAX_SEGMENTS, smartCutPlanUsesAvailableTakes, smartCutPlanWithinLimits, swapSmartCutTake, undoSmartCutState } from '../app/veyrnox/_lib/smartCut.js';
+import { applySmartCutState, buildSmartCutPlan, commitSmartCutEditState, patchSmartCutMetadataState, redoSmartCutEditState, SMART_CUT_MAX_SEGMENTS, smartCutHasEdits, smartCutPlanUsesAvailableTakes, smartCutPlanWithinLimits, swapSmartCutTake, undoSmartCutEditState, undoSmartCutState } from '../app/veyrnox/_lib/smartCut.js';
 
 const clips = [
   { job_id: 'take-a', name: 'Opening take', duration: 18 },
@@ -139,14 +139,85 @@ test('Smart Cut undo restores the original list after later fine-tuning', () => 
   const applied = [{ uid: 'a#smart', in_s: 1, out_s: 4 }];
   const state = applySmartCutState({ items: original, smartCutSnapshot: null }, applied);
   const fineTuned = { ...state, items: [{ ...state.items[0], in_s: 1.5 }] };
-  assert.deepEqual(undoSmartCutState(fineTuned), { items: original, smartCutSnapshot: null });
+  assert.equal(smartCutHasEdits(state.items, state.smartCutApplied), false);
+  assert.equal(smartCutHasEdits(fineTuned.items, fineTuned.smartCutApplied), true);
+  assert.deepEqual(undoSmartCutState(fineTuned), { items: original, smartCutSnapshot: null, smartCutApplied: null, editPast: [], editFuture: [] });
+});
+
+test('manual editor undo and redo restore ordered clip states', () => {
+  const original = [{ uid: 'a', in_s: 0, out_s: 4 }, { uid: 'b', in_s: 0, out_s: 5 }];
+  const trimmed = [{ ...original[0], in_s: 1 }, original[1]];
+  const reordered = [trimmed[1], trimmed[0]];
+  const initial = { items: original, editPast: [], editFuture: [] };
+  const edited = commitSmartCutEditState(commitSmartCutEditState(initial, trimmed), reordered);
+  const once = undoSmartCutEditState(edited);
+  assert.deepEqual(once.items, trimmed);
+  const twice = undoSmartCutEditState(once);
+  assert.deepEqual(twice.items, original);
+  const redone = redoSmartCutEditState(twice);
+  assert.deepEqual(redone.items, trimmed);
+  assert.deepEqual(redoSmartCutEditState(redone).items, reordered);
+});
+
+test('Undo Smart Cut clears manual history so it cannot restore an orphaned applied cut', () => {
+  const original = [{ uid: 'original', in_s: 0, out_s: 8 }];
+  const applied = [{ uid: 'applied', in_s: 1, out_s: 5 }];
+  const state = commitSmartCutEditState(
+    { ...applySmartCutState({ items: original, smartCutSnapshot: null, smartCutApplied: null }, applied), editPast: [], editFuture: [] },
+    [{ ...applied[0], in_s: 1.5 }],
+  );
+  const restored = undoSmartCutState(state);
+  assert.deepEqual(restored.items, original);
+  assert.deepEqual(restored.editPast, []);
+  assert.deepEqual(restored.editFuture, []);
+  assert.equal(undoSmartCutEditState(restored), restored);
+});
+
+test('loaded metadata is patched through manual history and Smart Cut snapshots', () => {
+  const unloaded = { uid: 'a', job_id: 'take-a', duration: null, out_s: null, ratio: null };
+  const state = {
+    items: [unloaded],
+    smartCutSnapshot: [unloaded],
+    smartCutApplied: [unloaded],
+    editPast: [[unloaded]],
+    editFuture: [[unloaded]],
+  };
+  const patched = patchSmartCutMetadataState(state, 'a', { duration: 8, out_s: 8, ratio: '1.78' });
+  for (const items of [patched.items, patched.smartCutSnapshot, patched.smartCutApplied, ...patched.editPast, ...patched.editFuture]) {
+    assert.deepEqual(items[0], { ...unloaded, duration: 8, out_s: 8, ratio: '1.78' });
+  }
+});
+
+test('reloaded metadata fills missing ends without overwriting trims in saved states', () => {
+  const state = {
+    items: [{ uid: 'a', duration: 10, out_s: 3, ratio: null }],
+    smartCutSnapshot: [{ uid: 'a', duration: null, out_s: null, ratio: null }],
+    smartCutApplied: [{ uid: 'a', duration: 10, out_s: 4, ratio: null }],
+    editPast: [[{ uid: 'a', duration: 10, out_s: 8, ratio: null }]],
+    editFuture: [[{ uid: 'a', duration: 10, out_s: 6, ratio: null }]],
+  };
+  const patched = patchSmartCutMetadataState(state, 'a', { duration: 12, out_s: 3, ratio: '1.78' });
+  assert.equal(patched.items[0].out_s, 3);
+  assert.equal(patched.smartCutApplied[0].out_s, 4);
+  assert.equal(patched.editPast[0][0].out_s, 8);
+  assert.equal(patched.editFuture[0][0].out_s, 6);
+  assert.equal(patched.smartCutSnapshot[0].out_s, 12);
+  assert.ok([patched.items, patched.smartCutApplied, patched.smartCutSnapshot, ...patched.editPast, ...patched.editFuture].every((items) => items[0].duration === 12 && items[0].ratio === '1.78'));
+});
+
+test('manual edit history is bounded and a new edit clears redo', () => {
+  let state = { items: [{ uid: 'a', in_s: 0 }], editPast: [], editFuture: [[{ uid: 'future' }]] };
+  for (let index = 1; index <= 35; index += 1) state = commitSmartCutEditState(state, [{ uid: 'a', in_s: index }]);
+  assert.equal(state.editPast.length, 30);
+  assert.deepEqual(state.editFuture, []);
 });
 
 test('the existing Clip Editor owns Smart Cut apply and the caption/export handoff', () => {
   const editor = readFileSync(new URL('../app/veyrnox/_components/EditSheet.js', import.meta.url), 'utf8');
   const planner = readFileSync(new URL('../app/veyrnox/_components/SmartCutPlanner.js', import.meta.url), 'utf8');
   const messages = readFileSync(new URL('../lib/i18n/messages/app/en/smart-cut.mjs', import.meta.url), 'utf8');
-  assert.match(editor, /\{smartCut && \([\s\S]*<SmartCutPlanner[\s\S]*clips=\{items\}[\s\S]*onApply=\{applySmartCut\}[\s\S]*startOpen[\s\S]*\/>/);
+  assert.match(editor, /<SmartCutWorkbench/);
+  assert.match(editor, /<SmartCutPlanner[\s\S]*clips=\{items\}[\s\S]*applyRevision=\{smartCutApplyRevision\}[\s\S]*onApply=\{applySmartCut\}[\s\S]*startOpen[\s\S]*\/>/);
   assert.match(planner, /app\.smartCut\.action\.apply/);
   assert.match(planner, /app\.smartCut\.action\.undo/);
   assert.match(planner, /app\.smartCut\.why/);
@@ -159,8 +230,23 @@ test('the existing Clip Editor owns Smart Cut apply and the caption/export hando
   assert.match(planner, /smartCutPlanWithinLimits/);
   assert.match(editor, /applySmartCutState/);
   assert.match(editor, /undoSmartCutState/);
+  assert.match(editor, /pendingSmartCutApply/);
+  assert.match(editor, /app\.smartCut\.price\.review/);
+  assert.match(editor, /app\.smartCut\.price\.title/);
+  assert.doesNotMatch(planner, /ConfirmDialog/);
   assert.match(editor, /app\.editor\.sheet\.captions/);
   assert.match(editor, /app\.editor\.sheet\.create/);
+});
+
+test('Smart Cut workbench exposes playback, timeline tools and accessible zoom', () => {
+  const workbench = readFileSync(new URL('../app/veyrnox/_components/SmartCutWorkbench.js', import.meta.url), 'utf8');
+  const messages = readFileSync(new URL('../lib/i18n/messages/app/en/smart-cut.mjs', import.meta.url), 'utf8');
+  assert.match(workbench, /previewRef\.current\?\.pause\(\)/);
+  assert.match(workbench, /app\.smartCut\.workbench\.zoomGroup/);
+  assert.match(workbench, /app\.smartCut\.workbench\.zoomOut/);
+  assert.match(workbench, /app\.smartCut\.workbench\.zoomIn/);
+  assert.match(workbench, /clipOutputDuration/);
+  for (const label of ['Portrait edit preview', 'Clip timeline', 'Smart Cut editing tools', 'Undo manual edit', 'Redo manual edit']) assert.match(messages, new RegExp(label));
 });
 
 test('Smart Cut has a mobile-first path from home to a review-ready editor', () => {

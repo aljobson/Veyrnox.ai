@@ -7,9 +7,11 @@ import Link from 'next/link';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 import { Modal } from './Modal';
 import { AssetLoadStatus } from './AssetLoadStatus';
+import { ConfirmDialog } from './ConfirmDialog';
 import { SmartCutPlanner } from './SmartCutPlanner';
 import { SmartCutAnalyse } from './SmartCutAnalyse';
-import { applySmartCutState, undoSmartCutState } from '../_lib/smartCut';
+import { SmartCutWorkbench } from './SmartCutWorkbench';
+import { applySmartCutState, commitSmartCutEditState, patchSmartCutMetadataState, redoSmartCutEditState, smartCutHasEdits, undoSmartCutEditState, undoSmartCutState } from '../_lib/smartCut';
 import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
 
 // Clip Editor sheet (docs/editor/PRD.md §4). The server re-checks every
@@ -63,8 +65,11 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const [editState, setEditState] = useState(() => ({
     items: clips.map((c, i) => ({ ...c, uid: `${c.job_id}#${i}`, in_s: 0, out_s: null, duration: null, ratio: null })),
     smartCutSnapshot: null,
+    smartCutApplied: null,
+    editPast: [],
+    editFuture: [],
   }));
-  const { items, smartCutSnapshot } = editState;
+  const { items, smartCutSnapshot, smartCutApplied, editPast, editFuture } = editState;
   const [analyses, setAnalyses] = useState(() => new Map());
   const addAnalysis = (jobId, analysis) => setAnalyses((map) => new Map(map).set(jobId, analysis));
   const [audioId, setAudioId] = useState('');
@@ -75,30 +80,53 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const showSlow = slowPreview();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const [confirmSmartCutUndo, setConfirmSmartCutUndo] = useState(false);
+  const [pendingSmartCutApply, setPendingSmartCutApply] = useState(null);
+  const [smartCutApplyRevision, setSmartCutApplyRevision] = useState(0);
+  const [confirmCreate, setConfirmCreate] = useState(false);
 
-
-
+  const commitItems = (change) => {
+    setEditState((state) => commitSmartCutEditState(state, change(state.items)));
+  };
   const update = (i, patch) => {
-    setEditState((state) => ({ ...state, items: state.items.map((x, k) => (k === i ? { ...x, ...patch } : x)) }));
+    commitItems((current) => current.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+  };
+  const updateMetadata = (uid, patch) => {
+    setEditState((state) => patchSmartCutMetadataState(state, uid, patch));
   };
   const move = (i, d) => {
-    setEditState((state) => {
+    commitItems((current) => {
       const j = i + d;
-      if (j < 0 || j >= state.items.length) return state;
-      const next = [...state.items];
+      if (j < 0 || j >= current.length) return current;
+      const next = [...current];
       [next[i], next[j]] = [next[j], next[i]];
-      return { ...state, items: next };
+      return next;
     });
   };
   const remove = (i) => {
-    setEditState((state) => ({ ...state, items: state.items.filter((_, k) => k !== i) }));
+    commitItems((current) => current.filter((_, k) => k !== i));
+  };
+  const commitSmartCutApply = (nextItems) => {
+    setEditState((state) => ({ ...applySmartCutState(state, nextItems), editPast: [], editFuture: [] }));
+    setSmartCutApplyRevision((revision) => revision + 1);
   };
   const applySmartCut = (nextItems) => {
-    setEditState((state) => applySmartCutState(state, nextItems));
+    if (smartCutHasEdits(items, smartCutApplied)) {
+      setPendingSmartCutApply(nextItems);
+      return false;
+    }
+    commitSmartCutApply(nextItems);
+    return true;
   };
   const undoSmartCut = () => {
+    if (smartCutHasEdits(items, smartCutApplied)) {
+      setConfirmSmartCutUndo(true);
+      return;
+    }
     setEditState(undoSmartCutState);
   };
+  const undoEdit = () => setEditState(undoSmartCutEditState);
+  const redoEdit = () => setEditState(redoSmartCutEditState);
 
   const loaded = items.every((x) => x.duration != null);
   // A slowed clip runs `slow` times longer in the result (the server counts it the same way).
@@ -141,7 +169,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     }
   }
 
-  return (
+  return (<>
     <Modal aria-labelledby="edit-sheet-title" onCancel={() => !busy && onClose()} className="vx-overlay-sheet items-end sm:items-center justify-center p-0 sm:p-6">
       <div
         onClick={(e) => e.stopPropagation()}
@@ -156,26 +184,33 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
+          {smartCut && <SmartCutWorkbench items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
           {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy} />}
+          <div id="smart-cut-panel" className="scroll-mt-4">
           {smartCut && (
             <SmartCutPlanner
               clips={items}
               analyses={analyses.size ? analyses : null}
               disabled={busy}
+              applyRevision={smartCutApplyRevision}
               onApply={applySmartCut}
               onUndo={smartCutSnapshot ? undoSmartCut : null}
               startOpen
             />
           )}
+          </div>
 
-          <ol className="flex flex-col gap-3">
+          <section id="clip-layer-controls" className="scroll-mt-4" aria-labelledby="clip-layer-heading">
+          <h3 id="clip-layer-heading" className="sr-only">{t('app.smartCut.workbench.layersHeading')}</h3>
+          <ol id="clip-cut-controls" className="flex scroll-mt-4 flex-col gap-3">
             {items.map((x, i) => (
               <ClipRow key={x.uid} item={x} index={i} count={items.length}
-                showSlow={showSlow} onChange={(p) => update(i, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
+                showSlow={showSlow} onChange={(p) => update(i, p)} onMetadata={(p) => updateMetadata(x.uid, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
             ))}
           </ol>
+          </section>
 
-          <div className="mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-end gap-3">
+          <div id="clip-sound-controls" className="mt-4 scroll-mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-xs text-vx-fg-muted grow min-w-[200px]">
               {t("app.editor.sheet.audio")}<select value={audioId} onChange={(e) => setAudioId(e.target.value)} className="min-h-11 rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
                 <option value="">{t("app.editor.sheet.noAudio")}</option>
@@ -196,8 +231,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
               {t("app.editor.sheet.slowHelp")}</p>
           )}
 
-          {showCaptions && (
-            <div className="mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3">
+          <div id="clip-text-controls" className="mt-3 scroll-mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3">
+            {showCaptions ? <>
               <label className="flex min-h-11 items-center gap-2 text-sm text-vx-fg">
                 <input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />
                 {t("app.editor.sheet.captions")}</label>
@@ -212,8 +247,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
                 <p className="text-xs text-vx-fg-muted basis-full">
                   {t("app.editor.sheet.captionHelp")}</p>
               )}
-            </div>
-          )}
+            </> : <p className="text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.workbench.textUnavailable')}</p>}
+          </div>
 
           <div role="status" className="mt-3 text-sm min-h-[1.25rem]">
             {mixed && <span className="text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</span>}
@@ -228,21 +263,57 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-vx-border bg-vx-base px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-6">
+        <div id="clip-create-controls" className="shrink-0 border-t border-vx-border bg-vx-base px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-6">
           <div className="flex items-center justify-between gap-3">
             <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{t('app.editor.sheet.output', { seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
-            <button onClick={submit} disabled={blocked}
+            <button onClick={() => smartCut ? setConfirmCreate(true) : submit()} disabled={blocked}
               className="vx-press min-h-11 rounded-full px-5 py-2.5 font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
-              {busy ? t("app.editor.sheet.starting") : cost == null ? t("app.editor.sheet.create") : t('app.editor.sheet.createCost', { cost: number(cost) })}
+              {busy ? t("app.editor.sheet.starting") : cost == null ? t("app.editor.sheet.create") : smartCut ? t('app.smartCut.price.review', { cost: number(cost) }) : t('app.editor.sheet.createCost', { cost: number(cost) })}
             </button>
           </div>
         </div>
       </div>
     </Modal>
-  );
+    {confirmSmartCutUndo && <ConfirmDialog
+      title={t('app.smartCut.confirm.undo.title')}
+      body={t('app.smartCut.confirm.undo.body')}
+      confirmLabel={t('app.smartCut.confirm.undo.action')}
+      tone="danger"
+      onCancel={() => setConfirmSmartCutUndo(false)}
+      onConfirm={() => {
+        setEditState(undoSmartCutState);
+        setConfirmSmartCutUndo(false);
+      }}
+    />}
+    {pendingSmartCutApply && <ConfirmDialog
+      title={t('app.smartCut.confirm.replace.title')}
+      body={t('app.smartCut.confirm.replace.body')}
+      confirmLabel={t('app.smartCut.confirm.replace.action')}
+      tone="danger"
+      onCancel={() => setPendingSmartCutApply(null)}
+      onConfirm={() => {
+        const nextItems = pendingSmartCutApply;
+        setPendingSmartCutApply(null);
+        commitSmartCutApply(nextItems);
+      }}
+    />}
+    {confirmCreate && cost != null && <ConfirmDialog
+      title={t('app.smartCut.price.title', {
+        seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+        cost: number(cost),
+      })}
+      body={t('app.smartCut.price.body')}
+      confirmLabel={t('app.smartCut.price.confirm', { cost: number(cost) })}
+      onCancel={() => setConfirmCreate(false)}
+      onConfirm={() => {
+        setConfirmCreate(false);
+        submit();
+      }}
+    />}
+  </>);
 }
 
-function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
+function ClipRow({ item, index, count, showSlow, onChange, onMetadata, onMove, onRemove }) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const asset = useAssetUrl(item.job_id, item.asset_url);
@@ -257,7 +328,7 @@ function ClipRow({ item, index, count, showSlow, onChange, onMove, onRemove }) {
           onLoadedMetadata={(e) => {
             asset.onLoad();
             const v = e.currentTarget;
-            onChange({ duration: v.duration, out_s: item.out_s ?? v.duration, ratio: v.videoHeight ? (v.videoWidth / v.videoHeight).toFixed(2) : null });
+            onMetadata({ duration: v.duration, ratio: v.videoHeight ? (v.videoWidth / v.videoHeight).toFixed(2) : null });
           }} />
         <AssetLoadStatus asset={asset} />
       </div>

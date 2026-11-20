@@ -194,12 +194,89 @@ export function swapSmartCutTake(plan, segmentId, takeId) {
 
 export function applySmartCutState(state, nextItems) {
   return {
+    ...state,
     items: nextItems,
     smartCutSnapshot: state.smartCutSnapshot || state.items,
+    smartCutApplied: nextItems,
   };
 }
 
 export function undoSmartCutState(state) {
   if (!state.smartCutSnapshot) return state;
-  return { items: state.smartCutSnapshot, smartCutSnapshot: null };
+  return {
+    ...state,
+    items: state.smartCutSnapshot,
+    smartCutSnapshot: null,
+    smartCutApplied: null,
+    editPast: [],
+    editFuture: [],
+  };
+}
+
+const editableItem = (item) => ({
+  uid: item?.uid || null,
+  job_id: item?.job_id || null,
+  in_s: Number(item?.in_s) || 0,
+  out_s: item?.out_s == null ? null : Number(item.out_s),
+  slow: Number(item?.slow) > 1 ? Number(item.slow) : 1,
+});
+
+export function smartCutHasEdits(items, appliedItems) {
+  if (!Array.isArray(appliedItems)) return false;
+  return JSON.stringify((items || []).map(editableItem)) !== JSON.stringify(appliedItems.map(editableItem));
+}
+
+export function patchSmartCutMetadataState(state, uid, patch) {
+  const patchItems = (items) => items?.map((item) => {
+    if (item.uid !== uid) return item;
+    const next = { ...item };
+    if (patch.duration != null) {
+      next.duration = patch.duration;
+      if (next.out_s == null) next.out_s = patch.duration;
+    }
+    if (Object.hasOwn(patch, 'ratio')) next.ratio = patch.ratio;
+    return next;
+  }) || items;
+  return {
+    ...state,
+    items: patchItems(state.items),
+    smartCutSnapshot: patchItems(state.smartCutSnapshot),
+    smartCutApplied: patchItems(state.smartCutApplied),
+    editPast: (state.editPast || []).map(patchItems),
+    editFuture: (state.editFuture || []).map(patchItems),
+  };
+}
+
+export function commitSmartCutEditState(state, nextItems) {
+  if (nextItems === state.items) return state;
+  return {
+    ...state,
+    items: nextItems,
+    editPast: [...(state.editPast || []), state.items].slice(-30),
+    editFuture: [],
+  };
+}
+
+export function undoSmartCutEditState(state) {
+  const past = state.editPast || [];
+  if (!past.length) return state;
+  const previous = past[past.length - 1];
+  return {
+    ...state,
+    items: previous,
+    editPast: past.slice(0, -1),
+    editFuture: [state.items, ...(state.editFuture || [])].slice(0, 30),
+  };
+}
+
+export function redoSmartCutEditState(state) {
+  const future = state.editFuture || [];
+  if (!future.length) return state;
+  const [next, ...remaining] = future;
+  return {
+    ...state,
+    items: next,
+    editPast: [...(state.editPast || []), state.items].slice(-30),
+    editFuture: remaining,
+  };
 }
