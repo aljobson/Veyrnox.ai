@@ -6762,6 +6762,7 @@ export default {
     "beat.cycle.endHandle": "Griff am Schleifenende",
     "beat.cycle.changed": "Schleife geändert",
     "beat.drag.moving": "Region wird verschoben, ziehen und loslassen",
+    "beat.cycle.moving": "Schleifenrand wird verschoben, ziehen und loslassen",
     "beat.drag.cancelled": "Ziehen abgebrochen",
     "beat.audio.gain": "Verstärkung (dB)",
     "beat.audio.fadeIn": "Einblenden (ms)",

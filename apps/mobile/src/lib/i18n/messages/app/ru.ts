@@ -6924,6 +6924,7 @@ export default {
     "beat.cycle.endHandle": "Маркер конца цикла",
     "beat.cycle.changed": "Цикл изменён",
     "beat.drag.moving": "Перемещение региона: перетащите и отпустите",
+    "beat.cycle.moving": "Перемещение границы цикла: перетащите и отпустите",
     "beat.drag.cancelled": "Перетаскивание отменено",
     "beat.audio.gain": "Усиление (дБ)",
     "beat.audio.fadeIn": "Нарастание (мс)",

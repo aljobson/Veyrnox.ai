@@ -163,6 +163,7 @@ export default {
     "beat.cycle.endHandle": "Cycle end handle",
     "beat.cycle.changed": "Cycle changed",
     "beat.drag.moving": "Moving region, drag then lift",
+    "beat.cycle.moving": "Moving cycle edge, drag then lift",
     "beat.drag.cancelled": "Drag cancelled",
     "beat.audio.gain": "Gain (dB)",
     "beat.audio.fadeIn": "Fade in (ms)",

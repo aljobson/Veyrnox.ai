@@ -7086,6 +7086,7 @@ export default {
     "beat.cycle.endHandle": "مقبض نهاية التكرار",
     "beat.cycle.changed": "تم تغيير التكرار",
     "beat.drag.moving": "جارٍ تحريك المنطقة، اسحب ثم ارفع إصبعك",
+    "beat.cycle.moving": "جارٍ تحريك حافة التكرار، اسحب ثم ارفع إصبعك",
     "beat.drag.cancelled": "تم إلغاء السحب",
     "beat.audio.gain": "الكسب (ديسيبل)",
     "beat.audio.fadeIn": "تلاشي الدخول (مللي ثانية)",

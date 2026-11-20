@@ -7,7 +7,7 @@ import { DRUM_KITS, audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds
 export type TrackMix = { gain: number; pan: number };
 export interface BeatAudio {
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc, onStep?: (step: number) => void): Promise<void>;
+    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void): Promise<void>;
     stop(): void;
     isPlaying(): boolean;
     hitPad(pad: PadId, kit: string, velocity?: number): void;
@@ -43,7 +43,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     let timer: unknown = null;
     let cursor = 0;
     let nextTime = 0;
-    let getDoc: (() => BeatDoc) | null = null;
+    let getDoc: (() => BeatDoc | undefined) | null = null;
     let onStep: ((step: number) => void) | undefined;
     const kitOf = new Map<string, string>();
 
@@ -68,6 +68,8 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
         const horizon = engine.now() + LOOKAHEAD_S;
         while (nextTime < horizon) {
             const doc = getDoc();
+            // The beat can leave the store while it plays (deleted, account reset): stop scheduling instead of throwing in a timer.
+            if (!doc) { timer = null; return; }
             const { from, to } = playRange(doc);
             const step = from + (cursor % (to - from));
             for (const track of doc.tracks) {

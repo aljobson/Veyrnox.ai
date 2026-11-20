@@ -34,11 +34,11 @@ function CycleHandle({ edge, props, preview }: { edge: 'start' | 'end'; props: P
             const at = Math.max(0, Math.min(512 * barTicks, snapTick(props.cycle[edge] + xToTick(dx, props.zoom), props.snap)));
             return { ...props.cycle, [edge]: edge === 'start' ? Math.min(at, props.cycle.end - 240) : Math.max(at, props.cycle.start + 240) };
         },
-        preview, lock: props.lock, announce: props.announce, select: () => undefined,
+        preview, lock: props.lock, announce: props.announce, select: () => undefined, heldMessage: t('beat.cycle.moving'),
         commit: cycle => props.apply(d => setCycle(d, cycle), t('beat.cycle.changed')),
     });
     return <View pointerEvents="box-none" style={[s.handleHit, edge === 'start' ? { left: 0, top: 0 } : { right: 0, bottom: 0 }]}><View {...handlers} testID={`cycle-${edge}`} pointerEvents="box-only" hitSlop={10} accessible accessibilityRole="adjustable"
-        accessibilityLabel={t(edge === 'start' ? 'beat.cycle.startHandle' : 'beat.cycle.endHandle')}
+        accessibilityLabel={t(edge === 'start' ? 'beat.cycle.startHandle' : 'beat.cycle.endHandle')} accessibilityValue={{ text: position(props.cycle[edge]) }}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={event => props.apply(d => setCycle(d, { ...d.cycle, [edge]: d.cycle[edge] + (event.nativeEvent.actionName === 'increment' ? props.snap : -props.snap) }), t('beat.cycle.changed'))}
         style={s.handle} /></View>;

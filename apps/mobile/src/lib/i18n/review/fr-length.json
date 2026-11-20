@@ -5694,6 +5694,12 @@
     "ratio": 1.62
   },
   {
+    "id": "beat.cycle.moving",
+    "english": "Moving cycle edge, drag then lift",
+    "translation": "Déplacement du bord de la boucle, glissez puis relâchez",
+    "ratio": 1.67
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

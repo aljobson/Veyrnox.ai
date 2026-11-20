@@ -6681,6 +6681,7 @@ export default {
     "beat.cycle.endHandle": "サイクル終了ハンドル",
     "beat.cycle.changed": "サイクルを変更しました",
     "beat.drag.moving": "リージョンを移動中です。ドラッグして指を離してください",
+    "beat.cycle.moving": "サイクルの端を移動中です。ドラッグして指を離してください",
     "beat.drag.cancelled": "ドラッグをキャンセルしました",
     "beat.audio.gain": "ゲイン（dB）",
     "beat.audio.fadeIn": "フェードイン（ミリ秒）",

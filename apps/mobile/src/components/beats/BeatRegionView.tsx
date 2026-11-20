@@ -5,7 +5,7 @@ import { t } from '../../lib/i18n';
 import { copyRegion, moveRegion, resizeRegion, trimRegionStart, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc } from '../../lib/beatNative/doc';
 import { dragValue, tickToX, xToTick, type DragMode, type DragValue } from '../../lib/beatNative/arrange';
 import { useRegionHold } from '../../lib/beatNative/useRegionHold';
-import { regionActions, regionLabel, regionName, type Apply } from '../../lib/beatNative/regionActions';
+import { position, regionActions, regionLabel, regionName, type Apply } from '../../lib/beatNative/regionActions';
 
 type Props = {
     doc: BeatDoc; track: BeatTrackDoc; region: BeatRegionDoc; zoom: number; snap: number; locator: number;
@@ -26,6 +26,7 @@ function Handle({ mode, props, style }: { mode: 'trim' | 'resize'; props: Props;
     const s = useThemedStyles(sheets);
     return <View pointerEvents="box-none" testID={`${props.region.id}-${mode}-hit`} style={[s.handleHit, style]}><View {...handlers} testID={`${props.region.id}-${mode}`} pointerEvents="box-only" style={s.handle} hitSlop={10}
         accessible accessibilityRole="adjustable" accessibilityLabel={t(mode === 'trim' ? 'beat.region.trim' : 'beat.region.resize')}
+        accessibilityValue={{ text: position(mode === 'trim' ? props.region.start : props.region.start + props.region.length) }}
         accessibilityActions={[{ name: 'increment', label: t(mode === 'trim' ? 'beat.region.trim' : 'beat.region.longer') }, { name: 'decrement', label: t(mode === 'trim' ? 'beat.region.extend' : 'beat.region.shorter') }]}
         onAccessibilityAction={event => props.apply(d => mode === 'trim'
             ? trimRegionStart(d, props.region.id, props.region.start + (event.nativeEvent.actionName === 'increment' ? props.snap : -props.snap))

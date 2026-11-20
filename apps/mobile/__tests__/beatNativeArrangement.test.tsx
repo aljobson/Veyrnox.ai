@@ -5,7 +5,7 @@ import BeatEditor from '../src/app/(app)/beats/[id]';
 import { t } from '../src/lib/i18n';
 import { beatStore, newBeat, resetBeats, getBeat, putBeat } from '../src/lib/beatNative/store';
 import { addAudioRegion, addKitTrack, addRegion, copyRegion, deleteRegion, duplicateRegion, moveRegion, resizeRegion, selectPattern, setCycle, setAudioRegion, setRegionPattern, setView, splitRegion, trimRegionStart, validateBeat, type BeatDoc, type Edit } from '../src/lib/beatNative/doc';
-import { regionLabel } from '../src/lib/beatNative/regionActions';
+import { position, regionLabel } from '../src/lib/beatNative/regionActions';
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 jest.mock('../src/components/beats/BeatSaveControls', () => ({ BeatSaveControls: () => null }));
@@ -308,4 +308,24 @@ test('N3-R4 handles appear at 88 pt and the resize target is centred on the draw
         expect(handle.accessibilityLabel).toBeTruthy(); expect(visual.width).toBe(24);
         expect(visual.width + handle.hitSlop * 2).toBe(44);
     }
+});
+test('cycle and trim handles speak where their edge is', async () => {
+    await open(); await choose();
+    const doc = current(), region = doc.tracks[0].regions[0];
+    expect(node('cycle-start').props.accessibilityValue).toEqual({ text: position(doc.cycle.start) });
+    expect(node('cycle-end').props.accessibilityValue).toEqual({ text: position(doc.cycle.end) });
+    expect(node('r1-trim').props.accessibilityValue).toEqual({ text: position(region.start) });
+    expect(node('r1-resize').props.accessibilityValue).toEqual({ text: position(region.start + region.length) });
+});
+test('tapping another region while holding a resize handle keeps the selection and commits the resize once', async () => {
+    await open(d => addRegion(d, 't1', 8 * 3840, d.currentPattern)); await choose('r1');
+    const before = current().tracks[0].regions.find(r => r.id === 'r1')!;
+    const handle = node('r1-resize').props, second = { nativeEvent: { identifier: 2, pageX: 0, pageY: 0 }, stopPropagation: jest.fn() };
+    await act(async () => { handle.onTouchStart(touch()); jest.advanceTimersByTime(350); });
+    await act(async () => { const r2 = node('region-r2').props; r2.onTouchStart(second); r2.onTouchEnd(second); });
+    expect(node('r1-resize')).toBeDefined(); expect(node('arrangement-scroll').props.scrollEnabled).toBe(false);
+    await act(async () => node('r1-resize').props.onTouchMove(touch(96)));
+    await act(async () => node('r1-resize').props.onTouchEnd(touch(96)));
+    expect(current().tracks[0].regions.find(r => r.id === 'r1')!.length).toBe(before.length + 3840);
+    expect(node('arrangement-scroll').props.scrollEnabled).toBe(true);
 });

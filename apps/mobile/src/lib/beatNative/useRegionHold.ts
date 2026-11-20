@@ -9,7 +9,11 @@ type Options<T> = {
     commit: (value: T) => void;
     select: () => void;
     announce: (message: string) => void;
+    /** Spoken when the hold starts; defaults to the region wording. */
+    heldMessage?: string;
 };
+/** One held gesture at a time owns the shared preview and scroll lock; a second finger cannot clear or steal them. */
+let holder: object | null = null;
 /** Raw events own the lifetime, including stationary touches which never become responders. */
 export function useRegionHold<T>(options: Options<T>) {
     const latest = useRef(options); latest.current = options;
@@ -21,23 +25,25 @@ export function useRegionHold<T>(options: Options<T>) {
             if (!gesture || gesture.id !== id) return;
             active.current = null;
             clearTimeout(gesture.timer);
-            gesture.options.preview(null); gesture.options.lock(false);
+            if (gesture.held && holder === gesture) { holder = null; gesture.options.preview(null); gesture.options.lock(false); }
             if (kind === 'cancel') { if (gesture.held) gesture.options.announce(t('beat.drag.cancelled')); return; }
+            if (holder && holder !== gesture) return; // a touch that overlapped another finger's hold neither selects nor edits
             if (kind === 'commit' && gesture.held && gesture.moved && gesture.value !== undefined) gesture.options.commit(gesture.value);
             else if (!gesture.moved) gesture.options.select();
         };
         const begin = (event: GestureResponderEvent) => {
             event.stopPropagation();
-            if (active.current) return;
+            if (active.current || holder) return;
             const { pageX, pageY, identifier, locationY } = event.nativeEvent;
             const id = ++sequence.current;
             const frozen = latest.current;
             const timer = setTimeout(() => {
                 const gesture = active.current;
                 if (!gesture || gesture.id !== id) return;
-                gesture.held = true;
+                if (holder) { finish('cancel', id); return; } // another finger already holds: this touch does nothing
+                holder = gesture; gesture.held = true;
                 gesture.value = frozen.value(0, 0, locationY ?? 44);
-                frozen.preview(gesture.value); frozen.lock(true); frozen.announce(t('beat.drag.moving'));
+                frozen.preview(gesture.value); frozen.lock(true); frozen.announce(frozen.heldMessage ?? t('beat.drag.moving'));
             }, 350);
             active.current = { id, touch: identifier, x: pageX, y: pageY, originY: locationY ?? 44, held: false, moved: false, timer, options: frozen };
         };

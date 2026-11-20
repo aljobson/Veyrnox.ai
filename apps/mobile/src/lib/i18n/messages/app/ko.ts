@@ -6681,6 +6681,7 @@ export default {
     "beat.cycle.endHandle": "반복 끝 핸들",
     "beat.cycle.changed": "반복이 변경되었습니다",
     "beat.drag.moving": "영역을 이동 중입니다. 드래그한 후 손을 떼세요",
+    "beat.cycle.moving": "반복 경계를 이동 중입니다. 드래그한 후 손을 떼세요",
     "beat.drag.cancelled": "드래그가 취소되었습니다",
     "beat.audio.gain": "게인(dB)",
     "beat.audio.fadeIn": "페이드 인(ms)",

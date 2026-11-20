@@ -6681,6 +6681,7 @@ export default {
     "beat.cycle.endHandle": "循环终点手柄",
     "beat.cycle.changed": "循环已更改",
     "beat.drag.moving": "正在移动片段，请拖动后松手",
+    "beat.cycle.moving": "正在移动循环边界，请拖动后松手",
     "beat.drag.cancelled": "拖动已取消",
     "beat.audio.gain": "增益（分贝）",
     "beat.audio.fadeIn": "淡入（毫秒）",

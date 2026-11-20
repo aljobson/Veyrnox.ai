@@ -6843,6 +6843,7 @@ export default {
     "beat.cycle.endHandle": "Alça de fim do ciclo",
     "beat.cycle.changed": "Ciclo alterado",
     "beat.drag.moving": "Movendo região, arraste e solte",
+    "beat.cycle.moving": "Movendo a borda do ciclo, arraste e solte",
     "beat.drag.cancelled": "Arrasto cancelado",
     "beat.audio.gain": "Ganho (dB)",
     "beat.audio.fadeIn": "Entrada gradual (ms)",

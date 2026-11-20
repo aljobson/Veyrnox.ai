@@ -23,7 +23,9 @@ test.each([100, 350])('raw touch start/end after %i ms without responder grant s
     await run(() => { props().onTouchStart(touch()); jest.advanceTimersByTime(delay); });
     await run(() => props().onTouchEnd(touch()));
     expect(select).toHaveBeenCalledTimes(1); expect(commit).not.toHaveBeenCalled();
-    expect(preview).toHaveBeenLastCalledWith(null); expect(lock).toHaveBeenLastCalledWith(false);
+    // A held touch clears what it set; a quick tap never touched the shared preview or lock.
+    if (delay >= 350) { expect(preview).toHaveBeenLastCalledWith(null); expect(lock).toHaveBeenLastCalledWith(false); }
+    else { expect(preview).not.toHaveBeenCalled(); expect(lock).not.toHaveBeenCalled(); }
     await run(() => responder.onPanResponderRelease?.(touch(), {} as never));
     expect(select).toHaveBeenCalledTimes(1); expect(commit).not.toHaveBeenCalled();
 });
@@ -58,4 +60,49 @@ test.each(['terminate', 'reject', 'rawCancel', 'unmount'])('%s clears preview an
 test('unmount before timeout cannot lock a discarded view', async () => {
     await run(() => { props().onTouchStart(touch()); root.unmount(); });
     await run(() => jest.advanceTimersByTime(400)); expect(lock).not.toHaveBeenCalledWith(true);
+});
+test('a caller-supplied held message replaces the region wording', async () => {
+    function Cycle() { return <View testID="cycle" {...useRegionHold({ value: dx => dx, commit, select, preview, lock, announce, heldMessage: t('beat.cycle.moving') })} />; }
+    await act(async () => root.render(<Cycle />));
+    const cycle = root.container.queryAll(n => n.props.testID === 'cycle')[0].props;
+    await run(() => { cycle.onTouchStart(touch()); jest.advanceTimersByTime(350); });
+    expect(announce).toHaveBeenCalledWith(t('beat.cycle.moving')); expect(announce).not.toHaveBeenCalledWith(t('beat.drag.moving'));
+    await run(() => cycle.onTouchCancel(touch()));
+});
+test('a second finger cannot clear or steal the held drag', async () => {
+    const other = { preview: jest.fn(), lock: jest.fn(), select: jest.fn(), commit: jest.fn() };
+    function Two() {
+        const a = useRegionHold({ value: (dx, dy) => ({ dx, dy }), commit, select, preview, lock, announce });
+        const b = useRegionHold({ value: () => 'b', announce, ...other });
+        return <><View testID="hold" {...a} /><View testID="b" {...b} /></>;
+    }
+    await act(async () => root.render(<Two />));
+    const b = () => root.container.queryAll(n => n.props.testID === 'b')[0].props;
+    const touchB = (x = 0) => ({ nativeEvent: { pageX: x, pageY: 0, identifier: 2 }, stopPropagation: jest.fn() } as never);
+    await run(() => { props().onTouchStart(touch()); jest.advanceTimersByTime(350); });
+    expect(lock).toHaveBeenLastCalledWith(true);
+    await run(() => { b().onTouchStart(touchB()); b().onTouchEnd(touchB()); });           // quick tap
+    await run(() => { b().onTouchStart(touchB()); b().onTouchMove(touchB(20)); });         // pre-hold cancel
+    await run(() => { b().onTouchStart(touchB()); jest.advanceTimersByTime(350); b().onTouchEnd(touchB()); }); // competing hold
+    expect(other.lock).not.toHaveBeenCalled(); expect(other.preview).not.toHaveBeenCalled(); expect(other.commit).not.toHaveBeenCalled();
+    expect(other.select).not.toHaveBeenCalled();
+    expect(lock).not.toHaveBeenCalledWith(false); expect(preview).not.toHaveBeenCalledWith(null);
+    await run(() => { props().onTouchMove(touch(12, 0)); props().onTouchEnd(touch(12, 0)); });
+    expect(commit).toHaveBeenCalledWith({ dx: 12, dy: 0 }); expect(lock).toHaveBeenLastCalledWith(false);
+});
+test('a touch already pending when another finger takes the hold does not select on lift', async () => {
+    const other = { preview: jest.fn(), lock: jest.fn(), select: jest.fn(), commit: jest.fn() };
+    function Two() {
+        const a = useRegionHold({ value: (dx, dy) => ({ dx, dy }), commit, select, preview, lock, announce });
+        const b = useRegionHold({ value: () => 'b', announce, ...other });
+        return <><View testID="hold" {...a} /><View testID="b" {...b} /></>;
+    }
+    await act(async () => root.render(<Two />));
+    const b = root.container.queryAll(n => n.props.testID === 'b')[0].props;
+    const touchB = { nativeEvent: { pageX: 0, pageY: 0, identifier: 2 }, stopPropagation: jest.fn() } as never;
+    await run(() => { props().onTouchStart(touch()); jest.advanceTimersByTime(200); b.onTouchStart(touchB); jest.advanceTimersByTime(150); });
+    expect(lock).toHaveBeenLastCalledWith(true);
+    await run(() => b.onTouchEnd(touchB));
+    expect(other.select).not.toHaveBeenCalled(); expect(lock).not.toHaveBeenCalledWith(false);
+    await run(() => props().onTouchCancel(touch()));
 });

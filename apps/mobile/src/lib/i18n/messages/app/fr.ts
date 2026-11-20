@@ -6843,6 +6843,7 @@ export default {
     "beat.cycle.endHandle": "Poignée de fin de boucle",
     "beat.cycle.changed": "Boucle modifiée",
     "beat.drag.moving": "Déplacement de la région, glissez puis relâchez",
+    "beat.cycle.moving": "Déplacement du bord de la boucle, glissez puis relâchez",
     "beat.drag.cancelled": "Déplacement annulé",
     "beat.audio.gain": "Niveau (dB)",
     "beat.audio.fadeIn": "Fondu entrant (ms)",

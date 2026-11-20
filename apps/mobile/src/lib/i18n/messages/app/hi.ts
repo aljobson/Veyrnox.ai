@@ -6762,6 +6762,7 @@ export default {
     "beat.cycle.endHandle": "चक्र समाप्त करने का हैंडल",
     "beat.cycle.changed": "चक्र बदला गया",
     "beat.drag.moving": "रीजन खिसक रहा है, खींचें फिर उँगली उठाएँ",
+    "beat.cycle.moving": "चक्र का किनारा खिसक रहा है, खींचें फिर उँगली उठाएँ",
     "beat.drag.cancelled": "खींचना रद्द हुआ",
     "beat.audio.gain": "गेन (dB)",
     "beat.audio.fadeIn": "धीरे बढ़ना (ms)",
