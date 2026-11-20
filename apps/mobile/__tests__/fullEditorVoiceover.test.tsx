@@ -102,3 +102,14 @@ test('existing three-argument imports still fall back to guessed length when pro
     await act(async () => { seconds = await mockSession.preparePicked({ uri: 'file://temp.wav' }, 'l-another', 'audio', true); });
     expect(seconds).toBeNull(); expect(mockSession.localMediaUris['l-another']).toBeUndefined();
 });
+
+test('document gate refusal preserves selection, take and document without announcing success', async () => {
+    const timeline = emptyTimeline();
+    for (let i = 0; i < 40; i++) timeline.media[`m${i}`] = { id: `m${i}`, kind: 'video', frames: 120, name: 'Source', hasAudio: true, width: 640, height: 360 };
+    mockHead.document = { ...mockHead.document, timeline, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
+    await open(); const before = mockSession.currentDocument(); await take(); await press(t('editorVoiceover.add'));
+    expect(mockSession.currentDocument()).toEqual(before); expect(mockSession.selection).toBeNull();
+    expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false); expect(mockSheetMounted).toBe(true);
+    expect(mockDiscard).not.toHaveBeenCalledWith('file://take.wav');
+    expect(AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalledWith(t('editorVoiceover.added'));
+});

@@ -1,3 +1,9 @@
+import { slicedWords } from '../../../../app/veyrnox/_lib/editorWords.mjs';
+import { slicedAnimation } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { sliceMaskKeyframes as webSliceMaskKeyframes } from '../../../../app/veyrnox/_lib/editorMask.mjs';
+// The web caller supplies the retained length; today's helper preserves keys beyond that boundary.
+const sliceMaskKeyframes = webSliceMaskKeyframes as (clip: Clip | TextClip, from: number, len: number) => ReturnType<typeof webSliceMaskKeyframes>;
+import { sourceFrame } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
 import { clipAt, updateClip, type Clip, type Media, type Selection, type TextClip, type Timeline } from './nativeEditorModel';
 
 export const PPF_MIN = 0.25;
@@ -57,6 +63,9 @@ export function moveItems(timeline: Timeline, selections: readonly Selection[], 
 }
 
 export function canTrim(item: Clip | TextClip): boolean {
+    return item.speedCurve == null && item.freezeFrame == null;
+}
+export function canChangeSpeed(item: Clip | TextClip): boolean {
     const fields = item as unknown as Record<string, unknown>;
     const animation = item.animation as Record<string, unknown> | undefined;
     return !['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve'].some(key => fields[key] != null)
@@ -111,10 +120,12 @@ export function trimItem(timeline: Timeline, selection: Selection, edge: 'in' | 
     const len = item.len + (fromStart ? -delta : delta);
     const rippled = followers.reduce((next, { track, other }) => updateClip(next, { track, id: other.id }, { start: other.start + delta }), timeline);
     // A clip that was already longer than its file (older edits) is healed by any trim, not grown further.
-    const fitted = bounded ? fitLength(media, { ...clip, len, ...(fromStart ? { in: sourceIn + delta * rate * (clip.reverse ? -1 : 1) } : {}) }) : len;
+    const fitted = bounded ? fitLength(media, { ...clip, len, ...(fromStart ? { in: sourceFrame(clip, delta) } : {}) }) : len;
     return updateClip(rippled, selection, {
         len: fitted,
-        ...(fromStart ? { start: item.start + delta, ...(selection.track !== 'text' ? { in: sourceIn + delta * rate * (clip.reverse ? -1 : 1) } : {}) } : {}),
-        ...(selection.track !== 'text' ? { fadeIn: Math.min(clip.fadeIn ?? 0, len), fadeOut: Math.min(clip.fadeOut ?? 0, len) } : {}),
+        ...slicedWords(item, fromStart ? delta : 0), ...slicedAnimation(item, fromStart ? delta : 0),
+        ...(item.maskKeyframes ? { maskKeyframes: sliceMaskKeyframes(item, fromStart ? delta : 0, fitted) } : {}),
+        ...(fromStart ? { start: item.start + delta, ...(selection.track !== 'text' ? { in: sourceFrame(clip, delta) } : {}) } : {}),
+        ...(selection.track !== 'text' ? { fadeIn: Math.min(clip.fadeIn ?? 0, fitted), fadeOut: Math.min(clip.fadeOut ?? 0, fitted) } : {}),
     });
 }

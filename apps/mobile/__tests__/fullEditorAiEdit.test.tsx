@@ -12,6 +12,7 @@ void [AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleS
 const projectId = '11111111-1111-4111-8111-111111111111', jobId = '33333333-3333-4333-8333-333333333333';
 const mockRequest = jest.fn(), mockApi = { request: mockRequest }, mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
 var mockListeners: Set<() => void>;
+let mockRefuse = false;
 let mockSession: ReturnType<typeof useFullEditorSession>, mockOwner = 'owner';
 jest.mock('../src/lib/editorFlag', () => ({ EDITOR_AI_EDIT_ENABLED: true, EDITOR_SPEECH_CUT_ENABLED: true }));
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
@@ -29,7 +30,9 @@ jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, b
 jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: () => null }));
 jest.mock('../src/components/chat/MakePanel', () => ({ MakePanel: () => null }));
 jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: any) => {
-    mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args); return mockSession;
+    mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args);
+    const mark = mockSession.markDocument;
+    return { ...mockSession, markDocument: (...values: Parameters<typeof mark>) => mockRefuse ? false : mark(...values) };
 } }));
 const seed = (): Timeline => ({ ...emptyTimeline(), seq: 1, media: { [`j-${jobId}`]: { id: `j-${jobId}`, kind: 'video', name: 'My private take', frames: 360, hasAudio: true } },
     video: [{ id: 'v1', mediaId: `j-${jobId}`, start: 0, in: 0, len: 360, trackId: 'video-0', rate: 1, volume: 1, transition: 0 }] });
@@ -49,7 +52,7 @@ const sendLabel = (mode: string) => mode === 'ai' ? t('editorAi.send', { price: 
 const posts = () => mockRequest.mock.calls.filter(([, init]) => init?.method === 'POST');
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); resetNetworkState();
-    price = 7; unavailable = false; resultError = null; mockOwner = 'owner'; head = { revision: 4, document: { schema_version: 3, project_id: projectId, timeline: seed() } };
+    mockRefuse = false; price = 7; unavailable = false; resultError = null; mockOwner = 'owner'; head = { revision: 4, document: { schema_version: 3, project_id: projectId, timeline: seed() } };
     mockRequest.mockReset().mockImplementation(async (path: string, init?: RequestInit) => {
         if (path.endsWith('/quote')) { if (unavailable) throw new ApiError(501, 'unavailable'); return { credits: price, max_seconds: 60, languages: ['en'], max_commands: 20, max_instruction_chars: 500 }; }
         if (init?.method === 'POST') { if (resultError) throw resultError; return path.includes('speech-analyses') ? speechResult : aiResult; }
@@ -124,4 +127,15 @@ test('speech reports transcribing with a live region; closing cancels polling', 
     expect(root.container.queryAll(n => n.props.accessibilityLiveRegion === 'polite').length).toBeGreaterThan(0);
     const poll = mockRequest.mock.calls.find(([path]) => path.includes('/speech-analyses/by-key/'))!; expect(poll[1].signal.aborted).toBe(false);
     await press(t('editorSimple.close')); expect(poll[1].signal.aborted).toBe(true);
+});
+
+for (const mode of ['ai', 'speech'] as const) test(`${mode}: refused document never announces completion`, async () => {
+    await render(); await open(mode); await press(sendLabel(mode)); const before = mockSession.currentDocument();
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    mockRefuse = true;
+    await press(t('editorAi.apply'));
+    expect(mockSession.currentDocument()).toEqual(before);
+    expect(announce).not.toHaveBeenCalledWith(t(mode === 'ai' ? 'editorAi.applied' : 'editorSpeech.applied'));
+    expect(mockSession.selection).toBeNull();
+
 });

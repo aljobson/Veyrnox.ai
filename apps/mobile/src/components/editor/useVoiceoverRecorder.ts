@@ -18,7 +18,7 @@ type Session = ReturnType<typeof useFullEditorSession>;
 export type VoiceoverProps = {
     projectId: string; startFrame: number; fps: number; active: boolean;
     beginImport: Session['beginImport']; preparePicked: Session['preparePicked'];
-    insert(media: Media): 'placed' | 'track' | 'full'; onAdded(): void; onClose(): void;
+    insert(media: Media): 'placed' | 'track' | 'full' | 'refused'; onAdded(): void; onClose(): void;
 };
 export function useVoiceoverRecorder(props: VoiceoverProps) {
     const latest = useRef(props); latest.current = props;
@@ -196,6 +196,7 @@ export function useVoiceoverRecorder(props: VoiceoverProps) {
             const result = props.insert(media);
             if (result === 'track') { failure(t('editor.unlockoraddatrackfirst', { value1: 'audio' })); return; }
             if (result === 'full') { failure(t('editorAi.projectFull')); return; }
+            if (result === 'refused') { failure(t('editorEditGate.invalid')); return; }
             erase(); props.onAdded();
         } catch { failure(t('editorVoiceover.addFailed')); }
         finally {

@@ -227,3 +227,10 @@ test.each(['mode', 'prepare'] as const)('inactive still cancels startup during %
     await render(); await press('editorVoiceover.record'); await app('inactive'); await app('active');
     await act(async () => gate.resolve()); expect(mockRecord).not.toHaveBeenCalled(); expect(mockHook.phase).toBe('idle');
 });
+
+test('document refusal retains the review take and never announces placement', async () => {
+    await review(); mockInsert.mockReturnValueOnce('refused'); await press('editorVoiceover.add');
+    enabledReview(); expect(mockAdded).not.toHaveBeenCalled(); expect(mockDiscard).not.toHaveBeenCalledWith('file://take.wav');
+    expect(mockHook.message).toBe("That change can't be kept in this project.");
+    await press('editorVoiceover.add'); expect(mockAdded).toHaveBeenCalledTimes(1);
+});

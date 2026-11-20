@@ -1,3 +1,4 @@
+import { documentProblem } from '../../lib/editorDocumentGate';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
@@ -18,7 +19,7 @@ type Ref<T> = MutableRefObject<T>;
 type Options = {
     api: ApiClient; projectId: string; name: string;
     documentRef: Ref<ProjectDocument | null>; revisionRef: Ref<number>; dirtyRef: Ref<boolean>;
-    baseline(head: DocumentHead): void; markDocument(doc: ProjectDocument, record?: boolean): void;
+    baseline(head: DocumentHead): void; markDocument(doc: ProjectDocument, record?: boolean): boolean;
     mergeBackups(doc: ProjectDocument): ProjectDocument; problem: string | null; setProblem(message: string | null): void;
     onOwnerChange(): void; onCopy(id: string): void; clearDocument(): void; entryImport(): Promise<void>;
 };
@@ -63,7 +64,7 @@ export function useEditorSaveSync(options: Options) {
             if (!live() || gate !== 'open' || !doc || !o().dirtyRef.current) return;
             const captured = epoch, id = identity();
             let kept = false;
-            try { kept = await queue.write({ owner: owner || '', projectId: o().projectId, baseRevision: o().revisionRef.current, document: o().mergeBackups(doc), updatedAt: Date.now() }, () => live() && epoch === captured) === true; } catch { /* Storage failure is reflected in the leave prompt. */ }
+            try { kept = await queue.write({ owner: owner || '', projectId: o().projectId, baseRevision: o().revisionRef.current, document: doc, updatedAt: Date.now() }, () => live() && epoch === captured) === true; } catch { /* Storage failure is reflected in the leave prompt. */ }
             if (live() && captured === epoch && id === identity()) draftState = { identity: id, kept: kept ? 'kept' : 'failed' };
         }
         function changed() {
@@ -95,7 +96,7 @@ export function useEditorSaveSync(options: Options) {
             if (!live() || sheet || replacing || restoreOp || gate !== 'open' || !current) return false;
             const merged = o().mergeBackups(current);
             if (documentIdentity(merged) === documentIdentity(current)) return false;
-            o().markDocument(merged, false); return true;
+            return o().markDocument(merged, false);
         }
         async function fetchConflict(op: Operation) {
             if (!holds(op)) return;
@@ -199,10 +200,15 @@ export function useEditorSaveSync(options: Options) {
             }
             if (replacing === op) { replacing = null; settle(); } watchGen++; if (live()) notify();
         }
+        function copyDocument() {
+            const current = o().documentRef.current!;
+            const merged = o().mergeBackups(current);
+            return documentProblem(current) === null && documentProblem(merged) !== null ? current : merged;
+        }
         async function keepCopy() {
             if (copy ? !canRetry(locks(), copy) : !canStart(locks())) return;
             if (!o().documentRef.current || !workspaceId) return;
-            copy ??= { ...start(), createKey: randomUUID(), saveKey: randomUUID(), name: conflictCopyName(o().name), workspaceId, document: o().mergeBackups(o().documentRef.current!), identity: identity() };
+            copy ??= { ...start(), createKey: randomUUID(), saveKey: randomUUID(), name: conflictCopyName(o().name), workspaceId, document: copyDocument(), identity: identity() };
             const op = copy; op.token = {}; op.state = 'inflight'; replacing = op; watchGen++; notify();
             try {
                 if (!validDocument(op.document, o().projectId)) throw new ApiError(400, 'invalid_document');

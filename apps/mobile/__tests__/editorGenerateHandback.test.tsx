@@ -293,3 +293,14 @@ test('an unexpected reconcile rejection stays handled and the next trigger can r
     await open(); expect(waitForJob).not.toHaveBeenCalled(); expect(await readPending(projectId)).toHaveLength(1);
     await foreground(); expect(waitForJob).toHaveBeenCalledTimes(1); await finish(); expect(generated()).toHaveLength(1);
 });
+
+test('a refused generation stays pending and can be retried without a placed acknowledgement', async () => {
+    const timeline = emptyTimeline();
+    for (let i = 0; i < 40; i++) timeline.media[`m${i}`] = { id: `m${i}`, kind: 'video', frames: 120, name: 'Source', hasAudio: true, width: 640, height: 360 };
+    head.document = { ...head.document, timeline, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
+    await open(); const before = mockSession.currentDocument(); await generate(); await finish();
+    expect(generated()).toHaveLength(0); expect(mockSession.currentDocument()).toEqual(before);
+    expect(mockSession.selection).toBeNull(); expect((await readPending(projectId))[0].placed).not.toBe(true);
+    await act(async () => mockSession.markDocument({ ...mockSession.currentDocument()!, timeline: emptyTimeline() }));
+    await press(t('editorAi.addAtPlayhead')); expect(generated()).toHaveLength(1);
+});

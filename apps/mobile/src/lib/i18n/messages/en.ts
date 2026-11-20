@@ -77,6 +77,8 @@ import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
 import area_editorCore from './en/editorCore';
+import area_editorEditGate from './en/editorEditGate';
+import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
@@ -305,6 +307,8 @@ const catalog = {
     ...area_editor,
     ...area_editorAi,
     ...area_editorCore,
+    ...area_editorEditGate,
+    ...area_editorExportRefusal,
     ...area_editorProjects,
     ...area_editorSave,
     ...area_editorServerExport,

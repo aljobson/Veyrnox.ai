@@ -357,10 +357,16 @@ test('Adjust length uses source bounds, clamps fades, and offers a fine frame st
 });
 test('protected clips disable Adjust length steppers and explain web trimming', async () => {
     const { emptyTimeline } = require('../src/lib/nativeEditorModel');
-    serverDocument = { ...document, schema_version: 3, timeline: { ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 90 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 0, in: 0, len: 90, words: [] }] } };
+    serverDocument = { ...document, schema_version: 3, timeline: { ...emptyTimeline(), media: { m: { id: 'm', kind: 'video', frames: 90 } }, video: [{ id: 'v1', mediaId: 'm', trackId: 'video-0', start: 0, in: 0, len: 90, speedCurve: [] }] } };
     await render(); await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap()); await press('Adjust');
     expect(visible('Trim this clip on the web editor.')).toBe(true);
     for (const label of ['Decrease Duration: 3.0 seconds', 'Increase Duration: 3.0 seconds', 'Length +1 frame', 'Length −1 frame']) expect(root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.accessibilityState?.disabled)).toHaveLength(1);
+    for (const fields of [{ freezeFrame: 0 }, { words: [], keyframes: [] }]) {
+        await act(async () => root.unmount()); root = createRoot();
+        const clip = serverDocument.timeline.video[0]; delete clip.speedCurve; delete clip.freezeFrame; Object.assign(clip, fields);
+        await render(); await act(async () => root.container.queryAll(n => n.props.testID === 'clip-v1')[0].props.onAccessibilityTap()); await press('Adjust');
+        expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Length −1 frame' && n.props.accessibilityState?.disabled)).toHaveLength('freezeFrame' in fields ? 1 : 0);
+    }
 });
 test('a track locked while Library length resolves is rechecked at completion', async () => {
     const finish = deferLength(); await render(); await press('Library video'); await press('Choose Library item'); await press('Adjust');

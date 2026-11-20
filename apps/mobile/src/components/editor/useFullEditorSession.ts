@@ -1,3 +1,4 @@
+import { documentProblem } from '../../lib/editorDocumentGate';
 import { createFrameStore } from './editorFrameStore';
 import { PPF_DEFAULT, SEQUENCE_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
@@ -63,37 +64,47 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const mergeBackups = useCallback((doc: ProjectDocument): ProjectDocument => {
         if (!doc.timeline) return doc;
         const tl = doc.timeline as Timeline;
+        if (!tl.media || typeof tl.media !== 'object') return doc;
         return { ...doc, timeline: { ...tl, media: Object.fromEntries(Object.entries(tl.media).map(([id, media]) => [id, backups.current[id] ? { ...media, assetSource: backups.current[id] } : media])) } };
     }, []);
 
     const playbackTimeline = timelineOf(document?.timeline);
     const playbackTotal = framesIn(playbackTimeline);
 
-    const markDocument = useCallback((next: ProjectDocument, record = true) => {
-        if (!syncRef.current?.live()) return;
+    const commitDocument = useCallback((next: ProjectDocument, record = true, historyBase?: ProjectDocument, restoreSnapshot = false) => {
+        if (!syncRef.current?.live()) return false;
+        const candidate = mergeBackups(next);
+        const problem = documentProblem(candidate);
+        // History can restore a previously accepted legacy snapshot, but cannot smuggle in a refused backup.
+        const knownLegacy = restoreSnapshot && documentProblem(next) !== null && documentIdentity(candidate) === documentIdentity(next);
+        if (problem && !knownLegacy && documentRef.current && documentProblem(documentRef.current) === null) {
+            setProblem(t(`editorEditGate.${problem}`));
+            return false;
+        }
+        next = candidate;
         if (record && documentRef.current) {
-            pastRef.current.push(documentRef.current);
+            pastRef.current.push(historyBase ?? documentRef.current);
             if (pastRef.current.length > 30) pastRef.current.shift();
             futureRef.current = [];
             setHistory({ canUndo: true, canRedo: false });
         }
-        next = mergeBackups(next);
         editRevisionRef.current++;
         documentRef.current = next;
         dirtyRef.current = true;
         setDocument(next);
         syncRef.current?.changed();
         setProblem(null);
+        return true;
     }, [mergeBackups]);
+    const markDocument = useCallback((next: ProjectDocument, record = true, historyBase?: ProjectDocument) =>
+        commitDocument(next, record, historyBase), [commitDocument]);
 
     const applyBackup = useCallback((mediaId: string, source: NonNullable<Media['assetSource']>) => {
         if (!syncRef.current?.live()) return;
-        editRevisionRef.current++;
+        // Keep metadata pending until the exact merged candidate is accepted.
         backups.current[mediaId] = source;
-        pastRef.current = pastRef.current.map(mergeBackups);
-        futureRef.current = futureRef.current.map(mergeBackups);
         syncRef.current.settle();
-    }, [mergeBackups]);
+    }, []);
 
     const baseline = useCallback((head: DocumentHead) => {
         editRevisionRef.current++;
@@ -202,14 +213,14 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const travel = useCallback((direction: 'undo' | 'redo') => {
         const source = direction === 'undo' ? pastRef.current : futureRef.current;
         const destination = direction === 'undo' ? futureRef.current : pastRef.current;
-        const next = source.pop();
-        if (!next || !documentRef.current) return;
-        destination.push(documentRef.current);
-        markDocument(mergeBackups(next), false);
+        const next = source.at(-1), current = documentRef.current;
+        if (!next || !current || !commitDocument(next, false, undefined, true)) return;
+        source.pop();
+        destination.push(current);
         setSelection(null);
         setSelections([]);
         setHistory({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
-    }, [markDocument, mergeBackups]);
+    }, [commitDocument]);
 
     const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string, requireCopy = false) => {
         const token = sync.beginImport(); if (!token) return null;

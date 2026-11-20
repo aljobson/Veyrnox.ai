@@ -1,3 +1,4 @@
+import { t } from '../../lib/i18n';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { framesIn, timelineOf, type Timeline } from '../../lib/nativeEditorModel';
@@ -23,12 +24,12 @@ export function useBestCutEditor(session: Session, projectId: string, autoOpen: 
         sheet: open && quote ? <BestCutSheet api={session.api} projectId={projectId} quote={quote} onClose={() => setOpen(false)} onApply={value => {
             const current = session.currentDocument();
             if (!current || current.project_id !== projectId || !session.sync.live() || session.sync.replacing || captured.current?.owner !== getCacheUser() || captured.current?.revision !== session.getEditRevision()) return false;
-            let before = timelineOf(current.timeline);
-            if (framesIn(before) === 0) {
-                before = value.before;
-                session.markDocument({ ...current, schema_version: 3, timeline: before }, false);
+            const currentTimeline = timelineOf(current.timeline);
+            const before = framesIn(currentTimeline) === 0 ? value.before : currentTimeline;
+            const historyBase = framesIn(currentTimeline) === 0 ? { ...current, schema_version: 3 as const, timeline: before } : undefined;
+            if (!session.markDocument({ ...current, schema_version: 3, timeline: value.timeline }, true, historyBase)) {
+                session.setProblem(t('editorEditGate.invalid')); return false;
             }
-            session.markDocument({ ...current, schema_version: 3, timeline: value.timeline });
             session.setLocalMediaUris(uris => ({ ...uris, ...value.uris }));
             session.setPlaying(false); session.setFrame(0); session.setSelection(null); session.setSelections([]);
             setComparison({ before, plan: value.plan, captionsOmitted: value.captionsOmitted, refunded: value.refunded }); return true;
