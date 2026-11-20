@@ -1,3 +1,4 @@
+import type { TextActions } from './useTextActions';
 import type { SpeedActions } from './useSpeedActions';
 import type { DocumentCommitResult } from '../../../lib/editorDocumentGate';
 import type { Canvas, Clip, EditorTrack, Media, Selection, TextClip, Timeline, TrackKind } from '../../../lib/nativeEditorModel';
@@ -6,6 +7,7 @@ import type { SlotKind } from '../../../lib/sources';
 import type { Kind } from '../../../lib/media';
 
 export type ToolPanelProps = {
+    textActions?: TextActions;
     timeline: Timeline; selection: Selection | null; selected: Clip | TextClip | undefined;
     selections: Selection[]; selectedMedia: Media | undefined; selectedTrack: EditorTrack | undefined;
     patchSelected(patch: Partial<Clip & TextClip>): void; applyTimeline(timeline: Timeline): boolean;

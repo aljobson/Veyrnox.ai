@@ -247,6 +247,8 @@
   "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
+  "editorText.animationName6": "Standard notation or established style name, retained in this locale.",
+  "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "speech.emotion": "Emotion is also the German noun for emotion, with the same spelling and capitalization.",
   "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
   "speech.gender.neutral": "Neutral is the German adjective for a neutral voice; capitalization follows a standalone interface label.",

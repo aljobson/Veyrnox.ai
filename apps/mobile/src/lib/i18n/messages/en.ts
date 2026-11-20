@@ -86,6 +86,7 @@ import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
 import area_editorSpike from './en/editorSpike';
+import area_editorText from './en/editorText';
 import area_editorTools from './en/editorTools';
 import area_editorVoiceover from './en/editorVoiceover';
 import area_email from './en/email';
@@ -321,6 +322,7 @@ const catalog = {
     ...area_editorSimple,
     ...area_editorSpeech,
     ...area_editorSpike,
+    ...area_editorText,
     ...area_editorTools,
     ...area_editorVoiceover,
     ...area_email,

@@ -3972,6 +3972,96 @@
     "ratio": 1.67
   },
   {
+    "id": "editorText.font",
+    "english": "Font",
+    "translation": "Schriftart",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Mit Serifen",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.monospace",
+    "english": "Monospace",
+    "translation": "Nichtproportional",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorText.shadowOpacity",
+    "english": "Shadow opacity",
+    "translation": "Deckkraft des Schattens",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Horizontaler Schattenversatz",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Vertikaler Schattenversatz",
+    "ratio": 3.25
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Anfang",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.loop",
+    "english": "Loop",
+    "translation": "Schleife",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.animationName1",
+    "english": "Fade",
+    "translation": "Überblenden",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Nach links schieben",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Nach rechts gleiten",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Nach oben gleiten",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Nach unten gleiten",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Schwingen",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorText.loopName7",
+    "english": "Loop bounce",
+    "translation": "Springen in Schleife",
+    "ratio": 1.82
+  },
+  {
     "id": "library.useForLipSync",
     "english": "Use for lip sync",
     "translation": "Für Lippensynchronisation verwenden",
