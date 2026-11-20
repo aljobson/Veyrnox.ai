@@ -248,5 +248,16 @@
   "musicPublic.genre.jazz": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
   "musicPublic.genre.rnb-soul": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
   "musicPublic.genre.ambient": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
-  "musicPublic.genre.country-folk": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending."
+  "musicPublic.genre.country-folk": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "beat.home.untitled": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempo": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempoValue": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.clap": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.tom": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.rim": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.crash": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.gain": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.solo.short": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.808": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.lofi": "Same in fr: a loanword, brand-style name or number used unchanged in this language."
 }

@@ -1962,6 +1962,54 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.pad.kick",
+    "english": "Kick",
+    "translation": "الطبل الكبير",
+    "ratio": 3
+  },
+  {
+    "id": "beat.pad.snare",
+    "english": "Snare",
+    "translation": "الطبل الصغير",
+    "ratio": 2.4
+  },
+  {
+    "id": "beat.pad.openhat",
+    "english": "Open hat",
+    "translation": "هاي هات مفتوح",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.pad.rim",
+    "english": "Rim",
+    "translation": "الحافة",
+    "ratio": 2
+  },
+  {
+    "id": "beat.pan",
+    "english": "Pan, {track}",
+    "translation": "التوزيع الصوتي، {track}",
+    "ratio": 1.92
+  },
+  {
+    "id": "beat.solo",
+    "english": "Solo {track}",
+    "translation": "عزف منفرد لـ {track}",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.soloOn",
+    "english": "{track} solo on",
+    "translation": "تفعيل العزف المنفرد لـ {track}",
+    "ratio": 2
+  },
+  {
+    "id": "beat.soloOff",
+    "english": "{track} solo off",
+    "translation": "إيقاف العزف المنفرد لـ {track}",
+    "ratio": 1.88
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

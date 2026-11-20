@@ -72,14 +72,22 @@ test('Account switch remounts Projects and removes the preceding account list', 
   await fixture.switchUser(SECOND_SYNTHETIC_USER); await expect(page.getByRole('link', { name: 'Second account project', exact: true })).toBeVisible(); await expect(page.getByRole('link', { name: 'Synthetic project', exact: true })).toHaveCount(0);
 });
 
+const hasVeyHelp = (page) => (page.viewportSize()?.width ?? 0) >= 640;
+
 async function editor(page, options = {}) {
   const fixture = await installProductFixtures(page, options); const response = await fixture.open('/app/editor');
   expect(response.status(), 'The owned local server must enable the editor rollout for these fixtures').toBe(200);
   await expect(page.getByTestId('editor-workspace')).toBeVisible();
   await expect(page.getByTestId('editor-workspace')).toHaveAccessibleName('Multitrack editing workspace');
   const header = page.getByTestId('editor-workspace').getByTestId('editor-header');
-  await expect(header.getByTestId('assistant-editor-launcher')).toBeVisible();
   await expect(page.getByTestId('assistant-mascot')).toHaveCount(0);
+  // The Vey help box is not offered at phone widths (under 640px).
+  if (!hasVeyHelp(page)) {
+    await expect(page.getByTestId('assistant-editor-launcher')).toHaveCount(0);
+    const recover = page.getByTestId('editor-discard'); if (await recover.isVisible()) await recover.click();
+    return fixture;
+  }
+  await expect(header.getByTestId('assistant-editor-launcher')).toBeVisible();
   await expect.poll(async () => {
     const reserved = await header.boundingBox(), launcher = await header.getByTestId('assistant-editor-launcher').boundingBox();
     return Boolean(reserved && launcher && launcher.x >= reserved.x && launcher.y >= reserved.y
@@ -90,11 +98,13 @@ async function editor(page, options = {}) {
 }
 test('Editor adds text, edits words and exposes local export settings without a cloud render', async ({ page }) => {
   const fixture = await editor(page);
-  const helper = page.getByTestId('assistant-editor-launcher'); await helper.click();
-  await expect(page.getByRole('dialog', { name: 'Ask Vey', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Close helper', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Ask Vey', exact: true })).toHaveCount(0);
-  await expect(helper).toBeFocused(); await expect(helper).toHaveAttribute('aria-expanded', 'false');
+  if (hasVeyHelp(page)) {
+    const helper = page.getByTestId('assistant-editor-launcher'); await helper.click();
+    await expect(page.getByRole('dialog', { name: 'Ask Vey', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close helper', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Ask Vey', exact: true })).toHaveCount(0);
+    await expect(helper).toBeFocused(); await expect(helper).toHaveAttribute('aria-expanded', 'false');
+  }
   const sections = page.getByTestId('editor-sections'); if (await sections.isVisible()) await sections.getByTestId('editor-stage-media').click();
   await page.getByTestId('editor-add-text').click(); if (await sections.isVisible()) await sections.getByTestId('editor-stage-inspector').click();
   await page.getByTestId('editor-words').fill('Synthetic editable title'); await page.getByTestId('editor-words').press('Tab'); await expect(page.getByTestId('editor-undo')).toBeEnabled();
