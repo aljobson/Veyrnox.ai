@@ -34,7 +34,7 @@ How icons are made: Phosphor regular 2.1.1 (MIT), SVG recoloured #ffffff, render
 | S3 | Native Text to speech studio: script, 17 voices, 19 languages, 7 styles, speed/volume/pitch, price panel; Audition Board after | S2. Register the POST in `aiConsent.ts` CONTENT_POSTS and `hardPaywall.ts` PAID_ACTIONS, real client guard test, one idempotency key per attempt, price before spend | large |
 | S4 | Native Dialogue studio: ordered turns (2-12, 1000 chars), 2-4 speakers, cast (Aria/Roger/Sarah/George), `elevenlabs-dialogue`. Photo dialogue stays out: `multitalk-dialogue` has no catalog row | S2 | large |
 | S5 | Dub / lip sync depth: video dubbing locale batch (2-5), speech step (script via minimax, upload, record), consent step, optional subtitles (clip-edit, x7); five avatar workflows already exist as features | S2 for the script step; rate limit 10 jobs/60 s | large |
-| S6 | Library audio: seek, "use for lip sync", save to shelf | none | small |
+| S6 | Library audio: seek, use for lip sync (save to shelf moved to S7) | none | small |
 | S7 | Voice Recipes, palettes, audio shelf | web keeps them in localStorage only; needs a storage decision | medium |
 | S8 | Music extras (Discover, Playlists, Workspaces, Beats, Labs, Studio, Sounds) | owned by the music sessions; flags true except beatCloud | n/a |
 

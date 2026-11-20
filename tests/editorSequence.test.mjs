@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptySequence, addSequenceMedia, addSequenceClip, addSequenceTrack, addSequenceText, updateSequenceClip, updateSequenceTrack, splitSequenceClip, splitSequenceAtFrames, removeSequenceClip, duplicateSequence, moveSequence, trimSequence, upgradeSequence, sequenceEnd } from '../app/veyrnox/_lib/editorSequence.mjs';
+import { emptySequence, addSequenceMedia, addSequenceClip, addSequenceTrack, addSequenceText, updateSequenceClip, updateSequenceTrack, splitSequenceClip, splitSequenceAtFrames,
+    removeSequenceClip, duplicateSequence, moveSequence, trimSequence, upgradeSequence, sequenceEnd } from '../app/veyrnox/_lib/editorSequence.mjs';
 import { validateSequence } from '../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import { emptyTimeline, addMedia, addVideoClip } from '../app/veyrnox/_lib/editorTimeline.mjs';
 import { sequenceLayers } from '../app/veyrnox/_lib/editorSequenceRender.mjs';
@@ -18,7 +19,8 @@ test('independent visual and audio tracks overlap without length drift; hidden l
 });
 test('locked tracks refuse split, trim, move, delete and duplicate without changing the input', () => {
     const tl = ok(updateSequenceTrack(fixture(), 'video-0', { locked: true })), snapshot = JSON.stringify(tl);
-    for (const result of [splitSequenceClip(tl, 'video', 'v1', 30), trimSequence(tl, 'video', 'v1', 'out', -1), moveSequence(tl, 'video', 'v1', 10), removeSequenceClip(tl, 'video', 'v1'), duplicateSequence(tl, { track: 'video', id: 'v1' })]) assert.match(result.error, /Unlock/);
+    for (const result of [splitSequenceClip(tl, 'video', 'v1', 30), trimSequence(tl, 'video', 'v1', 'out', -1), moveSequence(tl, 'video', 'v1', 10), removeSequenceClip(tl, 'video', 'v1'),
+        duplicateSequence(tl, { track: 'video', id: 'v1' })]) assert.match(result.error, /Unlock/);
     assert.equal(JSON.stringify(tl), snapshot);
 });
 test('rate-aware splits and trims preserve source alignment; bounds are refused atomically', () => {
@@ -71,4 +73,14 @@ test('splitSequenceAtFrames cuts a clip at several frames as one edit, last to f
     assert.equal(JSON.stringify(tl), snapshot, 'the input is never changed');
     const trimmed = ok(updateSequenceClip(tl, 'video', 'v1', { in: 30, len: 120 }));
     assert.deepEqual(ok(splitSequenceAtFrames(trimmed, 'video', 'v1', [50])).video.map(c => [c.start, c.in, c.len]), [[0, 30, 50], [50, 80, 70]]);
+});
+
+test('freeze insertion clamps long fades at the start and inside a clip', async () => {
+    const { insertSequenceFreeze } = await import('../app/veyrnox/_lib/editorSequence.mjs');
+    const tl = ok(updateSequenceClip(fixture(), 'video', 'v1', { fadeIn: 100, fadeOut: 100 }));
+    for (const frame of [0, 30]) {
+        const next = ok(insertSequenceFreeze(tl, 'v1', frame));
+        const freeze = next.video.find(c => c.freezeFrame !== undefined);
+        assert.equal(freeze.len, 60); assert.equal(freeze.fadeIn, 60); assert.equal(freeze.fadeOut, 60);
+    }
 });

@@ -77,5 +77,8 @@
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "beat.tempoValue": "Same in ja: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.808": "Same in ja: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in ja: a loanword, brand-style name or number used unchanged in this language.",
+  "editorTools.rateValue": "Standard mathematical notation shared across languages.",
+  "editorTools.positionValue": "Standard mathematical notation shared across languages.",
+  "editorText.percent": "Standard notation or established style name, retained in this locale."
 }

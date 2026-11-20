@@ -17,12 +17,14 @@ provenance remain evidence. Clip publication uses template ownership, with
 explicit independent landing placements; clip keys need not equal template IDs.
 Ten promptless homepage wall cards are removed, leaving 14.
 
-`sourcePromptRunnable` is informational by owner decision: 285 public templates
-are audit-compatible and 599 incompatible. The application sends the selected
+`sourcePromptRunnable` is informational by owner decision: 264 public templates
+are audit-compatible and 620 incompatible. The application sends the selected
 exact text even when reference slots cannot be filled. This decision does not
-change limits, pricing contracts, required-input validation or consent. The Syntx route correction described below follows the existing importer precedent. All three
-assigned model routes currently have a 30,000-character prompt limit; none of
-the public exact prompts exceeds it. There are 535 prompts with explicit
+change limits, pricing contracts, required-input validation or consent. The Syntx route correction described below follows the existing importer precedent. The assigned
+model routes have a 30,000-character prompt limit, except Kling 3.0
+image-to-video, which has fal's documented 2,500 (`KLING_V3_PROMPT_MAX`,
+2026-11-20); templates whose exact prompt is longer are unsupported and refused
+before any charge, never trimmed. There are 535 prompts with explicit
 `@imageN`, `@videoN` or angle-bracket slots, and 559 with reference requirements
 under the broader audit parser. No reference is silently invented or substituted.
 

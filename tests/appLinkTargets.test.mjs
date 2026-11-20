@@ -40,3 +40,17 @@ test('every /app link written into a page leads to a page that exists', () => {
     }
     assert.deepEqual([...new Set(dead)], []);
 });
+
+test('Music association paths map to existing native screens with the intended auth boundary', async () => {
+    const { mapAppLink } = await import('../apps/mobile/src/lib/appLinks.ts');
+    const { APP_LINK_PATHS } = await import('../lib/mobileAppLinks.js');
+    for (const [web, expected, file, association] of [
+        [`/music/tracks/${'a'.repeat(24)}`, `/music/track/${'a'.repeat(24)}`, '(app)/music/track/[slug].tsx', '/music/tracks/*'],
+        ['/music/creators/artist_one', '/music/creator/artist_one', '(app)/music/creator/[handle].tsx', '/music/creators/*'],
+        [`/listen/${'A'.repeat(43)}`, `/music/listen/${'A'.repeat(43)}`, 'music/listen/[token].tsx', '/listen/*'],
+    ]) {
+        assert.ok(APP_LINK_PATHS.includes(association));
+        assert.equal(mapAppLink(`https://veyrnox.ai${web}`), expected);
+        assert.ok(statSync(join(ROOT, 'apps/mobile/src/app', file)).isFile());
+    }
+});

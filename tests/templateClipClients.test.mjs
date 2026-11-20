@@ -44,7 +44,7 @@ for (const clip of [{ id, model: catalog[0].id, credits: 85, durationSeconds: 5 
   assert.equal(request.templateClip, id); assert.equal(request.modelId, clip.model); assert.equal(request.durationSeconds, 5); assert.equal(request.prompt, clipPrompt.TEMPLATE_CLIP_PROMPT);
   let wire;
   const { mediaApi } = load('apps/mobile/src/lib/media.ts', {
-    './network': { ensureOnline: async () => {} }, './aiConsentStore': { aiConsent: { ensure: async () => {}, hasAgreed: async () => true } },
+    './appCache': { getCacheUser: () => 'owner' }, './network': { ensureOnline: async () => {} }, './aiConsentStore': { aiConsent: { ensure: async () => {}, hasAgreed: async () => true } },
     './celebrate': { noteLocalSubmission() {} }, './generationProgress': { noteJobStarted() {} }, './analytics/generations': { noteGenerationSubmitted: async () => {} },
   });
   await mediaApi({ request: async (_path, init) => { wire = JSON.parse(init.body); return { job_id: 'job' }; } }).createGeneration({ ...request, idempotencyKey: 'mobile-proof' });

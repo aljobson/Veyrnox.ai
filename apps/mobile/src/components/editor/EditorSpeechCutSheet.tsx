@@ -1,3 +1,4 @@
+import type { DocumentApplyResult } from '../../lib/editorDocumentGate';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { randomUUID } from 'expo-crypto';
@@ -15,7 +16,7 @@ import { useReducedMotion } from '../ui/useReducedMotion';
 import { Text } from '../ui/Text';
 import { colors, ds, text, tokensForScheme, getAppearance, resolveScheme } from '../../theme';
 type Snapshot = { timeline: Timeline; freshness: Freshness; selection: Selection | null };
-type Props = { api: ApiClient; quote: SpeechQuote; mode: SpeechMode; snapshot(): Snapshot; apply(next: Timeline, expected: Freshness): boolean; onClose(): void; onUnavailable(): void };
+type Props = { api: ApiClient; quote: SpeechQuote; mode: SpeechMode; snapshot(): Snapshot; apply(next: Timeline, expected: Freshness): DocumentApplyResult; onClose(): void; onUnavailable(): void };
 type Phase = 'quoting' | 'idle' | 'queued' | 'transcribing' | 'planning' | 'preview' | 'error' | 'pending';
 export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot, apply, onClose, onUnavailable }: Props) {
     const [opening] = useState(snapshot), [selected, setSelected] = useState(opening.selection), [quote, setQuote] = useState(initialQuote);
@@ -86,9 +87,14 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
     const kept = keptAfterRemovals(removals.filter((_, i) => checked[i]), start, end);
     const next = target && phase === 'preview' ? applySpeechRanges(opening.timeline, target, kept) : null;
     const commit = () => {
-        if (!next || !captured.current || !sameRevision(captured.current.freshness, snapshot().freshness) || !apply(next, captured.current.freshness)) {
+        if (!next || !captured.current) return;
+        if (!sameRevision(captured.current.freshness, snapshot().freshness)) {
             setMessage(t('editorAi.stale')); setPhase('error'); return;
-        } onClose();
+        }
+        const result = apply(next, captured.current.freshness);
+        if (result.status === 'refused') { setMessage(t(`editorEditGate.${result.reason}`)); return; }
+        if (result.status === 'stale') { setMessage(t('editorAi.stale')); return; }
+        if (result.status === 'accepted') onClose();
     };
     const button = (label: string, action: () => void, disabled = false) => <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={action} style={[styles.button, touchTarget, disabled && styles.disabled]}><Text style={styles.action}>{label}</Text></Pressable>;
     const stamp = (r: SpeechRange) => `${r.start.toFixed(2)}–${r.end.toFixed(2)} s`;

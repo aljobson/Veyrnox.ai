@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { exportCopy, exportDurations, exportError, exportFeature, exportIdentity, exportSourceLink, freezeExport, renderStatus, sendExportAttempt } from '../src/lib/editorServerExport';
+import { SERVER_PLAIN_TEXT_STYLE, exportCopy, exportDurations, exportError, exportFeature, exportIdentity, exportSourceLink, freezeExport, renderStatus, sendExportAttempt } from '../src/lib/editorServerExport';
 import { DEFAULT_TEXT_STYLE, emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import type { ProjectDocument } from '../src/lib/editorBridge';
 import { probeDuration } from '../src/lib/editorMediaDuration';
@@ -87,5 +87,15 @@ test('neutral fade, pan and reverse defaults written by trim/fit are not sent, r
 });
 test('the unsupported message names the audio setting', () => {
     const error = new ApiError(422, 'editor_render_unsupported', { feature: 'fadeIn' });
-    expect(exportError(error)).toMatch(/Audio$/);
+    expect(exportError(error)).toBe("Phone export can't include audio settings yet.");
+});
+
+test('plain export style is independent of authoring defaults and preserves web styling', () => {
+    expect(SERVER_PLAIN_TEXT_STYLE).toEqual(DEFAULT_TEXT_STYLE); expect(Object.isFrozen(SERVER_PLAIN_TEXT_STYLE)).toBe(true);
+    const saved = fixture();
+    const { TEXT_DEFAULTS } = require('../../../app/veyrnox/_lib/editorSequenceValidation.mjs');
+    (saved.timeline as Timeline).text[0].style = { ...TEXT_DEFAULTS };
+    expect((exportCopy(saved, {}).document.timeline as Timeline).text[0].style).toEqual(TEXT_DEFAULTS);
+    (saved.timeline as Timeline).text[0].style = { ...DEFAULT_TEXT_STYLE };
+    expect((exportCopy(saved, {}).document.timeline as Timeline).text[0]).not.toHaveProperty('style');
 });

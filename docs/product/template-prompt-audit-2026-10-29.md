@@ -33,7 +33,7 @@ a hash-only fixture prevents them returning in served fields.
 The owner explicitly requires the complete exact prompt to be handed to the
 existing generation route even when source slots cannot be filled. No copy-only
 blocking or limit increase is introduced. The Syntx routing correction follows the existing Seedance importer precedent. Existing required-upload,
-price and consent checks remain. Audit-compatible: **285**; incompatible: **599**.
+price and consent checks remain. Audit-compatible: **264**; incompatible: **620**.
 The previous stage had 244 compatible and 423 incompatible public exact prompts.
 
 | Constraint | Public exact prompts |

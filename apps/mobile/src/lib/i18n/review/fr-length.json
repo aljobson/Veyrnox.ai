@@ -1,5 +1,179 @@
 [
   {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "Couleur hexadécimale de {label}",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Préréglage de vitesse",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorTools.pulse",
+    "english": "Pulse",
+    "translation": "Pulsation",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Personnalisé",
+    "ratio": 2
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Durée de l’image figée",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorTools.updated",
+    "english": "Speed edit applied.",
+    "translation": "Modification de vitesse appliquée.",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Ajouter un point de vitesse",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.curveApply",
+    "english": "Apply speed curve",
+    "translation": "Appliquer la courbe de vitesse",
+    "ratio": 1.76
+  },
+  {
+    "id": "editorExportRefusal.speed",
+    "english": "Phone export can't include speed changes yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les changements de vitesse.",
+    "ratio": 2.02
+  },
+  {
+    "id": "editorExportRefusal.audio",
+    "english": "Phone export can't include audio settings yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les réglages audio.",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorExportRefusal.motion",
+    "english": "Phone export can't include motion settings yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les réglages de mouvement.",
+    "ratio": 1.91
+  },
+  {
+    "id": "editorExportRefusal.animation",
+    "english": "Phone export can't include animation yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les animations.",
+    "ratio": 1.93
+  },
+  {
+    "id": "editorExportRefusal.colour",
+    "english": "Phone export can't include colour adjustments or filters yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les réglages de couleur ou les filtres.",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorExportRefusal.crop",
+    "english": "Phone export can't include crop or fit settings yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les réglages de recadrage ou d’ajustement.",
+    "ratio": 2.04
+  },
+  {
+    "id": "editorExportRefusal.effects",
+    "english": "Phone export can't include effects yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les effets.",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorExportRefusal.blend",
+    "english": "Phone export can't include blend settings yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les réglages de fusion.",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorExportRefusal.background",
+    "english": "Phone export can't include custom backgrounds yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les arrière-plans personnalisés.",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorExportRefusal.masks",
+    "english": "Phone export can't include masks yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les masques.",
+    "ratio": 2.05
+  },
+  {
+    "id": "editorExportRefusal.smart",
+    "english": "Phone export can't include smart picture settings yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les réglages d’image intelligente.",
+    "ratio": 1.81
+  },
+  {
+    "id": "editorExportRefusal.transitions",
+    "english": "Phone export can't include these transitions yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge ces transitions.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorExportRefusal.text",
+    "english": "Phone export can't include text styling yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge la mise en forme du texte.",
+    "ratio": 2.05
+  },
+  {
+    "id": "editorExportRefusal.captions",
+    "english": "Phone export can't include captions or word timing yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les sous-titres ou le minutage des mots.",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorExportRefusal.position",
+    "english": "Phone export can't include text positioning yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge le positionnement du texte.",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorExportRefusal.fonts",
+    "english": "Phone export can't include custom fonts yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les polices personnalisées.",
+    "ratio": 2.07
+  },
+  {
+    "id": "editorExportRefusal.images",
+    "english": "Phone export can't include images or graphics yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les images ou les graphismes.",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorExportRefusal.originalAudio",
+    "english": "Phone export can't include original audio yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge l’audio d’origine.",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorExportRefusal.assets",
+    "english": "Phone export can't include project media yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les médias du projet.",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorExportRefusal.groups",
+    "english": "Phone export can't include grouped clips yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les clips groupés.",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorExportRefusal.unknown",
+    "english": "Phone export can't include one of this project's edits yet.",
+    "translation": "L’exportation depuis un téléphone ne prend pas encore en charge l’une des modifications de ce projet.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Turquoise",
@@ -5424,6 +5598,30 @@
     "ratio": 2.22
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Ne plus suivre",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublic.saved",
+    "english": "Saved.",
+    "translation": "Enregistré.",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicPublic.reaction.wow",
+    "english": "Wow",
+    "translation": "Waouh",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Chaud",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.title",
     "english": "Beat maker",
     "translation": "Créateur de beats",
@@ -5578,6 +5776,258 @@
     "english": "Checkpoint",
     "translation": "Point de sauvegarde",
     "ratio": 1.9
+  },
+  {
+    "id": "speech.addCredits",
+    "english": "Add credits",
+    "translation": "Ajouter des crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculine",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
+    "ratio": 2
+  },
+  {
+    "id": "speech.emotion.angry",
+    "english": "Angry",
+    "translation": "En colère",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.groans",
+    "english": "Groan",
+    "translation": "Gémissement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Halètement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.inhale",
+    "english": "Inhale",
+    "translation": "Inspiration",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "Expiration",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "Sursaut",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Reniflement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "Ébrouement",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Claquement de lèvres",
+    "ratio": 2.22
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Fredonnement",
+    "ratio": 4
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Sifflement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.sneezes",
+    "english": "Sneeze",
+    "translation": "Éternuement",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.tone.Warm",
+    "english": "Warm",
+    "translation": "Chaleureuse",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Avec empattement",
+    "ratio": 3.2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Police personnalisée",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Décalage horizontal de l’ombre",
+    "ratio": 3.75
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Décalage vertical de l’ombre",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Entrée",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Sortie",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.apply",
+    "english": "Apply",
+    "translation": "Appliquer",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "Citation avec empattement",
+    "ratio": 2.27
+  },
+  {
+    "id": "editorText.preset7",
+    "english": "Warm label",
+    "translation": "Étiquette chaleureuse",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Glisser vers la gauche",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Glisser vers la droite",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Glisser vers le haut",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Glisser vers le bas",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName9",
+    "english": "Wipe from left",
+    "translation": "Balayage depuis la gauche",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorText.animationName10",
+    "english": "Wipe from right",
+    "translation": "Balayage depuis la droite",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.animationName11",
+    "english": "Wipe from top",
+    "translation": "Balayage depuis le haut",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorText.loopName1",
+    "english": "Float",
+    "translation": "Flottement",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName2",
+    "english": "Pulse",
+    "translation": "Pulsation",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.loopName3",
+    "english": "Turn",
+    "translation": "Rotation",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Balancement",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.loopName6",
+    "english": "Wobble",
+    "translation": "Oscillation",
+    "ratio": 1.83
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Utiliser pour la synchronisation labiale",
+    "ratio": 2.5
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "Utiliser {name} pour la synchronisation labiale",
+    "ratio": 2.04
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirer la publication",
+    "ratio": 2.44
+  },
+  {
+    "id": "musicPublication.comments",
+    "english": "Allow comments",
+    "translation": "Autoriser les commentaires",
+    "ratio": 1.86
+  },
+  {
+    "id": "musicPublication.remixes",
+    "english": "Allow remixes",
+    "translation": "Autoriser les remixes",
+    "ratio": 1.62
   },
   {
     "id": "beat.view.song",

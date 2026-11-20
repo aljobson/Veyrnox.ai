@@ -1,5 +1,89 @@
 [
   {
+    "id": "editorTools.speed",
+    "english": "Speed",
+    "translation": "Velocidade",
+    "ratio": 2
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Predefinição de velocidade",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Duração do quadro congelado",
+    "ratio": 2.08
+  },
+  {
+    "id": "editorTools.updated",
+    "english": "Speed edit applied.",
+    "translation": "Alteração de velocidade aplicada.",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Adicionar ponto de velocidade",
+    "ratio": 1.93
+  },
+  {
+    "id": "editorExportRefusal.speed",
+    "english": "Phone export can't include speed changes yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir alterações de velocidade.",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorExportRefusal.audio",
+    "english": "Phone export can't include audio settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de áudio.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorExportRefusal.motion",
+    "english": "Phone export can't include motion settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de movimento.",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorExportRefusal.crop",
+    "english": "Phone export can't include crop or fit settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de corte ou ajuste.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorExportRefusal.blend",
+    "english": "Phone export can't include blend settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de mesclagem.",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorExportRefusal.masks",
+    "english": "Phone export can't include masks yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir máscaras.",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorExportRefusal.smart",
+    "english": "Phone export can't include smart picture settings yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir configurações de imagem inteligente.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorExportRefusal.fonts",
+    "english": "Phone export can't include custom fonts yet.",
+    "translation": "A exportação pelo celular ainda não permite incluir fontes personalizadas.",
+    "ratio": 1.68
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Turquesa",
@@ -3384,6 +3468,24 @@
     "ratio": 1.67
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Deixar de seguir",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reply",
+    "english": "Reply",
+    "translation": "Responder",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Quente",
+    "ratio": 2
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproduzir",
@@ -3466,6 +3568,192 @@
     "english": "Checkpoint",
     "translation": "Ponto de controle",
     "ratio": 1.7
+  },
+  {
+    "id": "speech.speed",
+    "english": "Speed",
+    "translation": "Velocidade",
+    "ratio": 2
+  },
+  {
+    "id": "speech.addCredits",
+    "english": "Add credits",
+    "translation": "Adicionar créditos",
+    "ratio": 1.64
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculina",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.sighs",
+    "english": "Sigh",
+    "translation": "Suspiro",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Estalo de lábios",
+    "ratio": 1.78
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Cantarolar",
+    "ratio": 3.33
+  },
+  {
+    "id": "speech.tone.Warm",
+    "english": "Warm",
+    "translation": "Acolhedora",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.tone.Rich",
+    "english": "Rich",
+    "translation": "Encorpada",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorText.font",
+    "english": "Font",
+    "translation": "Tipo de letra",
+    "ratio": 3.25
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Com serifa",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Fonte personalizada",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorText.letterSpacing",
+    "english": "Letter spacing",
+    "translation": "Espaçamento entre letras",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorText.shadowBlur",
+    "english": "Shadow blur",
+    "translation": "Desfoque da sombra",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Deslocamento horizontal da sombra",
+    "ratio": 4.13
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Deslocamento vertical da sombra",
+    "ratio": 3.88
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Entrada",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Saída",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "Citação com serifa",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorText.preset6",
+    "english": "Typewriter",
+    "translation": "Máquina de escrever",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.preset7",
+    "english": "Warm label",
+    "translation": "Etiqueta acolhedora",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName1",
+    "english": "Fade",
+    "translation": "Desvanecer",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Deslizar à esquerda",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Deslizar para a direita",
+    "ratio": 2.09
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Deslizar para cima",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Deslizar para baixo",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Balanço",
+    "ratio": 1.75
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Usar para sincronizar lábios",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirar publicação",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.handle",
+    "english": "Creator handle",
+    "translation": "Identificador de criador",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.listen",
+    "english": "Shared song",
+    "translation": "Música compartilhada",
+    "ratio": 1.82
   },
   {
     "id": "beat.region.later",

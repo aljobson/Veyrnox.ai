@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useAssetUrl } from '../_lib/useAssetUrl';
@@ -16,7 +16,7 @@ function analysisOf(analyses, assetId) {
   return analyses?.[assetId];
 }
 
-export function SmartCutPlanner({ clips, analyses = null, disabled = false, onApply, onUndo, startOpen = false }) {
+export function SmartCutPlanner({ clips, analyses = null, disabled = false, applyRevision = 0, onApply, onUndo, startOpen = false }) {
   const { t, locale } = useI18n();
   const number = (value, options) => Number(value).toLocaleString(localeTag(locale), options);
   const [open, setOpen] = useState(startOpen);
@@ -26,6 +26,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
   const [plan, setPlan] = useState(null);
   const [view, setView] = useState('cut');
   const [notice, setNotice] = useState('');
+  const lastApplyRevision = useRef(applyRevision);
   const ready = clips.length > 0 && clips.every((clip) => Number.isFinite(Number(clip.duration)) && Number(clip.duration) > 0);
   const analysisReady = ready && analyses && clips.every((clip) => {
     if (analyses instanceof Map) return analyses.has(clip.job_id);
@@ -87,6 +88,20 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
     setNotice('');
   }
 
+  function finishApply() {
+    setPlan(null);
+    setOpen(false);
+    setNotice(t('app.smartCut.notice.applied'));
+  }
+
+  useEffect(() => {
+    if (lastApplyRevision.current === applyRevision) return;
+    lastApplyRevision.current = applyRevision;
+    setPlan(null);
+    setOpen(false);
+    setNotice(t('app.smartCut.notice.applied'));
+  }, [applyRevision, t]);
+
   function apply() {
     if (disabled) return;
     if (!smartCutPlanWithinLimits(plan)) {
@@ -105,10 +120,11 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
       out_s: segment.end,
       slow: 1,
     }));
-    onApply(nextClips);
-    setPlan(null);
-    setOpen(false);
-    setNotice(t('app.smartCut.notice.applied'));
+    if (onApply(nextClips) === false) {
+      setNotice(t('app.smartCut.notice.confirmReplace'));
+      return;
+    }
+    finishApply();
   }
 
   if (!open) {
