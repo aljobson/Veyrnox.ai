@@ -3528,6 +3528,48 @@
     "ratio": 1.73
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Desfazer",
+    "ratio": 2
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Refazer",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "beat.local.loadError",
+    "english": "Could not load saved beats. Retry loading.",
+    "translation": "Não foi possível carregar os beats salvos. Tente carregar novamente.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.cloud.error",
+    "english": "Cloud saving could not finish. Retry when ready.",
+    "translation": "Não foi possível concluir o salvamento na nuvem. Tente novamente quando puder.",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Salvamento automático",
+    "ratio": 2.63
+  },
+  {
+    "id": "beat.versions.checkpoint",
+    "english": "Checkpoint",
+    "translation": "Ponto de controle",
+    "ratio": 1.7
+  },
+  {
     "id": "speech.speed",
     "english": "Speed",
     "translation": "Velocidade",

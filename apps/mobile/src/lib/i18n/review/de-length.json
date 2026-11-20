@@ -3882,6 +3882,54 @@
     "ratio": 1.77
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Rückgängig",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Wiederholen",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "Wird gespeichert",
+    "ratio": 2.67
+  },
+  {
+    "id": "beat.local.loadError",
+    "english": "Could not load saved beats. Retry loading.",
+    "translation": "Gespeicherte Beats konnten nicht geladen werden. Versuche es erneut.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.cloud.error",
+    "english": "Cloud saving could not finish. Retry when ready.",
+    "translation": "Die Cloud-Speicherung konnte nicht abgeschlossen werden. Versuche es erneut, wenn du bereit bist.",
+    "ratio": 2.02
+  },
+  {
+    "id": "beat.conflict.busy",
+    "english": "Saving your choice…",
+    "translation": "Deine Auswahl wird gespeichert…",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Automatische Speicherung",
+    "ratio": 3
+  },
+  {
     "id": "speech.speed",
     "english": "Speed",
     "translation": "Geschwindigkeit",

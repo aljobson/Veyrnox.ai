@@ -2100,6 +2100,42 @@
     "ratio": 2.33
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "पहले जैसा करें",
+    "ratio": 3.5
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "फिर से करें",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "सहेजा जा रहा है",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.cloud.checking",
+    "english": "Checking cloud saving…",
+    "translation": "क्लाउड में सहेजने की उपलब्धता जाँची जा रही है…",
+    "ratio": 2.09
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "अपने आप सहेजा गया",
+    "ratio": 2.13
+  },
+  {
     "id": "speech.volume",
     "english": "Volume",
     "translation": "आवाज़ की मात्रा",
