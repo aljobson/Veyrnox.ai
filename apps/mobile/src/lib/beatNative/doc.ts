@@ -11,6 +11,8 @@ import * as time from '../../../../../app/veyrnox/_lib/music/beat/beatTime.mjs';
 // @ts-ignore see above
 import * as instruments from '../../../../../lib/musicInstruments.js';
 
+import type { TakeAsset, TakeGroup } from './takeShared';
+
 export type PadId = 'kick' | 'snare' | 'hat' | 'openhat' | 'clap' | 'tom' | 'rim' | 'crash';
 export type Hit = [step: number, velocity: number];
 export type BeatRegionDoc = {
@@ -19,10 +21,10 @@ export type BeatRegionDoc = {
     fadeOut?: { startBeforeEndSec: number; endBeforeEndSec: number } | null; reverse?: boolean;
 };
 export type BeatCycle = { on: boolean; start: number; end: number };
-export type BeatTrackDoc = { id: string; name: string; kind?: 'drums' | 'audio' | 'midi'; kit?: string; mute: boolean; solo: boolean; gain: number; pan: number; regions: BeatRegionDoc[] };
+export type BeatTrackDoc = { id: string; name: string; kind?: 'drums' | 'audio' | 'midi'; kit?: string; mute: boolean; solo: boolean; gain: number; pan: number; takeGroups?: TakeGroup[]; regions: BeatRegionDoc[] };
 export type BeatDoc = {
     kind: string; version: number; id: string; title: string; createdAt: number; updatedAt: number;
-    view: 'pattern' | 'song'; cycle: BeatCycle; assets?: Record<string, { name: string }>; clips?: Record<string, { name: string }>;
+    view: 'pattern' | 'song'; cycle: BeatCycle; assets?: Record<string, TakeAsset>; clips?: Record<string, { name: string }>;
     tempo: { bpm: number }; swing: number; steps: number; currentPattern: string;
     patterns: Record<string, { rows: Partial<Record<PadId, Hit[]>> }>; tracks: BeatTrackDoc[];
 };

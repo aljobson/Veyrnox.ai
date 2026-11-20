@@ -2034,6 +2034,24 @@
     "ratio": 1.67
   },
   {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "تجهيز {track} للتسجيل",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatTakes.latency",
+    "english": "Latency: {ms} ms",
+    "translation": "زمن التأخير: {ms} مللي ثانية",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatTakes.crossfade",
+    "english": "Crossfade: {ms} ms",
+    "translation": "تلاشي متداخل: {ms} مللي ثانية",
+    "ratio": 1.61
+  },
+  {
     "id": "speech.volume",
     "english": "Volume",
     "translation": "مستوى الصوت",

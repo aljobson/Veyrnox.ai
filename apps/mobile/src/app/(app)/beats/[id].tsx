@@ -1,3 +1,10 @@
+import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
+import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
+import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
+import { addAudioTrack } from '../../../lib/beatNative/takeShared';
+import { replacementUnderway, subscribeReplacements } from '../../../lib/beatNative/recordingFinalizers';
+import type { RecordingEdit } from '../../../lib/beatNative/takeShared';
+import type { TakeRecording } from '../../../lib/beatNative/takeRecording';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -31,6 +38,7 @@ export default function BeatEditor() {
     const s = useThemedStyles(sheets);
     const history = useRef<History | null>(null);
     if (doc && history.current?.present !== doc) history.current = createHistory(doc);
+    const recordingRef = useRef<TakeRecording | null>(null);
     const audio = useRef<BeatAudio | null>(null);
     const manualRun = useRef(false);
     const docRef = useRef<BeatDoc | undefined>(doc);
@@ -43,16 +51,17 @@ export default function BeatEditor() {
     const [said, setSaid] = useState<string | null>(null);
     useAnnouncement(notice ?? said, { everywhere: true });
     useLocalBeatLifecycle();
-    useEffect(() => () => { void audio.current?.close(); audio.current = null; }, []);
+    useEffect(() => () => { void recordingRef.current?.finishAndDisarm().finally(() => { void audio.current?.close(); audio.current = null; }); }, []);
 
     // The native module is touched only when the person first asks for sound.
     const engine = useCallback((): BeatAudio | null => {
         if (audio.current) return audio.current;
         try { audio.current = createBeatAudio(); return audio.current; } catch { setNotice(t('beat.audioError')); return null; }
     }, []);
-    const apply = useCallback((operation: Edit, announce?: string) => {
+    const apply = useCallback((operation: Edit, announce?: string, options?: { recordingCommit?: boolean }) => {
         const current = docRef.current;
         if (!current) return false;
+        if ((recordingRef.current?.locked() || replacementUnderway(current.id)) && !options?.recordingCommit) { setNotice(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : 'beatTakes.locked')); return false; }
         let result;
         try { result = tryOp(current, operation); } catch { setNotice(t('beat.refused', { reason: '' })); return false; }
         if (result.refused) { setNotice(t('beat.refused', { reason: result.refused })); return false; }
@@ -64,8 +73,22 @@ export default function BeatEditor() {
         setNotice(null); setSaid(announce ?? null); return true;
     }, []);
 
+    const currentDoc = useCallback(() => docRef.current!, []);
+    const recordingEdit = useCallback<RecordingEdit>((edit, options) => apply(edit, options?.message ?? t('beatTakes.recordingSaved'), options), [apply]);
+    const takes = useTakeRecording(String(id), doc, { current: currentDoc, audio: engine, edit: recordingEdit, t });
+    recordingRef.current = takes.controller;
+    const wasRecording = useRef(false);
+    useEffect(() => {
+        const active = ['recording', 'finishing'].includes(takes.view.status);
+        if (active || wasRecording.current) setPlaying(active);
+        wasRecording.current = active;
+    }, [takes.view.status]);
+    const replacing = useSyncExternalStore(subscribeReplacements, () => replacementUnderway(String(id)), () => false);
+    const locked = takes.controller.locked() || replacing;
+    useEffect(() => { if (!replacing) setNotice(message => message === t('beatTakes.replacing') ? null : message); }, [replacing]);
+
     const navigateHistory = (direction: 'undo' | 'redo') => {
-        if (!history.current) return;
+        if (!history.current || recordingRef.current?.locked() || replacementUnderway(String(id))) return;
         const next = travel(history.current, direction);
         if (next === history.current) return;
         if (!putBeat(next.present)) { setNotice(t('beat.local.busy')); return; }
@@ -95,11 +118,13 @@ export default function BeatEditor() {
         <ScrollView scrollEnabled={!held} style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: doc.title }} />
             <BeatSaveControls id={doc.id} apply={apply} />
-            <Button label={t('beat.undo')} disabled={!history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
-            <Button label={t('beat.redo')} disabled={!history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
+            <Button label={t('beat.undo')} disabled={locked || !history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
+            <Button label={t('beat.redo')} disabled={locked || !history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
+            {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
+            <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing} />
             {notice ? <MusicNotice message={notice} /> : null}
             <View style={s.transport} accessibilityLabel={t('beat.transport')}>
-                <Button label={playing ? t('beat.stop') : t('beat.play')} onPress={() => void (playing ? stop() : play())} containerStyle={s.play} />
+                <Button label={playing ? t('beat.stop') : t('beat.play')} disabled={locked} onPress={() => void (playing ? stop() : play())} containerStyle={s.play} />
                 <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
                     <View style={s.stepper}>
                         <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
@@ -121,16 +146,19 @@ export default function BeatEditor() {
             </>}
             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.mixer')}</Text>
             {doc.tracks.map((track, i) => (
-                <MixerStrip key={track.id} track={track} index={i} canRemove={doc.tracks.length > 1}
+                <View key={track.id}><MixerStrip track={track} index={i} canRemove={doc.tracks.length > 1}
                     onGain={v => mix(track.id, d => setTrackGain(d, track.id, Math.round(v * 100) / 100))}
                     onPan={v => mix(track.id, d => setTrackPan(d, track.id, v))}
                     onMute={v => mix(track.id, d => setTrackMute(d, track.id, v), t(v ? 'beat.muted' : 'beat.unmuted', { track: nameOf(i) }))}
                     onSolo={v => mix(track.id, d => setTrackSolo(d, track.id, v), t(v ? 'beat.soloOn' : 'beat.soloOff', { track: nameOf(i) }))}
                     onKit={kit => apply(d => setTrackKit(d, track.id, kit))}
                     onRemove={() => apply(d => removeTrack(d, track.id))} />
+                    <BeatTakeLanes doc={doc} track={track} apply={apply} locked={locked} />
+                </View>
             ))}
             <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
                 onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
+            <Button variant="secondary" label={t('beatTakes.addTrack')} disabled={locked || doc.tracks.length >= MAX_TRACKS} onPress={() => apply(d => addAudioTrack(d))} />
             {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
         </ScrollView>
     );

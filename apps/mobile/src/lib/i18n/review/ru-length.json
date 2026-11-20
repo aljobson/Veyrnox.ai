@@ -3738,6 +3738,24 @@
     "ratio": 1.7
   },
   {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "Подготовить {track} к записи",
+    "ratio": 2.55
+  },
+  {
+    "id": "beatTakes.locked",
+    "english": "Stop recording to edit",
+    "translation": "Остановите запись для редактирования",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatTakes.choose",
+    "english": "Use {name}",
+    "translation": "Использовать {name}",
+    "ratio": 1.9
+  },
+  {
     "id": "speech.pitch",
     "english": "Pitch",
     "translation": "Высота тона",

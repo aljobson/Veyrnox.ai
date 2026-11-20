@@ -11,7 +11,7 @@ import { ds } from '../../theme';
 export function BeatVersionsSheet({ sync, view, apply, onClose }: { sync: BeatCloudSync; view: SyncView; apply(edit: Edit, label?: string): boolean; onClose(): void }) {
     const [rows, setRows] = useState<BeatVersion[]>([]), [busy, setBusy] = useState(false), [error, setError] = useState(false);
     const live = useRef(true), s = useThemedStyles(sheets);
-    const allowed = !['checking', 'off', 'signed_out', 'other', 'unlinked', 'removed', 'takes'].includes(view.state);
+    const allowed = !['checking', 'off', 'signed_out', 'other', 'unlinked', 'removed'].includes(view.state);
     const load = useCallback(async () => {
         if (!allowed) return;
         const token = sync.capture(); setBusy(true); setError(false);
