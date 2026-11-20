@@ -1,5 +1,23 @@
 [
   {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "Шестнадцатеричный цвет: {label}",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorTools.pulse",
+    "english": "Pulse",
+    "translation": "Пульсация",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Длительность стоп-кадра",
+    "ratio": 1.77
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Бирюзовый",
@@ -3718,6 +3736,18 @@
     "english": "Checkpoint",
     "translation": "Контрольная точка",
     "ratio": 1.7
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Использовать для синхронизации губ",
+    "ratio": 2.13
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "Использовать {name} для синхронизации губ",
+    "ratio": 1.78
   },
   {
     "id": "musicPublication.unpublish",

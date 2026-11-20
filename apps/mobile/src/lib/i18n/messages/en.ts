@@ -78,12 +78,15 @@ import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
 import area_editorCore from './en/editorCore';
+import area_editorEditGate from './en/editorEditGate';
+import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
 import area_editorSpike from './en/editorSpike';
+import area_editorTools from './en/editorTools';
 import area_editorVoiceover from './en/editorVoiceover';
 import area_email from './en/email';
 import area_empty from './en/empty';
@@ -309,12 +312,15 @@ const catalog = {
     ...area_editor,
     ...area_editorAi,
     ...area_editorCore,
+    ...area_editorEditGate,
+    ...area_editorExportRefusal,
     ...area_editorProjects,
     ...area_editorSave,
     ...area_editorServerExport,
     ...area_editorSimple,
     ...area_editorSpeech,
     ...area_editorSpike,
+    ...area_editorTools,
     ...area_editorVoiceover,
     ...area_email,
     ...area_empty,

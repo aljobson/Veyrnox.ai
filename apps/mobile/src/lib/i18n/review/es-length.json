@@ -1,5 +1,41 @@
 [
   {
+    "id": "editorTools.speed",
+    "english": "Speed",
+    "translation": "Velocidad",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Preajuste de velocidad",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Duración del fotograma fijo",
+    "ratio": 2.08
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Añadir punto de velocidad",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorExportRefusal.assets",
+    "english": "Phone export can't include project media yet.",
+    "translation": "La exportación desde el móvil aún no admite archivos multimedia del proyecto.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Turquesa",
@@ -3490,6 +3526,12 @@
     "english": "Autosave",
     "translation": "Guardado automático",
     "ratio": 2.38
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Usar para sincronizar labios",
+    "ratio": 1.75
   },
   {
     "id": "musicPublication.unpublish",
