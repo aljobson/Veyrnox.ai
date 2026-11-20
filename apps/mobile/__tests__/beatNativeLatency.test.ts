@@ -27,8 +27,8 @@ test('hydration emits and preserves measurements written while the file read was
 
 test('an early measurement waits for hydration before publishing and preserves other devices on disk', async () => {
     const io = takeIO(), gate = deferred<string[]>(), write = jest.fn(io.write);
-    const key = 'veyrnox.beat.latency.v1';
-    io.data.set('beat-latency.json.pending', new TextEncoder().encode(JSON.stringify({ [key]: JSON.stringify({ default: { ms: 10, measuredAt: 100 }, headset: { ms: 20, measuredAt: 100 } }) })));
+    const storageName = 'veyrnox.beat.latency.v1';
+    io.data.set('beat-latency.json.pending', new TextEncoder().encode(JSON.stringify({ [storageName]: JSON.stringify({ default: { ms: 10, measuredAt: 100 }, headset: { ms: 20, measuredAt: 100 } }) })));
     const storage = createLatencyStorage({ ...io, list: () => gate.promise, write });
     writeLatency('default', 42, storage, 200);
     const flush = storage.flush();
