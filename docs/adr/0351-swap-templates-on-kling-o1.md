@@ -540,3 +540,11 @@ The route takes one element (a frontal and a crop of one person), so every templ
 Decision: the curated "Put yourself in" row drops the three scenes with a second person it carried: basketball-3, community-billboard-product-swap and community-stadium-ball-control (13 remain). The registry, the manifest and the pin are unchanged, so the three stay swappable by direct link. This is a stop-gap: the real fix is a two-element mode or a proven wording, either of which needs a paid O1 test (about $0.84 a run). 74 two-photo and 47 three-or-more-photo templates remain in the registry and can lose a person the same way.
 
 Rollback: restore the three rows in `app/veyrnox/_lib/templateSwapRow.js`.
+
+## Amendment 13 (2026-11-20): only one-photo scenes stay in the registry (410 to 289 ids)
+
+The composers send one photo and the server sends one `@Element1`; nothing checks how many people the source scene holds, so a second person is dropped (seen on basketball-3, where the opponent vanished). The registry therefore keeps only the 289 scenes the review counted as one-photo and removes the 74 two-photo and 47 three-or-more-photo ids. The gate answers `template_swap_not_found` for the removed ids, so they cannot be charged; their swap links stop working until a two-photo mode exists.
+
+The R2 manifest and its pin (`a795629b…bf28b`) are unchanged and the 411 clips stay in both buckets, so adding ids back is a registry-only change. The curated row holds 13 ids, none removed here.
+
+Rollback: restore the removed ids in `app/veyrnox/_lib/templateSwapClips.js`.
