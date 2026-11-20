@@ -6,6 +6,12 @@
     "ratio": 1.62
   },
   {
+    "id": "editorCaptionTools.treatAsCaptions",
+    "english": "Treat as captions",
+    "translation": "Traiter comme des sous-titres",
+    "ratio": 1.71
+  },
+  {
     "id": "editorCaptionTools.shareSrt",
     "english": "Share SRT",
     "translation": "Partager en SRT",

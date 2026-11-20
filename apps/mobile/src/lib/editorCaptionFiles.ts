@@ -11,7 +11,8 @@ export async function pickCaptionFile(live: () => boolean = () => true): Promise
         if (result.canceled) return null;
         const asset = result.assets[0]; file = new File(asset.uri);
         if (!live()) return null;
-        if (asset.size !== undefined && asset.size > 262144) return { refused: 'fileTooLarge' };
+        const size = asset.size ?? file.info().size;
+        if (size === undefined || !Number.isFinite(size) || size < 0 || size > 262144) return { refused: 'fileTooLarge' };
         const text = await file.text();
         return live() ? { text, name: asset.name } : null;
     } catch { return live() ? { refused: 'fileUnreadable' } : null; }

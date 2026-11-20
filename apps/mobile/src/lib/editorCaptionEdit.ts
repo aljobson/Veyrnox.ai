@@ -29,7 +29,17 @@ export function captionExport(tl: Timeline, format: 'srt' | 'vtt' | 'txt', track
         body: format === 'txt' ? transcriptText(tl, trackId) : exportCaptions(tl, format) };
 }
 const patch = (tl: Timeline, id: string, change: Partial<TextClip>) => run(() => updateSequenceClip(tl, 'text', id, change) as WebResult);
-export const captionTextEdit = (tl: Timeline, id: string, text: string) => patch(tl, id, { text });
+export const captionTextEdit = (tl: Timeline, id: string, text: string) => patch(tl, id, { text: text.slice(0, 1000) });
+export function treatAsCaptions(tl: Timeline, ids: string[]): CaptionResult {
+    if (!ids.length) return { refused: { key: 'editorEditGate.invalid' } };
+    let next = tl;
+    for (const id of new Set(ids)) {
+        const edit = patch(next, id, { caption: true });
+        if ('refused' in edit) return edit;
+        next = edit.timeline;
+    }
+    return { timeline: next };
+}
 export function wordEdit(tl: Timeline, id: string, index: number, key: 'start' | 'len', frames: number): CaptionResult {
     const cue = tl.text.find(c => c.id === id);
     if (!cue?.words?.[index]) return { refused: { key: 'editorCaptionTools.wordMismatch' } };

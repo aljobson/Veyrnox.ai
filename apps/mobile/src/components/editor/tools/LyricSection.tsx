@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, TextInput } from 'react-native';
 import { lyricSourceCaptions } from '../../../../../../app/veyrnox/_lib/editorLyrics.mjs';
-import { t, rawText } from '../../../lib/i18n';
+import { t, plural, rawText } from '../../../lib/i18n';
 import type { Timeline, TextClip } from '../../../lib/nativeEditorModel';
 import { touchTarget } from '../../../lib/a11y';
 import { Action } from '../EditorControls';
@@ -19,7 +19,7 @@ export function LyricSection({ timeline, actions }: { timeline: Timeline; action
         <TextInput accessibilityLabel={rawText(t('editorCaptionTools.lyrics'))} multiline maxLength={16000} value={lyrics} onChangeText={setLyrics}
             style={[styles.input, styles.inputMultiline, touchTarget]} />
         <Text style={styles.panelDetail}>{t('editorCaptionTools.lyricsHelp')}</Text>
-        <Text style={styles.panelDetail}>{sources.length ? t('editorCaptionTools.sources', { count: sources.length }) : t('editorCaptionTools.lyricsNoTiming')}</Text>
+        <Text style={styles.panelDetail}>{sources.length ? plural('editorCaptionTools.sources', sources.length) : t('editorCaptionTools.lyricsNoTiming')}</Text>
         <Action label={t('editorCaptionTools.align')} disabled={!sources.length || !lyrics.trim() || actions.busy} onPress={() => actions.align(lyrics, sourceId)} />
     </>;
 }

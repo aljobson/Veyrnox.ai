@@ -3,7 +3,7 @@ import { Text, TextInput, View } from 'react-native';
 import { transcriptEntries, transcriptRange } from '../../../../../../app/veyrnox/_lib/editorTranscript.mjs';
 import { captionRefusal } from '../../../lib/editorCaptionErrors';
 import type { TranscriptSelection } from '../../../lib/editorCaptionEdit';
-import { t, rawText, formatNumber } from '../../../lib/i18n';
+import { t, plural, rawText, formatNumber } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import type { Timeline } from '../../../lib/nativeEditorModel';
 import { touchTarget } from '../../../lib/a11y';
@@ -20,8 +20,7 @@ export function TranscriptSection({ timeline, actions }: { timeline: Timeline; a
     const entries = transcriptEntries(timeline, trackId) as Entry[];
     const range = transcriptRange(timeline, selection, trackId);
     const error = 'error' in range ? captionRefusal(range.error) : null;
-    const status = error ? t(error.key, error.params) : t('editorCaptionTools.range', {
-        count: range.entries!.length, start: formatNumber(range.start! / timeline.fps, 2), end: formatNumber(range.end! / timeline.fps, 2),
+    const status = error ? t(error.key, error.params) : plural('editorCaptionTools.range', range.entries!.length, { start: formatNumber(range.start! / timeline.fps, 2), end: formatNumber(range.end! / timeline.fps, 2),
     });
     useAnnouncement(selection ? status : null);
     const single = selection?.first === selection?.last ? entries.find(w => w.key === selection?.first && w.wordIndex !== null) : undefined;

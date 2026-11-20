@@ -118,7 +118,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const textActions = useTextActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         frameStore, setSelection, setSelections, setTool });
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
-        setSelection, setSelections, frameStore, beginImport, currentDocument });
+        setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const total = framesIn(timeline); const selected = clipAt(timeline, selection);

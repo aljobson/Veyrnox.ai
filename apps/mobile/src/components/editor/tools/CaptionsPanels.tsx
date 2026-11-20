@@ -26,14 +26,18 @@ export function CaptionsPanel({ timeline, selection, selected, captionActions, a
             selectClip({ track: 'text', id: item.id }); setFrame(item.start); }} />)}
     </>;
 }
-export function TranscriptPanel({ timeline, selection, selectClip, setFrame, captionActions }: Pick<ToolPanelProps, 'timeline' | 'selection' |
-    'selectClip' | 'setFrame' | 'captionActions'>) {
+export function TranscriptPanel({ timeline, selection, selections, selectClip, setFrame, captionActions }: Pick<ToolPanelProps, 'timeline' | 'selection' |
+    'selections' | 'selectClip' | 'setFrame' | 'captionActions'>) {
+    const legacy = timeline.text.length > 0 && !timeline.text.some(c => c.caption);
+    const chosen = (selections.length ? selections : selection ? [selection] : []).filter(c => c.track === 'text').map(c => c.id);
     return <>
         <PanelHeading title={t('editor.transcript')} detail={t('editor.cues', { value1: timeline.text.length })} />
         {captionActions && timeline.text.some(c => c.caption) ? <TranscriptSection timeline={timeline} actions={captionActions} />
-            : !captionActions && timeline.text.length ? [...timeline.text].sort((a, b) => a.start - b.start).map((item) => <TranscriptRow key={item.id} item={item} fps={timeline.fps}
+            : timeline.text.length ? [...timeline.text].sort((a, b) => a.start - b.start).map((item) => <TranscriptRow key={item.id} item={item} fps={timeline.fps}
             selected={selection?.track
             === 'text' && selection.id === item.id} onPress={() => { selectClip({ track: 'text', id: item.id }); setFrame(item.start); }} />) : <EmptyPanel
             title={t('editor.notranscriptyet')} body={t('editor.captionandtextcuesbecomeatime')} />}
+        {legacy && captionActions ? <Action label={t('editorCaptionTools.treatAsCaptions')} disabled={!chosen.length || captionActions.busy}
+            onPress={() => captionActions.treatAsCaptions(chosen)} /> : null}
     </>;
 }
