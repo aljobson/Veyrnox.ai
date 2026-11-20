@@ -1,3 +1,4 @@
+import { nearLimit } from './fixtures/editorNearLimit';
 import { act } from 'react';
 import { AccessibilityInfo, AppState, Platform } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -103,11 +104,17 @@ test('existing three-argument imports still fall back to guessed length when pro
     expect(seconds).toBeNull(); expect(mockSession.localMediaUris['l-another']).toBeUndefined();
 });
 
-test('document gate refusal preserves selection, take and document without announcing success', async () => {
+test.each(['full', 'tooLarge'] as const)('document gate refusal preserves selection, take and document without announcing success (%s)', async reason => {
     const timeline = emptyTimeline();
     for (let i = 0; i < 40; i++) timeline.media[`m${i}`] = { id: `m${i}`, kind: 'video', frames: 120, name: 'Source', hasAudio: true, width: 640, height: 360 };
     mockHead.document = { ...mockHead.document, timeline, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
+    if (reason === 'tooLarge') mockHead.document = { ...nearLimit(false), project_id: projectId };
     await open(); const before = mockSession.currentDocument(); await take(); await press(t('editorVoiceover.add'));
+    if (reason === 'tooLarge') {
+        expect(mockSession.problem).toBe(t('editorEditGate.tooLarge'));
+        expect(root.container.queryAll(node => node.children.includes(t('editorEditGate.tooLarge'))).length).toBeGreaterThan(0);
+    }
+    if (reason === 'tooLarge') expect(root.container.queryAll(node => node.children.includes(t('editorEditGate.invalid')))).toHaveLength(0);
     expect(mockSession.currentDocument()).toEqual(before); expect(mockSession.selection).toBeNull();
     expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false); expect(mockSheetMounted).toBe(true);
     expect(mockDiscard).not.toHaveBeenCalledWith('file://take.wav');

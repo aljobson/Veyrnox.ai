@@ -32,7 +32,7 @@ jest.mock('../src/components/chat/MakePanel', () => ({ MakePanel: () => null }))
 jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: any) => {
     mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args);
     const mark = mockSession.markDocument;
-    return { ...mockSession, markDocument: (...values: Parameters<typeof mark>) => mockRefuse ? false : mark(...values) };
+    return { ...mockSession, markDocument: (...values: Parameters<typeof mark>) => mockRefuse ? { status: 'refused', reason: 'invalid' } : mark(...values) };
 } }));
 const seed = (): Timeline => ({ ...emptyTimeline(), seq: 1, media: { [`j-${jobId}`]: { id: `j-${jobId}`, kind: 'video', name: 'My private take', frames: 360, hasAudio: true } },
     video: [{ id: 'v1', mediaId: `j-${jobId}`, start: 0, in: 0, len: 360, trackId: 'video-0', rate: 1, volume: 1, transition: 0 }] });

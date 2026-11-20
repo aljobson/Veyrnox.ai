@@ -1,3 +1,4 @@
+import { nearLimit } from './fixtures/editorNearLimit';
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
 import { act } from 'react';
 import { AccessibilityInfo, Platform, Alert, AppState, Text, View, Pressable } from 'react-native';
@@ -14,6 +15,7 @@ import { formatTimecode } from '../src/lib/editorTimeline';
 
 void [Text, View, Pressable];
 const projectId = '11111111-1111-1111-1111-111111111111', jobId = '22222222-2222-2222-2222-222222222222';
+let mockCommitNotLive = false;
 let mockOwner = 'owner', mockSession: ReturnType<typeof useFullEditorSession>, mockMake: any;
 const mockListeners = new Set<() => void>(), mockStorage = new Map<string, string>();
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() }, mockRequest = jest.fn(), mockPut = jest.fn();
@@ -21,7 +23,11 @@ const mockApi = { request: mockRequest }, mockBegin = () => { const owner = mock
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => { mockListeners?.add(fn); return () => mockListeners?.delete(fn); }, userDocStorage: {
     get: async (key: string) => mockStorage.get(key) ?? null, set: async (key: string, value: string) => { mockStorage.set(key, value); }, remove: async (key: string) => { mockStorage.delete(key); }, keys: async () => [...mockStorage.keys()],
 } }));
-jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: any) => { mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args); return mockSession; } }));
+jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: any) => {
+    mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args);
+    return { ...mockSession, markDocument: (...values: Parameters<typeof mockSession.markDocument>) =>
+        mockCommitNotLive ? { status: 'not-live' } : mockSession.markDocument(...values) };
+} }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
@@ -73,7 +79,7 @@ function gesture(edge?: 'in' | 'out') {
 }
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks();
-    mockOwner = 'owner'; mockMake = null; mockStorage.clear(); polls = new Map(); active = new Set();
+    mockCommitNotLive = false; mockOwner = 'owner'; mockMake = null; mockStorage.clear(); polls = new Map(); active = new Set();
     head = { revision: 4, document: { schema_version: 3, project_id: projectId, timeline: emptyTimeline() } };
     jest.mocked(readDraft).mockReset().mockResolvedValue(null);
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
@@ -294,13 +300,34 @@ test('an unexpected reconcile rejection stays handled and the next trigger can r
     await foreground(); expect(waitForJob).toHaveBeenCalledTimes(1); await finish(); expect(generated()).toHaveLength(1);
 });
 
-test('a refused generation stays pending and can be retried without a placed acknowledgement', async () => {
+test.each(['full', 'tooLarge'] as const)('a refused generation stays pending and can be retried without a placed acknowledgement (%s)', async reason => {
     const timeline = emptyTimeline();
     for (let i = 0; i < 40; i++) timeline.media[`m${i}`] = { id: `m${i}`, kind: 'video', frames: 120, name: 'Source', hasAudio: true, width: 640, height: 360 };
     head.document = { ...head.document, timeline, brief: '', canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
+    if (reason === 'tooLarge') head.document = { ...nearLimit(false), project_id: projectId };
     await open(); const before = mockSession.currentDocument(); await generate(); await finish();
+    if (reason === 'tooLarge') {
+        expect(mockSession.problem).toBe(t('editorEditGate.tooLarge'));
+        expect(root.container.queryAll(node => node.children.includes(t('editorEditGate.tooLarge'))).length).toBeGreaterThan(0);
+    }
+    if (reason === 'tooLarge') expect(hasText(t('editorEditGate.invalid'))).toBe(false);
     expect(generated()).toHaveLength(0); expect(mockSession.currentDocument()).toEqual(before);
     expect(mockSession.selection).toBeNull(); expect((await readPending(projectId))[0].placed).not.toBe(true);
     await act(async () => mockSession.markDocument({ ...mockSession.currentDocument()!, timeline: emptyTimeline() }));
     await press(t('editorAi.addAtPlayhead')); expect(generated()).toHaveLength(1);
+});
+
+
+test('a not-live generation commit keeps the pending item without a new refusal message', async () => {
+    await open(); await generate();
+    await act(async () => mockSession.setProblem('Existing message'));
+    mockCommitNotLive = true; await finish();
+    expect(mockSession.problem).toBe('Existing message');
+    expect(hasText(t('editorEditGate.invalid'))).toBe(false);
+    expect(hasText(t('editorEditGate.tooLarge'))).toBe(false);
+    expect(generated()).toHaveLength(0); expect(mockSession.selection).toBeNull();
+    expect((await readPending(projectId))[0].placed).not.toBe(true);
+    mockCommitNotLive = false;
+    await act(async () => mockSession.setProblem(null));
+    await foreground(); await finish(); expect(generated()).toHaveLength(1);
 });

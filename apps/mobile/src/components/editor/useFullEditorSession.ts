@@ -1,4 +1,4 @@
-import { documentProblem } from '../../lib/editorDocumentGate';
+import { documentProblem, type DocumentCommitResult } from '../../lib/editorDocumentGate';
 import { createFrameStore } from './editorFrameStore';
 import { PPF_DEFAULT, SEQUENCE_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
@@ -71,15 +71,17 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const playbackTimeline = timelineOf(document?.timeline);
     const playbackTotal = framesIn(playbackTimeline);
 
-    const commitDocument = useCallback((next: ProjectDocument, record = true, historyBase?: ProjectDocument, restoreSnapshot = false) => {
-        if (!syncRef.current?.live()) return false;
-        const candidate = mergeBackups(next);
-        const problem = documentProblem(candidate);
+    const commitDocument = useCallback((next: ProjectDocument, record = true, historyBase?: ProjectDocument, restoreSnapshot = false): DocumentCommitResult => {
+        if (!syncRef.current?.live()) return { status: 'not-live' };
+        let candidate = mergeBackups(next);
+        let problem = documentProblem(candidate);
+        // Pending metadata must not block a valid edit; retain it for a later commit or settle.
+        if (problem && documentProblem(next) === null) { candidate = next; problem = null; }
         // History can restore a previously accepted legacy snapshot, but cannot smuggle in a refused backup.
         const knownLegacy = restoreSnapshot && documentProblem(next) !== null && documentIdentity(candidate) === documentIdentity(next);
         if (problem && !knownLegacy && documentRef.current && documentProblem(documentRef.current) === null) {
             setProblem(t(`editorEditGate.${problem}`));
-            return false;
+            return { status: 'refused', reason: problem };
         }
         next = candidate;
         if (record && documentRef.current) {
@@ -94,7 +96,7 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         setDocument(next);
         syncRef.current?.changed();
         setProblem(null);
-        return true;
+        return { status: 'accepted' };
     }, [mergeBackups]);
     const markDocument = useCallback((next: ProjectDocument, record = true, historyBase?: ProjectDocument) =>
         commitDocument(next, record, historyBase), [commitDocument]);
@@ -214,7 +216,7 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         const source = direction === 'undo' ? pastRef.current : futureRef.current;
         const destination = direction === 'undo' ? futureRef.current : pastRef.current;
         const next = source.at(-1), current = documentRef.current;
-        if (!next || !current || !commitDocument(next, false, undefined, true)) return;
+        if (!next || !current || commitDocument(next, false, undefined, true).status !== 'accepted') return;
         source.pop();
         destination.push(current);
         setSelection(null);

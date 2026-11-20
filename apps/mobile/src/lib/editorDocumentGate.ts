@@ -1,6 +1,13 @@
 import { validProjectDocument } from '../../../../lib/projectDocument.js';
 import { utf8Bytes, type ProjectDocument } from './editorBridge';
 
+export type DocumentCommitResult =
+    | { status: 'accepted' }
+    | { status: 'refused'; reason: 'invalid' | 'tooLarge' }
+    | { status: 'not-live' };
+
+export type DocumentCommitFailure = Exclude<DocumentCommitResult, { status: 'accepted' }>;
+
 export function documentProblem(doc: ProjectDocument): 'invalid' | 'tooLarge' | null {
     try {
         if (utf8Bytes(JSON.stringify(doc)) > 32768) return 'tooLarge';

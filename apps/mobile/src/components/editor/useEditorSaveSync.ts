@@ -1,4 +1,4 @@
-import { documentProblem } from '../../lib/editorDocumentGate';
+import { documentProblem, type DocumentCommitResult } from '../../lib/editorDocumentGate';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
@@ -19,7 +19,7 @@ type Ref<T> = MutableRefObject<T>;
 type Options = {
     api: ApiClient; projectId: string; name: string;
     documentRef: Ref<ProjectDocument | null>; revisionRef: Ref<number>; dirtyRef: Ref<boolean>;
-    baseline(head: DocumentHead): void; markDocument(doc: ProjectDocument, record?: boolean): boolean;
+    baseline(head: DocumentHead): void; markDocument(doc: ProjectDocument, record?: boolean): DocumentCommitResult;
     mergeBackups(doc: ProjectDocument): ProjectDocument; problem: string | null; setProblem(message: string | null): void;
     onOwnerChange(): void; onCopy(id: string): void; clearDocument(): void; entryImport(): Promise<void>;
 };
@@ -96,7 +96,7 @@ export function useEditorSaveSync(options: Options) {
             if (!live() || sheet || replacing || restoreOp || gate !== 'open' || !current) return false;
             const merged = o().mergeBackups(current);
             if (documentIdentity(merged) === documentIdentity(current)) return false;
-            return o().markDocument(merged, false);
+            return o().markDocument(merged, false).status === 'accepted';
         }
         async function fetchConflict(op: Operation) {
             if (!holds(op)) return;

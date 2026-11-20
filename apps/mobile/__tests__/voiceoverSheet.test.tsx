@@ -228,9 +228,9 @@ test.each(['mode', 'prepare'] as const)('inactive still cancels startup during %
     await act(async () => gate.resolve()); expect(mockRecord).not.toHaveBeenCalled(); expect(mockHook.phase).toBe('idle');
 });
 
-test('document refusal retains the review take and never announces placement', async () => {
-    await review(); mockInsert.mockReturnValueOnce('refused'); await press('editorVoiceover.add');
+test.each(['invalid', 'tooLarge', 'not-live'] as const)('document result %s retains the review take and never announces placement', async reason => {
+    await review(); mockInsert.mockReturnValueOnce(reason === 'not-live' ? { status: 'not-live' } : { status: 'refused', reason }); await press('editorVoiceover.add');
     enabledReview(); expect(mockAdded).not.toHaveBeenCalled(); expect(mockDiscard).not.toHaveBeenCalledWith('file://take.wav');
-    expect(mockHook.message).toBe("That change can't be kept in this project.");
+    expect(mockHook.message).toBe(reason === 'not-live' ? null : t(`editorEditGate.${reason}`));
     await press('editorVoiceover.add'); expect(mockAdded).toHaveBeenCalledTimes(1);
 });

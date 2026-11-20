@@ -124,7 +124,7 @@ function panelFixture(): ToolPanelProps {
         setLibraryKind: noop, choosePhotos: async () => {}, chooseFiles: async () => {}, selectClip: noop, openVoiceover: noop,
         openGenerate: noop, addTimelineTrack: noop, addText: noop, addCaption: noop, updateSelectedText: noop,
         setFrame: noop, setPlaying: noop, addTimelineMarker: noop, currentDocument: () => envelope(timeline), document: envelope(timeline),
-        markDocument: () => true, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, updateCanvas: noop, updateTrack: noop,
+        markDocument: () => ({ status: 'accepted' }), canvas: { aspect_ratio: '16:9', frame_rate: 30 }, updateCanvas: noop, updateTrack: noop,
         canMove: () => true, moveSelection: noop, removeSelection: noop, adjustStart: noop, adjustLength: noop, changeSpeed: noop, toggleReverse: noop };
 }
 test.each(panelCases)('%s retains its accessible heading and a representative control', async (Panel, header, label) => {

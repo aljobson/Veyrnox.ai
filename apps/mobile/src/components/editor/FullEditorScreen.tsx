@@ -1,3 +1,4 @@
+import type { VoiceoverProps } from './useVoiceoverRecorder';
 import { ToolRail } from './tools/ToolRail';
 import type { Tool } from './tools/editorTools';
 import type { ToolPanelProps } from './tools/types';
@@ -101,7 +102,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         const result = insertMediaAt(timelineOf(current.timeline), media, at);
         if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' }));
             return result.error; }
-        if (!markDocument({ ...current, schema_version: 3, timeline: result.timeline })) return 'refused'; if (result.trimmed) setProblem(t('editor.musicTrimmed'));
+        const commit = markDocument({ ...current, schema_version: 3, timeline: result.timeline });
+        if (commit.status !== 'accepted') return commit; if (result.trimmed) setProblem(t('editor.musicTrimmed'));
         if (select || media.kind === 'audio') { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
     const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() }); useAnnouncement(problem);
@@ -116,10 +118,15 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const clipCount = timeline.video.length + timeline.audio.length + timeline.text.length; const selectedGroup = selected?.groupId;
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId ===
-        asset.assetSource?.assetId))]; const applyTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
+        asset.assetSource?.assetId))];
+    const commitTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
+    const applyTimeline = (next: Timeline) => commitTimeline(next).status === 'accepted';
     const trackActions = useEditorTrackActions(timeline, () => timelineOf(currentDocument()?.timeline ?? document.timeline), applyTimeline);
-    const placeVoiceover = (media: Media): 'placed' | 'track' | 'full' | 'refused' => { const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0); if
-        ('error' in result) return result.error; if (!applyTimeline(result.timeline)) return 'refused'; setSelection(result.selection); setSelections([result.selection]); return 'placed';
+    const placeVoiceover: VoiceoverProps['insert'] = media => {
+        const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0);
+        if ('error' in result) return result.error; const commit = commitTimeline(result.timeline);
+        if (commit.status !== 'accepted') return commit;
+        setSelection(result.selection); setSelections([result.selection]); return 'placed';
     };
     const updateCanvas = (patch: Partial<Canvas>) => { const nextCanvas = { ...canvas, ...patch }; const nextTimeline = { ...timeline, aspect: nextCanvas.aspect_ratio };
         markDocument({ ...document, schema_version: 3, canvas: nextCanvas, ...(nextTimeline ? { timeline: nextTimeline } : {}) }); };
@@ -155,7 +162,9 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         if (next) applyTimeline(next); };
     const toggleReverse = () => { if (!selection || selection.track === 'text' || !selected) return; const clip = selected as Clip;
         const distance = Math.max(0, clip.len - 1) * (clip.rate ?? 1); patchSelected({ reverse: !clip.reverse, in: Math.max(0, (clip.in ?? 0) + (clip.reverse ? -distance : distance)) }); };
-    const splitSelection = () => { if (!selection) return; const next = splitClip(timeline, selection, frameStore.get());
+    const splitSelection = () => { if (!selection) return;
+        if (selectedTrack?.locked) { setProblem(t('editor.unlockoraddatrackfirst', { value1: selection.track })); return; }
+        const next = splitClip(timeline, selection, frameStore.get());
         if (!next) { setProblem(t('editor.movetheplayheadinsidetheselectedclip')); return; } applyTimeline(next); };
     const paste = () => { const result = pasteClipboard(timeline, clipboard, frameStore.get()); if (!result) return; if (!applyTimeline(result.timeline)) return;
         setSelections(result.selections); setSelection(result.selections.at(-1) ?? null); };
