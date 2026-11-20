@@ -129,7 +129,8 @@ function get(id, auth = true) {
   return GET(new Request('https://veyrnox.test/api/catalog?template_swap=' + encodeURIComponent(id), { headers: auth ? { 'x-veyrnox-auth-id': AUTH } : {} }));
 }
 
-const ROLES = ['the green character', 'the red character'];
+const ROLES = ['the girl in the blue headscarf holding the basketball', 'the woman in the long green dress'];
+const MANIFEST_ROLE = 'the green character';
 const onFlags = t => { process.env.APP_RUNTIME_FLAGS = '{"templateSwapPeople":true}'; t.after(() => { delete process.env.APP_RUNTIME_FLAGS; }); };
 const idOf = ref => ref.asset_id;
 
@@ -152,7 +153,7 @@ test('key ON: two people become @Element1 and @Element2 in photo order, one pric
   assert.equal((await post()).status, 200);
   assert.equal(net.debits.length, 1); assert.equal(net.debits[0].p_credits, 47);
   assert.equal(net.debits[0].p_inputs.prompt, templateSwapPeoplePrompt(ROLES));
-  assert.deepEqual(net.debits[0].p_inputs.template_source, { template: ID, version: 'v1', sha256: 'a'.repeat(64), role: ROLES[0], roles: ROLES });
+  assert.deepEqual(net.debits[0].p_inputs.template_source, { template: ID, version: 'v1', sha256: 'a'.repeat(64), role: MANIFEST_ROLE, roles: ROLES });
   assert.deepEqual(net.debits[0].p_inputs.references, four);
   const payload = net.submits[0];
   assert.equal(payload.prompt, templateSwapPeoplePrompt(ROLES));
@@ -172,11 +173,11 @@ test('key ON: two people become @Element1 and @Element2 in photo order, one pric
 
 test('key ON but another id, or key OFF: the one-person path is unchanged', async t => {
   const off = network(t);
-  assert.deepEqual(await (await get(ID)).json(), { id: ID, model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: ROLES[0], images: 2 });
+  assert.deepEqual(await (await get(ID)).json(), { id: ID, model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: MANIFEST_ROLE, images: 2 });
   assert.equal((await post({ references: four.slice(0, 2) })).status, 200);
   assert.equal(off.submits[0].elements.length, 1);
-  assert.equal(off.debits[0].p_inputs.prompt, templateSwapPrompt(ROLES[0]));
-  assert.deepEqual(off.debits[0].p_inputs.template_source, { template: ID, version: 'v1', sha256: 'a'.repeat(64), role: ROLES[0] });
+  assert.equal(off.debits[0].p_inputs.prompt, templateSwapPrompt(MANIFEST_ROLE));
+  assert.deepEqual(off.debits[0].p_inputs.template_source, { template: ID, version: 'v1', sha256: 'a'.repeat(64), role: MANIFEST_ROLE });
   assert.deepEqual(await (await post({ references: four, idempotency_key: 'four-photos-key-off' })).json(), { error: 'template_swap_photo_count' });
   onFlags(t);
   assert.deepEqual(await (await get(ONE)).json(), { id: ONE, model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: 'the main character', images: 2 });
