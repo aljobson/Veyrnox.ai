@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { publicMusicRail } from '../lib/musicRails.js';
 import { publicBestOf } from '../lib/musicLyrics.js';
 import { publicMusicComments } from '../lib/musicComments.js';
@@ -17,16 +17,21 @@ test('all public actor allowlists validate UUID strings and preserve the old sha
         assert.deepEqual(publicMusicCreator({ ...row, creator_id: id }), { ...row, ...field });
         assert.deepEqual(publicMusicRail([{ ...row, creator_id: id, user_id: 'secret' }])[0], { ...row, ...field });
         assert.deepEqual(publicBestOf({ playlists: [{ genre: 'pop', tracks: [{ ...row, creator_id: id }] }] })[0].tracks[0], { ...row, ...field });
-        const c = publicMusicComments({ comments: [{ author_id: id, author: 'Listener', user_id: 'secret' }] }).comments[0];
+        const result = { comments: [{ author_id: id, author: 'Listener', user_id: 'secret' }] };
+        assert.equal(Object.hasOwn(publicMusicComments(result).comments[0], 'author_id'), false);
+        const c = publicMusicComments(result, { viewer: true }).comments[0];
         assert.equal(c.author_id, id === ACTOR ? ACTOR : undefined); assert.equal(c.user_id, undefined);
     }
 });
 
-test('all five SQL projections select opaque ids; every read remains STABLE', () => {
-    for (const name of ['music_resolve_publication', 'music_read_public_profile', 'music_public_rails', 'music_best_of_playlists', 'music_comments_read']) {
+test('creator and viewer comment projections select opaque ids; every read remains STABLE', () => {
+    for (const name of ['music_resolve_publication', 'music_read_public_profile', 'music_public_rails', 'music_best_of_playlists', 'music_comments_read_for_viewer']) {
         const fn = sql.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${name}\\([\\s\\S]*?\\$\\$;`))?.[0];
         assert.ok(fn, name); assert.match(fn, /STABLE/); assert.match(fn, /private\.music_actor_field/); assert.doesNotMatch(fn, /private\.music_actor_id\(/);
     }
+    const anonymous = sql.match(/CREATE OR REPLACE FUNCTION public\.music_comments_read\([^]*?\$\$;/)[0];
+    assert.match(anonymous, /STABLE/);
+    assert.doesNotMatch(anonymous, /private\.music_actor_(field|id)/);
     for (const fn of sql.matchAll(/CREATE OR REPLACE FUNCTION (?:public|private)\.([^\s(]+)\([^]*?\$\$;/g)) {
         if (/for_viewer$|^music_(actor_field|actor_blocked|visible_tracks|list_blocked_actors)$/.test(fn[1])) assert.match(fn[0], /STABLE/);
     }
@@ -65,4 +70,31 @@ test('telemetry uses normalized identity-free routes while retaining the prior a
         assert.ok(sql.includes(`'${normalized}'`));
     }
     assert.match(sql, /OR public\.telemetry_path_allowed_pre_0570\(p_path\)/);
+});
+
+// Match complete dollar-quoted function definitions, including named delimiters.
+const publicWrites = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.(music_publish_song|music_comment_mutate)\s*\([^]*?\bAS\s+(\$(?:[a-z_][a-z_0-9]*)?\$)([^]*?)\2/gi;
+function assertActorMinting(source, filename) {
+    const uncommented = source.replace(/--[^\n]*|\/\*[^]*?\*\//g, '');
+    for (const fn of uncommented.matchAll(publicWrites)) {
+        assert.match(fn[3], /\bprivate\.music_actor_id\s*\(/i, `${filename}: ${fn[1]} must preserve actor minting; change the private *_pre_0570 implementation instead`);
+    }
+}
+
+test('later migrations preserve actor minting when replacing public Music write wrappers', async () => {
+    for (const path of ['../packages/db/schema/', '../packages/db/schema/supabase/']) {
+        const directory = new URL(path, import.meta.url);
+        for (const file of (await readdir(directory)).filter(name => /^\d{4}_.*\.sql$/.test(name) && Number(name.slice(0, 4)) > 570)) {
+            assertActorMinting(await readFile(new URL(file, directory), 'utf8'), file);
+        }
+    }
+});
+
+test('wrapper guard rejects missing or commented-out minting in either function', () => {
+    for (const name of ['music_publish_song', 'music_comment_mutate']) {
+        const prefix = `CREATE OR REPLACE FUNCTION public.${name}() RETURNS JSONB LANGUAGE plpgsql AS $body$ BEGIN `;
+        assert.throws(() => assertActorMinting(`${prefix} RETURN '{}'; END $body$;`, 'fixture'), /must preserve actor minting/);
+        assert.throws(() => assertActorMinting(`${prefix} -- private.music_actor_id(user);\n RETURN '{}'; END $body$;`, 'fixture'), /must preserve actor minting/);
+        assertActorMinting(`${prefix} PERFORM private.music_actor_id(user); END $body$;`, 'fixture');
+    }
 });

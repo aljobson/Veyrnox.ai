@@ -28,7 +28,7 @@ RETURNS UUID LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS 
 DECLARE v_id UUID;
 BEGIN
     -- Serialize with account erasure before minting.
-    PERFORM 1 FROM public.users WHERE id=p_user AND deleted_at IS NULL FOR UPDATE;
+    PERFORM 1 FROM public.users WHERE id=p_user AND deleted_at IS NULL FOR SHARE;
     IF NOT FOUND THEN RETURN NULL; END IF;
     INSERT INTO public.music_actors(user_id) VALUES(p_user) ON CONFLICT DO NOTHING;
     SELECT public_id INTO v_id FROM public.music_actors WHERE user_id=p_user;
@@ -54,6 +54,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 REVOKE ALL ON FUNCTION private.music_publish_song_pre_0570(TEXT,UUID,UUID,TEXT,TEXT,BOOLEAN,BOOLEAN,TEXT,TEXT) FROM PUBLIC, anon, authenticated, service_role;
+-- Later publication changes must target private.music_publish_song_pre_0570; retain this minting wrapper.
 CREATE OR REPLACE FUNCTION public.music_publish_song(p_auth_id TEXT,p_song_id UUID,p_version_id UUID,p_handle TEXT,p_display_name TEXT,p_allow_comments BOOLEAN,p_allow_remixes BOOLEAN,p_policy_version TEXT,p_idempotency_key TEXT)
 RETURNS JSONB LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_result JSONB;
@@ -72,6 +73,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 REVOKE ALL ON FUNCTION private.music_comment_mutate_pre_0570(TEXT,TEXT,JSONB) FROM PUBLIC, anon, authenticated, service_role;
+-- Later comment changes must target private.music_comment_mutate_pre_0570; retain this minting wrapper.
 CREATE OR REPLACE FUNCTION public.music_comment_mutate(p_auth_id TEXT,p_idempotency_key TEXT,p_payload JSONB)
 RETURNS JSONB LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
 DECLARE v_result JSONB;
@@ -93,8 +95,8 @@ BEGIN
         WHERE a.public_id=p_actor_id AND u.deleted_at IS NULL;
     IF v_target IS NULL THEN RETURN jsonb_build_object('error','user_not_found'); END IF;
     IF v_target=v_me THEN RETURN jsonb_build_object('error','cannot_block_self'); END IF;
-    -- Lock both accounts in deterministic order, including against erasure.
-    PERFORM id FROM public.users WHERE id IN (v_me,v_target) ORDER BY id FOR UPDATE;
+    -- Shared account locks allow independent blockers while excluding account erasure.
+    PERFORM id FROM public.users WHERE id IN (v_me,v_target) ORDER BY id FOR SHARE;
     IF EXISTS (SELECT 1 FROM public.users WHERE id=v_me AND deleted_at IS NOT NULL) THEN
         RETURN jsonb_build_object('error','account_not_found');
     END IF;
@@ -121,8 +123,8 @@ BEGIN
         WHERE a.public_id=p_actor_id AND u.deleted_at IS NULL;
     IF v_target IS NULL THEN RETURN jsonb_build_object('error','user_not_found'); END IF;
     IF v_target=v_me THEN RETURN jsonb_build_object('error','cannot_block_self'); END IF;
-    -- Lock both accounts in deterministic order, including against erasure.
-    PERFORM id FROM public.users WHERE id IN (v_me,v_target) ORDER BY id FOR UPDATE;
+    -- Shared account locks allow independent blockers while excluding account erasure.
+    PERFORM id FROM public.users WHERE id IN (v_me,v_target) ORDER BY id FOR SHARE;
     IF EXISTS (SELECT 1 FROM public.users WHERE id=v_me AND deleted_at IS NOT NULL) THEN
         RETURN jsonb_build_object('error','account_not_found');
     END IF;
@@ -262,7 +264,7 @@ BEGIN
         SELECT c.created_at, c.id, jsonb_build_object(
             'id', c.id, 'parent_id', c.parent_id, 'body', c.body, 'at_seconds', c.at_seconds, 'created_at', c.created_at,
             'author', private.music_commenter_name(c.author_id), 'is_creator', c.author_id = v_pub.user_id,
-            'own', v_viewer IS NOT NULL AND c.author_id = v_viewer) || private.music_actor_field(c.author_id,'author_id') AS item
+            'own', v_viewer IS NOT NULL AND c.author_id = v_viewer) AS item
         FROM public.music_comments c JOIN public.users u ON u.id = c.author_id
         WHERE c.publication_id = v_pub.id AND c.status = 'approved' AND u.deleted_at IS NULL AND u.frozen_at IS NULL
           AND (v_before IS NULL OR (c.created_at, c.id) < (v_before, p_before_id))

@@ -23,7 +23,10 @@ All read functions remain STABLE. A missing mapping omits only the new field.
 in Music does not silently block them in Cinema, or vice versa. Each person
 may block 500 others. An advisory lock in namespace 570 serializes changes;
 replaying a block or unblock returns `already: true`. Unknown or erased actor
-IDs return `user_not_found`; self blocks return `cannot_block_self`.
+IDs return `user_not_found`; self blocks return `cannot_block_self`. Minting and
+block/unblock take FOR SHARE locks on the relevant users: independent blockers
+can proceed together, while prepare_account_deletion / erase_account (FOR UPDATE)
+must wait. The per-blocker advisory lock still enforces the cap.
 
 Both tables have enabled and forced RLS, no policies, and no caller table
 grants, including service_role. SECURITY DEFINER RPCs have empty search paths,
@@ -56,11 +59,15 @@ Block errors: `not_authenticated` 401, `blocks_unavailable` 404,
 `invalid_body` 400 (413 for oversized JSON), `invalid_content_type` 415 and
 `invalid_query` 400. Block routes and explore mirrors use
 `consume_account_read_request`; denial is 429 with `Retry-After: 60`.
+The authenticated comments route also maps viewer RPC `USER_NOT_FOUND` to
+403 `account_not_found`, matching block and explore account failures.
 Unexpected RPC failures return `temporarily_unavailable` 503 without DB details.
 
 Anonymous routes and their RPC signatures remain unchanged, apart from optional
-`creator_id` on track/profile/rails/best-of rows and `author_id` on public
-comments. JS projections validate UUID strings before exposing these fields.
+`creator_id` on track/profile/rails/best-of rows. Only
+`music_comments_read_for_viewer` emits comment `author_id`; the anonymous RPC
+and JS projection omit it. JS projections validate UUID strings before exposing
+these fields.
 Authenticated comments select `music_comments_read_for_viewer` when blocks is
 on; filtering happens before pagination, while own pending/rejected rows stay
 unchanged. Mirrors use viewer RPCs and fail closed on filtering errors. Rails
@@ -82,6 +89,12 @@ those operations. Turning the key off closes the new surfaces without deleting
 block preferences. The web UI is unchanged and continues using anonymous reads.
 
 ## Privacy, erasure and exclusions
+
+A stable commenter id enables cross-track linkability even when it is opaque.
+Anonymous comment responses therefore omit `author_id`; only authenticated
+viewer reads expose it for blocking. Signed-in viewers can correlate those
+comments, including with that person's creator identity. Creator ids remain
+public because creator pages are already public by handle.
 
 `music_actors.user_id` uses ON DELETE RESTRICT like creator profiles. Normal
 account deletion is a tombstone, not a physical user deletion. The erasure
@@ -107,9 +120,14 @@ RPC selection, projection allowlists and migration invariants. The real database
 suite is `packages/db/music-blocks.acceptance.test.ts`; run it with the repository's
 existing tsx/pg tooling against a disposable local PostgreSQL (CI uses PG16),
 through `~/.local/bin/with-build-slot`, with one test worker. It requires CREATEDB
-and creates one temporary database, seeds it through `migrate.mjs` and the normal
-full replay, then drops it even on failure. Budget roughly 100–300 MiB of temporary
-database storage; no package or native build installation is required. This
+and creates one fresh temporary database, initializes it only through
+`scripts/replay-migrations.mjs` (which includes the base schema), then drops it
+even on failure. Running `migrate.mjs` first is incorrect: replay would try to
+create the base schema again. CI excludes this suite from the migrate-base glob
+and runs it once beside music-pair/music-long-song in the replay-database step.
+The bootstrap still creates its own database even when DATABASE_URL points at
+`rebuild_check`, costing one additional full replay and temporary database.
+Budget roughly 100–300 MiB of temporary database storage; no package or native build installation is required. This
 isolates both a migrate-only base and a fully replayed host from historical
 migration replacements. It verifies real read-only transactions as the allowed
 substitute for a local PostgREST server, plus `pg_proc.provolatile`, replay,

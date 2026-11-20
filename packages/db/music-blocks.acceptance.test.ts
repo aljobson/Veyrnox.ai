@@ -75,8 +75,55 @@ describe('Music actor identities and blocks (0570)', { skip: !DATABASE_URL && 'D
         try { if (db) { try { await q('ROLLBACK'); } finally { await db.end(); } } }
         finally { if (isolated) await isolated.cleanup(); }
     });
+    it('shares target and minting locks between independent blockers but excludes erasure', async () => {
+        // Separate committed fixtures: both sessions must see the users and actor mapping.
+        const pg = (await import('pg')).default;
+        const first = new pg.Client({ connectionString: isolated.connectionString });
+        const second = new pg.Client({ connectionString: isolated.connectionString });
+        await first.connect();
+        try {
+            await second.connect();
+            const auths = [randomUUID(), randomUUID(), randomUUID()];
+            for (const auth of auths) await first.query('INSERT INTO auth.users(id,email,email_confirmed_at) VALUES($1,$2,now())', [auth, `${auth}@example.invalid`]);
+            const target = (await first.query('SELECT id FROM public.users WHERE auth_id=$1', [auths[2]])).rows[0].id;
+            const id = (await first.query('SELECT private.music_actor_id($1) AS id', [target])).rows[0].id;
+            for (const operation of ['music_block_actor', 'music_unblock_actor', 'music_actor_id']) {
+                await first.query('BEGIN'); await second.query('BEGIN');
+                await second.query("SET LOCAL lock_timeout = '1s'");
+                try {
+                    if (operation === 'music_actor_id') {
+                        assert.equal((await first.query('SELECT private.music_actor_id($1) AS id', [target])).rows[0].id, id);
+                    } else {
+                        assert.equal((await first.query(`SELECT public.${operation}($1,$2) AS result`, [auths[0], id])).rows[0].result.ok, true);
+                    }
+                    // Different blocker, same target: no exclusive user-row bottleneck.
+                    assert.equal((await second.query('SELECT public.music_block_actor($1,$2) AS result', [auths[1], id])).rows[0].result.ok, true);
+                    assert.equal((await second.query('SELECT private.music_actor_id($1) AS id', [target])).rows[0].id, id);
+                    for (const lock of ['UPDATE', 'NO KEY UPDATE']) {
+                        await second.query('SAVEPOINT erasure');
+                        await assert.rejects(second.query(`SELECT id FROM public.users WHERE id=$1 FOR ${lock} NOWAIT`, [target]), e => e.code === '55P03');
+                        await second.query('ROLLBACK TO SAVEPOINT erasure');
+                    }
+                } finally {
+                    await second.query('ROLLBACK'); await first.query('ROLLBACK');
+                }
+            }
+            // Exercise first-time minting too; erasure cannot pass the user's shared lock.
+            await first.query('DELETE FROM public.music_actors WHERE user_id=$1', [target]);
+            await first.query('BEGIN'); await second.query('BEGIN');
+            try {
+                assert.ok((await first.query('SELECT private.music_actor_id($1) AS id', [target])).rows[0].id);
+                await assert.rejects(second.query('SELECT id FROM public.users WHERE id=$1 FOR UPDATE NOWAIT', [target]), e => e.code === '55P03');
+            } finally {
+                await second.query('ROLLBACK'); await first.query('ROLLBACK');
+            }
+        } finally {
+            await second.end(); await first.end();
+        }
+    });
     it('mints one opaque id across creator/commenter names and repeated publication writes', async () => {
         const id = await actor(creator), listenerId = await actor(listener);
+        assert.equal((await call('music_comments_read_for_viewer', track.slug, alice.auth, null)).comments[0].author_id, listenerId, 'non-creator commenter has an opaque id');
         const update = await call('music_publish_song', creator.auth, track.song, track.version, 'renamed_creator', 'New name', true, false, 'test-music-blocks', randomUUID());
         assert.equal(update.ok, true); track.handle = 'renamed_creator';
         assert.equal(await actor(creator), id);
@@ -85,7 +132,9 @@ describe('Music actor identities and blocks (0570)', { skip: !DATABASE_URL && 'D
         assert.equal(profile.profile.creator_id, id); assert.ok(profile.tracks.every(t => t.creator_id === id));
         await publish(listener, 'listener_now_creator', 'New listener name');
         assert.equal(await actor(listener), listenerId);
-        const comments = await call('music_comments_read', track.slug, null, null);
+        const anonymous = await call('music_comments_read', track.slug, null, null);
+        assert.ok(anonymous.comments.every(c => !Object.hasOwn(c, 'author_id')));
+        const comments = await call('music_comments_read_for_viewer', track.slug, alice.auth, null);
         assert.equal(comments.comments[0].author_id, listenerId); assert.equal(comments.comments[0].author, 'New listener name');
         await q(migration); assert.equal(await actor(creator), id); assert.equal(await actor(listener), listenerId);
     });
@@ -138,10 +187,13 @@ describe('Music actor identities and blocks (0570)', { skip: !DATABASE_URL && 'D
         assert.equal(result.own_comments[0].id, own);
         assert.equal((await call('music_comments_read_for_viewer', track.slug, bob.auth, null)).comments.length, 25);
         assert.equal((await call('music_comments_read_for_viewer', track.slug, listener.auth, null)).comments.length, 25);
-        assert.equal((await call('music_comments_read', track.slug, null, null)).comments.length, 25);
+        const anonymous = await call('music_comments_read', track.slug, null, null);
+        assert.equal(anonymous.comments.length, 25);
+        assert.ok(anonymous.comments.every(c => !Object.hasOwn(c, 'author_id')));
         await call('music_unblock_actor', alice.auth, id);
         const visible = await call('music_comments_read_for_viewer', track.slug, alice.auth, null);
         assert.equal(visible.comments.length, 25); assert.ok(visible.next_cursor);
+        assert.ok(visible.comments.every(c => c.author_id === id));
         assert.equal((await call('music_comments_read_for_viewer', track.slug, alice.auth, visible.next_cursor)).comments.length, 6);
     });
     it('caps new blocks at 500 but permits replay and unblock at the cap', async () => {
@@ -170,6 +222,7 @@ describe('Music actor identities and blocks (0570)', { skip: !DATABASE_URL && 'D
         assert.equal((await call('music_block_actor', other.auth, id)).error, 'user_not_found');
         assert.equal((await call('music_list_blocked_actors', erased.auth)).error, 'account_not_found');
         assert.equal(await value('SELECT private.music_actor_id($1)', [erased.user]), null);
+        assert.equal((await call('music_comments_read_for_viewer', track.slug, erased.auth, null)).code, 'USER_NOT_FOUND');
         await q(migration); assert.equal(await value('SELECT count(*)::int FROM public.music_actors WHERE user_id=$1', [erased.user]), 0);
     });
     it('pins search_path, keeps reads stable and exposes RPCs only to service_role', async () => {

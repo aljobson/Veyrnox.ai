@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { musicBlocksHandler } from '../lib/musicBlocks.js';
 import { musicExploreHandler } from '../lib/musicExplore.js';
 import { musicCommentsReadHandler } from '../lib/musicCommentsRead.js';
+import { GET as publicTrack } from '../app/api/music/public/[slug]/route.js';
 import { musicRuntimeFlag } from '../lib/musicRuntime.js';
 
 const AUTH = '11111111-1111-4111-8111-111111111111';
@@ -148,4 +149,32 @@ test('existing authenticated comments select the filtered RPC only when blocks i
         assert.equal(m.calls[0].name, blocks ? 'music_comments_read_for_viewer' : 'music_comments_read');
         assert.equal(m.calls[0].args.p_auth_id, AUTH); assert.equal(body.comments.own_comments[0].body, 'Waiting');
     }
+});
+
+test('anonymous track response strips comment actor ids while the viewer mirror includes them', async (t) => {
+    on({ comments: true });
+    const calls = [];
+    const result = name => name.includes('resolve_publication')
+        ? { ok: true, track: { title: 'Track', creator_id: ACTOR } }
+        : { ok: true, comments: [{ id: ACTOR, author_id: ACTOR, author: 'Listener' }] };
+    t.mock.method(globalThis, 'fetch', async (url, options) => {
+        const name = new URL(url).pathname.split('/').pop();
+        calls.push({ name, args: JSON.parse(options.body) });
+        return Response.json(result(name));
+    });
+    const ctx = { params: Promise.resolve({ slug: SLUG }) };
+    const anon = await expect(await publicTrack(request(), ctx), 200);
+    assert.equal(anon.track.creator_id, ACTOR);
+    assert.equal(Object.hasOwn(anon.comments.comments[0], 'author_id'), false);
+    assert.equal(calls.find(c => c.name === 'music_comments_read').args.p_auth_id, null);
+    const viewer = await expect(await musicExploreHandler({ kind: 'track', rpcCall: async name => result(name) })(request(), ctx), 200);
+    assert.equal(viewer.comments.comments[0].author_id, ACTOR);
+});
+
+test('viewer comments map USER_NOT_FOUND to no-store 403 account_not_found', async () => {
+    on({ comments: true });
+    const m = mock({ ok: false, code: 'USER_NOT_FOUND' });
+    const req = new Request(`https://example.invalid/api/v1/music/comments?slug=${SLUG}`, { headers: { 'x-veyrnox-auth-id': AUTH } });
+    assert.deepEqual(await expect(await musicCommentsReadHandler(m)(req), 403, 'account_not_found'), { error: 'account_not_found' });
+    assert.equal(m.calls[0].name, 'music_comments_read_for_viewer');
 });
