@@ -6839,6 +6839,8 @@ export default {
     "beat.refused": "No se aplicó el cambio: {reason}",
     "beat.audioError": "No se pudo iniciar el sonido en este dispositivo. Puedes seguir editando.",
     "beat.saveNote": "Aún sin guardar. Este beat se pierde al cerrar la app.",
+    "library.useForLipSync": "Usar para sincronizar labios",
+    "library.useForLipSyncLabel": "Usar {name} para sincronizar labios",
     "musicPublication.title": "Lanzamiento público",
     "musicPublication.publish": "Publicar canción",
     "musicPublication.unpublish": "Retirar publicación",

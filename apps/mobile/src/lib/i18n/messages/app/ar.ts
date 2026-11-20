@@ -7091,6 +7091,8 @@ export default {
     "beat.refused": "لم يُطبَّق التغيير: {reason}",
     "beat.audioError": "تعذّر بدء الصوت على هذا الجهاز. يمكنك متابعة التعديل.",
     "beat.saveNote": "لم يُحفظ بعد. سيضيع هذا الإيقاع عند إغلاق التطبيق.",
+    "library.useForLipSync": "استخدام لمزامنة الشفاه",
+    "library.useForLipSyncLabel": "استخدام {name} لمزامنة الشفاه",
     "musicPublication.title": "إصدار عام",
     "musicPublication.publish": "نشر الأغنية",
     "musicPublication.unpublish": "إلغاء النشر",

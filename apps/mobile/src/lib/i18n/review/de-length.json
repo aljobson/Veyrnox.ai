@@ -3840,6 +3840,18 @@
     "ratio": 1.77
   },
   {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Für Lippensynchronisation verwenden",
+    "ratio": 2.19
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "{name} für Lippensynchronisation verwenden",
+    "ratio": 1.83
+  },
+  {
     "id": "musicPublication.title",
     "english": "Public release",
     "translation": "Öffentliche Veröffentlichung",

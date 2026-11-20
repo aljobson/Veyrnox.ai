@@ -6755,6 +6755,8 @@ export default {
     "beat.refused": "बदलाव लागू नहीं हुआ: {reason}",
     "beat.audioError": "इस डिवाइस पर ध्वनि शुरू नहीं हो सकी। आप संपादन जारी रख सकते हैं।",
     "beat.saveNote": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",
+    "library.useForLipSync": "लिप सिंक के लिए उपयोग करें",
+    "library.useForLipSyncLabel": "लिप सिंक के लिए {name} का उपयोग करें",
     "musicPublication.title": "सार्वजनिक रिलीज़",
     "musicPublication.publish": "गीत प्रकाशित करें",
     "musicPublication.unpublish": "प्रकाशन हटाएँ",

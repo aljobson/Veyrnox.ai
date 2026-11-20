@@ -2100,6 +2100,12 @@
     "ratio": 2.33
   },
   {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "लिप सिंक के लिए उपयोग करें",
+    "ratio": 1.63
+  },
+  {
     "id": "musicPublication.comments",
     "english": "Allow comments",
     "translation": "टिप्पणियों की अनुमति दें",

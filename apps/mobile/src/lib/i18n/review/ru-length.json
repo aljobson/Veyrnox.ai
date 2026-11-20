@@ -3678,6 +3678,18 @@
     "ratio": 2.25
   },
   {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Использовать для синхронизации губ",
+    "ratio": 2.13
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "Использовать {name} для синхронизации губ",
+    "ratio": 1.78
+  },
+  {
     "id": "musicPublication.unpublish",
     "english": "Unpublish",
     "translation": "Снять с публикации",

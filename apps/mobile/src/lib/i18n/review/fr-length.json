@@ -5652,6 +5652,18 @@
     "ratio": 1.63
   },
   {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Utiliser pour la synchronisation labiale",
+    "ratio": 2.5
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "Utiliser {name} pour la synchronisation labiale",
+    "ratio": 2.04
+  },
+  {
     "id": "musicPublication.unpublish",
     "english": "Unpublish",
     "translation": "Retirer la publication",

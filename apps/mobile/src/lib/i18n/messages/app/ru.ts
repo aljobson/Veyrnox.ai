@@ -6923,6 +6923,8 @@ export default {
     "beat.refused": "Изменение не применено: {reason}",
     "beat.audioError": "Не удалось запустить звук на этом устройстве. Вы можете продолжать редактировать.",
     "beat.saveNote": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
+    "library.useForLipSync": "Использовать для синхронизации губ",
+    "library.useForLipSyncLabel": "Использовать {name} для синхронизации губ",
     "musicPublication.title": "Публичный выпуск",
     "musicPublication.publish": "Опубликовать песню",
     "musicPublication.unpublish": "Снять с публикации",

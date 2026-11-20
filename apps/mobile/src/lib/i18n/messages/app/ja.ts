@@ -6671,6 +6671,8 @@ export default {
     "beat.refused": "変更は適用されませんでした: {reason}",
     "beat.audioError": "この端末では音を開始できませんでした。編集は続けられます。",
     "beat.saveNote": "まだ保存されていません。アプリを閉じるとこのビートは失われます。",
+    "library.useForLipSync": "リップシンクに使用",
+    "library.useForLipSyncLabel": "{name}をリップシンクに使用",
     "musicPublication.title": "一般公開",
     "musicPublication.publish": "曲を公開",
     "musicPublication.unpublish": "公開を取り消す",
