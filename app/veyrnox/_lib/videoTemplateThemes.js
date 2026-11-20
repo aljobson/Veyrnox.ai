@@ -13,6 +13,8 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
       'community-midnight-supercar-refuel', 'community-supercar-night-fueling', 'community-supercar-midnight-refuel',
       'community-midnight-sports-drive', 'car-sky-fall', 'desert-rider', 'community-drive-thru-dialogue',
       'community-truck-window-confrontation',
+      // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
+      'ocean-car-sinking',
     ],
   },
   {
@@ -21,6 +23,8 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
       'community-street-shuffle-walk', 'community-urban-dance-walk', 'community-skyline-terrace-groove',
       'community-boardwalk-dance-routine', 'community-subway-mascot-dance', 'community-canyon-groove',
       'community-london-gentleman-walk',
+      // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
+      'studio-ballerina-turns',
     ],
   },
   {
@@ -28,6 +32,8 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
     templateIds: [
       'community-explosive-exit', 'community-mansion-raid-swap', 'community-midnight-forest-run',
       'community-cartoon-puppet-swap', 'seedance-quick-change',
+      // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
+      'seedance-rescue-myself', 'ruins-escape-run', 'community-shockwave-horizon-shift', 'seedance-subway-fight', 'rooftop-agent-pursuit', 'seedance-roof-jump', 'community-subway-combat-strike', 'community-parkour-vault-shift', 'freefall', 'sm-brand-new-day', 'office-kitchen', 'seedance-quick-change-2',
     ],
   },
   {
@@ -35,6 +41,32 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
     templateIds: [
       'community-skyline-flamingo-prank', 'community-championship-slap-duel', 'community-dramatic-office-outburst',
       'seedance-anothers-opinion',
+      // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
+      'seedance-blocked-light', 'seedance-bunny-taxi', 'holiday-heist-run',
+    ],
+  },
+  // ADR-0309 amendment 3: three themes for the long-prompt templates, listed only while the seedanceLongTemplates runtime key is
+  // on. With it off they have no card, so their chips do not show (templateCategories lists only themes with a card).
+  {
+    id: 'HORROR',
+    templateIds: [
+      'trick-or-skin', 'theater-ceiling-horror', 'the-wrong-one', 'pizzeria-hide-and-seek', 'thrille', 'fashion-halloween',
+      'ghost-makeover', 'pumpkin-guardian', 'enchanted-forest-selfie',
+    ],
+  },
+  {
+    id: 'MAGIC',
+    templateIds: [
+      'community-dragon-rider-encounter', 'community-dragon-awakening', 'dragon-lord', 'curious-garden-journey', 'dandelion-ball',
+      'the-crown', 'the-spirit', 'sea-snakes', 'born-from-sand',
+    ],
+  },
+  // Movie-style scenes. MOVIES is a style category id, which a theme may not reuse, so this theme is FILM.
+  {
+    id: 'FILM',
+    templateIds: [
+      'noir-film', 'underground-lab-transformation', 'window-explode', 'seedance-glass-cube', 'x-ray-matter', 'game-character-rig',
+      'reflection-in-the-mirror',
     ],
   },
   {
