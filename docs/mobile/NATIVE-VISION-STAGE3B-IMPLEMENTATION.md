@@ -38,7 +38,7 @@ Owner options: (1) keep it and disclose it in the privacy policy; (2) exclude it
 
 ## API compatibility audit
 
-No MediaPipe call-site names or signatures needed changing. The audit covers constructors/builders, options, CPU/IMAGE enums, inference, label access, result/landmark access, mask dimensions/data and Android resource closing. It is not a native compile or accuracy result.
+No MediaPipe call-site names or signatures needed changing. The audit covers constructors/builders, options, CPU/IMAGE enums, inference, label access, reading results and landmarks, mask dimensions and data and Android resource closing. It is not a native compile or accuracy result.
 
 **iOS 1.0.1:** inspected the host's pod archive device headers at `frameworks/MediaPipeTasksVision.xcframework/ios-arm64/MediaPipeTasksVision.framework/Headers/`. Files checked: `MPPBaseOptions.h`, `MPPTaskOptions.h`, `MPPRunningMode.h`, `MPPImage.h`, `MPPMask.h`, `MPPLandmark.h`, `MPPFaceLandmarker.h`, `MPPFaceLandmarkerOptions.h`, `MPPFaceLandmarkerResult.h`, `MPPImageSegmenter.h`, `MPPImageSegmenterOptions.h`, `MPPImageSegmenterResult.h`. The headers retain the used Swift imports, including `detect(image:)`, `segment(image:)`, confidence-mask options and `float32Data`. Package identity/pin follows the [host-confirmed 1.0.1 podspec](https://github.com/CocoaPods/Specs/blob/master/Specs/9/9/0/MediaPipeTasksVision/1.0.1/MediaPipeTasksVision.podspec.json).
 
