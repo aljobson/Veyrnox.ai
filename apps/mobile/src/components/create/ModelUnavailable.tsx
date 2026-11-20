@@ -9,18 +9,22 @@ import { createFormSheets } from './createFormStyles';
 // The failure state sits in the screen container, which has no padding of its own: without this it ran edge to edge.
 const layout = StyleSheet.create({ failed: { padding: 16, gap: 12 } });
 
-export function ModelUnavailable({ error, fromTemplate }: { error: string | null; fromTemplate: boolean }) {
+export function ModelUnavailable({ error, fromTemplate, title = t('label.Create'), recovery }: {
+    error: string | null; fromTemplate: boolean; title?: string; recovery?: { label: string; onPress: () => void };
+}) {
     const styles = useThemedStyles(createFormSheets);
     const router = useRouter();
     const gone = error === t('form.modelGone');
     const failed = gone || error === t('form.modelLoad');
     return <View style={styles.screen}>
-        <Stack.Screen options={{ title: t('label.Create') }} />
+        <Stack.Screen options={{ title }} />
         {failed ? <View style={layout.failed}>
             <Text variant="title2" accessibilityRole="header" accessibilityLiveRegion="polite">{error}</Text>
             <Text variant="body" tone="secondary">{t(gone ? 'form.modelGoneBody' : 'form.modelLoadBody')}</Text>
+            {recovery ? <Button label={recovery.label} onPress={recovery.onPress} /> : <>
             <Button label={t('form.modelGoneChoose')} onPress={() => router.replace('/create')} />
             <Button variant="secondary" label={t(fromTemplate ? 'form.modelGoneBack' : 'form.modelBack')} onPress={() => (fromTemplate ? router.replace('/create/presets') : router.canGoBack() ? router.back() : router.replace('/create'))} />
+            </>}
         </View> : error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : <ActivityIndicator color={styles.accentInk.color} />}
     </View>;
 }

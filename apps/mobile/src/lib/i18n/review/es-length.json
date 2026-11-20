@@ -3528,100 +3528,70 @@
     "ratio": 2.38
   },
   {
-    "id": "beatMix.title",
-    "english": "Mixer",
-    "translation": "Mezclador",
+    "id": "speech.speed",
+    "english": "Speed",
+    "translation": "Velocidad",
     "ratio": 1.8
   },
   {
-    "id": "beatMix.master.room",
-    "english": "Reverb room size",
-    "translation": "Tamaño de sala de reverberación",
-    "ratio": 1.94
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculina",
+    "ratio": 2.25
   },
   {
-    "id": "beatMix.master.time",
-    "english": "Delay time",
-    "translation": "Tiempo de retardo",
-    "ratio": 1.7
-  },
-  {
-    "id": "beatMix.master.feedback",
-    "english": "Delay feedback",
-    "translation": "Realimentación del retardo",
-    "ratio": 1.86
-  },
-  {
-    "id": "beatMix.fx.eq",
-    "english": "EQ",
-    "translation": "Ecualizador",
-    "ratio": 5.5
-  },
-  {
-    "id": "beatMix.fx.reverb",
-    "english": "Reverb",
-    "translation": "Reverberación",
-    "ratio": 2.17
-  },
-  {
-    "id": "beatMix.param.low",
-    "english": "Low",
-    "translation": "Graves",
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
     "ratio": 2
   },
   {
-    "id": "beatMix.param.mid",
-    "english": "Mid",
-    "translation": "Medios",
+    "id": "speech.cue.inhale",
+    "english": "Inhale",
+    "translation": "Inhalación",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "Exhalación",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "Bocanada",
     "ratio": 2
   },
   {
-    "id": "beatMix.param.feedback",
-    "english": "Feedback",
-    "translation": "Realimentación",
+    "id": "speech.cue.sighs",
+    "english": "Sigh",
+    "translation": "Suspiro",
     "ratio": 1.75
   },
   {
-    "id": "beatMix.param.mix",
-    "english": "Mix",
-    "translation": "Mezcla",
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "Resoplido",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Chasquido de labios",
+    "ratio": 2.11
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Tarareo",
+    "ratio": 2.33
+  },
+  {
+    "id": "speech.tone.Rich",
+    "english": "Rich",
+    "translation": "Profunda",
     "ratio": 2
-  },
-  {
-    "id": "beatMix.send.reverb",
-    "english": "Reverb send",
-    "translation": "Envío de reverberación",
-    "ratio": 2
-  },
-  {
-    "id": "beatMix.lane.show.gain",
-    "english": "Show gain lane",
-    "translation": "Mostrar línea de ganancia",
-    "ratio": 1.79
-  },
-  {
-    "id": "beatMix.lane.show.pan",
-    "english": "Show pan lane",
-    "translation": "Mostrar línea de panorámica",
-    "ratio": 2.08
-  },
-  {
-    "id": "beatMix.lane.gain",
-    "english": "Gain",
-    "translation": "Ganancia",
-    "ratio": 2
-  },
-  {
-    "id": "beatMix.lane.pan",
-    "english": "Pan",
-    "translation": "Panorámica",
-    "ratio": 3.33
-  },
-  {
-    "id": "beatMix.curve.in",
-    "english": "Ease in",
-    "translation": "Entrada suave",
-    "ratio": 1.86
   },
   {
     "id": "editorText.serif",
@@ -3760,6 +3730,102 @@
     "english": "Shared song",
     "translation": "Canción compartida",
     "ratio": 1.64
+  },
+  {
+    "id": "beatMix.title",
+    "english": "Mixer",
+    "translation": "Mezclador",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatMix.master.room",
+    "english": "Reverb room size",
+    "translation": "Tamaño de sala de reverberación",
+    "ratio": 1.94
+  },
+  {
+    "id": "beatMix.master.time",
+    "english": "Delay time",
+    "translation": "Tiempo de retardo",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatMix.master.feedback",
+    "english": "Delay feedback",
+    "translation": "Realimentación del retardo",
+    "ratio": 1.86
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "Ecualizador",
+    "ratio": 5.5
+  },
+  {
+    "id": "beatMix.fx.reverb",
+    "english": "Reverb",
+    "translation": "Reverberación",
+    "ratio": 2.17
+  },
+  {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "Medios",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.feedback",
+    "english": "Feedback",
+    "translation": "Realimentación",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "Mezcla",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.send.reverb",
+    "english": "Reverb send",
+    "translation": "Envío de reverberación",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.lane.show.gain",
+    "english": "Show gain lane",
+    "translation": "Mostrar línea de ganancia",
+    "ratio": 1.79
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "Mostrar línea de panorámica",
+    "ratio": 2.08
+  },
+  {
+    "id": "beatMix.lane.gain",
+    "english": "Gain",
+    "translation": "Ganancia",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "Panorámica",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatMix.curve.in",
+    "english": "Ease in",
+    "translation": "Entrada suave",
+    "ratio": 1.86
   },
   {
     "id": "oauth.signIn",

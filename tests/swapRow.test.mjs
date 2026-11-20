@@ -13,9 +13,10 @@ import { templateDetail } from '../lib/clientTemplates.js';
 import { loadTemplateSwapRow } from '../lib/templateSwapClipGate.js';
 import { catalog, manifest, id as fixtureId, registry as fixtureRegistry } from './fixtures/templateSwapClips.mjs';
 
-test('the curated row: 13 unique ids, no multi-person scenes, all swap clips, none withdrawn, data equals the template data, posters on disk', () => {
+test('the curated row: 11 unique ids, no multi-person scenes, all swap clips, none withdrawn, data equals the template data, posters on disk', () => {
   const ids = TEMPLATE_SWAP_ROW.map(row => row.id);
-  assert.equal(ids.length, 13); assert.equal(new Set(ids).size, 13);
+  assert.equal(ids.length, 11); assert.equal(new Set(ids).size, 11);
+  for (const out of ['community-storefront-hero-swap', 'community-garden-path-tea']) assert.equal(ids.includes(out), false, out);
   for (const out of ['basketball-3', 'community-billboard-product-swap', 'community-stadium-ball-control']) assert.ok(!ids.includes(out), out);
   for (const row of TEMPLATE_SWAP_ROW) {
     assert.ok(TEMPLATE_SWAP_CLIPS.includes(row.id), row.id);
