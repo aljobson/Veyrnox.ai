@@ -1,16 +1,17 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ScrollView, View } from 'react-native';
-import { Button, Text, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Button, SegmentedControl, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { PadGrid } from '../../../components/beats/PadGrid';
 import { StepGrid } from '../../../components/beats/StepGrid';
 import { BeatInstrumentsSection, openPiano } from '../../../components/beats/BeatInstrumentsSection';
+import { BeatArrangement } from '../../../components/beats/BeatArrangement';
 import { MixerStrip } from '../../../components/beats/MixerStrip';
 import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
 import {
-    addKitTrack, audibleGain, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, removeTrack, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp,
+    addKitTrack, audibleGain, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, removeTrack, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp, setView,
     type BeatDoc, type Edit, type PadId,
 } from '../../../lib/beatNative/doc';
 import { beatStore, getBeat, listBeats, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
@@ -32,8 +33,10 @@ export default function BeatEditor() {
     const history = useRef<History | null>(null);
     if (doc && history.current?.present !== doc) history.current = createHistory(doc);
     const audio = useRef<BeatAudio | null>(null);
+    const manualRun = useRef(false);
     const docRef = useRef<BeatDoc | undefined>(doc);
     docRef.current = doc;
+    const [held, setHeld] = useState(false);
     const [pad, setPad] = useState<PadId>('kick');
     const [playing, setPlaying] = useState(false);
     const [step, setStep] = useState<number | null>(null);
@@ -74,10 +77,10 @@ export default function BeatEditor() {
     if (!doc) return <EmptyState title={t('beat.missing')} body={t('beat.missingBody')} actionLabel={t('beat.back')} href="/beats" />;
     const play = async () => {
         const a = engine(); if (!a) return;
-        try { await a.play(() => docRef.current as BeatDoc, n => setStep(n)); setPlaying(true); setSaid(t('beat.playing')); } catch { setNotice(t('beat.audioError')); }
+        try { await a.play(() => docRef.current as BeatDoc, n => setStep(n)); manualRun.current = false; setPlaying(true); setSaid(t('beat.playing')); } catch { setNotice(t('beat.audioError')); }
     };
     const stop = () => { audio.current?.stop(); setPlaying(false); setStep(null); setSaid(t('beat.stopped')); };
-    const hit = (p: PadId) => { setPad(p); engine()?.hitPad(p, doc.tracks[0]?.kit ?? DRUM_KITS[0].id); };
+    const hit = (p: PadId) => { setPad(p); engine()?.hitPad(p, doc.tracks.find(track => !track.kind || track.kind === 'drums')?.kit ?? DRUM_KITS[0].id); };
     const mixOf = (trackId: string, next: BeatDoc) => {
         const track = next.tracks.find(x => x.id === trackId);
         if (track) audio.current?.setTrackMix(trackId, { gain: audibleGain(next, track), pan: track.pan });
@@ -90,7 +93,7 @@ export default function BeatEditor() {
     const bpm = doc.tempo.bpm;
     const bump = (by: number) => apply(d => setTempo(d, clampBpm(bpm + by)));
     return (
-        <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+        <ScrollView scrollEnabled={!held} style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: doc.title }} />
             <BeatSaveControls id={doc.id} apply={apply} />
             <Button label={t('beat.undo')} disabled={!history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
@@ -108,10 +111,15 @@ export default function BeatEditor() {
                     <Text variant="title3" accessibilityLiveRegion="polite">{t('beat.tempoValue', { bpm })}</Text>
                 </View>
             </View>
+            <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')}
+                options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
+                onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
+            {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : <>
             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
             <PadGrid selected={pad} onHit={hit} />
             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.steps', { pad: t(`beat.pad.${pad}`) })}</Text>
             <StepGrid doc={doc} pad={pad} current={playing ? step : null} onToggle={n => apply(d => toggleStep(d, pad, n))} />
+            </>}
             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.mixer')}</Text>
             {doc.tracks.map((track, i) => (
                 <MixerStrip key={track.id} track={track} index={i} canRemove={doc.tracks.length > 1}

@@ -6138,6 +6138,126 @@
     "ratio": 1.62
   },
   {
+    "id": "beat.view.song",
+    "english": "Song",
+    "translation": "Morceau",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.kind.drums",
+    "english": "Drum track",
+    "translation": "Piste de batterie",
+    "ratio": 1.7
+  },
+  {
+    "id": "beat.region.select",
+    "english": "Select region",
+    "translation": "Sélectionner la région",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.region.later",
+    "english": "Move later",
+    "translation": "Déplacer plus tard",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.region.resize",
+    "english": "Resize region",
+    "translation": "Redimensionner la région",
+    "ratio": 1.85
+  },
+  {
+    "id": "beat.region.split",
+    "english": "Split at playhead",
+    "translation": "Scinder à la tête de lecture",
+    "ratio": 1.65
+  },
+  {
+    "id": "beat.region.copy",
+    "english": "Copy on drop",
+    "translation": "Copier au relâchement",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.region.add",
+    "english": "Add region at playhead",
+    "translation": "Ajouter une région à la tête de lecture",
+    "ratio": 1.77
+  },
+  {
+    "id": "beat.region.drumOnly",
+    "english": "Select a drum track to add a region",
+    "translation": "Sélectionnez une piste de batterie pour ajouter une région",
+    "ratio": 1.66
+  },
+  {
+    "id": "beat.snap.bar",
+    "english": "Bar",
+    "translation": "Mesure",
+    "ratio": 2
+  },
+  {
+    "id": "beat.snap.sixteenth",
+    "english": "1/16 note",
+    "translation": "Double croche (1/16)",
+    "ratio": 2.22
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Mesure suivante",
+    "ratio": 1.88
+  },
+  {
+    "id": "beat.ruler.position",
+    "english": "Playhead position",
+    "translation": "Position de la tête de lecture",
+    "ratio": 1.76
+  },
+  {
+    "id": "beat.ruler.left",
+    "english": "Playhead left",
+    "translation": "Tête de lecture à gauche",
+    "ratio": 1.85
+  },
+  {
+    "id": "beat.ruler.right",
+    "english": "Playhead right",
+    "translation": "Tête de lecture à droite",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.cycle.on",
+    "english": "Cycle on",
+    "translation": "Boucle activée",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.cycle.off",
+    "english": "Cycle off",
+    "translation": "Boucle désactivée",
+    "ratio": 1.89
+  },
+  {
+    "id": "beat.cycle.end",
+    "english": "Cycle end to playhead",
+    "translation": "Fin de boucle à la tête de lecture",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.drag.moving",
+    "english": "Moving region, drag then lift",
+    "translation": "Déplacement de la région, glissez puis relâchez",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.cycle.moving",
+    "english": "Moving cycle edge, drag then lift",
+    "translation": "Déplacement du bord de la boucle, glissez puis relâchez",
+    "ratio": 1.67
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
