@@ -265,5 +265,13 @@
   "editorText.animationName6": "Standard notation or established style name, retained in this locale.",
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "speech.volume": "Volume is the French noun for audio volume, with the same spelling as English.",
-  "speech.tone.Expressive": "Expressive is the French feminine adjective describing an expressive voice, with the same spelling as English."
+  "speech.tone.Expressive": "Expressive is the French feminine adjective describing an expressive voice, with the same spelling as English.",
+  "editorAudioTools.bpm": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.db": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.description": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.hz": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.radio": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.robot": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale."
 }

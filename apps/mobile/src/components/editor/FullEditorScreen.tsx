@@ -1,3 +1,5 @@
+import { useAudioSettingsActions } from './tools/useAudioSettingsActions';
+import { useOriginalAudio } from './tools/useOriginalAudio';
 import { useCaptionActions } from './tools/useCaptionActions';
 import { useTextActions } from './tools/useTextActions';
 import { useSpeedActions } from './tools/useSpeedActions';
@@ -119,6 +121,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         frameStore, setSelection, setSelections, setTool });
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
+    const audioActions = useAudioSettingsActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
+    const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, insertMedia, frameStore, playing, setProblem });
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const total = framesIn(timeline); const selected = clipAt(timeline, selection);
@@ -228,7 +232,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
     const panelProps: ToolPanelProps = {
-        timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
+        audioActions, originalAudio, timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };

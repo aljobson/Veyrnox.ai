@@ -1,3 +1,5 @@
+import { audioProcessingActive } from '../../../../app/veyrnox/_lib/editorAudioSettings.mjs';
+import { audioEffectsActive } from '../../../../app/veyrnox/_lib/editorAudioEffects.mjs';
 import { exportRefusal } from './editorExportRefusal';
 import { ApiError, type ApiClient } from './api';
 import { getCacheUser, subscribeCacheUser } from './appCache';
@@ -27,7 +29,7 @@ export function exportIdentity(document: ProjectDocument): string {
     return documentIdentity(copy);
 }
 const SOURCE = /^([jef])-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-export type BlockReason = 'notOnPhone' | 'unsupported' | 'durationUnknown' | 'clipLongerThanFile' | 'localType' | 'localSize' | 'localCount';
+export type BlockReason = 'originalAudio' | 'notOnPhone' | 'unsupported' | 'durationUnknown' | 'clipLongerThanFile' | 'localType' | 'localSize' | 'localCount';
 export type Blocked = { id: string; name?: string; reason: BlockReason };
 export async function exportSourceLink(api: ApiClient, media: Media): Promise<string | null> {
     const match = SOURCE.exec(media.id);
@@ -62,6 +64,12 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
     const clips = [...timeline.video, ...timeline.audio];
     const used = new Set(clips.map(c => c.mediaId));
     timeline.media = Object.fromEntries(Object.entries(timeline.media).filter(([id]) => used.has(id)));
+    for (const clip of clips) {
+        if (clip.eq && clip.eq.low === 0 && clip.eq.mid === 0 && clip.eq.high === 0) delete clip.eq;
+        if (!audioProcessingActive({ audioProcessing: clip.audioProcessing })) delete clip.audioProcessing;
+        if (!audioEffectsActive(clip.audioEffects)) delete clip.audioEffects;
+        if (!clip.preservePitch) delete clip.preservePitch;
+    }
     for (const clip of [...clips, ...timeline.text]) {
         if ('rate' in clip && clip.rate === 1) delete clip.rate;
         // Neutral defaults (written by trim and fit-to-file) mean "no edit"; the server only accepts keys that carry one.
@@ -74,6 +82,7 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
     for (const text of timeline.text) if (documentIdentity(text.style) === documentIdentity(SERVER_PLAIN_TEXT_STYLE)) delete text.style;
     for (const [id, media] of Object.entries(timeline.media)) {
         const block = (reason: BlockReason) => blocked.push({ id, name: media.name, reason });
+        if (media.originalAudio) { block('originalAudio'); continue; }
         const file = localFiles[id];
         if (id.startsWith('p-') || (id.startsWith('l-') && !file)) { block('notOnPhone'); continue; }
         if (id.startsWith('l-') && UUID.test(id.slice(2))) {
@@ -108,7 +117,8 @@ let disabledOwner: string | undefined;
 subscribeCacheUser(() => { disabledOwner = undefined; });
 export const exportUnavailable = () => !!getCacheUser() && disabledOwner === getCacheUser();
 export const rememberExportUnavailable = () => { disabledOwner = getCacheUser(); };
-export const isGateRefusal = (error: unknown) => { const e = error as ApiError; return e.status === 501 || e.status === 404 || (e.status === 403 && e.code === 'preview_only') || e.code === 'not_enabled'; };
+export const isGateRefusal = (error: unknown) => { const e = error as ApiError; return e.status === 501 || e.status === 404 || (e.status === 403 && e.code === 'preview_only') || e.code ===
+    'not_enabled'; };
 export const uncertainAttempt = (error: unknown) => { const e = error as ApiError; return e.status === 0 || (e.status >= 500 && !e.body?.job_id); };
 export const retiredAttempt = (error: unknown) => { const e = error as ApiError; return ['price_changed', 'render_refunded'].includes(e.code) || (e.status === 503 && !!e.body?.job_id); };
 export type RenderReply = { job_id: string; state: string; render_id?: string; refunded?: boolean; credits?: number };
@@ -132,7 +142,8 @@ export async function sendExportAttempt(api: ApiClient, attempt: ExportRecord, l
 }
 const ERRORS: Record<string, string> = {
     upload_budget_exceeded: 'uploadBudget', too_many_pending_uploads: 'uploadBudget', upload_admission_unavailable: 'uploadAdmission',
-    upload_consent_expired: 'uploadExpired', upload_reservation_unavailable: 'uploadFailed', upload_invalid_grant: 'uploadFailed', upload_failed: 'uploadFailed', upload_unreadable: 'localType', upload_type_mismatch: 'localType',
+    upload_consent_expired: 'uploadExpired', upload_reservation_unavailable: 'uploadFailed', upload_invalid_grant: 'uploadFailed', upload_failed: 'uploadFailed', upload_unreadable: 'localType',
+        upload_type_mismatch: 'localType',
     render_busy: 'refunded', runner_submit_failed: 'refunded', editor_render_unsupported: 'unsupported', editor_render_duration_limit: 'duration', editor_render_clip_limit: 'clips',
     editor_render_media_not_owned: 'ownership', editor_render_upload_incomplete: 'uploadFailed', insufficient_balance: 'balanceLow', insufficient_credits: 'balanceLow',
     rate_limited: 'rate', render_limit: 'rate', render_invalid: 'invalid', invalid_render: 'invalid', editor_render_invalid_document: 'invalid', render_too_large: 'tooLarge',
@@ -153,7 +164,12 @@ export function exportError(error: unknown, uploaded = false): string {
 }
 export function exportFeature(feature: unknown): string {
     const key = typeof feature === 'string' ? feature : '';
-    const existing: Record<string, string> = { reverse: 'editor.reverse', crop: 'editorServerExport.crop', rotation: 'editor.rotation', opacity: 'editor.opacity', transform: 'editorServerExport.transform', flipX: 'editorServerExport.flipX', flipY: 'editorServerExport.flipY', filter: 'editor.filters', picture: 'editor.animation', motion: 'editor.animation', animation: 'editor.animation', keyframes: 'editor.animation', speed: 'editor.speed', rate: 'editor.speed', speedCurve: 'editor.speed', transitionType: 'editor.transitions', multiple_tracks: 'editorServerExport.tracks', track_visibility: 'editorServerExport.visibility', overlapping_clips: 'editorServerExport.overlap', background: 'editorServerExport.background', source_aspect: 'editorServerExport.aspect', schemaVersion: 'editorServerExport.version', 'canvas.frame_rate': 'editorServerExport.frameRate', mask: 'editorServerExport.mask' };
+    const existing: Record<string, string> = { reverse: 'editor.reverse', crop: 'editorServerExport.crop', rotation: 'editor.rotation', opacity: 'editor.opacity', transform:
+        'editorServerExport.transform', flipX: 'editorServerExport.flipX', flipY: 'editorServerExport.flipY', filter: 'editor.filters', picture: 'editor.animation', motion: 'editor.animation',
+        animation: 'editor.animation', keyframes: 'editor.animation', speed: 'editor.speed', rate: 'editor.speed', speedCurve: 'editor.speed', transitionType: 'editor.transitions',
+        multiple_tracks: 'editorServerExport.tracks', track_visibility: 'editorServerExport.visibility', overlapping_clips: 'editorServerExport.overlap', background:
+        'editorServerExport.background', source_aspect: 'editorServerExport.aspect', schemaVersion: 'editorServerExport.version', 'canvas.frame_rate': 'editorServerExport.frameRate', mask:
+        'editorServerExport.mask' };
     if (key.startsWith('text.')) return t('editor.text2');
     if (key.startsWith('media.')) return t('editor.media2');
     if (['audioProcessing', 'preservePitch', 'fadeIn', 'fadeOut', 'volume', 'audio', 'audioEffects'].includes(key)) return t('editor.audio');

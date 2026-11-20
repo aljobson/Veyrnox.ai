@@ -1,3 +1,4 @@
+import { exportRefusal } from '../../lib/editorExportRefusal';
 import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { Alert, Platform, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -20,20 +21,26 @@ export function ServerExportSheet(props: ServerExportProps) {
         <View style={styles.backdrop} onAccessibilityEscape={state.close}><ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
             <Text accessibilityRole="header" style={styles.heading}>{t('editorServerExport.title')}</Text>
             {state.message ? <StatusText variant="inherit" accessibilityRole={Platform.OS === 'android' ? 'alert' : undefined} style={styles.text}>{state.message}</StatusText> : null}
-            {working ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.text}>{t(`editorServerExport.${state.phase}` as Parameters<typeof t>[0])}</StatusText> : null}
-            {state.phase === 'uploading' ? <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(state.progress * 100) }} style={styles.track}><View style={[styles.fill, { width: `${state.progress * 100}%` }]} /></View> : null}
+            {working ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.text}>{t(`editorServerExport.${state.phase}` as
+                Parameters<typeof t>[0])}</StatusText> : null}
+            {state.phase === 'uploading' ? <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: Math.round(state.progress * 100) }} style={styles.track}><View
+                style={[styles.fill, { width: `${state.progress * 100}%` }]} /></View> : null}
             {!working && !state.job ? <View>
-                {(['1080p', '720p'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={rawText(value)} accessibilityState={{ selected: state.resolution === value }} onPress={() => state.choose(value)} style={[styles.button, touchTarget]}>
+                {(['1080p', '720p'] as const).map(value => <Pressable key={value} accessibilityRole="button" accessibilityLabel={rawText(value)} accessibilityState={{ selected: state.resolution
+                    === value }} onPress={() => state.choose(value)} style={[styles.button, touchTarget]}>
                     <Text style={styles.text}>{state.limits[value] ? t('editorServerExport.resolution', { resolution: value, seconds: state.limits[value]! }) : value}</Text>
                 </Pressable>)}
             </View> : null}
             {state.blocked.length ? <View>
                 {state.blocked.some(item => item.reason === 'notOnPhone') ? <Text style={styles.text}>{t('editorServerExport.notOnPhone')}</Text> : null}
-                {state.blocked.map((item, index) => <Text key={`${item.id}-${index}`} style={styles.text}>{item.name ? `${item.name}: ` : ''}{t(`editorServerExport.${item.reason}` as Parameters<typeof t>[0])}</Text>)}
+                {state.blocked.map((item, index) => <Text key={`${item.id}-${index}`} style={styles.text}>{item.name ? `${item.name}: ` : ''}{item.reason === 'originalAudio' ?
+                    exportRefusal('media.originalAudio') :
+                    t(`editorServerExport.${item.reason}` as Parameters<typeof t>[0])}</Text>)}
             </View> : null}
             {state.phase === 'quoted' && state.quote ? <View>
                 <Text style={styles.text}>{t('editorServerExport.confirm', { credits: state.quote.credits, resolution: state.resolution })}</Text>
-                {state.files.length ? <Text style={styles.text}>{t('editorServerExport.retention', { count: state.files.length, mb: formatNumber(state.files.reduce((sum, file) => sum + file.size, 0) / 1048576, 1) })}</Text> : null}
+                {state.files.length ? <Text style={styles.text}>{t('editorServerExport.retention', { count: state.files.length, mb: formatNumber(state.files.reduce((sum, file) => sum +
+                    file.size, 0) / 1048576, 1) })}</Text> : null}
                 <Text style={styles.text}>{t('editorServerExport.fidelity')}</Text>
                 <Button label={t('editorServerExport.start')} onPress={() => void state.confirm()} />
             </View> : null}

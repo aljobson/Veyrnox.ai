@@ -12,6 +12,8 @@ export type Selection = { track: TrackKind; id: string };
 export type Canvas = { aspect_ratio: '16:9' | '9:16' | '1:1'; frame_rate: 24 | 25 | 30 | 60 };
 export type Media = {
     id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number;
+    sourceName?: string; folder?: string; attribution?: { credit: string; usage: string; url: string };
+    originalAudio?: { version: 1; presetId: string };
     assetSource?: { projectId: string; assetId: string };
 };
 export type TimedFields = {
@@ -29,7 +31,9 @@ export type Clip = TimedFields & {
     effect?: { type: string; intensity: number }; animation?: Animation;
     transform?: { x?: number; y?: number; scale?: number; rotation?: number; opacity?: number; flipX?: boolean; flipY?: boolean };
     filter?: { brightness?: number; contrast?: number; saturate?: number; hue?: number; blur?: number };
-    eq?: { low?: number; mid?: number; high?: number };
+    eq?: { low: number; mid: number; high: number };
+    audioProcessing?: { pitch: number; voice: string; noiseReduction: number; noiseStart: number; noiseLength: number; gateDb: number };
+    audioEffects?: { width: number; tremoloRate: number; tremoloDepth: number; echoDelay: number; echoDecay: number; echoRepeats: number; echoMix: number };
 };
 export type TextClip = TimedFields & {
     caption?: boolean; wordsEstimated?: boolean;

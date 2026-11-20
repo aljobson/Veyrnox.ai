@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "निम्न",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
     "id": "editorCaptionTools.none",
     "english": "None",
     "translation": "कोई नहीं",

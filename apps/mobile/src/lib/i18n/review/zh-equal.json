@@ -76,5 +76,9 @@
   "beat.kit.808": "Same in zh: a loanword, brand-style name or number used unchanged in this language.",
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
-  "editorText.percent": "Standard notation or established style name, retained in this locale."
+  "editorText.percent": "Standard notation or established style name, retained in this locale.",
+  "editorAudioTools.bpm": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.db": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.hz": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale."
 }

@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Tiefen",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Mitten",
+    "ratio": 2
+  },
+  {
     "id": "editorCaptionTools.allSources",
     "english": "All timed captions",
     "translation": "Alle Untertitel mit Zeitangaben",

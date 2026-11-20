@@ -1,5 +1,65 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Médios",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.none",
+    "english": "None",
+    "translation": "Nenhuma",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "editorAudioTools.tremoloRate",
+    "english": "Tremolo rate",
+    "translation": "Frequência do tremolo",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.tremoloDepth",
+    "english": "Tremolo depth",
+    "translation": "Profundidade do tremolo",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorAudioTools.echoDecay",
+    "english": "Echo decay",
+    "translation": "Decaimento do eco",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorAudioTools.echoMix",
+    "english": "Echo mix",
+    "translation": "Mistura do eco",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.noMatches",
+    "english": "No sounds match.",
+    "translation": "Nenhum som correspondente.",
+    "ratio": 1.63
+  },
+  {
     "id": "editorCaptionTools.correctChoose",
     "english": "Choose one timed word to correct.",
     "translation": "Escolha uma palavra com tempo definido para corrigir.",
