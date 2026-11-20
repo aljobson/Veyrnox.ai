@@ -1,6 +1,7 @@
 import { createBeat, validateBeat, type BeatDoc } from './doc';
 import { beatFile, documentFiles, loadRecords, type BeatFiles } from './persist';
 import { validCloudLink, type BeatRecord, type CloudLink } from './rules';
+import { createPersistedListeners } from './persistedListeners';
 
 export const newId = (): string => 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => Math.floor(Math.random() * 16).toString(16));
 export type SaveState = 'saved' | 'saving' | 'error' | 'busy';
@@ -8,13 +9,7 @@ export function createBeatStore(files: BeatFiles = documentFiles()) {
     const persistedDocs = new Map<string, BeatDoc>();
     let records = new Map<string, BeatRecord>();
     let docs: readonly BeatDoc[] = [];
-    const persistedListeners = new Set<(id: string, doc: BeatDoc) => void | Promise<void>>();
-    const persisted = async (id: string, doc: BeatDoc) => {
-        for (const listener of persistedListeners) {
-            try { await listener(id, doc); }
-            catch (error) { console.warn('Beat post-save reconciliation failed', error); }
-        }
-    };
+    const persisted = createPersistedListeners();
     const listeners = new Set<() => void>();
     const dirty = new Set<string>(), barriers = new Set<string>(), deleted = new Set<string>();
     const errors = new Set<string>();
@@ -47,7 +42,7 @@ export function createBeatStore(files: BeatFiles = documentFiles()) {
                 if (captured) persistedDocs.set(id, captured.doc);
             } catch (error) { if (generation === epoch) errors.add(id); throw error; }
             finally { if (generation === epoch) emit(); }
-            if (captured && generation === epoch) await persisted(id, captured.doc);
+            if (captured && generation === epoch) await persisted.notify(id, captured.doc);
         });
     }
     const schedule = (id: string) => {
@@ -56,7 +51,7 @@ export function createBeatStore(files: BeatFiles = documentFiles()) {
         emit();
     };
     const api = {
-        onPersisted(listener: (id: string, doc: BeatDoc) => void | Promise<void>) { persistedListeners.add(listener); return () => { persistedListeners.delete(listener); }; },
+        onPersisted: persisted.subscribe,
         listBeats: () => docs,
         getPersistedBeat: (id: string) => persistedDocs.get(id),
         getBeat: (id: string) => records.get(id)?.doc,
@@ -118,10 +113,10 @@ export function createBeatStore(files: BeatFiles = documentFiles()) {
                 barriers.delete(id);
                 if (dirty.has(id)) schedule(id); else emit();
             }
-            if (saved) await persisted(id, saved);
+            if (saved) await persisted.notify(id, saved);
         },
         resetBeats() {
-            epoch++; timers.forEach(clearTimeout); timers.clear(); records.clear(); persistedDocs.clear(); dirty.clear(); deleted.clear(); errors.clear();
+            epoch++; persisted.reset(); timers.forEach(clearTimeout); timers.clear(); records.clear(); persistedDocs.clear(); dirty.clear(); deleted.clear(); errors.clear();
             hydration = undefined; hydrationState = 'loading'; emit();
         },
     };

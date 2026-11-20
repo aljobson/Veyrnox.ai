@@ -159,3 +159,40 @@ test('post-save listener failures cannot undo a durable flush or replacement', a
         expect(states).toEqual(['saved', 'saved']); expect(warning).toHaveBeenCalledTimes(2);
     } finally { warning.mockRestore(); }
 });
+
+test('failed reconciliation retries every durable document without rewriting the beat', async () => {
+    const warning = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+        const files = memoryFiles(), store = createBeatStore(files), doc = store.newBeat('First saved take');
+        const reconciled: string[] = []; let unavailable = true;
+        store.onPersisted((_id, saved) => {
+            if (unavailable) throw new Error('take_store_unreadable');
+            reconciled.push(saved.title);
+        });
+        await store.flushBeat(doc.id);
+        const replacement = { ...doc, title: 'Cloud revision', updatedAt: doc.updatedAt + 1 };
+        await store.replaceFromCloud(doc.id, { doc: replacement, cloud: { userId: USER, projectId: PROJECT, revision: 2, syncedUpdatedAt: replacement.updatedAt } }, { isCurrent: () => true, stash: async () => {} });
+        const writes = jest.mocked(files.write).mock.calls.length;
+        unavailable = false;
+        await jest.advanceTimersByTimeAsync(5000);
+        expect(reconciled).toEqual(['First saved take', 'Cloud revision']);
+        expect(files.write).toHaveBeenCalledTimes(writes);
+        expect(store.getBeat(doc.id)).toEqual(replacement);
+        expect(store.saveState(doc.id)).toBe('saved');
+        await jest.advanceTimersByTimeAsync(5000);
+        expect(reconciled).toHaveLength(2);
+    } finally { warning.mockRestore(); }
+});
+
+test.each(['reset', 'unsubscribe'])('%s cancels deferred post-save reconciliation', async action => {
+    const warning = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+        const store = createBeatStore(memoryFiles()), doc = store.newBeat('Local');
+        const listener = jest.fn(() => { throw new Error('offline'); });
+        const unsubscribe = store.onPersisted(listener);
+        await store.flushBeat(doc.id);
+        if (action === 'reset') store.resetBeats(); else unsubscribe();
+        await jest.advanceTimersByTimeAsync(10000);
+        expect(listener).toHaveBeenCalledTimes(1);
+    } finally { warning.mockRestore(); }
+});

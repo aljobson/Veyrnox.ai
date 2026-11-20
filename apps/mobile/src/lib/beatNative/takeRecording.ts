@@ -122,7 +122,7 @@ export function createTakeRecording(deps: RecordingDeps) {
         },
         async beforeReplace() {
             if (['recording', 'finishing'].includes(state.status) || transport) await api.finishAndDisarm();
-            else if (opening) { ++intent; await opening; }
+            else if (opening) { ++intent; await opening; show({ status: input ? 'armed' : 'idle' }); }
             if (session?.error) throw new Error('recording_not_preserved');
         },
         async recover(discard = false) {

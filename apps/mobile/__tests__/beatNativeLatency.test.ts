@@ -1,6 +1,7 @@
 import { calibrationFrames, capturedSamples, detectClickOnsets, matchCalibration, readLatency, writeLatency } from '../src/lib/beatNative/takeShared';
 import { createLatencyStorage } from '../src/lib/beatNative/latencyStore';
 import { takeIO } from './beatNativeTakeFixtures';
+import { deferred } from './beatNativeFixtures';
 test('eight delayed clicks recover loopback latency within 1 ms and expire after 90 days', async () => {
     const io = takeIO(), storage = createLatencyStorage(io), sr = 48000, frames = calibrationFrames(sr), delay = 123 * sr / 1000;
     const samples = new Float32Array(sr * 8);
@@ -14,8 +15,7 @@ test('eight delayed clicks recover loopback latency within 1 ms and expire after
 });
 
 test('hydration emits and preserves measurements written while the file read was pending', async () => {
-    const { deferred } = require('./beatNativeFixtures');
-    const io = takeIO(), gate = deferred(), storage = createLatencyStorage({ ...io, read: () => gate.promise });
+    const io = takeIO(), gate = deferred<Uint8Array | null>(), storage = createLatencyStorage({ ...io, read: () => gate.promise });
     const listener = jest.fn(); storage.subscribe(listener); const hydrate = storage.hydrate();
     expect(writeLatency('default', 42, storage, 200)).toBe(true);
     gate.resolve(new TextEncoder().encode(JSON.stringify({ 'veyrnox.beat.latency.v1': JSON.stringify({ default: { ms: 10, measuredAt: 100 }, headset: { ms: 20, measuredAt: 100 } }) })));
@@ -23,4 +23,20 @@ test('hydration emits and preserves measurements written while the file read was
     expect(readLatency('default', storage, 201)?.ms).toBe(42); expect(readLatency('headset', storage, 201)?.ms).toBe(20);
     expect(listener).toHaveBeenCalledTimes(2);
     const reopened = createLatencyStorage(io); await reopened.hydrate(); expect(readLatency('default', reopened, 201)?.ms).toBe(42);
+});
+
+test('an early measurement waits for hydration before publishing and preserves other devices on disk', async () => {
+    const io = takeIO(), gate = deferred<string[]>(), write = jest.fn(io.write);
+    const key = 'veyrnox.beat.latency.v1';
+    io.data.set('beat-latency.json.pending', new TextEncoder().encode(JSON.stringify({ [key]: JSON.stringify({ default: { ms: 10, measuredAt: 100 }, headset: { ms: 20, measuredAt: 100 } }) })));
+    const storage = createLatencyStorage({ ...io, list: () => gate.promise, write });
+    writeLatency('default', 42, storage, 200);
+    const flush = storage.flush();
+    await Promise.resolve(); await Promise.resolve();
+    expect(write).not.toHaveBeenCalled();
+    gate.resolve(['beat-latency.json.pending']); await flush;
+    expect(readLatency('default', storage, 201)?.ms).toBe(42);
+    const reopened = createLatencyStorage(io); await reopened.hydrate();
+    expect(readLatency('default', reopened, 201)?.ms).toBe(42);
+    expect(readLatency('headset', reopened, 201)?.ms).toBe(20);
 });

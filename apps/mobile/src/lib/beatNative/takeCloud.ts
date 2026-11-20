@@ -87,8 +87,11 @@ export function createTakeCloud(api: ApiClient, fetcher: typeof fetch = fetch, i
         try { initialize(); } catch (error) { check(token); failures.fail(batch, error); return false; }
         for (const asset of assets) {
             const key = `${doc.id}:download:${asset.ref}`;
-            if (failures.held(key)) { all = false; continue; }
-            try { if (!await loadBeatTake(asset.ref)) missing.push(asset); else failures.ready(key); }
+            try {
+                if (await loadBeatTake(asset.ref)) failures.ready(key);
+                else if (failures.held(key)) all = false;
+                else missing.push(asset);
+            }
             catch (error) { check(token); all = false; failures.fail(key, error); }
         }
         if (!missing.length) return all;
@@ -102,9 +105,10 @@ export function createTakeCloud(api: ApiClient, fetcher: typeof fetch = fetch, i
             try {
                 const signed = await call<{ url: string }>(`${path(doc.id)}/${encodeURIComponent(row.id)}`, token);
                 if (typeof signed?.url !== 'string') throw new ApiError(200, 'bad_response');
-                const response = await fetcher(signed.url, { signal: token.signal, credentials: 'omit' });
+                const networkError = (error: unknown): never => { throw error instanceof ApiError ? error : new ApiError(0, 'NETWORK_ERROR'); };
+                const response = await fetcher(signed.url, { signal: token.signal, credentials: 'omit' }).catch(networkError);
                 if (!response.ok) throw new ApiError(response.status, 'TAKE_DOWNLOAD_FAILED');
-                const decoded = decodeTakeWav(await response.arrayBuffer()); check(token);
+                const decoded = decodeTakeWav(await response.arrayBuffer().catch(networkError)); check(token);
                 await putBeatTake({ ...decoded, id: asset.ref, beatId: doc.id, label: asset.name, length: decoded.samples.length, createdAt: Date.now(), state: 'committed' }, () => check(token));
                 failures.ready(key);
             } catch (error) { check(token); all = false; failures.fail(key, error); }

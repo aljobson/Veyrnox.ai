@@ -143,3 +143,46 @@ test('background replacement accepts local-only takes while explicit Load theirs
     expect((await loadBeatTake('take-1'))?.samples.length).toBe(1000);
     await expect(sync.takes.upload(saved, sync.capture(), true)).rejects.toMatchObject({ code: 'TAKE_LOCAL_ONLY' }); sync.dispose();
 });
+
+test.each(['fetch', 'body'])('a download %s network failure backs off for 60 s while document autosave continues', async failure => {
+    const store = createBeatStore(memoryFiles()), doc = store.newBeat('Cloud-only');
+    store.putBeat({ ...docWithTake(), id: doc.id }); const saved = store.getBeat(doc.id)!;
+    store.setCloudLink(doc.id, { userId: USER, projectId: project(doc.id).id, revision: 1, syncedUpdatedAt: saved.updatedAt });
+    const api = { request: jest.fn(async (path: string, init: RequestInit) => {
+        if (init.method === 'PUT') return { project: project(doc.id, 2) };
+        if (path.endsWith('/server-take')) return { url: 'https://signed.test/download' };
+        if (path.endsWith('/takes')) return { takes: [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] };
+        if (path.endsWith(doc.id)) return { project: project(doc.id, 1), doc_json: JSON.stringify(saved) };
+        return { projects: [] };
+    }) };
+    let offline = true;
+    const download = jest.spyOn(global, 'fetch').mockImplementation(async () => {
+        if (offline && failure === 'fetch') throw new TypeError('Network request failed');
+        return { ok: true, arrayBuffer: async () => {
+            if (offline) throw new TypeError('Connection lost');
+            return encodeWav(takeRow().samples, 1000);
+        } } as Response;
+    });
+    download.mockClear();
+    const sync = new BeatCloudSync(api as unknown as ApiClient, store, doc.id);
+    try {
+        await sync.start(USER); expect(sync.snapshot().state).toBe('takes');
+        store.putBeat({ ...store.getBeat(doc.id)!, title: 'Document still saves' });
+        await jest.advanceTimersByTimeAsync(1600);
+        expect(api.request.mock.calls.filter(([, init]) => init.method === 'PUT')).toHaveLength(1);
+        expect(store.getRecord(doc.id)?.cloud?.revision).toBe(2);
+        offline = false; await jest.advanceTimersByTimeAsync(58399);
+        expect(download).toHaveBeenCalledTimes(1);
+        await jest.advanceTimersByTimeAsync(1);
+        expect(download).toHaveBeenCalledTimes(2); expect(sync.snapshot().state).toBe('synced');
+        expect((await loadBeatTake('take-1'))?.state).toBe('committed');
+    } finally { sync.dispose(); download.mockRestore(); }
+});
+
+test('a refused download clears when the take becomes available on the device', async () => {
+    const api = { request: jest.fn(async () => ({ takes: [] })) };
+    const cloud = createTakeCloud(api as unknown as ApiClient, jest.fn() as never, () => {}), doc = docWithTake();
+    expect(await cloud.download(doc, token)).toBe(false);
+    await putBeatTake(takeRow());
+    expect(await cloud.download(doc, token)).toBe(true);
+});

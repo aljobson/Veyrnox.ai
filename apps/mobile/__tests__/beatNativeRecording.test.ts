@@ -6,7 +6,7 @@ import { addAudioTrack, appendBeatTake, configureBeatTakeStorage, hydrateBeatTak
 import { createRecordingTransport } from '../src/lib/beatNative/transport';
 import { beforeReplace, registerRecordingFinalizer, replacementUnderway } from '../src/lib/beatNative/recordingFinalizers';
 import { fakeCapture, takeIO, takeRow } from './beatNativeTakeFixtures';
-import { memoryFiles } from './beatNativeFixtures';
+import { deferred, memoryFiles } from './beatNativeFixtures';
 import { t } from '../src/lib/i18n';
 function harness(cycle = false) {
     const io = takeIO(); configureBeatTakeStorage(createTakeFiles(io));
@@ -101,4 +101,20 @@ test('a cloud replacement leaves an idle armed microphone open', async () => {
     const release = await beforeReplace(h.id);
     expect(h.controller.snapshot().armedId).toBe(h.trackId); expect(h.input.capture.ended).toBe(false);
     release(); unregister(); await h.controller.dispose();
+});
+
+test('replacement cancels a pending recording start and releases the recording lock', async () => {
+    jest.useFakeTimers(); const h = harness(), gate = deferred<string[]>();
+    await h.controller.arm(h.trackId);
+    configureBeatTakeStorage(createTakeFiles({ ...h.io, list: () => gate.promise }));
+    const starting = h.controller.record(false);
+    expect(h.controller.snapshot().status).toBe('opening');
+    const unregister = registerRecordingFinalizer(h.id, h.controller.beforeReplace);
+    const replacing = beforeReplace(h.id);
+    gate.resolve([]); await starting;
+    const release = await replacing;
+    expect(h.audio.playRange).not.toHaveBeenCalled();
+    expect(h.controller.snapshot()).toMatchObject({ status: 'armed', armedId: h.trackId });
+    release(); expect(h.controller.locked()).toBe(false);
+    unregister(); await h.controller.dispose();
 });
