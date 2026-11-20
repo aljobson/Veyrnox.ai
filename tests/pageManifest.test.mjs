@@ -58,7 +58,7 @@ test('only an explicit valid saved-version fixture can classify Editor Review as
 });
 
 test('a route the Worker answers 404 while its flag is off is swept as a dark route, not a render', () => {
-  assert.deepEqual([...DARK_ROUTES], ['/app/photo-studio']);
+  assert.deepEqual([...DARK_ROUTES], []);
   for (const route of DARK_ROUTES) {
     assert.ok(PAGE_TEMPLATES.some(entry => entry.route === route), `${route} is still in the route inventory`);
     assert.equal(photoStudioRouteDisabled(route, {}), true, 'the flag ships off, so the Worker answers 404');
@@ -69,6 +69,6 @@ test('a route the Worker answers 404 while its flag is off is swept as a dark ro
     }
   }
   const modes = new Set(buildPageManifest([]).map(({ mode }) => mode));
-  assert.deepEqual([...modes].sort(), ['dark-route', 'negative-path', 'render']);
+  assert.deepEqual([...modes].sort(), ['negative-path', 'render']);
   assert.equal(buildPageManifest([]).filter(({ mode }) => mode === 'dark-route').length, DARK_ROUTES.size);
 });

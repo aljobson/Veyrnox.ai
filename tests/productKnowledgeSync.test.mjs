@@ -105,7 +105,7 @@ const extendedAccountKnowledge = new Set([
 
 test('phase B retains every app route knowledge item from origin/main', async () => {
     const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
-    assert.equal(baseline.routes.length, 32);
+    assert.equal(baseline.routes.length, 31);
     const words = value => value.toLowerCase().replace(/[’‘]/g, "'").replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
     for (const entry of baseline.routes) {
         const current = AUTO_PRODUCT_INVENTORY.find(row => row.route === entry.route);

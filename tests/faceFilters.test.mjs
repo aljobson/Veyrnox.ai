@@ -90,14 +90,15 @@ test('makeup takes only the listed styles and intensities', () => {
     assert.equal(checkInputs(record, { image_url: IMAGE, intensity: 'extreme' }).ok, false);
 });
 
-test('the Tools page groups the filters in one place, web and phone', () => {
-    const task = TOOL_TASKS.find((t) => t.key === 'face-filters');
-    assert.deepEqual(task.ids, FILTERS.map(([id]) => id), 'Costumes is phone-only until the web has a style picker');
-    const models = FILTERS.map(([id, endpoint]) => ({ id, capabilities: { media: REGISTRY[endpoint].media } }));
-    const group = toolGroups(models).find((g) => g.key === 'face-filters');
-    assert.equal(group.tools.length, FILTERS.length);
-    const en = readFileSync(new URL('../lib/i18n/messages/en.mjs', import.meta.url), 'utf8');
-    assert.match(en, /'tools\.t\.face-filters\.label': 'Face filters'/);
+test('face filters are retired: no Tools group on web or phone, and 0571 sets every row inactive', () => {
+    assert.equal(TOOL_TASKS.find((t) => t.key === 'face-filters'), undefined);
+    const phone = readFileSync(new URL('../apps/mobile/src/lib/toolDirectory.ts', import.meta.url), 'utf8');
+    assert.doesNotMatch(phone, /'face-filters'/);
+    const sql = readFileSync(new URL('../packages/db/schema/supabase/0571_retire_face_filters.sql', import.meta.url), 'utf8');
+    assert.equal((sql.match(/UPDATE public\.model_catalog/g) || []).length, 1, 'exactly one catalog UPDATE');
+    assert.match(sql, /SET active = false/);
+    assert.match(sql, /affected <> 6/);
+    for (const id of ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age', 'face-costume']) assert.match(sql, new RegExp(`'${id}'`));
 });
 
 test('0357 activates the four filters fal billed at list price, and leaves relight staged', () => {

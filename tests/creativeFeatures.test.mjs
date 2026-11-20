@@ -5,8 +5,7 @@ import { CREATIVE_FEATURES, CREATIVE_FEATURE_SLUGS, creativeFeature, creativeFea
 
 const EXPECTED = [
   'ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
-  'text-to-speech', 'ai-voice-cloning', 'ai-hairstyle-changer', 'ai-hair-color-changer',
-  'ai-baby-generator', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo',
+  'text-to-speech', 'ai-voice-cloning', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo',
   'avatar-dialogue', 'video-dubbing', 'talking-cartoon', 'talking-animals',
   'ai-baby-podcast', 'talking-objects', 'ai-ad-clone', 'product-avatar',
   'product-video-generator', 'product-image-generator',
@@ -34,7 +33,7 @@ test('every workflow exposes a real, required upload control', () => {
   assert.equal(textToSpeech.scriptUpload, true);
   assert.equal(textToSpeech.model, 'inworld-tts');
   assert.deepEqual(textToSpeech.media, []);
-  for (const slug of ['ai-avatar-generator', 'ai-human-generator', 'ai-influencer-generator', 'ai-baby-generator', 'product-image-generator']) {
+  for (const slug of ['ai-avatar-generator', 'ai-human-generator', 'ai-influencer-generator', 'product-image-generator']) {
     const item = creativeFeature(slug);
     assert.equal(item.model, 'nano-banana-pro-edit-grsai');
     assert.deepEqual(item.media, ['image']);
