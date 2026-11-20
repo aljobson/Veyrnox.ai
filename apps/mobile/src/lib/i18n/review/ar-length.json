@@ -2094,6 +2094,60 @@
     "ratio": 1.63
   },
   {
+    "id": "beat.region.later",
+    "english": "Move later",
+    "translation": "تحريك إلى وقت لاحق",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "محاذاة للشبكة",
+    "ratio": 3.25
+  },
+  {
+    "id": "beat.snap.bar",
+    "english": "Bar",
+    "translation": "مازورة",
+    "ratio": 2
+  },
+  {
+    "id": "beat.snap.sixteenth",
+    "english": "1/16 note",
+    "translation": "نغمة جزء من ستة عشر",
+    "ratio": 2.11
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "المازورة التالية",
+    "ratio": 2
+  },
+  {
+    "id": "beat.ruler.end",
+    "english": "End",
+    "translation": "النهاية",
+    "ratio": 2.33
+  },
+  {
+    "id": "beat.cycle.on",
+    "english": "Cycle on",
+    "translation": "التكرار مفعّل",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.audio.fadeIn",
+    "english": "Fade in (ms)",
+    "translation": "تلاشي الدخول (مللي ثانية)",
+    "ratio": 2.08
+  },
+  {
+    "id": "beat.audio.fadeOut",
+    "english": "Fade out (ms)",
+    "translation": "تلاشي الخروج (مللي ثانية)",
+    "ratio": 1.92
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

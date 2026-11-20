@@ -1,6 +1,7 @@
 import { IMAGE_TEMPLATE_MODELS } from './imageTemplateModels.js';
 import { templateRoute } from '../../../lib/templateRoute.js';
 import { internalModelId } from '../../../lib/publicModelIds.js';
+import { VIDEO_THEME_IDS } from './videoTemplateThemes.js';
 // Veyrnox.ai data constants — source of truth: platform_model.xlsx / handoff README
 // Do not drift these numbers. Credit costs & plan prices are contractual.
 
@@ -89,7 +90,8 @@ export function kindOf(modality) {
 /** The template's own page, where its prompt and inputs are shown before use. */
 // The first filter row is deliberately concise; the gallery can disclose the
 // complete category catalog in place without hiding choices in a scroll rail.
-export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
+// The video themes are always shown: they are how the video gallery is organised (videoTemplateThemes.js).
+export const QUICK_PRESET_CATEGORIES = ['ALL', 'NEW', 'POPULAR', ...VIDEO_THEME_IDS, 'YOUR PHOTO', 'PRODUCTS', 'STORIES'];
 
 export function templateHref(preset) {
   return `/presets/${encodeURIComponent(preset.id)}`;

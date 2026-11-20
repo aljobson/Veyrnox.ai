@@ -2232,6 +2232,12 @@
     "ratio": 1.62
   },
   {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "ग्रिड से मिलाएँ",
+    "ratio": 3.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

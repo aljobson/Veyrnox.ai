@@ -5,8 +5,8 @@ import BeatsHome from '../src/app/(app)/beats';
 import BeatEditor from '../src/app/(app)/beats/[id]';
 import { ApiError } from '../src/lib/api';
 import { t } from '../src/lib/i18n';
-import { beatStore, createBeatStore, newBeat, resetBeats, getBeat } from '../src/lib/beatNative/store';
-import { audibleGain, addKitTrack, createBeat, eventsAtStep, hasHit, loopSteps, validateBeat, DRUM_PADS, MAX_BPM } from '../src/lib/beatNative/doc';
+import { beatStore, createBeatStore, newBeat, resetBeats, getBeat, putBeat } from '../src/lib/beatNative/store';
+import { audibleGain, addKitTrack, createBeat, eventsAtStep, hasHit, loopSteps, validateBeat, DRUM_PADS, MAX_BPM, setView } from '../src/lib/beatNative/doc';
 import { BeatVersionsSheet } from '../src/components/beats/BeatVersionsSheet';
 import { BeatCloudConflictModal } from '../src/components/beats/BeatCloudConflictModal';
 import { BeatCloudSync, type SyncView } from '../src/lib/beatNative/cloudSync';
@@ -67,7 +67,8 @@ describe('beats home', () => {
 });
 
 describe('beat editor', () => {
-    const open = async () => { const doc = newBeat('Test'); mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />)); return doc; };
+    // Pads and the step grid live in Pattern view since N3; new beats retain the web Song default.
+    const open = async () => { const doc = setView(newBeat('Test'), 'pattern'); putBeat(doc); mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />)); return doc; };
     test('a missing beat shows the empty state', async () => {
         mockParams = { id: 'nope' };
         await act(async () => root.render(<BeatEditor />));

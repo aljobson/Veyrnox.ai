@@ -201,3 +201,13 @@ test('migration 0573: one dark-safe offer at the catalog floor, one mirroring ro
     assert.match(sql, /ON CONFLICT \(model_id, priority\) DO NOTHING/);
     assert.equal((sql.match(/RAISE EXCEPTION/g) || []).length, 3);
 });
+
+test('themes: every long-prompt gallery template has a theme; the new theme chips only show while the key is on', async () => {
+    const { videoTemplateTheme, VIDEO_THEME_IDS } = await import('../app/veyrnox/_lib/videoTemplateThemes.js');
+    for (const id of LONG_PROMPT_GALLERY_TEMPLATE_IDS) assert.ok(VIDEO_THEME_IDS.includes(videoTemplateTheme(id)), `${id} has no theme`);
+    const counts = {};
+    for (const id of LONG_PROMPT_GALLERY_TEMPLATE_IDS) counts[videoTemplateTheme(id)] = (counts[videoTemplateTheme(id)] || 0) + 1;
+    assert.deepEqual(counts, { CARS: 1, DANCE: 1, ACTION: 12, COMEDY: 3, HORROR: 9, MAGIC: 9, FILM: 7 });
+    const offThemes = new Set(GALLERY_PRESETS.map(p => videoTemplateTheme(p.id)));
+    for (const theme of ['HORROR', 'MAGIC', 'FILM']) assert.equal(offThemes.has(theme), false, `${theme} would show empty while off`);
+});
