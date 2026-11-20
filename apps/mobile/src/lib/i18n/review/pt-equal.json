@@ -171,5 +171,14 @@
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "musicDiscover.mood.Hip-hop": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "musicDiscover.mood.Jazz": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
-  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending."
+  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "beat.home.untitled": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.home.loaded": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.tempoValue": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pad.tom": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.mixer": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.gain": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.solo.short": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.808": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.lofi": "Same in pt: a loanword, brand-style name or number used unchanged in this language."
 }

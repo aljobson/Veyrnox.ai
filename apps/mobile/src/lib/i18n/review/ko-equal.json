@@ -74,5 +74,7 @@
   "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
   "job.percent": "Percent sign directly after the number is the standard form in this language.",
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
-  "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending."
+  "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "beat.tempoValue": "Same in ko: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.kit.808": "Same in ko: a loanword, brand-style name or number used unchanged in this language."
 }
