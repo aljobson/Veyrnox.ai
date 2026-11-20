@@ -149,7 +149,7 @@ describe('probeMusic (feature flags are server-side)', () => {
     test('on', async () => {
         expect(await probeMusic(async () => 7)).toEqual({ state: 'on', data: 7 });
     });
-    test.each(['music_unavailable', 'music_library_unavailable', 'music_library_tabs_unavailable', 'music_remix_unavailable', 'music_future_unavailable', 'music_distribution_unavailable'])('404 %s is off', async (code) => {
+    test.each(['blocks_unavailable', 'music_unavailable', 'music_library_unavailable', 'music_library_tabs_unavailable', 'music_remix_unavailable', 'music_future_unavailable', 'music_distribution_unavailable'])('404 %s is off', async (code) => {
         expect(await probeMusic(async () => { throw new ApiError(404, code); })).toEqual({ state: 'off', code });
     });
     test('getEntitlements 404 music_unavailable gives off, not a throw', async () => {

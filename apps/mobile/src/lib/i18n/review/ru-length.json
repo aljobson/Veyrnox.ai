@@ -3606,6 +3606,54 @@
     "ratio": 1.67
   },
   {
+    "id": "musicPublic.unblock",
+    "english": "Unblock",
+    "translation": "Разблокировать",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.blockNamed",
+    "english": "Block {name}",
+    "translation": "Заблокировать {name}",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.follow",
+    "english": "Follow",
+    "translation": "Подписаться",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicPublic.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicPublic.saved",
+    "english": "Saved.",
+    "translation": "Сохранено.",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.reportTrack",
+    "english": "Report track",
+    "translation": "Пожаловаться на трек",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.reaction.like",
+    "english": "Like",
+    "translation": "Нравится",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Жарко",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.transport",
     "english": "Transport",
     "translation": "Воспроизведение",

@@ -2058,28 +2058,6 @@
     "ratio": 3.25
   },
   {
-    "id": "editorText.shadowY",
-    "english": "Shadow Y",
-    "translation": "छाया का लंबवत स्थानांतरण",
-    "ratio": 3
-  },
-  {
-    "id": "editorText.apply",
-    "english": "Apply",
-    "translation": "लागू करें",
-    "ratio": 1.8
-  },
-  {
-    "id": "editorText.animationName0",
-    "english": "None",
-    "translation": "कोई नहीं",
-    "ratio": 2
-  },
-  {
-    "id": "editorText.loopName0",
-    "english": "None",
-    "translation": "कोई नहीं",
-    "ratio": 2
   },
   {
     "id": "oauth.signIn",

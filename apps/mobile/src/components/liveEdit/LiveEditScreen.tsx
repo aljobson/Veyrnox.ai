@@ -24,7 +24,7 @@ import { AiWigPanel, HairPanel, MakeupPanel, RetouchPanel } from './Panels';
 import { wigStatus, clearOverlays, getOverlay, overlayKey, pinOverlay, unpinOverlay, type WigStatus } from '../../lib/liveEdit/wig';
 import { VisionBridge } from './VisionBridge';
 import { LiveCameraView, type LiveCameraHandle } from './LiveCameraView';
-import { Wig3dBridge } from './Wig3dBridge';
+import { NativeWig3d } from './NativeWig3d';
 import { liveErrorKey, type LiveError, type LiveFace, type LiveWig } from '../../lib/liveEdit/liveProtocol';
 type Status = 'empty' | 'loading' | 'ready' | 'noFace' | 'multiple' | 'noHair' | 'failed' | 'invalid' | 'saved' | 'denied' | 'unsupportedFormat' | 'tooLarge';
 export function LiveEditScreen({ owner }: { owner: string }) {
@@ -42,7 +42,7 @@ export function LiveEditScreen({ owner }: { owner: string }) {
     const [tool, setTool] = useState<Tool>('looks'), [canvas, setCanvas] = useState(0);
     const [cameraError, setCameraError] = useState<LiveError | null>(null), [cameras, setCameras] = useState(0);
     const cameraRef = useRef<LiveCameraHandle>(null);
-    // A 3D wig overlay is rendered asynchronously by the WebView; this counter redraws the photo when one arrives.
+    // A 3D wig overlay is rendered asynchronously by NativeWig3d (native Skia); this counter redraws the photo when one arrives.
     const [overlayRevision, setOverlayRevision] = useState(0);
     const inferenceGeneration = lifecycle.current.generation;
     const current = () => mounted.current && !controller.current.signal.aborted && getCacheUser() === owner;
@@ -216,7 +216,7 @@ export function LiveEditScreen({ owner }: { owner: string }) {
             <ToolStrip value={tool} onChange={setTool} />
         </View> : null}
         {source && foreground ? <VisionBridge key={`${source.sourceId}:${source.frameId}:${retry}`} frame={source.frame} onResult={receive} onError={() => { if (inferenceGeneration !== lifecycle.current.generation) return; lifecycle.current.fail(inferenceGeneration); setInference(null); setStatus('failed'); }} /> : null}
-        {source && foreground && inference?.count === 1 && isWig3d(stack.wig.style) && stack.wig.strength > 0 ? <Wig3dBridge job={{ wig: stack.wig, landmarks: inference.landmarks, width: source.width, height: source.height }} onChange={() => setOverlayRevision(n => n + 1)} /> : null}
+        {source && foreground && inference?.count === 1 && isWig3d(stack.wig.style) && stack.wig.strength > 0 ? <NativeWig3d job={{ wig: stack.wig, landmarks: inference.landmarks, width: source.width, height: source.height }} onChange={() => setOverlayRevision(n => n + 1)} /> : null}
     </View>;
 }
 const sheets = themedStyles(p => ({
