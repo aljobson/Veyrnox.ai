@@ -2,7 +2,7 @@ import { ApiError, type ApiClient } from '../api';
 import { conflictDraft, createQuote, getCustomDraft, getEntitlements, saveCustomDraft } from './client';
 import { createGenerationAttempts } from './attempts';
 import { createGenerationTracker } from './queue';
-import { buildCustomQuote, buildSimpleQuote, normalizeInput, quoteBlockers } from './createForm';
+import { buildCustomQuote, buildSimpleQuote, clampDuration, normalizeInput, quoteBlockers } from './createForm';
 import { createQuoteGate } from './shared';
 import { isMusicOff, probeMusic } from './probe';
 import type { MusicDraft, MusicEntitlements, MusicInputSnapshot } from './types';
@@ -15,7 +15,7 @@ type State = Readonly<{
 export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof createGenerationTracker>, mintKey?: () => string) {
     const attempts = createGenerationAttempts(api, mintKey), gate = createQuoteGate();
     let state: State = { status: 'loading', entitlements: null, input: empty, rights: false, draft: null, conflict: null, busy: false, error: null };
-    let disposed = false, loading = false, confirming = false;
+    let disposed = false, loading = false, confirming = false, refreshing = false;
     const listeners = new Set<() => void>();
     const emit = () => listeners.forEach(fn => fn());
     const update = (patch: Partial<State>) => { if (!disposed) { state = { ...state, ...patch }; emit(); } };
@@ -72,6 +72,31 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 ? normalizeInput({ ...empty, model_id: model.id, duration: model.controls.duration_seconds.default }, model) : empty });
         },
         edit, loadDraft,
+        async refreshEntitlements() {
+            if (disposed || refreshing || state.status !== 'on' || !state.entitlements) return;
+            refreshing = true;
+            try {
+                const result = await probeMusic(() => getEntitlements(api));
+                if (disposed || state.status !== 'on') return;
+                if (result.state === 'off' || (result.state === 'on' && !result.data.available)) { off(); return; }
+                // A background refresh failure must not replace submission recovery state.
+                if (result.state === 'error') return;
+                const previous = state.entitlements.models.find(m => m.id === state.input.model_id)?.controls;
+                const model = result.data.models.find(m => m.id === state.input.model_id);
+                const controls = model?.controls;
+                const duration = model ? clampDuration(state.input.duration, model) : state.input.duration;
+                if (duration !== state.input.duration
+                    || previous?.duration_seconds.min !== controls?.duration_seconds.min
+                    || previous?.duration_seconds.max !== controls?.duration_seconds.max
+                    || previous?.duration_seconds.default !== controls?.duration_seconds.default
+                    || previous?.duration_price_block_seconds !== controls?.duration_price_block_seconds) {
+                    gate.invalidate();
+                    // invalidate keeps ambiguous and in-flight attempts, including their original input/key.
+                    attempts.invalidate();
+                }
+                update({ entitlements: result.data, input: { ...state.input, duration } });
+            } finally { refreshing = false; }
+        },
         async review() {
             if (disposed || state.status !== 'on' || !state.entitlements || confirming || attempts.snapshot()?.phase === 'AMBIGUOUS') return;
             const e = state.entitlements, input = state.input, rights = state.rights;
@@ -114,7 +139,7 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 const result = await attempts.confirm(pending.quote);
                 if (disposed) return;
                 tracker.add(result, pending.input);
-                update({ entitlements: { ...e, balance: result.balance_after } });
+                update({ entitlements: { ...state.entitlements!, balance: result.balance_after } });
             } catch (error) {
                 if (!disposed) {
                     if (!gate.unchanged(revision)) attempts.invalidate();

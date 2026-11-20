@@ -1,8 +1,8 @@
 import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { touchTarget } from '../../lib/a11y';
 import {
@@ -66,8 +66,17 @@ export default function History() {
         fetchUsage(api).then(setUsage).catch(() => setUsage(null));
     }, [api]);
 
-    useEffect(() => {
-        void load();
+    // Reload each time the screen comes into view, so a charge made elsewhere shows at once.
+    useFocusEffect(
+        useCallback(() => {
+            void load();
+        }, [load]),
+    );
+
+    const [refreshing, setRefreshing] = useState(false);
+    const refresh = useCallback(async () => {
+        setRefreshing(true);
+        try { await load(); } finally { setRefreshing(false); }
     }, [load]);
 
     async function more() {
@@ -104,6 +113,7 @@ export default function History() {
                     data={entries}
                     keyExtractor={(e) => e.id}
                     contentContainerStyle={styles.list}
+                    refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={() => void refresh()} />}
                     onEndReached={() => void more()}
                     onEndReachedThreshold={0.5}
                     ListHeaderComponent={

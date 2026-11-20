@@ -8,7 +8,7 @@ export function modelState(model: MusicModel | undefined, entitlements: MusicEnt
 }
 export function clampDuration(value: number, model: MusicModel): number {
     const bounds = model.controls.duration_seconds;
-    return Math.max(10, bounds.min, Math.min(60, bounds.max, Math.round(Number.isFinite(value) ? value : bounds.default)));
+    return Math.max(bounds.min, Math.min(bounds.max, Math.round(Number.isFinite(value) ? value : bounds.default)));
 }
 export function normalizeInput(input: MusicInputSnapshot, model: MusicModel): MusicInputSnapshot {
     return Object.freeze({ ...input, duration: clampDuration(input.duration, model),

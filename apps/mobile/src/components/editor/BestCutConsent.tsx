@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { rawText, t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { Button, Text } from '../ui';
+import { brandText } from '../BrandText';
 
 type Props = { busy: boolean; onClose(): void; onConfirm(): void };
 
@@ -17,7 +18,7 @@ export function BestCutConsent({ busy, onClose, onConfirm }: Props) {
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, paddingTop: 16, gap: 16 }}>
                 <Text variant="title2">{t('bestCut.title')}</Text>
                 <Text>{t('bestCut.intro')}</Text>
-                <Text>{t('bestCut.consent')}</Text>
+                <Text>{brandText(t('bestCut.consent'))}</Text>
                 <Text>{t('bestCut.metadata')}</Text>
                 <Text>{t('bestCut.agree')}</Text>
                 <Switch accessibilityLabel={rawText(t('bestCut.agree'))} disabled={busy} value={agreed} onValueChange={setAgreed} />

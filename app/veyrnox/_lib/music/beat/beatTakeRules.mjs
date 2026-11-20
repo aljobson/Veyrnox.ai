@@ -15,7 +15,7 @@ function groupOk(g, doc, end, ids) {
 export function takeGroupsError(track, doc) {
   if (!Object.hasOwn(track, 'takeGroups')) return null;
   const groups = track.takeGroups;
-  if (doc.version !== 4 || track.kind !== 'audio' || !Array.isArray(groups) || groups.length > 16) return 'Invalid take groups.';
+  if (![4, 5].includes(doc.version) || track.kind !== 'audio' || !Array.isArray(groups) || groups.length > 16) return 'Invalid take groups.';
   const ids = new Set();
   let end = 0;
   for (const g of [...groups].sort((a, b) => a?.start - b?.start)) {

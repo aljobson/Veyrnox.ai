@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { featuredModels, modelSummary, modelTag } from '../_lib/modelSummaries';
+import { publicModelId } from '../../../lib/publicModelIds.js';
 import { useCatalog } from '../_lib/useCatalog';
 
 export function ModelsMenu({ active = false }) {
@@ -68,7 +69,7 @@ export function ModelsMenu({ active = false }) {
             return (
               <li key={model.id}>
                 <Link
-                  href={`/models/${encodeURIComponent(model.id)}`}
+                  href={`/models/${encodeURIComponent(publicModelId(model.id))}`}
                   className="group/model grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 rounded-xl px-3 py-2.5 transition-colors hover:bg-vx-base focus-visible:bg-vx-base focus-visible:outline-2 focus-visible:outline-vx-accent"
                 >
                   <span className="min-w-0">

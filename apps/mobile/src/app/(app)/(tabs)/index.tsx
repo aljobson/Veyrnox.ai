@@ -36,6 +36,7 @@ import { useFirstProfile } from '../../../lib/useFirstProfile';
 import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
 import { PresetCard } from '../../../components/home/PresetCard';
+import { SwapRow } from '../../../components/home/SwapRow';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
 import { VeyLoader } from '../../../components/VeyLoader';
 
@@ -184,7 +185,6 @@ export default function Explore() {
     }, [typedPresets, type, activeCategory, popularIds, query, vibe]);
     useEffect(() => setLimit(PAGE), [type, activeCategory, query]);
     const shown = useMemo(() => matching.slice(0, limit), [matching, limit]);
-    const modelCount = useMemo(() => new Set((allTemplates ?? []).map((preset) => preset.modelId)).size, [allTemplates]);
 
     function pickType(next: TypeFilter) {
         setType(next);
@@ -245,7 +245,7 @@ export default function Explore() {
                         const onPress = () => void recordHomeStart(api, key);
                         const divided = index > 0;
                         if (key === 'create') return <StartOption href="/create" hue="mint" key={key} onPress={onPress} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} divided={divided} badge={badge} />;
-                        if (key === 'audio') return <StartOption href="/audio" hue="rose" key={key} onPress={onPress} style={styles.startOption} icon="audio" title={t('menu.audio')} body={t('audioHub.home.body')} hint={t('audioHub.home.hint')} divided={divided} badge={badge} />;
+                        if (key === 'audio') return <StartOption href="/audio" hue="rose" key={key} onPress={onPress} style={styles.startOption} icon="headphones" title={t('menu.audio')} body={t('audioHub.home.body')} hint={t('audioHub.home.hint')} divided={divided} badge={badge} />;
                         if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
@@ -297,7 +297,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length, modelCount)}
+                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length)}
                             </Text>
                         ) : null}
                     </View>
@@ -323,7 +323,7 @@ export default function Explore() {
                     <VeyLoader />
                 ) : (
                     <>
-                        {searchShown ? (
+                        <SwapRow />{searchShown ? (
                             <TextField
                                 label={t('explore.search')}
                                 accessibilityLabel={t('explore.search')}

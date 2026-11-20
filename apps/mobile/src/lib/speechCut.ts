@@ -1,8 +1,13 @@
 import { type Timeline, type Selection, type Clip, framesIn } from './nativeEditorModel';
 export type SpeechChunk = { start: number; end: number; text: string };
-export type SpeechAnalysis = { version: 1; assetId: string; duration: number; provider: 'fal-scribe-v2' | 'fal-wizper'; transcript: string; language: string; chunks: SpeechChunk[] };
+export type SpeechAnalysis = { version: 1; assetId: string; duration: number; provider: 'fal-scribe-v2' | 'fal-wizper'; transcript: string; language: string; timingQuality?: 'word' | 'phrase'; chunks: SpeechChunk[] };
+export type SilencePreset = 'snappy' | 'natural' | 'relaxed';
+/** Same presets as web SMART_CUT_SILENCE_PRESETS; `balanced` is the demo planner's name for `natural`. */
+export const SILENCE_PRESETS: Record<SilencePreset, { minimumSeconds: number; edgePaddingSeconds: number }> = {
+    snappy: { minimumSeconds: .4, edgePaddingSeconds: .08 }, natural: { minimumSeconds: .75, edgePaddingSeconds: .12 }, relaxed: { minimumSeconds: 1.2, edgePaddingSeconds: .18 } };
+export const silencePreset = (name?: string): SilencePreset => { const key = name === 'balanced' ? 'natural' : name; return key === 'snappy' || key === 'relaxed' ? key : 'natural'; };
 export type SpeechRange = { start: number; end: number; label: string };
-export type SpeechMode = 'silences' | 'retakes';
+export type SpeechMode = 'silences' | 'retakes' | 'fillers';
 const languages = ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];
 const iso3: Record<string, string> = { eng: 'en', spa: 'es', zho: 'zh', cmn: 'zh', chi: 'zh', hin: 'hi', ara: 'ar', fra: 'fr', fre: 'fr', por: 'pt', rus: 'ru', jpn: 'ja', deu: 'de', ger: 'de', kor: 'ko' };
 const clean = (v: unknown) => String(v || '').replace(/\s+/g, ' ').trim();
@@ -31,20 +36,21 @@ export function parseSmartCutAnalysis(v: unknown, expected: { assetId?: string; 
     }
     const code = typeof v.language === 'string' ? v.language.toLowerCase() : '';
     return { ok: true, analysis: { version: 1, assetId: v.assetId, duration: round(v.duration), provider: v.provider as SpeechAnalysis['provider'],
-        transcript: clean(v.transcript), language: languages.includes(code) ? code : iso3[code] || 'und', chunks: chunks.sort((a, b) => a.start - b.start || a.end - b.end) } };
+        transcript: clean(v.transcript), language: languages.includes(code) ? code : iso3[code] || 'und', timingQuality: v.provider === 'fal-wizper' ? 'phrase' : 'word', chunks: chunks.sort((a, b) => a.start - b.start || a.end - b.end) } };
 }
 /** Same padded, overlap-merged, shortest-gap-reintroduced ranges as WEB. */
-export function silenceRanges(analysis: SpeechAnalysis, start = 0, end = analysis.duration): SpeechRange[] {
+export function silenceRanges(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural'): SpeechRange[] {
+    const { minimumSeconds, edgePaddingSeconds } = SILENCE_PRESETS[silencePreset(preset)];
     const groups: SpeechRange[] = [];
     for (const c of analysis.chunks) {
         if (c.end <= start || c.start >= end) continue;
         const entry = { start: Math.max(start, c.start), end: Math.min(end, c.end), label: c.text }, last = groups.at(-1);
-        if (!last || entry.start - last.end >= .75) groups.push(entry);
+        if (!last || entry.start - last.end >= minimumSeconds) groups.push(entry);
         else { last.end = Math.max(last.end, entry.end); last.label += ` ${entry.label}`; }
     }
     const merged: SpeechRange[] = [];
     for (const group of groups) {
-        const padded = { ...group, start: Math.min(end, Math.max(start, ceil(group.start - .12))), end: Math.min(floor(end), floor(group.end + .12)) };
+        const padded = { ...group, start: Math.min(end, Math.max(start, ceil(group.start - edgePaddingSeconds))), end: Math.min(floor(end), floor(group.end + edgePaddingSeconds)) };
         const last = merged.at(-1);
         if (last && padded.start <= last.end) { last.end = Math.max(last.end, padded.end); last.label += ` ${padded.label}`; }
         else merged.push(padded);

@@ -1,3 +1,4 @@
+import { fetchSwapAvailability } from './templateSwap/availability';
 import { mapAppLink } from './appLinks';
 import { fetchCatalog } from './media';
 import { fetchPresets, presetHref } from './presets';
@@ -20,6 +21,9 @@ export function resolveAppLink(path: string): string | Promise<string> {
     const lookup = (async () => {
         try {
             if (preset) {
+                const swap = await fetchSwapAvailability(preset);
+                if (!current()) return latestMapped;
+                if (swap.kind === 'offer') return `/templates/${encodeURIComponent(preset)}`;
                 const found = (await fetchPresets()).find(p => p.id === preset);
                 if (!current()) return latestMapped;
                 if (!found) return '/create';

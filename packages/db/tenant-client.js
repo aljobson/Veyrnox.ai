@@ -3,7 +3,7 @@ import { readConfig } from '../security/config.js';
 import { ApiError } from '../security/errors.js';
 import { readBody } from '../security/input.js';
 
-export async function tenantRequest(request, context, path, { method = 'GET', body, maxBytes = 256 * 1024, limitAware = false, removalAware = false, beatAware = false } = {}) {
+export async function tenantRequest(request, context, path, { method = 'GET', body, maxBytes = 256 * 1024, limitAware = false, removalAware = false, beatAware = false, proFileAware = false } = {}) {
     const cfg = readConfig(process.env);
     const authorization = request.headers.get('authorization');
     if (!authorization?.toLowerCase().startsWith('bearer ')) throw new ApiError(401, 'UNAUTHORIZED', 'Authentication required.');
@@ -26,12 +26,21 @@ export async function tenantRequest(request, context, path, { method = 'GET', bo
             409: ['CONFLICT', 'The request conflicts with the saved state.'],
             429: ['RATE_LIMITED', 'Too many requests. Try again later.'],
         };
-        if (beatAware && response.status === 409) {
+        if (proFileAware && [409, 429].includes(response.status)) {
+            let code;
+            try { code = JSON.parse(new TextDecoder().decode(await readBody(response, 4096)))?.message; }
+            catch { /* Unrecognised vendor errors remain generic. */ }
+            finally { await response.body?.cancel().catch(() => {}); }
+            const allowed = response.status === 409
+                ? ['VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'UPLOAD_CLOSED', 'FILE_UNAVAILABLE']
+                : ['STORAGE_QUOTA_EXCEEDED', 'LIMIT_REACHED'];
+            if (allowed.includes(code)) throw new ApiError(response.status, code.toLowerCase().replaceAll('_', '-'), 'The file operation could not be completed.');
+        } else if (beatAware && response.status === 409) {
             let code;
             try { code = JSON.parse(new TextDecoder().decode(await readBody(response, 4096)))?.message; }
             catch { /* Unknown errors stay generic. */ }
             finally { await response.body?.cancel().catch(() => {}); }
-            if (['VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'SIZE_MISMATCH', 'TAKE_CHANGED'].includes(code))
+            if (['BEAT_WRITES_DISABLED', 'BEAT_CLIENT_OUTDATED', 'VERSION_CONFLICT', 'IDEMPOTENCY_CONFLICT', 'SIZE_MISMATCH', 'TAKE_CHANGED'].includes(code))
                 throw new ApiError(409, code, 'The request conflicts with the saved state.');
         } else if (removalAware && [403, 409].includes(response.status)) {
             const removalErrors = {

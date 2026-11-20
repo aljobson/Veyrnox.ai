@@ -4,17 +4,20 @@ import { StyleSheet, View } from 'react-native';
 import WebView from 'react-native-webview';
 import { allowsVisionNavigation } from '../../lib/liveEdit/navigation';
 import { createVisionJob, type Frame, type Inference } from '../../lib/liveEdit/protocol';
-type Props = { frame: Frame; onResult(value: Inference): void; onError(): void };
+type Job<T> = { init(): Promise<T | null>; detect(frame: Frame): Promise<T>; close(): void; receive(message: string): void };
+type Props<T> = { frame: Frame; onResult(value: T): void; onError(): void; createJob: (transport: import('../../lib/liveEdit/protocol').VisionTransport) => Job<T> };
+type LegacyProps = { frame: Frame; onResult(value: Inference): void; onError(): void };
+export function VisionBridge(props: LegacyProps) { return <VisionBridgeTransport {...props} createJob={createVisionJob} />; }
 // Key this component by source/frame. A timeout or cancel destroys the entire WASM heap.
-export function VisionBridge({ frame, onResult, onError }: Props) {
+export function VisionBridgeTransport<T>({ frame, onResult, onError, createJob }: Props<T>) {
     const ref = useRef<WebView<object>>(null), callbacks = useRef({ onResult, onError });
     callbacks.current = { onResult, onError };
     const [uri, setUri] = useState<string | null>(null), [closed, setClosed] = useState(false);
     const loadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const job = useRef<ReturnType<typeof createVisionJob> | null>(null);
+    const job = useRef<Job<T> | null>(null);
     useEffect(() => {
         let mounted = true;
-        const current = createVisionJob({
+        const current = createJob({
             send: message => {
                 if (!ref.current) throw Error('inference-unavailable');
                 ref.current.injectJavaScript(`window.liveEditReceive(${JSON.stringify(message)});true;`);
@@ -30,7 +33,7 @@ export function VisionBridge({ frame, onResult, onError }: Props) {
             else if (mounted) throw Error('inference-unavailable');
         }).catch(() => { current.close(); if (mounted) callbacks.current.onError(); });
         return () => { mounted = false; finished.current = true; clearTimeout(timer); current.close(); job.current = null; };
-    }, []);
+    }, [createJob]);
     const started = useRef(false), finished = useRef(false);
     async function start() {
         if (started.current || !job.current) return;

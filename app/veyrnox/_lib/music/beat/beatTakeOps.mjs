@@ -57,7 +57,7 @@ export const materializeGroup = (doc, trackId, groupId, now = Date.now()) => edi
 export function recordingCapacity(doc, trackId, { start, length, single = false, preflight = false }) {
   const track = doc.tracks.find(t => t.id === trackId);
   let reason = '';
-  if (doc.version !== 4 || track?.kind !== 'audio') reason = 'Arm an audio track to record.';
+  if (![4, 5].includes(doc.version) || track?.kind !== 'audio') reason = 'Arm an audio track to record.';
   if (![start, length].every(n => Number.isSafeInteger(n) && n % 240 === 0) || start < 0 || length < 240 || start + length > Math.min(512 * 3840, 600 * doc.tempo.bpm * 16)) reason = 'Recording exceeds the song limit.';
   if (reason) return { lanes: 0, reason };
   const same = single && preflight ? null : track.takeGroups?.find(g => g.start === start && g.length === length);

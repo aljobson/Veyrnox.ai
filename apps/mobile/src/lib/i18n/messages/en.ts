@@ -127,10 +127,17 @@ import area_mdl from './en/mdl';
 import area_mediaKind from './en/mediaKind';
 import area_menu from './en/menu';
 import area_mobile from './en/mobile';
+import area_mobileSwap from './en/mobileSwap';
 import area_model from './en/model';
 import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
 import area_music from './en/music';
+import area_musicActions from './en/musicActions';
+import area_musicDiscover from './en/musicDiscover';
+import area_musicGenerationActions from './en/musicGenerationActions';
+import area_musicPlaylists from './en/musicPlaylists';
+import area_musicSectionActions from './en/musicSectionActions';
+import area_musicTargetStems from './en/musicTargetStems';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
 import area_network from './en/network';
@@ -347,10 +354,17 @@ const catalog = {
     ...area_mediaKind,
     ...area_menu,
     ...area_mobile,
+    ...area_mobileSwap,
     ...area_model,
     ...area_modelPage,
     ...area_montage,
     ...area_music,
+    ...area_musicActions,
+    ...area_musicDiscover,
+    ...area_musicGenerationActions,
+    ...area_musicPlaylists,
+    ...area_musicSectionActions,
+    ...area_musicTargetStems,
     ...area_nativeEditorModel,
     ...area_net,
     ...area_network,

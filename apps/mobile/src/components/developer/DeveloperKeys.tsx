@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Text, TextInput } from 'react-native';
 import { usePublishApi } from '../../lib/usePublishApi';
 import { t } from '../../lib/i18n';
-import { EXPIRY_DAYS, LABEL_MAX, SCOPES, createKey, devErrorKey, fetchKeys, keyLive, keyProblem, revokeKey, type ApiKey } from '../../lib/publishDeveloper';
+import { EXPIRY_DAYS, LABEL_MAX, SCOPES, SCOPE_LABEL_KEY, createKey, devErrorKey, fetchKeys, keyLive, keyProblem, revokeKey, type ApiKey } from '../../lib/publishDeveloper';
 import { colors } from '../../theme';
 import { Action, Card, Status, styles } from '../account/shared';
 import { Choice, Row, SecretCard, shortDate } from './parts';
@@ -107,7 +107,7 @@ export function DeveloperKeys() {
                 <TextInput accessibilityLabel={t('dev.label')} style={styles.input} maxLength={LABEL_MAX} value={label} onChangeText={setLabel} placeholderTextColor={colors.muted} />
                 <Text style={styles.label}>{t('dev.keys.scopes')}</Text>
                 {SCOPES.map((s) => (
-                    <Choice key={s} label={s} on={scopes.includes(s)} onPress={() => setScopes((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]))} />
+                    <Choice key={s} label={t(SCOPE_LABEL_KEY[s])} hint={s} on={scopes.includes(s)} onPress={() => setScopes((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]))} />
                 ))}
                 <Text style={styles.label}>{t('dev.keys.expiry')}</Text>
                 {EXPIRY_DAYS.map((d) => (

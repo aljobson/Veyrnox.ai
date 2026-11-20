@@ -18,12 +18,15 @@ import BeatLibrary from './BeatLibrary';
 import { prepareAsset, syncAssetTempo, clearBeatAssets } from '../../../_lib/music/beat/beatAssets';
 import { soundDuration } from '../../../_lib/music/beat/beatSounds.mjs';
 import BeatRegionActions from './BeatRegionActions';
+import BeatClipSearch from './BeatClipSearch';
+import { guardRipple } from '../../../_lib/music/beat/beatRippleGuard.mjs';
+import { rippleDeleteRegion, rippleInsertGap } from '../../../_lib/music/beat/beatRipple.mjs';
 import useRegionDrag from './useRegionDrag';
 import { button, input } from './beatStyles';
 
 const BeatTakeLanes = dynamic(() => import('./BeatTakeLanes'), { ssr: false });
 export default function BeatArrangement({ armedId, onArm, automationLanes = {}, onAutomation, recording = false, ai, onAi, doc, edit, selectPattern, editTrackId, setEditTrackId,
-  locator, setLocator, playhead, runId, announce, onSelectRegion }) {
+  locator, setLocator, playhead, runId, announce, onSelectRegion, ripple = false, setRipple }) {
   const { t } = useI18n();
   useEffect(() => () => clearBeatAssets(), []);
   useEffect(() => { syncAssetTempo(doc.tempo.bpm); }, [doc.tempo.bpm]);
@@ -56,6 +59,33 @@ export default function BeatArrangement({ armedId, onArm, automationLanes = {}, 
   function choose(region, track) {
     setSelectedId(region.id); onSelectRegion(region.id); setEditTrackId(track.id); if (region.pattern) selectPattern(region.pattern);
     announce(region.clipId ? t('app.music.beat.status.s0', { p0: doc.clips[region.clipId].name, p1: track.name }) : region.assetId ? t('app.music.beat.status.s0', { p0: doc.assets[region.assetId].name, p1: track.name }) : t('app.music.beat.status.s1', { p0: region.pattern, p1: track.name }));
+  }
+  function rippleEdit(request, options) {
+    return edit(d => {
+      const guard = guardRipple(d, request);
+      if (!guard.ok) throw new ops.BeatRefusal(guard.reason);
+      try {
+        return request.type === 'delete' ? rippleDeleteRegion(d, request.trackId, request.regionId)
+          : rippleInsertGap(d, request.trackId, request.atTick, 3840);
+      } catch (error) {
+        if (error instanceof ops.BeatRefusal && error.code) throw new ops.BeatRefusal(error.code);
+        throw error;
+      }
+    }, options);
+  }
+  function deleteRegion(region, track) {
+    return ripple ? rippleEdit({ type: 'delete', trackId: track.id, regionId: region.id }, { label: BEAT_ACTIONS.a59, regionId: region.id })
+      : edit(d => ops.deleteRegion(d, region.id), { label: BEAT_ACTIONS.a7, regionId: region.id });
+  }
+  function searchChoose(result) {
+    const track = doc.tracks.find(t => t.id === result.trackId);
+    const region = track?.regions.find(r => r.id === result.regionId);
+    if (!region) return;
+    choose(region, track);
+    setLocator(clampLocator(region.start, end));
+    const lane = [...(scroller.current?.querySelectorAll('[data-track-lane]') || [])].find(el => el.dataset.trackLane === track.id);
+    lane?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (scroller.current) scroller.current.scrollLeft = Math.max(0, region.start / 3840 * zoom - zoom);
   }
   function laneTick(event) {
     return Math.max(0, Math.min(512 * 3840 - 240,
@@ -92,10 +122,17 @@ export default function BeatArrangement({ armedId, onArm, automationLanes = {}, 
         <option value={3840}>{t('app.music.beat.ui.bar')}</option><option value={960}>1/4</option><option value={480}>1/8</option>
         <option value="240">1/16</option><option value="off">{t('app.music.beat.ui.off.1.16')}</option>
       </select></label>
-      <button className={button} aria-label={t('app.music.beat.ui.zoom.out')} disabled={zoom === 32} onClick={() => setZoom(Math.max(32, zoom - 32))}>−</button>
+      <button data-beat-read className={button} aria-label={t('app.music.beat.ui.zoom.out')} disabled={zoom === 32} onClick={() => setZoom(Math.max(32, zoom - 32))}>−</button>
       <span className="text-xs">{zoom}{t('app.music.beat.ui.px.bar')}</span>
-      <button className={button} aria-label={t('app.music.beat.ui.zoom.in')} disabled={zoom === 256} onClick={() => setZoom(Math.min(256, zoom + 32))}>+</button>
+      <button data-beat-read className={button} aria-label={t('app.music.beat.ui.zoom.in')} disabled={zoom === 256} onClick={() => setZoom(Math.min(256, zoom + 32))}>+</button>
       <span className="text-xs">{t('app.music.beat.ui.playhead')}{formatPosition(locator, t)}</span>
+      <button className={`${button} ${ripple ? 'bg-vx-accent text-vx-accent-ink' : ''}`} aria-pressed={ripple}
+        onClick={() => setRipple(value => !value)}>{t('app.music.beat.shortcut.ripple')}</button>
+      <button className={button} disabled={!selectedRegion} onClick={() => rippleEdit(
+        { type: 'insert', trackId: selectedTrack.id, atTick: snapTick(locator, snap) },
+        { label: BEAT_ACTIONS.a60, regionId: selectedRegion.id })}>{t('app.music.beat.ripple.insert')}</button>
+      <p className="w-full text-xs text-vx-fg-muted">{t('app.music.beat.ripple.hint')}</p>
+      <BeatClipSearch doc={doc} choose={searchChoose} />
     </div>
     <div dir="ltr" className="flex min-w-0 max-w-full rounded-xl border border-vx-border">
       <div className="z-20 w-16 shrink-0 md:w-64">
@@ -126,8 +163,8 @@ export default function BeatArrangement({ armedId, onArm, automationLanes = {}, 
               className="pointer-events-none absolute inset-y-0 border-l border-vx-border" style={{ left: i * zoom }} />)}
             {track.regions.map((region) => <BeatRegion key={region.id} region={region} track={track} doc={doc}
               zoom={zoom} snap={snap} locator={locator} selected={region.id === selectedId}
-              select={() => choose(region, track)} edit={edit} drag={drag} />)}
-            {track.takeGroups?.map(g => <button key={g.id} className={`${button} absolute bottom-2`} style={{ left: g.start / 3840 * zoom }} aria-expanded={g.id === openGroup} onClick={() => setOpenGroup(g.id === openGroup ? null : g.id)}>{t('app.music.beat.ui.takes')}{g.lanes.length})</button>)}
+              select={() => choose(region, track)} edit={edit} drag={drag} onDelete={() => deleteRegion(region, track)} />)}
+            {track.takeGroups?.map(g => <button data-beat-read key={g.id} className={`${button} absolute bottom-2`} style={{ left: g.start / 3840 * zoom }} aria-expanded={g.id === openGroup} onClick={() => setOpenGroup(g.id === openGroup ? null : g.id)}>{t('app.music.beat.ui.takes')}{g.lanes.length})</button>)}
             {drag.preview?.trackId === track.id && <div aria-hidden="true"
               className="pointer-events-none absolute top-4 z-20 h-16 rounded-lg border-2 border-vx-accent bg-vx-hue-iris/60"
               style={{ left: drag.preview.start / 3840 * zoom, width: drag.preview.length / 3840 * zoom }}>
@@ -155,8 +192,7 @@ export default function BeatArrangement({ armedId, onArm, automationLanes = {}, 
         { label: BEAT_ACTIONS.a5, regionId: selectedRegion.id })}>{t('app.music.beat.shortcut.regionSplit')}</button>
       <button className={button} onClick={() => edit((d) => ops.duplicateRegion(d, selectedRegion.id),
         { label: BEAT_ACTIONS.a6, regionId: selectedRegion.id })}>{t('app.music.beat.shortcut.regionDuplicate')}</button>
-      <button className={button} onClick={() => edit((d) => ops.deleteRegion(d, selectedRegion.id),
-        { label: BEAT_ACTIONS.a7, regionId: selectedRegion.id })}>{t('app.music.beat.shortcut.regionDelete')}</button>
+      <button className={button} onClick={() => deleteRegion(selectedRegion, selectedTrack)}>{t('app.music.beat.shortcut.regionDelete')}</button>
     </div>}
     {selectedRegion?.pattern && <button className={button} onClick={() => edit((d) => midi.convertDrums(d, selectedRegion.id), { label: BEAT_ACTIONS.a8, message: t('app.music.beat.status.s4') })}>{t('app.music.beat.ui.convert.to.midi')}</button>}
     {selectedRegion?.assetId && <BeatRegionInspector ai={ai} onAi={onAi} asset={doc.assets[selectedRegion.assetId]} trackId={selectedTrack.id} region={selectedRegion} edit={edit} />}

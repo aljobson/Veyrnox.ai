@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { DISCOVER_SEEDS, buildSamplePrompt } from '../../../lib/music/discoverSeeds';
 import { ScrollView, Switch, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
@@ -14,6 +15,16 @@ const KNOWN = new Set(['empty_prompt', 'over_length', 'locked_plan', 'unavailabl
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
+    const { sample } = useLocalSearchParams<{ sample?: string }>();
+    const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
+    const edit: typeof flow.edit = (...args) => { touched.current = flow; flow.edit(...args); };
+    useEffect(() => {
+        const seed = DISCOVER_SEEDS.find(s => s.id === sample), input = state.input;
+        if (seeded.current === flow || !seed || state.status !== 'on') return;
+        seeded.current = flow;
+        if (touched.current !== flow && !pending && input.mode === 'simple' && !input.prompt && !input.title && !input.lyrics && !input.styles && !state.rights)
+            flow.edit({ prompt: buildSamplePrompt(seed), title: seed.title });
+    }, [flow, sample, state.status, state.input, state.rights, pending]);
     const lock = useRef(false);
     const [now, setNow] = useState(Date.now);
     useEffect(() => {
@@ -35,30 +46,32 @@ export default function MusicCreate() {
                     : e ? <>
                         <Text variant="title1">{t('music.create.title')}</Text>
                         <SegmentedControl value={input.mode} options={(['simple', 'custom'] as const).map(value => ({ value, label: t(`music.create.${value}`) }))}
-                            onChange={mode => flow.edit({ mode })} />
+                            onChange={mode => edit({ mode })} />
                         <View style={s.row}>{e.models.filter(m => m.generation_modes.includes(input.mode)).map(m => {
                             const status = modelState(m, e);
                             return <Button key={m.id} variant={input.model_id === m.id ? 'primary' : 'secondary'}
                                 label={status === 'locked_plan' ? t('music.create.paidModel', { model: m.name }) : m.name}
-                                disabled={status !== 'usable'} onPress={() => { if (status === 'usable') flow.edit({ model_id: m.id }); }} />;
+                                disabled={status !== 'usable'} onPress={() => { if (status === 'usable') edit({ model_id: m.id }); }} />;
                         })}</View>
-                        {input.mode === 'simple' ? <TextField label={t('music.create.prompt')} value={input.prompt} multiline maxLength={500} onChangeText={prompt => flow.edit({ prompt })} />
+                        {input.mode === 'simple' ? <TextField label={t('music.create.prompt')} value={input.prompt} multiline maxLength={500} onChangeText={prompt => edit({ prompt })} />
                             : <>
-                                <MusicLyricsPanel value={input.lyrics} max={Math.min(3000, e.custom_drafts.lyrics_max)} onChange={lyrics => flow.edit({ lyrics })} />
-                                <TextField label={t('music.create.styles')} value={input.styles} maxLength={Math.min(500, e.custom_drafts.styles_max)} onChangeText={styles => flow.edit({ styles })} />
+                                <MusicLyricsPanel value={input.lyrics} max={Math.min(3000, e.custom_drafts.lyrics_max)} onChange={lyrics => edit({ lyrics })} />
+                                <TextField label={t('music.create.styles')} value={input.styles} maxLength={Math.min(500, e.custom_drafts.styles_max)} onChangeText={styles => edit({ styles })} />
                                 {model?.controls.instrumental === 'optional' && model.controls.lyrics ? <View style={s.row}>
-                                    <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')} value={input.instrumental} onValueChange={instrumental => flow.edit({ instrumental })} />
+                                    <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')} value={input.instrumental} onValueChange={instrumental => edit({ instrumental })} />
                                 </View> : null}
                                 {!input.instrumental ? <Button variant="secondary" accessibilityRole="checkbox" accessibilityState={{ checked: state.rights }}
-                                    label={t('music.create.rights')} onPress={() => flow.edit({}, !state.rights)} /> : null}
+                                    label={t('music.create.rights')} onPress={() => edit({}, !state.rights)} /> : null}
                                 {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
                             </>}
-                        <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => flow.edit({ title })} />
+                        <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => edit({ title })} />
                         <Text>{t('music.create.duration', { seconds: input.duration })}</Text>
                         <View style={s.row}>
-                            <Button variant="secondary" label={t('music.create.shorter')} onPress={() => flow.edit({ duration: input.duration - 5 })} />
-                            <Button variant="secondary" label={t('music.create.longer')} onPress={() => flow.edit({ duration: input.duration + 5 })} />
+                            <Button variant="secondary" label={t('music.create.shorter')} disabled={!model || input.duration <= model.controls.duration_seconds.min} onPress={() => edit({ duration: input.duration - 5 })} />
+                            <Button variant="secondary" label={t('music.create.longer')} disabled={!model || input.duration >= model.controls.duration_seconds.max} onPress={() => edit({ duration: input.duration + 5 })} />
                         </View>
+                        {model?.controls.duration_price_block_seconds === 60 ? <Text>{t('music.create.durationPriceHint')}</Text> : null}
+                        {input.duration > 60 ? <Text>{t('music.create.longerGenerationHint')}</Text> : null}
                         {state.conflict ? <View style={s.content}>
                             <Text>{t('music.create.conflict')}</Text>
                             <Text selectable>{state.conflict.title}</Text><Text selectable>{state.conflict.lyrics}</Text><Text selectable>{state.conflict.styles}</Text>

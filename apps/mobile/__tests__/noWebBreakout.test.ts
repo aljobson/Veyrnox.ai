@@ -6,6 +6,8 @@ const { join } = require('path');
 const root = join(__dirname, '../src');
 // Exact files AND arguments: another browser call in an allowed file still fails.
 const allowed: Record<string, { call: string; reason: string }[]> = {
+    'app/(app)/music/target-stems.tsx': [{ call: 'openURL(asset.url)', reason: 'P3b opens a freshly fetched, validated HTTPS target or residual WAV only on tap, guarded against account changes; URLs are never persisted.' }],
+    'app/(app)/music/stems.tsx': [{ call: 'openURL(archive.url)', reason: 'P3a explicitly opens a freshly fetched, validated HTTPS stem ZIP in the browser; the app does not download or persist the archive.' }],
     'auth/AuthProvider.tsx': [{ call: 'openAuthSessionAsync', reason: 'System OAuth login must use the provider authentication session.' }],
     'app/(app)/publish/connect.tsx': [{ call: 'openAuthSessionAsync', reason: 'Social providers require an external OAuth session.' }],
     'app/(app)/oauth-consent.tsx': [{ call: 'openURL(target)', reason: 'OAuth hands the authorization result back to the requesting app.' }],
@@ -20,6 +22,7 @@ const allowed: Record<string, { call: string; reason: string }[]> = {
     'app/(app)/about.tsx': [{ call: 'openURL(`mailto:${LEGAL_EMAIL}`)', reason: 'Contact legal in the mail app; the scheme is fixed.' }],
     'components/cinema/creator/UploadPanel.tsx': [{ call: 'openURL(SUPPORT_MAIL_URL)', reason: 'Creator support uses the existing mailto support constant.' }],
     'components/account/MfaCard.tsx': [{ call: 'openURL(pending.uri)', reason: 'The existing isTotpUri gate allows only otpauth TOTP enrollment.' }],
+    'components/templates/SwapAttemptStatus.tsx': [{ call: 'openURL(`mailto:${SUPPORT_EMAIL}`)', reason: 'Contact support in the mail app about an unresolved swap run; the scheme is fixed.' }],
     'components/legal/LegalDocumentView.tsx': [{ call: 'openURL(target.href)', reason: 'legalLink classifies only mailto addresses as mail; other addresses are inert.' }],
 };
 function calls(source: string) {

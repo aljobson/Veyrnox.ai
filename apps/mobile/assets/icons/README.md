@@ -28,3 +28,7 @@ gauge, aperture.
 google-g.png is the multicolour Google "G" mark (Google sign-in branding guidelines). It is never tinted.
 
 Instruments card: piano-keys.png is drawn in the same 96 x 96 white, 6 px stroke style (not from the Phosphor package; no licence impact).
+
+Audio parity additions (Phosphor regular 2.1.1, same render steps: replace `currentColor` with `#ffffff`, then `rsvg-convert -w 96 -h 96`): vinyl-record, microphone, headphones, chats-circle, swap, crosshair, scissors, arrows-horizontal, pause-circle, arrow-counter-clockwise, arrow-clockwise.
+
+Music P4a additions: playlist, compass (Phosphor regular 2.1.1, same white 96 × 96 render steps). Reused locally cached package SVGs; no dependency install.

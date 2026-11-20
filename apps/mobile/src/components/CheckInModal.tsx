@@ -3,6 +3,7 @@ import { isCheckinStatus } from '../lib/responseShapes';
 import { Text as StatusText } from './ui/Text';
 import { useFirstRunPending } from '../lib/firstRunPending';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { usePathname } from 'expo-router';
 import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useAuth } from '../auth/AuthProvider';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../lib/appCache';
@@ -12,7 +13,7 @@ import { checkinStatusReader } from '../lib/checkinStatus';
 import { ApiError, type ApiClient } from '../lib/api';
 import { touchTarget } from '../lib/a11y';
 import { plural, t } from '../lib/i18n';
-import { holdCheckinDialog } from '../lib/checkinVisibility';
+import { checkinRouteEligible, holdCheckinDialog } from '../lib/checkinVisibility';
 import { colors } from '../theme';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -29,7 +30,13 @@ export function CheckInModal() {
 function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
     const reader = useMemo(() => checkinStatusReader(api, owner), [api, owner]);
     const [status, setStatus] = useState<CheckinStatus | null>(null);
-    const [open, setOpen] = useState(false);
+    // `due`: today's invitation is owed. It appears only on the screens made for it (Explore, Credits), so a file
+    // browser is never interrupted; it waits for the person to arrive there. `asked`: the person opened it by hand.
+    const [due, setDue] = useState(false);
+    const [asked, setAsked] = useState(false);
+    const onRoute = checkinRouteEligible(usePathname());
+    const open = asked || (due && onRoute);
+    const setOpen = (value: boolean) => { setDue(value); setAsked(value); };
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     useEffect(() => {
@@ -40,7 +47,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
                 const saved = await appStorage.get(`checkin.${owner}`).catch(() => null);
                 if (!live || owner !== getCacheUser()) return;
                 setStatus(next); announceCheckin(owner, next); setError(null);
-                setOpen(!!next && !next.claimed_today && saved !== today() && dismissed.get(owner) !== today());
+                setDue(!!next && !next.claimed_today && saved !== today() && dismissed.get(owner) !== today());
             } catch { /* A display-storage failure does not trigger another API read. */ }
         }
         void load();
@@ -52,7 +59,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
     useEffect(() => onCheckinOpenRequest(() => {
         if (owner !== getCacheUser()) return;
         const next = reader.peek();
-        if (next) { setStatus(next); setOpen(true); }
+        if (next) { setStatus(next); setAsked(true); }
     }), [reader, owner]);
     function remember() {
         if (!owner) return;

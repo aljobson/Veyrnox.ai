@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { createGenerationSubmit, unknownGenerationOutcome } from '../src/lib/generationSubmit';
+import { createGenerationSubmit, unknownGenerationOutcome, generationSignature } from '../src/lib/generationSubmit';
 const mockCreate = jest.fn();
 jest.mock('expo-crypto', () => { let n = 0; return { randomUUID: () => `key-${++n}` }; });
 jest.mock('../src/lib/media', () => ({ mediaApi: () => ({ createGeneration: mockCreate }) }));
@@ -129,4 +129,11 @@ test('scene retry after a lost response reuses its key; changing scene rotates t
     await expect(submit.run(api, { ...sceneRequest, swap: 'scene-b' })).rejects.toMatchObject({ code: 'network' });
     expect(mockCreate.mock.calls[2][0].swap).toBe('scene-b');
     expect(mockCreate.mock.calls[2][0].idempotencyKey).not.toBe(mockCreate.mock.calls[0][0].idempotencyKey);
+});
+
+test('swap signature is additive; every legacy signature retains its exact bytes', () => {
+    const legacy = { modelId: 'm', prompt: 'p', textKey: 'txt', durationSeconds: 5, extraInputs: { audio: false }, references: [], sources: {}, assets: {}, sourceRights: true, preset: 'preset', templateId: 'template', swap: 'scene', templateClip: 'clip' };
+    const before = JSON.stringify({ ...legacy, count: 1 });
+    expect(generationSignature(legacy as never, 1)).toBe(before);
+    expect(generationSignature({ ...legacy, template_swap: 'o1' } as never, 1)).toBe(JSON.stringify({ ...legacy, template_swap: 'o1', count: 1 }));
 });

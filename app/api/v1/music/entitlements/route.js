@@ -1,4 +1,5 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
+import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
 import { readPublicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
     musicEntitlementProjection, musicGenerationEnabled, musicSchemaEnabled, validMusicAuthId,
@@ -26,6 +27,7 @@ export async function GET(request) {
             models,
             credits,
             generationEnabled: musicGenerationEnabled(),
+            longSongs: musicRuntimeFlag('longSongs'),
             subscription: subscription?.ok ? subscription.subscription : null,
         }));
     } catch (error) {

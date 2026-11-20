@@ -42,6 +42,7 @@ const recipe=load('app/veyrnox/_components/TemplateRecipe.js',{
 const noop=()=>null;
 const page=load('app/veyrnox/presets/[id]/page.js',{
   '../../_components/TemplateSwapBoundary.js':boundary,'../../../../lib/i18n/translate.mjs':{tOr:(t,k,f)=>t.messages[k]?t(k):f},
+  '../../../../lib/publicModelIds.js':{publicModelId:x=>x},
   '../../../../lib/templateFraming.js':{templateSourceAspect:()=>null},'../../../../lib/i18n/server':{getT:async()=>({locale:'en',t})},
   '../../../../lib/i18n/metadata.mjs':{},'../../../../lib/i18n/rich':{rich:(text,v)=>React.createElement(React.Fragment,null,text.replace('{model}',''),v.model)},
   '../../../../lib/i18n/locales.mjs':{localizedHref:(_,p)=>p},'next/link':{default:'a',__esModule:true},'next/navigation':{notFound(){throw Error('404');}},'next/server':{},
@@ -64,7 +65,7 @@ test('complete public page replaces legacy notice, CTA, model and inputs only on
 test('Create preset and template query use shared availability and catalog-only presentation',()=>{
   for(const query of ['preset=test','template=test','template_id=test']){
     const entry=load('app/veyrnox/_components/SwapCreateEntry.js',{
-      'next/navigation':{useSearchParams:()=>new URLSearchParams(query)},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,
+      'next/navigation':{useSearchParams:()=>new URLSearchParams(query)},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,'./SwapTemplatePreview.js':{SwapTemplatePreview:()=>null},
     });
     for(const enabled of [false,true]){
       available=enabled;

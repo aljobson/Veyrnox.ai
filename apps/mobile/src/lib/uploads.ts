@@ -16,7 +16,7 @@ export type PutFile = (url: string, headers: Record<string, string>, uri: string
 
 // React Native fetch cannot report upload progress, so the file goes through XMLHttpRequest.
 export const putFile: PutFile = async (url, headers, uri, onProgress, signal) => {
-    const blob = await (await fetch(uri)).blob();
+    const blob = await (await fetch(uri, { signal })).blob();
     await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', url);
@@ -26,7 +26,7 @@ export const putFile: PutFile = async (url, headers, uri, onProgress, signal) =>
         xhr.onerror = () => reject(new Error('put_network'));
         xhr.onabort = () => reject(new Error('put_aborted'));
         signal.addEventListener('abort', () => xhr.abort(), { once: true });
-        if (signal.aborted) return xhr.abort();
+        if (signal.aborted) { xhr.abort(); reject(new Error('put_aborted')); return; }
         xhr.send(blob);
     });
 };
@@ -41,12 +41,15 @@ export async function uploadSource(
     signal: AbortSignal,
     put: PutFile = putFile,
 ): Promise<string> {
+    if (signal.aborted) throw new ApiError(0, 'upload_cancelled');
     const grant = await api.request<UploadGrant>('/api/v1/uploads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content_type: contentType, size_bytes: file.size }),
+        signal,
     });
     try {
+        if (signal.aborted) throw new ApiError(0, 'upload_cancelled');
         await put(grant.upload_url, { 'Content-Type': grant.content_type, ...(grant.headers ?? {}) }, file.uri, onProgress, signal);
     } catch {
         throw new ApiError(0, signal.aborted ? 'upload_cancelled' : 'upload_failed');

@@ -1998,6 +1998,48 @@
     "ratio": 1.89
   },
   {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "गाना फिर से लोड करें",
+    "ratio": 1.82
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "अलग ट्रैक",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "अलग ट्रैक का आर्काइव",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicActions.stems.zip",
+    "english": "Get ZIP",
+    "translation": "ZIP प्राप्त करें",
+    "ratio": 2.29
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "क्रॉप करें",
+    "ratio": 2.5
+  },
+  {
+    "id": "musicTargetStems.instrument.brass",
+    "english": "Brass",
+    "translation": "पीतल के वाद्य",
+    "ratio": 2.6
+  },
+  {
+    "id": "musicTargetStems.instrument.woodwinds",
+    "english": "Woodwinds",
+    "translation": "लकड़ी के सुषिर वाद्य",
+    "ratio": 2.22
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",
@@ -2098,5 +2140,17 @@
     "english": "Reset prompt",
     "translation": "प्रॉम्प्ट रीसेट करें",
     "ratio": 1.67
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "presets.swap.signin",
+    "english": "Sign in",
+    "translation": "साइन इन करें",
+    "ratio": 1.71
   }
 ]

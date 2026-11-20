@@ -1,3 +1,4 @@
+import { useSwapRedirect } from '../../../lib/templateSwap/availability';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, AppState, FlatList, ScrollView, View } from 'react-native';
@@ -75,10 +76,11 @@ export default function Templates() {
     }, [kind, attempt]);
     useFocusEffect(useCallback(() => () => setPlaying(null), []));
     useEffect(() => { const sub = AppState.addEventListener('change', state => { if (state !== 'active') setPlaying(null); }); return () => sub.remove(); }, []);
-    useEffect(() => { setLimit(50); setPlaying(null); }, [chip, query]);
+    useEffect(() => { setLimit(50); setPlaying(null); }, [chip, query, kind, audioChip]);
     const chips = useMemo(() => templateChips(presets ?? [], popular), [presets, popular]);
     const shown = useMemo(() => searchPresets(templatesFor(rankPresets(presets ?? [], vibe), chip, popular), query), [presets, vibe, chip, popular, query]);
     const unavailableId = Array.isArray(params.unavailable) ? params.unavailable[0] : params.unavailable;
+    useSwapRedirect(unavailableId);
     const unavailablePreset = presets?.find(p => p.id === unavailableId);
     const known = useMemo(() => catalog && catalogConfirmed ? new Map(catalog.map(m => [m.id, m])) : null, [catalog, catalogConfirmed]);
     const audioListed = useMemo(() => templatesWithCatalogModel(audio ?? [], known), [audio, known]);
@@ -119,11 +121,11 @@ export default function Templates() {
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(templatesWithCatalogModel(audio ?? [], known))].map(c => <Chip key={c} selected={audioCategory === c} accessibilityState={{ selected: audioCategory === c }} label={c === 'ALL' ? t('audioTemplates.all') : categoryLabel(c)} onPress={() => setAudioChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
-                renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} onOpen={() => openAudio(item)} />} />)
+                renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} playing={playing === `audio:${item.id}`} onPlay={() => setPlaying(id => id === `audio:${item.id}` ? null : `audio:${item.id}`)} onOpen={() => { setPlaying(null); openAudio(item); }} />} />)
         : failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
             : presets === null ? <ActivityIndicator /> : <FlatList key="video" data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
-                    <Text>{templateCountLabel({ t, plural }, shown.length, new Set(shown.map(p => p.modelId)).size)}</Text>
+                    <Text>{templateCountLabel({ t, plural }, shown.length)}</Text>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{chips.map(c => <Chip key={c} selected={chip === c} accessibilityState={{ selected: chip === c }} label={c === 'ALL' ? t('explore.type.all') : c === 'NEW' ? t('explore.new') : c === 'POPULAR' ? t('libraryCreate.popular') : themeTitle(c)} onPress={() => setChip(c)} />)}</ScrollView>
                     {chip === 'ALL' && !query.trim() ? <TemplateCollage presets={shown.filter(p => p.posterUrl).slice(0, 24)} isTall={p => previewRatio(p) < 1} onOpen={open} /> : null}

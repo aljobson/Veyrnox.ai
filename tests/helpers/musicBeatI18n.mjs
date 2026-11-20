@@ -1,3 +1,5 @@
+import * as compatibility from '../../app/veyrnox/_lib/music/beat/beatCompatibility.mjs';
+import * as cloudRules from '../../app/veyrnox/_lib/music/beat/beatCloudRules.mjs';
 import * as display from '../../app/veyrnox/_lib/music/beat/beatDisplay.mjs';
 import * as actions from '../../app/veyrnox/_lib/music/beat/beatActionLabels.mjs';
 import * as labels from '../../app/veyrnox/_lib/music/beat/beatLabels.mjs';
@@ -7,6 +9,8 @@ import * as translate from '../../lib/i18n/translate.mjs';
 import { translator } from '../../lib/i18n/translate.mjs';
 const english = translator('en', messages);
 export const englishBeatImports = {
+  '../../../_lib/music/beat/beatCompatibility.mjs': compatibility,
+  '../../../_lib/music/beat/beatCloudRules.mjs': cloudRules,
   '../../../_lib/music/beat/beatDisplay.mjs': display,
   '../../../_lib/music/beat/beatActionLabels.mjs': actions,
   '../../../_lib/music/beat/beatLabels.mjs': labels,

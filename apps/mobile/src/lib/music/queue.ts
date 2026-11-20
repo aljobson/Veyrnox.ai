@@ -1,10 +1,11 @@
+import type { AnyGenerationActionKind as GenerationActionKind } from './sectionActionTypes';
 import { ApiError, type ApiClient } from '../api';
 import { getGeneration } from './client';
 import { isMusicOff } from './probe';
 import type { MusicGeneration, MusicGenerationView, MusicInputSnapshot } from './types';
 export const terminalGeneration = (state: string) => ['succeeded', 'partial', 'failed', 'refunded'].includes(state);
 export type TrackedGeneration = Readonly<{
-    id: string; input: MusicInputSnapshot; createdAt: number; view: MusicGenerationView; missing: boolean;
+    id: string; input: MusicInputSnapshot; createdAt: number; view: MusicGenerationView; missing: boolean; sourceAction?: GenerationActionKind;
 }>;
 type Snapshot = Readonly<{ state: 'on' | 'off'; entries: readonly TrackedGeneration[] }>;
 type Options = {
@@ -60,12 +61,12 @@ export function createGenerationTracker(o: Options) {
         subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
         activeCount: () => snapshot.entries.filter(e => !e.missing && !terminalGeneration(e.view.state)).length,
         off, reset, dispose() { reset(); unsubscribe(); },
-        add(result: MusicGeneration, input: MusicInputSnapshot) {
+        add(result: Omit<MusicGeneration, 'balance_after'>, input: MusicInputSnapshot, sourceAction?: GenerationActionKind) {
             if (snapshot.state === 'off') return;
             const existing = find(result.generation_id);
             if (existing) { schedule(existing.id, 800); return; }
             const createdAt = now();
-            const entry: TrackedGeneration = { id: result.generation_id, input: Object.freeze({ ...input }), createdAt, missing: false,
+            const entry: TrackedGeneration = { id: result.generation_id, input: Object.freeze({ ...input }), createdAt, missing: false, ...(sourceAction ? { sourceAction } : {}),
                 view: { id: result.generation_id, state: result.state, model_id: input.model_id, prompt: input.prompt,
                     title: input.title, total_credits: 0, created_at: new Date(createdAt).toISOString(),
                     candidates: result.candidates.map(c => ({ ...c, song_id: null, version_id: null, error_code: null, audio_url: null })) } };

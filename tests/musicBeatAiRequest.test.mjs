@@ -2,6 +2,7 @@ import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
+import { configureBeatWrites } from '../app/veyrnox/_lib/music/beat/beatWriteVersion.mjs';
 import { readPending, definitivelyRefused } from '../app/veyrnox/_lib/music/beat/beatAiPending.mjs';
 
 // Run the production hook with deterministic React effects and gateway responses,
@@ -74,7 +75,7 @@ async function setup(t) {
     if (priorStorage) Object.defineProperty(globalThis, 'localStorage', priorStorage); else delete globalThis.localStorage;
   });
   await settle(); r.output.open({ op: 'generate', prompt: draft.prompt }); await settle();
-  return { beatId, calls, announcements, settle, get request() { return r.output; }, refuse: e => { response = e; },
+  return { beatId, calls, announcements, settle, setDoc: doc => { options.project = { current: { current: doc } }; r.dirty = true; }, get request() { return r.output; }, refuse: e => { response = e; },
     price: async () => { await r.output.price('/music/generation-quotes', {}, draft); await settle(); },
     send: async () => { await r.output.send(); await settle(); },
   };
@@ -145,4 +146,13 @@ test('resuming an acknowledged request polls GET only; unknown acknowledgement n
   h.request.resume({ ...record, requestId, state: 'accepted' }); await h.settle();
   assert.deepEqual(calls, [{ path: `/music/generations/${requestId}`, method: 'GET' }]);
   assert.equal(calls.some(c => c.method === 'POST'), false);
+});
+test('a quote opened before rollback cannot submit after v5 capability is lost', async t => {
+  const h = await setup(t); t.after(() => configureBeatWrites(false));
+  configureBeatWrites(true); h.setDoc({ version: 5 }); await h.settle();
+  await h.price(); assert.ok(h.request.quote);
+  configureBeatWrites(false);
+  const count = h.calls.length; await h.send();
+  assert.equal(h.calls.length, count); assert.match(h.request.error, /read-only/);
+  assert.deepEqual(readPending(h.beatId), []);
 });

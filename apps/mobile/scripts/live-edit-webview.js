@@ -1,9 +1,10 @@
-/* global Vision, LIVE_ASSETS, ReactNativeWebView */
+/* global Vision, LIVE_ASSETS, PHOTO_STUDIO_RUNTIME, ReactNativeWebView */
 // Prepared into a local HTML document. No remote URL, upload, analytics or storage API.
 (() => {
     // Camera capability is granted by the app per document: only the visible live view loads this page with `#live`. Every other
     // document (the hidden still-photo and 3D-wig views) gets a getUserMedia that always refuses, and live.* operations are rejected.
-    const liveAllowed = typeof location !== 'undefined' && location.hash === '#live';
+    const studioAllowed = typeof PHOTO_STUDIO_RUNTIME === 'undefined' || PHOTO_STUDIO_RUNTIME;
+    const liveAllowed = studioAllowed && typeof location !== 'undefined' && location.hash === '#live';
     if (!liveAllowed && typeof navigator !== 'undefined' && navigator.mediaDevices) {
         const refuse = () => Promise.reject(new DOMException('The camera is not available in this document.', 'NotAllowedError'));
         // Both the instance and the prototype method, so MediaDevices.prototype.getUserMedia.call(...) cannot reach the real one either.
@@ -33,9 +34,9 @@
     window.liveEditReceive = async raw => {
         let request;
         try { if (typeof raw !== 'string' || raw.length > 901000) return; request = JSON.parse(raw); } catch { return; }
-        if (request && typeof request.op === 'string' && request.op.startsWith('live.')) { void liveReceive(request); return; }
-        if (request && request.op === 'wig3d') { void wig3dReceive(request); return; }
-        if (!request || !validId(request.id) || !['init', 'detect'].includes(request.op)) return;
+        if (request && typeof request.op === 'string' && request.op.startsWith('live.')) { if (studioAllowed) void liveReceive(request); else post({ live: 'error', code: 'live-unavailable' }); return; }
+        if (request && request.op === 'wig3d') { if (studioAllowed) void wig3dReceive(request); else post({ id: request.id, error: true }); return; }
+        if (!request || !validId(request.id) || !['init', 'detect', 'swapDetect'].includes(request.op)) return;
         if (busy) { post({ id: request.id, error: true }); return; }
         busy = true;
         let image, canvas;
@@ -49,12 +50,28 @@
             canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
             canvas.getContext('2d').drawImage(image, 0, 0);
             const result = face.detect(canvas), count = Math.min(2, result.faceLandmarks.length);
-            if (count !== 1) { post({ id: request.id, sourceId, frameId, count, landmarks: [], hair: null }); return; }
+            if (count !== 1) { post({ id: request.id, sourceId, frameId, count, landmarks: [], ...(request.op === 'swapDetect' ? { width, height } : { hair: null }) }); return; }
             const landmarks = result.faceLandmarks[0].flatMap(p => [p.x, p.y, p.z]);
             if (landmarks.length !== 1434 || landmarks.some(v => !Number.isFinite(v) || Math.abs(v) > 2)) throw Error('landmarks');
             const segmentation = hair.segment(canvas);
             try {
                 if (segmentation.confidenceMasks?.length !== 6) throw Error('channels');
+                if (request.op === 'swapDetect') {
+                    const encode = index => {
+                        const mask = segmentation.confidenceMasks[index], values = mask.getAsFloat32Array();
+                        if (!Number.isInteger(mask.width) || !Number.isInteger(mask.height) || Math.min(mask.width, mask.height) < 8 || Math.max(mask.width, mask.height) > 512 || values.length !== mask.width * mask.height || values.some(v => !Number.isFinite(v) || v < 0 || v > 1)) throw Error('mask');
+                        let bytes = '';
+                        // Pixel-centre resampling matches the decoded frame; quantise before crossing the bridge.
+                        for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+                            const sx = Math.min(mask.width - 1, Math.floor((x + .5) * mask.width / width));
+                            const sy = Math.min(mask.height - 1, Math.floor((y + .5) * mask.height / height));
+                            bytes += String.fromCharCode(Math.round(values[sy * mask.width + sx] * 255));
+                        }
+                        return btoa(bytes);
+                    };
+                    post({ id: request.id, sourceId, frameId, count, landmarks, width, height, background: encode(0), body: encode(2), face: encode(3) });
+                    return;
+                }
                 const mask = segmentation.confidenceMasks[1], values = mask.getAsFloat32Array();
                 if (Math.min(mask.width, mask.height) < 8 || Math.max(mask.width, mask.height) > 512 || values.length !== mask.width * mask.height || values.some(v => !Number.isFinite(v) || v < 0 || v > 1)) throw Error('mask');
                 post({ id: request.id, sourceId, frameId, count, landmarks, width: mask.width, height: mask.height, hair: Array.from(values, v => Math.round(v * 255)) });

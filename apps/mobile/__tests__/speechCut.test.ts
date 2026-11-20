@@ -82,3 +82,15 @@ test('overlap merging and punctuation utterances use timestamps without cutting 
     const tl = timeline(); tl.audio = Array.from({ length: 10 }, (_, i) => ({ id: `a${i}`, start: 0, len: 30, trackId: 'audio-0' }));
     expect(applySpeechRanges(tl, speechClip(tl, null)!, [{ start: 1, end: 2, label: '' }])).toBeNull();
 });
+
+test.each(['snappy', 'natural', 'relaxed', 'balanced'] as const)('%s silence preset matches the web planner and timing quality matches web', (preset) => {
+    const result = { language_code: 'eng', text: 'one two three four', words: [
+        { type: 'word', text: 'one', start: .5, end: 1 }, { type: 'word', text: 'two', start: 1.6, end: 2 },
+        { type: 'word', text: 'three', start: 3, end: 3.5 }, { type: 'word', text: 'four', start: 5, end: 5.5 } ] };
+    const analysis = normalized(result);
+    const plan = web.buildSpeechAwareCutPlan({ clips: [{ id: 'v1', assetId, duration: 12, in_s: 0, out_s: 12 }], analyses: { [assetId]: analysis }, silencePreset: preset });
+    expect(silenceRanges(analysis, 0, 12, preset).map(({ start, end }) => ({ start, end }))).toEqual(plan.segments.map((s: any) => ({ start: s.start, end: s.end })));
+    expect(analysis.timingQuality).toBe('word');
+    expect(web.parseSmartCutAnalysis({ ...analysis, provider: 'fal-wizper' }, { assetId, duration: 12 }).analysis.timingQuality).toBe('phrase');
+    expect(parseSmartCutAnalysis({ ...analysis, provider: 'fal-wizper' }, { assetId, duration: 12 })).toEqual(web.parseSmartCutAnalysis({ ...analysis, provider: 'fal-wizper' }, { assetId, duration: 12 }));
+});

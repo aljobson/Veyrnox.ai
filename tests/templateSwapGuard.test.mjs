@@ -21,6 +21,30 @@ test('swap, replace and change-X-to-photo prompts need a source video', () => {
   ]) assert.equal(swapNeedsSourceVideo(p), true, p);
 });
 
+// 18 Nov 2026 audit of the listed templates: five edit-the-video prompts passed the guard and would have charged for a photo that barely moves.
+test('passive and plural replace, "in the video" and a leading Swap are swaps too', () => {
+  for (const p of [
+    'A high-quality cinematic video where the male driver inside the car is completely replaced by the man from <<<image_1>>>. Keep the exact background.',
+    '<<<image_1>>> replaces guy with blonde hair at the head of the table\n\nRemove all text and watermarks',
+    'when guy dancing ing the video with <<<image_1>>>  copy all motion.',
+    '<<<image_1>>>  is the character in the video',
+    'Swap a location and the character \n<<<image_1>>> - location \n - actor\n - second look',
+  ]) assert.equal(swapNeedsSourceVideo(p), true, p);
+});
+
+test('wording that only mentions a video, a hairstyle or the photo is still not a swap', () => {
+  for (const p of [
+    "Preserve the exact facial features, hair colour and hairstyle shown in @image1. Do not replace the hairstyle with a generic ballet bun.",
+    "do not change, alter, or restyle their clothing at any point in the video, even inside the tent",
+    'Put me dressed in designer swim trunks using my picture <<<image_1>>>',
+    '<<<image_1>>> For my character don’t change is hair and his face and his body',
+    'The character from <<<image_1>>> is the one doing the slap',
+    'A character walks through the video wall of a gallery.',
+    'No text or logo may be changed or replaced, and it must be exactly the same as @Image2.',
+    'The WITCH filter is completely replaced by the ZOMBIE filter. Keep @image1 as the exact reference.',
+  ]) assert.equal(swapNeedsSourceVideo(p), false, p);
+});
+
 test('negated, incidental and camera wording is not a swap', () => {
   for (const p of [
     'DO NOT REPLACE THE FACE WITH ANOTHER FEMALE CHARACTER. Use the exact face from the provided photograph.',

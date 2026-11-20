@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Pro editor dev parent</title></head>
+<body style="margin:0;background:#111;color:#ddd;font:13px system-ui">
+<!-- Dev stand-in for the Veyrnox app page. Never deployed. -->
+<iframe id="host" src="__CHILD_ORIGIN__/host.html" title="Pro editor" style="width:100%;height:560px;border:0"
+        allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+<pre id="log" style="margin:8px;white-space:pre-wrap"></pre>
+<script type="module">
+  const CHILD = '__CHILD_ORIGIN__';
+  const PROTOCOL = 'veyrnox.pro/1';
+  window.__log = [];
+  const frame = document.getElementById('host');
+  const log = (m) => { window.__log.push(m); document.getElementById('log').textContent = window.__log.map((x) => JSON.stringify(x)).join('\n'); };
+  window.addEventListener('message', (e) => {
+    if (e.origin !== CHILD || e.source !== frame.contentWindow) return;
+    const d = e.data || {};
+    if (d.type === 'host:started') window.__session = d.sessionId;
+    log({ type: d.type, reason: d.reason, detail: d.detail, dirty: d.dirty, name: d.name, seq: d.seq, renderer: d.renderer, bytes: d.bytes ? d.bytes.byteLength : undefined });
+  });
+  // After host:started every command carries the session id the host announced.
+  window.proSend = (type, fields = {}) => frame.contentWindow.postMessage(
+    { protocol: PROTOCOL, type, ...(type === 'app:hello' ? {} : { sessionId: window.__session }), ...fields }, CHILD, fields.bytes ? [fields.bytes] : []);
+  // Dev stand-in for the sign-out path: load the wasm-free purge page, ask for cleanup, remove it.
+  window.proCleanup = () => new Promise((resolve) => {
+    const f = document.createElement('iframe');
+    f.src = CHILD + '/purge.html';
+    f.style.cssText = 'width:200px;height:40px';
+    document.body.appendChild(f);
+    const done = (result) => { window.removeEventListener('message', on); clearInterval(t); setTimeout(() => f.remove(), 0); resolve(result); };
+    const on = (e) => { if (e.origin === CHILD && e.source === f.contentWindow && e.data && e.data.type === 'host:cleaned') done({ ok: e.data.ok, reason: e.data.reason }); };
+    window.addEventListener('message', on);
+    const t = setInterval(() => f.contentWindow && f.contentWindow.postMessage({ protocol: PROTOCOL, type: 'app:cleanup' }, CHILD), 250);
+    setTimeout(() => done({ ok: false, reason: 'timeout' }), 8000);
+  });
+  // The host listens only after its script runs: retry hello until it answers.
+  let tries = 0;
+  const timer = setInterval(() => {
+    if (window.__log.some((m) => m.type === 'host:started') || ++tries > 40) { clearInterval(timer); return; }
+    window.proSend('app:hello');
+  }, 250);
+</script>
+</body>
+</html>

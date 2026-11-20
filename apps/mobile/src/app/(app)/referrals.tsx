@@ -57,7 +57,7 @@ export default function Referrals() {
                     <Text style={styles.body1}>{t('referrals.referralsarenotavailablerightnow')}</Text>
                 ) : (
                     <>
-                        <Text style={styles.body1}>{t('referrals.whenafriendyoureferbuystheir')}</Text>
+                        <Text style={styles.body1}>{t('referrals.whenafriendyoureferbuystheir')} {t('referrals.afriendwhousesyourcodegetsno')}</Text>
                         <View style={styles.codeBox}>
                             <Text style={styles.label}>{t('referrals.yourcode')}</Text>
                             <Text selectable style={styles.code} accessibilityLabel={rawText(t('referrals.yourreferralcode', { value1: info.code.split('').join(' ') }))}>

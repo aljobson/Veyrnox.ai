@@ -22,6 +22,8 @@ on:
       - "scripts/test-project-documents.mjs"
       - "scripts/test-film-studio-cloud.mjs"
       - "scripts/test-music-beat-cloud.mjs"
+      - "scripts/test-music-beat-v5.mjs"
+      - "scripts/test-music-beat-v5-rest.mjs"
       - "scripts/test-music-beat-ai.mjs"
       - "scripts/test-music-beat-ai-concurrency.mjs"
       - "scripts/test-music-mixdowns.mjs"
@@ -219,7 +221,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
           # Music pair depends on the current catalog route and subscription-credit columns,
           # so exercise it against the fully replayed schema rather than the legacy fixture below.
-          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" npx tsx --test --test-concurrency=1 packages/db/music-pair.acceptance.test.ts
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" npx tsx --test --test-concurrency=1 packages/db/music-pair.acceptance.test.ts packages/db/music-long-song.acceptance.test.ts
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-fal-dispatch-capped.mjs
           # These legacy fixtures exercise accounting with deliberately huge
           # synthetic jobs, not supplier dispatch. Keep their disposable DB
@@ -252,6 +254,14 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-documents.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-film-studio-cloud.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-cloud.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-v5.mjs
+          # PostgREST overload parity needs a running PostgREST and its test JWT secret, which this job does not provide.
+          # It runs wherever MUSIC_BEAT_TEST_REST_URL and MUSIC_BEAT_TEST_JWT_SECRET are set (see ADR 0361); here it is reported as skipped, never silently.
+          if [ -n "${MUSIC_BEAT_TEST_REST_URL:-}" ] && [ -n "${MUSIC_BEAT_TEST_JWT_SECRET:-}" ]; then
+            DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-v5-rest.mjs
+          else
+            echo "test-music-beat-v5-rest SKIPPED: no PostgREST configured in CI; run it locally per ADR 0361."
+          fi
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-ai.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-beat-ai-concurrency.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-music-mixdowns.mjs
@@ -265,6 +275,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tiktok-submission-fence.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-tenant-write-caps.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-assets.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-project-files.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-content.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-uploads.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-cinema-upload-recovery.mjs
@@ -353,5 +364,5 @@ jobs:
       # database, which must not land mid-way through another file's run.
       - name: Run ledger acceptance tests
         run: |
-          mapfile -t acceptance_files < <(find packages/db -maxdepth 1 -name '*.acceptance.test.ts' ! -name 'provider-spend-limits.acceptance.test.ts' ! -name 'user-inflight-cap.acceptance.test.ts' ! -name 'editorAiEdit.acceptance.test.ts' ! -name 'speechAnalysis.acceptance.test.ts' ! -name 'music-pair.acceptance.test.ts' | sort)
+          mapfile -t acceptance_files < <(find packages/db -maxdepth 1 -name '*.acceptance.test.ts' ! -name 'provider-spend-limits.acceptance.test.ts' ! -name 'user-inflight-cap.acceptance.test.ts' ! -name 'editorAiEdit.acceptance.test.ts' ! -name 'speechAnalysis.acceptance.test.ts' ! -name 'music-pair.acceptance.test.ts' ! -name 'music-long-song.acceptance.test.ts' | sort)
           npx tsx --test --test-concurrency=1 "${acceptance_files[@]}"

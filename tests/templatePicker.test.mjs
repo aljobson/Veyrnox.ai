@@ -11,7 +11,7 @@ import * as createTemplates from '../app/veyrnox/_lib/createTemplates.js';
 import * as runnableTemplates from '../app/veyrnox/_lib/runnableTemplates.js';
 import * as tokens from '../app/veyrnox/_lib/tokens.js';
 import { templateById } from '../app/veyrnox/_lib/templates.js';
-import { templateDetail } from '../lib/clientTemplates.js';
+import { templateCards, templateDetail } from '../lib/clientTemplates.js';
 import { templateStartId } from '../lib/templateStart.js';
 import { internalModelId } from '../lib/publicModelIds.js';
 import { LICENSED_MUSIC_BASE, LICENSED_MUSIC_TRACKS } from '../lib/licensedMusicCatalog.js';
@@ -23,6 +23,7 @@ const local = {
   '../_lib/createTemplates.js': createTemplates,
   '../_lib/runnableTemplates.js': runnableTemplates,
   '../_lib/tokens.js': tokens,
+  '../_lib/useTemplates.js': { useTemplateCards: () => ({ templates: [], categories: ['ALL', 'NEW'], ready: false }) },
   './Modal': { Modal: ({ children, onCancel, initialFocusRef, ...labels }) => createElement('dialog', { open: true, ...labels }, children) },
 };
 const compiledModule = { exports: {} };
@@ -32,7 +33,7 @@ const compiled = ts.transpileModule(read('app/veyrnox/_components/TemplatePicker
 new Function('require', 'module', 'exports', compiled)((id) => local[id] || englishAppImports[id.replace('../../../', '../../../../').replace(/\.jsx$/, '')] || require(id), compiledModule, compiledModule.exports);
 
 const models = fromFallback();
-const renderPicker = (goal, catalog = models) => renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models: catalog, goal, onPick() {}, onClose() {} }));
+const renderPicker = (goal, catalog = models, galleryCards) => renderToStaticMarkup(createElement(compiledModule.exports.TemplatePicker, { models: catalog, goal, galleryCards, onPick() {}, onClose() {} }));
 const templateButtons = (html) => [...html.matchAll(/data-testid="create-template-(?!picker)[^"]+"/g)].length;
 
 test('the curated Create catalog has valid image and audio templates, no video, and bundled previews', () => {
@@ -67,15 +68,29 @@ test('the curated Create catalog has valid image and audio templates, no video, 
   }
 });
 
-test('Create offers no video starts and points to the template gallery instead', () => {
-  const html = renderPicker('video');
+test('Create lists the gallery video templates, each with its poster and a link to the gallery', () => {
+  const cards = templateCards();
+  const video = cards.filter((card) => card.kind !== 'image');
+  const runnable = runnableTemplates.runnableTemplates(video, models, 'video');
+  assert.ok(runnable.length >= 50, `only ${runnable.length} runnable video templates`);
+  const html = renderPicker('video', models, cards);
   assert.match(html, /<dialog[^>]*aria-labelledby="create-template-picker-title"/);
-  assert.equal(templateButtons(html), 0);
-  assert.doesNotMatch(html, /TEMPLATES · 0/);
-  assert.match(html, /data-testid="create-template-picker-empty"/);
-  assert.match(html, /Video templates that use your own photo are in the template gallery/);
+  assert.equal(templateButtons(html), runnable.length);
+  assert.match(html, new RegExp(`TEMPLATES · ${runnable.length}`));
+  assert.doesNotMatch(html, /create-template-picker-empty/);
+  assert.match(html, /src="\/showcase\/[^"]+\.jpg"/);
   assert.match(html, /href="\/presets"[^>]*>Open the template gallery</);
-  for (const title of ['CCTV Night', 'Sunset Drift', 'Rainy Taxi']) assert.doesNotMatch(html, new RegExp(title));
+  assert.ok(runnable.every(({ model }) => model.kind === 'video'));
+});
+
+test('the video picker says it is loading until the gallery answers, and points to the gallery when it cannot', () => {
+  const loading = renderPicker('video');
+  assert.match(loading, /data-testid="create-template-picker-loading"/);
+  assert.match(loading, /Loading templates…/);
+  assert.doesNotMatch(loading, /create-template-picker-empty/);
+  const failed = renderPicker('video', models, []);
+  assert.match(failed, /data-testid="create-template-picker-empty"/);
+  assert.match(failed, /href="\/presets"[^>]*>Open the template gallery</);
 });
 
 test('Create offers exactly three image templates using bundled Veyrnox images', () => {

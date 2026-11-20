@@ -1,17 +1,18 @@
 import { swapRequest, reduceAttempt, lookupJobByKey, unsettled } from './templateSwapClient.mjs';
 import { createBatch, sendInOrder } from './imageBatch.js';
-import { checkAbort } from './templateSwapPhoto.mjs';
+const abortError = () => Object.assign(new Error('Cancelled'), { name: 'AbortError' });
+const checkAbort = signal => { if (signal?.aborted) throw abortError(); };
 export const POLL_LIMIT = 12;
 export const pollDelay = index => Math.min(20000, 2000 * 2 ** index);
 export function waitForPoll(ms, signal) {
   checkAbort(signal);
   return new Promise((resolve, reject) => {
-    const abort = () => { clearTimeout(timer); reject(new DOMException('Cancelled', 'AbortError')); };
+    const abort = () => { clearTimeout(timer); reject(abortError()); };
     const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, ms);
     signal.addEventListener('abort', abort, { once: true });
   });
 }
-export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {} }) {
+export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {} }) {
   const active = new Map();
   const current = (template, key) => store.get(template).find(a => a.key === key);
   function start(a, kind) {
@@ -29,7 +30,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
     store.put(a); const op = start(a, 'photo');
     try {
       const result = await processPhoto(file, { signal: op.signal });
-      if (!op.valid()) return;
+      if (!op.valid()) { discardPhoto(result); return; }
       store.update(op.ticket, { ...result, urls: result.files.map(objectURL), state: 'ready', photo: undefined });
     } catch (e) {
       if (op.valid()) store.update(op.ticket, { state: 'photo_error', errorCode: ['NotAllowedError', 'SecurityError'].includes(e.name) ? e.name : e.message || e.name });

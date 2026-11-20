@@ -8,6 +8,7 @@ import { Main } from '../Main';
 import { MUSIC_PREVIEW_FLAG } from '../../_lib/music/previewStore';
 import { useI18n } from '../../../../components/I18nProvider';
 import { BrandName } from '../BrandName';
+import { MusicPlayerProvider } from './MusicMiniPlayer';
 
 const LINKS = [
   { href: '/app/music/create', label: 'Create', key: 'create' },
@@ -56,6 +57,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
   }
 
   return (
+    <MusicPlayerProvider>
     <div className="min-h-screen bg-vx-base text-vx-fg">
       <AppNav active="music" readAccount={false} />
       {!(serverMode || enabled) ? (
@@ -111,5 +113,6 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
         </>
       )}
     </div>
+    </MusicPlayerProvider>
   );
 }
