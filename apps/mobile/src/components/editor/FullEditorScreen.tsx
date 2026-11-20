@@ -349,12 +349,16 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         {bestCut.sheet}
         {speechMode && speechQuote ? <EditorSpeechCutSheet api={api} quote={speechQuote} mode={speechMode} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness:
             editFreshness(), selection })}
-            apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; if (!applyTimeline(next)) return false;
-                setAiAnnouncement(t('editorSpeech.applied')); return true; }}
+            apply={(next, expected) => { if (!isReady()) return { status: 'not-live' };
+                if (!sameRevision(expected, editFreshness())) return { status: 'stale' };
+                const result = commitTimeline(next); if (result.status !== 'accepted') return result;
+                setAiAnnouncement(t('editorSpeech.applied')); return result; }}
             onClose={() => setSpeechMode(null)} onUnavailable={() => { setSpeechMode(null); setSpeechQuote(null); }} /> : null}
         {aiEditOpen && aiQuote ? <EditorAiEditSheet api={api} quote={aiQuote} snapshot={() => ({ timeline: timelineOf(currentDocument()?.timeline), freshness: editFreshness() })}
-            apply={(next, expected) => { if (!isReady() || !sameRevision(expected, editFreshness())) return false; if (!applyTimeline(next)) return false;
-                setAiAnnouncement(t('editorAi.applied')); return true; }}
+            apply={(next, expected) => { if (!isReady()) return { status: 'not-live' };
+                if (!sameRevision(expected, editFreshness())) return { status: 'stale' };
+                const result = commitTimeline(next); if (result.status !== 'accepted') return result;
+                setAiAnnouncement(t('editorAi.applied')); return result; }}
             onClose={() => setAiEditOpen(false)} onUnavailable={() => { setAiEditOpen(false); setAiQuote(null); }} /> : null}
         {sheet === 'add' ? <SimpleEditorSheet title={t('editorSimple.addTitle')} rows={addRows} onClose={() => setSheet(null)} /> : null}
         {sheet === 'ai' ? <SimpleEditorSheet title={t('editorSimple.aiTitle')} rows={aiRows} describe onDescribe={(id, prompt) => {

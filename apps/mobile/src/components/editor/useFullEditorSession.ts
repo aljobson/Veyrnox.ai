@@ -75,10 +75,10 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         if (!syncRef.current?.live()) return { status: 'not-live' };
         let candidate = mergeBackups(next);
         let problem = documentProblem(candidate);
-        // Pending metadata must not block a valid edit; retain it for a later commit or settle.
-        if (problem && documentProblem(next) === null) { candidate = next; problem = null; }
-        // History can restore a previously accepted legacy snapshot, but cannot smuggle in a refused backup.
-        const knownLegacy = restoreSnapshot && documentProblem(next) !== null && documentIdentity(candidate) === documentIdentity(next);
+        // History may restore its known legacy snapshot, but never a refused backup merge.
+        const nextProblem = documentProblem(next), knownLegacy = restoreSnapshot && nextProblem !== null;
+        // Pending metadata must not block a valid edit or legacy undo; retain it for later.
+        if (problem && (nextProblem === null || knownLegacy)) { candidate = next; problem = nextProblem; }
         if (problem && !knownLegacy && documentRef.current && documentProblem(documentRef.current) === null) {
             setProblem(t(`editorEditGate.${problem}`));
             return { status: 'refused', reason: problem };

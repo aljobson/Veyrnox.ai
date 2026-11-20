@@ -6,6 +6,9 @@ export type DocumentCommitResult =
     | { status: 'refused'; reason: 'invalid' | 'tooLarge' }
     | { status: 'not-live' };
 
+// Applying a paid preview can also fail because its captured revision changed.
+export type DocumentApplyResult = DocumentCommitResult | { status: 'stale' };
+
 export type DocumentCommitFailure = Exclude<DocumentCommitResult, { status: 'accepted' }>;
 
 export function documentProblem(doc: ProjectDocument): 'invalid' | 'tooLarge' | null {

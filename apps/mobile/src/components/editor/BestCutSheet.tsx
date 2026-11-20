@@ -1,3 +1,4 @@
+import type { DocumentApplyResult } from '../../lib/editorDocumentGate';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, ScrollView, TextInput, View, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +27,7 @@ import { t, plural, rawText } from '../../lib/i18n';
 import { BestCutSettings } from './BestCutSettings';
 import type { BestCutSettings as Settings } from '../../lib/bestCutSettings';
 type Result = { timeline: Timeline; before: Timeline; plan: BestCutPlan | null; uris: Record<string, string>; captionsOmitted?: boolean; refunded?: number };
-type Props = { api: ApiClient; projectId: string; quote: SpeechQuote; onClose(): void; onApply(result: Result): boolean };
+type Props = { api: ApiClient; projectId: string; quote: SpeechQuote; onClose(): void; onApply(result: Result): DocumentApplyResult };
 export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onApply }: Props) {
     const insets = useSafeAreaInsets();
     const links = useAssetLinks(api);
@@ -39,11 +40,11 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
     const [consent, setConsent] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState('');
     const [settings, setSettings] = useState<Settings>({ captions: true, language: 'auto' });
     const [progress, setProgress] = useState<BestCutProgress>({ phase: 'ready', index: 0, fraction: 0, refunded: 0 });
-    const [result, setResult] = useState<Result | null>(null);
+    const [result, setResult] = useState<Result | null>(null), [applyBlocked, setApplyBlocked] = useState(false);
     const abort = useRef(new AbortController()), mounted = useRef(true), working = useRef(false);
     const [close] = useState(() => onClose);
     const live = useCallback(() => mounted.current && getCacheUser() === account, [account]);
-    const onSettingsChange = useCallback((value: Settings) => { setSettings(value); setResult(null); }, []);
+    const onSettingsChange = useCallback((value: Settings) => { setSettings(value); if (!applyBlocked) setResult(null); }, [applyBlocked]);
     useEffect(() => {
         mounted.current = true;
         void consentGate.hasAgreed().then(value => { if (live()) setConsent(value); });
@@ -93,7 +94,7 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
     const before = () => bestCutBefore(clips.map(c => c.media));
     const uris = () => Object.fromEntries(clips.flatMap(c => c.file ? [[c.media.id, c.file.file]] : []));
     async function run() {
-        if (working.current) return; working.current = true; setBusy(true); setMessage(''); setResult(null); abort.current = new AbortController();
+        if (working.current || applyBlocked) return; working.current = true; setBusy(true); setMessage(''); setResult(null); abort.current = new AbortController();
         try {
             consentGate.setPrompter(async () => consent); await consentGate.ensure('/api/v1/editor/speech-analyses', 'POST');
             // Fail before upload or charge if the source timeline would not be valid for the editor.
@@ -112,8 +113,7 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
             const value = { before: original, timeline: compiled.timeline, plan, uris: uris(), captionsOmitted: compiled.captionsOmitted, refunded: output.refunded };
             if (compiled.captionsOmitted) setMessage(t('bestCut.captionsOmitted'));
             if (plan.warnings.includes('tail')) setResult(value);
-            else if (onApply(value)) onClose();
-            else setMessage(t('bestCut.stale'));
+            else apply(value);
         } catch (error) {
             if (!live()) return;
             if (error instanceof ApiError && error.code === 'cancelled') return; // Cancel is a choice, not a failure.
@@ -125,32 +125,39 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
         } finally { working.current = false; if (live()) setBusy(false); }
     }
     const price = bestCutPrice(quote, clips.length, balance ?? 0, progress.prices);
-    const apply = (value: Result) => { if (onApply(value)) onClose(); else setMessage(t('bestCut.stale')); };
+    const apply = (value: Result) => {
+        const outcome = onApply(value);
+        if (outcome.status === 'accepted') { onClose(); return; }
+        setResult(value); setApplyBlocked(true);
+        if (outcome.status === 'refused') setMessage(t(`editorEditGate.${outcome.reason}`));
+        else if (outcome.status === 'stale') setMessage(t('bestCut.stale'));
+    };
+    const locked = busy || applyBlocked;
     const inputStyle = { color: colors.text, borderColor: colors.border, borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 80 };
     return <Modal visible animationType="slide" onRequestClose={() => { abort.current.abort(); onClose(); }}><View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: colors.background }}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, paddingTop: 16, gap: 16 }}>
         <Text variant="title2">{t('bestCut.title')}</Text><Text>{t('bestCut.limits')}</Text><Text>{t('bestCut.uploadBudget')}</Text><Text>{t('bestCut.replace')}</Text>
-        <Button label={t('bestCut.camera')} onPress={() => void pick()} disabled={busy || clips.length >= 10} />
-        <Button label={t('bestCut.library')} onPress={() => setLibraryOpen(true)} disabled={busy || clips.length >= 10} />
+        <Button label={t('bestCut.camera')} onPress={() => void pick()} disabled={locked || clips.length >= 10} />
+        <Button label={t('bestCut.library')} onPress={() => setLibraryOpen(true)} disabled={locked || clips.length >= 10} />
         <Text>{plural('bestCut.clips', clips.length)} · {t('bestCut.seconds', { n: Math.round(clips.reduce((n, c) => n + c.duration, 0)) })}</Text>
-        {clips.map((c, i) => <View key={c.media.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>{c.media.id.startsWith('j-') ? <JobThumb links={links} jobId={c.media.id.slice(2)} /> : null}<Text>{c.media.name}</Text>{progress.prices?.[i]?.cached ? <Text>{t('bestCut.cached')}</Text> : null}<Button variant="tertiary" label={t('bestCut.remove')} onPress={() => editClips(clips.filter(v => v !== c))} disabled={busy} /></View>)}
+        {clips.map((c, i) => <View key={c.media.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>{c.media.id.startsWith('j-') ? <JobThumb links={links} jobId={c.media.id.slice(2)} /> : null}<Text>{c.media.name}</Text>{progress.prices?.[i]?.cached ? <Text>{t('bestCut.cached')}</Text> : null}<Button variant="tertiary" label={t('bestCut.remove')} onPress={() => editClips(clips.filter(v => v !== c))} disabled={locked} /></View>)}
         <Text>{price.maximum ? t('bestCut.priceMax', { n: clips.length, price: quote.credits, total: price.total }) : t('bestCut.priceExact', { total: price.total })}</Text>
         {balance !== null && price.maximum && balance < price.total ? <Text accessibilityLiveRegion="polite">{t('editorAi.balance')}</Text> : null}
         {balance !== null ? <Text>{t('bestCut.balance', { n: balance })} · {t(price.maximum ? 'bestCut.afterMin' : 'bestCut.after', { n: price.remaining })}</Text> : null}
-        <Text>{t('bestCut.script')}</Text><TextInput multiline editable={!busy} accessibilityLabel={t('bestCut.script')} style={inputStyle} value={script} onChangeText={value => { setScript(value); setResult(null); }} maxLength={20000} />
-        <Text>{t('bestCut.notes')}</Text><TextInput multiline editable={!busy} accessibilityLabel={t('bestCut.notes')} style={inputStyle} value={notes} onChangeText={setNotes} maxLength={2000} /><Text>{t('bestCut.localNotes')}</Text>
-        <ScrollView horizontal contentContainerStyle={{ gap: 8 }}>{(['balanced', 'vlog', 'educational', 'punchy', 'steps'] as const).map(p => <Chip key={p} label={t(`bestCut.${p}`)} selected={p === preset} onPress={() => { if (!busy) { setPreset(p); setResult(null); } }} />)}</ScrollView>
-        <BestCutSettings disabled={busy} onChange={onSettingsChange} />
-        <Text>{brandText(t('bestCut.consent'))}</Text><Text>{t('bestCut.metadata')}</Text><Text>{t('bestCut.agree')}</Text><Switch accessibilityLabel={rawText(t('bestCut.agree'))} disabled={busy} value={consent} onValueChange={setConsent} />
+        <Text>{t('bestCut.script')}</Text><TextInput multiline editable={!locked} accessibilityLabel={t('bestCut.script')} style={inputStyle} value={script} onChangeText={value => { setScript(value); setResult(null); }} maxLength={20000} />
+        <Text>{t('bestCut.notes')}</Text><TextInput multiline editable={!locked} accessibilityLabel={t('bestCut.notes')} style={inputStyle} value={notes} onChangeText={setNotes} maxLength={2000} /><Text>{t('bestCut.localNotes')}</Text>
+        <ScrollView horizontal contentContainerStyle={{ gap: 8 }}>{(['balanced', 'vlog', 'educational', 'punchy', 'steps'] as const).map(p => <Chip disabled={locked} key={p} label={t(`bestCut.${p}`)} selected={p === preset} onPress={() => { if (!locked) { setPreset(p); setResult(null); } }} />)}</ScrollView>
+        <BestCutSettings disabled={locked} onChange={onSettingsChange} />
+        <Text>{brandText(t('bestCut.consent'))}</Text><Text>{t('bestCut.metadata')}</Text><Text>{t('bestCut.agree')}</Text><Switch accessibilityLabel={rawText(t('bestCut.agree'))} disabled={locked} value={consent} onValueChange={setConsent} />
         {busy ? <><Text accessibilityLiveRegion="polite">{t(`bestCut.${progress.phase}`, { n: progress.index + 1, percent: Math.round(progress.fraction * 100) })}</Text><Button label={t('bestCut.cancel')} onPress={() => abort.current.abort()} /></> : null}
         {progress.refunded > 0 ? <Text>{t('bestCut.refunded', { n: progress.refunded })}</Text> : null}
         {message ? <Text accessibilityLiveRegion="polite">{message}</Text> : null}
-        {progress.phase === 'no-speech' ? <><Text>{t('bestCut.noSpeech')}</Text><Button label={t('bestCut.chooseAnother')} onPress={() => editClips([])} /><Button label={t('bestCut.tryAnyway')} onPress={() => {
+        {progress.phase === 'no-speech' && !result ? <><Text>{t('bestCut.noSpeech')}</Text><Button label={t('bestCut.chooseAnother')} onPress={() => editClips([])} /><Button label={t('bestCut.tryAnyway')} onPress={() => {
             const original = before(); if (clips.reduce((n, c) => n + c.duration, 0) > 60 || validateAgentTimeline(original)) { setMessage(t('bestCut.tryLimit')); return; }
             apply({ before: original, timeline: original, plan: null, uris: uris() });
-        }} /></> : result ? <><Text>{t('bestCut.summary', { pauses: result.plan!.removedPauses, retakes: result.plan!.removedRetakes, matched: result.plan!.matchedLines })}</Text>
-            {result.plan!.warnings.map(w => <Text key={w}>{t(`bestCut.warning.${w}`)}</Text>)}
-            {!!result.plan!.missingLines.length && <Text>{t('bestCut.missing', { lines: result.plan!.missingLines.join(', ') })}</Text>}
-            <Button label={t('bestCut.apply')} onPress={() => apply(result)} /></> : <><Button label={t('bestCut.title')} accessibilityHint={!consent && !busy ? t('bestCut.needsAgree') : undefined} onPress={() => void run()} disabled={busy || !clips.length || !consent} />{!consent && !busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('bestCut.needsAgree')}</Text> : null}</>}
+        }} /></> : result ? <>{result.plan ? <><Text>{t('bestCut.summary', { pauses: result.plan.removedPauses, retakes: result.plan.removedRetakes, matched: result.plan.matchedLines })}</Text>
+            {result.plan.warnings.map(w => <Text key={w}>{t(`bestCut.warning.${w}`)}</Text>)}
+            {!!result.plan.missingLines.length && <Text>{t('bestCut.missing', { lines: result.plan.missingLines.join(', ') })}</Text>}
+            </> : null}<Button label={t('bestCut.apply')} onPress={() => apply(result)} /></> : <><Button label={t('bestCut.title')} accessibilityHint={!consent && !busy ? t('bestCut.needsAgree') : undefined} onPress={() => void run()} disabled={busy || !clips.length || !consent} />{!consent && !busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('bestCut.needsAgree')}</Text> : null}</>}
         <Button variant="tertiary" label={t('bestCut.notNow')} onPress={() => { abort.current.abort(); onClose(); }} />
     </ScrollView></View>{libraryOpen ? <LibraryChooser api={api} kind="video" onClose={() => setLibraryOpen(false)} onPick={choice => { setLibraryOpen(false); void select(choice); }} /> : null}</Modal>;
 }

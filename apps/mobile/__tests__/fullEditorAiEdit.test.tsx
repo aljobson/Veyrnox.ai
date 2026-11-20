@@ -32,7 +32,7 @@ jest.mock('../src/components/chat/MakePanel', () => ({ MakePanel: () => null }))
 jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: any) => {
     mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args);
     const mark = mockSession.markDocument;
-    return { ...mockSession, markDocument: (...values: Parameters<typeof mark>) => mockRefuse ? { status: 'refused', reason: 'invalid' } : mark(...values) };
+    return { ...mockSession, markDocument: (...values: Parameters<typeof mark>) => mockRefuse ? { status: 'refused', reason: 'tooLarge' } : mark(...values) };
 } }));
 const seed = (): Timeline => ({ ...emptyTimeline(), seq: 1, media: { [`j-${jobId}`]: { id: `j-${jobId}`, kind: 'video', name: 'My private take', frames: 360, hasAudio: true } },
     video: [{ id: 'v1', mediaId: `j-${jobId}`, start: 0, in: 0, len: 360, trackId: 'video-0', rate: 1, volume: 1, transition: 0 }] });
@@ -137,5 +137,10 @@ for (const mode of ['ai', 'speech'] as const) test(`${mode}: refused document ne
     expect(mockSession.currentDocument()).toEqual(before);
     expect(announce).not.toHaveBeenCalledWith(t(mode === 'ai' ? 'editorAi.applied' : 'editorSpeech.applied'));
     expect(mockSession.selection).toBeNull();
+    expect(visible(t('editorEditGate.tooLarge'))).toBe(true); expect(visible(t('editorAi.stale'))).toBe(false);
+    expect(visible(t(mode === 'ai' ? 'editorAi.preview' : 'editorSpeech.preview'))).toBe(true);
+    expect(nodes(sendLabel(mode))).toHaveLength(0); expect(nodes(t('recovery.retry'))).toHaveLength(0);
+    await act(async () => jest.advanceTimersByTimeAsync(15000)); expect(posts()).toHaveLength(1);
+    await press(t('editorAi.discard')); expect(nodes(t('editorAi.apply'))).toHaveLength(0);
 
 });

@@ -95,7 +95,7 @@ export function useEditorSaveSync(options: Options) {
             const current = o().documentRef.current;
             if (!live() || sheet || replacing || restoreOp || gate !== 'open' || !current) return false;
             const merged = o().mergeBackups(current);
-            if (documentIdentity(merged) === documentIdentity(current)) return false;
+            if (documentIdentity(merged) === documentIdentity(current) || documentProblem(merged)) return false;
             return o().markDocument(merged, false).status === 'accepted';
         }
         async function fetchConflict(op: Operation) {
@@ -117,7 +117,9 @@ export function useEditorSaveSync(options: Options) {
             const current = o().documentRef.current;
             if (current) {
                 const merged = o().mergeBackups(current);
-                if (documentIdentity(merged) !== identity()) { o().markDocument(merged, false); await flushDraft(); }
+                if (documentIdentity(merged) !== identity()) {
+                    if (!documentProblem(merged)) { o().markDocument(merged, false); await flushDraft(); }
+                }
                 else if (o().dirtyRef.current) changed();
             }
             if (live()) notify();
@@ -230,8 +232,8 @@ export function useEditorSaveSync(options: Options) {
                 if (!holds(op)) return;
                 if (identity() !== op.identity) { op.state = 'ambiguous'; await flushDraft(); if (holds(op)) o().setProblem(t('editorSave.copyChanged')); return; }
                 clear('draft'); epoch++; op.epoch = epoch;
-                if (documentIdentity(o().mergeBackups(o().documentRef.current!)) === documentIdentity(op.document)) {
-                    await queue.remove(() => holds(op) && identity() === op.identity && documentIdentity(o().mergeBackups(o().documentRef.current!)) === documentIdentity(op.document)).catch(() => undefined);
+                if (documentIdentity(copyDocument()) === documentIdentity(op.document)) {
+                    await queue.remove(() => holds(op) && identity() === op.identity && documentIdentity(copyDocument()) === documentIdentity(op.document)).catch(() => undefined);
                 }
                 if (!holds(op)) return;
                 if (identity() !== op.identity) {
@@ -239,7 +241,7 @@ export function useEditorSaveSync(options: Options) {
                     if (holds(op)) o().setProblem(t('editorSave.copyChanged'));
                     return;
                 }
-                if (documentIdentity(o().mergeBackups(o().documentRef.current!)) !== documentIdentity(op.document)) await flushDraft();
+                if (documentIdentity(copyDocument()) !== documentIdentity(op.document)) await flushDraft();
                 if (!holds(op)) return;
                 if (identity() !== op.identity) {
                     op.state = 'ambiguous'; await flushDraft();

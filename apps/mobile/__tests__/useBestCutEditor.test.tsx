@@ -6,7 +6,7 @@ import { useBestCutEditor } from '../src/components/editor/useBestCutEditor';
 import { useFullEditorSession } from '../src/components/editor/useFullEditorSession';
 import { emptyTimeline } from '../src/lib/nativeEditorModel';
 import { webSequenceV3, envelope } from './fixtures/webSequenceV3';
-let mockApply: (value: any) => boolean;
+let mockApply: (value: any) => import('../src/lib/editorDocumentGate').DocumentApplyResult;
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/components/editor/useBestCutAvailability', () => ({ useBestCutAvailability: () => ({ quote: {} }) }));
 jest.mock('../src/components/editor/BestCutResult', () => ({ BestCutResult: () => null }));
@@ -22,7 +22,7 @@ test.each(['accepted', 'invalid', 'tooLarge', 'not-live'] as const)('Best Cut is
     const root = createRoot(); await act(async () => root.render(<Harness />));
     const value = { before: webSequenceV3(), timeline: webSequenceV3(), uris: {}, plan: null };
     let result: unknown; await act(async () => { result = mockApply(value); });
-    expect(result).toBe(!refused); expect(markDocument).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(markDocument.mock.results[0].value); expect(markDocument).toHaveBeenCalledTimes(1);
     expect(session.setProblem).not.toHaveBeenCalled();
     if (refused) {
         expect(session.setFrame).not.toHaveBeenCalled(); expect(session.setSelection).not.toHaveBeenCalled();
@@ -51,11 +51,11 @@ test('Best Cut preserves a real tooLarge refusal and permits retry', async () =>
         const timeline = nearLimit(false).timeline as ReturnType<typeof emptyTimeline>;
         timeline.text.push({ ...timeline.text[0], id: 't29', start: 2800 }); timeline.seq = 29;
         const value = { before: emptyTimeline(), timeline, uris: { m: 'file://source' }, plan: null };
-        await act(async () => { expect(mockApply(value)).toBe(false); });
+        await act(async () => { expect(mockApply(value)).toEqual({ status: 'refused', reason: 'tooLarge' }); });
         expect(session!.problem).toBe(t('editorEditGate.tooLarge'));
         expect(session!.currentDocument()).toEqual(doc); expect(session!.history.canUndo).toBe(false);
         expect(session!.localMediaUris).toEqual({});
-        await act(async () => { expect(mockApply({ ...value, timeline: webSequenceV3() })).toBe(true); });
+        await act(async () => { expect(mockApply({ ...value, timeline: webSequenceV3() })).toEqual({ status: 'accepted' }); });
         expect(session!.problem).toBeNull(); expect(session!.localMediaUris).toEqual(value.uris);
     } finally { await act(async () => root.unmount()); jest.useRealTimers(); }
 });

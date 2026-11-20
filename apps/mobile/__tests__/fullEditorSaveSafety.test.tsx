@@ -1,3 +1,5 @@
+import type { ProjectDocument } from '../src/lib/editorBridge';
+import { nearLimit } from './fixtures/editorNearLimit';
 import { act } from 'react';
 import { Alert, AppState, type AppStateStatus } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -26,7 +28,7 @@ jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn(), writeDraft: 
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn(), files: jest.fn(), copy: jest.fn(), backup: jest.fn() } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
 let root: Root, session: ReturnType<typeof useFullEditorSession>, stored: EditorDraft | null;
-let background: (state: AppStateStatus) => void, head: { revision: number; document: typeof doc };
+let background: (state: AppStateStatus) => void, head: { revision: number; document: ProjectDocument };
 function Harness({ jobId }: { jobId?: string }) { session = useFullEditorSession({ projectId: id, jobId, onOwnerChange: mockOwnerChange, onCopy: mockCopy }); return null; }
 function deferred<T>() { let resolve!: (value: T) => void, reject!: (error: unknown) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; }
 const tick = async (ms: number) => { await act(async () => jest.advanceTimersByTimeAsync(ms)); };
@@ -218,13 +220,13 @@ test('Keep copy account_changed leaves the draft and schedules no retry or error
 });
 test('deferred backup after Use saved is drafted then PUT against the adopted head; no matching backup leaves it clean', async () => {
     await open(); const mediaId = 'l-22222222-2222-2222-2222-222222222222', timeline = timelineOf(undefined);
-    timeline.media[mediaId] = { id: mediaId, kind: 'video', frames: 60 };
-    await act(async () => session.markDocument({ ...doc, schema_version: 3, timeline })); await conflict();
-    await act(async () => session.applyBackup(mediaId, { projectId: id, assetId: 'asset' }));
-    head = { revision: 9, document: { ...doc, schema_version: 3, timeline } as any }; await useSaved();
+    timeline.media[mediaId] = { id: mediaId, kind: 'video', frames: 60, name: 'Source', hasAudio: true, width: 640, height: 360 };
+    await act(async () => session.markDocument({ ...doc, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, schema_version: 3, timeline })); await conflict();
+    await act(async () => session.applyBackup(mediaId, { projectId: id, assetId: '22222222-2222-4222-8222-222222222222' }));
+    head = { revision: 9, document: { ...doc, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, schema_version: 3, timeline } as any }; await useSaved();
     expect(session.dirty).toBe(true); expect(stored?.baseRevision).toBe(9); expect((stored?.document.timeline as any).media[mediaId].assetSource).toBeTruthy();
     const response = deferred<{ revision: number }>(); mockRequest.mockImplementationOnce(() => response.promise); await tick(900);
-    expect(JSON.parse(puts().at(-1)![1].body)).toMatchObject({ expected_revision: 9, document: { timeline: { media: { [mediaId]: { assetSource: { assetId: 'asset' } } } } } });
+    expect(JSON.parse(puts().at(-1)![1].body)).toMatchObject({ expected_revision: 9, document: { timeline: { media: { [mediaId]: { assetSource: { assetId: '22222222-2222-4222-8222-222222222222' } } } } } });
     expect(stored).not.toBeNull(); await act(async () => response.resolve({ revision: 10 })); expect(stored).toBeNull();
 });
 test.each([false, true])('Library media-info account switch sends no asset request and shows no error (entry=%s)', async entry => {
@@ -297,13 +299,13 @@ test('fix-1 HIGH-2: a failed draft read keeps drafting and saving, warns, and le
 });
 test('fix-1 HIGH-3: a backup that finishes while Versions is open is applied, drafted and saved after Close', async () => {
     await open(); const mediaId = 'l-22222222-2222-2222-2222-222222222222', timeline = timelineOf(undefined);
-    timeline.media[mediaId] = { id: mediaId, kind: 'video', frames: 60 };
-    await act(async () => session.markDocument({ ...doc, schema_version: 3, timeline })); await tick(900); expect(session.dirty).toBe(false);
-    await act(async () => session.sync.openVersions()); await act(async () => session.applyBackup(mediaId, { projectId: id, assetId: 'asset' }));
+    timeline.media[mediaId] = { id: mediaId, kind: 'video', frames: 60, name: 'Source', hasAudio: true, width: 640, height: 360 };
+    await act(async () => session.markDocument({ ...doc, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, schema_version: 3, timeline })); await tick(900); expect(session.dirty).toBe(false);
+    await act(async () => session.sync.openVersions()); await act(async () => session.applyBackup(mediaId, { projectId: id, assetId: '22222222-2222-4222-8222-222222222222' }));
     expect(session.dirty).toBe(false);
     await act(async () => session.sync.closeVersions()); expect(session.dirty).toBe(true);
-    await tick(400); expect((stored?.document.timeline as any).media[mediaId].assetSource).toEqual({ projectId: id, assetId: 'asset' }); await tick(500);
-    expect(JSON.parse(puts().at(-1)![1].body)).toMatchObject({ expected_revision: 5, document: { timeline: { media: { [mediaId]: { assetSource: { assetId: 'asset' } } } } } });
+    await tick(400); expect((stored?.document.timeline as any).media[mediaId].assetSource).toEqual({ projectId: id, assetId: '22222222-2222-4222-8222-222222222222' }); await tick(500);
+    expect(JSON.parse(puts().at(-1)![1].body)).toMatchObject({ expected_revision: 5, document: { timeline: { media: { [mediaId]: { assetSource: { assetId: '22222222-2222-4222-8222-222222222222' } } } } } });
 });
 test.each([401, 408, 413])('fix-1 MEDIUM-1: save status %s is shown and retried instead of sticking', async status => {
     await open(); await edit(); mockRequest.mockImplementationOnce(async () => { throw new ApiError(status, 'x'); });
@@ -313,4 +315,17 @@ test.each([401, 408, 413])('fix-1 MEDIUM-1: save status %s is shown and retried 
 test('fix-1 MEDIUM-2: a session generation change before the cache owner changes stops drafts and saves', async () => {
     await open(); await edit(); await act(async () => { mockGen++; }); await tick(60000);
     expect(puts()).toHaveLength(0); expect(writeDraft).not.toHaveBeenCalled(); expect(session.sync.live()).toBe(false);
+});
+
+test.each([false, true])('Keep a copy removes the draft after copying without an unmergeable backup (%s)', async envelopeLimit => {
+    const near = { ...nearLimit(envelopeLimit), project_id: id };
+    head = { revision: 4, document: near };
+    await open(); await edit(near.brief + 'a');
+    await act(async () => session.applyBackup('m', { projectId: id, assetId: '22222222-2222-4222-8222-222222222222' }));
+    await act(async () => session.sync.flushDraft()); expect(stored).not.toBeNull();
+    const copied = session.currentDocument(); jest.mocked(removeDraft).mockClear();
+    await act(async () => session.sync.keepCopy());
+    expect(JSON.parse(puts().at(-1)![1].body).document).toEqual({ ...copied, project_id: copyId });
+    expect(removeDraft).toHaveBeenCalledTimes(1); expect(stored).toBeNull();
+    expect(mockCopy).toHaveBeenCalledWith(copyId);
 });

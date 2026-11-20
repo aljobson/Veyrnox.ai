@@ -1,3 +1,4 @@
+import { Alert, AccessibilityInfo } from 'react-native';
 import { createElement, act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import { documentProblem } from '../src/lib/editorDocumentGate';
@@ -22,8 +23,8 @@ async function open(doc: ProjectDocument) {
     mockRequest.mockImplementation(async (path: string) => path.endsWith('/document') ? { document: doc, revision: 1 } : { project: { name: 'Test' } });
     await act(async () => root.render(createElement(Harness)));
 }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); root = createRoot(); });
-afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {}); root = createRoot(); });
+afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMocks(); jest.useRealTimers(); });
 test('pure gate validates timelines, versions and exact UTF-8 envelope size', () => {
     const doc = envelope(webSequenceV3()); expect(documentProblem(doc)).toBeNull();
     expect(documentProblem({ ...doc, timeline: { ...webSequenceV3(), fps: 29 } })).toBe('invalid');
@@ -69,7 +70,9 @@ test.each([false, true])('backup exceeding %s limit stays pending while edits an
     await act(async () => { session.markDocument(edited); });
     const revision = session.getEditRevision();
     const source = { projectId: doc.project_id, assetId: '22222222-2222-4222-8222-222222222222' };
+    jest.mocked(AccessibilityInfo.announceForAccessibility).mockClear();
     await act(async () => session.applyBackup('m', source));
+    expect(session.problem).toBeNull(); expect(AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalled();
     expect(session.currentDocument()).toEqual(edited); expect(session.getEditRevision()).toBe(revision);
     const next = { ...edited, brief: edited.brief + 'b' };
     await act(async () => { expect(session.markDocument(next)).toEqual({ status: 'accepted' }); });
@@ -83,7 +86,9 @@ test.each([false, true])('backup exceeding %s limit stays pending while edits an
     await act(async () => session.travel('redo')); expect(session.currentDocument()).toEqual(edited);
     expect(session.problem).toBeNull();
     await act(async () => session.sync.flushDraft()); expect(jest.mocked(writeDraft).mock.calls.at(-1)![0].document).toEqual(edited);
+    jest.mocked(AccessibilityInfo.announceForAccessibility).mockClear();
     await act(async () => session.sync.settle()); expect(session.currentDocument()).toEqual(edited);
+    expect(session.problem).toBeNull(); expect(AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalled();
 });
 
 test.each([false, true])('pending backup merges on the first later commit with room (%s limit)', async envelopeLimit => {
@@ -109,4 +114,35 @@ test('a valid envelope at exactly 32768 UTF-8 bytes is accepted, one extra byte 
     const doc = nearLimit(true); doc.brief += 'x'.repeat(32768 - utf8Bytes(JSON.stringify(doc)));
     expect(utf8Bytes(JSON.stringify(doc))).toBe(32768); expect(documentProblem(doc)).toBeNull();
     expect(documentProblem({ ...doc, brief: doc.brief + 'x' })).toBe('tooLarge');
+});
+
+test('repair, pending backup, legacy undo and redo retain the unmerged snapshots', async () => {
+    const valid = nearLimit(false), legacy = { ...valid, timeline: { ...valid.timeline as ReturnType<typeof emptyTimeline>, fps: 29 } };
+    await open(legacy);
+    await act(async () => { expect(session.markDocument(valid)).toEqual({ status: 'accepted' }); });
+    const source = { projectId: valid.project_id, assetId: '22222222-2222-4222-8222-222222222222' };
+    await act(async () => session.applyBackup('m', source));
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toEqual(legacy); expect(session.problem).toBeNull();
+    expect(session.history).toEqual({ canUndo: false, canRedo: true });
+    await act(async () => session.travel('redo'));
+    expect(session.currentDocument()).toEqual(valid); expect(session.problem).toBeNull();
+    expect(session.history).toEqual({ canUndo: true, canRedo: false });
+    await act(async () => { session.markDocument({ ...valid, timeline: { ...valid.timeline as ReturnType<typeof emptyTimeline>, text: [] } }); });
+    expect((session.currentDocument()!.timeline as any).media.m.assetSource).toEqual(source);
+});
+test('adopting a saved document silently retains a backup that cannot merge', async () => {
+    const doc = nearLimit(false); await open(doc);
+    await act(async () => { session.markDocument({ ...doc, brief: 'edited' }); });
+    const source = { projectId: doc.project_id, assetId: '22222222-2222-4222-8222-222222222222' };
+    await act(async () => session.sync.openVersions());
+    await act(async () => session.applyBackup('m', source));
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    await act(async () => session.sync.useSaved());
+    const discard = jest.mocked(Alert.alert).mock.calls.at(-1)![2]!.find(button => button.style === 'destructive')!;
+    await act(async () => discard.onPress!());
+    expect(session.currentDocument()).toEqual(doc); expect(session.problem).toBeNull();
+    expect(AccessibilityInfo.announceForAccessibility).not.toHaveBeenCalledWith("This project is too large to save. Remove some clips or keyframes first.");
+    await act(async () => { session.markDocument({ ...doc, timeline: { ...doc.timeline as ReturnType<typeof emptyTimeline>, text: [] } }); });
+    expect((session.currentDocument()!.timeline as any).media.m.assetSource).toEqual(source);
 });
