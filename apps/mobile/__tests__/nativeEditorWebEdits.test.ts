@@ -1,9 +1,32 @@
-import { splitSequenceClip, trimSequence, sourceFrame } from '../../../app/veyrnox/_lib/editorSequence.mjs';
+import { splitSequenceClip, trimSequence, sourceFrame, setSequenceRate } from '../../../app/veyrnox/_lib/editorSequence.mjs';
 import { validateSequence } from '../../../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import { splitClip, pasteClipboard, copySelections, duplicateSelections, type Timeline, type Selection } from '../src/lib/nativeEditorModel';
-import { canTrim, canChangeSpeed, trimItem } from '../src/lib/editorTimeline';
+import { canTrim, canChangeSpeed, changeItemSpeed, trimItem } from '../src/lib/editorTimeline';
 import { webSequenceV3 } from './fixtures/webSequenceV3';
 const video: Selection = { track: 'video', id: 'v1' }, text: Selection = { track: 'text', id: 't3' };
+test.each(['original', 'trimmed', 'split'] as const)('%s animated clip changes speed exactly like web and remains editable', kind => {
+    let tl = webSequenceV3();
+    const clip = tl.video[0];
+    delete clip.keyframes; delete clip.parameterKeyframes; delete clip.maskKeyframes;
+    clip.animation = { in: 'fade', out: 'fade', duration: 15 };
+    let selection = video;
+    if (kind === 'trimmed') tl = trimItem(tl, video, 'in', 30, false, 0)!;
+    if (kind === 'split') {
+        tl = splitClip(tl, video, 30)!;
+        selection = { track: 'video', id: tl.video.find(c => c.start === 30)!.id };
+    }
+    const original = tl.video.find(c => c.id === selection.id)!;
+    expect(canChangeSpeed(original)).toBe(true);
+    const next = changeItemSpeed(tl, selection, 2)!;
+    expect(next).toEqual(setSequenceRate(tl, selection.track, selection.id, 2));
+    const changed = next.video.find(c => c.id === selection.id)!;
+    const len = kind === 'original' ? 45 : 30;
+    expect(changed).toMatchObject({ len, rate: 2, animation: { in: 'fade', out: 'fade', offset: 0, span: len },
+        keyframes: [], parameterKeyframes: [], maskKeyframes: [], speedCurve: [], fadeIn: len, fadeOut: len });
+    expect(validateSequence(next)).toBeNull();
+    expect(canChangeSpeed(changed)).toBe(true);
+    expect(changeItemSpeed(next, selection, 1)).toEqual(setSequenceRate(next, selection.track, selection.id, 1));
+});
 const cases: [string, Selection, Record<string, unknown>][] = [
     ['rate', video, { rate: 2 }], ['reverse', video, { rate: 2, reverse: true, in: 400 }],
     ['ramp', video, { speedCurve: [{ frame: 0, rate: 1 }, { frame: 90, rate: 2 }] }], ['caption', text, {}],

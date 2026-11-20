@@ -33,7 +33,7 @@ import { Text as StatusText } from '../ui/Text';
 import { Command, Action, Choice, WorkflowPanel } from './EditorControls';
 import { useEditorTrackActions } from './useEditorTrackActions';
 import { PlaybackPreview, PlaybackTimeline, PlaybackTransport } from './EditorPlayback';
-import { canChangeSpeed, fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX } from '../../lib/editorTimeline';
+import { changeItemSpeed, fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { useEditorLeaveGuard } from './useEditorLeaveGuard';
@@ -156,9 +156,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         } };
     const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frameStore.get(), advanced ? ripple : 'lane'); if (next)
         applyTimeline(next); } };
-    const changeSpeed = (rate: number) => { if (!selection || selection.track === 'text' || !selected || !canChangeSpeed(selected)) return; const clip = selected as Clip;
-        const sourceSpan = clip.len * (clip.rate ?? 1);
-        const next = trimItem(updateClip(timeline, selection, { rate }), selection, 'out', Math.max(1, Math.floor(sourceSpan / rate)) - clip.len, false, frameStore.get());
+    const changeSpeed = (rate: number) => { if (!selection) return;
+        const next = changeItemSpeed(timeline, selection, rate);
         if (next) applyTimeline(next); };
     const toggleReverse = () => { if (!selection || selection.track === 'text' || !selected) return; const clip = selected as Clip;
         const distance = Math.max(0, clip.len - 1) * (clip.rate ?? 1); patchSelected({ reverse: !clip.reverse, in: Math.max(0, (clip.in ?? 0) + (clip.reverse ? -distance : distance)) }); };

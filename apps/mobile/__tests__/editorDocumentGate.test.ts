@@ -54,6 +54,72 @@ test('repair then undo to a legacy snapshot then redo is transactional', async (
     await act(async () => session.travel('redo')); expect(session.currentDocument()).toEqual(valid);
     expect(session.history).toEqual({ canUndo: true, canRedo: false });
 });
+test('a locally introduced invalid snapshot never gains baseline legacy status on undo or redo', async () => {
+    const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
+    const localInvalid = { ...baseline, brief: 'Local invalid edit' };
+    await open(baseline);
+    await act(async () => { expect(session.markDocument(localInvalid)).toEqual({ status: 'accepted' }); });
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toEqual(baseline);
+    await act(async () => { expect(session.markDocument(valid, false)).toEqual({ status: 'accepted' }); });
+    const revision = session.getEditRevision();
+    await act(async () => session.travel('redo'));
+    expect(session.currentDocument()).toEqual(valid); expect(session.getEditRevision()).toBe(revision);
+    expect(session.problem).toBe("That change can't be kept in this project.");
+    expect(session.history).toEqual({ canUndo: false, canRedo: true });
+});
+test('undo refuses a locally introduced invalid snapshot after repair', async () => {
+    const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
+    await open(baseline);
+    await act(async () => { session.markDocument({ ...baseline, brief: 'Local invalid edit' }); session.markDocument(valid); });
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toEqual(valid);
+    expect(session.history).toEqual({ canUndo: true, canRedo: false });
+    expect(session.problem).toBe("That change can't be kept in this project.");
+});
+test('a successful save makes its earlier history known baseline snapshots', async () => {
+    const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
+    const earlier = { ...baseline, brief: 'Earlier edit' };
+    await open(baseline);
+    await act(async () => { session.markDocument(earlier); session.markDocument(valid); });
+    mockRequest.mockResolvedValueOnce({ revision: 2 });
+    await act(async () => { expect(await session.save()).toBe(true); });
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toEqual(earlier); expect(session.problem).toBeNull();
+    await act(async () => session.travel('redo'));
+    expect(session.currentDocument()).toEqual(valid);
+});
+test('a save finishing after an undo and new edits never blesses the new branch as legacy', async () => {
+    const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
+    await open(baseline);
+    let finish!: (value: unknown) => void;
+    const request = mockRequest.getMockImplementation()!;
+    mockRequest.mockImplementation((path, init) => init?.method === 'PUT' ? new Promise(resolve => { finish = resolve; }) : request(path, init));
+    await act(async () => { session.markDocument(valid); });
+    let saving!: Promise<boolean>;
+    await act(async () => { saving = session.save(); });
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toEqual(baseline);
+    const repaired = { ...valid, brief: 'New repair' };
+    await act(async () => { session.markDocument({ ...baseline, brief: 'New invalid edit' }); session.markDocument(repaired); });
+    await act(async () => { finish({ document: valid, revision: 2 }); await saving; });
+    expect(session.revision).toBe(2);
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toEqual(repaired);
+    expect(session.problem).toBe("That change can't be kept in this project.");
+});
+test('draft flush retains a completed backup while a versions sheet holds unsaved edits', async () => {
+    const doc = envelope(webSequenceV3()); await open(doc);
+    const edited = { ...doc, brief: 'Unsaved edits' };
+    await act(async () => { session.markDocument(edited); session.sync.openVersions(); });
+    const source = { projectId: doc.project_id, assetId: '22222222-2222-4222-8222-222222222222' };
+    await act(async () => session.applyBackup('m', source));
+    expect(session.sync.sheet).toBe('versions'); expect(session.currentDocument()).toEqual(edited);
+    await act(async () => jest.advanceTimersByTimeAsync(400));
+    const draft = jest.mocked(writeDraft).mock.calls.at(-1)![0].document;
+    expect(draft).toEqual({ ...edited, timeline: { ...webSequenceV3(), media: { m: { ...webSequenceV3().media.m, assetSource: source } } } });
+    expect(documentProblem(draft)).toBeNull(); expect(session.currentDocument()).toEqual(edited);
+});
 test('a timeline just over 30000 UTF-8 bytes is tooLarge even when the envelope is under 32768', () => {
     const doc = nearLimit(false), tl = doc.timeline as ReturnType<typeof emptyTimeline>;
     tl.media.m.name += '😀'.repeat(10);

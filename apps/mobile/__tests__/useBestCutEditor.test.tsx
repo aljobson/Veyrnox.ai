@@ -59,3 +59,28 @@ test('Best Cut preserves a real tooLarge refusal and permits retry', async () =>
         expect(session!.problem).toBeNull(); expect(session!.localMediaUris).toEqual(value.uris);
     } finally { await act(async () => root.unmount()); jest.useRealTimers(); }
 });
+
+test.each(['invalid', 'tooLarge'] as const)('Best Cut refuses a %s history base before any transactional side effects', async reason => {
+    jest.useFakeTimers();
+    const doc = envelope(emptyTimeline());
+    mockRequest.mockImplementation(async (path: string) => path.endsWith('/document') ? { document: doc, revision: 1 } : { project: { name: 'Test' } });
+    let session: ReturnType<typeof useFullEditorSession>;
+    function Harness() { session = useFullEditorSession({ projectId: doc.project_id }); return useBestCutEditor(session, doc.project_id, true).sheet; }
+    const root = createRoot();
+    try {
+        await act(async () => root.render(<Harness />));
+        const revision = session!.getEditRevision();
+        const before = reason === 'invalid' ? { ...webSequenceV3(), fps: 29 } : nearLimit(false).timeline as ReturnType<typeof emptyTimeline>;
+        if (reason === 'tooLarge') before.text.push({ ...before.text[0], id: 't29', start: 2800 });
+        const value = { before, timeline: webSequenceV3(), uris: { m: 'file://source' }, plan: null };
+        await act(async () => { expect(mockApply(value)).toEqual({ status: 'refused', reason }); });
+        expect(session!.problem).toBe(t(`editorEditGate.${reason}`));
+        expect(session!.currentDocument()).toEqual(doc); expect(session!.getEditRevision()).toBe(revision);
+        expect(session!.history).toEqual({ canUndo: false, canRedo: false });
+        expect(session!.dirty).toBe(false); expect(session!.localMediaUris).toEqual({});
+        await act(async () => { expect(mockApply({ ...value, before: webSequenceV3() })).toEqual({ status: 'accepted' }); });
+        expect(session!.problem).toBeNull(); expect(session!.localMediaUris).toEqual(value.uris);
+        await act(async () => session!.travel('undo'));
+        expect(session!.currentDocument()).toEqual(envelope(webSequenceV3()));
+    } finally { await act(async () => root.unmount()); jest.useRealTimers(); }
+});

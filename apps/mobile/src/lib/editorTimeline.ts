@@ -1,10 +1,11 @@
 import { slicedWords } from '../../../../app/veyrnox/_lib/editorWords.mjs';
 import { slicedAnimation } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { sliceMaskKeyframes as webSliceMaskKeyframes } from '../../../../app/veyrnox/_lib/editorMask.mjs';
+import { sourceFrame } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
+import { setSequenceRate } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
+import { clipAt, updateClip, type Clip, type Media, type Selection, type TextClip, type Timeline } from './nativeEditorModel';
 // The web caller supplies the retained length; today's helper preserves keys beyond that boundary.
 const sliceMaskKeyframes = webSliceMaskKeyframes as (clip: Clip | TextClip, from: number, len: number) => ReturnType<typeof webSliceMaskKeyframes>;
-import { sourceFrame } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
-import { clipAt, updateClip, type Clip, type Media, type Selection, type TextClip, type Timeline } from './nativeEditorModel';
 
 export const PPF_MIN = 0.25;
 export const PPF_MAX = 8;
@@ -67,9 +68,16 @@ export function canTrim(item: Clip | TextClip): boolean {
 }
 export function canChangeSpeed(item: Clip | TextClip): boolean {
     const fields = item as unknown as Record<string, unknown>;
-    const animation = item.animation as Record<string, unknown> | undefined;
-    return !['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve'].some(key => fields[key] != null)
-        && animation?.offset == null && animation?.span == null;
+    return !['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve'].some(key => {
+        const value = fields[key];
+        return value != null && (!Array.isArray(value) || value.length > 0);
+    });
+}
+export function changeItemSpeed(timeline: Timeline, selection: Selection, rate: number): Timeline | null {
+    const item = clipAt(timeline, selection);
+    if (!item || selection.track === 'text' || !canChangeSpeed(item)) return null;
+    const next = setSequenceRate(timeline, selection.track, selection.id, rate) as Timeline | { error: string };
+    return 'error' in next ? null : next;
 }
 // Longest length (frames) a video or audio clip may have so it never reads past the end of its source file; null when
 // the file's length is unknown or the media is unbounded (images, graphics). Never below 1 frame and `in` never below 0.

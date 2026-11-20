@@ -19,7 +19,7 @@ type Ref<T> = MutableRefObject<T>;
 type Options = {
     api: ApiClient; projectId: string; name: string;
     documentRef: Ref<ProjectDocument | null>; revisionRef: Ref<number>; dirtyRef: Ref<boolean>;
-    baseline(head: DocumentHead): void; markDocument(doc: ProjectDocument, record?: boolean): DocumentCommitResult;
+    baseline(head: DocumentHead): void; saved(doc: ProjectDocument): void; markDocument(doc: ProjectDocument, record?: boolean): DocumentCommitResult;
     mergeBackups(doc: ProjectDocument): ProjectDocument; problem: string | null; setProblem(message: string | null): void;
     onOwnerChange(): void; onCopy(id: string): void; clearDocument(): void; entryImport(): Promise<void>;
 };
@@ -62,9 +62,11 @@ export function useEditorSaveSync(options: Options) {
             clear('draft');
             const doc = o().documentRef.current;
             if (!live() || gate !== 'open' || !doc || !o().dirtyRef.current) return;
+            const merged = o().mergeBackups(doc);
+            const document = documentProblem(merged) === null ? merged : doc;
             const captured = epoch, id = identity();
             let kept = false;
-            try { kept = await queue.write({ owner: owner || '', projectId: o().projectId, baseRevision: o().revisionRef.current, document: doc, updatedAt: Date.now() }, () => live() && epoch === captured) === true; } catch { /* Storage failure is reflected in the leave prompt. */ }
+            try { kept = await queue.write({ owner: owner || '', projectId: o().projectId, baseRevision: o().revisionRef.current, document, updatedAt: Date.now() }, () => live() && epoch === captured) === true; } catch { /* Storage failure is reflected in the leave prompt. */ }
             if (live() && captured === epoch && id === identity()) draftState = { identity: id, kept: kept ? 'kept' : 'failed' };
         }
         function changed() {
@@ -141,6 +143,7 @@ export function useEditorSaveSync(options: Options) {
                     pending = null; failure = null; attempt = 0; recovered = false;
                     // A later edit derives from this saved snapshot, so its base advances too.
                     o().revisionRef.current = result.revision;
+                    o().saved(op.document);
                     if (identity() === documentIdentity(op.document)) {
                         o().dirtyRef.current = false;
                         const captured = epoch;
