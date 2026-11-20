@@ -5700,12 +5700,6 @@
     "ratio": 1.63
   },
   {
-    "id": "beat.saveNote",
-    "english": "Saved on this phone",
-    "translation": "Pas encore sauvegardé. Ce beat est perdu à la fermeture de l’app.",
-    "ratio": 3.42
-  },
-  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Annuler",

@@ -6797,7 +6797,6 @@ export default {
   "beatTakes.recorded": "녹음된 테이크 수: {count}. 선택한 테이크: {take}.",
   "beatTakes.recordingSaved": "녹음이 저장되었습니다",
   "beatTakes.replacing": "클라우드 업데이트 중",
-    "beat.saveNote": "아직 저장되지 않았습니다. 앱을 닫으면 이 비트가 사라집니다.",
     "library.useForLipSync": "립싱크에 사용",
     "library.useForLipSyncLabel": "{name}을(를) 립싱크에 사용",
     "musicPublication.title": "공개 발매",

@@ -2016,12 +2016,6 @@
     "ratio": 1.88
   },
   {
-    "id": "beat.saveNote",
-    "english": "Saved on this phone",
-    "translation": "لم يُحفظ بعد. سيضيع هذا الإيقاع عند إغلاق التطبيق.",
-    "ratio": 2.63
-  },
-  {
     "id": "beat.retry",
     "english": "Retry",
     "translation": "إعادة المحاولة",

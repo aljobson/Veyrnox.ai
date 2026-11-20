@@ -6797,7 +6797,6 @@ export default {
   "beatTakes.recorded": "已录制的片段数：{count}。已选择的片段：{take}。",
   "beatTakes.recordingSaved": "录音已保存",
   "beatTakes.replacing": "正在更新云端版本",
-    "beat.saveNote": "尚未保存。关闭应用后此节拍将丢失。",
     "library.useForLipSync": "用于口型同步",
     "library.useForLipSyncLabel": "将{name}用于口型同步",
     "musicPublication.title": "公开发布",

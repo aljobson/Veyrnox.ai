@@ -3696,12 +3696,6 @@
     "ratio": 2.25
   },
   {
-    "id": "beat.saveNote",
-    "english": "Saved on this phone",
-    "translation": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
-    "ratio": 3.21
-  },
-  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Отменить",

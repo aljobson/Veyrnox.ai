@@ -6882,7 +6882,6 @@ export default {
   "beatTakes.recorded": "रिकॉर्ड किए गए टेक: {count}। चुना गया टेक: {take}।",
   "beatTakes.recordingSaved": "रिकॉर्डिंग सहेजी गई",
   "beatTakes.replacing": "क्लाउड अपडेट जारी है",
-    "beat.saveNote": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",
     "library.useForLipSync": "लिप सिंक के लिए उपयोग करें",
     "library.useForLipSyncLabel": "लिप सिंक के लिए {name} का उपयोग करें",
     "musicPublication.title": "सार्वजनिक रिलीज़",

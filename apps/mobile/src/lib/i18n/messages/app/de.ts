@@ -6883,7 +6883,6 @@ export default {
   "beatTakes.recorded": "Aufgenommene Takes: {count}. Ausgewählter Take: {take}.",
   "beatTakes.recordingSaved": "Aufnahme gespeichert",
   "beatTakes.replacing": "Cloud-Aktualisierung läuft",
-    "beat.saveNote": "Noch nicht gespeichert. Dieser Beat geht verloren, wenn die App geschlossen wird.",
     "library.useForLipSync": "Für Lippensynchronisation verwenden",
     "library.useForLipSyncLabel": "{name} für Lippensynchronisation verwenden",
     "musicPublication.title": "Öffentliche Veröffentlichung",

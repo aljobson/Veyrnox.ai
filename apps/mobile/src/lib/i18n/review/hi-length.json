@@ -2100,12 +2100,6 @@
     "ratio": 2.33
   },
   {
-    "id": "beat.saveNote",
-    "english": "Saved on this phone",
-    "translation": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",
-    "ratio": 2.58
-  },
-  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "पहले जैसा करें",

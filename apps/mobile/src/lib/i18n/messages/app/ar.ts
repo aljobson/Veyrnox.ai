@@ -7222,7 +7222,6 @@ export default {
   "beatTakes.recorded": "المقاطع المسجلة: {count}. المقطع المحدد: {take}.",
   "beatTakes.recordingSaved": "تم حفظ التسجيل",
   "beatTakes.replacing": "جارٍ تحديث النسخة السحابية",
-    "beat.saveNote": "لم يُحفظ بعد. سيضيع هذا الإيقاع عند إغلاق التطبيق.",
     "library.useForLipSync": "استخدام لمزامنة الشفاه",
     "library.useForLipSyncLabel": "استخدام {name} لمزامنة الشفاه",
     "musicPublication.title": "إصدار عام",

@@ -6797,7 +6797,6 @@ export default {
   "beatTakes.recorded": "録音したテイク数：{count}。選択したテイク：{take}。",
   "beatTakes.recordingSaved": "録音を保存しました",
   "beatTakes.replacing": "クラウドを更新中",
-    "beat.saveNote": "まだ保存されていません。アプリを閉じるとこのビートは失われます。",
     "library.useForLipSync": "リップシンクに使用",
     "library.useForLipSyncLabel": "{name}をリップシンクに使用",
     "musicPublication.title": "一般公開",

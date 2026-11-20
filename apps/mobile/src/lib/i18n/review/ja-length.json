@@ -28,11 +28,5 @@
     "english": "Fit",
     "translation": "全体を表示",
     "ratio": 1.67
-  },
-  {
-    "id": "beat.saveNote",
-    "english": "Saved on this phone",
-    "translation": "まだ保存されていません。アプリを閉じるとこのビートは失われます。",
-    "ratio": 1.68
   }
 ]

@@ -7052,7 +7052,6 @@ export default {
   "beatTakes.recorded": "Записано дублей: {count}. Выбранный дубль: {take}.",
   "beatTakes.recordingSaved": "Запись сохранена",
   "beatTakes.replacing": "Обновление облачной версии",
-    "beat.saveNote": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
     "library.useForLipSync": "Использовать для синхронизации губ",
     "library.useForLipSyncLabel": "Использовать {name} для синхронизации губ",
     "musicPublication.title": "Публичный выпуск",

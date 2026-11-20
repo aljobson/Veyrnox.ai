@@ -3882,12 +3882,6 @@
     "ratio": 1.77
   },
   {
-    "id": "beat.saveNote",
-    "english": "Saved on this phone",
-    "translation": "Noch nicht gespeichert. Dieser Beat geht verloren, wenn die App geschlossen wird.",
-    "ratio": 4.26
-  },
-  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Rückgängig",
