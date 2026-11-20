@@ -2046,6 +2046,54 @@
     "ratio": 1.63
   },
   {
+    "id": "musicPublic.unblock",
+    "english": "Unblock",
+    "translation": "अनब्लॉक करें",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublic.blockNamed",
+    "english": "Block {name}",
+    "translation": "{name} को ब्लॉक करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.follow",
+    "english": "Follow",
+    "translation": "फ़ॉलो करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "फ़ॉलो करना बंद करें",
+    "ratio": 2.38
+  },
+  {
+    "id": "musicPublic.lyrics",
+    "english": "Lyrics",
+    "translation": "गीत के बोल",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.saved",
+    "english": "Saved.",
+    "translation": "सहेजा गया।",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublic.reportTrack",
+    "english": "Report track",
+    "translation": "ट्रैक की रिपोर्ट करें",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "जबरदस्त",
+    "ratio": 2.33
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

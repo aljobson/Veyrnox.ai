@@ -1,3 +1,4 @@
+import { shareStemFile, sweepStemFiles } from '../src/lib/music/stemFiles';
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
@@ -12,6 +13,7 @@ import { resetNetworkState } from '../src/lib/network';
 import { t, rawText } from '../src/lib/i18n';
 import { actionSong, actionQuote, stemStart, stemReplay, stemRequest, stemArchive, cropResult, croppedSong, SONG_ID } from './fixtures/musicActions';
 const mockApi = { request: jest.fn() }, mockPush = jest.fn();
+jest.mock('../src/lib/music/stemFiles', () => ({ shareStemFile: jest.fn(async () => {}), sweepStemFiles: jest.fn() }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => ({ id: '11111111-2222-4333-8444-555555555555' }),
@@ -94,14 +96,17 @@ test.each(['failed', 'refunded'] as const)('terminal %s renders its own copy and
     expect(text(t(`musicActions.stems.${state}`)).length).toBeGreaterThan(0); expect(button(t('musicActions.stems.zip'))).toBeUndefined();
     expect(text(t(`musicActions.stems.${state === 'failed' ? 'refunded' : 'failed'}`))).toHaveLength(0);
 });
-test('ready fetches a fresh private ZIP only on each tap and opens it via Linking', async () => {
+test('ready fetches a fresh private ZIP only on each tap and shares it natively', async () => {
     const open = jest.spyOn(RN.Linking, 'openURL').mockResolvedValue(undefined);
     mockApi.request.mockImplementation(p => p.endsWith(`/stem-requests/${stemRequest.id}`) ? { ...stemRequest, state: 'ready', archive_url: '/archive' } : baseResponse(p));
     await mountStems(); await review(); await confirmStems(); await act(async () => jest.advanceTimersByTimeAsync(1500));
     expect(mockApi.request.mock.calls.filter(([p]) => p.endsWith('/archive'))).toHaveLength(0);
     await click(t('musicActions.stems.zip')); await click(t('musicActions.stems.zip'));
     expect(mockApi.request.mock.calls.filter(([p]) => p.endsWith('/archive'))).toHaveLength(2);
-    expect(open).toHaveBeenCalledTimes(2); expect(open).toHaveBeenLastCalledWith(stemArchive.url);
+    expect(open).not.toHaveBeenCalled(); expect(shareStemFile).toHaveBeenCalledTimes(2);
+    expect(shareStemFile).toHaveBeenLastCalledWith({ url: stemArchive.url, mimeType: stemArchive.mime_type,
+        sizeBytes: stemArchive.size_bytes, requestId: stemStart.request_id, kind: 'archive', isCurrent: expect.any(Function) });
+    expect(sweepStemFiles).toHaveBeenCalled();
 });
 test('poll ceiling offers manual refresh without showing provider failure', async () => {
     await mountStems(); await review(); await confirmStems(); await act(async () => jest.advanceTimersByTimeAsync(300000));
@@ -160,7 +165,7 @@ test('an unavailable archive dismisses the feature and an account switch cannot 
     let finish!: (value: typeof stemArchive) => void;
     mockApi.request.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     await click(t('musicActions.stems.zip')); await act(async () => bindCacheUser('zip-other-user'));
-    await act(async () => finish(stemArchive)); expect(open).not.toHaveBeenCalled();
+    await act(async () => finish(stemArchive)); expect(open).not.toHaveBeenCalled(); expect(shareStemFile).not.toHaveBeenCalled();
     await review(); await confirmStems(); await act(async () => jest.advanceTimersByTimeAsync(1500));
     mockApi.request.mockRejectedValueOnce(new ApiError(404, 'music_stems_unavailable')); await click(t('musicActions.stems.zip'));
     expect(text(t('music.off')).length).toBeGreaterThan(0); expect(button(t('musicActions.stems.zip'))).toBeUndefined();
@@ -177,4 +182,24 @@ test('crop plays a preview-only version unbounded so entered seconds match the s
     await act(async () => root.render(<Crop />));
     const player = root.container.queryAll(n => n.props.testID === 'music-player')[0];
     expect(player.props.input).toEqual({ songId: preview.id, jobId: preview.job_id, start: 0 });
+});
+
+test('native ZIP sharing keeps the button locked and its session callback expires on account change', async () => {
+    mockApi.request.mockImplementation(p => p.endsWith(`/stem-requests/${stemRequest.id}`) ? { ...stemRequest, state: 'ready', archive_url: '/archive' } : baseResponse(p));
+    await mountStems(); await review(); await confirmStems(); await act(async () => jest.advanceTimersByTimeAsync(1500));
+    let finish!: () => void;
+    jest.mocked(shareStemFile).mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+    await click(t('musicActions.stems.zip'));
+    expect(button(t('musicActions.stems.zip')).props.accessibilityState.disabled).toBe(true);
+    const { isCurrent } = jest.mocked(shareStemFile).mock.calls[0][0]; expect(isCurrent()).toBe(true);
+    await act(async () => bindCacheUser('new-zip-owner')); expect(isCurrent()).toBe(false);
+    await act(async () => finish());
+});
+test('native ZIP failures reuse the translated share error', async () => {
+    mockApi.request.mockImplementation(p => p.endsWith(`/stem-requests/${stemRequest.id}`) ? { ...stemRequest, state: 'ready', archive_url: '/archive' } : baseResponse(p));
+    await mountStems(); await review(); await confirmStems(); await act(async () => jest.advanceTimersByTimeAsync(1500));
+    jest.mocked(shareStemFile).mockRejectedValueOnce(new ApiError(0, 'stem_share_failed'));
+    await click(t('musicActions.stems.zip'));
+    expect(text(t('job.shareFailed')).length).toBeGreaterThan(0);
+    expect(button(t('musicActions.stems.zip')).props.accessibilityState.disabled).toBe(false);
 });
