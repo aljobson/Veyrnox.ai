@@ -1,47 +1,5 @@
 [
   {
-    "id": "editorTools.speed",
-    "english": "Speed",
-    "translation": "Geschwindigkeit",
-    "ratio": 3
-  },
-  {
-    "id": "editorTools.preset",
-    "english": "Speed preset",
-    "translation": "Geschwindigkeitsvorlage",
-    "ratio": 1.92
-  },
-  {
-    "id": "editorTools.custom",
-    "english": "Custom",
-    "translation": "Benutzerdefiniert",
-    "ratio": 2.83
-  },
-  {
-    "id": "editorTools.pointRate",
-    "english": "Speed point {n} rate",
-    "translation": "Rate von Geschwindigkeitspunkt {n}",
-    "ratio": 1.7
-  },
-  {
-    "id": "editorTools.updated",
-    "english": "Speed edit applied.",
-    "translation": "Geschwindigkeitsänderung angewendet.",
-    "ratio": 1.89
-  },
-  {
-    "id": "editorTools.pointAdd",
-    "english": "Add speed point",
-    "translation": "Geschwindigkeitspunkt hinzufügen",
-    "ratio": 2.13
-  },
-  {
-    "id": "editorTools.curveApply",
-    "english": "Apply speed curve",
-    "translation": "Geschwindigkeitskurve anwenden",
-    "ratio": 1.76
-  },
-  {
     "id": "editorExportRefusal.speed",
     "english": "Phone export can't include speed changes yet.",
     "translation": "Der Export auf dem Handy unterstützt Geschwindigkeitsänderungen noch nicht.",
