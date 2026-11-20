@@ -3462,6 +3462,12 @@
     "ratio": 2.38
   },
   {
+    "id": "beatTakes.countIn",
+    "english": "One-bar count-in",
+    "translation": "Cuenta previa de un compás",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

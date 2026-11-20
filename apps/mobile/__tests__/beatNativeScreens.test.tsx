@@ -1,3 +1,9 @@
+import * as recordingHook from '../src/lib/beatNative/useTakeRecording';
+import { beforeReplace } from '../src/lib/beatNative/recordingFinalizers';
+import type { RecordingEdit } from '../src/lib/beatNative/takeShared';
+import { configureBeatTakeStorage } from '../src/lib/beatNative/takeShared';
+import { createTakeFiles } from '../src/lib/beatNative/takeFiles';
+import { takeIO } from './beatNativeTakeFixtures';
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
@@ -38,7 +44,7 @@ const press = async (label: string) => {
     await act(async () => { (n.props.onClick ?? n.props.onPress)({ nativeEvent: {} }); });
 };
 const text = (value: string) => root.container.queryAll(n => n.children.includes(value));
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); resetBeats(); jest.clearAllMocks(); jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() })); mockGeneration = 0; mockGetAccessToken.mockImplementation(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`); mockApi.request.mockResolvedValue({ projects: [] }); });
+beforeEach(() => { configureBeatTakeStorage(createTakeFiles(takeIO())); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); resetBeats(); jest.clearAllMocks(); jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() })); mockGeneration = 0; mockGetAccessToken.mockImplementation(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`); mockApi.request.mockResolvedValue({ projects: [] }); });
 afterEach(async () => { await act(async () => root.unmount()); });
 
 describe('beats home', () => {
@@ -330,4 +336,33 @@ test('signed-out home retains local controls and skips the collection probe', as
     await act(async () => root.render(<BeatsHome />));
     expect(byLabel(t('beat.home.new'))).toBeDefined(); expect(text(t('beat.cloud.signed_out')).length).toBeGreaterThan(0);
     expect(mockApi.request).not.toHaveBeenCalled();
+});
+
+
+test('replacement lease release alone unlocks editor controls and uses cloud-specific copy', async () => {
+    const doc = newBeat('Replacement'); mockParams = { id: doc.id };
+    await act(async () => root.render(<BeatEditor />)); await press(t('beat.tempoUp'));
+    let release!: () => void;
+    await act(async () => { release = await beforeReplace(doc.id); });
+    const disabled = (label: string) => { const b = byLabel(label); return b?.props.accessibilityState?.disabled ?? b?.props.disabled; };
+    expect(disabled(t('beat.play'))).toBe(true); expect(disabled(t('beat.undo'))).toBe(true);
+    expect(text(t('beatTakes.replacing')).length).toBeGreaterThan(0);
+    await press(t('beat.tempoUp')); expect(text(t('beatTakes.locked'))).toHaveLength(0);
+    await act(async () => release());
+    expect(disabled(t('beat.play'))).toBe(false); expect(disabled(t('beat.undo'))).toBe(false);
+    expect(disabled(t('beatTakes.addTrack'))).toBe(false);
+});
+
+test('recording history and announcements use the localized message or fallback, never the web English label', async () => {
+    const original = recordingHook.useTakeRecording; let edit!: RecordingEdit;
+    const hook = jest.spyOn(recordingHook, 'useTakeRecording').mockImplementation((id, doc, deps) => { edit = deps.edit; return original(id, doc, deps); });
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility');
+    try {
+        const doc = newBeat('Announcement'); mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />));
+        const message = t('beatTakes.recorded', { count: 1, take: 1 });
+        await act(async () => { edit(d => ({ ...d, title: 'First' }), { recordingCommit: true, label: 'Recorded 1 takes', message }); });
+        expect(announce).toHaveBeenCalledWith(message); expect(announce).not.toHaveBeenCalledWith('Recorded 1 takes');
+        await act(async () => { edit(d => ({ ...d, title: 'Second' }), { recordingCommit: true, label: 'Recorded 2 takes' }); });
+        expect(announce).toHaveBeenCalledWith(t('beatTakes.recordingSaved'));
+    } finally { hook.mockRestore(); announce.mockRestore(); }
 });

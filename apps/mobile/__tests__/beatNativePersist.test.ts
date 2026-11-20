@@ -142,3 +142,20 @@ test('list failure still fails hydration and can be retried', async () => {
     expect(store.hydrationState()).toBe('error');
     files.list = list; await store.hydrateBeats(); expect(store.hydrationState()).toBe('ready');
 });
+
+test('post-save listener failures cannot undo a durable flush or replacement', async () => {
+    const warning = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+        const files = memoryFiles(), store = createBeatStore(files), doc = store.newBeat('Original');
+        const states: string[] = [];
+        store.onPersisted((_id, saved) => { states.push(store.saveState(doc.id)); expect(store.getBeat(doc.id)).toEqual(saved); throw new Error('take_store_unreadable'); });
+        await expect(store.flushBeat(doc.id)).resolves.toBeUndefined();
+        expect(store.saveState(doc.id)).toBe('saved'); expect(store.getPersistedBeat(doc.id)).toEqual(doc);
+        const replacement = { ...doc, title: 'Cloud revision', updatedAt: doc.updatedAt + 1 };
+        await expect(store.replaceFromCloud(doc.id, { doc: replacement, cloud: { userId: USER, projectId: PROJECT, revision: 2, syncedUpdatedAt: replacement.updatedAt } }, { isCurrent: () => true, stash: async () => {} })).resolves.toBeUndefined();
+        expect(store.getBeat(doc.id)).toEqual(replacement); expect(store.saveState(doc.id)).toBe('saved');
+        const writes = jest.mocked(files.write).mock.calls.length; await store.flushBeat(doc.id); expect(files.write).toHaveBeenCalledTimes(writes);
+        const reopened = createBeatStore(files); await reopened.hydrateBeats(); expect(reopened.getBeat(doc.id)).toEqual(replacement);
+        expect(states).toEqual(['saved', 'saved']); expect(warning).toHaveBeenCalledTimes(2);
+    } finally { warning.mockRestore(); }
+});

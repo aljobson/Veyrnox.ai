@@ -144,13 +144,13 @@ test('typed client validates versions and delete shapes and sends the required p
     expect(fetcher.mock.calls.at(-1)?.[1]).toMatchObject({ method: 'DELETE', body: JSON.stringify({ expected_revision: 4 }) });
 });
 
-test('documents containing take assets stay local and expose a clear state', async () => {
+test('off state keeps take documents local without any media calls', async () => {
     const store = createBeatStore(memoryFiles()), doc = store.newBeat('With a take');
-    const withTake = { ...doc, assets: { a1: { source: 'take', ref: 'shelf-one', name: 'Take', durationSec: 3, bpm: null, sourceChannels: 1, encodedBytes: 0 } } };
+    const withTake = { ...doc, assets: { a1: { source: 'take' as const, ref: 'shelf-one', name: 'Take', durationSec: 3, bpm: null, sourceChannels: 1, encodedBytes: 0 } } };
     expect(store.putBeat(withTake)).toBe(true);
-    const { api, fetcher } = fakeApi(() => response({ projects: [] }));
+    const { api, fetcher } = fakeApi(() => failure('music_unavailable', 404));
     const sync = new BeatCloudSync(api, store, doc.id); await sync.start(USER); await sync.link();
-    expect(sync.snapshot().state).toBe('takes'); expect(fetcher).toHaveBeenCalledTimes(1); sync.dispose();
+    expect(sync.snapshot().state).toBe('off'); expect(fetcher).toHaveBeenCalledTimes(1); sync.dispose();
 });
 
 test('changed account during delayed stash leaves the local document and releases the barrier', async () => {

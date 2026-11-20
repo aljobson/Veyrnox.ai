@@ -3468,6 +3468,12 @@
     "ratio": 1.7
   },
   {
+    "id": "beatTakes.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
