@@ -6519,7 +6519,7 @@ export default {
     "musicActions.stems.failed": "O provedor não conseguiu criar o arquivo de faixas separadas.",
     "musicActions.stems.refunded": "O provedor não produziu um arquivo. Os créditos do trabalho foram reembolsados.",
     "musicActions.stems.zip": "Obter ZIP",
-    "musicActions.stems.external": "Abre um link privado no navegador. O link expira em cinco minutos.",
+    "musicActions.stems.external": "Baixa o arquivo e abre o menu de compartilhamento para você salvar ou enviar.",
     "musicActions.stems.session": "Mantenha esta tela aberta para acompanhar a solicitação. O status não é salvo ao sair ou reiniciar o app.",
     "musicActions.crop.title": "Recortar",
     "musicActions.crop.body": "Salva uma nova versão; o original é mantido.",

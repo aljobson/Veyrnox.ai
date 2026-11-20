@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Linking, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicActionQuoteCard } from '../../../components/music/MusicActionQuoteCard';
 import { useSongActionScreen } from '../../../components/music/useSongActionScreen';
+import { shareStemFile, sweepStemFiles } from '../../../lib/music/stemFiles';
 import { getCacheUser } from '../../../lib/appCache';
 import { targetStemsAction } from '../../../lib/music/targetStemsAction';
 import { getTargetStemAsset } from '../../../lib/music/client';
@@ -21,6 +22,7 @@ export default function TargetStems() {
     const { api, user, flow, state, pending } = useSongActionScreen(id, targetStemsAction);
     const [opening, setOpening] = useState(false); const assetLock = useRef(false); const s = useThemedStyles(sheets);
     useEffect(() => { assetLock.current = false; setOpening(false); }, [flow]);
+    useEffect(() => { sweepStemFiles(); }, []);
     const status = state.poll?.value?.state ?? (state.result ? 'queued' : null);
     useAnnouncement(status ? t(`musicTargetStems.state.${status}`) : null, { everywhere: true });
     const selected = state.input.parameters?.instrument;
@@ -33,7 +35,11 @@ export default function TargetStems() {
         assetLock.current = true; setOpening(true);
         try {
             const asset = await getTargetStemAsset(api, state.result.request_id, kind);
-            if (flow.isLive() && getCacheUser() === user) await Linking.openURL(asset.url);
+            if (flow.isLive() && getCacheUser() === user) await shareStemFile({
+                url: asset.url, mimeType: asset.mime_type, sizeBytes: asset.size_bytes,
+                requestId: state.result.request_id, kind,
+                isCurrent: () => flow.isLive() && getCacheUser() === user,
+            });
         } catch (error) { flow.fail(error); }
         finally { if (flow.isLive()) { assetLock.current = false; setOpening(false); } }
     }

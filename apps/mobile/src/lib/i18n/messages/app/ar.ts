@@ -6759,7 +6759,7 @@ export default {
     "musicActions.stems.failed": "تعذر على المزود إنشاء أرشيف المسارات المنفصلة.",
     "musicActions.stems.refunded": "لم يُنتج المزود أرشيفًا. أُعيد الرصيد المدفوع للمهمة.",
     "musicActions.stems.zip": "الحصول على ZIP",
-    "musicActions.stems.external": "يفتح رابطًا خاصًا في متصفحك. تنتهي صلاحية الرابط بعد خمس دقائق.",
+    "musicActions.stems.external": "ينزّل الملف ويفتح قائمة المشاركة لتتمكن من حفظه أو إرساله.",
     "musicActions.stems.session": "أبقِ هذه الشاشة مفتوحة لمتابعة الطلب. لن تُحفظ حالته بعد مغادرة الشاشة أو إعادة تشغيل التطبيق.",
     "musicActions.crop.title": "قص",
     "musicActions.crop.body": "يحفظ نسخة جديدة؛ ويبقى الأصل كما هو.",

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Linking, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicActionQuoteCard } from '../../../components/music/MusicActionQuoteCard';
+import { shareStemFile, sweepStemFiles } from '../../../lib/music/stemFiles';
 import { getCacheUser } from '../../../lib/appCache';
 import { useSongActionScreen } from '../../../components/music/useSongActionScreen';
 import { stemsAction } from '../../../lib/music/stemsAction';
@@ -19,6 +20,7 @@ export default function Stems() {
     useEffect(() => {
         zipLock.current = false; setOpening(false);
     }, [flow, user]);
+    useEffect(() => { sweepStemFiles(); }, []);
     const status = state.poll?.value?.state ?? (state.result ? 'queued' : null);
     useAnnouncement(status ? t(`musicActions.stems.${status}`) : null, { everywhere: true });
     async function openZip() {
@@ -26,7 +28,11 @@ export default function Stems() {
         zipLock.current = true; setOpening(true);
         try {
             const archive = await getStemArchive(api, state.result.request_id);
-            if (flow.isLive() && getCacheUser() === user) await Linking.openURL(archive.url);
+            if (flow.isLive() && getCacheUser() === user) await shareStemFile({
+                url: archive.url, mimeType: archive.mime_type, sizeBytes: archive.size_bytes,
+                requestId: state.result.request_id, kind: 'archive',
+                isCurrent: () => flow.isLive() && getCacheUser() === user,
+            });
         } catch (error) { flow.fail(error); }
         finally { if (flow.isLive()) { zipLock.current = false; setOpening(false); } }
     }

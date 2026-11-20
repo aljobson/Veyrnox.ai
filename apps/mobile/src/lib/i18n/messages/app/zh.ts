@@ -6359,7 +6359,7 @@ export default {
     "musicActions.stems.failed": "服务提供商未能生成分轨压缩包。",
     "musicActions.stems.refunded": "服务提供商未生成压缩包，此任务的积分已退还。",
     "musicActions.stems.zip": "获取 ZIP",
-    "musicActions.stems.external": "在浏览器中打开私密链接。链接将在五分钟后过期。",
+    "musicActions.stems.external": "下载文件并打开分享菜单，以便你保存或发送文件。",
     "musicActions.stems.session": "请保持此屏幕打开以跟踪请求。离开此屏幕或重启应用后，请求状态不会保存。",
     "musicActions.crop.title": "裁剪",
     "musicActions.crop.body": "保存为新版本，原始版本保留。",
