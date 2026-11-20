@@ -2160,6 +2160,36 @@
     "ratio": 1.75
   },
   {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "{track} को रिकॉर्डिंग के लिए तैयार करें",
+    "ratio": 3.55
+  },
+  {
+    "id": "beatTakes.disarm",
+    "english": "Disarm {track}",
+    "translation": "{track} की रिकॉर्डिंग तैयारी हटाएँ",
+    "ratio": 2.43
+  },
+  {
+    "id": "beatTakes.notCalibrated",
+    "english": "Not calibrated",
+    "translation": "कैलिब्रेट नहीं किया गया",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatTakes.record",
+    "english": "Record",
+    "translation": "रिकॉर्ड करें",
+    "ratio": 2
+  },
+  {
+    "id": "beatTakes.choose",
+    "english": "Use {name}",
+    "translation": "{name} उपयोग करें",
+    "ratio": 1.7
+  },
+  {
     "id": "speech.volume",
     "english": "Volume",
     "translation": "आवाज़ की मात्रा",

@@ -69,7 +69,8 @@ test('the payload carries source framing and exact public source prompts but no 
         for (const u of [p.previewUrl, p.posterUrl, p.sourcePromptDuplicateOf]) assert.doesNotMatch(u ?? '', /higgs|syntx/i, p.id);
     }
     const framed = toPublicPresets(catalog, PRESETS).filter((p) => p.sourceAspect);
-    assert.equal(framed.length, 787 + 30 + 59);
+    // ADR-0309 amendment 3: 15 long one-photo recipes now run on kie Seedance, which takes its own aspect, so they need no crop shape.
+    assert.equal(framed.length, 787 + 30 + 59 - 15);
     assert.ok(framed.every((p) => /^(?:1:1|4:3|9:16|16:9)$/.test(p.sourceAspect)));
     const exact = toPublicPresets(catalog, PRESETS).filter((p) => p.sourcePromptOrigin === 'community-source-exact');
     assert.equal(exact.length, 749 + 46 + 30 + 59);
@@ -100,7 +101,8 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === true).length, 79);
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === false).length, 115);
     assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-reference' && p.modelName === 'Seedance 2.0 · Reference' && p.durationSeconds === 10).length, 0);
-    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast' && p.durationSeconds === 5).length, 125);
+    // ADR-0309 amendment 3: nine long one-photo Seedance-origin recipes route to the kie Seedance photo offer instead.
+    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast' && p.durationSeconds === 5).length, 125 - 9);
     assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-reference' && p.durationSeconds === 5).length, 0);
     assert.ok(seedance.every((p) => seedanceMeta(p.id).sourceUrl?.startsWith('https://')));
     const formerlyClipped = exact.find((p) => p.id === 'football-showstopper');

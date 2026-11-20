@@ -10,7 +10,7 @@ const report = audit();
 const contracts = Object.values(report.contracts);
 test('fidelity classification totals and generated contract bytes are pinned', () => {
   // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61});
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49}); /* 49 one-photo recipes over the Kling cap bind to the long-prompt kie Seedance offer (ADR-0309 amendment 3) */
   const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
   const packed = packContracts(report.contracts);
   assert.equal(JSON.stringify(compressContractData(packed)) + '\n', readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url), 'utf8'), 'regeneration must be byte-identical; inspect class changes before accepting drift');
@@ -56,7 +56,7 @@ test('server stores only informative safe-contract metadata', async () => {
 test('unsupported templates remain admitted without audited identity', async () => {
   const { fidelityTemplateId } = await import('../lib/templateFidelityRuntime.js');
   const unbound = contracts.filter(c => c.class === 'unsupported');
-  assert.equal(unbound.length, 98 + 61, 'multi-photo recipes (96) and Kling-unsupported framings keep the legacy route');
+  assert.equal(unbound.length, 98 + 61 - 49, 'multi-photo recipes (96) and Kling-unsupported framings keep the legacy route; 49 long one-photo recipes bind to kie Seedance (ADR-0309 amendment 3)');
   for (const c of unbound) {
     assert.equal(fidelityTemplateId(c, c.sourcePrompt, c.modelId), undefined);
     assert.equal(fidelityTemplateId(c, c.sourcePrompt, 'different-model'), undefined);

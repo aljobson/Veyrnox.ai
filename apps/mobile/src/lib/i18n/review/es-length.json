@@ -3570,6 +3570,12 @@
     "ratio": 1.63
   },
   {
+    "id": "beatTakes.countIn",
+    "english": "One-bar count-in",
+    "translation": "Cuenta previa de un compás",
+    "ratio": 1.63
+  },
+  {
     "id": "speech.speed",
     "english": "Speed",
     "translation": "Velocidad",

@@ -5886,6 +5886,30 @@
     "ratio": 1.75
   },
   {
+    "id": "beatTakes.record",
+    "english": "Record",
+    "translation": "Enregistrer",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatTakes.stop",
+    "english": "Stop recording",
+    "translation": "Arrêter l’enregistrement",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatTakes.locked",
+    "english": "Stop recording to edit",
+    "translation": "Arrêtez l’enregistrement pour modifier",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatTakes.recordingSaved",
+    "english": "Recording saved",
+    "translation": "Enregistrement sauvegardé",
+    "ratio": 1.67
+  },
+  {
     "id": "speech.addCredits",
     "english": "Add credits",
     "translation": "Ajouter des crédits",

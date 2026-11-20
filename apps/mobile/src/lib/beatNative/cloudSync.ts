@@ -1,3 +1,7 @@
+import { TakeMediaError } from './takeMediaFailures';
+import { createTakeCloud } from './takeCloud';
+import { beforeReplace } from './recordingFinalizers';
+import { normalizeCloudError } from './cloud';
 import { ApiError, type ApiClient } from '../api';
 import { createBeatCloud, type BeatCloud } from './cloud';
 import { probeBeatCloud, type BeatProbe } from './probe';
@@ -20,14 +24,18 @@ export class BeatCloudSync {
     private conflict: Conflict | null = null;
     private attempt = 0;
     private retryAt = 0;
+    private mediaTimer?: ReturnType<typeof setTimeout>;
     private timer?: ReturnType<typeof setTimeout>;
     private pending?: { signature: string; key: string };
     private unsubscribe?: () => void;
     private opened = false;
     private halted = false;
+    private mediaPending = new Set<string>();
+    readonly takes: ReturnType<typeof createTakeCloud>;
     readonly cloud: BeatCloud;
     constructor(private api: ApiClient, readonly store: BeatStore, readonly id: string) {
         this.cloud = createBeatCloud(api);
+        this.takes = createTakeCloud(api);
     }
     snapshot = () => this.view;
     subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -43,6 +51,7 @@ export class BeatCloudSync {
     async start(userId: string | null) {
         this.active = true;
         this.unsubscribe ??= this.store.subscribeBeats(() => this.schedule());
+        clearTimeout(this.mediaTimer); this.takes.reset(); this.mediaPending.clear();
         this.opened = false; this.halted = false; this.availability = 'error';
         this.generation++; this.abort.abort(); this.abort = new AbortController();
         this.userId = userId; this.busy = false; this.conflict = null; this.pending = undefined; this.retryAt = 0; this.attempt = 0;
@@ -56,24 +65,39 @@ export class BeatCloudSync {
         if (result.state !== 'on') { this.show(result.state); return; }
         await this.cycle();
     }
-    dispose() { this.active = false; this.generation++; this.abort.abort(); clearTimeout(this.timer); this.unsubscribe?.(); this.unsubscribe = undefined; }
+    dispose() { this.active = false; this.generation++; this.abort.abort(); clearTimeout(this.timer); clearTimeout(this.mediaTimer); this.unsubscribe?.(); this.unsubscribe = undefined; }
     private schedule(delay = 800) {
-        if (this.halted || !this.active || this.availability !== 'on' || !this.userId || this.busy || this.conflict || ['limit', 'removed', 'takes'].includes(this.view.state)) return;
+        if (this.halted || !this.active || this.availability !== 'on' || !this.userId || this.busy || this.conflict || ['limit', 'removed'].includes(this.view.state)) return;
         clearTimeout(this.timer);
         this.timer = setTimeout(() => { void this.cycle(); }, Math.max(delay, this.retryAt - Date.now()));
     }
     private async write(record: BeatRecord, body: SaveBody, token: ReturnType<BeatCloudSync['capture']>, link = true) {
         if (!token.current()) throw new Error('account_changed');
-        if (takeAssets(record.doc).length) throw new Error('takes_not_supported');
         const signature = JSON.stringify(body);
         if (this.pending?.signature !== signature) this.pending = { signature, key: newId() };
         const result = await this.cloud.put(this.id, body, this.pending.key, token);
         if (!token.current()) throw new Error('account_changed');
         if (link && !this.store.setCloudLink(this.id, { userId: token.userId!, projectId: result.project.id, revision: result.project.revision, syncedUpdatedAt: record.doc.updatedAt })) throw new Error('local_conflict');
-        if (link) { this.opened = true; await this.store.flushBeat(this.id); }
+        if (link) { this.opened = true; await this.store.flushBeat(this.id); this.conflict = null; }
         return result;
     }
+    private async syncMedia(doc: BeatDoc, token: ReturnType<BeatCloudSync['capture']>) {
+        if (takeAssets(doc).length) this.mediaPending.add(doc.id);
+        const downloaded = await this.takes.download(doc, token);
+        const uploaded = await this.takes.upload(doc, token);
+        const complete = downloaded && uploaded;
+        if (complete) this.mediaPending.delete(doc.id);
+        return complete;
+    }
+    private scheduleMedia() {
+        clearTimeout(this.mediaTimer);
+        const at = this.takes.nextRetryAt(this.id);
+        if (at && this.active && !this.halted && !this.conflict && this.availability === 'on') {
+            this.mediaTimer = setTimeout(() => { void this.cycle(); }, Math.max(1000, at - Date.now()));
+        }
+    }
     private normalizeFailure(error: unknown): ApiError {
+        error = normalizeCloudError(error);
         return error instanceof ApiError ? error : new ApiError(500, 'LOCAL_ERROR');
     }
     private parseAccountDoc(json: string): BeatDoc {
@@ -124,7 +148,7 @@ export class BeatCloudSync {
     async cycle(mode: 'autosave' | 'checkpoint' = 'autosave', lifecycle = false): Promise<boolean> {
         if (this.halted || this.busy || this.conflict || !this.active || this.availability !== 'on' || !this.userId) return false;
         const current = this.store.getRecord(this.id);
-        if (lifecycle && current && !needsSync(current, this.userId) && mode !== 'checkpoint') return false;
+        if (lifecycle && current && !needsSync(current, this.userId) && !this.mediaPending.has(this.id) && mode !== 'checkpoint') return false;
         if (!lifecycle && this.retryAt > Date.now()) { this.schedule(); return false; }
         clearTimeout(this.timer);
         const token = this.capture();
@@ -134,7 +158,6 @@ export class BeatCloudSync {
             if (!token.current()) return false;
             const record = this.store.getRecord(this.id);
             if (!record) return false;
-            if (takeAssets(record.doc).length) { this.show('takes'); return false; }
             if (!maySync(record.cloud, this.userId)) {
                 this.show(record.cloud?.userId === this.userId && isRemoved(record.cloud) ? 'removed' : record.cloud ? 'other' : 'unlinked'); return false;
             }
@@ -150,13 +173,15 @@ export class BeatCloudSync {
                     if (needsSync(latest, this.userId)) {
                         this.conflict = replacement; this.show('conflict'); return false;
                     }
-                    await this.store.replaceFromCloud(this.id, replacement, {
+                    const release = await beforeReplace(this.id);
+                    try { await this.store.replaceFromCloud(this.id, replacement, {
                         isCurrent: token.current,
                         stash: async capturedDoc => {
                             // The barrier may wait for a pending file write before capturing the document.
                             if (capturedDoc.updatedAt !== record.doc.updatedAt) throw new Error('local_conflict');
+                            await this.takes.upload(capturedDoc, token);
                         },
-                    });
+                    }); } finally { release(); }
                 }
                 this.opened = true;
             }
@@ -165,14 +190,16 @@ export class BeatCloudSync {
                 await this.write(record, saveRequest(record.doc, record.cloud!.revision, mode), token);
             }
             if (!token.current()) return false;
-            this.attempt = 0; this.retryAt = 0; this.show('synced'); return true;
+            const latestDoc = this.store.getBeat(this.id)!;
+            const complete = await this.syncMedia(latestDoc, token);
+            this.attempt = 0; this.retryAt = 0; this.show(complete ? 'synced' : 'takes'); return complete;
         } catch (error) {
             try { await this.failure(error, token); } catch (failure) { this.retryFailure(failure, token); }
             return false;
         }
         finally {
             if (token.current()) {
-                this.busy = false; this.show(this.view.state, this.view.detail);
+                this.busy = false; this.show(this.view.state, this.view.detail); this.scheduleMedia();
                 const latest = this.store.getRecord(this.id);
                 if (latest && (needsSync(latest, this.userId!) || this.retryAt > Date.now())) this.schedule();
             }
@@ -181,13 +208,13 @@ export class BeatCloudSync {
     async link() {
         if (this.availability !== 'on' || !this.userId || this.busy) return false;
         const record = this.store.getRecord(this.id);
-        if (!record || takeAssets(record.doc).length || (record.cloud && !(record.cloud.userId === this.userId && isRemoved(record.cloud)))) return false;
+        if (!record || (record.cloud && !(record.cloud.userId === this.userId && isRemoved(record.cloud)))) return false;
         this.store.setCloudLink(this.id, { userId: this.userId, projectId: null, revision: 0, syncedUpdatedAt: 0 });
         this.show('unlinked'); this.retryAt = 0;
         return this.cycle();
     }
     async retry() {
-        this.retryAt = 0; this.halted = false;
+        this.retryAt = 0; this.halted = false; this.takes.reset(); clearTimeout(this.mediaTimer);
         if (this.conflict) { this.show('conflict'); return; }
         if (this.availability !== 'on') { await this.start(this.userId); return; }
         await this.cycle();
@@ -211,19 +238,26 @@ export class BeatCloudSync {
                 const record = this.store.getRecord(this.id);
                 if (!record || !token.current()) return;
                 await this.write(record, conflictRequest(choice, record.doc, theirs.cloud.revision), token);
+                await this.syncMedia(record.doc, token);
             } else {
-                await this.store.replaceFromCloud(this.id, theirs, { isCurrent: token.current, stash: async doc => {
+                const release = await beforeReplace(this.id);
+                try { await this.store.replaceFromCloud(this.id, theirs, { isCurrent: token.current, stash: async doc => {
+                    await this.takes.upload(doc, token, true);
                     const record = this.store.getRecord(this.id)!;
                     await this.write({ ...record, doc }, conflictRequest(choice, doc, theirs.cloud.revision), token, false);
-                } });
+                } }); } finally { release(); }
+                this.conflict = null; this.mediaPending.delete(this.id);
+                await this.syncMedia(theirs.doc, token);
             }
-            if (token.current()) { this.conflict = null; this.attempt = 0; this.retryAt = 0; this.show('synced'); }
+            if (token.current()) { this.conflict = null; this.attempt = 0; this.retryAt = 0; this.show(this.mediaPending.has(this.id) ? 'takes' : 'synced'); }
         } catch (error) {
             if (!token.current()) return;
+            if (error instanceof TakeMediaError) { this.show('conflict', true); return; }
+            if (!this.conflict) { this.retryFailure(error, token); return; }
             if (['removed', 'conflict'].includes(errorState(this.normalizeFailure(error)))) {
                 try { await this.failure(error, token); } catch { if (token.current()) this.show('conflict', true); }
             }
             else this.show('conflict', true);
-        } finally { if (token.current()) { this.busy = false; this.show(this.view.state, this.view.detail); this.schedule(); } }
+        } finally { if (token.current()) { this.busy = false; this.show(this.view.state, this.view.detail); this.schedule(); this.scheduleMedia(); } }
     }
 }

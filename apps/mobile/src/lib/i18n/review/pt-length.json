@@ -3624,6 +3624,12 @@
     "ratio": 1.67
   },
   {
+    "id": "beatTakes.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
     "id": "speech.speed",
     "english": "Speed",
     "translation": "Velocidade",

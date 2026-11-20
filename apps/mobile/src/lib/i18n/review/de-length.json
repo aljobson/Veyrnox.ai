@@ -3984,6 +3984,36 @@
     "ratio": 1.7
   },
   {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "{track} scharf schalten",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatTakes.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatTakes.recover.one",
+    "english": "Recover {count} unsaved take",
+    "translation": "{count} ungespeicherten Take wiederherstellen",
+    "ratio": 1.61
+  },
+  {
+    "id": "beatTakes.recoveryError",
+    "english": "Could not read unsaved takes. Try again.",
+    "translation": "Ungespeicherte Takes konnten nicht gelesen werden. Versuche es erneut.",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatTakes.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
     "id": "speech.speed",
     "english": "Speed",
     "translation": "Geschwindigkeit",

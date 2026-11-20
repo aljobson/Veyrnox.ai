@@ -1,5 +1,12 @@
 // The one audio interface the beat screens talk to. N1 has a single implementation (the N0 adapter over the shared web engine);
 // if the N0 device gate fails, swap `createBeatAudio` for another implementation of `BeatAudio` and no screen changes.
+import { createRecordingTransport, type PlayRange } from './transport';
+import { createTakePlayback, type PlaybackContext } from './takePlayback';
+import type { SongWindow } from './takeShared';
+import { tickSeconds } from './takeShared';
+import { songEnd } from './doc';
+import { configureNativeTakeStorage } from './takeShared';
+import { type BeatEngine as NativeBeatEngine } from './shared';
 import { createNativeBeatEngine, loadNativeContext, type NativeContextCtor } from './nativeContext';
 import type { BeatEngine, BeatVoice, EngineContext, Run } from './shared';
 import { DRUM_KITS, audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
@@ -8,8 +15,10 @@ import { midiNoteOnsInWindow, midiTracks, type Instrument, type MidiSoundTrack }
 
 export type TrackMix = { gain: number; pan: number };
 export interface BeatAudio {
+    recordingEngine?(): NativeBeatEngine;
+    playRange?(options: PlayRange): Promise<{ contextStart: number }>;
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void): Promise<void>;
+    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number): Promise<void>;
     stop(): void;
     isPlaying(): boolean;
     hitPad(pad: PadId, kit: string, velocity?: number): void;
@@ -48,7 +57,6 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     const levels = new Map<string, TrackMix>();
     let timer: unknown = null;
     let run: Run | null = null;
-    let generation = 0;
     let starting = false;
     let closed = false;
     const keys = new Map<string, { voice?: BeatVoice }>();
@@ -56,6 +64,16 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     let nextTime = 0;
     let getDoc: (() => BeatDoc | undefined) | null = null;
     let onStep: ((step: number) => void) | undefined;
+    let windowCallback: ((window: SongWindow) => void) | undefined;
+    const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc) => {
+        const track = doc.tracks.find(t => t.id === id)!;
+        const s = strip(id); s.gain.value = audibleGain(doc, track); s.pan.value = track.pan; return s.input;
+    });
+    const range = createRecordingTransport(engine, (id, doc) => {
+        const track = doc.tracks.find(t => t.id === id)!;
+        const s = strip(id); s.gain.value = audibleGain(doc, track); s.pan.value = track.pan; return s.input;
+    }, (doc, w, bounds) => { void takes.window(doc, w, bounds).catch(() => undefined); }, setTimer, clearTimer);
+    let playGeneration = 0;
     const kitOf = new Map<string, string>();
 
     const bus = (): { gain: Param; connect(n: unknown): unknown } => {
@@ -109,6 +127,10 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
                 const at = nextTime + event.songTimeSec - stepStart;
                 engine.playMidi(track, event.pitch, event.velocity, at, run, audibleGain(doc, track)).release(at + event.durationSec);
             }
+            const fromSec = step * stepSeconds(doc.tempo.bpm);
+            const window = { fromSec, toSec: fromSec + stepSeconds(doc.tempo.bpm), contextTime: nextTime };
+            windowCallback?.(window);
+            void takes.window(doc, window, { startSec: 0, endSec: tickSeconds(songEnd(doc), doc.tempo.bpm) }).catch(() => undefined);
             onStep?.(step);
             cursor += 1;
             nextTime += stepSeconds(doc.tempo.bpm);
@@ -117,24 +139,33 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     }
 
     return {
-        async play(read, step) {
+        recordingEngine: () => engine,
+        async playRange(options) {
+            this.stop(); const token = playGeneration; configureNativeTakeStorage();
+            await takes.preload(options.getDoc());
+            if (token !== playGeneration) throw new Error('transport_cancelled');
+            return range.play(options);
+        },
+        async play(read, step, onWindow, startOffsetSec = 0) {
             if (timer !== null || starting || closed) return;
-            const token = ++generation;
+            const token = ++playGeneration;
             starting = true;
-            try { await engine.resume(); } finally { if (token === generation) starting = false; }
-            if (token !== generation || closed) return;
+            try { await engine.resume(); } finally { if (token === playGeneration) starting = false; }
+            if (token !== playGeneration || closed) return;
             run = engine.startRun(null);
-            getDoc = read; onStep = step; cursor = 0; nextTime = engine.now() + 0.1;
+            windowCallback = onWindow;
+            getDoc = read; onStep = step; cursor = 0; nextTime = engine.now() + 0.1 + startOffsetSec;
             tick();
         },
         stop() {
-            generation++; starting = false;
+            playGeneration++; starting = false;
+            range.stop(); takes.stop();
             if (timer !== null) clearTimer(timer);
             timer = null;
             if (run) engine.stopRun(run);
             run = null;
         },
-        isPlaying: () => timer !== null,
+        isPlaying: () => timer !== null || range.isPlaying(),
         hitPad(pad, kit, velocity = PAD_VELOCITY) {
             void engine.resume();
             engine.playPad(pad, velocity, engine.now(), bus(), kit);
@@ -174,7 +205,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
                 engine.playMidi(track, pitch, 100, at, engine.live).release(at + 0.25);
             }
         },
-        async close() { closed = true; this.stop(); this.releaseKeys(); await engine.close(); },
+        async close() { closed = true; this.stop(); this.releaseKeys(); takes.close(); await engine.close(); },
     };
 }
 
