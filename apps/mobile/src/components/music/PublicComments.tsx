@@ -20,7 +20,7 @@ export function PublicComments({ comments, flow, state, slug, position }: { comm
             <Text>{c.author}</Text><Text>{c.body}</Text>
             {c.at_seconds !== null ? <Text>{plural('musicPublic.position', c.at_seconds)}</Text> : null}
             {c.parent_id ? <Text>{t('musicPublic.replyComment')}</Text> : null}
-            {comments.allow_comments ? <Button variant="tertiary" label={t('musicPublic.reply')} disabled={locked} onPress={() => flow.reply(c)} /> : null}
+            {comments.allow_comments && !c.parent_id ? <Button variant="tertiary" label={t('musicPublic.reply')} disabled={locked} onPress={() => flow.reply(c)} /> : null}
             {c.own ? <Button variant="tertiary" label={t('comments.withdraw')} disabled={locked} onPress={() => void flow.write({ kind: 'withdraw', comment_id: c.id })} /> : <>
                 <Button variant="tertiary" label={t('comments.reportBy', { name: c.author })} onPress={() => router.push({ pathname: '/music/report-comment', params: { slug, commentId: c.id, before: flow.commentCursor(c.id) } } as never)} />
                 <Button variant="tertiary" label={t('musicPublic.blockNamed', { name: c.author })} disabled={state.busy} onPress={() => void flow.block(c.author_id, true, c.author)} />

@@ -140,7 +140,11 @@ export function createPublicFlow(api: ApiClient, session: PublicSession, target:
             if (disposed || account !== session.snapshot().account) return false;
             emit({ notice: w.kind === 'submit' ? 'pending' : 'saved', reply: w.kind === 'submit' ? null : state.reply });
             if (revision === session.snapshot().revision) {
-                if ('social' in receipt) emit({ social: receipt.social });
+                if ('social' in receipt) {
+                    // A follow answers a creator-level summary (no per-track reaction state): keep the track's reactions.
+                    const keep = w.kind === 'follow' ? state.social : null;
+                    emit({ social: keep ? { ...keep, following: receipt.social.following, follower_count: receipt.social.follower_count, is_own: receipt.social.is_own } : receipt.social });
+                } 
                 else await load();
             }
             return true;
@@ -170,7 +174,8 @@ export function createPublicFlow(api: ApiClient, session: PublicSession, target:
         if (error.code === 'not_found' || error.code === 'handle_not_found' || error.code.endsWith('_unavailable')) {
             const code = write.kind === 'reaction' || write.kind === 'follow' ? 'public_social_unavailable'
                 : write.kind === 'report_song' ? 'public_reporting_unavailable'
-                : write.kind === 'withdraw' || write.kind === 'report' ? 'public_comment_gone' : 'comments_closed';
+                : write.kind === 'withdraw' || write.kind === 'report' ? 'public_comment_gone'
+                : write.kind === 'submit' && write.parent_id && error.code === 'not_found' ? 'public_comment_gone' : 'comments_closed';
             return new ApiError(error.status, code);
         }
         return error;
@@ -180,6 +185,6 @@ export function createPublicFlow(api: ApiClient, session: PublicSession, target:
         reply(comment: ApprovedComment | null) { emit({ reply: comment, notice: null }); },
         focus() { focused = true; void load(); },
         blur() { focused = false; ++epoch; emit({ refreshing: false }); },
-        dispose() { disposed = true; epoch++; unsubscribe(); attempts.reset(); listeners.clear(); },
+        isLive: () => !disposed, dispose() { disposed = true; epoch++; unsubscribe(); attempts.reset(); listeners.clear(); },
     };
 }

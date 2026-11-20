@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../auth/AuthProvider';
 import { subscribeCacheUser } from '../appCache';
@@ -21,9 +21,14 @@ export function usePublicMusic(target: PublicTarget) {
     const { api, session } = usePublicSession();
     const key = target.kind === 'track' ? target.slug : target.kind === 'creator' ? target.handle : '';
     const kind = target.kind, before = target.kind === 'track' ? target.before : undefined;
-    const flow = useMemo(() => createPublicFlow(api, session, kind === 'track' ? { kind, slug: key, before } : kind === 'creator' ? { kind, handle: key } : { kind }), [api, session, kind, key, before]);
+    // Disposed flows never revive: StrictMode and Fast Refresh need a fresh generation.
+    const [generation, setGeneration] = useState(0);
+    const flow = useMemo(() => createPublicFlow(api, session, kind === 'track' ? { kind, slug: key, before } : kind === 'creator' ? { kind, handle: key } : { kind }), [api, session, kind, key, before, generation]);
     const state = useSyncExternalStore(flow.subscribe, flow.snapshot, flow.snapshot);
-    useEffect(() => () => flow.dispose(), [flow]);
+    useEffect(() => {
+        if (!flow.isLive()) { setGeneration(n => n + 1); return; }
+        return () => flow.dispose();
+    }, [flow]);
     useFocusEffect(useCallback(() => { flow.focus(); void getBlocks(api, session).catch(() => {}); return () => flow.blur(); }, [flow, api, session]));
     return { api, flow, state, session };
 }

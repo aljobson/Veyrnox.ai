@@ -139,3 +139,20 @@ test('unblock revalidates a mirror-blocked creator even if the block-list read n
     expect(f.snapshot().data).toHaveProperty('track');
     expect(request.mock.calls.map(([p]) => p)).toEqual([`/api/v1/music/explore/tracks/${slug}`, `/api/v1/music/social?slug=${slug}`]);
 });
+test('a follow receipt keeps the track reaction state (creator summary has no reactions)', async () => {
+    const f = flowFor(); await f.load();
+    const mine = { ...social, my_reaction: 'fire' as const, reactions: { ...social.reactions, fire: 3 } };
+    request.mockImplementation(async (path: string) => path.includes('/social?') ? { social: mine } : track); await f.load();
+    request.mockResolvedValueOnce({ social: { ...social, reactions: { ...social.reactions, fire: 0 }, my_reaction: null, following: true, follower_count: 9 }, idempotent: false });
+    await f.write({ kind: 'follow', handle: 'creator_one', following: true });
+    expect(f.snapshot().social).toMatchObject({ my_reaction: 'fire', following: true, follower_count: 9, reactions: { fire: 3 } });
+});
+test('a reply whose parent is gone says the comment no longer exists, not that comments are closed', async () => {
+    const f = flowFor(); await f.load();
+    request.mockRejectedValueOnce(new ApiError(404, 'not_found'));
+    await f.write({ kind: 'submit', slug, body: 'Hello', parent_id: commentId });
+    expect((f.snapshot().error as ApiError).code).toBe('public_comment_gone');
+    request.mockRejectedValueOnce(new ApiError(404, 'not_found'));
+    await f.write({ kind: 'submit', slug, body: 'Hello' });
+    expect((f.snapshot().error as ApiError).code).toBe('comments_closed');
+});
