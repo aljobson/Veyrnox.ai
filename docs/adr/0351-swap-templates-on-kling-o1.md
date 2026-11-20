@@ -533,7 +533,23 @@ and the failed-submit refund are covered by `tests/templateSwapClipGeneration.te
 Rollback: set `templateSwap` to `false` (or remove the key) in `APP_RUNTIME_FLAGS` and deploy. The gate then refuses every swap request, the catalog answers 404 and
 accepted jobs still settle through the existing webhook and refund paths.
 
-## Amendment 12 (2026-11-20): two-person templates behind their own key, dark
+## Amendment 12 (2026-11-20): one-photo swaps can drop a second person; three scenes leave the curated row
+
+The route takes one element (a frontal and a crop of one person), so every template runs as a one-person swap whatever the source clip holds. On production, basketball-3 with one photo swapped the main character and the second person (the opponent) was missing from the output. The prompt already says to leave every other person as in @Video1, so wording alone did not prevent it (one run; the cause is not proven).
+
+Decision: the curated "Put yourself in" row drops the three scenes with a second person it carried: basketball-3, community-billboard-product-swap and community-stadium-ball-control (13 remain). The registry, the manifest and the pin are unchanged, so the three stay swappable by direct link. This is a stop-gap: the real fix is a two-element mode or a proven wording, either of which needs a paid O1 test (about $0.84 a run). 74 two-photo and 47 three-or-more-photo templates remain in the registry and can lose a person the same way.
+
+Rollback: restore the three rows in `app/veyrnox/_lib/templateSwapRow.js`.
+
+## Amendment 13 (2026-11-20): only one-photo scenes stay in the registry (410 to 289 ids)
+
+The composers send one photo and the server sends one `@Element1`; nothing checks how many people the source scene holds, so a second person is dropped (seen on basketball-3, where the opponent vanished). The registry therefore keeps only the 289 scenes the review counted as one-photo and removes the 74 two-photo and 47 three-or-more-photo ids. The gate answers `template_swap_not_found` for the removed ids, so they cannot be charged; their swap links stop working until a two-photo mode exists.
+
+The R2 manifest and its pin (`a795629b…bf28b`) are unchanged and the 411 clips stay in both buckets, so adding ids back is a registry-only change. The curated row holds 13 ids, none removed here.
+
+Rollback: restore the removed ids in `app/veyrnox/_lib/templateSwapClips.js`.
+
+## Amendment 14 (2026-11-20): two-person templates behind their own key, dark
 
 **Problem.** Template `basketball-3` needs two photos. The one-photo path sends one element (frontal plus crop of ONE person), the prompt names one role, and O1 dropped the other person in the output. About 121 of the 410 registry ids need two or more photos.
 
@@ -551,11 +567,3 @@ accepted jobs still settle through the existing webhook and refund paths.
 **Not done here.** The live registry is not touched; ids removed by the stop-gap come back only through a separate owner-approved registry step after the staging proof below. Three-plus people: fal allows four elements, but no 3+ prompt, UI or table exists; see the PR for the recommendation.
 
 **Staging proof (owner decides; STAGING fal key only, never PROD FAL).** `basketball-3` on staging with the key on, two different supplied faces: expect one 5 s job, 47 credits, about $0.84 at fal. Look at: both people present; person 1 is the green character, person 2 the red one; faces match the two photos; scene unchanged.
-
-## Amendment 13 (2026-11-20): only one-photo scenes stay in the registry (410 to 289 ids)
-
-The composers send one photo and the server sends one `@Element1`; nothing checks how many people the source scene holds, so a second person is dropped (seen on basketball-3, where the opponent vanished). The registry therefore keeps only the 289 scenes the review counted as one-photo and removes the 74 two-photo and 47 three-or-more-photo ids. The gate answers `template_swap_not_found` for the removed ids, so they cannot be charged; their swap links stop working until a two-photo mode exists.
-
-The R2 manifest and its pin (`a795629b…bf28b`) are unchanged and the 411 clips stay in both buckets, so adding ids back is a registry-only change. The curated row holds 13 ids, none removed here.
-
-Rollback: restore the removed ids in `app/veyrnox/_lib/templateSwapClips.js`.

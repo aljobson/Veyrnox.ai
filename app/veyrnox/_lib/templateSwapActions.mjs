@@ -23,7 +23,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
     return { controller, ticket, signal: controller.signal, valid: () => store.valid(ticket) && !controller.signal.aborted,
       finish: () => { if (active.get(operation) === controller) active.delete(operation); store.release(controller); } };
   }
-  // person 0 is the first (or only) photo, person 1 the second person's photo (two-person templates, ADR-0351 amendment 12).
+  // person 0 is the first (or only) photo, person 1 the second person's photo (two-person templates, ADR-0351 amendment 14).
   // A not-yet-submitted draft is updated in place so choosing one person never drops the other's photo.
   async function choose(templateId, file, person = 0) {
     if (!store.owner()) return;
