@@ -11,7 +11,9 @@ export async function fetchSwapAvailability(id, fetcher = fetch, signal) {
     if (response.status !== 200) return null;
     const c = await response.json();
     return c?.id === id && c.model === 'kling-o1-reference' && Number.isInteger(c.credits) && c.credits > 0
-      && c.durationSeconds === 5 && c.images === 2 && typeof c.role === 'string' && c.role.trim() ? c : null;
+      && c.durationSeconds === 5 && typeof c.role === 'string' && c.role.trim()
+      && ((c.images === 2 && c.people === undefined)
+        || (c.images === 4 && c.people === 2 && Array.isArray(c.roles) && c.roles.length === 2 && c.roles.every(r => typeof r === 'string' && r.trim()))) ? c : null;
   } catch { return null; }
 }
 
@@ -30,7 +32,7 @@ export function faceBoxFromResult(result, size) {
 }
 
 export function swapRequest(offer, key, references) {
-  if (!offer?.id || !offer.model || !Number.isInteger(offer.credits) || !key || references?.length !== 2
+  if (!offer?.id || !offer.model || !Number.isInteger(offer.credits) || !key || references?.length !== (offer.people === 2 ? 4 : 2)
       || references.some(r => r.slot !== 'image' || r.origin !== 'upload' || typeof r.key !== 'string' || !r.key)) throw Error('invalid_swap_request');
   return { template_swap: offer.id, model_id: offer.model, idempotency_key: key, inputs: {},
     max_charge_credits: offer.credits, references: references.map(r => ({ ...r })), consent: true };
