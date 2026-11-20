@@ -168,7 +168,7 @@ test('duration fixes move zero inventory templates to unsupported and preserve 3
   const { audit } = await import('../scripts/audit-template-fidelity.mjs');
   const report = audit();
   // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61} /* 61 over the Kling 3.0 prompt cap (KLING_V3_PROMPT_MAX) moved to unsupported */);
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49} /* 61 over the Kling 3.0 prompt cap moved to unsupported; 49 of them (one photo, at most 20,000 characters) bind to kie Seedance (ADR-0309 amendment 3) */);
   const cs = Object.values(report.contracts);
   assert.equal(cs.filter(c => c.reasons.includes('unsupported-duration')).length, 0);
   for (const c of cs.filter(c => c.class === 'exact-transport-unbound-tokens')) {

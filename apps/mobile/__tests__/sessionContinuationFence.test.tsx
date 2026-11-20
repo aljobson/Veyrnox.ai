@@ -67,7 +67,6 @@ import { EditorSpikeHarness } from '../src/components/dev/EditorSpikeHarness';
 import { confirmDeletion, prepareDeletion } from '../src/lib/accountDeletion';
 import { revokeSessions } from '../src/lib/auth/accountCalls';
 import { ApiError } from '../src/lib/api';
-import FaceFiltersScreen from '../src/app/(app)/face-filters';
 jest.mock('../src/lib/auth/accountCalls', () => ({ ...jest.requireActual('../src/lib/auth/accountCalls'), revokeSessions: jest.fn() }));
 jest.mock('../src/lib/accountDeletion', () => ({ prepareDeletion: jest.fn(), confirmDeletion: jest.fn(), blockerText: (s: string) => s }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status: 'off', refreshSales: jest.fn() }) }));
@@ -76,8 +75,6 @@ jest.mock('../src/push/pushContext', () => ({ usePush: () => mockPush }));
 const mockRouter = { replace: jest.fn(), push: jest.fn() };
 jest.mock('expo-router', () => ({ useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]), Stack: { Screen: () => null }, Link: ({ children }: any) => children, useRouter: () => mockRouter }));
 jest.mock('react-native-webview', () => ({ WebView: 'WebView' }));
-let mockFaceApi: ReturnType<typeof useAuth>['api'];
-jest.mock('../src/components/FaceFiltersFlow', () => ({ FaceFiltersFlow: ({ api }: any) => { mockFaceApi = api; return null; } }));
 
 beforeEach(() => {
     jest.mocked(prepareDeletion).mockResolvedValue({ kind: 'ready', token: 'delete-token', forfeit: { credits: 0, freeCredits: 0 } });
@@ -130,14 +127,4 @@ test('EditorSpikeHarness stale forced token is not handed to the page', async ()
     await act(async () => root.render(<AuthProvider><Probe /><EditorSpikeHarness /></AuthProvider>));
     await adopt('B'); await act(async () => gate.resolve(session('A', 1)));
     expect(root.container.queryAll(n => typeof n.props.injectedJavaScriptBeforeContentLoaded === 'string' && n.props.injectedJavaScriptBeforeContentLoaded.includes(jwt('A', 1)))).toHaveLength(0);
-});
-test.each(['request', 'stream'] as const)('Face filters %s consent delay cannot refresh or drop expiring B', async method => {
-    await mount(<FaceFiltersScreen />); await adopt(); const gate = deferred(); jest.mocked(aiConsent.ensure).mockReturnValueOnce(gate.promise);
-    let result!: Promise<any>; await act(async () => { result = mockFaceApi[method]('/api/v1/generations', { method: 'POST' }).catch(e => e); });
-    await act(async () => { await auth.signOut(); await auth.adoptSession({ ...session('B'), expiresAt: Date.now() + 1000 }); });
-    jest.mocked(refreshSession).mockRejectedValueOnce(new AuthError(401, 'rejected')); jest.mocked(clearRefreshToken).mockClear(); jest.mocked(wipeCache).mockClear();
-    await act(async () => { gate.resolve(); await result; });
-    expect(await result).toBeInstanceOf(ApiError); expect(await result).toMatchObject({ code: 'account_changed' });
-    expect(send).not.toHaveBeenCalled(); expect(streamFetch).not.toHaveBeenCalled(); expect(refreshSession).not.toHaveBeenCalled(); expect(clearRefreshToken).not.toHaveBeenCalled(); expect(wipeCache).not.toHaveBeenCalled();
-    expect(auth.status).toBe('signedIn'); expect(auth.beginSessionTask().user).toBe('B');
 });

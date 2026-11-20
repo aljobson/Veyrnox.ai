@@ -16,8 +16,8 @@ export function BeatSaveControls({ id, apply }: { id: string; apply(edit: Edit, 
         {saveState === 'error' ? <Button label={t('beat.retry')} onPress={() => void beatStore.flushBeat(id).catch(() => undefined)} /> : null}
         <Text variant="footnote" accessibilityLiveRegion="polite">{t(`beat.cloud.${view.state}`)}</Text>
         {view.state === 'unlinked' || view.state === 'removed' ? <Button label={t(view.state === 'removed' ? 'beat.cloud.linkAgain' : 'beat.cloud.link')} onPress={() => void sync.link()} /> : null}
-        {['offline', 'error', 'rate_limited', 'limit'].includes(view.state) ? <Button label={t('beat.retry')} disabled={view.busy} onPress={() => void sync.retry()} /> : null}
-        {!['off', 'checking', 'signed_out', 'other', 'takes'].includes(view.state) ? <Button label={t('beat.versions.title')} onPress={() => setVersions(sync)} /> : null}
+        {['offline', 'error', 'rate_limited', 'limit', 'takes'].includes(view.state) ? <Button label={t('beat.retry')} disabled={view.busy} onPress={() => void sync.retry()} /> : null}
+        {!['off', 'checking', 'signed_out', 'other'].includes(view.state) ? <Button label={t('beat.versions.title')} onPress={() => setVersions(sync)} /> : null}
         {view.state === 'paused_conflict' ? <Button label={t('beat.conflict.choose')} onPress={() => sync.chooseVersion()} /> : null}
         <BeatCloudConflictModal sync={sync} view={view} />
         {versions === sync ? <BeatVersionsSheet key={sync.id} sync={sync} view={view} apply={apply} onClose={() => setVersions(null)} /> : null}

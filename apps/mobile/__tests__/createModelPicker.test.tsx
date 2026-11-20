@@ -86,7 +86,7 @@ test('a template keeps its model as the default and can still be changed', async
 });
 
 test('a Tools recipe keeps its fixed model', async () => {
-    mockParams = { ...mockParams, recipe: 'ai-hairstyle-changer' };
+    mockParams = { ...mockParams, recipe: 'ai-avatar-generator' };
     await render();
     expect(byLabel(`${t('create.workspace.settingsMeta')}. ${t('chat.model.change')}`)).toHaveLength(0);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'button' && typeof n.props.accessibilityLabel === 'string' && n.props.accessibilityLabel.endsWith(t('chat.model.change')))).toHaveLength(0);

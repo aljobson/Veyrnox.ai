@@ -12,7 +12,7 @@ import { templateModelId, MODELS } from '../app/veyrnox/_lib/tokens.js';
 import { templateSourceAspect } from '../lib/templateFraming.js';
 import { templateDetail } from '../lib/clientTemplates.js';
 import { writeStudioDraft, takeStudioDraft } from '../app/veyrnox/_lib/landingDraft.js';
-import { internalModelId } from '../lib/publicModelIds.js';
+import { internalModelId, publicModelId } from '../lib/publicModelIds.js';
 import { templateArrival } from '../app/veyrnox/_lib/templateDraft.js';
 const page = 'app/veyrnox/presets/[id]/page.js';
 const recipe = 'app/veyrnox/_components/TemplateRecipe.js';
@@ -51,7 +51,7 @@ test('repository source routing uses the shared route; only catalog readers may 
 });
 
 test('Create arrival restores an edited bound-model draft without a model URL parameter', () => {
-  const preset = PRESETS.find(p => templateContract(p.id)?.class === 'bound' && p.model === 'Kling 3.0 · I2V');
+  const preset = PRESETS.find(p => templateContract(p.id)?.class === 'bound' && templateContract(p.id).modelId === 'kling-3.0-i2v' && p.model === 'Kling 3.0 · I2V');
   const source = readFileSync('app/veyrnox/app/create/page.js', 'utf8');
   const requestedExpression = source.match(/const requested = (.*);/)[1];
   const params = new URLSearchParams({ preset: preset.id });
@@ -112,10 +112,13 @@ test('bound detail differs only in model link/name and reviewed crop guidance; l
       expected = expected.replace(/<div class="mt-4 rounded-xl border border-vx-border px-4 py-3 text-\[14px\] text-vx-fg-body"><p>(.*?)<\/p><p class="mt-2 font-bold">[^<]+<\/p><\/div>/s, '<p class="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">$1</p>');
     }
     assert.equal(normalize(after), expected, preset.id);
-    assert.match(after, /href="\/models\/kling-3.0-i2v"[^>]*>Kling 3.0 · I2V<\/a>/);
+    // ADR-0309 amendment 3: long one-photo recipes run on the kie Seedance offer; the link names the contract's model.
+    const bound = MODELS.find(m => m.id === templateContract(preset.id).modelId);
+    assert.ok(after.includes(`href="/models/${publicModelId(bound.id)}" class="font-bold underline underline-offset-4">${bound.name}</a>`), preset.id);
   }
-  assert.deepEqual(cropChanges, []);
-  assert.deepEqual(changed, PRESETS.filter(p => !duplicateKeeperId(p.id) && templateContract(p.id)?.class === 'bound' && p.model !== 'Kling 3.0 · I2V').map(p => p.id));
+  // ADR-0309 amendment 3: only recipes moved to the kie Seedance offer (it takes its own aspect) lose the crop-to-shape hint.
+  assert.ok(cropChanges.length > 0 && cropChanges.every(id => templateContract(id).modelId === 'seedance-2.0-photo-kie'), cropChanges.join(','));
+  assert.deepEqual(changed, PRESETS.filter(p => !duplicateKeeperId(p.id) && templateContract(p.id)?.class === 'bound' && (p.model !== 'Kling 3.0 · I2V' || templateContract(p.id).modelId !== 'kling-3.0-i2v')).map(p => p.id));
   mkdirSync('.gstack/a2-round3', { recursive: true });
   writeFileSync('.gstack/a2-round3/bound-markup-changes.json', JSON.stringify({ changed, cropChanges }, null, 2) + '\n');
 });

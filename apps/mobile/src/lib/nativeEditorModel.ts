@@ -32,6 +32,8 @@ export type Clip = TimedFields & {
     eq?: { low?: number; mid?: number; high?: number };
 };
 export type TextClip = TimedFields & {
+    caption?: boolean; wordsEstimated?: boolean;
+    wordStyle?: { mode: 'none' | 'highlight' | 'karaoke' | 'word'; color: string };
     id: string; text: string; start: number; len: number; trackId?: string; x: number; y: number; size: number;
     groupId?: string; animation?: Animation;
     style?: { font?: string; weight?: string; align?: string; color?: string; stroke?: string; strokeWidth?: number; background?: string; backgroundOpacity?: number;

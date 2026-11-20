@@ -42,7 +42,6 @@ export const STUDIO_DESTINATIONS = [
   { section: 'tools', key: 'features', href: '/app/features', labelKey: 'label.Tools', icon: 'wand', nav: false },
   { section: 'tools', key: 'film', href: '/app/film-studio', labelKey: 'label.Film Studio', hintKey: 'app.nav.filmStudioHint', icon: 'film', nav: false },
   { section: 'tools', key: 'oddlings', href: '/app/oddlings', labelKey: 'label.Oddlings', icon: 'character', nav: false },
-  { section: 'tools', key: 'enhance', href: '/app/enhance', labelKey: 'label.Enhance', icon: 'wand', flag: 'enhance', nav: false },
   { section: 'tools', href: '/mcp', labelKey: 'label.MCP', icon: 'plug', menu: false, nav: false },
   { section: 'assets', key: 'projects', href: '/app/projects', labelKey: 'label.Projects', icon: 'folder', flag: 'projects', nav: false },
   { section: 'assets', href: '/presets', labelKey: 'label.Templates', icon: 'template', menu: false, nav: false },

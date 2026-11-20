@@ -186,7 +186,9 @@ test('phone parsing and handoff keep every exact community prompt available', ()
   const f = renderFixture('en', '/presets', { moduleMocks });
   moduleMocks['./templateHandoff'] = f.load('apps/mobile/src/lib/templateHandoff.ts');
   const mobile = f.load('apps/mobile/src/lib/presets.ts');
-  const rows = mobile.parsePresets({ presets: toPublicPresets(catalog, PRESETS) });
+  // The live catalog lists the long-prompt kie Seedance offer only while its runtime key is on (ADR-0309 amendment 3); model it as on.
+  const live = [...catalog, { id: 'seedance-2.0-photo-kie', modality: 'image-to-video', durations: [5, 10], media: { image: { required: true } }, aspects: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'], credits: 58 }];
+  const rows = mobile.parsePresets({ presets: toPublicPresets(live, PRESETS) });
   assert.equal(rows.length, PRESETS.length);
   for (const id of changedIds) {
     const row = rows.find(preset => preset.id === publicTemplateId(id));

@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { fixture } from './publicSiteRender.mjs';
 export const files = {
-  enhance: 'app/veyrnox/app/enhance/page.js',
   controls: 'app/veyrnox/_components/editor/EditorControls.js',
   commerce: 'app/veyrnox/app/publish/commerce/page.js',
   autolists: 'app/veyrnox/app/publish/autolists/page.js',
@@ -21,9 +20,6 @@ const mediaProps = { kind: 'video', prompt: 'User prompt unchanged', onPrompt: n
 const timeline = { media: {}, video: [], audio: [], text: [], tracks: [] };
 const caption = { id: 'cue', trackId: 'text', caption: true, start: 0, len: 60, text: 'User transcript unchanged', wordsEstimated: true, words: [{ text: 'User', start: 0, len: 15 }, { text: 'transcript', start: 15, len: 25 }, { text: 'unchanged', start: 40, len: 20 }] };
 export const scenarios = [
-  { area: 'enhance', name: 'default' },
-  { area: 'enhance', name: 'Editor' },
-  { area: 'enhance', name: 'Editor', states: [{ file: { name: 'User video unchanged' }, url: 'blob:fixture' }, 10.5, 16/9, '', { smoothing: 30, look: 'natural', intensity: 100 }, { time: 1.2, faces: 1, playing: false }, 'ready', '', null] },
   { area: 'controls', name: 'VisualControls', props: { item: { start: 0, len: 90 }, frame: 0, onChange: noop } },
   { area: 'controls', name: 'SoundControls', props: { item: { len: 90, volume: 1 }, onChange: noop, onRate: noop, onExtract: noop } },
   { area: 'controls', name: 'TextControls', props: { item: { start: 0, len: 90, size: 10, x: .5, y: .5 }, frame: 0, onChange: noop } },
@@ -48,7 +44,7 @@ export function renderScenario(scenario, locale, messages, sourceOverrides = {})
   const file = files[scenario.area];
   const f = fixture(locale, '/app/' + scenario.area, {
     messages, signedIn: true, sourceOverrides,
-    expose: { [files.enhance]: ['Editor'], [files.autolists]: ['Autolists'], [files.chat]: ['Footer'] },
+    expose: { [files.autolists]: ['Autolists'], [files.chat]: ['Footer'] },
     states: scenario.states ? { [file]: scenario.states } : {},
     moduleMocks: {
       // Imported child controls have separate entries in the strict inventory.

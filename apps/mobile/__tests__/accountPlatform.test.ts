@@ -99,7 +99,7 @@ describe('catalogue pages', () => {
 
 describe('search', () => {
     const title = (k: string) => ({ 'srch.s.security': 'Account security', 'srch.s.account': 'Account', 'srch.s.help': 'Help' })[k] ?? k;
-    const entries = [...screenEntries(title, true), ...modelEntries([model({ id: 'm/1', name: 'Sunrise Pro' })])];
+    const entries = [...screenEntries(title), ...modelEntries([model({ id: 'm/1', name: 'Sunrise Pro' })])];
     test('finds a screen by title, by a word in it, and by a synonym', () => {
         expect(searchEntries('account', entries)[0].href).toBe('/account');
         expect(searchEntries('secur', entries).some((e) => e.href === '/security')).toBe(true);
@@ -121,19 +121,16 @@ describe('search', () => {
         expect(searchEntries('same', many)).toHaveLength(MAX_RESULTS);
         expect(SCREENS.every((s) => s.href.startsWith('/'))).toBe(true);
     });
-    test('Tools, Face Filters and MCP are searchable native screens; Film Studio is not (ADR-0344)', () => {
+    test('Tools and MCP are searchable native screens; Film Studio is not (ADR-0344)', () => {
         expect(searchEntries('studio', entries).map((entry) => entry.href)).not.toContain('/film');
-        for (const [query, href] of [['upscale', '/create/tools'], ['relight', '/face-filters'], ['connector', '/mcp']]) {
+        for (const [query, href] of [['upscale', '/create/tools'], ['connector', '/mcp']]) {
             expect(searchEntries(query, entries).map((entry) => entry.href)).toContain(href);
         }
     });
 });
 
-test('Face Filters search entry is hidden until availability is known open', () => {
-    const hrefs = (open?: boolean) => screenEntries(k => k, open).map(e => e.href);
-    expect(hrefs()).not.toContain('/face-filters');
-    expect(hrefs(false)).not.toContain('/face-filters');
-    expect(hrefs(true)).toContain('/face-filters');
+test('search has no Face filters entry', () => {
+    expect(screenEntries(k => k).map(e => e.href)).not.toContain('/face-filters');
 });
 
 describe('brand kit style and asset parity', () => {
