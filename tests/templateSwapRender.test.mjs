@@ -83,6 +83,7 @@ test('rendered reconciliation survives a gate 404 and is invisible to another ac
     ...shared,'../_lib/useSwapDraft.js':{useSwapDraft:id=>({attempts:store.get(id)})},
     '../_lib/templateSwapRuntime.js':{swapActions:{}},
     '../_lib/templateSwapClient.mjs':await import('../app/veyrnox/_lib/templateSwapClient.mjs'),
+    '../app/create/GeneratingProgress.js':{GeneratingProgress:()=>null},
   });
   const saved=attempts.SwapAttemptStatus;attempts.SwapAttemptStatus=realStatus.SwapAttemptStatus;
   try{

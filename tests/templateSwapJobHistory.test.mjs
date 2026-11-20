@@ -79,3 +79,36 @@ test('the web runtime writes accepted swaps to the job history; both swap screen
   const phone = readFileSync(new URL('../apps/mobile/src/components/templates/SwapAttemptStatus.tsx', import.meta.url), 'utf8');
   assert.match(phone, /<GenerationProgress key=\{a\.job_id\} jobId=\{a\.job_id\}/);
 });
+
+test('a running swap keeps being read past 12 lookups and settles instead of showing unresolved', async () => {
+  const { POLL_LIMIT, LIVE_POLL_LIMIT } = await import('../app/veyrnox/_lib/templateSwapActions.mjs');
+  let reads = 0; const waits = [];
+  const s = setup(async path => {
+    if (path === '/generations') return { job_id: 'slow-job' };
+    if (path === '/balance') return { balance: 5 };
+    reads++;
+    return { job: { id: 'slow-job', state: reads < 20 ? 'running' : 'succeeded', refunded: false, refund_state: 'none' } };
+  });
+  await s.actions.choose('test', new Blob(['raw'])); await s.actions.submit('test', offer);
+  await s.actions.reconcile('test', s.store.get('test')[0].key);
+  assert.ok(reads > POLL_LIMIT);
+  assert.equal(reads, 20);
+  assert.equal(s.store.get('test')[0].state, 'succeeded');
+  assert.ok(LIVE_POLL_LIMIT * 20_000 >= 55 * 60_000, 'about an hour at the 20 s ceiling');
+});
+
+test('a job still running after the long window hands over to Check; an unknown outcome stays at 12 reads', async () => {
+  const { POLL_LIMIT, LIVE_POLL_LIMIT } = await import('../app/veyrnox/_lib/templateSwapActions.mjs');
+  let reads = 0;
+  const s = setup(async path => (path === '/generations' ? { job_id: 'stuck-job' } : (reads++, { job: { id: 'stuck-job', state: 'running', refunded: false, refund_state: 'none' } })));
+  await s.actions.choose('test', new Blob(['raw'])); await s.actions.submit('test', offer);
+  await s.actions.reconcile('test', s.store.get('test')[0].key);
+  assert.equal(reads, LIVE_POLL_LIMIT);
+  assert.equal(s.store.get('test')[0].state, 'unresolved');
+  let unknownReads = 0;
+  const u = setup(async path => { if (path === '/generations') throw { code: 'network_error' }; unknownReads++; return { job: { id: 'j', state: 'queued', refunded: false, refund_state: 'unknown' } }; });
+  await u.actions.choose('test', new Blob(['raw'])); await u.actions.submit('test', offer);
+  await u.actions.reconcile('test', u.store.get('test')[0].key);
+  assert.equal(unknownReads, POLL_LIMIT);
+  assert.equal(u.store.get('test')[0].state, 'unresolved');
+});
