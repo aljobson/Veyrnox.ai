@@ -32,8 +32,10 @@ test('KIDS BIRTHDAY remains an explicit exclusion pending an owner decision', ()
 
 test('the Trends categories from ADR-0072 are in the filter', () => {
     // CARTOONS has no template that binds the person's photo (audit 2026-11-15), so it leaves the filter until one does.
-    for (const c of ['MOVIES', 'FANTASY', 'REALISTIC']) assert.ok(PRESET_CATEGORIES.includes(c), c);
+    for (const c of ['FANTASY', 'REALISTIC']) assert.ok(PRESET_CATEGORIES.includes(c), c);
     assert.equal(PRESET_CATEGORIES.includes('CARTOONS'), false);
+    // MOVIES likewise leaves the filter (2026-11-20): its remaining listed templates had prompts over the Kling 3.0 cap (KLING_V3_PROMPT_MAX).
+    assert.equal(PRESET_CATEGORIES.includes('MOVIES'), false);
 });
 
 test('every real category has at least one template, so no filter shows an empty page', () => {

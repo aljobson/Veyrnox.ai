@@ -115,13 +115,13 @@ export default function Templates() {
                 ListEmptyComponent={empty}
                 renderItem={({ item }) => <ImageTemplateCard template={item} onOpen={() => openImage(item)} />} />)
         : kind === 'audio' ? (audioFailed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
-            : audio === null ? <ActivityIndicator /> : <FlatList key="audio" data={audioShown} keyExtractor={a => a.id} contentContainerStyle={styles.list}
+            : audio === null ? <ActivityIndicator /> : <FlatList key="audio" data={audioShown} numColumns={2} keyExtractor={a => a.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
                     <TextField accessibilityLabel={t('libraryCreate.searchTemplates')} placeholder={t('libraryCreate.searchTemplates')} value={query} onChangeText={setQuery} />
                     <ScrollView horizontal contentContainerStyle={styles.chips}>{['ALL', ...audioCategoriesOf(templatesWithCatalogModel(audio ?? [], known))].map(c => <Chip key={c} selected={audioCategory === c} accessibilityState={{ selected: audioCategory === c }} label={c === 'ALL' ? t('audioTemplates.all') : categoryLabel(c)} onPress={() => setAudioChip(c)} />)}</ScrollView>
                 </View>}
                 ListEmptyComponent={<Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>}
-                renderItem={({ item }) => <AudioTemplateCard template={item} credits={audioCredits.get(item.modelId)} playing={playing === `audio:${item.id}`} onPlay={() => setPlaying(id => id === `audio:${item.id}` ? null : `audio:${item.id}`)} onOpen={() => { setPlaying(null); openAudio(item); }} />} />)
+                renderItem={({ item }) => <AudioTemplateCard template={item} style={styles.audioCard} credits={audioCredits.get(item.modelId)} playing={playing === `audio:${item.id}`} onPlay={() => setPlaying(id => id === `audio:${item.id}` ? null : `audio:${item.id}`)} onOpen={() => { setPlaying(null); openAudio(item); }} />} />)
         : failed ? <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>
             : presets === null ? <ActivityIndicator /> : <FlatList key="video" data={shown.slice(0, limit)} numColumns={2} keyExtractor={p => p.id} contentContainerStyle={styles.list}
                 ListHeaderComponent={<View style={styles.header}>
@@ -135,4 +135,4 @@ export default function Templates() {
                 renderItem={({ item }) => <TemplateCard preset={item} playing={playing === item.id} onPlay={() => setPlaying(id => id === item.id ? null : item.id)} onOpen={() => open(item)} />} />}
     </View>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg, padding: 16 }, kinds: { flexDirection: 'row', gap: 8, marginBottom: 12 }, list: { paddingBottom: 80 }, header: { gap: 12 }, chips: { gap: 8 } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg, padding: 16 }, kinds: { flexDirection: 'row', gap: 8, marginBottom: 12 }, list: { paddingBottom: 80 }, header: { gap: 12 }, chips: { gap: 8 }, audioCard: { flex: 1, margin: 4, maxWidth: '48.5%' } }));

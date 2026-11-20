@@ -3762,6 +3762,54 @@
     "ratio": 1.64
   },
   {
+    "id": "beat.play",
+    "english": "Play",
+    "translation": "Abspielen",
+    "ratio": 2.25
+  },
+  {
+    "id": "beat.playing",
+    "english": "Playing",
+    "translation": "Wiedergabe läuft",
+    "ratio": 2.29
+  },
+  {
+    "id": "beat.pad.kick",
+    "english": "Kick",
+    "translation": "Bassdrum",
+    "ratio": 2
+  },
+  {
+    "id": "beat.pad.openhat",
+    "english": "Open hat",
+    "translation": "Offene Hi-Hat",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.pad.rim",
+    "english": "Rim",
+    "translation": "Rimshot",
+    "ratio": 2.33
+  },
+  {
+    "id": "beat.mute",
+    "english": "Mute {track}",
+    "translation": "{track} stummschalten",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.solo",
+    "english": "Solo {track}",
+    "translation": "{track} solo schalten",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.muted",
+    "english": "{track} muted",
+    "translation": "{track} stummgeschaltet",
+    "ratio": 1.77
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

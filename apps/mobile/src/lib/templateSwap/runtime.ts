@@ -42,6 +42,7 @@ export function useSwapRuntime(templateId: string) {
             return uploadSource({ ...api, request: (path, init) => api.request(path, init, { task, owner: task.user ?? undefined }) }, file, file.type, () => {}, signal);
         },
         objectURL: file => leases.acquire(swapStore.owner()!, file.uri),
+        revokeURL: uri => leases.release(uri),
         discardPhoto: result => result.files.forEach(file => deleteSwapFile(file.uri)),
         refreshOffer: refreshSwapOffer,
         balanceChanged: () => refreshBalanceAfterSwap(api),

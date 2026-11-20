@@ -20,24 +20,20 @@ export const VIDEO_TEMPLATE_CAP = 150;
 // -forest-umbrella-shift, -stage-dance-sync, -urban-stride) slipped past the guard until it learned "replaced by <photo>",
 // "in the video" and a leading "Swap". They stay reachable by direct link. Re-list one only once its swap is on.
 // tests/videoTemplateCap.test.mjs pins that no listed template is such a recipe.
+// Hidden 2026-11-20 (owner, option B): 45 templates whose exact prompt is over the Kling 3.0 cap (KLING_V3_PROMPT_MAX, 2,500 characters)
+// left the list. fal rejects such a prompt and the job is refunded, so the server now refuses it before any charge. Templates run their exact
+// prompt, never a trimmed one. They stay reachable by direct link and return once the cap is raised or a route takes the length:
+// impact, cake-in-the-fridge, trick-or-skin, seedance-rescue-myself, ruins-escape-run, born-from-sand, community-shockwave-horizon-shift, community-dragon-rider-encounter, community-dragon-awakening, seedance-glass-cube, theater-ceiling-horror, ghost-makeover, pumpkin-guardian, seedance-blocked-light, curious-garden-journey, the-wrong-one, holiday-heist-run, enchanted-forest-selfie, fashion-halloween, pizzeria-hide-and-seek, seedance-subway-fight, x-ray-matter, reflection-in-the-mirror, dandelion-ball, rooftop-agent-pursuit, game-character-rig, sm-brand-new-day, jellyfish-airlines, seedance-roof-jump, window-explode, ocean-car-sinking, seedance-bunny-taxi, the-crown, office-kitchen, dragon-lord, studio-ballerina-turns, community-subway-combat-strike, noir-film, the-spirit, underground-lab-transformation, freefall, sea-snakes, seedance-quick-change-2, community-parkour-vault-shift, thrille.
 export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
-  'jellyfish-airlines', 'dandelion-ball', 'sm-brand-new-day', 'trick-or-skin',
-  'the-wrong-one', 'enchanted-forest-selfie', 'pizzeria-hide-and-seek', 'theater-ceiling-horror',
-  'studio-ballerina-turns', 'reflection-in-the-mirror', 'pumpkin-guardian', 'fashion-halloween',
-  'thrille', 'ghost-makeover', 'community-midnight-supercar-refuel', 'community-explosive-exit',
-  'community-mansion-raid-swap', 'ocean-car-sinking', 'office-kitchen', 'animal-pov-to-the-club',
-  'car-sky-fall', 'underground-lab-transformation', 'the-spirit', 'the-crown',
-  'dragon-lord', 'noir-film', 'desert-rider', 'impact',
-  'ruins-escape-run', 'curious-garden-journey', 'born-from-sand', 'freefall',
-  'x-ray-matter', 'sea-snakes', 'rooftop-agent-pursuit', 'community-pet-affection-reveal',
-  'window-explode', 'seedance-bunny-taxi', 'seedance-blocked-light', 'seedance-anothers-opinion',
-  'seedance-rescue-myself', 'seedance-quick-change-2', 'seedance-quick-change', 'seedance-roof-jump',
-  'seedance-glass-cube', 'seedance-subway-fight', 'cake-in-the-fridge', 'game-character-rig',
-  'holiday-heist-run', 'community-dragon-awakening', 'community-skyline-flamingo-prank', 'community-championship-slap-duel',
-  'community-supercar-night-fueling', 'community-truck-window-confrontation', 'community-subway-combat-strike', 'community-street-shuffle-walk',
+  'community-midnight-supercar-refuel', 'community-explosive-exit',
+  'community-mansion-raid-swap', 'animal-pov-to-the-club',
+  'car-sky-fall', 'desert-rider', 'community-pet-affection-reveal',
+  'seedance-anothers-opinion',
+  'seedance-quick-change', 'community-skyline-flamingo-prank', 'community-championship-slap-duel',
+  'community-supercar-night-fueling', 'community-truck-window-confrontation', 'community-street-shuffle-walk',
   'community-supercar-midnight-refuel', 'community-drive-thru-dialogue', 'community-urban-dance-walk', 'community-skyline-terrace-groove',
-  'community-london-gentleman-walk', 'community-dragon-rider-encounter', 'community-synchronized-pet-portrait', 'community-dramatic-office-outburst',
-  'community-midnight-forest-run', 'community-midnight-sports-drive', 'community-shockwave-horizon-shift', 'community-boardwalk-dance-routine',
-  'community-subway-mascot-dance', 'community-parkour-vault-shift', 'community-cartoon-puppet-swap', 'community-modern-listing-dolly',
+  'community-london-gentleman-walk', 'community-synchronized-pet-portrait', 'community-dramatic-office-outburst',
+  'community-midnight-forest-run', 'community-midnight-sports-drive', 'community-boardwalk-dance-routine',
+  'community-subway-mascot-dance', 'community-cartoon-puppet-swap', 'community-modern-listing-dolly',
   'community-canyon-groove',
 ]);

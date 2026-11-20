@@ -20,15 +20,16 @@ export function SwapComposer({ offer }: { offer: SwapOffer }) {
         setSlow(false); if (!busy) return;
         const timer = setTimeout(() => setSlow(true), 3000); return () => clearTimeout(timer);
     }, [busy]);
-    const ready = !!a?.files && ['ready', 'not_charged', 'refunded', 'refund_pending', 'upload_error'].includes(a.state);
+    const people = offer.people === 2 ? 2 : 1;
+    const ready = a?.files?.length === people * 2 && ['ready', 'not_charged', 'refunded', 'refund_pending', 'upload_error'].includes(a.state);
     const canReplace = !!accountId && !busy && !picking && !attempts.some(unsettled);
-    async function pick() {
-        if (!canReplace) return;
+    async function pick(person: 0 | 1 = 0) {
+        if (!canReplace || (person === 1 && !a?.files)) return;
         setPickerError(false); setPicking(true); const task = beginSessionTask();
         try {
             const selected = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, quality: 1, preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current });
             if (!selected.canceled && selected.assets[0]) {
-                if (task.current()) await actions.choose(offer.id, selected.assets[0]);
+                if (task.current()) await actions.choose(offer.id, selected.assets[0], person);
                 else discardCacheCopy(selected.assets[0].uri);
             }
         } catch { setPickerError(true); }
@@ -41,23 +42,29 @@ export function SwapComposer({ offer }: { offer: SwapOffer }) {
         <View style={styles.content}>
             <SwapVisionHost />
             <Text variant="title2" accessibilityRole="header">{t('presets.swap.title')}</Text>
-            <Text>{t('presets.swap.role', { role: offer.role })}</Text>
+            <Text>{people === 2 && offer.roles ? t('presets.swap.roles', { first: offer.roles[0], second: offer.roles[1] }) : t('presets.swap.role', { role: offer.role })}</Text>
             <Text>{t('presets.swap.model', { model: offer.name || t('presets.swap.loading') })}</Text>
             <Text>{t('presets.swap.scene')}</Text>
             <Text>{t('presets.swap.rights')}</Text>
             <Button variant="tertiary" label={t('presets.swap.terms')} onPress={() => router.push('/legal/terms')} />
             <Button variant="tertiary" label={t('presets.swap.aup')} onPress={() => router.push('/legal/aup')} />
             <Text>{t('presets.swap.privacy')}</Text>
-            <Text variant="bodyStrong">{t('presets.swap.photo')}</Text>
-            <Text>{t('presets.swap.guidance')}</Text>
-            <Button variant="secondary" label={t(a?.files ? 'presets.swap.replace' : 'presets.swap.choose')} disabled={!canReplace} onPress={() => void pick()} />
+            {Array.from({ length: people }, (_, person) => {
+                const mine = a?.urls?.slice(person * 2, person * 2 + 2), label = people === 2 && offer.roles ? t('presets.swap.personPhoto', { role: offer.roles[person] }) : t('presets.swap.photo');
+                const showError = error && (people === 1 || ((a as { photoPerson?: number } | undefined)?.photoPerson ?? 0) === person);
+                return <View key={person} style={styles.content}>
+                    <Text variant="bodyStrong">{label}</Text>
+                    <Text>{t(people === 2 ? 'presets.swap.twoGuidance' : 'presets.swap.guidance')}</Text>
+                    <Button variant="secondary" label={t(mine?.length ? 'presets.swap.replace' : 'presets.swap.choose')} disabled={!canReplace || (person === 1 && !a?.files)} onPress={() => void pick(person as 0 | 1)} />
+                    {showError && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
+                    {showError && a?.state === 'photo_error' && <Button variant="secondary" label={t('presets.swap.retry')} disabled={!canReplace} onPress={() => void pick(person as 0 | 1)} />}
+                    {mine?.length === 2 && mine.map((uri, i) => <View key={uri} style={styles.content}>
+                        <Image source={{ uri }} cachePolicy="none" contentFit="contain" style={styles.preview} accessibilityLabel={t(i ? 'presets.swap.crop' : 'presets.swap.frontal')} />
+                        <Text variant="caption">{t(i ? 'presets.swap.crop' : 'presets.swap.frontal')}</Text>
+                    </View>)}
+                </View>;
+            })}
             {pickerError && <Text tone="danger" accessibilityLiveRegion="polite">{t('mobileSwap.permission')}</Text>}
-            {error && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
-            {a?.state === 'photo_error' && <Button variant="secondary" label={t('presets.swap.retry')} disabled={!canReplace} onPress={() => void pick()} />}
-            {a?.urls?.map((uri, i) => <View key={uri} style={styles.content}>
-                <Image source={{ uri }} cachePolicy="none" contentFit="contain" style={styles.preview} accessibilityLabel={t(i ? 'presets.swap.crop' : 'presets.swap.frontal')} />
-                <Text variant="caption">{t(i ? 'presets.swap.crop' : 'presets.swap.frontal')}</Text>
-            </View>)}
             {busy && <Text accessibilityLiveRegion="polite">{t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</Text>}
             {a && !a.body && <Button variant="secondary" label={t('presets.swap.cancel')} onPress={() => actions.cancel(a.key)} />}
             {offline && <Text accessibilityLiveRegion="polite">{t('presets.swap.offline')}</Text>}

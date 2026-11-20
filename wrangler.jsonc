@@ -110,7 +110,7 @@
     // Music's migrated pair queue is independent of generic durable admission. One JSON binding opens the
     // verified ACE-Step create/library/Studio paths and its recovery sweep while provider-specific models
     // that remain inactive in model_catalog stay hidden behind their own false switches.
-    "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":true,\"stems\":true,\"targetStems\":true,\"trackAdd\":true,\"extend\":true,\"replace\":true,\"addSection\":true,\"comments\":true,\"reactions\":true,\"follows\":true,\"rails\":true,\"beatEditor\":true,\"beatAi\":true,\"remix\":true,\"libraryTabs\":true,\"plays\":true,\"songReports\":true,\"reverse\":true,\"lyrics\":true,\"bestOf\":true,\"notifications\":true,\"labs\":true,\"ranking\":true,\"magicBar\":false}",
+    "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":true,\"stems\":true,\"targetStems\":true,\"trackAdd\":true,\"extend\":true,\"replace\":true,\"addSection\":true,\"comments\":true,\"reactions\":true,\"follows\":true,\"rails\":true,\"beatEditor\":true,\"beatAi\":true,\"remix\":true,\"libraryTabs\":true,\"plays\":true,\"songReports\":true,\"reverse\":true,\"lyrics\":true,\"bestOf\":true,\"blocks\":false,\"notifications\":true,\"labs\":true,\"ranking\":true,\"magicBar\":false}",
     // ADR-0069: MAX_CHARGE_ENABLED is omitted (unset is off) while generic durable admission remains off.
     // ADR-0080: free browser editing and MP4 export, visible in Studio (owner, 2026-10-10).
     // Cloud saving and Projects navigation share the separate TENANT_PROJECTS_ENABLED gate.
@@ -258,11 +258,11 @@
     // PUBLISH_CAROUSEL_ENABLED "false" was removed here to free this binding (absent is off, lib/social/postCapabilities.js).
     // ADR-0337: still-image templates on (owner, 2026-11-13); remove the line to turn them off.
     "IMAGE_TEMPLATES_ENABLED": "true",
-    "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\",\"automation\":\"true\"}",
+    "PUBLISH_RUNTIME_FLAGS": "{\"multiAccount\":\"true\",\"plans\":\"true\",\"videoDestinations\":\"false\",\"inbox\":\"true\",\"inboxWorkflows\":\"true\",\"smartlinks\":\"true\",\"contentPresets\":\"true\",\"queues\":\"true\",\"approvals\":\"true\",\"teams\":\"true\",\"variants\":\"true\",\"reports\":\"true\",\"scheduledReports\":\"true\",\"reportExports\":\"true\",\"reportDelivery\":\"true\",\"customerApi\":\"true\",\"customerWebhooks\":\"true\",\"ads\":\"true\",\"commerce\":\"true\",\"rssAutolists\":\"true\",\"automation\":\"true\",\"facebook\":\"true\"}",
     // Preserve the private pilot secret and default YouTube uploads to Private.
     "PUBLISH_YOUTUBE_VISIBILITY_ENABLED": "true",
 
-    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter,tiktok",
+    "PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter,tiktok,facebook,instagram",
     // Facebook and Instagram Login use distinct public app identifiers.
     "FACEBOOK_CLIENT_ID": "2428989684301953",
     "INSTAGRAM_CLIENT_ID": "1116196098057142",
@@ -277,7 +277,7 @@
     "PUBLISH_UPLOADS_ENABLED": "false",
     // ADR-0336/0339: first goal, role and destination follow the account. Needs 0494 and 0499 (both applied).
     // Took the binding of PUBLISH_EXTENDED_NETWORKS_ENABLED, whose absent value is the same "off" it held here
-    // ("false"); the 67-var budget is full, so re-activating extended networks needs a binding freed first.
+    // ("false"); Facebook is enabled separately through PUBLISH_RUNTIME_FLAGS without opening other extended networks.
     "FIRST_GOAL_SYNC_ENABLED": "true",
     // Provider-review scopes share one binding to remain below Cloudflare's
     // 128 text-binding limit. Enable each only after its provider approves it;
@@ -351,7 +351,7 @@
         "TENANT_PROJECTS_ENABLED": "true",
         "PROJECT_MEDIA_UPLOADS_ENABLED": "true",
         "FAL_DISPATCH_SCHEMA_ENABLED": "true",
-        "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":true,\"stems\":true,\"targetStems\":true,\"trackAdd\":true,\"extend\":true,\"replace\":true,\"addSection\":true,\"comments\":true,\"reactions\":true,\"follows\":true,\"rails\":true,\"beatEditor\":true,\"beatAi\":true,\"remix\":true,\"libraryTabs\":true,\"plays\":true,\"songReports\":true,\"reverse\":true,\"lyrics\":true,\"bestOf\":true,\"notifications\":true,\"labs\":true,\"ranking\":true,\"magicBar\":false,\"longSongs\":true}",
+        "MUSIC_RUNTIME_FLAGS": "{\"ui\":true,\"schema\":true,\"library\":true,\"references\":false,\"generation\":true,\"dispatch\":true,\"sources\":true,\"distribution\":true,\"publication\":true,\"editing\":true,\"playlists\":true,\"studio\":true,\"reuse\":true,\"collaboration\":true,\"cover\":true,\"stems\":true,\"targetStems\":true,\"trackAdd\":true,\"extend\":true,\"replace\":true,\"addSection\":true,\"comments\":true,\"reactions\":true,\"follows\":true,\"rails\":true,\"beatEditor\":true,\"beatAi\":true,\"remix\":true,\"libraryTabs\":true,\"plays\":true,\"songReports\":true,\"reverse\":true,\"lyrics\":true,\"bestOf\":true,\"blocks\":false,\"notifications\":true,\"labs\":true,\"ranking\":true,\"magicBar\":false,\"longSongs\":true}",
         "RECOVERY_HEALTH_ENABLED": "true",
         // ADR-0256 phase 0: log the supplier route chooseRoute would pick next to the real dispatch. Log only; staging only.
         // Needs migration 0367 applied on the staging database to find anything; without it the log says so and nothing else happens.

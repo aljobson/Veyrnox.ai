@@ -15,8 +15,8 @@ adaptation and negative-prompt text was removed from community data modules;
 only hashes remain in the removal fixture. Names, categories, guidance, steps,
 models, credits, duration, previews and posters of existing rows are unchanged.
 
-Compatibility flags are informational by owner decision: 285 public exact
-prompts are compatible and 599 incompatible with the audited source contract.
+Compatibility flags are informational by owner decision: 264 public exact
+prompts are compatible and 620 incompatible with the audited source contract.
 535 contain explicit numbered reference slots the app cannot fill. The broader
 audit counts 559 prompts with image/video requirements. The exact text is still
 handed to the selected model; no missing reference is silently substituted.
