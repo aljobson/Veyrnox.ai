@@ -21,7 +21,7 @@ INSERT INTO public.music_actors(user_id)
 SELECT u.id FROM public.users u WHERE u.deleted_at IS NULL AND
     (EXISTS (SELECT 1 FROM public.music_creator_profiles p WHERE p.user_id=u.id)
      OR EXISTS (SELECT 1 FROM public.music_comments c WHERE c.author_id=u.id))
-ORDER BY u.id FOR UPDATE OF u
+ORDER BY u.id FOR SHARE OF u
 ON CONFLICT DO NOTHING;
 CREATE OR REPLACE FUNCTION private.music_actor_id(p_user UUID)
 RETURNS UUID LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = '' AS $$
