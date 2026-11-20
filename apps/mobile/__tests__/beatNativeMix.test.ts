@@ -1,5 +1,5 @@
 import * as mix from '../src/lib/beatNative/mix';
-import { createBeat, setTrackGain, tryOp, validateBeat, type BeatDoc } from '../src/lib/beatNative/doc';
+import { addKitTrack, createBeat, setTrackGain, tryOp, validateBeat, type BeatDoc } from '../src/lib/beatNative/doc';
 import { fromUnit, toUnit } from '../src/components/beats/MixSlider';
 // @ts-ignore web JavaScript modules
 import * as ops from '../../../app/veyrnox/_lib/music/beat/beatMixOps.mjs';
@@ -64,4 +64,12 @@ test('slider mapping is clamped, rounded and reversible across signed and unsign
     expect(fromUnit(0.51, -12, 12, 1)).toBe(0); expect(fromUnit(0.7, 0, 1, 0.01)).toBe(0.7);
     expect(fromUnit(-1, 0.02, 1, 0.01)).toBe(0.02); expect(fromUnit(2, 1, 20, 1)).toBe(20);
     expect(toUnit(100, 0, 1)).toBe(1);
+});
+test('the run key binds effects to track identity, so a swapped-track replacement rebuilds', () => {
+    const base = mix.addEffect(addKitTrack(make(), 'lofi'), 't1', 'eq') as mix.MixDoc;
+    const [first, second] = base.tracks as mix.MixTrack[];
+    const { fx, ...dry } = first;
+    const swapped = { ...base, tracks: [{ ...second, fx }, dry] } as mix.MixDoc;
+    expect(mix.mixSignature(swapped)).toBe(mix.mixSignature(base));
+    expect(mix.runKey(swapped)).not.toBe(mix.runKey(base));
 });

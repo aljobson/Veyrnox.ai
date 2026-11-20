@@ -53,6 +53,7 @@ export const { automationEnvelope, envelopeAt } = automation as unknown as {
 };
 export const { mixSignature } = graph as { mixSignature(d: BeatDoc): string };
 // Envelopes capture tempo/view at construction. G2 also needs a fresh, single-write shaper.
-export const runKey = (doc: BeatDoc): string => JSON.stringify([mixSignature(doc), doc.tempo.bpm, (doc as MixDoc).view,
+// Track ids bind the positional web signature to channel identity (a version or cloud replacement can reorder tracks).
+export const runKey = (doc: BeatDoc): string => JSON.stringify([mixSignature(doc), doc.tracks.map(t => t.id), doc.tempo.bpm, (doc as MixDoc).view,
     doc.tracks.map(t => (t as MixTrack).fx?.filter(f => f.type === 'distortion').map(f => f.params.drive))]);
 export const nativeMixSignature = runKey;

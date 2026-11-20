@@ -33,6 +33,9 @@ export function BeatAutomationLane({ doc, track, lane, step, playing, apply, onH
         if (selected === null || !point) return;
         apply(d => moveAutomationPoint(d, track.id, lane, selected, tick, Math.max(min, Math.min(1, Number(value.toFixed(4))))), undefined, `${track.id}:auto:${lane}:${selected}`);
     };
+    // 44 pt targets of neighbouring points overlap; a touch picks the point whose dot is nearest, not the last-drawn target.
+    const nearest = (atX: number, atY: number) => points.reduce((best, q, i) =>
+        Math.hypot(x(q[0]) - atX, y(q[1]) - atY) < Math.hypot(x(points[best][0]) - atX, y(points[best][1]) - atY) ? i : best, 0);
     const earlier = point ? point[0] - STEP_TICKS : 0, later = point ? point[0] + STEP_TICKS : 0;
     return <View style={s.lane}>
         <Text accessibilityRole="header" variant="title3">{title}</Text>
@@ -51,7 +54,7 @@ export function BeatAutomationLane({ doc, track, lane, step, playing, apply, onH
                 accessibilityRole="button" accessibilityState={{ selected: i === selected }}
                 accessibilityLabel={t('beatMix.lane.point', { lane: t(`beatMix.lane.${lane}`), n: i + 1, bar: Math.floor(p[0] / 3840) + 1,
                     beat: Number((p[0] % 3840 / 960 + 1).toFixed(2)), value: t('beatMix.unit.percent', { value: Math.round(p[1] * 100) }) })}
-                onPress={() => select(i)}><View style={[s.dot, i === selected && s.selected]} /></Pressable>)}
+                onPress={e => select(nearest(x(p[0]) - 22 + (e?.nativeEvent?.locationX ?? 22), y(p[1]) - 22 + (e?.nativeEvent?.locationY ?? 22)))}><View style={[s.dot, i === selected && s.selected]} /></Pressable>)}
         </View>
         {point && selected !== null && <View style={s.editor}>
             <Text>{t('beatMix.lane.selected', { n: selected + 1 })}</Text>
@@ -73,6 +76,6 @@ const sheets = themedStyles(p => ({
     background: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 },
     segment: { position: 'absolute', height: 2, backgroundColor: p.accent },
     pointHit: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-    dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: p.accent },
-    selected: { borderWidth: 2, borderColor: p.textPrimary, width: 16, height: 16, borderRadius: 8 },
+    dot: { width: 10, height: 10, borderRadius: ds.radius.pill, backgroundColor: p.accent },
+    selected: { borderWidth: 2, borderColor: p.textPrimary, width: 16, height: 16, borderRadius: ds.radius.pill },
 }));

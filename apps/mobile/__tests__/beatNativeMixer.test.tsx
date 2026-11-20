@@ -166,3 +166,19 @@ test('mixer sliders read their own value and unit to the screen reader', async (
     await act(async () => root.render(<MixSlider label="Pan" value={0} min={-1} max={1} onChange={() => undefined} />));
     expect(slider('Pan').props.accessibilityValue.text).toBe(t('beatMix.unit.percent', { value: 0 }));
 });
+test('a touch on overlapping point targets selects the nearest dot', async () => {
+    let doc = addAutomationPoint(newBeat('Near'), 't1', 'gain', 0, 0.5);
+    doc = addAutomationPoint(doc, 't1', 'gain', 240, 0.5);
+    const apply: MixApply = () => true;
+    await act(async () => root.render(<BeatAutomationLane doc={doc} track={doc.tracks[0]} lane="gain" step={null} playing={false} apply={apply} onHide={() => {}} />));
+    const surface = root.container.queryAll(n => typeof n.props.onLayout === 'function' && n.props.style?.height === 160)[0];
+    await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 300 } } }));
+    const point = (n: number) => nodes(t('beatMix.lane.point', { lane: t('beatMix.lane.gain'), n, bar: 1, beat: n === 1 ? 1 : 1.25,
+        value: t('beatMix.unit.percent', { value: 50 }) })).find(x => typeof (x.props.onClick ?? x.props.onPress) === 'function')!;
+    const second = point(2);
+    // The second target starts at x=4; a touch 18 pt into it lands on the first dot (x=22).
+    await act(async () => (second.props.onClick ?? second.props.onPress)({ nativeEvent: { locationX: 18, locationY: 22 } }));
+    expect(point(1).props.accessibilityState).toEqual({ selected: true });
+    await act(async () => (second.props.onClick ?? second.props.onPress)({ nativeEvent: { locationX: 22, locationY: 22 } }));
+    expect(point(2).props.accessibilityState).toEqual({ selected: true });
+});

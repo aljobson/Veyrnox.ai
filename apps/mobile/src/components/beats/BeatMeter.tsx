@@ -5,6 +5,7 @@ import { useReducedMotion } from '../ui/useReducedMotion';
 import type { BeatAudio } from '../../lib/beatNative/audio';
 import { meterText, subscribeMeter } from '../../lib/beatNative/meter';
 import { t } from '../../lib/i18n';
+import { ds } from '../../theme';
 
 export function BeatMeter({ audio, trackId, name }: { audio: BeatAudio | null; trackId: string; name: string }) {
     const [db, setDb] = useState(-60);
@@ -19,4 +20,4 @@ export function BeatMeter({ audio, trackId, name }: { audio: BeatAudio | null; t
         </View>}
     </View>;
 }
-const sheets = themedStyles(p => ({ track: { height: 6, backgroundColor: p.borderSubtle, overflow: 'hidden', borderRadius: 3 }, fill: { height: 6, backgroundColor: p.accent } }));
+const sheets = themedStyles(p => ({ track: { height: 6, backgroundColor: p.borderSubtle, overflow: 'hidden', borderRadius: ds.radius.pill }, fill: { height: 6, backgroundColor: p.accent } }));
