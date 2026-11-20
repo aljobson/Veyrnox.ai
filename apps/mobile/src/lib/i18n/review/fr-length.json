@@ -5502,6 +5502,18 @@
     "ratio": 1.63
   },
   {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Masculin",
+    "ratio": 2
+  },
+  {
+    "id": "musicTrackAdd.checkAgain",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

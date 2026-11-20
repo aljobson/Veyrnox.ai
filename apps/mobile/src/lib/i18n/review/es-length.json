@@ -3432,6 +3432,24 @@
     "ratio": 2.25
   },
   {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Masculino",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicTrackAdd.checkAgain",
+    "english": "Check again",
+    "translation": "Volver a comprobar",
+    "ratio": 1.64
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

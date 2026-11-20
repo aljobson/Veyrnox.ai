@@ -2040,6 +2040,18 @@
     "ratio": 2.22
   },
   {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "गीत के बोल",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

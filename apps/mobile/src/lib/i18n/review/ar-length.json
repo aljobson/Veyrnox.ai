@@ -1998,6 +1998,12 @@
     "ratio": 1.88
   },
   {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "كلمات الأغنية",
+    "ratio": 2.17
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

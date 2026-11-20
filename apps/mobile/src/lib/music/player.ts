@@ -1,9 +1,10 @@
 import { ApiError } from '../api';
+import { isTrackAddAudio } from './validateTrackAdd';
 import { isRecord } from '../responseShapes';
 import { MUSIC_ASSET_PATH, isPlayableMusicHook } from './validate';
 import type { MusicHook, MusicSongDetail } from './types';
 
-export type PlaybackInput = { songId: string; jobId: string; start: number; end?: number };
+export type PlaybackInput = { songId: string; jobId: string; start: number; end?: number; trackAddRequestId?: string };
 export function songPlayback(song: MusicSongDetail): PlaybackInput {
     if (song.lifecycle_status === 'trashed' || song.audio_url === null) throw new ApiError(404, 'not_found');
     const crop = song.provenance.crop;
@@ -28,6 +29,7 @@ export type PlayerPort = {
 };
 type Options = {
     getAsset(jobId: string): Promise<{ url: string; mime_type: string; asset_expires_at?: string }>;
+    getTrackAddAudio?(requestId: string): Promise<{ url: string; mime_type: string; size_bytes: number; expires_in: number }>;
     factory(url: string): PlayerPort;
     setAudioMode(mode: { playsInSilentMode: true; shouldPlayInBackground: false }): Promise<void>;
     subscribeAppState(cb: (state: string | null | undefined) => void): () => void;
@@ -62,7 +64,9 @@ export function createMusicPlayer(o: Options) {
         try {
             await o.setAudioMode({ playsInSilentMode: true, shouldPlayInBackground: false });
             if (disposed || ticket !== epoch || !input) return false;
-            const asset = await o.getAsset(input.jobId);
+            const trackRequestId = input.trackAddRequestId;
+            const asset = trackRequestId ? await o.getTrackAddAudio?.(trackRequestId) : await o.getAsset(input.jobId);
+            if (!asset || (trackRequestId && !isTrackAddAudio(asset))) throw new ApiError(200, 'bad_response');
             if (disposed || ticket !== epoch) return false;
             // asset_expires_at is file retention, NOT the signed URL expiry. Resolve before its 15-minute TTL.
             expires = now() + 12 * 60_000;
@@ -116,6 +120,7 @@ export function createMusicPlayer(o: Options) {
         async load(next: PlaybackInput) {
             input = next; wanted = false; retried = false;
             emit({ position: next.start, duration: 0 });
+            if (next.trackAddRequestId) { ++epoch; release(); emit({ state: 'paused' }); return true; }
             return resolve(next.start);
         },
         async play() {
@@ -125,14 +130,14 @@ export function createMusicPlayer(o: Options) {
                 || (state.retryAt !== undefined && now() < state.retryAt)) return;
             starting = true; wanted = true;
             try {
-                if (!player || now() >= expires) {
+                if (!player || now() >= expires || input.trackAddRequestId) {
                     retried = false;
                     if (!await resolve(state.state === 'ended' ? input.start : state.position)) return;
                 } else if (state.state === 'ended') await player.seekTo(input.start);
                 if (!wanted || background || disposed || !player) return;
                 // One record per explicit start; automatic URL recovery never records another listen.
                 const songId = input.songId;
-                void Promise.resolve().then(() => o.recordListen(songId)).catch(() => {});
+                if (!input.trackAddRequestId) void Promise.resolve().then(() => o.recordListen(songId)).catch(() => {});
                 try { player.play(); emit({ state: 'playing' }); } catch { await recover(); }
             } catch (error) { fail(error); } finally { starting = false; }
         },

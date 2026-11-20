@@ -250,5 +250,7 @@
   "beat.gain": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
   "beat.solo.short": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
   "beat.kit.808": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.lofi": "Same in fr: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.lofi": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending.",
+  "musicTrackAdd.gender.auto": "Music track add: established term retained in machine translation. Native review pending."
 }
