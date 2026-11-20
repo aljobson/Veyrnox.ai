@@ -7,9 +7,6 @@ import { PRODUCT_KNOWLEDGE } from '../lib/productKnowledge.js';
 import { AUTO_PRODUCT_INVENTORY } from '../lib/generatedProductInventory.js';
 
 const NO_ARTICLE = Object.freeze({
-    // Photo Studio is dark behind photoStudio and omitted from Vey's runtime inventory.
-    // Add a reviewed article when rollout is approved, rather than describe an inactive tool.
-    darkPreview: ['/app/photo-studio'],
     // Hidden by ADR-0344: the page answers 404, so Vey has nothing to explain.
     hidden: ['/app/film-studio'],
     // Reached only by a link or redirect, with no question to ask about them.

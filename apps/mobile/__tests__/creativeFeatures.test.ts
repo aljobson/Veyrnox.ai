@@ -8,10 +8,10 @@ const { join } = require('path') as { join: (...parts: string[]) => string };
 
 describe('guided creative feature registry', () => {
     test('contains every website workflow exactly once in website order', () => {
-        const expected = ['ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator', 'text-to-speech', 'ai-voice-cloning', 'ai-hairstyle-changer', 'ai-hair-color-changer', 'ai-baby-generator', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'avatar-dialogue', 'video-dubbing', 'talking-cartoon', 'talking-animals', 'ai-baby-podcast', 'talking-objects', 'ai-ad-clone', 'product-avatar', 'product-video-generator', 'product-image-generator'];
+        const expected = ['ai-avatar-generator', 'talking-avatar', 'ai-human-generator', 'ai-influencer-generator', 'text-to-speech', 'ai-voice-cloning', 'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'avatar-dialogue', 'video-dubbing', 'talking-cartoon', 'talking-animals', 'ai-baby-podcast', 'talking-objects', 'ai-ad-clone', 'product-avatar', 'product-video-generator', 'product-image-generator'];
         expect(CREATIVE_FEATURES.map((feature) => feature.slug)).toEqual(expected);
-        expect(new Set(expected).size).toBe(22);
-        expect(CREATIVE_FEATURE_GROUPS).toEqual(['Avatars', 'Voice', 'Photo', 'Performance', 'Characters', 'Commerce']);
+        expect(new Set(expected).size).toBe(19);
+        expect(CREATIVE_FEATURE_GROUPS).toEqual(['Avatars', 'Voice', 'Performance', 'Characters', 'Commerce']);
     });
 
     test('every workflow has a live handoff contract and working example', () => {
@@ -23,7 +23,6 @@ describe('guided creative feature registry', () => {
             expect('sourceUrl' in feature.example).toBe(false);
             expect(creativeFeature(feature.slug)).toBe(feature);
         }
-        expect(featurePrompt(creativeFeature('ai-hairstyle-changer')!, 'Long curls')).toMatch(/Requested hairstyle: Long curls$/);
         expect(creativeFeature('text-to-speech')?.model).toBe('inworld-tts');
     });
 

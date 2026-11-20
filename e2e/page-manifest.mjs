@@ -2,7 +2,7 @@ import { AUTO_PRODUCT_INVENTORY } from '../lib/generatedProductInventory.js';
 
 export const PAGE_TEMPLATES = AUTO_PRODUCT_INVENTORY.map(({ route, source }) => ({ route, source }));
 // Routes worker.js answers with an empty 404 while their flag is off (lib/photoStudioGate.mjs).
-export const DARK_ROUTES = new Set(['/app/photo-studio']);
+export const DARK_ROUTES = new Set([]);
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function templateMatches(template, pathname) {
   const pattern = template.split('/').map((part) => /^\[.+\]$/.test(part) ? '[^/]+' : escape(part)).join('/');

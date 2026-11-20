@@ -34,8 +34,6 @@ test('still-photo lifecycle unmounts on background, then remounts with fresh own
         expect(result).toHaveBeenCalledTimes(1); expect(error).not.toHaveBeenCalled();
     } finally { await act(async () => root.unmount()); }
     expect(mockListeners.size).toBe(0);
-    const source = readFileSync(resolve(__dirname, '../src/components/liveEdit/LiveEditScreen.tsx'), 'utf8');
-    expect(source).toContain('source && foreground ? <NativeVision'); expect(source).not.toContain('VisionBridge');
 });
 test('account abort clears swap pending slot and cancels old token before replacement', async () => {
     const root = createRoot(), oldAccount = new AbortController(), newAccount = new AbortController();
