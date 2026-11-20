@@ -3,13 +3,13 @@
 Offline structural audit, contract version 1. Reproduce with `node scripts/audit-template-fidelity.mjs`; regenerate with `--write`.
 
 - like-for-like-safe: 220
-- bound: 113
+- bound: 162
 - blocked-needs-video: 392
-- unsupported: 159
+- unsupported: 110
 
 Original source hashes remain unchanged. Only recognized image tokens change in bound text; bound hashes and occurrence maps are recorded in `lib/templateFidelityContracts.json`. Bound templates use Seedance reference with 1–9 ordered photos, fixed generated audio, and catalog pricing. No external source audio can be supplied by an active template route.
 
-A2-3 routes all 113 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
+A2-3 routes all 162 bound templates by the contract model on feed, card, detail and Create. Web and mobile show exactly N required, ordered photo slots; only complete valid photo selections carry template_id. The web handoff holds up to nine photos in memory only; the mobile handoff uses the existing short-lived, owner-scoped memory store. Unsupported templates remain admitted with the notice. Source-video dependencies are blocked, including harmless prompt edits; independent custom text is admitted.
 
 Structurally validated, not output-verified. No paid provider call, migration, flag or price configuration change. TemplateRecipe and detail markup remain unchanged for non-bound, non-blocked recipes; bound detail model links/names and obsolete crop hints follow the effective model; prose-only video-blocked recipes now show the existing source-video note. Edited-prompt PHOTO_CHARACTER_LINE is preserved.
 
@@ -19,9 +19,9 @@ Owner decision, 7 November 2026: higher Seedance-reference quotes for token-bear
 
 - reference-video-required: 392
 - multi-photo-needs-people-model: 180
-- unsupported-aspect: 12
+- unsupported-aspect: 8
 - source-audio-not-audited: 71
-- prompt-limit: 280
+- prompt-limit: 183
 - unmapped-image-reference: 27
 - unmapped-placeholder: 122
 - too-many-image-slots: 2
@@ -31,8 +31,8 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 ## Unsupported reason counts (overlapping)
 
 - multi-photo-needs-people-model: 96
-- unsupported-aspect: 9
-- prompt-limit: 115
+- unsupported-aspect: 7
+- prompt-limit: 66
 
 ## Remaining unbound templates
 
@@ -43,26 +43,18 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - fat-parkour: reference-video-required, source-audio-not-audited
 - crazy-frog-race: reference-video-required, multi-photo-needs-people-model
 - the-push: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
-- dreamworks-castle: unsupported-aspect, prompt-limit
 - a-moment-between-strangers: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
-- jellyfish-airlines: prompt-limit
-- dandelion-ball: prompt-limit
-- sm-brand-new-day: prompt-limit
 - who-was-that-business: multi-photo-needs-people-model, prompt-limit
-- trick-or-skin: prompt-limit
-- the-wrong-one: prompt-limit
-- enchanted-forest-selfie: prompt-limit
-- rap-takeover: reference-video-required, prompt-limit
-- urban-broomstick-flight: reference-video-required, source-audio-not-audited, prompt-limit
+- rap-takeover: reference-video-required
+- urban-broomstick-flight: reference-video-required, source-audio-not-audited
 - hotel-window-watch: multi-photo-needs-people-model, prompt-limit
-- broomstick-flight: reference-video-required, prompt-limit
+- broomstick-flight: reference-video-required
 - money-flex: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - epic-slap-knockout: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - curtain-reveal: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
-- event-character-swap: reference-video-required, unsupported-aspect, prompt-limit
-- character-takeover: reference-video-required, source-audio-not-audited, unsupported-aspect, prompt-limit
+- event-character-swap: reference-video-required
+- character-takeover: reference-video-required, source-audio-not-audited
 - escalator-loop: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
-- sheep-kingdom: unsupported-aspect, prompt-limit
 - pumpkin-night: reference-video-required, multi-photo-needs-people-model, unsupported-aspect
 - fashion-catch: multi-photo-needs-people-model, unsupported-aspect
 - desert-train-heist: multi-photo-needs-people-model, unsupported-aspect, prompt-limit
@@ -72,7 +64,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - k9-dance-groove: reference-video-required, prompt-limit
 - twilight-field-memory: reference-video-required
 - community-street-dance-ensemble: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
-- community-driver-portrait: reference-video-required, prompt-limit
+- community-driver-portrait: reference-video-required
 - community-foggy-street-dance: reference-video-required, unmapped-placeholder
 - community-noir-leading-role: reference-video-required, source-audio-not-audited
 - community-candle-wish-drift: multi-photo-needs-people-model, prompt-limit
@@ -101,13 +93,13 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-dual-character-performance: multi-photo-needs-people-model
 - community-marble-hallway-pose: reference-video-required
 - community-urban-street-pose: reference-video-required
-- beyond-gravity: reference-video-required, source-audio-not-audited, prompt-limit
-- chasing-you: reference-video-required, prompt-limit
+- beyond-gravity: reference-video-required, source-audio-not-audited
+- chasing-you: reference-video-required
 - cinematic-showcase-2: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - cinematic-showcase: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - basketball-3: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- reality-shift: reference-video-required, prompt-limit
-- live-stage-performance: reference-video-required, source-audio-not-audited, prompt-limit
+- reality-shift: reference-video-required
+- live-stage-performance: reference-video-required, source-audio-not-audited
 - football: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - brixton: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - unforgettable: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
@@ -116,47 +108,39 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - the-lost-chase: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
 - burning-bridges: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - retro-hip-hop-spotlight: reference-video-required, source-audio-not-audited, prompt-limit
-- wheelie-rider: reference-video-required, source-audio-not-audited, prompt-limit
+- wheelie-rider: reference-video-required, source-audio-not-audited
 - mystery-unboxing: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- whiskey-gun-trick: reference-video-required, prompt-limit
+- whiskey-gun-trick: reference-video-required
 - cyber-mask-transformation: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- pizzeria-hide-and-seek: prompt-limit
-- god-of-war: reference-video-required, prompt-limit
+- god-of-war: reference-video-required
 - basketball-2: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- tesla-object-replace: reference-video-required, prompt-limit
-- playing-chess-with-tesla: reference-video-required, source-audio-not-audited, prompt-limit
+- tesla-object-replace: reference-video-required
+- playing-chess-with-tesla: reference-video-required, source-audio-not-audited
 - tesla-lose-control: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- fly-over-the-teslas: reference-video-required, source-audio-not-audited, prompt-limit
+- fly-over-the-teslas: reference-video-required, source-audio-not-audited
 - desire-mode: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - license-registration-liftoff: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- tesla-started-something: reference-video-required, prompt-limit
+- tesla-started-something: reference-video-required
 - coliseum-drift: multi-photo-needs-people-model, prompt-limit
 - and-i-need-you: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - just-a-lit-bit: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - i-am-here: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - somebody: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - sega: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
-- theater-ceiling-horror: prompt-limit
-- studio-ballerina-turns: prompt-limit
 - little-storm-knight: multi-photo-needs-people-model, prompt-limit
 - wear-the-moment: multi-photo-needs-people-model, prompt-limit
 - wassup-freestyle: reference-video-required
 - piano-vibe: reference-video-required
-- you-good-max: reference-video-required, source-audio-not-audited, prompt-limit
-- reflection-in-the-mirror: prompt-limit
+- you-good-max: reference-video-required, source-audio-not-audited
 - car-blows-up: multi-photo-needs-people-model, prompt-limit
 - saved-by-darkness: multi-photo-needs-people-model, prompt-limit
-- pumpkin-guardian: prompt-limit
-- fashion-halloween: prompt-limit
-- thrille: prompt-limit
-- ghost-makeover: prompt-limit
 - cash-flow: reference-video-required
-- cliffside-silence: reference-video-required, source-audio-not-audited, prompt-limit
+- cliffside-silence: reference-video-required, source-audio-not-audited
 - icon-duet: reference-video-required, multi-photo-needs-people-model
 - raindance: reference-video-required, multi-photo-needs-people-model
 - kieza-dance-flow: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - call-the-car: reference-video-required, multi-photo-needs-people-model
-- haunted-motion: reference-video-required, prompt-limit
+- haunted-motion: reference-video-required
 - my-other-hobby: reference-video-required
 - one-last-embrace: multi-photo-needs-people-model, prompt-limit
 - lil-yachti-coffin: reference-video-required, source-audio-not-audited, prompt-limit
@@ -167,7 +151,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-black-trench: reference-video-required, unmapped-placeholder
 - community-urban-fashion-stroll: reference-video-required
 - community-rugside-wardrobe-swaps: multi-photo-needs-people-model
-- community-urban-suit-swap: reference-video-required, prompt-limit
+- community-urban-suit-swap: reference-video-required
 - community-athlete-dance-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
 - community-truck-jump-reveal: reference-video-required, unmapped-placeholder
 - community-vocalist-outfit-swap: reference-video-required, unmapped-placeholder
@@ -175,7 +159,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-street-style-swap: reference-video-required, unmapped-placeholder
 - community-supercar-showreel-spin: reference-video-required, too-many-image-slots
 - community-party-dancer-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
-- community-spinning-wardrobe-swap: prompt-limit
 - community-orbital-truck-morph: reference-video-required, unmapped-placeholder
 - community-evening-party-recast: reference-video-required
 - community-sunset-rider: reference-video-required, unmapped-placeholder
@@ -224,7 +207,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-subway-landmark-swap: reference-video-required, unmapped-placeholder
 - community-midnight-wheelie: reference-video-required, unmapped-placeholder
 - community-burgundy-stride: reference-video-required, unmapped-placeholder
-- community-warrior-standoff: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
+- community-warrior-standoff: reference-video-required, source-audio-not-audited, unmapped-placeholder
 - community-locker-room-swap: reference-video-required, unmapped-placeholder
 - community-character-swap: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - community-global-zoom-ambassador: prompt-limit
@@ -270,7 +253,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-boombox-street-groove: reference-video-required, source-audio-not-audited, unmapped-image-reference, prompt-limit
 - community-news-desk-recast: reference-video-required
 - community-pizza-slice: multi-photo-needs-people-model, prompt-limit
-- community-flying-cake-ride: reference-video-required, prompt-limit
+- community-flying-cake-ride: reference-video-required
 - community-kitchen-character-swap: reference-video-required, source-audio-not-audited, unmapped-placeholder
 - community-lobby-couple-walk: reference-video-required, multi-photo-needs-people-model
 - community-vaulted-temple-walk: multi-photo-needs-people-model
@@ -306,7 +289,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-pet-dance-swapping: reference-video-required, prompt-limit
 - community-urban-dance-squad: reference-video-required
 - community-showroom-vehicle-reveal: reference-video-required
-- community-mirror-flip-transition: reference-video-required, unmapped-placeholder, prompt-limit
+- community-mirror-flip-transition: reference-video-required, unmapped-placeholder
 - community-urban-style-walk: reference-video-required, unmapped-placeholder
 - community-tactical-range-drill: reference-video-required
 - community-tactical-hallway-brawl: reference-video-required
@@ -342,7 +325,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-streetball-rivalry-swaps: multi-photo-needs-people-model
 - community-kitchen-feline-reveal: reference-video-required, prompt-limit
 - community-alleyway-identity-swap: reference-video-required, source-audio-not-audited, prompt-limit
-- community-apocalypse-lounge: reference-video-required, unmapped-placeholder, prompt-limit
+- community-apocalypse-lounge: reference-video-required, unmapped-placeholder
 - community-urban-recast-suit: reference-video-required
 - community-costume-basketball-swap: reference-video-required, source-audio-not-audited
 - community-grooving-driver-dog: reference-video-required
@@ -351,7 +334,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-hillside-dance-swap: reference-video-required
 - community-playful-animal-duel: reference-video-required, unmapped-placeholder
 - community-skyline-luxury-reveal: reference-video-required, multi-photo-needs-people-model
-- community-skyscraper-ledge-spin: reference-video-required, prompt-limit
+- community-skyscraper-ledge-spin: reference-video-required
 - community-pitch-pitch-sprint: reference-video-required, unmapped-placeholder, prompt-limit
 - community-urban-orbit-runway: reference-video-required, unmapped-placeholder, prompt-limit
 - community-birthday-car-swap: reference-video-required, unmapped-placeholder
@@ -364,7 +347,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-white-outfit-swirl: reference-video-required, unmapped-placeholder
 - community-animated-duo-toast: multi-photo-needs-people-model
 - community-convertible-driver-swap: reference-video-required
-- community-symbiote-supercar-shift: reference-video-required, prompt-limit
+- community-symbiote-supercar-shift: reference-video-required
 - community-street-rap-collective: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - community-skyline-rhythm-walk: reference-video-required
 - community-urban-sedan-pursuit: reference-video-required
@@ -383,7 +366,7 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-clubside-observation: multi-photo-needs-people-model, prompt-limit
 - community-formal-groove: reference-video-required, unmapped-placeholder
 - community-balcony-trio-dance: multi-photo-needs-people-model
-- community-nightclub-sway: reference-video-required, prompt-limit
+- community-nightclub-sway: reference-video-required
 - community-zombie-dance: reference-video-required, unmapped-placeholder
 - community-puppy-city-stroll: reference-video-required
 - community-kitchen-trombone-duo: reference-video-required, unmapped-placeholder
@@ -441,50 +424,34 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-kitchen-cleaver-swing: multi-photo-needs-people-model
 - community-rug-fashion-rotation: reference-video-required, unmapped-placeholder, prompt-limit
 - community-elevator-style-shift: multi-photo-needs-people-model
-- community-lavish-cash-flow: reference-video-required, unmapped-placeholder, prompt-limit
-- community-money-mobile-recast: reference-video-required, unmapped-placeholder, prompt-limit
-- community-action-hero-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder, prompt-limit
-- community-retro-housewife-dance: reference-video-required, prompt-limit
+- community-lavish-cash-flow: reference-video-required, unmapped-placeholder
+- community-money-mobile-recast: reference-video-required, unmapped-placeholder
+- community-action-hero-recast: reference-video-required, source-audio-not-audited, unmapped-placeholder
+- community-retro-housewife-dance: reference-video-required
 - fancy-cafe: reference-video-required, multi-photo-needs-people-model
 - morning-coffee: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
 - crowd-choreography-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - vampire-voyage: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - tilted-melody: reference-video-required, source-audio-not-audited
 - the-giant-caretaker: multi-photo-needs-people-model, prompt-limit
-- ocean-car-sinking: prompt-limit
-- neon-city-freefall: reference-video-required, prompt-limit
+- neon-city-freefall: reference-video-required
 - edge-of-victory: multi-photo-needs-people-model, prompt-limit
 - what-falls-next: multi-photo-needs-people-model, prompt-limit
-- office-kitchen: prompt-limit
 - catch-of-the-day: multi-photo-needs-people-model, prompt-limit
 - the-beast-awakens: multi-photo-needs-people-model, prompt-limit
 - grab-heist: multi-photo-needs-people-model, prompt-limit
 - office-escape: multi-photo-needs-people-model, prompt-limit
 - sketch-to-real-car: multi-photo-needs-people-model
-- underground-lab-transformation: prompt-limit
-- the-spirit: prompt-limit
-- the-crown: prompt-limit
-- dragon-lord: prompt-limit
-- noir-film: prompt-limit
 - split-jump: multi-photo-needs-people-model, prompt-limit
 - impact: prompt-limit
-- ruins-escape-run: prompt-limit
-- curious-garden-journey: prompt-limit
-- born-from-sand: prompt-limit
-- freefall: prompt-limit
 - sculptural-sunglasses-ad: multi-photo-needs-people-model, prompt-limit
-- dont-touch-the-braids: prompt-limit
-- last-supper: prompt-limit
-- x-ray-matter: prompt-limit
 - edit-the-sky: multi-photo-needs-people-model, prompt-limit
-- sea-snakes: prompt-limit
-- rooftop-agent-pursuit: prompt-limit
 - community-anime-passenger-glow: reference-video-required, prompt-limit
 - community-chibi-monster-dance: reference-video-required, unmapped-placeholder
 - community-macro-product-montage: prompt-limit
 - community-chic-accessory-rotation: prompt-limit
 - community-glossy-hair-flip: reference-video-required
-- community-coastal-car-showcase: reference-video-required, prompt-limit
+- community-coastal-car-showcase: reference-video-required
 - community-beverage-brand-swap: reference-video-required, unmapped-placeholder
 - community-aloe-drink-swap: reference-video-required, unmapped-placeholder
 - community-brand-billboard-swap: reference-video-required, source-audio-not-audited, unmapped-image-reference, prompt-limit
@@ -498,12 +465,6 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - community-apocalypse-terrace: reference-video-required, prompt-limit
 - community-canine-expression-swap: reference-video-required
 - community-pampered-spa-day: reference-video-required, prompt-limit
-- community-dragon-awakening: prompt-limit
-- community-subway-combat-strike: prompt-limit
-- community-dragon-rider-encounter: prompt-limit
-- community-shockwave-horizon-shift: prompt-limit
-- community-parkour-vault-shift: prompt-limit
-- window-explode: prompt-limit
 - seedance-birthday-morning: multi-photo-needs-people-model, prompt-limit
 - seedance-jean-phil: reference-video-required, multi-photo-needs-people-model
 - seedance-burning-stage: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
@@ -513,9 +474,9 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - seedance-cinematic-car-drop: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - seedance-big-stepper: reference-video-required
 - seedance-rooftop-shepherd: reference-video-required, source-audio-not-audited
-- seedance-riding-the-bear: reference-video-required, prompt-limit
+- seedance-riding-the-bear: reference-video-required
 - seedance-spider-dance: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- seedance-matrix-bullet-dodge: reference-video-required, prompt-limit
+- seedance-matrix-bullet-dodge: reference-video-required
 - seedance-xp-daydream: multi-photo-needs-people-model
 - seedance-toy-to-torque: multi-photo-needs-people-model
 - seedance-groovy-golf-shot: multi-photo-needs-people-model, prompt-limit
@@ -526,24 +487,16 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - seedance-hotel-lobby-2: reference-video-required, multi-photo-needs-people-model
 - seedance-hotel-lobby: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model
 - seedance-through-the-cloudline: multi-photo-needs-people-model, prompt-limit
-- seedance-bunny-taxi: prompt-limit
 - seedance-best-friend: multi-photo-needs-people-model, prompt-limit
-- seedance-blocked-light: prompt-limit
 - seedance-butterfly-effect: multi-photo-needs-people-model, prompt-limit
 - seedance-rain-rider: multi-photo-needs-people-model, prompt-limit
 - seedance-midnight-run: multi-photo-needs-people-model, prompt-limit
 - seedance-birthday-shot: multi-photo-needs-people-model, prompt-limit
-- seedance-popcorn-eruption: prompt-limit
-- seedance-rescue-myself: prompt-limit
-- seedance-quick-change-2: prompt-limit
-- seedance-roof-jump: prompt-limit
-- seedance-glass-cube: prompt-limit
 - seedance-still-my-friend: multi-photo-needs-people-model, prompt-limit
 - seedance-the-train-rushes-by: multi-photo-needs-people-model, prompt-limit
-- seedance-subway-fight: prompt-limit
 - london-london: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - hand-frame-switch: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- blow-and-throw: reference-video-required, prompt-limit
+- blow-and-throw: reference-video-required
 - light-and-blow: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - cake-in-the-fridge: prompt-limit
 - one-breath-wish: reference-video-required, multi-photo-needs-people-model, prompt-limit
@@ -552,11 +505,11 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - stage-performer-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - ride-the-beat: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - epic-arrival: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
-- football-duo-recast: reference-video-required, source-audio-not-audited, prompt-limit
+- football-duo-recast: reference-video-required, source-audio-not-audited
 - retro-groove: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - kick-and-run: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
 - surprise-knockout-kick: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- fans-go-wild: reference-video-required, source-audio-not-audited, prompt-limit
+- fans-go-wild: reference-video-required, source-audio-not-audited
 - outfit-transition-gone-crazy: reference-video-required, multi-photo-needs-people-model
 - carousel: reference-video-required
 - wish-a-merry-christmas: reference-video-required, multi-photo-needs-people-model
@@ -565,25 +518,23 @@ These include reasons secondary to a video block. Source-audio dependencies in t
 - street-phantom: reference-video-required, multi-photo-needs-people-model, prompt-limit
 - on-the-winter-roof: multi-photo-needs-people-model, prompt-limit
 - new-year-on-the-nose: reference-video-required, multi-photo-needs-people-model
-- game-character-rig: prompt-limit
-- holiday-heist-run: prompt-limit
-- holiday-home-recast: reference-video-required, prompt-limit
+- holiday-home-recast: reference-video-required
 - the-winning-gift: multi-photo-needs-people-model, prompt-limit
 - dance-in-the-snow: reference-video-required, multi-photo-needs-people-model
 - the-bigger-gift: multi-photo-needs-people-model, prompt-limit
 - one-more-dance: multi-photo-needs-people-model, prompt-limit
 - snowball-revenge: multi-photo-needs-people-model, prompt-limit
 - drift-therapy: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- dj-performance: reference-video-required, prompt-limit
+- dj-performance: reference-video-required
 - summer-romance-recast: reference-video-required, source-audio-not-audited, multi-photo-needs-people-model, prompt-limit
-- athlete-flex: reference-video-required, prompt-limit
+- athlete-flex: reference-video-required
 - 3-friends: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- helicopter-jump-two: reference-video-required, prompt-limit
-- landing: reference-video-required, prompt-limit
-- fridge-down: reference-video-required, prompt-limit
+- helicopter-jump-two: reference-video-required
+- landing: reference-video-required
+- fridge-down: reference-video-required
 - hyenas-run: reference-video-required, source-audio-not-audited
 - burn-it-to-ashes: reference-video-required, multi-photo-needs-people-model, prompt-limit
-- taxi-chase: reference-video-required, prompt-limit
-- helicopter-jump: reference-video-required, prompt-limit
-- rope-swing: reference-video-required, prompt-limit
+- taxi-chase: reference-video-required
+- helicopter-jump: reference-video-required
+- rope-swing: reference-video-required
 - fairytale-villain-recast: reference-video-required, multi-photo-needs-people-model, prompt-limit

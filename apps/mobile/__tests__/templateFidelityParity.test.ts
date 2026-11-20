@@ -100,7 +100,7 @@ const createRequest = new Function('context', `with (context) { ${ts.transpileMo
 
 test('all bound contracts use ordered references and the same bound transport on web and mobile', async () => {
     const { templateRoute } = require('../src/lib/templateFidelity');
-    expect(fixtureData.boundInventory).toHaveLength(70 + 3 + 30 + 59 - 126); // minus the 78 swap templates the photo route refuses (template_blocked); 73 until the guard learned three more wordings (2026-11-18)
+    expect(fixtureData.boundInventory).toHaveLength(70 + 3 + 30 + 59 - 126 + 48); // + 48 long one-photo recipes bound to the kie Seedance photo offer (ADR-0309 amendment 3) // minus the 78 swap templates the photo route refuses (template_blocked); 73 until the guard learned three more wordings (2026-11-18)
     for (const { feed, model, body, contract, serverCheck } of fixtureData.boundInventory) {
         const [parsed] = parsePresets({ presets: [feed] });
         const route = templateRoute(parsed, parsed.modelId, body.references.length);
@@ -108,7 +108,8 @@ test('all bound contracts use ordered references and the same bound transport on
         expect(route.slotCount).toBe(body.references.length);
         const href = presetHref(parsed, {}, [model]);
         const detail = readTemplate(href.params, ['veyrnox.ai']);
-        expect('modelId' in href.params && href.params.modelId).toBe('kling-3.0-i2v');
+        expect('modelId' in href.params && href.params.modelId).toBe(model.id); // Kling 3.0, or kie Seedance for long recipes (ADR-0309 amendment 3)
+        expect(['kling-3.0-i2v', 'seedance-2.0-photo-kie']).toContain(model.id);
         expect(detail?.id).toBe(parsed.id);
         if (!('prompt' in href.params)) throw new Error('Create route unavailable');
         expect(href.params.prompt).toBe(contract.sourcePrompt);
