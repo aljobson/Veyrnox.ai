@@ -551,3 +551,11 @@ accepted jobs still settle through the existing webhook and refund paths.
 **Not done here.** The live registry is not touched; ids removed by the stop-gap come back only through a separate owner-approved registry step after the staging proof below. Three-plus people: fal allows four elements, but no 3+ prompt, UI or table exists; see the PR for the recommendation.
 
 **Staging proof (owner decides; STAGING fal key only, never PROD FAL).** `basketball-3` on staging with the key on, two different supplied faces: expect one 5 s job, 47 credits, about $0.84 at fal. Look at: both people present; person 1 is the green character, person 2 the red one; faces match the two photos; scene unchanged.
+
+## Amendment 13 (2026-11-20): only one-photo scenes stay in the registry (410 to 289 ids)
+
+The composers send one photo and the server sends one `@Element1`; nothing checks how many people the source scene holds, so a second person is dropped (seen on basketball-3, where the opponent vanished). The registry therefore keeps only the 289 scenes the review counted as one-photo and removes the 74 two-photo and 47 three-or-more-photo ids. The gate answers `template_swap_not_found` for the removed ids, so they cannot be charged; their swap links stop working until a two-photo mode exists.
+
+The R2 manifest and its pin (`a795629b…bf28b`) are unchanged and the 411 clips stay in both buckets, so adding ids back is a registry-only change. The curated row holds 13 ids, none removed here.
+
+Rollback: restore the removed ids in `app/veyrnox/_lib/templateSwapClips.js`.
