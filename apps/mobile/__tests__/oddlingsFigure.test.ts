@@ -1,4 +1,5 @@
-import { figureCall, figureHtml, svgForPicks } from '../src/lib/oddlingsFigure';
+import { legacySvgForPicks } from './helpers/oddlingsFigureOracle';
+import { svgForPicks } from '../src/lib/oddlingsFigure';
 import { ODDLINGS } from '../src/lib/oddlings';
 import { CATEGORIES, CATEGORY_FOCUS, GROUPS, swatchOf, type Picks } from '../src/lib/oddlingsBuilder';
 
@@ -21,19 +22,15 @@ describe('the preview figure', () => {
         for (const g of GROUPS) for (const [value] of g.options) expect(() => svgForPicks({ [g.id]: value })).not.toThrow();
     });
 
-    test('text in the creator fields never reaches the page as markup', () => {
-        const call = figureCall({ oddling_name: '</script><img src=x onerror=alert(1)>' });
-        expect(call.startsWith('window.draw(')).toBe(true);
-        expect(call).not.toContain('</script');
-        expect(call).not.toContain('<');
+    test('native SVG is byte-identical to the legacy serializer for cast, focus and hostile picks', () => {
+        const hostile = { oddling_name: '</script><img src=x onerror=alert(1)>', skin_tone: '\"<&>', hair: '__proto__', eye_color: 'constructor' };
+        for (const picks of [{}, hostile, ...ODDLINGS.map(o => o.picks as Picks)]) {
+            for (const focus of ['body', 'face', ...Object.values(CATEGORY_FOCUS), '\"<&>']) {
+                expect(svgForPicks(picks, focus)).toBe(legacySvgForPicks(picks, focus));
+            }
+        }
     });
 
-    test('the page is offline: no URLs to load', () => {
-        // The only address in the page is the SVG namespace, which is an identifier and is never fetched.
-        const html = figureHtml().replaceAll('http://www.w3.org/2000/svg', '');
-        expect(html.includes('http://')).toBe(false);
-        expect(html.includes('https://')).toBe(false);
-    });
 });
 
 describe('categories', () => {

@@ -59,8 +59,8 @@ const builder = {
 };
 const builderOut = `{${Object.entries(builder).map(([k, v]) => `${JSON.stringify(k)}:${k === 'groups' ? `[\n${v.map((g) => JSON.stringify(g)).join(',\n')}\n]` : JSON.stringify(v)}`).join(',\n')}}\n`;
 
-// The preview figure. The web draws it from pure geometry (picks in, SVG shapes out); the app has no SVG library and may
-// not add one, so the same modules are wrapped into one script that a WebView runs offline. Nothing is rewritten by hand.
+// Test-only legacy figure oracle. Native rendering imports the geometry modules directly.
+// Keep this generated string for SVG parity tests; it is never imported by application code.
 const FIGURE_MODULES = ['oddlingColour', 'oddlingSkinFx', 'oddlingSpecies', 'oddlingFace', 'oddlingBodyParts', 'oddlingMannequin'];
 const wrapModule = (name) => {
   const names = [];
