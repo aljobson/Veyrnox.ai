@@ -235,5 +235,20 @@
   "beat.pad.crash": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.mixer": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.solo.short": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "beatMix.title": "Established audio term in de, conventionally used unchanged: Mixer.",
+  "beatMix.master": "Established audio term in de, conventionally used unchanged: Master.",
+  "beatMix.limiter": "Established audio term in de, conventionally used unchanged: Limiter.",
+  "beatMix.fx.eq": "Established audio term in de, conventionally used unchanged: EQ.",
+  "beatMix.fx.delay": "Established audio term in de, conventionally used unchanged: Delay.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.fx.param": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.lane.gain": "Established audio term in de, conventionally used unchanged: Gain.",
+  "beatMix.lane.title": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.curve.linear": "Established audio term in de, conventionally used unchanged: Linear.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.slider.value": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.seconds": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale."
 }

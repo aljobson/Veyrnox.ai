@@ -155,7 +155,7 @@ describe('audio interface over the engine', () => {
         const node = () => ({ gain: { value: 1 }, pan: { value: 0 }, connect: jest.fn() });
         const context = { currentTime: 0, sampleRate: 44100, state: 'running', destination: {}, resume: async () => undefined, close: async () => undefined, createGain: node, createStereoPanner: node };
         const played: unknown[][] = [];
-        const engine = { context, now: () => now, resume: jest.fn(async () => undefined), close: jest.fn(async () => undefined), playPad: (...a: unknown[]) => { played.push(a); }, playMidi: jest.fn(), click: jest.fn() };
+        const engine = { context, startRun: (doc: ReturnType<typeof createBeat>) => ({ channels: new Map(doc.tracks.map(t => [t.id, { input: node(), schedule: jest.fn() }])) }), stopRun: jest.fn(), setTrackMix: (run: { channels: Map<string, { input: unknown }> }, id: string) => run.channels.get(id)?.input, meterTap: () => null, live: { bus: {}, channels: new Map() }, now: () => now, resume: jest.fn(async () => undefined), close: jest.fn(async () => undefined), playPad: (...a: unknown[]) => { played.push(a); }, playMidi: jest.fn(), click: jest.fn() };
         return { engine: engine as never, played, advance: (s: number) => { now += s; } };
     }
     test('schedules pad events from the document inside the look-ahead and stops on stop()', async () => {

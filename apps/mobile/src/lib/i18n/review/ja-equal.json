@@ -77,5 +77,11 @@
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "beat.tempoValue": "Same in ja: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.808": "Same in ja: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in ja: a loanword, brand-style name or number used unchanged in this language.",
+  "beatMix.fx.eq": "Established audio term in ja, conventionally used unchanged: EQ.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.percent": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale."
 }

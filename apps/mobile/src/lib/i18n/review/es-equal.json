@@ -171,5 +171,13 @@
   "beat.pad.crash": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
   "beat.solo.short": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
   "beat.kit.808": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.lofi": "Same in es: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.lofi": "Same in es: a loanword, brand-style name or number used unchanged in this language.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.fx.param": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.lane.title": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.slider.value": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.seconds": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale."
 }

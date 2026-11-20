@@ -3846,6 +3846,78 @@
     "ratio": 3
   },
   {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "Tiefen",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "Mitten",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.ratio",
+    "english": "Ratio",
+    "translation": "Verhältnis",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "Mischung",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatMix.lane.show.gain",
+    "english": "Show gain lane",
+    "translation": "Gain-Automationsspur zeigen",
+    "ratio": 1.93
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "Panorama-Automationsspur zeigen",
+    "ratio": 2.38
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "Panorama",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatMix.lane.add",
+    "english": "Add point",
+    "translation": "Punkt hinzufügen",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatMix.lane.clear",
+    "english": "Clear lane",
+    "translation": "Automationsspur leeren",
+    "ratio": 2.2
+  },
+  {
+    "id": "beatMix.lane.hide",
+    "english": "Hide lane",
+    "translation": "Automationsspur ausblenden",
+    "ratio": 2.89
+  },
+  {
+    "id": "beatMix.curve.in",
+    "english": "Ease in",
+    "translation": "Langsam beginnen",
+    "ratio": 2.29
+  },
+  {
+    "id": "beatMix.curve.out",
+    "english": "Ease out",
+    "translation": "Langsam enden",
+    "ratio": 1.63
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

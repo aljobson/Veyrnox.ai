@@ -28,5 +28,11 @@
     "english": "Fit",
     "translation": "화면에 맞추기",
     "ratio": 2.33
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "이퀄라이저",
+    "ratio": 2.5
   }
 ]

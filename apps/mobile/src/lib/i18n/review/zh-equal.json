@@ -73,5 +73,10 @@
   "job.percent": "Percent sign directly after the number is the standard form in this language.",
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
-  "beat.kit.808": "Same in zh: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in zh: a loanword, brand-style name or number used unchanged in this language.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.percent": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale."
 }

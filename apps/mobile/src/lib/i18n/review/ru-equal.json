@@ -68,5 +68,12 @@
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
   "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
-  "beat.kit.808": "Same in ru: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in ru: a loanword, brand-style name or number used unchanged in this language.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.fx.param": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.lane.title": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.slider.value": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.unit.percent": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale."
 }

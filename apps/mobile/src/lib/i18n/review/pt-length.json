@@ -3468,6 +3468,78 @@
     "ratio": 1.7
   },
   {
+    "id": "beatMix.master.room",
+    "english": "Reverb room size",
+    "translation": "Tamanho da sala de reverberação",
+    "ratio": 1.94
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "Equalizador",
+    "ratio": 5.5
+  },
+  {
+    "id": "beatMix.fx.reverb",
+    "english": "Reverb",
+    "translation": "Reverberação",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "Médios",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.feedback",
+    "english": "Feedback",
+    "translation": "Realimentação",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatMix.param.size",
+    "english": "Room size",
+    "translation": "Tamanho da sala",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatMix.send.reverb",
+    "english": "Reverb send",
+    "translation": "Envio de reverberação",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "Mostrar linha de panorama",
+    "ratio": 1.92
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "Panorama",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatMix.lane.add",
+    "english": "Add point",
+    "translation": "Adicionar ponto",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatMix.curve.in",
+    "english": "Ease in",
+    "translation": "Entrada suave",
+    "ratio": 1.86
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

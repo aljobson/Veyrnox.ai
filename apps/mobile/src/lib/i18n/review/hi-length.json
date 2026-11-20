@@ -2076,6 +2076,18 @@
     "ratio": 2.13
   },
   {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "ईक्यू",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "मिक्स",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",
