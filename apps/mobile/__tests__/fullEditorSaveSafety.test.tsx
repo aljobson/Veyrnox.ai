@@ -1,5 +1,7 @@
 import type { ProjectDocument } from '../src/lib/editorBridge';
 import { nearLimit } from './fixtures/editorNearLimit';
+import { envelope, webSequenceV3 } from './fixtures/webSequenceV3';
+import { documentProblem } from '../src/lib/editorDocumentGate';
 import { act } from 'react';
 import { Alert, AppState, type AppStateStatus } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -139,6 +141,33 @@ test('older-base draft opens conflict and keeps its local base', async () => {
     stored = { owner: 'A', projectId: id, baseRevision: 2, document: { ...doc, brief: 'recovered' }, updatedAt: 1 };
     await open(); expect(session.sync.sheet).toBe('conflict'); expect(session.revision).toBe(2);
     await act(async () => session.sync.flushDraft()); expect(stored?.baseRevision).toBe(2);
+});
+test.each([4, 2])('invalid draft at base %s remains undoable after a valid edit', async baseRevision => {
+    const draft = { ...envelope({ ...webSequenceV3(), fps: 29 }), project_id: id };
+    expect(documentProblem(draft)).toBe('invalid');
+    stored = { owner: 'A', projectId: id, baseRevision, document: draft, updatedAt: 1 };
+    await open();
+    expect(session.sync.sheet).toBe(baseRevision === 4 ? 'recovery' : 'conflict');
+    if (baseRevision === 4) await act(async () => session.sync.recover());
+    const recovered = session.currentDocument()!;
+    expect(recovered).toEqual(draft);
+    // Recovery commits the merged object, which is distinct from its loaded baseline.
+    expect(recovered).not.toBe(draft);
+    const valid = { ...recovered, timeline: webSequenceV3() };
+    expect(documentProblem(valid)).toBeNull();
+    await act(async () => { expect(session.markDocument(valid)).toEqual({ status: 'accepted' }); });
+    expect(session.history).toEqual({ canUndo: true, canRedo: false });
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toBe(recovered);
+    expect(session.problem).toBeNull();
+    expect(session.history).toEqual({ canUndo: false, canRedo: true });
+    await act(async () => session.travel('redo'));
+    expect(session.currentDocument()).toEqual(valid);
+    expect(session.history).toEqual({ canUndo: true, canRedo: false });
+    await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toBe(recovered);
+    expect(session.history.canUndo).toBe(false);
+    expect(puts()).toHaveLength(0);
 });
 test('backgrounding while Recovery is unanswered writes no draft and sends no PUT; reopening offers the original draft', async () => {
     stored = { owner: 'A', projectId: id, baseRevision: 4, document: { ...doc, brief: 'precious' }, updatedAt: 1 };

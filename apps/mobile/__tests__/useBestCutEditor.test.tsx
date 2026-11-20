@@ -1,4 +1,5 @@
 import { nearLimit } from './fixtures/editorNearLimit';
+import { documentProblem } from '../src/lib/editorDocumentGate';
 import { t } from '../src/lib/i18n';
 import { act } from 'react';
 import { createRoot } from 'test-renderer';
@@ -38,6 +39,40 @@ jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValu
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, beginSessionTask: () => ({ current: () => true }) }) }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn() }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}) } }));
+
+test('Best Cut on an invalid empty legacy project keeps its derived history base undoable', async () => {
+    jest.useFakeTimers();
+    const doc = { schema_version: 1 as const, project_id: envelope(null).project_id, brief: 'legacy' };
+    expect(documentProblem(doc)).toBe('invalid');
+    mockRequest.mockImplementation(async (path: string) => path.endsWith('/document') ? { document: doc, revision: 1 } : { project: { name: 'Test' } });
+    let session: ReturnType<typeof useFullEditorSession>;
+    function Harness() { session = useFullEditorSession({ projectId: doc.project_id }); return useBestCutEditor(session, doc.project_id, true).sheet; }
+    const root = createRoot();
+    try {
+        await act(async () => root.render(<Harness />));
+        const before = webSequenceV3(), timeline = { ...before, markers: [] };
+        await act(async () => { expect(mockApply({ before, timeline, uris: {}, plan: null })).toEqual({ status: 'accepted' }); });
+        expect(session!.history).toEqual({ canUndo: true, canRedo: false });
+        const historyBase = { ...doc, schema_version: 3 as const, timeline: before };
+        expect(documentProblem(historyBase)).toBe('invalid');
+        // Repair the legacy envelope without replacing Best Cut's undo entry.
+        const repaired = { ...session!.currentDocument()!, canvas: { aspect_ratio: '16:9', frame_rate: 30 } };
+        expect(documentProblem(repaired)).toBeNull();
+        await act(async () => { expect(session!.markDocument(repaired, false)).toEqual({ status: 'accepted' }); });
+        for (let cycle = 0; cycle < 2; cycle++) {
+            expect(session!.history.canUndo).toBe(true);
+            const revision = session!.getEditRevision();
+            await act(async () => session!.travel('undo'));
+            expect(session!.getEditRevision()).toBe(revision + 1);
+            expect(session!.currentDocument()).toEqual(historyBase);
+            expect(session!.problem).toBeNull();
+            expect(session!.history).toEqual({ canUndo: false, canRedo: true });
+            await act(async () => session!.travel('redo'));
+            expect(session!.currentDocument()).toEqual(repaired);
+            expect(session!.history).toEqual({ canUndo: true, canRedo: false });
+        }
+    } finally { await act(async () => root.unmount()); jest.useRealTimers(); }
+});
 
 test('Best Cut preserves a real tooLarge refusal and permits retry', async () => {
     jest.useFakeTimers();

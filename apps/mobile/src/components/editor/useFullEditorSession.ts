@@ -82,16 +82,18 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         }
         let candidate = mergeBackups(next);
         let problem = documentProblem(candidate);
-        // History may restore its known legacy snapshot, but never a refused backup merge.
-        const nextProblem = documentProblem(next), knownLegacy = restoreSnapshot && baselineSnapshots.current.has(next);
+        // History may restore an exact accepted snapshot, but never a refused backup merge.
+        const nextProblem = documentProblem(next), knownSnapshot = restoreSnapshot && baselineSnapshots.current.has(next);
         // Pending metadata must not block a valid edit or legacy undo; retain it for later.
-        if (problem && (nextProblem === null || knownLegacy)) { candidate = next; problem = nextProblem; }
-        if (problem && !knownLegacy && currentIsValid) {
+        if (problem && (nextProblem === null || knownSnapshot)) { candidate = next; problem = nextProblem; }
+        if (problem && !knownSnapshot && currentIsValid) {
             setProblem(t(`editorEditGate.${problem}`));
             return { status: 'refused', reason: problem };
         }
         next = candidate;
         if (record && documentRef.current) {
+            // A failing base is allowed only when derived from an already-invalid live document.
+            if (historyBase && historyProblem) baselineSnapshots.current.add(historyBase);
             pastRef.current.push(historyBase ?? documentRef.current);
             if (pastRef.current.length > 30) pastRef.current.shift();
             futureRef.current = [];
@@ -99,6 +101,7 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         }
         editRevisionRef.current++;
         documentRef.current = next;
+        if (problem) baselineSnapshots.current.add(next);
         dirtyRef.current = true;
         setDocument(next);
         syncRef.current?.changed();

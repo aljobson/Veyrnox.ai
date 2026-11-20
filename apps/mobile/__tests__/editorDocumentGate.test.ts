@@ -54,28 +54,31 @@ test('repair then undo to a legacy snapshot then redo is transactional', async (
     await act(async () => session.travel('redo')); expect(session.currentDocument()).toEqual(valid);
     expect(session.history).toEqual({ canUndo: true, canRedo: false });
 });
-test('a locally introduced invalid snapshot never gains baseline legacy status on undo or redo', async () => {
+test('redo restores an invalid snapshot that was previously live', async () => {
     const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
     const localInvalid = { ...baseline, brief: 'Local invalid edit' };
     await open(baseline);
     await act(async () => { expect(session.markDocument(localInvalid)).toEqual({ status: 'accepted' }); });
+    const committed = session.currentDocument();
     await act(async () => session.travel('undo'));
     expect(session.currentDocument()).toEqual(baseline);
     await act(async () => { expect(session.markDocument(valid, false)).toEqual({ status: 'accepted' }); });
     const revision = session.getEditRevision();
     await act(async () => session.travel('redo'));
-    expect(session.currentDocument()).toEqual(valid); expect(session.getEditRevision()).toBe(revision);
-    expect(session.problem).toBe("That change can't be kept in this project.");
-    expect(session.history).toEqual({ canUndo: false, canRedo: true });
+    expect(session.currentDocument()).toBe(committed); expect(session.getEditRevision()).toBe(revision + 1);
+    expect(session.problem).toBeNull();
+    expect(session.history).toEqual({ canUndo: true, canRedo: false });
 });
-test('undo refuses a locally introduced invalid snapshot after repair', async () => {
+test('undo restores a previously live invalid snapshot after repair', async () => {
     const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
     await open(baseline);
-    await act(async () => { session.markDocument({ ...baseline, brief: 'Local invalid edit' }); session.markDocument(valid); });
+    await act(async () => { session.markDocument({ ...baseline, brief: 'Local invalid edit' }); });
+    const committed = session.currentDocument();
+    await act(async () => { session.markDocument(valid); });
     await act(async () => session.travel('undo'));
-    expect(session.currentDocument()).toEqual(valid);
-    expect(session.history).toEqual({ canUndo: true, canRedo: false });
-    expect(session.problem).toBe("That change can't be kept in this project.");
+    expect(session.currentDocument()).toBe(committed);
+    expect(session.history).toEqual({ canUndo: true, canRedo: true });
+    expect(session.problem).toBeNull();
 });
 test('a successful save makes its earlier history known baseline snapshots', async () => {
     const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
@@ -89,7 +92,7 @@ test('a successful save makes its earlier history known baseline snapshots', asy
     await act(async () => session.travel('redo'));
     expect(session.currentDocument()).toEqual(valid);
 });
-test('a save finishing after an undo and new edits never blesses the new branch as legacy', async () => {
+test('a save finishing after an undo preserves the new branch\'s previously live snapshots', async () => {
     const valid = envelope(webSequenceV3()), baseline = { ...valid, timeline: { ...webSequenceV3(), fps: 29 } };
     await open(baseline);
     let finish!: (value: unknown) => void;
@@ -101,12 +104,16 @@ test('a save finishing after an undo and new edits never blesses the new branch 
     await act(async () => session.travel('undo'));
     expect(session.currentDocument()).toEqual(baseline);
     const repaired = { ...valid, brief: 'New repair' };
-    await act(async () => { session.markDocument({ ...baseline, brief: 'New invalid edit' }); session.markDocument(repaired); });
+    await act(async () => { session.markDocument({ ...baseline, brief: 'New invalid edit' }); });
+    const committed = session.currentDocument();
+    await act(async () => { session.markDocument(repaired); });
     await act(async () => { finish({ document: valid, revision: 2 }); await saving; });
     expect(session.revision).toBe(2);
     await act(async () => session.travel('undo'));
+    expect(session.currentDocument()).toBe(committed);
+    expect(session.problem).toBeNull();
+    await act(async () => session.travel('redo'));
     expect(session.currentDocument()).toEqual(repaired);
-    expect(session.problem).toBe("That change can't be kept in this project.");
 });
 test('draft flush retains a completed backup while a versions sheet holds unsaved edits', async () => {
     const doc = envelope(webSequenceV3()); await open(doc);
