@@ -1,3 +1,4 @@
+import { useTextActions } from './tools/useTextActions';
 import { useSpeedActions } from './tools/useSpeedActions';
 import type { VoiceoverProps } from './useVoiceoverRecorder';
 import { ToolRail } from './tools/ToolRail';
@@ -112,9 +113,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const { height: windowHeight } = useWindowDimensions(); const insets = useContext(SafeAreaInsetsContext);
     const budget = editorLayoutBudget({ windowHeight, topInset: insets?.top ?? 0, bottomInset: insets?.bottom ?? 0, trackCount: document ? timelineOf(document.timeline).tracks.length : 1 });
     const previewHeight = advanced ? budget.previewHeight : Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen ? 0.1 : 0.14))));
+    const timeline = timelineOf(document?.timeline);
+    const textActions = useTextActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
+        frameStore, setSelection, setSelections, setTool });
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
-    const timeline = timelineOf(document.timeline); const total = framesIn(timeline); const selected = clipAt(timeline, selection);
+    const total = framesIn(timeline); const selected = clipAt(timeline, selection);
     const selectedMedia = selected && 'mediaId' in selected && selected.mediaId ? timeline.media[selected.mediaId] : undefined;
     const clipCount = timeline.video.length + timeline.audio.length + timeline.text.length; const selectedGroup = selected?.groupId;
     const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
@@ -220,7 +224,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
     const panelProps: ToolPanelProps = {
-        timeline, selection, selected, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
+        timeline, selection, selected, textActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };

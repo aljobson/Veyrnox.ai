@@ -246,5 +246,7 @@
   "beat.solo.short": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
-  "editorTools.positionValue": "Standard mathematical notation shared across languages."
+  "editorTools.positionValue": "Standard mathematical notation shared across languages.",
+  "editorText.animationName6": "Standard notation or established style name, retained in this locale.",
+  "editorText.percent": "Standard notation or established style name, retained in this locale."
 }
