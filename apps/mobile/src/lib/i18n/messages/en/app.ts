@@ -207,6 +207,7 @@ export default {
     "app.smartCut.native.analyse.ineligibleBlocked": "Remove or trim these clips to 0.5–60 seconds before using speech-aware Smart Cut: {names}. Local preview remains available.",
     "app.smartCut.fillers.title": "FILLER SOUNDS",
     "app.smartCut.fillers.toggle": "Also remove ums and uhs ({count} found)",
+    "app.smartCut.fillers.row": "{label} · {start}–{end} s",
     "app.smartCut.fillers.none": "No ums or uhs found. This looks for English, Spanish, German, French, Portuguese and Russian.",
     "app.smartCut.native.fillers.wordTimingRequired": "Filler-sound review needs word-level timing. Only long pauses can be removed for: {names}.",
     "app.explore.smartCutStart": "Turn finished clips into a reviewed first cut.",

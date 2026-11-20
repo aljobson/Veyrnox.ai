@@ -375,7 +375,7 @@ export default function SmartCutRoute() {
                         <Text variant="caption" tone="accent">{t('app.smartCut.mode.speechReady')}</Text>
                         <Text tone="secondary">{t('app.smartCut.speechReady')}</Text>
                         <View style={styles.switchRow}><Text variant="bodyStrong">{t('app.smartCut.fillers.toggle', { count: fillerRows.length })}</Text><Switch accessibilityLabel={rawText(t('app.smartCut.fillers.toggle', { count: fillerRows.length }))} disabled={!fillerRows.length} value={removeFillers} onValueChange={changeRemoveFillers} /></View>
-                        {removeFillers ? fillerRows.map((row) => <Chip key={row.key} selected={!skippedFillers.includes(row.key)} label={`${row.label} · ${seconds(row.start)}–${seconds(row.end)} s`} onPress={() => toggleFiller(row.key)} />) : null}
+                        {removeFillers ? fillerRows.map((row) => <Chip key={row.key} selected={!skippedFillers.includes(row.key)} label={t('app.smartCut.fillers.row', { label: row.label, start: seconds(row.start), end: seconds(row.end) })} onPress={() => toggleFiller(row.key)} />) : null}
                         {phraseTimingNames.length ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.fillers.wordTimingRequired', { names: phraseTimingNames.join(', ') })}</Text>
                             : !fillerRows.length ? <Text variant="footnote" tone="secondary">{t('app.smartCut.fillers.none')}</Text> : null}
                     </> : <>
