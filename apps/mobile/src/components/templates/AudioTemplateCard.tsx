@@ -1,41 +1,45 @@
-import { Pressable, View } from 'react-native';
+import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
-import { Card, Icon, Text, themedStyles, useThemedStyles } from '../ui';
+import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../ui';
 import { plural, t } from '../../lib/i18n';
 import type { AudioTemplate } from '../../lib/audioTemplates';
 import { categoryLabel } from '../../lib/presetCategoryLabel';
+import { ds } from '../../theme';
 
-// An audio template is a row: a small square of the licensed track's artwork with a play button over it, then a badge
-// that says it is a sound, its category, its name, the start of its prompt and its price. The play button plays the
-// track's sample in place; the rest of the row opens the template. The screen keeps one sample playing at a time.
+// An audio template drawn the way the web's Explore > Audio draws it: the licensed track's artwork, its name and
+// category, a play control for the sample, the price, the track's credit line and Use template. The artwork, name and
+// Use template open the template; the play control plays the sample in place. The screen keeps one sample playing.
 interface AudioTemplateCardProps {
     readonly template: AudioTemplate;
     readonly credits?: number;
     readonly playing?: boolean;
+    readonly style?: StyleProp<ViewStyle>;
     onPlay?(): void;
     onOpen(): void;
 }
 
-export function AudioTemplateCard({ template, credits, playing = false, onPlay, onOpen }: AudioTemplateCardProps) {
+export function AudioTemplateCard({ template, credits, playing = false, style, onPlay, onOpen }: AudioTemplateCardProps) {
     const styles = useThemedStyles(sheets);
     const price = typeof credits === 'number' && credits > 0 ? plural('library.cost', credits) : null;
     const sample = template.previewAudioUrl;
-    const art = template.previewUrl ? <Image source={{ uri: template.previewUrl }} style={styles.art} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors /> : <View style={styles.art} />;
-    return <Card style={styles.card}>
-        {sample && onPlay ? <Pressable onPress={onPlay} accessibilityRole="button" accessibilityLabel={`${t(playing ? 'music.pause' : 'music.play')}, ${template.name}`} accessibilityState={{ selected: playing }} hitSlop={4} style={styles.thumb}>
-            {art}
-            <View style={styles.playBadge}><Icon name={playing ? 'pauseCircle' : 'play'} size={28} tint="#FFFFFF" /></View>
-            {playing ? <SamplePlayer url={sample} onEnd={onPlay} /> : null}
-        </Pressable> : <View style={styles.thumb}>{art}</View>}
-        <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${t('templates.kind.audio')}, ${template.name}${price ? `, ${price}` : ''}`} style={styles.body}>
-            <View style={styles.meta}>
-                <View style={styles.badge}><Text variant="caption">{t('templates.kind.audio')}</Text></View>
-                <Text variant="caption" tone="secondary">{categoryLabel(template.category)}</Text>
+    return <Card style={[styles.card, style]}>
+        <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${t('templates.kind.audio')}, ${template.name}${price ? `, ${price}` : ''}`} style={styles.open}>
+            <View style={styles.art}>
+                {template.previewUrl
+                    ? <Image source={{ uri: template.previewUrl }} style={styles.fill} contentFit="cover" accessible={false} accessibilityIgnoresInvertColors />
+                    : <Icon name="audio" size={24} />}
             </View>
-            <Text variant="bodyStrong" numberOfLines={1}>{template.name}</Text>
-            <Text variant="caption" tone="secondary" numberOfLines={2}>{template.prompt}</Text>
-            {price ? <Text tone="warning">{price}</Text> : null}
+            <Text variant="bodyStrong" numberOfLines={2}>{template.name}</Text>
+            <Text variant="caption" tone="secondary">{categoryLabel(template.category)}</Text>
         </Pressable>
+        {sample && onPlay ? <Pressable onPress={onPlay} accessibilityRole="button" accessibilityLabel={`${t(playing ? 'music.pause' : 'music.play')}, ${template.name}`} accessibilityState={{ selected: playing }} style={({ pressed }) => [styles.play, pressed && styles.playPressed]}>
+            <Icon name={playing ? 'pauseCircle' : 'play'} size={16} />
+            <Text variant="caption">{t(playing ? 'music.pause' : 'music.play')}</Text>
+            {playing ? <SamplePlayer url={sample} onEnd={onPlay} /> : null}
+        </Pressable> : null}
+        {price ? <Text variant="caption" tone="warning">{price}</Text> : null}
+        {template.attribution ? <Text variant="caption" tone="tertiary" numberOfLines={3}>{template.attribution}</Text> : null}
+        <Button variant="primary" size="sm" label={t('libraryCreate.useTemplate')} accessibilityLabel={`${t('libraryCreate.useTemplate')}, ${template.name}`} onPress={onOpen} />
     </Card>;
 }
 
@@ -45,13 +49,12 @@ function SamplePlayer(props: { readonly url: string; onEnd(): void }) {
     return <Player {...props} />;
 }
 
-const THUMB = 72;
 const sheets = themedStyles(p => ({
-    card: { marginVertical: 4, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
-    thumb: { width: THUMB, height: THUMB, borderRadius: 8, overflow: 'hidden' },
-    art: { width: THUMB, height: THUMB, backgroundColor: p.bgElevated2 },
-    playBadge: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.28)' },
-    body: { flex: 1, gap: 4 },
-    meta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    badge: { backgroundColor: p.bgElevated2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 },
+    card: { padding: ds.space.sm, gap: ds.space.xs, overflow: 'hidden' },
+    open: { gap: ds.space.xs },
+    // 4:3, as on the web, so the artwork reads as a cover rather than a poster-sized tile.
+    art: { width: '100%', aspectRatio: 4 / 3, borderRadius: ds.radius.sm, overflow: 'hidden', backgroundColor: p.bgElevated2, alignItems: 'center', justifyContent: 'center', marginBottom: ds.space.xxs },
+    fill: { width: '100%', height: '100%' },
+    play: { flexDirection: 'row', alignItems: 'center', gap: ds.space.xs, minHeight: 44, paddingHorizontal: ds.space.sm, borderRadius: ds.radius.pill, backgroundColor: p.bgElevated2 },
+    playPressed: { backgroundColor: p.surfacePressed },
 }));
