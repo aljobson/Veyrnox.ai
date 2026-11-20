@@ -37,6 +37,8 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     const { api } = useAuth();
     const account = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser) || '';
     const [quote, setQuote] = useState<SpeechQuote | null | undefined>(() => EDITOR_SPEECH_CUT_ENABLED && account ? undefined : null);
+    const [quoteError, setQuoteError] = useState(false);
+    const [quoteAttempt, setQuoteAttempt] = useState(0);
     const [running, setRunning] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0 });
     const [messages, setMessages] = useState<readonly string[]>([]);
@@ -60,11 +62,15 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
         live.current = true;
         if (!EDITOR_SPEECH_CUT_ENABLED || !account) return () => { live.current = false; };
         const abort = new AbortController();
-        void fetchSpeechQuote(api, abort.signal).then((value) => { if (live.current && !abort.signal.aborted) setQuote(value); })
-            .catch(() => { if (live.current && !abort.signal.aborted) setQuote(null); });
-        const off = subscribeCacheUser(() => { abort.abort(); controller.current?.abort(); setQuote(null); });
+        setQuoteError(false);
+        void fetchSpeechQuote(api, abort.signal).then((value) => {
+            if (live.current && !abort.signal.aborted) { setQuote(value); setQuoteError(false); }
+        }).catch(() => {
+            if (live.current && !abort.signal.aborted) { setQuote(undefined); setQuoteError(true); }
+        });
+        const off = subscribeCacheUser(() => { abort.abort(); controller.current?.abort(); setQuote(null); setQuoteError(false); });
         return () => { live.current = false; abort.abort(); controller.current?.abort(); off(); };
-    }, [account, api]);
+    }, [account, api, quoteAttempt]);
 
     useEffect(() => {
         const accountChanged = accountRef.current !== account;
@@ -87,7 +93,12 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
         });
     }, [account, signature]);
 
-    if (!EDITOR_SPEECH_CUT_ENABLED || !quote || !clips.length || !account) return null;
+    if (!EDITOR_SPEECH_CUT_ENABLED || !clips.length || !account) return null;
+    if (quoteError) return <Card style={styles.card}>
+        <Text variant="bodyStrong">{t('app.smartCut.native.analyse.quoteFailed')}</Text>
+        <Button label={t('app.smartCut.native.analyse.quoteRetry')} variant="secondary" onPress={() => { setQuoteError(false); setQuote(undefined); setQuoteAttempt((value) => value + 1); }} />
+    </Card>;
+    if (!quote) return null;
 
     const activeQuote = quote;
     const ineligible = clips.filter((clip) => !Number.isFinite(clip.duration) || clip.duration < 0.5 || clip.duration > activeQuote.max_seconds);

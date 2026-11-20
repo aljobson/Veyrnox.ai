@@ -112,5 +112,7 @@
   "app.smartCut.native.fillers.wordTimingRequired": "Exact English retained for native Smart Cut billing, privacy, and recovery wording pending professional zh translation; this avoids changing legal or credit meaning.",
   "app.smartCut.native.analyse.failedConfirmed": "Exact English retained for native Smart Cut billing, privacy, and recovery wording pending professional zh translation; this avoids changing legal or credit meaning.",
   "app.smartCut.native.analyse.ineligibleBlocked": "Exact English retained for native Smart Cut billing, privacy, and recovery wording pending professional zh translation; this avoids changing legal or credit meaning.",
-  "app.smartCut.fillers.row": "Exact English retained for native Smart Cut timing wording pending professional zh translation."
+  "app.smartCut.fillers.row": "Exact English retained for native Smart Cut timing wording pending professional zh translation.",
+  "app.smartCut.native.analyse.quoteFailed": "Exact English retained for native Smart Cut recovery wording pending professional zh translation.",
+  "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional zh translation."
 }

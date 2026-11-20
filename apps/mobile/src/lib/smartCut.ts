@@ -353,7 +353,8 @@ export function buildSpeechAwareCutPlan({ clips, analyses, pacing = 'balanced', 
     const appliedRemovals = knownRemovals.filter((cut) => {
         if (keptAnyway.includes(cut)) return false;
         const take = clipById.get(cut.takeId);
-        const windowEnd = take ? outputWindowEnd(take, candidateGroups, segments) : null;
+        if (!take) return false;
+        const windowEnd = outputWindowEnd(take, candidateGroups, segments);
         return windowEnd !== null && cut.end > take.rangeStart && cut.start < windowEnd + 0.02;
     });
     const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];

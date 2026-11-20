@@ -151,7 +151,7 @@ export default function SmartCutRoute() {
         const analysis = analyses.get(source.assetId);
         if (!analysis || analysis.timingQuality !== 'word') return [];
         const rangeStart = source.rangeStart ?? 0, rangeEnd = source.rangeEnd ?? source.duration;
-        return fillerRanges(analysis).filter((range) => range.end > rangeStart && range.start < rangeEnd).map((range) => {
+        return fillerRanges(analysis, { start: rangeStart, end: rangeEnd }).map((range) => {
             const start = Math.max(rangeStart, range.start), end = Math.min(rangeEnd, range.end);
             return { ...range, start, end, takeId: source.id, key: `${source.id}:${start}:${end}` };
         });

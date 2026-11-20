@@ -25,3 +25,11 @@ test('phrase-level timing proposes nothing and the lexicons match web', () => {
     expect(webFillers.smartCutFillerRanges(analysis)).toEqual([]);
     expect(FILLER_WORDS).toEqual(webFillers.SMART_CUT_FILLER_WORDS);
 });
+
+test('the selected range is applied before the fifty-suggestion cap', () => {
+    const early = Array.from({ length: 51 }, (_, index) => ({ start: index * 0.5, end: index * 0.5 + 0.1, text: 'um' }));
+    const ranged = { ...scribe('eng', [['um', 55, 55.2]], 60), chunks: [...early, { start: 55, end: 55.2, text: 'um' }] };
+
+    expect(fillerRanges(ranged)).toHaveLength(50);
+    expect(fillerRanges(ranged, { start: 54, end: 56 })).toEqual([{ start: 54.97, end: 55.23, label: 'um' }]);
+});

@@ -64,6 +64,19 @@ test('requires an accessible explicit confirmation and carries zero-credit evide
     expect(lines()).toContain(t('app.smartCut.native.analyse.reused', { name: clip.label }));
 });
 
+test('a transient quote failure explains that nothing started and can retry', async () => {
+    mockFetchQuote.mockRejectedValueOnce(new ApiError(503, 'unavailable'))
+        .mockResolvedValueOnce({ credits: 7, max_seconds: 60, languages: ['en'] });
+    await render();
+    expect(lines()).toContain(t('app.smartCut.native.analyse.quoteFailed'));
+    expect(mockStart).not.toHaveBeenCalled();
+
+    await press(t('app.smartCut.native.analyse.quoteRetry'));
+
+    expect(mockFetchQuote).toHaveBeenCalledTimes(2);
+    expect(button(t('app.smartCut.native.analyse.start'))).toBeDefined();
+});
+
 test('rejects and names a completed analysis that belongs to a different clip', async () => {
     const mismatched = { ...analysis, assetId: '44444444-4444-4444-8444-444444444444' };
     mockStart.mockResolvedValue({ id: 'request', status: 'completed', analysis: mismatched, credits: 0 });

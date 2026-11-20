@@ -205,6 +205,8 @@ export default {
     "app.smartCut.native.analyse.mismatchPending": "{name}: the returned analysis did not match this clip ({reason}); billing is still pending. Check status before retrying.",
     "app.smartCut.native.analyse.blocked": "Analyse these clips to use speech-aware Smart Cut: {names}. Local preview remains available.",
     "app.smartCut.native.analyse.ineligibleBlocked": "Remove or trim these clips to 0.5–60 seconds before using speech-aware Smart Cut: {names}. Local preview remains available.",
+    "app.smartCut.native.analyse.quoteFailed": "Couldn't load the speech-analysis price. No analysis started.",
+    "app.smartCut.native.analyse.quoteRetry": "Retry price",
     "app.smartCut.fillers.title": "FILLER SOUNDS",
     "app.smartCut.fillers.toggle": "Also remove ums and uhs ({count} found)",
     "app.smartCut.fillers.row": "{label} · {start}–{end} s",
