@@ -6670,7 +6670,7 @@ export default {
   "musicPublic.removeTimestamp.one": "Zeitmarke entfernen ({count} Sekunde)",
   "musicPublic.removeTimestamp.other": "Zeitmarke entfernen ({count} Sekunden)",
   "musicPublic.rate.one": "Warte {count} Sekunde und wiederhole dieselbe Anfrage.",
-  "musicPublic.rate.other": "Warte {count} Sekunden und wiederhole dieselbe Anfrage."
+  "musicPublic.rate.other": "Warte {count} Sekunden und wiederhole dieselbe Anfrage.",
     "beat.title": "Beat-Maker",
     "beat.home.new": "Neuer Beat",
     "beat.home.untitled": "Beat {n}",

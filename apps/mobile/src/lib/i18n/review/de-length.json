@@ -3777,7 +3777,9 @@
     "id": "musicPublic.reaction.like",
     "english": "Like",
     "translation": "Gefällt mir",
-    "ratio": 2.75,
+    "ratio": 2.75
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Abspielen",

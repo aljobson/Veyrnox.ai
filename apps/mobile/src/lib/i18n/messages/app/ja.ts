@@ -6586,7 +6586,7 @@ export default {
   "musicPublic.genre.latin": "ラテン",
   "musicPublic.position.other": "{count}秒",
   "musicPublic.removeTimestamp.other": "時刻を削除（{count}秒）",
-  "musicPublic.rate.other": "{count}秒待ってから同じリクエストを再試行してください。"
+  "musicPublic.rate.other": "{count}秒待ってから同じリクエストを再試行してください。",
     "beat.title": "ビートメーカー",
     "beat.home.new": "新しいビート",
     "beat.home.untitled": "ビート {n}",

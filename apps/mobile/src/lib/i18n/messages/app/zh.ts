@@ -6586,7 +6586,7 @@ export default {
   "musicPublic.genre.latin": "拉丁",
   "musicPublic.position.other": "{count}秒",
   "musicPublic.removeTimestamp.other": "移除时间戳（{count}秒）",
-  "musicPublic.rate.other": "请等待{count}秒后重试相同请求。"
+  "musicPublic.rate.other": "请等待{count}秒后重试相同请求。",
     "beat.title": "节拍制作",
     "beat.home.new": "新建节拍",
     "beat.home.untitled": "节拍 {n}",

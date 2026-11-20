@@ -6754,7 +6754,7 @@ export default {
   "musicPublic.removeTimestamp.other": "Remover marcação ({count} segundos)",
   "musicPublic.rate.one": "Aguarde {count} segundo e repita a mesma solicitação.",
   "musicPublic.rate.many": "Aguarde {count} segundos e repita a mesma solicitação.",
-  "musicPublic.rate.other": "Aguarde {count} segundos e repita a mesma solicitação."
+  "musicPublic.rate.other": "Aguarde {count} segundos e repita a mesma solicitação.",
     "beat.title": "Criador de beats",
     "beat.home.new": "Novo beat",
     "beat.home.untitled": "Beat {n}",

@@ -6586,7 +6586,7 @@ export default {
   "musicPublic.genre.latin": "라틴",
   "musicPublic.position.other": "{count}초",
   "musicPublic.removeTimestamp.other": "시간 표시 삭제({count}초)",
-  "musicPublic.rate.other": "{count}초 후 동일한 요청을 다시 시도하세요."
+  "musicPublic.rate.other": "{count}초 후 동일한 요청을 다시 시도하세요.",
     "beat.title": "비트 메이커",
     "beat.home.new": "새 비트",
     "beat.home.untitled": "비트 {n}",

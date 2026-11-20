@@ -3399,7 +3399,9 @@
     "id": "musicPublic.reaction.hot",
     "english": "Hot",
     "translation": "Quente",
-    "ratio": 2,
+    "ratio": 2
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproduzir",

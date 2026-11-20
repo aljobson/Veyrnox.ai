@@ -7006,7 +7006,7 @@ export default {
   "musicPublic.rate.two": "انتظر {count} ثانية ثم أعد المحاولة بالطلب نفسه.",
   "musicPublic.rate.few": "انتظر {count} ثوانٍ ثم أعد المحاولة بالطلب نفسه.",
   "musicPublic.rate.many": "انتظر {count} ثانية ثم أعد المحاولة بالطلب نفسه.",
-  "musicPublic.rate.other": "انتظر {count} ثانية ثم أعد المحاولة بالطلب نفسه."
+  "musicPublic.rate.other": "انتظر {count} ثانية ثم أعد المحاولة بالطلب نفسه.",
     "beat.title": "صانع الإيقاعات",
     "beat.home.new": "إيقاع جديد",
     "beat.home.untitled": "إيقاع {n}",

@@ -3411,7 +3411,9 @@
     "id": "musicPublic.reaction.hot",
     "english": "Hot",
     "translation": "Ardiente",
-    "ratio": 2.67,
+    "ratio": 2.67
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproducir",

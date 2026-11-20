@@ -6670,7 +6670,7 @@ export default {
   "musicPublic.removeTimestamp.one": "टाइमस्टैम्प हटाएँ ({count} सेकंड)",
   "musicPublic.removeTimestamp.other": "टाइमस्टैम्प हटाएँ ({count} सेकंड)",
   "musicPublic.rate.one": "{count} सेकंड रुकें, फिर वही अनुरोध दोबारा भेजें।",
-  "musicPublic.rate.other": "{count} सेकंड रुकें, फिर वही अनुरोध दोबारा भेजें।"
+  "musicPublic.rate.other": "{count} सेकंड रुकें, फिर वही अनुरोध दोबारा भेजें।",
     "beat.title": "बीट मेकर",
     "beat.home.new": "नया बीट",
     "beat.home.untitled": "बीट {n}",

@@ -6838,7 +6838,7 @@ export default {
   "musicPublic.rate.one": "Подождите {count} сек. и повторите тот же запрос.",
   "musicPublic.rate.few": "Подождите {count} сек. и повторите тот же запрос.",
   "musicPublic.rate.many": "Подождите {count} сек. и повторите тот же запрос.",
-  "musicPublic.rate.other": "Подождите {count} сек. и повторите тот же запрос."
+  "musicPublic.rate.other": "Подождите {count} сек. и повторите тот же запрос.",
     "beat.title": "Создание битов",
     "beat.home.new": "Новый бит",
     "beat.home.untitled": "Бит {n}",

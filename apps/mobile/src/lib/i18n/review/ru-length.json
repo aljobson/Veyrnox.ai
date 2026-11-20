@@ -3633,7 +3633,9 @@
     "id": "musicPublic.reaction.hot",
     "english": "Hot",
     "translation": "Жарко",
-    "ratio": 1.67,
+    "ratio": 1.67
+  },
+  {
     "id": "beat.transport",
     "english": "Transport",
     "translation": "Воспроизведение",
