@@ -22,7 +22,7 @@ import { Dial } from './Dial';
 import { ToolStrip, type Tool } from './ToolStrip';
 import { AiWigPanel, HairPanel, MakeupPanel, RetouchPanel } from './Panels';
 import { wigStatus, clearOverlays, getOverlay, overlayKey, pinOverlay, unpinOverlay, type WigStatus } from '../../lib/liveEdit/wig';
-import { VisionBridge } from './VisionBridge';
+import { NativeVision } from './NativeVision';
 import { LiveCameraView, type LiveCameraHandle } from './LiveCameraView';
 import { NativeWig3d } from './NativeWig3d';
 import { liveErrorKey, type LiveError, type LiveFace, type LiveWig } from '../../lib/liveEdit/liveProtocol';
@@ -215,7 +215,7 @@ export function LiveEditScreen({ owner }: { owner: string }) {
             <ScrollView style={{ maxHeight: screenHeight * .38 }} contentContainerStyle={styles.panelBody}>{panel}</ScrollView>
             <ToolStrip value={tool} onChange={setTool} />
         </View> : null}
-        {source && foreground ? <VisionBridge key={`${source.sourceId}:${source.frameId}:${retry}`} frame={source.frame} onResult={receive} onError={() => { if (inferenceGeneration !== lifecycle.current.generation) return; lifecycle.current.fail(inferenceGeneration); setInference(null); setStatus('failed'); }} /> : null}
+        {source && foreground ? <NativeVision key={`${source.sourceId}:${source.frameId}:${retry}`} frame={source.frame} onResult={receive} onError={() => { if (inferenceGeneration !== lifecycle.current.generation) return; lifecycle.current.fail(inferenceGeneration); setInference(null); setStatus('failed'); }} /> : null}
         {source && foreground && inference?.count === 1 && isWig3d(stack.wig.style) && stack.wig.strength > 0 ? <NativeWig3d job={{ wig: stack.wig, landmarks: inference.landmarks, width: source.width, height: source.height }} onChange={() => setOverlayRevision(n => n + 1)} /> : null}
     </View>;
 }
