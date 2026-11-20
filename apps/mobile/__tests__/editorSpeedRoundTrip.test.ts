@@ -1,0 +1,41 @@
+import { webSequenceV3, envelope } from './fixtures/webSequenceV3';
+import { timelineOf, splitClip, framesIn, type Timeline } from '../src/lib/nativeEditorModel';
+import { speedCurve, speedReverse, freezeInsert } from '../src/lib/editorSpeedEdit';
+import { trimItem } from '../src/lib/editorTimeline';
+import { SPEED_PRESETS } from '../../../app/veyrnox/_lib/editorSpeed.mjs';
+import { setSequenceSpeedCurve, reverseSequenceClip, insertSequenceFreeze, trimSequence, splitSequenceClip } from '../../../app/veyrnox/_lib/editorSequence.mjs';
+import { validateSequence } from '../../../app/veyrnox/_lib/editorSequenceValidation.mjs';
+test('web and phone speed edits round trip every frame and preserve untouched fields', () => {
+    const fixture = webSequenceV3();
+    fixture.video.push({ id: 'v8', volume: 1, transition: 0, mediaId: 'm', trackId: 'video-0', start: 400, in: 0, len: 60, rate: 2, preservePitch: true });
+    fixture.video.push({ id: 'v9', volume: 1, transition: 0, mediaId: 'm', trackId: 'video-0', start: 500, in: 0, len: 30 });
+    let web = reverseSequenceClip(setSequenceSpeedCurve(fixture, 'video', 'v1', SPEED_PRESETS.pulse), 'video', 'v1') as Timeline;
+    web = insertSequenceFreeze(web, 'v8', 400) as Timeline;
+    let phone = timelineOf(web);
+    const sel = { track: 'video' as const, id: 'v1' };
+    const check = () => {
+        expect(validateSequence(phone)).toBeNull(); expect(validateSequence(web)).toBeNull();
+        expect(phone).toEqual(web); expect(framesIn(phone)).toBe(framesIn(web));
+        expect(new TextEncoder().encode(JSON.stringify(envelope(phone))).length).toBeLessThanOrEqual(32768);
+        expect(phone.video.find(c => c.id === 'v2')).toEqual(fixture.video[1]);
+        expect(phone.video.find(c => c.id === 'v8')?.preservePitch).toBe(true);
+        expect(phone.text).toEqual(fixture.text);
+    };
+    const take = (result: ReturnType<typeof speedCurve>) => {
+        if (!('timeline' in result)) throw Error(result.refused); return result.timeline;
+    };
+    check();
+    phone = take(speedCurve(phone, sel, SPEED_PRESETS.accelerate));
+    web = setSequenceSpeedCurve(web, 'video', 'v1', SPEED_PRESETS.accelerate) as Timeline; check();
+    phone = take(speedReverse(phone, sel)); web = reverseSequenceClip(web, 'video', 'v1') as Timeline; check();
+    phone = take(freezeInsert(phone, sel, 0)); web = insertSequenceFreeze(web, 'v1', 0) as Timeline; check();
+    const frozen = phone.video.find(c => c.start === 0 && c.freezeFrame !== undefined)!;
+    phone = trimItem(phone, { track: 'video', id: frozen.id }, 'out', 30, false, 0)!;
+    const oldEnd = frozen.start + frozen.len;
+    web = trimSequence(web, 'video', frozen.id, 'out', 30) as Timeline;
+    web = { ...web, video: web.video.map(c => c.id !== frozen.id && c.trackId === frozen.trackId && c.start >= oldEnd ? { ...c, start: c.start + 30 } : c) };
+    check();
+    phone = trimItem(phone, sel, 'in', 12, false, 0)!; web = trimSequence(web, 'video', 'v1', 'in', 12) as Timeline; check();
+    const splitAt = phone.video.find(c => c.id === 'v1')!.start + 20;
+    phone = splitClip(phone, sel, splitAt)!; web = splitSequenceClip(web, 'video', 'v1', splitAt) as Timeline; check();
+});

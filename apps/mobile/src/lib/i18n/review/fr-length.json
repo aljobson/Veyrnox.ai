@@ -1,5 +1,53 @@
 [
   {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "Couleur hexadécimale de {label}",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Préréglage de vitesse",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorTools.pulse",
+    "english": "Pulse",
+    "translation": "Pulsation",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Personnalisé",
+    "ratio": 2
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Durée de l’image figée",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorTools.updated",
+    "english": "Speed edit applied.",
+    "translation": "Modification de vitesse appliquée.",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Ajouter un point de vitesse",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.curveApply",
+    "english": "Apply speed curve",
+    "translation": "Appliquer la courbe de vitesse",
+    "ratio": 1.76
+  },
+  {
     "id": "editorExportRefusal.speed",
     "english": "Phone export can't include speed changes yet.",
     "translation": "L’exportation depuis un téléphone ne prend pas encore en charge les changements de vitesse.",

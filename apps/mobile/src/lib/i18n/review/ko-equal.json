@@ -78,5 +78,7 @@
   "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending.",
   "beat.tempoValue": "Same in ko: a loanword, brand-style name or number used unchanged in this language.",
   "beat.kit.808": "Same in ko: a loanword, brand-style name or number used unchanged in this language.",
+  "editorTools.rateValue": "Standard mathematical notation shared across languages.",
+  "editorTools.positionValue": "Standard mathematical notation shared across languages.",
   "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose."
 }
