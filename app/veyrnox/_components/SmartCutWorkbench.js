@@ -27,6 +27,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
   const [playing, setPlaying] = useState(false);
   const previewRef = useRef(null);
   const active = items[clampIndex(activeIndex, items.length)] || null;
+  const activeUid = active?.uid;
   const start = clipStart(active);
   const end = clipEnd(active);
   const asset = useAssetUrl(active?.job_id, active?.asset_url);
@@ -41,7 +42,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
     setPlayhead(next);
     setPlaying(false);
     if (previewRef.current) previewRef.current.currentTime = next;
-  }, [active?.uid]);
+  }, [activeUid, start, end]);
 
   function chooseClip(index) {
     setActiveIndex(index);
@@ -114,7 +115,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
               }}
             /> : <div className="grid h-full place-items-center px-6 text-center text-xs text-white/60">{t('app.smartCut.workbench.empty')}</div>}
             <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between bg-gradient-to-b from-black/70 to-transparent p-3 text-[10px] font-bold text-white">
-              <span>{active?.name || 'Smart Cut'}</span><span>{time(output)}</span>
+              <span>{active?.name || t('app.smartCut.workbench.tool.smartCut')}</span><span>{time(output)}</span>
             </div>
           </div>
           <div className="mt-3 flex items-center justify-center gap-2">
