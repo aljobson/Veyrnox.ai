@@ -6759,5 +6759,7 @@ export default {
     "musicPublication.checkUnpublish": "Das Zurückziehen konnte nicht bestätigt werden. Prüfe unten den aktuellen Status. Falls noch veröffentlicht, bestätige das Zurückziehen erneut für eine neue Anfrage.",
     "musicPublication.retry": "Veröffentlichung prüfen",
     "musicPublication.listen": "Geteilter Song",
+    "musicPublication.removedByModeration": "Dieser Song wurde von der Moderation entfernt.",
+    "musicPublication.shareSheetError": "Das Teilen-Menü konnte nicht geöffnet werden. Versuche es erneut.",
     "musicPublication.linkGone": "Dieser Hörlink funktioniert nicht mehr.",
 } as const;

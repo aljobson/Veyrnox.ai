@@ -16,10 +16,15 @@ export function createPublicationFlow(api: ApiClient, song: string) {
         if (!live) return;
         const ticket = ++epoch;
         const read = await probeMusic(() => getPublication(api, song));
-        if (live && ticket === epoch) emit({ read });
+        if (!live || ticket !== epoch) return;
+        if (read.state === 'on' && read.data?.status === 'published' && state.pending) {
+            attempts.reset();
+            emit({ read, pending: null, issue: state.issue === 'retryPublish' ? null : state.issue });
+        } else emit({ read });
     }
     async function write(input?: PublishInput) {
         if (!live || lock || state.read?.state !== 'on') return;
+        if (state.read.data?.status === 'blocked') return;
         if (!input && (state.pending || state.read.data?.status !== 'published')) return;
         lock = true; ++epoch; emit({ busy: true, issue: null });
         try { if (input) await attempts.publish(input); else await attempts.unpublish(); }

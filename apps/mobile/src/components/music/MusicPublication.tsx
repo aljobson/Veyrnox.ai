@@ -33,6 +33,10 @@ function PublicationBody({ song }: { song: MusicSongDetail }) {
         : state.issue === 'retryPublish' ? t('musicPublication.retryPublish') : state.issue === 'checkUnpublish' ? t('musicPublication.checkUnpublish')
         : state.issue === 'writeError' ? t('music.writeError') : '';
     if (read?.state === 'off') return null;
+    if (publication?.status === 'blocked') return <View style={s.group}>
+        <Text variant="title3">{t('musicPublication.title')}</Text>
+        <Text>{t('musicPublication.removedByModeration')}</Text>
+    </View>;
     function show() { setHandle(publication?.handle ?? ''); setName(publication?.display_name ?? ''); setRights(false); setOpen(true); }
     function unpublish() {
         Alert.alert(rawText(t('musicPublication.unpublish')), rawText(t('musicPublication.unpublishConfirm')), [

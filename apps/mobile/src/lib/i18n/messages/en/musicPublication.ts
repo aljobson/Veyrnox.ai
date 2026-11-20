@@ -25,5 +25,7 @@ export default {
     "musicPublication.checkUnpublish": "The unpublish result could not be confirmed. Check the current status below. If still published, confirm Unpublish again to make a new request.",
     "musicPublication.retry": "Check publish result",
     "musicPublication.listen": "Shared song",
+    "musicPublication.removedByModeration": "This song was removed by moderation.",
+    "musicPublication.shareSheetError": "The share sheet could not open. Try again.",
     "musicPublication.linkGone": "This listen link no longer works."
 } as const;

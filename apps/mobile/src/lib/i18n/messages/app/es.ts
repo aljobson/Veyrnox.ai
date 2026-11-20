@@ -6843,5 +6843,7 @@ export default {
     "musicPublication.checkUnpublish": "No se pudo confirmar la retirada. Comprueba el estado actual abajo. Si sigue publicada, confirma de nuevo la retirada para enviar una nueva solicitud.",
     "musicPublication.retry": "Comprobar publicación",
     "musicPublication.listen": "Canción compartida",
+    "musicPublication.removedByModeration": "Esta canción fue retirada por moderación.",
+    "musicPublication.shareSheetError": "No se pudo abrir el menú para compartir. Inténtalo de nuevo.",
     "musicPublication.linkGone": "Este enlace de escucha ya no funciona.",
 } as const;

@@ -6675,5 +6675,7 @@ export default {
     "musicPublication.checkUnpublish": "공개 취소를 확인하지 못했습니다. 아래의 현재 상태를 확인하세요. 아직 공개 중이면 취소를 다시 확인하여 새 요청을 보내세요.",
     "musicPublication.retry": "공개 결과 확인",
     "musicPublication.listen": "공유된 곡",
+    "musicPublication.removedByModeration": "이 곡은 운영진에 의해 삭제되었습니다.",
+    "musicPublication.shareSheetError": "공유 메뉴를 열 수 없습니다. 다시 시도하세요.",
     "musicPublication.linkGone": "이 청취 링크는 더 이상 작동하지 않습니다.",
 } as const;

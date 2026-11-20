@@ -30,6 +30,26 @@ test('POST acknowledgement cannot replace authoritative GET state', async () => 
     const h = setup(); await h.flow.load(); h.request.mockResolvedValueOnce(receipt).mockResolvedValueOnce({ publication: null });
     await h.flow.publish(input); expect(h.flow.snapshot().read).toEqual({ state: 'on', data: null }); h.flow.dispose();
 });
+test.each([false, true])('published refetch settles an unknown publish attempt (later retry: %s)', async later => {
+    const h = setup(); await h.flow.load();
+    h.request.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ publication: later ? null : publication });
+    await h.flow.publish(input);
+    if (later) {
+        expect(h.flow.snapshot()).toMatchObject({ pending: input, issue: 'retryPublish' });
+        h.request.mockResolvedValueOnce({ publication }); await h.flow.load();
+    }
+    expect(h.flow.snapshot()).toMatchObject({ pending: null, issue: null, busy: false, read: { state: 'on', data: publication } });
+    expect(h.request.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
+    h.request.mockResolvedValueOnce({ ok: true, idempotent: false }).mockResolvedValueOnce({ publication: null });
+    await h.flow.unpublish(publication.slug);
+    expect(h.request.mock.calls.filter(([, init]) => init?.method === 'DELETE')).toHaveLength(1);
+    expect(h.flow.snapshot().read).toEqual({ state: 'on', data: null }); h.flow.dispose();
+});
+test('blocked publication rejects stale publish and unpublish actions without a write', async () => {
+    const h = setup(); h.request.mockResolvedValueOnce({ publication: { ...publication, status: 'blocked' } });
+    await h.flow.load(); await h.flow.publish(input); await h.flow.unpublish(publication.slug);
+    expect(h.request).toHaveBeenCalledTimes(1); h.flow.dispose();
+});
 test.each([new Error('offline'), new ApiError(503, 'internal'), new ApiError(408, 'timeout')])('uncertain DELETE never replays across intervening republish', async error => {
     const h = setup(), newer = { ...publication, slug: 'b'.repeat(24) };
     h.request.mockResolvedValueOnce({ publication }); await h.flow.load();

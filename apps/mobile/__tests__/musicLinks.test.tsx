@@ -39,6 +39,14 @@ test('URL builders only produce validated production track/creator URLs', () => 
 });
 test('track share control invokes the exact URL', () => share(<MusicLinkShare slug={slug} />, 'musicPublication.shareTrack', `https://veyrnox.ai/music/tracks/${slug}`));
 test('creator share control invokes the exact URL', () => share(<MusicLinkShare handle="artist_one" />, 'musicPublication.shareCreator', 'https://veyrnox.ai/music/creators/artist_one'));
+test('share sheet failure uses button-neutral copy and clears after retry', async () => {
+    jest.mocked(RN.Share.share).mockRejectedValueOnce(new Error('unavailable'));
+    await share(<MusicLinkShare slug={slug} />, 'musicPublication.shareTrack', `https://veyrnox.ai/music/tracks/${slug}`);
+    expect(root.container.queryAll(n => n.children.includes(t('musicPublication.shareSheetError')))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.children.includes(t('music.shareSheetError')))).toHaveLength(0);
+    await share(<MusicLinkShare slug={slug} />, 'musicPublication.shareTrack', `https://veyrnox.ai/music/tracks/${slug}`);
+    expect(root.container.queryAll(n => n.children.includes(t('musicPublication.shareSheetError')))).toHaveLength(0);
+});
 test('own publication track button invokes the exact URL', () => share(<MusicPublication song={detail} />, 'musicPublication.shareTrack', `https://veyrnox.ai/music/tracks/${publication.slug}`));
 test('own publication profile button invokes the exact URL', () => share(<MusicPublication song={detail} />, 'musicPublication.shareCreator', `https://veyrnox.ai/music/creators/${publication.handle}`));
 test('P4b track screen invokes the exact URL', () => share(<Track />, 'musicPublication.shareTrack', `https://veyrnox.ai/music/tracks/${slug}`));

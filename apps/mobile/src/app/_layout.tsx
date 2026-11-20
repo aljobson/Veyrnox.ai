@@ -8,7 +8,7 @@ import { typefaceFonts } from '../components/ui/FontCatalog';
 import { useFonts } from 'expo-font';
 import { Slot, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { AuthProvider } from '../auth/AuthProvider';
 import { BillingProvider } from '../billing/BillingProvider';
 import { PushProvider } from '../push/PushProvider';
@@ -49,12 +49,24 @@ function RootLayout() {
 function ThemeRouteRestorer() {
     const router = useRouter();
     const pathname = usePathname();
+    const pending = useRef<string | null>(null);
+    const taking = useRef<Promise<void> | null>(null);
     useEffect(() => {
+        if (isListenRoute(pathname)) return;
         let live = true;
-        void takeThemeReturnPath().then((next) => {
-            if (!live || isListenRoute(pathname) || !next || next === pathname) return;
-            restoreReturnRoute(router, next);
-        }).catch(() => captureIssue('theme_return_failed', {}));
+        function restore() {
+            if (!live || !pending.current) return;
+            const next = pending.current;
+            pending.current = null;
+            if (next !== pathname) restoreReturnRoute(router, next);
+        }
+        if (pending.current) restore();
+        else {
+            // Keep a taken path in memory if navigation changes while storage resolves.
+            taking.current ??= takeThemeReturnPath().then(next => { pending.current = next; })
+                .finally(() => { taking.current = null; });
+            void taking.current.then(restore).catch(() => captureIssue('theme_return_failed', {}));
+        }
         return () => { live = false; };
     }, [pathname, router]);
     return null;

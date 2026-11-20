@@ -6927,5 +6927,7 @@ export default {
     "musicPublication.checkUnpublish": "Не удалось подтвердить снятие. Проверьте текущий статус ниже. Если песня всё ещё опубликована, подтвердите снятие снова для нового запроса.",
     "musicPublication.retry": "Проверить публикацию",
     "musicPublication.listen": "Песня по ссылке",
+    "musicPublication.removedByModeration": "Эта песня удалена модерацией.",
+    "musicPublication.shareSheetError": "Не удалось открыть меню «Поделиться». Попробуйте ещё раз.",
     "musicPublication.linkGone": "Эта ссылка для прослушивания больше не работает.",
 } as const;

@@ -69,6 +69,10 @@ test('fresh signed-out install defers language choice while listening, then chan
 test('saved theme return cannot override an incoming anonymous listen link', async () => {
     await saveLanguage('en'); await saveThemeReturnPath('/account'); await render();
     expect(texts(shared.song.title)).toHaveLength(1); expect(mockRouter.push).not.toHaveBeenCalled(); expect(mockRouter.replace).not.toHaveBeenCalled();
+    expect([...mockStore.values()]).toContain('/account');
+    mockPathname = '/'; await render();
+    expect(mockRouter.push).toHaveBeenCalledWith('/account', { withAnchor: true });
+    expect([...mockStore.values()]).not.toContain('/account');
 });
 test('first launch with an RTL device locale defers direction reload without storing the token', async () => {
     setLocaleFromDevice(['ar']); await render(); expect(texts(shared.song.title)).toHaveLength(1);

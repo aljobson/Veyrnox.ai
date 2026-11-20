@@ -6675,5 +6675,7 @@ export default {
     "musicPublication.checkUnpublish": "公開取り消しを確認できませんでした。以下の現在の状態を確認してください。まだ公開中の場合は、再度取り消しを確認して新しいリクエストを送信してください。",
     "musicPublication.retry": "公開結果を確認",
     "musicPublication.listen": "共有された曲",
+    "musicPublication.removedByModeration": "この曲はモデレーションにより削除されました。",
+    "musicPublication.shareSheetError": "共有メニューを開けませんでした。もう一度お試しください。",
     "musicPublication.linkGone": "この再生リンクは利用できなくなりました。",
 } as const;

@@ -6759,5 +6759,7 @@ export default {
     "musicPublication.checkUnpublish": "प्रकाशन हटने की पुष्टि नहीं हुई। नीचे वर्तमान स्थिति जाँचें। यदि अब भी प्रकाशित है, तो नए अनुरोध के लिए फिर से हटाने की पुष्टि करें।",
     "musicPublication.retry": "प्रकाशन का परिणाम जाँचें",
     "musicPublication.listen": "साझा किया गया गीत",
+    "musicPublication.removedByModeration": "यह गाना मॉडरेशन टीम ने हटा दिया है।",
+    "musicPublication.shareSheetError": "शेयर मेन्यू नहीं खुल सका। फिर से कोशिश करें।",
     "musicPublication.linkGone": "यह सुनने का लिंक अब काम नहीं करता।",
 } as const;

@@ -6675,5 +6675,7 @@ export default {
     "musicPublication.checkUnpublish": "无法确认取消发布的结果。请检查下方当前状态。如果仍已发布，请再次确认取消发布以发起新请求。",
     "musicPublication.retry": "检查发布结果",
     "musicPublication.listen": "分享的歌曲",
+    "musicPublication.removedByModeration": "这首歌曲已被审核团队移除。",
+    "musicPublication.shareSheetError": "无法打开分享菜单。请重试。",
     "musicPublication.linkGone": "此收听链接已失效。",
 } as const;

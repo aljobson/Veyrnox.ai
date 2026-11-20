@@ -14,6 +14,6 @@ export function MusicLinkShare(props: { slug: string } | { handle: string }) {
     }
     return <>
         <Button icon="shareNetwork" variant="secondary" label={t('slug' in props ? 'musicPublication.shareTrack' : 'musicPublication.shareCreator')} onPress={() => void share()} />
-        {failed ? <Text tone="danger">{t('music.shareSheetError')}</Text> : null}
+        {failed ? <Text tone="danger">{t('musicPublication.shareSheetError')}</Text> : null}
     </>;
 }

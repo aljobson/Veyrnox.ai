@@ -7095,5 +7095,7 @@ export default {
     "musicPublication.checkUnpublish": "تعذر تأكيد إلغاء النشر. تحقق من الحالة الحالية أدناه. إذا بقيت الأغنية منشورة، فأكد إلغاء النشر مجددًا لإرسال طلب جديد.",
     "musicPublication.retry": "التحقق من نتيجة النشر",
     "musicPublication.listen": "أغنية مشتركة",
+    "musicPublication.removedByModeration": "أُزيلت هذه الأغنية بقرار من فريق الإشراف.",
+    "musicPublication.shareSheetError": "تعذّر فتح نافذة المشاركة. حاول مرة أخرى.",
     "musicPublication.linkGone": "لم يعد رابط الاستماع هذا يعمل.",
 } as const;

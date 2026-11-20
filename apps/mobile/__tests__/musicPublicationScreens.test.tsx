@@ -74,6 +74,23 @@ test('unpublish waits for confirmation, refetches an intervening republish, and 
 test.each(['music_publication_unavailable', 'music_unavailable'])('%s hides publication section', async code => {
     mockApi.request.mockRejectedValue(new ApiError(404, code)); await mount(); expect(root.container.children).toHaveLength(0);
 });
+test('moderation removal shows a notice without publish, unpublish or a dialog', async () => {
+    mockApi.request.mockResolvedValue({ publication: { ...publication, status: 'blocked' } });
+    await mount();
+    expect(texts(t('musicPublication.removedByModeration'))).toHaveLength(1);
+    for (const key of ['publish', 'unpublish', 'confirm', 'retry']) expect(buttons(`musicPublication.${key}`)).toHaveLength(0);
+    expect(texts(t('musicPublication.private'))).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.presentationStyle === 'pageSheet')).toHaveLength(0);
+    expect(writes()).toHaveLength(0); expect(writes('DELETE')).toHaveLength(0);
+});
+test('a moderation removal returned after a write hides the open dialog and pending retry', async () => {
+    await open(); await check(2);
+    mockApi.request.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ publication: { ...publication, status: 'blocked' } });
+    await click('musicPublication.confirm');
+    expect(texts(t('musicPublication.removedByModeration'))).toHaveLength(1);
+    for (const key of ['publish', 'unpublish', 'confirm', 'retry']) expect(buttons(`musicPublication.${key}`)).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.presentationStyle === 'pageSheet')).toHaveLength(0);
+});
 test('account generation and unmount discard late publication results', async () => {
     const late = deferred<unknown>(); mockApi.request.mockReturnValueOnce(late.promise); await mount();
     mockGeneration++; await mount(); await act(async () => late.resolve({ publication }));
