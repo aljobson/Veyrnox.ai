@@ -1,4 +1,5 @@
 import { SwapComposer } from '../../../components/templates/SwapComposer';
+import { SwapTemplatePreview } from '../../../components/templates/SwapTemplatePreview';
 import { SwapAttemptStatus } from '../../../components/templates/SwapAttemptStatus';
 import { useSwapAvailability } from '../../../lib/templateSwap/availability';
 import { TEMPLATE_SWAP_RUNTIME } from '../../../lib/templateSwap/runtimeFlag';
@@ -101,7 +102,7 @@ export default function TemplatePage() {
         {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
         {swapOffer ? <>
             {preset && <Text variant="title1" accessibilityRole="header">{preset.title}</Text>}
-            {preset?.previewUrl && <InlineMedia url={preset.previewUrl} label={t('job.playVideo')} />}
+            <SwapTemplatePreview id={id} title={preset?.title} />
             <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} />
         </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>

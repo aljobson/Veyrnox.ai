@@ -65,7 +65,7 @@ test('complete public page replaces legacy notice, CTA, model and inputs only on
 test('Create preset and template query use shared availability and catalog-only presentation',()=>{
   for(const query of ['preset=test','template=test','template_id=test']){
     const entry=load('app/veyrnox/_components/SwapCreateEntry.js',{
-      'next/navigation':{useSearchParams:()=>new URLSearchParams(query)},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,
+      'next/navigation':{useSearchParams:()=>new URLSearchParams(query)},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,'./SwapTemplatePreview.js':{SwapTemplatePreview:()=>null},
     });
     for(const enabled of [false,true]){
       available=enabled;
