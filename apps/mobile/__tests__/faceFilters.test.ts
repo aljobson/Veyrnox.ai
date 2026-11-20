@@ -170,7 +170,7 @@ test('the owner-bound client shares AuthProvider session-loss and stream options
     expect(screen).toContain('getCacheUser() !== owner');
     expect(auth).toContain('const onSessionLost = useCallback(');
     expect(auth).toContain('if (expected !== undefined && expected !== generationRef.current) return;');
-    expect(auth).toContain('if (!transientFailure.current) void drop()');
+    expect(auth).toContain("if (!transientFailure.current) void drop('expired')");
     for (const source of [screen, auth]) {
         expect(source).toContain('streamFetch: expoFetch as unknown as typeof fetch');
         expect(source).toContain('beforeSend: guardedBeforeSend');

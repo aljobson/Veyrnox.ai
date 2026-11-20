@@ -1,8 +1,8 @@
-import { appRuntimeFlag } from '../../../../lib/appRuntime.js';
+import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
 import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
-import { templateSwapPrompt } from '../../../../lib/templateSwapClipPrompt.mjs';
+import { templateSwapPrompt, templateSwapPeoplePrompt } from '../../../../lib/templateSwapClipPrompt.mjs';
 import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
 import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
 import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
@@ -11,6 +11,7 @@ import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
 import { checkSwapRequest, resolveSwapVideo } from '../../../../lib/swapSceneGeneration.js';
 import { hasRuntimeReplay } from '../../../../lib/runtimeReplay.js';
 import { validateInputs } from '../../../../lib/generationInputValidation.js';
+import { SPEECH_CONTROL_KEYS } from '../../../../lib/speechInputs.js';
 import { isFeatureKilled } from '../../../../lib/runtimeSwitchCache.js';
 import { featurePaused } from '../../../../lib/runtimeAdmission.js';
 import { readBoundedBody } from '../../../../lib/boundedBody.js';
@@ -212,12 +213,13 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
-    if (hasTemplateSwap && (process.env.TEMPLATE_SWAP_CLIP_ENABLED !== 'true' || typeof body.template_swap !== 'string'
+    if (hasTemplateSwap && (!templateSwapSwitchOn(process.env) || typeof body.template_swap !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_swap))) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
     const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() }) : null;
     if (swapClipReplay) return NextResponse.json(swapClipReplay.body, { status: swapClipReplay.status });
     const templateSwap = hasTemplateSwap ? await loadTemplateSwapClip(body.template_swap, cfg, { r2cfg: r2EnvConfig() }) : null;
     if (hasTemplateSwap && !templateSwap) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
+    const swapPeople = templateSwap?.template.people === 2 ? 2 : 1;
     if (templateSwap && clientTemplateVideo(body)) return NextResponse.json({ error: 'template_swap_video_not_allowed' }, { status: 400 });
     const hasTemplateClip = Object.hasOwn(body, 'template_clip');
     if (hasTemplateClip && (process.env.TEMPLATE_CLIP_ENABLED !== 'true' || typeof body.template_clip !== 'string'
@@ -251,9 +253,9 @@ export async function POST(req) {
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
     }
     if (templateSwap) {
-        const error = checkTemplateSwapRequest(body, references.references, templateSwap.modelRow.id);
+        const error = checkTemplateSwapRequest(body, references.references, templateSwap.modelRow.id, swapPeople);
         if (error) return NextResponse.json({ error }, { status: 400 });
-        inputs = { ...inputs, prompt: templateSwapPrompt(templateSwap.source.role), duration_seconds: 5 };
+        inputs = { ...inputs, prompt: swapPeople === 2 ? templateSwapPeoplePrompt(templateSwap.template.roles) : templateSwapPrompt(templateSwap.source.role), duration_seconds: 5 };
         const checked = validateInputs(inputs);
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
     }
@@ -295,7 +297,7 @@ export async function POST(req) {
     // No capability record = no known contract for this endpoint: refuse rather
     // than forward inputs the provider may bill differently for.
     const publicRecord = capabilityFor(modelRow.provider_endpoint);
-    const record = templateSwap && publicRecord ? templateSwapCapability(publicRecord, templateSwap) : publicRecord;
+    const record = templateSwap && publicRecord ? templateSwapCapability(publicRecord, templateSwap, swapPeople) : publicRecord;
     if (!record || record.provider !== modelRow.provider) {
         console.error('[generations] no capability record for', modelRow.id, modelRow.provider_endpoint);
         return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
@@ -307,7 +309,7 @@ export async function POST(req) {
     }
     if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
-    for (const key of ['output_resolution', 'audio_enabled']) {
+    for (const key of ['output_resolution', 'audio_enabled', ...SPEECH_CONTROL_KEYS]) {
         if (inputs[key] !== undefined && !Object.hasOwn(record.inputs, key)) {
             return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
         }
@@ -327,10 +329,10 @@ export async function POST(req) {
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
     if (templateSwap) {
-        const imageCheck = checkTemplateSwapImages(sources);
+        const imageCheck = checkTemplateSwapImages(sources, swapPeople);
         if (!imageCheck.ok) return NextResponse.json({ error: imageCheck.error }, { status: 400 });
-        const [frontal, crop] = resolved.inputs.image_url;
-        inputs.elements = [{ frontal_image_url: frontal, reference_image_urls: [crop] }];
+        const urls = resolved.inputs.image_url;
+        inputs.elements = Array.from({ length: swapPeople }, (_, person) => ({ frontal_image_url: urls[person * 2], reference_image_urls: [urls[person * 2 + 1]] }));
         delete inputs.image_url;
     }
     const swapVideo = templateSwap ? await resolveTemplateSwapVideo(templateSwap, record, r2cfg) : templateClip ? await resolveTemplateClipVideo(templateClip, record, r2cfg) : swap ? await resolveSwapVideo(swap, record, r2cfg) : null;

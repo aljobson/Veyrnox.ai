@@ -84,6 +84,24 @@
     "ratio": 1.73
   },
   {
+    "id": "acct.dev.unknown",
+    "english": "Unknown device",
+    "translation": "Dispositivo desconhecido",
+    "ratio": 1.71
+  },
+  {
+    "id": "acct.dev.confirm",
+    "english": "Sign out {name}?",
+    "translation": "Encerrar a sessão em {name}?",
+    "ratio": 1.75
+  },
+  {
+    "id": "acct.dev.endFailed",
+    "english": "Could not sign that device out. Try again.",
+    "translation": "Não foi possível encerrar a sessão desse dispositivo. Tente de novo.",
+    "ratio": 1.62
+  },
+  {
     "id": "acct.mfa.cancelSetup",
     "english": "Cancel setup",
     "translation": "Cancelar configuração",
@@ -3312,6 +3330,60 @@
     "ratio": 2.17
   },
   {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Faixas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Arquivo de faixas separadas",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicActions.stems.ready",
+    "english": "Your stem archive is ready.",
+    "translation": "Seu arquivo de faixas separadas está pronto.",
+    "ratio": 1.63
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Sincronização labial",
+    "ratio": 2.5
+  },
+  {
+    "id": "musicPlaylists.title",
+    "english": "Playlists",
+    "translation": "Listas de reprodução",
+    "ratio": 2.22
+  },
+  {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Reproduzir tudo",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Adicionar músicas",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicDiscover.mood.all",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproduzir",
@@ -3496,5 +3568,17 @@
     "english": "Reset prompt",
     "translation": "Redefinir instruções",
     "ratio": 1.67
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
+    "id": "presets.swap.check",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
   }
 ]

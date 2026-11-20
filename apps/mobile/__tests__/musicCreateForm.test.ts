@@ -50,6 +50,14 @@ test('clamps model durations and validates lengths', () => {
     for (const patch of [{ prompt: 'x'.repeat(501) }, { title: 'x'.repeat(81) }]) expect(() => buildSimpleQuote({ ...input, ...patch }, e)).toThrow('over_length');
     for (const patch of [{ lyrics: 'x'.repeat(3001) }, { styles: 'x'.repeat(501) }]) expect(() => buildCustomQuote({ ...custom, ...patch }, e, 0, true)).toThrow('over_length');
 });
+test.each([
+    { min: 10, max: 60, value: 200, expected: 60 },
+    { min: 10, max: 135, value: 200, expected: 135 },
+    { min: 20, max: 135, value: 5, expected: 20 },
+])('clampDuration($value) respects server bounds $min–$max', ({ min, max, value, expected }) => {
+    const model = { ...e.models[0], controls: { ...e.models[0].controls, duration_seconds: { min, max, default: 60 } } };
+    expect(clampDuration(value, model)).toBe(expected);
+});
 test('locked plan cannot build either payload; blockers cover balance, slots and expiry', () => {
     const locked = { ...e, models: e.models.map(m => ({ ...m, available: false })) };
     expect(modelState(locked.models[1], locked)).toBe('locked_plan');

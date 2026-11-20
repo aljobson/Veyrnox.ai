@@ -6,7 +6,7 @@ register('data:text/javascript,' + encodeURIComponent(`
 export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }
 export async function load(url,c,next) {
  const r = await next(url,c);
- if(url.endsWith('/app/veyrnox/_lib/templateSwapClips.js')) return {...r,source:String(r.source).replace('Object.freeze([])', ${JSON.stringify(JSON.stringify(registry))}).replace("export const TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 = '';", ${JSON.stringify(`export { pin as TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 } from '${new URL('./fixtures/templateSwapClips.mjs', import.meta.url).href}';`)})};
+ if(url.endsWith('/app/veyrnox/_lib/templateSwapClips.js')) return {...r,source:String(r.source).replace(/Object\\.freeze\\(\\[[^\\]]*\\]\\)/, ${JSON.stringify(JSON.stringify(registry))}).replace(/export const TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 = '[0-9a-f]*';/, ${JSON.stringify(`export { pin as TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 } from '${new URL('./fixtures/templateSwapClips.mjs', import.meta.url).href}';`)})};
  return r;
 }`));
 const { GET } = await import('../app/api/catalog/route.js');

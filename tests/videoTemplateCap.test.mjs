@@ -14,6 +14,8 @@ import { templateCards, templateDetail } from '../lib/clientTemplates.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
 import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlock.js';
 import { imageSlots } from '../lib/templateBinding.js';
+import { templateContract } from '../lib/templateContract.js';
+import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 
 const CAP = 150, IMAGE_CAP = 150, AUDIO_CAP = 100;
 const VIDEO_REF = /@video\d*/i;
@@ -54,6 +56,16 @@ test('every listed video template binds the person\'s photo, needs no @video, an
         assert.equal(citedSlots.length, detail.fidelity.slotCount,
             `${preset.id} cites a different number of photos than its model accepts`);
     }
+});
+
+test('no listed video template is a swap recipe the server refuses before charging', () => {
+    // A swap recipe ("Replace X in the video with <<<image_1>>>") needs the template's own source clip. The generations
+    // route answers template_blocked for it (lib/templateFidelity.js), so listing it only shows people an error.
+    const refused = PRESETS.filter((preset) => {
+        const contract = templateContract(preset.id);
+        return contract && swapNeedsSourceVideo(contract.sourcePrompt);
+    }).map((preset) => preset.id);
+    assert.deepEqual(refused, []);
 });
 
 test('the three audited multi-photo templates stay hidden but keep resolving by direct link', () => {

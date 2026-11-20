@@ -22,6 +22,9 @@ export const LANGUAGES: readonly LanguageOption[] = [
     { code: 'ko', flag: '🇰🇷', name: '한국어', tag: 'ko' },
 ];
 
+// The flag shown beside a language's name, or null for a code with none ("auto" in Best Cut's language chips).
+export const languageFlag = (code: string): string | null => LANGUAGES.find((l) => l.code === code)?.flag ?? null;
+
 export const LANGUAGE_SLOT = 'veyrnox.language.v1';
 
 export const isLanguageCode = (value: unknown): value is string => typeof value === 'string' && LANGUAGES.some((l) => l.code === value);

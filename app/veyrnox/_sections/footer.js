@@ -4,12 +4,12 @@ import { Logo } from '../_components/Logo';
 import { PrintOnView } from '../_components/PrintOnView';
 import { ENTITY } from '../../legal/_lib/entity';
 import { rich } from '../../../lib/i18n/rich';
+import { LEGAL_UPDATED } from '../../../lib/legalUpdated.mjs';
 import { localizedHref, localeInfo } from '../../../lib/i18n/locales.mjs';
 import {
   FAQ,
   MORE_FEATURES,
   footerStamp,
-  SITE_UPDATED,
   SUPPORT_EMAIL,
   distinctShelfNames,
 } from '../_lib/tokens';
@@ -234,7 +234,7 @@ export function FooterForest({ locale = 'en', t, flush = false }) {
             <span>{t('footer.company', { no: ENTITY.companyNo, jurisdiction: ENTITY.jurisdiction })}</span>
             <span aria-hidden="true">·</span>
             <span>
-              {rich(t('footer.updated'), { date: <time dateTime={SITE_UPDATED}>{formatUpdated(SITE_UPDATED, info.hreflang)}</time> })}
+              {rich(t('footer.updated'), { date: <time dateTime={LEGAL_UPDATED}>{formatUpdated(LEGAL_UPDATED, info.hreflang)}</time> })}
             </span>
           </div>
           {/* py-2 on each link, taken back out of the bar's own padding: the

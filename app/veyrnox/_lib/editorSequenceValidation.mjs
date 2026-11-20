@@ -42,13 +42,19 @@ export function visualProblem(c) {
     if (c.keyframes !== undefined && (!Array.isArray(c.keyframes) || c.keyframes.length > 40 || c.keyframes.some((k, i) => !exact(k, ['frame', 'x', 'y', 'scale', 'rotation', 'opacity', 'easing']) || !int(k.frame, -18000, 18000) || (i > 0 && k.frame <= c.keyframes[i - 1].frame) || !number(k.x, -2, 3) || !number(k.y, -2, 3) || !number(k.scale, 0.05, 8) || !number(k.rotation, -360, 360) || !number(k.opacity, 0, 1) || !['linear', 'ease-in', 'ease-out', 'ease-in-out'].includes(k.easing)))) return helperEnglish('invalid_keyframes');
     return null;
 }
+// Shared validator allowlists: interchange dispositions are independently checked against these.
+export const CLIP_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'audioEffects', 'smartPicture']);
+export const TEXT_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'text', 'x', 'y', 'size', 'style', 'caption', 'words', 'wordStyle', 'wordsEstimated']);
+export const MEDIA_KEYS = Object.freeze(['id','kind','frames','name','hasAudio','width','height','graphic','folder','attribution','sourceName','assetSource','originalAudio']);
+export const TRACK_KEYS = Object.freeze(['id','kind','name','locked','muted','hidden','solo']);
+export const MARKER_KEYS = Object.freeze(['id','frame','label','color']);
 export function validateSequence(tl) {
     if (!exact(tl, ['schemaVersion', 'fps', 'seq', 'aspect', 'media', 'video', 'audio', 'text', 'tracks', 'background',...['folders','fonts','markers'].filter(k=>tl[k]!==undefined)])) return helperEnglish('invalid_multitrack_document');
     if (tl.schemaVersion !== 3 || tl.fps !== 30 || !int(tl.seq, 0, 1e6) || !['source', '16:9', '9:16', '1:1'].includes(tl.aspect) || !colour(tl.background)) return helperEnglish('invalid_project_settings');
     const organization=organizationProblem(tl);if(organization)return organization;
     if (!object(tl.media) || Object.keys(tl.media).length > 40) return helperEnglish('a_project_holds_up_to_40_files');
     for (const [id, m] of Object.entries(tl.media)) {
-        if (!exact(m, ['id', 'kind', 'frames', 'name', 'hasAudio', 'width', 'height', ...(m.graphic !== undefined ? ['graphic'] : []),...['folder','attribution','sourceName','assetSource','originalAudio'].filter(k=>m[k]!==undefined)]) || id !== m.id || !/^[A-Za-z0-9_-]{1,64}$/.test(id) || !['video', 'audio', 'image', 'graphic'].includes(m.kind) || !int(m.frames, 1, 1e7) || typeof m.name !== 'string' || m.name.length > 120 || typeof m.hasAudio !== 'boolean' || !int(m.width, 0, 16384) || !int(m.height, 0, 16384)) return helperEnglish('invalid_media_entry');
+        if (!exact(m, MEDIA_KEYS.filter(k => ['id','kind','frames','name','hasAudio','width','height'].includes(k) || m[k] !== undefined)) || id !== m.id || !/^[A-Za-z0-9_-]{1,64}$/.test(id) || !['video', 'audio', 'image', 'graphic'].includes(m.kind) || !int(m.frames, 1, 1e7) || typeof m.name !== 'string' || m.name.length > 120 || typeof m.hasAudio !== 'boolean' || !int(m.width, 0, 16384) || !int(m.height, 0, 16384)) return helperEnglish('invalid_media_entry');
         const details=mediaDetailsProblem(m)||assetSourceProblem(m.assetSource)||originalAudioProblem(m.originalAudio);if(details)return details;
         if(m.originalAudio && (m.kind!=='audio' || m.assetSource || !m.hasAudio || m.width || m.height || m.frames!==Math.floor(Math.round(originalAudioPreset(m.originalAudio.presetId).seconds*48000)/48000*30)))return helperEnglish('invalid_original_audio_media');
         if (m.kind === 'graphic' && (!exact(m.graphic, ['shape', 'color']) || !SHAPES.includes(m.graphic.shape) || !colour(m.graphic.color) || m.hasAudio)) return helperEnglish('invalid_graphic');
@@ -57,17 +63,16 @@ export function validateSequence(tl) {
     if (!Array.isArray(tl.tracks) || tl.tracks.length < 3 || tl.tracks.length > 16) return helperEnglish('a_project_holds_up_to_16_tracks');
     const lanes = new Map();
     for (const t of tl.tracks) {
-        if (!exact(t, ['id', 'kind', 'name', 'locked', 'muted', 'hidden', ...(t.solo !== undefined ? ['solo'] : [])]) || typeof t.id !== 'string' || !/^(video|audio|text)-[0-9]{1,7}$/.test(t.id) || lanes.has(t.id) || !['video', 'audio', 'text'].includes(t.kind) || typeof t.name !== 'string' || !t.name.trim() || t.name.length > 40 || [t.locked, t.muted, t.hidden].some(v => typeof v !== 'boolean') || (t.solo !== undefined && typeof t.solo !== 'boolean')) return helperEnglish('invalid_track');
+        if (!exact(t, TRACK_KEYS.filter(k => k !== 'solo' || t.solo !== undefined)) || typeof t.id !== 'string' || !/^(video|audio|text)-[0-9]{1,7}$/.test(t.id) || lanes.has(t.id) || !['video', 'audio', 'text'].includes(t.kind) || typeof t.name !== 'string' || !t.name.trim() || t.name.length > 40 || [t.locked, t.muted, t.hidden].some(v => typeof v !== 'boolean') || (t.solo !== undefined && typeof t.solo !== 'boolean')) return helperEnglish('invalid_track');
         lanes.set(t.id, t);
     }
     if (['video', 'audio', 'text'].some(kind => !tl.tracks.some(t => t.kind === kind))) return helperEnglish('keep_a_video_audio_and_text_track');
-    if(tl.markers!==undefined && (!Array.isArray(tl.markers) || tl.markers.length>100 || tl.markers.some((marker,index)=>!exact(marker,['id','frame','label','color']) || !/^m[0-9]{1,7}$/.test(marker.id) || !int(marker.frame,0,18000) || typeof marker.label!=='string' || !marker.label.trim() || marker.label.length>80 || /[\u0000-\u001f\u007f]/.test(marker.label) || !colour(marker.color) || tl.markers.some((other,otherIndex)=>otherIndex!==index && other.id===marker.id))))return helperEnglish('invalid_timeline_marker');
+    if(tl.markers!==undefined && (!Array.isArray(tl.markers) || tl.markers.length>100 || tl.markers.some((marker,index)=>!exact(marker,MARKER_KEYS) || !/^m[0-9]{1,7}$/.test(marker.id) || !int(marker.frame,0,18000) || typeof marker.label!=='string' || !marker.label.trim() || marker.label.length>80 || /[\u0000-\u001f\u007f]/.test(marker.label) || !colour(marker.color) || tl.markers.some((other,otherIndex)=>otherIndex!==index && other.id===marker.id))))return helperEnglish('invalid_timeline_marker');
     const seen = new Set();
     for (const [kind, max] of [['video', 40], ['audio', 40], ['text', 150]]) {
         if (!Array.isArray(tl[kind]) || tl[kind].length > max) return helperEnglish('too_many_clips', { value1: kind });
         for (const c of tl[kind]) {
-            const common = ['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'];
-            const allowed = kind === 'text' ? [...common, 'text', 'x', 'y', 'size', 'style', 'caption', 'words', 'wordStyle', 'wordsEstimated'] : [...common, 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'audioEffects', 'smartPicture'];
+            const allowed = kind === 'text' ? TEXT_KEYS : CLIP_KEYS;
             if (!only(c, allowed) || typeof c.id !== 'string' || !new RegExp(`^${kind[0]}[0-9]{1,7}$`).test(c.id) || seen.has(c.id)) return helperEnglish('invalid_clip_id');
             seen.add(c.id);
             if (c.groupId !== undefined && !/^g[0-9]{1,7}$/.test(c.groupId)) return helperEnglish('invalid_clip_group');

@@ -1,3 +1,9 @@
+let mockSwapOffer: any = null;
+let mockSwapRuntime = false;
+jest.mock('../src/lib/templateSwap/runtimeFlag', () => ({ get TEMPLATE_SWAP_RUNTIME() { return mockSwapRuntime; } }));
+jest.mock('../src/lib/templateSwap/availability', () => ({ useSwapAvailability: () => mockSwapOffer, useSwapRedirect: jest.fn() }));
+jest.mock('../src/components/templates/SwapComposer', () => ({ SwapComposer: () => require('react').createElement(require('react-native').Text, null, 'swap-composer') }));
+jest.mock('../src/components/templates/SwapAttemptStatus', () => ({ SwapAttemptStatus: () => require('react').createElement(require('react-native').Text, null, 'swap-money-history') }));
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -39,7 +45,7 @@ const otherModel: CatalogModel = { ...originalModel, id: 'other', name: 'Other m
 let root: Root;
 const controls = (label: string) => root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === label);
 async function click(label: string, index = 0) { await act(async () => controls(label)[index].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.clearAllMocks(); mockPlayers.length = 0; mockFetch.mockResolvedValue(feed); jest.mocked(fetchCatalog).mockResolvedValue([originalModel]); mockPopular.mockResolvedValue(['p-2', 'p-0']); mockCopy.mockResolvedValue(true); root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.clearAllMocks(); mockSwapOffer = null; mockSwapRuntime = false; mockPlayers.length = 0; mockFetch.mockResolvedValue(feed); jest.mocked(fetchCatalog).mockResolvedValue([originalModel]); mockPopular.mockResolvedValue(['p-2', 'p-0']); mockCopy.mockResolvedValue(true); root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); });
 test('filters chips, batches fifty, and opens a template page', async () => {
     await act(async () => root.render(<Templates />)); expect(mockList.data).toHaveLength(50);
@@ -162,4 +168,22 @@ test('the preview says it is a sample and states the length the video will actua
     await act(async () => { root.unmount(); root = createRoot(); });
     await act(async () => root.render(<TemplatePage />));
     expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.previewSample', { seconds: '5' })))).toHaveLength(1);
+});
+
+test('O1 offer suppresses legacy runs-on, unsupported notice and CTAs even for unavailable legacy model', async () => {
+    mockSwapRuntime = true; mockSwapOffer = { id: 'p-0', model: 'kling-o1-reference', credits: 47, durationSeconds: 5, images: 2, role: 'main character' };
+    mockFetch.mockResolvedValue([{ ...feed[0], available: false, prompt: '@video1 unsupported' }]);
+    jest.mocked(fetchCatalog).mockResolvedValue([]);
+    await act(async () => root.render(<TemplatePage />));
+    const output = () => root.container.queryAll(n => typeof n.props.children === 'string').map(n => n.props.children).join('\n');
+    expect(output()).toContain('swap-composer'); expect(output()).toContain('swap-money-history');
+    expect(output()).not.toContain(t('public.TemplateRecipe.sourceVideoUnsupported'));
+    expect(output()).not.toContain(t('libraryCreate.runsOn', { model: 'Model' }));
+    expect(controls(t('libraryCreate.useTemplate'))).toHaveLength(0);
+    mockSwapOffer = null; await act(async () => root.render(<TemplatePage />));
+    expect(output()).not.toContain('swap-composer'); expect(output()).toContain('swap-money-history');
+    expect(output()).toContain(t('public.TemplateRecipe.sourceVideoUnsupported'));
+    // With the build switch off (the default) the screen carries no swap node at all, even with an offer.
+    mockSwapRuntime = false; mockSwapOffer = null; await act(async () => root.render(<TemplatePage />));
+    expect(output()).not.toContain('swap-money-history');
 });

@@ -284,13 +284,13 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'library-video', icon: '▣', label: t('editor.libraryvideo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
         { id: 'library-image', icon: '▧', label: t('editor.libraryimage'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
         { id: 'library-audio', icon: '♫', label: t('editor.libraryaudio'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
-        { id: 'photos', icon: '▤', label: t('editor.photosvideos'), disabled: replacing, onPress: () => void choosePhotos() },
-        { id: 'files', icon: '▥', label: t('editor.files'), disabled: replacing, onPress: () => void chooseFiles() },
+        { id: 'photos', icon: '▤', label: t('editor.photosvideos'), disabled: replacing, afterClose: true, onPress: () => void choosePhotos() },
+        { id: 'files', icon: '▥', label: t('editor.files'), disabled: replacing, afterClose: true, onPress: () => void chooseFiles() },
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
     ];
     const aiRows: SheetRow[] = [
         ...(bestCut.available ? [{ id: 'best-cut', icon: '✦', label: t('bestCut.title'), disabled: !ready, onPress: () => { setSheet(null); bestCut.launch(); } }] : []),
-        ...(speechQuote ? (['silences', 'retakes'] as const).map(mode => ({ id: `speech-${mode}`, icon: '✦', label: t(`editorSpeech.${mode}`), disabled: !ready, onPress: () => { setPlaying(false); setSheet(null); setSpeechMode(mode); } })) : []),
+        ...(speechQuote ? (['silences', 'retakes', 'fillers'] as const).map(mode => ({ id: `speech-${mode}`, icon: '✦', label: t(`editorSpeech.${mode}`), disabled: !ready, onPress: () => { setPlaying(false); setSheet(null); setSpeechMode(mode); } })) : []),
         ...(aiQuote ? [{ id: 'describe', icon: '✦', label: t('editorAi.describe'), disabled: !ready, onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } }] : []),
         { id: 'smart-cut', icon: '✦', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
         { id: 'make-clip', icon: '▶', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },

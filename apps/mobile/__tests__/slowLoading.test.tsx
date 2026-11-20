@@ -11,7 +11,7 @@ import { RATE_LIMIT_DEFAULT_MS, RATE_LIMIT_MAX_MS, retryDelayMs } from '../src/l
 import { ApiError } from '../src/lib/api';
 import { t } from '../src/lib/i18n';
 
-jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Stack: { Screen: () => null } }));
+jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Stack: { Screen: () => null }, useFocusEffect: (cb: any) => require('react').useEffect(cb, [cb]) }));
 const mockApi = {};
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: jest.fn(), fetchAllCatalog: jest.fn() }));

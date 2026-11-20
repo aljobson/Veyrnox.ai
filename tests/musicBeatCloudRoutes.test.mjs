@@ -29,6 +29,7 @@ test('every route is flag gated and refuses missing identity/bearer before upstr
 test('PUT forwards exact text, full validation and user JWT; replay returns 200', async () => {
   let calls = 0;
   globalThis.fetch = async (url, init) => {
+    if (String(url).includes('music_beat_projects?')) return Response.json([metadata]);
     calls++; assert.equal(init.headers.authorization, 'Bearer user-jwt'); assert.equal(init.headers.apikey, 'sb_publishable_local_test');
     const sent = JSON.parse(init.body); assert.equal(sent.p_doc, raw); assert.equal(sent.p_beat_id, beatId); assert.equal(sent.p_mode, 'autosave');
     return Response.json({ ...metadata, idempotent: calls > 1 });
@@ -43,7 +44,7 @@ test('PUT forwards exact text, full validation and user JWT; replay returns 200'
 });
 test('RPC errors preserve only the opted-in typed codes', async () => {
   for (const [status, code] of [[409, 'VERSION_CONFLICT'], [409, 'IDEMPOTENCY_CONFLICT'], [429, 'LIMIT_REACHED'], [429, 'RATE_LIMITED'], [404, 'NOT_FOUND']]) {
-    globalThis.fetch = async () => Response.json({ message: code, details: 'secret' }, { status });
+    globalThis.fetch = async url => String(url).includes('music_beat_projects?') ? Response.json([metadata]) : Response.json({ message: code, details: 'secret' }, { status });
     await error(await PUT(req('PUT', body), params), status, code);
   }
 });
@@ -60,7 +61,7 @@ test('both document reads accept heavily escaped near-limit text and project-bin
 const key = `music-beat-takes/${user}/${takeId}.wav`;
 test('reserve binds byte size and If-None-Match; ready takes have no upload URL/key', async () => {
   let ready = false;
-  globalThis.fetch = async () => Response.json(ready ? { take_id: takeId, status: 'ready' } : { take_id: takeId, status: 'pending', r2_key: key, byte_size: 44, upload_expires_at: new Date(Date.now() + 900000).toISOString() });
+  globalThis.fetch = async url => String(url).includes('music_beat_projects?') ? Response.json([metadata]) : Response.json(ready ? { take_id: takeId, status: 'ready' } : { take_id: takeId, status: 'pending', r2_key: key, byte_size: 44, upload_expires_at: new Date(Date.now() + 900000).toISOString() });
   const body = { take_ref: 'take', byte_size: 44, duration_sec: 1 };
   const response = await reserve(req('POST', body), params); assert.equal(response.status, 200);
   const result = await response.json(); assert.equal(result.r2_key, undefined);
@@ -72,6 +73,7 @@ test('confirmation reads the owned key, HEADs it, never deletes missing objects;
   for (const scenario of ['missing', 'mismatch', 'ready']) {
     const calls = [];
     globalThis.fetch = async (url, init) => {
+      if (String(url).includes('music_beat_projects?')) return Response.json([metadata]);
       calls.push(init.method);
       if (String(url).includes('read_music_beat_take')) {
         assert.deepEqual(JSON.parse(init.body), { p_beat_id: beatId, p_take_id: takeId });
@@ -100,10 +102,83 @@ test('PUT preserves trailing space, tab and newline titles exactly', async () =>
   for (const title of ['My beat ', 'My beat\t', 'My beat\n']) {
     const text = JSON.stringify({ ...doc, title });
     globalThis.fetch = async (url, init) => {
+      if (String(url).includes('music_beat_projects?')) return Response.json([metadata]);
       const sent = JSON.parse(init.body);
       assert.equal(sent.p_title, title); assert.equal(sent.p_doc, text);
       return Response.json({ ...metadata, title });
     };
     assert.equal((await PUT(req('PUT', { ...body, doc_json: text }), params)).status, 201);
   }
+});
+
+test('declared version defaults to 4 for old clients and passes 5 for new saves and deletes', async () => {
+  for (const declared of [undefined, 5]) {
+    globalThis.fetch = async (_url, init) => {
+      if (String(_url).includes('music_beat_projects?')) return Response.json([metadata]);
+      const sent = JSON.parse(init.body);
+      assert.equal(sent.p_client_beat_version, declared ?? 4);
+      if (sent.p_doc) assert.equal(JSON.parse(sent.p_doc).version, 4);
+      return Response.json(metadata);
+    };
+    const declaration = declared === undefined ? {} : { client_beat_version: declared };
+    assert.equal((await PUT(req('PUT', { ...body, ...declaration }), params)).status, 201);
+    assert.equal((await DELETE(req('DELETE', { expected_revision: 1, ...declaration }), params)).status, 200);
+  }
+});
+test('old-client replace/delete preserve BEAT_CLIENT_OUTDATED from PostgREST and expose no upstream detail', async () => {
+  let calls = 0;
+  globalThis.fetch = async (_url, init) => {
+    if (String(_url).includes('music_beat_projects?')) return Response.json([metadata]);
+    calls++; assert.equal(JSON.parse(init.body).p_client_beat_version, 4);
+    return Response.json({ message: 'BEAT_CLIENT_OUTDATED', details: 'private database detail' }, { status: 409 });
+  };
+  await error(await PUT(req('PUT', body), params), 409, 'BEAT_CLIENT_OUTDATED');
+  await error(await DELETE(req('DELETE', { expected_revision: 1 }), params), 409, 'BEAT_CLIENT_OUTDATED');
+  assert.equal(calls, 2);
+});
+test('switch off cannot write v5 and rejects invalid declarations before any upstream mutation', async () => {
+  globalThis.fetch = async () => { assert.fail('no RPC may be called'); };
+  await error(await PUT(req('PUT', { ...body, client_beat_version: 5, doc_json: JSON.stringify({ ...doc, version: 5 }) }), params), 409, 'BEAT_WRITES_DISABLED');
+  for (const client_beat_version of [null, 0, 6, 999, '5', 1.5]) {
+    await error(await PUT(req('PUT', { ...body, client_beat_version }), params), 400, 'INVALID_BEAT_CLIENT_VERSION');
+    await error(await DELETE(req('DELETE', { expected_revision: 1, client_beat_version }), params), 400, 'INVALID_BEAT_CLIENT_VERSION');
+  }
+});
+test('switch on admits declared-5 payload while legacy declared-4 remains fenced', async () => {
+  const flags = process.env.MUSIC_RUNTIME_FLAGS;
+  process.env.MUSIC_RUNTIME_FLAGS = JSON.stringify({ ui: true, beatEditor: true, beatCloud: true, beatV5Writes: true });
+  try {
+    let calls = 0;
+    globalThis.fetch = async (_url, init) => { calls++; const sent = JSON.parse(init.body); assert.equal(sent.p_client_beat_version, 5); assert.equal(JSON.parse(sent.p_doc).version, 5); return Response.json(metadata); };
+    const payload = { ...body, doc_json: JSON.stringify({ ...doc, version: 5 }), client_beat_version: 5 };
+    assert.equal((await PUT(req('PUT', payload), params)).status, 201);
+    await error(await PUT(req('PUT', { ...payload, client_beat_version: 4 }), params), 409, 'BEAT_CLIENT_OUTDATED');
+    assert.equal(calls, 1);
+  } finally { process.env.MUSIC_RUNTIME_FLAGS = flags; }
+});
+test('take reserve and confirm refuse v5 before reservation, signing or HEAD; reads remain available', async () => {
+  const calls = [];
+  globalThis.fetch = async (url, init) => { calls.push(String(url)); assert.equal(init.method, 'GET'); return Response.json([{ ...metadata, doc_version: 5 }]); };
+  await error(await reserve(req('POST', { take_ref: 'take', byte_size: 44, duration_sec: 1 }), params), 409, 'BEAT_WRITES_DISABLED');
+  await error(await confirm(req('POST', {}), params), 409, 'BEAT_WRITES_DISABLED');
+  assert.equal(calls.length, 2);
+});
+
+for (const declared of [4, 5]) test(`stored v5 refuses stale v4 payload from declared-${declared} with one read and no RPC`, async () => {
+  let reads = 0;
+  globalThis.fetch = async (url, init) => {
+    assert.ok(String(url).includes('music_beat_projects?')); assert.equal(init.method, 'GET'); reads++;
+    return Response.json([{ ...metadata, doc_version: 5 }]);
+  };
+  await error(await PUT(req('PUT', { ...body, expected_revision: 1, client_beat_version: declared }), params), 409, declared === 4 ? 'BEAT_CLIENT_OUTDATED' : 'BEAT_WRITES_DISABLED');
+  assert.equal(reads, 1);
+});
+test('switch off still creates a v4 project when the preflight read finds no row', async () => {
+  let reads = 0, writes = 0;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).includes('music_beat_projects?')) { reads++; return Response.json([]); }
+    writes++; assert.equal(init.method, 'POST'); return Response.json(metadata);
+  };
+  assert.equal((await PUT(req('PUT', body), params)).status, 201);
+  assert.equal(reads, 1); assert.equal(writes, 1);
 });

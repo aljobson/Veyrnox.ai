@@ -21,6 +21,51 @@ beforeEach(async () => {
 });
 afterEach(() => flow.dispose());
 const customFlow = async () => { flow.edit({ mode: 'custom' }); await flow.loadDraft(); flow.edit(custom, true); };
+const longEntitlements = { ...entitlements, models: entitlements.models.map(model => ({ ...model, controls: {
+    ...model.controls, duration_seconds: { ...model.controls.duration_seconds, max: 135 }, duration_price_block_seconds: 60,
+} })) };
+const reviewLongCustom = async () => {
+    request.mockResolvedValueOnce(longEntitlements); await flow.refreshEntitlements();
+    await customFlow(); flow.edit({ duration: 135, styles: 'Warm strings' }); await flow.review();
+    expect(flow.attempts.snapshot()).toMatchObject({ phase: 'UNSUBMITTED', input: { duration: 135 } });
+};
+test.each(['UNSUBMITTED', 'AMBIGUOUS'] as const)('refresh clamps duration and preserves form fields with an %s quote', async phase => {
+    await reviewLongCustom();
+    if (phase === 'AMBIGUOUS') {
+        request.mockRejectedValueOnce(new ApiError(503, 'pair_acceptance_unknown')); await flow.confirm();
+    }
+    const before = flow.snapshot(), pending = flow.attempts.snapshot();
+    expect(pending?.phase).toBe(phase);
+    request.mockResolvedValueOnce(entitlements); await flow.refreshEntitlements();
+    expect(flow.snapshot()).toEqual({ ...before, entitlements, input: { ...before.input, duration: 60 } });
+    expect(flow.attempts.snapshot()).toBe(phase === 'UNSUBMITTED' ? null : pending);
+    if (phase === 'AMBIGUOUS') {
+        await flow.confirm();
+        const sends = request.mock.calls.filter(([path]) => path.endsWith('/generations'));
+        expect(sends.map(([, init]) => JSON.parse(init.body))).toEqual(Array(2).fill({ quote_id: pending!.quote.quote_id, idempotency_key: pending!.key }));
+        expect(flow.tracker.snapshot().entries[0].input).toEqual(pending!.input);
+    }
+});
+test('a refresh during submission preserves the attempt and acknowledgement updates only the latest entitlement balance', async () => {
+    await reviewLongCustom();
+    const wait = deferred(); request.mockImplementationOnce(() => wait.promise);
+    const confirming = flow.confirm(), pending = flow.attempts.snapshot();
+    expect(pending).toMatchObject({ phase: 'AMBIGUOUS', input: { duration: 135 } });
+    expect(flow.snapshot().busy).toBe(true);
+    const before = flow.snapshot();
+    request.mockResolvedValueOnce(entitlements); await flow.refreshEntitlements();
+    expect(flow.attempts.snapshot()).toBe(pending);
+    expect(flow.snapshot()).toEqual({ ...before, entitlements, input: { ...before.input, duration: 60 } });
+    const refreshed = flow.snapshot();
+    wait.resolve(generation); await confirming;
+    expect(flow.snapshot()).toEqual({ ...refreshed, busy: false, entitlements: { ...entitlements, balance: generation.balance_after } });
+    expect(flow.snapshot().entitlements?.models.find(model => model.id === custom.model_id)?.controls).toMatchObject({ duration_seconds: { max: 60 } });
+    expect(flow.snapshot().entitlements?.models.find(model => model.id === custom.model_id)?.controls).not.toHaveProperty('duration_price_block_seconds');
+    expect(flow.attempts.snapshot()).toBeNull();
+    expect(flow.tracker.snapshot().entries).toHaveLength(1);
+    expect(flow.tracker.snapshot().entries[0].input).toEqual(pending!.input);
+    expect(request.mock.calls.filter(([path]) => path.endsWith('/generations'))).toHaveLength(1);
+});
 test('custom saves then quotes with returned revision and immutable input', async () => {
     await customFlow(); await flow.review();
     const calls = request.mock.calls.filter(([path]) => path.endsWith('/drafts/custom') || path.endsWith('/generation-quotes'));

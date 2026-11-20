@@ -26,7 +26,10 @@ else) and compares it with a floor.
 | 2 | A balance could not be read (no key, 401, 403, 429, 5xx, timeout, bad shape) | One `provider-balance` issue per episode: could not check is never a pass |
 
 While a `provider-balance` issue is open no second one is filed; the hourly job
-summary shows the current state. Close the issue after the top-up once a run
+summary shows the current state. An open issue alone is easy to miss (the fal
+balance sat LOW and unread for five days in November 2026 until it ran out), so
+while the problem lasts the workflow adds one reminder comment a day. A comment
+is a new GitHub notification; it names the days open and the state, never a figure. Close the issue after the top-up once a run
 is green. No run moves money or touches the Worker.
 
 The report says `ok`, `LOW` or `UNREADABLE` per provider and names the floor,

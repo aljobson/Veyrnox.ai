@@ -12,6 +12,7 @@ export type MusicProbe<T> =
 // a missing song or hook on a feature that is on.
 const OFF_CODES: ReadonlySet<string> = new Set([
     'music_unavailable',
+    'playlists_unavailable',
     'music_library_unavailable',
     'music_library_tabs_unavailable',
     'music_remix_unavailable',

@@ -31,7 +31,7 @@ test('roles follow the lowest numbered slot, exposing all alternatives and objec
   assert.equal(templateSwapRoles('Replace the car with @image1.').object_role_suspected, true);
   assert.equal(normaliseSwapRole("  The   Girl's Hat "), "the girl's hat");
   const candidates = await swapCandidates();
-  assert.equal(candidates.length, 519);
+  assert.equal(candidates.length, 524); // 519 in the frozen plan; +5 edit-the-video templates the guard now reads as swaps (18 Nov 2026)
   for (const c of candidates) {
     const result = templateSwapRoles(c.sourcePrompt);
     assert.equal(normaliseSwapRole(result.role), result.role, c.id);

@@ -83,6 +83,7 @@ import { uploadSourceFile } from '../../_lib/uploadSourceFile';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
+import { SpeechSongNudge } from '../../_components/SpeechSongNudge';
 import { swapSceneModel, applySwapScene } from '../../_lib/swapSceneForm';
 import { internalModelId } from '../../../../lib/publicModelIds.js';
 // Auto Short stays hidden until launch unless this browser opts in
@@ -942,6 +943,7 @@ function CreateStudio() {
             className="scroll-mt-24 block w-full bg-transparent p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none outline-hidden"
             placeholder={helperCopy(t, locale, promptPlaceholder(model))}
           />
+          <SpeechSongNudge model={model} prompt={prompt} className="px-3.5 pb-2" />
           {(
             <div className="flex flex-wrap items-center gap-2 rounded-b-2xl border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
               {/* A template on a text-only model cannot use a picture (it would not reach the provider), so offer no slot for one. */}

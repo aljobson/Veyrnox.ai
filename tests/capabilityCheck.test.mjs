@@ -8,6 +8,13 @@ import { REGISTRY } from '../lib/modelCapabilities.js';
 // fal's live schema for Sana, captured 2026-10-09 and cut down to the input
 // schema and the ImageSize it refers to.
 const SANA_DOC = JSON.parse(readFileSync(new URL('./fixtures/fal-sana-openapi.json', import.meta.url), 'utf8'));
+// fal's public schema for MiniMax speech, captured 2026-11-19 (input schema plus VoiceSetting).
+const MINIMAX_DOC = JSON.parse(readFileSync(new URL('./fixtures/fal-minimax-speech-input.json', import.meta.url), 'utf8'));
+
+test('MiniMax derived speech fields match the live provider input contract', () => {
+    const live = inputSchemaOf(MINIMAX_DOC);
+    assert.deepEqual(checkRecord(REGISTRY['fal-ai/minimax/speech-2.6-hd'], live.schema, live.schemas), []);
+});
 
 const SIZE_PRESETS = ['square_hd', 'square', 'portrait_4_3', 'portrait_16_9', 'landscape_4_3', 'landscape_16_9'];
 const IMAGE_SIZE = { width: { type: 'integer', exclusiveMinimum: 0, maximum: 14142 }, height: { type: 'integer', exclusiveMinimum: 0, maximum: 14142 } };

@@ -80,3 +80,10 @@ test('old log failure cannot replace a newer result', async () => {
     await press(root, t('acct.oauth.refresh')); await press(root, t('acct.oauth.refresh')); await act(async () => old.reject(new ApiError(403, 'old')));
     expect(textOf(root.container)).toContain('Current key'); expect(textOf(root.container)).not.toContain(t('dev.err.role'));
 });
+test('API key scopes read as plain labels with the code as secondary text', async () => {
+    await render(DeveloperKeys);
+    const text = textOf(root.container);
+    for (const key of ['dev.scope.accountsRead', 'dev.scope.postsRead', 'dev.scope.postsWrite']) expect(text).toContain(t(key));
+    for (const code of ['accounts:read', 'posts:read', 'posts:write']) expect(text).toContain(code);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'checkbox' && n.props.accessibilityLabel === `${t('dev.scope.postsWrite')}, posts:write`)).toHaveLength(1);
+});

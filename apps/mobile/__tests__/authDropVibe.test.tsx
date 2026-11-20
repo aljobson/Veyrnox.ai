@@ -80,3 +80,31 @@ test.each(['hydration', 'finish'] as const)('old %s after same-account sign-in i
     expect(await old).toEqual(kind === 'hydration' ? false : { kind: 'stale-session' }); expect(await vibeStore.loadVibe()).toBeNull(); expect(notify).not.toHaveBeenCalled(); off();
     expect(await vibeStore.vibeOffered(api, auth.beginSessionTask())).toBe(false); expect(await vibeStore.loadVibe()).toEqual(chosen());
 });
+
+import { subscribeCacheUser } from '../src/lib/appCache';
+import { createSwapStore } from '../../../app/veyrnox/_lib/templateSwapStore.mjs';
+test.each(['rejected-refresh', 'post-refresh-401', 'signout'] as const)('real AuthProvider %s carries the loss reason to swap ownership', async path => {
+    const revoke = jest.fn(), store = createSwapStore({ revoke }); store.session('A');
+    store.put({ accountId: 'A', templateId: 't', key: 'key', state: 'ready', urls: ['file://frontal', 'file://crop'] });
+    const reasons: (string | undefined)[] = [];
+    const off = subscribeCacheUser((user, reason) => { reasons.push(reason); store.session(user ?? null, reason); });
+    const savedFetch = global.fetch;
+    try {
+        if (path === 'signout') await act(async () => { await auth.signOut(); });
+        else if (path === 'rejected-refresh') {
+            jest.mocked(refreshSession).mockRejectedValueOnce(new AuthError(400, 'refresh_token_not_found'));
+            await act(async () => { await auth.getAccessToken(true).catch(() => null); await tick(); });
+        } else {
+            jest.mocked(refreshSession).mockResolvedValueOnce({ ...makeSession('A'), accessToken: `new.${btoa(JSON.stringify({ sub: 'A' }))}.s` });
+            global.fetch = jest.fn(async () => new Response('{}', { status: 401 })) as typeof fetch;
+            await act(async () => { await auth.api.request('/api/v1/balance').catch(() => null); await tick(); });
+        }
+        expect(reasons.at(-1)).toBe(path === 'signout' ? 'signout' : 'expired');
+        expect(store.get('t')).toEqual([]);
+        expect(revoke).toHaveBeenCalledTimes(path === 'signout' ? 2 : 0);
+        if (path !== 'signout') {
+            await adopt('A'); expect(store.get('t')).toHaveLength(1);
+            await act(async () => { await auth.signOut(); }); expect(revoke).toHaveBeenCalledTimes(2);
+        }
+    } finally { off(); global.fetch = savedFetch; }
+});

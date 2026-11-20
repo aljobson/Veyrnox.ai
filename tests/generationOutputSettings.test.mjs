@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
+import { DEFAULT_TTS_SETTINGS, ttsGenerationInputs } from '../app/veyrnox/_lib/textToSpeech.js';
+import { dialogueCastInputs } from '../app/veyrnox/_lib/dialogueCastMap.js';
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
 Object.assign(process.env, {
     SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service', OPENROUTER_API_KEY: 'test-key',
     PUBLIC_HOST: 'https://veyrnox.test', FREE_ALLOWANCE_ENABLED: 'false',
+    FAL_KEY: 'test-fal', FAL_DURABLE_DISPATCH_ENABLED: 'false',
 });
 const { POST } = await import('../app/api/v1/generations/route.js');
 const AUTH = '11111111-1111-4111-8111-111111111111';
@@ -30,16 +33,17 @@ function network(t, row = model, { submit = () => Response.json({ id: 'provider-
             return Response.json(submitted);
         }
         if (u.pathname === '/api/v1/videos') return submit();
+        if (u.hostname === 'queue.fal.run') return Response.json({ request_id: 'provider-job' });
         if (u.pathname.includes('/rpc/')) return Response.json({ ok: true });
         assert.fail(`Unexpected request: ${u.pathname}`);
     });
     return calls;
 }
 
-function request(inputs) {
+function request(inputs, modelId = model.id) {
     return new Request('https://veyrnox.test/api/v1/generations', { method: 'POST',
         headers: { 'content-type': 'application/json', 'x-veyrnox-auth-id': AUTH },
-        body: JSON.stringify({ model_id: model.id, idempotency_key: 'output-settings-test', inputs: { prompt: 'Waves on the beach', ...inputs } }),
+        body: JSON.stringify({ model_id: modelId, idempotency_key: 'output-settings-test', inputs: { prompt: 'Waves on the beach', ...inputs } }),
     });
 }
 
@@ -111,4 +115,84 @@ test('models without output choices refuse them before signing sources or debiti
     }
     assert.equal(calls.some((call) => call.path.endsWith('/rpc/ledger_debit')), false);
     assert.equal(calls.some((call) => call.path === '/api/v1/videos'), false);
+});
+
+const speechModel = { id: 'minimax-speech-2.6-hd', provider: 'fal', provider_endpoint: 'fal-ai/minimax/speech-2.6-hd',
+    modality: 'text-to-speech', credits_5s: 6, active: true, gated_flag: false };
+const dialogueModel = { ...speechModel, id: 'elevenlabs-dialogue', provider_endpoint: 'fal-ai/elevenlabs/text-to-dialogue/eleven-v3' };
+
+for (const row of [
+    { ...speechModel, id: 'flux-2-pro', provider_endpoint: 'fal-ai/flux-2-pro', modality: 'text-to-image' },
+    { ...speechModel, id: 'elevenlabs-turbo', provider_endpoint: 'fal-ai/elevenlabs/tts/turbo-v2.5' },
+    dialogueModel,
+]) {
+    test(`${row.id} refuses every TTS control before debit, free admission or provider submission`, async t => {
+        const before = process.env.FREE_ALLOWANCE_ENABLED;
+        process.env.FREE_ALLOWANCE_ENABLED = 'true';
+        t.after(() => { process.env.FREE_ALLOWANCE_ENABLED = before; });
+        const calls = network(t, { ...row, free_allowance_per_day: 3 });
+        for (const [key, value] of Object.entries(ttsGenerationInputs(DEFAULT_TTS_SETTINGS))) {
+            calls.length = 0;
+            const response = await POST(request({ [key]: value }, row.id));
+            assert.equal(response.status, 400);
+            assert.deepEqual(await response.json(), { error: `inputs_key_not_allowed:${key}` });
+            assert.deepEqual(calls.map(call => call.path), ['/rest/v1/rpc/check_generation_rate_limit', '/rest/v1/model_catalog']);
+        }
+    });
+}
+
+for (const row of [speechModel, { ...dialogueModel, provider: 'kie', provider_endpoint: 'market:elevenlabs/text-to-dialogue-v3' }]) {
+    test(`${row.provider_endpoint} refuses all cast controls before any admission or submission`, async t => {
+        const calls = network(t, row);
+        for (let index = 1; index <= 4; index++) {
+            calls.length = 0;
+            const key = `dialogue_voice_${index}`;
+            const response = await POST(request({ [key]: 'Sarah' }, row.id));
+            assert.equal(response.status, 400);
+            assert.deepEqual(await response.json(), { error: `inputs_key_not_allowed:${key}` });
+            assert.deepEqual(calls.map(call => call.path), ['/rest/v1/rpc/check_generation_rate_limit', '/rest/v1/model_catalog']);
+        }
+    });
+}
+
+test('invalid TTS speed returns its typed error before any RPC or lookup', async t => {
+    const calls = network(t, speechModel);
+    const response = await POST(request({ tts_speed: 2.01 }, speechModel.id));
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: 'inputs_invalid:tts_speed' });
+    assert.deepEqual(calls, []);
+});
+
+test('the complete web TTS payload is stored, priced at six credits and forwarded to MiniMax', async t => {
+    const calls = network(t, speechModel);
+    const inputs = { prompt: 'Hello there', ...ttsGenerationInputs(DEFAULT_TTS_SETTINGS) };
+    const response = await POST(request(inputs, speechModel.id));
+    assert.equal(response.status, 200);
+    const debit = calls.find(call => call.path.endsWith('/rpc/ledger_debit')).body;
+    assert.equal(debit.p_credits, 6);
+    assert.deepEqual(debit.p_inputs, inputs);
+    assert.deepEqual(calls.find(call => call.path === `/${speechModel.provider_endpoint}`).body, {
+        prompt: 'Hello there', output_format: 'url', language_boost: 'auto',
+        voice_setting: { voice_id: 'Wise_Woman', speed: 1, vol: 1, pitch: 0, emotion: 'neutral' },
+    });
+});
+
+test('the dialogue web cast reaches fal and invalid cast orders stop before debit', async t => {
+    const calls = network(t, dialogueModel);
+    for (const cast of [
+        { dialogue_voice_1: 'George', dialogue_voice_2: 'George' },
+        { dialogue_voice_2: 'Sarah' },
+    ]) {
+        calls.length = 0;
+        const response = await POST(request({ prompt: 'Ana: Hi', ...cast }, dialogueModel.id));
+        assert.equal(response.status, 400);
+        assert.deepEqual(await response.json(), { error: 'dialogue_invalid' });
+        assert.deepEqual(calls.map(call => call.path), ['/rest/v1/rpc/check_generation_rate_limit', '/rest/v1/model_catalog']);
+    }
+    const inputs = { prompt: 'Ana: Hello\nBen: Hi', ...dialogueCastInputs([{ voice: 'Sarah' }, { voice: 'George' }]) };
+    assert.equal((await POST(request(inputs, dialogueModel.id))).status, 200);
+    assert.deepEqual(calls.find(call => call.path.endsWith('/rpc/ledger_debit')).body.p_inputs, inputs);
+    assert.deepEqual(calls.find(call => call.path === `/${dialogueModel.provider_endpoint}`).body, {
+        inputs: [{ text: 'Hello', voice: 'Sarah' }, { text: 'Hi', voice: 'George' }],
+    });
 });

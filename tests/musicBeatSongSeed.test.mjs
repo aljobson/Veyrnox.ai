@@ -27,7 +27,7 @@ test.after(() => { hooks.deregister(); delete navigator.onLine; delete globalThi
 test('song seeding creates one valid audio track at bar 1 and an optional cloud sync link', async () => {
   for (const cloud of [false, true]) {
     const result = await seedSongBeat(id, cloud);
-    assert.equal(result, saved.id); assert.equal(validateBeat(saved).ok, true);
+    assert.equal(saved.version, 4); assert.equal(result, saved.id); assert.equal(validateBeat(saved).ok, true);
     assert.equal(saved.title, song.title); assert.equal(saved.tracks.length, 1); assert.equal(saved.tracks[0].id, 't1');
     assert.equal(saved.tracks[0].kind, 'audio'); assert.equal(saved.tracks[0].regions[0].start, 0);
     assert.equal(Object.values(saved.assets)[0].ref.versionId, song.version_id);

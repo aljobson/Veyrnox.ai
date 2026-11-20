@@ -16,8 +16,9 @@ export function MusicQueue({ entries, activeCount, limit }: { entries: readonly 
         {entries.map(entry => <View key={entry.id} style={{ gap: 12 }}>
             <Text variant="bodyStrong">{entry.input.title || t('music.create.untitled')}</Text>
             {entry.missing ? <Text>{t('music.create.missing')}</Text>
-                : entry.view.candidates.map(candidate => <MusicCandidateCard key={candidate.ordinal} candidate={candidate} onPlay={setSelected} />)}
-            <MusicLyricsPanel value={entry.input.lyrics} instrumental={entry.input.instrumental} />
+                : entry.view.candidates.map(candidate => <MusicCandidateCard key={candidate.ordinal} candidate={candidate} onPlay={setSelected}
+                    requireValidSongId={!!entry.sourceAction} openSongLabel={entry.sourceAction ? t('musicGenerationActions.openSong') : undefined} />)}
+            {!entry.sourceAction ? <MusicLyricsPanel value={entry.input.lyrics} instrumental={entry.input.instrumental} /> : null}
         </View>)}
     </View>;
 }

@@ -10,7 +10,7 @@ import { audioLoopLabel, drumLoopLabel } from '../../../_lib/music/beat/beatPlay
 import * as ops from '../../../_lib/music/beat/beatOps.mjs';
 
 const trimModes = ['trim', 'resize'];
-export default function BeatRegion({ region, track, doc, zoom, snap, locator, selected, select, edit, drag }) {
+export default function BeatRegion({ region, track, doc, zoom, snap, locator, selected, select, edit, drag, onDelete }) {
   const { t, locale } = useI18n();
   const position = { left: region.start / 3840 * zoom, width: region.length / 3840 * zoom };
   const asset = region.assetId && doc.assets[region.assetId];
@@ -42,7 +42,9 @@ export default function BeatRegion({ region, track, doc, zoom, snap, locator, se
       label = BEAT_ACTIONS.a7; operation = (d) => ops.deleteRegion(d, region.id);
     } else if (event.key === 'Enter') { event.preventDefault(); select(); }
     if (operation) {
-      event.preventDefault(); edit(operation, { label, regionId: region.id });
+      event.preventDefault();
+      if (['Delete', 'Backspace'].includes(event.key) && onDelete) onDelete();
+      else edit(operation, { label, regionId: region.id });
       // Moving between keyed lanes remounts the button. Keep keyboard editing continuous.
       requestAnimationFrame(() => {
         const buttons = document.querySelectorAll('[data-region-id]');

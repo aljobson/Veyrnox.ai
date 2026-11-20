@@ -1,7 +1,13 @@
+import { SwapComposer } from '../../../components/templates/SwapComposer';
+import { SwapTemplatePreview } from '../../../components/templates/SwapTemplatePreview';
+import { SwapAttemptStatus } from '../../../components/templates/SwapAttemptStatus';
+import { useSwapAvailability } from '../../../lib/templateSwap/availability';
+import { TEMPLATE_SWAP_RUNTIME } from '../../../lib/templateSwap/runtimeFlag';
 import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
 import { TemplateClipComposer } from '../../../components/templates/TemplateClipComposer';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
-import { templatePhotoHints, templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
+import { phonePhotoHints } from '../../../lib/templatePhotoHintText';
+import { templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useState } from 'react';
@@ -50,6 +56,7 @@ export default function TemplatePage() {
     const [catalog, setCatalog] = useState<CatalogModel[] | undefined>();
     const [choices, setChoices] = useState<TemplateChoices>({});
     const templateClip = useTemplateClipAvailable(id);
+    const swapOffer = useSwapAvailability(id);
     const displayPrompt = templateClip && preset ? (hasExactSourcePrompt ? preset.sourcePrompt! : preset.prompt) : prompt;
     const catalogModel = catalog?.find(model => model.id === (templateClip?.model ?? preset?.modelId));
     const original = templateClip && catalogModel ? templateClipModel(catalogModel, templateClip) : catalogModel;
@@ -92,7 +99,12 @@ export default function TemplatePage() {
     }, []);
     return <ScrollView contentContainerStyle={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
-        {loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
+        {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
+        {swapOffer ? <>
+            {preset && <Text variant="title1" accessibilityRole="header">{preset.title}</Text>}
+            <SwapTemplatePreview id={id} title={preset?.title} />
+            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} />
+        </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>
             <Text variant="title1" accessibilityRole="header">{preset.title}</Text>
             <Text>{t('libraryCreate.runsOn', { model: model?.name ?? preset.modelName })}</Text>
@@ -124,7 +136,7 @@ export default function TemplatePage() {
             </View></> : null}
             <Text tone="warning">{templatePrice(model && options ? { ...preset, credits: estimateCredits(model, options.duration), durationSeconds: options.duration } : preset)}</Text>
             {photosUnavailable ? <Card><Text accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text></Card> : unsupported ? <Card><Text accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text></Card> : available && inline ? <>
-                {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={templatePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : !templateClip && slot && model ? <View style={{ gap: 12 }}>
+                {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={phonePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : !templateClip && slot && model ? <View style={{ gap: 12 }}>
                     <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />
                 </View> : null}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}

@@ -5,6 +5,7 @@ export default {
     "referrals.couldnotloadthisCheckyourconnection": "Could not load this. Check your connection.",
     "referrals.referralsarenotavailablerightnow": "Referrals are not available right now.",
     "referrals.whenafriendyoureferbuystheir": "When a friend you refer buys their first Credit Pack, you earn Credits worth 10% of that Pack, added to your balance 14 days later if the purchase has not been refunded or disputed. Credits only; they never expire. Nothing is paid out as money.",
+    "referrals.afriendwhousesyourcodegetsno": "A friend who uses your code gets no extra bonus from the referral.",
     "referrals.yourcode": "Your code",
     "referrals.yourreferralcode": "Your referral code {value1}",
     "referrals.shareyourlink": "Share your link",

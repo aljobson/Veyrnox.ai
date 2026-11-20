@@ -1,5 +1,6 @@
+import { assertBeatWritable, capabilityGeneration, assertBeatGeneration, getBeatWriteVersion } from './beatCompatibility.mjs';
 import { BEAT_LIMITS, validateBeat, migrateBeat, validBeatId } from './beatDocument.mjs';
-import { decideCreate, decideUpdate, decideDelete, validRecord, validCloudLink, decideCloudLink } from './beatStoreRules.mjs';
+import { classifyRecord, decideCreate, decideUpdate, decideDelete, validRecord, validCloudLink, decideCloudLink } from './beatStoreRules.mjs';
 
 const NAME = 'veyrnox-beat-projects';
 const memory = new Map();
@@ -17,17 +18,25 @@ function open() {
     if (typeof indexedDB === 'undefined') unavailable = true;
     if (unavailable) { reject(new Error('unavailable')); return; }
     let request;
-    try { request = indexedDB.open(NAME, 1); }
+    try { request = indexedDB.open(NAME, 2); }
     catch (error) {
       if (!opened && ['SecurityError', 'InvalidStateError'].includes(error.name)) unavailable = true;
       reject(error); return;
     }
     let expired = false;
     const timeout = setTimeout(() => { expired = true; reject(new Error('blocked')); }, 2000);
-    request.onupgradeneeded = () => request.result.createObjectStore('projects', { keyPath: 'id' });
+    request.onblocked = () => {
+      clearTimeout(timeout); expired = true; reject(new Error('blocked'));
+    };
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains('projects')) request.result.createObjectStore('projects', { keyPath: 'id' });
+    };
     request.onsuccess = () => {
       clearTimeout(timeout);
-      if (expired) request.result.close();
+      if (expired) {
+        request.result.close();
+        for (const listener of listeners) listener({ storageReady: true });
+      }
       else {
         const db = request.result;
         db.onversionchange = () => { db.close(); connections.delete(db); };
@@ -65,6 +74,16 @@ export function subscribeBeats(listener) {
 }
 // Read/check/write all occur in this one transaction, including the device limit.
 async function run(mode, decide) {
+  const captured = capabilityGeneration(), writeVersion = getBeatWriteVersion();
+  const decideNow = rows => {
+    // Re-evaluate admission inside the transaction under the current capability.
+    const result = decide(rows);
+    const doc = result.record?.doc || rows.find(row => row.id === result.id)?.doc;
+    try {
+      if (mode === 'readwrite' && (doc?.version === 5 || result.error === 'v5_write_disabled') && writeVersion !== getBeatWriteVersion()) assertBeatGeneration(captured);
+    } catch (error) { return { error: error.code }; }
+    return result;
+  };
   let db;
   try {
     db = await open();
@@ -75,7 +94,7 @@ async function run(mode, decide) {
       let result;
       read.onsuccess = () => {
         try {
-          result = decide(read.result);
+          result = decideNow(read.result);
           if (result.action === 'put') store.put(result.record);
           if (result.action === 'delete') store.delete(result.id);
         } catch (error) { tx.abort(); reject(error); }
@@ -90,9 +109,9 @@ async function run(mode, decide) {
       tx.onabort = () => reject(tx.error || new Error('aborted'));
       tx.onerror = () => reject(tx.error);
     });
-  } catch {
-    if (!unavailable) return { error: 'storage' };
-    const result = decide([...memory.values()]);
+  } catch (error) {
+    if (!unavailable) return { error: error?.message === 'blocked' ? 'blocked' : 'storage' };
+    const result = decideNow([...memory.values()]);
     if (result.action === 'put') memory.set(result.record.id, structuredClone(result.record));
     if (result.action === 'delete') memory.delete(result.id);
     return { ...result, persistent: false };
@@ -107,9 +126,11 @@ function writeResult(result) {
   return result;
 }
 export async function createBeat(doc, cloud) {
+  try { assertBeatWritable(doc); } catch (error) { return { error: error.code }; }
   if (cloud !== undefined && !validCloudLink(cloud)) return { error: 'invalid' };
   if (!validateBeat(doc).ok) return { error: 'invalid' };
   return writeResult(await run('readwrite', (rows) => {
+    try { assertBeatWritable(doc); } catch (error) { return { error: error.code }; }
     const decision = decideCreate(rows.find((r) => r.id === doc.id));
     if (decision.error) return decision;
     if (rows.length >= BEAT_LIMITS.projects) return { error: 'limit' };
@@ -132,19 +153,21 @@ export async function deleteDamagedBeat(id, expectedRevision) {
   return writeResult(await run('readwrite', rows => {
     const existing = rows.find(row => row.id === id);
     if (!existing) return { error: 'not_found' };
+    if (classifyRecord(existing) === 'unsupported-version') return { error: 'unsupported_version' };
     if (validRecord(existing) || existing.revision !== expectedRevision) return { error: 'conflict' };
     return { action: 'delete', id };
   }));
 }
 export async function listBeats() {
   return run('readonly', (rows) => ({ records: rows.filter(validRecord).map((r) => ({ ...r, doc: migrateBeat(r.doc) })).sort((a, b) => b.updatedAt - a.updatedAt),
-    damaged: rows.filter(row => !validRecord(row)).map(row => ({ id: row.id, revision: row.revision })), count: rows.length }));
+    unsupported: rows.filter(row => classifyRecord(row) === 'unsupported-version').map(row => ({ id: row.id, revision: row.revision, title: row.doc?.title })),
+    damaged: rows.filter(row => classifyRecord(row) === 'damaged').map(row => ({ id: row.id, revision: row.revision })), count: rows.length }));
 }
 export async function getBeat(id) {
   if (!validBeatId(id)) return { error: 'not_found' };
   return run('readonly', (rows) => {
     const record = rows.find((r) => r.id === id);
-    return !record ? { error: 'not_found' } : !validRecord(record) ? { error: 'damaged' } : { record: { ...record, doc: migrateBeat(record.doc) } };
+    return !record ? { error: 'not_found' } : !validRecord(record) ? { error: classifyRecord(record) === 'unsupported-version' ? 'unsupported_version' : 'damaged' } : { record: { ...record, doc: migrateBeat(record.doc) } };
   });
 }
 
@@ -152,4 +175,16 @@ export async function setCloudLink(id, captured, link) {
   const result = await run('readwrite', rows => decideCloudLink(rows.find(r => r.id === id), captured, link));
   if (result.action === 'put') broadcast({ id, cloud: true });
   return result;
+}
+
+export async function loadCloudBeat(doc, cloud, { expectedRevision = null, current = () => true, generation = capabilityGeneration() } = {}) {
+  return writeResult(await run('readwrite', rows => {
+    try { assertBeatGeneration(generation); } catch (error) { return { error: error.code }; }
+    if (!current()) return { error: 'account_changed' };
+    if (!validateBeat(doc).ok || !validCloudLink(cloud)) return { error: 'invalid' };
+    const existing = rows.find(row => row.id === doc.id);
+    if (existing ? existing.revision !== expectedRevision || existing.doc.version > doc.version : expectedRevision !== null) return { error: 'conflict' };
+    if (!existing && rows.length >= BEAT_LIMITS.projects) return { error: 'limit' };
+    return { action: 'put', record: { id: doc.id, revision: (existing?.revision || 0) + 1, cloud, doc, updatedAt: doc.updatedAt } };
+  }));
 }

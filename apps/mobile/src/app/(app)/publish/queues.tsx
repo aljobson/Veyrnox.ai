@@ -122,7 +122,7 @@ export default function Queues() {
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
+    screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 12 },
     row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
     main: { flex: 1, gap: 2 },
     name: { color: colors.text, fontSize: 16 },

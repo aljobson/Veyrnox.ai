@@ -17,7 +17,7 @@ export default function BeatShortcutSheet({ open, close, replayTips }) {
     replayPending.current = false;
     replayTips();
   }, [open, replayTips]);
-  return <dialog ref={dialog} onClose={close} aria-labelledby="beat-shortcuts-title" className="m-auto max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-4 text-vx-fg backdrop:bg-vx-base/80">
+  return <dialog data-beat-read ref={dialog} onClose={close} aria-labelledby="beat-shortcuts-title" className="m-auto max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-vx-border bg-vx-panel p-4 text-vx-fg backdrop:bg-vx-base/80">
     <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 bg-vx-panel py-2"><h2 id="beat-shortcuts-title" className="text-xl font-bold">{t('app.music.beat.shortcuts')}</h2><button autoFocus className={button} onClick={() => dialog.current.close()}>{t('app.music.beat.close')}</button></div>
     <p className="my-3 text-sm">{t('app.music.beat.shortcut.scope')}</p>
     {[...new Set(BEAT_SHORTCUTS.map(row => row.context))].map(context => <section key={context} className="my-4">

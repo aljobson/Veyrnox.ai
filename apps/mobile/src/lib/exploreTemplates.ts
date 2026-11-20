@@ -31,7 +31,7 @@ export function imageAsPreset(i: ImageTemplate, models: ReadonlyMap<string, Cata
 }
 
 export function audioAsPreset(a: AudioTemplate, models: ReadonlyMap<string, CatalogModel>): Preset {
-    return { ...common(a.modelId, models), id: AUDIO_PREFIX + a.id, title: a.name, category: a.category, modality: 'text-to-audio', prompt: a.prompt, posterUrl: null };
+    return { ...common(a.modelId, models), id: AUDIO_PREFIX + a.id, title: a.name, category: a.category, modality: 'text-to-audio', prompt: a.prompt, posterUrl: a.previewUrl };
 }
 
 // The catalog price of the template's model, as Create > Templates shows it ('' while the catalog has not arrived).

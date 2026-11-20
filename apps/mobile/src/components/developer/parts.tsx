@@ -16,18 +16,21 @@ export function SecretCard({ title, secret, onDone }: { title: string; secret: s
     );
 }
 
-export function Choice({ label, on, onPress, disabled }: { label: string; on: boolean; onPress: () => void; disabled?: boolean }) {
+export function Choice({ label, hint, on, onPress, disabled }: { label: string; hint?: string; on: boolean; onPress: () => void; disabled?: boolean }) {
     return (
         <Pressable
             accessibilityRole="checkbox"
-            accessibilityLabel={rawText(label)}
+            accessibilityLabel={rawText(hint ? `${label}, ${hint}` : label)}
             accessibilityState={{ checked: on, disabled: Boolean(disabled) }}
             disabled={disabled}
             onPress={onPress}
             style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 }}
         >
             <Text style={{ color: colors.accent, width: 20 }}>{on ? '✓' : ''}</Text>
-            <Text style={{ color: colors.text, fontSize: 15, flexShrink: 1 }}>{label}</Text>
+            <View style={{ flexShrink: 1 }}>
+                <Text style={{ color: colors.text, fontSize: 15 }}>{label}</Text>
+                {hint ? <Text style={{ color: colors.muted, fontSize: 12 }}>{rawText(hint)}</Text> : null}
+            </View>
         </Pressable>
     );
 }

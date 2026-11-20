@@ -1,3 +1,12 @@
+import type { AddSectionParameters, ReplaceParameters, MusicAddSectionQuote, MusicReplaceQuote, ReplaceCommit } from './sectionActionTypes';
+import { validSectionPosition, validSectionDuration, validSectionStyles, validSectionLyrics, validReplaceRange, isMusicAddSectionQuote, isMusicReplaceQuote, isReplaceCommit, isSectionUuid } from './validateSectionActions';
+import type { MusicExtendQuote, MusicCoverQuote, GenerationActionStart } from './generationActionTypes';
+import { isMusicExtendQuote, isMusicCoverQuote, parseGenerationActionStart, validActionPrompt, validSourceInfluence } from './validateGenerationActions';
+import type { TargetStemInstrument } from './shared';
+import type { MusicTargetStemQuote, TargetStemStart, TargetStemRequest, TargetStemAsset, TargetStemKind } from './targetStemTypes';
+import { isMusicTargetStemQuote, isTargetStemStart, isTargetStemRequest, isTargetStemAsset } from './validateTargetStems';
+import type { MusicActionQuote, StemStart, StemRequest, StemArchive, CropInput, CropResult } from './actionTypes';
+import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropResult } from './validateActions';
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
 import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle } from './validate';
@@ -107,4 +116,116 @@ export async function getGeneration(api: ApiClient, id: string): Promise<MusicGe
     const v = await api.request<unknown>(`${BASE}/generations/${encodeURIComponent(id)}`);
     if (!isMusicGenerationView(v) || v.id !== id) throw bad();
     return v;
+}
+
+// Song actions have a different quote/acceptance contract from P2 generation.
+export async function createStemQuote(api: ApiClient, songId: string, versionId: string): Promise<MusicActionQuote> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/stem-quotes`, post({ version_id: versionId, rights_confirmed: true }));
+    if (!isMusicActionQuote(v)) throw bad();
+    return v;
+}
+export async function startStems(api: ApiClient, songId: string, quoteId: string, key: string): Promise<StemStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/stems`, post({ quote_id: quoteId, idempotency_key: key }));
+    if (!isStemStart(v)) throw bad();
+    return v;
+}
+export async function getStemRequest(api: ApiClient, id: string): Promise<StemRequest> {
+    const v = await api.request<unknown>(`${BASE}/stem-requests/${encodeURIComponent(id)}`, {}, { timeoutMs: 15000 });
+    if (!isStemRequest(v) || v.id !== id) throw bad();
+    return v;
+}
+export async function getStemArchive(api: ApiClient, id: string): Promise<StemArchive> {
+    const v = await api.request<unknown>(`${BASE}/stem-requests/${encodeURIComponent(id)}/archive`);
+    if (!isStemArchive(v)) throw bad();
+    return v;
+}
+export async function cropSong(api: ApiClient, songId: string, input: CropInput, key: string): Promise<CropResult> {
+    const { version_id, start_seconds, end_seconds } = input;
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/crop`, post({ version_id, start_seconds, end_seconds, idempotency_key: key }));
+    if (!isCropResult(v)) throw bad();
+    return v;
+}
+export async function createTargetStemQuote(api: ApiClient, songId: string, versionId: string, instrument: TargetStemInstrument): Promise<MusicTargetStemQuote> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/target-stem-quotes`, post({ version_id: versionId, instrument, rights_confirmed: true }));
+    if (!isMusicTargetStemQuote(v) || v.instrument !== instrument) throw bad();
+    return v;
+}
+export async function startTargetStems(api: ApiClient, songId: string, quoteId: string, key: string): Promise<TargetStemStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/target-stems`, post({ quote_id: quoteId, idempotency_key: key }));
+    if (!isTargetStemStart(v)) throw bad();
+    return v;
+}
+export async function getTargetStemRequest(api: ApiClient, id: string): Promise<TargetStemRequest> {
+    const v = await api.request<unknown>(`${BASE}/target-stem-requests/${encodeURIComponent(id)}`, {}, { timeoutMs: 15000 });
+    if (!isTargetStemRequest(v) || v.id !== id) throw bad();
+    return v;
+}
+export async function getTargetStemAsset(api: ApiClient, id: string, kind: TargetStemKind): Promise<TargetStemAsset> {
+    const v = await api.request<unknown>(`${BASE}/target-stem-requests/${encodeURIComponent(id)}/${kind}`);
+    if (!isTargetStemAsset(v, kind)) throw bad();
+    return v;
+}
+
+export async function createExtendQuote(api: ApiClient, songId: string, versionId: string, prompt: string): Promise<MusicExtendQuote> {
+    if (!validActionPrompt(prompt)) throw new ApiError(400, 'prompt_invalid');
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/extend-quotes`, post({ version_id: versionId, prompt: prompt.trim(), rights_confirmed: true }));
+    if (!isMusicExtendQuote(v)) throw bad();
+    return v;
+}
+export async function createCoverQuote(api: ApiClient, songId: string, versionId: string, prompt: string, sourceInfluence: number): Promise<MusicCoverQuote> {
+    if (!validActionPrompt(prompt)) throw new ApiError(400, 'prompt_invalid');
+    if (!validSourceInfluence(sourceInfluence)) throw new ApiError(400, 'source_influence_invalid');
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/cover-quotes`, post({ version_id: versionId, prompt: prompt.trim(), source_influence: sourceInfluence, rights_confirmed: true }));
+    if (!isMusicCoverQuote(v) || v.source_influence !== sourceInfluence) throw bad();
+    return v;
+}
+async function startPairAction(api: ApiClient, songId: string, route: 'extends' | 'covers', quoteId: string, key: string): Promise<GenerationActionStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/${route}`, post({ quote_id: quoteId, idempotency_key: key }));
+    const result = parseGenerationActionStart(v);
+    if (!result) throw bad();
+    return result;
+}
+export const startExtend = (api: ApiClient, songId: string, quoteId: string, key: string) => startPairAction(api, songId, 'extends', quoteId, key);
+export const startCover = (api: ApiClient, songId: string, quoteId: string, key: string) => startPairAction(api, songId, 'covers', quoteId, key);
+
+export async function createAddSectionQuote(api: ApiClient, songId: string, versionId: string, input: AddSectionParameters): Promise<MusicAddSectionQuote> {
+    if (!validSectionPosition(input.position)) throw new ApiError(400, 'section_position_invalid');
+    if (!validSectionDuration(input.duration_seconds)) throw new ApiError(400, 'section_duration_invalid');
+    if (!validSectionStyles(input.styles)) throw new ApiError(400, 'styles_invalid');
+    if (!validSectionLyrics(input.lyrics)) throw new ApiError(400, 'lyrics_invalid');
+    const { position, duration_seconds } = input;
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/add-section-quotes`, post({
+        version_id: versionId, position, duration_seconds, styles: input.styles.trim(),
+        ...(input.lyrics === undefined ? {} : { lyrics: input.lyrics.trim() }), rights_confirmed: true,
+    }));
+    if (!isMusicAddSectionQuote(v) || v.position !== position || v.duration_seconds !== duration_seconds || v.instrumental !== !input.lyrics?.trim()) throw bad();
+    return v;
+}
+export async function createReplaceQuote(api: ApiClient, songId: string, versionId: string, input: ReplaceParameters): Promise<MusicReplaceQuote> {
+    if (!validActionPrompt(input.prompt)) throw new ApiError(400, 'prompt_invalid');
+    if (!validReplaceRange(input.start_seconds, input.end_seconds)) throw new ApiError(400, 'range_invalid');
+    const { start_seconds, end_seconds } = input;
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/replace-quotes`, post({
+        version_id: versionId, prompt: input.prompt.trim(), start_seconds, end_seconds, rights_confirmed: true,
+    }));
+    if (!isMusicReplaceQuote(v) || v.start_seconds !== start_seconds || v.end_seconds !== end_seconds) throw bad();
+    return v;
+}
+export async function startAddSection(api: ApiClient, songId: string, quoteId: string, key: string): Promise<GenerationActionStart> {
+    return startSectionPair(api, songId, 'sections', quoteId, key);
+}
+export async function startReplace(api: ApiClient, songId: string, quoteId: string, key: string): Promise<GenerationActionStart> {
+    return startSectionPair(api, songId, 'replacements', quoteId, key);
+}
+async function startSectionPair(api: ApiClient, songId: string, route: string, quoteId: string, key: string): Promise<GenerationActionStart> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/${route}`, post({ quote_id: quoteId, idempotency_key: key }));
+    const result = parseGenerationActionStart(v); if (!result) throw bad(); return result;
+}
+export const replaceCommitKey = (generationId: string, versionId: string) => `replace-commit.${generationId}.${versionId}`;
+export async function commitReplaceTake(api: ApiClient, songId: string, generationId: string, versionId: string): Promise<ReplaceCommit> {
+    if (!isSectionUuid(generationId) || !isSectionUuid(versionId)) throw new ApiError(400, 'invalid_request');
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/replacements/commit`, post({
+        generation_id: generationId, version_id: versionId, idempotency_key: replaceCommitKey(generationId, versionId),
+    }));
+    if (!isReplaceCommit(v) || v.version_id !== versionId) throw bad(); return v;
 }
