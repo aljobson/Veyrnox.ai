@@ -215,7 +215,9 @@ export function insertSequenceFreeze(tl,id,frame,length=60) {
     let next=offset>0?splitSequenceClip(tl,'video',id,frame):tl;if(next.error)return next;
     next={...next,video:next.video.map(c=>c.trackId===item.trackId && c.start>=frame?{...c,start:c.start+length}:c)};
     const {id:_id,...settings}=item;
-    return addSequenceClip(next,'video',item.mediaId,{...settings,start:frame,len:length,in:still,freezeFrame:still,volume:0,transition:0,speedCurve:[],keyframes:[],parameterKeyframes:[],maskKeyframes:[],animation:{in:'none',out:'none',duration:15}});
+    return addSequenceClip(next,'video',item.mediaId,{...settings,start:frame,len:length,in:still,freezeFrame:still,volume:0,transition:0,
+        fadeIn:Math.min(item.fadeIn || 0,length),fadeOut:Math.min(item.fadeOut || 0,length),speedCurve:[],
+        keyframes:[],parameterKeyframes:[],maskKeyframes:[],animation:{in:'none',out:'none',duration:15}});
 }
 
 export function updateMediaDetails(tl,id,patch) {

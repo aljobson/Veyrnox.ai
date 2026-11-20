@@ -6,7 +6,7 @@ import { useVideoPlayer, VideoView, type VideoPlayer } from 'expo-video';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
-import { editorSourceTimeSeconds, resolveEditorMediaSource, type EditorMediaSource } from '../../lib/editorPreview';
+import { editorPlaybackRate, editorSourceTimeSeconds, resolveEditorMediaSource, type EditorMediaSource } from '../../lib/editorPreview';
 import type { Clip, Media } from '../../lib/nativeEditorModel';
 
 interface Props {
@@ -25,7 +25,8 @@ export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing,
     const sourceProjectId = media.assetSource?.projectId;
     const sourceAssetId = media.assetSource?.assetId;
     const key = `${media.id}:${media.kind || ''}:${sourceProjectId || ''}:${sourceAssetId || ''}:${localUri || ''}`;
-    const remoteMedia = useMemo<Media>(() => ({ id: media.id, kind: media.kind, assetSource: sourceProjectId && sourceAssetId ? { projectId: sourceProjectId, assetId: sourceAssetId } : undefined }), [media.id, media.kind, sourceAssetId, sourceProjectId]);
+    const remoteMedia = useMemo<Media>(() => ({ id: media.id, kind: media.kind, assetSource: sourceProjectId && sourceAssetId ? { projectId: sourceProjectId, assetId: sourceAssetId } : undefined
+        }), [media.id, media.kind, sourceAssetId, sourceProjectId]);
     const localSource: EditorMediaSource | null = localUri && localKind ? { uri: localUri, kind: localKind } : null;
     const source = localSource ?? (state.key === key ? state.source : null);
     const failed = !localSource && state.key === key && state.error;
@@ -43,10 +44,12 @@ export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing,
         return <View accessibilityLabel={t('editor.loadingmediapreview')} style={styles.center}><ActivityIndicator color="#3ee6c4" /></View>;
     }
     if (!source) {
-        return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text><Text style={styles.detail}>{t('editor.theclipremainsonyourtimelineTry')}</Text></View>;
+        return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text><Text
+        style={styles.detail}>{t('editor.theclipremainsonyourtimelineTry')}</Text></View>;
     }
     if (source.kind === 'image') {
-        return <Image accessibilityLabel={rawText(t('editor.preview2', { value1: media.name || t('editor.imageFallback') }))} alt={media.name || t('editor.imagePreviewAlt')} source={{ uri: source.uri }} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} style={StyleSheet.absoluteFill} />;
+        return <Image accessibilityLabel={rawText(t('editor.preview2', { value1: media.name || t('editor.imageFallback') }))} alt={media.name || t('editor.imagePreviewAlt')} source={{ uri:
+        source.uri }} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} style={StyleSheet.absoluteFill} />;
     }
     return <EditorVideo source={source} clip={clip} frameStore={frameStore} fps={fps} playing={playing} label={media.name || t('editor.video')} />;
 }
@@ -67,18 +70,21 @@ function EditorVideo({ source, clip, frameStore, fps, playing, label }: { source
 
     useEffect(() => {
         const wanted = editorSourceTimeSeconds(clip, frame, fps);
-        syncPlayer(player, clip, wanted, playing, fps);
+        syncPlayer(player, clip, wanted, playing, fps, editorPlaybackRate(clip, frame));
     }, [clip, fps, frame, player, playing]);
 
     if (failed) return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text></View>;
-    return <VideoView accessibilityLabel={rawText(t('editor.preview2', { value1: label }))} player={player} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} nativeControls={false} style={StyleSheet.absoluteFill} />;
+    return <VideoView accessibilityLabel={rawText(t('editor.preview2', { value1: label }))} player={player} contentFit={clip.fit === 'cover' ? 'cover' : 'contain'} nativeControls={false}
+        style={StyleSheet.absoluteFill} />;
 }
 
-function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number) {
-    if (Math.abs(player.currentTime - wanted) > (playing ? 0.2 : 0.5 * Math.max(0.1, clip.rate ?? 1) / fps) || clip.reverse) player.currentTime = wanted;
-    player.playbackRate = Math.max(0.1, Math.min(16, clip.rate ?? 1));
+function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number, rate: number) {
+    const still = clip.freezeFrame !== undefined;
+    if (Math.abs(player.currentTime - wanted) > (playing ? 0.2 : 0.5 * rate / fps) || clip.reverse || still) player.currentTime = wanted;
+    player.playbackRate = rate;
+    player.preservesPitch = clip.preservePitch === true;
     player.volume = Math.max(0, Math.min(1, clip.volume ?? 1));
-    if (playing && !clip.reverse) player.play(); else player.pause();
+    if (playing && !clip.reverse && !still) player.play(); else player.pause();
 }
 
 const styles = StyleSheet.create({

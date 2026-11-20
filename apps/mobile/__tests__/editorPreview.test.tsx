@@ -48,7 +48,8 @@ test('resolves owned project and Library media without persisting the signed URL
     const request = jest.fn()
         .mockResolvedValueOnce({ url: 'https://assets.example/project.mp4', content_type: 'video/mp4' })
         .mockResolvedValueOnce({ url: 'https://assets.example/library.png', mime_type: 'image/png' });
-    await expect(resolveEditorMediaSource({ request }, { id: `p-${assetId}`, kind: 'video', assetSource: { projectId, assetId } })).resolves.toEqual({ uri: 'https://assets.example/project.mp4', kind: 'video' });
+    await expect(resolveEditorMediaSource({ request }, { id: `p-${assetId}`, kind: 'video', assetSource: { projectId, assetId } })).resolves.toEqual({ uri: 'https://assets.example/project.mp4',
+        kind: 'video' });
     await expect(resolveEditorMediaSource({ request }, { id: `j-${jobId}`, kind: 'image' })).resolves.toEqual({ uri: 'https://assets.example/library.png', kind: 'image' });
     expect(request.mock.calls.map(([path]) => path)).toEqual([
         `/api/v1/projects/${projectId}/assets/${assetId}/download`,
@@ -76,7 +77,8 @@ describe('EditorMediaPreview', () => {
     test('renders a picked device image immediately from its session URI', async () => {
         const media: Media = { id: 'l-local', kind: 'image', name: 'Device image', frames: 90 };
         frameStore.set(30);
-        await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, mediaId: media.id }} media={media} frameStore={frameStore} fps={30} playing={false} localUri="file:///device/photo.jpg" />));
+        await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, mediaId: media.id }} media={media} frameStore={frameStore} fps={30} playing={false}
+        localUri="file:///device/photo.jpg" />));
         await act(async () => Promise.resolve());
         expect(root.container.queryAll((node) => node.props.accessibilityLabel === 'Preview Device image')).toHaveLength(1);
     });
@@ -122,4 +124,37 @@ describe('EditorMediaPreview', () => {
         expect(mockPlayer.pause).toHaveBeenCalled();
     });
 
+});
+
+test('pulse source time follows the shared integral at each offset', () => {
+    const { SPEED_PRESETS, sourceFrame } = require('../../../app/veyrnox/_lib/editorSpeed.mjs');
+    const pulse = { ...clip, speedCurve: SPEED_PRESETS.pulse.map((p: any) => ({ frame: p.position * 90, rate: p.rate })) };
+    for (const offset of [0, 37, 89]) expect(editorSourceTimeSeconds(pulse, pulse.start + offset, 30)).toBe(sourceFrame(pulse, offset) / 30);
+});
+test('playing ramps use timeline offset and pitch setting; freezes seek and pause', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    const root = createRoot(), store = createFrameStore();
+    const media: Media = { id: 'm', kind: 'video', frames: 900 };
+    const { speedAt } = require('../../../app/veyrnox/_lib/editorSpeed.mjs');
+    const ramp = { ...clip, start: 100, in: 200, speedCurve: [{ frame: 0, rate: .5 }, { frame: 90, rate: 2 }] };
+    store.set(137);
+    try {
+        for (const preservePitch of [false, true]) {
+            await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...ramp, preservePitch }}
+                media={media} frameStore={store} fps={30} playing localUri="file:///ramp.mp4" />));
+            expect(mockPlayer.playbackRate).toBe(speedAt(ramp, 37));
+            expect((mockPlayer as any).preservesPitch).toBe(preservePitch);
+        }
+        mockPlayer.play.mockClear();
+        const freeze = { ...ramp, freezeFrame: 895, volume: 0, preservePitch: undefined };
+        await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={freeze}
+            media={media} frameStore={store} fps={30} playing localUri="file:///ramp.mp4" />));
+        for (const frame of [100, 137, 189]) {
+            await act(async () => store.set(frame));
+            expect(editorSourceTimeSeconds(freeze, frame, 30)).toBe(895 / 30);
+            expect(mockPlayer.currentTime).toBe(895 / 30);
+        }
+        expect(mockPlayer.play).not.toHaveBeenCalled(); expect(mockPlayer.pause).toHaveBeenCalled();
+        expect((mockPlayer as any).preservesPitch).toBe(false);
+    } finally { await act(async () => root.unmount()); }
 });

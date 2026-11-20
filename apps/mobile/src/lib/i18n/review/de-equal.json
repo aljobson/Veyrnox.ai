@@ -235,5 +235,7 @@
   "beat.pad.crash": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.mixer": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.solo.short": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "editorTools.rateValue": "Standard mathematical notation shared across languages.",
+  "editorTools.positionValue": "Standard mathematical notation shared across languages."
 }

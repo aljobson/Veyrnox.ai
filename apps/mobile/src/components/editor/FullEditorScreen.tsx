@@ -1,3 +1,4 @@
+import { useSpeedActions } from './tools/useSpeedActions';
 import type { VoiceoverProps } from './useVoiceoverRecorder';
 import { ToolRail } from './tools/ToolRail';
 import type { Tool } from './tools/editorTools';
@@ -33,7 +34,7 @@ import { Text as StatusText } from '../ui/Text';
 import { Command, Action, Choice, WorkflowPanel } from './EditorControls';
 import { useEditorTrackActions } from './useEditorTrackActions';
 import { PlaybackPreview, PlaybackTimeline, PlaybackTransport } from './EditorPlayback';
-import { changeItemSpeed, fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX } from '../../lib/editorTimeline';
+import { fitPpf, formatTimecode as timecode, moveItems, trimItem, PPF_MIN, PPF_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { useEditorLeaveGuard } from './useEditorLeaveGuard';
@@ -137,6 +138,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         !== null; const moveSelection = (direction: -1 | 1) => { const next = selection && canMove(direction) ? moveClip(timeline, selection, direction) : null;
         if (next) applyTimeline(next); };
     const removeSelection = () => { const targets = selections.length ? selections : selection ? [selection] : []; if (!targets.length) return;
+        if (targets.some(target => timeline.tracks.some(track => track.id === clipAt(timeline, target)?.trackId && track.locked))) {
+            setProblem(t('editor.unlockoraddatrackfirst', { value1: selection?.track ?? 'video' })); return; }
         // An extra track emptied by this delete goes with it (one undo step); the first track of each kind always stays.
         const next = pruneEmptiedExtraTracks(removeSelections(timeline, targets, ripple), targets.map(target => clipAt(timeline, target)?.trackId)); if (!applyTimeline(next)) return;
         setSelection(null); setSelections([]); };
@@ -156,11 +159,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         } };
     const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frameStore.get(), advanced ? ripple : 'lane'); if (next)
         applyTimeline(next); } };
-    const changeSpeed = (rate: number) => { if (!selection) return;
-        const next = changeItemSpeed(timeline, selection, rate);
-        if (next) applyTimeline(next); };
-    const toggleReverse = () => { if (!selection || selection.track === 'text' || !selected) return; const clip = selected as Clip;
-        const distance = Math.max(0, clip.len - 1) * (clip.rate ?? 1); patchSelected({ reverse: !clip.reverse, in: Math.max(0, (clip.in ?? 0) + (clip.reverse ? -distance : distance)) }); };
+    const speedActions = useSpeedActions({ timeline, selection, applyTimeline, setProblem, frameStore,
+        setSelection: next => { setSelection(next); setSelections(next ? [next] : []); } });
     const splitSelection = () => { if (!selection) return;
         if (selectedTrack?.locked) { setProblem(t('editor.unlockoraddatrackfirst', { value1: selection.track })); return; }
         const next = splitClip(timeline, selection, frameStore.get());
@@ -224,7 +224,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         timeline, selection, selected, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
-        canMove, moveSelection, removeSelection, adjustStart, adjustLength, changeSpeed, toggleReverse, document, markDocument, canvas, updateCanvas, updateTrack, };
+        canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };
     return <View style={styles.screen}>
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}

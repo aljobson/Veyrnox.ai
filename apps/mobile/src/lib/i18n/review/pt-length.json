@@ -1,5 +1,41 @@
 [
   {
+    "id": "editorTools.speed",
+    "english": "Speed",
+    "translation": "Velocidade",
+    "ratio": 2
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Predefinição de velocidade",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Duração do quadro congelado",
+    "ratio": 2.08
+  },
+  {
+    "id": "editorTools.updated",
+    "english": "Speed edit applied.",
+    "translation": "Alteração de velocidade aplicada.",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Adicionar ponto de velocidade",
+    "ratio": 1.93
+  },
+  {
     "id": "editorExportRefusal.speed",
     "english": "Phone export can't include speed changes yet.",
     "translation": "A exportação pelo celular ainda não permite incluir alterações de velocidade.",

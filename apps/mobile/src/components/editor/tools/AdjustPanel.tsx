@@ -1,3 +1,5 @@
+import { ColourField } from './ColourField';
+import { SpeedSection } from './SpeedSection';
 import { Text, View } from 'react-native';
 import { t, formatNumber } from '../../../lib/i18n';
 
@@ -9,9 +11,9 @@ import { editorTrackLabel } from '../../../lib/editorTrackLabel';
 
 import { seconds } from './EditorRows';
 import type { ToolPanelProps } from './types';
-export function AdjustPanel({ timeline, selection, selected, selectedMedia, selectedTrack, canMove, moveSelection, removeSelection, patchSelected, adjustStart, adjustLength, changeSpeed,
-    toggleReverse, document, markDocument, canvas, updateCanvas, applyTimeline, updateTrack }: Pick<ToolPanelProps, 'timeline' | 'selection' | 'selected' | 'selectedMedia' | 'selectedTrack' |
-    'canMove' | 'moveSelection' | 'removeSelection' | 'patchSelected' | 'adjustStart' | 'adjustLength' | 'changeSpeed' | 'toggleReverse' | 'document' | 'markDocument' | 'canvas' | 'updateCanvas'
+export function AdjustPanel({ timeline, selection, selected, selectedMedia, selectedTrack, canMove, moveSelection, removeSelection, patchSelected, adjustStart, adjustLength, speedActions,
+    document, markDocument, canvas, updateCanvas, applyTimeline, updateTrack }: Pick<ToolPanelProps, 'timeline' | 'selection' | 'selected' | 'selectedMedia' | 'selectedTrack' |
+    'canMove' | 'moveSelection' | 'removeSelection' | 'patchSelected' | 'adjustStart' | 'adjustLength' | 'speedActions' | 'document' | 'markDocument' | 'canvas' | 'updateCanvas'
     | 'applyTimeline' | 'updateTrack'>) {
     const transformOf = (clip: Clip) => ({ x: .5, y: .5, scale: 1, rotation: 0, opacity: 1, flipX: false, flipY: false, ...clip.transform });
     return <>
@@ -33,8 +35,8 @@ export function AdjustPanel({ timeline, selection, selected, selectedMedia, sele
             <View style={styles.quickActions}><Action label={t('editorCore.shortenFrame')} disabled={!canTrim(selected) || !!selectedTrack?.locked} onPress={() => adjustLength(-1)}
                 /><Action label={t('editorCore.lengthenFrame')} disabled={!canTrim(selected) || !!selectedTrack?.locked} onPress={() => adjustLength(1)} /></View>
             {!canTrim(selected) ? <Text style={styles.body}>{t('editorCore.trimOnWeb')}</Text> : null}
-            {selection.track !== 'text' ? <><Stepper label={t('editor.speed')} value={(selected as Clip).rate ?? 1} min={0.1} max={8} step={0.1} suffix="×" onChange={changeSpeed}
-                /><Choice label={t('editor.reverse')} selected={!!(selected as Clip).reverse} onPress={toggleReverse} /><Stepper label={t('editor.volume')} value={((selected as
+            <SpeedSection timeline={timeline} selection={selection} actions={speedActions} />
+            {selection.track !== 'text' ? <><Stepper label={t('editor.volume')} value={((selected as
                 Clip).volume ?? 1) * 100} min={0} max={200} step={5} suffix="%" onChange={(volume) => patchSelected({ volume: volume / 100 })} /><Stepper label={t('editor.fadein')}
                 value={(selected as Clip).fadeIn ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeIn) => patchSelected({ fadeIn })} /><Stepper
                 label={t('editor.fadeout')} value={(selected as Clip).fadeOut ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeOut) => patchSelected({
@@ -52,8 +54,8 @@ export function AdjustPanel({ timeline, selection, selected, selectedMedia, sele
             selected={canvas.aspect_ratio === value} onPress={() => updateCanvas({ aspect_ratio: value })} />)}</View>
         <Text style={styles.fieldLabel}>{t('editor.rate')}</Text><View style={styles.choices}>{([24, 25, 30, 60] as const).map((value) => <Choice key={value} label={`${value}`}
             selected={canvas.frame_rate === value} onPress={() => updateCanvas({ frame_rate: value })} />)}</View>
-        <Text style={styles.fieldLabel}>{t('editor.canvascolour')}</Text><View style={styles.choices}>{['#000000', '#ffffff', '#15211f', '#301c36', '#17233f'].map((value) => <Choice
-            key={value} label={value} selected={timeline.background === value} onPress={() => applyTimeline({ ...timeline, background: value })} />)}</View>
+        <ColourField label={t('editor.canvascolour')} value={timeline.background} swatches={['#000000', '#ffffff', '#15211f', '#301c36', '#17233f']}
+            onChange={background => applyTimeline({ ...timeline, background })} />
         <PanelHeading title={t('editor.tracks')} detail={t('editor.total', { value1: timeline.tracks.length })} />
         {timeline.tracks.map((track) => <View key={track.id} style={styles.trackControl}><View style={styles.rowCopy}><Text style={styles.rowTitle}>{editorTrackLabel(track)}</Text><Text
             style={styles.muted}>{t(`editor.track.${track.kind}`)}</Text></View><Choice label={t('editor.lock')} selected={track.locked} onPress={() => updateTrack(track, { locked:
