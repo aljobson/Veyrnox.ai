@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorExportRefusal.position",
+    "english": "Phone export can't include text positioning yet.",
+    "translation": "फ़ोन से एक्सपोर्ट में टेक्स्ट की स्थिति तय करने की सुविधा अभी उपलब्ध नहीं है।",
+    "ratio": 1.6
+  },
+  {
+    "id": "editorExportRefusal.groups",
+    "english": "Phone export can't include grouped clips yet.",
+    "translation": "फ़ोन से एक्सपोर्ट में समूह में रखी गई क्लिप की सुविधा अभी उपलब्ध नहीं है।",
+    "ratio": 1.62
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "फ़िरोज़ी",
@@ -2098,6 +2110,18 @@
     "english": "Auto",
     "translation": "स्वचालित",
     "ratio": 2
+  },
+  {
+    "id": "musicPublication.comments",
+    "english": "Allow comments",
+    "translation": "टिप्पणियों की अनुमति दें",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.remixes",
+    "english": "Allow remixes",
+    "translation": "रीमिक्स की अनुमति दें",
+    "ratio": 1.62
   },
   {
     "id": "oauth.signIn",

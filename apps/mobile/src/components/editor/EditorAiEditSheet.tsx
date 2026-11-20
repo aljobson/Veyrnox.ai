@@ -1,3 +1,4 @@
+import type { DocumentApplyResult } from '../../lib/editorDocumentGate';
 import { EDITOR_AI_EDIT_ENABLED } from '../../lib/editorFlag';
 import { subscribeCacheUser } from '../../lib/appCache';
 import { useEffect, useRef, useState } from 'react';
@@ -16,7 +17,7 @@ import { Text } from '../ui/Text';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 
 type Snapshot = { timeline: Timeline; freshness: Freshness };
-type Props = { api: ApiClient; quote: AiEditQuote; snapshot(): Snapshot; apply(next: Timeline, expected: Freshness): boolean; onClose(): void; onUnavailable(): void };
+type Props = { api: ApiClient; quote: AiEditQuote; snapshot(): Snapshot; apply(next: Timeline, expected: Freshness): DocumentApplyResult; onClose(): void; onUnavailable(): void };
 export function EditorAiEditSheet({ api, quote: initialQuote, snapshot, apply, onClose, onUnavailable }: Props) {
     const reduced = useReducedMotion();
     const [quote, setQuote] = useState(initialQuote);
@@ -100,10 +101,14 @@ export function EditorAiEditSheet({ api, quote: initialQuote, snapshot, apply, o
     const commit = () => {
         const expected = captured.current;
         // Recheck immediately before the editor's one history entry, including account and project.
-        if (!expected || !preview?.next || !sameRevision(expected.freshness, snapshot().freshness) || !apply(preview.next, expected.freshness)) {
+        if (!expected || !preview?.next) return;
+        if (!sameRevision(expected.freshness, snapshot().freshness)) {
             setMessage(t('editorAi.stale')); setPreview(null); setState('error'); return;
         }
-        onClose();
+        const result = apply(preview.next, expected.freshness);
+        if (result.status === 'refused') { setMessage(t(`editorEditGate.${result.reason}`)); return; }
+        if (result.status === 'stale') { setMessage(t('editorAi.stale')); return; }
+        if (result.status === 'accepted') onClose();
     };
     const button = (label: string, action: () => void, disabled = false) => <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={action} style={[styles.button, touchTarget, disabled && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></Pressable>;
     const price = t('editorAi.price', { n: quote.credits });

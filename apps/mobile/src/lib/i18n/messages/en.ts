@@ -78,6 +78,8 @@ import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
 import area_editorCore from './en/editorCore';
+import area_editorEditGate from './en/editorEditGate';
+import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
@@ -139,6 +141,7 @@ import area_musicDiscover from './en/musicDiscover';
 import area_musicGenerationActions from './en/musicGenerationActions';
 import area_musicPlaylists from './en/musicPlaylists';
 import area_musicPublic from './en/musicPublic';
+import area_musicPublication from './en/musicPublication';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_musicTrackAdd from './en/musicTrackAdd';
@@ -309,6 +312,8 @@ const catalog = {
     ...area_editor,
     ...area_editorAi,
     ...area_editorCore,
+    ...area_editorEditGate,
+    ...area_editorExportRefusal,
     ...area_editorProjects,
     ...area_editorSave,
     ...area_editorServerExport,
@@ -370,6 +375,7 @@ const catalog = {
     ...area_musicGenerationActions,
     ...area_musicPlaylists,
     ...area_musicPublic,
+    ...area_musicPublication,
     ...area_musicSectionActions,
     ...area_musicTargetStems,
     ...area_musicTrackAdd,

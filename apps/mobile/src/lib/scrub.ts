@@ -5,9 +5,18 @@
 export function scrubUrl(url: string): string {
     const cut = url.search(/[?#]/);
     const bare = cut === -1 ? url : url.slice(0, cut);
-    return bare.replace(/^((?:[a-z][a-z0-9+.-]*:\/\/[^/]+)?\/(?:api\/social\/team|social\/team\/invite|api\/social\/approvals|social\/review|media\/social)\/)[^/]+/i, '$1:token');
+    return redactListen(bare).replace(/^((?:[a-z][a-z0-9+.-]*:\/\/[^/]+)?\/(?:api\/social\/team|social\/team\/invite|api\/social\/approvals|social\/review|media\/social)\/)[^/]+/i, '$1:token');
 }
 
+// Also cover transaction descriptions and nested navigation params, not only HTTP URL fields.
+const redactListen = (value: string) => value.replace(/(\/(?:api\/music\/shared|music\/listen|listen)\/)[^/?#\s]+/gi, '$1:token');
+function scrubSecrets(value: unknown, key = ''): unknown {
+    if (/^(?:token|share_token)$/i.test(key)) return ':token';
+    if (typeof value === 'string') return redactListen(value);
+    if (Array.isArray(value)) return value.map(item => scrubSecrets(item));
+    if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, scrubSecrets(v, k)]));
+    return value;
+}
 type Bag = Record<string, unknown>;
 
 const URL_KEYS = ['url', 'from', 'to'];
@@ -38,7 +47,7 @@ export function scrubBreadcrumb<T extends object>(crumb: T): T {
     }
     // A URL message keeps its route; any other message is dropped (it may repeat what was logged).
     if (typeof out.message === 'string') out.message = LOOKS_LIKE_URL.test(out.message) ? scrubUrl(out.message) : undefined;
-    return out as T;
+    return scrubSecrets(out) as T;
 }
 
 export function scrubEvent<T extends object>(event: T): T {
@@ -79,5 +88,5 @@ export function scrubEvent<T extends object>(event: T): T {
         for (const key of SAFE_CONTEXTS) if (source[key] !== undefined) pruned[key] = source[key];
         out.contexts = pruned;
     }
-    return out as T;
+    return scrubSecrets(out) as T;
 }

@@ -1,3 +1,4 @@
+import { documentProblem, type DocumentCommitResult } from '../../lib/editorDocumentGate';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { Alert, AppState } from 'react-native';
 import { randomUUID } from 'expo-crypto';
@@ -18,7 +19,7 @@ type Ref<T> = MutableRefObject<T>;
 type Options = {
     api: ApiClient; projectId: string; name: string;
     documentRef: Ref<ProjectDocument | null>; revisionRef: Ref<number>; dirtyRef: Ref<boolean>;
-    baseline(head: DocumentHead): void; markDocument(doc: ProjectDocument, record?: boolean): void;
+    baseline(head: DocumentHead): void; saved(doc: ProjectDocument): void; markDocument(doc: ProjectDocument, record?: boolean): DocumentCommitResult;
     mergeBackups(doc: ProjectDocument): ProjectDocument; problem: string | null; setProblem(message: string | null): void;
     onOwnerChange(): void; onCopy(id: string): void; clearDocument(): void; entryImport(): Promise<void>;
 };
@@ -61,9 +62,11 @@ export function useEditorSaveSync(options: Options) {
             clear('draft');
             const doc = o().documentRef.current;
             if (!live() || gate !== 'open' || !doc || !o().dirtyRef.current) return;
+            const merged = o().mergeBackups(doc);
+            const document = documentProblem(merged) === null ? merged : doc;
             const captured = epoch, id = identity();
             let kept = false;
-            try { kept = await queue.write({ owner: owner || '', projectId: o().projectId, baseRevision: o().revisionRef.current, document: o().mergeBackups(doc), updatedAt: Date.now() }, () => live() && epoch === captured) === true; } catch { /* Storage failure is reflected in the leave prompt. */ }
+            try { kept = await queue.write({ owner: owner || '', projectId: o().projectId, baseRevision: o().revisionRef.current, document, updatedAt: Date.now() }, () => live() && epoch === captured) === true; } catch { /* Storage failure is reflected in the leave prompt. */ }
             if (live() && captured === epoch && id === identity()) draftState = { identity: id, kept: kept ? 'kept' : 'failed' };
         }
         function changed() {
@@ -94,8 +97,8 @@ export function useEditorSaveSync(options: Options) {
             const current = o().documentRef.current;
             if (!live() || sheet || replacing || restoreOp || gate !== 'open' || !current) return false;
             const merged = o().mergeBackups(current);
-            if (documentIdentity(merged) === documentIdentity(current)) return false;
-            o().markDocument(merged, false); return true;
+            if (documentIdentity(merged) === documentIdentity(current) || documentProblem(merged)) return false;
+            return o().markDocument(merged, false).status === 'accepted';
         }
         async function fetchConflict(op: Operation) {
             if (!holds(op)) return;
@@ -116,7 +119,9 @@ export function useEditorSaveSync(options: Options) {
             const current = o().documentRef.current;
             if (current) {
                 const merged = o().mergeBackups(current);
-                if (documentIdentity(merged) !== identity()) { o().markDocument(merged, false); await flushDraft(); }
+                if (documentIdentity(merged) !== identity()) {
+                    if (!documentProblem(merged)) { o().markDocument(merged, false); await flushDraft(); }
+                }
                 else if (o().dirtyRef.current) changed();
             }
             if (live()) notify();
@@ -138,6 +143,7 @@ export function useEditorSaveSync(options: Options) {
                     pending = null; failure = null; attempt = 0; recovered = false;
                     // A later edit derives from this saved snapshot, so its base advances too.
                     o().revisionRef.current = result.revision;
+                    o().saved(op.document);
                     if (identity() === documentIdentity(op.document)) {
                         o().dirtyRef.current = false;
                         const captured = epoch;
@@ -199,10 +205,15 @@ export function useEditorSaveSync(options: Options) {
             }
             if (replacing === op) { replacing = null; settle(); } watchGen++; if (live()) notify();
         }
+        function copyDocument() {
+            const current = o().documentRef.current!;
+            const merged = o().mergeBackups(current);
+            return documentProblem(current) === null && documentProblem(merged) !== null ? current : merged;
+        }
         async function keepCopy() {
             if (copy ? !canRetry(locks(), copy) : !canStart(locks())) return;
             if (!o().documentRef.current || !workspaceId) return;
-            copy ??= { ...start(), createKey: randomUUID(), saveKey: randomUUID(), name: conflictCopyName(o().name), workspaceId, document: o().mergeBackups(o().documentRef.current!), identity: identity() };
+            copy ??= { ...start(), createKey: randomUUID(), saveKey: randomUUID(), name: conflictCopyName(o().name), workspaceId, document: copyDocument(), identity: identity() };
             const op = copy; op.token = {}; op.state = 'inflight'; replacing = op; watchGen++; notify();
             try {
                 if (!validDocument(op.document, o().projectId)) throw new ApiError(400, 'invalid_document');
@@ -224,8 +235,8 @@ export function useEditorSaveSync(options: Options) {
                 if (!holds(op)) return;
                 if (identity() !== op.identity) { op.state = 'ambiguous'; await flushDraft(); if (holds(op)) o().setProblem(t('editorSave.copyChanged')); return; }
                 clear('draft'); epoch++; op.epoch = epoch;
-                if (documentIdentity(o().mergeBackups(o().documentRef.current!)) === documentIdentity(op.document)) {
-                    await queue.remove(() => holds(op) && identity() === op.identity && documentIdentity(o().mergeBackups(o().documentRef.current!)) === documentIdentity(op.document)).catch(() => undefined);
+                if (documentIdentity(copyDocument()) === documentIdentity(op.document)) {
+                    await queue.remove(() => holds(op) && identity() === op.identity && documentIdentity(copyDocument()) === documentIdentity(op.document)).catch(() => undefined);
                 }
                 if (!holds(op)) return;
                 if (identity() !== op.identity) {
@@ -233,7 +244,7 @@ export function useEditorSaveSync(options: Options) {
                     if (holds(op)) o().setProblem(t('editorSave.copyChanged'));
                     return;
                 }
-                if (documentIdentity(o().mergeBackups(o().documentRef.current!)) !== documentIdentity(op.document)) await flushDraft();
+                if (documentIdentity(copyDocument()) !== documentIdentity(op.document)) await flushDraft();
                 if (!holds(op)) return;
                 if (identity() !== op.identity) {
                     op.state = 'ambiguous'; await flushDraft();

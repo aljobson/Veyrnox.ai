@@ -78,9 +78,11 @@ test('audio trims bound the file and snap only the moved edge', () => {
     expect(trimItem(tl, selection, 'out', 25, true, 150)?.audio[0].len).toBe(120);
     expect(trimItem(tl, selection, 'out', 500, false, 0)?.audio[0].len).toBe(270);
 });
-test.each(['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve', 'offset', 'span'])('web timed field %s disables trims but permits moves', field => {
-    const tl = fixture(); Object.assign(tl.video[0], ['offset', 'span'].includes(field) ? { animation: { [field]: 0 } } : { [field]: [] });
-    expect(canTrim(tl.video[0])).toBe(false); expect(trimItem(tl, selected, 'out', 1, false, 0)).toBeNull();
+test.each(['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve', 'freezeFrame', 'offset', 'span'])('web timed field %s trims safely or stays protected', field => {
+    const tl = fixture(); Object.assign(tl.video[0], ['offset', 'span'].includes(field) ? { animation: { in: 'none', out: 'none', duration: 15, [field]: 90 } } : { [field]: field === 'freezeFrame' ? 0 : [] });
+    const protectedField = ['speedCurve', 'freezeFrame'].includes(field); expect(canTrim(tl.video[0])).toBe(!protectedField);
+    const trimmed = trimItem(tl, selected, 'in', 1, false, 0);
+    if (protectedField) expect(trimmed).toBeNull(); else expect(trimmed?.video[0]).toMatchObject({ start: 31, in: 31, len: 89 });
     expect(moveItems(tl, [], selected, 1, undefined, false, 0)?.video[0]).toEqual({ ...tl.video[0], start: 31 });
 });
 
