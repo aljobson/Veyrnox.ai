@@ -36,6 +36,7 @@ import { useFirstProfile } from '../../../lib/useFirstProfile';
 import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
 import { PresetCard } from '../../../components/home/PresetCard';
+import { SwapRow } from '../../../components/home/SwapRow';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
 import { VeyLoader } from '../../../components/VeyLoader';
 
@@ -322,7 +323,7 @@ export default function Explore() {
                     <VeyLoader />
                 ) : (
                     <>
-                        {searchShown ? (
+                        <SwapRow />{searchShown ? (
                             <TextField
                                 label={t('explore.search')}
                                 accessibilityLabel={t('explore.search')}
