@@ -3738,6 +3738,54 @@
     "ratio": 1.7
   },
   {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Создать отдельную копию",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Привязка",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Выключено",
+    "ratio": 3
+  },
+  {
+    "id": "beatPiano.quantise",
+    "english": "Quantise",
+    "translation": "Квантизировать",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatPiano.zoomOut",
+    "english": "Zoom out",
+    "translation": "Уменьшить масштаб",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.zoomIn",
+    "english": "Zoom in",
+    "translation": "Увеличить масштаб",
+    "ratio": 2.43
+  },
+  {
+    "id": "beatPiano.toggle",
+    "english": "Toggle note at cursor",
+    "translation": "Добавить или убрать ноту у курсора",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Ударные установки",
+    "ratio": 1.89
+  },
+  {
     "id": "beatTakes.arm",
     "english": "Arm {track}",
     "translation": "Подготовить {track} к записи",

@@ -5778,6 +5778,114 @@
     "ratio": 1.9
   },
   {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Créer une copie unique",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Alignement",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
+    "id": "beatPiano.zoomOut",
+    "english": "Zoom out",
+    "translation": "Réduire le zoom",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.actions",
+    "english": "Selected note actions",
+    "translation": "Actions sur les notes sélectionnées",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Déplacer à gauche",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Déplacer à droite",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "Monter la hauteur",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.down",
+    "english": "Pitch down",
+    "translation": "Baisser la hauteur",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatPiano.selectAll",
+    "english": "Select all notes",
+    "translation": "Sélectionner toutes les notes",
+    "ratio": 1.81
+  },
+  {
+    "id": "beatPiano.resized",
+    "english": "Resized notes",
+    "translation": "Durée des notes modifiée",
+    "ratio": 1.85
+  },
+  {
+    "id": "beatPiano.cursorDown",
+    "english": "Cursor pitch down",
+    "translation": "Baisser la hauteur du curseur",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatPiano.cursorUp",
+    "english": "Cursor pitch up",
+    "translation": "Monter la hauteur du curseur",
+    "ratio": 1.87
+  },
+  {
+    "id": "beatPiano.toggle",
+    "english": "Toggle note at cursor",
+    "translation": "Activer ou retirer la note au curseur",
+    "ratio": 1.76
+  },
+  {
+    "id": "beatPiano.library.title",
+    "english": "Instruments",
+    "translation": "Bibliothèque d’instruments",
+    "ratio": 2.36
+  },
+  {
+    "id": "beatPiano.library.close",
+    "english": "Close library",
+    "translation": "Fermer la bibliothèque",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Kits de batterie",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatPiano.selected.octaveUp",
+    "english": "Selected notes octave up",
+    "translation": "Notes sélectionnées : une octave plus haut",
+    "ratio": 1.75
+  },
+  {
     "id": "beatTakes.record",
     "english": "Record",
     "translation": "Enregistrer",

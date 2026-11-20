@@ -13,6 +13,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { PadGrid } from '../../../components/beats/PadGrid';
 import { StepGrid } from '../../../components/beats/StepGrid';
+import { BeatInstrumentsSection, openPiano } from '../../../components/beats/BeatInstrumentsSection';
 import { BeatArrangement } from '../../../components/beats/BeatArrangement';
 import { MixerStrip } from '../../../components/beats/MixerStrip';
 import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
@@ -156,6 +157,7 @@ export default function BeatEditor() {
                     <BeatTakeLanes doc={doc} track={track} apply={apply} locked={locked} />
                 </View>
             ))}
+            <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
             <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
                 onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
             <Button variant="secondary" label={t('beatTakes.addTrack')} disabled={locked || doc.tracks.length >= MAX_TRACKS} onPress={() => apply(d => addAudioTrack(d))} />
