@@ -1,5 +1,65 @@
 [
   {
+    "id": "editorCaptionTools.correctChoose",
+    "english": "Choose one timed word to correct.",
+    "translation": "Escolha uma palavra com tempo definido para corrigir.",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorCaptionTools.shareSrt",
+    "english": "Share SRT",
+    "translation": "Compartilhar SRT",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorCaptionTools.shareVtt",
+    "english": "Share VTT",
+    "translation": "Compartilhar VTT",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorCaptionTools.wordTiming",
+    "english": "Word timing",
+    "translation": "Tempos das palavras",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCaptionTools.mode",
+    "english": "Word display",
+    "translation": "Exibição das palavras",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.word",
+    "english": "Word",
+    "translation": "Palavra",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.spread",
+    "english": "Spread words evenly",
+    "translation": "Distribuir palavras uniformemente",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorCaptionTools.start",
+    "english": "Word start",
+    "translation": "Início da palavra",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorCaptionTools.length",
+    "english": "Word length",
+    "translation": "Duração da palavra",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCaptionTools.allTracks",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
     "id": "editorTools.speed",
     "english": "Speed",
     "translation": "Velocidade",
@@ -3526,6 +3586,12 @@
     "english": "Add a track",
     "translation": "Adicionar uma faixa",
     "ratio": 1.73
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Ainda não salvo. Este beat é perdido quando o app é fechado.",
+    "ratio": 3.16
   },
   {
     "id": "beat.undo",

@@ -1,5 +1,35 @@
 [
   {
+    "id": "editorCaptionTools.correctChoose",
+    "english": "Choose one timed word to correct.",
+    "translation": "Выберите одно слово с временными метками для исправления.",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCaptionTools.length",
+    "english": "Word length",
+    "translation": "Длительность слова",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCaptionTools.align",
+    "english": "Align lyrics",
+    "translation": "Выровнять текст песни",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Все субтитры с временными метками",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorCaptionTools.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "Шестнадцатеричный цвет: {label}",
@@ -3694,6 +3724,12 @@
     "english": "Mute",
     "translation": "Без звука",
     "ratio": 2.25
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
+    "ratio": 3.21
   },
   {
     "id": "beat.undo",

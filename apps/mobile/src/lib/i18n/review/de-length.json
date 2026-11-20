@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Alle Untertitel mit Zeitangaben",
+    "ratio": 1.72
+  },
+  {
     "id": "editorTools.speed",
     "english": "Speed",
     "translation": "Geschwindigkeit",
@@ -3880,6 +3886,12 @@
     "english": "{track} muted",
     "translation": "{track} stummgeschaltet",
     "ratio": 1.77
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Noch nicht gespeichert. Dieser Beat geht verloren, wenn die App geschlossen wird.",
+    "ratio": 4.26
   },
   {
     "id": "beat.undo",
