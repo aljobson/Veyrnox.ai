@@ -34,7 +34,9 @@ export type Clip = TimedFields & {
 export type TextClip = TimedFields & {
     id: string; text: string; start: number; len: number; trackId?: string; x: number; y: number; size: number;
     groupId?: string; animation?: Animation;
-    style?: { font?: string; weight?: string; align?: string; color?: string; stroke?: string; strokeWidth?: number; background?: string; backgroundOpacity?: number };
+    style?: { font?: string; weight?: string; align?: string; color?: string; stroke?: string; strokeWidth?: number; background?: string; backgroundOpacity?: number;
+        italic?: boolean; underline?: boolean; letterSpacing?: number; lineHeight?: number;
+        shadowColor?: string; shadowOpacity?: number; shadowBlur?: number; shadowX?: number; shadowY?: number };
 };
 export type EditorTrack = { id: string; kind: TrackKind; name: string; locked: boolean; muted: boolean; hidden: boolean; solo?: boolean };
 export type Marker = { id: string; frame: number; label: string; color: string };

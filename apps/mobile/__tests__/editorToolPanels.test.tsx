@@ -84,8 +84,8 @@ test.each(['normal', 'left'])('style-less web text accepts %s with complete web 
 test('animation edits keep combo and timing extras', async () => {
     const tl = webSequenceV3(); serverDocument = { ...envelope(tl), project_id: projectId }; await render();
     await press('Captions'); await press('00:00:00:00 Hello world'); await press('Animation');
-    const zoom = root.container.queryAll(n => n.props.accessibilityLabel === 'zoom' && typeof n.props.onClick === 'function');
-    await act(async () => zoom[0].props.onClick({ nativeEvent: {} }));
+    const zoom = root.container.queryAll(n => n.props.accessibilityLabel === 'Zoom' && typeof n.props.onClick === 'function');
+    await act(async () => zoom[0].props.onClick({ nativeEvent: {} })); await press('Apply');
     const next = await savedTimeline(); expect(next.text[0].animation).toEqual({ ...tl.text[0].animation, in: 'zoom' }); expect(validateSequence(next)).toBeNull();
 });
 test('changing caption text clears stale word timing', async () => {
@@ -118,7 +118,7 @@ const panelCases = [
     [TextPanel, 'Text', 'Add text'], [CaptionsPanel, 'Captions', 'Add caption at playhead'],
     [TranscriptPanel, 'Transcript', '00:00:00:00 Hello world'], [EffectsPanel, 'Effects', 'None'],
     [TransitionsPanel, 'Transitions', 'Dissolve'], [FiltersPanel, 'Filters', 'Increase brightness'],
-    [AnimationPanel, 'Animation', 'zoom'], [MarkersPanel, 'Markers', 'Add marker'], [AdjustPanel, 'Source', 'Move left'],
+    [AnimationPanel, 'Animation', 'Zoom'], [MarkersPanel, 'Markers', 'Add marker'], [AdjustPanel, 'Source', 'Move left'],
 ] as const;
 function panelFixture(): ToolPanelProps {
     const timeline = webSequenceV3(), noop = () => {};
