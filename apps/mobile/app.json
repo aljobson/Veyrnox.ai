@@ -206,6 +206,7 @@
       ]
     },
     "plugins": [
+      "./modules/veyrnox-vision/app.plugin.js",
       "expo-router",
       [
         "expo-secure-store",

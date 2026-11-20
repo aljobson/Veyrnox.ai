@@ -1,0 +1,13 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+group = 'ai.veyrnox.vision'
+version = '1.0.0'
+android {
+  namespace 'ai.veyrnox.vision'
+  androidResources { noCompress += ['tflite', 'task'] }
+}
+dependencies {
+  implementation 'com.google.mediapipe:tasks-vision:1.0.0'
+}
