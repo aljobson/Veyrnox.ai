@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { createSongActionFlow } from '../../lib/music/actionFlow';
-import type { ActionSpec } from '../../lib/music/actionTypes';
+import type { ActionSpec, MusicActionQuote, MusicActionQuoteBase } from '../../lib/music/actionTypes';
 
-export function useSongActionScreen<R extends { balance_after?: number }, S>(id: string, makeSpec: (id: string) => ActionSpec<R, S>) {
+export function useSongActionScreen<R extends { balance_after?: number }, S, Q extends MusicActionQuoteBase = MusicActionQuote>(id: string, makeSpec: (id: string) => ActionSpec<R, S, Q>) {
     const { api } = useAuth();
     const user = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
     // Disposed flows never revive: StrictMode and Fast Refresh need a fresh generation.

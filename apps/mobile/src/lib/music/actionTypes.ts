@@ -1,8 +1,9 @@
 import type { ApiClient } from '../api';
-export type MusicActionQuote = Readonly<{
-    quote_id: string; model_id: string; total_credits: number; balance: number; balance_after: number;
-    affordable: boolean; expires_at: string; outputs?: readonly string[];
+export type MusicActionQuoteBase = Readonly<{
+    quote_id: string; total_credits: number; balance: number; balance_after: number;
+    affordable: boolean; expires_at: string;
 }>;
+export type MusicActionQuote = MusicActionQuoteBase & Readonly<{ model_id: string; outputs?: readonly string[] }>;
 export type StemStart = Readonly<{
     request_id: string; job_id: string; state: string; balance_after?: number; idempotent?: true;
 }>;
@@ -18,14 +19,14 @@ export type CropResult = Readonly<{
 export type ActionInput = Readonly<{
     song_id: string; version_id: string; rights_confirmed: boolean; parameters?: Readonly<Record<string, unknown>>;
 }>;
-export type ActionSpec<R extends { balance_after?: number }, S> = Readonly<{
+export type ActionSpec<R extends { balance_after?: number }, S, Q extends MusicActionQuoteBase = MusicActionQuote> = Readonly<{
     name: string; keyPrefix: string; definitiveCodes: ReadonlySet<string>;
     balanceOnReplay?: 'omit';
     resultBalanceOnly?: boolean;
-    quote(api: ApiClient, input: ActionInput): Promise<MusicActionQuote>;
+    quote(api: ApiClient, input: ActionInput): Promise<Q>;
     confirm(api: ApiClient, quoteId: string, key: string): Promise<R>;
     beforeConfirm?(): Promise<void>;
-    accepted?(api: ApiClient, result: R, input: ActionInput, quote: MusicActionQuote): void;
+    accepted?(api: ApiClient, result: R, input: ActionInput, quote: Q): void;
     status(api: ApiClient, result: R): Promise<S>;
     terminal(status: S): boolean;
 }>;

@@ -1,10 +1,10 @@
 import { randomUUID } from 'expo-crypto';
 import { ApiError, type ApiClient } from '../api';
 import { DEFINITIVE_REJECTIONS } from './attempts';
-import type { ActionInput, ActionSpec, MusicActionQuote } from './actionTypes';
-export type ActionAttempt = Readonly<{ quote: MusicActionQuote; input: ActionInput; key: string; phase: 'UNSUBMITTED' | 'AMBIGUOUS' }>;
-export function createActionAttempts<R extends { balance_after?: number }, S>(api: ApiClient, spec: ActionSpec<R, S>, mintKey = randomUUID) {
-    let pending: ActionAttempt | null = null, flight: Promise<R> | null = null, epoch = 0;
+import type { ActionInput, ActionSpec, MusicActionQuote, MusicActionQuoteBase } from './actionTypes';
+export type ActionAttempt<Q extends MusicActionQuoteBase = MusicActionQuote> = Readonly<{ quote: Q; input: ActionInput; key: string; phase: 'UNSUBMITTED' | 'AMBIGUOUS' }>;
+export function createActionAttempts<R extends { balance_after?: number }, S, Q extends MusicActionQuoteBase = MusicActionQuote>(api: ApiClient, spec: ActionSpec<R, S, Q>, mintKey = randomUUID) {
+    let pending: ActionAttempt<Q> | null = null, flight: Promise<R> | null = null, epoch = 0;
     const listeners = new Set<() => void>();
     const emit = () => listeners.forEach(fn => fn());
     const reset = () => { epoch++; pending = null; flight = null; emit(); };
@@ -13,14 +13,14 @@ export function createActionAttempts<R extends { balance_after?: number }, S>(ap
         subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
         reset,
         invalidate() { if (pending?.phase === 'UNSUBMITTED' && !flight) reset(); },
-        prepare(quote: MusicActionQuote, input: ActionInput) {
+        prepare(quote: Q, input: ActionInput) {
             if (pending?.quote.quote_id === quote.quote_id) return pending;
             if (pending?.phase === 'AMBIGUOUS' || flight) throw new Error('pending_result');
-            pending = Object.freeze({ quote: Object.freeze({ ...quote, ...(quote.outputs ? { outputs: Object.freeze([...quote.outputs]) } : {}) }),
+            pending = Object.freeze({ quote: Object.freeze({ ...quote, ...('outputs' in quote && Array.isArray(quote.outputs) ? { outputs: Object.freeze([...quote.outputs]) } : {}) }),
                 input: Object.freeze({ ...input }), key: `${spec.keyPrefix}.${mintKey()}`, phase: 'UNSUBMITTED' });
             emit(); return pending;
         },
-        confirm(quote: MusicActionQuote): Promise<R> {
+        confirm(quote: Q): Promise<R> {
             if (flight) return flight;
             if (!pending || pending.quote.quote_id !== quote.quote_id) return Promise.reject(new Error('quote_missing'));
             if (pending.phase === 'UNSUBMITTED') {
