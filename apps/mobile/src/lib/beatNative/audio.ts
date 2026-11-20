@@ -3,12 +3,12 @@
 import { createNativeBeatEngine, loadNativeContext, type NativeContextCtor } from './nativeContext';
 import type { BeatEngine, EngineContext } from './shared';
 import { createMixRun } from './mixRun';
-import { eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
+import { DRUM_KITS, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
 
 export type TrackMix = { gain: number; pan: number };
 export interface BeatAudio {
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc, onStep?: (step: number) => void, onError?: (error: unknown) => void, onEffectError?: (message: string) => void): Promise<void>;
+    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onError?: (error: unknown) => void, onEffectError?: (message: string) => void): Promise<void>;
     readonly context: EngineContext;
     meterTap(trackId: string | 'master'): unknown | null;
     stop(): void;
@@ -17,6 +17,11 @@ export interface BeatAudio {
     /** Fader and pan for one track; mute and solo are folded into `gain` by the caller (see `audibleGain`). */
     setTrackMix(trackId: string, mix: TrackMix): void;
     close(): Promise<void>;
+}
+
+export function playRange(doc: BeatDoc): { from: number; to: number } {
+    if (doc.view === 'pattern') return { from: 0, to: doc.steps };
+    return doc.cycle.on ? { from: doc.cycle.start / 240, to: doc.cycle.end / 240 } : { from: 0, to: loopSteps(doc) };
 }
 
 const LOOKAHEAD_S = 0.15;
@@ -36,7 +41,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     let timer: unknown = null;
     let cursor = 0;
     let nextTime = 0;
-    let getDoc: (() => BeatDoc) | null = null;
+    let getDoc: (() => BeatDoc | undefined) | null = null;
     let onStep: ((step: number) => void) | undefined;
     let onError: ((error: unknown) => void) | undefined;
     function stop() {
@@ -54,18 +59,22 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
         timer = null;
         if (!playing) return;
         try {
-            const doc = getDoc?.();
-            if (!doc) return;
+            let doc = getDoc?.();
+            // The beat can leave the store while it plays (deleted, account reset): stop instead of throwing in a timer.
+            if (!doc) { stop(); return; }
             mixRun.sync(doc);
             const horizon = engine.now() + LOOKAHEAD_S;
             while (nextTime < horizon) {
-                const step = cursor % loopSteps(doc);
+                doc = getDoc?.();
+                if (!doc) { stop(); return; }
+                const { from, to } = playRange(doc);
+                const step = from + (cursor % (to - from));
                 const seconds = stepSeconds(doc.tempo.bpm);
                 mixRun.schedule(doc, step * seconds, (step + 1) * seconds, nextTime);
                 for (const event of eventsAtStep(doc, step)) {
                     const at = eventTime(nextTime, step, doc.tempo.bpm, doc.swing);
                     const destination = mixRun.destination(event.trackId, doc, at);
-                    engine.playPad(event.pad, event.velocity, at, destination, doc.tracks.find(t => t.id === event.trackId)?.kit);
+                    engine.playPad(event.pad, event.velocity, at, destination, doc.tracks.find(t => t.id === event.trackId)?.kit ?? DRUM_KITS[0].id);
                 }
                 onStep?.(step);
                 if (!playing) return;
@@ -94,7 +103,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
             engine.playPad(pad, velocity, engine.now(), undefined, kit);
         },
         setTrackMix(_trackId, _mix) {
-            if (playing && getDoc) { try { mixRun.sync(getDoc()); } catch (error) { fail(error); } }
+            if (playing && getDoc) { try { const doc = getDoc(); if (doc) mixRun.sync(doc); } catch (error) { fail(error); } }
         },
         async close() { try { stop(); } catch { /* Released below with the context. */ } await engine.close(); },
     };

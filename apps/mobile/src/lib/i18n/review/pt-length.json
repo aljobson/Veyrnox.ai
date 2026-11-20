@@ -3756,6 +3756,72 @@
     "ratio": 1.82
   },
   {
+    "id": "beat.region.later",
+    "english": "Move later",
+    "translation": "Mover para depois",
+    "ratio": 1.7
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "Ajuste à grade",
+    "ratio": 3.5
+  },
+  {
+    "id": "beat.snap.bar",
+    "english": "Bar",
+    "translation": "Compasso",
+    "ratio": 2.67
+  },
+  {
+    "id": "beat.snap.quarter",
+    "english": "1/4 note",
+    "translation": "Semínima (1/4)",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.snap.eighth",
+    "english": "1/8 note",
+    "translation": "Colcheia (1/8)",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.snap.sixteenth",
+    "english": "1/16 note",
+    "translation": "Semicolcheia (1/16)",
+    "ratio": 2.11
+  },
+  {
+    "id": "beat.zoom.in",
+    "english": "Zoom in",
+    "translation": "Ampliar zoom",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Compasso seguinte",
+    "ratio": 2.13
+  },
+  {
+    "id": "beat.cycle.on",
+    "english": "Cycle on",
+    "translation": "Ciclo ativado",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.cycle.off",
+    "english": "Cycle off",
+    "translation": "Ciclo desativado",
+    "ratio": 1.78
+  },
+  {
+    "id": "beat.audio.fadeIn",
+    "english": "Fade in (ms)",
+    "translation": "Entrada gradual (ms)",
+    "ratio": 1.67
+  },
+  {
     "id": "beatMix.master.room",
     "english": "Reverb room size",
     "translation": "Tamanho da sala de reverberação",
