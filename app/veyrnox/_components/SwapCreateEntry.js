@@ -3,11 +3,12 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useResolvedSwap, TemplateSwapBoundary, TemplateSwapSummary } from './TemplateSwapBoundary.js';
 import { SwapComposer } from './SwapComposer.js';
+import { SwapTemplatePreview } from './SwapTemplatePreview.js';
 import { SwapAttemptStatus } from './SwapAttemptStatus.js';
 function Placeholder() { return <div aria-busy="true" className="min-h-96" />; }
 function Entry({ id, children }) {
   const resolved = useResolvedSwap();
-  return <><SwapAttemptStatus templateId={id} />{resolved?.offer ? <section className="mx-auto max-w-3xl px-4 py-8"><TemplateSwapSummary /><SwapComposer offer={resolved.offer} /></section> : resolved?.loading ? <Placeholder /> : children}</>;
+  return <><SwapAttemptStatus templateId={id} />{resolved?.offer ? <section className="mx-auto max-w-3xl px-4 py-8"><TemplateSwapSummary /><div className="mt-4"><SwapTemplatePreview id={id} /></div><SwapComposer offer={resolved.offer} /></section> : resolved?.loading ? <Placeholder /> : children}</>;
 }
 function QueryEntry({ children }) {
   const query = useSearchParams();
