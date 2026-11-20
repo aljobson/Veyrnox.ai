@@ -4170,6 +4170,66 @@
     "ratio": 3.22
   },
   {
+    "id": "beat.view.song",
+    "english": "Song",
+    "translation": "Songansicht",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.region.later",
+    "english": "Move later",
+    "translation": "Später verschieben",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.region.longer",
+    "english": "Longer",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.region.copy",
+    "english": "Copy on drop",
+    "translation": "Beim Ablegen kopieren",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "Einrasten",
+    "ratio": 2.25
+  },
+  {
+    "id": "beat.snap.sixteenth",
+    "english": "1/16 note",
+    "translation": "Sechzehntelnote",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Nächster Takt",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.ruler.left",
+    "english": "Playhead left",
+    "translation": "Abspielkopf nach links",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.ruler.right",
+    "english": "Playhead right",
+    "translation": "Abspielkopf nach rechts",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.audio.gain",
+    "english": "Gain (dB)",
+    "translation": "Verstärkung (dB)",
+    "ratio": 1.78
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

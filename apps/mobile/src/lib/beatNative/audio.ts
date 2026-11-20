@@ -9,20 +9,25 @@ import { configureNativeTakeStorage } from './takeShared';
 import { type BeatEngine as NativeBeatEngine } from './shared';
 import { createNativeBeatEngine, loadNativeContext, type NativeContextCtor } from './nativeContext';
 import type { BeatEngine, EngineContext } from './shared';
-import { audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
+import { DRUM_KITS, audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
 
 export type TrackMix = { gain: number; pan: number };
 export interface BeatAudio {
     recordingEngine?(): NativeBeatEngine;
     playRange?(options: PlayRange): Promise<{ contextStart: number }>;
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number): Promise<void>;
+    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number): Promise<void>;
     stop(): void;
     isPlaying(): boolean;
     hitPad(pad: PadId, kit: string, velocity?: number): void;
     /** Fader and pan for one track; mute and solo are folded into `gain` by the caller (see `audibleGain`). */
     setTrackMix(trackId: string, mix: TrackMix): void;
     close(): Promise<void>;
+}
+
+export function playRange(doc: BeatDoc): { from: number; to: number } {
+    if (doc.view === 'pattern') return { from: 0, to: doc.steps };
+    return doc.cycle.on ? { from: doc.cycle.start / 240, to: doc.cycle.end / 240 } : { from: 0, to: loopSteps(doc) };
 }
 
 const LOOKAHEAD_S = 0.15;
@@ -47,7 +52,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     let timer: unknown = null;
     let cursor = 0;
     let nextTime = 0;
-    let getDoc: (() => BeatDoc) | null = null;
+    let getDoc: (() => BeatDoc | undefined) | null = null;
     let onStep: ((step: number) => void) | undefined;
     let windowCallback: ((window: SongWindow) => void) | undefined;
     const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc) => {
@@ -78,15 +83,17 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     };
 
     function tick() {
-        const doc = getDoc?.();
-        if (!doc) return;
+        if (!getDoc) return;
         const horizon = engine.now() + LOOKAHEAD_S;
         while (nextTime < horizon) {
-            const length = loopSteps(doc);
-            const step = cursor % length;
+            const doc = getDoc();
+            // The beat can leave the store while it plays (deleted, account reset): stop scheduling instead of throwing in a timer.
+            if (!doc) { timer = null; return; }
+            const { from, to } = playRange(doc);
+            const step = from + (cursor % (to - from));
             for (const track of doc.tracks) {
                 levels.set(track.id, { gain: audibleGain(doc, track), pan: track.pan });
-                kitOf.set(track.id, track.kit);
+                kitOf.set(track.id, track.kit ?? DRUM_KITS[0].id);
             }
             for (const event of eventsAtStep(doc, step)) {
                 const s = strip(event.trackId);

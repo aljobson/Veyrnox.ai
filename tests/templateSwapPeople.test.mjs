@@ -17,7 +17,9 @@ test('the people key is off unless exactly true, and needs the swap switch', () 
   assert.equal(templateSwapPeopleOn(on), true);
 });
 test('roles come only from the reviewed table and must be two different usable roles', () => {
-  assert.deepEqual(templateSwapPeopleRoles('basketball-3', on), ['the green character', 'the red character']);
+  assert.deepEqual(templateSwapPeopleRoles('basketball-3', on), ['the girl in the blue headscarf holding the basketball', 'the woman in the long green dress']);
+  // Eye-checked: cliffside-rescue-hero shows one person, so it stays one-person.
+  assert.equal(templateSwapPeopleRoles('community-cliffside-rescue-hero', on), null);
   assert.equal(templateSwapPeopleRoles('basketball-3', { TEMPLATE_SWAP_CLIP_ENABLED: 'true' }), null);
   assert.equal(templateSwapPeopleRoles('community-action-hero-strut', on), null);
   assert.equal(templateSwapPeopleRoles('__proto__', on), null);
