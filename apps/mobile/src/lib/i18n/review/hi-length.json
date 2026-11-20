@@ -2100,6 +2100,18 @@
     "ratio": 2.33
   },
   {
+    "id": "musicPublication.comments",
+    "english": "Allow comments",
+    "translation": "टिप्पणियों की अनुमति दें",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.remixes",
+    "english": "Allow remixes",
+    "translation": "रीमिक्स की अनुमति दें",
+    "ratio": 1.62
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

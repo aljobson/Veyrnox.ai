@@ -1,3 +1,4 @@
+import { playbackReady } from './playbackReady';
 import { ApiError, type ApiClient } from '../api';
 import { countPlay, getPublicTrack } from './publicClient';
 import type { PublicSession } from './publicSession';
@@ -42,25 +43,19 @@ export function createPublicPlayback(o: { api: ApiClient; session: PublicSession
             if (!valid()) return;
             // Native HTTP playback follows the asset redirect. No auth header, signed URL cache or persistence.
             const p = o.factory(`${o.baseUrl}${page.data.track.audio_url}`); player = p;
-            let ready: (ok: boolean) => void = () => {};
-            const loaded = new Promise<boolean>(r => { ready = r; });
-            const timer = setTimeout(() => ready(false), 30_000);
-            cancelReady = () => { clearTimeout(timer); ready(false); };
-            const sub = p.addListener('playbackStatusUpdate', status => {
+            const waiting = playbackReady(p, status => {
                 if (!valid()) { if (player === p) pause(); return; }
                 if (status.error || ['error', 'failed'].includes(status.playbackState)) {
-                    ready(false);
                     if (state.state === 'playing' && !recovery) {
                         pause(); void start(true);
                     } else if (state.state !== 'loading') { pause(); emit({ state: 'error' }); }
                     return;
                 }
-                if (status.isLoaded) ready(true);
                 emit({ position: status.currentTime, duration: status.duration });
                 if (status.didJustFinish) { p.pause(); emit({ state: 'ended' }); }
             });
-            offStatus = () => sub.remove(); if (p.isLoaded) ready(true);
-            const ok = await loaded; clearTimeout(timer);
+            offStatus = waiting.detach; cancelReady = waiting.cancel;
+            const ok = await waiting.ready;
             if (!valid()) return;
             cancelReady = null;
             if (!ok) throw new Error('audio_load_failed');

@@ -34,3 +34,5 @@ Audio parity additions (Phosphor regular 2.1.1, same render steps: replace `curr
 Music P4a additions: playlist, compass (Phosphor regular 2.1.1, same white 96 × 96 render steps). Reused locally cached package SVGs; no dependency install.
 
 Music P4b Explore: users-three (Phosphor regular 2.1.1, same white 96 × 96 render steps). Reused the cached package SVG; no dependency install. The icon identifies the public Music community, distinct from the Discover compass.
+
+Music P4c additions: broadcast (publish), globe-x (unpublish), share-network (native link sharing). Phosphor regular 2.1.1, cached package SVGs rendered white at 96 × 96 with rsvg-convert; no dependency install.

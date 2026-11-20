@@ -3840,6 +3840,24 @@
     "ratio": 1.77
   },
   {
+    "id": "musicPublication.title",
+    "english": "Public release",
+    "translation": "Öffentliche Veröffentlichung",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.publish",
+    "english": "Publish song",
+    "translation": "Song veröffentlichen",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Veröffentlichung zurückziehen",
+    "ratio": 3.22
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
