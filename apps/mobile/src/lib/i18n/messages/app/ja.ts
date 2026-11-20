@@ -6697,6 +6697,8 @@ export default {
     "musicTrackAdd.refundPending": "このパートを作成できませんでした。返金処理中です。再度確認して最新状況をご覧ください。",
     "musicTrackAdd.refunded": "このリクエストの返金が記録されました。",
     "musicTrackAdd.checkAgain": "再度確認",
+    "library.useForLipSync": "リップシンクに使用",
+    "library.useForLipSyncLabel": "{name}をリップシンクに使用",
     "musicPublication.title": "一般公開",
     "musicPublication.publish": "曲を公開",
     "musicPublication.unpublish": "公開を取り消す",

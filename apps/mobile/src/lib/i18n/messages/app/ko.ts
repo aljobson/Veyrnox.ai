@@ -6697,6 +6697,8 @@ export default {
     "musicTrackAdd.refundPending": "이 파트를 만들지 못했습니다. 환불을 처리 중입니다. 다시 확인하여 업데이트를 확인하세요.",
     "musicTrackAdd.refunded": "이 요청에 대한 환불이 기록되었습니다.",
     "musicTrackAdd.checkAgain": "다시 확인",
+    "library.useForLipSync": "립싱크에 사용",
+    "library.useForLipSyncLabel": "{name}을(를) 립싱크에 사용",
     "musicPublication.title": "공개 발매",
     "musicPublication.publish": "곡 공개",
     "musicPublication.unpublish": "공개 취소",

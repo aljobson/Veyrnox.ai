@@ -8,7 +8,7 @@ import type { Job } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
 const mockApi = {};
 const mockMedia = { listJobs: jest.fn(), getJob: jest.fn(), getAsset: jest.fn() };
-const mockPlayer = { pause: jest.fn(), play: jest.fn(), replaceAsync: jest.fn().mockResolvedValue(undefined), muted: true };
+const mockPlayer = { addListener: () => ({ remove: jest.fn() }), pause: jest.fn(), play: jest.fn(), replaceAsync: jest.fn().mockResolvedValue(undefined), muted: true };
 let mockAccountChanged: () => void;
 let mockList: any;
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));

@@ -6781,6 +6781,8 @@ export default {
     "musicTrackAdd.refundPending": "यह भाग नहीं बन सका। आपकी धनवापसी संसाधित हो रही है। अपडेट के लिए फिर जाँचें।",
     "musicTrackAdd.refunded": "इस अनुरोध के लिए धनवापसी दर्ज की गई है।",
     "musicTrackAdd.checkAgain": "फिर जाँचें",
+    "library.useForLipSync": "लिप सिंक के लिए उपयोग करें",
+    "library.useForLipSyncLabel": "लिप सिंक के लिए {name} का उपयोग करें",
     "musicPublication.title": "सार्वजनिक रिलीज़",
     "musicPublication.publish": "गीत प्रकाशित करें",
     "musicPublication.unpublish": "प्रकाशन हटाएँ",

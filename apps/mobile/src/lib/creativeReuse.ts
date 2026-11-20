@@ -37,3 +37,5 @@ export const creativeReuseTargetHref = (slug: string, reuse: CreativeReuse) => (
     pathname: '/features/[slug]',
     params: { slug, sourceJobId: reuse.jobId, sourceKind: reuse.kind },
 }) as const;
+
+export const lipSyncSourceHref = (jobId: string) => creativeReuseTargetHref('lip-sync', { jobId, kind: 'audio' });

@@ -6781,6 +6781,8 @@ export default {
     "musicTrackAdd.refundPending": "Dieser Part konnte nicht erstellt werden. Deine Erstattung wird bearbeitet. Prüfe später erneut den Stand.",
     "musicTrackAdd.refunded": "Für diesen Auftrag wurde eine Erstattung erfasst.",
     "musicTrackAdd.checkAgain": "Erneut prüfen",
+    "library.useForLipSync": "Für Lippensynchronisation verwenden",
+    "library.useForLipSyncLabel": "{name} für Lippensynchronisation verwenden",
     "musicPublication.title": "Öffentliche Veröffentlichung",
     "musicPublication.publish": "Song veröffentlichen",
     "musicPublication.unpublish": "Veröffentlichung zurückziehen",

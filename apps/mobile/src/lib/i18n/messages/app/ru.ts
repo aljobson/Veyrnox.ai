@@ -6949,6 +6949,8 @@ export default {
     "musicTrackAdd.refundPending": "Не удалось создать эту партию. Ваш возврат обрабатывается. Проверьте статус ещё раз позже.",
     "musicTrackAdd.refunded": "Для этого запроса зарегистрирован возврат средств.",
     "musicTrackAdd.checkAgain": "Проверить снова",
+    "library.useForLipSync": "Использовать для синхронизации губ",
+    "library.useForLipSyncLabel": "Использовать {name} для синхронизации губ",
     "musicPublication.title": "Публичный выпуск",
     "musicPublication.publish": "Опубликовать песню",
     "musicPublication.unpublish": "Снять с публикации",

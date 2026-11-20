@@ -6865,6 +6865,8 @@ export default {
     "musicTrackAdd.refundPending": "Não foi possível criar esta parte. Seu reembolso está sendo processado. Confira novamente para ver atualizações.",
     "musicTrackAdd.refunded": "Um reembolso foi registrado para esta solicitação.",
     "musicTrackAdd.checkAgain": "Verificar novamente",
+    "library.useForLipSync": "Usar para sincronizar lábios",
+    "library.useForLipSyncLabel": "Usar {name} para sincronizar lábios",
     "musicPublication.title": "Lançamento público",
     "musicPublication.publish": "Publicar música",
     "musicPublication.unpublish": "Retirar publicação",

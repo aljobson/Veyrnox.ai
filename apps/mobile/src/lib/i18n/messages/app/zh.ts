@@ -6697,6 +6697,8 @@ export default {
     "musicTrackAdd.refundPending": "无法制作此声部。你的退款正在处理中。请再次查询以获取最新状态。",
     "musicTrackAdd.refunded": "此请求的退款已记录。",
     "musicTrackAdd.checkAgain": "再次查询",
+    "library.useForLipSync": "用于口型同步",
+    "library.useForLipSyncLabel": "将{name}用于口型同步",
     "musicPublication.title": "公开发布",
     "musicPublication.publish": "发布歌曲",
     "musicPublication.unpublish": "取消发布",

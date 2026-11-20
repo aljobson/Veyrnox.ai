@@ -1,6 +1,6 @@
 import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
 import { Image } from 'expo-image';
-import { useVideoPlayer, type VideoThumbnail } from 'expo-video';
+import type { VideoThumbnail } from 'expo-video';
 import { createAssetLinks, type AssetLink } from '../../../lib/libraryMedia';
 import { posterFor, clearPosters } from '../../../lib/videoPoster';
 import { appendPage, applyStatus, inFlightIds, mergePage } from '../../../lib/libraryPoll';
@@ -18,17 +18,15 @@ import { KIND_FILTERS, STATE_FILTERS, expiryOf, canReuse, canSchedule, filterJob
 import { fetchLibrarySync, pushFavourite, reconcileFavourites } from '../../../lib/librarySync';
 import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref, askAboutHref } from '../../../lib/nextSteps';
-import { creativeReuseHref } from '../../../lib/creativeReuse';
+import { creativeReuseHref, lipSyncSourceHref } from '../../../lib/creativeReuse';
 import { ds, LIST_END_PADDING } from '../../../theme';
 import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
+import { useLibraryAudio } from '../../../lib/useLibraryAudio';
 import { retryDelayMs } from '../../../lib/retryDelay';
 
 import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
-
-// Player objects are native handles; configuring one lives outside the component body.
-function unmuteAndPlay(player: ReturnType<typeof useVideoPlayer>) { player.muted = false; player.play(); }
 
 export default function Library() {
     const styles = useThemedStyles(sheets);
@@ -75,19 +73,16 @@ export default function Library() {
     const failures = useRef(0);
     const version = useRef(0);
     const jobsRef = useRef(jobs); jobsRef.current = jobs;
-    const player = useVideoPlayer(null, p => { p.muted = true; });
-    const [playing, setPlaying] = useState<string | null>(null);
-    const audioVersion = useRef(0);
-    const pause = useCallback(() => { audioVersion.current++; player.pause(); setPlaying(null); }, [player]);
+    const audio = useLibraryAudio(links);
     useEffect(() => {
-        const sub = AppState.addEventListener('change', value => { setActive(value === 'active'); if (value !== 'active') pause(); });
+        const sub = AppState.addEventListener('change', value => { setActive(value === 'active'); });
         return () => sub.remove();
-    }, [pause]);
+    }, []);
     useEffect(() => {
-        const clear = () => { version.current++; links.clear(); clearPosters(); void Image.clearMemoryCache?.().catch(() => {}); unresolved.current.clear(); retentionPending.current.clear(); setMedia({}); setFavourites([]); setSaved(null); setJobs(null); setNext(null); setFocused(false); pause(); void player.replaceAsync(null).catch(() => {}); };
+        const clear = () => { version.current++; links.clear(); clearPosters(); void Image.clearMemoryCache?.().catch(() => {}); unresolved.current.clear(); retentionPending.current.clear(); setMedia({}); setFavourites([]); setSaved(null); setJobs(null); setNext(null); setFocused(false); };
         const unsubscribe = subscribeCacheUser(clear);
         return () => { unsubscribe(); version.current++; links.clear(); clearPosters(); };
-    }, [links, pause]);
+    }, [links]);
     const resolveAsset = useCallback(async (id: string) => {
         const generation = version.current;
         const result = await links.request(id);
@@ -159,21 +154,6 @@ export default function Library() {
         schedule();
         return () => { live = false; if (timer) clearTimeout(timer); };
     }, [api, focused, active, unreachable, hasWork, resolveAsset]);
-    async function toggleAudio(id: string) {
-        const wasPlaying = playing === id;
-        pause();
-        if (wasPlaying) return;
-        const ticket = audioVersion.current;
-        const generation = version.current;
-        const link = await links.request(id);
-        if (link.kind !== 'file' || ticket !== audioVersion.current || generation !== version.current) return;
-        try {
-            await player.replaceAsync(link.url);
-            if (ticket !== audioVersion.current || generation !== version.current) return;
-            unmuteAndPlay(player); setPlaying(id);
-        } catch { pause(); }
-    }
-
     function star(jobId: string) {
         const nextList = toggled(favourites, jobId);
         setFavourites(nextList);
@@ -244,8 +224,8 @@ export default function Library() {
             });
             // The model list only names and sorts what the server returned; a failed read leaves them unfiltered by type.
             fetchCatalogCached((list) => setModels(list)).catch(() => undefined);
-            return () => { setFocused(false); pause(); };
-        }, [load, pause, api]),
+            return () => { setFocused(false); };
+        }, [load, api]),
     );
 
     async function more() {
@@ -333,7 +313,9 @@ export default function Library() {
                             job={item}
                             retentionKnown={!retentionPending.current.has(item.job_id)}
                             now={now}
-                            media={{ ...media[item.job_id], audio: { playing: playing === item.job_id, toggle: () => void toggleAudio(item.job_id) } }}
+                            media={{ ...media[item.job_id], audio: { playing: audio.playing === item.job_id, toggle: () => void audio.toggle(item.job_id) } }}
+                            audioSeek={audio.loaded === item.job_id ? { position: audio.position, duration: audio.duration, onSeek: audio.seek } : undefined}
+                            onLipSync={() => router.push(lipSyncSourceHref(item.job_id))}
                             name={item.label || names.get(item.model_id) || item.model_id}
                             kind={kind}
                             grid={view === 'grid'}

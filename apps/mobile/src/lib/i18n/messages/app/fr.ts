@@ -6865,6 +6865,8 @@ export default {
     "musicTrackAdd.refundPending": "Cette partie n’a pas pu être créée. Votre remboursement est en cours de traitement. Vérifiez à nouveau pour obtenir une mise à jour.",
     "musicTrackAdd.refunded": "Un remboursement a été enregistré pour cette demande.",
     "musicTrackAdd.checkAgain": "Vérifier à nouveau",
+    "library.useForLipSync": "Utiliser pour la synchronisation labiale",
+    "library.useForLipSyncLabel": "Utiliser {name} pour la synchronisation labiale",
     "musicPublication.title": "Sortie publique",
     "musicPublication.publish": "Publier le morceau",
     "musicPublication.unpublish": "Retirer la publication",

@@ -7117,6 +7117,8 @@ export default {
     "musicTrackAdd.refundPending": "تعذر إنشاء هذا الجزء. تجري معالجة استردادك. تحقق مجددًا لمعرفة التحديثات.",
     "musicTrackAdd.refunded": "تم تسجيل استرداد لهذا الطلب.",
     "musicTrackAdd.checkAgain": "تحقق مجددًا",
+    "library.useForLipSync": "استخدام لمزامنة الشفاه",
+    "library.useForLipSyncLabel": "استخدام {name} لمزامنة الشفاه",
     "musicPublication.title": "إصدار عام",
     "musicPublication.publish": "نشر الأغنية",
     "musicPublication.unpublish": "إلغاء النشر",
