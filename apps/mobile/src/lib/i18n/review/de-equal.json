@@ -253,5 +253,6 @@
   "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
   "speech.gender.neutral": "Neutral is the German adjective for a neutral voice; capitalization follows a standalone interface label.",
   "speech.emotion.neutral": "Neutral is the German adjective for neutral delivery; capitalization follows a standalone interface label.",
-  "speech.tone.Neutral": "Neutral is the German adjective for a neutral vocal tone; the standalone label has the same spelling as English."
+  "speech.tone.Neutral": "Neutral is the German adjective for a neutral vocal tone; the standalone label has the same spelling as English.",
+  "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending."
 }
