@@ -22,10 +22,10 @@ import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
-import { fetchPresets, presetPrice, type Preset } from '../../../lib/presets';
+import { fetchPresets, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
 import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
-import { isDirectTemplate, listedTemplates, mixKinds, priceOfDirect } from '../../../lib/exploreTemplates';
+import { isDirectTemplate, listedTemplates, mixKinds } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
@@ -35,7 +35,7 @@ import { hasRealAnswer, phoneStarts } from '../../../lib/firstProfile';
 import { useFirstProfile } from '../../../lib/useFirstProfile';
 import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
-import { PresetCard } from '../../../components/home/PresetCard';
+import { ExploreTemplateGrid } from '../../../components/home/ExploreTemplateGrid';
 import { SwapRow } from '../../../components/home/SwapRow';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
 import { VeyLoader } from '../../../components/VeyLoader';
@@ -370,11 +370,7 @@ export default function Explore() {
                                 {filtered ? <Button variant="secondary" size="md" label={t('common.clearFilters')} onPress={clearFilters} /> : null}
                             </View>
                         ) : (
-                            <View style={styles.grid}>
-                                {shown.map((preset) => (
-                                    <PresetCard key={preset.id} preset={preset} price={isDirectTemplate(preset.id) ? priceOfDirect(preset, models) : presetPrice(preset)} onOpen={openPreset} />
-                                ))}
-                            </View>
+                            <ExploreTemplateGrid shown={shown} audio={audioList} models={models} onOpen={openPreset} />
                         )}
                         {matching.length > shown.length ? (
                             <Button variant="secondary" label={t('libraryCreate.showMore')} onPress={() => setLimit((n) => n + PAGE)} />
@@ -489,10 +485,4 @@ const sheets = themedStyles((p, ramp) => ({
         paddingHorizontal: ds.space.md,
     },
     notice: { alignItems: 'flex-start', gap: ds.space.sm, paddingVertical: ds.space.md },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        rowGap: 12,
-    },
 }));
