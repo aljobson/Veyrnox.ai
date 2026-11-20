@@ -76,5 +76,6 @@
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "beat.tempoValue": "Same in ko: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.808": "Same in ko: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in ko: a loanword, brand-style name or number used unchanged in this language.",
+  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose."
 }

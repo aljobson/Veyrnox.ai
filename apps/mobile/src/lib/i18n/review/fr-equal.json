@@ -250,5 +250,7 @@
   "beat.gain": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
   "beat.solo.short": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
   "beat.kit.808": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.lofi": "Same in fr: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.lofi": "Same in fr: a loanword, brand-style name or number used unchanged in this language.",
+  "speech.volume": "Volume is the French noun for audio volume, with the same spelling as English.",
+  "speech.tone.Expressive": "Expressive is the French feminine adjective describing an expressive voice, with the same spelling as English."
 }

@@ -1998,6 +1998,30 @@
     "ratio": 1.88
   },
   {
+    "id": "speech.volume",
+    "english": "Volume",
+    "translation": "مستوى الصوت",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.pitch",
+    "english": "Pitch",
+    "translation": "حدة الصوت",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "استنشاق بالأنف",
+    "ratio": 2.8
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "همهمة",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

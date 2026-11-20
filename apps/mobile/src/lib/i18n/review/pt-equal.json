@@ -180,5 +180,7 @@
   "beat.gain": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
   "beat.solo.short": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
   "beat.kit.808": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.lofi": "Same in pt: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.lofi": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "speech.volume": "Volume is the Portuguese noun for audio volume, with the same spelling as English.",
+  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose."
 }
