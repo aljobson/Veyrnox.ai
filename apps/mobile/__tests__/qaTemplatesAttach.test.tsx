@@ -56,7 +56,7 @@ test('an audio template card shows its artwork when the server sends one', async
     expect(root.container.queryAll(n => n.props.source?.uri === art).length).toBeGreaterThan(0);
 });
 
-test('an audio template card plays its sample from the thumbnail and opens from the rest of the row', async () => {
+test('an audio template card plays its sample from its play control and opens from the artwork', async () => {
     const onPlay = jest.fn(), onOpen = jest.fn();
     const withSample = { ...template, previewUrl: 'https://veyrnox.ai/a.jpg', previewAudioUrl: 'https://veyrnox.ai/a.mp3' };
     mockPlay.mockClear(); mockFinished = false;
@@ -80,6 +80,15 @@ test('a finished sample stops its card', async () => {
     await act(async () => root.render(<AudioTemplateCard template={{ ...template, previewAudioUrl: 'https://veyrnox.ai/a.mp3' }} playing onPlay={onPlay} onOpen={jest.fn()} />));
     expect(onPlay).toHaveBeenCalled();
     mockFinished = false;
+});
+
+test('an audio template card shows the track credit line and a Use template button, as on the web', async () => {
+    const onOpen = jest.fn();
+    await act(async () => root.render(<AudioTemplateCard template={{ ...template, attribution: 'Music by cdk, CC BY 3.0' }} onOpen={onOpen} />));
+    expect(text()).toContain('Music by cdk, CC BY 3.0');
+    const use = root.container.queryAll(n => n.props.accessibilityLabel === 'Use template, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
+    await act(async () => use.props.onClick());
+    expect(onOpen).toHaveBeenCalledTimes(1);
 });
 
 test('a template without a sample shows no play button', async () => {
