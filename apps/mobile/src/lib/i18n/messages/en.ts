@@ -79,12 +79,16 @@ import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
 import area_editorCore from './en/editorCore';
+import area_editorEditGate from './en/editorEditGate';
+import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
 import area_editorSpike from './en/editorSpike';
+import area_editorText from './en/editorText';
+import area_editorTools from './en/editorTools';
 import area_editorVoiceover from './en/editorVoiceover';
 import area_email from './en/email';
 import area_empty from './en/empty';
@@ -139,6 +143,8 @@ import area_musicActions from './en/musicActions';
 import area_musicDiscover from './en/musicDiscover';
 import area_musicGenerationActions from './en/musicGenerationActions';
 import area_musicPlaylists from './en/musicPlaylists';
+import area_musicPublic from './en/musicPublic';
+import area_musicPublication from './en/musicPublication';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_nativeEditorModel from './en/nativeEditorModel';
@@ -205,6 +211,7 @@ import area_sourceDuration from './en/sourceDuration';
 import area_sourceLimits from './en/sourceLimits';
 import area_sourcePicker from './en/sourcePicker';
 import area_sources from './en/sources';
+import area_speech from './en/speech';
 import area_srch from './en/srch';
 import area_start from './en/start';
 import area_stem from './en/stem';
@@ -309,12 +316,16 @@ const catalog = {
     ...area_editor,
     ...area_editorAi,
     ...area_editorCore,
+    ...area_editorEditGate,
+    ...area_editorExportRefusal,
     ...area_editorProjects,
     ...area_editorSave,
     ...area_editorServerExport,
     ...area_editorSimple,
     ...area_editorSpeech,
     ...area_editorSpike,
+    ...area_editorText,
+    ...area_editorTools,
     ...area_editorVoiceover,
     ...area_email,
     ...area_empty,
@@ -369,6 +380,8 @@ const catalog = {
     ...area_musicDiscover,
     ...area_musicGenerationActions,
     ...area_musicPlaylists,
+    ...area_musicPublic,
+    ...area_musicPublication,
     ...area_musicSectionActions,
     ...area_musicTargetStems,
     ...area_nativeEditorModel,
@@ -435,6 +448,7 @@ const catalog = {
     ...area_sourceLimits,
     ...area_sourcePicker,
     ...area_sources,
+    ...area_speech,
     ...area_srch,
     ...area_start,
     ...area_stem,

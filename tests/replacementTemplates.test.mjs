@@ -98,7 +98,7 @@ test('14 replacements use the reviewed routes, exact captured bytes and existing
 
 test('all old records, recipes, visual signatures and hidden rows remain unchanged; only reviewed category deltas occur', () => {
   assert.equal(Object.keys(baseline.templates).length, 827);
-  for (const [id, hash] of Object.entries(baseline.templates)) assert.equal(sha(JSON.stringify(SOURCE_TEMPLATES.find(t => t.id === id))), hash, id);
+  for (const [id, hash] of Object.entries(baseline.templates)) assert.equal('sha256:' + sha(JSON.stringify(SOURCE_TEMPLATES.find(t => t.id === id))), hash, id);
   for (const [id, hash] of Object.entries(baseline.records)) assert.equal(sha(JSON.stringify(SOURCE_PROMPT_RECORDS[id])), hash, id);
   assert.equal(Object.keys(baseline.visual).length, 917);
   for (const [id, signature] of Object.entries(baseline.visual)) assert.deepEqual(visual.placements[id], signature, id);

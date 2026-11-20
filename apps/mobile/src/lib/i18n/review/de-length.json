@@ -1,5 +1,59 @@
 [
   {
+    "id": "editorTools.speed",
+    "english": "Speed",
+    "translation": "Geschwindigkeit",
+    "ratio": 3
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Geschwindigkeitsvorlage",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Benutzerdefiniert",
+    "ratio": 2.83
+  },
+  {
+    "id": "editorTools.pointRate",
+    "english": "Speed point {n} rate",
+    "translation": "Rate von Geschwindigkeitspunkt {n}",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorTools.updated",
+    "english": "Speed edit applied.",
+    "translation": "Geschwindigkeitsänderung angewendet.",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Geschwindigkeitspunkt hinzufügen",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorTools.curveApply",
+    "english": "Apply speed curve",
+    "translation": "Geschwindigkeitskurve anwenden",
+    "ratio": 1.76
+  },
+  {
+    "id": "editorExportRefusal.speed",
+    "english": "Phone export can't include speed changes yet.",
+    "translation": "Der Export auf dem Handy unterstützt Geschwindigkeitsänderungen noch nicht.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorExportRefusal.crop",
+    "english": "Phone export can't include crop or fit settings yet.",
+    "translation": "Der Export auf dem Handy unterstützt Zuschnitt- oder Einpassungseinstellungen noch nicht.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.navy",
     "english": "Navy",
     "translation": "Dunkelblau",
@@ -3750,6 +3804,36 @@
     "ratio": 1.64
   },
   {
+    "id": "musicPublic.unblock",
+    "english": "Unblock",
+    "translation": "Blockierung aufheben",
+    "ratio": 2.86
+  },
+  {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Nicht mehr folgen",
+    "ratio": 2.13
+  },
+  {
+    "id": "musicPublic.reply",
+    "english": "Reply",
+    "translation": "Antworten",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicPublic.saved",
+    "english": "Saved.",
+    "translation": "Gespeichert.",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reaction.like",
+    "english": "Like",
+    "translation": "Gefällt mir",
+    "ratio": 2.75
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Abspielen",
@@ -3898,6 +3982,216 @@
     "english": "Add {name}",
     "translation": "{name} hinzufügen",
     "ratio": 1.7
+  },
+  {
+    "id": "speech.speed",
+    "english": "Speed",
+    "translation": "Geschwindigkeit",
+    "ratio": 3
+  },
+  {
+    "id": "speech.volume",
+    "english": "Volume",
+    "translation": "Lautstärke",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.addCredits",
+    "english": "Add credits",
+    "translation": "Credits hinzufügen",
+    "ratio": 1.64
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Männlich",
+    "ratio": 2
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Traurig",
+    "ratio": 2.33
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Hecheln",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "Nach Luft schnappen",
+    "ratio": 4.75
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Schniefen",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.sighs",
+    "english": "Sigh",
+    "translation": "Seufzen",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "Schnauben",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.burps",
+    "english": "Burp",
+    "translation": "Rülpsen",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Summen",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Zischen",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.tone.Warm",
+    "english": "Warm",
+    "translation": "Warmherzig",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.tone.Upbeat",
+    "english": "Upbeat",
+    "translation": "Beschwingt",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.font",
+    "english": "Font",
+    "translation": "Schriftart",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Mit Serifen",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.monospace",
+    "english": "Monospace",
+    "translation": "Nichtproportional",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorText.shadowOpacity",
+    "english": "Shadow opacity",
+    "translation": "Deckkraft des Schattens",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Horizontaler Schattenversatz",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Vertikaler Schattenversatz",
+    "ratio": 3.25
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Anfang",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.loop",
+    "english": "Loop",
+    "translation": "Schleife",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.animationName1",
+    "english": "Fade",
+    "translation": "Überblenden",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Nach links schieben",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Nach rechts gleiten",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Nach oben gleiten",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Nach unten gleiten",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Schwingen",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorText.loopName7",
+    "english": "Loop bounce",
+    "translation": "Springen in Schleife",
+    "ratio": 1.82
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Für Lippensynchronisation verwenden",
+    "ratio": 2.19
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "{name} für Lippensynchronisation verwenden",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicPublication.title",
+    "english": "Public release",
+    "translation": "Öffentliche Veröffentlichung",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.publish",
+    "english": "Publish song",
+    "translation": "Song veröffentlichen",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Veröffentlichung zurückziehen",
+    "ratio": 3.22
   },
   {
     "id": "recovery.retry",

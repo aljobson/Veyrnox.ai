@@ -28,8 +28,9 @@ import { retentionOf, type Retention } from '../../../lib/libraryView';
 import { mediaApi, waitForJob, type Job, type JobState } from '../../../lib/media';
 import { failedJobMessage } from '../../../lib/failedJob';
 import { askAboutHref, editHref, makeAnotherHref, nextStepsFor, publishHref } from '../../../lib/nextSteps';
-import { creativeReuseHref, kindForMime } from '../../../lib/creativeReuse';
+import { creativeReuseHref, kindForMime, lipSyncSourceHref } from '../../../lib/creativeReuse';
 import { saveOutput, shareOutput } from '../../../lib/output';
+import { AUDIO_ICONS } from '../../../lib/audioHub';
 import { ds } from '../../../theme';
 import { plural, t, formatLocale } from '../../../lib/i18n';
 
@@ -271,7 +272,7 @@ export default function JobScreen() {
     const retention: Retention = lookup === 'file' || lookup === 'missing' ? retentionOf({
         job_id: id, state, model_id: modelId ?? '', credits: 0, created_at: '',
         has_asset: lookup === 'file', asset_expires_at: expiresAt,
-    }, now) : { kind: 'none' };
+    }, Math.max(now, Date.now())) : { kind: 'none' };
     const retentionText = retention.kind === 'unavailable' ? t('library.fileUnavailable')
         : retention.kind === 'default' ? t('library.keptDefault')
         : retention.kind === 'expires' || retention.kind === 'ended'
@@ -293,6 +294,7 @@ export default function JobScreen() {
     }
     const inlineOutput = !!asset && stems.length === 0 && !held && !error && !asset.mime.startsWith('image/');
     const next = asset ? nextStepsFor(asset.mime, modelId) : { edit: false, publish: false, makeAnother: false, reuse: false };
+    const canLipSync = state === 'succeeded' && lookup === 'file' && !!asset?.mime.startsWith('audio/') && !held && !error && retention.kind !== 'ended';
     const reusableKind = asset ? kindForMime(asset.mime) : null;
 
     return (
@@ -376,6 +378,7 @@ export default function JobScreen() {
                                 {next.makeAnother && modelId ? (
                                     <Button variant="secondary" accessibilityRole="button" onPress={() => void reopen(false)} label={t('job.next.makeAnother')} />
                                 ) : null}
+                                {canLipSync ? <Button variant="secondary" icon={AUDIO_ICONS.lipSync} containerStyle={styles.lipSync} textStyle={styles.lipSyncText} label={t('library.useForLipSync')} onPress={() => router.push(lipSyncSourceHref(id))} /> : null}
                                 {next.reuse && reusableKind ? (
                                     <Button variant="secondary" accessibilityRole="button" onPress={() => router.push(creativeReuseHref(id, reusableKind))} label={t('job.next.reuse')} />
                                 ) : null}
@@ -417,6 +420,8 @@ const sheets = themedStyles((p) => ({
     actions: { flexGrow: 0, flexShrink: 1 },
     nextBlock: { gap: ds.space.sm },
     nextTitle: { color: p.textPrimary, },
+    lipSync: { maxWidth: '100%' },
+    lipSyncText: { flexShrink: 1 },
     nextRow: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
     actionsBody: { gap: ds.space.sm, paddingTop: ds.space.md },
     grow: { flex: 1 },

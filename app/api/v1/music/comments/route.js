@@ -1,32 +1,15 @@
+import { musicCommentsReadHandler } from '../../../../../lib/musicCommentsRead.js';
 import { retryAfterSeconds } from '../../../../../lib/rateLimitHeaders.js';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { musicRpcStatus, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../lib/musicBackend.js';
-import { musicCommentsEnabled, parseMusicCommentWrite, publicMusicComments, validCommentId, validCommentSlug } from '../../../../../lib/musicComments.js';
+import { musicCommentsEnabled, parseMusicCommentWrite } from '../../../../../lib/musicComments.js';
 import { musicPlaysEnabled, musicSongReportsEnabled, parseMusicPlay, parseMusicSongReport } from '../../../../../lib/musicPlays.js';
 
 // Signed-in track comments (0518). Approved comments are also on the anonymous
 // public track route; this one adds the caller's own pending comments, paging and the writes.
 const reply = (body, status = 200, headers = {}) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
 
-export async function GET(request) {
-    const authId = request.headers.get('x-veyrnox-auth-id');
-    if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
-    if (!musicCommentsEnabled()) return reply({ error: 'not_found' }, 404);
-    const query = new URL(request.url).searchParams;
-    const slug = query.get('slug'), before = query.get('before');
-    if (!validCommentSlug(slug)) return reply({ error: 'slug_invalid' }, 400);
-    if (before !== null && !validCommentId(before)) return reply({ error: 'before_invalid' }, 400);
-    const cfg = envConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
-    try {
-        const result = await rpc('music_comments_read', { p_slug: slug, p_auth_id: authId, p_before_id: before }, cfg);
-        if (!result?.ok) return reply({ error: publicMusicError(result?.code) }, musicRpcStatus(result?.code));
-        return reply({ comments: publicMusicComments(result, { viewer: true }) });
-    } catch (error) {
-        console.error('[music/comments] read failed:', error?.message);
-        return reply({ error: 'temporarily_unavailable' }, 502);
-    }
-}
+export const GET = musicCommentsReadHandler();
 
 export async function POST(request) {
     const authId = request.headers.get('x-veyrnox-auth-id');

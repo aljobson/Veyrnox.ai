@@ -35,6 +35,8 @@ test('positive generation capabilities use 30,000 or an explicit verified provid
     ['market:kling-2.6/text-to-video', 1000],
     ['market:hailuo/02-text-to-video-standard', 1500],
     ['market:nano-banana-pro', 10000],
+    ['fal-ai/kling-video/v3/pro/image-to-video', 2500], // Kling 3.0 image-to-video: inferred from job history, see KLING_V3_PROMPT_MAX.
+    ['fal-ai/kling-video/v3/standard/image-to-video', 2500],
     ['crun:kling/v3', 2500],
     ['crun:kling/v3-std', 2500],
     ['crun:kling/v2-6', 2500],

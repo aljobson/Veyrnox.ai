@@ -86,6 +86,8 @@ export default function AppLayout() {
                     <Stack.Screen name="model/[id]" options={{ title: t('mdl.title') }} />
                     <Stack.Screen name="model/compare" options={{ title: t('modelCompare.title') }} />
                     <Stack.Screen name="music/create" options={{ title: t('music.create.title') }} />
+                    <Stack.Screen name="music/track/[slug]" options={{ title: t('musicPublic.track') }} />
+                    <Stack.Screen name="music/creator/[handle]" options={{ title: t('musicPublic.creator') }} />
                     <Stack.Screen name="music/playlists/[id]" options={{ title: t('musicPlaylists.title') }} />
                     <Stack.Screen name="music/[id]" options={{ title: t('music.title') }} />
                     <Stack.Screen name="beats/[id]" options={{ title: t('beat.title') }} />

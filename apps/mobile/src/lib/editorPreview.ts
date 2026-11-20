@@ -1,3 +1,4 @@
+import { sourceFrame, speedAt } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
 import type { ApiClient } from './api';
 import type { Clip, Media, Timeline } from './nativeEditorModel';
 
@@ -55,8 +56,8 @@ export async function resolveEditorMediaSource(api: Pick<ApiClient, 'request'>, 
 }
 
 export function editorSourceTimeSeconds(clip: Clip, frame: number, fps: number): number {
-    const elapsed = Math.max(0, frame - clip.start);
-    const rate = Math.max(0.1, clip.rate ?? 1);
-    const sourceFrame = clip.reverse ? Math.max(0, (clip.in ?? 0) - elapsed * rate) : Math.max(0, (clip.in ?? 0) + elapsed * rate);
-    return sourceFrame / Math.max(1, fps);
+    return Math.max(0, sourceFrame({ ...clip, in: clip.in ?? 0 }, Math.max(0, frame - clip.start))) / Math.max(1, fps);
+}
+export function editorPlaybackRate(clip: Clip, frame: number): number {
+    return clip.freezeFrame !== undefined ? 0 : Math.max(.1, Math.min(16, speedAt(clip, Math.max(0, frame - clip.start))));
 }

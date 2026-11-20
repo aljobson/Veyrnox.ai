@@ -107,6 +107,14 @@ is last, so a fresh replay ends locked — the state the live database is in.
 `0022_cost_unit_and_deactivate_seedance` was applied at 14:56 UTC, after
 `0028`, and was still uncommitted when this landed. It belongs at `0029`.
 
+### Music write wrappers (0570)
+
+Later publication/comment changes must target the private implementations
+`private.music_publish_song_pre_0570` and `private.music_comment_mutate_pre_0570`.
+Keep the public wrappers: they mint opaque actor ids after successful writes.
+Replacing a public wrapper without calling `private.music_actor_id` loses that
+guarantee; `tests/musicBlocksProjection.test.mjs` guards later migrations.
+
 ### Every applied migration must be accounted for
 
 `check-migration-numbers.sh` compares this directory's files with each

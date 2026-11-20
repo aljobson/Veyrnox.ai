@@ -49,3 +49,10 @@ test('Kubai artwork belongs to real skills, every PNG exists and the art reaches
     for (const file of files) expect(fs.existsSync(path.join(__dirname, '../assets/icons/kubai', file))).toBe(true);
     expect(skillIcon('prompt-writer', 'Make').art).toBeUndefined();
 });
+
+test('public Music Explore has a distinct icon from Discover and private playlists', () => {
+    expect(MENU_ICONS.usersThree).toBeDefined();
+    const source = fs.readFileSync(path.join(__dirname, '../src/lib/menuIcons.ts'), 'utf8');
+    expect(source).toContain("usersThree: require('../../assets/icons/users-three.png')");
+    expect(source).toContain("compass: require('../../assets/icons/compass.png')");
+});
