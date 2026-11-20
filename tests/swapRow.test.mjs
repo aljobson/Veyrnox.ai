@@ -13,10 +13,10 @@ import { templateDetail } from '../lib/clientTemplates.js';
 import { loadTemplateSwapRow } from '../lib/templateSwapClipGate.js';
 import { catalog, manifest, id as fixtureId, registry as fixtureRegistry } from './fixtures/templateSwapClips.mjs';
 
-test('the curated row: 16 unique ids, all swap clips, none withdrawn, data equals the template data, posters on disk', () => {
+test('the curated row: 13 unique ids, no multi-person scenes, all swap clips, none withdrawn, data equals the template data, posters on disk', () => {
   const ids = TEMPLATE_SWAP_ROW.map(row => row.id);
-  assert.equal(ids.length, 16); assert.equal(new Set(ids).size, 16);
-  assert.ok(ids.includes('basketball-3') && ids.includes('community-billboard-product-swap'));
+  assert.equal(ids.length, 13); assert.equal(new Set(ids).size, 13);
+  for (const out of ['basketball-3', 'community-billboard-product-swap', 'community-stadium-ball-control']) assert.ok(!ids.includes(out), out);
   for (const row of TEMPLATE_SWAP_ROW) {
     assert.ok(TEMPLATE_SWAP_CLIPS.includes(row.id), row.id);
     assert.ok(!Object.hasOwn(DUPLICATE_TEMPLATE_KEEPERS, row.id), row.id);
@@ -63,8 +63,8 @@ test('switch off: the row renders no bytes at all; on: cards link to the compose
   assert.equal(renderToStaticMarkup(React.createElement(loadComponent([]))), '');
   const html = renderToStaticMarkup(React.createElement(loadComponent([{ ...TEMPLATE_SWAP_ROW[0], credits: 47 }, { ...TEMPLATE_SWAP_ROW[1], credits: 47 }])));
   assert.match(html, /presets\.swap\.title/);
-  assert.match(html, /href="\/app\/create\?preset=basketball-3"/);
-  assert.match(html, /src="\/showcase\/viral-basketball-3\.jpg"/);
+  assert.ok(html.includes(`href="/app/create?preset=${TEMPLATE_SWAP_ROW[0].id}"`));
+  assert.ok(html.includes(`src="${TEMPLATE_SWAP_ROW[0].poster}"`));
   assert.match(html, /presets\.swap\.price:47/);
   assert.equal(html.match(/<li /g).length, 2);
 });
