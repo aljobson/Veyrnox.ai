@@ -17,8 +17,8 @@ provenance remain evidence. Clip publication uses template ownership, with
 explicit independent landing placements; clip keys need not equal template IDs.
 Ten promptless homepage wall cards are removed, leaving 14.
 
-`sourcePromptRunnable` is informational by owner decision: 285 public templates
-are audit-compatible and 599 incompatible. The application sends the selected
+`sourcePromptRunnable` is informational by owner decision: 264 public templates
+are audit-compatible and 620 incompatible. The application sends the selected
 exact text even when reference slots cannot be filled. This decision does not
 change limits, pricing contracts, required-input validation or consent. The Syntx route correction described below follows the existing importer precedent. All three
 assigned model routes currently have a 30,000-character prompt limit; none of

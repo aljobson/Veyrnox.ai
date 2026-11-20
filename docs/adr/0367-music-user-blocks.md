@@ -22,8 +22,9 @@ All read functions remain STABLE. A missing mapping omits only the new field.
 `music_user_blocks` is separate from Cinema's `user_blocks`. Blocking someone
 in Music does not silently block them in Cinema, or vice versa. Each person
 may block 500 others. An advisory lock in namespace 570 serializes changes;
-replaying a block or unblock returns `already: true`. Unknown or erased actor
-IDs return `user_not_found`; self blocks return `cannot_block_self`. Minting and
+replaying a block or unblock returns `already: true`. Blocking an unknown or erased actor
+returns `user_not_found`; unblocking one is a no-op (`already: true`), since
+erasure removes both the mapping and every block; self blocks return `cannot_block_self`. Minting and
 block/unblock take FOR SHARE locks on the relevant users: independent blockers
 can proceed together, while prepare_account_deletion / erase_account (FOR UPDATE)
 must wait. The per-blocker advisory lock still enforces the cap.

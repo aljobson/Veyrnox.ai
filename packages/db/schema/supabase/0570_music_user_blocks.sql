@@ -121,7 +121,8 @@ BEGIN
     IF p_actor_id IS NULL THEN RETURN jsonb_build_object('error','invalid_actor_id'); END IF;
     SELECT a.user_id INTO v_target FROM public.music_actors a JOIN public.users u ON u.id=a.user_id
         WHERE a.public_id=p_actor_id AND u.deleted_at IS NULL;
-    IF v_target IS NULL THEN RETURN jsonb_build_object('error','user_not_found'); END IF;
+    -- An erased or unknown person has no mapping (erasure deletes it and every block): unblocking is a no-op, like Cinema's.
+    IF v_target IS NULL THEN RETURN jsonb_build_object('ok',true,'already',true); END IF;
     IF v_target=v_me THEN RETURN jsonb_build_object('error','cannot_block_self'); END IF;
     -- Shared account locks allow independent blockers while excluding account erasure.
     PERFORM id FROM public.users WHERE id IN (v_me,v_target) ORDER BY id FOR SHARE;
@@ -129,7 +130,7 @@ BEGIN
         RETURN jsonb_build_object('error','account_not_found');
     END IF;
     IF EXISTS (SELECT 1 FROM public.users WHERE id=v_target AND deleted_at IS NOT NULL) THEN
-        RETURN jsonb_build_object('error','user_not_found');
+        RETURN jsonb_build_object('ok',true,'already',true);
     END IF;
     PERFORM pg_advisory_xact_lock(570, hashtext(v_me::text));
     DELETE FROM public.music_user_blocks WHERE blocker_id=v_me AND blocked_id=v_target;

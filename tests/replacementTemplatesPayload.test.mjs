@@ -13,12 +13,16 @@ import { inlineBlockReason } from '../app/veyrnox/_lib/templateGenerate.js';
 import { templateContract } from '../lib/templateContract.js';
 import { checkTemplateRequest } from '../lib/templateFidelity.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
+import { KLING_V3_PROMPT_MAX } from '../lib/generationPromptLimits.js';
+import { capabilityFor, checkInputs } from '../lib/modelCapabilities.js';
 
 const json = file => JSON.parse(readFileSync(new URL(file, import.meta.url)));
 const hashes = { ...json('./fixtures/higgsfieldReplacementPromptHashes.json'), ...json('./fixtures/syntxReplacementPromptHashes.json') };
 const sha = text => createHash('sha256').update(text).digest('hex');
 // Independent owner-reviewed table. Do not infer image requirements from prompt tokens.
-const photoIds = ['window-explode', 'red-crystal-amulet', 'community-martial-arts-suit', 'community-pet-affection-reveal'];
+// window-explode's exact prompt (5,557 characters) is over the Kling 3.0 cap (KLING_V3_PROMPT_MAX), so it is refused before any debit.
+const overCapIds = ['window-explode'];
+const photoIds = ['red-crystal-amulet', 'community-martial-arts-suit', 'community-pet-affection-reveal'];
 const textIds = ['community-spin-kick-puppy', 'community-neon-paint-splash', 'community-neon-animal-dance', 'community-island-life-performance', 'community-cinematic-persona-swap', 'community-roadside-service-pitch', 'community-martial-arts-feline', 'community-cosmic-sands-encounter', 'community-luxe-timepiece-reveal'];
 const fixtureReferences = [{ slot: 'image', origin: 'upload', key: PHOTO_KEY }];
 const photoResults = new Map();
@@ -65,10 +69,10 @@ async function runPhoto(id) {
 
 test('G1 covers exactly the fourteen imported IDs and their reviewed route tuples', () => {
   const imported = [...HF_REPLACEMENTS_TEMPLATES, ...SYNTX_REPLACEMENTS_TEMPLATES];
-  assert.deepEqual(imported.filter(t => templateById(t.id)).map(t => t.id).sort(), [...photoIds, ...textIds].sort());
+  assert.deepEqual(imported.filter(t => templateById(t.id)).map(t => t.id).sort(), [...photoIds, ...overCapIds, ...textIds].sort());
   assert.deepEqual(Object.keys(hashes).sort(), imported.map(t => t.id).sort());
   for (const t of imported.filter(t => templateById(t.id))) {
-    const photo = photoIds.includes(t.id);
+    const photo = photoIds.includes(t.id) || overCapIds.includes(t.id);
     assert.deepEqual([t.model, t.credits, t.durationSeconds, t.needsKey], photo
       ? ['Kling 3.0 · I2V', 32, 10, 'community.cinematic'] : ['Seedance 2.0 Fast', 19, 5, null], t.id);
   }
@@ -133,6 +137,15 @@ for (const id of [...photoIds, ...textIds]) {
       assert.deepEqual(refused.resolved, { ok: false, error: 'source_slot_invalid' });
       assert.deepEqual(refused.lookedUp, []);
     }
+  });
+}
+
+for (const id of overCapIds) {
+  test(`over-cap Kling template is refused before any debit: ${id}`, () => {
+    const prompt = lockedPrompt(id);
+    assert.ok(prompt.length > KLING_V3_PROMPT_MAX);
+    assert.deepEqual(checkInputs(capabilityFor('fal-ai/kling-video/v3/pro/image-to-video'), { prompt, start_image_url: PHOTO_URL }), { ok: false, error: 'inputs_invalid:prompt' });
+    assert.equal(templateContract(id).class, 'unsupported');
   });
 }
 
