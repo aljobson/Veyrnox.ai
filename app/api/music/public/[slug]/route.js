@@ -1,3 +1,4 @@
+import { publicMusicCreator } from '../../../../../lib/musicActors.js';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { musicPublicationEnabled } from '../../../../../lib/musicBackend.js';
 import { musicSocialEnabled, publicMusicSocial } from '../../../../../lib/musicSocial.js';
@@ -33,7 +34,7 @@ export async function GET(_request, { params }) {
         const plays = musicPlaysEnabled()
             ? await rpc('music_public_play_count', { p_slug: slug }, cfg).catch(() => null) : null;
         return reply({
-            track: { ...safe, audio_url: `/api/music/public/${slug}/asset` },
+            track: { ...publicMusicCreator(safe), audio_url: `/api/music/public/${slug}/asset` },
             ...(lyrics?.ok && publicLyrics(lyrics.lyrics) ? { lyrics: publicLyrics(lyrics.lyrics) } : {}),
             ...(plays?.ok ? { plays: { count: publicPlayCount(plays) } } : {}),
             ...(musicSongReportsEnabled() ? { reports: { open: true } } : {}),
