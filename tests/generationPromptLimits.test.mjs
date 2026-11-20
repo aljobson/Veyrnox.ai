@@ -117,7 +117,6 @@ test('web, API, MCP and mobile boundaries all reference the shared 30,000 contra
   const mobileChat = readFileSync('apps/mobile/src/app/(app)/chat/[id].tsx', 'utf8');
   const webMediaComposer = readFileSync('app/veyrnox/_components/chat/MediaComposer.js', 'utf8');
   const webEditor = readFileSync('app/veyrnox/_components/editor/GenerationPanel.js', 'utf8');
-  const mobileFaceFilters = readFileSync('apps/mobile/src/components/FaceFiltersFlow.tsx', 'utf8');
   const mobileFilm = readFileSync('apps/mobile/src/lib/filmStudio.ts', 'utf8');
   const mobileFilmBreakdown = readFileSync('apps/mobile/src/components/film/FilmBreakdownStage.tsx', 'utf8');
   const mobileFilmOutput = readFileSync('apps/mobile/src/components/film/FilmPromptOutput.tsx', 'utf8');
@@ -152,8 +151,8 @@ test('web, API, MCP and mobile boundaries all reference the shared 30,000 contra
   assert.match(mobileMake, /const promptTooLong/);
   assert.match(mobileMake, /public\.TemplateRecipe\.promptTooLong/);
   assert.doesNotMatch(mobileChat, /initialPrompt=\{draft\.trim\(\)\.slice/);
-  for (const source of [webMediaComposer, webEditor, mobileFaceFilters]) assert.doesNotMatch(source, /maxLength=\{(?:model\?\.promptMax|textInput\(model\)\?\.max)/);
-  assert.ok([webMediaComposer, webEditor, mobileFaceFilters].every((source) => source.includes('promptTooLong')));
+  for (const source of [webMediaComposer, webEditor]) assert.doesNotMatch(source, /maxLength=\{(?:model\?\.promptMax|textInput\(model\)\?\.max)/);
+  assert.ok([webMediaComposer, webEditor].every((source) => source.includes('promptTooLong')));
   assert.match(mobileFilm, /\['script', 'content'\]\.includes\(key\) \? GENERATION_PROMPT_MAX/);
   assert.match(mobileFilmBreakdown, /maxLength=\{GENERATION_PROMPT_MAX\}/);
   assert.match(mobileFilmOutput, /maxLength = 24_000/);

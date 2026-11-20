@@ -1,5 +1,4 @@
 import { rawText } from '../../../lib/i18n/translate';
-import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
@@ -7,18 +6,13 @@ import { Icon, IconBadge, Text, themedStyles, useThemedStyles } from '../../../c
 import { toolIcon } from '../../../lib/featureIcons';
 import { plural, t } from '../../../lib/i18n';
 import { fetchCatalogCached, type CatalogModel } from '../../../lib/media';
-import { TOOL_TASKS, inputTools, toolGroups, toolNeeds, toolQualifiers, type ToolGroup } from '../../../lib/toolDirectory';
+import { inputTools, toolGroups, toolNeeds, toolQualifiers } from '../../../lib/toolDirectory';
 import { ds, LIST_END_PADDING } from '../../../theme';
 
-const FACE = 'face-filters';
-const FACE_TASK = TOOL_TASKS.find((task) => task.key === FACE);
-
 // The web's /tools page on the phone: one card per job, in the web's order, with the job's models under it. A model
-// row opens the Create form, where the file is chosen and Generate shows the exact cost. Face filters is one card
-// that opens its own screen (the filters are chosen there), so it never repeats once per filter model.
+// row opens the Create form, where the file is chosen and Generate shows the exact cost.
 export default function CreateTools() {
     const styles = useThemedStyles(sheets);
-    const faceAvailable = useFaceFiltersAvailable();
     const router = useRouter();
     const params = useLocalSearchParams<{ source?: string; mode?: string }>();
     const [models, setModels] = useState<CatalogModel[] | null>(null);
@@ -29,16 +23,7 @@ export default function CreateTools() {
     }, []);
 
     const source = params.source === 'image' || params.source === 'video' ? params.source : null;
-    const showFace = faceAvailable && source !== 'video' && params.mode !== 'reference';
-    const groups = useMemo(() => {
-        const found = toolGroups(inputTools(models ?? [], source, params.mode), params.mode === 'reference').filter((g) => g.key !== FACE);
-        if (!showFace || !FACE_TASK) return found;
-        // Face filters keeps its place in the web's order even when the saved catalog has no face models.
-        const order = (key: string) => { const i = TOOL_TASKS.findIndex((task) => task.key === key); return i < 0 ? TOOL_TASKS.length : i; };
-        const face: ToolGroup = { key: FACE, label: FACE_TASK.label, blurb: t('faceFilters.lead'), tools: [] };
-        const at = found.findIndex((g) => order(g.key) > order(FACE));
-        return at < 0 ? [...found, face] : [...found.slice(0, at), face, ...found.slice(at)];
-    }, [models, source, showFace, params.mode]);
+    const groups = useMemo(() => toolGroups(inputTools(models ?? [], source, params.mode), params.mode === 'reference'), [models, source, params.mode]);
     const lead = params.mode === 'reference'
         ? t('tools.choosewhatyourreferenceshouldguideYou')
         : source === 'image'
@@ -57,19 +42,7 @@ export default function CreateTools() {
                 <ActivityIndicator color={styles.accentInk.color} />
             ) : groups.length === 0 ? (
                 <Text variant="footnote" tone="secondary">{t('toolsDir.empty')}</Text>
-            ) : groups.map((g) => { const qualifiers = toolQualifiers(g.tools); return g.key === FACE ? (
-                <Pressable key={g.key} accessibilityRole="button" accessibilityLabel={rawText(`${g.label}. ${g.blurb}`)} onPress={() => router.push('/face-filters')}
-                    style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
-                    <View style={styles.head}>
-                        <IconBadge {...toolIcon(g.key)} />
-                        <View style={styles.headText}>
-                            <Text variant="bodyStrong" tone="primary" accessibilityRole="header">{g.label}</Text>
-                            <Text variant="footnote" tone="secondary">{g.blurb}</Text>
-                        </View>
-                        <Icon name="caretRight" size={20} />
-                    </View>
-                </Pressable>
-            ) : (
+            ) : groups.map((g) => { const qualifiers = toolQualifiers(g.tools); return (
                 <View key={g.key} style={styles.card}>
                     <View style={styles.head}>
                         <IconBadge {...toolIcon(g.key)} />
