@@ -1944,6 +1944,12 @@
     "ratio": 1.63
   },
   {
+    "id": "musicPlaylists.next",
+    "english": "Next song",
+    "translation": "الأغنية التالية",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

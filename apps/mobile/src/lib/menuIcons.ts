@@ -89,6 +89,8 @@ export const MENU_ICONS = {
     gauge: require('../../assets/icons/gauge.png'),
     aperture: require('../../assets/icons/aperture.png'),
     googleG: require('../../assets/icons/google-g.png'),
+    playlist: require('../../assets/icons/playlist.png'),
+    compass: require('../../assets/icons/compass.png'),
     vinylRecord: require('../../assets/icons/vinyl-record.png'),
     microphone: require('../../assets/icons/microphone.png'),
     headphones: require('../../assets/icons/headphones.png'),

@@ -3354,6 +3354,36 @@
     "ratio": 2.63
   },
   {
+    "id": "musicPlaylists.title",
+    "english": "Playlists",
+    "translation": "Listas de reproducción",
+    "ratio": 2.44
+  },
+  {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Reproducir todo",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicPlaylists.next",
+    "english": "Next song",
+    "translation": "Canción siguiente",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Añadir canciones",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicDiscover.mood.all",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

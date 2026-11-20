@@ -154,5 +154,9 @@
   "create.frameOriginal": "Common loanword or label identical to English in this language: Original.",
   "music.create.instrumental": "Standard musical or interface term with the same spelling in this language.",
   "musicTargetStems.instrument.piano": "Shared instrument name in this locale; machine translation retains the established musical term. Native review pending.",
-  "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language."
+  "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
+  "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicDiscover.mood.Hip-hop": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicDiscover.mood.Jazz": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending."
 }

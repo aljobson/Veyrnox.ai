@@ -3360,6 +3360,30 @@
     "ratio": 2.5
   },
   {
+    "id": "musicPlaylists.title",
+    "english": "Playlists",
+    "translation": "Listas de reprodução",
+    "ratio": 2.22
+  },
+  {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Reproduzir tudo",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Adicionar músicas",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicDiscover.mood.all",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

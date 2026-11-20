@@ -5400,6 +5400,30 @@
     "ratio": 1.61
   },
   {
+    "id": "musicPlaylists.pin",
+    "english": "Pin playlist",
+    "translation": "Épingler la playlist",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.unpin",
+    "english": "Unpin playlist",
+    "translation": "Désépingler la playlist",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicPlaylists.next",
+    "english": "Next song",
+    "translation": "Morceau suivant",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Ajouter des morceaux",
+    "ratio": 2.22
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

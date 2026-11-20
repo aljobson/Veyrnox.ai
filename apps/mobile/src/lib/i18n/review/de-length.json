@@ -3672,6 +3672,84 @@
     "ratio": 2.63
   },
   {
+    "id": "musicPlaylists.title",
+    "english": "Playlists",
+    "translation": "Wiedergabelisten",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicPlaylists.empty",
+    "english": "No playlists yet",
+    "translation": "Noch keine Wiedergabelisten",
+    "ratio": 1.69
+  },
+  {
+    "id": "musicPlaylists.name",
+    "english": "Playlist title",
+    "translation": "Titel der Wiedergabeliste",
+    "ratio": 1.79
+  },
+  {
+    "id": "musicPlaylists.create",
+    "english": "Create playlist",
+    "translation": "Wiedergabeliste erstellen",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.pinned",
+    "english": "Pinned",
+    "translation": "Angeheftet",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.pin",
+    "english": "Pin playlist",
+    "translation": "Wiedergabeliste anheften",
+    "ratio": 2
+  },
+  {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Alle abspielen",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPlaylists.saved",
+    "english": "Playlist saved.",
+    "translation": "Wiedergabeliste gespeichert.",
+    "ratio": 1.87
+  },
+  {
+    "id": "musicPlaylists.error",
+    "english": "Could not update playlists. Please retry.",
+    "translation": "Wiedergabelisten konnten nicht aktualisiert werden. Versuche es erneut.",
+    "ratio": 1.73
+  },
+  {
+    "id": "musicPlaylists.working",
+    "english": "Updating playlist…",
+    "translation": "Wiedergabeliste wird aktualisiert…",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicPlaylists.missing",
+    "english": "Playlist not found",
+    "translation": "Wiedergabeliste nicht gefunden",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Songs hinzufügen",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicPlaylists.addNamed",
+    "english": "Add {title}",
+    "translation": "{title} hinzufügen",
+    "ratio": 1.64
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
