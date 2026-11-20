@@ -20,6 +20,7 @@ export const MODELS = [
   { id: 'swap-recast', staged: true, name: 'Swap · Pro', credits: 134, kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
   { id: 'swap-quick', staged: true, name: 'Swap · Quick', credits: 67, kind: 'video', durations: [5], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
   { id: 'kling-o1-reference', staged: true, name: 'Kling O1 · Reference', credits: 47, kind: 'video', durations: [5, 10], media: { video: { required: true, maxSeconds: 10 }, image: { required: true } } },
+  { id: 'seedance-2.0-photo-kie', staged: true, name: 'Seedance 2.0 · Photo', credits: 58, kind: 'video', durations: [5, 10], aspects: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'], media: { image: { required: true } } },
   { id: 'seedance-2.0-reference', staged: true, name: 'Seedance 2.0 · Reference', credits: 85, kind: 'video', durations: [5, 10], media: { image: { required: true, maxFiles: 9 } } },
   { id: 'seedance-2.0-fast',  name: 'Seedance 2.0 Fast',   credits: 19,                                         kind: 'video', durations: [5], aspects: ['16:9', '9:16'] },
   { id: 'kling-avatar-v2',    name: 'Kling AI Avatar',     credits: 32,  tag: 'NEW',                            kind: 'video', durations: [5], media: { image: { required: true }, audio: { required: true, maxSeconds: 10 } } },

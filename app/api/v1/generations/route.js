@@ -1,4 +1,5 @@
 import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
+import { seedanceLongModelOpen } from '../../../../lib/seedanceLongTemplates.js';
 import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
@@ -280,7 +281,8 @@ export async function POST(req) {
         console.error('[generations] catalog lookup failed:', err);
         return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
     }
-    if (!modelRow || !modelRow.active) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+    // The long-template Seedance offer is refused, before any charge, while its runtime key is off (lib/seedanceLongTemplates.js).
+    if (!modelRow || !modelRow.active || !seedanceLongModelOpen(modelRow.id)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     // ADR-0058 decision 9: Cloudflare supplies the visitor country. Keep US
     // requests off BytePlus until its written end-user ruling is recorded.
     if (modelRow.provider === 'byteplus' && req.headers.get('cf-ipcountry')?.trim().toUpperCase() === 'US') {

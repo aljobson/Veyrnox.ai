@@ -7,9 +7,9 @@
 -- revoked ACL, and the body reads previous allowlist AND NOT a removed path.
 DO $$
 BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0572(text)') IS NULL THEN
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0575(text)') IS NULL THEN
         ALTER FUNCTION public.telemetry_path_allowed(TEXT)
-            RENAME TO telemetry_path_allowed_pre_0572;
+            RENAME TO telemetry_path_allowed_pre_0575;
     END IF;
 END $$;
 
@@ -19,7 +19,7 @@ LANGUAGE sql
 IMMUTABLE
 SET search_path = ''
 AS $$
-    SELECT public.telemetry_path_allowed_pre_0572(p_path)
+    SELECT public.telemetry_path_allowed_pre_0575(p_path)
        AND p_path NOT IN ('/app/enhance', '/app/photo-studio')
 $$;
 

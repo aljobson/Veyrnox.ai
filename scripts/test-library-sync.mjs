@@ -116,7 +116,7 @@ try {
     for (const p of ['/api/v1/library-sync', '/api/v1/library-sync/favourites', '/api/v1/library-sync/draft', '/api/v1/first-goal']) {
         assert.equal((await one('SELECT public.telemetry_path_allowed($1) AS ok', [p])).ok, true, p);
     }
-    // 0572 retired the removed Photo Studio and Video Enhance pages.
+    // 0575 retired the removed Photo Studio and Video Enhance pages.
     for (const p of ['/app/photo-studio', '/app/enhance']) {
         assert.equal((await one('SELECT public.telemetry_path_allowed($1) AS ok', [p])).ok, false, p);
     }

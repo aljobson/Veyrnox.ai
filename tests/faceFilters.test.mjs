@@ -90,11 +90,11 @@ test('makeup takes only the listed styles and intensities', () => {
     assert.equal(checkInputs(record, { image_url: IMAGE, intensity: 'extreme' }).ok, false);
 });
 
-test('face filters are retired: no Tools group on web or phone, and 0571 sets every row inactive', () => {
+test('face filters are retired: no Tools group on web or phone, and 0574 sets every row inactive', () => {
     assert.equal(TOOL_TASKS.find((t) => t.key === 'face-filters'), undefined);
     const phone = readFileSync(new URL('../apps/mobile/src/lib/toolDirectory.ts', import.meta.url), 'utf8');
     assert.doesNotMatch(phone, /'face-filters'/);
-    const sql = readFileSync(new URL('../packages/db/schema/supabase/0571_retire_face_filters.sql', import.meta.url), 'utf8');
+    const sql = readFileSync(new URL('../packages/db/schema/supabase/0574_retire_face_filters.sql', import.meta.url), 'utf8');
     assert.equal((sql.match(/UPDATE public\.model_catalog/g) || []).length, 1, 'exactly one catalog UPDATE');
     assert.match(sql, /SET active = false/);
     assert.match(sql, /affected <> 6/);
