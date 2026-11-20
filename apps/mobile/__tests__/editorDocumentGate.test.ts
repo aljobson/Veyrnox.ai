@@ -65,6 +65,16 @@ function nearLimit(envelopeLimit: boolean) {
     if (envelopeLimit) doc.brief = 'b'.repeat(32720 - utf8Bytes(JSON.stringify(doc)));
     return doc;
 }
+test('a timeline just over 30000 UTF-8 bytes is tooLarge even when the envelope is under 32768', () => {
+    const doc = nearLimit(false), tl = doc.timeline as ReturnType<typeof emptyTimeline>;
+    tl.media.m.name += '😀'.repeat(10);
+    expect(new TextEncoder().encode(JSON.stringify(tl)).byteLength).toBe(30000);
+    expect(documentProblem(doc)).toBeNull();
+    tl.media.m.name += 'x';
+    expect(new TextEncoder().encode(JSON.stringify(tl)).byteLength).toBe(30001);
+    expect(utf8Bytes(JSON.stringify(doc))).toBeLessThan(32768);
+    expect(documentProblem(doc)).toBe('tooLarge');
+});
 test.each([false, true])('backup exceeding %s limit stays pending, drafts accepted data, retries after shrinking', async envelopeLimit => {
     const doc = nearLimit(envelopeLimit); expect(documentProblem(doc)).toBeNull(); await open(doc);
     await act(async () => { session.markDocument({ ...doc, brief: doc.brief + 'a' }); });
