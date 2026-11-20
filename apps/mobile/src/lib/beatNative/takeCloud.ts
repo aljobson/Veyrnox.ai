@@ -5,7 +5,11 @@ import { normalizeCloudError, type CloudOptions } from './cloud';
 import type { BeatDoc } from './doc';
 import { loadBeatTake, putBeatTake, recoverTake, takeAssets, type CloudTake, type Reservation } from './takeShared';
 import { configureNativeTakeStorage } from './takeShared';
+import { validUploadUrl } from '../publishUploads';
 export type TakeCloudToken = CloudOptions & { current(): boolean };
+// Signed media URLs come from our API; refuse any target that is not our R2 storage (or the dev API in dev builds).
+const mediaTarget = (url: unknown): string => { if (typeof url !== 'string' || !validUploadUrl(url)) throw new ApiError(200, 'bad_response'); return url; };
+const uploadHeaders = (headers: Record<string, string> | undefined) => Object.fromEntries(Object.entries(headers ?? {}).filter(([name]) => ['content-type', 'if-none-match'].includes(name.toLowerCase())));
 const localOnly = () => new ApiError(400, 'TAKE_LOCAL_ONLY');
 const check = (token: TakeCloudToken) => { if (!token.current() || token.signal?.aborted) throw new Error('account_changed'); };
 export function decodeTakeWav(data: ArrayBuffer): { samples: Float32Array; sampleRate: number } {
@@ -65,7 +69,7 @@ export function createTakeCloud(api: ApiClient, fetcher: typeof fetch = fetch, i
                     },
                     put: async reservation => {
                         check(token);
-                        try { const response = await fetcher(reservation.upload_url, { method: 'PUT', headers: reservation.upload_headers, body, signal: token.signal, credentials: 'omit' }); check(token); return response; }
+                        try { const response = await fetcher(mediaTarget(reservation.upload_url), { method: 'PUT', headers: uploadHeaders(reservation.upload_headers), body, signal: token.signal, credentials: 'omit' }); check(token); return response; }
                         catch (error) { check(token); if (error instanceof ApiError) throw error; throw new ApiError(0, 'NETWORK_ERROR'); }
                     },
                 });
@@ -105,9 +109,8 @@ export function createTakeCloud(api: ApiClient, fetcher: typeof fetch = fetch, i
             if (!row) { all = false; failures.defer(key); continue; }
             try {
                 const signed = await call<{ url: string }>(`${path(doc.id)}/${encodeURIComponent(row.id)}`, token);
-                if (typeof signed?.url !== 'string') throw new ApiError(200, 'bad_response');
                 const networkError = (error: unknown): never => { throw error instanceof ApiError ? error : new ApiError(0, 'NETWORK_ERROR'); };
-                const response = await fetcher(signed.url, { signal: token.signal, credentials: 'omit' }).catch(networkError);
+                const response = await fetcher(mediaTarget(signed?.url), { signal: token.signal, credentials: 'omit' }).catch(networkError);
                 if (!response.ok) throw new ApiError(response.status, 'TAKE_DOWNLOAD_FAILED');
                 const decoded = decodeTakeWav(await response.arrayBuffer().catch(networkError)); check(token);
                 await putBeatTake({ ...decoded, id: asset.ref, beatId: doc.id, label: asset.name, length: decoded.samples.length, createdAt: Date.now(), state: 'committed' }, () => check(token));
