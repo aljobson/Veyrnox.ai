@@ -3672,6 +3672,66 @@
     "ratio": 1.7
   },
   {
+    "id": "beat.view.song",
+    "english": "Song",
+    "translation": "Композиция",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.region.nextTrack",
+    "english": "Next track",
+    "translation": "Следующая дорожка",
+    "ratio": 1.7
+  },
+  {
+    "id": "beat.region.resize",
+    "english": "Resize region",
+    "translation": "Изменить длину региона",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.region.copy",
+    "english": "Copy on drop",
+    "translation": "Копировать при отпускании",
+    "ratio": 2.08
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "Привязка",
+    "ratio": 2
+  },
+  {
+    "id": "beat.zoom.out",
+    "english": "Zoom out",
+    "translation": "Уменьшить масштаб",
+    "ratio": 2.13
+  },
+  {
+    "id": "beat.zoom.in",
+    "english": "Zoom in",
+    "translation": "Увеличить масштаб",
+    "ratio": 2.43
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Следующий такт",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.ruler.end",
+    "english": "End",
+    "translation": "Конец",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.drag.cancelled",
+    "english": "Drag cancelled",
+    "translation": "Перетаскивание отменено",
+    "ratio": 1.64
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

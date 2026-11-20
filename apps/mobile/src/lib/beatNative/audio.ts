@@ -2,7 +2,7 @@
 // if the N0 device gate fails, swap `createBeatAudio` for another implementation of `BeatAudio` and no screen changes.
 import { createNativeBeatEngine, loadNativeContext, type NativeContextCtor } from './nativeContext';
 import type { BeatEngine, EngineContext } from './shared';
-import { audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
+import { DRUM_KITS, audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
 
 export type TrackMix = { gain: number; pan: number };
 export interface BeatAudio {
@@ -14,6 +14,11 @@ export interface BeatAudio {
     /** Fader and pan for one track; mute and solo are folded into `gain` by the caller (see `audibleGain`). */
     setTrackMix(trackId: string, mix: TrackMix): void;
     close(): Promise<void>;
+}
+
+export function playRange(doc: BeatDoc): { from: number; to: number } {
+    if (doc.view === 'pattern') return { from: 0, to: doc.steps };
+    return doc.cycle.on ? { from: doc.cycle.start / 240, to: doc.cycle.end / 240 } : { from: 0, to: loopSteps(doc) };
 }
 
 const LOOKAHEAD_S = 0.15;
@@ -59,15 +64,15 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     };
 
     function tick() {
-        const doc = getDoc?.();
-        if (!doc) return;
+        if (!getDoc) return;
         const horizon = engine.now() + LOOKAHEAD_S;
         while (nextTime < horizon) {
-            const length = loopSteps(doc);
-            const step = cursor % length;
+            const doc = getDoc();
+            const { from, to } = playRange(doc);
+            const step = from + (cursor % (to - from));
             for (const track of doc.tracks) {
                 levels.set(track.id, { gain: audibleGain(doc, track), pan: track.pan });
-                kitOf.set(track.id, track.kit);
+                kitOf.set(track.id, track.kit ?? DRUM_KITS[0].id);
             }
             for (const event of eventsAtStep(doc, step)) {
                 const s = strip(event.trackId);

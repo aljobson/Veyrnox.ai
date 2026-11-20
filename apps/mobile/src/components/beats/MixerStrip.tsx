@@ -20,8 +20,8 @@ export function MixerStrip({ track, index, canRemove, onGain, onPan, onMute, onS
     return (
         <View style={s.strip} accessibilityLabel={name}>
             <Text variant="bodyStrong">{name}</Text>
-            <SegmentedControl value={track.kit} onChange={onKit} options={DRUM_KITS.map(k => ({ value: k.id, label: t(`beat.kit.${k.id}`) }))}
-                accessibilityLabel={t('beat.kit', { track: name })} />
+            {!track.kind || track.kind === 'drums' ? <SegmentedControl value={track.kit ?? DRUM_KITS[0].id} onChange={onKit} options={DRUM_KITS.map(k => ({ value: k.id, label: t(`beat.kit.${k.id}`) }))}
+                accessibilityLabel={t('beat.kit', { track: name })} /> : <Text>{t(track.kind === 'audio' ? 'beat.kind.audio' : 'beat.kind.midi')}</Text>}
             <StrengthSlider tone="surface" label={t('beat.gain', { track: name })} value={track.gain} onChange={onGain} />
             <StrengthSlider tone="surface" label={t('beat.pan', { track: name })} value={toSlider(track.pan)} onChange={v => onPan(fromSlider(v))} />
             <View style={s.buttons}>
