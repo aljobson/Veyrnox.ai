@@ -1,0 +1,41 @@
+import { act } from 'react';
+import { createRoot, type Root } from 'test-renderer';
+import AppLayout from '../src/app/(app)/_layout';
+import { SignedInRedirect } from '../src/components/SignedInRedirect';
+import { redirectSystemPath } from '../src/app/+native-intent';
+import { recallPendingLink } from '../src/lib/pendingLink';
+import { slug } from './fixtures/musicPublication';
+const mockSlots = new Map<string, string>(), mockRedirect = jest.fn();
+let mockStatus = 'signedOut';
+jest.mock('expo-secure-store', () => ({ getItem: (key: string) => mockSlots.get(key) ?? null,
+    setItem: (key: string, value: string) => { mockSlots.set(key, value); }, deleteItemAsync: async (key: string) => { mockSlots.delete(key); } }));
+jest.mock('../src/components/ui', () => ({ ...jest.requireActual('../src/components/ui'), useAppearance: () => ({ settings: jest.requireActual('../src/theme').getAppearance(), scheme: 'light' }) }));
+jest.mock('expo-router', () => ({ Redirect: (props: { href: string }) => { mockRedirect(props.href); return null; }, Stack: { Screen: () => null } }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: mockStatus, generation: 0 }) }));
+jest.mock('../src/lib/useOfflineRecovery', () => ({ useOfflineRecovery: () => undefined }));
+jest.mock('../src/components/ErrorFallback', () => ({ SignedInErrorBoundary: () => null }));
+jest.mock('../src/components/CelebrationHost', () => ({ CelebrationHost: () => null }));
+jest.mock('../src/components/CheckInModal', () => ({ CheckInModal: () => null }));
+jest.mock('../src/components/ReferralAttach', () => ({ ReferralAttach: () => null }));
+jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
+jest.mock('../src/components/AiConsentHost', () => ({ AiConsentHost: () => null }));
+jest.mock('../src/components/FirstRunGate', () => ({ FirstRunGate: () => null }));
+jest.mock('../src/components/OfflineBanner', () => ({ OfflineBanner: () => null }));
+jest.mock('../src/components/ServiceBanner', () => ({ ServiceBanner: () => null }));
+jest.mock('../src/components/PaywallPrompt', () => ({ PaywallPrompt: () => null }));
+jest.mock('../src/components/HomeBackButton', () => ({ HomeBackButton: () => null }));
+jest.mock('../src/components/account/MfaGate', () => ({ MfaGate: ({ children }: any) => children }));
+jest.mock('../src/components/account/AgeConfirmationGate', () => ({ AgeConfirmationGate: ({ children }: any) => children }));
+jest.mock('../src/components/HardPaywallGate', () => ({ HardPaywallGate: ({ children }: any) => children }));
+
+let root: Root;
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; mockSlots.clear(); mockRedirect.mockClear(); mockStatus = 'signedOut'; root = createRoot(); });
+afterEach(async () => { await act(async () => root.unmount()); });
+test.each([[`/music/tracks/${slug}`, `/music/track/${slug}`], ['/music/creators/artist_one', '/music/creator/artist_one']])('signed-out %s goes through sign-in then continues once to %s', async (path, route) => {
+    expect(await redirectSystemPath({ path: `https://veyrnox.ai${path}`, initial: true })).toBe(route);
+    await act(async () => root.render(<AppLayout />)); expect(mockRedirect).toHaveBeenLastCalledWith('/sign-in');
+    expect(recallPendingLink()).toBe(route); mockStatus = 'signedIn';
+    await act(async () => root.render(<SignedInRedirect />)); expect(mockRedirect).toHaveBeenLastCalledWith(route);
+    expect(recallPendingLink()).toBeNull();
+    await act(async () => root.render(<SignedInRedirect />)); expect(mockRedirect).toHaveBeenLastCalledWith(route);
+});

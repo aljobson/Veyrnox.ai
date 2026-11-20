@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "لون {label} بالنظام الست عشري",
+    "ratio": 1.61
+  },
+  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "المحاولة على أي حال",
@@ -1950,6 +1956,18 @@
     "ratio": 1.67
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "إلغاء المتابعة",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "حماسي",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.pad.kick",
     "english": "Kick",
     "translation": "الطبل الكبير",
@@ -2073,6 +2091,42 @@
     "id": "beatMix.curve.out",
     "english": "Ease out",
     "translation": "نهاية تدريجية",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "إزاحة الظل أفقيًا",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "إزاحة الظل عموديًا",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "بداية",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "نهاية",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "اقتباس بخط ذي زوائد",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "انزلاق للأعلى",
     "ratio": 1.63
   },
   {

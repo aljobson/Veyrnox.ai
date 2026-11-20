@@ -1,7 +1,8 @@
+import { exportRefusal } from './editorExportRefusal';
 import { ApiError, type ApiClient } from './api';
 import { getCacheUser, subscribeCacheUser } from './appCache';
 import { documentIdentity, type ProjectDocument } from './editorBridge';
-import { DEFAULT_TEXT_STYLE, type Media, type Timeline } from './nativeEditorModel';
+import { type Media, type Timeline } from './nativeEditorModel';
 import { mediaApi } from './media';
 import { fetchFileLink } from './libraryFiles';
 import { probeDuration } from './editorMediaDuration';
@@ -12,6 +13,9 @@ import { OfflineError, OFFLINE_PAID_MESSAGE, requireOnline } from './network';
 import { CONSENT_DECLINED_MESSAGE } from './aiConsent';
 import { t } from './i18n';
 
+// The server's plain-text appearance is independent of future authoring defaults.
+export const SERVER_PLAIN_TEXT_STYLE = Object.freeze({ font: 'sans-serif', weight: 'bold', align: 'center', color: '#ffffff',
+    stroke: '#000000', strokeWidth: 0, background: '#000000', backgroundOpacity: 0 });
 export const RENDER_PATH = '/api/v1/editor/server-render';
 export const JSON_HEADERS = { 'Content-Type': 'application/json' };
 // A completed local backup changes persistence metadata, not the export snapshot.
@@ -64,7 +68,7 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
         for (const key of ['fadeIn', 'fadeOut', 'pan', 'reverse'] as const) if (key in clip && !(clip as Record<string, unknown>)[key]) delete (clip as Record<string, unknown>)[key];
         delete clip.groupId;
     }
-    for (const text of timeline.text) if (documentIdentity(text.style) === documentIdentity(DEFAULT_TEXT_STYLE)) delete text.style;
+    for (const text of timeline.text) if (documentIdentity(text.style) === documentIdentity(SERVER_PLAIN_TEXT_STYLE)) delete text.style;
     for (const [id, media] of Object.entries(timeline.media)) {
         const block = (reason: BlockReason) => blocked.push({ id, name: media.name, reason });
         const file = localFiles[id];
@@ -137,7 +141,11 @@ export function exportError(error: unknown, uploaded = false): string {
     const e = error as ApiError;
     if (e.code === 'consent_declined') return CONSENT_DECLINED_MESSAGE;
     const key = e.status === 403 && e.code === 'editor_render_media_not_owned' && uploaded ? 'uploadExpired' : ERRORS[e.code] || 'failed';
-    if (e.code === 'editor_render_unsupported') return `${t('editorServerExport.unsupported')} ${exportFeature(e.body?.feature)}`;
+    if (e.code === 'editor_render_unsupported') {
+        const feature = e.body?.feature;
+        return ['multiple_tracks', 'track_visibility', 'overlapping_clips', 'source_aspect', 'schemaVersion', 'canvas.frame_rate'].includes(String(feature))
+            ? `${t('editorServerExport.unsupported')} ${exportFeature(feature)}` : exportRefusal(feature);
+    }
     return t(`editorServerExport.${key}` as Parameters<typeof t>[0]);
 }
 export function exportFeature(feature: unknown): string {

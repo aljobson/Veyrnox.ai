@@ -13,6 +13,7 @@ export type MusicProbe<T> =
 const OFF_CODES: ReadonlySet<string> = new Set([
     'music_unavailable',
     'playlists_unavailable',
+    'blocks_unavailable',
     'music_library_unavailable',
     'music_library_tabs_unavailable',
     'music_remix_unavailable',

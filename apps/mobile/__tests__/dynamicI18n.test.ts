@@ -10,6 +10,8 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'editorEditGate.{}': ['invalid', 'tooLarge'],
+    'editorExportRefusal.{}': ['speed', 'audio', 'motion', 'animation', 'colour', 'crop', 'effects', 'blend', 'background', 'masks', 'smart', 'transitions', 'text', 'captions', 'position', 'fonts', 'images', 'originalAudio', 'assets', 'groups', 'unknown'],
     'musicDiscover.mood.{}': ['all', 'Hip-hop', 'Rock', 'Jazz'],
     'musicPlaylists.{}': ['titleInvalid', 'conflict', 'invalidSongs', 'offline', 'scanStale', 'saved', 'noneUnavailable', 'pending', 'signIn', 'denied', 'error'],
     'musicSectionActions.{}.title': ['add_section', 'replace_section'],
@@ -41,6 +43,8 @@ const domains: Record<string, readonly string[]> = {
     'beat.kit.{}': ['acoustic', '808', 'lofi'],
     'music.tab.{}': ['songs', 'history', 'hooks'],
     'music.empty.{}': ['songs', 'history', 'hooks'],
+    'musicPublic.reaction.{}': ['fire', 'love', 'wow', 'praise', 'like', 'cool', 'hot'],
+    'musicPublic.genre.{}': ['pop', 'hip-hop', 'rock', 'electronic', 'house', 'lo-fi', 'jazz', 'rnb-soul', 'ambient', 'cinematic', 'country-folk', 'latin'],
     'music.player.{}': ['idle', 'loading', 'playing', 'paused', 'error', 'held', 'ended', 'background'],
     'templates.kind.{}': ['video', 'audio'],
     'audioTemplates.cat.{}': ['MUSIC', 'VOICE-OVER', 'SOUND FX'],

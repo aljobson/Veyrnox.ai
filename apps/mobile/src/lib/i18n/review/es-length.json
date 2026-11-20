@@ -1,5 +1,41 @@
 [
   {
+    "id": "editorTools.speed",
+    "english": "Speed",
+    "translation": "Velocidad",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.preset",
+    "english": "Speed preset",
+    "translation": "Preajuste de velocidad",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorTools.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Duración del fotograma fijo",
+    "ratio": 2.08
+  },
+  {
+    "id": "editorTools.pointAdd",
+    "english": "Add speed point",
+    "translation": "Añadir punto de velocidad",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorExportRefusal.assets",
+    "english": "Phone export can't include project media yet.",
+    "translation": "La exportación desde el móvil aún no admite archivos multimedia del proyecto.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Turquesa",
@@ -3384,6 +3420,36 @@
     "ratio": 1.67
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Dejar de seguir",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicPublic.plays",
+    "english": "Plays: {count}",
+    "translation": "Reproducciones: {count}",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicPublic.reply",
+    "english": "Reply",
+    "translation": "Responder",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicPublic.reaction.like",
+    "english": "Like",
+    "translation": "Me gusta",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Ardiente",
+    "ratio": 2.67
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproducir",
@@ -3556,6 +3622,144 @@
     "english": "Ease in",
     "translation": "Entrada suave",
     "ratio": 1.86
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Con remates",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Fuente personalizada",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorText.shadowBlur",
+    "english": "Shadow blur",
+    "translation": "Desenfoque de la sombra",
+    "ratio": 2.09
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Desplazamiento horizontal de la sombra",
+    "ratio": 4.75
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Desplazamiento vertical de la sombra",
+    "ratio": 4.5
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Entrada",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Salida",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.preset6",
+    "english": "Typewriter",
+    "translation": "Máquina de escribir",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName0",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorText.animationName1",
+    "english": "Fade",
+    "translation": "Fundido",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Deslizar a la izquierda",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Deslizar a la derecha",
+    "ratio": 1.91
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Deslizar hacia arriba",
+    "ratio": 2.63
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Deslizar hacia abajo",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.animationName6",
+    "english": "Zoom",
+    "translation": "Acercamiento",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.animationName9",
+    "english": "Wipe from left",
+    "translation": "Barrido desde la izquierda",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorText.loopName0",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Balanceo",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName6",
+    "english": "Wobble",
+    "translation": "Oscilación",
+    "ratio": 1.67
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Usar para sincronizar labios",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirar publicación",
+    "ratio": 2.11
+  },
+  {
+    "id": "musicPublication.handle",
+    "english": "Creator handle",
+    "translation": "Identificador de creador",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicPublication.listen",
+    "english": "Shared song",
+    "translation": "Canción compartida",
+    "ratio": 1.64
   },
   {
     "id": "oauth.signIn",

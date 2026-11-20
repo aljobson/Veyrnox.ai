@@ -15,7 +15,8 @@ const n = {
   retained: SOURCE_TEMPLATES.length, public: PRESETS.length, all: ALL_TEMPLATES.length,
   captured: SOURCE_TEMPLATES.filter(t => exactSourcePromptRecord(t.id)).length,
   hidden: SOURCE_TEMPLATES.length - PRESETS.length, wall: WALL_PRESETS.length,
-  compatible: audits.filter(a => a.runnable).length, incompatible: audits.filter(a => !a.runnable).length,
+  // Model-aware (sourcePromptRunnable), so a prompt over its model's cap counts as incompatible, as the public pages show.
+  compatible: PRESETS.filter(t => t.sourcePromptRunnable).length, incompatible: PRESETS.filter(t => !t.sourcePromptRunnable).length,
   slots: PRESETS.filter(t => /@(?:image|video)\s*[_-]?\d+|<<<\s*(?:image|video)[_\s-]*\d+\s*>>>/i.test(t.prompt)).length,
   references: audits.filter(a => a.referenceImageCount || a.referenceVideoCount).length,
   images: audits.filter(a => a.referenceImageCount).length, multi: audits.filter(a => a.referenceImageCount > 1).length,

@@ -19,6 +19,14 @@ Each analysis record carries a derived `timingQuality`: `word` for Scribe (a cut
 
 This slice does not score faces, delivery, framing, or technical quality. It does not align alternate takes to a script, so a transcript-backed section cannot be swapped onto an unanalysed take.
 
+## Web editing workbench
+
+Smart Cut opens inside the existing Clip Editor with a portrait preview, play/pause and previous/next controls, playhead scrubbing, a zoomable thumbnail timeline, and direct Smart Cut, Cut, Sound, Text and Layers navigation. Manual clip changes use a bounded 30-state undo/redo history. Loaded media metadata is propagated through saved history so undo cannot restore an unusable loading state.
+
+Applying Smart Cut preserves the original clip list as a single dedicated undo point. Undoing the Smart Cut clears manual history so an applied cut cannot be resurrected without its original snapshot. Re-applying after fine-tuning requires a destructive confirmation; cancelling it keeps the reviewed plan and editor open.
+
+Rendering remains separate from paid speech analysis. The footer first opens a confirmation naming the exact output duration and credit price, and only its final action submits the existing `clip-edit` generation request.
+
 ## Boundary contract
 
 `app/veyrnox/_lib/smartCutAnalysis.js` owns schema version 1:

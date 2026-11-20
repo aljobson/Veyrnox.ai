@@ -1,3 +1,4 @@
+import { safeReturnPath } from './lib/secretRoutes';
 import { captureEvent } from './lib/analytics/events';
 import type { TextStyle } from 'react-native';
 declare const require: (id: string) => any;
@@ -80,7 +81,7 @@ export async function saveThemeReturnPath(path: string | null): Promise<boolean>
         const store = secureStore();
         if (!store || (path !== null && !path.startsWith('/'))) return false;
         if (path === null) await store.deleteItemAsync(THEME_RETURN_KEY);
-        else store.setItem(THEME_RETURN_KEY, path);
+        else store.setItem(THEME_RETURN_KEY, safeReturnPath(path));
         return true;
     } catch { return false; }
 }
@@ -88,7 +89,7 @@ export async function takeThemeReturnPath(): Promise<string | null> {
     try {
         const path = read(THEME_RETURN_KEY);
         if (path) await secureStore()?.deleteItemAsync(THEME_RETURN_KEY);
-        return path?.startsWith('/') ? path : null;
+        return path?.startsWith('/') ? safeReturnPath(path) : null;
     } catch {
         return null;
     }

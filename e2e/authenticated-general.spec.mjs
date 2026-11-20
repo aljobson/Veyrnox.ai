@@ -38,15 +38,14 @@ test('Dashboard authenticated balance, template pagination and filters remain re
   const fixture = await fixtureFor(page);
   await open(fixture, page, '/app', 'Explore presets');
   await expect(page.getByTestId('app-credit-balance')).toBeVisible();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
-  await page.getByRole('button', { name: 'Show more templates', exact: true }).click();
-  // 73 listed video templates (18 Nov 2026: the 76 swap recipes the server refuses were hidden); the second page of 50 is the remaining 23.
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(73);
+  // 28 listed video templates (20 Nov 2026: the 45 whose exact prompt is over the Kling 3.0 cap were hidden), so one page of 50 holds them all and there is no "Show more".
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(28);
+  await expect(page.getByRole('button', { name: 'Show more templates', exact: true })).toHaveCount(0);
   const filters = page.getByRole('group', { name: 'Filter templates', exact: true });
   await filters.getByRole('button', { name: 'New', exact: true }).click();
   await expect(filters.getByRole('button', { name: 'New', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await filters.getByRole('button', { name: 'All', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(28);
   expect(writes(fixture)).toEqual([]);
 });
 
