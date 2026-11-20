@@ -42,8 +42,8 @@ test('shared detectors distinguish source dependencies from generated or negated
 });
 test('audit classification, reasons, source hashes and non-token bytes are locked', () => {
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 + 0,"bound":70 + 3 + 30 + 59,"blocked-needs-video":355 + 37,"unsupported":92 + 6});
-  assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 9 });
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61} /* 61 over the Kling 3.0 prompt cap (KLING_V3_PROMPT_MAX) moved to unsupported */);
+  assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 9, 'prompt-limit': 115 });
   for (const p of PRESETS) {
     const c = report.contracts[p.id];
     if (!c) continue;
@@ -99,7 +99,7 @@ test('the generated contract covers all exact-source templates', () => {
 test('reviewed overlapping reason counts are pinned across all classes', () => {
   const counts = {};
   for (const c of Object.values(audit().contracts)) for (const reason of c.reasons) counts[reason] = (counts[reason] || 0) + 1;
-  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2, 'multi-photo-needs-people-model': 180, 'unsupported-aspect': 12 });
+  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2, 'multi-photo-needs-people-model': 180, 'unsupported-aspect': 12, 'prompt-limit': 280 });
 });
 
 test('all bound detail pages offer exactly N fixed required slots', async t => {

@@ -1,3 +1,4 @@
+import { isListenRoute } from './secretRoutes';
 import * as SecureStore from 'expo-secure-store';
 import { isAppLinkRoute } from './appLinks';
 
@@ -26,7 +27,7 @@ export const securePendingLinkStore: PendingLinkStore = {
 
 /** The route worth keeping for after sign-in, or null for Home, a public screen or anything the link mapper does not produce. */
 export function pendingLinkRoute(route: unknown): string | null {
-    return isAppLinkRoute(route) && !PUBLIC_ROUTE.test(route) ? route : null;
+    return isAppLinkRoute(route) && !PUBLIC_ROUTE.test(route) && !isListenRoute(route) ? route : null;
 }
 
 /** Forget the kept destination. Never throws. */

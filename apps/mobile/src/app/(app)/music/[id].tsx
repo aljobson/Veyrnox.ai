@@ -1,3 +1,4 @@
+import { MusicPublication } from '../../../components/music/MusicPublication';
 import { MusicSongActions } from '../../../components/music/MusicSongActions';
 import { subscribeSongChanges } from '../../../lib/music/songChanges';
 import { Stack, useLocalSearchParams } from 'expo-router';
@@ -78,6 +79,7 @@ export default function SongDetail() {
         </View> : song ? <>
             {!busy && playback ? <MusicPlayer input={playback} /> : !busy ? <MusicNotice message={t('music.player.error')} /> : null}
             <MusicSongActions song={song} />
+            <MusicPublication song={song} />
             <Text variant="title3" accessibilityRole="header">{t('music.versions')}</Text>
             <Text variant="footnote" tone="secondary">{t('music.versionsBody')}</Text>
             {song.versions.map(v => <View key={v.id} style={s.group}>

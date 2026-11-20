@@ -3,6 +3,11 @@ import { createBatch, sendInOrder } from './imageBatch.js';
 const abortError = () => Object.assign(new Error('Cancelled'), { name: 'AbortError' });
 const checkAbort = signal => { if (signal?.aborted) throw abortError(); };
 export const POLL_LIMIT = 12;
+// A job the server accepted and still reports queued or running is not "unresolved":
+// a 5 s Kling O1 swap takes minutes. Keep reading it at the 20 s ceiling for about an
+// hour (the job watcher's window) before handing over to the Check button.
+export const LIVE_POLL_LIMIT = POLL_LIMIT + 180;
+const live = a => Boolean(a && !a.uncertain && ['queued', 'running'].includes(a.state));
 export const pollDelay = index => Math.min(20000, 2000 * 2 ** index);
 export function waitForPoll(ms, signal) {
   checkAbort(signal);
@@ -12,9 +17,15 @@ export function waitForPoll(ms, signal) {
     signal.addEventListener('abort', abort, { once: true });
   });
 }
-export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), revokeURL = url => URL.revokeObjectURL(url), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {} }) {
+export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), revokeURL = url => URL.revokeObjectURL(url), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {}, jobStarted = () => {} }) {
   const active = new Map();
   const current = (template, key) => store.get(template).find(a => a.key === key);
+  // An accepted job joins the same job history every other generation writes, so the
+  // site's progress bar and background watcher see it. Only ever after acceptance.
+  function started(a, label) {
+    if (!a?.job_id || !a.body) return;
+    try { jobStarted({ job_id: a.job_id, model_id: a.body.model_id, credits: a.spent ?? a.body.max_charge_credits, templateId: a.templateId, name: label }); } catch { /* display only */ }
+  }
   function start(a, kind) {
     const operation = `${a.accountId}:${a.key}:${kind}`;
     if (active.has(operation) && !active.get(operation).signal.aborted) return null;
@@ -86,6 +97,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
       if (!op.valid()) return;
       if (!accepted?.job_id) throw Error('invalid_response');
       store.update(op.ticket, reduceAttempt(current(templateId, a.key), { accepted }));
+      started(current(templateId, a.key), offer.name);
       for (const old of store.get(templateId)) store.dropFiles(old.key);
       balanceChanged();
     } catch (error) {
@@ -101,7 +113,8 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
     const op = start(a, 'poll'); if (!op) return;
     if (a.state === 'unresolved') store.update(op.ticket, { state: a.refusal ? 'refund_pending' : 'unknown' });
     try {
-      for (let index = 0; index < POLL_LIMIT; index++) {
+      const limit = () => (live(current(templateId, key)) ? LIVE_POLL_LIMIT : POLL_LIMIT);
+      for (let index = 0; index < limit(); index++) {
         if (!op.valid()) return;
         try {
           const job = await lookupJobByKey(a.key, gateway, op.signal);
@@ -115,6 +128,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
               if (!op.valid()) return;
               if (accepted?.job_id) {
                 store.update(op.ticket, reduceAttempt(current(templateId, key), { accepted }));
+                started(current(templateId, key));
                 store.dropFiles(key);
                 balanceChanged();
               }
@@ -140,7 +154,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
             }
           }
         } catch { if (!op.valid()) return; }
-        if (index < POLL_LIMIT - 1) await wait(pollDelay(index), op.signal);
+        if (index < limit() - 1) await wait(pollDelay(index), op.signal);
       }
       if (op.valid()) store.update(op.ticket, { state: 'unresolved' });
     } finally { op.finish(); }

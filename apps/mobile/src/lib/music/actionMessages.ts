@@ -6,4 +6,4 @@ const names: Readonly<Record<string, string>> = {
     crop_range_invalid: 'range', crop_too_short: 'short', concurrency_limit: 'busy', source_unavailable: 'source',
     source_duration_unavailable: 'source', source_too_large: 'tooLarge', stem_acceptance_unknown: 'recovery', network: 'network',
 };
-export const actionMessage = (code: string) => t(`musicActions.action.${names[code] ?? 'error'}`);
+export const actionMessage = (code: string) => code === 'stem_share_failed' ? t('job.shareFailed') : t(`musicActions.action.${names[code] ?? 'error'}`);

@@ -39,7 +39,7 @@ type VeyCharacterProps = {
 export function VeyCharacter(props: VeyCharacterProps) {
     const character = useSyncExternalStore(subscribeVeyCharacter, getVeyCharacter, getVeyCharacter);
     const [still, setStill] = useState(true);
-    // If the mascot's engine cannot start (no WebGL), the robot stands in until the choice changes.
+    // If the mascot's engine cannot start (for example a Skia compile failure), the robot stands in until the choice changes.
     const [failedFor, setFailedFor] = useState<string | null>(null);
     useEffect(() => {
         let alive = true;
@@ -48,7 +48,7 @@ export function VeyCharacter(props: VeyCharacterProps) {
         return () => { alive = false; sub.remove(); };
     }, []);
     if (!isWobnimoCharacter(character) || failedFor === character) return <VeyRobot {...props} />;
-    // Loaded only when a mascot is shown, so the WebView module is not pulled in for the robot.
+    // Loaded only when a mascot is shown, so the native shader programs are not pulled in for the robot.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { WobnimoView } = require('./WobnimoView') as typeof import('./WobnimoView');
     return <WobnimoView character={character} width={props.width ?? 72} state={still ? 'idle' : wobnimoStateForMood(props.mood)}

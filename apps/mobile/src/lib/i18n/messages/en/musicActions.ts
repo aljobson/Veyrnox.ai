@@ -35,7 +35,7 @@ export default {
     'musicActions.stems.failed': 'The provider could not produce the stem archive.',
     'musicActions.stems.refunded': 'The provider did not produce an archive. The job was refunded.',
     'musicActions.stems.zip': 'Get ZIP',
-    'musicActions.stems.external': 'Opens a private link in your browser. The link expires in five minutes.',
+    'musicActions.stems.external': 'Downloads the file and opens the share sheet so you can save or send it.',
     'musicActions.stems.session': 'Keep this screen open to follow this request. Its status is not saved after you leave or restart the app.',
     'musicActions.crop.title': 'Crop',
     'musicActions.crop.body': 'Saves a new version; the original stays.',

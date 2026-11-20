@@ -3750,6 +3750,36 @@
     "ratio": 1.64
   },
   {
+    "id": "musicPublic.unblock",
+    "english": "Unblock",
+    "translation": "Blockierung aufheben",
+    "ratio": 2.86
+  },
+  {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Nicht mehr folgen",
+    "ratio": 2.13
+  },
+  {
+    "id": "musicPublic.reply",
+    "english": "Reply",
+    "translation": "Antworten",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicPublic.saved",
+    "english": "Saved.",
+    "translation": "Gespeichert.",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reaction.like",
+    "english": "Like",
+    "translation": "Gefällt mir",
+    "ratio": 2.75
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Abspielen",
@@ -3844,6 +3874,24 @@
     "english": "Autosave",
     "translation": "Automatische Speicherung",
     "ratio": 3
+  },
+  {
+    "id": "musicPublication.title",
+    "english": "Public release",
+    "translation": "Öffentliche Veröffentlichung",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublication.publish",
+    "english": "Publish song",
+    "translation": "Song veröffentlichen",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Veröffentlichung zurückziehen",
+    "ratio": 3.22
   },
   {
     "id": "recovery.retry",

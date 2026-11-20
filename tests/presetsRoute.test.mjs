@@ -84,8 +84,8 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(statuses['adaptation-only'], undefined);
     assert.equal(statuses['exact-truncated'], undefined);
     assert.equal(statuses.unavailable, undefined);
-    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 285 + 0);
-    assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 464 + 46 + 30 + 59);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === true).length, 285 - 21);
+    assert.equal(exact.filter((p) => p.sourcePromptRunnable === false).length, 464 + 46 + 30 + 59 + 21);
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === false).every((p) => p.sourcePromptIssues.includes('source-input-contract-not-wired')));
     assert.ok(exact.filter((p) => p.sourcePromptRunnable === true).every((p) => !p.sourcePromptIssues.includes('source-input-contract-not-wired')));
     assert.equal(exact.filter((p) => p.sourcePromptIssues.includes('prompt-over-30000')).length, 0);
@@ -100,7 +100,7 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === true).length, 79);
     assert.equal(seedance.filter((p) => p.sourcePromptRunnable === false).length, 115);
     assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-reference' && p.modelName === 'Seedance 2.0 · Reference' && p.durationSeconds === 10).length, 0);
-    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast' && p.durationSeconds === 5).length, 117);
+    assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-fast' && p.modelName === 'Seedance 2.0 Fast' && p.durationSeconds === 5).length, 125);
     assert.equal(seedance.filter(p => p.modelId === 'seedance-2.0-reference' && p.durationSeconds === 5).length, 0);
     assert.ok(seedance.every((p) => seedanceMeta(p.id).sourceUrl?.startsWith('https://')));
     const formerlyClipped = exact.find((p) => p.id === 'football-showstopper');
@@ -155,8 +155,8 @@ test('all 299 retained API rows expose one exact prompt and informational compat
     const ids = new Set(HIGGSFIELD_300_TEMPLATE_IDS);
     const rows = toPublicPresets(catalog, PRESETS).filter(row => ids.has(row.id));
     assert.equal(rows.length, 295);
-    assert.equal(rows.filter(row => row.sourcePromptRunnable).length, 100);
-    assert.equal(rows.filter(row => !row.sourcePromptRunnable).length, 195);
+    assert.equal(rows.filter(row => row.sourcePromptRunnable).length, 89);
+    assert.equal(rows.filter(row => !row.sourcePromptRunnable).length, 206);
     for (const row of rows) {
         const template = PRESETS.find(p => p.id === row.id);
         const audit = sourcePromptAuditForModel(row.id, fallbackCapabilitiesFor(row.modelId)?.inputs?.prompt?.max);
