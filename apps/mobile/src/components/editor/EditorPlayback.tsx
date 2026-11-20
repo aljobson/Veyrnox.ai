@@ -8,6 +8,7 @@ import { EditorMediaPreview } from './EditorMediaPreview';
 import { EditorTimeline } from './EditorTimeline';
 import { EditorTransport } from './EditorTransport';
 import { useEditorFrame, type FrameStore } from './editorFrameStore';
+import { EditorTextOverlay } from './EditorTextOverlay';
 import { styles } from './fullEditorStyles';
 
 type Playback = { frameStore: FrameStore };
@@ -24,11 +25,13 @@ export function PlaybackPreview({ frameStore, timeline, api, playing, localMedia
 }) {
     const frame = useEditorFrame(frameStore);
     const active = activeEditorMedia(timeline, frame);
-    const caption = timeline.text.find(item => frame >= item.start && frame < item.start + item.len)?.text ?? timeline.text[0]?.text;
+    const caption = timeline.text.find(item => frame >= item.start && frame < item.start + item.len) ?? timeline.text[0];
     return <>
-        {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}
+        {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore}
+            fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}
         <View style={styles.safeFrame} />
-        {!active && !caption ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}
-        {caption ? <Text style={styles.previewCaption}>{caption}</Text> : null}
+        {!active && !caption ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>{timeline.video.length ?
+            t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}
+        {caption ? <EditorTextOverlay item={caption} /> : null}
     </>;
 }

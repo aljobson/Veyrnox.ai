@@ -3468,6 +3468,120 @@
     "ratio": 2.25
   },
   {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Con remates",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Fuente personalizada",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorText.shadowBlur",
+    "english": "Shadow blur",
+    "translation": "Desenfoque de la sombra",
+    "ratio": 2.09
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Desplazamiento horizontal de la sombra",
+    "ratio": 4.75
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Desplazamiento vertical de la sombra",
+    "ratio": 4.5
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Entrada",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Salida",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.preset6",
+    "english": "Typewriter",
+    "translation": "Máquina de escribir",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName0",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorText.animationName1",
+    "english": "Fade",
+    "translation": "Fundido",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Deslizar a la izquierda",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Deslizar a la derecha",
+    "ratio": 1.91
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Deslizar hacia arriba",
+    "ratio": 2.63
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Deslizar hacia abajo",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.animationName6",
+    "english": "Zoom",
+    "translation": "Acercamiento",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.animationName9",
+    "english": "Wipe from left",
+    "translation": "Barrido desde la izquierda",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorText.loopName0",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Balanceo",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName6",
+    "english": "Wobble",
+    "translation": "Oscilación",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",
