@@ -146,8 +146,9 @@ describe('Music actor identities and blocks (0570)', { skip: !DATABASE_URL && 'D
         assert.equal(blocks.length, 1); assert.equal(blocks[0].actor_id, id); assert.equal(blocks[0].display_name, 'New name');
         assert.deepEqual(Object.keys(blocks[0]).sort(), ['actor_id', 'created_at', 'display_name']);
         assert.equal((await call('music_block_actor', creator.auth, id)).error, 'cannot_block_self');
+        assert.equal((await call('music_block_actor', alice.auth, randomUUID())).error, 'user_not_found');
+        assert.deepEqual(await call('music_unblock_actor', alice.auth, randomUUID()), { ok: true, already: true });
         for (const fn of ['music_block_actor', 'music_unblock_actor']) {
-            assert.equal((await call(fn, alice.auth, randomUUID())).error, 'user_not_found');
             assert.equal((await call(fn, randomUUID(), id)).error, 'account_not_found');
         }
         assert.deepEqual(await call('music_unblock_actor', alice.auth, id), { ok: true, already: false });
