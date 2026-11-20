@@ -169,6 +169,11 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     }
   }
 
+  const clipRows = items.map((x, i) => (
+    <ClipRow key={x.uid} item={x} index={i} count={items.length}
+      showSlow={showSlow} onChange={(p) => update(i, p)} onMetadata={(p) => updateMetadata(x.uid, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
+  ));
+
   return (<>
     <Modal aria-labelledby="edit-sheet-title" onCancel={() => !busy && onClose()} className="vx-overlay-sheet items-end sm:items-center justify-center p-0 sm:p-6">
       <div
@@ -186,8 +191,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
           {smartCut && <SmartCutWorkbench items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
           {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy} />}
-          <div id="smart-cut-panel" className="scroll-mt-4">
-          {smartCut && (
+          {smartCut && <div id="smart-cut-panel" className="scroll-mt-4">
             <SmartCutPlanner
               clips={items}
               analyses={analyses.size ? analyses : null}
@@ -197,20 +201,14 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
               onUndo={smartCutSnapshot ? undoSmartCut : null}
               startOpen
             />
-          )}
-          </div>
+          </div>}
 
-          <section id="clip-layer-controls" className="scroll-mt-4" aria-labelledby="clip-layer-heading">
-          <h3 id="clip-layer-heading" className="sr-only">{t('app.smartCut.workbench.layersHeading')}</h3>
-          <ol id="clip-cut-controls" className="flex scroll-mt-4 flex-col gap-3">
-            {items.map((x, i) => (
-              <ClipRow key={x.uid} item={x} index={i} count={items.length}
-                showSlow={showSlow} onChange={(p) => update(i, p)} onMetadata={(p) => updateMetadata(x.uid, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
-            ))}
-          </ol>
-          </section>
+          {smartCut ? <section id="clip-layer-controls" className="scroll-mt-4" aria-labelledby="clip-layer-heading">
+            <h3 id="clip-layer-heading" className="sr-only">{t('app.smartCut.workbench.layersHeading')}</h3>
+            <ol id="clip-cut-controls" className="flex scroll-mt-4 flex-col gap-3">{clipRows}</ol>
+          </section> : <ol className="flex flex-col gap-3">{clipRows}</ol>}
 
-          <div id="clip-sound-controls" className="mt-4 scroll-mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-end gap-3">
+          <div id={smartCut ? 'clip-sound-controls' : undefined} className={`mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-end gap-3${smartCut ? ' scroll-mt-4' : ''}`}>
             <label className="flex flex-col gap-1 text-xs text-vx-fg-muted grow min-w-[200px]">
               {t("app.editor.sheet.audio")}<select value={audioId} onChange={(e) => setAudioId(e.target.value)} className="min-h-11 rounded-lg bg-vx-base border border-vx-field px-2 py-2 text-sm text-vx-fg">
                 <option value="">{t("app.editor.sheet.noAudio")}</option>
@@ -231,7 +229,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
               {t("app.editor.sheet.slowHelp")}</p>
           )}
 
-          <div id="clip-text-controls" className="mt-3 scroll-mt-4 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3">
+          {(showCaptions || smartCut) && <div id={smartCut ? 'clip-text-controls' : undefined} className={`mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3${smartCut ? ' scroll-mt-4' : ''}`}>
             {showCaptions ? <>
               <label className="flex min-h-11 items-center gap-2 text-sm text-vx-fg">
                 <input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />
@@ -247,8 +245,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
                 <p className="text-xs text-vx-fg-muted basis-full">
                   {t("app.editor.sheet.captionHelp")}</p>
               )}
-            </> : <p className="text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.workbench.textUnavailable')}</p>}
-          </div>
+            </> : smartCut ? <p className="text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.workbench.textUnavailable')}</p> : null}
+          </div>}
 
           <div role="status" className="mt-3 text-sm min-h-[1.25rem]">
             {mixed && <span className="text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</span>}
@@ -263,7 +261,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
           </div>
         </div>
 
-        <div id="clip-create-controls" className="shrink-0 border-t border-vx-border bg-vx-base px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-6">
+        <div id={smartCut ? 'clip-create-controls' : undefined} className="shrink-0 border-t border-vx-border bg-vx-base px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 sm:px-6 sm:pb-6">
           <div className="flex items-center justify-between gap-3">
             <span className="font-vx-mono text-xs text-vx-fg-muted vx-num">{t('app.editor.sheet.output', { seconds: locale === 'en' ? output.toFixed(1) : output.toLocaleString(localeTag(locale), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
             <button onClick={() => smartCut ? setConfirmCreate(true) : submit()} disabled={blocked}

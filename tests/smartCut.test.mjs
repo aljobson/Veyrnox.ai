@@ -233,6 +233,8 @@ test('the existing Clip Editor owns Smart Cut apply and the caption/export hando
   assert.match(editor, /pendingSmartCutApply/);
   assert.match(editor, /app\.smartCut\.price\.review/);
   assert.match(editor, /app\.smartCut\.price\.title/);
+  assert.match(editor, /\{\(showCaptions \|\| smartCut\) && <div id=\{smartCut \? 'clip-text-controls' : undefined\}/);
+  assert.match(editor, /\{smartCut && <div id="smart-cut-panel"/);
   assert.doesNotMatch(planner, /ConfirmDialog/);
   assert.match(editor, /app\.editor\.sheet\.captions/);
   assert.match(editor, /app\.editor\.sheet\.create/);
@@ -246,6 +248,7 @@ test('Smart Cut workbench exposes playback, timeline tools and accessible zoom',
   assert.match(workbench, /app\.smartCut\.workbench\.zoomOut/);
   assert.match(workbench, /app\.smartCut\.workbench\.zoomIn/);
   assert.match(workbench, /clipOutputDuration/);
+  assert.match(workbench, /\[activeUid, start, end\]/);
   for (const label of ['Portrait edit preview', 'Clip timeline', 'Smart Cut editing tools', 'Undo manual edit', 'Redo manual edit']) assert.match(messages, new RegExp(label));
 });
 
