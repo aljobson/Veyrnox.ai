@@ -126,6 +126,18 @@
     "ratio": 1.92
   },
   {
+    "id": "acct.dev.lastUsed",
+    "english": "Last used {date}",
+    "translation": "Последнее использование: {date}",
+    "ratio": 1.94
+  },
+  {
+    "id": "acct.dev.confirm",
+    "english": "Sign out {name}?",
+    "translation": "Выйти на устройстве «{name}»?",
+    "ratio": 1.81
+  },
+  {
     "id": "acct.mfa.unlock",
     "english": "Unlock",
     "translation": "Открыть доступ",
@@ -796,6 +808,18 @@
     "english": "Revoke {name}?",
     "translation": "Отозвать доступ у {name}?",
     "ratio": 1.79
+  },
+  {
+    "id": "dev.scope.postsRead",
+    "english": "View posts",
+    "translation": "Просмотр публикаций",
+    "ratio": 1.9
+  },
+  {
+    "id": "dev.scope.postsWrite",
+    "english": "Create and edit posts",
+    "translation": "Создание и редактирование публикаций",
+    "ratio": 1.71
   },
   {
     "id": "dev.keys.revokeTitle",
@@ -3486,6 +3510,84 @@
     "ratio": 1.62
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Свой вариант",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "Загрузить песню заново",
+    "ratio": 2
+  },
+  {
+    "id": "musicActions.stems.zip",
+    "english": "Get ZIP",
+    "translation": "Получить ZIP",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Обрезать",
+    "ratio": 2
+  },
+  {
+    "id": "musicTargetStems.instrument.piano",
+    "english": "Piano",
+    "translation": "Фортепиано",
+    "ratio": 2
+  },
+  {
+    "id": "musicTargetStems.instrument.brass",
+    "english": "Brass",
+    "translation": "Медные духовые",
+    "ratio": 2.8
+  },
+  {
+    "id": "musicTargetStems.instrument.woodwinds",
+    "english": "Woodwinds",
+    "translation": "Деревянные духовые",
+    "ratio": 2
+  },
+  {
+    "id": "musicSectionActions.position.end",
+    "english": "End",
+    "translation": "Конец",
+    "ratio": 1.67
+  },
+  {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Синхронизация губ",
+    "ratio": 2.13
+  },
+  {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Воспроизвести всё",
+    "ratio": 2.13
+  },
+  {
+    "id": "musicPlaylists.next",
+    "english": "Next song",
+    "translation": "Следующая песня",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.up",
+    "english": "Move {title} up",
+    "translation": "Переместить {title} вверх",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
@@ -3592,5 +3694,17 @@
     "english": "Image",
     "translation": "Изображение",
     "ratio": 2.2
+  },
+  {
+    "id": "presets.swap.aup",
+    "english": "Acceptable Use Policy",
+    "translation": "Политика допустимого использования",
+    "ratio": 1.62
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
   }
 ]

@@ -1,12 +1,24 @@
-// The Audio hub: the same four studios as the web hub (app/veyrnox/app/audio/page.js). The hub owns no generation
-// logic; each card opens an existing screen, on the cheapest open model that fits the job where one is needed.
+import { priceLines } from './catalogPages';
+import { creativeFeature } from './creativeFeatures';
+import type { MenuIcon } from './menuIcons';
 import { audioFamily, starterModel } from './createOptions';
-import { kindOf, type CatalogModel } from './media';
+import { estimateCredits, kindOf, type CatalogModel } from './media';
 
-export type AudioStudioId = 'yourMusic' | 'music' | 'speech' | 'dialogue' | 'dub';
-export const AUDIO_STUDIOS: readonly AudioStudioId[] = ['music', 'speech', 'dialogue', 'dub'];
+export type AudioStudioId = 'yourMusic' | 'music' | 'speech' | 'dialogue' | 'dub' | 'lipSync' | 'dubbing' | 'talkingPhoto' | 'singingPhoto';
+export type AudioHubId = Exclude<AudioStudioId, 'dub'>;
+export const AUDIO_STUDIOS = ['music', 'speech', 'dialogue'] as const;
+export const AUDIO_PERFORMANCES = ['lipSync', 'dubbing', 'talkingPhoto', 'singingPhoto'] as const;
+export const AUDIO_ICONS = {
+    yourMusic: 'vinylRecord', music: 'audio', speech: 'microphone', dialogue: 'chatsCircle',
+    lipSync: 'waveform', dubbing: 'monitorPlay', talkingPhoto: 'userSound', singingPhoto: 'pianoKeys',
+} as const satisfies Record<AudioHubId, MenuIcon>;
 
-export type AudioTarget = { pathname: '/music' } | { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
+const FEATURE_SLUGS: Partial<Record<AudioStudioId, string>> = {
+    dub: 'lip-sync', lipSync: 'lip-sync', dubbing: 'video-dubbing',
+    talkingPhoto: 'ai-talking-photo-generator', singingPhoto: 'singing-photo',
+};
+
+export type AudioTarget = { pathname: '/music' | '/music/create' } | { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
 
 // A catalog name like "ACE-Step (music/SFX)" trips the effects heuristic in audioFamily, so music is matched by name first.
 const isMusic = (m: CatalogModel): boolean => {
@@ -22,9 +34,26 @@ const dialogue = (models: readonly CatalogModel[]): CatalogModel | null =>
     starterModel(models.filter((m) => kindOf(m.modality) === 'audio' && /dialogue/i.test(`${m.id} ${m.name}`)), 'audio');
 
 // Where a card goes. Before the catalog arrives (or when no open model fits) it falls back to Create, never a dead end.
-export function audioTarget(id: AudioStudioId, models: readonly CatalogModel[] | null): AudioTarget {
+export function audioTarget(id: AudioStudioId, models: readonly CatalogModel[] | null, musicAvailable = false): AudioTarget {
+    if (id === 'music' && musicAvailable) return { pathname: '/music/create' };
     if (id === 'yourMusic') return { pathname: '/music' };
-    if (id === 'dub') return { pathname: '/features/[slug]', params: { slug: 'lip-sync' } };
+    const slug = FEATURE_SLUGS[id];
+    if (slug) return { pathname: '/features/[slug]', params: { slug } };
     const model = !models ? null : id === 'music' ? byFamily(models, 'music') : id === 'speech' ? byFamily(models, 'speech') : dialogue(models);
     return model ? { pathname: '/create/[modelId]', params: { modelId: model.id } } : { pathname: '/create' };
+}
+
+// Price the actual catalog destination. Native music uses a separate two-candidate quote.
+// Stale catalog entries remain useful for navigation, but cannot advertise a current price.
+export function fromCredits(models: readonly CatalogModel[] | null, id: AudioStudioId, musicAvailable = false, fresh = false): number | null {
+    if (!fresh || !models) return null;
+    const target = audioTarget(id, models, musicAvailable);
+    const modelId = target.pathname === '/create/[modelId]' ? target.params.modelId
+        : target.pathname === '/features/[slug]' ? creativeFeature(target.params.slug)?.model : undefined;
+    const model = models.find((item) => item.id === modelId);
+    if (!model || !Number.isFinite(model.credits) || model.credits < 0) return null;
+    const credits = target.pathname === '/features/[slug]'
+        ? estimateCredits(model, model.durations?.includes(5) ? 5 : (model.durations?.[0] ?? null))
+        : priceLines(model)[0].credits;
+    return Number.isFinite(credits) && credits >= 0 ? credits : null;
 }

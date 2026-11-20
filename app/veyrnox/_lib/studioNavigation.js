@@ -20,7 +20,10 @@ import { FILM_STUDIO_ENABLED } from './filmStudioSwitch.js';
 export const STUDIO_DESTINATIONS = [
   { section: 'tools', key: 'create', href: '/app/create', labelKey: 'label.Create', icon: 'image' },
   { section: 'tools', key: 'audio', href: '/app/audio', labelKey: 'app.audio.title', icon: 'music' },
-  { section: 'tools', key: 'editor', href: '/app/editor', labelKey: 'label.Video editor', icon: 'scissors', flag: 'editor' },
+  // Two editors: Smart Cut opens the Library in its clip-picking mode
+  // (the #smart-cut hash the Library already reads); Professional is the timeline.
+  { section: 'tools', key: 'smartCut', href: '/app/library#smart-cut', labelKey: 'app.nav.smartCut', hintKey: 'app.nav.smartCutHint', icon: 'wand' },
+  { section: 'tools', key: 'editor', href: '/app/editor', labelKey: 'app.nav.professional', hintKey: 'app.nav.professionalHint', icon: 'scissors', flag: 'editor' },
   { section: 'tools', key: 'publish', href: '/app/publish', labelKey: 'app.nav.publish', icon: 'send', flag: 'publish' },
   { section: 'tools', key: 'cinema', href: '/social-cinema', labelKey: 'label.Social Cinema', icon: 'film' },
   { section: 'assets', key: 'library', href: '/app/library', labelKey: 'label.Library', icon: 'library' },

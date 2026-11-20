@@ -70,3 +70,6 @@ page-coverage-report/
 
 # Generated on demand; mobile CI uploads the localization list as an artifact.
 /docs/mobile/I18N-NEW-KEYS.md
+
+# Pro editor build output (contains the 50 MB FilmCraft wasm)
+/.pro-editor-dist*/

@@ -138,6 +138,18 @@
     "ratio": 2.31
   },
   {
+    "id": "acct.dev.lastUsed",
+    "english": "Last used {date}",
+    "translation": "Dernière utilisation {date}",
+    "ratio": 1.69
+  },
+  {
+    "id": "acct.dev.signOut",
+    "english": "Sign out",
+    "translation": "Se déconnecter",
+    "ratio": 1.75
+  },
+  {
     "id": "acct.mfa.cancelSetup",
     "english": "Cancel setup",
     "translation": "Annuler la configuration",
@@ -1444,6 +1456,18 @@
     "english": "No webhooks yet.",
     "translation": "Aucun webhook pour le moment.",
     "ratio": 1.81
+  },
+  {
+    "id": "dev.scope.postsRead",
+    "english": "View posts",
+    "translation": "Voir les publications",
+    "ratio": 2.1
+  },
+  {
+    "id": "dev.scope.postsWrite",
+    "english": "Create and edit posts",
+    "translation": "Créer et modifier des publications",
+    "ratio": 1.62
   },
   {
     "id": "dev.keys.none",
@@ -5262,6 +5286,144 @@
     "ratio": 1.79
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Personnalisé",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.useServer",
+    "english": "Use server version",
+    "translation": "Utiliser la version du serveur",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.create.keepMine",
+    "english": "Keep mine",
+    "translation": "Garder ma version",
+    "ratio": 1.89
+  },
+  {
+    "id": "music.create.copy",
+    "english": "Copy lyrics",
+    "translation": "Copier les paroles",
+    "ratio": 1.64
+  },
+  {
+    "id": "music.create.queued",
+    "english": "Queued",
+    "translation": "En attente",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.create.openSong",
+    "english": "Open song",
+    "translation": "Ouvrir le morceau",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicActions.action.model",
+    "english": "The stem provider is unavailable right now.",
+    "translation": "Le fournisseur de séparation des pistes est indisponible pour le moment.",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "Recharger le morceau",
+    "ratio": 1.82
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Pistes séparées",
+    "ratio": 3
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Archive des pistes séparées",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicActions.stems.queued",
+    "english": "Your stem request is queued.",
+    "translation": "Votre demande de séparation est dans la file d’attente.",
+    "ratio": 1.96
+  },
+  {
+    "id": "musicActions.stems.zip",
+    "english": "Get ZIP",
+    "translation": "Obtenir le ZIP",
+    "ratio": 2
+  },
+  {
+    "id": "musicActions.crop.save",
+    "english": "Save new version",
+    "translation": "Enregistrer une nouvelle version",
+    "ratio": 2
+  },
+  {
+    "id": "musicTargetStems.state.refunded",
+    "english": "The provider did not produce stems. The job was refunded.",
+    "translation": "Le fournisseur n’a pas produit de pistes séparées. Les crédits de la tâche ont été remboursés.",
+    "ratio": 1.65
+  },
+  {
+    "id": "musicGenerationActions.more",
+    "english": "More source influence",
+    "translation": "Augmenter l’influence de la source",
+    "ratio": 1.62
+  },
+  {
+    "id": "musicGenerationActions.state.queued",
+    "english": "Queued",
+    "translation": "En attente",
+    "ratio": 1.67
+  },
+  {
+    "id": "audioHub.groups.performance",
+    "english": "Lip sync and dubbing",
+    "translation": "Synchronisation labiale et doublage",
+    "ratio": 1.75
+  },
+  {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Synchronisation labiale",
+    "ratio": 2.88
+  },
+  {
+    "id": "musicActions.action.tooLarge",
+    "english": "This song is too large to edit here.",
+    "translation": "Cette chanson est trop volumineuse pour être modifiée ici.",
+    "ratio": 1.61
+  },
+  {
+    "id": "musicPlaylists.pin",
+    "english": "Pin playlist",
+    "translation": "Épingler la playlist",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.unpin",
+    "english": "Unpin playlist",
+    "translation": "Désépingler la playlist",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicPlaylists.next",
+    "english": "Next song",
+    "translation": "Morceau suivant",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Ajouter des morceaux",
+    "ratio": 2.22
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
@@ -5434,5 +5596,47 @@
     "english": "Reset prompt",
     "translation": "Réinitialiser les instructions",
     "ratio": 2.5
+  },
+  {
+    "id": "presets.swap.terms",
+    "english": "Terms",
+    "translation": "Conditions",
+    "ratio": 2
+  },
+  {
+    "id": "presets.swap.aup",
+    "english": "Acceptable Use Policy",
+    "translation": "Politique d’utilisation acceptable",
+    "ratio": 1.62
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "presets.swap.signin",
+    "english": "Sign in",
+    "translation": "Se connecter",
+    "ratio": 1.71
+  },
+  {
+    "id": "presets.swap.check",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
+    "id": "presets.swap.library",
+    "english": "Open Library",
+    "translation": "Ouvrir la bibliothèque",
+    "ratio": 1.83
+  },
+  {
+    "id": "presets.swap.unknown",
+    "english": "We could not confirm this run; checking.",
+    "translation": "Nous n’avons pas pu confirmer cette génération ; vérification en cours.",
+    "ratio": 1.77
   }
 ]

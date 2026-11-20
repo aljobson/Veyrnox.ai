@@ -113,7 +113,7 @@ test('pure cutout module stays outside the server and Worker import graph', asyn
   function walk(path) {
     if (seen.has(path) || !existsSync(path) || !/\.(?:js|mjs)$/.test(path)) return;
     seen.add(path);
-    assert.notEqual(path, resolve(root, 'lib/templateSwapCutout.mjs'));
+    for (const forbidden of ['lib/templateSwapCutout.mjs', 'app/veyrnox/_lib/templateSwapClient.mjs', 'app/veyrnox/_lib/templateSwapStore.mjs', 'app/veyrnox/_lib/templateSwapActions.mjs']) assert.notEqual(path, resolve(root, forbidden));
     const source = readFileSync(path, 'utf8');
     const imports = [...source.matchAll(/(?:\bfrom\s*|\bimport\s*|\b(?:import|require)\s*\(\s*)['"]([^'"]+)['"]/g)];
     for (const [, specifier] of imports) if (specifier.startsWith('.')) walk(resolve(dirname(path), specifier));

@@ -6,6 +6,12 @@ import { ApiError, type ApiClient } from './api';
 // answer to the create call; this file never stores one, and the screens hold it in memory until the person leaves.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const SCOPES = ['accounts:read', 'posts:read', 'posts:write'] as const;
+// Plain wording for each scope; the code stays visible beside it.
+export const SCOPE_LABEL_KEY: Record<(typeof SCOPES)[number], string> = {
+    'accounts:read': 'dev.scope.accountsRead',
+    'posts:read': 'dev.scope.postsRead',
+    'posts:write': 'dev.scope.postsWrite',
+};
 export const EXPIRY_DAYS = [30, 90, 365] as const;
 export const EVENTS = ['post.published', 'post.delivered', 'post.failed'] as const;
 export const LABEL_MAX = 80;

@@ -1,5 +1,5 @@
-import { useTemplateContract } from '../../../lib/useTemplateContract';
-import { templatePhotoHints, templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
+import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
+import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
 import { fetchFreeAllowance } from '../../../lib/freeAllowance';
 import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
@@ -26,7 +26,7 @@ import { SectionLabel } from '../../../components/create/SectionLabel';
 import { SourceDurationCard } from '../../../components/create/SourceDurationCard';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../../../components/ui';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'; import { useSwapRedirect } from '../../../lib/templateSwap/availability';
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -65,7 +65,7 @@ const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 const hostOf = (url: string): string => { try { return new URL(url).hostname; } catch { return ''; } };
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>();
+    const { modelId: linkedModelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>(); useSwapRedirect(tid); const modelId = /* a link carries the public id (nano-banana-a1); the catalog uses the internal one */ typeof linkedModelId === 'string' ? internalModelId(linkedModelId) : linkedModelId;
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, modelId]);
     const templatePreset = templateOnOriginalModel({ tmodel }, modelId);
@@ -177,7 +177,7 @@ export default function CreateWithModel() {
                 if (handedSources?.settings) {
                     const saved = acceptedSettings(found, handedSources.settings);
                     setPrompt(typeof presetPrompt === 'string' ? presetPrompt : '');
-                    setOpts({ ...saved.opts, aspect: handedAspect ?? saved.opts.aspect ?? aspect });
+                    setOpts({ ...saved.opts, aspect: handedAspect ?? saved.opts.aspect ?? aspect }); frame.set(saved.frame ?? '');
                     setCameraOn(saved.cameraOn); setCinema(saved.cinema); setCharacterOn(saved.characterOn); setCharacter(saved.character);
                     draftReady.current = true;
                     return;
@@ -380,7 +380,7 @@ export default function CreateWithModel() {
             <KeyboardFormScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <RevealOnFirstLayout scroll={scrollRef}><CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /></RevealOnFirstLayout> : undefined}
                     onChangeModel={changeModel} onTemplates={!template && !results ? () => router.push('/create/presets') : undefined} />
-                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                <ModelPickerSheet visible={modelSwitch.picking} models={choices} currentId={model.id} freeLeft={freeMap} onClose={modelSwitch.close} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character, frame: frame.value }, references, handedSources ?? undefined))} />
                 {contract && !boundCount && <Text accessibilityLiveRegion="polite">{t(contract.photoGuidance)}</Text>} {photosUnavailable && <Text tone="danger" accessibilityLiveRegion="polite">{t('presets.fidelity.photosUnavailable')}</Text>}
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
                 {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
@@ -396,7 +396,7 @@ export default function CreateWithModel() {
                         </View>
                         <UploadLimitNote model={model} />
                         <View pointerEvents={attaching ? 'none' : 'auto'} style={{ gap: ds.space.md }}>
-                        {boundCount ? <TemplatePhotoSlots key={`${template?.id}:${modelId}`} count={boundCount} hints={templatePhotoHints(contract)} model={model} api={api} references={references} onReferences={setReferences} onBusy={busy => setSending(previous => ({ ...previous, image: busy }))} /> : slots.map((s) => (
+                        {boundCount ? <TemplatePhotoSlots key={`${template?.id}:${modelId}`} count={boundCount} hints={phonePhotoHints(contract)} model={model} api={api} references={references} onReferences={setReferences} onBusy={busy => setSending(previous => ({ ...previous, image: busy }))} /> : slots.map((s) => (
                             <SourcePicker
                                 key={s.slot}
                                 slot={s}
@@ -416,7 +416,7 @@ export default function CreateWithModel() {
                         </View>
                     </View>
                 ) : null}
-                {!swapScene && !boundCount && <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>}
+                {!swapScene && !boundCount && <View style={styles.section}><AttachMore hasSlots={slots.length > 0} api={api} current={model} carry={attachCarry} settings={{ opts, cameraOn, cinema, characterOn, character, frame: frame.value }} references={references} previous={handedSources ?? undefined} blocked={waiting} onBusy={setAttaching} onPlaced={placeAttached} /></View>}
                 {text_ ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
@@ -459,7 +459,7 @@ export default function CreateWithModel() {
                                 ))}
                             </View>
                         ) : null}
-                        {frame.node}<ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character }, references, handedSources ?? undefined))} />
+                        {frame.node}<ResolutionVariantChips model={model} catalog={catalog} duration={duration} onPick={(id) => void modelSwitch.change(model, catalog.find(m => m.id === id), (target) => createHandoff(target, attachCarry, { opts, cameraOn, cinema, characterOn, character, frame: frame.value }, references, handedSources ?? undefined))} />
                         {hasAnyOption(options) || takesImageCount(model) ? <CreateOptions options={options} values={opts} showCount={takesImageCount(model)} resolution={resolution} audio={audio} tier={tier} tierLabel={(id) => `${id === '4k' ? '4K' : id} · ${estimateCredits(model, duration, id)}`} outputPrice={plural('opt.outputPriceSame', unit)} onChange={setOpts} /> : null}
                         {takesCharacter ? <CharacterPanel on={characterOn} picks={character} onToggle={setCharacterOn} onChange={setCharacter} /> : null}
                         {takesCamera ? <CameraPanel on={cameraOn} value={cinema} onToggle={setCameraOn} onChange={setCinema} /> : null}

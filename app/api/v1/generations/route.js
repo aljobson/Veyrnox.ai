@@ -1,4 +1,4 @@
-import { appRuntimeFlag } from '../../../../lib/appRuntime.js';
+import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
 import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
@@ -11,6 +11,7 @@ import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
 import { checkSwapRequest, resolveSwapVideo } from '../../../../lib/swapSceneGeneration.js';
 import { hasRuntimeReplay } from '../../../../lib/runtimeReplay.js';
 import { validateInputs } from '../../../../lib/generationInputValidation.js';
+import { SPEECH_CONTROL_KEYS } from '../../../../lib/speechInputs.js';
 import { isFeatureKilled } from '../../../../lib/runtimeSwitchCache.js';
 import { featurePaused } from '../../../../lib/runtimeAdmission.js';
 import { readBoundedBody } from '../../../../lib/boundedBody.js';
@@ -212,7 +213,7 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
-    if (hasTemplateSwap && (process.env.TEMPLATE_SWAP_CLIP_ENABLED !== 'true' || typeof body.template_swap !== 'string'
+    if (hasTemplateSwap && (!templateSwapSwitchOn(process.env) || typeof body.template_swap !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_swap))) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
     const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() }) : null;
     if (swapClipReplay) return NextResponse.json(swapClipReplay.body, { status: swapClipReplay.status });
@@ -307,7 +308,7 @@ export async function POST(req) {
     }
     if (record.outputStems && !editorFeatureEnabled('EDITOR_AUDIO_STEMS_ENABLED')) return NextResponse.json({ error: 'audio_stems_unavailable' }, { status: 503 });
     if (modelRow.gated_flag) return NextResponse.json({ error: 'model_gated' }, { status: 402 });
-    for (const key of ['output_resolution', 'audio_enabled']) {
+    for (const key of ['output_resolution', 'audio_enabled', ...SPEECH_CONTROL_KEYS]) {
         if (inputs[key] !== undefined && !Object.hasOwn(record.inputs, key)) {
             return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
         }

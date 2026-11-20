@@ -1,3 +1,5 @@
+import { cleanOldSwapFiles } from '../lib/templateSwap/files';
+import { TEMPLATE_SWAP_RUNTIME } from '../lib/templateSwap/runtimeFlag';
 import { guardedBeforeSend } from '../lib/guardedBeforeSend';
 import { clearAllVibes } from '../lib/creatorProfileStore';
 import { tokenUser, isAccountChanged } from '../lib/auth/tokenUser';
@@ -83,6 +85,7 @@ export function useAuth(): AuthContextValue {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    useEffect(() => { if (TEMPLATE_SWAP_RUNTIME) cleanOldSwapFiles(); }, []);
     const generationRef = useRef(0);
     const [generation, setGeneration] = useState(0);
     const sessionGeneration = useCallback(() => generationRef.current, []);
@@ -141,9 +144,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSessionRevision(value => value + 1);
     }, []);
 
-    const drop = useCallback(async () => {
+    const drop = useCallback(async (reason: 'expired' | 'signout') => {
         // A refresh rejection and the request's session-loss callback can both arrive.
-        if (dropped.current) return;
+        if (dropped.current) {
+            if (reason === 'signout') await wipeCache(undefined, undefined, reason).catch(() => undefined);
+            return;
+        }
         generationRef.current += 1; setGeneration(generationRef.current);
         const gen = generationRef.current;
         dropped.current = true;
@@ -156,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         forgetMfaCleared();
         await aiConsent.forget();
         if (generationRef.current !== gen) return;
-        await wipeCache().catch(() => undefined);
+        await wipeCache(undefined, undefined, reason).catch(() => undefined);
         if (generationRef.current !== gen) return;
         await clearAllVibes().catch(() => undefined);
         if (generationRef.current !== gen) return;
@@ -213,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 transientFailure.current = isTransientRefreshFailure(err);
                 // A rejected token is final; a network error, throttling or an auth-service
                 // outage keeps the token and the saved drafts for the next attempt.
-                if (!transientFailure.current && err instanceof Error && 'status' in err) await drop();
+                if (!transientFailure.current && err instanceof Error && 'status' in err) await drop('expired');
                 return null;
             }
         })().finally(() => {
@@ -254,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const onSessionLost = useCallback((expected?: number) => {
         if (expected !== undefined && expected !== generationRef.current) return;
-        if (!transientFailure.current) void drop();
+        if (!transientFailure.current) void drop('expired');
     }, [drop]);
 
     const api = useMemo(
@@ -403,7 +409,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (expected !== undefined && expected !== generationRef.current) return;
         const token = sessionRef.current?.accessToken;
         forgetPendingLink(); // a destination kept from a link never outlives a sign-out
-        await drop();
+        await drop('signout');
         if (token) await revokeSession(token);
     }, [drop]);
 

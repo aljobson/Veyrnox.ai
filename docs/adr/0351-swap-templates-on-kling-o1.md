@@ -349,8 +349,9 @@ manifest uploads/read-back and dry runs emit nothing publishable.
 
 Amendment 4 (PR #2389) records the wording clause and the owner's price
 decision; this amendment does not repeat it. The checked-in size script already
-has a 60,700 KiB budget, despite the frozen plan's 60,500 KiB assertion. This work leaves that script unchanged; no budget
-increase is authorized or performed. Source-byte accounting cannot establish
+had a higher budget than the frozen plan's 60,500 KiB assertion. ADR-0353 now
+sets the webpack budget. This amendment left that script unchanged; no budget
+increase was authorized or performed. Source-byte accounting cannot establish
 compiled Worker size; `worker-smoke` must measure the compiled result in CI.
 
 ## Amendment 6: one reviewed character through an O1 element (2026-11-17)
@@ -421,7 +422,7 @@ permit an identical accepted job to replay. The pre-existing template-swap kill
 switch behavior remains. Public catalog projection adds only `role` and `images: 2`.
 Registry and pin remain empty; no migration, price, gallery, deployment, upload
 or switch changes are included. Worker size still requires CI `worker-smoke`
-against the unchanged 60,700 KiB budget.
+against the active budget in `scripts/check-worker-size.mjs` (now governed by ADR-0353).
 
 Inventory correction to the frozen plan: shared `imageSlots` finds four
 `@image2`-only clips among the 411 approved v3 ids, and five among all 519
@@ -490,3 +491,44 @@ meant to stay as in the template, but generated details can change. Neither scen
 nor other people, motion or timing are guaranteed unchanged. B0 is matte-quality
 evidence only, not proof of generated-video fidelity. B1 has no UI; all web/mobile
 layout, type, accessibility and screen-state criteria are not applicable here.
+
+## Amendment 8: the guard reads three more swap wordings (2026-11-18)
+
+`lib/templateSwapGuard.js` now also treats these as swap recipes: "replaces"/"replaced by" next to the photo, "... in the video" next to the
+photo, and a clause that starts with "Swap". Five listed templates (`community-coastal-driver-swap`, `-dinner-party-recast`,
+`-forest-umbrella-shift`, `-stage-dance-sync`, `-urban-stride`) are refused before any charge and leave the gallery. The importer's candidate set
+grows from 519 to 524 (the five, which have no clip yet and cannot be approved until one is made), and 14 already-hidden video-edit
+templates move from kind `motion` to `video_swap` (127/300/92 becomes 132/314/78). The 519-candidate counts and the 411 approved v3 ids in the
+earlier amendments describe the frozen plan and are unchanged. Narrative uses ("the filter is replaced by", "no text may be replaced") stay allowed;
+this was checked across all 884 templates that have a contract.
+
+## Amendment 9 (2026-11-19): one swap switch in the runtime flags
+
+The Worker is at its variable cap, so the swap switch is now the `templateSwap` key of the existing `APP_RUNTIME_FLAGS` JSON binding
+(precedent: `push`, `checkin`, `templateFaceWording`). `lib/appRuntime.js` exports `templateSwapSwitchOn(env)`, true only for the key `true` or the older
+`TEMPLATE_SWAP_CLIP_ENABLED` var being exactly `"true"` (still honoured if present). The clip gate, and through it `/api/catalog?template_swap=`, and the
+generations route both call that one helper. An absent, false, malformed or string `"true"` key is off. `MULTI_REFERENCE_ENABLED` is still required. This change
+edits neither `wrangler.jsonc` nor `APP_RUNTIME_FLAGS`; turning the swap on is a later owner-approved edit of that one JSON value after the upload, ids-and-pin PR
+and activation migration. Removing the key (or setting it false) is the rollback.
+
+## Amendment 10 (2026-11-19): the registry carries 410 of the 411 uploaded ids and the confirmed pin
+
+`app/veyrnox/_lib/templateSwapClips.js` lists 410 ids and the manifest pin `a795629b7397a570a10a838499c6c6e76d4f765408369e1cfe0d48170d2bf28b`. The owner's
+R2 upload (run `swap-upload-run-3`, publishable true) verified 411 clips and printed the identical SHA-256, so the pin is confirmed, not provisional. The owner
+dropped `community-brand-billboard-swap` from the registry as a near-duplicate of `community-billboard-product-swap` (same base shot plus a third-party brand
+and truck). It stays in the manifest only: the gate needs the id in both, so the pin is unchanged and the clip is refused. The manifest is not in source. The
+switch is untouched, so nothing is reachable: the gate needs the `templateSwap` key, and the model row stays inactive until the activation migration. Three
+tests that replaced the empty literals match the declarations by pattern; the registry test pins 410 sorted unique ids.
+
+## Amendment 11 (2026-11-19): production switch on, after the staging proof
+
+`wrangler.jsonc` sets `"templateSwap":true` in the production `APP_RUNTIME_FLAGS` (`{"checkin":true,"push":true,"templateSwap":true}`). No Worker var is added. This
+is the last step of the activation order: the upload (done), the ids-and-pin PR (merged), the activation migration 0569 (PR 2492, applied by the owner-approved
+apply run), then this edit, merged only on the owner's word.
+
+Staging proof (2026-11-19, project `yrqzwqywxfesmbvhzjgj`): one real swap, job `8bbd8c9e`, state STORED, one `debit:generation` of -47 (Subscription bucket only), no
+refund, completed by the fal webhook. Not live-proven: the short-clip refusal does not apply to swaps (the video is the server-held 5 s clip), the image-type refusal
+and the failed-submit refund are covered by `tests/templateSwapClipGeneration.test.mjs` only, and immediate-versus-sweep refund timing is unverified.
+
+Rollback: set `templateSwap` to `false` (or remove the key) in `APP_RUNTIME_FLAGS` and deploy. The gate then refuses every swap request, the catalog answers 404 and
+accepted jobs still settle through the existing webhook and refund paths.

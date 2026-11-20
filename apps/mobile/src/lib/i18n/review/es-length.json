@@ -60,6 +60,18 @@
     "ratio": 1.7
   },
   {
+    "id": "acct.dev.unknown",
+    "english": "Unknown device",
+    "translation": "Dispositivo desconocido",
+    "ratio": 1.64
+  },
+  {
+    "id": "acct.dev.signOut",
+    "english": "Sign out",
+    "translation": "Cerrar sesión",
+    "ratio": 1.63
+  },
+  {
     "id": "acct.dev.othersTitle",
     "english": "Sign out other devices?",
     "translation": "¿Cerrar sesión en otros dispositivos?",
@@ -718,6 +730,12 @@
     "english": "Developer tools need an active Publish plan.",
     "translation": "Las herramientas para desarrolladores requieren un plan Publish activo.",
     "ratio": 1.61
+  },
+  {
+    "id": "dev.scope.postsRead",
+    "english": "View posts",
+    "translation": "Ver publicaciones",
+    "ratio": 1.7
   },
   {
     "id": "dev.logs.none",
@@ -3276,6 +3294,96 @@
     "ratio": 1.79
   },
   {
+    "id": "music.create.custom",
+    "english": "Custom",
+    "translation": "Personalizado",
+    "ratio": 2.17
+  },
+  {
+    "id": "music.create.songTitle",
+    "english": "Song title",
+    "translation": "Título de la canción",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.keepMine",
+    "english": "Keep mine",
+    "translation": "Conservar la mía",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicActions.action.reload",
+    "english": "Reload song",
+    "translation": "Volver a cargar la canción",
+    "ratio": 2.36
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Pistas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Archivo de pistas separadas",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "musicTargetStems.instrument.woodwinds",
+    "english": "Woodwinds",
+    "translation": "Vientos de madera",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicSectionActions.position.end",
+    "english": "End",
+    "translation": "Final",
+    "ratio": 1.67
+  },
+  {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Sincronización labial",
+    "ratio": 2.63
+  },
+  {
+    "id": "musicPlaylists.title",
+    "english": "Playlists",
+    "translation": "Listas de reproducción",
+    "ratio": 2.44
+  },
+  {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Reproducir todo",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicPlaylists.next",
+    "english": "Next song",
+    "translation": "Canción siguiente",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Añadir canciones",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicDiscover.mood.all",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",
@@ -3406,5 +3514,23 @@
     "english": "Reset prompt",
     "translation": "Restablecer instrucciones",
     "ratio": 2.08
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "presets.swap.signin",
+    "english": "Sign in",
+    "translation": "Iniciar sesión",
+    "ratio": 2
+  },
+  {
+    "id": "presets.swap.check",
+    "english": "Check again",
+    "translation": "Comprobar de nuevo",
+    "ratio": 1.64
   }
 ]

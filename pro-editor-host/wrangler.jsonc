@@ -1,0 +1,18 @@
+{
+  // The Pro editor child origin (ADR-0358). A separate Worker from veyrnox-ai on purpose: it
+  // serves a 50 MB wasm from R2 and must not share the main Worker's size or binding budget.
+  // Deploying it with the custom-domain route below is what creates the DNS record.
+  "name": "veyrnox-pro-editor",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-01",
+  // Only the custom domain answers: no workers.dev route and no preview URLs (same rule as the
+  // main Worker, ADR-0078).
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "pro-editor.veyrnox.ai", "custom_domain": true }],
+  "r2_buckets": [{ "binding": "SITE", "bucket_name": "veyrnox-pro-editor-site" }],
+  "vars": {
+    // Exact origins allowed to frame host.html. Must equal the --parents the site was built with.
+    "ALLOWED_PARENTS": "https://veyrnox.ai"
+  }
+}

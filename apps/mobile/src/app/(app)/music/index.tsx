@@ -1,5 +1,6 @@
+import { subscribeSongChanges } from '../../../lib/music/songChanges';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, ListRow, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -53,6 +54,7 @@ export default function MusicLibrary() {
         setLoading(false);
     }, [api, applied]);
     useFocusEffect(useCallback(() => { void load(); return () => { epoch.current++; setHook(null); }; }, [load]));
+    useEffect(() => subscribeSongChanges(() => { void load(); }), [load]);
     const currentTab = tab !== 'songs' && results[tab]?.state === 'off' ? 'songs' : tab;
     const result = results[currentTab];
     const rows = result?.state === 'on' ? result.data : previous[currentTab] ?? [];
@@ -65,6 +67,11 @@ export default function MusicLibrary() {
     return <ScrollView style={s.screen} contentContainerStyle={s.content}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}>
         <Stack.Screen options={{ title: t('music.title') }} />
+        {results.songs?.state === 'on' ? <>
+            <Button label={t('music.create.title')} onPress={() => router.push('/music/create' as never)} />
+            <ListRow icon="playlist" title={t('musicPlaylists.title')} accessibilityLabel={t('musicPlaylists.title')} onPress={() => router.push('/music/playlists' as never)} />
+            <ListRow icon="compass" title={t('musicDiscover.title')} accessibilityLabel={t('musicDiscover.title')} onPress={() => router.push('/music/discover' as never)} />
+        </> : null}
         {off ? <EmptyState title={t('music.off')} body={t('music.offBody')} actionLabel={t('music.back')} href="/audio" /> : <>
             <SegmentedControl value={currentTab} onChange={value => { setTab(value); setHook(null); }}
                 options={(['songs', 'history', 'hooks'] as const).filter(value => value === 'songs' || results[value]?.state === 'on' || (results[value]?.state === 'error' && previous[value] !== undefined))

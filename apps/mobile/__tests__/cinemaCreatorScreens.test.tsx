@@ -120,6 +120,13 @@ test.each(['upload_busy', 'upload_needs_reconciliation'])('%s offers Contact sup
 const noRawKeys = (text: string, code: string) => {
     expect(text).not.toMatch(/cinemaUpload\./); expect(text).not.toContain(code); expect(text).toContain(t('cinemaCreator.upload.body'));
 };
+// QA 12.9: the closed message and the no-titles message sat flush against the screen edge.
+test('the analytics closed and no-titles messages carry the screen padding', () => {
+    const source = readFileSync(resolve(__dirname, '../src/app/(app)/cinema/analytics.tsx'), 'utf8');
+    expect(source).toMatch(/style=\{\[styles\.muted, styles\.notice\]\}>\{t\('cinemaCreator\.analytics\.closed'\)\}/);
+    expect(source).toMatch(/style=\{\[styles\.body, styles\.notice\]\}>\{t\('cinema\.creatorAnalytics\.publishATitleToStartSeeing'\)\}/);
+    expect(source).toMatch(/notice: \{ padding: 16 \}/);
+});
 test.each(['creator_required', 'account_not_active'])('upload panel shows the creator-closed state for %s, never a raw key', async code => {
     mockEnabled = true; mockRequest.mockRejectedValue(apiError(403, code));
     const panel = await mountPanel(); noRawKeys(words(panel.tree()), code); panel.cleanup();
@@ -167,7 +174,7 @@ test('AuthProvider fences upload ownership after cache and vibe cleanup', () => 
     const adopt = source.slice(source.indexOf('const adopt = useCallback'), source.indexOf('const drop = useCallback'));
     const drop = source.slice(source.indexOf('const drop = useCallback'), source.indexOf('const refresh = useCallback'));
     expect(adopt).toMatch(/await bindCacheUser\(userId\);\n\s*if \(!live\(\)\) return;\n\s*await setCinemaUploadOwner\(userId\)\.catch\(/);
-    expect(drop).toMatch(/await wipeCache\(\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await clearAllVibes\(\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await setCinemaUploadOwner\(null\)\.catch\(/);
+    expect(drop).toMatch(/await wipeCache\(undefined, undefined, reason\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await clearAllVibes\(\)\.catch\(\(\) => undefined\);\n\s*if \(generationRef.current !== gen\) return;\n\s*await setCinemaUploadOwner\(null\)\.catch\(/);
     const lines = (text: string) => text.split('\n').map(x => x.trim()).filter(Boolean);
     const { execFileSync } = require('child_process');
     const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: __dirname, encoding: 'utf8' }).trim();

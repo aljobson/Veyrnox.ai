@@ -1,5 +1,6 @@
 import type { SlotKind, SlotName } from './sources';
 import { kindOf, type CatalogModel, type Job } from './media';
+import { t } from './i18n';
 
 // ADR-0190: a Library creation can be the file for a Create slot without being downloaded and uploaded again. The server
 // takes `source_assets: [{asset_id, slot}]` (lib/generationSources.js) and checks ownership, kind and expiry itself;
@@ -18,15 +19,17 @@ export interface LibraryChoice {
 }
 
 // Finished, stored, unheld, unexpired creations of the kind the slot needs. A job on a model the catalog no longer lists
-// has no known kind and is not offered.
+// has no known kind and is not offered, except an Editor export, which is always a video.
 export function libraryChoices(jobs: readonly Job[], models: readonly CatalogModel[], kind: SlotKind, now: number = Date.now()): LibraryChoice[] {
     const byId = new Map(models.map((m) => [m.id, m]));
     const out: LibraryChoice[] = [];
     for (const j of jobs) {
         const model = byId.get(j.model_id);
-        if (!model || kindOf(model.modality) !== kind) continue;
+        // An Editor export runs on a private model the public catalog never lists, so it is a video by its output type.
+        const edited = !model && j.output_type === 'editor-render';
+        if (edited ? kind !== 'video' : !model || kindOf(model.modality) !== kind) continue;
         if (j.state !== 'succeeded' || !j.has_asset || j.held || isExpired(j, now)) continue;
-        out.push({ jobId: j.job_id, name: j.label || model.name, createdAt: j.created_at });
+        out.push({ jobId: j.job_id, name: j.label || model?.name || t('handoff.editedVideo'), createdAt: j.created_at });
     }
     return out;
 }

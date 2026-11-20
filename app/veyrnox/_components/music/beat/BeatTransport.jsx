@@ -39,7 +39,7 @@ export default function BeatTransport({ doc, edit, selectPattern, playing, loadi
   }
   return <section data-beat-transport aria-label={t('app.music.beat.ui.transport')} className="space-y-4 rounded-2xl border border-vx-border bg-vx-panel p-3">
     <div className="flex flex-wrap items-end gap-3">
-      <button data-beat-live data-beat-tip="play" className={action} aria-pressed={playing || loading} onClick={toggle}>{playing || loading ? t('app.music.beat.ui.stop') : t('app.music.beat.ui.play')}</button>
+      <button data-beat-read data-beat-live data-beat-tip="play" className={action} aria-pressed={playing || loading} onClick={toggle}>{playing || loading ? t('app.music.beat.ui.stop') : t('app.music.beat.ui.play')}</button>
       {loading && <span role="status">{t('app.music.beat.ui.loading.sounds')}</span>}
       <div role="group" aria-label={t('app.music.beat.ui.playback.view')} className="flex gap-1">
         {viewModes.map((view) => <button key={view} className={doc.view === view ? action : button}

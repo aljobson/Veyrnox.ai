@@ -7,6 +7,8 @@ import { ApiError } from '../src/lib/api';
 import { requestCheckinOpen } from '../src/lib/checkinEntry';
 import { appStorage, bindCacheUser, getCacheUser, wipeCache } from '../src/lib/appCache';
 
+let mockPath = '/';
+jest.mock('expo-router', () => ({ usePathname: () => mockPath }));
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest, getBalance: async () => ({ balance: 11, free_credits: 10, free_expires_at: null }) };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, status: 'signedIn' }) }));
@@ -22,7 +24,7 @@ async function press(label: string) {
 }
 async function mount() { await act(async () => root.render(createElement(CheckInModal))); }
 beforeEach(async () => {
-    setFirstRunPending(false);
+    setFirstRunPending(false); mockPath = '/';
     (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     mockRequest.mockReset(); mockRequest.mockResolvedValue(status);
     await wipeCache(); await bindCacheUser(`checkin-modal-${++serial}`);
@@ -122,4 +124,18 @@ test('reopening after today is claimed shows "Claimed today" once and no tappabl
     expect(root.container.queryAll(n => n.children.includes('Claimed today') && typeof n.children[0] === 'string')).toHaveLength(1);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'button' && n.props.accessibilityLabel === 'Check in')).toHaveLength(0);
     await press('Close');
+});
+
+test('the invitation does not interrupt a file browser; it waits for Explore or Credits', async () => {
+    mockPath = '/library';
+    await mount(); expect(has('Earn Credits by Checking In')).toBe(false);
+    mockPath = '/credits';
+    await act(async () => root.render(createElement(CheckInModal)));
+    expect(has('Earn Credits by Checking In')).toBe(true);
+});
+test('an explicit request still opens it on any screen', async () => {
+    mockPath = '/library';
+    await mount(); expect(has('Earn Credits by Checking In')).toBe(false);
+    await act(async () => { requestCheckinOpen(); });
+    expect(has('Earn Credits by Checking In')).toBe(true);
 });

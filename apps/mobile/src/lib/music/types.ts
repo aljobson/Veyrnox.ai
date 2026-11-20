@@ -9,6 +9,7 @@ export type MusicModelControls = {
     readonly exclude_styles: boolean;
     readonly tempo_key_meter: boolean;
     readonly duration_seconds: { readonly min: number; readonly max: number; readonly default: number };
+    readonly duration_price_block_seconds?: number;
     readonly lyrics: boolean;
     readonly styles: boolean;
     readonly instrumental: 'optional' | 'required';
@@ -119,24 +120,54 @@ export type MusicLifecycle = {
 export type MusicQuoteMode = 'simple' | 'custom';
 
 export type MusicSimpleQuoteInput = {
-    readonly prompt: string; // 1..500
-    readonly title?: string; // up to 80
-    readonly model_id?: string;
-    readonly variety?: number; // 0..100, premium model only
-    readonly style_influence?: number; // 0..100, premium model only
-    readonly exclude_styles?: string; // up to 500, premium model only
-    readonly duration_seconds?: number; // 10..60, default 60
-    readonly bpm?: number; // 40..220, premium only
-    readonly key_scale?: string;
-    readonly time_signature?: string;
+    readonly mode: 'simple';
+    readonly prompt: string;
+    readonly title?: string;
+    readonly instrumental: true;
+    readonly model_id: string;
+    readonly duration_seconds: number;
 };
-
 export type MusicCustomQuoteInput = {
+    readonly mode: 'custom';
     readonly draft_revision: number;
     readonly instrumental: boolean;
-    readonly rights_confirmed: boolean; // true exactly when not instrumental
-    readonly duration_seconds?: number;
+    readonly rights_confirmed: boolean;
+    readonly duration_seconds: number;
 };
+export type MusicDraft = {
+    readonly id: string | null;
+    readonly updated_at: string | null;
+    readonly revision: number;
+    readonly model_id: string;
+    readonly lyrics: string;
+    readonly styles: string;
+    readonly title: string;
+};
+export type MusicDraftInput = Pick<MusicDraft, 'revision' | 'model_id' | 'lyrics' | 'styles' | 'title'>;
+export type MusicCandidateView = {
+    readonly ordinal: number;
+    readonly label: string;
+    readonly state: string;
+    readonly job_id: string | null;
+    readonly song_id: string | null;
+    readonly version_id: string | null;
+    readonly error_code: string | null;
+    readonly audio_url: string | null;
+};
+export type MusicGenerationView = {
+    readonly id: string;
+    readonly state: string;
+    readonly model_id: string;
+    readonly prompt: string;
+    readonly title: string | null;
+    readonly total_credits: number;
+    readonly created_at: string;
+    readonly candidates: readonly MusicCandidateView[];
+};
+export type MusicInputSnapshot = Readonly<{
+    mode: MusicQuoteMode; title: string; lyrics: string; styles: string; prompt: string;
+    instrumental: boolean; duration: number; model_id: string;
+}>;
 
 // POST /api/v1/music/generation-quotes answers 201 with this.
 export type MusicQuote = {

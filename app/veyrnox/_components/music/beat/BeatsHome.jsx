@@ -1,10 +1,11 @@
 'use client';
+import { configureBeatWrites, capabilityGeneration, subscribeBeatWrites, beatReadOnly, BEAT_READ_ONLY_MESSAGE } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import Link from 'next/link';
 import BeatTemplatePicker from './BeatTemplatePicker';
 import { useI18n } from '../../../../../components/I18nProvider';
 import { createBeatFromTemplate } from '../../../_lib/music/beat/beatTemplates.mjs';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useEffect, useRef, useState } from 'react';
 import { useBeatAccountList } from './useBeatAccountList';
 import { trackSummary } from '../../../_lib/music/beat/beatTrackSummary.mjs';
 import { BEAT_LIMITS } from '../../../_lib/music/beat/beatDocument.mjs';
@@ -12,11 +13,17 @@ import { rename } from '../../../_lib/music/beat/beatOps.mjs';
 import * as store from '../../../_lib/music/beat/beatStore.js';
 import { action, button, input } from './beatStyles';
 
-export default function BeatsHome({ cloud = false }) {
+export default function BeatsHome({ v5Writes = false, cloud = false }) {
+  const [, setCapability] = useState(capabilityGeneration());
+  useLayoutEffect(() => {
+    configureBeatWrites(v5Writes); setCapability(capabilityGeneration());
+    return subscribeBeatWrites(() => setCapability(capabilityGeneration()));
+  }, [v5Writes]);
   const router = useRouter();
   const { t, locale } = useI18n();
   const picker = useRef(null);
   const [readError, setReadError] = useState(false), [damaged, setDamaged] = useState([]);
+  const [unsupported, setUnsupported] = useState([]);
   const [records, setRecords] = useState([]);
   const [count, setCount] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -29,9 +36,9 @@ export default function BeatsHome({ cloud = false }) {
     const token = {}; request.current = token;
     const result = await store.listBeats();
     if (token !== request.current) return;
-    setLoaded(true); setReadError(Boolean(result.error));
+    setLoaded(true); setReadError(result.error || false);
     if (result.error) return;
-    setDamaged(result.damaged || []);
+    setDamaged(result.damaged || []); setUnsupported(result.unsupported || []);
     setRecords(result.records); setCount(result.count); setPersistent(result.persistent); setLoaded(true);
   }, []);
   const account = useBeatAccountList(cloud, router, setMessage, refresh);
@@ -53,7 +60,7 @@ export default function BeatsHome({ cloud = false }) {
   async function saveName(event) {
     event.preventDefault(); setBusy(true);
     const result = await store.updateBeat(rename(editing.doc, editing.title.trim()), editing.revision);
-    setMessage(result.error ? t('app.music.beat.status.s62') : t('app.music.beat.ui.saved.on.this.device'));
+    setMessage(result.error ? t(['v5_write_disabled', 'capability_changed'].includes(result.error) ? BEAT_READ_ONLY_MESSAGE : 'app.music.beat.status.s62') : t('app.music.beat.ui.saved.on.this.device'));
     setEditing(null); await refresh(); setBusy(false);
   }
   async function remove(record) {
@@ -70,7 +77,8 @@ export default function BeatsHome({ cloud = false }) {
       <h2 className="text-xl font-bold">{t('app.music.beat.templates')}</h2><BeatTemplatePicker choose={makeBeat} disabled={busy} focusBlank />
       <button className={`${button} mt-4`} onClick={() => picker.current.close()}>{t('app.music.beat.close')}</button>
     </dialog>
-    {readError && <p role="alert" className="text-vx-danger">{t('app.music.beat.device.readError')} <button className={button} onClick={refresh}>{t('app.music.beat.ui.retry')}</button></p>}
+    {readError && <p role="alert" className="text-vx-danger">{t(readError === 'blocked' ? 'app.music.beat.compat.blocked' : 'app.music.beat.device.readError')} <button className={button} onClick={refresh}>{t('app.music.beat.ui.retry')}</button></p>}
+    {unsupported.length > 0 && <ul className="space-y-3">{unsupported.map(record => <li key={record.id} className="rounded-xl border border-vx-border p-4"><p>{record.title}</p><p role="status">{t('app.music.beat.compat.unsupported')}</p></li>)}</ul>}
     {damaged.length > 0 && <ul className="space-y-3">{damaged.map(record => <li key={record.id} className="rounded-xl border border-vx-border p-4">
       <p>{t('app.music.beat.device.damaged')}</p><button className={button} disabled={busy} onClick={async () => {
         if (!window.confirm(t('app.music.beat.device.deleteDamaged'))) return;
@@ -86,17 +94,18 @@ export default function BeatsHome({ cloud = false }) {
           <label className="flex min-w-0 flex-1 flex-col gap-1">{t('app.music.beat.ui.beat.title')}<input autoFocus className={input} maxLength={80} value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></label>
           <button className={action} disabled={busy || !editing.title.trim()}>{t('app.music.beat.ui.save.name')}</button><button type="button" className={button} onClick={() => setEditing(null)}>{t('app.music.beat.ui.cancel')}</button>
         </form> : <h2 className="break-words text-xl font-bold">{record.doc.title}</h2>}
+        {beatReadOnly(record.doc) && <p role="status">{t(BEAT_READ_ONLY_MESSAGE)}</p>}
         <p className="my-2 text-sm text-vx-fg-muted">{record.doc.tempo.bpm}{t('app.music.beat.ui.bpm.2')}{trackSummary(record.doc.tracks, t, locale)}{t('app.music.beat.ui.last.edited')}{new Date(record.updatedAt).toLocaleString()}</p>
         {cloud && <p className="my-2 text-sm text-vx-fg-muted">{t('app.music.beat.ui.on.this.device')}{account.rows.some(row => row.beat_id === record.id) ? t('app.music.beat.ui.in.your.account') : ''}</p>}
         <div className="flex flex-wrap gap-2"><Link className={`${action} inline-flex items-center`} href={`/app/music/beats/${record.id}`}>{t('app.music.beat.ui.open')}</Link>
-          <button className={button} disabled={busy} onClick={() => setEditing({ ...record, title: record.doc.title })}>{t('app.music.beat.ui.rename')}</button><button className={button} disabled={busy} onClick={() => remove(record)}>{t('app.music.beat.ui.delete')}</button>
-          {cloud && account.rows.some(row => row.beat_id === record.id) && <button className={button} onClick={() => account.remove(account.rows.find(row => row.beat_id === record.id))}>{t('app.music.beat.ui.remove.from.account')}</button>}</div>
+          <button className={button} disabled={busy || beatReadOnly(record.doc)} title={beatReadOnly(record.doc) ? t(BEAT_READ_ONLY_MESSAGE) : undefined} onClick={() => setEditing({ ...record, title: record.doc.title })}>{t('app.music.beat.ui.rename')}</button><button className={button} disabled={busy} onClick={() => remove(record)}>{t('app.music.beat.ui.delete')}</button>
+          {cloud && account.rows.some(row => row.beat_id === record.id && !row.unsupported) && <button className={button} onClick={() => account.remove(account.rows.find(row => row.beat_id === record.id))}>{t('app.music.beat.ui.remove.from.account')}</button>}</div>
       </li>)}</ul>}
     {cloud && <section aria-label={t('app.music.beat.ui.account.beats')} className="space-y-3">
       {account.message && <p role="status">{account.message} <button className={button} onClick={account.refresh}>{t('app.music.beat.ui.retry')}</button></p>}
-      <ul className="space-y-3">{account.rows.filter(row => !records.some(record => record.id === row.beat_id)).map(row => <li key={row.id} className="space-y-3 rounded-2xl border border-vx-border bg-vx-panel p-4">
+      <ul className="space-y-3">{account.rows.filter(row => row.unsupported || !records.some(record => record.id === row.beat_id)).map(row => <li key={row.id} className="space-y-3 rounded-2xl border border-vx-border bg-vx-panel p-4">
         <h2 className="text-xl font-bold">{row.title}</h2><p className="text-sm text-vx-fg-muted">{t('app.music.beat.ui.in.your.account.2')}</p>
-        <div className="flex flex-wrap gap-2"><button className={action} onClick={() => account.open(row)}>{t('app.music.beat.ui.open')}</button><button className={button} onClick={() => account.remove(row)}>{t('app.music.beat.ui.remove.from.account')}</button></div>
+        {row.unsupported ? <p role="status">{t('app.music.beat.compat.unsupported')}</p> : <div className="flex flex-wrap gap-2"><button className={action} onClick={() => account.open(row)}>{t('app.music.beat.ui.open')}</button><button className={button} onClick={() => account.remove(row)}>{t('app.music.beat.ui.remove.from.account')}</button></div>}
       </li>)}</ul>
     </section>}
     <p aria-live="polite" className="text-sm text-vx-fg-muted">{message}</p>

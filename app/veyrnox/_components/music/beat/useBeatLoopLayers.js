@@ -1,4 +1,5 @@
 'use client';
+import { assertBeatWritable, BEAT_READ_ONLY_MESSAGE, capabilityGeneration, assertBeatGeneration } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { useI18n } from '../../../../../components/I18nProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../../_lib/gateway';
@@ -8,7 +9,7 @@ import { loopSeconds, readLayers, writeLayers } from '../../../_lib/music/beat/m
  * Magic loop layers for one beat: kept beside the beat, decoded once, looped at
  * exactly their bar length, started and stopped with the beat transport.
  */
-export function useBeatLoopLayers(beatId, playing) {
+export function useBeatLoopLayers(beatId, playing, current) {
   const { t } = useI18n();
   const [layers, setLayers] = useState(() => readLayers(beatId));
   const context = useRef(null);
@@ -16,7 +17,10 @@ export function useBeatLoopLayers(beatId, playing) {
   const sources = useRef([]);
   const [error, setError] = useState('');
 
-  const save = useCallback((next) => { setLayers(next); writeLayers(beatId, next); }, [beatId]);
+  const save = useCallback((next, generation = capabilityGeneration()) => {
+    try { assertBeatGeneration(generation); assertBeatWritable(current?.current); writeLayers(beatId, next); setLayers(next); return true; }
+    catch { setError(t(BEAT_READ_ONLY_MESSAGE)); return false; }
+  }, [beatId, current, t]);
 
   const stopAll = useCallback(() => {
     for (const source of sources.current) { try { source.stop(); } catch { /* already stopped */ } }
@@ -63,7 +67,7 @@ export function useBeatLoopLayers(beatId, playing) {
 
   return {
     layers, error,
-    add: (layer) => save([...layers.filter((item) => item.songId !== layer.songId), layer]),
+    add: (layer, generation) => save([...layers.filter((item) => item.songId !== layer.songId), layer], generation),
     toggleMute: (songId) => save(layers.map((item) => (item.songId === songId ? { ...item, muted: !item.muted } : item))),
     remove: (songId) => save(layers.filter((item) => item.songId !== songId)),
   };

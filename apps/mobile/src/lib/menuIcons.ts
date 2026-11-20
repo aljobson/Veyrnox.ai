@@ -89,6 +89,19 @@ export const MENU_ICONS = {
     gauge: require('../../assets/icons/gauge.png'),
     aperture: require('../../assets/icons/aperture.png'),
     googleG: require('../../assets/icons/google-g.png'),
+    playlist: require('../../assets/icons/playlist.png'),
+    compass: require('../../assets/icons/compass.png'),
+    vinylRecord: require('../../assets/icons/vinyl-record.png'),
+    microphone: require('../../assets/icons/microphone.png'),
+    headphones: require('../../assets/icons/headphones.png'),
+    chatsCircle: require('../../assets/icons/chats-circle.png'),
+    swap: require('../../assets/icons/swap.png'),
+    crosshair: require('../../assets/icons/crosshair.png'),
+    scissors: require('../../assets/icons/scissors.png'),
+    arrowsHorizontal: require('../../assets/icons/arrows-horizontal.png'),
+    pauseCircle: require('../../assets/icons/pause-circle.png'),
+    seekBack: require('../../assets/icons/arrow-counter-clockwise.png'),
+    seekForward: require('../../assets/icons/arrow-clockwise.png'),
 } as const;
 
 export type MenuIcon = keyof typeof MENU_ICONS;

@@ -1,3 +1,5 @@
+import { TemplateSwapBoundary, TemplateSwapSummary, TemplateSwapLegacy } from '../../_components/TemplateSwapBoundary.js';
+import { publicModelId } from '../../../../lib/publicModelIds.js';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 import { templateSourceAspect } from '../../../../lib/templateFraming.js';
 import { getT } from '../../../../lib/i18n/server';
@@ -81,14 +83,14 @@ export default async function TemplatePage({ params }) {
             title below it. From lg the preview is the left column again and
             spans both rows; the first row hugs the heading (auto) so a tall
             clip cannot open a gap above the recipe. */}
-        <div className="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-[1fr_420px] lg:grid-rows-[auto_1fr] lg:gap-y-0">
+        <TemplateSwapBoundary id={template.id}><div className="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-[1fr_420px] lg:grid-rows-[auto_1fr] lg:gap-y-0">
           <div className="lg:col-start-2 lg:row-start-1">
             <p className="font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">
               {tOr(t, `presets.cat.${template.category}`, template.category)}{template.isNew ? t("presets.detail.new") : ''}
             </p>
             <h1 className="mt-2 vx-display vx-title-detail">{presetTitle(template.name)}</h1>
-            <p className="mt-4 text-vx-fg-body">
-              {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(modelId)}`)} className="font-bold underline underline-offset-4">{modelName}</Link> : <span className="font-bold">{template.model}</span> })}
+            <TemplateSwapSummary><p className="mt-4 text-vx-fg-body">
+              {rich(t('presets.detail.runsOn'), { model: modelId ? <Link href={localizedHref(locale, `/models/${encodeURIComponent(publicModelId(modelId))}`)} className="font-bold underline underline-offset-4">{modelName}</Link> : <span className="font-bold">{template.model}</span> })}
             </p>
             {template.needs && (sourceAspect ? (
               <div className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
@@ -99,7 +101,7 @@ export default async function TemplatePage({ params }) {
               <p className="mt-4 rounded-xl border border-vx-border px-4 py-3 text-[14px] text-vx-fg-body">
                 {t('presets.detail.inputs', { inputs: tOr(t, `presets.needs.${template.needsKey || template.id}`, template.needs) })}
               </p>
-            ))}
+            ))}</TemplateSwapSummary>
           </div>
           <div className="lg:col-start-1 lg:row-start-1 lg:row-span-2">
             {template.kind === 'image' ? <TemplateImage preset={template} className="mx-auto w-full max-w-[640px] rounded-2xl" /> : clip ? (
@@ -112,9 +114,9 @@ export default async function TemplatePage({ params }) {
           </div>
           <div className="lg:col-start-2 lg:row-start-2">
             <TemplateRecipe key={template.id} preset={recipe} generatedPreview={clip?.generatedOnVeyrnox} />
-            {clip && TemplateRecreate && <TemplateRecreate preset={{ id: template.id, name: template.name, prompt: template.prompt }} />}
+            {clip && TemplateRecreate && <TemplateSwapLegacy><TemplateRecreate preset={{ id: template.id, name: template.name, prompt: template.prompt }} /></TemplateSwapLegacy>}
           </div>
-        </div>
+        </div></TemplateSwapBoundary>
         </div>
       </Main>
     </div>

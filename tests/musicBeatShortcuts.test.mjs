@@ -11,10 +11,13 @@ test('sheet renders the shared shortcut list and platform modifier', () => {
   assert.equal(beatModifier({ platform: 'MacIntel' }), '⌘');
   assert.equal(beatModifier({ userAgentData: { platform: 'Windows' } }), 'Ctrl');
   assert.equal(shortcutKeys(BEAT_SHORTCUTS.find(row => row.id === 'undo'), { platform: 'MacIntel' }), '⌘+Z');
+  assert.deepEqual(BEAT_SHORTCUTS.find(row => row.id === 'ripple').handled, ['r']);
+  assert.equal(BEAT_SHORTCUTS.find(row => row.id === 'ripple').context, 'global');
+  assert.ok(![...DRUM_PADS.map(p => p.key), ...Object.keys(TYPING_NOTES)].includes('r'));
   assert.equal(new Set(BEAT_SHORTCUTS.map(row => row.id)).size, BEAT_SHORTCUTS.length);
   assert.deepEqual(BEAT_SHORTCUTS.find(row => row.id === 'notes').handled, Object.keys(TYPING_NOTES));
   assert.deepEqual(BEAT_SHORTCUTS.find(row => row.id === 'pads').handled, DRUM_PADS.map(p => p.key));
-  assert.ok(!BEAT_SHORTCUTS.some(row => /Mod\+[LK]|^R$|^C$/.test(row.keys)));
+  assert.ok(!BEAT_SHORTCUTS.some(row => /Mod\+[LK]|^C$/.test(row.keys)));
 });
 test('every explicit surface key has a sheet entry; documented keys remain in handlers', () => {
   const contexts = { grid: 'BeatStepGrid', regions: 'BeatRegion', ruler: 'BeatRuler', piano: 'BeatPianoRoll', automation: 'BeatAutomationLane', takes: 'BeatTakeLanes' };
@@ -35,7 +38,7 @@ test('every explicit surface key has a sheet entry; documented keys remain in ha
     const native = context === 'grid' ? ['Enter', ' ', ...BEAT_KEYS.arrows] : [];
     for (const key of handled) assert.ok(literals.includes(key) || shared.includes(key) || native.includes(key), `${file}: stale ${key}`);
   }
-  for (const name of ['help', 'play', 'undo', 'redo']) assert.match(source('BeatEditor'), new RegExp(`BEAT_KEYS\\.${name}`));
+  for (const name of ['help', 'play', 'undo', 'redo', 'ripple']) assert.match(source('BeatEditor'), new RegExp(`BEAT_KEYS\\.${name}`));
 });
 
 test('library suggestions select nearby categories and keep at least two recovery choices', async () => {

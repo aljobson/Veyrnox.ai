@@ -5,6 +5,7 @@ import { SourcePicker } from '../src/components/SourcePicker';
 import { launchImageLibraryAsync } from 'expo-image-picker';
 import { uploadSource } from '../src/lib/uploads';
 import { reframePicked } from '../src/lib/reframePicked';
+import { MENU_ICONS } from '../src/lib/menuIcons';
 import { replaceSlotReferences, type GenerationReference } from '../src/lib/sources';
 
 jest.mock('../src/lib/appCache', () => ({ ...jest.requireActual('../src/lib/appCache'), getCacheUser: () => 'A', subscribeCacheUser: () => () => {} }));
@@ -56,4 +57,11 @@ test('a second frame change still leaves one file', async () => {
     await act(async () => setFrame('16:9'));
     expect(uploads()).toEqual(['key-wide']);
     expect(rows()).toHaveLength(1);
+});
+
+// QA: after a model switch the held start photo showed an empty grey box that said "Ready".
+test('a held photo with no local picture shows its kind, not a blank box', async () => {
+    await act(async () => root.render(<SourcePicker slot={slot} api={{} as any} references={[{ slot: 'image', origin: 'upload', key: 'held' }]}
+        onReferences={() => {}} onChange={() => {}} onLibrary={() => {}} onBusy={() => {}} />));
+    expect(root.container.queryAll(n => n.props.source === MENU_ICONS.image)).toHaveLength(1);
 });

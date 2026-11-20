@@ -8,6 +8,7 @@ import { SavedMusicMixes } from './SavedMusicMixes';
 import { MusicWorkspaceCollaboration } from './MusicWorkspaceCollaboration';
 import { useMusicLibraryState } from './useMusicLibraryState';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
+import { PlayInBarButton } from './MusicMiniPlayer';
 import dynamic from 'next/dynamic';
 import { recordMusicListen } from './musicListen';
 
@@ -35,6 +36,7 @@ function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy, wav
           {waveform && song.audio_url ? <MusicWaveform src={song.audio_url} label={song.title} /> : null}
           {song.audio_url ? <MusicPrivateAudio className="mt-3 w-full" controls preload="none" src={song.audio_url} aria-label={`Play ${song.title}`} onPlay={tabsEnabled ? () => recordMusicListen(song.id) : undefined} /> : null}
           <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`Feedback for ${song.title}`}>
+            <PlayInBarButton song={song} />
             <button type="button" aria-pressed={song.feedback === 'like'} onClick={() => onFeedback(song.id, song.feedback === 'like' ? null : 'like')} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${song.feedback === 'like' ? 'border-vx-accent bg-vx-accent/15 text-vx-accent' : 'border-vx-border text-vx-fg-body'}`}>Like</button>
             <button type="button" aria-pressed={song.feedback === 'dislike'} onClick={() => onFeedback(song.id, song.feedback === 'dislike' ? null : 'dislike')} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${song.feedback === 'dislike' ? 'border-vx-danger bg-vx-danger/10 text-vx-danger' : 'border-vx-border text-vx-fg-body'}`}>Dislike</button>
             <button type="button" onClick={() => onTrash(song)} disabled={busy} className="min-h-10 rounded-full border border-vx-border px-4 text-sm font-bold text-vx-fg-muted disabled:opacity-40">Move to Trash</button>

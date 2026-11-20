@@ -18,6 +18,11 @@ data safe under real load. Break any of them only with an ADR that explains why.
 
 ## Bundler traps — the three libraries that break Cloudflare Workers Builds
 
+Production builds now select webpack; `next dev` still uses Turbopack (ADR-0353).
+The dependency/import audit found none of the three libraries below in root
+dependencies or application SSR imports. Their historical restrictions remain;
+switching bundlers does not establish that adding them is safe.
+
 Tripwires from PRs #25, #27, #38, #40:
 
 - **`tsx`** in root `devDependencies` -> build fails. Install ad-hoc in CI.
@@ -230,7 +235,7 @@ developer surface is `/api/v1/developer/*` and requires a verified OAuth
     (prices, packs, published titles, ranked template ids, the template gallery priced
     from the catalog for the mobile app, the slim gallery list, one template and template
     search for the web so no page bundles the catalog). Nothing per-user. `/api/templates`
-    carries no price and reads no database. `/api/catalog?template_clip=<id>` is an anonymous no-store availability/price projection (ADR-0333); no identity or source media is exposed. `/api/catalog?template_swap=<id>` is the anonymous no-store O1 swap availability/price projection (ADR-0351); it reads no identity header and exposes no source media.
+    carries no price and reads no database. `/api/catalog?template_clip=<id>` is an anonymous no-store availability/price projection (ADR-0333); no identity or source media is exposed. `/api/catalog?template_swap=<id>` is the anonymous no-store O1 swap availability/price projection (ADR-0351); it reads no identity header and exposes no source media. `/api/catalog?template_swap_row=1` (the curated "Put yourself in" row) is anonymous and cached 60 s: it lists only live `{ id, credits }` pairs and is empty while the swap switch is off.
   - `/api/cinema/voting`, `/api/cinema/discovery`, `/api/cinema/winners`, `/api/cinema/comments`, `/api/cinema/story-polls`, `/api/credit-subscription-plans`, `/api/cinema-pass-plans` — anonymous read-only, explicitly gated, no-store projections. Factories use `authed: false`, ignore inbound identity headers, and never return another account’s votes, pending comments, reports or billing records.
   - `/api/music/public/:slug[/asset]`, `/api/music/profiles/:handle`, `/api/music/shared/:token[/asset]`, `/api/music/best-of` — anonymous, GET-only, no-store reads behind the published Music pages, Explore's Best of playlists (0535) and listen-only links. Each is off unless its Music switch (`publication` / `distribution`) is on, checks a strict id shape, and returns only the public projection (no job id or storage key; audio is a 302 to a 5-minute presigned URL). A share token is matched by its hash. They read no identity header.
   - `/api/webhook/*` — the provider's signature (see Provider webhooks).

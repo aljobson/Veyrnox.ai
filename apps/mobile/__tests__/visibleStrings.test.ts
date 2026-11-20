@@ -10,6 +10,7 @@ const exceptions = new Set([
     'components/dev/EditorSpikeHarness.tsx',
     'components/dev/BeatEngineSpikeHarness.tsx',
     'app/(app)/dev-b1-beat.tsx',
+    'lib/music/discoverSeeds.ts', // Canonical first-party sample names/recipes; exact web parity is enforced by musicDiscover.test.ts.
     'lib/cinemaEditorialData.ts', // Imported film/episode names are creator content, not app copy.
 ]);
 // Generated legal documents have their own translation/parity guard and must remain verbatim.

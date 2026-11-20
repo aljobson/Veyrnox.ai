@@ -6,7 +6,7 @@ const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'
 
 test('a blocked template links to its Swap scene only after the public gate answers', () => {
   const recipe = read('app/veyrnox/_components/TemplateRecipe.js');
-  assert.match(recipe, /useSwapSceneAvailable\(sourceUnsupported \? preset\.id : null\)/, 'lookup only for source-unsupported templates');
+  assert.match(recipe, /useSwapSceneAvailable\(sourceUnsupported && !resolvedSwap\?\.loading \? preset\.id : null\)/, 'lookup only for source-unsupported templates');
   assert.match(recipe, /swapSceneAvailable && <Link href=\{`\/app\/create\?swap=\$\{encodeURIComponent\(preset\.id\)\}`\}/);
   const hook = read('app/veyrnox/_lib/useSwapSceneAvailable.js');
   assert.match(hook, /\/api\/catalog\?swap=\$\{encodeURIComponent\(id\)\}/);

@@ -142,7 +142,7 @@ export async function sendTurn({ threadId, text, key, options, attachments = [],
     throw unanswered(e); // from here on the request may be at the server, whatever the browser saw of it
   }
   if (res.status === 401) {
-    if (getSession()?.access_token === token) clearSession();
+    if (getSession()?.access_token === token) clearSession('expired');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('veyrnox:auth-required'));
     throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' });
   }

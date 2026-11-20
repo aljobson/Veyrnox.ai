@@ -1,4 +1,4 @@
-import { clipAt, updateClip, type Clip, type Selection, type TextClip, type Timeline } from './nativeEditorModel';
+import { clipAt, updateClip, type Clip, type Media, type Selection, type TextClip, type Timeline } from './nativeEditorModel';
 
 export const PPF_MIN = 0.25;
 export const PPF_MAX = 8;
@@ -62,6 +62,22 @@ export function canTrim(item: Clip | TextClip): boolean {
     return !['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve'].some(key => fields[key] != null)
         && animation?.offset == null && animation?.span == null;
 }
+// Longest length (frames) a video or audio clip may have so it never reads past the end of its source file; null when
+// the file's length is unknown or the media is unbounded (images, graphics). Never below 1 frame and `in` never below 0.
+export function maxClipLength(media: Media | undefined, clip: Pick<Clip, 'in' | 'rate' | 'reverse'>): number | null {
+    if (!media?.frames || media.kind === 'image' || media.kind === 'graphic') return null;
+    const rate = Math.max(0.1, clip.rate ?? 1), sourceIn = Math.max(0, clip.in ?? 0);
+    return Math.max(1, clip.reverse ? Math.floor(sourceIn / rate) + 1 : Math.floor((media.frames - sourceIn) / rate));
+}
+const fitLength = (media: Media | undefined, clip: Clip): number => Math.min(clip.len, maxClipLength(media, clip) ?? clip.len);
+// Cut every video and audio clip that runs past the end of its file back to the file's length (repairs older edits).
+export function fitToMedia(timeline: Timeline): Timeline {
+    const fit = (list: Clip[]) => list.map(clip => {
+        const len = fitLength(timeline.media[clip.mediaId ?? ''], clip), sourceIn = Math.max(0, clip.in ?? 0);
+        return len === clip.len && sourceIn === (clip.in ?? 0) ? clip : { ...clip, in: sourceIn, len, fadeIn: Math.min(clip.fadeIn ?? 0, len), fadeOut: Math.min(clip.fadeOut ?? 0, len) };
+    });
+    return { ...timeline, video: fit(timeline.video), audio: fit(timeline.audio) };
+}
 export function trimItem(timeline: Timeline, selection: Selection, edge: 'in' | 'out', deltaFrames: number, snap: boolean, playhead: number, ripple: 'none' | 'lane' | 'all' = 'none'): Timeline | null {
     const item = clipAt(timeline, selection);
     if (!item || locked(timeline, item) || !canTrim(item)) return null;
@@ -94,8 +110,10 @@ export function trimItem(timeline: Timeline, selection: Selection, edge: 'in' | 
     const delta = clamp(at - oldEdge, low, high);
     const len = item.len + (fromStart ? -delta : delta);
     const rippled = followers.reduce((next, { track, other }) => updateClip(next, { track, id: other.id }, { start: other.start + delta }), timeline);
+    // A clip that was already longer than its file (older edits) is healed by any trim, not grown further.
+    const fitted = bounded ? fitLength(media, { ...clip, len, ...(fromStart ? { in: sourceIn + delta * rate * (clip.reverse ? -1 : 1) } : {}) }) : len;
     return updateClip(rippled, selection, {
-        len,
+        len: fitted,
         ...(fromStart ? { start: item.start + delta, ...(selection.track !== 'text' ? { in: sourceIn + delta * rate * (clip.reverse ? -1 : 1) } : {}) } : {}),
         ...(selection.track !== 'text' ? { fadeIn: Math.min(clip.fadeIn ?? 0, len), fadeOut: Math.min(clip.fadeOut ?? 0, len) } : {}),
     });

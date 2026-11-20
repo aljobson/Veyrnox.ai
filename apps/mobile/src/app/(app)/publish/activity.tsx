@@ -92,7 +92,7 @@ export default function ActivityScreen() {
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16 },
+    screen: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 12 },
     row: { paddingVertical: 12, gap: 2, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
     action: { color: colors.text, fontSize: 15 },
     detail: { color: colors.body, fontSize: 13 },

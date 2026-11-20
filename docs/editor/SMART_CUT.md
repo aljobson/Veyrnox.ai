@@ -1,6 +1,6 @@
 # Smart Cut — timed transcription and silence removal
 
-**Status:** server and phone implementation draft built; flags OFF, model inactive, migrations unapplied. Regression suites are added; database execution and reserved fal admission integration remain unverified; see [speech-cut ADR](../adr/0331-mobile-speech-cut.md).
+**Status:** on in production since 2026-11-07 (#1997: `speechCut` in the production `EDITOR_RUNTIME_FLAGS`, catalog row `elevenlabs-scribe-v2` activated at 3 credits by migration 0453, then repriced to a flat 10 credits by migration 0547; the production row read 10 on 2026-11-19; migration 0566 lowered it to **5 credits**, applied to production on 2026-11-19 and read back as 5). Migrations 0451-0453 are on `main` and the apply-migrations workflow has since applied later ones in order; this was not confirmed against the live database. The production database read on 2026-11-19 showed the `speech_analyses` table present, fal reserved-only capacity policy off and admission not paused. Still unverified: the phone build flag, and the live probes listed in the ADR. See [speech-cut ADR](../adr/0331-mobile-speech-cut.md).
 **Extends:** [Clip Editor PRD](./PRD.md) and [captions addendum](./CAPTIONS.md).
 
 ## Product slice
@@ -8,10 +8,14 @@
 The first speech-aware slice is intentionally narrow:
 
 1. Analyse each selected clip into a versioned, provider-neutral timed transcript.
-2. Keep transcript-backed ranges and remove pauses of at least 0.75 seconds.
+2. Keep transcript-backed ranges and remove pauses of at least 0.75 seconds (the Balanced pacing; Snappy and Relaxed use other lengths, see below).
 3. Add 120 ms of context at each kept edge, merge overlaps, and reintroduce the shortest pauses when needed to stay inside the existing 10-section limit.
 4. Stop at the Clip Editor's existing 60-second output limit.
 5. Let the user preview every boundary and apply the resulting ranges to the existing trim/stitch renderer.
+
+Pause length is chosen with the pacing buttons (ADR-0331 follow-on S1): **Snappy** removes pauses of 0.40 s or more and keeps 80 ms at each edge, **Balanced** (the default, same as before) 0.75 s and 120 ms, **Relaxed** 1.20 s and 180 ms. These values are Veyrnox's own starting points to be tuned on real recordings, not figures taken from another product. The planner records the preset on the plan (`silencePreset`). The phone planner has the same presets in `silenceRanges` and keeps Balanced until its sheet gets a selector.
+
+Each analysis record carries a derived `timingQuality`: `word` for Scribe (a cut can fall between any two words) and `phrase` for Wizper (pauses inside a phrase cannot be seen). A phrase-level analysis adds a review warning to the plan. The contract stays at version 1; stored records without the field get it from their provider.
 
 This slice does not score faces, delivery, framing, or technical quality. It does not align alternate takes to a script, so a transcript-backed section cannot be swapped onto an unanalysed take.
 
@@ -85,7 +89,7 @@ The source fingerprint must change when the stored object changes, preventing a 
 3. Extended provider probe for long clips, additional languages/codecs and signed webhook failures.
 4. Phone quote/confirmation, progress, reviewable silence/retake suggestions and atomic Apply remain flag-off, with planner parity and installed test-renderer coverage. The host waived ARTEMIS exploration; device layout/accessibility checks remain unperformed.
 5. Script-to-transcript alignment and alternate-take comparison.
-6. Optional filler-word suggestions; never remove uncertain words without review.
+6. Optional filler-word suggestions; never remove uncertain words without review. **Detection is built, review screens are not:** `app/veyrnox/_lib/smartCutFillers.js` (phone twin `apps/mobile/src/lib/speechFillers.ts`) proposes padded removals for pure hesitation sounds (en um/uh/er/hmm, es, de, fr, pt, ru lists) from a word-level analysis. It returns nothing for phrase-level timing, an unknown language, or a script without a lexicon (zh, ja, ko, hi, ar), and never proposes meaningful words such as "like" or "so". The phone review is the "Remove ums and uhs" option in the editor AI menu (same sheet, checkboxes and single Undo as the other speech cuts). On the web, once a clip is analysed, the Smart Cut planner offers an opt-in "Also remove ums and uhs" box with a checkbox per suggestion; ticked ranges are cut out of the kept sections (`removals` on `buildSpeechAwareCutPlan`), and the 10-section limit can merge one back, which the plan warns about. Web copy is English only for now, like the rest of the web Smart Cut strings.
 
 ## Create Best Cut (disabled implementation, ADR-0334)
 

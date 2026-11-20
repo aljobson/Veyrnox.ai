@@ -41,10 +41,10 @@ export class GatewayError extends Error {
  * On 5xx or shape error → throws with .code = 'gateway_error'.
  *
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
- * @param {RequestInit & {preserveUploadErrors?: boolean}} [init]
+ * @param {RequestInit & {preserveUploadErrors?: boolean, beforeSend?: () => void}} [init]
  */
 export async function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot, mfaRetried = false) {
-  const { preserveUploadErrors, ...requestInit } = init;
+  const { preserveUploadErrors, beforeSend, ...requestInit } = init;
   const assertCurrentBrand = () => { if (brandSnapshot !== undefined) assertSocialBrandSnapshot(brandSnapshot); };
   assertCurrentBrand();
   const token = await getFreshAccessToken();
@@ -72,6 +72,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     headers['content-type'] = 'application/json';
   }
   let res;
+  beforeSend?.();
   try {
     res = await fetch(`/api/v1${path}`, { ...requestInit, headers });
   } catch {
@@ -87,7 +88,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
   if (res.status === 401) {
     // The gateway rejected our token: drop it so a revoked session cannot linger.
     if (getSession()?.access_token === token) {
-      clearSession();
+      clearSession('expired');
       dispatchAuthRequired();
     }
     throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' });
@@ -209,7 +210,7 @@ export async function gatewayDownload(path) {
   if (selectedBrand) headers['x-publish-brand-id'] = selectedBrand;
   const res = await fetch(`/api/v1${path}`, { headers });
   if (!getSession() || getSession()?.user?.id !== account) throw new GatewayError('account changed', { status: 409, code: 'account_changed' });
-  if (res.status === 401) { clearSession(); dispatchAuthRequired(); throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' }); }
+  if (res.status === 401) { clearSession('expired'); dispatchAuthRequired(); throw new GatewayError('unauthenticated', { status: 401, code: 'unauthenticated' }); }
   if (!res.ok) {
     let body = null; try { body = await res.json(); } catch { /* binary failures are not expected */ }
     const failure = apiErrorDetails(body, res.status);

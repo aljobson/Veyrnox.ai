@@ -26,6 +26,8 @@ const FROZEN = { TemplateRecipe: 'b8266a3e7eccadda1ffcb7499f6bd6e887ac1a2765c2b2
 const digest = text => createHash('sha256').update(text).digest('hex');
 const versions = file => [readFileSync(file, 'utf8')];
 const webMocks = {
+  './TemplateSwapBoundary.js': { useResolvedSwap: () => ({ offer: null, loading: false }) },
+  './SwapAttemptStatus.js': { SwapAttemptStatus: () => null },
   react: React, 'next/link': { __esModule: true, default: 'a' }, 'next/navigation': { useRouter: () => ({}) },
   '../../../components/I18nProvider.jsx': { useI18n: () => ({ t }) },
   '../../../lib/i18n/rich': { rich: value => value },
@@ -66,6 +68,7 @@ test('mobile template: flag-off render tree matches the frozen checkout', () => 
       '../../../lib/i18n': { t }, '../../../lib/i18n/translate': { rawText: value => value },
       '../../../components/ui': { Button: 'button', Card: 'card', Chip: 'chip', Text: 'text', TextField: 'field', themedStyles: () => ({}), useThemedStyles: () => ({}) },
       '../../../lib/templateClips': { useTemplateClipAvailable: () => null },
+      '../../../lib/templateSwap/availability': { useSwapAvailability: () => null },
       '../../../lib/templateFidelity': { templateContract: () => undefined, templatePhotosUnavailable: () => false, templatePhotoHints: () => [] },
       '../../../lib/templateChoices': { templateModelEligible: () => true, templateOptions: () => ({ aspects: [], durations: [5], duration: 5 }) },
       '../../../lib/templateGenerate': { sourceUnsupported: () => false, photoSlot: () => null, inlineBlockReason: () => null, templateRequest: () => ({}) },

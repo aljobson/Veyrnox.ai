@@ -35,7 +35,7 @@ export function EntryTile({ icon, label, accessibilityLabel, onPress }: { readon
 const MAKE: readonly { readonly kind: Kind; readonly label: string; readonly badge: FeatureIcon }[] = [
     { kind: 'image', label: 'create.goal.image', badge: { icon: 'image', hue: 'sky' } },
     { kind: 'video', label: 'create.goal.video', badge: { icon: 'video', hue: 'iris' } },
-    { kind: 'audio', label: 'create.goal.audio', badge: { icon: 'audio', hue: 'rose' } },
+    { kind: 'audio', label: 'create.goal.audio', badge: { icon: 'headphones', hue: 'rose' } },
 ];
 
 // Create starts from what you want to make, not from a list of models. Each goal opens the form with its starter
@@ -133,7 +133,7 @@ export default function Create() {
                     <View style={styles.entries}>
                         <EntryTile icon="squares" label={`${t('templates.kind.video')} ${t('label.Templates')}`} onPress={() => router.push('/create/presets')} />
                         <EntryTile icon="squares" label={`${t('templates.kind.image')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'image' } })} />
-                        <EntryTile icon="squares" label={`${t('templates.kind.audio')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'audio' } })} />
+                        <EntryTile icon="audio" label={`${t('templates.kind.audio')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'audio' } })} />
                         <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
                         {PHOTO_STUDIO_ENABLED ? <EntryTile icon="smiley" label={t('liveEdit.title')} onPress={() => router.push('/live-edit')} /> : null}
                         {faceAvailable ? <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} /> : null}
