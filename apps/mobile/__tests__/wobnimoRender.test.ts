@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -9,13 +9,14 @@ import { WOBNIMO_CHARACTERS, type WobnimoId } from '../src/lib/veyCharacterChoic
 import { WOBNIMO_COLOR_GOLDENS, WOBNIMO_COLOR_POINTS } from './fixtures/wobnimoColorGoldens';
 const CanvasKitInit = require('canvaskit-wasm/bin/full/canvaskit');
 let Skia: any, ColorType: any, AlphaType: any, ImageFormat: any;
-const artifacts = join(tmpdir(), 'veyrnox-s2b-proof');
+// A private, uniquely named folder per run (never a fixed shared path in the OS temp dir).
+let artifacts = '';
 const costs: Record<string, number> = {};
 
 beforeAll(async () => {
     const kit = await CanvasKitInit({});
     ({ Skia, ColorType, AlphaType, ImageFormat } = require('@shopify/react-native-skia/lib/commonjs/mock').Mock(kit));
-    mkdirSync(artifacts, { recursive: true });
+    artifacts = mkdtempSync(join(tmpdir(), 'veyrnox-s2b-proof-'));
 });
 afterAll(() => {
     console.info('Wobnimo CanvasKit CPU 128x128 draw + readback ms:', JSON.stringify(costs));
