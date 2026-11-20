@@ -343,7 +343,7 @@ bbe2476669fcda9c04129f57ab4f7f67637d0d8c:app/veyrnox/_lib/music/beat/beatLatency
 3d1816425a7f48e70ed3092fe596c98a37edc345:tests/jobsLookup.test.mjs:generic-api-key:10
 # The same fake idempotency key fixture, under the squash commit on main (#2418). The entry above names the pre-squash commit, which no longer exists, so history failed on every PR. Fixture value only; not a credential.
 d720f7b2fb2f85d66b9aa98047ee3b3a58dff50b:tests/jobsLookup.test.mjs:generic-api-key:10
-# Frozen template hash in the replacement-templates baseline (PR 2518): a sha256 next to a template id, not a credential.
-06b036b17f2a77214c4f373df35b0164fe673860:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
-# Fake idempotency key in the Kling cap test (PR 2518), first commit only; renamed in the next commit. Fixture value only.
+
+# PR 2518 (Kling prompt cap), pre-squash commit: a fake test idempotency key and a table of template hashes (fixtures, not secrets).
 06b036b17f2a77214c4f373df35b0164fe673860:tests/klingV3PromptCap.test.mjs:generic-api-key:55
+06b036b17f2a77214c4f373df35b0164fe673860:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
