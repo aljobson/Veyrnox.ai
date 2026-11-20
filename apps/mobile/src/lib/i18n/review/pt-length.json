@@ -3570,6 +3570,114 @@
     "ratio": 1.7
   },
   {
+    "id": "editorText.font",
+    "english": "Font",
+    "translation": "Tipo de letra",
+    "ratio": 3.25
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Com serifa",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Fonte personalizada",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorText.letterSpacing",
+    "english": "Letter spacing",
+    "translation": "Espaçamento entre letras",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorText.shadowBlur",
+    "english": "Shadow blur",
+    "translation": "Desfoque da sombra",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Deslocamento horizontal da sombra",
+    "ratio": 4.13
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Deslocamento vertical da sombra",
+    "ratio": 3.88
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Entrada",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Saída",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "Citação com serifa",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorText.preset6",
+    "english": "Typewriter",
+    "translation": "Máquina de escrever",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.preset7",
+    "english": "Warm label",
+    "translation": "Etiqueta acolhedora",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName1",
+    "english": "Fade",
+    "translation": "Desvanecer",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Deslizar à esquerda",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Deslizar para a direita",
+    "ratio": 2.09
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Deslizar para cima",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Deslizar para baixo",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Balanço",
+    "ratio": 1.75
+  },
+  {
     "id": "library.useForLipSync",
     "english": "Use for lip sync",
     "translation": "Usar para sincronizar lábios",

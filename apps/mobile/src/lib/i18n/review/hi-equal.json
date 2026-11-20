@@ -80,5 +80,6 @@
   "beat.kit.808": "Same in hi: a loanword, brand-style name or number used unchanged in this language.",
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
+  "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending."
 }

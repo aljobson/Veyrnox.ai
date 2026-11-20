@@ -2034,6 +2034,42 @@
     "ratio": 1.67
   },
   {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "إزاحة الظل أفقيًا",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "إزاحة الظل عموديًا",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "بداية",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "نهاية",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "اقتباس بخط ذي زوائد",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "انزلاق للأعلى",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

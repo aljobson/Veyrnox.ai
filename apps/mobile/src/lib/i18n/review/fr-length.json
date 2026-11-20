@@ -5778,6 +5778,132 @@
     "ratio": 1.9
   },
   {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "Avec empattement",
+    "ratio": 3.2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Police personnalisée",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Décalage horizontal de l’ombre",
+    "ratio": 3.75
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Décalage vertical de l’ombre",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Entrée",
+    "ratio": 3
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Sortie",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.apply",
+    "english": "Apply",
+    "translation": "Appliquer",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "Citation avec empattement",
+    "ratio": 2.27
+  },
+  {
+    "id": "editorText.preset7",
+    "english": "Warm label",
+    "translation": "Étiquette chaleureuse",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorText.animationName2",
+    "english": "Slide left",
+    "translation": "Glisser vers la gauche",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.animationName3",
+    "english": "Slide right",
+    "translation": "Glisser vers la droite",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.animationName4",
+    "english": "Slide up",
+    "translation": "Glisser vers le haut",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorText.animationName5",
+    "english": "Slide down",
+    "translation": "Glisser vers le bas",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorText.animationName9",
+    "english": "Wipe from left",
+    "translation": "Balayage depuis la gauche",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorText.animationName10",
+    "english": "Wipe from right",
+    "translation": "Balayage depuis la droite",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.animationName11",
+    "english": "Wipe from top",
+    "translation": "Balayage depuis le haut",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorText.loopName1",
+    "english": "Float",
+    "translation": "Flottement",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName2",
+    "english": "Pulse",
+    "translation": "Pulsation",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.loopName3",
+    "english": "Turn",
+    "translation": "Rotation",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Balancement",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.loopName6",
+    "english": "Wobble",
+    "translation": "Oscillation",
+    "ratio": 1.83
+  },
+  {
     "id": "library.useForLipSync",
     "english": "Use for lip sync",
     "translation": "Utiliser pour la synchronisation labiale",
