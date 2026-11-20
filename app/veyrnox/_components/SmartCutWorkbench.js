@@ -107,7 +107,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
               onTimeUpdate={(event) => {
                 const current = event.currentTarget.currentTime;
                 setPlayhead(current);
-                if (current >= end) {
+                if (!event.currentTarget.paused && current >= end) {
                   event.currentTarget.pause();
                   event.currentTarget.currentTime = start;
                   setPlayhead(start);
@@ -173,7 +173,13 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
 }
 function TimelineThumbnail({ item }) {
   const asset = useAssetUrl(item.job_id, item.asset_url);
+  const videoRef = useRef(null);
+  const start = clipStart(item);
+  useEffect(() => {
+    if (videoRef.current?.readyState >= 1) videoRef.current.currentTime = start;
+  }, [start]);
   return <video
+    ref={videoRef}
     src={asset.url}
     muted
     playsInline
@@ -184,7 +190,7 @@ function TimelineThumbnail({ item }) {
     onError={asset.onError}
     onLoadedMetadata={(event) => {
       asset.onLoad();
-      event.currentTarget.currentTime = clipStart(item);
+      event.currentTarget.currentTime = start;
     }}
   />;
 }

@@ -89,7 +89,11 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     setEditState((state) => commitSmartCutEditState(state, change(state.items)));
   };
   const update = (i, patch) => {
-    commitItems((current) => current.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+    commitItems((current) => {
+      const item = current[i];
+      if (!item || Object.entries(patch).every(([key, value]) => Object.is(item[key], value))) return current;
+      return current.map((x, k) => (k === i ? { ...x, ...patch } : x));
+    });
   };
   const updateMetadata = (uid, patch) => {
     setEditState((state) => patchSmartCutMetadataState(state, uid, patch));
@@ -147,6 +151,10 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const units = Math.max(1, Math.ceil(output / UNIT_S), steps);
   const cost = credits5s != null && output > 0 ? credits5s * units : null;
   const blocked = !items.length || !loaded || mixed || badRange || tooManyClips || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
+
+  useEffect(() => {
+    if (confirmCreate && (cost == null || blocked)) setConfirmCreate(false);
+  }, [blocked, confirmCreate, cost]);
 
   async function submit() {
     if (blocked) return;
