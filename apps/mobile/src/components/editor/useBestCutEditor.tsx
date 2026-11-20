@@ -22,16 +22,16 @@ export function useBestCutEditor(session: Session, projectId: string, autoOpen: 
         result: comparison && after && changed ? <BestCutResult onOpen={() => session.setPlaying(false)} before={comparison.before} after={after} plan={comparison.plan} captionsOmitted={comparison.captionsOmitted} refunded={comparison.refunded} api={session.api} uris={session.localMediaUris} /> : null,
         sheet: open && quote ? <BestCutSheet api={session.api} projectId={projectId} quote={quote} onClose={() => setOpen(false)} onApply={value => {
             const current = session.currentDocument();
-            if (!current || current.project_id !== projectId || !session.sync.live() || session.sync.replacing || captured.current?.owner !== getCacheUser() || captured.current?.revision !== session.getEditRevision()) return false;
-            let before = timelineOf(current.timeline);
-            if (framesIn(before) === 0) {
-                before = value.before;
-                session.markDocument({ ...current, schema_version: 3, timeline: before }, false);
-            }
-            session.markDocument({ ...current, schema_version: 3, timeline: value.timeline });
+            if (!current || current.project_id !== projectId || !session.sync.live() || session.sync.replacing || captured.current?.owner !== getCacheUser()) return { status: 'not-live' };
+            if (captured.current?.revision !== session.getEditRevision()) return { status: 'stale' };
+            const currentTimeline = timelineOf(current.timeline);
+            const before = framesIn(currentTimeline) === 0 ? value.before : currentTimeline;
+            const historyBase = framesIn(currentTimeline) === 0 ? { ...current, schema_version: 3 as const, timeline: before } : undefined;
+            const result = session.markDocument({ ...current, schema_version: 3, timeline: value.timeline }, true, historyBase);
+            if (result.status !== 'accepted') return result;
             session.setLocalMediaUris(uris => ({ ...uris, ...value.uris }));
             session.setPlaying(false); session.setFrame(0); session.setSelection(null); session.setSelections([]);
-            setComparison({ before, plan: value.plan, captionsOmitted: value.captionsOmitted, refunded: value.refunded }); return true;
+            setComparison({ before, plan: value.plan, captionsOmitted: value.captionsOmitted, refunded: value.refunded }); return result;
         }} /> : null,
     };
 }

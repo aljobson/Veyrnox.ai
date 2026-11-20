@@ -1,3 +1,4 @@
+import { documentProblem, type DocumentCommitResult } from '../../lib/editorDocumentGate';
 import { createFrameStore } from './editorFrameStore';
 import { PPF_DEFAULT, SEQUENCE_MAX } from '../../lib/editorTimeline';
 import { libraryMedia, LIBRARY_STOPPED } from '../../lib/editorLibraryLength';
@@ -37,6 +38,7 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const syncRef = useRef<EditorSaveSync | null>(null);
     const pastRef = useRef<ProjectDocument[]>([]);
     const futureRef = useRef<ProjectDocument[]>([]);
+    const baselineSnapshots = useRef(new WeakSet<ProjectDocument>());
     const [name, setName] = useState(t('editor.title'));
     const projectName = useRef(name);
     const [document, setDocument] = useState<ProjectDocument | null>(null);
@@ -63,48 +65,78 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const mergeBackups = useCallback((doc: ProjectDocument): ProjectDocument => {
         if (!doc.timeline) return doc;
         const tl = doc.timeline as Timeline;
+        if (!tl.media || typeof tl.media !== 'object') return doc;
         return { ...doc, timeline: { ...tl, media: Object.fromEntries(Object.entries(tl.media).map(([id, media]) => [id, backups.current[id] ? { ...media, assetSource: backups.current[id] } : media])) } };
     }, []);
 
     const playbackTimeline = timelineOf(document?.timeline);
     const playbackTotal = framesIn(playbackTimeline);
 
-    const markDocument = useCallback((next: ProjectDocument, record = true) => {
-        if (!syncRef.current?.live()) return;
+    const commitDocument = useCallback((next: ProjectDocument, record = true, historyBase?: ProjectDocument, restoreSnapshot = false): DocumentCommitResult => {
+        if (!syncRef.current?.live()) return { status: 'not-live' };
+        const currentIsValid = documentRef.current && documentProblem(documentRef.current) === null;
+        const historyProblem = historyBase && documentProblem(historyBase);
+        if (historyProblem && currentIsValid) {
+            setProblem(t(`editorEditGate.${historyProblem}`));
+            return { status: 'refused', reason: historyProblem };
+        }
+        let candidate = mergeBackups(next);
+        let problem = documentProblem(candidate);
+        // History may restore an exact accepted snapshot, but never a refused backup merge.
+        const nextProblem = documentProblem(next), knownSnapshot = restoreSnapshot && baselineSnapshots.current.has(next);
+        // Pending metadata must not block a valid edit or legacy undo; retain it for later.
+        if (problem && (nextProblem === null || knownSnapshot)) { candidate = next; problem = nextProblem; }
+        if (problem && !knownSnapshot && currentIsValid) {
+            setProblem(t(`editorEditGate.${problem}`));
+            return { status: 'refused', reason: problem };
+        }
+        next = candidate;
         if (record && documentRef.current) {
-            pastRef.current.push(documentRef.current);
+            // A failing base is allowed only when derived from an already-invalid live document.
+            if (historyBase && historyProblem) baselineSnapshots.current.add(historyBase);
+            pastRef.current.push(historyBase ?? documentRef.current);
             if (pastRef.current.length > 30) pastRef.current.shift();
             futureRef.current = [];
             setHistory({ canUndo: true, canRedo: false });
         }
-        next = mergeBackups(next);
         editRevisionRef.current++;
         documentRef.current = next;
+        if (problem) baselineSnapshots.current.add(next);
         dirtyRef.current = true;
         setDocument(next);
         syncRef.current?.changed();
         setProblem(null);
+        return { status: 'accepted' };
     }, [mergeBackups]);
+    const markDocument = useCallback((next: ProjectDocument, record = true, historyBase?: ProjectDocument) =>
+        commitDocument(next, record, historyBase), [commitDocument]);
 
     const applyBackup = useCallback((mediaId: string, source: NonNullable<Media['assetSource']>) => {
         if (!syncRef.current?.live()) return;
-        editRevisionRef.current++;
+        // Keep metadata pending until the exact merged candidate is accepted.
         backups.current[mediaId] = source;
-        pastRef.current = pastRef.current.map(mergeBackups);
-        futureRef.current = futureRef.current.map(mergeBackups);
         syncRef.current.settle();
-    }, [mergeBackups]);
+    }, []);
 
     const baseline = useCallback((head: DocumentHead) => {
         editRevisionRef.current++;
         documentRef.current = head.document; revisionRef.current = head.revision; dirtyRef.current = false;
         pastRef.current = []; futureRef.current = [];
+        baselineSnapshots.current = new WeakSet([head.document]);
         setSelection(null); setSelections([]); setClipboard(null);
         setHistory({ canUndo: false, canRedo: false }); setDocument(head.document);
         void editorDeviceMedia.hydrate(projectId, head.document).then(uris => {
             if (syncRef.current?.live() && documentIdentity(documentRef.current) === documentIdentity(head.document)) setLocalMediaUris(uris);
         }).catch(() => {});
     }, [projectId]);
+    const saved = useCallback((doc: ProjectDocument) => {
+        baselineSnapshots.current.add(doc);
+        // Only ancestors of the acknowledged save become known baseline history.
+        // A save may finish after more edits or an undo, so never bless the whole stack.
+        const history = [...pastRef.current, ...(documentRef.current ? [documentRef.current] : []), ...futureRef.current.slice().reverse()];
+        const index = history.indexOf(doc);
+        for (const snapshot of history.slice(0, index + 1)) baselineSnapshots.current.add(snapshot);
+    }, []);
     const entryImport = useCallback(async () => {
         if ((!jobId && !cuts) || initialImport.current) return;
         const token = syncRef.current?.beginImport(); if (!token) return;
@@ -155,7 +187,7 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         } catch (error) { if (isAccountChanged(error)) syncRef.current?.accountChanged(); else if (token.valid()) setProblem(t('editorCore.lengthUnknown')); }
         finally { token.end(); }
     }, [api, jobId, cuts, markDocument]);
-    const sync = useEditorSaveSync({ api, projectId, name, documentRef, revisionRef, dirtyRef, baseline, markDocument, mergeBackups, problem, setProblem, onOwnerChange, onCopy, entryImport,
+    const sync = useEditorSaveSync({ api, projectId, name, documentRef, revisionRef, dirtyRef, baseline, saved, markDocument, mergeBackups, problem, setProblem, onOwnerChange, onCopy, entryImport,
         clearDocument: () => { editRevisionRef.current++; documentRef.current = null; setDocument(null); setPlaying(false); },
     });
     syncRef.current = sync;
@@ -202,14 +234,14 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const travel = useCallback((direction: 'undo' | 'redo') => {
         const source = direction === 'undo' ? pastRef.current : futureRef.current;
         const destination = direction === 'undo' ? futureRef.current : pastRef.current;
-        const next = source.pop();
-        if (!next || !documentRef.current) return;
-        destination.push(documentRef.current);
-        markDocument(mergeBackups(next), false);
+        const next = source.at(-1), current = documentRef.current;
+        if (!next || !current || commitDocument(next, false, undefined, true).status !== 'accepted') return;
+        source.pop();
+        destination.push(current);
         setSelection(null);
         setSelections([]);
         setHistory({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
-    }, [markDocument, mergeBackups]);
+    }, [commitDocument]);
 
     const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string, requireCopy = false) => {
         const token = sync.beginImport(); if (!token) return null;

@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorExportRefusal.assets",
+    "english": "Phone export can't include project media yet.",
+    "translation": "La exportación desde el móvil aún no admite archivos multimedia del proyecto.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Turquesa",

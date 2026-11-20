@@ -1,4 +1,11 @@
+import { slicedWords } from '../../../../app/veyrnox/_lib/editorWords.mjs';
+import { slicedAnimation } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { sliceMaskKeyframes as webSliceMaskKeyframes } from '../../../../app/veyrnox/_lib/editorMask.mjs';
+import { sourceFrame } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
+import { setSequenceRate } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
 import { clipAt, updateClip, type Clip, type Media, type Selection, type TextClip, type Timeline } from './nativeEditorModel';
+// The web caller supplies the retained length; today's helper preserves keys beyond that boundary.
+const sliceMaskKeyframes = webSliceMaskKeyframes as (clip: Clip | TextClip, from: number, len: number) => ReturnType<typeof webSliceMaskKeyframes>;
 
 export const PPF_MIN = 0.25;
 export const PPF_MAX = 8;
@@ -57,10 +64,20 @@ export function moveItems(timeline: Timeline, selections: readonly Selection[], 
 }
 
 export function canTrim(item: Clip | TextClip): boolean {
+    return item.speedCurve == null && item.freezeFrame == null;
+}
+export function canChangeSpeed(item: Clip | TextClip): boolean {
     const fields = item as unknown as Record<string, unknown>;
-    const animation = item.animation as Record<string, unknown> | undefined;
-    return !['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve'].some(key => fields[key] != null)
-        && animation?.offset == null && animation?.span == null;
+    return !['words', 'keyframes', 'parameterKeyframes', 'maskKeyframes', 'speedCurve'].some(key => {
+        const value = fields[key];
+        return value != null && (!Array.isArray(value) || value.length > 0);
+    });
+}
+export function changeItemSpeed(timeline: Timeline, selection: Selection, rate: number): Timeline | null {
+    const item = clipAt(timeline, selection);
+    if (!item || selection.track === 'text' || !canChangeSpeed(item)) return null;
+    const next = setSequenceRate(timeline, selection.track, selection.id, rate) as Timeline | { error: string };
+    return 'error' in next ? null : next;
 }
 // Longest length (frames) a video or audio clip may have so it never reads past the end of its source file; null when
 // the file's length is unknown or the media is unbounded (images, graphics). Never below 1 frame and `in` never below 0.
@@ -111,10 +128,12 @@ export function trimItem(timeline: Timeline, selection: Selection, edge: 'in' | 
     const len = item.len + (fromStart ? -delta : delta);
     const rippled = followers.reduce((next, { track, other }) => updateClip(next, { track, id: other.id }, { start: other.start + delta }), timeline);
     // A clip that was already longer than its file (older edits) is healed by any trim, not grown further.
-    const fitted = bounded ? fitLength(media, { ...clip, len, ...(fromStart ? { in: sourceIn + delta * rate * (clip.reverse ? -1 : 1) } : {}) }) : len;
+    const fitted = bounded ? fitLength(media, { ...clip, len, ...(fromStart ? { in: sourceFrame(clip, delta) } : {}) }) : len;
     return updateClip(rippled, selection, {
         len: fitted,
-        ...(fromStart ? { start: item.start + delta, ...(selection.track !== 'text' ? { in: sourceIn + delta * rate * (clip.reverse ? -1 : 1) } : {}) } : {}),
-        ...(selection.track !== 'text' ? { fadeIn: Math.min(clip.fadeIn ?? 0, len), fadeOut: Math.min(clip.fadeOut ?? 0, len) } : {}),
+        ...slicedWords(item, fromStart ? delta : 0), ...slicedAnimation(item, fromStart ? delta : 0),
+        ...(item.maskKeyframes ? { maskKeyframes: sliceMaskKeyframes(item, fromStart ? delta : 0, fitted) } : {}),
+        ...(fromStart ? { start: item.start + delta, ...(selection.track !== 'text' ? { in: sourceFrame(clip, delta) } : {}) } : {}),
+        ...(selection.track !== 'text' ? { fadeIn: Math.min(clip.fadeIn ?? 0, fitted), fadeOut: Math.min(clip.fadeOut ?? 0, fitted) } : {}),
     });
 }
