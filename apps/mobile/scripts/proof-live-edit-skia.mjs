@@ -129,19 +129,19 @@ try {
     assert.equal(wigStatus(standard.wig, standard.hair, { ...inference, hair: null }, w, h), 'coverage-unknown', 'no hair mask = coverage unknown');
     assert.equal(wigStatus(normalizeStack().wig, standard.hair, inference, w, h), 'off');
     assert.deepEqual(draw(wigStack('bob'), { ...inference, hair: { width: 64, height: 64, hair: outside } }).pixels.length, bytes.length);
-    // ---- 3D wigs (S9): the overlay is rendered elsewhere (three.js in the WebView); Skia only composites it, for preview and export alike ----
+    // ---- 3D wigs (S9): the native overlay is supplied separately; Skia only composites it, for preview and export alike ----
     {
         // A stand-in overlay (opaque band above the face, transparent below): proves the compositing path, not the wig's look (the browser proof does that).
         const overlay = new Uint8Array(w * h * 4); for (let y = 0; y < 90; y++) for (let x = 40; x < 216; x++) overlay.set([120, 70, 40, 255], (y * w + x) * 4);
         const overlayData = Skia.Data.fromBytes(overlay), raw = Skia.Image.MakeImage({ width: w, height: h, colorType: types.ColorType.RGBA_8888, alphaType: types.AlphaType.Unpremul }, overlayData, w * 4); overlayData.dispose();
-        const png = raw.encodeToBase64(); raw.dispose();
+        const overlayImage = () => raw.makeNonTextureImage();
         const stack3d = (extra = {}) => normalizeStack({ wig: { style: '3d-bob', strength: 1, ...extra } });
         const wig3d = stack3d().wig, hairShade = normalizeStack().hair;
         assert.equal(wig3d.style, '3d-bob', 'a 3D style survives stack normalization');
         assert.equal(planWig(wig3d, hairShade, inference, w, h).status, 'loading', 'no overlay yet = loading, nothing drawn');
         assert.deepEqual(draw(stack3d()).pixels, bytes, 'loading draws nothing');
         const key = overlayKey(wig3d, inference.landmarks, w, h);
-        putOverlay(key, { status: 'ready', png, fade: 1 });
+        putOverlay(key, { status: 'ready', image: overlayImage(), fade: 1 });
         assert.equal(planWig(wig3d, hairShade, inference, w, h).status, 'ready');
         const withWig = draw(stack3d()).pixels;
         assert.ok(diffCount(withWig, bytes) > 10000, 'the overlay is composited');
@@ -161,12 +161,12 @@ try {
         putOverlay(key, { status: 'unavailable' });
         assert.equal(planWig(wig3d, hairShade, inference, w, h).status, 'unavailable', 'a failed render says so');
         assert.deepEqual(draw(stack3d()).pixels, bytes, 'unavailable draws nothing');
-        putOverlay(key, { status: 'ready', png, fade: .4 });
+        putOverlay(key, { status: 'ready', image: overlayImage(), fade: .4 });
         assert.equal(planWig(wig3d, hairShade, inference, w, h).status, 'angle', 'a partial fade is reported as angle');
         // Contract: a head part-way through the fade draws the wig faded (like 2D); only a fully faded one (fade 0, above) draws nothing.
         const faded = draw(stack3d()).pixels;
         assert.ok(diffCount(faded, bytes) > 2000 && diffCount(faded, withWig) > 2000, 'a partial fade draws a fainter wig, not nothing and not full')
-        clearOverlays();
+        clearOverlays(); raw.dispose();
         assert.equal(planWig(wig3d, hairShade, inference, w, h).status, 'loading', 'clearing forgets overlays');
         console.log('Software Skia 3D wigs: overlay composited for preview and export (replay equality, tolerance 0); loading/angle/unavailable/no-face/strength 0 draw nothing; opacity and tint are real; nothing below the overlay changes.');
     }

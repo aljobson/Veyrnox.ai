@@ -20,11 +20,11 @@ const { polygonFromLandmarks, LEFT_EYE, RIGHT_EYE, LEFT_BROW, RIGHT_BROW, LIPS }
 export type WigStatus = 'off' | 'face-required' | 'loading' | 'angle' | 'unavailable' | 'ready' | 'coverage-unknown' | 'uncovered' | 'angle-uncovered';
 type Tint = { rgb: number[]; amount: number } | null;
 type ArtPlan = { kind: 'art'; art: WigArt; image: SkImage; pixels: [number, number]; fit: Fit; opacity: number; fade: number; holes: number[][][]; tint: Tint };
-// A 3D wig (S9) arrives as a full-image RGBA overlay already rendered, fitted and face-carved by the offline WebView (three.js): drawn as-is.
+// A 3D wig arrives as a full-image RGBA overlay rendered, fitted and face-carved by native Skia: drawn as-is.
 type OverlayPlan = { kind: 'overlay'; image: SkImage; pixels: [number, number]; opacity: number; fade: number; tint: Tint };
 export type WigPlan = ArtPlan | OverlayPlan;
 
-// ---- 3D overlays: produced asynchronously by Wig3dBridge, read synchronously by planWig so preview and export share one path. ----
+// ---- 3D overlays: produced by NativeWig3d, read synchronously by planWig so preview and export share one path. ----
 export type Overlay3d = { status: 'ready' | 'angle' | 'face-required' | 'unavailable'; image: SkImage | null; fade: number };
 const overlays = new Map<string, Overlay3d>(), pinned = new Set<string>(), MAX_OVERLAYS = 4;
 /** Identifies one rendered overlay: the style and fit controls, the photo size and the exact landmarks it was fitted to. */
@@ -34,14 +34,10 @@ export function overlayKey(wig: Wig, points: Float32Array, w: number, h: number)
     return `${wig.style}|${wig.size.toFixed(3)}|${wig.offset.toFixed(3)}|${w}x${h}|${(hash >>> 0).toString(16)}`;
 }
 export const getOverlay = (key: string) => overlays.get(key);
-export function putOverlay(key: string, entry: { status: Overlay3d['status']; png?: string; fade?: number }): void {
-    // A corrupt payload must end as `unavailable`, never as an exception out of a message handler (and the temporary data is always released).
-    let image: SkImage | null = null;
-    if (entry.png) {
-        let data: ReturnType<typeof Skia.Data.fromBase64> | null = null;
-        try { data = Skia.Data.fromBase64(entry.png); image = Skia.Image.MakeImageFromEncoded(data); } catch { image = null; } finally { data?.dispose(); }
-    }
-    const old = overlays.get(key); old?.image?.dispose(); overlays.delete(key);
+/** Transfers ownership of a non-texture image to the cache. */
+export function putOverlay(key: string, entry: { status: Overlay3d['status']; image?: SkImage | null; fade?: number }): void {
+    const image = entry.image ?? null;
+    const old = overlays.get(key); if (old?.image !== image) old?.image?.dispose(); overlays.delete(key);
     overlays.set(key, { status: image || entry.status !== 'ready' ? entry.status : 'unavailable', image, fade: entry.fade ?? 1 });
     // Never evict an overlay an export is holding: a save must draw the wig it was started with, or refuse, never silently omit it.
     for (const candidate of [...overlays.keys()]) { if (overlays.size <= MAX_OVERLAYS) break; if (!pinned.has(candidate)) { overlays.get(candidate)?.image?.dispose(); overlays.delete(candidate); } }
