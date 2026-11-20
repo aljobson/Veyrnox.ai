@@ -90,6 +90,7 @@ export const MENU_ICONS = {
     aperture: require('../../assets/icons/aperture.png'),
     googleG: require('../../assets/icons/google-g.png'),
     playlist: require('../../assets/icons/playlist.png'),
+    usersThree: require('../../assets/icons/users-three.png'),
     compass: require('../../assets/icons/compass.png'),
     vinylRecord: require('../../assets/icons/vinyl-record.png'),
     microphone: require('../../assets/icons/microphone.png'),

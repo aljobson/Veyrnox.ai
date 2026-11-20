@@ -70,6 +70,7 @@ export default function MusicLibrary() {
         {results.songs?.state === 'on' ? <>
             <Button label={t('music.create.title')} onPress={() => router.push('/music/create' as never)} />
             <ListRow icon="playlist" title={t('musicPlaylists.title')} accessibilityLabel={t('musicPlaylists.title')} onPress={() => router.push('/music/playlists' as never)} />
+            <ListRow icon="usersThree" title={t('musicPublic.explore')} accessibilityLabel={t('musicPublic.explore')} onPress={() => router.push('/music/explore' as never)} />
             <ListRow icon="compass" title={t('musicDiscover.title')} accessibilityLabel={t('musicDiscover.title')} onPress={() => router.push('/music/discover' as never)} />
         </> : null}
         {off ? <EmptyState title={t('music.off')} body={t('music.offBody')} actionLabel={t('music.back')} href="/audio" /> : <>

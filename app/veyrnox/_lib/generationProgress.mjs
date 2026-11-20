@@ -18,6 +18,9 @@ const MODEL_EXPECTED_MS = {
   'mmaudio-v2': 180 * SECOND,
   'seedance-2.0-fast': 120 * SECOND,
   'auto-short-32s': 360 * SECOND,
+  // Template swaps (Kling O1 reference, 5 s): not timed end to end yet; the owner's
+  // production runs took a few minutes, longer than the 150 s video default.
+  'kling-o1-reference': 240 * SECOND,
 };
 const VIDEO_HINT = /(video|kling|seedance|veo|sora|wan|hailuo|runway|luma|pika|avatar|lipsync|swap)/i;
 const AUDIO_HINT = /(audio|music|voice|tts|speech|sound|song)/i;

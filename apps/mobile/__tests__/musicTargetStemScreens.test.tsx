@@ -1,3 +1,4 @@
+import { shareStemFile, sweepStemFiles } from '../src/lib/music/stemFiles';
 import { act, StrictMode } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
@@ -11,6 +12,7 @@ import { t } from '../src/lib/i18n';
 import { SONG_ID, deferred } from './fixtures/musicActions';
 import { targetSong, targetQuote, targetStart, targetReplay, targetRequest, targetAsset, residualAsset } from './fixtures/musicTargetStems';
 const mockApi = { request: jest.fn() }, mockPush = jest.fn();
+jest.mock('../src/lib/music/stemFiles', () => ({ shareStemFile: jest.fn(async () => {}), sweepStemFiles: jest.fn() }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => ({ id: '11111111-2222-4333-8444-555555555555' }) }));
@@ -97,13 +99,14 @@ test('ready fetches each fresh asset only on each tap, with a shared double-tap 
         mockApi.request.mockImplementationOnce(() => wait.promise);
         const first = button(assetLabel(kind)), other = button(assetLabel(kind === 'target' ? 'residual' : 'target'));
         await act(async () => { first.props.onClick({ nativeEvent: {} }); first.props.onClick({ nativeEvent: {} }); other.props.onClick({ nativeEvent: {} }); });
-        expect(open).toHaveBeenCalledTimes(kind === 'target' ? 0 : 2);
+        expect(shareStemFile).toHaveBeenCalledTimes(kind === 'target' ? 0 : 2);
         await act(async () => wait.resolve(asset));
         const fresh = { ...asset, url: `${asset.url}?fresh=2` }; mockApi.request.mockResolvedValueOnce(fresh);
-        await click(assetLabel(kind)); expect(open).toHaveBeenLastCalledWith(fresh.url);
+        await click(assetLabel(kind)); expect(shareStemFile).toHaveBeenLastCalledWith({ url: fresh.url, mimeType: fresh.mime_type,
+            sizeBytes: fresh.size_bytes, requestId: targetStart.request_id, kind, isCurrent: expect.any(Function) });
         expect(mockApi.request.mock.calls.filter(([p]) => p.endsWith(`/${kind}`))).toHaveLength(2);
     }
-    expect(open).toHaveBeenCalledTimes(4);
+    expect(shareStemFile).toHaveBeenCalledTimes(4); expect(open).not.toHaveBeenCalled(); expect(sweepStemFiles).toHaveBeenCalled();
 });
 test.each(['target', 'residual'] as const)('%s rejects non-HTTPS links before opening', async kind => {
     const open = jest.spyOn(RN.Linking, 'openURL').mockResolvedValue(undefined); await ready();
@@ -114,7 +117,7 @@ test.each(['target', 'residual'] as const)('account change cannot open late %s a
     const open = jest.spyOn(RN.Linking, 'openURL').mockResolvedValue(undefined); await ready();
     const wait = deferred<typeof targetAsset>(); mockApi.request.mockImplementationOnce(() => wait.promise); await click(assetLabel(kind));
     await act(async () => bindCacheUser('other-target-user')); await act(async () => wait.resolve({ ...targetAsset, kind }));
-    expect(open).not.toHaveBeenCalled(); expect(button(assetLabel(kind))).toBeUndefined();
+    expect(open).not.toHaveBeenCalled(); expect(shareStemFile).not.toHaveBeenCalled(); expect(button(assetLabel(kind))).toBeUndefined();
 });
 test.each(['quote', 'confirm', 'status', 'asset'])('call-time unavailable at %s hides the feature', async step => {
     const off = new ApiError(404, 'music_target_stems_unavailable');
@@ -150,4 +153,21 @@ test('StrictMode loads a fresh flow and poll ceiling offers manual refresh', asy
     await review(); await confirm(); await act(async () => jest.advanceTimersByTimeAsync(300000));
     expect(text(t('musicActions.action.waiting')).length).toBeGreaterThan(0); const count = mockApi.request.mock.calls.length;
     await click(t('musicActions.action.refresh')); expect(mockApi.request).toHaveBeenCalledTimes(count + 1);
+});
+
+test('native target sharing locks both buttons and its session callback expires on unmount', async () => {
+    await ready(); const wait = deferred<void>();
+    jest.mocked(shareStemFile).mockReturnValueOnce(wait.promise);
+    await click(assetLabel('target'));
+    expect(button(assetLabel('target')).props.accessibilityState.disabled).toBe(true);
+    expect(button(assetLabel('residual')).props.accessibilityState.disabled).toBe(true);
+    const { isCurrent } = jest.mocked(shareStemFile).mock.calls[0][0]; expect(isCurrent()).toBe(true);
+    await act(async () => root.unmount()); expect(isCurrent()).toBe(false);
+    await act(async () => wait.resolve()); root = createRoot();
+});
+test('native target failures reuse the translated share error', async () => {
+    await ready(); jest.mocked(shareStemFile).mockRejectedValueOnce(new ApiError(0, 'stem_share_failed'));
+    await click(assetLabel('residual'));
+    expect(text(t('job.shareFailed')).length).toBeGreaterThan(0);
+    expect(button(assetLabel('residual')).props.accessibilityState.disabled).toBe(false);
 });
