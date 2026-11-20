@@ -3,8 +3,13 @@ import { TITLE_STYLES } from '../../../../../../app/veyrnox/_lib/editorPresets.m
 import { t, rawText } from '../../../lib/i18n';
 import { touchTarget } from '../../../lib/a11y';
 import { editorTextPreviewStyle } from '../../../lib/editorTextPreview';
-import { colors, ds, type } from '../../../theme';
+import { colors, ds, type, tokensForScheme } from '../../../theme';
 import { styles } from '../fullEditorStyles';
+function sampleSurface(color: string) {
+    const [r, g, b] = [1, 3, 5].map(index => parseInt(color.slice(index, index + 2), 16) / 255)
+        .map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4);
+    return tokensForScheme(.2126 * r + .7152 * g + .0722 * b < .179 ? 'light' : 'dark').surface;
+}
 export function TextStyleCatalog({ onInsert }: { onInsert(name: string): void }) {
     const labels: Record<string, string> = {
         "Clean title": t('editorText.preset0'),
@@ -28,8 +33,8 @@ export function TextStyleCatalog({ onInsert }: { onInsert(name: string): void })
         <Text accessibilityRole="header" style={styles.sectionTitle}>{t('editorText.catalog')}</Text>
         <View style={local.grid}>{TITLE_STYLES.map(preset => <Pressable key={preset.name} accessibilityRole="button"
             accessibilityLabel={rawText(labels[preset.name])} onPress={() => onInsert(preset.name)} style={[touchTarget, local.tile]}>
-            <View style={[local.sample, { backgroundColor: styles.previewFrame.backgroundColor }]}>
-                <Text style={editorTextPreviewStyle(preset.style, preset.size, Platform.OS)}>{rawText('Aa')}</Text>
+            <View style={[local.sample, { backgroundColor: sampleSurface(preset.style.color) }]}>
+                <Text style={editorTextPreviewStyle(preset.style, preset.size, Platform.OS, { outline: true })}>{rawText('Aa')}</Text>
             </View>
             <Text style={local.label}>{labels[preset.name]}</Text>
         </Pressable>)}</View>

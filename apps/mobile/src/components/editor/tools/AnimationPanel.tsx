@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { ANIMATION_CATALOG, LOOP_CATALOG } from '../../../../../../app/veyrnox/_lib/editorAnimationCatalog.mjs';
-import { t, formatNumber } from '../../../lib/i18n';
+import { t, plural, formatNumber } from '../../../lib/i18n';
 import { touchTarget } from '../../../lib/a11y';
 import type { AnimationMode } from '../../../lib/editorTextEdit';
 import { ds } from '../../../theme';
@@ -41,7 +41,7 @@ export function AnimationPanel({ selection, selected, textActions }: Pick<ToolPa
     };
     const labels = mode === 'loop' ? loopLabels : animationLabels, catalog = mode === 'loop' ? LOOP_CATALOG : ANIMATION_CATALOG;
     const current = selected?.animation?.[mode === 'loop' ? 'combo' : mode] ?? 'none';
-    const timing = (frames: number) => t('editorText.framesSeconds', { frames: formatNumber(frames, 0), seconds: (frames / 30).toFixed(2) });
+    const timing = (frames: number) => plural('editorText.framesSeconds', frames, { seconds: formatNumber(frames / 30, 2) });
     return <>
         <PanelHeading title={t('editor.animation')} detail={selection ? t('editor.layermotion') : t('editor.selectalayer')} />
         {selected && (selection?.track === 'text' || selection?.track === 'video') ? <>

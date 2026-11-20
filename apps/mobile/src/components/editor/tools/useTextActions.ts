@@ -8,18 +8,18 @@ export function useTextActions({ timeline, selection, applyTimeline, setProblem,
     timeline: Timeline; selection: Selection | null; applyTimeline(next: Timeline): boolean; setProblem(message: string | null): void;
     setSelection(next: Selection | null): void; setSelections(next: Selection[]): void; setTool(tool: Tool): void; frameStore: FrameStore;
 }) {
-    const commit = (result: TextEditResult, track = selection?.track ?? 'text') => {
+    const commit = (result: TextEditResult, track = selection?.track ?? 'text', textOnly = false) => {
         if ('refused' in result) {
             setProblem(result.refused === 'locked' ? t('editor.unlockoraddatrackfirst', { value1: track })
-                : result.refused === 'select' ? t('editorText.visualSelection') : t('editorEditGate.invalid'));
+                : result.refused === 'select' ? (textOnly ? t('editor.selectatextlayeronthetimeline') : t('editorText.visualSelection')) : t('editorEditGate.invalid'));
             return false;
         }
         if (!applyTimeline(result.timeline)) return false;
         setProblem(null); return true;
     };
     return {
-        style: (key: TextStyleKey, value: string | number) => commit(textStyleEdit(timeline, selection, key, value)),
-        typography: (key: TypographyKey, value: string | number | boolean) => commit(typographyEdit(timeline, selection, key, value)),
+        style: (key: TextStyleKey, value: string | number) => commit(textStyleEdit(timeline, selection, key, value), selection?.track, true),
+        typography: (key: TypographyKey, value: string | number | boolean) => commit(typographyEdit(timeline, selection, key, value), selection?.track, true),
         insertPreset: (name: string) => {
             const sample = name === 'Lower third' ? t('editorText.lowerThirdSample') : t('editor.yourtitle');
             const result = titlePresetInsert(timeline, name, frameStore.get(), sample);
