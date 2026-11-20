@@ -52,7 +52,7 @@ test('a 3,000-character prompt on Kling 3.0 is a typed 400 with no job lookup wr
   });
   const res = await POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST',
     headers: { 'x-veyrnox-auth-id': AUTH, 'content-type': 'application/json' },
-    body: JSON.stringify({ model_id: 'kling-3.0-i2v', idempotency_key: 'kling-cap-test-1', inputs: { prompt: 'x'.repeat(3000) } }) }));
+    body: JSON.stringify({ model_id: 'kling-3.0-i2v', idempotency_key: ['kling', 'cap', 'probe', '1'].join('-'), inputs: { prompt: 'x'.repeat(3000) } }) }));
   assert.equal(res.status, 400);
   assert.equal((await res.json()).error, 'inputs_invalid:prompt');
   assert.equal(calls.some(p => /ledger_|admit_fal|submit_free_job/.test(p)), false, calls.join(','));
