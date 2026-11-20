@@ -29,7 +29,7 @@ test('audio reports global cycle steps and re-reads edits even inside one lookah
     let now = 0, fire = () => {};
     const node = () => ({ gain: { value: 1 }, pan: { value: 0 }, connect: jest.fn() });
     const playPad = jest.fn();
-    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, playPad };
+    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, live: {}, startRun: () => ({}), stopRun: jest.fn(), setTrackMix: jest.fn(), playMidi: jest.fn(), playPad };
     let doc = setCycle(beat(), { on: true, start: 960, end: 1920 });
     const steps: number[] = [];
     const audio = createBeatAudioFromEngine({ engine: engine as never, setTimer: fn => { fire = fn; return 1; }, clearTimer: () => {} });
@@ -49,7 +49,7 @@ test('audio reports global cycle steps and re-reads edits even inside one lookah
 test('audio stops scheduling instead of throwing when the beat leaves the store mid-play', async () => {
     let now = 0, fire = () => {};
     const node = () => ({ gain: { value: 1 }, pan: { value: 0 }, connect: jest.fn() });
-    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, playPad: jest.fn() };
+    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, live: {}, startRun: () => ({}), stopRun: jest.fn(), setTrackMix: jest.fn(), playMidi: jest.fn(), playPad: jest.fn() };
     let doc: ReturnType<typeof beat> | undefined = beat();
     const audio = createBeatAudioFromEngine({ engine: engine as never, setTimer: fn => { fire = fn; return 1; }, clearTimer: () => {} });
     await audio.play(() => doc);
