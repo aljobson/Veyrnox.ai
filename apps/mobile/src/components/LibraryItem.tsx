@@ -9,9 +9,15 @@ import { playSelection } from '../lib/haptics';
 import { retentionOf, rowStatus } from '../lib/libraryView';
 import type { Job, Kind } from '../lib/media';
 import { LibraryMedia, type LibraryMediaProps } from './library/LibraryMedia';
+import { AudioSeekBar } from './AudioSeekBar';
+import { AUDIO_ICONS } from '../lib/audioHub';
 import { ds } from '../theme';
 
+const THUMBNAIL_SIZE = 72;
+
 interface Props {
+    readonly audioSeek?: { position: number; duration: number; onSeek(seconds: number): void };
+    readonly onLipSync?: () => void;
     readonly job: Job;
     readonly retentionKnown: boolean;
     readonly now: number;
@@ -35,7 +41,7 @@ const STAR_PULSE = 1.06;
 
 // One creation in the Library: what it is, its state, its price, when its file goes, and the actions that apply.
 // A failed job says how many credits came back; a file near the end of its life says when.
-export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media }: Props) {
+export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media, audioSeek, onLipSync }: Props) {
     const styles = useThemedStyles(sheets);
     const status = rowStatus(job);
     const retention = retentionKnown ? retentionOf(job, now) : { kind: 'none' } as const;
@@ -80,6 +86,9 @@ export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starre
                 {retentionText ? <Text variant="footnote" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null}
                 </View>
             </Card>
+            {!grid && kind === 'audio' && audioSeek ? <View style={styles.seek}>
+                <AudioSeekBar {...audioSeek} label={name} testID="library-audio-position" />
+            </View> : null}
             <View style={styles.actions}>
                 <Animated.View style={popStyle}>
                     <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={rawText(t('library.favouriteLabel', { name }))} accessibilityState={{ selected: starred }} onPress={toggleStar} label={t('library.favouriteLabel', { name })} icon={starred ? 'starFill' : 'star'} iconOnly />
@@ -89,6 +98,9 @@ export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starre
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('library.scheduleLabel', { name }))} onPress={onSchedule} label={t('library.schedule')} />
                 ) : null}
                 {canAsk && !grid ? <Button variant="secondary" label={t('chatDepth.ask')} accessibilityLabel={rawText(t('chatDepth.askLabel', { name }))} onPress={onAsk} /> : null}
+                {canReuse && kind === 'audio' && !grid && onLipSync ? (
+                    <Button variant="secondary" icon={AUDIO_ICONS.lipSync} containerStyle={styles.lipSync} textStyle={styles.lipSyncText} label={t('library.useForLipSync')} accessibilityLabel={rawText(t('library.useForLipSyncLabel', { name }))} onPress={onLipSync} />
+                ) : null}
                 {canReuse && !grid ? (
                     <Button variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(t('library.reuseLabel', { name }))} onPress={onReuse} label={t('library.reuse')} />
                 ) : null}
@@ -104,7 +116,7 @@ const sheets = themedStyles((p) => ({
     gridCard: { flex: 1, margin: ds.space.xs, padding: ds.space.md, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md },
     main: { padding: 0, borderWidth: 0, borderRadius: 0, backgroundColor: 'transparent', boxShadow: 'none', gap: ds.space.xs, minHeight: 44 },
     square: { width: '100%', aspectRatio: 1 },
-    thumbnail: { width: 72, height: 72 },
+    thumbnail: { width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE },
     horizontal: { flexDirection: 'row' },
     copy: { flex: 1, gap: ds.space.xs },
     statusChip: { position: 'absolute', top: ds.space.xs, start: ds.space.xs, borderRadius: ds.radius.xs, padding: ds.space.xs, backgroundColor: p.bgElevated1 },
@@ -112,5 +124,8 @@ const sheets = themedStyles((p) => ({
     status: { color: p.accent, },
     statusBad: { color: p.danger },
     muted: { color: p.textTertiary, },
+    lipSync: { maxWidth: '100%' },
+    lipSyncText: { flexShrink: 1 },
+    seek: { flexDirection: 'row', paddingStart: THUMBNAIL_SIZE + ds.space.xs },
     actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.sm },
 }));
