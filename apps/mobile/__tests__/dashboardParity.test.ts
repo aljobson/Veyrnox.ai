@@ -25,8 +25,11 @@ describe('the native Explore dashboard mirrors the signed-in website', () => {
         expect(explore).toContain('oddling-body-chaos.webp');
         expect(explore).toContain("t('explore.heroTitle')");
         expect(explore.indexOf('<StartOption href="/chat"')).toBeLessThan(explore.indexOf('oddling-body-chaos.webp'));
-        expect(explore).toContain('presetPrice(preset)');
-        expect(explore).toContain('styles.grid');
+        // The template grid (poster cards with their price, audio cards as on the web) lives in its own component.
+        const grid = read('components', 'home', 'ExploreTemplateGrid.tsx');
+        expect(explore).toContain('<ExploreTemplateGrid');
+        expect(grid).toContain('presetPrice(preset)');
+        expect(grid).toContain('styles.grid');
     });
 });
 
