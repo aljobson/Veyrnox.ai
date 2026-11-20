@@ -3528,6 +3528,72 @@
     "ratio": 2.38
   },
   {
+    "id": "speech.speed",
+    "english": "Speed",
+    "translation": "Velocidad",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculina",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.inhale",
+    "english": "Inhale",
+    "translation": "Inhalación",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "Exhalación",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "Bocanada",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.sighs",
+    "english": "Sigh",
+    "translation": "Suspiro",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "Resoplido",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Chasquido de labios",
+    "ratio": 2.11
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Tarareo",
+    "ratio": 2.33
+  },
+  {
+    "id": "speech.tone.Rich",
+    "english": "Rich",
+    "translation": "Profunda",
+    "ratio": 2
+  },
+  {
     "id": "editorText.serif",
     "english": "Serif",
     "translation": "Con remates",

@@ -3570,6 +3570,60 @@
     "ratio": 1.7
   },
   {
+    "id": "speech.speed",
+    "english": "Speed",
+    "translation": "Velocidade",
+    "ratio": 2
+  },
+  {
+    "id": "speech.addCredits",
+    "english": "Add credits",
+    "translation": "Adicionar créditos",
+    "ratio": 1.64
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculina",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.sighs",
+    "english": "Sigh",
+    "translation": "Suspiro",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Estalo de lábios",
+    "ratio": 1.78
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Cantarolar",
+    "ratio": 3.33
+  },
+  {
+    "id": "speech.tone.Warm",
+    "english": "Warm",
+    "translation": "Acolhedora",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.tone.Rich",
+    "english": "Rich",
+    "translation": "Encorpada",
+    "ratio": 2.25
+  },
+  {
     "id": "editorText.font",
     "english": "Font",
     "translation": "Tipo de letra",

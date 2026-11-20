@@ -81,5 +81,6 @@
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
-  "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending."
+  "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending.",
+  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose."
 }

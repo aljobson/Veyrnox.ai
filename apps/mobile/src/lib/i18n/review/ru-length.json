@@ -3738,6 +3738,72 @@
     "ratio": 1.7
   },
   {
+    "id": "speech.pitch",
+    "english": "Pitch",
+    "translation": "Высота тона",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Мужской",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Грусть",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Частое дыхание",
+    "ratio": 3.5
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Шмыгнуть носом",
+    "ratio": 2.8
+  },
+  {
+    "id": "speech.cue.burps",
+    "english": "Burp",
+    "translation": "Отрыжка",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Напевание",
+    "ratio": 3
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Шипение",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.tone.Rich",
+    "english": "Rich",
+    "translation": "Насыщенный",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.tone.Relaxed",
+    "english": "Relaxed",
+    "translation": "Расслабленный",
+    "ratio": 1.86
+  },
+  {
+    "id": "speech.tone.Serene",
+    "english": "Serene",
+    "translation": "Безмятежный",
+    "ratio": 1.83
+  },
+  {
     "id": "editorText.serif",
     "english": "Serif",
     "translation": "С засечками",

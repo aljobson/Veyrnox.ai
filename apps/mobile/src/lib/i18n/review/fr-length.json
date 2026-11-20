@@ -5778,6 +5778,102 @@
     "ratio": 1.9
   },
   {
+    "id": "speech.addCredits",
+    "english": "Add credits",
+    "translation": "Ajouter des crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculine",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
+    "ratio": 2
+  },
+  {
+    "id": "speech.emotion.angry",
+    "english": "Angry",
+    "translation": "En colère",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.groans",
+    "english": "Groan",
+    "translation": "Gémissement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Halètement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.inhale",
+    "english": "Inhale",
+    "translation": "Inspiration",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "Expiration",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "Sursaut",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Reniflement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "Ébrouement",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Claquement de lèvres",
+    "ratio": 2.22
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Fredonnement",
+    "ratio": 4
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Sifflement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.sneezes",
+    "english": "Sneeze",
+    "translation": "Éternuement",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.tone.Warm",
+    "english": "Warm",
+    "translation": "Chaleureuse",
+    "ratio": 2.75
+  },
+  {
     "id": "editorText.serif",
     "english": "Serif",
     "translation": "Avec empattement",
