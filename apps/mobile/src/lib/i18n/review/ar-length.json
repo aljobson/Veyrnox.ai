@@ -2016,6 +2016,24 @@
     "ratio": 1.67
   },
   {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.cursorLeft",
+    "english": "Cursor earlier",
+    "translation": "نقل المؤشر إلى وقت أسبق",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatPiano.cursorRight",
+    "english": "Cursor later",
+    "translation": "نقل المؤشر إلى وقت لاحق",
+    "ratio": 1.92
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

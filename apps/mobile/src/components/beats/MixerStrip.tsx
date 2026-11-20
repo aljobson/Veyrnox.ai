@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { Button, SegmentedControl, Text, themedStyles, useThemedStyles } from '../ui';
 import { StrengthSlider } from '../StrengthSlider';
+import { instrumentLabel, type MidiTrackDoc } from '../../lib/beatNative/midi';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
 import { DRUM_KITS, type BeatTrackDoc } from '../../lib/beatNative/doc';
@@ -20,8 +21,8 @@ export function MixerStrip({ track, index, canRemove, onGain, onPan, onMute, onS
     return (
         <View style={s.strip} accessibilityLabel={name}>
             <Text variant="bodyStrong">{name}</Text>
-            <SegmentedControl value={track.kit} onChange={onKit} options={DRUM_KITS.map(k => ({ value: k.id, label: t(`beat.kit.${k.id}`) }))}
-                accessibilityLabel={t('beat.kit', { track: name })} />
+            {track.kind === 'midi' ? <Text>{instrumentLabel((track as MidiTrackDoc).instrument)}</Text> : <SegmentedControl value={track.kit} onChange={onKit} options={DRUM_KITS.map(k => ({ value: k.id, label: t(`beat.kit.${k.id}`) }))}
+                accessibilityLabel={t('beat.kit', { track: name })} />}
             <StrengthSlider tone="surface" label={t('beat.gain', { track: name })} value={track.gain} onChange={onGain} />
             <StrengthSlider tone="surface" label={t('beat.pan', { track: name })} value={toSlider(track.pan)} onChange={v => onPan(fromSlider(v))} />
             <View style={s.buttons}>

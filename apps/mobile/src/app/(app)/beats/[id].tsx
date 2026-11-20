@@ -6,6 +6,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { PadGrid } from '../../../components/beats/PadGrid';
 import { StepGrid } from '../../../components/beats/StepGrid';
+import { BeatInstrumentsSection, openPiano } from '../../../components/beats/BeatInstrumentsSection';
 import { MixerStrip } from '../../../components/beats/MixerStrip';
 import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
 import {
@@ -121,6 +122,7 @@ export default function BeatEditor() {
                     onKit={kit => apply(d => setTrackKit(d, track.id, kit))}
                     onRemove={() => apply(d => removeTrack(d, track.id))} />
             ))}
+            <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
             <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
                 onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
             {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}

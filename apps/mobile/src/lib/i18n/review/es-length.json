@@ -3462,6 +3462,48 @@
     "ratio": 2.38
   },
   {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Ajuste de rejilla",
+    "ratio": 4.25
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Desactivado",
+    "ratio": 3.67
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Mover a la izquierda",
+    "ratio": 2.22
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Mover a la derecha",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatPiano.selectAll",
+    "english": "Select all notes",
+    "translation": "Seleccionar todas las notas",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatPiano.resized",
+    "english": "Resized notes",
+    "translation": "Duración de notas modificada",
+    "ratio": 2.15
+  },
+  {
+    "id": "beatPiano.selected.octaveUp",
+    "english": "Selected notes octave up",
+    "translation": "Subir octava de las notas seleccionadas",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

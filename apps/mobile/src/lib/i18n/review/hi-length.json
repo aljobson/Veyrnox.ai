@@ -2076,6 +2076,30 @@
     "ratio": 2.13
   },
   {
+    "id": "beatPiano.uses",
+    "english": "Regions using this clip: {n}",
+    "translation": "इस क्लिप का उपयोग करने वाले क्षेत्रों की संख्या: {n}",
+    "ratio": 1.86
+  },
+  {
+    "id": "beatPiano.quantise",
+    "english": "Quantise",
+    "translation": "क्वांटाइज़ करें",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "सुर ऊँचा करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatPiano.cursorRight",
+    "english": "Cursor later",
+    "translation": "कर्सर बाद में ले जाएँ",
+    "ratio": 1.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

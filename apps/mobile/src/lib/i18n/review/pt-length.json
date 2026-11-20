@@ -3468,6 +3468,60 @@
     "ratio": 1.7
   },
   {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Ajuste à grelha",
+    "ratio": 3.75
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatPiano.zoomIn",
+    "english": "Zoom in",
+    "translation": "Aumentar zoom",
+    "ratio": 1.86
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Mover para a esquerda",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Mover para a direita",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.resized",
+    "english": "Resized notes",
+    "translation": "Duração das notas alterada",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.hint",
+    "english": "Tap to add or select. Hold a note before dragging to move it. Hold a selected note’s right edge before dragging to resize. Hold a velocity bar before dragging vertically to adjust velocity. Pinch to zoom.",
+    "translation": "Toque para adicionar ou selecionar. Mantenha uma nota premida antes de a arrastar para a mover. Mantenha a margem direita de uma nota selecionada premida antes de a arrastar para alterar a duração. Mantenha uma barra de velocidade premida antes de a arrastar verticalmente para ajustar a velocidade. Use dois dedos para ampliar.",
+    "ratio": 1.61
+  },
+  {
+    "id": "beatPiano.library.title",
+    "english": "Instruments",
+    "translation": "Biblioteca de instrumentos",
+    "ratio": 2.36
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Kits de bateria",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
