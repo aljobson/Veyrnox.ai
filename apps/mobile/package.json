@@ -41,6 +41,7 @@
     "react": "19.3.1",
     "react-native": "0.88.1",
     "react-native-passkeys": "^0.4.2",
+    "react-native-audio-api": "1.0.1",
     "react-native-purchases": "11.0.2",
     "react-native-purchases-ui": "11.0.2",
     "react-native-safe-area-context": "~5.10.1",
