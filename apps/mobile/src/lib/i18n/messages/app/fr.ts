@@ -6867,7 +6867,6 @@ export default {
     "beat.track.max": "Un beat peut avoir au maximum {max} pistes.",
     "beat.refused": "Le changement n’a pas été appliqué : {reason}",
     "beat.audioError": "Le son n’a pas pu démarrer sur cet appareil. Tu peux continuer à modifier.",
-    "beat.saveNote": "Pas encore sauvegardé. Ce beat est perdu à la fermeture de l’app.",
 
     "musicTrackAdd.title": "Ajouter une partie vocale ou instrumentale",
     "musicTrackAdd.mode": "Type de partie",

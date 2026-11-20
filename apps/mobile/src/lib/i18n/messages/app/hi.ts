@@ -6782,7 +6782,6 @@ export default {
     "beat.track.max": "एक बीट में अधिकतम {max} ट्रैक हो सकते हैं।",
     "beat.refused": "बदलाव लागू नहीं हुआ: {reason}",
     "beat.audioError": "इस डिवाइस पर ध्वनि शुरू नहीं हो सकी। आप संपादन जारी रख सकते हैं।",
-    "beat.saveNote": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",
 
     "musicTrackAdd.title": "वोकल या वाद्य भाग जोड़ें",
     "musicTrackAdd.mode": "भाग का प्रकार",

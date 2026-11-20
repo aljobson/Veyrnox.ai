@@ -6698,7 +6698,6 @@ export default {
     "beat.track.max": "ビートのトラックは最大 {max} 本です。",
     "beat.refused": "変更は適用されませんでした: {reason}",
     "beat.audioError": "この端末では音を開始できませんでした。編集は続けられます。",
-    "beat.saveNote": "まだ保存されていません。アプリを閉じるとこのビートは失われます。",
 
     "musicTrackAdd.title": "ボーカルまたは楽器パートを追加",
     "musicTrackAdd.mode": "パートの種類",

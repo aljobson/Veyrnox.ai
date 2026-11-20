@@ -6698,7 +6698,6 @@ export default {
     "beat.track.max": "비트에는 트랙을 최대 {max}개까지 둘 수 있습니다.",
     "beat.refused": "변경이 적용되지 않았습니다: {reason}",
     "beat.audioError": "이 기기에서 소리를 시작하지 못했습니다. 계속 편집할 수 있습니다.",
-    "beat.saveNote": "아직 저장되지 않았습니다. 앱을 닫으면 이 비트가 사라집니다.",
 
     "musicTrackAdd.title": "보컬 또는 악기 파트 추가",
     "musicTrackAdd.mode": "파트 유형",

@@ -6698,7 +6698,6 @@ export default {
     "beat.track.max": "一个节拍最多可有 {max} 条音轨。",
     "beat.refused": "更改未应用：{reason}",
     "beat.audioError": "此设备无法启动声音。你仍可以继续编辑。",
-    "beat.saveNote": "尚未保存。关闭应用后此节拍将丢失。",
 
     "musicTrackAdd.title": "添加人声或器乐声部",
     "musicTrackAdd.mode": "声部类型",
