@@ -1,17 +1,5 @@
 [
   {
-    "area": "enhance",
-    "text": "LOCAL PREVIEWVideo EnhancePreview unavailableVideo Enhance is available only in an enabled local development preview.Back to Explore"
-  },
-  {
-    "area": "enhance",
-    "text": "Choose a short clip, adjust the look, and download a copy. Your video stays in this browser. This experimental preview uses no credits.Choose videoYour next edit starts hereUP TO 15 SECONDS▷A natural finish. Still you.Start with a single-person clip. MP4, WebM or MOV, up to 100 MiB and a longest edge of 1920 pixels.AdjustmentsResetSkin smoothing 30%Start low to retain texture. Smoothing can also affect hands or hair covering the face. Turn it off for those clips, and check eyes and head turns before keeping your export.Colour lookNaturalWarmCoolSoft cinemaLook intensity 100%Export videoKeep this tab visible during export. Export supports MP4 input with one video track and up to one AAC audio track. Subtitles and descriptive metadata are not included. Output is H.264 MP4 when this browser supports it."
-  },
-  {
-    "area": "enhance",
-    "text": "Choose a short clip, adjust the look, and download a copy. Your video stays in this browser. This experimental preview uses no credits.Choose another videoUser video unchanged10.5sORIGINALENHANCEDPlayback position 1.2 / 10.5sPlay comparisonOne face tracked. Smoothing is applied to the face region.AdjustmentsResetSkin smoothing 30%Start low to retain texture. Smoothing can also affect hands or hair covering the face. Turn it off for those clips, and check eyes and head turns before keeping your export.Colour lookNaturalWarmCoolSoft cinemaLook intensity 100%Export videoKeep this tab visible during export. Export supports MP4 input with one video track and up to one AAC audio track. Subtitles and descriptive metadata are not included. Output is H.264 MP4 when this browser supports it."
-  },
-  {
     "area": "controls",
     "text": "TransformPosition X (%)Position Y (%)Scale (%)Rotation (degrees)Opacity (%)Picture fitcontaincoverFlip horizontalFlip verticalCrop and maskCrop x (%)Crop y (%)Crop width (%)Crop height (%)Blend modeNormalmultiplyscreenoverlaydarkenlightendifferenceColourBrightnessContrastSaturationHueBlurReset colour"
   },

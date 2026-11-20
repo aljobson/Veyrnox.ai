@@ -7,9 +7,8 @@ import { slotsFor } from './sources';
 // only the task names, blurbs and the order live here. __tests__/toolDirectory.test.ts reads the web file and fails if
 // the tasks, their order or their models differ, except the ids in PHONE_ONLY below.
 
-// Models the phone lists before the web does. Costumes needs a style picker the web Create page does not have yet,
-// so it is not on the web /tools page; remove it from this list when the web gains one.
-export const PHONE_ONLY: readonly string[] = ['face-costume'];
+// Models the phone lists before the web does. None at present.
+export const PHONE_ONLY: readonly string[] = [];
 
 export interface ToolTask {
     readonly key: string;

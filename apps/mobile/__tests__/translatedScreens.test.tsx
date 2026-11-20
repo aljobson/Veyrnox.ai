@@ -53,7 +53,6 @@ jest.mock('../src/lib/montage', () => ({ ...jest.requireActual('../src/lib/monta
 jest.mock('../src/lib/creatorProfileStore', () => ({ loadVibe: async () => null }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 100, useBalanceDetails: () => ({ details: null, failed: false, refresh: async () => {} }) }));
 jest.mock('../src/lib/useFreeLeft', () => ({ useFreeLeft: () => ({}) }));
-jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => false }));
 jest.mock('../src/lib/usePublishApi', () => ({ usePublishApi: () => mockApi }));
 jest.mock('../src/lib/publish', () => ({ ...jest.requireActual('../src/lib/publish'), fetchAccounts: async () => ({ accounts: [], plan: null, features: {}, plansEnabled: true, brandRole: 'owner', accountLimit: 1, planTier: 'free' }), fetchPosts: async () => [] }));
 jest.mock('../src/lib/publishBrand', () => ({ ...jest.requireActual('../src/lib/publishBrand'), fetchBrands: async () => [] }));
