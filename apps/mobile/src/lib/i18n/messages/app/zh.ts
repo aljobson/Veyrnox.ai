@@ -6579,4 +6579,6 @@ export default {
     "beat.refused": "更改未应用：{reason}",
     "beat.audioError": "此设备无法启动声音。你仍可以继续编辑。",
     "beat.saveNote": "尚未保存。关闭应用后此节拍将丢失。",
+    "library.useForLipSync": "用于口型同步",
+    "library.useForLipSyncLabel": "将{name}用于口型同步",
 } as const;

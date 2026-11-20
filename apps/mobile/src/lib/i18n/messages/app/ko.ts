@@ -6579,4 +6579,6 @@ export default {
     "beat.refused": "변경이 적용되지 않았습니다: {reason}",
     "beat.audioError": "이 기기에서 소리를 시작하지 못했습니다. 계속 편집할 수 있습니다.",
     "beat.saveNote": "아직 저장되지 않았습니다. 앱을 닫으면 이 비트가 사라집니다.",
+    "library.useForLipSync": "립싱크에 사용",
+    "library.useForLipSyncLabel": "{name}을(를) 립싱크에 사용",
 } as const;

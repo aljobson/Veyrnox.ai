@@ -6741,4 +6741,6 @@ export default {
     "beat.refused": "A alteração não foi aplicada: {reason}",
     "beat.audioError": "Não foi possível iniciar o som neste dispositivo. Você pode continuar editando.",
     "beat.saveNote": "Ainda não salvo. Este beat é perdido quando o app é fechado.",
+    "library.useForLipSync": "Usar para sincronizar lábios",
+    "library.useForLipSyncLabel": "Usar {name} para sincronizar lábios",
 } as const;

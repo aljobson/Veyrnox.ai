@@ -6741,4 +6741,6 @@ export default {
     "beat.refused": "Le changement n’a pas été appliqué : {reason}",
     "beat.audioError": "Le son n’a pas pu démarrer sur cet appareil. Tu peux continuer à modifier.",
     "beat.saveNote": "Pas encore sauvegardé. Ce beat est perdu à la fermeture de l’app.",
+    "library.useForLipSync": "Utiliser pour la synchronisation labiale",
+    "library.useForLipSyncLabel": "Utiliser {name} pour la synchronisation labiale",
 } as const;

@@ -2040,6 +2040,12 @@
     "ratio": 2.22
   },
   {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "लिप सिंक के लिए उपयोग करें",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

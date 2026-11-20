@@ -6660,4 +6660,6 @@ export default {
     "beat.refused": "Die Änderung wurde nicht übernommen: {reason}",
     "beat.audioError": "Der Ton konnte auf diesem Gerät nicht gestartet werden. Du kannst weiter bearbeiten.",
     "beat.saveNote": "Noch nicht gespeichert. Dieser Beat geht verloren, wenn die App geschlossen wird.",
+    "library.useForLipSync": "Für Lippensynchronisation verwenden",
+    "library.useForLipSyncLabel": "{name} für Lippensynchronisation verwenden",
 } as const;

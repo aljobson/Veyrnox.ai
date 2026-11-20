@@ -3426,6 +3426,12 @@
     "ratio": 1.73
   },
   {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Usar para sincronizar lábios",
+    "ratio": 1.75
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
