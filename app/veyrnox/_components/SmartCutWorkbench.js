@@ -20,22 +20,19 @@ const time = (seconds) => `${Math.floor(Math.max(0, seconds) / 60)}:${String(Mat
 
 export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, canRedo, onUndo, onRedo }) {
   const { t } = useI18n();
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeSelection, setActiveSelection] = useState(() => ({ uid: items[0]?.uid || null, index: 0 }));
   const [activeTool, setActiveTool] = useState('smart-cut');
   const [zoom, setZoom] = useState(1);
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
   const previewRef = useRef(null);
-  const active = items[clampIndex(activeIndex, items.length)] || null;
-  const activeUid = active?.uid;
+  const matchedIndex = items.findIndex((item) => item.uid === activeSelection.uid);
+  const activeIndex = matchedIndex >= 0 ? matchedIndex : clampIndex(activeSelection.index, items.length);
+  const active = items[activeIndex] || null;
   const start = clipStart(active);
   const end = clipEnd(active);
   const playbackRate = showSlow && Number(active?.slow) > 1 ? 1 / Number(active.slow) : 1;
   const asset = useAssetUrl(active?.job_id, active?.asset_url);
-
-  useEffect(() => {
-    setActiveIndex((current) => clampIndex(current, items.length));
-  }, [items.length]);
 
   useEffect(() => {
     const next = clipStart(active);
@@ -43,14 +40,15 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
     setPlayhead(next);
     setPlaying(false);
     if (previewRef.current) previewRef.current.currentTime = next;
-  }, [activeUid, start, end]);
+  }, [active?.uid, start, end]);
 
   useEffect(() => {
     if (previewRef.current) previewRef.current.playbackRate = playbackRate;
   }, [playbackRate]);
 
   function chooseClip(index) {
-    setActiveIndex(index);
+    const nextIndex = clampIndex(index, items.length);
+    setActiveSelection({ uid: items[nextIndex]?.uid || null, index: nextIndex });
   }
 
   function stepClip(delta) {

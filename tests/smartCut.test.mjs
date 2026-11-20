@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { applySmartCutState, buildSmartCutPlan, commitSmartCutEditState, patchSmartCutMetadataState, redoSmartCutEditState, SMART_CUT_MAX_SEGMENTS, smartCutHasEdits, smartCutPlanUsesAvailableTakes, smartCutPlanWithinLimits, swapSmartCutTake, undoSmartCutEditState, undoSmartCutState } from '../app/veyrnox/_lib/smartCut.js';
+import { applySmartCutState, buildSmartCutPlan, commitSmartCutEditState, commitSmartCutGroupedEditState, endSmartCutEditGroupState, patchSmartCutMetadataState, redoSmartCutEditState, SMART_CUT_MAX_SEGMENTS, smartCutHasEdits, smartCutPlanUsesAvailableTakes, smartCutPlanWithinLimits, swapSmartCutTake, undoSmartCutEditState, undoSmartCutState } from '../app/veyrnox/_lib/smartCut.js';
 
 const clips = [
   { job_id: 'take-a', name: 'Opening take', duration: 18 },
@@ -141,7 +141,7 @@ test('Smart Cut undo restores the original list after later fine-tuning', () => 
   const fineTuned = { ...state, items: [{ ...state.items[0], in_s: 1.5 }] };
   assert.equal(smartCutHasEdits(state.items, state.smartCutApplied), false);
   assert.equal(smartCutHasEdits(fineTuned.items, fineTuned.smartCutApplied), true);
-  assert.deepEqual(undoSmartCutState(fineTuned), { items: original, smartCutSnapshot: null, smartCutApplied: null, editPast: [], editFuture: [] });
+  assert.deepEqual(undoSmartCutState(fineTuned), { items: original, smartCutSnapshot: null, smartCutApplied: null, editPast: [], editFuture: [], editGroup: null });
 });
 
 test('manual editor undo and redo restore ordered clip states', () => {
@@ -212,6 +212,23 @@ test('manual edit history is bounded and a new edit clears redo', () => {
   assert.deepEqual(state.editFuture, []);
 });
 
+test('one focused trim edit is one undo entry and undo ends its group', () => {
+  const original = [{ uid: 'a', in_s: 0, out_s: 8 }];
+  const group = 'a:in_s';
+  let state = { items: original, editPast: [], editFuture: [], editGroup: null };
+  state = commitSmartCutGroupedEditState(state, [{ ...original[0], in_s: 1 }], group);
+  state = commitSmartCutGroupedEditState(state, [{ ...original[0], in_s: 1.5 }], group);
+  assert.equal(state.editPast.length, 1);
+  assert.equal(state.editGroup, group);
+  state = undoSmartCutEditState(state);
+  assert.deepEqual(state.items, original);
+  assert.equal(state.editGroup, null);
+  state = commitSmartCutGroupedEditState(state, [{ ...original[0], in_s: 2 }], group);
+  assert.equal(state.editPast.length, 1);
+  assert.deepEqual(state.editFuture, []);
+  assert.deepEqual(undoSmartCutEditState(endSmartCutEditGroupState(state)).items, original);
+});
+
 test('the existing Clip Editor owns Smart Cut apply and the caption/export handoff', () => {
   const editor = readFileSync(new URL('../app/veyrnox/_components/EditSheet.js', import.meta.url), 'utf8');
   const planner = readFileSync(new URL('../app/veyrnox/_components/SmartCutPlanner.js', import.meta.url), 'utf8');
@@ -234,8 +251,7 @@ test('the existing Clip Editor owns Smart Cut apply and the caption/export hando
   assert.match(editor, /app\.smartCut\.price\.review/);
   assert.match(editor, /app\.smartCut\.price\.title/);
   assert.match(editor, /Object\.entries\(patch\)\.every/);
-  assert.match(editor, /if \(nextItems === state\.items\) return state;/);
-  assert.match(editor, /if \(continuesGroup\) return \{ \.\.\.state, items: nextItems, editFuture: \[\] \};/);
+  assert.match(editor, /commitSmartCutGroupedEditState\(state, nextItems, group\)/);
   assert.match(editor, /onBlur=\{onEditEnd\}/);
   assert.match(editor, /confirmCreate && \(cost == null \|\| blocked\)/);
   assert.match(editor, /\{\(showCaptions \|\| smartCut\) && <div id=\{smartCut \? 'clip-text-controls' : undefined\}/);
@@ -253,7 +269,8 @@ test('Smart Cut workbench exposes playback, timeline tools and accessible zoom',
   assert.match(workbench, /app\.smartCut\.workbench\.zoomOut/);
   assert.match(workbench, /app\.smartCut\.workbench\.zoomIn/);
   assert.match(workbench, /clipOutputDuration/);
-  assert.match(workbench, /\[activeUid, start, end\]/);
+  assert.match(workbench, /items\.findIndex\(\(item\) => item\.uid === activeSelection\.uid\)/);
+  assert.match(workbench, /matchedIndex >= 0 \? matchedIndex : clampIndex\(activeSelection\.index, items\.length\)/);
   assert.match(workbench, /!event\.currentTarget\.paused && current >= end/);
   assert.match(workbench, /\[start\]/);
   assert.match(workbench, /previewRef\.current\.playbackRate = playbackRate/);

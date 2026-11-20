@@ -11,7 +11,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { SmartCutPlanner } from './SmartCutPlanner';
 import { SmartCutAnalyse } from './SmartCutAnalyse';
 import { SmartCutWorkbench } from './SmartCutWorkbench';
-import { applySmartCutState, commitSmartCutEditState, patchSmartCutMetadataState, redoSmartCutEditState, smartCutHasEdits, undoSmartCutEditState, undoSmartCutState } from '../_lib/smartCut';
+import { applySmartCutState, commitSmartCutGroupedEditState, endSmartCutEditGroupState, patchSmartCutMetadataState, redoSmartCutEditState, smartCutHasEdits, undoSmartCutEditState, undoSmartCutState } from '../_lib/smartCut';
 import { gatewayFetch, GatewayError, makeIdempotencyKey } from '../_lib/gateway';
 
 // Clip Editor sheet (docs/editor/PRD.md §4). The server re-checks every
@@ -68,6 +68,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     smartCutApplied: null,
     editPast: [],
     editFuture: [],
+    editGroup: null,
   }));
   const { items, smartCutSnapshot, smartCutApplied, editPast, editFuture } = editState;
   const [analyses, setAnalyses] = useState(() => new Map());
@@ -84,16 +85,10 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const [pendingSmartCutApply, setPendingSmartCutApply] = useState(null);
   const [smartCutApplyRevision, setSmartCutApplyRevision] = useState(0);
   const [confirmCreate, setConfirmCreate] = useState(false);
-  const editGroupRef = useRef(null);
-
   const commitItems = (change, group = null) => {
     setEditState((state) => {
       const nextItems = change(state.items);
-      if (nextItems === state.items) return state;
-      const continuesGroup = group && editGroupRef.current === group;
-      editGroupRef.current = group;
-      if (continuesGroup) return { ...state, items: nextItems, editFuture: [] };
-      return commitSmartCutEditState(state, nextItems);
+      return commitSmartCutGroupedEditState(state, nextItems, group);
     });
   };
   const update = (i, patch, group = null) => {
@@ -103,7 +98,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
       return current.map((x, k) => (k === i ? { ...x, ...patch } : x));
     }, group);
   };
-  const finishEditGroup = () => { editGroupRef.current = null; };
+  const finishEditGroup = () => setEditState(endSmartCutEditGroupState);
   const updateMetadata = (uid, patch) => {
     setEditState((state) => patchSmartCutMetadataState(state, uid, patch));
   };

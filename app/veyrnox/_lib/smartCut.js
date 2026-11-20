@@ -198,6 +198,7 @@ export function applySmartCutState(state, nextItems) {
     items: nextItems,
     smartCutSnapshot: state.smartCutSnapshot || state.items,
     smartCutApplied: nextItems,
+    editGroup: null,
   };
 }
 
@@ -210,6 +211,7 @@ export function undoSmartCutState(state) {
     smartCutApplied: null,
     editPast: [],
     editFuture: [],
+    editGroup: null,
   };
 }
 
@@ -254,7 +256,18 @@ export function commitSmartCutEditState(state, nextItems) {
     items: nextItems,
     editPast: [...(state.editPast || []), state.items].slice(-30),
     editFuture: [],
+    editGroup: null,
   };
+}
+
+export function commitSmartCutGroupedEditState(state, nextItems, group = null) {
+  if (nextItems === state.items) return state;
+  if (group && state.editGroup === group) return { ...state, items: nextItems, editFuture: [] };
+  return { ...commitSmartCutEditState(state, nextItems), editGroup: group };
+}
+
+export function endSmartCutEditGroupState(state) {
+  return state.editGroup == null ? state : { ...state, editGroup: null };
 }
 
 export function undoSmartCutEditState(state) {
@@ -266,6 +279,7 @@ export function undoSmartCutEditState(state) {
     items: previous,
     editPast: past.slice(0, -1),
     editFuture: [state.items, ...(state.editFuture || [])].slice(0, 30),
+    editGroup: null,
   };
 }
 
@@ -278,5 +292,6 @@ export function redoSmartCutEditState(state) {
     items: next,
     editPast: [...(state.editPast || []), state.items].slice(-30),
     editFuture: remaining,
+    editGroup: null,
   };
 }
