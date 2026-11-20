@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorExportRefusal.speed",
+    "english": "Phone export can't include speed changes yet.",
+    "translation": "Der Export auf dem Handy unterstützt Geschwindigkeitsänderungen noch nicht.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorExportRefusal.crop",
+    "english": "Phone export can't include crop or fit settings yet.",
+    "translation": "Der Export auf dem Handy unterstützt Zuschnitt- oder Einpassungseinstellungen noch nicht.",
+    "ratio": 1.71
+  },
+  {
     "id": "brand.swatch.navy",
     "english": "Navy",
     "translation": "Dunkelblau",
