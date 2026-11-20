@@ -1,5 +1,5 @@
-import { isListenRoute } from '../lib/secretRoutes';
 import { flushInstallResetIssue } from '../lib/installReset';
+import { isListenRoute } from '../lib/secretRoutes';
 import { revokeDiscardedSession } from '../lib/auth/discardedSession';
 export { ErrorFallback as ErrorBoundary } from '../components/ErrorFallback';
 import { AnalyticsHost } from '../components/AnalyticsHost';
