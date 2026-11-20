@@ -1,6 +1,13 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "modelCompare.title": "मॉडल की तुलना करें",
+  "modelCompare.pair": "{a} बनाम {b}",
+  "modelCompare.price": "कीमत",
+  "modelCompare.value": "{name}: {value}",
+  "modelCompare.unavailable": "इन मॉडल की तुलना नहीं की जा सकती। एक ही प्रकार के दो उपलब्ध जनरेटर चुनें जिन्हें केवल टेक्स्ट निर्देश चाहिए।",
+  "modelCompare.choose": "इससे तुलना करें...",
+  "modelCompare.picker": "तुलना के लिए मॉडल चुनें",
   "mobileSwap.permission": "फ़ोटो का ऐक्सेस नहीं मिला। सेटिंग में फ़ोटो लाइब्रेरी का ऐक्सेस दें और फिर कोशिश करें।",
   "mobileSwap.photoTooLarge": "यह फ़ोटो बहुत बड़ी है। हर तरफ़ अधिकतम 8192 पिक्सल और कुल 24 मेगापिक्सल वाली फ़ोटो चुनें।",
   "mobileSwap.invalidImage": "ऐसी पढ़ी जा सकने वाली फ़ोटो चुनें जिसके आयाम जाँचे जा सकें।",

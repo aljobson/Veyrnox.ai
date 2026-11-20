@@ -13,6 +13,8 @@ export interface AudioTemplate {
     readonly negativePrompt?: string;
     readonly previewUrl: string | null;
     readonly previewAudioUrl: string | null;
+    // The licensed track's credit line, shown with the sample as its licence asks.
+    readonly attribution?: string;
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
@@ -24,8 +26,8 @@ export function parseAudioTemplates(body: unknown, base: string = API_BASE): Aud
         const r = (raw ?? {}) as Record<string, unknown>;
         const id = str(r.id), name = str(r.name), category = str(r.category), modelId = internalModelIdOrNull(str(r.modelId)), prompt = str(r.prompt);
         if (!id || !name || !category || !modelId || !prompt) return [];
-        const negativePrompt = str(r.negativePrompt);
-        return [{ id, name, category, modelId, prompt, ...(negativePrompt ? { negativePrompt } : {}), previewUrl: previewUrl(r.previewImage, base), previewAudioUrl: previewUrl(r.previewAudio, base) }];
+        const negativePrompt = str(r.negativePrompt), attribution = str(r.previewAttribution);
+        return [{ id, name, category, modelId, prompt, ...(negativePrompt ? { negativePrompt } : {}), ...(attribution ? { attribution } : {}), previewUrl: previewUrl(r.previewImage, base), previewAudioUrl: previewUrl(r.previewAudio, base) }];
     });
 }
 

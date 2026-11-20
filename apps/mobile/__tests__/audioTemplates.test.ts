@@ -25,3 +25,10 @@ test('parse keeps the artwork as an absolute address and refuses other schemes',
     expect(list.map(t => t.previewUrl)).toEqual(['https://veyrnox.ai/music-licensed/a.svg', null, null]);
     expect(list.map(t => t.previewAudioUrl)).toEqual(['https://veyrnox.ai/music-licensed/a.mp3', null, null]);
 });
+test('parse keeps the track credit line the licence asks for', () => {
+    const list = parseAudioTemplates({ templates: [
+        { id: 'a', name: 'A', category: 'MUSIC', modelId: 'm', prompt: 'p', previewAttribution: 'Music by cdk — CC BY 3.0' },
+        { id: 'b', name: 'B', category: 'MUSIC', modelId: 'm', prompt: 'p', previewAttribution: 7 },
+    ] });
+    expect(list.map(t => t.attribution)).toEqual(['Music by cdk — CC BY 3.0', undefined]);
+});

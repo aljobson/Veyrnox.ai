@@ -6,6 +6,7 @@ import { Button, Card, Icon, Text, themedStyles, useThemedStyles } from '../../.
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { fetchPremiumModels } from '../../../lib/premiumModels';
 import { modelFacts, priceUnit } from '../../../lib/modelFacts';
+import { comparableWith, compareHref } from '../../../lib/modelCompare';
 import { internalModelId } from '../../../lib/publicModelIds';
 import { plural, t } from '../../../lib/i18n';
 import { MIN_TARGET } from '../../../lib/a11y';
@@ -18,6 +19,7 @@ export default function ModelDetail() {
     const [models, setModels] = useState<CatalogModel[] | null>(null);
     const [failed, setFailed] = useState(false);
     const [attempt, setAttempt] = useState(0);
+    const [compareFor, setCompareFor] = useState<string | null>(null);
     useEffect(() => {
         let live = true;
         setFailed(false);
@@ -29,6 +31,7 @@ export default function ModelDetail() {
         return () => { live = false; };
     }, [attempt]);
     const model = typeof id === 'string' ? models?.find(m => m.id === internalModelId(id)) : undefined;
+    const peers = model && models ? comparableWith(model, models) : [];
     const all = <Button variant="secondary" label={t('modelPage.all')} onPress={() => router.push('/models')} style={styles.target} />;
     return (
         <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -53,6 +56,15 @@ export default function ModelDetail() {
                     accessibilityLabel={rawText(plural('modelPage.generateLabel', model.credits, { title: model.name }))}
                     onPress={() => router.push({ pathname: '/create/[modelId]', params: { modelId: model.id } })} style={styles.target} />}
                 <Button variant="secondary" label={t('modelPage.packs')} onPress={() => router.push('/pricing')} style={styles.target} />
+                {peers.length > 0 ? <>
+                    <Button variant="secondary" label={t('modelCompare.choose')} accessibilityState={{ expanded: compareFor === model.id }}
+                        onPress={() => setCompareFor(compareFor === model.id ? null : model.id)} style={styles.target} />
+                    {compareFor === model.id ? <Card style={styles.facts}>
+                        <Text variant="bodyStrong" accessibilityRole="header">{t('modelCompare.picker')}</Text>
+                        {peers.map(peer => <Button key={peer.id} variant="secondary" label={peer.name} style={styles.target}
+                            onPress={() => { setCompareFor(null); router.push(compareHref(model.id, peer.id)); }} />)}
+                    </Card> : null}
+                </> : null}
                 <Text variant="footnote" tone="secondary">{t('modelPage.note')}</Text>
                 <Card style={styles.facts}>
                     {modelFacts(model).map((fact, index) => <View key={index} accessible accessibilityLabel={rawText(`${fact.label}: ${fact.value}`)} style={styles.fact}>
