@@ -6,24 +6,42 @@ import { Button, ListRow, Text, themedStyles, useThemedStyles } from '../../../c
 import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { MusicNotice } from '../../../components/music/MusicNotice';
-import { dropBeat, listBeats, newBeat, subscribeBeats } from '../../../lib/beatNative/store';
+import { beatStore, hydrateBeats, dropBeat, listBeats, newBeat, subscribeBeats } from '../../../lib/beatNative/store';
+import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
+import { userIdFromToken } from '../../../lib/appCache';
+import { isRemoved } from '../../../lib/beatNative/rules';
 import { probeBeats } from '../../../lib/beatNative/probe';
 import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { ds } from '../../../theme';
 
-type State = 'checking' | 'on' | 'off' | 'offline';
+type State = 'checking' | 'on' | 'off' | 'offline' | 'error' | 'signed_out';
 
-// Beats home: new beat, the beats open in this session, open one. Availability is probed by calling the beat route.
+// Local beats remain available regardless of the account route’s availability.
 export default function BeatsHome() {
-    const { api } = useAuth(); const router = useRouter(); const s = useThemedStyles(sheets);
+    const { api, getAccessToken, generation } = useAuth(); const router = useRouter(); const s = useThemedStyles(sheets);
     const beats = useSyncExternalStore(subscribeBeats, listBeats, listBeats);
+    const [account, setAccount] = useState<{ generation: number; userId: string | null } | null>(null);
+    const userId = account?.generation === generation ? account.userId : null;
+    const linked = (id: string) => {
+        const link = beatStore.getRecord(id)?.cloud;
+        return !!(userId && link?.projectId && !isRemoved(link) && link.userId === userId);
+    };
     const [state, setState] = useState<State>('checking');
+    useLocalBeatLifecycle();
     useFocusEffect(useCallback(() => {
         let live = true;
-        void probeBeats(api).then(r => { if (live) setState(r.state === 'off' ? 'off' : r.state === 'error' && r.status === 0 ? 'offline' : 'on'); });
+        void (async () => {
+            const token = await getAccessToken?.().catch(() => null);
+            if (!live) return;
+            const id = token ? userIdFromToken(token) : null;
+            setAccount({ generation, userId: id });
+            if (!id) { setState('signed_out'); return; }
+            const result = await probeBeats(api);
+            if (live) setState(result.state);
+        })();
         return () => { live = false; };
-    }, [api]));
+    }, [api, getAccessToken, generation]));
     useAnnouncement(state !== 'checking' && state !== 'off' ? t('beat.home.loaded', { count: beats.length }) : null, { everywhere: true });
     const open = (id: string) => router.push({ pathname: '/beats/[id]', params: { id } } as never);
     const create = () => open(newBeat(t('beat.home.untitled', { n: beats.length + 1 })).id);
@@ -31,8 +49,10 @@ export default function BeatsHome() {
         <ScrollView style={s.screen} contentContainerStyle={s.content}>
             <Stack.Screen options={{ title: t('beat.title') }} />
             {state === 'checking' ? <VeyLoader label={t('beat.home.checking')} showLabel /> : null}
-            {state === 'off' ? <EmptyState title={t('beat.off')} body={t('beat.offBody')} actionLabel={t('beat.back')} href="/audio" /> : null}
-            {state === 'on' || state === 'offline' ? <>
+            {state === 'signed_out' ? <MusicNotice message={t('beat.cloud.signed_out')} /> : null}
+            {state === 'off' ? <MusicNotice message={t('beat.cloud.off')} /> : null}
+            {state === 'error' ? <><MusicNotice message={t('beat.cloud.error')} /><Button label={t('beat.retry')} onPress={() => void probeBeats(api).then(result => setState(result.state))} /></> : null}
+            {beatStore.hydrationState() === 'error' ? <><MusicNotice message={t('beat.local.loadError')} /><Button label={t('beat.retry')} onPress={() => void hydrateBeats().catch(() => undefined)} /></> : null}
                 {state === 'offline' ? <MusicNotice message={t('beat.offline')} /> : null}
                 <Button label={t('beat.home.new')} onPress={create} />
                 {beats.length === 0 ? <EmptyState title={t('beat.home.empty')} body={t('beat.home.emptyBody')} /> : beats.map(beat => (
@@ -40,11 +60,10 @@ export default function BeatsHome() {
                         <View style={s.grow}>
                             <ListRow title={beat.title} subtitle={t('beat.tempoValue', { bpm: beat.tempo.bpm })} accessibilityLabel={t('beat.home.openNamed', { title: beat.title })} onPress={() => open(beat.id)} />
                         </View>
+                        {state === 'on' && linked(beat.id) ? <Text variant="caption">{t('beat.cloud.linked')}</Text> : null}
                         <Button size="sm" variant="tertiary" label={t('beat.home.delete', { title: beat.title })} iconOnly icon="close" onPress={() => dropBeat(beat.id)} />
                     </View>
                 ))}
-                {beats.length ? <Text variant="footnote" tone="secondary">{t('beat.saveNote')}</Text> : null}
-            </> : null}
         </ScrollView>
     );
 }

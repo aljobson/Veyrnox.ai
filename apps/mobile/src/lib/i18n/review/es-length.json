@@ -3342,6 +3342,36 @@
     "ratio": 2.25
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Deshacer",
+    "ratio": 2
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Rehacer",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "beat.conflict.mine",
+    "english": "Keep mine",
+    "translation": "Conservar la mía",
+    "ratio": 1.78
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Guardado automático",
+    "ratio": 2.38
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

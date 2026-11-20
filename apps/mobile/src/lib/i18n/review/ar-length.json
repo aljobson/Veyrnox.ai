@@ -1944,6 +1944,24 @@
     "ratio": 1.88
   },
   {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "جارٍ الحفظ",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.conflict.mine",
+    "english": "Keep mine",
+    "translation": "الاحتفاظ بنسختي",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

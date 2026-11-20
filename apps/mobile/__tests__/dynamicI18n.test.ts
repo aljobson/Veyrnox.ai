@@ -11,6 +11,8 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
     'music.create.{}': ['simple', 'custom', 'empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable', 'rights_required', 'error', 'queued', 'running', 'ready', 'failed', 'refunded', 'cancelled'],
+    'beat.local.{}': ['saved', 'saving', 'error', 'busy'],
+    'beat.cloud.{}': ['checking', 'off', 'unlinked', 'other', 'signed_out', 'syncing', 'synced', 'conflict', 'paused_conflict', 'removed', 'limit', 'rate_limited', 'offline', 'error', 'takes'],
     'beat.pad.{}': ['kick', 'snare', 'hat', 'openhat', 'clap', 'tom', 'rim', 'crash'],
     'beat.kit.{}': ['acoustic', '808', 'lofi'],
     'music.tab.{}': ['songs', 'history', 'hooks'],
