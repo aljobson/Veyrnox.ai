@@ -159,8 +159,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         } };
     const adjustLength = (delta: number) => { if (selection) { const next = trimItem(timeline, selection, 'out', delta, false, frameStore.get(), advanced ? ripple : 'lane'); if (next)
         applyTimeline(next); } };
-    const speedActions = useSpeedActions({ timeline, selection, applyTimeline, setProblem, frameStore,
-        setSelection: next => { setSelection(next); setSelections(next ? [next] : []); } });
+    const speedActions = useSpeedActions({ timeline, selection, applyTimeline, setProblem, frameStore, setSelection, setSelections });
     const splitSelection = () => { if (!selection) return;
         if (selectedTrack?.locked) { setProblem(t('editor.unlockoraddatrackfirst', { value1: selection.track })); return; }
         const next = splitClip(timeline, selection, frameStore.get());

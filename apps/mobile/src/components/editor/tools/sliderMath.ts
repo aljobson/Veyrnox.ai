@@ -9,7 +9,7 @@ export function sliderValue(x: number, width: number, min: number, max: number, 
     // Imported values may be outside the track: an outward drag must not clamp them backwards.
     if (motion && ((motion.value > max && motion.delta >= 0) || (motion.value < min && motion.delta <= 0))) return motion.value;
     const value = clamp(round(clamp(min + (width > 0 ? x / width : 0) * (max - min), min, max), step), min, max);
-    const nearest = snaps.filter(point => point >= min && point <= max && Math.abs(point - value) < snapDistance)
+    const nearest = snaps.filter(point => point >= min && point <= max && Math.abs(point - value) < snapDistance - 1e-10)
         .sort((a, b) => Math.abs(a - value) - Math.abs(b - value))[0];
     return nearest ?? value;
 }

@@ -3,12 +3,11 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, ds, type } from '../../../theme';
 import { touchTarget } from '../../../lib/a11y';
 import { t, rawText } from '../../../lib/i18n';
-import { useAnnouncement } from '../../../lib/useAnnouncement';
+import { Text as AnnouncedText } from '../../ui/Text';
 export function ColourField({ label, value, swatches, onChange }: {
     label: string; value: string; swatches: readonly string[]; onChange(hex: string): void;
 }) {
     const [draft, setDraft] = useState(value), [invalid, setInvalid] = useState(false);
-    useAnnouncement(invalid ? t('editorTools.colourError') : null);
     useEffect(() => { setDraft(value); setInvalid(false); }, [value]);
     return <View style={styles.field}>
         <Text style={styles.label}>{label}</Text>
@@ -22,7 +21,7 @@ export function ColourField({ label, value, swatches, onChange }: {
                 const valid = /^#[0-9a-fA-F]{6}$/.test(hex); setInvalid(!valid);
                 if (valid) onChange(hex);
             }} style={[touchTarget, styles.input]} />
-        {invalid ? <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{t('editorTools.colourError')}</Text> : null}
+        {invalid ? <AnnouncedText variant="inherit" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{t('editorTools.colourError')}</AnnouncedText> : null}
     </View>;
 }
 const styles = StyleSheet.create({

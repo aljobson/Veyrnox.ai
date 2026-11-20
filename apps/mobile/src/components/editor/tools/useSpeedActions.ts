@@ -3,9 +3,9 @@ import { clipAt, pruneEmptiedExtraTracks, removeSelections, type Clip, type Sele
 import { freezeInsert, speedCurve, speedRate, speedReverse, type SpeedPoint, type SpeedResult } from '../../../lib/editorSpeedEdit';
 import { trimItem } from '../../../lib/editorTimeline';
 import type { FrameStore } from '../editorFrameStore';
-export function useSpeedActions({ timeline, selection, applyTimeline, setProblem, setSelection, frameStore }: {
+export function useSpeedActions({ timeline, selection, applyTimeline, setProblem, setSelection, setSelections, frameStore }: {
     timeline: Timeline; selection: Selection | null; applyTimeline(next: Timeline): boolean;
-    setProblem(message: string | null): void; setSelection(next: Selection | null): void; frameStore: FrameStore;
+    setProblem(message: string | null): void; setSelection(next: Selection | null): void; setSelections(next: Selection[]): void; frameStore: FrameStore;
 }) {
     const refuse = (reason: 'outside' | 'locked' | 'invalid') => {
         setProblem(reason === 'outside' ? t('editorTools.outside') : reason === 'locked'
@@ -30,7 +30,7 @@ export function useSpeedActions({ timeline, selection, applyTimeline, setProblem
             const result = freezeInsert(timeline, selection, frameStore.get());
             if (!commit(result) || !('timeline' in result)) return;
             const freeze = result.timeline.video.find(c => c.freezeFrame !== undefined && !timeline.video.some(old => old.id === c.id));
-            if (freeze) setSelection({ track: 'video', id: freeze.id });
+            if (freeze) { const next: Selection = { track: 'video', id: freeze.id }; setSelection(next); setSelections([next]); }
             setProblem(t('editorTools.freezeHelp'));
         },
         freezeLength: (length: number) => {
@@ -45,7 +45,7 @@ export function useSpeedActions({ timeline, selection, applyTimeline, setProblem
             if (!selection || !clip || clip.freezeFrame === undefined) return;
             if (timeline.tracks.some(track => track.id === clip.trackId && track.locked)) { refuse('locked'); return; }
             const next = pruneEmptiedExtraTracks(removeSelections(timeline, [selection], 'lane'), [clip.trackId]);
-            if (commit({ timeline: next })) setSelection(null);
+            if (commit({ timeline: next })) { setSelection(null); setSelections([]); }
         },
     };
 }

@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
-import { PanResponder, TextInput } from 'react-native';
+import { AccessibilityInfo, PanResponder, TextInput } from 'react-native';
 import { Slider } from '../src/components/editor/tools/Slider';
 import { ColourField } from '../src/components/editor/tools/ColourField';
 import { sliderValue, stepValue } from '../src/components/editor/tools/sliderMath';
@@ -13,6 +13,7 @@ test('slider clamps, rounds without drift and snaps only within distance', () =>
     expect(sliderValue(10.4, 100, 0, 10, .1, [1])).toBe(1);
     expect(sliderValue(31, 100, 0, 100, 1, [30])).toBe(31);
     expect(sliderValue(1, 1, 0, 1, 1, [.5])).toBe(1);
+    expect(sliderValue(30, 100, 0, 1, .1, [.25])).toBe(.3);
     expect(sliderValue(12, 100, 0, 10, .1, [1])).toBe(1.2);
     expect(stepValue(.2, 1, .1, 8, .1)).toBe(.3);
     expect(stepValue(8, 1, .1, 8, .1)).toBe(8);
@@ -116,7 +117,7 @@ test('dragging away and back to the controlled value releases without a change',
     } finally { spy.mockRestore(); }
 });
 
-test.each([[1.1, .1, 1, 1.1], [1.04, .1, 1, 1], [31, 1, 30, 31]])(
+test.each([[1.1, .1, 1, 1.1], [1.04, .1, 1, 1], [31, 1, 30, 31], [.3, .1, .25, .3]])(
     'slider gesture at %s uses a strict half-step snap distance', async (position, step, snap, expected) => {
         const spy = jest.spyOn(PanResponder, 'create'), onChange = jest.fn();
         try {
@@ -135,6 +136,25 @@ test.each([[1.1, .1, 1, 1.1], [1.04, .1, 1, 1], [31, 1, 30, 31]])(
         } finally { spy.mockRestore(); }
     },
 );
+
+test('colour error announces once on iOS and announces again after correction', async () => {
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {}).mockClear();
+    try {
+        await act(async () => root.render(<ColourField label="Canvas colour" value="#000000" swatches={[]} onChange={jest.fn()} />));
+        expect(announce).not.toHaveBeenCalled();
+        const endEdit = async (text: string) => {
+            const input = root.container.queryAll(n => typeof n.props.onEndEditing === 'function')[0];
+            await act(async () => input.props.onEndEditing({ nativeEvent: { text } }));
+        };
+        await endEdit('red');
+        expect(announce.mock.calls).toEqual([['Use a colour like #1a2b3c.']]);
+        await endEdit('blue');
+        expect(announce).toHaveBeenCalledTimes(1);
+        await endEdit('#1a2b3c');
+        await endEdit('red');
+        expect(announce.mock.calls).toEqual([['Use a colour like #1a2b3c.'], ['Use a colour like #1a2b3c.']]);
+    } finally { announce.mockRestore(); }
+});
 
 test.each([[2, 1], [1, 1]])('empty slider interval %s..%s blocks drag and accessibility edits', async (min, max) => {
     const { PanResponder } = require('react-native');

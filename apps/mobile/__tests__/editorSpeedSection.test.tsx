@@ -1,9 +1,11 @@
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
-import { act } from 'react';
+import { act, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { SpeedSection } from '../src/components/editor/tools/SpeedSection';
-import type { Clip } from '../src/lib/nativeEditorModel';
+import type { Clip, Selection } from '../src/lib/nativeEditorModel';
+import { useSpeedActions } from '../src/components/editor/tools/useSpeedActions';
+import { createFrameStore } from '../src/components/editor/editorFrameStore';
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -90,6 +92,27 @@ async function saved() {
     await act(async () => jest.advanceTimersByTimeAsync(900));
     return JSON.parse(puts().at(-1)![1].body).document.timeline;
 }
+test.each([true, false])('Remove freeze frame clears both selection states only when accepted: %s', async accepted => {
+    const initial = webSequenceV3();
+    Object.assign(initial.video[0], { freezeFrame: 100, volume: 0 });
+    const freeze: Selection = { track: 'video', id: 'v1' };
+    const selected: Selection[] = [{ track: 'video', id: 'v2' }, freeze];
+    let state: { selection: Selection | null; selections: Selection[]; hasFreeze: boolean };
+    function Harness() {
+        const [timeline, setTimeline] = useState(initial);
+        const [selection, setSelection] = useState<Selection | null>(freeze);
+        const [selections, setSelections] = useState(selected);
+        const options = { timeline, selection, setSelection, setSelections, setProblem: jest.fn(), frameStore: createFrameStore(),
+            applyTimeline: (next: typeof initial) => { if (accepted) setTimeline(next); return accepted; } };
+        const actions = useSpeedActions(options);
+        state = { selection, selections, hasFreeze: timeline.video.some(clip => clip.id === freeze.id) };
+        return <SpeedSection timeline={timeline} selection={selection} actions={actions} />;
+    }
+    await act(async () => root.render(<Harness />));
+    expect(state!.selections).toEqual(selected);
+    await press('Remove freeze frame');
+    expect(state!).toEqual({ selection: accepted ? null : freeze, selections: accepted ? [] : selected, hasFreeze: !accepted });
+});
 test('moving video shows named controls; accelerate commits once with web points', async () => {
     await setup();
     for (const label of ['Constant', 'Smooth', 'Accelerate', 'Decelerate', 'Pulse', 'Reverse', 'Freeze frame (2 s)']) {
