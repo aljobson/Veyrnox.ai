@@ -184,5 +184,6 @@
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
-  "editorText.preset2": "Standard notation or established style name, retained in this locale."
+  "editorText.preset2": "Standard notation or established style name, retained in this locale.",
+  "editorCaptionTools.karaoke": "Established borrowed term, retained in this language."
 }

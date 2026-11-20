@@ -1,5 +1,47 @@
 [
   {
+    "id": "editorCaptionTools.transcriptChoose",
+    "english": "Select a transcript word or caption range.",
+    "translation": "Sélectionnez un mot de la transcription ou une plage de sous-titres.",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorCaptionTools.shareSrt",
+    "english": "Share SRT",
+    "translation": "Partager en SRT",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.shareVtt",
+    "english": "Share VTT",
+    "translation": "Partager en VTT",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.wordTiming",
+    "english": "Word timing",
+    "translation": "Synchronisation des mots",
+    "ratio": 2.18
+  },
+  {
+    "id": "editorCaptionTools.find",
+    "english": "Find captions",
+    "translation": "Rechercher des sous-titres",
+    "ratio": 2
+  },
+  {
+    "id": "editorCaptionTools.noMatches",
+    "english": "No captions match.",
+    "translation": "Aucun sous-titre ne correspond.",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Tous les sous-titres synchronisés",
+    "ratio": 1.83
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "Couleur hexadécimale de {label}",

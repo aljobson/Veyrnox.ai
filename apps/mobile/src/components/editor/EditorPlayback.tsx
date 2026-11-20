@@ -1,3 +1,4 @@
+import { CaptionWords } from './CaptionWords';
 import type { ComponentProps } from 'react';
 import { Text, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
@@ -25,11 +26,14 @@ export function PlaybackPreview({ frameStore, timeline, api, playing, localMedia
 }) {
     const frame = useEditorFrame(frameStore);
     const active = activeEditorMedia(timeline, frame);
-    const caption = timeline.text.find(item => frame >= item.start && frame < item.start + item.len) ?? timeline.text[0];
+    const activeCue = timeline.text.find(item => frame >= item.start && frame < item.start + item.len);
+    const caption = activeCue ?? timeline.text[0];
     return <>
-        {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}
+        {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore}
+            fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}
         <View style={styles.safeFrame} />
-        {!active && !caption ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}
-        {caption ? <EditorTextOverlay item={caption} /> : null}
+        {!active && !caption ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>
+            {timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}
+        {activeCue?.caption ? <CaptionWords item={activeCue} frame={frame} /> : caption ? <EditorTextOverlay item={caption} /> : null}
     </>;
 }

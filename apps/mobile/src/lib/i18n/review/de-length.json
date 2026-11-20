@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Alle Untertitel mit Zeitangaben",
+    "ratio": 1.72
+  },
+  {
     "id": "editorTools.speed",
     "english": "Speed",
     "translation": "Geschwindigkeit",

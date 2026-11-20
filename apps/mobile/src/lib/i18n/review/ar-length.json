@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorCaptionTools.align",
+    "english": "Align lyrics",
+    "translation": "محاذاة كلمات الأغنية",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.lyrics",
+    "english": "Lyrics",
+    "translation": "كلمات الأغنية",
+    "ratio": 2.17
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "لون {label} بالنظام الست عشري",

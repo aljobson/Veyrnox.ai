@@ -77,6 +77,7 @@ import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
+import area_editorCaptionTools from './en/editorCaptionTools';
 import area_editorCore from './en/editorCore';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
@@ -312,6 +313,7 @@ const catalog = {
     ...area_edit,
     ...area_editor,
     ...area_editorAi,
+    ...area_editorCaptionTools,
     ...area_editorCore,
     ...area_editorEditGate,
     ...area_editorExportRefusal,
