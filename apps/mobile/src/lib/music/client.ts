@@ -1,3 +1,7 @@
+import { getCacheUser } from '../appCache';
+import { markTrackAddUnavailable } from './trackAddAvailability';
+import { isMusicTrackAddQuote, isTrackAddStart, isTrackAddRequest, isTrackAddAudio, trackAddInputError } from './validateTrackAdd';
+import type { TrackAddParameters } from './trackAddTypes';
 import type { AddSectionParameters, ReplaceParameters, MusicAddSectionQuote, MusicReplaceQuote, ReplaceCommit } from './sectionActionTypes';
 import { validSectionPosition, validSectionDuration, validSectionStyles, validSectionLyrics, validReplaceRange, isMusicAddSectionQuote, isMusicReplaceQuote, isReplaceCommit, isSectionUuid } from './validateSectionActions';
 import type { MusicExtendQuote, MusicCoverQuote, GenerationActionStart } from './generationActionTypes';
@@ -228,4 +232,39 @@ export async function commitReplaceTake(api: ApiClient, songId: string, generati
         generation_id: generationId, version_id: versionId, idempotency_key: replaceCommitKey(generationId, versionId),
     }));
     if (!isReplaceCommit(v) || v.version_id !== versionId) throw bad(); return v;
+}
+
+async function trackAddRequest(api: ApiClient, path: string, init: RequestInit = {}) {
+    const user = getCacheUser();
+    try { return await api.request<unknown>(`${BASE}/${path}`, init, { timeoutMs: 15000 }); }
+    catch (error) {
+        if (getCacheUser() === user && error instanceof ApiError && error.status === 404 && error.code === 'music_track_add_unavailable') markTrackAddUnavailable();
+        throw error;
+    }
+}
+export async function createTrackAddQuote(api: ApiClient, songId: string, versionId: string, input: TrackAddParameters, rightsConfirmed: boolean) {
+    const error = trackAddInputError(input);
+    if (error) throw new ApiError(400, error);
+    if (rightsConfirmed !== true) throw new ApiError(400, 'source_rights_required');
+    const v = await trackAddRequest(api, `songs/${encodeURIComponent(songId)}/track-add-quotes`, post({
+        version_id: versionId, mode: input.mode, prompt: input.prompt.trim(), lyrics: input.lyrics.trim(),
+        vocal_gender: input.vocal_gender ?? 'auto', rights_confirmed: true, lyrics_rights_confirmed: input.lyrics_rights_confirmed,
+    }));
+    if (!isMusicTrackAddQuote(v) || v.mode !== input.mode) throw new ApiError(200, 'bad_response');
+    return v;
+}
+export async function startTrackAdd(api: ApiClient, songId: string, quoteId: string, key: string) {
+    const v = await trackAddRequest(api, `songs/${encodeURIComponent(songId)}/track-adds`, post({ quote_id: quoteId, idempotency_key: key }));
+    if (!isTrackAddStart(v)) throw new ApiError(200, 'bad_response');
+    return v;
+}
+export async function getTrackAdd(api: ApiClient, id: string) {
+    const v = await trackAddRequest(api, `track-add-requests/${encodeURIComponent(id)}`);
+    if (!isTrackAddRequest(v) || v.id !== id) throw new ApiError(200, 'bad_response');
+    return v;
+}
+export async function getTrackAddAudio(api: ApiClient, id: string) {
+    const v = await trackAddRequest(api, `track-add-requests/${encodeURIComponent(id)}/audio`);
+    if (!isTrackAddAudio(v)) throw new ApiError(200, 'bad_response');
+    return v;
 }

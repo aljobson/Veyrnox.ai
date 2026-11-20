@@ -130,7 +130,8 @@ test('all new videos pass through the unchanged fidelity classifier', () => {
     assert.equal(actual.sourcePrompt, t.prompt, t.id);
     classes[actual.class] = (classes[actual.class] || 0) + 1;
   }
-  assert.deepEqual(classes, { 'blocked-needs-video': 37, unsupported: 9 });
+  // ADR-0309 amendment 3: two long one-photo recipes bind to the kie Seedance photo offer.
+  assert.deepEqual(classes, { 'blocked-needs-video': 37, unsupported: 9 - 2, bound: 2 });
   const videos = audit.records.filter(r => r.kind === 'video');
   assert.equal(videos.filter(r => r.sourceMinFiles === 2).length, 35);
   assert.equal(videos.filter(r => r.sourceMinFiles === 3).length, 5);

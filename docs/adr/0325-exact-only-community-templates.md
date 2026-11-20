@@ -24,7 +24,11 @@ change limits, pricing contracts, required-input validation or consent. The Synt
 model routes have a 30,000-character prompt limit, except Kling 3.0
 image-to-video, which has fal's documented 2,500 (`KLING_V3_PROMPT_MAX`,
 2026-11-20); templates whose exact prompt is longer are unsupported and refused
-before any charge, never trimmed. There are 535 prompts with explicit
+before any charge, never trimmed. Exception (ADR-0309 amendment 3): a one-photo
+template whose exact bound prompt is 2,501 to 20,000 characters binds instead to
+the kie Seedance 2 photo offer (`seedance-2.0-photo-kie`, kie's published limit
+20,000), with the same exact text; it is sold only while the
+`seedanceLongTemplates` runtime key is on. Longer prompts stay refused. There are 535 prompts with explicit
 `@imageN`, `@videoN` or angle-bracket slots, and 559 with reference requirements
 under the broader audit parser. No reference is silently invented or substituted.
 

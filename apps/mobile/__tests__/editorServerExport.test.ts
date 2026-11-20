@@ -99,3 +99,18 @@ test('plain export style is independent of authoring defaults and preserves web 
     (saved.timeline as Timeline).text[0].style = { ...DEFAULT_TEXT_STYLE };
     expect((exportCopy(saved, {}).document.timeline as Timeline).text[0]).not.toHaveProperty('style');
 });
+
+test('plain captions strip neutral metadata; timed captions remain refused and titles stay unchanged', () => {
+    const { parseCaptions, insertCaptions } = require('../../../app/veyrnox/_lib/editorCaptions.mjs');
+    const saved = fixture(), tl = saved.timeline as Timeline;
+    const title = { ...tl.text[0] }; delete title.style; delete title.groupId;
+    tl.text = [title, { ...title, id: 'native', caption: true },
+        { ...title, id: 'empty', caption: true, words: [], wordsEstimated: true, wordStyle: { mode: 'karaoke', color: '#ffe66d' } },
+        { ...title, id: 'timed', caption: true, words: [{ text: 'Title', start: 0, len: 90 }], wordsEstimated: false }];
+    tl.text.push(...insertCaptions(emptyTimeline(), parseCaptions('1\n00:00:04,000 --> 00:00:05,000\nImported', 'srt').cues).text);
+    const before = JSON.stringify(saved), out = exportCopy(saved, {}).document.timeline as Timeline;
+    const keys = ['id', 'text', 'start', 'len', 'x', 'y', 'size', 'trackId'];
+    for (const text of out.text.filter(c => c.id !== 'timed')) expect(Object.keys(text).every(k => keys.includes(k))).toBe(true);
+    expect(out.text[0]).toEqual(title); expect(out.text.find(c => c.id === 'timed')!.words).toHaveLength(1);
+    expect(JSON.stringify(saved)).toBe(before);
+});

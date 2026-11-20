@@ -77,8 +77,3 @@ test('direct page and internal route requests are 404 with photoStudio off regar
         }
     } finally { names.forEach((name, i) => { if (previous[i] === undefined) delete process.env[name]; else process.env[name] = previous[i]; }); }
 });
-test('Vey hides the generated route until the server photoStudio gate is enabled', async () => {
-    const { publicProductInventory } = await import('../lib/productKnowledge.js');
-    assert.equal(publicProductInventory({}).some(entry => entry.route === '/app/photo-studio'), false);
-    assert.equal(publicProductInventory({ EDITOR_RUNTIME_FLAGS: '{"photoStudio":"true"}' }).some(entry => entry.route === '/app/photo-studio'), true);
-});

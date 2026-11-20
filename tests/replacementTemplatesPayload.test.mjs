@@ -20,7 +20,8 @@ const json = file => JSON.parse(readFileSync(new URL(file, import.meta.url)));
 const hashes = { ...json('./fixtures/higgsfieldReplacementPromptHashes.json'), ...json('./fixtures/syntxReplacementPromptHashes.json') };
 const sha = text => createHash('sha256').update(text).digest('hex');
 // Independent owner-reviewed table. Do not infer image requirements from prompt tokens.
-// window-explode's exact prompt (5,557 characters) is over the Kling 3.0 cap (KLING_V3_PROMPT_MAX), so it is refused before any debit.
+// window-explode's exact prompt (5,557 characters) is over the Kling 3.0 cap (KLING_V3_PROMPT_MAX): Kling refuses it before any debit,
+// so the template binds to the long-prompt kie Seedance offer instead (ADR-0309 amendment 3).
 const overCapIds = ['window-explode'];
 const photoIds = ['red-crystal-amulet', 'community-martial-arts-suit', 'community-pet-affection-reveal'];
 const textIds = ['community-spin-kick-puppy', 'community-neon-paint-splash', 'community-neon-animal-dance', 'community-island-life-performance', 'community-cinematic-persona-swap', 'community-roadside-service-pitch', 'community-martial-arts-feline', 'community-cosmic-sands-encounter', 'community-luxe-timepiece-reveal'];
@@ -141,11 +142,13 @@ for (const id of [...photoIds, ...textIds]) {
 }
 
 for (const id of overCapIds) {
-  test(`over-cap Kling template is refused before any debit: ${id}`, () => {
+  test(`over-cap Kling template is refused by Kling and binds to the long-prompt offer: ${id}`, () => {
     const prompt = lockedPrompt(id);
     assert.ok(prompt.length > KLING_V3_PROMPT_MAX);
     assert.deepEqual(checkInputs(capabilityFor('fal-ai/kling-video/v3/pro/image-to-video'), { prompt, start_image_url: PHOTO_URL }), { ok: false, error: 'inputs_invalid:prompt' });
-    assert.equal(templateContract(id).class, 'unsupported');
+    assert.equal(templateContract(id).class, 'bound');
+    assert.equal(templateContract(id).modelId, 'seedance-2.0-photo-kie');
+    assert.equal(templateContract(id).prompt.length, prompt.length);
   });
 }
 

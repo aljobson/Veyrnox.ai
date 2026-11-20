@@ -28,12 +28,19 @@ export type BeatTrackInstrument = { id: 'piano' | 'guitar' | 'bass' | 'synth' | 
 export type BeatTrack = { id: string; instrument: BeatTrackInstrument; gain: number; pan: number };
 export type BeatVoice = { endTime: number; ended: Promise<void>; release(at: number): void; stop(at: number): void };
 
+/** Engine-owned run; callers only retain its identity. */
+export type Run = object;
+
 export type BeatEngine = {
+    live: Run;
+    startRun(doc: null): Run;
+    stopRun(run: Run): void;
+    setTrackMix(run: Run, trackId: string, gain: number, pan: number): unknown;
     context: EngineContext;
     now(): number;
     resume(): Promise<void>;
     close(): Promise<void>;
-    playMidi(track: BeatTrack, pitch: number, velocity: number, at: number): BeatVoice;
+    playMidi(track: BeatTrack | { id: string; instrument: { engine: 'voice' | 'wavetable'; id: string; preset: string }; gain: number; pan: number }, pitch: number, velocity: number, at: number, run?: Run, gain?: number): BeatVoice;
     playPad(pad: string, velocity: number, at: number, destination?: unknown, kit?: string): void;
     click(at: number, accent: boolean, destination: unknown): void;
 };

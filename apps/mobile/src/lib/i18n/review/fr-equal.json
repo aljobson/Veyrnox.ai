@@ -266,9 +266,6 @@
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "speech.volume": "Volume is the French noun for audio volume, with the same spelling as English.",
   "speech.tone.Expressive": "Expressive is the French feminine adjective describing an expressive voice, with the same spelling as English.",
-  "beatLabs.template.hiphop": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
-  "beatLabs.template.lofi": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
-  "beatLabs.template.house": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
-  "beatLabs.category.FX": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
-  "beatLabs.context.piano": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog."
+  "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending.",
+  "musicTrackAdd.gender.auto": "Music track add: established term retained in machine translation. Native review pending."
 }

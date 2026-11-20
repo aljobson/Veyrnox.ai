@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { createRoot } from 'test-renderer';
+import { createRoot, type TestNode } from 'test-renderer';
 import { platformFontFamily, editorTextPreviewStyle } from '../src/lib/editorTextPreview';
 import { PlaybackPreview } from '../src/components/editor/EditorPlayback';
 import { createFrameStore } from '../src/components/editor/editorFrameStore';
@@ -45,7 +45,9 @@ test('PlaybackPreview renders the active styled clip and preserves fallback choi
     const store = createFrameStore(10);
     try {
         await act(async () => root.render(<PlaybackPreview frameStore={store} timeline={tl} api={{ request: jest.fn() }} playing={false} localMediaUris={{}} />));
-        const caption = () => root.container.queryAll(n => n.children.includes('Hello world') && !!n.props.style)[0];
+        const textContent = (node: TestNode): string => typeof node === 'string' ? node : node.children.map(textContent).join('');
+        const caption = () => root.container.queryAll(n => textContent(n) === 'Hello world' && !!n.props.style,
+            { matchDeepestOnly: true })[0];
         expect(StyleSheet.flatten(caption().props.style)).toMatchObject(editorTextPreviewStyle(preset.style, preset.size, Platform.OS));
         await act(async () => store.set(1000)); expect(caption()).toBeDefined();
     } finally { await act(async () => root.unmount()); }
