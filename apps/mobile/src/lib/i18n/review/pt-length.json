@@ -3384,6 +3384,24 @@
     "ratio": 1.67
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Deixar de seguir",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reply",
+    "english": "Reply",
+    "translation": "Responder",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Quente",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

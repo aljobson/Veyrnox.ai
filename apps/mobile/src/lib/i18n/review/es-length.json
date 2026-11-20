@@ -3384,6 +3384,36 @@
     "ratio": 1.67
   },
   {
+    "id": "musicPublic.unfollow",
+    "english": "Unfollow",
+    "translation": "Dejar de seguir",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicPublic.plays",
+    "english": "Plays: {count}",
+    "translation": "Reproducciones: {count}",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicPublic.reply",
+    "english": "Reply",
+    "translation": "Responder",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicPublic.reaction.like",
+    "english": "Like",
+    "translation": "Me gusta",
+    "ratio": 2
+  },
+  {
+    "id": "musicPublic.reaction.hot",
+    "english": "Hot",
+    "translation": "Ardiente",
+    "ratio": 2.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

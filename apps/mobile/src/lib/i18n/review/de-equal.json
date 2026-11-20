@@ -224,5 +224,14 @@
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
   "musicDiscover.mood.Jazz": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
-  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending."
+  "musicDiscover.mood.Rock": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending.",
+  "musicPublic.reaction.wow": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "musicPublic.reaction.cool": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "musicPublic.genre.pop": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "musicPublic.genre.rock": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "musicPublic.genre.house": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "musicPublic.genre.jazz": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "musicPublic.genre.ambient": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending.",
+  "musicPublic.genre.latin": "Established musical genre or reaction loanword in this locale. Machine translated; native review pending."
 }

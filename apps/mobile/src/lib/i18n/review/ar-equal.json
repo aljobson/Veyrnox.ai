@@ -63,5 +63,6 @@
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
   "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
-  "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language."
+  "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
+  "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending."
 }

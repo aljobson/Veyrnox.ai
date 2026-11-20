@@ -29,6 +29,8 @@ const domains: Record<string, readonly string[]> = {
     'music.create.{}': ['simple', 'custom', 'empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable', 'rights_required', 'error', 'queued', 'running', 'ready', 'failed', 'refunded', 'cancelled'],
     'music.tab.{}': ['songs', 'history', 'hooks'],
     'music.empty.{}': ['songs', 'history', 'hooks'],
+    'musicPublic.reaction.{}': ['fire', 'love', 'wow', 'praise', 'like', 'cool', 'hot'],
+    'musicPublic.genre.{}': ['pop', 'hip-hop', 'rock', 'electronic', 'house', 'lo-fi', 'jazz', 'rnb-soul', 'ambient', 'cinematic', 'country-folk', 'latin'],
     'music.player.{}': ['idle', 'loading', 'playing', 'paused', 'error', 'held', 'ended', 'background'],
     'templates.kind.{}': ['video', 'audio'],
     'audioTemplates.cat.{}': ['MUSIC', 'VOICE-OVER', 'SOUND FX'],
