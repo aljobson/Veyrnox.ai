@@ -22,6 +22,7 @@ jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 100 }));
 jest.mock('../src/components/credits/CheckInEntry', () => ({ CheckInEntry: () => null }));
 jest.mock('../src/components/home/OddlingsBanner', () => ({ OddlingsBanner: () => null }));
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
+jest.mock('expo-audio', () => ({ setAudioModeAsync: jest.fn(() => Promise.resolve()), useAudioPlayer: () => ({ play: jest.fn() }), useAudioPlayerStatus: () => ({ didJustFinish: false }) }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 const video = parsePresets({ presets: Array.from({ length: 6 }, (_, i) => ({ id: `vid-${i}`, title: `Video ${i}`, modality: 'image-to-video', category: 'CINEMATIC', modelId: 'kling', modelName: 'Kling', prompt: 'p', credits: 5 })) });
 const images = [
@@ -33,7 +34,8 @@ let root: Root;
 const buttons = () => root.container.queryAll(n => n.props.accessibilityRole === 'button');
 // The Audio start option shares a label with the Audio filter chip; the chip is the one that carries selected state.
 const control = (label: string) => buttons().filter(n => n.props.accessibilityLabel === label).sort((a, b) => Number(b.props.accessibilityState?.selected !== undefined) - Number(a.props.accessibilityState?.selected !== undefined))[0];
-const titles = () => buttons().map(n => String(n.props.accessibilityLabel).split(',')[0]).filter(s => /^(Video \d|Forest Light|Pastel Corridor|Midnight Soul|Red Light)$/.test(s));
+// Audio cards are drawn as on the web and their open target reads "Audio, <name>"; poster cards lead with the name.
+const titles = () => buttons().map(n => String(n.props.accessibilityLabel).replace(/^Audio, /, '').split(',')[0]).filter(s => /^(Video \d|Forest Light|Pastel Corridor|Midnight Soul|Red Light)$/.test(s));
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 const click = (label: string) => act(async () => control(label)!.props.onClick(event));
 beforeEach(async () => {
@@ -56,8 +58,20 @@ test('All is a mix of video, image and audio, not video only', async () => {
 });
 test('an image or audio card opens Create with the template prompt, like Create > Templates', async () => {
     await click(t('explore.type.audio'));
-    await act(async () => buttons().find(n => String(n.props.accessibilityLabel).startsWith('Midnight Soul,'))!.props.onClick(event));
+    await act(async () => buttons().find(n => n.props.accessibilityLabel === 'Audio, Midnight Soul, 3 credits')!.props.onClick(event));
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/create/[modelId]', params: { modelId: 'suno', prompt: 'Soulful' } });
+});
+test('an audio template in Explore plays its sample from the list, like the web', async () => {
+    mockAudio.mockResolvedValue([{ ...audio[0], previewUrl: 'https://veyrnox.ai/a.jpg', previewAudioUrl: 'https://veyrnox.ai/a.mp3' }]);
+    await act(async () => root.unmount()); root = createRoot();
+    await act(async () => root.render(<Home />));
+    await click(t('explore.type.audio'));
+    const play = buttons().find(n => n.props.accessibilityLabel === 'Play, Midnight Soul');
+    expect(play).toBeDefined();
+    await act(async () => play!.props.onClick(event));
+    expect(buttons().some(n => n.props.accessibilityLabel === 'Pause, Midnight Soul')).toBe(true);
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(buttons().some(n => n.props.accessibilityLabel === 'Use template, Midnight Soul')).toBe(true);
 });
 test('the header counts every kind', async () => {
     const text = root.container.queryAll(n => typeof n.props.children === 'string' && /^\d+ templates?$/.test(n.props.children)).map(n => n.props.children).join(' ');
