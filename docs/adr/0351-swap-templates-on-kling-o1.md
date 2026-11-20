@@ -549,6 +549,28 @@ The R2 manifest and its pin (`a795629b…bf28b`) are unchanged and the 411 clips
 
 Rollback: restore the removed ids in `app/veyrnox/_lib/templateSwapClips.js`.
 
+## Amendment 17 (2026-11-20): 13 one-photo templates hidden (289 to 276 ids)
+
+Placed after amendment 13 because it continues that registry cut. Five frames of each live clip were read (the role review of amendment 16). These ids leave `TEMPLATE_SWAP_CLIPS`, and the first two leave the curated row (13 to 11). Their clips stay in the R2 manifest; the pin, prices and flags are unchanged.
+
+| id | reason |
+|---|---|
+| community-storefront-hero-swap | security-camera view, several people, no clear lead (was in the row) |
+| community-garden-path-tea | only legs are shown, no face (was in the row) |
+| community-bus-chase-sprint | feet and an arm only, no face |
+| community-skyline-supercar-drive | aerial city view, no person |
+| community-coastal-car-showcase | a car, no person |
+| community-highway-vehicle-swap | a car, no person |
+| community-symbiote-supercar-shift | a car built from goo, no person |
+| community-delivery-van-loop | a van and a shopping bag, no person |
+| community-highway-delivery-reveal | a box and a product, no person |
+| community-window-dog | a dog in a window |
+| community-window-snacker-swap | a cat in a window |
+| community-chauffeur-arrival-swap | chauffeur and passenger, no clear lead |
+| community-criminal-standoff-montage | two equally prominent men |
+
+Rollback: restore the ids to `TEMPLATE_SWAP_CLIPS` (and the two rows to `TEMPLATE_SWAP_ROW`, copying name, poster and ratio from the template data) and set the counts in `tests/templateSwapClipEmpty.test.mjs` and `tests/swapRow.test.mjs` back. No manifest upload is needed.
+
 ## Amendment 14 (2026-11-20): two-person templates behind their own key, dark
 
 **Problem.** Template `basketball-3` needs two photos. The one-photo path sends one element (frontal plus crop of ONE person), the prompt names one role, and O1 dropped the other person in the output. About 121 of the 410 registry ids need two or more photos.

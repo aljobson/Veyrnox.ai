@@ -7,9 +7,14 @@ import { templateContract } from '../lib/templateContract.js';
 import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { checkTemplateRequest } from '../lib/templateFidelity.js';
 test('ships ids and a pin; the old var is not set and every swap without the clip path remains blocked', () => {
- assert.ok(Object.isFrozen(TEMPLATE_SWAP_CLIPS)); assert.equal(TEMPLATE_SWAP_CLIPS.length, 289);
+ assert.ok(Object.isFrozen(TEMPLATE_SWAP_CLIPS)); assert.equal(TEMPLATE_SWAP_CLIPS.length, 276);
  // ADR-0351 amendment 13: the 74 two-photo and 47 three-or-more-photo ids are out of the registry (one element cannot carry a second person).
  for (const out of ['basketball-3', 'community-billboard-product-swap', 'community-stadium-ball-control']) assert.equal(TEMPLATE_SWAP_CLIPS.includes(out), false, out);
+ // ADR-0351 amendment 17: 13 hidden (no face, an object or an animal, or no clear lead); their clips stay in the manifest.
+ for (const out of ['community-storefront-hero-swap', 'community-garden-path-tea', 'community-bus-chase-sprint', 'community-skyline-supercar-drive',
+  'community-coastal-car-showcase', 'community-highway-vehicle-swap', 'community-symbiote-supercar-shift', 'community-delivery-van-loop',
+  'community-highway-delivery-reveal', 'community-window-dog', 'community-window-snacker-swap', 'community-chauffeur-arrival-swap',
+  'community-criminal-standoff-montage']) assert.equal(TEMPLATE_SWAP_CLIPS.includes(out), false, out);
  // The upload verified 411 clips; one near-duplicate stays in the R2 manifest only and is refused here.
  assert.equal(TEMPLATE_SWAP_CLIPS.includes('community-brand-billboard-swap'), false);
  assert.deepEqual([...TEMPLATE_SWAP_CLIPS], [...new Set(TEMPLATE_SWAP_CLIPS)].sort());
