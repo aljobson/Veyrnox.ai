@@ -117,4 +117,18 @@ describe('Smart Cut planning', () => {
         expect(reviewed.removalsApplied).toBe(1);
         expect(reviewed.totalDuration).toBeLessThan(untouched.totalDuration);
     });
+
+    test('a fully removed standalone filler inside the rendered window is reported as applied', () => {
+        const source: SmartCutSource = { id: 'take-a', assetId: 'asset-a', name: 'Take A', duration: 8 };
+        const analysis: SpeechAnalysis = {
+            version: 1, assetId: 'asset-a', duration: 8, provider: 'fal-scribe-v2', transcript: 'hello um goodbye', language: 'en', timingQuality: 'word',
+            chunks: [{ start: 0.5, end: 0.9, text: 'hello' }, { start: 2.5, end: 2.8, text: 'um' }, { start: 5, end: 5.5, text: 'goodbye' }],
+        };
+        const plan = buildSpeechAwareCutPlan({
+            clips: [source], analyses: new Map([['asset-a', analysis]]), removals: [{ takeId: 'take-a', start: 2.47, end: 2.83 }],
+        });
+
+        expect(plan.segments).toHaveLength(2);
+        expect(plan.removalsApplied).toBe(1);
+    });
 });

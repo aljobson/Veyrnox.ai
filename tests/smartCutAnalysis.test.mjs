@@ -292,6 +292,7 @@ test('a standalone filler between long pauses disappears and malformed removals 
   assert.equal(buildSpeechAwareCutPlan(base).segments.length, 3);
   const removed = buildSpeechAwareCutPlan({ ...base, removals: [{ takeId: clip.job_id, start: 2.47, end: 2.83 }] });
   assert.equal(removed.segments.length, 2);
+  assert.equal(removed.removalsApplied, 1, 'a fully removed standalone filler is still reported as applied');
   const ignored = buildSpeechAwareCutPlan({ ...base, removals: [null, { takeId: 5, start: 1, end: 2 }, { takeId: clip.job_id, start: 3, end: 2 }, { takeId: 'other-take', start: 2.4, end: 2.9 }] });
   assert.deepEqual(ignored.segments, buildSpeechAwareCutPlan(base).segments);
   assert.equal(ignored.removalsApplied, 0);

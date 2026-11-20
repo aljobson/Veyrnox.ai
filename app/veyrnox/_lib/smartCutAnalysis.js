@@ -231,13 +231,19 @@ function mergeToSegmentLimit(groups) {
   return reduced.slice(0, MAX_SEGMENTS);
 }
 
+function outputWindowEnd(take, candidateGroups, segments) {
+  const kept = segments.filter((segment) => segment.takeId === take.id).sort((a, b) => a.start - b.start);
+  if (!kept.length) return null;
+  const candidates = candidateGroups.filter((group) => group.takeId === take.id);
+  const complete = candidates.every((group) => kept.some((segment) => segment.start <= group.start + 0.01 && segment.end >= group.end - 0.01));
+  return complete ? take.rangeEnd : Math.max(...kept.map((segment) => segment.end));
+}
+
 function removedSecondsWithinOutput(takes, candidateGroups, segments) {
   return takes.reduce((total, take) => {
     const kept = segments.filter((segment) => segment.takeId === take.id).sort((a, b) => a.start - b.start);
     if (!kept.length) return total;
-    const candidates = candidateGroups.filter((group) => group.takeId === take.id);
-    const complete = candidates.every((group) => kept.some((segment) => segment.start <= group.start + 0.01 && segment.end >= group.end - 0.01));
-    const windowEnd = complete ? take.rangeEnd : Math.max(...kept.map((segment) => segment.end));
+    const windowEnd = outputWindowEnd(take, candidateGroups, segments);
     const keptSeconds = kept.reduce((sum, segment) => sum + Math.max(0, Math.min(windowEnd, segment.end) - Math.max(take.rangeStart, segment.start)), 0);
     return total + Math.max(0, windowEnd - take.rangeStart - keptSeconds);
   }, 0);
@@ -314,8 +320,12 @@ export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimu
     const middle = (cut.start + cut.end) / 2;
     return segments.some((segment) => segment.takeId === cut.takeId && segment.start <= middle && middle < segment.end);
   });
-  const appliedRemovals = relevantRemovals.filter((cut) => !keptAnyway.includes(cut) && segments.some((segment) =>
-    segment.takeId === cut.takeId && segment.end >= cut.start - 0.02 && segment.start <= cut.end + 0.02));
+  const appliedRemovals = relevantRemovals.filter((cut) => {
+    if (keptAnyway.includes(cut)) return false;
+    const take = clipById.get(cut.takeId);
+    const windowEnd = take ? outputWindowEnd(take, candidateGroups, segments) : null;
+    return windowEnd !== null && cut.end > take.rangeStart && cut.start < windowEnd + 0.02;
+  });
   if (keptAnyway.length) warnings.push('Some removals were kept because the plan is limited to 10 sections.');
   if (rawGroups.length > MAX_SEGMENTS) warnings.push('Some short pauses were retained to fit the Clip Editor’s 10-section limit.');
   if (outputOffset >= MAX_OUTPUT_SECONDS - 0.01) warnings.push('The speech-aware plan stopped at the Clip Editor’s 60-second output limit.');

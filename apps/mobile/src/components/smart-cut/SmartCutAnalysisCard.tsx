@@ -26,7 +26,7 @@ import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 export type SmartCutAnalysisClip = { readonly jobId: string; readonly label: string; readonly duration: number };
 type Recovery = { readonly clip: SmartCutAnalysisClip; readonly key: string };
 
-/** Net credits after the outcome settles. Missing evidence stays unknown instead of guessing. */
+/** Quote, confirm, recover and report optional speech analysis for the selected Smart Cut clips. */
 export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange }: {
     readonly clips: readonly SmartCutAnalysisClip[];
     readonly analyses: ReadonlyMap<string, SpeechAnalysis>;
@@ -47,6 +47,9 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     const live = useRef(true);
     const signature = useMemo(() => JSON.stringify([account, clips.map((clip) => [clip.jobId, clip.duration])]), [account, clips]);
     const signatureRef = useRef(signature);
+    const accountRef = useRef(account);
+    const selectedIdsRef = useRef(new Set<string>());
+    selectedIdsRef.current = new Set(clips.map((clip) => clip.jobId));
 
     useEffect(() => {
         onBusyChange?.(running);
@@ -64,17 +67,25 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     }, [account, api]);
 
     useEffect(() => {
+        const accountChanged = accountRef.current !== account;
+        accountRef.current = account;
+        const selectedIds = selectedIdsRef.current;
         signatureRef.current = signature;
         controller.current?.abort();
         queueMicrotask(() => {
             if (!live.current || signatureRef.current !== signature) return;
             setRunning(false);
             setProgress({ done: 0, total: 0 });
-            setMessages([]);
-            setRecovery(null);
-            setTerminalMessages(new Map());
+            if (accountChanged) {
+                setMessages([]);
+                setRecovery(null);
+                setTerminalMessages(new Map());
+                return;
+            }
+            setRecovery((current) => current && selectedIds.has(current.clip.jobId) ? current : null);
+            setTerminalMessages((current) => new Map([...current].filter(([jobId]) => selectedIds.has(jobId))));
         });
-    }, [signature]);
+    }, [account, signature]);
 
     if (!EDITOR_SPEECH_CUT_ENABLED || !quote || !clips.length || !account) return null;
 

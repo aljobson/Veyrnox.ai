@@ -275,13 +275,19 @@ function mergeToSegmentLimit(groups: readonly SpeechGroup[]): SpeechGroup[] {
     return reduced.slice(0, SMART_CUT_MAX_SEGMENTS);
 }
 
+function outputWindowEnd(take: SmartCutTake, candidateGroups: readonly SpeechGroup[], segments: readonly SmartCutSegment[]): number | null {
+    const kept = segments.filter((segment) => segment.takeId === take.id).sort((a, b) => a.start - b.start);
+    if (!kept.length) return null;
+    const candidates = candidateGroups.filter((group) => group.takeId === take.id);
+    const complete = candidates.every((group) => kept.some((segment) => segment.start <= group.start + 0.01 && segment.end >= group.end - 0.01));
+    return complete ? take.rangeEnd : Math.max(...kept.map((segment) => segment.end));
+}
+
 function removedSecondsWithinOutput(takes: readonly SmartCutTake[], candidateGroups: readonly SpeechGroup[], segments: readonly SmartCutSegment[]): number {
     return takes.reduce((total, take) => {
         const kept = segments.filter((segment) => segment.takeId === take.id).sort((a, b) => a.start - b.start);
         if (!kept.length) return total;
-        const candidates = candidateGroups.filter((group) => group.takeId === take.id);
-        const complete = candidates.every((group) => kept.some((segment) => segment.start <= group.start + 0.01 && segment.end >= group.end - 0.01));
-        const windowEnd = complete ? take.rangeEnd : Math.max(...kept.map((segment) => segment.end));
+        const windowEnd = outputWindowEnd(take, candidateGroups, segments)!;
         const keptSeconds = kept.reduce((sum, segment) => sum + Math.max(0, Math.min(windowEnd, segment.end) - Math.max(take.rangeStart, segment.start)), 0);
         return total + Math.max(0, windowEnd - take.rangeStart - keptSeconds);
     }, 0);
@@ -344,8 +350,12 @@ export function buildSpeechAwareCutPlan({ clips, analyses, pacing = 'balanced', 
         const middle = (cut.start + cut.end) / 2;
         return segments.some((segment) => segment.takeId === cut.takeId && segment.start <= middle && middle < segment.end);
     });
-    const appliedRemovals = knownRemovals.filter((cut) => !keptAnyway.includes(cut) && segments.some((segment) =>
-        segment.takeId === cut.takeId && segment.end >= cut.start - 0.02 && segment.start <= cut.end + 0.02));
+    const appliedRemovals = knownRemovals.filter((cut) => {
+        if (keptAnyway.includes(cut)) return false;
+        const take = clipById.get(cut.takeId);
+        const windowEnd = take ? outputWindowEnd(take, candidateGroups, segments) : null;
+        return windowEnd !== null && cut.end > take.rangeStart && cut.start < windowEnd + 0.02;
+    });
     const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];
     if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warnings.push('This transcript has phrase-level timing, so pauses inside a phrase cannot be removed.');
     if (keptAnyway.length) warnings.push('Some removals were kept because the plan is limited to 10 sections.');

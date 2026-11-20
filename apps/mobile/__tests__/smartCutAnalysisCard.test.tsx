@@ -90,6 +90,21 @@ test('an outcome whose acceptance is unknown stays recoverable', async () => {
     expect(onBusyChange).toHaveBeenLastCalledWith(false);
 });
 
+test('adding a clip preserves a pending recovery key and its billing guidance', async () => {
+    const second = { jobId: '55555555-5555-4555-8555-555555555555', label: 'Second take', duration: 9 };
+    mockStart.mockRejectedValueOnce(new ApiError(503, 'outcome_pending'));
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+    expect(lines()).toContain('outcome_pending');
+
+    await render([clip, second]);
+
+    expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeDefined();
+    expect(lines()).toContain('outcome_pending');
+    mockRecover.mockResolvedValue({ id: 'request', status: 'completed', analysis, credits: 7 });
+    await press(t('app.smartCut.native.analyse.checkStatus'));
+    expect(mockRecover).toHaveBeenCalledWith(mockApi, 'speech-key', 'owner', expect.any(AbortSignal));
+});
+
 test('no speech is terminal for this clip and does not strand a status action', async () => {
     mockStart.mockResolvedValue({ id: 'request', status: 'completed', speech: false, credits: 0 });
     await render(); await press(t('app.smartCut.native.analyse.start'));
