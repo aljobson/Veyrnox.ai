@@ -24,6 +24,8 @@ export function routeFit(c) {
   if (c.class === 'unsupported') return 'none_unsupported';
   if (['bound', 'like-for-like-safe'].includes(c.class) && !c.requiredReferences.video && !templateVideoDependency(c.sourcePrompt)) {
     if (c.allowedModels.includes('kling-3.0-i2v') && c.requiredReferences.imageMax > 0) return 'kling_i2v_photo';
+    // Owner decision 2026-11-20 (ADR-0309 amendment 3): long one-photo recipes on the kie Seedance photo offer.
+    if (c.allowedModels.includes('seedance-2.0-photo-kie') && c.requiredReferences.imageMax > 0) return 'seedance_long_photo';
     if (c.requiredReferences.imageMax === 0) return 'text_only_other_model';
   }
   // A new contract must get an explicit owner decision, not a guessed route.

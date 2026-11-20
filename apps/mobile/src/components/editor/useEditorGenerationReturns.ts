@@ -1,3 +1,4 @@
+import type { DocumentCommitFailure } from '../../lib/editorDocumentGate';
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import type { ApiClient } from '../../lib/api';
@@ -11,7 +12,7 @@ import { mediaApi, waitForJob } from '../../lib/media';
 import { timelineOf, type Media } from '../../lib/nativeEditorModel';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 
-export type InsertResult = 'placed' | 'queued' | 'track' | 'full' | 'dropped';
+export type InsertResult = 'placed' | 'queued' | 'track' | 'full' | 'dropped' | DocumentCommitFailure;
 export type GenerationRow = PendingGeneration & { status: 'queued' | 'running' | 'notAdded' | 'removed' | 'placed' };
 type Token = { valid(): boolean; end(): void };
 type Options = {
@@ -70,6 +71,10 @@ export function useEditorGenerationReturns(options: Options) {
             try {
                 if (!ready() || !token.valid()) return 'dropped';
                 const result = o().insert(entry.media, clampFrame(entry.frame), entry.select);
+                if (typeof result === 'object') {
+                    if (result.status === 'not-live') return result;
+                    setNote(t(`editorEditGate.${result.reason}`));
+                }
                 if (entry.item) {
                     if (result === 'placed') placed(entry.item, token);
                     else if (result !== 'queued' && result !== 'dropped') status(entry.item.jobId, 'notAdded');

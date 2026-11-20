@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import ts from 'typescript';
-import { Children, isValidElement, type ReactElement } from 'react';
+import { act, createElement } from 'react';
+import { createRoot } from 'test-renderer';
 import { creativeFeature } from '../src/lib/creativeFeatures';
 import { MENU_SECTIONS } from '../src/lib/menu';
 import { rawText } from '../src/lib/i18n/translate';
@@ -201,14 +202,37 @@ test('literal icon props and badge assignments in the affected screens all exist
     }
 });
 
-test('song-action buttons pin the seven semantic icons without changing their labels', () => {
+test('song-action buttons pin the seven semantic icons without changing their labels', async () => {
     const actions = ['add_section', 'replace_section', 'stems', 'crop', 'target_stem', 'extend', 'cover'];
-    const tree = MusicSongActions({ song: { id: 'song', lifecycle_status: 'active', actions } as unknown as MusicSongDetail });
-    const buttons = Children.toArray(tree!.props.children).filter(isValidElement) as ReactElement<{ icon: string; label: string }>[];
-    expect(buttons.map(button => [button.props.label, button.props.icon])).toEqual([
-        ['musicSectionActions.add_section.title', 'plus'], ['musicSectionActions.replace_section.title', 'swap'],
-        ['musicActions.stems.title', 'faders'], ['musicActions.crop.title', 'scissors'],
-        ['musicTargetStems.title', 'crosshair'], ['musicGenerationActions.extend.title', 'arrowsHorizontal'],
-        ['musicGenerationActions.cover.title', 'magicWand'],
-    ].map(([key, icon]) => [t(key), icon]));
+    const environment = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
+    const previous = environment.IS_REACT_ACT_ENVIRONMENT;
+    environment.IS_REACT_ACT_ENVIRONMENT = true;
+    const root = createRoot();
+    try {
+        await act(async () => root.render(createElement(MusicSongActions, {
+            song: { id: 'song', lifecycle_status: 'active', actions } as unknown as MusicSongDetail,
+        })));
+        const buttons = root.container.queryAll(node => typeof node.props.label === 'string');
+        expect(buttons.map(button => [button.props.label, button.props.icon])).toEqual([
+            ['musicSectionActions.add_section.title', 'plus'], ['musicSectionActions.replace_section.title', 'swap'],
+            ['musicActions.stems.title', 'faders'], ['musicActions.crop.title', 'scissors'],
+            ['musicTargetStems.title', 'crosshair'], ['musicGenerationActions.extend.title', 'arrowsHorizontal'],
+            ['musicGenerationActions.cover.title', 'magicWand'],
+        ].map(([key, icon]) => [t(key), icon]));
+    } finally {
+        await act(async () => root.unmount());
+        environment.IS_REACT_ACT_ENVIRONMENT = previous;
+    }
+});
+
+test('speech studio takes priority and prices its actual catalog model; missing or gated keeps generic fallback', () => {
+    const studio = model('minimax-speech-2.6-hd', 'MiniMax Speech 2.6 HD', 6);
+    const cheaper = model('other-speech', 'Speech', 2);
+    expect(audioTarget('speech', [cheaper, studio])).toEqual({ pathname: '/speech' });
+    expect(fromCredits([cheaper, studio], 'speech', false, true)).toBe(6);
+    expect(fromCredits([cheaper, studio], 'speech', false, false)).toBeNull();
+    for (const models of [[cheaper], [cheaper, { ...studio, gated: true }]]) {
+        expect(audioTarget('speech', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: cheaper.id } });
+        expect(fromCredits(models, 'speech', false, true)).toBe(2);
+    }
 });

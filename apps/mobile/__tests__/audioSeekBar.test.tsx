@@ -1,0 +1,35 @@
+import { act } from 'react';
+import * as RN from 'react-native';
+import { createRoot, type Root } from 'test-renderer';
+import { AudioSeekBar } from '../src/components/AudioSeekBar';
+void [RN.View, RN.Pressable];
+let root: Root;
+const seek = jest.fn();
+const rail = () => root.container.queryAll(n => n.props.testID === 'inline-audio-position')[0];
+const render = (position = 30, duration = 90) => act(async () => root.render(<AudioSeekBar position={position} duration={duration} label="Recording" onSeek={seek} />));
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); seek.mockClear(); });
+afterEach(async () => { await act(async () => root.unmount()); });
+test('readout and adjustable control seek by time and clamp at both ends', async () => {
+    await render();
+    expect(rail().props.accessibilityRole).toBe('adjustable');
+    expect(rail().props.accessibilityValue.text).toContain('0:30');
+    expect(rail().props.accessibilityValue.text).toContain('1:30');
+    await act(async () => rail().props.onLayout({ nativeEvent: { layout: { width: 200 } } }));
+    await act(async () => rail().props.onClick({ nativeEvent: { locationX: 100 } }));
+    expect(seek).toHaveBeenLastCalledWith(45);
+    await act(async () => rail().props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    expect(seek).toHaveBeenLastCalledWith(40);
+    await render(85);
+    await act(async () => rail().props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    expect(seek).toHaveBeenLastCalledWith(90);
+    await render(5);
+    await act(async () => rail().props.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }));
+    expect(seek).toHaveBeenLastCalledWith(0);
+});
+test('an unknown duration cannot seek beyond zero', async () => {
+    await render(0, 0);
+    await act(async () => rail().props.onClick({ nativeEvent: { locationX: 10 } }));
+    expect(seek).not.toHaveBeenCalled();
+    await act(async () => rail().props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    expect(seek).toHaveBeenCalledWith(0);
+});

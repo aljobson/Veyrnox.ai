@@ -49,4 +49,6 @@ export default {
     'library.older': 'Show older creations',
     'library.noMatch': 'Nothing matches these filters.',
     'library.noMatchOlder': 'Nothing matches in what is loaded. Show older creations to keep looking.',
+    "library.useForLipSync": "Use for lip sync",
+    "library.useForLipSyncLabel": "Use {name} for lip sync",
 } as const;

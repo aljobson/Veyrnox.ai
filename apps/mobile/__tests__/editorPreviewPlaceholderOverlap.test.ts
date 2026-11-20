@@ -7,6 +7,6 @@ describe('Editor preview: placeholder vs text layer', () => {
     const source = readFileSync(join(__dirname, '../src/components/editor/EditorPlayback.tsx'), 'utf8');
     test('the placeholder is not drawn while a text layer is showing', () => {
         expect(source).toMatch(/\{!active && !caption \? <>/);
-        expect(source).toMatch(/\{caption \? <Text style=\{styles\.previewCaption\}>/);
+        expect(source).toMatch(/\{caption \? <EditorTextOverlay /);
     });
 });

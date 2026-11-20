@@ -78,3 +78,21 @@ describe('maxClipLength and fitToMedia', () => {
         expect(fitToMedia(make({ in: -5, len: 50 })).video[0].in).toBe(0);
     });
 });
+
+test('freeze holds the final source frame freely and curve maximum matches brute force', () => {
+    const freeze = make({ in: FILE - 5, freezeFrame: FILE - 5, volume: 0, len: 200 });
+    expect(maxClipLength(media(), freeze.video[0])).toBeNull(); expect(fitToMedia(freeze)).toEqual(freeze);
+    const { sourceRange } = require('../../../app/veyrnox/_lib/editorSpeed.mjs');
+    const curved = make({ in: 50, speedCurve: [{ frame: 0, rate: .5 }, { frame: 90, rate: 2 }] });
+    const valid = Array.from({ length: 1000 }, (_, index) => index + 1).filter(len => sourceRange({ ...curved.video[0], len }).to < FILE);
+    expect(maxClipLength(media(), curved.video[0])).toBe(valid.at(-1));
+    expect(fitToMedia(curved)).toEqual(curved);
+});
+
+// A one-frame floor is a length API contract, not proof that an invalid source in-point is playable.
+test.each([false, true])('curve maximum keeps its one-frame floor with an out-of-source in-point (reverse=%s)', reverse => {
+    for (const sourceIn of [-1, FILE, FILE + 50]) {
+        expect(maxClipLength(media(), { in: sourceIn, reverse,
+            speedCurve: [{ frame: 0, rate: .5 }, { frame: 90, rate: 2 }] })).toBe(1);
+    }
+});

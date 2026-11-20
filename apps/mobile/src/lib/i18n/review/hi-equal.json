@@ -77,6 +77,10 @@
   "job.percent": "Percent sign directly after the number is the standard form in this language.",
   "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "musicDiscover.details": "Music genre or standard tempo/key notation retained; machine translation, native review pending.",
+  "beat.kit.808": "Same in hi: a loanword, brand-style name or number used unchanged in this language.",
+  "editorTools.rateValue": "Standard mathematical notation shared across languages.",
+  "editorTools.positionValue": "Standard mathematical notation shared across languages.",
+  "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending.",
-  "beat.kit.808": "Same in hi: a loanword, brand-style name or number used unchanged in this language."
+  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose."
 }

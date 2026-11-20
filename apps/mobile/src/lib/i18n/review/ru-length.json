@@ -1,5 +1,53 @@
 [
   {
+    "id": "editorCaptionTools.correctChoose",
+    "english": "Choose one timed word to correct.",
+    "translation": "Выберите одно слово с временными метками для исправления.",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCaptionTools.length",
+    "english": "Word length",
+    "translation": "Длительность слова",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCaptionTools.align",
+    "english": "Align lyrics",
+    "translation": "Выровнять текст песни",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Все субтитры с временными метками",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorCaptionTools.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorTools.colourHex",
+    "english": "{label} hex colour",
+    "translation": "Шестнадцатеричный цвет: {label}",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorTools.pulse",
+    "english": "Pulse",
+    "translation": "Пульсация",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorTools.freezeLength",
+    "english": "Freeze length",
+    "translation": "Длительность стоп-кадра",
+    "ratio": 1.77
+  },
+  {
     "id": "brand.swatch.teal",
     "english": "Teal",
     "translation": "Бирюзовый",
@@ -3676,6 +3724,372 @@
     "english": "Mute",
     "translation": "Без звука",
     "ratio": 2.25
+  },
+  {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Мужской",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
+    "ratio": 3.21
+  },
+  {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Повторить",
+    "ratio": 2.25
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Попробовать снова",
+    "ratio": 3.4
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "Сохранение",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.cloud.error",
+    "english": "Cloud saving could not finish. Retry when ready.",
+    "translation": "Не удалось завершить сохранение в облаке. Попробуй снова, когда будешь готов.",
+    "ratio": 1.6
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Автосохранение",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.versions.checkpoint",
+    "english": "Checkpoint",
+    "translation": "Контрольная точка",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Создать отдельную копию",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Привязка",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Выключено",
+    "ratio": 3
+  },
+  {
+    "id": "beatPiano.quantise",
+    "english": "Quantise",
+    "translation": "Квантизировать",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatPiano.zoomOut",
+    "english": "Zoom out",
+    "translation": "Уменьшить масштаб",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.zoomIn",
+    "english": "Zoom in",
+    "translation": "Увеличить масштаб",
+    "ratio": 2.43
+  },
+  {
+    "id": "beatPiano.toggle",
+    "english": "Toggle note at cursor",
+    "translation": "Добавить или убрать ноту у курсора",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Ударные установки",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "Подготовить {track} к записи",
+    "ratio": 2.55
+  },
+  {
+    "id": "beatTakes.locked",
+    "english": "Stop recording to edit",
+    "translation": "Остановите запись для редактирования",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatTakes.choose",
+    "english": "Use {name}",
+    "translation": "Использовать {name}",
+    "ratio": 1.9
+  },
+  {
+    "id": "speech.pitch",
+    "english": "Pitch",
+    "translation": "Высота тона",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Мужской",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Грусть",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Частое дыхание",
+    "ratio": 3.5
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Шмыгнуть носом",
+    "ratio": 2.8
+  },
+  {
+    "id": "speech.cue.burps",
+    "english": "Burp",
+    "translation": "Отрыжка",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Напевание",
+    "ratio": 3
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Шипение",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.tone.Rich",
+    "english": "Rich",
+    "translation": "Насыщенный",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.tone.Relaxed",
+    "english": "Relaxed",
+    "translation": "Расслабленный",
+    "ratio": 1.86
+  },
+  {
+    "id": "speech.tone.Serene",
+    "english": "Serene",
+    "translation": "Безмятежный",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorText.serif",
+    "english": "Serif",
+    "translation": "С засечками",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorText.customFont",
+    "english": "Custom font",
+    "translation": "Пользовательский шрифт",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.shadowX",
+    "english": "Shadow X",
+    "translation": "Смещение тени по горизонтали",
+    "ratio": 3.5
+  },
+  {
+    "id": "editorText.shadowY",
+    "english": "Shadow Y",
+    "translation": "Смещение тени по вертикали",
+    "ratio": 3.25
+  },
+  {
+    "id": "editorText.in",
+    "english": "In",
+    "translation": "Вход",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.out",
+    "english": "Out",
+    "translation": "Выход",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorText.strength",
+    "english": "Strength",
+    "translation": "Интенсивность",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorText.apply",
+    "english": "Apply",
+    "translation": "Применить",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.preset0",
+    "english": "Clean title",
+    "translation": "Лаконичный заголовок",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorText.preset4",
+    "english": "Serif quote",
+    "translation": "Цитата с засечками",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorText.animationName1",
+    "english": "Fade",
+    "translation": "Плавное появление",
+    "ratio": 4.25
+  },
+  {
+    "id": "editorText.animationName6",
+    "english": "Zoom",
+    "translation": "Масштабирование",
+    "ratio": 3.75
+  },
+  {
+    "id": "editorText.loopName2",
+    "english": "Pulse",
+    "translation": "Пульсация",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorText.loopName3",
+    "english": "Turn",
+    "translation": "Вращение",
+    "ratio": 2
+  },
+  {
+    "id": "editorText.loopName5",
+    "english": "Sway",
+    "translation": "Покачивание",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorText.loopName7",
+    "english": "Loop bounce",
+    "translation": "Циклический отскок",
+    "ratio": 1.64
+  },
+  {
+    "id": "library.useForLipSync",
+    "english": "Use for lip sync",
+    "translation": "Использовать для синхронизации губ",
+    "ratio": 2.13
+  },
+  {
+    "id": "library.useForLipSyncLabel",
+    "english": "Use {name} for lip sync",
+    "translation": "Использовать {name} для синхронизации губ",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Снять с публикации",
+    "ratio": 2
+  },
+  {
+    "id": "beat.view.song",
+    "english": "Song",
+    "translation": "Композиция",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.region.nextTrack",
+    "english": "Next track",
+    "translation": "Следующая дорожка",
+    "ratio": 1.7
+  },
+  {
+    "id": "beat.region.resize",
+    "english": "Resize region",
+    "translation": "Изменить длину региона",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.region.copy",
+    "english": "Copy on drop",
+    "translation": "Копировать при отпускании",
+    "ratio": 2.08
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "Привязка",
+    "ratio": 2
+  },
+  {
+    "id": "beat.zoom.out",
+    "english": "Zoom out",
+    "translation": "Уменьшить масштаб",
+    "ratio": 2.13
+  },
+  {
+    "id": "beat.zoom.in",
+    "english": "Zoom in",
+    "translation": "Увеличить масштаб",
+    "ratio": 2.43
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Следующий такт",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.ruler.end",
+    "english": "End",
+    "translation": "Конец",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.drag.cancelled",
+    "english": "Drag cancelled",
+    "translation": "Перетаскивание отменено",
+    "ratio": 1.64
   },
   {
     "id": "chrome.privacyPolicy",

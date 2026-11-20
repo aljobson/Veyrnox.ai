@@ -17,13 +17,12 @@ describe('the tasks match the web /tools page', () => {
         key: m[1], label: m[2].replace(/\\'/g, "'"), blurb: m[3].replace(/\\'/g, "'"), ids: [...(m[4] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]),
     }));
     test('same tasks, labels, blurbs, models and order', () => {
-        expect(theirs.length).toBe(11);
+        expect(theirs.length).toBe(10);
         expect(TOOL_TASKS.map((t) => ({ key: t.key, label: t.label, blurb: t.blurb, ids: t.ids.filter((id) => !PHONE_ONLY.includes(id)) }))).toEqual(theirs);
     });
-    test('phone-only models are the intended ones, all under Face filters, and none is on the web yet', () => {
-        expect(PHONE_ONLY).toEqual(['face-costume']);
-        expect(TOOL_TASKS.find((t) => t.key === 'face-filters')?.ids).toEqual(expect.arrayContaining([...PHONE_ONLY]));
-        for (const id of PHONE_ONLY) expect(body).not.toContain(`'${id}'`);
+    test('no phone-only models and no Face filters task', () => {
+        expect(PHONE_ONLY).toEqual([]);
+        expect(TOOL_TASKS.find((t) => t.key === 'face-filters')).toBeUndefined();
     });
 });
 
@@ -65,9 +64,8 @@ describe('tool groups', () => {
         expect(g[0]).toMatchObject({ key: 'video-upscale' });
         expect(g[0].tools[0].credits).toBe(49);
     });
-    test('Relight sits under Face filters, and without a catalog row there is no Video Upscale or Relight', () => {
-        const g = toolGroups([model('face-relight', media, 7)]);
-        expect(g.map((x) => x.key)).toEqual(['face-filters']);
+    test('a face model is in no Tools group, and without a catalog row there is no Video Upscale', () => {
+        expect(toolGroups([model('face-relight', media, 7)]).map((x) => x.key)).not.toContain('face-filters');
         expect(toolGroups([model('topaz-upscale', media, 5)]).map((x) => x.key)).toEqual(['upscale']);
     });
 });

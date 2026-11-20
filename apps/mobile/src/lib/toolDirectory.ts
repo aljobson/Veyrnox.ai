@@ -7,9 +7,8 @@ import { slotsFor } from './sources';
 // only the task names, blurbs and the order live here. __tests__/toolDirectory.test.ts reads the web file and fails if
 // the tasks, their order or their models differ, except the ids in PHONE_ONLY below.
 
-// Models the phone lists before the web does. Costumes needs a style picker the web Create page does not have yet,
-// so it is not on the web /tools page; remove it from this list when the web gains one.
-export const PHONE_ONLY: readonly string[] = ['face-costume'];
+// Models the phone lists before the web does. None at present.
+export const PHONE_ONLY: readonly string[] = [];
 
 export interface ToolTask {
     readonly key: string;
@@ -23,7 +22,6 @@ export const TOOL_TASKS: readonly ToolTask[] = [
     { key: 'background', label: t('toolDirectory.removebackground'), blurb: t('toolDirectory.cutthesubjectoutofaphoto'), ids: ['bria-bg-remove'] },
     { key: 'expand', label: t('toolDirectory.expand'), blurb: t('toolDirectory.extendanimagebeyonditsedges'), ids: ['bria-expand'] },
     { key: 'edit', label: t('toolDirectory.editwithaprompt'), blurb: t('toolDirectory.changeanimagebydescribingthechange'), ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
-    { key: 'face-filters', label: t('toolDirectory.facefilters'), blurb: t('toolDirectory.facefiltersBlurb'), ids: ['face-retouch', 'face-enhance', 'face-relight', 'face-makeup', 'face-age', 'face-costume'] },
     { key: 'animate', label: t('toolDirectory.phototovideo'), blurb: t('toolDirectory.turnastillimageintoamoving'), ids: ['kling-3.0-i2v', 'kling-3.0-standard-i2v', 'kling-3.0-i2v-kie'] },
     { key: 'avatar', label: t('toolDirectory.talkingavatar'), blurb: t('toolDirectory.makeaphotospeakavoiceclip'), ids: ['kling-avatar-v2'] },
     { key: 'lipsync', label: t('toolDirectory.lipsync'), blurb: t('toolDirectory.matchavideoslipstonew'), ids: ['latentsync'] },

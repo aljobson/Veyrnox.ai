@@ -1,3 +1,10 @@
+import { upgradeSequence } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
+import { slicedWords } from '../../../../app/veyrnox/_lib/editorWords.mjs';
+import { slicedAnimation } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { sliceMaskKeyframes as webSliceMaskKeyframes } from '../../../../app/veyrnox/_lib/editorMask.mjs';
+// The web caller supplies the retained length; today's helper preserves keys beyond that boundary.
+const sliceMaskKeyframes = webSliceMaskKeyframes as (clip: Clip | TextClip, from: number, len: number) => ReturnType<typeof webSliceMaskKeyframes>;
+import { sourceFrame, shiftedSpeedKeys } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
 import { rawText, t } from './i18n';
 export const DEFAULT_TEXT_STYLE = { font: 'sans-serif', weight: 'bold', align: 'center', color: '#ffffff', stroke: '#000000', strokeWidth: 0, background: '#000000', backgroundOpacity: 0 } as const;
 export type TrackKind = 'video' | 'audio' | 'text';
@@ -7,21 +14,33 @@ export type Media = {
     id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number;
     assetSource?: { projectId: string; assetId: string };
 };
-export type Clip = {
+export type TimedFields = {
+    words?: { text: string; start: number; len: number }[];
+    keyframes?: { frame: number; [key: string]: unknown }[];
+    parameterKeyframes?: { frame: number; [key: string]: unknown }[];
+    maskKeyframes?: { frame: number; [key: string]: unknown }[];
+    speedCurve?: { frame: number; rate: number }[]; freezeFrame?: number;
+};
+export type Animation = { in?: string; out?: string; duration?: number; combo?: string; period?: number; amount?: number; offset?: number; span?: number };
+export type Clip = TimedFields & {
     id: string; mediaId?: string; start: number; in?: number; len: number; trackId?: string;
-    volume?: number; transition?: number; transitionType?: string; rate?: number; reverse?: boolean;
+    volume?: number; transition?: number; transitionType?: string; rate?: number; reverse?: boolean; preservePitch?: boolean;
     fadeIn?: number; fadeOut?: number; pan?: number; groupId?: string; fit?: 'contain' | 'cover';
-    effect?: { type: string; intensity: number }; animation?: { in?: string; out?: string; duration?: number };
+    effect?: { type: string; intensity: number }; animation?: Animation;
     transform?: { x?: number; y?: number; scale?: number; rotation?: number; opacity?: number; flipX?: boolean; flipY?: boolean };
     filter?: { brightness?: number; contrast?: number; saturate?: number; hue?: number; blur?: number };
     eq?: { low?: number; mid?: number; high?: number };
 };
-export type TextClip = {
+export type TextClip = TimedFields & {
+    caption?: boolean; wordsEstimated?: boolean;
+    wordStyle?: { mode: 'none' | 'highlight' | 'karaoke' | 'word'; color: string };
     id: string; text: string; start: number; len: number; trackId?: string; x: number; y: number; size: number;
-    groupId?: string; animation?: { in?: string; out?: string; duration?: number };
-    style?: { font?: string; weight?: string; align?: string; color?: string; stroke?: string; strokeWidth?: number; background?: string; backgroundOpacity?: number };
+    groupId?: string; animation?: Animation;
+    style?: { font?: string; weight?: string; align?: string; color?: string; stroke?: string; strokeWidth?: number; background?: string; backgroundOpacity?: number;
+        italic?: boolean; underline?: boolean; letterSpacing?: number; lineHeight?: number;
+        shadowColor?: string; shadowOpacity?: number; shadowBlur?: number; shadowX?: number; shadowY?: number };
 };
-export type EditorTrack = { id: string; kind: TrackKind; name: string; locked: boolean; muted: boolean; hidden: boolean };
+export type EditorTrack = { id: string; kind: TrackKind; name: string; locked: boolean; muted: boolean; hidden: boolean; solo?: boolean };
 export type Marker = { id: string; frame: number; label: string; color: string };
 export type Timeline = {
     schemaVersion: 3; fps: number; seq: number; aspect: 'source' | Canvas['aspect_ratio']; background: string;
@@ -49,23 +68,29 @@ export const canvasOf = (value: unknown): Canvas => {
 
 export function timelineOf(value: unknown): Timeline {
     if (!value || typeof value !== 'object') return emptyTimeline();
-    const raw = value as Partial<Timeline> & { schemaVersion?: number };
-    if (!Array.isArray(raw.video) || !Array.isArray(raw.audio) || !Array.isArray(raw.text) || !raw.media || typeof raw.media !== 'object') return emptyTimeline();
+    const input = value as Partial<Omit<Timeline, 'schemaVersion'>> & { schemaVersion?: number };
+    if (!Array.isArray(input.video) || !Array.isArray(input.audio) || !Array.isArray(input.text) || !input.media || typeof input.media !== 'object') return emptyTimeline();
+    const raw = (input.schemaVersion === 2 ? upgradeSequence(input) : input) as Partial<Timeline> & Pick<Timeline, 'video' | 'audio' | 'text' | 'media'>;
     const tracks = Array.isArray(raw.tracks) && raw.tracks.length ? raw.tracks.map((track) => ({
         id: String(track.id), kind: track.kind, name: String(track.name), locked: !!track.locked, muted: !!track.muted, hidden: !!track.hidden,
+        ...(typeof track.solo === 'boolean' ? { solo: track.solo } : {}),
     })) : starterTracks();
     const trackId = (kind: TrackKind, current?: string) => tracks.some((track) => track.id === current && track.kind === kind) ? current : tracks.find((track) => track.kind === kind)?.id;
     const media = Object.fromEntries(Object.entries(raw.media).map(([id, item]) => {
         const source = item as Media;
         const kind = ['video', 'audio', 'image', 'graphic'].includes(String(source.kind)) ? String(source.kind) : 'video';
-        return [id, { ...source, id, kind, frames: Math.max(1, Math.round(Number(source.frames) || 90)), name: String(source.name || t('nativeEditorModel.untitled')).slice(0, 120), hasAudio: source.hasAudio ?? kind === 'audio', width: Number(source.width) || 0, height: Number(source.height) || 0 }];
+        return [id, { ...source, id, kind, frames: Math.max(1, Math.round(Number(source.frames) || 90)), name: String(source.name || t('nativeEditorModel.untitled')).slice(0, 120), hasAudio:
+        source.hasAudio ?? kind === 'audio', width: Number(source.width) || 0, height: Number(source.height) || 0 }];
     })) as Record<string, Media>;
-    const clip = (kind: 'video' | 'audio', item: Clip) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), in: Math.max(0, Number(item.in) || 0), len: Math.max(1, Math.round(Number(item.len) || 1)), trackId: trackId(kind, item.trackId), volume: item.volume ?? 1, ...(kind === 'video' ? { transition: item.transition ?? 0 } : {}) });
+    const clip = (kind: 'video' | 'audio', item: Clip) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), in: Math.max(0, Number(item.in) || 0), len: Math.max(1,
+        Math.round(Number(item.len) || 1)), trackId: trackId(kind, item.trackId), volume: item.volume ?? 1, ...(kind === 'video' ? { transition: item.transition ?? 0 } : {}) });
     return {
         ...emptyTimeline(), ...raw, schemaVersion: 3, fps: 30, media, tracks, markers: Array.isArray(raw.markers) ? raw.markers : [],
         video: raw.video.map((item) => clip('video', item)),
         audio: raw.audio.map((item) => clip('audio', item)),
-        text: raw.text.map((item) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), len: Math.max(1, Math.round(Number(item.len) || 1)), trackId: trackId('text', item.trackId), text: String(item.text || t('nativeEditorModel.yourtext')).slice(0, 1000), x: Number.isFinite(item.x) ? item.x : .5, y: Number.isFinite(item.y) ? item.y : .85, size: Math.max(2, Math.min(40, Math.round(Number(item.size) || 6))) })),
+        text: raw.text.map((item) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), len: Math.max(1, Math.round(Number(item.len) || 1)), trackId: trackId('text',
+        item.trackId), text: String(item.text || t('nativeEditorModel.yourtext')).slice(0, 1000), x: Number.isFinite(item.x) ? item.x : .5, y: Number.isFinite(item.y) ? item.y : .85, size:
+        Math.max(2, Math.min(40, Math.round(Number(item.size) || 6))) })),
     } as Timeline;
 }
 
@@ -80,24 +105,37 @@ export function updateClip(timeline: Timeline, selection: Selection, patch: Part
     return { ...timeline, [selection.track]: timeline[selection.track].map((item) => item.id === selection.id ? { ...item, ...patch, id: item.id } : item) } as Timeline;
 }
 
+// Shared slicing math, used by both explicit splits and insertion into an occupied lane.
+function splitPair(item: Clip | TextClip, kind: TrackKind, frame: number, seq: number): [Clip | TextClip, Clip | TextClip] {
+    const offset = frame - item.start, clip = item as Clip;
+    const fades = (len: number) => kind === 'text' ? {} : { fadeIn: Math.min(clip.fadeIn || 0, len), fadeOut: Math.min(clip.fadeOut || 0, len) };
+    const first = { ...item, ...slicedAnimation(item, 0),
+        ...(item.maskKeyframes ? { maskKeyframes: sliceMaskKeyframes(item, 0, offset) } : {}), len: offset, ...fades(offset) };
+    const second = { ...item, ...slicedWords(item, offset), ...slicedAnimation(item, offset),
+        ...(item.speedCurve ? { speedCurve: shiftedSpeedKeys(item, offset) } : {}),
+        ...(item.maskKeyframes ? { maskKeyframes: sliceMaskKeyframes(item, offset, item.len - offset) } : {}),
+        id: `${kind[0]}${seq}`, start: frame, len: item.len - offset, ...fades(item.len - offset),
+        ...(kind !== 'text' ? { in: sourceFrame(item, offset) } : {}), ...(kind === 'video' ? { transition: 0 } : {}) };
+    return [first, second];
+}
 export function splitClip(timeline: Timeline, selection: Selection, frame: number): Timeline | null {
     const item = clipAt(timeline, selection);
-    if (!item || frame <= item.start || frame >= item.start + item.len) return null;
-    const offset = frame - item.start;
+    if (!item || !Number.isInteger(frame) || frame <= item.start || frame >= item.start + item.len
+        || timeline.tracks.some(track => track.id === item.trackId && track.locked)) return null;
     const seq = timeline.seq + 1;
-    const first = { ...item, len: offset };
-    const second = { ...item, id: `${selection.track[0]}${seq}`, start: frame, len: item.len - offset, ...('in' in item ? { in: (item.in ?? 0) + offset } : {}) };
-    return { ...timeline, seq, [selection.track]: timeline[selection.track].flatMap((candidate) => candidate.id === item.id ? [first, second] : [candidate]) } as Timeline;
+    const pair = splitPair(item, selection.track, frame, seq);
+    return { ...timeline, seq, [selection.track]: timeline[selection.track].flatMap(candidate => candidate.id === item.id ? pair : [candidate]) } as Timeline;
 }
 
 export function removeSelections(timeline: Timeline, selections: readonly Selection[], ripple: 'none' | 'lane' | 'all'): Timeline {
     let next = timeline;
     for (const selection of selections) {
         const item = clipAt(next, selection);
-        if (!item) continue;
+        if (!item || timeline.tracks.some(track => track.id === item.trackId && track.locked)) continue;
+        const mode = item.freezeFrame !== undefined ? 'lane' : ripple;
         const list = next[selection.track].filter((candidate) => candidate.id !== selection.id).map((candidate) => {
             const sameLane = candidate.trackId === item.trackId;
-            const shouldRipple = candidate.start >= item.start + item.len && (ripple === 'all' || (ripple === 'lane' && sameLane));
+            const shouldRipple = candidate.start >= item.start + item.len && (mode === 'all' || (mode === 'lane' && sameLane));
             return shouldRipple ? { ...candidate, start: Math.max(0, candidate.start - item.len) } : candidate;
         });
         next = { ...next, [selection.track]: list } as Timeline;
@@ -127,7 +165,8 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
             if (!restored.has(key)) {
                 seq += 1;
                 restored.set(key, `${track}-${seq}`);
-                tracks.push({ id: `${track}-${seq}`, kind: track, name: `${track[0].toUpperCase()}${track.slice(1)} ${tracks.filter((candidate) => candidate.kind === track).length + 1}`, locked: false, muted: false, hidden: false });
+                tracks.push({ id: `${track}-${seq}`, kind: track, name: `${track[0].toUpperCase()}${track.slice(1)} ${tracks.filter((candidate) => candidate.kind === track).length + 1}`, locked:
+                false, muted: false, hidden: false });
             }
             lane = restored.get(key);
         }
@@ -149,10 +188,8 @@ export function pasteClipboard(timeline: Timeline, clipboard: Clipboard, frame: 
             existing = existing.flatMap((item) => {
                 if (item.trackId !== lane || item.start + item.len <= from) return [item];
                 if (item.start >= from) return [{ ...item, start: item.start + span }];
-                const head = from - item.start;
-                seq += 1;
-                const tail = { ...item, id: `${track[0]}${seq}`, start: from + span, len: item.len - head, ...('in' in item ? { in: (item.in ?? 0) + head } : {}) };
-                return [{ ...item, len: head }, tail];
+                const [head, tail] = splitPair(item, track, from, ++seq);
+                return [head, { ...tail, start: from + span }];
             });
         }
         (next as Record<TrackKind, (Clip | TextClip)[]>)[track] = [...existing, ...added];
@@ -194,12 +231,14 @@ export function moveClip(timeline: Timeline, selection: Selection, direction: -1
 export function groupSelections(timeline: Timeline, selections: readonly Selection[], grouped: boolean): Timeline {
     if (!grouped) {
         const groups = new Set(selectionItems(timeline, selections).map(({ item }) => item.groupId).filter(Boolean));
-        return (['video', 'audio', 'text'] as const).reduce((next, track) => ({ ...next, [track]: next[track].map((item) => groups.has(item.groupId) ? { ...item, groupId: undefined } : item) }), timeline) as Timeline;
+        return (['video', 'audio', 'text'] as const).reduce((next, track) => ({ ...next, [track]: next[track].map((item) => groups.has(item.groupId) ? { ...item, groupId: undefined } : item) }),
+        timeline) as Timeline;
     }
     if (selections.length < 2) return timeline;
     const groupId = `g${timeline.seq + 1}`;
     const keys = new Set(selections.map(({ track, id }) => `${track}:${id}`));
-    return (['video', 'audio', 'text'] as const).reduce((next, track) => ({ ...next, seq: timeline.seq + 1, [track]: next[track].map((item) => keys.has(`${track}:${item.id}`) ? { ...item, groupId } : item) }), timeline) as Timeline;
+    return (['video', 'audio', 'text'] as const).reduce((next, track) => ({ ...next, seq: timeline.seq + 1, [track]: next[track].map((item) => keys.has(`${track}:${item.id}`) ? { ...item,
+        groupId } : item) }), timeline) as Timeline;
 }
 
 export function addTrack(timeline: Timeline, kind: TrackKind): Timeline {
@@ -210,7 +249,8 @@ export function addTrack(timeline: Timeline, kind: TrackKind): Timeline {
 
 export function addMarker(timeline: Timeline, frame: number): Timeline {
     const seq = timeline.seq + 1;
-    return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: rawText(t('nativeEditorModel.marker', { value1: timeline.markers.length + 1 })), color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
+    return { ...timeline, seq, markers: [...timeline.markers, { id: `m${seq}`, frame: Math.max(0, Math.round(frame)), label: rawText(t('nativeEditorModel.marker', { value1:
+        timeline.markers.length + 1 })), color: '#3ee6c4' }].sort((a, b) => a.frame - b.frame) };
 }
 
 const clipsOnTrack = (timeline: Timeline, track: EditorTrack) => (timeline[track.kind] as (Clip | TextClip)[]).filter((item) => item.trackId === track.id);

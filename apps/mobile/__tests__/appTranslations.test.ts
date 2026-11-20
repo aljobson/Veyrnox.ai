@@ -24,7 +24,7 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(84);
+    expect(unused).toHaveLength(93);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
@@ -81,4 +81,20 @@ test.each(complete)('%s expanded-copy review includes every string over 1.6x, in
     const rows = Object.entries(CATALOGS[locale]!).filter(([key, value]) => sourceFor(key) && [...value].length > [...sourceFor(key)].length * 1.6)
         .map(([key, value]) => ({ id: key, english: sourceFor(key), translation: value, ratio: Number(([...value].length / [...sourceFor(key)].length).toFixed(2)) }));
     expect(require(`../src/lib/i18n/review/${locale}-length.json`)).toEqual(rows);
+});
+
+// French/Portuguese fractions below two select singular; Russian fractions use секунды.
+// Unit abbreviations avoid those inflections. Arabic ثانية already agrees with fractions.
+test.each([
+    ['ru', '{value} с'], ['fr', '{value} s'], ['pt', '{value} s'], ['ar', '{value} ثانية'],
+    ['de', '{value} Sekunden'], ['es', '{value} segundos'], ['hi', '{value} सेकंड'],
+    ['ja', '{value}秒'], ['ko', '{value}초'], ['zh', '{value}秒'], ['en', '{value} seconds'],
+] as const)('%s freeze duration supports fractional seconds with the value slot intact', (locale, template) => {
+    const key = 'editorTools.secondsValue', tr = createTranslator(locale, CATALOGS);
+    expect(CATALOGS[locale]![key]).toBe(template);
+    expect(slots(template)).toEqual(['{value}']);
+    for (const seconds of [.1, .5, 1.5, 2.5, 13.3]) {
+        const value = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(seconds);
+        expect(tr.t(key, { value })).toBe(fill(template, { value }, locale === 'ar'));
+    }
 });

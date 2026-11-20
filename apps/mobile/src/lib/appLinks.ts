@@ -64,9 +64,20 @@ function opened(segments: string[], query: URLSearchParams): string {
     return root;
 }
 
-// Maps an incoming link to an app route. Anything that is not a veyrnox.ai web link
-// under /app (the app's own scheme, an in-app path) is returned unchanged.
+// Exact Music shapes; no query, fragment, extra segment, or encoded traversal.
+function musicLink(raw: string): string {
+    if (/^\/music\/tracks\/[a-f0-9]{24}$/.test(raw)) return raw.replace('/tracks/', '/track/');
+    if (/^\/music\/creators\/[a-z][a-z0-9_]{2,29}$/.test(raw)) return raw.replace('/creators/', '/creator/');
+    if (/^\/listen\/[A-Za-z0-9_-]{43}$/.test(raw)) return `/music${raw}`;
+    return '/';
+}
+// Existing non-Music scheme and in-app paths retain their original handling.
 export function mapAppLink(path: string): string {
+    // Relative forms are validated before Router can normalize dot segments.
+    if (/^\/(?:music\/(?:tracks?|creators?|listen)(?:\/|[?#]|$)|listen(?:\/|[?#]|$))/.test(path)) {
+        if (/^\/music\/(?:track\/[a-f0-9]{24}|creator\/[a-z][a-z0-9_]{2,29}|listen\/[A-Za-z0-9_-]{43})$/.test(path)) return path;
+        return musicLink(path);
+    }
     let url: URL;
     try {
         url = new URL(path);
@@ -74,6 +85,12 @@ export function mapAppLink(path: string): string {
         return path;
     }
     if (url.protocol !== 'https:' || !WEB_HOSTS.has(url.hostname)) return path;
+    // Inspect the raw path: URL normalizes traversal before pathname is available.
+    const raw = path.replace(/^https:\/\/[^/]+/i, '');
+    if (/^\/(?:music(?:\/|$)|listen(?:\/|$))/.test(raw)) {
+        if (url.username || url.password || url.port) return '/';
+        return musicLink(raw);
+    }
     const segments = url.pathname.split('/').filter(Boolean);
     // A shared Cinema title or episode: /social-cinema/title/<id> and /social-cinema/watch/<id> (ADR-0164).
     if (segments[0] === 'social-cinema' && segments.length === 3 && UUID_RE.test(segments[2])) {
@@ -105,6 +122,9 @@ const TOKEN = '[A-Za-z0-9_-]+(?:\\.[A-Za-z0-9_-]+){1,3}';
 // The query a template hand-off carries (resolveAppLink): URLSearchParams output only, so no raw slash, colon, space or fragment.
 const ENCODED_QUERY = '(?:\\?[A-Za-z0-9._~*%+&=-]*)?';
 const ROUTE_SHAPES = [
+    /^\/music\/track\/[a-f0-9]{24}$/,
+    /^\/music\/creator\/[a-z][a-z0-9_]{2,29}$/,
+    /^\/music\/listen\/[A-Za-z0-9_-]{43}$/,
     new RegExp(`^/(?:job|chat|cinema|cinema/watch)/${UUID}$`),
     /^\/cinema\/series\/[a-z0-9-]{1,80}$/,
     new RegExp(`^/templates/[a-z0-9-]{1,40}${ENCODED_QUERY}$`),

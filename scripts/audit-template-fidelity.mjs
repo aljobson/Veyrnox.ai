@@ -15,6 +15,7 @@ import { GENERATION_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 import { ratioOf, nearestOption } from '../lib/aspectShapes.mjs';
 import { NEGATIVE_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
+import { longPromptTarget } from '../lib/templateLongPromptTarget.js';
 
 export const hash = text => createHash('sha256').update(text).digest('hex');
 export function auditTemplate(p) {
@@ -33,7 +34,9 @@ export function auditTemplate(p) {
   else if (slots.length > 1) reasons.push('multi-photo-needs-people-model');
   if (!slots.length && imageCount) reasons.push('unmapped-image-reference');
   if (!slots.length && /<[^>]+>/.test(sourcePrompt)) reasons.push('unmapped-placeholder');
-  const target = slots.length && !binding.error ? PEOPLE_BINDING_MODEL : legacyModelId;
+  const defaultTarget = slots.length && !binding.error ? PEOPLE_BINDING_MODEL : legacyModelId;
+  // Over Kling 3.0's prompt cap, a one-photo recipe moves to the long-prompt offer when its exact text fits there (ADR-0309 am. 3).
+  const target = longPromptTarget(defaultTarget, (binding.text || sourcePrompt).length, slots.length);
   let cap = fallbackCapabilitiesFor(target);
   if (!cap || p.sourcePromptStatus === 'exact-truncated') reasons.push('unsupported-source-or-model');
   const wanted = p.aspect || p.clip?.aspectRatio || SHOWCASE_CLIPS[p.clipKey]?.aspectRatio || p.previewAspect;
@@ -45,7 +48,7 @@ export function auditTemplate(p) {
   if ((binding.text || sourcePrompt).length > Math.min(GENERATION_PROMPT_MAX, cap?.inputs?.prompt?.max || 0)) reasons.push('prompt-limit');
   const classification = video ? 'blocked-needs-video' : reasons.length ? 'unsupported' : slots.length ? 'bound' : 'like-for-like-safe';
   const bound = classification === 'bound';
-  const modelId = bound ? PEOPLE_BINDING_MODEL : legacyModelId;
+  const modelId = bound ? target : legacyModelId;
   cap = fallbackCapabilitiesFor(modelId);
   const text = bound ? binding.text : sourcePrompt;
   const hasPhoto = !!cap?.media?.image;

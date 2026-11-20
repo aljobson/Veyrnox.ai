@@ -1,6 +1,4 @@
-import { PHOTO_STUDIO_ENABLED } from '../../../lib/photoStudioFlag';
 import { rawText } from '../../../lib/i18n/translate';
-import { useFaceFiltersAvailable } from '../../../lib/useFaceFiltersAvailable';
 import { createTileColumns } from '../../../lib/createLayout';
 import { SectionLabel } from '../../../components/create/SectionLabel';
 import { Button, Text, Icon, IconBadge, ListRow, themedStyles, usePressStyle, useThemedStyles, useAppearance } from '../../../components/ui';
@@ -42,7 +40,6 @@ const MAKE: readonly { readonly kind: Kind; readonly label: string; readonly bad
 // model (the cheapest one that works from a prompt alone, as on the web); "Change model" on the form switches it, and
 // Generate shows the exact cost.
 export default function Create() {
-    const faceAvailable = useFaceFiltersAvailable();
     const { scheme } = useAppearance();
     const styles = useThemedStyles(sheets);
     const pressStyle = usePressStyle();
@@ -135,8 +132,6 @@ export default function Create() {
                         <EntryTile icon="squares" label={`${t('templates.kind.image')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'image' } })} />
                         <EntryTile icon="audio" label={`${t('templates.kind.audio')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'audio' } })} />
                         <EntryTile icon="wrench" label={t('menu.tools')} accessibilityLabel={t('toolsDir.entry')} onPress={() => router.push('/create/tools')} />
-                        {PHOTO_STUDIO_ENABLED ? <EntryTile icon="smiley" label={t('liveEdit.title')} onPress={() => router.push('/live-edit')} /> : null}
-                        {faceAvailable ? <EntryTile icon="smiley" label={t('faceFilters.title')} onPress={() => router.push('/face-filters')} /> : null}
                         {models.some(m => m.id === 'wan-2.5-kie' && !m.gated) ? <EntryTile icon="film" label={t('facelessReel.chip')} onPress={() => router.push('/faceless-reel')} /> : null}
                         {agent ? <EntryTile icon="filmReel" label={t('create.agentTitle')} accessibilityLabel={rawText(`${t('create.agentTitle')}. ${t('create.agentHint')}`)} onPress={() => router.push('/create/agent')} /> : null}
                         <EntryTile icon="chat" label={t('chat.skills.title')} onPress={() => router.push('/chat/skills')} />

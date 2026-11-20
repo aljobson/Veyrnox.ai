@@ -244,5 +244,16 @@
   "beat.pad.crash": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.mixer": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
   "beat.solo.short": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
-  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language."
+  "beat.kit.808": "Same in de: a loanword, brand-style name or number used unchanged in this language.",
+  "editorTools.rateValue": "Standard mathematical notation shared across languages.",
+  "editorTools.positionValue": "Standard mathematical notation shared across languages.",
+  "editorText.animationName6": "Standard notation or established style name, retained in this locale.",
+  "editorText.percent": "Standard notation or established style name, retained in this locale.",
+  "editorCaptionTools.karaoke": "Established borrowed term, retained in this language.",
+  "speech.emotion": "Emotion is also the German noun for emotion, with the same spelling and capitalization.",
+  "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
+  "speech.gender.neutral": "Neutral is the German adjective for a neutral voice; capitalization follows a standalone interface label.",
+  "speech.emotion.neutral": "Neutral is the German adjective for neutral delivery; capitalization follows a standalone interface label.",
+  "speech.tone.Neutral": "Neutral is the German adjective for a neutral vocal tone; the standalone label has the same spelling as English.",
+  "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending."
 }

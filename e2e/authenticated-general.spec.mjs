@@ -27,7 +27,7 @@ const writes = fixture => fixture.requests.filter(row => !['GET', 'HEAD', 'OPTIO
 async function open(fixture, page, path, heading) {
   const response = await fixture.open(path);
   expect(response.status(), 'Actual first-party document must render').toBe(200);
-  const title = path === '/app/enhance' ? page.getByTestId('enhance-title') : path === '/app/library' ? page.getByTestId('library-title') : page.getByRole('heading', { name: heading, exact: true });
+  const title = path === '/app/library' ? page.getByTestId('library-title') : page.getByRole('heading', { name: heading, exact: true });
   // The fixture has consumed streamed segments; prove the final document has
   // one title before checking that title's visibility.
   await expect(title).toHaveCount(1);
@@ -80,16 +80,6 @@ test('Credits unavailable balance does not invent a number and a reload recovers
   await fixture.reload();
   await expect(page.getByRole('button', { name: 'Buy credits', exact: true })).toBeDisabled();
   await expect(page.getByRole('alert').filter({ hasText: "We couldn't read your balance" })).toHaveCount(0);
-  expect(writes(fixture)).toEqual([]);
-});
-
-test('Enhance production-build gate does not expose development-only upload or export controls', async ({ page }) => {
-  const fixture = await fixtureFor(page);
-  await open(fixture, page, '/app/enhance', 'Video Enhance');
-  await expect(page.getByTestId('enhance-unavailable')).toBeVisible();
-  await expect(page.getByTestId('enhance-local-only')).toHaveText('Video Enhance is available only in an enabled local development preview.');
-  await expect(page.getByTestId('enhance-upload')).toHaveCount(0);
-  await expect(page.getByTestId('enhance-export')).toHaveCount(0);
   expect(writes(fixture)).toEqual([]);
 });
 
