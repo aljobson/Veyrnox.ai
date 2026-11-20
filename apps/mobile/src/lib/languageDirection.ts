@@ -1,3 +1,4 @@
+import { isListenRoute, safeReturnPath } from './secretRoutes';
 import { reloadAppAsync } from 'expo';
 import { I18nManager } from 'react-native';
 declare const require: (id: string) => any;
@@ -26,13 +27,14 @@ function parse(raw: string | null): Repair | null {
     try {
         const value = JSON.parse(raw ?? 'null');
         return value && typeof value.locale === 'string' && typeof value.returnPath === 'string'
-            && value.returnPath.startsWith('/') && !value.returnPath.startsWith('//') ? value : null;
+            && value.returnPath.startsWith('/') && !value.returnPath.startsWith('//') ? { ...value, returnPath: safeReturnPath(value.returnPath) } : null;
     } catch { return null; }
 }
 
 // Preserve deep-link parameters as well as the pathname. Dynamic segment parameters
 // are already in the pathname; only search parameters belong in the query string.
 export function languageReturnPath(pathname: string, params: Record<string, string | string[] | undefined>, segments: readonly string[]): string {
+    if (isListenRoute(pathname)) return '/';
     const pathParams = new Set(segments.flatMap(segment => {
         const match = segment.match(/^\[\[?(?:\.\.\.)?([^\]]+)\]\]?$/);
         return match ? [match[1]] : [];
@@ -75,7 +77,7 @@ export function createDirectionReconciler(deps: DirectionDependencies = defaults
                 attempted = false;
                 return false;
             }
-            await deps.write(JSON.stringify({ locale, returnPath: path } satisfies Repair));
+            await deps.write(JSON.stringify({ locale, returnPath: safeReturnPath(path) } satisfies Repair));
             prepared = true;
             handledRepair = true;
             if (session.signedIn && !session.canReloadSession()) {

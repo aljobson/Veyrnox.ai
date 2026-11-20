@@ -1,3 +1,4 @@
+import { safeReturnPath } from './secretRoutes';
 import { captureEvent } from './analytics/events';
 import { directionReconciler, reconcileLanguageDirection } from './languageDirection';
 import { reloadAppAsync } from 'expo';
@@ -50,7 +51,7 @@ export async function changeLanguage(code: string, returnPath: string, session: 
     try {
         previous = await deps.load();
         // Prepare route first: a route failure cannot leave a new language in storage.
-        routeSaved = await deps.saveReturn(returnPath);
+        routeSaved = await deps.saveReturn(safeReturnPath(returnPath));
         if (!routeSaved) return false;
         saved = await deps.save(code, !deps.signedIn);
         if (!saved || (deps.signedIn && !deps.canReloadSession())) throw new Error('language_not_durable');

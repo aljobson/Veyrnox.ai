@@ -5538,6 +5538,24 @@
     "ratio": 2.04
   },
   {
+    "id": "musicPublication.unpublish",
+    "english": "Unpublish",
+    "translation": "Retirer la publication",
+    "ratio": 2.44
+  },
+  {
+    "id": "musicPublication.comments",
+    "english": "Allow comments",
+    "translation": "Autoriser les commentaires",
+    "ratio": 1.86
+  },
+  {
+    "id": "musicPublication.remixes",
+    "english": "Allow remixes",
+    "translation": "Autoriser les remixes",
+    "ratio": 1.62
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
