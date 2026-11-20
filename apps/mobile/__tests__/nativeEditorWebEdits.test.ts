@@ -16,7 +16,7 @@ test.each(['original', 'trimmed', 'split'] as const)('%s animated clip changes s
         selection = { track: 'video', id: tl.video.find(c => c.start === 30)!.id };
     }
     const original = tl.video.find(c => c.id === selection.id)!;
-    expect(canChangeSpeed(original)).toBe(true);
+    expect(canChangeSpeed(tl, selection)).toBe(true);
     const next = changeItemSpeed(tl, selection, 2)!;
     expect(next).toEqual(setSequenceRate(tl, selection.track, selection.id, 2));
     const changed = next.video.find(c => c.id === selection.id)!;
@@ -24,7 +24,7 @@ test.each(['original', 'trimmed', 'split'] as const)('%s animated clip changes s
     expect(changed).toMatchObject({ len, rate: 2, animation: { in: 'fade', out: 'fade', offset: 0, span: len },
         keyframes: [], parameterKeyframes: [], maskKeyframes: [], speedCurve: [], fadeIn: len, fadeOut: len });
     expect(validateSequence(next)).toBeNull();
-    expect(canChangeSpeed(changed)).toBe(true);
+    expect(canChangeSpeed(next, selection)).toBe(true);
     expect(changeItemSpeed(next, selection, 1)).toEqual(setSequenceRate(next, selection.track, selection.id, 1));
 });
 const cases: [string, Selection, Record<string, unknown>][] = [
@@ -48,10 +48,11 @@ test.each(cases.filter(([name]) => name !== 'ramp'))('%s trims match the web wit
         expect(next).toEqual(expected); expect(validateSequence(next)).toBeNull();
     }
 });
-test('trim eligibility expands without expanding speed editing', () => {
+test('moving clips allow speed editing and timed clips allow trimming', () => {
     const tl = webSequenceV3();
-    for (const item of [tl.video[0], tl.text[0]]) { expect(canTrim(item)).toBe(true); expect(canChangeSpeed(item)).toBe(false); }
-    for (const patch of [{ speedCurve: [] }, { freezeFrame: 0 }]) expect(canTrim({ ...tl.video[0], ...patch })).toBe(false);
+    for (const item of [tl.video[0], tl.text[0]]) expect(canTrim(item)).toBe(true);
+    expect(canChangeSpeed(tl, video)).toBe(true); expect(canChangeSpeed(tl, text)).toBe(false);
+    for (const patch of [{ speedCurve: [] }, { freezeFrame: 0 }]) expect(canTrim({ ...tl.video[0], ...patch })).toBe(true);
 });
 test.each(cases.filter(([name]) => name !== 'ramp'))('paste inside %s retains the same source and timed tail as web split', (_name, selection, patch) => {
     const tl = webSequenceV3(); Object.assign(tl[selection.track][0], patch);
