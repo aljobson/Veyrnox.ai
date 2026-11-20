@@ -24,8 +24,8 @@ import { MakePanel } from '../../../components/chat/MakePanel';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
-import { chatApi, cleanOptions, cleanTitle, imagesExtra, isLongText, isModelSwitch, longTextState, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
-import { attachmentRefs, MAX_ATTACHMENTS, roomFor, type ChatImage } from '../../../lib/chatAttach';
+import { chatApi, cleanOptions, cleanTitle, imagesExtra, retryRefusalIsUnsettled, isLongText, isModelSwitch, longTextState, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
+import { imagesBlocked, MAX_ATTACHMENTS, photoNoticeKey, refsForSend, roomFor, type AttachmentRef, type ChatImage, type SentRefs } from '../../../lib/chatAttach';
 import { pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
 import { createVideoAttach } from '../../../lib/chatVideoAttempt';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
@@ -59,6 +59,8 @@ export default function Conversation() {
     // Kept only while a send is unsettled, so a retry of the same message with the same choices is charged once.
     const { messageList, ...follow } = useChatAutoScroll(messages?.length ?? 0, sending, typing);
     const pendingKey = useRef<PendingSend | null>(null);
+    // The storage keys sent with pendingKey: a retry of a send whose outcome is not known reuses them (ATT-REVIEW-05).
+    const pendingRefs = useRef<SentRefs | null>(null);
     const [model, setModel] = useState<ChatModel | null>(null);
     const [options, setOptions] = useState<ReplyOptions>(NO_OPTIONS);
     const [images, setImages] = useState<ChatImage[]>([]);
@@ -148,6 +150,7 @@ export default function Conversation() {
         async (again?: string) => {
             const text = (again ?? draft).trim();
             if (!text || busy.current || !messages || !model) return;
+            if (imagesBlocked(images.length, imagesExtra(model))) return; // ATT-04: never drop chosen images and send the text alone
             const sendCapture = captureChat(id);
             busy.current = true; setRound(r => r + 1);
             const chosen = cleanOptions(model, options);
@@ -163,13 +166,15 @@ export default function Conversation() {
             }
             const attached = model && imagesExtra(model) !== null ? images : [];
             const pending = sendKeyFor(pendingKey.current, text, chosen, () => makeSendKey(Crypto.randomUUID()), attached.map((i) => i.id).join(','));
+            const isRetry = pending === pendingKey.current; // the same key as a send whose outcome is not known yet
             pendingKey.current = pending;
             setSending(true);
             // Images from the phone go to storage first: a failed upload costs nothing and sends nothing.
-            let refs: ReturnType<typeof attachmentRefs> = [];
+            // A retry of a send still unsettled reuses its refs, so it is the same request and finds the same job.
+            let refs: readonly AttachmentRef[] = [];
             try {
-                const keys = await uploadChatImages(api, attached.filter((i) => i.uri), new AbortController().signal);
-                refs = attachmentRefs(keys, attached.filter((i) => i.assetId).map((i) => i.assetId as string));
+                pendingRefs.current = await refsForSend(pending.key, pendingRefs.current, attached, (files) => uploadChatImages(api, files, new AbortController().signal));
+                refs = pendingRefs.current.refs;
             } catch {
                 setError(t('chat.attach.uploadFailed'));
                 pendingKey.current = null;
@@ -218,6 +223,7 @@ export default function Conversation() {
                 // A refusal from the server made no reply. Anything else (Stop, a dropped connection, no answer) may have
                 // reached the server, which charges what it produced, so the send is looked for before it is called free.
                 if (controller.signal.aborted || !(err instanceof ApiError && err.status > 0)) unanswered = true;
+                else if (retryRefusalIsUnsettled(isRetry, err.status)) unanswered = true;
                 else failed = err.code;
             }
             deltas.close();
@@ -361,7 +367,8 @@ export default function Conversation() {
     async function addPhotos() {
         const r = await pickPhotos(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
         if (r.images.length) setImages((cur) => [...cur, ...r.images]);
-        if (r.problem === 'resize_unavailable') setNotice(t('chat.attach.needsUpdate'));
+        const key = photoNoticeKey(r.problem);
+        if (key) setNotice(t(key));
     }
     const videoAttempt = useRef(0);
     const [addVideo] = useState(() => createVideoAttach({
@@ -370,7 +377,8 @@ export default function Conversation() {
         addImages: (frames, limit) => setImages(cur => [...cur, ...frames].slice(0, limit)),
     }));
     const isFree = !busy.current && loadedFor === round && !!model && freeLeftFor(left, model.id) > 0 && !options.thinking && !options.web && images.length === 0 && !isLongText(draft.trim());
-    const canSend = !sending && !!draft.trim() && price !== null && !longTextState(model, draft.trim()).tooLong;
+    const blocked = imagesBlocked(images.length, imageExtra);
+    const canSend = !sending && !!draft.trim() && price !== null && !blocked && !longTextState(model, draft.trim()).tooLong;
     const last = messages && messages.length >= 2 ? messages[messages.length - 1] : null;
     const lastUser = last?.role === 'assistant' && last.content ? messages![messages!.length - 2] : null;
     const againPrice = model && lastUser ? replyPrice(model, options, imageExtra !== null ? images.length : 0, lastUser.content) : price;
@@ -430,6 +438,7 @@ export default function Conversation() {
                     )}
                 />
             )}
+            {blocked ? <Text style={styles.notice} accessibilityRole="alert">{t('chat.attach.modelImages')}</Text> : null}
             {notice ? <Text style={styles.notice} accessibilityRole="alert">{notice}</Text> : null}
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
             {threadLoad.failed ? <Button label={t('chat.tryagain')} accessibilityLabel={t('chat.tryagain')} variant="secondary" onPress={threadLoad.retry} /> : null}

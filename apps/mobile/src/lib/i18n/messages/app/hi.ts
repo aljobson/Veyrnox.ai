@@ -713,6 +713,8 @@ export default {
   "chat.attach.photosLabel": "इस डिवाइस से फ़ोटो जोड़ें",
   "chat.attach.removeN": "इमेज {n} हटाएँ",
   "chat.attach.uploadFailed": "एक इमेज अपलोड नहीं हो सकी। कुछ नहीं भेजा गया और कोई शुल्क नहीं लिया गया।",
+  "chat.attach.modelImages": "यह मॉडल इमेज नहीं पढ़ सकता। उन्हें हटाएँ या ऐसा मॉडल चुनें जो पढ़ सके।",
+  "chat.attach.photoFailed": "एक फ़ोटो पढ़ी नहीं जा सकी। कोई दूसरी आज़माएँ, या जाँचें कि Veyrnox.ai आपकी फ़ोटो खोल सकता है।",
   "chat.cancelrename": "नाम बदलना रद्द करें",
   "chat.chat": "चैट",
   "chat.chat2": "चैट",

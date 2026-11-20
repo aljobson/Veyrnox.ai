@@ -706,6 +706,8 @@ export default {
   "chat.attach.photosLabel": "附加此设备上的照片",
   "chat.attach.removeN": "移除图像 {n}",
   "chat.attach.uploadFailed": "有图像上传失败。未发送任何内容，也未扣费。",
+  "chat.attach.modelImages": "此模型无法读取图像。请移除图像，或选择可以读取的模型。",
+  "chat.attach.photoFailed": "无法读取某张照片。请换一张，或检查 Veyrnox.ai 是否可以打开你的照片。",
   "chat.cancelrename": "取消重命名",
   "chat.chat": "聊天",
   "chat.chat2": "聊天",
