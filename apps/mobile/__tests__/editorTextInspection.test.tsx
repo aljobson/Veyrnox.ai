@@ -47,11 +47,37 @@ test('Outlined playback overlay preserves fill and approximates its outline', as
     expect(JSON.stringify(item)).toBe(before);
 });
 
-test.each(['left', 'right'])('%s overlay alignment has horizontal room to take effect', async align => {
+test.each([
+    ['left', 'flex-start'], ['center', 'center'], ['right', 'flex-end'],
+])('%s overlay alignment positions natural-width text within its wrapper', async (align, alignItems) => {
     const item = { ...webSequenceV3().text[0], style: { align } };
     await act(async () => root.render(<EditorTextOverlay item={item} />));
     const caption = root.container.queryAll(n => n.children.includes(item.text) && !!n.props.style)[0];
-    expect(StyleSheet.flatten(caption.props.style)).toMatchObject({ textAlign: align, width: '84%' });
+    const captionStyle = StyleSheet.flatten(caption.props.style);
+    expect(captionStyle.textAlign).toBe(align);
+    expect(captionStyle.width).toBeUndefined();
+    expect(captionStyle.position).not.toBe('absolute');
+    expect(captionStyle.bottom).toBeUndefined();
+    expect(captionStyle.maxWidth).not.toBe('84%');
+    expect(StyleSheet.flatten(caption.parent!.props.style)).toMatchObject({
+        position: 'absolute', bottom: 17, width: '84%', alignItems,
+    });
+});
+
+test('left-aligned overlay keeps its background off the full-width wrapper', async () => {
+    const item = { ...webSequenceV3().text[0],
+        style: { align: 'left', background: '#123456', backgroundOpacity: 0.5 } };
+    await act(async () => root.render(<EditorTextOverlay item={item} />));
+    const caption = root.container.queryAll(n => n.children.includes(item.text) && !!n.props.style)[0];
+    const captionStyle = StyleSheet.flatten(caption.props.style);
+    expect(captionStyle.backgroundColor).toBe('rgba(18,52,86,0.5)');
+    expect(captionStyle.width).toBeUndefined();
+    const fullWidthElements = root.container.queryAll(n => !!n.props.style
+        && StyleSheet.flatten(n.props.style).width === '84%');
+    expect(fullWidthElements.length).toBeGreaterThan(0);
+    for (const element of fullWidthElements) {
+        expect(StyleSheet.flatten(element.props.style).backgroundColor).toBeUndefined();
+    }
 });
 
 test.each([
