@@ -97,6 +97,8 @@
   "menu.credits": "Established German term or label: Credits.",
   "menu.mcp": "Brand or product name, retained as on the website.",
   "menu.oddlings": "Brand or product name, retained as on the website.",
+  "modelCompare.pair": "Standard comparison notation between unchanged model-name placeholders; vs is conventional in this locale.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.build.name": "Established German term or label: Name.",
   "oddlings.title": "Brand or product name, retained as on the website.",
   "oddlingsProjects.defaultName": "Brand or product name, retained as on the website.",

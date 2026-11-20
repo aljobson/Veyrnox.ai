@@ -90,8 +90,14 @@ export function normaliseWizperResult({ assetId, duration, result }) {
 
 export function normaliseScribeResult({ assetId, duration, result }) {
   if (!result || !Array.isArray(result.words)) return invalid('provider_result_invalid');
-  const words = result.words.filter((word) => word?.type === 'word');
-  if (!words.length && !cleanText(result.text)) return invalid('analysis_no_speech');
+  // Scribe returns Japanese and Chinese punctuation ("。", "、", "，") as separate "words", often with zero
+  // length (probed 2026-11-20). That is not speech and would fail the timestamp check for the whole clip,
+  // and a spoken-pause-sized comma token would hide part of the pause; keep only tokens with a letter or digit.
+  const words = result.words.filter((word) => word?.type === 'word' && /[\p{L}\p{N}]/u.test(String(word.text ?? '')));
+  // Scribe describes a clip with no speech by its audio events, for example "[tone]" for music alone,
+  // with an empty word list. Without a word there is nothing to cut around, so that is "no speech"
+  // (settled as no speech, not as a failed analysis), whatever the text says.
+  if (!words.length) return invalid('analysis_no_speech');
   return parseSmartCutAnalysis({
     version: SMART_CUT_ANALYSIS_VERSION,
     assetId,

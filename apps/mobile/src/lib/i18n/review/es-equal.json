@@ -72,6 +72,8 @@
   "menu.cinema": "Brand or product name retained as on the Spanish website: Social Cinema.",
   "menu.mcp": "Brand or product name retained as on the Spanish website: MCP.",
   "menu.oddlings": "Brand or product name retained as on the Spanish website: Oddlings.",
+  "modelCompare.pair": "Standard comparison notation between unchanged model-name placeholders; vs is conventional in this locale.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.sheet.canon": "Same spelling in Spanish and English for this label: Canon.",
   "oddlings.title": "Brand or product name retained as on the Spanish website: Oddlings.",
   "oddlingsProjects.defaultName": "Brand or product name retained as on the Spanish website: Oddlings.",

@@ -27,6 +27,7 @@
   "menu.cinema": "Brand or product name, retained as on the website.",
   "menu.mcp": "Brand or product name, retained as on the website.",
   "menu.oddlings": "Brand or product name, retained as on the website.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.title": "Brand or product name, retained as on the website.",
   "oddlingsProjects.defaultName": "Brand or product name, retained as on the website.",
   "opt.countOption": "Standard notation, unit, format example or placeholder-only display.",
