@@ -22,10 +22,10 @@ import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { rankPresets } from '../../../lib/creatorTaste';
 import { cheapestCredits, isLowBalance } from '../../../lib/lowBalance';
 import { useBalance } from '../../../lib/useBalance';
-import { fetchPresets, presetPrice, type Preset } from '../../../lib/presets';
+import { fetchPresets, type Preset } from '../../../lib/presets';
 import { fetchImageTemplates, type ImageTemplate } from '../../../lib/imageTemplates';
 import { fetchAudioTemplates, type AudioTemplate } from '../../../lib/audioTemplates';
-import { isDirectTemplate, listedTemplates, mixKinds, priceOfDirect } from '../../../lib/exploreTemplates';
+import { isDirectTemplate, listedTemplates, mixKinds } from '../../../lib/exploreTemplates';
 import { fetchPopularIds, templateChips, templatesFor, templatePageHref } from '../../../lib/templateFilters';
 import { colors, ds, LIST_END_PADDING } from '../../../theme';
 import { Button, Card, Text, TextField, Chip, themedStyles, useThemedStyles, useAppearance } from '../../../components/ui';
@@ -35,7 +35,8 @@ import { hasRealAnswer, phoneStarts } from '../../../lib/firstProfile';
 import { useFirstProfile } from '../../../lib/useFirstProfile';
 import { StartOption } from '../../../components/home/StartOption';
 import { EntryRow } from '../../../components/home/EntryRow';
-import { PresetCard } from '../../../components/home/PresetCard';
+import { ExploreTemplateGrid } from '../../../components/home/ExploreTemplateGrid';
+import { SwapRow } from '../../../components/home/SwapRow';
 import { OddlingsBanner } from '../../../components/home/OddlingsBanner';
 import { VeyLoader } from '../../../components/VeyLoader';
 
@@ -184,7 +185,6 @@ export default function Explore() {
     }, [typedPresets, type, activeCategory, popularIds, query, vibe]);
     useEffect(() => setLimit(PAGE), [type, activeCategory, query]);
     const shown = useMemo(() => matching.slice(0, limit), [matching, limit]);
-    const modelCount = useMemo(() => new Set((allTemplates ?? []).map((preset) => preset.modelId)).size, [allTemplates]);
 
     function pickType(next: TypeFilter) {
         setType(next);
@@ -245,7 +245,7 @@ export default function Explore() {
                         const onPress = () => void recordHomeStart(api, key);
                         const divided = index > 0;
                         if (key === 'create') return <StartOption href="/create" hue="mint" key={key} onPress={onPress} style={styles.startOption} icon="sparkle" title={t('menu.create')} body={t('explore.start.create.body')} hint={t('explore.start.create.hint')} divided={divided} badge={badge} />;
-                        if (key === 'audio') return <StartOption href="/audio" hue="rose" key={key} onPress={onPress} style={styles.startOption} icon="audio" title={t('menu.audio')} body={t('audioHub.home.body')} hint={t('audioHub.home.hint')} divided={divided} badge={badge} />;
+                        if (key === 'audio') return <StartOption href="/audio" hue="rose" key={key} onPress={onPress} style={styles.startOption} icon="headphones" title={t('menu.audio')} body={t('audioHub.home.body')} hint={t('audioHub.home.hint')} divided={divided} badge={badge} />;
                         if (key === 'chat') return <StartOption href="/chat" hue="sky" key={key} onPress={onPress} style={styles.startOption} icon="chat" title={t('menu.chat')} body={t('explore.start.chat.body')} hint={t('explore.chat.hint')} divided={divided} badge={badge} />;
                         return <StartOption href="/film" hue="iris" key={key} onPress={onPress} style={styles.startOption} icon="slate" title={t('menu.film')} body={t('explore.start.film.body')} hint={t('explore.start.film.hint')} divided={divided} badge={badge} />;
                     })}
@@ -297,7 +297,7 @@ export default function Explore() {
                         </Text>
                         {presets ? (
                             <Text variant="footnote" style={styles.count}>
-                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length, modelCount)}
+                                {templateCountLabel({ t, plural }, allTemplates?.length ?? presets.length)}
                             </Text>
                         ) : null}
                     </View>
@@ -323,7 +323,7 @@ export default function Explore() {
                     <VeyLoader />
                 ) : (
                     <>
-                        {searchShown ? (
+                        <SwapRow />{searchShown ? (
                             <TextField
                                 label={t('explore.search')}
                                 accessibilityLabel={t('explore.search')}
@@ -370,11 +370,7 @@ export default function Explore() {
                                 {filtered ? <Button variant="secondary" size="md" label={t('common.clearFilters')} onPress={clearFilters} /> : null}
                             </View>
                         ) : (
-                            <View style={styles.grid}>
-                                {shown.map((preset) => (
-                                    <PresetCard key={preset.id} preset={preset} price={isDirectTemplate(preset.id) ? priceOfDirect(preset, models) : presetPrice(preset)} onOpen={openPreset} />
-                                ))}
-                            </View>
+                            <ExploreTemplateGrid shown={shown} audio={audioList} models={models} onOpen={openPreset} />
                         )}
                         {matching.length > shown.length ? (
                             <Button variant="secondary" label={t('libraryCreate.showMore')} onPress={() => setLimit((n) => n + PAGE)} />
@@ -489,10 +485,4 @@ const sheets = themedStyles((p, ramp) => ({
         paddingHorizontal: ds.space.md,
     },
     notice: { alignItems: 'flex-start', gap: ds.space.sm, paddingVertical: ds.space.md },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        rowGap: 12,
-    },
 }));

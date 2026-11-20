@@ -1,6 +1,8 @@
 export default {
     "editorSpeech.silences": "Remove silences",
     "editorSpeech.retakes": "Remove mistakes and keep the best take",
+    "editorSpeech.fillers": "Remove ums and uhs",
+    "editorSpeech.fillersLanguages": "Finds ums and uhs in English, Spanish, German, French, Portuguese and Russian. Other languages are analysed but may find nothing.",
     "editorSpeech.clip": "Choose a clip",
     "editorSpeech.uploadFirst": "Upload this clip first",
     "editorSpeech.unsupported": "Not available for this clip yet",

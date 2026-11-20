@@ -3,6 +3,19 @@ export const SMART_CUT_ANALYSIS_VERSION = 1;
 export const SMART_CUT_PRIMARY_ANALYSIS_PROVIDER = 'fal-scribe-v2';
 export const SMART_CUT_ANALYSIS_PROVIDERS = Object.freeze([SMART_CUT_PRIMARY_ANALYSIS_PROVIDER, 'fal-wizper']);
 export const SMART_CUT_SILENCE_DEFAULTS = Object.freeze({ minimumSeconds: 0.75, edgePaddingSeconds: 0.12 });
+// Pause-removal presets for the speech-aware planner. `natural` is the long-standing default;
+// `balanced` is accepted as its alias so the planner can share the demo planner's pacing names.
+export const SMART_CUT_SILENCE_PRESETS = Object.freeze({
+  snappy: Object.freeze({ minimumSeconds: 0.4, edgePaddingSeconds: 0.08 }),
+  natural: SMART_CUT_SILENCE_DEFAULTS,
+  relaxed: Object.freeze({ minimumSeconds: 1.2, edgePaddingSeconds: 0.18 }),
+});
+export function smartCutSilencePreset(name) {
+  const key = name === 'balanced' ? 'natural' : name;
+  return Object.hasOwn(SMART_CUT_SILENCE_PRESETS, key) ? key : 'natural';
+}
+// Word-level providers can be cut between any two words; phrase-level providers hide pauses inside a phrase.
+export const SMART_CUT_TIMING_QUALITY = Object.freeze({ 'fal-scribe-v2': 'word', 'fal-wizper': 'phrase' });
 
 const MAX_ANALYSIS_CHUNKS = 10_000;
 const MAX_TRANSCRIPT_CHARS = 100_000;
@@ -52,6 +65,7 @@ export function parseSmartCutAnalysis(value, { assetId, duration } = {}) {
       provider: value.provider,
       transcript: cleanText(value.transcript),
       language: speechCutLanguage(value.language),
+      timingQuality: SMART_CUT_TIMING_QUALITY[value.provider],
       chunks,
     },
   };
@@ -76,8 +90,14 @@ export function normaliseWizperResult({ assetId, duration, result }) {
 
 export function normaliseScribeResult({ assetId, duration, result }) {
   if (!result || !Array.isArray(result.words)) return invalid('provider_result_invalid');
-  const words = result.words.filter((word) => word?.type === 'word');
-  if (!words.length && !cleanText(result.text)) return invalid('analysis_no_speech');
+  // Scribe returns Japanese and Chinese punctuation ("。", "、", "，") as separate "words", often with zero
+  // length (probed 2026-11-20). That is not speech and would fail the timestamp check for the whole clip,
+  // and a spoken-pause-sized comma token would hide part of the pause; keep only tokens with a letter or digit.
+  const words = result.words.filter((word) => word?.type === 'word' && /[\p{L}\p{N}]/u.test(String(word.text ?? '')));
+  // Scribe describes a clip with no speech by its audio events, for example "[tone]" for music alone,
+  // with an empty word list. Without a word there is nothing to cut around, so that is "no speech"
+  // (settled as no speech, not as a failed analysis), whatever the text says.
+  if (!words.length) return invalid('analysis_no_speech');
   return parseSmartCutAnalysis({
     version: SMART_CUT_ANALYSIS_VERSION,
     assetId,
@@ -155,6 +175,39 @@ function padAndMerge(groups, clipById, padding) {
   return merged;
 }
 
+const MIN_PIECE_SECONDS = 0.1;
+
+// Cut reviewed removal ranges (for example filler sounds) out of the kept groups. A piece that no
+// longer holds any transcript entry, or is shorter than 0.1 s, is dropped rather than kept as a stub.
+function subtractRemovals(groups, removals) {
+  if (!removals.length) return groups;
+  const out = [];
+  for (const group of groups) {
+    const cuts = removals
+      .filter((cut) => cut.takeId === group.takeId && cut.end > group.start && cut.start < group.end)
+      .sort((a, b) => a.start - b.start);
+    if (!cuts.length) {
+      out.push(group);
+      continue;
+    }
+    const pieces = [];
+    let cursor = group.start;
+    for (const cut of cuts) {
+      if (cut.start > cursor) pieces.push([cursor, Math.min(cut.start, group.end)]);
+      cursor = Math.max(cursor, cut.end);
+    }
+    if (cursor < group.end) pieces.push([cursor, group.end]);
+    for (const [from, to] of pieces) {
+      const start = ceilHundredth(from);
+      const end = floorHundredth(to);
+      if (end - start < MIN_PIECE_SECONDS) continue;
+      const entries = group.entries.filter((entry) => entry.end > start && entry.start < end);
+      if (entries.length) out.push({ ...group, start, end, entries });
+    }
+  }
+  return out;
+}
+
 function mergeToSegmentLimit(groups) {
   const reduced = groups.map((group) => ({ ...group, entries: [...group.entries] }));
   while (reduced.length > MAX_SEGMENTS) {
@@ -185,16 +238,20 @@ function labelFor(group, end = group.end) {
 }
 
 /** Build the first production planner slice from normalized timed speech. */
-export function buildSpeechAwareCutPlan({ clips, analyses, minimumSilenceSeconds, edgePaddingSeconds } = {}) {
+export function buildSpeechAwareCutPlan({ clips, analyses, silencePreset, minimumSilenceSeconds, edgePaddingSeconds, removals = [] } = {}) {
+  const reviewedRemovals = (Array.isArray(removals) ? removals : [])
+    .filter((cut) => cut && typeof cut.takeId === 'string' && finite(cut.start) && finite(cut.end) && cut.end > cut.start);
+  const presetName = smartCutSilencePreset(silencePreset);
+  const preset = SMART_CUT_SILENCE_PRESETS[presetName];
   const takes = sourceClips(clips);
   if (!takes.length) throw new Error('Speech-aware Smart Cut needs at least one loaded video clip.');
   if (takes.length > MAX_SEGMENTS) throw new Error('Speech-aware Smart Cut supports at most 10 source clips.');
   const minimumSeconds = Number.isFinite(minimumSilenceSeconds)
     ? Math.min(3, Math.max(0.3, minimumSilenceSeconds))
-    : SMART_CUT_SILENCE_DEFAULTS.minimumSeconds;
+    : preset.minimumSeconds;
   const padding = Number.isFinite(edgePaddingSeconds)
     ? Math.min(0.5, Math.max(0, edgePaddingSeconds))
-    : SMART_CUT_SILENCE_DEFAULTS.edgePaddingSeconds;
+    : preset.edgePaddingSeconds;
   const clipById = new Map(takes.map((take) => [take.id, take]));
   const parsed = new Map();
   for (const take of takes) {
@@ -205,7 +262,8 @@ export function buildSpeechAwareCutPlan({ clips, analyses, minimumSilenceSeconds
 
   const rawGroups = takes.flatMap((take) => transcriptGroups(parsed.get(take.id), take, minimumSeconds));
   if (!rawGroups.length) throw new Error('No timed speech was found inside the selected clip ranges.');
-  const groups = mergeToSegmentLimit(padAndMerge(rawGroups, clipById, padding));
+  const knownRemovals = reviewedRemovals.filter((cut) => clipById.has(cut.takeId));
+  const groups = mergeToSegmentLimit(subtractRemovals(padAndMerge(rawGroups, clipById, padding), knownRemovals));
   const segments = [];
   let outputOffset = 0;
   for (const [index, group] of groups.entries()) {
@@ -236,6 +294,13 @@ export function buildSpeechAwareCutPlan({ clips, analyses, minimumSilenceSeconds
   const totalDuration = round(segments.reduce((sum, segment) => sum + segment.end - segment.start, 0));
   const selectedDuration = round(takes.reduce((sum, take) => sum + take.rangeEnd - take.rangeStart, 0));
   const warnings = ['Transcript timings guide these cuts; review every boundary before creating the video.'];
+  if ([...parsed.values()].some((analysis) => analysis.timingQuality === 'phrase')) warnings.push('This transcript has phrase-level timing, so pauses inside a phrase cannot be removed.');
+  // The 10-section limit can merge a removed range back into a kept section; say so instead of hiding it.
+  const keptAnyway = knownRemovals.filter((cut) => {
+    const middle = (cut.start + cut.end) / 2;
+    return segments.some((segment) => segment.takeId === cut.takeId && segment.start <= middle && middle < segment.end);
+  });
+  if (keptAnyway.length) warnings.push('Some removals were kept because the plan is limited to 10 sections.');
   if (rawGroups.length > MAX_SEGMENTS) warnings.push('Some short pauses were retained to fit the Clip Editor’s 10-section limit.');
   if (outputOffset >= MAX_OUTPUT_SECONDS - 0.01) warnings.push('The speech-aware plan stopped at the Clip Editor’s 60-second output limit.');
 
@@ -243,12 +308,14 @@ export function buildSpeechAwareCutPlan({ clips, analyses, minimumSilenceSeconds
     mode: 'transcript-silence',
     pacing: 'speech',
     pacingLabel: 'Speech aware',
+    silencePreset: presetName,
     notes: '',
     scriptProvided: true,
     takes,
     segments,
     totalDuration,
     silenceRemoved: round(Math.max(0, selectedDuration - totalDuration)),
+    removalsApplied: knownRemovals.length - keptAnyway.length,
     analysisProviders: [...new Set([...parsed.values()].map((analysis) => analysis.provider))],
     warnings,
   };

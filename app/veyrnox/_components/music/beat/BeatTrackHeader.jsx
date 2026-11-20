@@ -73,7 +73,7 @@ export default function BeatTrackHeader({ onHeight, armedId, onArm, mode = 'song
   }
   return <div ref={header} className={`relative min-h-64 border-b border-vx-border md:min-h-80 ${selected ? 'bg-vx-accent/10' : 'bg-vx-panel'}`}>
     <div className="flex flex-wrap items-center justify-center gap-1 md:justify-start md:px-2">
-      <button className="min-h-11 w-full truncate text-xs font-bold focus-visible:outline-vx-accent md:w-auto md:flex-1"
+      <button data-beat-read className="min-h-11 w-full truncate text-xs font-bold focus-visible:outline-vx-accent md:w-auto md:flex-1"
         aria-pressed={selected} onClick={onSelect} title={track.name}>{track.name}</button>
       <button className={`${button} px-2 max-md:w-11 ${track.mute ? 'bg-vx-accent text-vx-accent-ink' : ''}`}
         data-beat-live aria-label={t('app.music.beat.labels.l44', { p0: track.name })}
@@ -88,7 +88,7 @@ export default function BeatTrackHeader({ onHeight, armedId, onArm, mode = 'song
     </div>
     <div className="hidden p-2 md:block">{settings(layoutIds.desktop)}</div>
     <details className="md:hidden">
-      <summary data-beat-live aria-label={t('app.music.beat.labels.l47', { p0: track.name })}
+      <summary data-beat-read data-beat-live aria-label={t('app.music.beat.labels.l47', { p0: track.name })}
         className="relative z-10 flex min-h-11 cursor-pointer items-center text-center text-xs focus-visible:outline-vx-accent">{t('app.music.beat.ui.track.settings')}</summary>
       <div className="absolute start-0 top-full z-30 w-64 rounded-xl border border-vx-border bg-vx-panel p-2 shadow-lg">
         {settings(layoutIds.mobile)}

@@ -1,3 +1,5 @@
+import { MusicSongActions } from '../../../components/music/MusicSongActions';
+import { subscribeSongChanges } from '../../../lib/music/songChanges';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
@@ -37,6 +39,7 @@ export default function SongDetail() {
         if (!supplied) void probeMusic(() => findLifecycle(api, id)).then(r => { if (current && r.state === 'on') setLifecycle(r.data); });
         return () => { current = false; live.current = false; generation.current++; };
     }, [load, api, id, revision]);
+    useEffect(() => subscribeSongChanges(() => { void load(); }), [load]);
     async function mutate(action: 'trash' | 'restore') {
         if (!lifecycle || lock.current) return;
         lock.current = true; setBusy(true); setMessage('');
@@ -74,6 +77,7 @@ export default function SongDetail() {
             {lifecycle ? <Button label={t('music.restore')} disabled={busy} onPress={() => void mutate('restore')} /> : null}
         </View> : song ? <>
             {!busy && playback ? <MusicPlayer input={playback} /> : !busy ? <MusicNotice message={t('music.player.error')} /> : null}
+            <MusicSongActions song={song} />
             <Text variant="title3" accessibilityRole="header">{t('music.versions')}</Text>
             <Text variant="footnote" tone="secondary">{t('music.versionsBody')}</Text>
             {song.versions.map(v => <View key={v.id} style={s.group}>

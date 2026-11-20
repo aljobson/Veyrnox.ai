@@ -33,6 +33,7 @@ export default function Search() {
                 placeholder={t('srch.placeholder')}
                 placeholderTextColor={colors.muted}
                 autoFocus
+                autoCapitalize="none"
                 autoCorrect={false}
                 returnKeyType="search"
                 maxLength={80}

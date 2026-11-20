@@ -22,6 +22,7 @@
   "menu.cinema": "Brand or product name retained as on the website: Social Cinema.",
   "menu.mcp": "Standard abbreviation, size or visual mark used in Russian interfaces: MCP.",
   "menu.oddlings": "Brand or product name retained as on the website: Oddlings.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.title": "Brand or product name retained as on the website: Oddlings.",
   "oddlingsProjects.defaultName": "Brand or product name retained as on the website: Oddlings.",
   "opt.countOption": "Placeholders and version/punctuation notation only; substitutions are localized at the call site.",
@@ -66,5 +67,6 @@
   "create.firstRun.dest.tiktok": "Product name written the same in this language: TikTok.",
   "create.firstRun.dest.reels": "Product name written the same in this language: Instagram Reels.",
   "create.firstRun.dest.youtube": "Product name written the same in this language: YouTube.",
+  "menu.smartCut": "Smart Cut is the product name of the feature and stays in English in every language.",
   "beat.kit.808": "Same in ru: a loanword, brand-style name or number used unchanged in this language."
 }

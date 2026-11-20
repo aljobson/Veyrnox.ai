@@ -11,6 +11,8 @@ export default {
     'explore.presetsIntro': 'Each one opens Create on its model and prompt, priced before you press Generate.',
     'explore.templateCount.one': '{count} template on {models}',
     'explore.templateCount.other': '{count} templates on {models}',
+    'explore.templateTotal.one': '{count} template',
+    'explore.templateTotal.other': '{count} templates',
     'explore.modelCount.one': '{count} model',
     'explore.modelCount.other': '{count} models',
     'explore.templateCountNone': '0 templates',

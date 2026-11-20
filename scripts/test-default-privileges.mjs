@@ -16,12 +16,25 @@ const can = async (role, fn) => (await q('SELECT has_function_privilege($1, $2, 
 // Every function the browser roles may call, each granted explicitly by the
 // migration named. A new entry here is a deliberate decision, not a default.
 const BROWSER_CALLABLE = new Set([
+    // ADR-0362: deliberate tenant-JWT wrappers and their private implementations.
+    'public.reserve_project_file(uuid,text,bigint,text)',
+    'private.reserve_project_file(uuid,text,bigint,text)',
+    'public.consume_project_file_inspection(uuid,uuid)',
+    'private.consume_project_file_inspection(uuid,uuid)',
+    'public.set_pro_project_head(uuid,integer,uuid,text)',
+    'private.set_pro_project_head(uuid,integer,uuid,text)',
+
     'public.applied_migration_names()',         // 0034, anon: migration-ledger CI check
     'public.catalog_watch()',                   // 0030, anon: fal-catalog-watch; active fal rows only since 0256
     'public.reconcile_status()',                // 0128, anon: reconcile-watch
     'public.spend_watch_status()',              // 0444, anon: spend-watch; verdict only, no figures (ADR-0328)
     'public.recovery_status()',                 // 0131, anon: recovery-health
     // ADR-0245 film studio cloud
+    // ADR-0361 required client-version overloads; legacy signatures delegate with 4.
+    'public.save_music_beat_project(uuid,integer,text,text,text,text,integer)',
+    'public.remove_music_beat_project(uuid,integer,integer)',
+    'private.save_music_beat_project(uuid,integer,text,text,text,text,integer)',
+    'private.remove_music_beat_project(uuid,integer,integer)',
     // ADR-0345 music beat cloud
     'public.save_music_beat_project(uuid,integer,text,text,text,text)',
     'private.save_music_beat_project(uuid,integer,text,text,text,text)',

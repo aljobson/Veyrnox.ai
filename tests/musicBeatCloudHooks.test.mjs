@@ -1,112 +1,19 @@
-import { englishBeatImports } from './helpers/musicBeatI18n.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registerHooks } from 'node:module';
-import { createBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
+import { configureBeatWrites, assertBeatWritable } from '../app/veyrnox/_lib/music/beat/beatCompatibility.mjs';
+import { setup, fixture, saves } from './helpers/musicBeatCloudHookHarness.mjs';
 
-// Execute both production hooks with deterministic effects, timers and an in-memory
-// revisioned store. No network, IndexedDB or React renderer is needed for these flows.
-let activeRunner, fixture;
-globalThis.beatHookFixture = {
-  useI18n: englishBeatImports['../../../../../components/I18nProvider'].useI18n,
-  subscribeShelf: () => () => {},
-  useRef(value) { const r = activeRunner, i = r.cursor++; return r.slots[i] ||= { current: value }; },
-  useState(value) {
-    const r = activeRunner, i = r.cursor++;
-    if (!(i in r.slots)) r.slots[i] = value;
-    return [r.slots[i], next => { r.slots[i] = typeof next === 'function' ? next(r.slots[i]) : next; r.dirty = true; }];
-  },
-  useEffect(effect, deps) {
-    const r = activeRunner, i = r.cursor++, old = r.slots[i];
-    if (!old || !deps || deps.some((d, n) => d !== old.deps?.[n])) {
-      r.effects.push(() => { old?.cleanup?.(); r.slots[i] = { deps, cleanup: effect() }; });
-    }
-  },
-  useCallback(fn, deps) {
-    const r = activeRunner, i = r.cursor++, old = r.slots[i];
-    if (!old || deps.some((d, n) => d !== old.deps[n])) r.slots[i] = { deps, fn };
-    return r.slots[i].fn;
-  },
-  getStoredUserId: () => fixture.userId,
-  onSessionChange: () => () => {},
-  getBeat: async () => ({ record: structuredClone(fixture.record), persistent: true }),
-  setCloudLink: async (id, captured, link) => { fixture.record.cloud = link; fixture.calls.push('link'); return {}; },
-  updateBeat: async (doc, revision, options = {}) => {
-    if (revision !== fixture.record.revision || options.current?.() === false) return { error: 'conflict' };
-    fixture.record = { ...fixture.record, doc, updatedAt: doc.updatedAt, revision: revision + 1, cloud: options.link || fixture.record.cloud };
-    fixture.calls.push('local-write'); return { revision: revision + 1, persistent: true };
-  },
-  subscribeBeats: () => () => {},
-  createBeat: async () => { throw Error('Unexpected copy'); },
-  getShelf: () => [], hydrateShelf: async () => {},
-  configureCloudTakes: () => {},
-  getCloudBeat: async () => { fixture.calls.push('get'); return fixture.get(); },
-  saveCloudBeat: async (id, body) => { fixture.calls.push(['save', body]); return fixture.save(body); },
-  listTakes: async () => { fixture.calls.push('takes'); return { takes: fixture.rows }; },
-  uploadTake: async (id, asset) => { fixture.calls.push(['upload', asset.ref]); return fixture.upload(asset); },
-  takeUrl: async () => {},
-};
-const exportsByFile = {
-  'beat:i18n': ['useI18n'],
-  '/react/index.js': ['useRef', 'useState', 'useEffect', 'useCallback'],
-  '/authClient.js': ['getStoredUserId', 'onSessionChange'],
-  '/beatStore.js': ['getBeat', 'setCloudLink', 'updateBeat', 'subscribeBeats', 'createBeat'],
-  '/beatCloud.js': ['getCloudBeat', 'saveCloudBeat', 'listTakes', 'uploadTake', 'takeUrl'],
-  '/beatAssets.js': ['configureCloudTakes'],
-  '/instrumentShelf.js': ['getShelf', 'hydrateShelf', 'subscribeShelf'],
-};
-const hooks = registerHooks({ resolve(specifier, context, next) {
-  return specifier.endsWith('/components/I18nProvider') ? { url: 'beat:i18n', shortCircuit: true } : next(specifier, context);
-}, load(url, context, next) {
-  for (const [suffix, names] of Object.entries(exportsByFile)) if (url.endsWith(suffix))
-    return { format: 'module', shortCircuit: true, source: `export const { ${names.join(', ')} } = globalThis.beatHookFixture;` };
-  return next(url, context);
-} });
-const { useBeatCloudSync } = await import('../app/veyrnox/_components/music/beat/useBeatCloudSync.js');
-const { useBeatProject } = await import('../app/veyrnox/_components/music/beat/useBeatProject.js');
-hooks.deregister();
-function runner(render) {
-  const r = { slots: [], effects: [], dirty: true, cursor: 0, output: null,
-    render() { activeRunner = r; r.cursor = 0; r.dirty = false; r.output = render(); for (const effect of r.effects.splice(0)) effect(); },
-    close() { for (const slot of r.slots) slot?.cleanup?.(); },
-  };
-  return r;
-}
-async function setup(t, { edited = false, newer = false, assets = {} } = {}) {
-  const id = crypto.randomUUID(), userId = crypto.randomUUID(), projectId = crypto.randomUUID();
-  const doc = { ...createBeat({ id, now: 1 }), assets };
-  const cloud = { userId, projectId, revision: 1, syncedUpdatedAt: 1 };
-  fixture = { userId, record: { id, doc: { ...doc, updatedAt: edited ? 2 : 1 }, updatedAt: edited ? 2 : 1, revision: 1, cloud },
-    calls: [], announcements: [], rows: [],
-    get: async () => ({ project: { id: projectId, revision: newer ? 2 : 1 }, doc_json: JSON.stringify({ ...doc, title: newer ? 'From account' : doc.title, updatedAt: newer ? 3 : 1 }) }),
-    save: async body => ({ project: { id: projectId, revision: body.expected_revision + 1 } }),
-    upload: async asset => ({ id: asset.ref, status: 'ready' }),
-  };
-  const timers = new Map(); let timerId = 0;
-  t.mock.method(globalThis, 'setTimeout', (fn, delay) => { timers.set(++timerId, { fn, delay }); return timerId; });
-  t.mock.method(globalThis, 'clearTimeout', id => timers.delete(id));
-  const priorWindow = globalThis.window, priorDocument = globalThis.document;
-  globalThis.window = new EventTarget(); globalThis.document = new EventTarget();
-  const announce = text => fixture.announcements.push(text);
-  const project = runner(() => useBeatProject(id, announce));
-  const sync = runner(() => useBeatCloudSync({ beatId: id, project: project.output, cloud: true, announce }));
-  async function settle() {
-    for (let i = 0; i < 30; i++) {
-      if (project.dirty) { project.render(); sync.dirty = true; }
-      if (sync.dirty) sync.render();
-      await new Promise(resolve => setImmediate(resolve));
-    }
-  }
-  project.render(); sync.render(); await settle();
-  async function run(delay) {
-    const item = [...timers].find(([, timer]) => delay === undefined || timer.delay === delay);
-    assert.ok(item, `expected a timer for ${delay}`);
-    timers.delete(item[0]); item[1].fn(); await settle();
-  }
-  t.after(() => { sync.close(); project.close(); globalThis.window = priorWindow; globalThis.document = priorDocument; });
-  return { project, sync, run, settle, timers };
-}
-const saves = () => fixture.calls.filter(call => Array.isArray(call) && call[0] === 'save');
+test('a valid version-5 local record opens read-only and refuses edits', async t => {
+  const h = await setup(t, { edited: true, localVersion: 5 });
+  assert.equal(h.project.output.error, '');
+  assert.equal(h.project.output.doc.version, 5);
+  assert.equal(h.project.output.readOnly, true);
+  assert.equal(h.project.output.edit(d => ({ ...d, title: 'Blocked' })), null);
+  assert.match(fixture.announcements.at(-1), /read-only/);
+  assert.equal(fixture.record.doc.version, 5);
+  assert.equal(fixture.calls.includes('local-write'), false);
+  assert.equal(saves().length, 0);
+});
 test('unchanged open reads once, never writes or lists absent takes', async t => {
   const h = await setup(t); await h.run();
   assert.deepEqual(fixture.calls, ['get']);
@@ -262,4 +169,160 @@ test('a transient upload failure is not retried by a document save before its de
   assert.deepEqual(h.sync.output.media, ['one']);
   await h.run(60000);
   assert.equal(uploads(), 2); assert.deepEqual(h.sync.output.media, []);
+});
+
+test('BEAT_CLIENT_OUTDATED stops automatic retries and announces update required', async t => {
+  const h = await setup(t, { edited: true });
+  fixture.save = async () => { throw { code: 'BEAT_CLIENT_OUTDATED', status: 409 }; };
+  await h.run();
+  assert.equal(h.sync.output.state, 'update_required');
+  assert.match(h.sync.output.message, /Update the app/);
+  assert.equal(h.timers.size, 0);
+  const count = saves().length;
+  await h.sync.output.checkpoint(); await h.settle();
+  assert.equal(saves().length, count); assert.equal(h.timers.size, 0);
+});
+for (const version of [6, 999]) test(`cloud open v${version} refuses persistence without writes, stash or retry`, async t => {
+  const h = await setup(t, { newer: true });
+  const raw = JSON.stringify({ ...fixture.record.doc, version, ...(version === 5 ? { markers: [{ id: 'a', name: 'Intro', tick: 3 }] } : {}) });
+  const before = JSON.stringify(fixture.record);
+  fixture.get = async () => ({ project: { id: fixture.record.cloud.projectId, revision: 2 }, doc_json: raw });
+  await h.run();
+  assert.equal(h.sync.output.state, 'update_required'); assert.equal(h.timers.size, 0);
+  assert.equal(JSON.stringify(fixture.record), before); assert.deepEqual(fixture.calls, ['get']);
+});
+test('outdated response while resolving a conflict clears the conflict and never retries', async t => {
+  const h = await setup(t, { edited: true, newer: true });
+  fixture.save = async () => { throw { code: 'VERSION_CONFLICT', status: 409 }; };
+  await h.run();
+  fixture.save = async () => { throw { code: 'BEAT_CLIENT_OUTDATED', status: 409 }; };
+  await h.sync.output.resolve('mine'); await h.settle();
+  assert.equal(h.sync.output.state, 'update_required'); assert.equal(h.sync.output.conflict, null); assert.equal(h.timers.size, 0);
+});
+
+// B1 changes the v5 P0 case to read-only; unsupported-version cases above stay terminal.
+test('cloud refresh loads v5 read-only without write-gated replacement, stash or upload', async t => {
+  const h = await setup(t, { newer: true });
+  const doc = { ...fixture.record.doc, version: 5, title: 'V5 account', updatedAt: 3 };
+  fixture.get = async () => ({ project: { id: fixture.record.cloud.projectId, revision: 2 }, doc_json: JSON.stringify(doc) });
+  await h.run();
+  assert.equal(h.project.output.readOnly, true); assert.equal(h.project.output.doc.version, 5);
+  assert.equal(h.sync.output.state, 'read_only'); assert.equal(h.timers.size, 0);
+  assert.deepEqual(fixture.calls, ['get', 'cloud-read']);
+});
+for (const choice of ['mine', 'theirs']) test(`cross-version conflict ${choice} keeps v5 floor in editor, storage and every cloud payload`, async t => {
+  const h = await setup(t, { edited: true, writes: true });
+  fixture.get = async () => ({ project: { id: fixture.record.cloud.projectId, revision: 2 }, doc_json: JSON.stringify({ ...fixture.record.doc, version: 5, title: 'Remote v5', updatedAt: 3 }) });
+  fixture.save = async () => { throw { code: 'BEAT_CLIENT_OUTDATED', status: 409 }; };
+  await h.run(); assert.equal(h.sync.output.state, 'conflict');
+  fixture.save = async body => ({ project: { id: fixture.record.cloud.projectId, revision: body.expected_revision + 1 } });
+  const before = saves().length;
+  await h.sync.output.resolve(choice); await h.settle();
+  assert.equal(h.sync.output.state, 'synced');
+  assert.equal(h.project.output.doc.version, 5); assert.equal(fixture.record.doc.version, 5);
+  assert.equal(h.project.output.doc.title, choice === 'theirs' ? 'Remote v5' : 'Untitled beat 1');
+  for (const [, body] of saves().slice(before)) assert.equal(JSON.parse(body.doc_json).version, 5);
+});
+test('v4 history restored after promotion never downgrades undo, redo, local save or cloud save', async t => {
+  const h = await setup(t, { writes: true });
+  h.project.output.edit(d => ({ ...d, title: 'Edited v4', updatedAt: 2 })); await h.settle();
+  await h.project.output.raiseVersionFloor(5); await h.settle();
+  h.project.output.undo(); await h.settle();
+  assert.equal(h.project.output.doc.version, 5); assert.equal(h.project.output.doc.title, 'Untitled beat 1');
+  h.project.output.redo(); await h.settle(); assert.equal(h.project.output.doc.version, 5);
+  h.project.output.edit(d => ({ ...d, title: 'After undo', updatedAt: 3 })); await h.settle();
+  await h.project.output.flushLatest(); await h.settle();
+  assert.equal(fixture.record.doc.version, 5);
+  await h.sync.output.checkpoint(); await h.settle();
+  assert.equal(JSON.parse(saves().at(-1)[1].doc_json).version, 5);
+});
+test('server rollback stops retries, preserves pending edits, disables mounted editor without conflict', async t => {
+  const h = await setup(t, { writes: true, localVersion: 5, edited: true });
+  h.project.output.edit(d => ({ ...d, title: 'Pending edit', updatedAt: 4 })); await h.settle();
+  fixture.save = async () => { throw { code: 'BEAT_WRITES_DISABLED', status: 409 }; };
+  await h.run(10000); await h.settle();
+  assert.equal(h.sync.output.state, 'read_only'); assert.equal(h.sync.output.conflict, null);
+  assert.equal(h.project.output.doc.title, 'Pending edit'); assert.equal(h.project.output.dirty, true);
+  assert.equal(h.project.output.readOnly, true);
+  assert.equal(h.project.output.edit(d => ({ ...d, title: 'Refused' })), null);
+  assert.equal(h.timers.size, 0);
+});
+test('clean v5 missing cloud media lists playback takes but never uploads when off', async t => {
+  const h = await setup(t, { localVersion: 5, assets: takes }); await h.run();
+  assert.ok(fixture.calls.includes('takes')); assert.equal(fixture.calls.some(c => Array.isArray(c) && c[0] === 'upload'), false);
+  assert.equal(h.sync.output.state, 'read_only'); assert.equal(h.timers.size, 0);
+});
+test('mounted v5 editor follows disabled/enabled navigation without reloading its document', async t => {
+  const h = await setup(t, { writes: true, localVersion: 5 });
+  const doc = h.project.output.doc;
+  configureBeatWrites(false); await h.settle();
+  assert.equal(h.project.output.readOnly, true); assert.equal(h.project.output.doc, doc);
+  assert.equal(h.project.output.edit(d => ({ ...d, title: 'Refused' })), null);
+  configureBeatWrites(true); await h.settle();
+  assert.equal(h.project.output.readOnly, false); assert.equal(h.project.output.doc, doc);
+  assert.ok(h.project.output.edit(d => ({ ...d, title: 'Enabled again', updatedAt: 5 })));
+  await h.project.output.flushLatest(); await h.settle();
+  assert.equal(fixture.record.doc.version, 5); assert.equal(fixture.record.doc.title, 'Enabled again');
+});
+test('rollback during conflict media publication remains read-only after resolution exits', async t => {
+  const h = await setup(t, { writes: true, localVersion: 5, edited: true, assets: takes });
+  fixture.get = async () => ({ project: { id: fixture.record.cloud.projectId, revision: 2 }, doc_json: JSON.stringify(fixture.record.doc) });
+  fixture.save = async () => { throw { code: 'VERSION_CONFLICT', status: 409 }; };
+  await h.run(); assert.equal(h.sync.output.state, 'conflict');
+  fixture.save = async body => ({ project: { id: fixture.record.cloud.projectId, revision: body.expected_revision + 1 } });
+  fixture.upload = async () => { throw { code: 'BEAT_WRITES_DISABLED', status: 409 }; };
+  await h.sync.output.resolve('mine'); await h.settle();
+  assert.equal(h.sync.output.state, 'read_only'); assert.equal(h.sync.output.conflict, null); assert.equal(h.timers.size, 0);
+});
+
+test('clean v5 sync resumes after on/off/on and saves the next edit', async t => {
+  const h = await setup(t, { writes: true, localVersion: 5 });
+  await h.run(); assert.equal(h.sync.output.state, 'synced');
+  configureBeatWrites(false); await h.settle(); assert.equal(h.sync.output.state, 'read_only');
+  configureBeatWrites(true); await h.settle(); await h.run(0);
+  assert.equal(h.sync.output.state, 'synced');
+  h.project.output.edit(d => ({ ...d, title: 'After re-enable', updatedAt: 5 })); await h.settle();
+  await h.project.output.flushLatest(); await h.settle(); await h.run(10000);
+  assert.equal(h.sync.output.state, 'synced');
+  assert.equal(JSON.parse(saves().at(-1)[1].doc_json).title, 'After re-enable');
+});
+for (const enabled of [true, false]) test(`mounted v4 retries a stale cycle when v5Writes becomes ${enabled}`, async t => {
+  const h = await setup(t, { writes: !enabled, edited: true });
+  fixture.beforeRead = () => { fixture.beforeRead = null; configureBeatWrites(enabled); };
+  await h.run(); assert.notEqual(h.sync.output.state, 'read_only');
+  await h.run(0); assert.equal(h.sync.output.state, 'synced');
+  h.project.output.edit(d => ({ ...d, title: 'Still editable', updatedAt: 8 })); await h.settle();
+  await h.project.output.flushLatest(); await h.settle(); await h.run(10000);
+  assert.equal(h.sync.output.state, 'synced'); assert.equal(JSON.parse(saves().at(-1)[1].doc_json).version, 4);
+});
+for (const [code, state] of [['LIMIT_REACHED', 'limit'], ['BEAT_CLIENT_OUTDATED', 'update_required'], ['NOT_FOUND', 'removed']]) {
+  test(`capability changes never clear terminal ${state}`, async t => {
+    const h = await setup(t, { edited: true });
+    fixture.save = async () => { throw { code, status: code === 'NOT_FOUND' ? 404 : 409 }; };
+    await h.run(); assert.equal(h.sync.output.state, state);
+    const count = saves().length;
+    for (const enabled of [true, false, true]) {
+      configureBeatWrites(enabled); await h.settle(); await h.sync.output.checkpoint(); await h.settle();
+      assert.equal(h.sync.output.state, state); assert.equal(h.timers.size, 0); assert.equal(saves().length, count);
+    }
+  });
+}
+
+test('v4 account linking retries a capability change before persistence', async t => {
+  const h = await setup(t, { writes: true }); fixture.record.cloud = null;
+  await h.run(); assert.equal(h.sync.output.state, 'unlinked');
+  fixture.beforeRead = () => { fixture.beforeRead = null; configureBeatWrites(false); };
+  await h.sync.output.link(); await h.settle();
+  assert.equal(h.sync.output.state, 'synced'); assert.equal(saves().length, 1);
+  assert.ok(fixture.record.cloud.projectId);
+});
+for (const choice of ['mine', 'theirs']) test(`v4 conflict ${choice} retries its stale capability token`, async t => {
+  const h = await setup(t, { writes: true, edited: true, newer: true });
+  fixture.save = async () => { throw { code: 'VERSION_CONFLICT', status: 409 }; };
+  await h.run(); assert.equal(h.sync.output.state, 'conflict');
+  fixture.save = async body => ({ project: { id: fixture.record.cloud.projectId, revision: body.expected_revision + 1 } });
+  configureBeatWrites(false); await h.settle();
+  await h.sync.output.resolve(choice); await h.settle();
+  assert.equal(h.sync.output.state, 'synced'); assert.equal(h.sync.output.conflict, null);
+  assert.equal(h.project.output.doc.version, 4);
 });

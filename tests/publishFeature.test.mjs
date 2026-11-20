@@ -71,11 +71,12 @@ test('the page, the OAuth landing and the menu link are gated on the same switch
     assert.match(read('app/veyrnox/_components/NavBar.js'), /publish: publishEnabled/);
 });
 
-test('production prepares Instagram credentials while keeping its release closed', () => {
+test('production releases approved Meta destinations', () => {
     const wrangler = read('wrangler.jsonc');
     const [prod, staging] = wrangler.split('"env": {');
     assert.match(prod, /"PUBLISH_ENABLED": "true"/);
-    assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter,tiktok"/);
+    assert.match(prod, /"PUBLISH_RELEASED_NETWORKS": "youtube,linkedin,twitter,tiktok,facebook,instagram"/);
+    assert.match(prod, /\\"facebook\\":\\"true\\"/);
     assert.match(prod, /"FACEBOOK_CLIENT_ID": "2428989684301953"/);
     assert.match(prod, /"INSTAGRAM_CLIENT_ID": "1116196098057142"/);
     assert.match(prod, /"PUBLISH_ANALYTICS_ENABLED": "true"/);

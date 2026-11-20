@@ -40,7 +40,8 @@ test('Dashboard authenticated balance, template pagination and filters remain re
   await expect(page.getByTestId('app-credit-balance')).toBeVisible();
   await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
   await page.getByRole('button', { name: 'Show more templates', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(100);
+  // 73 listed video templates (18 Nov 2026: the 76 swap recipes the server refuses were hidden); the second page of 50 is the remaining 23.
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(73);
   const filters = page.getByRole('group', { name: 'Filter templates', exact: true });
   await filters.getByRole('button', { name: 'New', exact: true }).click();
   await expect(filters.getByRole('button', { name: 'New', exact: true })).toHaveAttribute('aria-pressed', 'true');

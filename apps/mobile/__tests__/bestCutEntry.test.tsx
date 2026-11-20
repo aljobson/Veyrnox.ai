@@ -57,7 +57,9 @@ test('entry opens consent without fetching workspaces, creating a project or nav
     expect(creates()).toHaveLength(0); expect(mockPush).not.toHaveBeenCalled();
     expect(mockRequest).not.toHaveBeenCalled(); expect(modals()).toHaveLength(1);
     for (const key of ['bestCut.intro', 'bestCut.consent', 'bestCut.metadata']) {
-        expect(modals()[0].queryAll(n => n.children.includes(t(key))).length).toBeGreaterThan(0);
+        // The consent prints the brand as the bold wordmark (a nested run), so its text is read as one joined string.
+        const text = (n: any): string => n.children.map((c: any) => typeof c === 'string' ? c : text(c)).join('');
+        expect(modals()[0].queryAll(n => text(n) === t(key).replace('Veyrnox.ai', 'VEYRNOX.ai')).length).toBeGreaterThan(0);
     }
 });
 

@@ -158,9 +158,9 @@ test('every video template that needs a source clip is a candidate: swap, video-
   const all = await swapCandidates();
   const count = kind => all.filter(c => c.kind === kind).length;
   // Pinned so a guard or catalog change that widens or narrows the set shows up in review (hidden and Seedance-labelled templates included).
-  assert.deepEqual([count('swap'), count('video_swap'), count('motion')], [127, 300, 92]);
+  assert.deepEqual([count('swap'), count('video_swap'), count('motion')], [132, 314, 78]);
   assert.equal(new Set(all.map(c => c.id)).size, all.length);
-  assert.deepEqual((await swapCandidates({ kinds: ['motion'] })).length, 92);
+  assert.deepEqual((await swapCandidates({ kinds: ['motion'] })).length, 78);
   assert.deepEqual([tierFor('swap', 'audit_hash'), tierFor('swap', 'no_audit_record'), tierFor('video_swap', 'audit_hash'), tierFor('motion', 'no_audit_record')], ['A', 'B', 'C', 'D']);
 });
 

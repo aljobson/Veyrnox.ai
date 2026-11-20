@@ -28,7 +28,7 @@ export function ServerExportSheet(props: ServerExportProps) {
                 </Pressable>)}
             </View> : null}
             {state.blocked.length ? <View>
-                <Text style={styles.text}>{t('editorServerExport.notOnPhone')}</Text>
+                {state.blocked.some(item => item.reason === 'notOnPhone') ? <Text style={styles.text}>{t('editorServerExport.notOnPhone')}</Text> : null}
                 {state.blocked.map((item, index) => <Text key={`${item.id}-${index}`} style={styles.text}>{item.name ? `${item.name}: ` : ''}{t(`editorServerExport.${item.reason}` as Parameters<typeof t>[0])}</Text>)}
             </View> : null}
             {state.phase === 'quoted' && state.quote ? <View>

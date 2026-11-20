@@ -310,6 +310,9 @@ test('every /api/v1 handler refuses a request with no caller id, before any outb
     const flags = [...readFileSync(join(ROOT, 'wrangler.jsonc'), 'utf8').matchAll(/"([A-Z0-9_]+_ENABLED)"\s*:/g)].map((m) => m[1]);
     const env = {
         ...Object.fromEntries(flags.map((flag) => [flag, 'true'])),
+        // Editor flags that ship absent (runtime-flags binding, not in wrangler.jsonc) are opened too,
+        // or the Pro editor routes, which gate before identity by design (ADR-0362), would answer 404.
+        PRO_EDITOR_ENABLED: 'true',
         APP_ENV: 'development', NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL,
         NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_test', PUBLIC_HOST: 'http://localhost:3000',
     };

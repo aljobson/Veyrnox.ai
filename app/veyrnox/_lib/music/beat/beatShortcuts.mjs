@@ -1,7 +1,7 @@
 import { beatEnglish } from './beatDisplay.mjs';
 import { DRUM_PADS } from '../../../../../lib/musicInstruments.js';
 import { TYPING_NOTES } from './beatKeys.mjs';
-export const BEAT_KEYS = Object.freeze({ help: '?', undo: 'z', redo: 'y', play: 'Space',
+export const BEAT_KEYS = Object.freeze({ help: '?', undo: 'z', redo: 'y', play: 'Space', ripple: 'r',
   remove: Object.freeze(['Delete', 'Backspace']), arrows: Object.freeze(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']),
   ruler: Object.freeze(['ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End']),
   takes: Object.freeze(['ArrowLeft', 'ArrowRight', 'Enter', 'Escape']),
@@ -22,6 +22,7 @@ const row = (context, id, keys, handled) => Object.freeze({ id, context, keys, h
 export const BEAT_SHORTCUTS = Object.freeze([
   row('global', 'help', '? (Shift+/)', ['?']),
   row('global', 'play', 'Space', ['Space']),
+  row('global', 'ripple', 'R', ['r']),
   row('global', 'undo', 'Mod+Z', ['z']),
   row('global', 'redo', 'Mod+Shift+Z / Mod+Y', ['z', 'y']),
   row('grid', 'gridMove', '← ↑ → ↓', BEAT_KEYS.arrows),

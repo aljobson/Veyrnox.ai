@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { publicModelId, internalModelId, withPublicModelIds } from '../lib/publicModelIds.js';
+import { publicModelId, internalModelId, withPublicModelIds, withPublicJobModelIds } from '../lib/publicModelIds.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
 import { templateCards, templateDetail, kindTemplates } from '../lib/clientTemplates.js';
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
@@ -61,4 +61,24 @@ test('the Developer API contract names no flag, supplier or provider shape', () 
     const blob = JSON.stringify(developerOpenApi);
     assert.doesNotMatch(blob, /MULTI_REFERENCE|_ENABLED|Provider list|scalar shape/);
     assert.doesNotMatch(blob.replace(/https:\/\/[a-z0-9]+\.supabase\.co\/auth\/v1\/oauth\/(?:authorize|token)/g, ''), /supabase/i);
+});
+
+test('a job read, or a list of them, shows public model ids and nothing else changes', () => {
+    const one = { state: 'running', credits: 18, model_id: 'kling-2.6-pro-kie', refunded: false };
+    assert.deepEqual(withPublicJobModelIds(one), { ...one, model_id: 'kling-2.6-pro-a1' });
+    assert.equal(one.model_id, 'kling-2.6-pro-kie');
+    const list = { jobs: [{ job_id: 'a', model_id: 'kling-3.0-i2v-kie' }, { job_id: 'b', model_id: 'kling-3.0-i2v' }, null], next: null };
+    assert.deepEqual(withPublicJobModelIds(list).jobs.map((job) => job && job.model_id), ['kling-3.0-i2v-a1', 'kling-3.0-i2v', null]);
+    assert.equal(withPublicJobModelIds(list).next, null);
+    for (const body of [null, undefined, 'x', 5, ['kling-3.0-i2v-kie']]) assert.equal(withPublicJobModelIds(body), body);
+    assert.deepEqual(withPublicJobModelIds({ error: 'not_found' }), { error: 'not_found' });
+});
+
+test('the MCP and the Developer API pass job reads through withPublicJobModelIds', () => {
+    const mcp = readFileSync(new URL('../lib/veyrnoxMcp.js', import.meta.url), 'utf8');
+    assert.match(mcp, /\.\.\.withPublicJobModelIds\(data\)/);
+    assert.match(mcp, /generationListText\(publicData, models\)/);
+    const dev = readFileSync(new URL('../lib/developerApi.js', import.meta.url), 'utf8');
+    assert.match(dev, /publicJobRead\(await internal\(listGenerations/);
+    assert.match(dev, /publicJobRead\(await internal\(readGeneration/);
 });

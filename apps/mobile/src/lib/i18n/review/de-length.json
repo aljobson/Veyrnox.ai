@@ -3606,6 +3606,150 @@
     "ratio": 2.67
   },
   {
+    "id": "musicActions.action.network",
+    "english": "Could not connect. Check your connection and try again.",
+    "translation": "Die Verbindung konnte nicht hergestellt werden. Prüfe deine Verbindung und versuche es erneut.",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicActions.stems.title",
+    "english": "Stems",
+    "translation": "Einzelspuren",
+    "ratio": 2.4
+  },
+  {
+    "id": "musicActions.stems.status",
+    "english": "Stem archive",
+    "translation": "Archiv der Einzelspuren",
+    "ratio": 1.92
+  },
+  {
+    "id": "musicActions.stems.queued",
+    "english": "Your stem request is queued.",
+    "translation": "Deine Anfrage zur Spurtrennung befindet sich in der Warteschlange.",
+    "ratio": 2.36
+  },
+  {
+    "id": "musicActions.crop.title",
+    "english": "Crop",
+    "translation": "Zuschneiden",
+    "ratio": 2.75
+  },
+  {
+    "id": "musicTargetStems.target",
+    "english": "Get isolated {instrument}",
+    "translation": "Isoliertes Instrument abrufen: {instrument}",
+    "ratio": 1.72
+  },
+  {
+    "id": "musicTargetStems.instrument.drums",
+    "english": "Drums",
+    "translation": "Schlagzeug",
+    "ratio": 2
+  },
+  {
+    "id": "musicTargetStems.instrument.brass",
+    "english": "Brass",
+    "translation": "Blechbläser",
+    "ratio": 2.2
+  },
+  {
+    "id": "musicGenerationActions.state.queued",
+    "english": "Queued",
+    "translation": "In der Warteschlange",
+    "ratio": 3.33
+  },
+  {
+    "id": "audioHub.groups.performance",
+    "english": "Lip sync and dubbing",
+    "translation": "Lippensynchronisation und Vertonung",
+    "ratio": 1.75
+  },
+  {
+    "id": "audioHub.lipSync.title",
+    "english": "Lip sync",
+    "translation": "Lippensynchronisation",
+    "ratio": 2.63
+  },
+  {
+    "id": "musicPlaylists.title",
+    "english": "Playlists",
+    "translation": "Wiedergabelisten",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicPlaylists.empty",
+    "english": "No playlists yet",
+    "translation": "Noch keine Wiedergabelisten",
+    "ratio": 1.69
+  },
+  {
+    "id": "musicPlaylists.name",
+    "english": "Playlist title",
+    "translation": "Titel der Wiedergabeliste",
+    "ratio": 1.79
+  },
+  {
+    "id": "musicPlaylists.create",
+    "english": "Create playlist",
+    "translation": "Wiedergabeliste erstellen",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.pinned",
+    "english": "Pinned",
+    "translation": "Angeheftet",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.pin",
+    "english": "Pin playlist",
+    "translation": "Wiedergabeliste anheften",
+    "ratio": 2
+  },
+  {
+    "id": "musicPlaylists.playAll",
+    "english": "Play all",
+    "translation": "Alle abspielen",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicPlaylists.saved",
+    "english": "Playlist saved.",
+    "translation": "Wiedergabeliste gespeichert.",
+    "ratio": 1.87
+  },
+  {
+    "id": "musicPlaylists.error",
+    "english": "Could not update playlists. Please retry.",
+    "translation": "Wiedergabelisten konnten nicht aktualisiert werden. Versuche es erneut.",
+    "ratio": 1.73
+  },
+  {
+    "id": "musicPlaylists.working",
+    "english": "Updating playlist…",
+    "translation": "Wiedergabeliste wird aktualisiert…",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicPlaylists.missing",
+    "english": "Playlist not found",
+    "translation": "Wiedergabeliste nicht gefunden",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicPlaylists.add",
+    "english": "Add songs",
+    "translation": "Songs hinzufügen",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicPlaylists.addNamed",
+    "english": "Add {title}",
+    "translation": "{title} hinzufügen",
+    "ratio": 1.64
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Abspielen",
@@ -3838,5 +3982,23 @@
     "english": "Add",
     "translation": "Hinzufügen",
     "ratio": 3.33
+  },
+  {
+    "id": "presets.swap.terms",
+    "english": "Terms",
+    "translation": "Bedingungen",
+    "ratio": 2.2
+  },
+  {
+    "id": "presets.swap.aup",
+    "english": "Acceptable Use Policy",
+    "translation": "Richtlinie zur akzeptablen Nutzung",
+    "ratio": 1.62
+  },
+  {
+    "id": "presets.swap.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
   }
 ]

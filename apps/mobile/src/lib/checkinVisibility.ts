@@ -14,3 +14,6 @@ export function holdCheckinDialog(): () => void {
         if (dialogs.delete(token)) listeners.forEach(listener => listener());
     };
 }
+
+// The invitation may appear on its own only on the screens made for it: Explore (the home tab) and Credits.
+export const checkinRouteEligible = (pathname: string | null | undefined): boolean => pathname === '/' || pathname === '/credits';

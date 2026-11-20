@@ -1,0 +1,10 @@
+import { extendQuote, generationSong } from './musicGenerationActions';
+import type { MusicAddSectionQuote, MusicReplaceQuote } from '../../src/lib/music/sectionActionTypes';
+export { generationStart, generationReplay, generationView, readyView } from './musicGenerationActions';
+const { extend_seconds_after, ...pair } = extendQuote;
+void extend_seconds_after;
+export const addSectionQuote: MusicAddSectionQuote = { ...pair, position: 'end', duration_seconds: 10, instrumental: true };
+export const replaceQuote: MusicReplaceQuote = { ...pair, source_duration_seconds: 60, start_seconds: 0, end_seconds: 1 };
+export const sectionSong = { ...generationSong, actions: ['add_section', 'replace_section'] };
+export const addParameters = { position: 'end' as const, duration_seconds: 10 as const, styles: '  ambient  ', lyrics: '' };
+export const replaceParameters = { prompt: '  ambient  ', start_half: 0, end_half: 2 };

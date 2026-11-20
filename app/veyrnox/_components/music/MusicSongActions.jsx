@@ -2,13 +2,27 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { musicActionLimitReason, musicActionOverLimit } from '../../_lib/music/actionLimits.js';
 
 const jobIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+
+// An action whose source limit this song exceeds stays visible but cannot start, with the reason beside it.
+function LimitedMenuItem({ ref, action, label, sourceDurationSeconds, className, onSelect }) {
+  const limit = musicActionOverLimit(action, sourceDurationSeconds);
+  if (!limit) return <button ref={ref} type="button" role="menuitem" onClick={onSelect} className={className}>{label}</button>;
+  const reason = musicActionLimitReason(limit);
+  return (
+    <button ref={ref} type="button" role="menuitem" aria-disabled="true" aria-label={`${label}, works on songs ${reason}`} onClick={(event) => event.preventDefault()} className={`${className} cursor-not-allowed justify-between gap-3 opacity-60`}>
+      <span>{label}</span>
+      <span className="shrink-0 text-xs font-normal text-vx-fg-muted">{reason}</span>
+    </button>
+  );
+}
 
 export function MusicSongActions({
   beatEditor = false,
   songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onMashup, onSample, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender, onReverse, onSpeed,
-  externalTriggerRef,
+  externalTriggerRef, sourceDurationSeconds,
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
@@ -75,6 +89,8 @@ export function MusicSongActions({
   }
 
   const itemClass = 'flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-bold text-vx-fg-body hover:bg-vx-panel-raised hover:text-vx-fg focus:bg-vx-panel-raised focus:text-vx-fg focus:outline-none';
+
+
 
   return (
     <div ref={rootRef} className="relative ml-auto shrink-0">
@@ -146,12 +162,7 @@ export function MusicSongActions({
             </button>
           ) : null}
           {canCover ? (
-            <button
-              ref={!canViewLineage && !canShare && !canDownload && !canPublish ? firstItemRef : undefined}
-              type="button" role="menuitem" onClick={() => { setOpen(false); onCover(); }} className={itemClass}
-            >
-              Create a cover variation
-            </button>
+            <LimitedMenuItem ref={!canViewLineage && !canShare && !canDownload && !canPublish ? firstItemRef : undefined} action="cover" label="Create a cover variation" sourceDurationSeconds={sourceDurationSeconds} className={itemClass} onSelect={() => { setOpen(false); onCover(); }} />
           ) : null}
           {canMashup ? (
             <button type="button" role="menuitem" onClick={() => { setOpen(false); onMashup(); }} className={itemClass}>
@@ -172,30 +183,16 @@ export function MusicSongActions({
             </button>
           ) : null}
           {canTargetStem ? (
-            <button
-              ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems ? firstItemRef : undefined}
-              type="button" role="menuitem" onClick={() => { setOpen(false); onTargetStem(); }} className={itemClass}
-            >
-              Isolate one instrument
-            </button>
+            <LimitedMenuItem ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems ? firstItemRef : undefined} action="target_stem" label="Isolate one instrument" sourceDurationSeconds={sourceDurationSeconds} className={itemClass} onSelect={() => { setOpen(false); onTargetStem(); }} />
           ) : null}
           {canAddTrack ? (
-            <button
-              ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem ? firstItemRef : undefined}
-              type="button" role="menuitem" onClick={() => { setOpen(false); onAddTrack(); }} className={itemClass}
-            >
-              Add vocals or instrumental
-            </button>
+            <LimitedMenuItem ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem ? firstItemRef : undefined} action="add_track" label="Add vocals or instrumental" sourceDurationSeconds={sourceDurationSeconds} className={itemClass} onSelect={() => { setOpen(false); onAddTrack(); }} />
           ) : null}
           {canReplace ? (
-            <button ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem && !canAddTrack ? firstItemRef : undefined} type="button" role="menuitem" onClick={() => { setOpen(false); onReplace(); }} className={itemClass}>
-              Replace a section
-            </button>
+            <LimitedMenuItem ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem && !canAddTrack ? firstItemRef : undefined} action="replace_section" label="Replace a section" sourceDurationSeconds={sourceDurationSeconds} className={itemClass} onSelect={() => { setOpen(false); onReplace(); }} />
           ) : null}
           {canAddSection ? (
-            <button ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem && !canReplace ? firstItemRef : undefined} type="button" role="menuitem" onClick={() => { setOpen(false); onAddSection(); }} className={itemClass}>
-              Add a new section
-            </button>
+            <LimitedMenuItem ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem && !canReplace ? firstItemRef : undefined} action="add_section" label="Add a new section" sourceDurationSeconds={sourceDurationSeconds} className={itemClass} onSelect={() => { setOpen(false); onAddSection(); }} />
           ) : null}
           {canReuse ? (
             <button ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem && !canReplace && !canAddSection ? firstItemRef : undefined} type="button" role="menuitem" onClick={() => { setOpen(false); onReuse(); }} className={itemClass}>
@@ -203,12 +200,7 @@ export function MusicSongActions({
             </button>
           ) : null}
           {canExtend ? (
-            <button
-              ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem && !canReplace && !canAddSection && !canReuse ? firstItemRef : undefined}
-              type="button" role="menuitem" onClick={() => { setOpen(false); onExtend(); }} className={itemClass}
-            >
-              Extend by 30 seconds
-            </button>
+            <LimitedMenuItem ref={!canViewLineage && !canShare && !canDownload && !canPublish && !canCover && !canStems && !canTargetStem && !canReplace && !canAddSection && !canReuse ? firstItemRef : undefined} action="extend" label="Extend by 30 seconds" sourceDurationSeconds={sourceDurationSeconds} className={itemClass} onSelect={() => { setOpen(false); onExtend(); }} />
           ) : null}
           {canCrop ? (
             <button

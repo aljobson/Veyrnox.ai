@@ -1,13 +1,20 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useAssetUrl } from '../_lib/useAssetUrl';
-import { buildSpeechAwareCutPlan } from '../_lib/smartCutAnalysis';
+import { buildSpeechAwareCutPlan, parseSmartCutAnalysis } from '../_lib/smartCutAnalysis';
+import { smartCutFillerRanges } from '../_lib/smartCutFillers';
 import { buildSmartCutPlan, SMART_CUT_PACING, smartCutPlanUsesAvailableTakes, smartCutPlanWithinLimits, swapSmartCutTake } from '../_lib/smartCut';
 
 const inputClass = 'mt-1 min-h-11 w-full rounded-xl border border-vx-border bg-vx-base px-3 py-2.5 text-sm text-vx-fg focus:border-vx-accent focus:outline-hidden';
+
+function analysisOf(analyses, assetId) {
+  if (analyses instanceof Map) return analyses.get(assetId);
+  if (Array.isArray(analyses)) return analyses.find((analysis) => analysis?.assetId === assetId);
+  return analyses?.[assetId];
+}
 
 export function SmartCutPlanner({ clips, analyses = null, disabled = false, onApply, onUndo, startOpen = false }) {
   const { t, locale } = useI18n();
@@ -27,11 +34,37 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
   });
   const modeLabel = t(plan?.mode === 'transcript-silence' ? 'app.smartCut.mode.speechAware' : 'app.smartCut.mode.localPreview');
 
+  const [removeFillers, setRemoveFillers] = useState(false);
+  const [skippedFillers, setSkippedFillers] = useState([]);
+  // Review-only: nothing is removed unless the person ticks the box, and each suggestion can be unticked.
+  const fillerRows = useMemo(() => {
+    if (!analysisReady) return [];
+    return clips.flatMap((clip) => {
+      const parsed = parseSmartCutAnalysis(analysisOf(analyses, clip.job_id), { assetId: clip.job_id });
+      if (!parsed.ok) return [];
+      const takeId = String(clip.uid || clip.job_id);
+      const low = Math.max(0, Number(clip.in_s) || 0);
+      const high = Number.isFinite(Number(clip.out_s)) ? Number(clip.out_s) : Number(clip.duration);
+      return smartCutFillerRanges(parsed.analysis)
+        .filter((range) => range.end > low && range.start < high)
+        .map((range) => ({ ...range, takeId, key: `${takeId}:${range.start}` }));
+    });
+  }, [analysisReady, analyses, clips]);
+
+  function toggleFiller(key) {
+    setSkippedFillers((current) => (current.includes(key) ? current.filter((item) => item !== key) : [...current, key]));
+  }
+
   function createPlan() {
     if (disabled) return;
     try {
       setPlan(analysisReady
-        ? buildSpeechAwareCutPlan({ clips, analyses })
+        ? buildSpeechAwareCutPlan({
+          clips,
+          analyses,
+          silencePreset: pacing,
+          removals: removeFillers ? fillerRows.filter((row) => !skippedFillers.includes(row.key)).map(({ takeId, start, end }) => ({ takeId, start, end })) : [],
+        })
         : buildSmartCutPlan({ clips, script, notes, pacing }));
       setView('cut');
       setNotice(t(analysisReady ? 'app.smartCut.notice.speechCreated' : 'app.smartCut.notice.localCreated'));
@@ -112,6 +145,34 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
       {!plan ? (
         <div className="mt-4 grid gap-4">
           {analysisReady && <p className="rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.speechReady')}</p>}
+          {analysisReady && (
+            <fieldset>
+              <legend className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.fillers.title')}</legend>
+              {fillerRows.length ? (
+                <>
+                  <label className="mt-2 flex min-h-11 items-center gap-3 text-sm font-bold">
+                    <input type="checkbox" checked={removeFillers} disabled={disabled} onChange={(event) => setRemoveFillers(event.target.checked)} className="size-5 accent-vx-accent" />
+                    {t('app.smartCut.fillers.toggle', { count: number(fillerRows.length) })}
+                  </label>
+                  {removeFillers && (
+                    <ul className="mt-1 grid gap-1">
+                      {fillerRows.map((row) => (
+                        <li key={row.key}>
+                          <label className="flex min-h-11 items-center gap-3 text-xs">
+                            <input type="checkbox" checked={!skippedFillers.includes(row.key)} disabled={disabled} onChange={() => toggleFiller(row.key)} className="size-5 accent-vx-accent" />
+                            <span className="font-bold text-vx-fg-body">{row.label}</span>
+                            <span className="font-vx-mono text-[10px] text-vx-fg-muted vx-num">{t('app.smartCut.range', { start: number(row.start, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), end: number(row.end, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <p className="mt-2 text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.fillers.none')}</p>
+              )}
+            </fieldset>
+          )}
           {!analysisReady && <>
           <label className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.script')}
             <textarea disabled={disabled} value={script} onChange={(event) => setScript(event.target.value)} rows="4" placeholder={t('app.smartCut.scriptPlaceholder')} className={`${inputClass} resize-y disabled:opacity-50`} />
@@ -119,6 +180,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
           <label className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.notes')}
             <textarea disabled={disabled} value={notes} onChange={(event) => setNotes(event.target.value)} rows="2" placeholder={t('app.smartCut.notesPlaceholder')} className={`${inputClass} resize-y disabled:opacity-50`} />
           </label>
+          </>}
           <fieldset>
             <legend className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.pacing')}</legend>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -127,7 +189,6 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, onAp
               ))}
             </div>
           </fieldset>
-          </>}
           {!ready && <p role="status" className="text-xs text-vx-fg-muted">{t('app.smartCut.reading')}</p>}
           <button type="button" disabled={disabled || !ready} onClick={createPlan} className="min-h-11 justify-self-start rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t(analysisReady ? 'app.smartCut.action.removePauses' : 'app.smartCut.action.createPreview')}</button>
         </div>

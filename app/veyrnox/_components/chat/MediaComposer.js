@@ -15,6 +15,7 @@ import { DictateButton, EnhanceButton, appendSpoken } from '../PromptTools';
 import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
+import { SpeechSongNudge } from '../SpeechSongNudge';
 
 const control = 'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-vx-border bg-vx-base px-3 text-xs font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg focus-within:border-vx-accent focus-within:outline-solid focus-within:outline-2 focus-within:outline-vx-accent disabled:opacity-50';
 function credits(t, locale, number) { return t(pluralKey(t, locale, 'app.chat.settings.credits', number), { count: locale === 'en' ? String(number) : number.toLocaleString(localeTag(locale)) }); }
@@ -88,6 +89,7 @@ export function MediaComposer({ kind, media, prompt, onPrompt }) {
             onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); if (canGenerate) generate(prompt); } }}
             className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
         </div>
+        <SpeechSongNudge model={model} prompt={prompt} className="px-4 pb-2" />
         {promptTooLong && <p role="alert" className="px-4 pb-2 text-xs text-vx-danger">{t(promptLimitKey, { count: number(prompt.trim().length), max: number(promptLimit) })}</p>}
         <div className="flex items-center gap-2 border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
           {model && (

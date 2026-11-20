@@ -100,7 +100,7 @@ const createRequest = new Function('context', `with (context) { ${ts.transpileMo
 
 test('all bound contracts use ordered references and the same bound transport on web and mobile', async () => {
     const { templateRoute } = require('../src/lib/templateFidelity');
-    expect(fixtureData.boundInventory).toHaveLength(70 + 3 + 30 + 59 - 73); // minus the 73 swap templates the photo route refuses (template_blocked)
+    expect(fixtureData.boundInventory).toHaveLength(70 + 3 + 30 + 59 - 78); // minus the 78 swap templates the photo route refuses (template_blocked); 73 until the guard learned three more wordings (2026-11-18)
     for (const { feed, model, body, contract, serverCheck } of fixtureData.boundInventory) {
         const [parsed] = parsePresets({ presets: [feed] });
         const route = templateRoute(parsed, parsed.modelId, body.references.length);

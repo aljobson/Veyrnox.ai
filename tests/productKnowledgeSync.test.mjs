@@ -99,6 +99,9 @@ const retiredPublishKnowledge = {
     controls: new Set(['Media type']),
     descriptions: new Set(['Media selected. Choose accounts, add a caption and confirm when to post.']),
 };
+const extendedAccountKnowledge = new Set([
+    'When a friend you refer buys their first Credit Pack, you earn Credits worth 10% of that Pack, added to your balance 14 days later if the purchase has not been refunded or disputed. Credits only; they never expire. Nothing is paid out as money.',
+]);
 
 test('phase B retains every app route knowledge item from origin/main', async () => {
     const baseline = JSON.parse(await readFile(path.join(root, 'tests/fixtures/app-knowledge-main.json'), 'utf8'));
@@ -120,6 +123,8 @@ test('phase B retains every app route knowledge item from origin/main', async ()
                 // pipeline instead of treating it as a local-only moodboard.
                 if (entry.route === '/app/oddlings' && retiredOddlingsKnowledge[field]?.has(value)) continue;
                 if (entry.route === '/app/publish' && retiredPublishKnowledge[field]?.has(value)) continue;
+                if (entry.route === '/app/account' && field === 'descriptions' && extendedAccountKnowledge.has(value)
+                    && [...actual].some(currentValue => currentValue.startsWith(normal(value)))) continue;
                 // ADR-0326 replaces the comma-separated palette with native swatches.
                 if (entry.route === '/app/editor' && field === 'descriptions' && value === 'Use up to 12 hex colours separated by commas.') continue;
                 if (entry.route === '/app/chat' && retiredChatKnowledge[field]?.has(value)) continue;

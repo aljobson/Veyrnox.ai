@@ -62,7 +62,9 @@ export const BEAT_ACTIONS = Object.freeze({
   "a55": "change track gain",
   "a56": "change track pan",
   "a57": "Change gain",
-  "a58": "Change pan"
+  "a58": "Change pan",
+  "a59": "ripple delete region",
+  "a60": "insert gap"
 });
 const byLabel = new Map(Object.entries(messages).map(([key, value]) => [value, key]));
 export function recordedNotesLabel(count) { return beatEnglish('app.music.beat.status.s84', { p0: count }); }
