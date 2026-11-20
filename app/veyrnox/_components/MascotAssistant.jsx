@@ -4,7 +4,7 @@ import { useI18n } from '../../../components/I18nProvider.jsx';
 
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { captureOperationalError, captureProductEvent } from '../../lib/analyticsClient.js';
 import { getSession } from '../../lib/authClient.js';
 import { gatewayFetch } from '../_lib/gateway';
@@ -63,7 +63,21 @@ function resolveHelpAction(plan, t) {
   return { ...action, label: tOr(t, `public.vey.action.${plan.action}`, action.label) };
 }
 
+// The help box is not offered on phone-width web: opening it there re-laid out the page menu and nav.
+const DESKTOP_QUERY = '(min-width: 640px)';
+function subscribeDesktop(onChange) {
+  const query = window.matchMedia(DESKTOP_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+const isDesktopViewport = () => window.matchMedia(DESKTOP_QUERY).matches;
+
 export default function MascotAssistant() {
+  const desktop = useSyncExternalStore(subscribeDesktop, isDesktopViewport, () => false);
+  return desktop ? <VeyHelper /> : null;
+}
+
+function VeyHelper() {
   const { t, locale } = useI18n();
   const pathname = browserPath(usePathname());
   const router = useRouter();
