@@ -89,6 +89,7 @@ export const MENU_ICONS = {
     listChecks: require('../../assets/icons/list-checks.png'),
     pushPin: require('../../assets/icons/push-pin.png'),
     idCard: require('../../assets/icons/identification-card.png'),
+    waveSine: require('../../assets/icons/wave-sine.png'),
     gauge: require('../../assets/icons/gauge.png'),
     aperture: require('../../assets/icons/aperture.png'),
     googleG: require('../../assets/icons/google-g.png'),

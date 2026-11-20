@@ -4,12 +4,19 @@ import { CREATOR_ANSWERS } from '../src/lib/creatorAnswers';
 import { creatorCardName } from '../src/lib/creatorCardLabels';
 import { archetypeName } from '../src/lib/creatorArchetype';
 import en from '../src/lib/i18n/messages/en';
+import { TTS_VOICES, TTS_EMOTIONS, TTS_EXAMPLES, TTS_INTERJECTIONS, TTS_INPUT_RULES, voiceGenderOptions } from '../src/lib/speech/shared';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'speech.tone.{}': [...new Set(TTS_VOICES.map(voice => voice.tone))],
+    'speech.cue.{}': TTS_INTERJECTIONS.map(([, cue]) => cue.slice(1, -1)),
+    'speech.emotion.{}': TTS_EMOTIONS,
+    'speech.{}': Object.entries(TTS_INPUT_RULES).filter(([, rule]) => rule.type !== 'enum').map(([key]) => key.slice('tts_'.length)),
+    'speech.example.{}': TTS_EXAMPLES.map((_, index) => String(index)),
+    'speech.gender.{}': ['all', ...voiceGenderOptions()],
     'editorEditGate.{}': ['invalid', 'tooLarge'],
     'editorExportRefusal.{}': ['speed', 'audio', 'motion', 'animation', 'colour', 'crop', 'effects', 'blend', 'background', 'masks', 'smart', 'transitions', 'text', 'captions', 'position', 'fonts', 'images', 'originalAudio', 'assets', 'groups', 'unknown'],
     'musicDiscover.mood.{}': ['all', 'Hip-hop', 'Rock', 'Jazz'],

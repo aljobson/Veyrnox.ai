@@ -210,6 +210,7 @@ import area_sourceDuration from './en/sourceDuration';
 import area_sourceLimits from './en/sourceLimits';
 import area_sourcePicker from './en/sourcePicker';
 import area_sources from './en/sources';
+import area_speech from './en/speech';
 import area_srch from './en/srch';
 import area_start from './en/start';
 import area_stem from './en/stem';
@@ -445,6 +446,7 @@ const catalog = {
     ...area_sourceLimits,
     ...area_sourcePicker,
     ...area_sources,
+    ...area_speech,
     ...area_srch,
     ...area_start,
     ...area_stem,

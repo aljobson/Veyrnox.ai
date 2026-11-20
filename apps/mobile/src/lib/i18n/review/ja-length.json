@@ -28,5 +28,11 @@
     "english": "Fit",
     "translation": "全体を表示",
     "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "シューという声",
+    "ratio": 1.75
   }
 ]
