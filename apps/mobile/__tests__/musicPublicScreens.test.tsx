@@ -151,7 +151,7 @@ test('Explore not_found uses Explore-specific copy and drops one bad row while r
 });
 test('comment reporting requests only the supplied page cursor and never scans later pages', async () => {
     mockParams = { slug, commentId: '55555555-5555-4555-8555-555555555555', before: nextId };
-    mockApi.request.mockImplementation((path, init) => path.includes('/comments?') ? { comments } : defaultRequest(path, init));
+    mockApi.request.mockImplementation(async (path, init) => path.includes('/comments?') ? { comments } : defaultRequest(path, init));
     await mount(<ReportComment />);
     const pages = mockApi.request.mock.calls.filter(([p]) => p.includes('/comments?'));
     expect(pages.map(([p]) => p)).toEqual([`/api/v1/music/comments?slug=${slug}&before=${nextId}`]);
@@ -177,13 +177,18 @@ test.each([
 });
 
 test('reporting a later-page comment routes its cursor and loads it directly', async () => {
-    mockApi.request.mockImplementation((path, init) => path.includes('/comments?') ? { comments: { ...comments, comments: [{ ...comments.comments[0], id: nextId }], next_cursor: null } } : defaultRequest(path, init));
+    const laterId = '55555555-5555-4555-8555-555555555555';
+    mockApi.request.mockImplementation(async (path, init) => path.includes('/comments?') ? { comments: { ...comments,
+        comments: [comments.comments[0], { ...comments.comments[0], id: laterId, body: 'Later comment' }], next_cursor: null,
+    } } : defaultRequest(path, init));
     await mount(<Track />); await click(t('comments.more'));
     const report = buttons(t('comments.reportBy', { name: 'Listener' }));
+    expect(report).toHaveLength(2); expect(texts('Lovely music')).toHaveLength(1); expect(texts('Later comment')).toHaveLength(1);
     await act(async () => report[1].props.onClick({ nativeEvent: {} }));
-    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/report-comment', params: { slug, commentId: nextId, before: nextId } });
-    await act(async () => root.unmount()); root = createRoot(); mockParams = { slug, commentId: nextId, before: nextId };
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/report-comment', params: { slug, commentId: laterId, before: nextId } });
+    await act(async () => root.unmount()); root = createRoot(); mockParams = { slug, commentId: laterId, before: nextId };
     mockApi.request.mockClear(); await mount(<ReportComment />);
     expect(field(t('comments.reportDetails'))).toBeDefined();
-    expect(mockApi.request.mock.calls.filter(([p]) => p.includes('/comments?'))).toHaveLength(1);
+    expect(mockApi.request.mock.calls.filter(([p]) => p.includes('/comments?')).map(([p]) => p))
+        .toEqual([`/api/v1/music/comments?slug=${slug}&before=${nextId}`]);
 });

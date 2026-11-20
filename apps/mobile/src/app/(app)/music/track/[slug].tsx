@@ -23,7 +23,7 @@ export default function PublicTrackScreen() {
         {data ? <>
             <ListRow title={creatorName(data.track)} subtitle={`@${data.track.handle}`} accessibilityLabel={creatorName(data.track)}
                 onPress={() => router.push({ pathname: '/music/creator/[handle]', params: { handle: data.track.handle } } as never)} />
-            <PublicPlayer key={`${slug}:${session.snapshot().account}`} slug={slug} creatorId={data.track.creator_id} session={session} onPosition={setPosition} />
+            <PublicPlayer key={`player:${slug}:${session.snapshot().account}`} slug={slug} creatorId={data.track.creator_id} session={session} onPosition={setPosition} />
             {data.plays ? <Text>{t('musicPublic.plays', { count: data.plays.count })}</Text> : null}
             {data.lyrics ? <View style={s.group}><Text variant="title3">{t('musicPublic.lyrics')}</Text><Text>{data.lyrics}</Text></View> : null}
             <PublicSocial counts={data.social} social={state.social} slug={slug} handle={data.track.handle} flow={flow} busy={state.busy} />
@@ -33,7 +33,7 @@ export default function PublicTrackScreen() {
                     onPress={() => void flow.block(data.track.creator_id, true, creatorName(data.track))} />
             </> : null}
             <PublicAttemptNotice flow={flow} state={state} />
-            {data.comments ? <PublicComments key={`${slug}:${session.snapshot().account}`} comments={data.comments} flow={flow} state={state} slug={slug} position={position} /> : null}
+            {data.comments ? <PublicComments key={`comments:${slug}:${session.snapshot().account}`} comments={data.comments} flow={flow} state={state} slug={slug} position={position} /> : null}
             {data.rails ? <>
                 {(['by_creator', 'similar'] as const).map(kind => data.rails![kind].length ? <View key={kind} style={s.group}>
                     <Text variant="title3">{t(kind === 'by_creator' ? 'musicPublic.moreCreator' : 'musicPublic.similar')}</Text>
