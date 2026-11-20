@@ -59,3 +59,7 @@ Also `references` and `magicBar` are false (out of scope) and `beatCloud` / `bea
 - Playback reuses `MusicPlayer` and the player rule that playback pauses in any app state other than active. A playlist plays its songs in order, each song's `audio_url` is relative and goes through the authenticated asset path used by the library.
 - Entry points are two rows on the Music hub screen (`music/index.tsx`), each with its own icon from `src/lib/menuIcons.ts`, never the Audio hub.
 - All new copy is in all eleven locales (machine translation for ten, native review pending).
+
+## P4b status (2026-11-20)
+
+P4b (Explore, public track and creator screens, reactions, follows, comments, reports, play counts, rails, Best of, Blocked creators) is built on top of the server block of PR #2523 (migration 0570, ADR 0367, switch `blocks`). Everything on the phone hides until the server `blocks` switch is on. Known follow-ups left by the final inspection (not fixed, budget used): social controls and the track-report form flicker on every reload because social state is cleared while refreshing; one flow-wide rate-limit gate silently disables all writes on a screen after any 429; a comment report depends on the comment still being on the page named by the route cursor, so a first-page comment that moved to page 2 cannot be reported from that entry point (pass `author_id` and name as route params and report by id). Not verified: real `expo-audio` playback of the 302 asset redirect, any device.
