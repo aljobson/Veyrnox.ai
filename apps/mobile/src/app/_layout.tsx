@@ -1,3 +1,4 @@
+import { isListenRoute } from '../lib/secretRoutes';
 import { flushInstallResetIssue } from '../lib/installReset';
 import { revokeDiscardedSession } from '../lib/auth/discardedSession';
 export { ErrorFallback as ErrorBoundary } from '../components/ErrorFallback';
@@ -49,10 +50,12 @@ function ThemeRouteRestorer() {
     const router = useRouter();
     const pathname = usePathname();
     useEffect(() => {
+        let live = true;
         void takeThemeReturnPath().then((next) => {
-            if (!next || next === pathname) return;
+            if (!live || isListenRoute(pathname) || !next || next === pathname) return;
             restoreReturnRoute(router, next);
         }).catch(() => captureIssue('theme_return_failed', {}));
+        return () => { live = false; };
     }, [pathname, router]);
     return null;
 }
