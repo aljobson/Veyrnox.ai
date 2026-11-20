@@ -298,3 +298,43 @@ test('a removal the ten-section limit merges back is reported, not hidden', () =
   assert.equal(plan.removalsApplied, 0);
   assert.ok(plan.warnings.some((warning) => /limited to 10 sections/.test(warning)));
 });
+
+test('a music-only response (audio-event text and no words) is no speech, not an invalid analysis', () => {
+  // Shape returned by fal Scribe v2 for 20 s of synthetic tones, probed 2026-11-20.
+  const music = { text: '[tone]', language_code: 'sh', language_probability: 0.395, words: [] };
+  assert.deepEqual(normaliseScribeResult({ assetId: clip.job_id, duration: 20, result: music }), { ok: false, error: 'analysis_no_speech' });
+  // Spacing and audio-event entries are not words either.
+  const events = { text: '(music)', language_code: 'en', words: [{ type: 'spacing', text: ' ', start: 0, end: 1 }, { type: 'audio_event', text: '(music)', start: 0, end: 5 }] };
+  assert.deepEqual(normaliseScribeResult({ assetId: clip.job_id, duration: 20, result: events }), { ok: false, error: 'analysis_no_speech' });
+  // A result with at least one real word is still an analysis.
+  const speech = { text: 'hello', language_code: 'eng', words: [{ type: 'word', text: 'hello', start: 0.2, end: 0.6 }] };
+  assert.equal(normaliseScribeResult({ assetId: clip.job_id, duration: 5, result: speech }).ok, true);
+});
+
+test('Japanese and Chinese punctuation tokens are dropped, so those clips parse', () => {
+  // Shape fal Scribe v2 returned for synthetic Japanese and Chinese clips on 2026-11-20: one token per
+  // character, with punctuation as zero-length "words" (and one comma token spanning a real pause).
+  const ja = { text: 'こんにちは、デモ。', language_code: 'jpn', words: [
+    { type: 'word', text: 'こ', start: 0.12, end: 0.22 }, { type: 'word', text: 'ん', start: 0.22, end: 0.38 },
+    { type: 'word', text: '、', start: 1, end: 1 }, { type: 'word', text: 'デ', start: 1.2, end: 1.4 },
+    { type: 'word', text: 'モ', start: 1.4, end: 1.6 }, { type: 'word', text: '。', start: 1.6, end: 1.6 },
+  ] };
+  const parsedJa = normaliseScribeResult({ assetId: clip.job_id, duration: 3, result: ja });
+  assert.equal(parsedJa.ok, true);
+  assert.deepEqual(parsedJa.analysis.chunks.map((c) => c.text), ['こ', 'ん', 'デ', 'モ']);
+  const zh = { text: '你好，欢迎。', language_code: 'zho', words: [
+    { type: 'word', text: '你', start: 0.04, end: 0.22 }, { type: 'word', text: '好', start: 0.22, end: 0.5 },
+    { type: 'word', text: '，', start: 0.5, end: 0.88 }, { type: 'word', text: '欢', start: 0.9, end: 1.1 },
+    { type: 'word', text: '。', start: 1.1, end: 1.1 },
+  ] };
+  const parsedZh = normaliseScribeResult({ assetId: clip.job_id, duration: 2, result: zh });
+  assert.equal(parsedZh.ok, true);
+  // The comma token no longer counts as speech, so the planner sees the real gap after "好".
+  assert.deepEqual(parsedZh.analysis.chunks.map((c) => c.text), ['你', '好', '欢']);
+  // A result that is only punctuation has no speech.
+  const marks = { text: '。', language_code: 'jpn', words: [{ type: 'word', text: '。', start: 1, end: 1 }] };
+  assert.deepEqual(normaliseScribeResult({ assetId: clip.job_id, duration: 3, result: marks }), { ok: false, error: 'analysis_no_speech' });
+  // A real word with zero length is still rejected, not silently repaired.
+  const zero = { text: 'hi', language_code: 'eng', words: [{ type: 'word', text: 'hi', start: 1, end: 1 }] };
+  assert.equal(normaliseScribeResult({ assetId: clip.job_id, duration: 3, result: zero }).error, 'analysis_timestamp_invalid');
+});

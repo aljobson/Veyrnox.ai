@@ -22,6 +22,7 @@
   "menu.cinema": "Brand or product name retained as on the website: Social Cinema.",
   "menu.mcp": "Standard abbreviation, size or visual mark used in Russian interfaces: MCP.",
   "menu.oddlings": "Brand or product name retained as on the website: Oddlings.",
+  "modelCompare.value": "Model-name and fact-value placeholders separated by a colon; this format contains no translatable words.",
   "oddlings.title": "Brand or product name retained as on the website: Oddlings.",
   "oddlingsProjects.defaultName": "Brand or product name retained as on the website: Oddlings.",
   "opt.countOption": "Placeholders and version/punctuation notation only; substitutions are localized at the call site.",
