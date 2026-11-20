@@ -24,25 +24,31 @@ export function validateResult(data: unknown, expected: FrameId): Inference {
     const selected = selectFaceHair({ width: Number(d.width), height: Number(d.height), hair: Float32Array.from(d.hair as number[], v => v / 255) }, landmarks);
     return { ...expected, count, landmarks, hair: hairTexture(selected) ? selected : null };
 }
-// Native/WebView isolation boundary. Closing must unmount the WebView to terminate WASM work.
-export interface VisionTransport { send(message: string): void; close(): void }
+// Closing releases the owner; native work is cancelled by token and WASM work by unmounting.
+export interface VisionTransport { send(message: string): void; close(): void; onAdmitted?(listener: (id: number) => void): void }
 export const createVisionJob = (transport: VisionTransport, timeoutMs = 15_000) => createProtocolJob(transport, timeoutMs, 'detect', validateResult);
 export function createProtocolJob<T>(transport: VisionTransport, timeoutMs: number, operation: string, validate: (data: unknown, frame: Frame) => T) {
     let closed = false, sequence = 0;
-    let pending: { id: number; frame?: Frame; resolve(value: T | null): void; reject(error: Error): void; timer: ReturnType<typeof setTimeout> } | undefined;
+    let pending: { id: number; frame?: Frame; admitted?: boolean; resolve(value: T | null): void; reject(error: Error): void; timer: ReturnType<typeof setTimeout> } | undefined;
     const close = (reason = Error('inference-cancelled')) => {
         if (closed) return;
         closed = true;
         if (pending) { clearTimeout(pending.timer); pending.reject(reason); pending = undefined; }
         transport.close();
     };
+    transport.onAdmitted?.(id => {
+        if (closed || !pending?.frame || pending.id !== id || pending.admitted) return;
+        pending.admitted = true;
+        clearTimeout(pending.timer);
+        pending.timer = setTimeout(() => close(Error('inference-timeout')), timeoutMs);
+    });
     function request(frame?: Frame): Promise<T | null> {
         if (closed) return Promise.reject(Error('inference-cancelled'));
         if (pending) return Promise.reject(Error('inference-busy'));
         if (frame) { try { validateFrame(frame); } catch (e) { return Promise.reject(e); } }
         return new Promise((resolve, reject) => {
             const requestId = ++sequence;
-            const timer = setTimeout(() => close(Error('inference-timeout')), frame ? timeoutMs : 60_000);
+            const timer = setTimeout(() => close(Error('inference-timeout')), frame ? (transport.onAdmitted ? 15_000 : timeoutMs) : 60_000);
             pending = { id: requestId, frame, resolve, reject, timer };
             try { transport.send(JSON.stringify({ op: frame ? operation : 'init', id: requestId, ...frame })); }
             catch { close(Error('inference-unavailable')); }
@@ -56,7 +62,9 @@ export function createProtocolJob<T>(transport: VisionTransport, timeoutMs: numb
                 if (typeof message !== 'string' || message.length > MAX_MESSAGE) throw Error('invalid-message');
                 const d = JSON.parse(message);
                 if (d?.id !== pending.id) return;
-                if (d.error) throw Error('inference-unavailable');
+                if (d.cancelled === true) { close(Error('inference-cancelled')); return; }
+                if (d.error === 'inference-busy') { close(Error('inference-busy')); return; }
+                if (d.error) { close(Error('inference-unavailable')); return; }
                 const value = pending.frame ? validate(d, pending.frame) : null;
                 if (!pending.frame && d.ready !== true) throw Error('inference-unavailable');
                 const p = pending; pending = undefined; clearTimeout(p.timer); p.resolve(value);

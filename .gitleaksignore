@@ -347,3 +347,7 @@ d720f7b2fb2f85d66b9aa98047ee3b3a58dff50b:tests/jobsLookup.test.mjs:generic-api-k
 # PR 2518 (Kling prompt cap), pre-squash commit: a fake test idempotency key and a table of template hashes (fixtures, not secrets).
 06b036b17f2a77214c4f373df35b0164fe673860:tests/klingV3PromptCap.test.mjs:generic-api-key:55
 06b036b17f2a77214c4f373df35b0164fe673860:tests/fixtures/replacementTemplatesBaseline.json:generic-api-key:2
+# PR 2544 (native-only stage 3B), pre-squash commit: prose "result/landmark access" in the implementation doc (no secret); the line is reworded in the next commit.
+878283ef4af4fb2e82a64ee1690e033aeaffd2a5:docs/mobile/NATIVE-VISION-STAGE3B-IMPLEMENTATION.md:generic-api-key:41
+# Synthetic latency-storage name (veyrnox.beat.latency.v1) in an N6 test, not a credential; renamed in a later commit.
+f2c6250aa9b629ae515dc0d21f032a98d3f0eac6:apps/mobile/__tests__/beatNativeLatency.test.ts:generic-api-key:30

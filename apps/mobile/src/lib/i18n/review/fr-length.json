@@ -1,53 +1,5 @@
 [
   {
-    "id": "editorCaptionTools.transcriptChoose",
-    "english": "Select a transcript word or caption range.",
-    "translation": "Sélectionnez un mot de la transcription ou une plage de sous-titres.",
-    "ratio": 1.62
-  },
-  {
-    "id": "editorCaptionTools.treatAsCaptions",
-    "english": "Treat as captions",
-    "translation": "Traiter comme des sous-titres",
-    "ratio": 1.71
-  },
-  {
-    "id": "editorCaptionTools.shareSrt",
-    "english": "Share SRT",
-    "translation": "Partager en SRT",
-    "ratio": 1.67
-  },
-  {
-    "id": "editorCaptionTools.shareVtt",
-    "english": "Share VTT",
-    "translation": "Partager en VTT",
-    "ratio": 1.67
-  },
-  {
-    "id": "editorCaptionTools.wordTiming",
-    "english": "Word timing",
-    "translation": "Synchronisation des mots",
-    "ratio": 2.18
-  },
-  {
-    "id": "editorCaptionTools.find",
-    "english": "Find captions",
-    "translation": "Rechercher des sous-titres",
-    "ratio": 2
-  },
-  {
-    "id": "editorCaptionTools.noMatches",
-    "english": "No captions match.",
-    "translation": "Aucun sous-titre ne correspond.",
-    "ratio": 1.72
-  },
-  {
-    "id": "editorCaptionTools.allSources",
-    "english": "All timed captions",
-    "translation": "Tous les sous-titres synchronisés",
-    "ratio": 1.83
-  },
-  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "Couleur hexadécimale de {label}",
@@ -5748,6 +5700,204 @@
     "ratio": 1.63
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Annuler",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Rétablir",
+    "ratio": 2
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "Enregistrement",
+    "ratio": 2.33
+  },
+  {
+    "id": "beat.local.error",
+    "english": "Could not save on this phone. Retry saving.",
+    "translation": "Impossible d’enregistrer sur ce téléphone. Réessaie l’enregistrement.",
+    "ratio": 1.6
+  },
+  {
+    "id": "beat.local.loadError",
+    "english": "Could not load saved beats. Retry loading.",
+    "translation": "Impossible de charger les beats enregistrés. Réessaie le chargement.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.cloud.checking",
+    "english": "Checking cloud saving…",
+    "translation": "Vérification de la sauvegarde dans le cloud…",
+    "ratio": 2
+  },
+  {
+    "id": "beat.conflict.mine",
+    "english": "Keep mine",
+    "translation": "Garder la mienne",
+    "ratio": 1.78
+  },
+  {
+    "id": "beat.versions.title",
+    "english": "Versions",
+    "translation": "Versions enregistrées",
+    "ratio": 2.63
+  },
+  {
+    "id": "beat.versions.save",
+    "english": "Save version now",
+    "translation": "Enregistrer une version maintenant",
+    "ratio": 2.13
+  },
+  {
+    "id": "beat.versions.today",
+    "english": "Today",
+    "translation": "Aujourd’hui",
+    "ratio": 2.2
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Sauvegarde automatique",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.versions.checkpoint",
+    "english": "Checkpoint",
+    "translation": "Point de sauvegarde",
+    "ratio": 1.9
+  },
+  {
+    "id": "beatTakes.record",
+    "english": "Record",
+    "translation": "Enregistrer",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatTakes.stop",
+    "english": "Stop recording",
+    "translation": "Arrêter l’enregistrement",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatTakes.locked",
+    "english": "Stop recording to edit",
+    "translation": "Arrêtez l’enregistrement pour modifier",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatTakes.recordingSaved",
+    "english": "Recording saved",
+    "translation": "Enregistrement sauvegardé",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.addCredits",
+    "english": "Add credits",
+    "translation": "Ajouter des crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Masculine",
+    "ratio": 2.25
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Triste",
+    "ratio": 2
+  },
+  {
+    "id": "speech.emotion.angry",
+    "english": "Angry",
+    "translation": "En colère",
+    "ratio": 1.8
+  },
+  {
+    "id": "speech.cue.groans",
+    "english": "Groan",
+    "translation": "Gémissement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Halètement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.inhale",
+    "english": "Inhale",
+    "translation": "Inspiration",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.cue.exhale",
+    "english": "Exhale",
+    "translation": "Expiration",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.cue.gasps",
+    "english": "Gasp",
+    "translation": "Sursaut",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Reniflement",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.cue.snorts",
+    "english": "Snort",
+    "translation": "Ébrouement",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.lip-smacking",
+    "english": "Lip smack",
+    "translation": "Claquement de lèvres",
+    "ratio": 2.22
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Fredonnement",
+    "ratio": 4
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Sifflement",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.cue.sneezes",
+    "english": "Sneeze",
+    "translation": "Éternuement",
+    "ratio": 1.83
+  },
+  {
+    "id": "speech.tone.Warm",
+    "english": "Warm",
+    "translation": "Chaleureuse",
+    "ratio": 2.75
+  },
+  {
     "id": "editorText.serif",
     "english": "Serif",
     "translation": "Avec empattement",
@@ -5902,6 +6052,126 @@
     "english": "Allow remixes",
     "translation": "Autoriser les remixes",
     "ratio": 1.62
+  },
+  {
+    "id": "beat.view.song",
+    "english": "Song",
+    "translation": "Morceau",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.kind.drums",
+    "english": "Drum track",
+    "translation": "Piste de batterie",
+    "ratio": 1.7
+  },
+  {
+    "id": "beat.region.select",
+    "english": "Select region",
+    "translation": "Sélectionner la région",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.region.later",
+    "english": "Move later",
+    "translation": "Déplacer plus tard",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.region.resize",
+    "english": "Resize region",
+    "translation": "Redimensionner la région",
+    "ratio": 1.85
+  },
+  {
+    "id": "beat.region.split",
+    "english": "Split at playhead",
+    "translation": "Scinder à la tête de lecture",
+    "ratio": 1.65
+  },
+  {
+    "id": "beat.region.copy",
+    "english": "Copy on drop",
+    "translation": "Copier au relâchement",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.region.add",
+    "english": "Add region at playhead",
+    "translation": "Ajouter une région à la tête de lecture",
+    "ratio": 1.77
+  },
+  {
+    "id": "beat.region.drumOnly",
+    "english": "Select a drum track to add a region",
+    "translation": "Sélectionnez une piste de batterie pour ajouter une région",
+    "ratio": 1.66
+  },
+  {
+    "id": "beat.snap.bar",
+    "english": "Bar",
+    "translation": "Mesure",
+    "ratio": 2
+  },
+  {
+    "id": "beat.snap.sixteenth",
+    "english": "1/16 note",
+    "translation": "Double croche (1/16)",
+    "ratio": 2.22
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Mesure suivante",
+    "ratio": 1.88
+  },
+  {
+    "id": "beat.ruler.position",
+    "english": "Playhead position",
+    "translation": "Position de la tête de lecture",
+    "ratio": 1.76
+  },
+  {
+    "id": "beat.ruler.left",
+    "english": "Playhead left",
+    "translation": "Tête de lecture à gauche",
+    "ratio": 1.85
+  },
+  {
+    "id": "beat.ruler.right",
+    "english": "Playhead right",
+    "translation": "Tête de lecture à droite",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.cycle.on",
+    "english": "Cycle on",
+    "translation": "Boucle activée",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.cycle.off",
+    "english": "Cycle off",
+    "translation": "Boucle désactivée",
+    "ratio": 1.89
+  },
+  {
+    "id": "beat.cycle.end",
+    "english": "Cycle end to playhead",
+    "translation": "Fin de boucle à la tête de lecture",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.drag.moving",
+    "english": "Moving region, drag then lift",
+    "translation": "Déplacement de la région, glissez puis relâchez",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.cycle.moving",
+    "english": "Moving cycle edge, drag then lift",
+    "translation": "Déplacement du bord de la boucle, glissez puis relâchez",
+    "ratio": 1.67
   },
   {
     "id": "label.Terms",

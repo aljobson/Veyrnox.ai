@@ -25,6 +25,7 @@ import area_audioTemplates from './en/audioTemplates';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
 import area_beat from './en/beat';
+import area_beatTakes from './en/beatTakes';
 import area_bestCut from './en/bestCut';
 import area_billing from './en/billing';
 import area_blocks from './en/blocks';
@@ -211,6 +212,7 @@ import area_sourceDuration from './en/sourceDuration';
 import area_sourceLimits from './en/sourceLimits';
 import area_sourcePicker from './en/sourcePicker';
 import area_sources from './en/sources';
+import area_speech from './en/speech';
 import area_srch from './en/srch';
 import area_start from './en/start';
 import area_stem from './en/stem';
@@ -261,6 +263,7 @@ const catalog = {
     ...area_authGate,
     ...area_autolists,
     ...area_beat,
+    ...area_beatTakes,
     ...area_bestCut,
     ...area_billing,
     ...area_blocks,
@@ -447,6 +450,7 @@ const catalog = {
     ...area_sourceLimits,
     ...area_sourcePicker,
     ...area_sources,
+    ...area_speech,
     ...area_srch,
     ...area_start,
     ...area_stem,

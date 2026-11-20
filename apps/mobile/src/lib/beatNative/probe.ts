@@ -1,7 +1,17 @@
-import type { ApiClient } from '../api';
-import { probeMusic, type MusicProbe } from '../music/probe';
-
-/** Probe by call, not by flag: the beat routes sit behind server switches the phone cannot read. A 404 "unavailable" means off. */
-export function probeBeats(api: ApiClient): Promise<MusicProbe<unknown>> {
-    return probeMusic(() => api.request<unknown>('/api/v1/music/beat-projects'));
+import { ApiError, type ApiClient } from '../api';
+import { probeMusic } from '../music/probe';
+import { createBeatCloud, type CloudOptions } from './cloud';
+export type BeatProbe = { state: 'on' | 'off' | 'offline' | 'error' | 'signed_out' };
+/** Collection 404 means disabled; an item 404 alone never establishes deletion. */
+export async function probeBeatCloud(api: ApiClient, options?: CloudOptions): Promise<BeatProbe> {
+    const result = await probeMusic(async () => {
+        try { return await createBeatCloud(api).list(options); }
+        catch (error) {
+            if (error instanceof ApiError && (error.status === 404 || /_unavailable$/i.test(error.code))) throw new ApiError(404, 'music_unavailable');
+            throw error;
+        }
+    });
+    if (result.state === 'error' && result.status === 401) return { state: 'signed_out' };
+    return { state: result.state === 'error' && result.status === 0 ? 'offline' : result.state };
 }
+export const probeBeats = probeBeatCloud;

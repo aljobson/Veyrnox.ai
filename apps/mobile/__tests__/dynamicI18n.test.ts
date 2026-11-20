@@ -4,6 +4,7 @@ import { CREATOR_ANSWERS } from '../src/lib/creatorAnswers';
 import { creatorCardName } from '../src/lib/creatorCardLabels';
 import { archetypeName } from '../src/lib/creatorArchetype';
 import en from '../src/lib/i18n/messages/en';
+import { TTS_VOICES, TTS_EMOTIONS, TTS_EXAMPLES, TTS_INTERJECTIONS, TTS_INPUT_RULES, voiceGenderOptions } from '../src/lib/speech/shared';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs'), path = require('path'), ts = require('typescript');
@@ -13,6 +14,12 @@ const domains: Record<string, readonly string[]> = {
     'editorCaptionTools.added.{}': ['one', 'other'],
     'editorCaptionTools.range.{}': ['one', 'other'],
     'editorCaptionTools.sources.{}': ['one', 'other'],
+    'speech.tone.{}': [...new Set(TTS_VOICES.map(voice => voice.tone))],
+    'speech.cue.{}': TTS_INTERJECTIONS.map(([, cue]) => cue.slice(1, -1)),
+    'speech.emotion.{}': TTS_EMOTIONS,
+    'speech.{}': Object.entries(TTS_INPUT_RULES).filter(([, rule]) => rule.type !== 'enum').map(([key]) => key.slice('tts_'.length)),
+    'speech.example.{}': TTS_EXAMPLES.map((_, index) => String(index)),
+    'speech.gender.{}': ['all', ...voiceGenderOptions()],
     'editorEditGate.{}': ['invalid', 'tooLarge'],
     'editorExportRefusal.{}': ['speed', 'audio', 'motion', 'animation', 'colour', 'crop', 'effects', 'blend', 'background', 'masks', 'smart', 'transitions', 'text', 'captions', 'position', 'fonts', 'images', 'originalAudio', 'assets', 'groups', 'unknown'],
     'musicDiscover.mood.{}': ['all', 'Hip-hop', 'Rock', 'Jazz'],
@@ -32,6 +39,8 @@ const domains: Record<string, readonly string[]> = {
     'musicActions.{}.title': ['stems', 'crop'],
     'musicActions.action.{}': ['rights', 'format', 'plan', 'model', 'notAffordable', 'expired', 'changed', 'consent', 'range', 'short', 'busy', 'source', 'recovery', 'network', 'error'],
     'music.create.{}': ['simple', 'custom', 'empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable', 'rights_required', 'error', 'queued', 'running', 'ready', 'failed', 'refunded', 'cancelled'],
+    'beat.local.{}': ['saved', 'saving', 'error', 'busy'],
+    'beat.cloud.{}': ['checking', 'off', 'unlinked', 'other', 'signed_out', 'syncing', 'synced', 'conflict', 'paused_conflict', 'removed', 'limit', 'rate_limited', 'offline', 'error', 'takes'],
     'beat.pad.{}': ['kick', 'snare', 'hat', 'openhat', 'clap', 'tom', 'rim', 'crash'],
     'beat.kit.{}': ['acoustic', '808', 'lofi'],
     'music.tab.{}': ['songs', 'history', 'hooks'],

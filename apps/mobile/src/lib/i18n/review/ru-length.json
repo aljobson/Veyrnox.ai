@@ -1,35 +1,5 @@
 [
   {
-    "id": "editorCaptionTools.correctChoose",
-    "english": "Choose one timed word to correct.",
-    "translation": "Выберите одно слово с временными метками для исправления.",
-    "ratio": 1.73
-  },
-  {
-    "id": "editorCaptionTools.length",
-    "english": "Word length",
-    "translation": "Длительность слова",
-    "ratio": 1.64
-  },
-  {
-    "id": "editorCaptionTools.align",
-    "english": "Align lyrics",
-    "translation": "Выровнять текст песни",
-    "ratio": 1.75
-  },
-  {
-    "id": "editorCaptionTools.allSources",
-    "english": "All timed captions",
-    "translation": "Все субтитры с временными метками",
-    "ratio": 1.83
-  },
-  {
-    "id": "editorCaptionTools.lyrics",
-    "english": "Lyrics",
-    "translation": "Текст песни",
-    "ratio": 1.83
-  },
-  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "Шестнадцатеричный цвет: {label}",
@@ -3726,6 +3696,132 @@
     "ratio": 2.25
   },
   {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Отменить",
+    "ratio": 2
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Повторить",
+    "ratio": 2.25
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Попробовать снова",
+    "ratio": 3.4
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "Сохранение",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.cloud.error",
+    "english": "Cloud saving could not finish. Retry when ready.",
+    "translation": "Не удалось завершить сохранение в облаке. Попробуй снова, когда будешь готов.",
+    "ratio": 1.6
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Автосохранение",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.versions.checkpoint",
+    "english": "Checkpoint",
+    "translation": "Контрольная точка",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "Подготовить {track} к записи",
+    "ratio": 2.55
+  },
+  {
+    "id": "beatTakes.locked",
+    "english": "Stop recording to edit",
+    "translation": "Остановите запись для редактирования",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatTakes.choose",
+    "english": "Use {name}",
+    "translation": "Использовать {name}",
+    "ratio": 1.9
+  },
+  {
+    "id": "speech.pitch",
+    "english": "Pitch",
+    "translation": "Высота тона",
+    "ratio": 2.2
+  },
+  {
+    "id": "speech.gender.male",
+    "english": "Male",
+    "translation": "Мужской",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.emotion.sad",
+    "english": "Sad",
+    "translation": "Грусть",
+    "ratio": 2
+  },
+  {
+    "id": "speech.cue.pant",
+    "english": "Pant",
+    "translation": "Частое дыхание",
+    "ratio": 3.5
+  },
+  {
+    "id": "speech.cue.sniffs",
+    "english": "Sniff",
+    "translation": "Шмыгнуть носом",
+    "ratio": 2.8
+  },
+  {
+    "id": "speech.cue.burps",
+    "english": "Burp",
+    "translation": "Отрыжка",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.cue.humming",
+    "english": "Hum",
+    "translation": "Напевание",
+    "ratio": 3
+  },
+  {
+    "id": "speech.cue.hissing",
+    "english": "Hiss",
+    "translation": "Шипение",
+    "ratio": 1.75
+  },
+  {
+    "id": "speech.tone.Rich",
+    "english": "Rich",
+    "translation": "Насыщенный",
+    "ratio": 2.5
+  },
+  {
+    "id": "speech.tone.Relaxed",
+    "english": "Relaxed",
+    "translation": "Расслабленный",
+    "ratio": 1.86
+  },
+  {
+    "id": "speech.tone.Serene",
+    "english": "Serene",
+    "translation": "Безмятежный",
+    "ratio": 1.83
+  },
+  {
     "id": "editorText.serif",
     "english": "Serif",
     "translation": "С засечками",
@@ -3838,6 +3934,66 @@
     "english": "Unpublish",
     "translation": "Снять с публикации",
     "ratio": 2
+  },
+  {
+    "id": "beat.view.song",
+    "english": "Song",
+    "translation": "Композиция",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.region.nextTrack",
+    "english": "Next track",
+    "translation": "Следующая дорожка",
+    "ratio": 1.7
+  },
+  {
+    "id": "beat.region.resize",
+    "english": "Resize region",
+    "translation": "Изменить длину региона",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.region.copy",
+    "english": "Copy on drop",
+    "translation": "Копировать при отпускании",
+    "ratio": 2.08
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "Привязка",
+    "ratio": 2
+  },
+  {
+    "id": "beat.zoom.out",
+    "english": "Zoom out",
+    "translation": "Уменьшить масштаб",
+    "ratio": 2.13
+  },
+  {
+    "id": "beat.zoom.in",
+    "english": "Zoom in",
+    "translation": "Увеличить масштаб",
+    "ratio": 2.43
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Следующий такт",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.ruler.end",
+    "english": "End",
+    "translation": "Конец",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.drag.cancelled",
+    "english": "Drag cancelled",
+    "translation": "Перетаскивание отменено",
+    "ratio": 1.64
   },
   {
     "id": "chrome.privacyPolicy",

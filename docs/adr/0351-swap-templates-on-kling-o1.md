@@ -549,6 +549,28 @@ The R2 manifest and its pin (`a795629b…bf28b`) are unchanged and the 411 clips
 
 Rollback: restore the removed ids in `app/veyrnox/_lib/templateSwapClips.js`.
 
+## Amendment 17 (2026-11-20): 13 one-photo templates hidden (289 to 276 ids)
+
+Placed after amendment 13 because it continues that registry cut. Five frames of each live clip were read (the role review of amendment 16). These ids leave `TEMPLATE_SWAP_CLIPS`, and the first two leave the curated row (13 to 11). Their clips stay in the R2 manifest; the pin, prices and flags are unchanged.
+
+| id | reason |
+|---|---|
+| community-storefront-hero-swap | security-camera view, several people, no clear lead (was in the row) |
+| community-garden-path-tea | only legs are shown, no face (was in the row) |
+| community-bus-chase-sprint | feet and an arm only, no face |
+| community-skyline-supercar-drive | aerial city view, no person |
+| community-coastal-car-showcase | a car, no person |
+| community-highway-vehicle-swap | a car, no person |
+| community-symbiote-supercar-shift | a car built from goo, no person |
+| community-delivery-van-loop | a van and a shopping bag, no person |
+| community-highway-delivery-reveal | a box and a product, no person |
+| community-window-dog | a dog in a window |
+| community-window-snacker-swap | a cat in a window |
+| community-chauffeur-arrival-swap | chauffeur and passenger, no clear lead |
+| community-criminal-standoff-montage | two equally prominent men |
+
+Rollback: restore the ids to `TEMPLATE_SWAP_CLIPS` (and the two rows to `TEMPLATE_SWAP_ROW`, copying name, poster and ratio from the template data) and set the counts in `tests/templateSwapClipEmpty.test.mjs` and `tests/swapRow.test.mjs` back. No manifest upload is needed.
+
 ## Amendment 14 (2026-11-20): two-person templates behind their own key, dark
 
 **Problem.** Template `basketball-3` needs two photos. The one-photo path sends one element (frontal plus crop of ONE person), the prompt names one role, and O1 dropped the other person in the output. About 121 of the 410 registry ids need two or more photos.
@@ -567,3 +589,11 @@ Rollback: restore the removed ids in `app/veyrnox/_lib/templateSwapClips.js`.
 **Not done here.** The live registry is not touched; ids removed by the stop-gap come back only through a separate owner-approved registry step after the staging proof below. Three-plus people: fal allows four elements, but no 3+ prompt, UI or table exists; see the PR for the recommendation.
 
 **Staging proof (owner decides; STAGING fal key only, never PROD FAL).** `basketball-3` on staging with the key on, two different supplied faces: expect one 5 s job, 47 credits, about $0.84 at fal. Look at: both people present; person 1 is the green character, person 2 the red one; faces match the two photos; scene unchanged.
+
+## Amendment 15 (2026-11-20): two-person roles describe the clip
+
+The first-wave roles in `lib/templateSwapPeople.mjs` were the source prompts' own words, which name the creator's reference images ("the green character", "the red character"). O1 matches roles against the clip, and in `basketball-3` nobody wears red, so the first photo would likely land on the woman in green. Every listed pair was eye-checked against the uploaded clip (five frames each) and rewritten to describe the two people as they appear in it. `community-cliffside-rescue-hero` shows only one person (the other is barely in frame), so it leaves the table and stays one-person. Five ids remain: `basketball-3`, `community-double-character-swap`, `community-firelit-combat-duel`, `community-elevator-dance-swap`, `community-streetball-rivalry-swaps`. No runtime key, registry, manifest or price changes; the feature is still dark.
+
+## Amendment 16 (2026-11-20): reviewed one-photo roles
+
+The importer copied each one-photo clip's role from its source prompt, which describes the creator's reference images, not the clip. Five frames of each uploaded clip were read for the 13 curated-row ids and the 46 live ids whose role is not the generic "the main character". 21 roles named someone absent from the clip (a cat, a horse rider, "the only male person" over a woman), were cut off mid-phrase ("the woman in", "the women from") or did not pick one person out where several are prominent. The pinned manifest cannot change, so `lib/templateSwapRoleOverrides.mjs` holds the reviewed wording, and `effectiveSwapRole` is read by the gate (catalog projection, prompt, job identity) and by replay. An id not listed keeps its manifest role. A replay of a job admitted with the old wording for a listed id now returns `idempotency_conflict` without a charge, as for any other changed revision. Templates better hidden (no face, an object or an animal, or no clear lead) are listed in the PR for the owner; hiding is a registry change and is not made here.
