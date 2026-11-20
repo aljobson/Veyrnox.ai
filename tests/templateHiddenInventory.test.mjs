@@ -9,15 +9,15 @@ import { templateContract } from '../lib/templateContract.js';
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
-    addressable: 1926, listed: 73, hidden: 1853,
-    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 98, 'like-for-like-safe': 232, bound: 89, none: 1042 },
-    hiddenRouteFits: { o1_clip: 524, none_unsupported: 78, text_only_other_model: 112, kling_i2v_photo: 97, none_no_contract: 1042 },
-    hiddenKinds: { video_swap: 314, none: 1329, motion: 78, swap: 132 },
-    seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 23, withdrawn_or_absent: 6, hidden: 171 },
-    seedanceHiddenRouteFits: { none_unsupported: 34, o1_clip: 53, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
+    addressable: 1926, listed: 28, hidden: 1898,
+    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 159, 'like-for-like-safe': 220, bound: 85, none: 1042 },
+    hiddenRouteFits: { o1_clip: 524, none_unsupported: 137, text_only_other_model: 112, kling_i2v_photo: 83, none_no_contract: 1042 },
+    hiddenKinds: { video_swap: 314, none: 1374, motion: 78, swap: 132 },
+    seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 2, withdrawn_or_absent: 6, hidden: 192 },
+    seedanceHiddenRouteFits: { none_unsupported: 55, o1_clip: 53, text_only_other_model: 84 }, boundOverBudget: 4, seedanceLabels: 238,
   });
   assert.equal(report.becomesRunnableAfterClipApproval.length, 524);
-  assert.equal(report.overBudget.find(r => r.id === 'jellyfish-airlines').length, 5814);
+  assert.equal(report.overBudget.find(r => r.id === 'community-supercar-midnight-refuel').length, 2454);
 });
 test('hidden clip list matches importer candidates; plain photo fit follows allowed models and references', async () => {
   const hidden = new Set(report.hidden.map(r => r.id));
