@@ -41,7 +41,9 @@ function fakes({ replies = {}, model = MODEL, stream } = {}) {
     };
     // Return only the columns the real query asks for, as PostgREST does. A fake that returned the whole row
     // hid a missing column once: the turn never fetched the images price, so staging refused every image.
-    const select = async (_table, q) => {
+    const select = async (table, q) => {
+        // No job is stored under a fresh send's key; a test that needs one supplies its own (withStored below).
+        if (table === 'jobs') return [];
         if (!model) return [];
         const wanted = String((q && q.columns) || '').split(',').map((c) => c.trim()).filter(Boolean);
         return [Object.fromEntries(wanted.filter((c) => c in model).map((c) => [c, model[c]]))];
@@ -638,13 +640,16 @@ test('library images: priced like uploads, resolved for the caller, recorded und
     assert.deepEqual(f.streamCalls[0].messages.at(-1).content.slice(1).map((p) => p.type), ['image_url', 'image_url']);
 });
 
-test('library images: uploads and Library images can be mixed; each is recorded where it belongs', async () => {
+test('library images: uploads and Library images can be mixed; each is recorded where it belongs, in the order sent', async () => {
     const f = fakes({ model: IMG_MODEL });
-    const w = withAssets(f, () => imageOk(), () => imageOk());
+    const w = withAssets(f, () => imageOk({ url: 'https://r2.example/upload' }), () => imageOk({ url: 'https://r2.example/library' }));
     await (await run(f, w.over({ body: body({ attachments: [{ source_asset: A1 }, { source_key: K1 }] }) }))).text();
     const inputs = called(f, 'ledger_debit')[0][1].p_inputs;
+    // The labels keep their keys-then-assets numbering: they are part of the request identity a retry is matched on (0399).
     assert.deepEqual(inputs.source_keys, { image_1: K1 });
     assert.deepEqual(inputs.source_assets, { image_2: A1 });
+    assert.deepEqual(f.streamCalls[0].messages.at(-1).content.slice(1).map((p) => p.image_url.url),
+        ['https://r2.example/library', 'https://r2.example/upload'], 'the model sees them in the order the person arranged them (ATT-06)');
     assert.equal(inputs.attachments.length, 2);
     assert.equal(called(f, 'ledger_debit')[0][1].p_credits, 4 + 3, 'one images extra however many pictures');
 });
@@ -1155,4 +1160,78 @@ test('an editor-only model is refused in Chat before any money moves (ADR-0332)'
     assert.equal(res.status, 409);
     assert.equal((await res.json()).error, 'model_unavailable');
     assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+// ATT-REVIEW-06 / REPLAY-01..03: a send already admitted under this key is found by its key first, before anything that
+// could refuse a fresh send (images, balance, search, free allowance), and handed to the ledger to replay. A refusal there
+// would read to the client as "never charged" and invite a second, charged send.
+const withStored = (f, rows, extra = {}) => ({ ...f.deps, ...extra, select: async (table, q) => {
+    if (table !== 'jobs') return f.deps.select(table, q);
+    if (rows instanceof Error) throw rows;
+    return rows;
+} });
+const STORED = {
+    kind: 'chat', thread_id: THREAD, options: { thinking: false, web: false }, request_hash: REQUEST_HASH,
+    attachments: [{ type: 'image/png', width: 1600, height: 900 }], source_keys: { image_1: K1 },
+};
+const REPLAY = { ok: true, job_id: JOB, idempotent: true, balance_after: 0 };
+
+test('a retry whose uploads were swept replays the stored job; the swept file is never looked for', async () => {
+    const f = fakes({ model: IMG_MODEL, replies: { ledger_debit: REPLAY } });
+    const seen = [];
+    const deps = withStored(f, [{ id: JOB, inputs: STORED }], { resolveImage: async (_a, k) => { seen.push(k); return { ok: false, error: 'source_not_found' }; } });
+    const res = await run(f, { deps, body: attach(K1) });
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { replay: true, job_id: JOB, balance_after: 0 });
+    assert.deepEqual(seen, []);
+    assert.deepEqual(called(f, 'ledger_debit')[0][1].p_inputs, STORED, 'the stored identity is presented again, so the ledger matches it');
+    assert.equal(f.streamCalls.length, 0);
+});
+
+test('a retry is answered from its job before the balance check and the search (REPLAY-02)', async () => {
+    const f = fakes({ model: IMG_MODEL, replies: { ledger_debit: REPLAY, read_user_credits: { balance: 0 } } });
+    const stored = { ...STORED, options: { thinking: false, web: true } };
+    const deps = withStored(f, [{ id: JOB, inputs: stored }], { resolveImage: async () => ({ ok: false, error: 'source_not_found' }), search: async () => { throw new Error('search must not run'); } });
+    const res = await run(f, { deps, body: body({ attachments: [{ source_key: K1 }], options: { web: true } }) });
+    assert.equal(res.status, 200, 'the first send spent the last credits; the retry still finds it');
+    assert.equal((await res.json()).replay, true);
+    for (const rpcName of ['read_user_credits', 'account_spend_eligible', 'provider_spend_admit_model', 'chat_stops_before_text']) assert.equal(called(f, rpcName).length, 0, rpcName);
+});
+
+test('a failed lookup of the stored send refuses as unavailable, never as a missing image (REPLAY-01)', async () => {
+    const f = fakes({ model: IMG_MODEL });
+    const deps = withStored(f, new Error('postgrest down'), { resolveImage: async () => ({ ok: false, error: 'source_not_found' }) });
+    const res = await run(f, { deps, body: attach(K1) });
+    assert.equal(res.status, 503);
+    assert.deepEqual(await res.json(), { error: 'replay_check_unavailable' });
+    assert.equal(called(f, 'ledger_debit').length, 0);
+});
+
+test('the same key with the images in another order, or other images, is a conflict, not a replay (REPLAY-03)', async () => {
+    const two = { ...STORED, attachments: [STORED.attachments[0], STORED.attachments[0]], source_keys: { image_1: K1, image_2: K2 } };
+    for (const order of [[K2, K1], [K2]]) {
+        const f = fakes({ model: IMG_MODEL, replies: { ledger_debit: REPLAY } });
+        const res = await run(f, { deps: withStored(f, [{ id: JOB, inputs: two }]), body: attach(...order) });
+        assert.equal(res.status, 409, order.join(','));
+        assert.deepEqual(await res.json(), { error: 'idempotency_conflict' });
+        assert.equal(called(f, 'ledger_debit').length, 0);
+    }
+});
+
+test('a stored job the ledger does not replay is refunded and refused, never streamed', async () => {
+    const f = fakes({ model: IMG_MODEL });
+    const res = await run(f, { deps: withStored(f, [{ id: JOB, inputs: STORED }]), body: attach(K1) });
+    assert.equal(res.status, 409);
+    assert.equal(f.streamCalls.length, 0);
+    assert.equal(called(f, 'ledger_refund').length, 1);
+});
+
+test('no job under the key: the send is checked and charged as any first send', async () => {
+    const f = fakes({ model: IMG_MODEL });
+    const deps = withStored(f, [], { resolveImage: async () => imageOk() });
+    const res = await run(f, { deps, body: attach(K1) });
+    await res.text();
+    assert.equal(res.status, 200);
+    assert.equal(called(f, 'ledger_debit').length, 1);
+    assert.ok(f.streamCalls.length > 0, 'the reply streamed');
 });

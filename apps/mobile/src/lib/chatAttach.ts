@@ -34,6 +34,13 @@ export function attachmentRefs(uploadKeys: readonly string[], assetIds: readonly
     return [...uploadKeys.map((k) => ({ source_key: k })), ...assetIds.map((id) => ({ source_asset: id.toLowerCase() }))];
 }
 
+// The same refs in the order the images are shown (ATT-06): the model is asked about "the first image" as the person sees it,
+// so uploads are not grouped ahead of Library images. `uploadKeys` are the keys of the images with a local file, in order.
+export function orderedAttachmentRefs(images: readonly ChatImage[], uploadKeys: readonly string[]): ({ source_key: string } | { source_asset: string })[] {
+    let next = 0;
+    return images.flatMap<AttachmentRef>((i) => (i.assetId ? [{ source_asset: i.assetId.toLowerCase() }] : i.uri ? [{ source_key: uploadKeys[next++] }] : []));
+}
+
 // A photo from the phone is redrawn before it leaves (chatResizer.ts): scaled to the long-edge cap (the server refuses more) and
 // re-encoded as JPEG, which drops its EXIF block (camera, time, GPS position). Library images are already in storage and skip it.
 export interface PreparedImage {
@@ -50,4 +57,34 @@ export const RESIZE_UNAVAILABLE = 'resize_unavailable';
 export function libraryImageJobs(jobs: readonly Job[], catalog: readonly Pick<CatalogModel, 'id' | 'modality'>[]): Job[] {
     const images = new Set(catalog.filter((m) => kindOf(m.modality) === 'image').map((m) => m.id));
     return jobs.filter((j) => j.state === 'succeeded' && j.has_asset && images.has(j.model_id));
+}
+
+// Images are chosen but the model in use cannot read them (no images offer). Sending then would drop them without a word and
+// send the text alone, so Send waits until they are removed or a model that reads images is chosen.
+export const imagesBlocked = (imageCount: number, imageExtra: number | null): boolean => imageCount > 0 && imageExtra === null;
+
+// What the screen says after the photo picker returns. A cancelled pick says nothing; a photo that could not be read or
+// prepared says so, even when others in the same pick were attached.
+export function photoNoticeKey(problem: 'resize_unavailable' | 'failed' | null): string | null {
+    if (problem === 'resize_unavailable') return 'chat.attach.needsUpdate';
+    if (problem === 'failed') return 'chat.attach.photoFailed';
+    return null;
+}
+
+export type AttachmentRef = { source_key: string } | { source_asset: string };
+export interface SentRefs { readonly key: string; readonly refs: readonly AttachmentRef[] }
+
+// The attachment refs for one send (ATT-REVIEW-05). A send whose outcome is not known yet keeps its idempotency key, and a
+// retry of it must name the very same storage keys: uploading the photos again would mint new keys, the server would refuse
+// the retry as a different request, and a further try could be charged twice. So the refs are kept with the send's key and
+// reused while that key is reused; only a new send uploads.
+export async function refsForSend(
+    sendKey: string,
+    kept: SentRefs | null,
+    images: readonly ChatImage[],
+    upload: (files: readonly ChatImage[]) => Promise<string[]>,
+): Promise<SentRefs> {
+    if (kept && kept.key === sendKey) return kept;
+    const keys = await upload(images.filter((i) => !i.assetId && i.uri));
+    return { key: sendKey, refs: orderedAttachmentRefs(images, keys) };
 }

@@ -3588,6 +3588,24 @@
     "ratio": 1.73
   },
   {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Masculino",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicTrackAdd.checkAgain",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
+  },
+  {
     "id": "beat.saveNote",
     "english": "Saved on this phone",
     "translation": "Ainda não salvo. Este beat é perdido quando o app é fechado.",
