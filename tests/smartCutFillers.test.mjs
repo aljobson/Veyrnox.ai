@@ -53,3 +53,10 @@ test('lexicon stays hesitation-only and lowercase', () => {
   assert.ok(!SMART_CUT_FILLER_WORDS.en.includes('like'));
   assert.ok(!SMART_CUT_FILLER_WORDS.en.includes('so'));
 });
+
+test('selected range is filtered and clamped before the suggestion cap', () => {
+  const early = Array.from({ length: 51 }, (_, index) => ['um', index * 0.5, index * 0.5 + 0.1]);
+  const analysis = scribe('eng', [...early, ['um', 55, 55.2]], 60);
+  assert.equal(smartCutFillerRanges(analysis).length, 50);
+  assert.deepEqual(smartCutFillerRanges(analysis, { start: 54, end: 56 }), [{ start: 54.97, end: 55.23, label: 'um' }]);
+});

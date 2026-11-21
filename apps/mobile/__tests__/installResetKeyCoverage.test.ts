@@ -40,6 +40,7 @@ test('every fixed SecureStore key is reset or kept with a reason', () => {
         'components/PaywallPrompt.tsx:seenKey(owner)': 'Per-user paywall seen flag.',
         'components/PaywallPrompt.tsx:depletedKey(owner)': 'Per-user paywall depleted flag.',
         'lib/mfaCheck.ts:key': 'Per-install, per-user MFA enrolment.',
+        'lib/beatNative/coachMarks.ts:secureTipKey(key)': 'Per-user beat editor tips seen flag (beatTipsSeenKey).',
     };
     const found = new Set<string>();
     const unknown: string[] = [];
