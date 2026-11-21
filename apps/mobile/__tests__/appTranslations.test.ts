@@ -104,3 +104,17 @@ test('Korean shortened sound announcement preserves both name particle forms and
     expect(CATALOGS.ko!['editorAudioTools.addedTrimmed']).toBe(template);
     expect(slots(template)).toEqual(['{name}', '{time}']);
 });
+test('HSL labels include the channel in every catalog, and Tint differs from Hue in French and Portuguese', () => {
+    for (const [locale, catalog] of [['en', english], ...complete] as [string, Record<string, string>][]) {
+        for (const key of ['hue', 'saturation', 'luminance']) {
+            expect(catalog[`editorLook.hsl.${key}`]).toContain('{channel}');
+            expect(createTranslator(locale as LocaleCode, CATALOGS).t(`editorLook.hsl.${key}`, { channel: 'CHANNEL' })).toContain('CHANNEL');
+        }
+    }
+    for (const locale of ['fr', 'pt'] as const) {
+        expect(APP_CATALOGS[locale]['editorLook.parameter.tint']).not.toBe(APP_CATALOGS[locale]['editorLook.parameter.hue']);
+    }
+});
+test.each([['es', 'Imagen'], ['fr', 'Image'], ['pt', 'Imagem'], ['ru', 'Изображение']])('background Image is capitalized in %s', (locale, label) => {
+    expect(APP_CATALOGS[locale as keyof typeof APP_CATALOGS]['editorLook.background.image']).toBe(label);
+});

@@ -142,7 +142,7 @@ test('neutral looks disappear only from the export copy and keep the translator 
     const before = JSON.stringify(saved), clean = (exportCopy(saved, {}).document.timeline as Timeline).video[0];
     const allowed = ['id', 'mediaId', 'in', 'len', 'volume', 'transition', 'start', 'trackId', 'transitionType'];
     expect(Object.keys(clean).every(key => allowed.includes(key))).toBe(true);
-    expect(clean.transitionType).toBe('dissolve'); expect(JSON.stringify(saved)).toBe(before);
+    expect(clean).not.toHaveProperty('transitionType'); expect(JSON.stringify(saved)).toBe(before);
     clip.effect = { type: 'none', intensity: .5 };
     expect((exportCopy(saved, {}).document.timeline as Timeline).video[0]).not.toHaveProperty('effect');
 });
@@ -159,6 +159,11 @@ test('active looks retain their S1 export refusal and animated neutral colour/fi
     ] as const;
     for (const [key, value, reason] of edits) {
         const saved = fixture(); Object.assign((saved.timeline as Timeline).video[0], { [key]: value });
+        if (key === 'transitionType') {
+            const tl = saved.timeline as Timeline;
+            tl.video[0].start = 120; tl.video[0].transition = 15;
+            tl.video.push({ ...tl.video[0], id: 'v2', start: 0, transition: 0 });
+        }
         const copy = exportCopy(saved, {}).document;
         expect((copy.timeline as Timeline).video[0]).toHaveProperty(key, value);
         expect(exportRefusal(key)).toBe(t(`editorExportRefusal.${reason}`));
@@ -167,4 +172,14 @@ test('active looks retain their S1 export refusal and animated neutral colour/fi
     clip.colourAdjustment = colourDefaults(); clip.filter = FILTER_DEFAULTS; clip.parameterKeyframes = [parameterKeyframe(clip, 0)];
     const clean = (exportCopy(saved, {}).document.timeline as Timeline).video[0];
     expect(clean.colourAdjustment).toEqual(clip.colourAdjustment); expect(clean.filter).toEqual(clip.filter);
+});
+test.each([[0, 120], [15, 121], [15, 120]])('export handles transition %s at start %s without changing saved metadata', (transition, start) => {
+    const saved = fixture(), timeline = saved.timeline as Timeline;
+    timeline.video.push({ ...timeline.video[0], id: 'v2', start, transition, transitionType: 'clock-wipe' });
+    const before = JSON.stringify(saved);
+    const copy = exportCopy(saved, { [`l-${id}`]: file }).document.timeline as Timeline;
+    if (transition === 0 || start !== 120) expect(copy.video[1]).not.toHaveProperty('transitionType');
+    else expect(copy.video[1].transitionType).toBe('clock-wipe');
+    expect(JSON.stringify(saved)).toBe(before);
+    expect(timeline.video[1].transitionType).toBe('clock-wipe');
 });

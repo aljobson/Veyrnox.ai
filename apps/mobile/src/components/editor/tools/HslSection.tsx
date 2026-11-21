@@ -10,9 +10,9 @@ import { LookChoice, degrees, percent } from './LookPanels';
 export function HslSection({ colour, actions, disabled }: { colour: Colour; actions: LookActions; disabled: boolean }) {
     const [channel, setChannel] = useState(HSL_CHANNELS[0]);
     return <View style={{ gap: ds.space.md }}>
-        <LookChoice label={t('editorLook.hsl')} value={channel} disabled={disabled} onChange={setChannel}
+        <LookChoice label={t('editorLook.hsl')} value={channel} onChange={setChannel}
             options={HSL_CHANNELS.map(id => ({ value: id, label: t(`editorLook.channel.${id}`) }))} />
-        {(['hue', 'saturation', 'luminance'] as HslKey[]).map(key => <Slider key={key} label={t(`editorLook.parameter.${key}`)}
+        {(['hue', 'saturation', 'luminance'] as HslKey[]).map(key => <Slider key={key} label={t(`editorLook.hsl.${key}`, { channel: t(`editorLook.channel.${channel}`) })}
             value={colour.hsl[channel][key]} min={key === 'hue' ? -180 : -1} max={key === 'hue' ? 180 : 1} step={key === 'hue' ? 1 : .01}
             format={key === 'hue' ? degrees : percent} disabled={disabled} onChange={value => actions.hsl(channel, key, value)} />)}
     </View>;

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View } from 'react-native';
 import { PARAMETER_BOUNDS } from '../../../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { t } from '../../../lib/i18n';
@@ -11,8 +12,15 @@ import { CurvesSection } from './CurvesSection';
 import { LookHeading, LookMessage, percent, number, degrees, type LookContentProps } from './LookPanels';
 const filters: FilterKey[] = ['brightness', 'contrast', 'saturate', 'hue', 'blur'];
 const colours: ColourKey[] = ['exposure', 'temperature', 'tint', 'shadows', 'highlights', 'gamma'];
-export function FiltersPanel({ clip, actions, disabled }: LookContentProps) {
-    const frame = useEditorFrame(actions.frameStore), values = lookValues(clip, frame - clip.start);
+export function FiltersPanel(props: LookContentProps) {
+    return props.clip.parameterKeyframes?.length ? <AnimatedFilters {...props} /> : <FilterControls {...props} offset={0} />;
+}
+function AnimatedFilters(props: LookContentProps) {
+    const frame = useEditorFrame(props.actions.frameStore);
+    return <FilterControls {...props} offset={frame - props.clip.start} />;
+}
+function FilterControls({ clip, actions, disabled, offset }: LookContentProps & { offset: number }) {
+    const values = useMemo(() => lookValues(clip, offset), [clip, offset]);
     return <View style={{ gap: ds.space.md }}>
         {clip.parameterKeyframes?.length ? <LookMessage>{t('editorLook.keyframes')}</LookMessage> : null}
         <LookHeading>{t('editorLook.filter')}</LookHeading>

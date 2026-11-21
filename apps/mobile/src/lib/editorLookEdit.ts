@@ -2,6 +2,7 @@ import { updateSequenceClip, setSequenceTransition } from '../../../../app/veyrn
 import { colourDefaults, colourProblem } from '../../../../app/veyrnox/_lib/editorColour.mjs';
 import { FILTER_DEFAULTS, evaluatedParameters, parameterKeyframe } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { BACKGROUND_DEFAULTS, backgroundProblem } from '../../../../app/veyrnox/_lib/editorBackground.mjs';
+import { validateSequence } from '../../../../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import { helperDiagnostic } from '../../../../lib/helperMessages.mjs';
 import type { Clip, Timeline } from './nativeEditorModel';
 import type { CurvePoint } from './editorCurvePoints';
@@ -81,20 +82,18 @@ export function cropSet(tl: Timeline, id: string, crop: Crop): LookResult {
 export const cropReset = (tl: Timeline, id: string): LookResult => clipPatch(tl, id, {}, 0, ['crop']);
 export function backgroundSet(tl: Timeline, id: string, patch: Partial<Background>): LookResult {
     const background = { ...BACKGROUND_DEFAULTS, ...selected(tl, id)?.background, ...patch } as Background;
-    if (patch.type !== undefined) background.mediaId = patch.type === 'image'
+    if (patch.type !== undefined && patch.type !== (selected(tl, id)?.background?.type ?? BACKGROUND_DEFAULTS.type)) background.mediaId = patch.type === 'image'
         ? Object.values(tl.media).find(m => m.kind === 'image' || m.kind === 'graphic')?.id ?? '' : '';
     return clipPatch(tl, id, { background });
 }
 export function backgroundAll(tl: Timeline, background: Background): LookResult {
     if (tl.video.some(c => tl.tracks.some(t => t.id === c.trackId && t.locked))) return { refused: 'lockedAll' };
     const bad = backgroundProblem(background, tl.media); if (bad) return { refused: lookRefusal(bad) };
-    let next = tl;
-    for (const clip of tl.video) {
-        const applied = clipPatch(next, clip.id, { background: { ...background } });
-        if ('refused' in applied) return applied;
-        next = applied.timeline;
-    }
-    return { timeline: next };
+    return result(() => {
+        const next = { ...tl, video: tl.video.map(clip => ({ ...clip, background: { ...background } })) };
+        const error = validateSequence(next);
+        return error ? { error } : next;
+    });
 }
 export const adjacent = (tl: Timeline, id: string): boolean => {
     const clip = selected(tl, id);

@@ -19,6 +19,7 @@ const domains: Record<string, readonly string[]> = {
     'editorLook.parameter.{}': ['brightness', 'contrast', 'saturate', 'hue', 'blur', 'exposure',
         'temperature', 'tint', 'shadows', 'highlights', 'gamma', 'saturation', 'luminance'],
     'editorLook.channel.{}': [...new Set([...HSL_CHANNELS, ...CURVE_CHANNELS])],
+    'editorLook.hsl.{}': ['hue', 'saturation', 'luminance'],
     'editorLook.category.{}': [...new Set([...EFFECT_CATEGORIES, ...TRANSITION_CATEGORIES])].filter(c => c !== 'All'),
     'editorLook.effect.{}': VIDEO_EFFECTS.map(e => e.id),
     'editorLook.transition.{}': [...TRANSITIONS.map(e => e.id), 'slide'],

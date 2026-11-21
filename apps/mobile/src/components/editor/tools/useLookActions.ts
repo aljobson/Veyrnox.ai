@@ -1,3 +1,4 @@
+import { documentIdentity } from '../../../lib/editorBridge';
 import { t } from '../../../lib/i18n';
 import * as edit from '../../../lib/editorLookEdit';
 import type { Selection, Timeline } from '../../../lib/nativeEditorModel';
@@ -14,6 +15,7 @@ export function useLookActions({ timeline, selection, applyTimeline, setProblem,
             setProblem(reason === 'tooLarge' || reason === 'invalid' ? t(`editorEditGate.${reason}`) : t(`editorLook.${reason}`));
             return false;
         }
+        if (documentIdentity(result.timeline) === documentIdentity(timeline)) return false;
         if (!applyTimeline(result.timeline)) return false;
         setProblem(null); return true;
     };

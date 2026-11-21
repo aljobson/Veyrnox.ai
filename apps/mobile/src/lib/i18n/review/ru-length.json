@@ -4404,6 +4404,12 @@
     "ratio": 2.62
   },
   {
+    "id": "editorLook.hsl.hue",
+    "english": "{channel} hue",
+    "translation": "{channel}: цветовой тон",
+    "ratio": 1.77
+  },
+  {
     "id": "editorLook.blend",
     "english": "Blend",
     "translation": "Наложение",
@@ -4586,7 +4592,7 @@
   {
     "id": "editorLook.background.image",
     "english": "Image",
-    "translation": "изображение",
+    "translation": "Изображение",
     "ratio": 2.2
   },
   {

@@ -1,4 +1,6 @@
 import { act } from 'react';
+import * as lookEdit from '../src/lib/editorLookEdit';
+import { BACKGROUND_DEFAULTS } from '../../../app/veyrnox/_lib/editorBackground.mjs';
 import { createRoot } from 'test-renderer';
 import { FiltersPanel, EffectsPanel, TransitionsPanel } from '../src/components/editor/tools/LookPanels';
 import { useLookActions } from '../src/components/editor/tools/useLookActions';
@@ -6,6 +8,11 @@ import { createFrameStore } from '../src/components/editor/editorFrameStore';
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import { parameterKeyframe } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
 import type { ToolPanelProps } from '../src/components/editor/tools/types';
+const mockCurveRender = jest.fn();
+jest.mock('../src/components/editor/tools/CurveEditor', () => {
+    const { CurveEditor } = jest.requireActual('../src/components/editor/tools/CurveEditor');
+    return { CurveEditor: (props: any) => { mockCurveRender(props); return <CurveEditor {...props} />; } };
+});
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 test('look panels show video-only controls; evaluated readouts follow a paused seek', async () => {
     const root = createRoot(), frameStore = createFrameStore(), applyTimeline = jest.fn((_next: Timeline) => true), setProblem = jest.fn();
@@ -26,7 +33,11 @@ test('look panels show video-only controls; evaluated readouts follow a paused s
             expect(typeof control.props.accessibilityLabel).toBe('string'); expect(control.props.accessibilityLabel.length).toBeGreaterThan(0);
         }
         expect(root.container.queryAll(n => n.children.includes("The phone preview doesn't show looks yet. They are kept in your project.")).length).toBeGreaterThan(0);
+        expect(root.container.queryAll(n => n.children.includes(t('editor.videoclipselected'))).length).toBeGreaterThan(0);
+        expect(root.container.queryAll(n => n.children.includes(t('editor.selectavideoclip')))).toHaveLength(0);
         await act(async () => root.render(<Harness Panel={Panel} audio />));
+        expect(root.container.queryAll(n => n.children.includes(t('editor.videoclipselected')))).toHaveLength(0);
+        expect(root.container.queryAll(n => n.children.includes(t('editor.selectavideoclip'))).length).toBeGreaterThan(0);
         expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')).toHaveLength(0);
     }
     await act(async () => root.render(<Harness Panel={FiltersPanel} />));
@@ -90,6 +101,71 @@ describe('FullEditorScreen look commits', () => {
         expect(nodes).toHaveLength(1);
         await act(async () => nodes[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     }
+    test.each([['Effects', 'Normal'], ['Effects', 'None'], ['Effects', 'Reset crop'],
+        ['Filters', 'Reset filter'], ['Filters', 'Reset colour'], ['Transitions', 'No transition']])(
+        '%s / %s leaves an untouched document clean with no revision or history', async (panel, label) => {
+            await open(); const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+            await press(panel);
+            const buttons = root.container.queryAll(n => n.props.accessibilityLabel === label && typeof n.props.onClick === 'function');
+            expect(buttons.length).toBeGreaterThan(0);
+            for (const button of buttons) await act(async () => button.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+            expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+            expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false);
+        });
+    test('reselecting Image retains the second image without revision, history or dirty change', async () => {
+        const tl: Timeline = timeline();
+        for (const id of ['first', 'second']) tl.media[id] = { id, kind: 'image', frames: 90, name: id, width: 50, height: 50, hasAudio: false };
+        tl.video[1].background = { ...BACKGROUND_DEFAULTS, type: 'image', mediaId: 'second' };
+        await open(tl as ReturnType<typeof timeline>);
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        await press('Effects'); await press('Image');
+        expect((mockSession.currentDocument()!.timeline as Timeline).video[1].background!.mediaId).toBe('second');
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false);
+    });
+    test('unchanged background swatch and hex blur commit nothing', async () => {
+        const tl: Timeline = timeline(); tl.background = '#aabbcc';
+        tl.video[1].background = { ...BACKGROUND_DEFAULTS, type: 'solid', color: '#aabbcc' };
+        await open(tl as ReturnType<typeof timeline>);
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        const background = jest.spyOn(lookEdit, 'backgroundSet');
+        await press('Effects'); await press(t('editorTools.colourSwatch', { hex: '#aabbcc' }));
+        const input = root.container.queryAll(n => typeof n.props.onEndEditing === 'function')[0];
+        expect(input).toBeDefined();
+        await act(async () => input.props.onEndEditing({ nativeEvent: { text: '#AABBCC' } }));
+        expect(background).not.toHaveBeenCalled(); background.mockRestore();
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false);
+    });
+    test('transition duration stays disabled until a transition is selected', async () => {
+        await open(); await press('Transitions');
+        const duration = () => root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === 'Duration')[0];
+        expect(duration().props.accessibilityState.disabled).toBe(true);
+        await press('Dissolve'); expect(duration().props.accessibilityState.disabled).toBe(false);
+        await press('No transition'); expect(duration().props.accessibilityState.disabled).toBe(true);
+    });
+    test('locked tracks allow HSL and curve channel inspection while keeping values disabled', async () => {
+        const tl = timeline(); tl.tracks[0].locked = true;
+        await open(tl); await press('Filters');
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        const blue = () => root.container.queryAll(n => n.props.accessibilityLabel === 'Blue' && typeof n.props.onClick === 'function');
+        expect(blue()).toHaveLength(2);
+        for (let i = 0; i < 2; i++) {
+            expect(blue()[i].props.accessibilityState.disabled).not.toBe(true);
+            await act(async () => blue()[i].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+        }
+        for (const key of ['hue', 'saturation', 'luminance']) {
+            const slider = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === `Blue ${key}`)[0];
+            expect(slider.props.accessibilityState.disabled).toBe(true);
+        }
+        const curve = root.container.queryAll(n => n.props.accessibilityRole === 'image' && n.props.accessibilityLabel === 'Curve for Blue: 2 points')[0];
+        expect(curve.props.accessibilityState.disabled).toBe(true);
+        for (const label of ['Increase Point 1 output', 'Add point', 'Reset Blue curve']) {
+            expect(root.container.queryAll(n => n.props.accessibilityLabel === label)[0].props.accessibilityState.disabled).toBe(true);
+        }
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false);
+    });
     test.each([['Effects', 'Motion tiles', 'effect'], ['Effects', 'Screen', 'blend'],
         ['Transitions', 'Clock wipe', 'transitionType'], ['Effects', 'Solid', 'background']])('%s / %s creates exactly one undo entry', async (panel, label, field) => {
         await open(); const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
@@ -148,4 +224,28 @@ describe('FullEditorScreen look commits', () => {
         expect(mockSession.dirty).toBe(false); expect(mockSession.getEditRevision()).toBe(revision);
         expect(mockSession.problem).toBe(t('editorEditGate.tooLarge'));
     });
+});
+
+test('static filters do not subscribe or render curves on playback, and reuse evaluated values on parent renders', async () => {
+    const root = createRoot(), frameStore = createFrameStore(), timeline = emptyTimeline();
+    timeline.video = [{ id: 'v1', start: 0, len: 90, in: 0, trackId: 'video-0', mediaId: 'm', transition: 0, volume: 1 }];
+    const selection = { track: 'video' as const, id: 'v1' }, applyTimeline = jest.fn(() => true);
+    const actions = useLookActions({ timeline, selection, frameStore, applyTimeline, setProblem: jest.fn() });
+    const subscribe = jest.spyOn(frameStore, 'subscribe'), values = jest.spyOn(lookEdit, 'lookValues');
+    const render = () => root.render(<FiltersPanel {...{ timeline, selection, lookActions: actions } as ToolPanelProps} />);
+    await act(async () => render());
+    expect(subscribe).not.toHaveBeenCalled();
+    const curves = mockCurveRender.mock.calls.length, evaluated = values.mock.calls.length;
+    for (const frame of [1, 15, 30, 89]) await act(async () => frameStore.set(frame));
+    expect(mockCurveRender).toHaveBeenCalledTimes(curves); expect(values).toHaveBeenCalledTimes(evaluated);
+    await act(async () => render()); expect(values).toHaveBeenCalledTimes(evaluated);
+    timeline.video[0] = { ...timeline.video[0], parameterKeyframes: [parameterKeyframe(timeline.video[0], 0),
+        { ...parameterKeyframe(timeline.video[0], 89), brightness: 2 }] };
+    await act(async () => render()); expect(subscribe).toHaveBeenCalledTimes(1);
+    const animatedRenders = mockCurveRender.mock.calls.length;
+    await act(async () => frameStore.set(0));
+    expect(mockCurveRender.mock.calls.length).toBeGreaterThan(animatedRenders);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === 'Brightness')[0]
+        .props.accessibilityValue.now).toBe(1);
+    await act(async () => root.unmount()); values.mockRestore(); subscribe.mockRestore();
 });

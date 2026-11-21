@@ -102,3 +102,29 @@ test('an eighth point crossing 30000 bytes refuses and preserves the seven-point
     expect(look.curveSet(tl, 'v0', 'master', next)).toEqual({ refused: 'tooLarge' });
     expect(JSON.stringify(tl)).toBe(before);
 });
+test('reselecting Image preserves the second image and the complete timeline', () => {
+    const tl = fixture();
+    for (const id of ['first', 'second']) tl.media[id] = { id, kind: 'image', frames: 90, name: id, width: 50, height: 50, hasAudio: false };
+    tl.video[1].background = { ...BACKGROUND_DEFAULTS, type: 'image', mediaId: 'second' };
+    expect(look.backgroundSet(tl, 'v1', { type: 'image' })).toEqual({ timeline: tl });
+});
+test('bulk backgrounds validate the final array even when the first replacement alone exceeds 30000 bytes', () => {
+    const tl = fixture(), background = { ...BACKGROUND_DEFAULTS, type: 'solid' as const };
+    const imageId = 'i'.repeat(64);
+    tl.media[imageId] = { id: imageId, kind: 'image', frames: 90, name: 'Still', width: 50, height: 50, hasAudio: false };
+    for (const clip of tl.video.slice(1)) clip.background = { ...BACKGROUND_DEFAULTS, type: 'image', mediaId: imageId };
+    tl.text = [];
+    while (JSON.stringify(tl).length < 28900) {
+        const i = tl.text.length;
+        tl.text.push({ id: `t${i}`, text: 'x'.repeat(900), start: i * 90, len: 90, trackId: 'text-0', x: .5, y: .8, size: 6 });
+    }
+    tl.text.push({ ...tl.text[0], id: 't99', start: 2700, text: '' });
+    tl.text[tl.text.length - 1].text = 'x'.repeat(29999 - JSON.stringify(tl).length);
+    expect(validateSequence(tl)).toBeNull();
+    const before = JSON.stringify(tl);
+    expect(look.backgroundSet(tl, 'v0', background)).toEqual({ refused: 'tooLarge' });
+    const next = { ...tl, video: tl.video.map(c => ({ ...c, background: { ...background } })) };
+    expect(validateSequence(next)).toBeNull();
+    expect(look.backgroundAll(tl, background)).toEqual({ timeline: next });
+    expect(JSON.stringify(tl)).toBe(before);
+});

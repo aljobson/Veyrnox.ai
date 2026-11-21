@@ -4344,6 +4344,12 @@
     "ratio": 2
   },
   {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "Tonalidade",
+    "ratio": 2.5
+  },
+  {
     "id": "editorLook.channel.red",
     "english": "Red",
     "translation": "Vermelho",

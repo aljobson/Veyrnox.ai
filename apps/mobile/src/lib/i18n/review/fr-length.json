@@ -6762,6 +6762,12 @@
     "ratio": 2
   },
   {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "Correction de dominante",
+    "ratio": 5.75
+  },
+  {
     "id": "editorLook.channel.red",
     "english": "Red",
     "translation": "Rouge",

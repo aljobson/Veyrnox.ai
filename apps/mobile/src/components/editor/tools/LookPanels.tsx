@@ -26,7 +26,7 @@ export function LookMessage({ children }: { children: ReactNode }) {
 }
 // S2's choice has no disabled prop. Keep its enabled UI; locked choices expose a true disabled state.
 export function LookChoice(props: Parameters<typeof SegmentedChoice>[0] & { disabled?: boolean }) {
-    if (!props.disabled) return <SegmentedChoice {...props} />;
+    if (!props.disabled) return <SegmentedChoice {...props} onChange={value => { if (value !== props.value) props.onChange(value); }} />;
     return <View><LookHeading>{props.label}</LookHeading><View style={styles.choices}>
         {props.options.map(option => <Pressable key={option.value} disabled accessibilityRole="button"
             accessibilityLabel={rawText(option.label)} accessibilityState={{ disabled: true, selected: props.value === option.value }}
@@ -42,7 +42,7 @@ function LookPanel({ props, kind }: { props: ToolPanelProps; kind: 'filters' | '
     const disabled = !!props.timeline.tracks.find(track => track.id === clip?.trackId)?.locked;
     const Content = kind === 'filters' ? Filters : kind === 'effects' ? Effects : Transitions;
     return <View style={{ gap: ds.space.md }}>
-        <PanelHeading title={t(`editor.${kind}`)} detail={t('editor.selectavideoclip')} />
+        <PanelHeading title={t(`editor.${kind}`)} detail={t(clip ? 'editor.videoclipselected' : 'editor.selectavideoclip')} />
         {clip ? <><LookMessage>{t('editorLook.preview')}</LookMessage>
             {disabled ? <LookMessage>{t('editorLook.locked')}</LookMessage> : null}
             <Content timeline={props.timeline} clip={clip} actions={actions} disabled={disabled} />

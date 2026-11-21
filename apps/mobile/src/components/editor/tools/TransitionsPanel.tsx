@@ -17,7 +17,7 @@ export function TransitionsPanel({ timeline, clip, actions, disabled }: LookCont
             onChange={actions.transition} options={[{ value: 'slide', label: t('editorLook.transition.slide') }]} /> : null}
         <LookMessage>{t('editorLook.export')}</LookMessage>
         {!adjacent(timeline, clip.id) ? <LookMessage>{t('editorLook.notAdjacent')}</LookMessage> : null}
-        <Slider label={t('editorLook.duration')} value={clip.transition || 15} min={1} max={60} step={1} disabled={disabled}
+        <Slider label={t('editorLook.duration')} value={clip.transition || 15} min={1} max={60} step={1} disabled={disabled || selected === 'none'}
             format={value => t('editorTools.secondsValue', { value: formatNumber(value / timeline.fps, 2) })} onChange={actions.transitionLength} />
     </View>;
 }
