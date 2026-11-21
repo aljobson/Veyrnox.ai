@@ -96,7 +96,7 @@ export function MediaTile({ playLabel, href, clip, mediaClassName = '', mediaSty
           </button>
         )}
         {player && (
-          <div className="absolute inset-0 z-20 bg-black" onClick={(event) => event.preventDefault()}>
+          <div className="absolute inset-0 z-20 bg-black" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
             <video src={clipVideo} poster={clip.poster} controls autoPlay playsInline aria-label={playLabel} onError={() => { setFailed(true); setPlayer(false); }} className="h-full w-full object-contain" />
           </div>
         )}
