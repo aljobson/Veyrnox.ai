@@ -15,6 +15,7 @@ import type { AiDoc, Op } from '../../../lib/beatAi/types';
 import type { ApiClient } from '../../../lib/api';
 import { BeatAiSheet } from './BeatAiSheet';
 import { BeatMagicBar } from './BeatMagicBar';
+import { MAGIC_BAR_ON_PHONE } from '../../../lib/beatAi/magicGate';
 export function BeatAiPanel({ doc, apply }: { doc: BeatDoc; apply(edit: Edit, label?: string): boolean }) {
     const { api, getAccessToken, generation } = useAuth();
     const identity = useRef({ generation, id: doc.id }); identity.current = { generation, id: doc.id };
@@ -61,6 +62,6 @@ function OwnerPanel({ api, owner, doc, apply, current }: { api: ApiClient; owner
         {view.rows.map(row => <Button key={row.key} label={t('beatAi.resume', { name: row.prompt || t(`beatAi.${row.op}`) })} disabled={view.busy || row.op === 'stems'} onPress={() => { setOp(row.op); void request.resume(row); }} />)}
         {view.error && !view.open ? <Text accessibilityRole="alert">{t(view.error, view.errorParams)}</Text> : null}
         {view.open ? <BeatAiSheet key={`${op}.${view.record?.key ?? 'new'}`} request={request} client={client} doc={doc} op={op} onClose={request.close} /> : null}
-        <BeatMagicBar doc={doc} client={client} owner={owner} current={valid} off={off} />
+        {MAGIC_BAR_ON_PHONE ? <BeatMagicBar doc={doc} client={client} owner={owner} current={valid} off={off} /> : null}
     </>;
 }

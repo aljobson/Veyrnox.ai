@@ -51,6 +51,16 @@ test('select failure fails closed; on skips all selects', async () => {
   flags(true); assert.equal((await submit(request(body))).status, 202); assert.equal(selects.length, 0); assert.equal(calls[0].name, 'music_submit_pair');
 });
 
+test('a failed guard read never refuses ordinary Create; a beat key still fails closed', async () => {
+  for (const table of [true, 'music_generation_quotes']) {
+    flags(false); fail = table;
+    const create = await submit(request({ ...body, idempotency_key: `create.${uuid(6)}` }));
+    assert.equal(create.status, 202); assert.equal(calls[0].name, 'music_submit_pair');
+    flags(false); fail = table;
+    assert.equal((await submit(request(body))).status, 502); assert.equal(calls.length, 0);
+  }
+});
+
 test('missing/foreign quotes preserve the RPC NOT_FOUND response; quote-select errors fail closed', async () => {
   flags(false); rpcResult = { ok: false, code: 'NOT_FOUND' };
   const missing = await submit(request(body));

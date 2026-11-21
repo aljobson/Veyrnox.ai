@@ -92,8 +92,11 @@ This is deliberately retryable: the read can race an original transaction that
 has not yet committed. The web and phone keep the receipt and idempotency key.
 Consumed quotes continue to the atomic replay RPC without a new debit. Other
 models and foreign/missing quote ids continue unchanged; ownership is not
-revealed. Select failures fail closed with 502 `temporarily_unavailable`, logging
-no vendor error text. With Beat AI on, neither select runs. Responses are no-store.
+revealed. A failed select logs no vendor error text. A `beat-ai.` idempotency key fails
+closed with 502 `temporarily_unavailable`; any other key continues to the RPC, so
+ordinary Create never depends on this read. Residual risk: a beat quote minted
+while on (five-minute expiry) and sent under another key during a flip and a read
+failure. With Beat AI on, neither select runs. Responses are no-store.
 
 The phone probes with exactly `{"model_id":"ace-step-loop"}`. A 400 means on;
 a 404 or `_unavailable` code means off; a 401 means signed out; a transport error
@@ -113,11 +116,15 @@ candidates remain durable until a layer is saved or the person discards results.
 
 Native parity gaps agreed for N8: Split stems remains disabled with web-editor
 copy because React Native lacks the ZIP loader's streaming decompression APIs.
-Target stem remains available. Owner decision point: the phone Magic Bar is gated
-by the `beatAi` probe only, independently of the web `magicBar` key. Its quotes
-use the public `ace-step-1.5` Create model and are not covered by the new
-`ace-step-loop` server guard. This amendment records that boundary without
-changing it. Magic layers are owner-scoped sidecar files, at most four; playback
+Target stem remains available.
+
+Repository configuration at this amendment: `wrangler.jsonc` sets `beatAi: true`
+and `magicBar: false` for production and staging (the live Worker was not read).
+With that configuration the guards take their on branch and add no reads, the
+probe reports on, and a phone build containing N8 can quote and charge for
+Generate, Target stem, Extend and Replace. The phone Magic Bar is built but off
+(`MAGIC_BAR_ON_PHONE`): `magicBar` has no API-visible state and its quotes use the
+public `ace-step-1.5` Create model, which the guard does not cover. Magic layers are owner-scoped sidecar files, at most four; playback
 is explicitly unavailable in this slice. AI audio track playback depends on
 N6/N7; audio tracks show no drum kit picker in the native mixer. Source
 operations use an additive audio-region picker until region selection lands.

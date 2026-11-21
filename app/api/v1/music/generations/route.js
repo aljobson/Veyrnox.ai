@@ -42,7 +42,8 @@ export async function POST(request) {
             }
         } catch {
             console.error('[music/generations] beat quote guard unavailable');
-            return reply({ error: 'temporarily_unavailable' }, 502);
+            // Ordinary Create must not depend on this read. A beat quote cannot be minted while off.
+            if (input.idempotencyKey.startsWith('beat-ai.')) return reply({ error: 'temporarily_unavailable' }, 502);
         }
     }
     let result;
