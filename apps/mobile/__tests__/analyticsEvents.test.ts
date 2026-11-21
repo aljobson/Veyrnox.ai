@@ -18,6 +18,8 @@ test('application events reject unknown names, content and unbounded values', ()
     expect(eventProperties('$identify', {})).toBeNull();
     expect(eventProperties('generation_submitted', { kind: 'image', model_id: 'flux-1', prompt: 'private', email: 'person@example.com', url: 'https://private', invalid: [] })).toEqual({ kind: 'image', model_id: 'flux-1' });
     expect(eventProperties('generation_finished', { kind: 'private', outcome: 'secret error' })).toEqual({});
+    expect(eventProperties('onboarding_step', { step: 'questions', action: 'skip', answer: 'private' })).toEqual({ step: 'questions', action: 'skip' });
+    expect(eventProperties('onboarding_step', { step: 'recap', action: 'next' })).toEqual({ step: 'recap', action: 'next' });
 });
 test('SDK envelope permits identity linking without person or URL properties', () => {
     expect(sanitizeEnvelope({ event: '$identify', $set: { email: 'private' }, properties: { distinct_id: 'user', $anon_distinct_id: 'anon', $set_once: { name: 'private' }, url: 'secret', $current_url: 'secret', $referrer: 'secret' } })).toEqual({ event: '$identify', properties: { distinct_id: 'user', $anon_distinct_id: 'anon' } });

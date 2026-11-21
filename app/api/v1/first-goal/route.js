@@ -3,20 +3,23 @@
  * identity is the x-veyrnox-auth-id the middleware set. Off (404) until FIRST_GOAL_SYNC_ENABLED is "true". Never
  * touches credits or the ledger.
  *
- * GET /api/v1/first-goal — 200 { goal, role, destination }, each null until answered. goal is "image" | "video" | "audio" |
+ * GET /api/v1/first-goal — 200 { goal, role, destination, version, current_step, completed }. goal is "image" | "video" | "audio" |
  *        "edit" | "publish" | "unsure" | "skipped"; role (ADR-0339) "creator" | "business" | "pro" | "hobbyist" | "beginner" |
  *        "skipped"; destination "tiktok" | "reels" | "youtube" | "private" | "skipped".
  * PUT /api/v1/first-goal — body: any non-empty subset of { goal, role, destination }. The database never lowers an answer
  *        (a real word outranks "skipped"; a real goal also outranks "unsure"), so the reply is what the account now holds:
  *        200 { goal, role, destination, changed: boolean }. Idempotent: the same body again changes nothing.
+ * Version-1 PUT adds { version: 1, current_step, completed }; one answer must match a question step, while recap completion
+ * carries no answer. Legacy bodies and replies remain unchanged for installed clients.
  *
- * Errors: 400 body_invalid | invalid_goal (+ field), 401 not_authenticated, 404 not_found (flag off) | account_not_found,
- *   502 first_goal_unavailable, 503 gateway_not_configured.
+ * Errors: 400 body_invalid | invalid_goal (+ field) | invalid_onboarding (+ field), 401 not_authenticated,
+ *   404 not_found (flag off) | account_not_found, 409 onboarding_version_unsupported | onboarding_incomplete
+ *   (with authoritative progress), 502 first_goal_unavailable, 503 gateway_not_configured.
  */
 
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
-import { cleanFirstAnswers, firstGoalSyncEnabled } from '../../../../lib/firstGoal.js';
+import { cleanFirstAnswers, cleanFirstOnboarding, firstGoalSyncEnabled } from '../../../../lib/firstGoal.js';
 import { isUuidLoose } from '../../../../lib/validate.js';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
@@ -46,6 +49,17 @@ function refused(result) {
     return fail('first_goal_unavailable', 502);
 }
 
+function publicState(result, extra = {}) {
+    const word = (value) => (typeof value === 'string' ? value : null);
+    const state = { goal: word(result.goal), role: word(result.role), destination: word(result.destination), ...extra };
+    if (result.version === 0 || result.version === 1) {
+        state.version = result.version;
+        state.current_step = typeof result.current_step === 'string' ? result.current_step : null;
+        state.completed = result.completed === true;
+    }
+    return state;
+}
+
 export async function GET(req) {
     const g = gate(req);
     if (g.response) return g.response;
@@ -53,8 +67,7 @@ export async function GET(req) {
     // Migration 0499 may not be applied yet: the goal alone still answers.
     if (result === null) result = await call('get_first_goal', { p_auth_id: g.authId }, g.cfg);
     if (result?.ok !== true) return refused(result);
-    const word = (value) => (typeof value === 'string' ? value : null);
-    return NextResponse.json({ goal: word(result.goal), role: word(result.role), destination: word(result.destination) }, { headers: NO_STORE });
+    return NextResponse.json(publicState(result), { headers: NO_STORE });
 }
 
 export async function PUT(req) {
@@ -63,6 +76,27 @@ export async function PUT(req) {
     let body;
     try { body = await req.json(); } catch { return fail('body_invalid', 400); }
     if (!body || typeof body !== 'object' || Array.isArray(body)) return fail('body_invalid', 400);
+
+    const versioned = Object.hasOwn(body, 'version') || Object.hasOwn(body, 'current_step') || Object.hasOwn(body, 'completed');
+    if (versioned) {
+        const clean = cleanFirstOnboarding(body);
+        if (!clean.ok) {
+            if (clean.version) return fail('onboarding_version_unsupported', 409, { field: clean.field });
+            return fail('invalid_onboarding', 400, { field: clean.field });
+        }
+        const { version, currentStep, completed, answers } = clean.transition;
+        const result = await call('set_first_onboarding', {
+            p_auth_id: g.authId, p_version: version, p_current_step: currentStep, p_completed: completed,
+            p_goal: answers.goal ?? null, p_role: answers.role ?? null, p_destination: answers.destination ?? null,
+        }, g.cfg);
+        if (result?.ok !== true) {
+            if (result?.error === 'onboarding_incomplete') return NextResponse.json({ error: result.error, ...publicState(result) }, { status: 409, headers: NO_STORE });
+            if (result?.error === 'onboarding_version_unsupported') return fail(result.error, 409);
+            if (result?.error === 'invalid_onboarding') return fail(result.error, 400);
+            return refused(result);
+        }
+        return NextResponse.json(publicState(result, { changed: result.changed === true }), { headers: NO_STORE });
+    }
 
     const clean = cleanFirstAnswers(body);
     if (!clean.ok) return fail('invalid_goal', 400, { field: clean.field });
@@ -74,6 +108,5 @@ export async function PUT(req) {
         ? await call('set_first_goal', { p_auth_id: g.authId, p_goal: goal }, g.cfg)
         : await call('set_first_answers', { p_auth_id: g.authId, p_goal: goal, p_role: role, p_destination: destination }, g.cfg);
     if (result?.ok !== true) return result?.error === 'invalid_goal' || result?.error === 'invalid_answers' ? fail('invalid_goal', 400, { field: 'goal' }) : refused(result);
-    const word = (value) => (typeof value === 'string' ? value : null);
-    return NextResponse.json({ goal: word(result.goal), role: word(result.role), destination: word(result.destination), changed: result.changed === true }, { headers: NO_STORE });
+    return NextResponse.json(publicState(result, { changed: result.changed === true }), { headers: NO_STORE });
 }

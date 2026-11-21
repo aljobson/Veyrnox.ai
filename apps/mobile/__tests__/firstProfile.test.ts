@@ -5,9 +5,10 @@ const path = require('path') as { join: (...p: string[]) => string };
 
 import {
     FIRST_DESTINATIONS, FIRST_PROFILE_SLOT, FIRST_ROLES, defaultAspectFor, exampleSetFor, hasRealAnswer, needsFirstRun, orderStarts, parseFirstProfile,
-    phoneStarts, readRemoteFirstProfile, serializeFirstProfile,
+    parseFirstOnboarding, phoneStarts, readRemoteFirstOnboarding, readRemoteFirstProfile, serializeFirstOnboarding, serializeFirstProfile,
 } from '../src/lib/firstProfile';
-import { fetchRemoteFirstAnswers, pushFirstAnswers } from '../src/lib/firstProfileSync';
+import { fetchRemoteFirstAnswers, pushFirstAnswers, pushFirstOnboarding } from '../src/lib/firstProfileSync';
+import { replayFirstOnboarding } from '../src/lib/firstProfileStore';
 
 const web = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'app', 'veyrnox', '_lib', 'firstProfile.js'), 'utf8');
 
@@ -35,10 +36,26 @@ describe('the first-run answers (role, destination)', () => {
         expect(readRemoteFirstProfile(null)).toEqual({ kind: 'unavailable' });
     });
 
+    test('progress is strict and the offline envelope belongs to one account', () => {
+        expect(readRemoteFirstOnboarding({ version: 1, current_step: 'role', completed: false })).toEqual({ version: 1, currentStep: 'role', completed: false });
+        expect(readRemoteFirstOnboarding({ version: 1, current_step: null, completed: false })).toBeNull();
+        const raw = serializeFirstOnboarding('A', { goal: 'video', role: null, destination: 'youtube', version: 1, currentStep: 'role', completed: false });
+        expect(parseFirstOnboarding(raw, 'A')).toEqual({ goal: 'video', role: null, destination: 'youtube', version: 1, currentStep: 'role', completed: false });
+        expect(parseFirstOnboarding(raw, 'B')).toBeNull();
+        expect(parseFirstOnboarding('{"owner":"A","version":1,"goal":"private prompt","role":null,"destination":null,"currentStep":"destination","completed":false}', 'A')).toBeNull();
+        expect(parseFirstOnboarding(serializeFirstOnboarding('A', { goal: 'video', role: 'creator', destination: 'youtube', version: 1,
+            currentStep: 'recap', completed: false, pending: true, completeRequested: true }), 'A')).toEqual({
+            goal: 'video', role: 'creator', destination: 'youtube', version: 1, currentStep: 'recap', completed: false,
+            pending: true, completeRequested: true,
+        });
+    });
+
     test('the questions are for an account with no goal and no role', () => {
         expect(needsFirstRun({ goal: null, role: null })).toBe(true);
         expect(needsFirstRun({ goal: 'skipped', role: null })).toBe(false);
         expect(needsFirstRun({ goal: null, role: 'skipped' })).toBe(false);
+        expect(needsFirstRun({ goal: 'video', role: null, completed: false })).toBe(true);
+        expect(needsFirstRun({ goal: null, role: null, completed: true })).toBe(false);
     });
 
     test('start options: all kept, once; a role and a goal move one first; the phone shows create, audio, chat and film', () => {
@@ -91,5 +108,43 @@ describe('first-run answers on the server', () => {
         expect(api.request).toHaveBeenCalledTimes(1);
         expect(api.request).toHaveBeenCalledWith('/api/v1/first-goal', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{"role":"pro","destination":"youtube"}' });
         await expect(pushFirstAnswers({ request: async () => { throw new Error('down'); } } as never, { role: 'pro' })).resolves.toBeUndefined();
+    });
+
+    test('a versioned push is fenced to its captured account task', async () => {
+        const api = { request: jest.fn(async () => ({ version: 1, current_step: 'destination', completed: false })) };
+        const task = { gen: 1, user: 'A', current: () => true };
+        await pushFirstOnboarding(api as never, task, { currentStep: 'goal', answer: 'video' });
+        expect(api.request).toHaveBeenCalledWith('/api/v1/first-goal', expect.objectContaining({ body: '{"version":1,"current_step":"goal","completed":false,"goal":"video"}' }), { task, owner: 'A', timeoutMs: 5000 });
+        const stale = { ...task, current: () => false };
+        await pushFirstOnboarding(api as never, stale, { currentStep: 'goal', answer: 'audio' });
+        expect(api.request).toHaveBeenCalledTimes(1);
+    });
+
+    test('the mobile outbox stays incomplete on failure, reconciles 409, and replays canonically on relaunch', async () => {
+        const task = { gen: 1, user: 'A', current: () => true };
+        const desired = { goal: 'video' as const, destination: 'youtube' as const, role: 'creator' as const, version: 1 as const,
+            currentStep: 'recap' as const, completed: false, pending: true, completeRequested: true };
+        const down = { request: jest.fn(async () => { throw new Error('offline'); }) };
+        const failed = await replayFirstOnboarding(down as never, task, desired);
+        expect(failed).toEqual(expect.objectContaining({ completed: false, pending: true }));
+
+        const order: string[] = [];
+        const success = { request: jest.fn(async (_path: string, init?: RequestInit) => {
+            if (!init?.method) return { goal: 'video', destination: 'youtube', role: 'creator', version: 1, current_step: null, completed: true };
+            order.push(JSON.parse(init.body as string).current_step);
+            return { ok: true };
+        }) };
+        const settled = await replayFirstOnboarding(success as never, task, failed!);
+        expect(order).toEqual(['goal', 'destination', 'role', 'recap']);
+        expect(settled).toEqual(expect.objectContaining({ completed: true }));
+        expect(settled?.pending).toBeUndefined();
+
+        const conflict = { request: jest.fn(async (_path: string, init?: RequestInit) => {
+            if (!init?.method) return { goal: 'video', destination: 'youtube', role: 'creator', version: 1, current_step: 'recap', completed: false };
+            if (JSON.parse(init.body as string).current_step === 'recap') throw new Error('409');
+            return { ok: true };
+        }) };
+        const pending = await replayFirstOnboarding(conflict as never, task, desired);
+        expect(pending).toEqual(expect.objectContaining({ completed: false, pending: true, currentStep: 'recap' }));
     });
 });

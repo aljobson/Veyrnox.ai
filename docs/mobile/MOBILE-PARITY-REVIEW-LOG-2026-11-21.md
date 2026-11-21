@@ -229,3 +229,38 @@ Claude found no material defect and independently confirmed the server/web Music
 Inspector limitations: Claude did not run tests, typecheck, registry generation or a simulator; later Publish, authentication, onboarding/paywall, editor, template, WebView and release waves were outside this batch. Codex ran the focused proof and typecheck described above, plus the broader Music and i18n proofs recorded in the implementation commits.
 
 The final serial all-mobile run completed 792 of 793 suites with all 17,367 executed assertions passing. The sole suite failed during module resolution before executing because the reused installed dependency tree lacks `react-native-audio-api@1.0.1`, although that package is pinned in both `apps/mobile/package.json` and the current lockfile. No compatible existing installed environment contains it, so the PR's clean `npm ci` Mobile CI job is the authoritative proof for that native-export suite and the iOS/Android bundle boundary; no duplicate local install was created.
+
+## Wave 2D onboarding inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `f02be47f-2f7b-4c52-b3a7-0096f9c4fab4`
+- Base: `ca3edd77317f30917ad9605c837bfd0281f077d3`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `7cb3f74c2e4b255855f12b9c1a60e16e10a92be428eabd171ce4420c5bdfe096`
+- Inspected diff SHA-256: `097af29182c662a0435935c27ced49aff372b031828245cc4e4f2af62f9a8079`
+- Runner result: `/private/tmp/claudex-mobile-parity-onboarding-inspect-r1-retry/claudex-d70ljg0r/result.json`
+
+Claude found that failed answer writes could be lost, the UI could wait on long network timeouts, the web recap was not personalised, Escape dismissal was not stable for the tab/account, the SQL constraint admitted a null current step, retries were unbounded, route documentation was incomplete, and the private helper privilege test was missing. All eight findings were accepted. The fix round added owner-fenced durable outboxes on web and mobile, canonical replay and 409 reconciliation, bounded launch sync/retries, a personalised recap, per-owner session dismissal, the corrected SQL constraint, documentation and privilege coverage.
+
+Post-fix proof before round 2: web/server contract tests 43/43, focused mobile tests 51/51, mobile TypeScript, migration numbering and `git diff --check` passed.
+
+## Wave 2D onboarding inspection round 2
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `08e0f23e-bab0-400b-89ab-b23ab3f920ba`
+- Base: `2a56a1627f8104b4c0a323c339b84ff30c648b62`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `ea7ffbffe48b3b7489917cc4cabdc1f6c0f1b6bb157060c2b31c815e551a7b70`
+- Inspected diff SHA-256: `020df66626331c63645adaca9ce3e5913ebe846d7dc0c8de70a90a6fc54473d7`
+- Runner result: `/private/tmp/claudex-mobile-parity-onboarding-inspect-r2/claudex-y_crh4ra/result.json`
+
+### Findings and host dispositions
+
+1. `F1` high: established accounts with no `first_goals` row would be replayed into the new journey. Accepted; migration 0578 now materialises a version-0 completed row for every non-deleted account present at cutover and leaves post-migration accounts rowless/version-1-new. Existing answer rows are never overwritten.
+2. `F2` medium: foreground reconciliation could replace analytics consent, welcome or a consent-policy route. Accepted; the gate respects owned routes, checks the launch-wide pending phase after the cached destination decision, and fences superseded effects before navigation.
+3. `F3` medium: web could reopen recap while the durable completion replay was pending. Accepted; authoritative `completed` remains unchanged and a separate owner-fenced `uiComplete` suppresses only `pending && completeRequested` envelopes.
+4. `F4` low: signed-out device personalisation was lost. Accepted; the signed-out hook again reads the device-only answers.
+5. `F5` low: an unused unfenced `pushOnboarding` path could bypass reconciliation. Accepted; the dead export and queue were removed.
+6. `F6` low: canonical mobile replay may resend earlier steps. The proposed global coalescing optimisation was rejected after host review because a shared result promise could cross account boundaries. The existing owner/session-fenced serial replay remains correct and replay-safe; request-count optimisation is deferred to a separately designed per-owner queue.
+
+The configured two-round inspection budget is exhausted. The accepted post-inspection corrections are therefore not labelled independently approved. Host verification on the final correction snapshot: focused mobile tests 55/55, web/server contract tests 45/45, mobile TypeScript, migration numbering and `git diff --check` all pass. A read-only mobile UX agent independently identified the consent-policy detour and authoritative-versus-visual completion distinction before those final tests; a schema archaeology agent independently confirmed migration-time materialisation as the safest legacy-account boundary.

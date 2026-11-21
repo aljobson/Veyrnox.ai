@@ -29,7 +29,11 @@ let startedAtHome = false;
 /** True once a home start option was tapped in this tab, so Create does not ask while the server copy is still on its way. */
 export const homeStartRecorded = () => startedAtHome;
 
-/** A home start option is the first-goal answer. Stored once: an answer already held (here or on the account) stays. */
+/**
+ * A home start option is the legacy first-goal answer. It intentionally keeps the old `{ goal }` wire body: the
+ * server classifies that goal-only account as version-0 complete, so tapping Home never silently opts someone into
+ * the newer destination/role questions. Stored once: an answer already held (here or on the account) stays.
+ */
 export async function recordHomeStart(key, { storage, fetcher = gatewayFetch, session = getSession } = {}) {
   const goal = homeStartGoal(key);
   if (!goal) return;
