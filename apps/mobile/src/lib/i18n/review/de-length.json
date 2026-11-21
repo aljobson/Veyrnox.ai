@@ -4836,6 +4836,60 @@
     "ratio": 2.25
   },
   {
+    "id": "musicRender.operation",
+    "english": "Edit type",
+    "translation": "Bearbeitungsart",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicRender.fade",
+    "english": "Fade",
+    "translation": "Ein-/Ausblenden",
+    "ratio": 3.75
+  },
+  {
+    "id": "musicRender.speed",
+    "english": "Speed",
+    "translation": "Geschwindigkeit",
+    "ratio": 3
+  },
+  {
+    "id": "musicRender.reorder",
+    "english": "Reorder",
+    "translation": "Neu anordnen",
+    "ratio": 1.71
+  },
+  {
+    "id": "musicRender.measure",
+    "english": "Play the song once to enable fade and reorder.",
+    "translation": "Spiele den Song einmal ab, um Ein-/Ausblenden und Neuanordnung zu aktivieren.",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicRender.saving",
+    "english": "Saving new master…",
+    "translation": "Neuer Master wird gespeichert…",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicRender.retry",
+    "english": "Retry the same edit",
+    "translation": "Dieselbe Bearbeitung erneut versuchen",
+    "ratio": 1.95
+  },
+  {
+    "id": "musicRender.session",
+    "english": "Stay on this screen until the save is confirmed. Leaving loses retry recovery.",
+    "translation": "Bleibe auf diesem Bildschirm, bis das Speichern bestätigt ist. Beim Verlassen geht die Wiederherstellung durch erneutes Versuchen verloren.",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicRender.offline",
+    "english": "You are offline. This tap sent no edit. Connect and retry.",
+    "translation": "Du bist offline. Dieser Tipp hat keine Bearbeitung gesendet. Stelle eine Verbindung her und versuche es erneut.",
+    "ratio": 1.91
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

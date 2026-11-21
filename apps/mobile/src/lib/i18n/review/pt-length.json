@@ -4512,6 +4512,18 @@
     "ratio": 2
   },
   {
+    "id": "musicRender.speed",
+    "english": "Speed",
+    "translation": "Velocidade",
+    "ratio": 2
+  },
+  {
+    "id": "musicRender.retry",
+    "english": "Retry the same edit",
+    "translation": "Tentar a mesma edição novamente",
+    "ratio": 1.63
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

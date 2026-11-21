@@ -4602,6 +4602,18 @@
     "ratio": 2.2
   },
   {
+    "id": "musicRender.title",
+    "english": "Edit master",
+    "translation": "Редактировать мастер",
+    "ratio": 1.82
+  },
+  {
+    "id": "musicRender.fade",
+    "english": "Fade",
+    "translation": "Затухание",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
