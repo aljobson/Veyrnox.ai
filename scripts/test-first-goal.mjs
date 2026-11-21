@@ -69,6 +69,10 @@ try {
     await c.query('SAVEPOINT chk');
     await assert.rejects(c.query("INSERT INTO public.first_goals(user_id, goal) VALUES ($1, 'bogus') ON CONFLICT (user_id) DO UPDATE SET goal = 'bogus'", [alice.userId]), (err) => err.code === '23514');
     await c.query('ROLLBACK TO SAVEPOINT chk');
+    await c.query('SAVEPOINT onboarding_check');
+    await assert.rejects(c.query(`UPDATE public.first_goals SET onboarding_version=1, onboarding_current_step=NULL,
+        onboarding_completed=false WHERE user_id=$1`, [bob.userId]), (err) => err.code === '23514');
+    await c.query('ROLLBACK TO SAVEPOINT onboarding_check');
 
     // Unknown accounts.
     assert.deepEqual(await set(randomUUID(), 'image'), { ok: false, error: 'account_not_found' });
@@ -82,6 +86,7 @@ try {
     for (const role of ['anon', 'authenticated']) {
         await refusedAs(role, "SELECT public.set_first_goal('x', 'image')");
         await refusedAs(role, "SELECT public.get_first_goal('x')");
+        await refusedAs(role, "SELECT public.set_first_onboarding('x', 1::smallint, 'goal', false, 'image', NULL, NULL)");
     }
     await c.query('SET LOCAL ROLE service_role');
     assert.equal((await one("SELECT public.get_first_goal($1) AS r", [alice.authId])).r.goal, 'audio');
@@ -94,11 +99,14 @@ try {
     const page = await call('read_privacy_export_page', alice.authId, 'aal1', exportId, 'profile', null, null, null, null);
     assert.equal(page.ok, true);
     assert.equal(page.rows[0].first_goal.goal, 'audio');
-    assert.deepEqual(Object.keys(page.rows[0].first_goal).sort(), ['created_at', 'destination', 'goal', 'role', 'updated_at']);
+    assert.deepEqual(Object.keys(page.rows[0].first_goal).sort(), ['completed', 'created_at', 'current_step', 'destination', 'goal', 'role', 'updated_at', 'version']);
     assert.ok(Object.hasOwn(page.rows[0], 'voice_profiles'), 'the existing wrapper key survives');
     assert.ok(Object.hasOwn(page.rows[0], 'creator_profile'), 'the existing profile keys survive');
+    assert.ok(Object.hasOwn(page.rows[0], 'library_favourites'), 'the later library wrapper survives');
+    assert.ok(Object.hasOwn(page.rows[0], 'create_draft'), 'the later draft wrapper survives');
     for (const role of ['anon', 'authenticated', 'service_role']) {
         assert.equal((await one('SELECT has_function_privilege($1, $2, $3) AS allowed', [role, 'private.read_privacy_export_page_without_first_goal(text,text,uuid,text,uuid,text,text,integer)', 'EXECUTE'])).allowed, false, role);
+        assert.equal((await one('SELECT has_function_privilege($1, $2, $3) AS allowed', [role, 'private.read_privacy_export_page_without_first_run_progress(text,text,uuid,text,uuid,text,text,integer)', 'EXECUTE'])).allowed, false, `${role} progress helper`);
     }
     // An export taken before the answer existed shows none.
     const early = (await one(`INSERT INTO public.privacy_export_requests(user_id, created_at, as_of, expires_at, aal)
@@ -107,7 +115,24 @@ try {
 
     // 0499 (ADR-0339): role and destination ride beside the goal. Any of the three may be sent; each is checked on its own list.
     const setAll = (authId, goal, role, destination) => call('set_first_answers', authId, goal, role, destination);
-    const getAll = (authId) => call('get_first_answers', authId);
+    const getProgress = (authId) => call('get_first_answers', authId);
+    const getAll = async (authId) => {
+        const { goal, role, destination, ok, error } = await getProgress(authId);
+        return error ? { ok, error } : { ok, goal, role, destination };
+    };
+    // 0578 materialises this exact row for established accounts. A new post-migration account remains rowless.
+    const legacyNoAnswers = await signUp();
+    await c.query(`INSERT INTO public.first_goals (
+        user_id, goal, role, destination, onboarding_version, onboarding_current_step, onboarding_completed)
+        VALUES ($1, NULL, NULL, NULL, 0, NULL, true)`, [legacyNoAnswers.userId]);
+    assert.deepEqual(await getProgress(legacyNoAnswers.authId), { ok: true, goal: null, role: null, destination: null,
+        version: 0, current_step: null, completed: true });
+    assert.deepEqual(await set(legacyNoAnswers.authId, 'image'), { ok: true, changed: true, goal: 'image' });
+    assert.deepEqual(await getProgress(legacyNoAnswers.authId), { ok: true, goal: 'image', role: null, destination: null,
+        version: 0, current_step: null, completed: true }, 'a legacy write never reopens the journey');
+    const postMigration = await signUp();
+    assert.deepEqual(await getProgress(postMigration.authId), { ok: true, goal: null, role: null, destination: null,
+        version: 1, current_step: 'goal', completed: false });
     const carol = await signUp();
     assert.deepEqual(await getAll(carol.authId), { ok: true, goal: null, role: null, destination: null });
     // A role alone creates the row with no goal: the goal still reads as "never chose" on both read paths.
@@ -144,6 +169,38 @@ try {
     const exportCarol = (await call('start_privacy_export', carol.authId, 'aal1')).export_id;
     const carolPage = await call('read_privacy_export_page', carol.authId, 'aal1', exportCarol, 'profile', null, null, null, null);
     assert.deepEqual({ goal: carolPage.rows[0].first_goal.goal, role: carolPage.rows[0].first_goal.role, destination: carolPage.rows[0].first_goal.destination }, { goal: 'video', role: 'business', destination: 'youtube' });
+
+    // 0578: a fresh account resumes each canonical step, then holds at recap until explicit completion.
+    const erin = await signUp();
+    const transition = (authId, step, completed, goal = null, role = null, destination = null) =>
+        call('set_first_onboarding', authId, 1, step, completed, goal, role, destination);
+    assert.deepEqual(await getProgress(erin.authId), { ok: true, goal: null, role: null, destination: null,
+        version: 1, current_step: 'goal', completed: false });
+    let progress = await transition(erin.authId, 'goal', false, 'video');
+    assert.deepEqual({ goal: progress.goal, current_step: progress.current_step, completed: progress.completed },
+        { goal: 'video', current_step: 'destination', completed: false });
+    progress = await transition(erin.authId, 'destination', false, null, null, 'youtube');
+    assert.equal(progress.current_step, 'role');
+    progress = await transition(erin.authId, 'role', false, null, 'creator');
+    assert.deepEqual({ current_step: progress.current_step, completed: progress.completed }, { current_step: 'recap', completed: false });
+    assert.equal((await transition(erin.authId, 'role', false, null, 'creator')).changed, false, 'same transition is replay-safe');
+    progress = await transition(erin.authId, 'recap', true);
+    assert.deepEqual({ current_step: progress.current_step, completed: progress.completed }, { current_step: null, completed: true });
+    assert.equal((await transition(erin.authId, 'recap', true)).changed, false, 'completion is replay-safe');
+    // A stale answer may update an equal-ranked preference, but never reopens or regresses completion.
+    progress = await transition(erin.authId, 'goal', false, 'audio');
+    assert.deepEqual({ goal: progress.goal, current_step: progress.current_step, completed: progress.completed },
+        { goal: 'audio', current_step: null, completed: true });
+
+    const finn = await signUp();
+    await transition(finn.authId, 'goal', false, 'skipped');
+    await transition(finn.authId, 'destination', false, null, null, 'skipped');
+    progress = await transition(finn.authId, 'role', false, null, 'skipped');
+    assert.deepEqual({ current_step: progress.current_step, completed: progress.completed }, { current_step: null, completed: true }, 'skipped goal takes the short path');
+    const grace = await signUp();
+    progress = await transition(grace.authId, 'recap', true);
+    assert.deepEqual({ error: progress.error, current_step: progress.current_step, completed: progress.completed },
+        { error: 'onboarding_incomplete', current_step: 'goal', completed: false });
     // Account deletion removes it too.
     await c.query('UPDATE public.users SET deleted_at = now() WHERE id = $1', [carol.userId]);
     assert.equal(await stored(carol.userId), undefined);

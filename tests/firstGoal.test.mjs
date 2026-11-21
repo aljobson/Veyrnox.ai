@@ -73,7 +73,7 @@ test('a home start option is the answer: Film is video, Smart Cut is edit, Creat
   for (const goal of Object.values(HOME_START_GOALS)) assert.doesNotThrow(() => serializeFirstGoal(goal));
 });
 
-test('web: a home tap stores the goal once, pushes it, and never replaces an answer already held', async () => {
+test('web: a home tap intentionally stays a legacy goal-only completion and never replaces an answer already held', async () => {
   const sync = await import('../app/veyrnox/_lib/firstGoalSync.js');
   const store = new Map();
   const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
@@ -82,7 +82,7 @@ test('web: a home tap stores the goal once, pushes it, and never replaces an ans
   assert.equal(sync.homeStartRecorded(), false);
   await sync.recordHomeStart('smart-cut', { storage, fetcher, session: () => ({}) });
   assert.equal(store.get('veyrnox.firstGoal.v1'), '{"version":1,"goal":"edit"}');
-  assert.deepEqual(calls, [['/first-goal', 'PUT', '{"goal":"edit"}']]);
+  assert.deepEqual(calls, [['/first-goal', 'PUT', '{"goal":"edit"}']], 'no versioned transition: the server classifies goal-only as v0 complete');
   assert.equal(sync.homeStartRecorded(), true, 'the Create page treats this visit as answered even before the server replies');
   await sync.recordHomeStart('create', { storage, fetcher, session: () => ({}) });
   assert.equal(store.get('veyrnox.firstGoal.v1'), '{"version":1,"goal":"edit"}', 'a held answer stays');

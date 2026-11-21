@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
+const nextServer = 'data:text/javascript,' + encodeURIComponent('export class NextResponse extends Response {}');
 register('data:text/javascript,' + encodeURIComponent(
-    `export async function resolve(s, c, next) { return next(s === 'next/server' ? 'next/server.js' : s, c); }`,
+    `const fake=${JSON.stringify(nextServer)}; export async function resolve(s, c, next) { return s === 'next/server' || s === 'next/server.js' ? { url: fake, shortCircuit: true } : next(s, c); }`,
 ));
 Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-role' });
 const route = await import('../app/api/v1/first-goal/route.js');
-const { FIRST_GOAL_VALUES, cleanFirstGoal, firstGoalSyncEnabled } = await import('../lib/firstGoal.js');
+const { FIRST_GOAL_VALUES, cleanFirstGoal, cleanFirstOnboarding, firstGoalSyncEnabled } = await import('../lib/firstGoal.js');
 const { FIRST_GOALS } = await import('../app/veyrnox/_lib/firstGoal.js');
 
 const auth = '11111111-1111-4111-8111-111111111111';
@@ -50,6 +51,21 @@ test('only a listed word is accepted', () => {
     assert.deepEqual(cleanFirstGoal({ goal: 'image', extra: 1 }), { ok: false, field: 'goal' }, 'unknown keys are refused');
 });
 
+test('the versioned contract accepts one current-step answer or recap completion', () => {
+    assert.deepEqual(cleanFirstOnboarding({ version: 1, current_step: 'goal', completed: false, goal: 'video' }), {
+        ok: true, transition: { version: 1, currentStep: 'goal', completed: false, answers: { goal: 'video' } },
+    });
+    assert.deepEqual(cleanFirstOnboarding({ version: 1, current_step: 'recap', completed: true }), {
+        ok: true, transition: { version: 1, currentStep: 'recap', completed: true, answers: {} },
+    });
+    for (const bad of [
+        { version: 2, current_step: 'goal', completed: false, goal: 'video' },
+        { version: 1, current_step: 'goal', completed: false, role: 'creator' },
+        { version: 1, current_step: 'recap', completed: false },
+        { version: 1, current_step: 'recap', completed: true, goal: 'video' },
+    ]) assert.equal(cleanFirstOnboarding(bad).ok, false, JSON.stringify(bad));
+});
+
 test('a caller with no identity is refused before any outbound call', async () => {
     stub();
     for (const id of [null, '', 'not-a-uuid']) {
@@ -77,6 +93,14 @@ test('GET returns the stored answers, or null, never anything else', async () =>
     stub({ ok: true, goal: null });
     res = await route.GET(req('GET'));
     assert.deepEqual(await res.json(), { goal: null, role: null, destination: null });
+    stub({ ok: true, goal: null, role: null, destination: null, version: 0, current_step: null, completed: true });
+    res = await route.GET(req('GET'));
+    assert.deepEqual(await res.json(), { goal: null, role: null, destination: null, version: 0, current_step: null, completed: true },
+        'an established no-answer account receives its migration-materialised completion');
+    stub({ ok: true, goal: null, role: null, destination: null, version: 1, current_step: 'goal', completed: false });
+    res = await route.GET(req('GET'));
+    assert.deepEqual(await res.json(), { goal: null, role: null, destination: null, version: 1, current_step: 'goal', completed: false },
+        'a post-migration no-row account starts the journey');
 });
 
 test('GET falls back to the goal alone while migration 0499 is not applied', async () => {
@@ -123,6 +147,28 @@ test('PUT validates, calls the database with the caller\'s own id, and returns w
     assert.deepEqual(calls, [], 'nothing invalid reaches the database');
     const invalid = await route.PUT(req('PUT', { goal: 'nope' }));
     assert.deepEqual(await invalid.json(), { error: 'invalid_goal', field: 'goal' });
+});
+
+test('versioned PUT calls the progress RPC and returns its authoritative next step', async () => {
+    stub({ ok: true, changed: true, goal: 'video', role: null, destination: null,
+        version: 1, current_step: 'destination', completed: false });
+    const res = await route.PUT(req('PUT', { version: 1, current_step: 'goal', completed: false, goal: 'video' }));
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { goal: 'video', role: null, destination: null, changed: true,
+        version: 1, current_step: 'destination', completed: false });
+    assert.deepEqual(calls, [{ name: 'set_first_onboarding', args: {
+        p_auth_id: auth, p_version: 1, p_current_step: 'goal', p_completed: false,
+        p_goal: 'video', p_role: null, p_destination: null,
+    } }]);
+});
+
+test('incomplete recap completion is a conflict with authoritative state', async () => {
+    stub({ ok: false, error: 'onboarding_incomplete', goal: 'video', role: null, destination: 'youtube',
+        version: 1, current_step: 'role', completed: false });
+    const res = await route.PUT(req('PUT', { version: 1, current_step: 'recap', completed: true }));
+    assert.equal(res.status, 409);
+    assert.deepEqual(await res.json(), { error: 'onboarding_incomplete', goal: 'video', role: null, destination: 'youtube',
+        version: 1, current_step: 'role', completed: false });
 });
 
 test('database refusals and outages become typed errors with no upstream detail', async () => {

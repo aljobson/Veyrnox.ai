@@ -3,6 +3,9 @@
 // Keep in step with apps/mobile/src/lib/firstProfile.ts and lib/firstGoal.js.
 export const FIRST_PROFILE_VERSION = 1;
 export const FIRST_PROFILE_SLOT = `veyrnox.firstProfile.v${FIRST_PROFILE_VERSION}`;
+export const FIRST_ONBOARDING_VERSION = 1;
+export const FIRST_ONBOARDING_SLOT = 'veyrnox.firstOnboarding.v1';
+export const FIRST_ONBOARDING_STEPS = ['goal', 'destination', 'role', 'recap'];
 
 export const FIRST_ROLES = ['creator', 'business', 'pro', 'hobbyist', 'beginner'];
 export const FIRST_DESTINATIONS = ['tiktok', 'reels', 'youtube', 'private'];
@@ -39,8 +42,45 @@ export function readRemoteFirstProfile(body) {
   return { kind: 'profile', role: r, destination: d };
 }
 
+export function readRemoteFirstOnboarding(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return { kind: 'unavailable' };
+  if ((body.version !== 0 && body.version !== FIRST_ONBOARDING_VERSION) || typeof body.completed !== 'boolean') return { kind: 'unavailable' };
+  const currentStep = body.current_step ?? null;
+  if (body.completed ? currentStep !== null : !FIRST_ONBOARDING_STEPS.includes(currentStep)) return { kind: 'unavailable' };
+  return { kind: 'progress', version: body.version, currentStep, completed: body.completed };
+}
+
+export function serializeFirstOnboarding(owner, state) {
+  if (typeof owner !== 'string' || !owner || (state.version !== 0 && state.version !== 1)) throw new Error('invalid onboarding owner');
+  return JSON.stringify({ owner, version: state.version, goal: state.goal ?? null, role: state.role ?? null,
+    destination: state.destination ?? null, currentStep: state.currentStep ?? null, completed: state.completed === true,
+    pending: state.pending === true, completeRequested: state.completeRequested === true });
+}
+
+export function parseFirstOnboarding(raw, owner) {
+  if (!raw || !owner) return null;
+  try {
+    const value = JSON.parse(raw);
+    if (!value || Array.isArray(value) || value.owner !== owner || (value.version !== 0 && value.version !== 1)
+        || typeof value.completed !== 'boolean') return null;
+    const progress = readRemoteFirstOnboarding({ version: value.version, current_step: value.currentStep, completed: value.completed });
+    const profile = readRemoteFirstProfile(value);
+    if (progress.kind !== 'progress' || profile.kind !== 'profile') return null;
+    const goalValue = value.goal ?? null;
+    if (goalValue !== null && !['image', 'video', 'audio', 'edit', 'publish', 'unsure', 'skipped'].includes(goalValue)) return null;
+    return { goal: goalValue, role: profile.role, destination: profile.destination, version: progress.version,
+      currentStep: progress.currentStep, completed: progress.completed,
+      ...(value.pending === true ? { pending: true } : {}), ...(value.completeRequested === true ? { completeRequested: true } : {}) };
+  } catch { return null; }
+}
+
 // Asked only of someone with no goal and no role on record, so an account that answered before is never asked again.
-export const needsFirstRun = ({ goal = null, role: r = null } = {}) => goal === null && r === null;
+export const needsFirstRun = ({ goal = null, role: r = null, completed } = {}) =>
+  typeof completed === 'boolean' ? !completed : goal === null && r === null;
+
+// A durable completion request closes the UI immediately while its owner-fenced outbox continues to reconcile.
+// This never changes the persisted/account `completed` bit.
+export const onboardingUiComplete = (state) => state?.completed === true || (state?.pending === true && state?.completeRequested === true);
 
 export const hasRealAnswer = (profile) => !!profile && [profile.goal, profile.role, profile.destination].some((word) => word && word !== 'skipped' && word !== 'unsure');
 

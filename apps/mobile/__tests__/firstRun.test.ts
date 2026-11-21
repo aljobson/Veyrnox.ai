@@ -103,6 +103,11 @@ describe('where the welcome shows', () => {
         expect(read('app', '(app)', '_layout.tsx')).toContain('FirstRunGate');
         const gate = read('components', 'FirstRunGate.tsx');
         expect(gate).toContain('firstRunDestination');
+        expect(gate).toContain('retry < 3');
+        expect(gate).toContain("state === 'active'");
+        expect(gate).toContain('OWNED_FIRST_RUN_ROUTES.has(pathname)');
+        expect(gate).toContain('if (isFirstRunPending()) return');
+        expect(gate).toContain('if (!alive || !task.current()) return');
         const decision = read('lib', 'firstRunPending.ts');
         expect(decision).toContain("return '/welcome'");
         expect(decision).toContain('appStorage.get(FIRST_RUN_SLOT)');
