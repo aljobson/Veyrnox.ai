@@ -1,5 +1,119 @@
 [
   {
+    "id": "beatLabs.unavailable",
+    "english": "Not on the phone editor yet.",
+    "translation": "Ainda não está disponível no editor do telemóvel.",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.category.All",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Adicionar",
+    "ratio": 3
+  },
+  {
+    "id": "beatLabs.songTitle",
+    "english": "My song",
+    "translation": "A minha música",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.touch.play",
+    "english": "Tap Play or Stop.",
+    "translation": "Toque em Reproduzir ou Parar.",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "Toque em Desfazer.",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "Toque em Refazer.",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatLabs.sound.bells",
+    "english": "Music box",
+    "translation": "Caixa de música",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.sound.sweep",
+    "english": "Rising sweep",
+    "translation": "Varredura ascendente",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.template.blank",
+    "english": "Blank",
+    "translation": "Em branco",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatLabs.next",
+    "english": "Next",
+    "translation": "Próximo",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.done",
+    "english": "Done",
+    "translation": "Concluído",
+    "ratio": 2.25
+  },
+  {
+    "id": "beatLabs.category.Synth",
+    "english": "Synth",
+    "translation": "Sintetizador",
+    "ratio": 2.4
+  },
+  {
+    "id": "beatLabs.context.grid",
+    "english": "Step grid",
+    "translation": "Grade de passos",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.control.play",
+    "english": "Play / Stop",
+    "translation": "Reproduzir / Parar",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatLabs.control.ripple",
+    "english": "Ripple edit",
+    "translation": "Edição com deslocamento",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Desfazer",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Refazer",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.control.pads",
+    "english": "Drum pads",
+    "translation": "Pads de bateria",
+    "ratio": 1.67
+  },
+  {
     "id": "editorCaptionTools.correctChoose",
     "english": "Choose one timed word to correct.",
     "translation": "Escolha uma palavra com tempo definido para corrigir.",
@@ -3900,6 +4014,36 @@
     "ratio": 1.82
   },
   {
+    "id": "beatAi.magic",
+    "english": "Magic Bar",
+    "translation": "Compasso mágico",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalidade",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calcular preço de dois loops",
+    "ratio": 1.87
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
+  },
+  {
     "id": "beat.region.later",
     "english": "Move later",
     "translation": "Mover para depois",
@@ -4036,6 +4180,72 @@
     "english": "Ease in",
     "translation": "Entrada suave",
     "ratio": 1.86
+  },
+  {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Tentar salvar no Music novamente",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.range",
+    "english": "Range",
+    "translation": "Intervalo",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatExport.cycle",
+    "english": "Cycle range",
+    "translation": "Intervalo do ciclo",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mixagem",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Faixas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "beatExport.depth",
+    "english": "Bit depth",
+    "translation": "Profundidade de bits",
+    "ratio": 2.22
+  },
+  {
+    "id": "beatExport.loops",
+    "english": "Loops",
+    "translation": "Repetições",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Carregando ferramentas de exportação…",
+    "ratio": 2.18
+  },
+  {
+    "id": "beatExport.retryShare",
+    "english": "Retry render and share",
+    "translation": "Tentar renderizar e compartilhar novamente",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatExport.shareError",
+    "english": "Could not share this file. Try again.",
+    "translation": "Não foi possível compartilhar este arquivo. Tente novamente.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "Salvar na biblioteca de Música",
+    "ratio": 2.31
   },
   {
     "id": "chrome.privacyPolicy",

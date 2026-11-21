@@ -209,7 +209,9 @@ test('themes: every long-prompt gallery template has a theme; the new theme chip
     for (const id of LONG_PROMPT_GALLERY_TEMPLATE_IDS) counts[videoTemplateTheme(id)] = (counts[videoTemplateTheme(id)] || 0) + 1;
     assert.deepEqual(counts, { CARS: 1, DANCE: 1, ACTION: 12, COMEDY: 3, HORROR: 9, MAGIC: 9, FILM: 7 });
     const offThemes = new Set(GALLERY_PRESETS.map(p => videoTemplateTheme(p.id)));
-    for (const theme of ['HORROR', 'MAGIC', 'FILM']) assert.equal(offThemes.has(theme), false, `${theme} would show empty while off`);
+    for (const theme of ['HORROR', 'MAGIC']) assert.equal(offThemes.has(theme), false, `${theme} would show empty while off`);
+    // FILM also holds community-modern-listing-dolly (2026-11-21), which is listed either way, so its chip shows with the key off too.
+    assert.deepEqual(GALLERY_PRESETS.filter(p => videoTemplateTheme(p.id) === 'FILM').map(p => p.id), ['community-modern-listing-dolly']);
 });
 
 test('production APP_RUNTIME_FLAGS turns the long templates on beside the existing keys, with no separate var (ADR-0309 amendment 4)', async () => {

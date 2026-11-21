@@ -16,7 +16,12 @@ config.watchFolders = [...new Set([...(config.watchFolders || []),
 // Only explicitly flagged native EAS release artifacts contain RNPurchases.
 // Expo Go, unflagged dev clients, web and Jest keep the real browser SDK.
 const nativeRelease = process.env.VEYRNOX_NATIVE_PURCHASES === '1';
+// The web mixdown lazily imports beatAssets.js for Music sources, which reaches browser auth. Native refuses those sources.
+const webMixdown = path.resolve(__dirname, '../../app/veyrnox/_lib/music/beat/beatMixdown.js');
 config.resolver.resolveRequest = (context, moduleName, platform) => {
+    if (moduleName === './beatAssets.js' && context.originModulePath === webMixdown) {
+        return { type: 'sourceFile', filePath: path.resolve(__dirname, 'src/lib/beatNative/beatAssetsUnavailable.ts') };
+    }
     if (nativeRelease && !context.dev && (platform === 'ios' || platform === 'android') && moduleName === '@revenuecat/purchases-js-hybrid-mappings') {
         return { type: 'sourceFile', filePath: path.resolve(__dirname, 'src/lib/purchasesNativeOnly.js') };
     }

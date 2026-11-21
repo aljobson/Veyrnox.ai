@@ -1,15 +1,15 @@
-import { BestCutEntry } from '../../components/editor/BestCutEntry';
-import { useBestCutAvailability } from '../../components/editor/useBestCutAvailability';
 import { rawText } from '../../lib/i18n/translate';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { SmartCutPreview } from '../../components/smart-cut/SmartCutPreview';
+import { SmartCutAnalysisCard } from '../../components/smart-cut/SmartCutAnalysisCard';
 import { JobThumb, useAssetLinks } from '../../components/JobThumb';
 import { Button, Card, Chip, SegmentedControl, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { aiConsent } from '../../lib/aiConsentStore';
+import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import {
     CAPTION_PRESETS,
     DEFAULT_CAPTION_PRESET,
@@ -38,14 +38,18 @@ import { libraryChoices } from '../../lib/librarySource';
 import { fetchCatalog, mediaApi, type CatalogModel, type Job, type JobPage } from '../../lib/media';
 import {
     SMART_CUT_PACING,
+    buildSpeechAwareCutPlan,
     buildSmartCutPlan,
     smartCutPlanUsesAvailableTakes,
     smartCutPlanWithinLimits,
     swapSmartCutTake,
+    validSmartCutAnalysis,
     type SmartCutPacing,
     type SmartCutPlan,
     type SmartCutSource,
 } from '../../lib/smartCut';
+import { fillerRanges } from '../../lib/speechFillers';
+import type { SpeechAnalysis } from '../../lib/speechCut';
 import { ds, LIST_END_PADDING } from '../../theme';
 
 type Stage = 'plan' | 'edit' | 'quote';
@@ -57,7 +61,6 @@ export default function SmartCutRoute() {
     const styles = useThemedStyles(sheets);
     const { api, beginSessionTask } = useAuth();
     const links = useAssetLinks(api);
-    const bestCutQuote = useBestCutAvailability(api).quote;
     const router = useRouter();
     const alive = useRef(true);
     const [jobs, setJobs] = useState<Job[] | null>(null);
@@ -69,6 +72,10 @@ export default function SmartCutRoute() {
     const [script, setScript] = useState('');
     const [notes, setNotes] = useState('');
     const [pacing, setPacing] = useState<SmartCutPacing>('balanced');
+    const [analyses, setAnalyses] = useState<ReadonlyMap<string, SpeechAnalysis>>(() => new Map());
+    const [analysisBusy, setAnalysisBusy] = useState(false);
+    const [removeFillers, setRemoveFillers] = useState(false);
+    const [skippedFillers, setSkippedFillers] = useState<readonly string[]>([]);
     const [plan, setPlan] = useState<SmartCutPlan | null>(null);
     const [compare, setCompare] = useState<CompareView>('cut');
     const [stage, setStage] = useState<Stage>('plan');
@@ -81,6 +88,7 @@ export default function SmartCutRoute() {
     const [previewBusy, setPreviewBusy] = useState<string | null>(null);
     const [preview, setPreview] = useState<Preview | null>(null);
     const keyRef = useRef<{ signature: string; key: string } | null>(null);
+    const owner = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
 
     useEffect(() => {
         alive.current = true;
@@ -92,7 +100,31 @@ export default function SmartCutRoute() {
             setModels(catalog);
         }).catch(() => { if (alive.current && task.current()) setProblem(t('common.error')); });
         return () => { alive.current = false; };
-    }, [api, beginSessionTask]);
+    }, [api, beginSessionTask, owner]);
+
+    useEffect(() => {
+        setJobs(null);
+        setNext(null);
+        setClips([]);
+        setPendingIds([]);
+        setLoadingMore(false);
+        setScript('');
+        setNotes('');
+        setAnalyses(new Map());
+        setAnalysisBusy(false);
+        setRemoveFillers(false);
+        setSkippedFillers([]);
+        setPlan(null);
+        setSnapshot(null);
+        setStage('plan');
+        setCaptionsOn(false);
+        setCredits(null);
+        setBusy(false);
+        setProblem(null);
+        setPreviewBusy(null);
+        setPreview(null);
+        keyRef.current = null;
+    }, [owner]);
 
     const videos = useMemo(() => libraryChoices(jobs ?? [], models, 'video'), [jobs, models]);
     const sources = useMemo<SmartCutSource[]>(() => clips.map((clip) => ({
@@ -103,9 +135,60 @@ export default function SmartCutRoute() {
         rangeStart: clip.start,
         rangeEnd: clip.end,
     })), [clips]);
+    const analysisReady = sources.length > 0 && sources.every((source) => {
+        const analysis = analyses.get(source.assetId);
+        return validSmartCutAnalysis(analysis, source.assetId, source.duration);
+    });
+    const phraseTimingNames = sources.filter((source) => {
+        const analysis = analyses.get(source.assetId);
+        return validSmartCutAnalysis(analysis, source.assetId, source.duration) && analysis.timingQuality === 'phrase';
+    }).map((source) => source.name);
+    const analysisClips = useMemo(() => {
+        const selected = stage !== 'plan' && snapshot ? snapshot : clips;
+        return [...new Map(selected.map((clip) => [clip.jobId, { jobId: clip.jobId, label: clip.label, duration: clip.length ?? 0 }])).values()];
+    }, [clips, snapshot, stage]);
+    const fillerRows = useMemo(() => sources.flatMap((source) => {
+        const analysis = analyses.get(source.assetId);
+        if (!analysis || analysis.timingQuality !== 'word') return [];
+        const rangeStart = source.rangeStart ?? 0, rangeEnd = source.rangeEnd ?? source.duration;
+        return fillerRanges(analysis, { start: rangeStart, end: rangeEnd }).map((range) => {
+            const start = Math.max(rangeStart, range.start), end = Math.min(rangeEnd, range.end);
+            return { ...range, start, end, takeId: source.id, key: `${source.id}:${start}:${end}` };
+        });
+    }), [analyses, sources]);
     const captions = captionsOn ? captionPreset : null;
     const total = totalSeconds(clips);
     const selectedCount = clips.length + pendingIds.length;
+
+    function recordAnalysis(jobId: string, analysis: SpeechAnalysis) {
+        setAnalyses((current) => {
+            const next = new Map(current);
+            next.set(jobId, analysis);
+            return next;
+        });
+        setPlan(null);
+        setSnapshot(null);
+    }
+
+    function invalidatePlan() {
+        setPlan(null);
+        setSnapshot(null);
+    }
+
+    function changePacing(value: SmartCutPacing) {
+        setPacing(value);
+        invalidatePlan();
+    }
+
+    function changeRemoveFillers(value: boolean) {
+        setRemoveFillers(value);
+        invalidatePlan();
+    }
+
+    function toggleFiller(key: string) {
+        setSkippedFillers((current) => current.includes(key) ? current.filter((value) => value !== key) : [...current, key]);
+        invalidatePlan();
+    }
 
     async function addTake(jobId: string, name: string) {
         if (selectedCount >= MAX_CLIPS || pendingIds.includes(jobId) || clips.some((clip) => clip.jobId === jobId)) return;
@@ -116,8 +199,8 @@ export default function SmartCutRoute() {
             const [media, aspect] = await Promise.all([libraryMedia(api, { jobId, name }, 'video'), fetchClipShape(api, jobId)]);
             if (!alive.current || !task.current()) return;
             if (!media?.frames) { setProblem(t('edit.unreadable')); return; }
-            const length = Math.floor((media.frames / 30) * 100) / 100;
-            const added: Clip = { jobId, label: name, length, start: 0, end: length, aspect };
+            const length = media.frames / 30;
+            const added: Clip = { jobId, label: name, length, start: 0, end: Math.floor(length * 100) / 100, aspect };
             setClips((current) => [...current, added]);
             setPlan(null);
             setSnapshot(null);
@@ -150,7 +233,12 @@ export default function SmartCutRoute() {
     function createPlan() {
         setProblem(null);
         try {
-            setPlan(buildSmartCutPlan({ clips: sources, script, notes, pacing }));
+            setPlan(analysisReady ? buildSpeechAwareCutPlan({
+                clips: sources,
+                analyses,
+                pacing,
+                removals: removeFillers ? fillerRows.filter((row) => !skippedFillers.includes(row.key)).map(({ takeId, start, end }) => ({ takeId, start, end })) : [],
+            }) : buildSmartCutPlan({ clips: sources, script, notes, pacing }));
             setCompare('cut');
         } catch (error) {
             setPlan(null);
@@ -228,10 +316,10 @@ export default function SmartCutRoute() {
         } finally { if (alive.current) setBusy(false); }
     }
 
-    if (stage === 'quote' && credits !== null) {
-        return (
+    const quoteOpen = stage === 'quote' && credits !== null;
+
+    const quoteView = quoteOpen ? (
             <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-                <Stack.Screen options={{ title: t('edit.reviewTitle') }} />
                 <Text variant="display" accessibilityRole="header">{t('edit.reviewTitle')}</Text>
                 <Card style={styles.stack}>
                     {clips.map((clip, index) => <Text key={`${clip.jobId}-${index}`} tone="secondary">{t('edit.stos', { value1: index + 1, value2: clip.label, value3: seconds(clip.start), value4: seconds(clip.end) })}</Text>)}
@@ -243,14 +331,13 @@ export default function SmartCutRoute() {
                 <Button label={t('edit.confirm')} loading={busy} disabled={busy} onPress={() => void confirmCreate()} />
                 <Button label={t('edit.backToEditing')} variant="tertiary" disabled={busy} onPress={() => { setStage('edit'); setCredits(null); setProblem(null); }} />
             </ScrollView>
-        );
-    }
+        ) : null;
 
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <Stack.Screen options={{ title: t('app.smartCut.name') }} />
+            <Stack.Screen options={{ title: t(quoteOpen ? 'edit.reviewTitle' : 'app.smartCut.name') }} />
+            <View style={quoteOpen ? styles.hidden : styles.routeBody} accessibilityElementsHidden={quoteOpen} importantForAccessibility={quoteOpen ? 'no-hide-descendants' : 'auto'}>
             <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-                <BestCutEntry />{bestCutQuote ? <Text variant="title2">{t('bestCut.quickPacing')}</Text> : null}
                 <View style={styles.hero}>
                     <Text variant="caption" tone="accent">{t('app.smartCut.name')}</Text>
                     <Text variant="display" accessibilityRole="header">{t('app.smartCut.entry.title')}</Text>
@@ -270,22 +357,40 @@ export default function SmartCutRoute() {
                                 <Text variant="bodyStrong" numberOfLines={1}>{video.name}</Text>
                                 <Text variant="footnote" tone="secondary">{new Date(video.createdAt).toLocaleDateString(formatLocale())}</Text>
                             </View>
-                            <Button label={selected ? t('edit.remove') : pending ? t('edit.reading') : t('editorSimple.add')} accessibilityLabel={selected || pending ? undefined : t('edit.add')} size="md" variant={selected ? 'tertiary' : 'secondary'} loading={pending} disabled={pending || (!selected && selectedCount >= MAX_CLIPS)} onPress={() => selected ? removeTake(video.jobId) : void addTake(video.jobId, video.name)} />
+                            <Button label={selected ? t('edit.remove') : pending ? t('edit.reading') : t('editorSimple.add')} accessibilityLabel={selected || pending ? undefined : t('edit.add')} size="md" variant={selected ? 'tertiary' : 'secondary'} loading={pending} disabled={analysisBusy || pending || (!selected && selectedCount >= MAX_CLIPS)} onPress={() => selected ? removeTake(video.jobId) : void addTake(video.jobId, video.name)} />
                         </Card>;
                     })}
-                    {next ? <Button label={t('library.older')} variant="tertiary" loading={loadingMore} onPress={() => void loadOlder()} /> : null}
+                    {next ? <Button label={t('library.older')} variant="tertiary" loading={loadingMore} disabled={analysisBusy} onPress={() => void loadOlder()} /> : null}
 
+                </> : null}
+
+                <View style={stage === 'plan' ? undefined : styles.hidden} accessibilityElementsHidden={stage !== 'plan'} importantForAccessibility={stage === 'plan' ? 'auto' : 'no-hide-descendants'}>
+                    <SmartCutAnalysisCard clips={analysisClips}
+                        analyses={analyses} onAnalysed={recordAnalysis} onBusyChange={setAnalysisBusy} />
+                </View>
+
+                {stage === 'plan' ? <>
                     <SectionHeading title={t('app.smartCut.shape.title')} detail={t('app.smartCut.action.createPreview')} />
-                    <Field label={t('app.smartCut.script')} value={script} placeholder={t('app.smartCut.scriptPlaceholder')} multiline onChange={setScript} />
-                    <Field label={t('app.smartCut.notes')} value={notes} placeholder={t('app.smartCut.notesPlaceholder')} multiline onChange={setNotes} />
+                    {analysisReady ? <>
+                        <Text variant="caption" tone="accent">{t('app.smartCut.mode.speechReady')}</Text>
+                        <Text tone="secondary">{t('app.smartCut.speechReady')}</Text>
+                        <View style={styles.switchRow}><Text variant="bodyStrong">{t('app.smartCut.fillers.toggle', { count: fillerRows.length })}</Text><Switch accessibilityLabel={rawText(t('app.smartCut.fillers.toggle', { count: fillerRows.length }))} disabled={!fillerRows.length} value={removeFillers} onValueChange={changeRemoveFillers} /></View>
+                        {removeFillers ? fillerRows.map((row) => <Chip key={row.key} selected={!skippedFillers.includes(row.key)} label={t('app.smartCut.fillers.row', { label: row.label, start: seconds(row.start), end: seconds(row.end) })} onPress={() => toggleFiller(row.key)} />) : null}
+                        {phraseTimingNames.length ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.fillers.wordTimingRequired', { names: phraseTimingNames.join(', ') })}</Text>
+                            : !fillerRows.length ? <Text variant="footnote" tone="secondary">{t('app.smartCut.fillers.none')}</Text> : null}
+                    </> : <>
+                        <Field label={t('app.smartCut.script')} value={script} placeholder={t('app.smartCut.scriptPlaceholder')} multiline onChange={setScript} />
+                        <Field label={t('app.smartCut.notes')} value={notes} placeholder={t('app.smartCut.notesPlaceholder')} multiline onChange={setNotes} />
+                    </>}
                     <Text variant="footnote" tone="secondary">{t('app.smartCut.pacing')}</Text>
-                    <View style={styles.chips}>{(Object.keys(SMART_CUT_PACING) as SmartCutPacing[]).map((value) => <Chip key={value} selected={pacing === value} label={t(`app.smartCut.pacing.${value}`)} onPress={() => setPacing(value)} />)}</View>
-                    <Button label={t('app.smartCut.action.createPreview')} disabled={!clips.length || pendingIds.length > 0} onPress={createPlan} />
+                    <View style={styles.chips}>{(Object.keys(SMART_CUT_PACING) as SmartCutPacing[]).map((value) => <Chip key={value} selected={pacing === value} label={t(`app.smartCut.pacing.${value}`)} onPress={() => changePacing(value)} />)}</View>
+                    <Button label={t(analysisReady ? 'app.smartCut.action.removePauses' : 'app.smartCut.action.createPreview')} disabled={!clips.length || pendingIds.length > 0 || analysisBusy} onPress={createPlan} />
 
                     {plan ? <Card style={styles.planCard}>
-                        <Text variant="bodyStrong">{t('app.smartCut.notice.localCreated')}</Text>
+                        <Text variant="caption" tone="accent">{t(plan.mode === 'transcript-silence' ? 'app.smartCut.mode.speechAware' : 'app.smartCut.mode.localPreview')}</Text>
+                        <Text variant="bodyStrong">{t(plan.mode === 'transcript-silence' ? 'app.smartCut.notice.speechCreated' : 'app.smartCut.notice.localCreated')}</Text>
                         <SegmentedControl options={[{ value: 'raw', label: t('app.smartCut.view.raw') }, { value: 'cut', label: t('app.smartCut.view.cut') }]} value={compare} onChange={setCompare} />
-                        <Text variant="footnote" tone="secondary">{t('app.smartCut.planSummary', { duration: seconds(plan.totalDuration), count: plan.segments.length, pacing: t(plan.pacingLabel) })}</Text>
+                        <Text variant="footnote" tone="secondary">{t('app.smartCut.planSummary', { duration: seconds(plan.totalDuration), count: plan.segments.length, pacing: t(`app.smartCut.pacing.${pacing}`) })}{plan.silenceRemoved != null ? t('app.smartCut.removed', { duration: seconds(plan.silenceRemoved) }) : ''}</Text>
                         {compare === 'raw' ? plan.takes.map((take) => <Card key={take.id} style={styles.segment}>
                             <View style={styles.segmentTop}><View style={styles.rowCopy}><Text variant="bodyStrong">{take.name}</Text><Text variant="footnote" tone="secondary">{t('app.smartCut.sourceDuration', { duration: seconds(take.duration) })}</Text></View><Button label={t('app.smartCut.preview', { name: take.name })} size="sm" variant="tertiary" loading={previewBusy === `${take.assetId}:${take.rangeStart}`} onPress={() => void openPreview(take.assetId, take.name, take.rangeStart, take.rangeEnd)} /></View>
                         </Card>) : plan.segments.map((segment, index) => {
@@ -293,9 +398,9 @@ export default function SmartCutRoute() {
                             return <Card key={segment.id} style={styles.segment}>
                                 <View style={styles.segmentTop}><View style={styles.rowCopy}><Text variant="caption" tone="accent">{t('app.smartCut.section', { count: index + 1 })}</Text><Text variant="bodyStrong">{segment.label}</Text></View><Text variant="footnote" tone="secondary">{t('app.smartCut.range', { start: seconds(segment.start), end: seconds(segment.end) })}</Text></View>
                                 <Text variant="footnote" tone="secondary">{t('app.smartCut.take')}</Text>
-                                <View style={styles.chips}>{plan.takes.map((option) => <Chip key={option.id} selected={option.id === segment.takeId} label={option.name} onPress={() => setPlan((current) => current ? swapSmartCutTake(current, segment.id, option.id) : current)} />)}</View>
+                                {plan.mode === 'transcript-silence' ? <Text variant="bodyStrong">{take.name}</Text> : <View style={styles.chips}>{plan.takes.map((option) => <Chip key={option.id} selected={option.id === segment.takeId} label={option.name} onPress={() => setPlan((current) => current ? swapSmartCutTake(current, segment.id, option.id) : current)} />)}</View>}
                                 <Button label={t('app.smartCut.preview', { name: take.name })} variant="secondary" size="md" loading={previewBusy === `${take.assetId}:${segment.start}`} onPress={() => void openPreview(take.assetId, take.name, segment.start, segment.end)} />
-                                <Text variant="footnote" tone="danger">{segment.matchStatus}</Text>
+                                <Text variant="footnote" tone={plan.mode === 'transcript-silence' ? 'accent' : 'danger'}>{segment.matchStatus}</Text>
                                 <Text variant="footnote" tone="secondary">{t('app.smartCut.why')} {segment.reason}</Text>
                             </Card>;
                         })}
@@ -304,7 +409,7 @@ export default function SmartCutRoute() {
                             {plan.warnings.map((warning) => <Text key={warning} variant="footnote" tone="secondary">• {warning}</Text>)}
                         </Card>
                         <View style={styles.actions}>
-                            <Button label={t('app.smartCut.action.apply')} onPress={applyPlan} />
+                            <Button label={t('app.smartCut.action.apply')} disabled={analysisBusy} onPress={applyPlan} />
                             <Button label={t('app.smartCut.action.restart')} variant="tertiary" onPress={() => setPlan(null)} />
                         </View>
                     </Card> : null}
@@ -322,11 +427,13 @@ export default function SmartCutRoute() {
                     {captionsOn ? <><Text variant="footnote" tone="secondary">{t('app.editor.sheet.style')}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>{CAPTION_PRESETS.map((preset) => <Chip key={preset} selected={captionPreset === preset} label={preset} onPress={() => setCaptionPreset(preset)} />)}</ScrollView></> : null}
                     <Text tone={total > MAX_OUTPUT_S ? 'danger' : 'secondary'}>{t('edit.total', { seconds: seconds(total), max: MAX_OUTPUT_S })}</Text>
                     {FULL_EDITOR_ENABLED && clips.length > 0 && clips.length <= MAX_CLIPS ? <Button label={t('edit.openLocal')} onPress={() => router.push({ pathname: '/editor/new', params: { cuts: encodeCuts(clips.map((clip) => ({ jobId: clip.jobId, start: clip.start, end: clip.end }))) } })} /> : null}
-                    <Button variant="secondary" label={t('edit.review')} loading={busy} disabled={busy} onPress={() => void reviewPrice()} />
+                    <Button variant={FULL_EDITOR_ENABLED ? 'secondary' : 'primary'} label={t('edit.review')} loading={busy} disabled={busy} onPress={() => void reviewPrice()} />
                 </>}
                 {problem ? <Text tone="danger" accessibilityRole="alert">{problem}</Text> : null}
             </ScrollView>
-            {preview ? <SmartCutPreview {...preview} onClose={() => setPreview(null)} /> : null}
+            </View>
+            {quoteView}
+            {!quoteOpen && preview ? <SmartCutPreview {...preview} onClose={() => setPreview(null)} /> : null}
         </KeyboardAvoidingView>
     );
 }
@@ -350,6 +457,8 @@ function RangeStepper({ label, value, lessLabel, moreLabel, onLess, onMore }: { 
 const sheets = themedStyles((p) => ({
     placeholder: { color: p.textTertiary },
     screen: { flex: 1, backgroundColor: p.bg },
+    routeBody: { flex: 1 },
+    hidden: { display: 'none' },
     content: { padding: ds.space.lg, paddingBottom: LIST_END_PADDING, gap: ds.space.md },
     hero: { gap: ds.space.sm, paddingBottom: ds.space.sm },
     sectionHeading: { gap: ds.space.xs, paddingTop: ds.space.md },

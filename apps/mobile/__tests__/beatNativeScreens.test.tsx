@@ -23,6 +23,8 @@ import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => undefined, remove: async () => undefined, list: async () => [] }) }));
 
+let mockExportProps: { prepare(): Promise<void>; recording: boolean; replacing: boolean } | undefined;
+jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: (props: typeof mockExportProps) => { mockExportProps = props; return null; } }));
 const mockApi = { request: jest.fn() };
 const mockGetAccessToken = jest.fn(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`);
 let mockGeneration = 0;
@@ -30,6 +32,7 @@ const mockPush = jest.fn();
 let mockParams: { id: string } = { id: 'x' };
 const mockAudio = { play: jest.fn(async () => undefined), stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined) };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: mockGeneration }) }));
+jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/lib/beatNative/audio', () => ({ ...jest.requireActual('../src/lib/beatNative/audio'), createBeatAudio: () => mockAudio }));
@@ -60,6 +63,8 @@ describe('beats home', () => {
         await act(async () => root.render(<BeatsHome />));
         expect(text(t('beat.home.empty')).length).toBeGreaterThan(0);
         await press(t('beat.home.new'));
+        expect(mockPush).not.toHaveBeenCalled();
+        await press(t('beatLabs.template.blank'));
         expect(mockPush).toHaveBeenCalledTimes(1);
         const id = (mockPush.mock.calls[0][0] as { params: { id: string } }).params.id;
         expect(getBeat(id)?.title).toBe(t('beat.home.untitled', { n: 1 }));
@@ -94,6 +99,22 @@ describe('beat editor', () => {
         await press(t('beat.pad.hit', { pad: t('beat.pad.snare') }));
         expect(mockAudio.hitPad).toHaveBeenCalledWith('snare', '808');
         expect(byLabel(t('beat.step.on', { n: 5, total: 16, pad: t('beat.pad.snare') }))).toBeDefined();
+    });
+    test('export mount releases playback before the sheet may render, and Play recreates the engine', async () => {
+        await open(); await press(t('beat.play')); await press(t('beatExport.title'));
+        expect(mockExportProps?.recording).toBe(false);
+        await act(async () => { await mockExportProps!.prepare(); });
+        expect(mockAudio.stop).toHaveBeenCalled(); expect(mockAudio.close).toHaveBeenCalled();
+        expect(byLabel(t('beat.play'))).toBeDefined();
+        await press(t('beat.play')); expect(mockAudio.play).toHaveBeenCalledTimes(2);
+    });
+    test('N7-R4: the editor forwards a held replacement lease to the export sheet', async () => {
+        const doc = await open(); await press(t('beatExport.title'));
+        let release!: () => void;
+        await act(async () => { release = await beforeReplace(doc.id); });
+        try { expect(mockExportProps?.replacing).toBe(true); }
+        finally { await act(async () => release()); }
+        expect(mockExportProps?.replacing).toBe(false);
     });
     test('transport: play starts the audio with the live document, stop stops it', async () => {
         await open();

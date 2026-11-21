@@ -1,5 +1,41 @@
 [
   {
+    "id": "beatLabs.audition",
+    "english": "Audition",
+    "translation": "استماع تجريبي",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "إضافة",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.touch.help",
+    "english": "Tap Controls.",
+    "translation": "اضغط على عناصر التحكم.",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "اضغط على تراجع.",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "اضغط على إعادة.",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.category.FX",
+    "english": "FX",
+    "translation": "مؤثرات",
+    "ratio": 3
+  },
+  {
     "id": "editorCaptionTools.align",
     "english": "Align lyrics",
     "translation": "محاذاة كلمات الأغنية",
@@ -2154,6 +2190,42 @@
     "ratio": 1.63
   },
   {
+    "id": "beatAi.magic",
+    "english": "Magic Bar",
+    "translation": "المازورة السحرية",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "المقام",
+    "ratio": 2
+  },
+  {
+    "id": "speech.audition.generate.zero",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
+    "id": "speech.audition.generate.two",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
+    "id": "speech.audition.generate.many",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
+    "id": "speech.audition.generate.other",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
     "id": "beat.region.later",
     "english": "Move later",
     "translation": "تحريك إلى وقت لاحق",
@@ -2266,6 +2338,24 @@
     "english": "Ease out",
     "translation": "نهاية تدريجية",
     "ratio": 1.63
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "المزج",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "المسارات المفصولة",
+    "ratio": 3.4
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "حفظ في مكتبة الموسيقى",
+    "ratio": 1.62
   },
   {
     "id": "oauth.signIn",
