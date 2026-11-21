@@ -17,9 +17,8 @@ const validName = (name: string) => {
     return name;
 };
 const accountTakeDirectory = (owner: string) => new Directory(Paths.document, 'beat-takes', 'accounts', validId(owner));
-/** Takes directly under Documents/beat-takes predate owner stamps and are never opened from here. */
-export function nativeTakeIO(owner: string): TakeFileIO {
-    const root = () => { const dir = accountTakeDirectory(owner); dir.create({ intermediates: true, idempotent: true }); return dir; };
+const takeIOAt = (directory: () => Directory): TakeFileIO => {
+    const root = () => { const dir = directory(); dir.create({ intermediates: true, idempotent: true }); return dir; };
     const file = (name: string) => new File(root(), validName(name));
     return {
         async list() { return root().list().filter(e => e instanceof File).map(e => e.name); },
@@ -28,7 +27,10 @@ export function nativeTakeIO(owner: string): TakeFileIO {
         async remove(name) { const f = file(name); if (f.exists) f.delete(); },
         async move(from, to) { file(from).move(file(to), { overwrite: true }); },
     };
-}
+};
+export const nativeTakeIO = (owner: string): TakeFileIO => takeIOAt(() => accountTakeDirectory(owner));
+/** Takes directly under Documents/beat-takes predate owner stamps. Only legacyMigration.ts may open them. */
+export const legacyTakeIO = (): TakeFileIO => takeIOAt(() => new Directory(Paths.document, 'beat-takes'));
 export function eraseAccountTakes(owner: string) {
     const dir = accountTakeDirectory(owner);
     if (dir.exists) dir.delete();
