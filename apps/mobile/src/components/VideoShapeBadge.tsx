@@ -11,5 +11,7 @@ export function VideoShapeBadge({ item, mismatch = false }: { item: ShapeItem; m
     const label = videoShapeLabel(item);
     if (!label) return null;
     const w = item.video_width ?? item.width, h = item.video_height ?? item.height;
-    return <Text variant="caption" tone={mismatch ? 'danger' : 'secondary'}>{label}{mismatch ? ` · ${t('videoShape.different')}${w && h ? ` · ${w}x${h}` : ''}` : ''}</Text>;
+    const size = w && h ? [w, h].join('x') : null;
+    const text = mismatch ? [label, t('videoShape.different'), size].filter(Boolean).join(' · ') : label;
+    return <Text variant="caption" tone={mismatch ? 'danger' : 'secondary'}>{text}</Text>;
 }
