@@ -43,7 +43,7 @@ export class GatewayError extends Error {
  * @param {string} path       leading slash, e.g. '/balance', '/jobs/123'
  * @param {RequestInit & {preserveUploadErrors?: boolean, beforeSend?: () => void}} [init]
  */
-export async function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot, mfaRetried = false) {
+async function sendGateway(path, init = {}, brandRetried = false, brandSnapshot, mfaRetried = false) {
   const { preserveUploadErrors, beforeSend, ...requestInit } = init;
   const assertCurrentBrand = () => { if (brandSnapshot !== undefined) assertSocialBrandSnapshot(brandSnapshot); };
   assertCurrentBrand();
@@ -167,7 +167,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
       // Await and re-check: the retry's getFreshAccessToken() could hydrate a different account,
       // whose own guards would pass — re-assert the original account/brand before returning its
       // body to this caller (the brand-recovery branch below does the same).
-      const recovered = await gatewayFetch(path, init, brandRetried, brandSnapshot, true);
+      const recovered = await sendGateway(path, init, brandRetried, brandSnapshot, true);
       assertCurrentAccount();
       assertCurrentBrand();
       return recovered;
@@ -177,7 +177,7 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     if (brandSnapshot === undefined && !brandRetried && path.startsWith('/social/') && selectedBrand && res.status === 404 && body?.error === 'brand_not_found'
         && String(init.method || 'GET').toUpperCase() === 'GET') {
       if (getSelectedSocialBrand() === selectedBrand) setSelectedSocialBrand('');
-      const recovered = await gatewayFetch(path, init, true, undefined, mfaRetried);
+      const recovered = await sendGateway(path, init, true, undefined, mfaRetried);
       assertCurrentAccount();
       return recovered;
     }
@@ -198,6 +198,28 @@ export async function gatewayFetch(path, init = {}, brandRetried = false, brandS
     });
   }
   return body;
+}
+
+// Several components ask for the same read in the same moment on page load (the account, the first-goal
+// answer, the balance). Concurrent identical GETs share one request; each caller gets its own copy of the
+// body. Only plain reads are shared: no options beyond the method (no abort signal, body, headers or hook), and the key carries the
+// account and brand so one person's read is never handed to another. A spend or refund event drops what is
+// in flight, so a read asked for after it never joins a request that began before it.
+const inFlightReads = new Map();
+if (typeof window !== 'undefined') window.addEventListener('veyrnox:balance-changed', () => inFlightReads.clear());
+
+export function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot, mfaRetried = false) {
+  const plainRead = String(init.method || 'GET').toUpperCase() === 'GET'
+    && Object.keys(init).every(key => key === 'method')
+    && !brandRetried && brandSnapshot === undefined && !mfaRetried;
+  if (!plainRead) return sendGateway(path, init, brandRetried, brandSnapshot, mfaRetried);
+  const key = `${getSession()?.user?.id ?? ''}|${getSelectedSocialBrand() ?? ''}|${path}`;
+  let shared = inFlightReads.get(key);
+  if (!shared) {
+    shared = sendGateway(path, init).finally(() => { if (inFlightReads.get(key) === shared) inFlightReads.delete(key); });
+    inFlightReads.set(key, shared);
+  }
+  return shared.then(body => (body && typeof body === 'object' ? structuredClone(body) : body));
 }
 
 /** Authenticated binary download with the same account/brand guards as gatewayFetch. */
