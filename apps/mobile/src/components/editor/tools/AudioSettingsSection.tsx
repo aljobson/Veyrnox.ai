@@ -19,7 +19,7 @@ export function AudioSettingsSection({ clip, media, track, actions }: { clip: Cl
     const effect = (patch: Partial<typeof effects>) => actions.patch({ audioEffects: { ...effects, ...patch } });
     const sourceSeconds = (media?.frames ?? 0) / 30;
     return <View style={{ gap: ds.space.sm }}>
-        {track === 'audio' ? <Text style={styles.body}>{t('editorAudioTools.audioLaneNote')}</Text> :
+        {track === 'audio' ? <Text style={styles.body}>{t('editorAudioTools.adjustAudioLaneNote')}</Text> :
             media?.kind !== 'image' && audioSectionsVisible(clip, media) ? <Text style={styles.body}>{t('editorAudioTools.previewNote')}</Text> : null}
         <Disclosure title={t('editorAudioTools.equaliser')}>
             {([{ key: 'low', label: t('editorAudioTools.low') }, { key: 'mid', label: t('editorAudioTools.mid') },

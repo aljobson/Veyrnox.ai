@@ -98,3 +98,9 @@ test.each([
         expect(tr.t(key, { value })).toBe(fill(template, { value }, locale === 'ar'));
     }
 });
+
+test('Korean shortened sound announcement preserves both name particle forms and slots', () => {
+    const template = '{time}에 {name}을(를) 추가하고 동영상과 함께 끝나도록 줄였습니다.';
+    expect(CATALOGS.ko!['editorAudioTools.addedTrimmed']).toBe(template);
+    expect(slots(template)).toEqual(['{name}', '{time}']);
+});

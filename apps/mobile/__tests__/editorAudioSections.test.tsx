@@ -15,7 +15,7 @@ import { documentProblem } from '../src/lib/editorDocumentGate';
 import { type Timeline } from '../src/lib/nativeEditorModel';
 import type { InsertResult } from '../src/components/editor/useEditorGenerationReturns';
 // Match the existing screen suites' allowance for cold React Native rendering on shared hosts.
-jest.setTimeout(30000);
+jest.setTimeout(20000);
 const mockEnsure = jest.fn(async (_id: string) => 'file://sound');
 const mockPlay = jest.fn(async (_uri: string) => {}), mockStop = jest.fn(), mockRelease = jest.fn();
 jest.mock('../src/lib/editorOriginalAudioFiles', () => ({
@@ -32,10 +32,10 @@ function Harness({ catalog = false, playing = false, insertResult }: { catalog?:
         applyTimeline: next => { if (documentProblem(envelope(next))) return false;
             commits.push(next); timeline = next; dirty = true; render(n => n + 1); return true; }, setProblem: next => { message = next; } });
     const original = useOriginalAudio({ timeline, localMediaUris: uris, setLocalMediaUris: setUris, frameStore: store, playing,
-        setProblem: next => { message = next; }, insertMedia: (media, at) => {
+        setProblem: next => { message = next; }, insertMedia: (media, at, _select, onPlaced) => {
             if (insertResult) return insertResult;
             const result = insertMediaAt(timeline, media, at); if ('error' in result) return result.error;
-            timeline = result.timeline; commits.push(timeline); render(n => n + 1); return 'placed';
+            timeline = result.timeline; commits.push(timeline); onPlaced(result.trimmed); render(n => n + 1); return 'placed';
         } });
     useLayoutEffect(() => { actions = handlers; localUris = uris; });
     return catalog ? <OriginalAudioSection actions={original} /> :
@@ -80,11 +80,14 @@ test.each([
 });
 test('preview wording follows the selected lane and is absent for images', async () => {
     const videoNote = 'The phone preview plays volume and fades. EQ, pan, voice, noise and effects are saved but not heard on the phone yet.';
-    const audioNote = "Sounds on audio tracks don't play in the phone preview yet. Use Preview to hear one.";
+    const audioNote = "Sounds on audio tracks don't play in the phone preview yet.";
+    const catalogNote = `${audioNote} Use Preview to hear one.`;
     const text = (value: string) => root.container.queryAll(n => n.children.includes(value));
     await screen(); await act(async () => mockSession.setSelection({ track: 'video', id: 'v1' })); await press('Adjust');
     expect(text(videoNote).length).toBeGreaterThan(0); expect(text(audioNote)).toHaveLength(0);
-    await press('Audio'); await press('Insert Tap click'); await press('Adjust');
+    await press('Audio'); expect(text(catalogNote).length).toBeGreaterThan(0);
+    await press('Insert Tap click'); await press('Adjust');
+    expect(text(catalogNote)).toHaveLength(0);
     expect(text(audioNote).length).toBeGreaterThan(0); expect(text(videoNote)).toHaveLength(0);
     await act(async () => {
         const doc = mockSession.currentDocument()!, tl = doc.timeline as Timeline;
@@ -233,4 +236,24 @@ test('moved insertion announces the exact frame, including a fractional second',
     await act(async () => root.render(<Harness catalog />)); await press('Insert Tap click');
     expect(timeline.audio[0].start).toBe(235);
     expect(message).toBe('Added Tap click at 00:00:07:25.');
+});
+
+test('real screen re-adding an existing original sound from Media announces shortening', async () => {
+    await screen(); await press('Audio'); await press('Insert Soft keys');
+    await act(async () => mockSession.frameStore.set(30));
+    await press('Media'); await press('Add Soft keys to timeline');
+    const tl = mockSession.currentDocument()!.timeline as Timeline;
+    expect(tl.audio).toHaveLength(2);
+    expect(tl.audio[1]).toMatchObject({ mediaId: 'l-new', start: 30, len: 210 });
+    expect(mockSession.problem).toBe('Music trimmed to fit your video.');
+});
+test('real screen audio-only insertion at frame 17,900 does not claim a trim to video', async () => {
+    const tl = webSequenceV3(), media = originalAudioMedia('soft-keys', 'existing');
+    tl.video = []; tl.text = []; tl.media = { existing: media };
+    tl.audio = [{ id: 'a1', mediaId: media.id, trackId: 'audio-0', start: 0, in: 0, len: media.frames!, volume: 1 }];
+    await screen(tl); await act(async () => mockSession.frameStore.set(17900));
+    await press('Audio'); await press('Insert Soft keys');
+    const inserted = (mockSession.currentDocument()!.timeline as Timeline).audio[1];
+    expect(inserted).toMatchObject({ mediaId: 'l-new', start: 17900, len: 100 });
+    expect(mockSession.problem).toBe('Added Soft keys at 00:09:56:20.');
 });

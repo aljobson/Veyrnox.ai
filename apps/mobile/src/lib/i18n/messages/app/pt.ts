@@ -53,6 +53,7 @@ export default {
   "editorAudioTools.stop": "Parar prévia",
   "editorAudioTools.insert": "Inserir {name}",
   "editorAudioTools.audioLaneNote": "As faixas de áudio ainda não tocam na prévia do telefone. Use a prévia do som para ouvi-lo.",
+  "editorAudioTools.adjustAudioLaneNote": "As faixas de áudio ainda não tocam na prévia do telefone.",
   "editorAudioTools.added": "{name} adicionado em {time}.",
   "editorAudioTools.addedTrimmed": "{name} adicionado em {time}, encurtado para terminar com o vídeo.",
   "editorAudioTools.prepareFailed": "Não foi possível preparar este som. Tente novamente.",

@@ -53,6 +53,7 @@ export default {
   "editorAudioTools.stop": "Остановить прослушивание",
   "editorAudioTools.insert": "Вставить {name}",
   "editorAudioTools.audioLaneNote": "Звуки на аудиодорожках пока не слышны в предпросмотре телефона. Используйте прослушивание звука.",
+  "editorAudioTools.adjustAudioLaneNote": "Звуки на аудиодорожках пока не слышны в предпросмотре телефона.",
   "editorAudioTools.added": "{name} добавлен на {time}.",
   "editorAudioTools.addedTrimmed": "{name} добавлен в {time} и сокращён, чтобы закончиться вместе с видео.",
   "editorAudioTools.prepareFailed": "Не удалось подготовить этот звук. Попробуйте ещё раз.",

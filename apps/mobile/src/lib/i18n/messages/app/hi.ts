@@ -53,6 +53,7 @@ export default {
   "editorAudioTools.stop": "प्रीव्यू रोकें",
   "editorAudioTools.insert": "{name} जोड़ें",
   "editorAudioTools.audioLaneNote": "ऑडियो ट्रैक की ध्वनियाँ अभी फ़ोन के प्रीव्यू में नहीं बजतीं। सुनने के लिए ध्वनि का प्रीव्यू इस्तेमाल करें।",
+  "editorAudioTools.adjustAudioLaneNote": "ऑडियो ट्रैक की ध्वनियाँ अभी फ़ोन के प्रीव्यू में नहीं बजतीं।",
   "editorAudioTools.added": "{name} को {time} पर जोड़ा गया।",
   "editorAudioTools.addedTrimmed": "{name} को {time} पर जोड़ा गया और वीडियो के साथ समाप्त होने के लिए छोटा किया गया।",
   "editorAudioTools.prepareFailed": "यह ध्वनि तैयार नहीं हो सकी। फिर कोशिश करें।",

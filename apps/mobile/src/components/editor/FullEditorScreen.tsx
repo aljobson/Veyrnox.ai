@@ -102,13 +102,15 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     useEffect(() => { setGenerate(null); setStemChoice(null); return subscribeCacheUser(() => { setGenerate(null); setStemChoice(null); }); }, [projectId]);
     const returns = useEditorGenerationReturns({ api, projectId, announce: tool !== 'generate', get ready() { return isReady(); }, currentDocument, get dirty() { return sync.dirty; }, get
         saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, insert: insertMedia });
-    function insertMedia(media: Media, at: number, select = false): InsertResult {
+    function insertMedia(media: Media, at: number, select = false, onPlaced?: (trimmed: boolean) => void): InsertResult {
         const current = currentDocument(); if (!isReady() || !current || current.project_id !== projectId) return 'dropped';
         const result = insertMediaAt(timelineOf(current.timeline), media, at);
         if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' }));
             return result.error; }
         const commit = markDocument({ ...current, schema_version: 3, timeline: result.timeline });
-        if (commit.status !== 'accepted') return commit; if (result.trimmed && !media.originalAudio) setProblem(t('editor.musicTrimmed'));
+        if (commit.status !== 'accepted') return commit;
+        if (result.trimmed && (!media.originalAudio || Object.hasOwn(timelineOf(current.timeline).media, media.id))) setProblem(t('editor.musicTrimmed'));
+        onPlaced?.(result.trimmed);
         if (select || media.kind === 'audio') { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
     const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() }); useAnnouncement(problem);

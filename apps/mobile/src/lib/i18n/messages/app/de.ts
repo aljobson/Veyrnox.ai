@@ -54,6 +54,7 @@ export default {
   "editorAudioTools.stop": "Vorhören stoppen",
   "editorAudioTools.insert": "{name} einfügen",
   "editorAudioTools.audioLaneNote": "Sounds auf Audiospuren sind in der Telefonvorschau noch nicht hörbar. Nutze die Vorhörfunktion.",
+  "editorAudioTools.adjustAudioLaneNote": "Sounds auf Audiospuren sind in der Telefonvorschau noch nicht hörbar.",
   "editorAudioTools.added": "{name} bei {time} hinzugefügt.",
   "editorAudioTools.addedTrimmed": "{name} bei {time} hinzugefügt und bis zum Videoende gekürzt.",
   "editorAudioTools.prepareFailed": "Dieser Sound konnte nicht vorbereitet werden. Versuche es erneut.",

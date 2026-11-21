@@ -53,6 +53,7 @@ export default {
   "editorAudioTools.stop": "停止试听",
   "editorAudioTools.insert": "插入{name}",
   "editorAudioTools.audioLaneNote": "音轨中的声音暂时无法在手机预览中播放。请使用试听功能收听。",
+  "editorAudioTools.adjustAudioLaneNote": "音轨中的声音暂时无法在手机预览中播放。",
   "editorAudioTools.added": "已在{time}处添加{name}。",
   "editorAudioTools.addedTrimmed": "已在{time}添加{name}，并缩短至与视频同时结束。",
   "editorAudioTools.prepareFailed": "无法准备此声音，请重试。",

@@ -53,6 +53,7 @@ export default {
   "editorAudioTools.stop": "إيقاف المعاينة",
   "editorAudioTools.insert": "إدراج {name}",
   "editorAudioTools.audioLaneNote": "لا تعمل الأصوات على المسارات الصوتية في معاينة الهاتف بعد. استخدم معاينة الصوت لسماعه.",
+  "editorAudioTools.adjustAudioLaneNote": "لا تعمل الأصوات على المسارات الصوتية في معاينة الهاتف بعد.",
   "editorAudioTools.added": "تمت إضافة {name} عند {time}.",
   "editorAudioTools.addedTrimmed": "تمت إضافة {name} عند {time}، مع تقصيره لينتهي مع الفيديو.",
   "editorAudioTools.prepareFailed": "تعذّر تجهيز هذا الصوت. حاول مجددًا.",

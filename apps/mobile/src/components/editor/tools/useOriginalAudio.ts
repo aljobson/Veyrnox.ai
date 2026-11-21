@@ -10,13 +10,13 @@ import type { FrameStore } from '../editorFrameStore';
 import type { InsertResult } from '../useEditorGenerationReturns';
 type Props = {
     timeline: Timeline; localMediaUris: Record<string, string>; setLocalMediaUris: Dispatch<SetStateAction<Record<string, string>>>;
-    insertMedia(media: Media, at: number, select: boolean): InsertResult; frameStore: FrameStore; playing: boolean; setProblem(message: string | null): void;
+    insertMedia(media: Media, at: number, select: boolean, onPlaced: (trimmed: boolean) => void): InsertResult; frameStore: FrameStore; playing: boolean; setProblem(message: string | null): void;
 };
 export function useOriginalAudio(props: Props) {
     const latest = useRef(props); useLayoutEffect(() => { latest.current = props; });
     const mounted = useRef(true), busy = useRef(false), previewToken = useRef(0), lifetime = useRef(0);
     const [preparing, setPreparing] = useState(false), [preview, setPreview] = useState<string | null>(null);
-    const audition = useRef<ReturnType<typeof createAudition> | null>(null), inserted = useRef<Media | null>(null);
+    const audition = useRef<ReturnType<typeof createAudition> | null>(null), inserted = useRef<{ media: Media; trimmed: boolean } | null>(null);
     const stop = useCallback(() => { previewToken.current++; audition.current?.stop(); if (mounted.current) setPreview(null); }, []);
     useEffect(() => {
         mounted.current = true; const life = lifetime.current;
@@ -25,12 +25,13 @@ export function useOriginalAudio(props: Props) {
     useEffect(() => { if (props.playing) stop(); }, [props.playing, stop]);
     const { timeline, setProblem } = props;
     useEffect(() => {
-        const media = inserted.current;
-        if (!media) return;
+        const placement = inserted.current;
+        if (!placement) return;
+        const { media, trimmed } = placement;
         const clip = timeline.audio.find(c => c.mediaId === media.id);
         if (clip) {
             inserted.current = null;
-            const key = clip.len < media.frames! ? 'editorAudioTools.addedTrimmed' : 'editorAudioTools.added';
+            const key = trimmed ? 'editorAudioTools.addedTrimmed' : 'editorAudioTools.added';
             setProblem(t(key, { name: media.name!, time: formatTimecode(clip.start, timeline.fps) }));
         }
     }, [timeline, setProblem]);
@@ -60,9 +61,8 @@ export function useOriginalAudio(props: Props) {
             const current = latest.current;
             if (insert) {
                 const media = originalAudioMedia(id, `l-${randomUUID()}`), at = clampFrame(current.frameStore.get());
-                const result = current.insertMedia(media, at, true);
+                const result = current.insertMedia(media, at, true, trimmed => { inserted.current = { media, trimmed }; });
                 if (result === 'placed') {
-                    inserted.current = media;
                     current.setLocalMediaUris(uris => ({ ...uris, [media.id]: uri }));
                 } else if (typeof result === 'object' && result.status === 'refused') {
                     current.setProblem(t(result.reason === 'tooLarge' ? 'editorEditGate.tooLarge' : 'editorEditGate.invalid'));
