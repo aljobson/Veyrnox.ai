@@ -62,7 +62,8 @@ export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing,
         return <EditorTransformLayer clip={clip} media={fittedMedia} frameStore={frameStore}>
             <Image accessibilityLabel={rawText(t('editor.preview2', { value1: media.name || t('editor.imageFallback') }))}
                 alt={media.name || t('editor.imagePreviewAlt')} source={{ uri:
-        source.uri }} onLoad={event => onDimensions(event.source)} contentFit="contain" style={StyleSheet.absoluteFill} /></EditorTransformLayer>;
+        source.uri }} onLoad={event => onDimensions(event.source)} contentFit={dimensions.key === key ? 'contain' : clip.fit ?? 'contain'}
+                style={StyleSheet.absoluteFill} /></EditorTransformLayer>;
     }
     return <><EditorTransformLayer clip={clip} media={fittedMedia} frameStore={frameStore}>
         <EditorVideo key={key} source={source} clip={clip} frameStore={frameStore} fps={fps} playing={playing} label={media.name || t('editor.video')}

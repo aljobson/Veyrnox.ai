@@ -41,7 +41,7 @@ export function EditorMotionHandle({ timeline, selection, actions }: MotionHandl
     if (!visible || !value) return null;
     const position = ghost ?? value;
     const labels = { left: t('editorMotion.left'), right: t('editorMotion.right'), up: t('editorMotion.up'), down: t('editorMotion.down') };
-    return <View testID="editor-motion-layout" pointerEvents="box-none" style={StyleSheet.absoluteFill}
+    return <View testID="editor-motion-layout" pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.layout]}
         onLayout={event => { const { width, height } = event.nativeEvent.layout; setSize({ width, height }); }}>
         <View {...responder.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel={rawText(t('editorMotion.position'))}
             accessibilityValue={{ text: rawText(t('editorMotion.positionValue', { x: formatNumber(position.x * 100, 0), y: formatNumber(position.y * 100, 0) })) }}
@@ -55,5 +55,5 @@ export function EditorMotionHandle({ timeline, selection, actions }: MotionHandl
             }} style={[styles.handle, { left: position.x * size.width - 22, top: position.y * size.height - 22 }]} />
     </View>;
 }
-const styles = StyleSheet.create({ handle: { position: 'absolute', width: 44, height: 44, borderRadius: 22, borderWidth: 2,
+const styles = StyleSheet.create({ layout: { direction: 'ltr' }, handle: { position: 'absolute', width: 44, height: 44, borderRadius: 22, borderWidth: 2,
     borderColor: colors.accent, backgroundColor: colors.surface } });

@@ -11,9 +11,12 @@ import { evaluatedTransform, motionPreset } from '../../../app/veyrnox/_lib/edit
 const mockGestures: any[] = [];
 jest.mock('react-native', () => {
     const actual = jest.requireActual('react-native');
-    return Object.defineProperty(Object.create(actual), 'PanResponder', { value: {
+    const mocked = Object.create(actual);
+    Object.defineProperty(mocked, 'PanResponder', { value: {
         create: (config: unknown) => { mockGestures.push(config); return { panHandlers: {} }; },
     } });
+    Object.defineProperty(mocked, 'I18nManager', { value: { ...actual.I18nManager, isRTL: true } });
+    return mocked;
 });
 void View;
 const clip: Clip = { id: 'v1', start: 0, len: 90, mediaId: 'm', in: 0, volume: 1, transition: 0, trackId: 'video-0', fit: 'cover' };
@@ -35,6 +38,7 @@ test.each([{ x: .75 }, { rotation: 45 }, { scale: 1.5 }])('Cover transforms the 
     await act(async () => root.render(<EditorTransformLayer clip={c} media={media} frameStore={store}><View /></EditorTransformLayer>));
     const outer = root.container.queryAll(n => n.props.testID === 'editor-transform-layout')[0];
     await act(async () => outer.props.onLayout({ nativeEvent: { layout: { width: 200, height: 200 } } }));
+    expect(StyleSheet.flatten(outer.props.style)).toMatchObject({ direction: 'ltr' });
     const inner = root.container.queryAll(n => n.props.testID === 'editor-transform-picture')[0];
     const style = StyleSheet.flatten(inner.props.style);
     expect(style).toMatchObject({ width: 400, height: 200, left: -100, top: 0, ...previewTransformStyle(c, 0, 200, 200) });
@@ -56,6 +60,8 @@ test('handle visibility follows the rendered clip, and drag/action commits use s
     await act(async () => root.render(<Harness />));
     const layout = () => root.container.queryAll(n => n.props.testID === 'editor-motion-layout')[0];
     await act(async () => layout().props.onLayout({ nativeEvent: { layout: { width: 200, height: 100 } } }));
+    expect(StyleSheet.flatten(layout().props.style)).toMatchObject({ direction: 'ltr' });
+    expect(StyleSheet.flatten(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0].props.style)).toMatchObject({ left: 48, top: 28 });
     const gesture = mockGestures.at(-1);
     await act(async () => { gesture.onPanResponderGrant(); gesture.onPanResponderMove(null, { dx: 400, dy: -400 }); });
     expect(applyTimeline).not.toHaveBeenCalled();
@@ -79,8 +85,7 @@ test('handle visibility follows the rendered clip, and drag/action commits use s
     for (const state of ['locked', 'hidden', 'overlap', 'outside'] as const) {
         tl.tracks[0].locked = state === 'locked'; tl.tracks[0].hidden = state === 'hidden';
         tl.video = state === 'overlap' ? [{ ...clip }, { ...clip, id: 'v2' }] : [{ ...clip }];
-        frameStore.set(state === 'outside' ? 90 : 0);
-        await act(async () => root.render(<Harness />));
+        await act(async () => { frameStore.set(state === 'outside' ? 90 : 0); root.render(<Harness />); });
         expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')).toHaveLength(0);
     }
     await act(async () => root.unmount());
@@ -103,9 +108,12 @@ test('decoded image dimensions fix Cover fitting when catalog dimensions are unk
         media={{ id: 'm', kind, width: 0, height: 0 }} frameStore={frameStore} fps={30} playing={false} localUri="file://media" />));
     const outer = root.container.queryAll(n => n.props.testID === 'editor-transform-layout')[0];
     await act(async () => outer.props.onLayout({ nativeEvent: { layout: { width: 200, height: 200 } } }));
+    const image = () => root.container.queryAll(n => n.props.testID === 'decoded-image')[0];
+    expect(image().props.contentFit).toBe('cover');
     await act(async () => {
-        root.container.queryAll(n => n.props.testID === 'decoded-image')[0].props.onLoad({ source: { width: 400, height: 200 } });
+        image().props.onLoad({ source: { width: 400, height: 200 } });
     });
+    expect(image().props.contentFit).toBe('contain');
     expect(StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'editor-transform-picture')[0].props.style)).toMatchObject({ width: 400, height: 200, left: -100 });
     await act(async () => root.unmount());
 });
