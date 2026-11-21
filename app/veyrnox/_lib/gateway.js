@@ -206,13 +206,19 @@ async function sendGateway(path, init = {}, brandRetried = false, brandSnapshot,
 // account and brand so one person's read is never handed to another. A spend or refund event drops what is
 // in flight, so a read asked for after it never joins a request that began before it.
 const inFlightReads = new Map();
-if (typeof window !== 'undefined') window.addEventListener('veyrnox:balance-changed', () => inFlightReads.clear());
+let listeningForBalance = false;
+function dropReadsOnBalanceChange() {
+  if (listeningForBalance || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+  listeningForBalance = true;
+  window.addEventListener('veyrnox:balance-changed', () => inFlightReads.clear());
+}
 
 export function gatewayFetch(path, init = {}, brandRetried = false, brandSnapshot, mfaRetried = false) {
   const plainRead = String(init.method || 'GET').toUpperCase() === 'GET'
     && Object.keys(init).every(key => key === 'method')
     && !brandRetried && brandSnapshot === undefined && !mfaRetried;
   if (!plainRead) return sendGateway(path, init, brandRetried, brandSnapshot, mfaRetried);
+  dropReadsOnBalanceChange();
   const key = `${getSession()?.user?.id ?? ''}|${getSelectedSocialBrand() ?? ''}|${path}`;
   let shared = inFlightReads.get(key);
   if (!shared) {
