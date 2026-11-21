@@ -10,6 +10,7 @@ const binding = new Set<string>(BINDING_ENGLISH_KEYS);
 const appKeys = Object.keys(en).filter(key => !webKeys.includes(key));
 const slots = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 const complete = Object.entries(APP_CATALOGS) as [LocaleCode, Record<string, string>][];
+const studioKeys = ['studio.eyebrow', 'studio.summary', 'studio.projectsBody', 'studio.beatsBody', 'tabs.studio'] as const;
 // A suffix alone is not a plural family: share.review.one is an ordinary label.
 const bases = Object.keys(en).filter(key => key.endsWith('.one') && Object.hasOwn(en, key.slice(0, -4) + '.other')).map(key => key.slice(0, -4));
 const pluralBase = (key: string) => {
@@ -21,6 +22,12 @@ const sourceFor = (key: string) => english[key] ?? english[`${pluralBase(key)}.o
 test('all eleven languages are enabled in LANGUAGES order with complete app catalogs', () => {
     expect(ACTIVE_LOCALES).toEqual(LANGUAGES.map(language => language.code));
     expect(ACTIVE_LOCALES).toEqual(['en', ...complete.map(([locale]) => locale)]);
+});
+test.each(complete)('%s owns all Studio directory copy without English fallback', (_locale, own) => {
+    for (const key of studioKeys) expect(Object.hasOwn(own, key)).toBe(true);
+});
+test('Studio summary only promises workspaces available in every build', () => {
+    expect(en['studio.summary']).not.toMatch(/\bfilm\b/i);
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));

@@ -35,6 +35,16 @@ export function AvatarButton({ palette: override }: { palette?: Palette }) {
         </Pressable>
     );
 }
+export function SearchButton({ palette: override }: { palette?: Palette }) {
+    const palette = usePalette(override);
+    const styles = useThemedStyles(sheets);
+    const router = useRouter();
+    return (
+        <Pressable accessibilityRole="button" accessibilityLabel={t('srch.title')} style={({ pressed }) => [styles.hit, pressed && styles.pressed]} onPress={() => router.push('/search')}>
+            <Icon name="search" tint={palette.text} />
+        </Pressable>
+    );
+}
 export function ThemeButton({ palette: override }: { palette?: Palette }) {
     const palette = usePalette(override);
     const styles = useThemedStyles(sheets);
@@ -57,6 +67,7 @@ export function HeaderRight({ palette }: { palette?: Palette }) {
     const styles = useThemedStyles(sheets);
     return (
         <View style={styles.row}>
+            <SearchButton palette={palette} />
             <CreditsChip palette={palette} />
             <AvatarButton palette={palette} />
         </View>

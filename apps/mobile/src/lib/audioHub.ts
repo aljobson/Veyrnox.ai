@@ -5,11 +5,12 @@ import { creativeFeature } from './creativeFeatures';
 import type { MenuIcon } from './menuIcons';
 import { audioFamily, starterModel } from './createOptions';
 import { estimateCredits, kindOf, type CatalogModel } from './media';
+import { audioFeatureIds } from './featureRegistry';
 
 export type AudioStudioId = 'yourMusic' | 'music' | 'speech' | 'dialogue' | 'dub' | 'lipSync' | 'dubbing' | 'talkingPhoto' | 'singingPhoto';
 export type AudioHubId = Exclude<AudioStudioId, 'dub'>;
-export const AUDIO_STUDIOS = ['music', 'speech', 'dialogue'] as const;
-export const AUDIO_PERFORMANCES = ['lipSync', 'dubbing', 'talkingPhoto', 'singingPhoto'] as const;
+export const AUDIO_STUDIOS = audioFeatureIds('studios') as readonly AudioHubId[];
+export const AUDIO_PERFORMANCES = audioFeatureIds('performance') as readonly AudioHubId[];
 export const AUDIO_ICONS = {
     yourMusic: 'vinylRecord', music: 'audio', speech: 'microphone', dialogue: 'chatsCircle',
     lipSync: 'waveform', dubbing: 'monitorPlay', talkingPhoto: 'userSound', singingPhoto: 'pianoKeys',

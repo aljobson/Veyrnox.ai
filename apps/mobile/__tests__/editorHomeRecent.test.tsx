@@ -4,8 +4,11 @@ import EditorHome from '../src/app/(app)/(tabs)/editor';
 import { notifyProjectsChanged } from '../src/lib/projectsChanged';
 
 jest.setTimeout(30000);
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }), useFocusEffect: (callback: () => void | (() => void)) => require('react').useEffect(() => callback(), [callback]) }));
-jest.mock('../src/lib/editorFlag', () => ({ __esModule: true, EDITOR_ENABLED: true }));
+const mockPush = jest.fn();
+let mockEditorEnabled = true;
+const mockReact = jest.requireActual<typeof import('react')>('react');
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }), useFocusEffect: (callback: () => void | (() => void)) => mockReact.useEffect(() => callback(), [callback]) }));
+jest.mock('../src/lib/editorFlag', () => ({ __esModule: true, get EDITOR_ENABLED() { return mockEditorEnabled; } }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('../src/components/editor/BestCutEntry', () => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -21,7 +24,7 @@ const mockApi = { request: async (path: string) => {
 } };
 const row = (id: string, name: string, extra: Record<string, unknown> = {}) => ({ id, workspace_id: 'w1', name, version: 1, created_at: '2026-11-15T17:38:00Z', updated_at: '2026-11-15T17:38:00Z', ...extra });
 let root: Root;
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); requests.length = 0; });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); requests.length = 0; mockPush.mockClear(); mockEditorEnabled = true; });
 afterEach(async () => { await act(async () => root.unmount()); });
 const text = () => root.container.queryAll(n => Array.isArray(n.children) && n.children.some(c => typeof c === 'string')).map(n => n.children.filter(c => typeof c === 'string').join(''));
 const listLoads = () => requests.filter(p => p.includes('?workspace_id=')).length;
@@ -63,4 +66,22 @@ test('a quiet refresh that fails keeps the rows and shows the retry', async () =
     const lines = text();
     expect(lines).toContain('KEEP ME');
     expect(lines.some(l => /busy|try again/i.test(l))).toBe(true);
+});
+
+test('Studio keeps native workspaces reachable when Professional Editor is off', async () => {
+    mockEditorEnabled = false;
+    await act(async () => root.render(<EditorHome />));
+    const lines = text();
+    expect(requests).toHaveLength(0);
+    expect(lines).toContain('Studio');
+    expect(lines).toContain('Projects');
+    expect(lines).toContain('Beat maker');
+    expect(lines).toContain('Smart Cut');
+    expect(lines).not.toContain('Professional editor');
+    expect(lines).not.toContain('Editor is not available in this build.');
+    const refreshables = root.container.queryAll(node => Object.hasOwn(node.props, 'refreshing'));
+    expect(refreshables).toHaveLength(1);
+    expect(refreshables[0]?.props.refreshing).toBe(false);
+    expect(refreshables[0]?.props.onRefresh).toBeUndefined();
+
 });

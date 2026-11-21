@@ -29,7 +29,7 @@ describe('tab shell', () => {
         const layout = read(path.join(TABS, '_layout.tsx'));
         const named = [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) => m[1]);
         expect(named).toEqual(ORDER);
-        for (const key of ['explore', 'create', 'editor', 'cinema', 'library', 'publish', 'account']) {
+        for (const key of ['explore', 'create', 'studio', 'cinema', 'library', 'publish', 'account']) {
             expect((en as Record<string, string>)[`tabs.${key}`]).toEqual(expect.any(String));
         }
         // Every tab has its own spoken label and its label growth is capped like the header's.
@@ -39,20 +39,26 @@ describe('tab shell', () => {
         expect(layout).toContain('maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}');
     });
 
-    test('Editor is a direct destination and recent projects open in the native editor', () => {
+    test('Studio keeps the stable editor route and gates only editor-specific actions', () => {
+        const layout = read(path.join(TABS, '_layout.tsx'));
         const editor = read(path.join(TABS, 'editor.tsx'));
+        expect(layout).toContain("title: t('tabs.studio')");
+        expect(layout).toContain("tabBarIcon: tabIcon('scissors')");
+        expect(layout).not.toContain('href: EDITOR_ENABLED');
         expect(editor).toContain("pathname: '/editor/new'");
         expect(editor).toContain("params: { blank: '1' }");
         expect(editor).toContain("pathname: '/editor/[projectId]'");
-        expect(editor).toContain("router.push('/projects')");
-        // Cinema remains available from the drawer after giving its tab slot to Editor.
-        expect(read(path.join(__dirname, '..', 'src', 'lib', 'menu.ts'))).toContain("href: '/cinema'");
+        expect(editor).toContain("mobileFeature('projects')");
+        expect(editor).toContain("mobileFeature('beats')");
+        // Cinema remains available through the registry-backed drawer after giving its tab slot to Studio.
+        expect(read(path.join(__dirname, '..', 'src', 'lib', 'featureRegistry.ts'))).toContain("href: '/cinema'");
     });
 
-    test('the tab header carries the credits chip and the avatar', () => {
+    test('the tab header carries global search, credits and the avatar', () => {
         const layout = read(path.join(TABS, '_layout.tsx'));
         expect(layout).toMatch(/headerRight:\s*\(\)\s*=>\s*<HeaderRight/);
         const chips = read(path.join(__dirname, '..', 'src', 'components', 'HeaderChips.tsx'));
+        expect(chips).toContain("router.push('/search')");
         expect(chips).toContain("router.push('/credits')");
         expect(chips).toContain("router.push('/account')");
     });
