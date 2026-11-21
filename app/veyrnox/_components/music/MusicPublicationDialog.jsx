@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '../../../../components/I18nProvider';
 import { gatewayFetch } from '../../_lib/gateway';
 
 const key = () => `publish.${globalThis.crypto.randomUUID()}`;
@@ -10,6 +11,7 @@ const key = () => `publish.${globalThis.crypto.randomUUID()}`;
 const MusicRankingOptIn = dynamic(() => import('./MusicLabsRank').then((module) => module.MusicRankingOptIn), { ssr: false });
 
 export function MusicPublicationDialog({ song, onClose }) {
+  const { t } = useI18n();
   const rootRef = useRef(null);
   const closeRef = useRef(null);
   const attemptRef = useRef(null);
@@ -73,6 +75,7 @@ export function MusicPublicationDialog({ song, onClose }) {
       setNotice('Published. You can unpublish immediately without affecting the private original.');
     } catch (reason) {
       const messages = {
+        publication_blocked: t('music.publication.blocked'),
         handle_taken: 'That creator handle is already in use.',
         publication_not_allowed: 'This track did not pass the independent publication policy check.',
         rights_confirmation_required: 'Confirm publication permission before continuing.',

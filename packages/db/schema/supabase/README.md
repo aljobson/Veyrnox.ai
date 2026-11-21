@@ -114,6 +114,9 @@ Later publication/comment changes must target the private implementations
 Keep the public wrappers: they mint opaque actor ids after successful writes.
 Replacing a public wrapper without calling `private.music_actor_id` loses that
 guarantee; `tests/musicBlocksProjection.test.mjs` guards later migrations.
+Migration 0576 adds the per-song takedown refusal in the private publication
+implementation only. Moderation must UPDATE the existing publication row so
+the publish lock serializes with the takedown (ADR-0369).
 
 ### Every applied migration must be accounted for
 
