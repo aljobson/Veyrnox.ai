@@ -24,7 +24,7 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(99);
+    expect(unused).toHaveLength(101);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
@@ -97,4 +97,37 @@ test.each([
         const value = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(seconds);
         expect(tr.t(key, { value })).toBe(fill(template, { value }, locale === 'ar'));
     }
+});
+
+test('Korean shortened sound announcement preserves both name particle forms and slots', () => {
+    const template = '{time}에 {name}을(를) 추가하고 동영상과 함께 끝나도록 줄였습니다.';
+    expect(CATALOGS.ko!['editorAudioTools.addedTrimmed']).toBe(template);
+    expect(slots(template)).toEqual(['{name}', '{time}']);
+});
+test('HSL labels include the channel in every catalog, and Tint differs from Hue in French and Portuguese', () => {
+    for (const [locale, catalog] of [['en', english], ...complete] as [string, Record<string, string>][]) {
+        for (const key of ['hue', 'saturation', 'luminance']) {
+            expect(catalog[`editorLook.hsl.${key}`]).toContain('{channel}');
+            expect(createTranslator(locale as LocaleCode, CATALOGS).t(`editorLook.hsl.${key}`, { channel: 'CHANNEL' })).toContain('CHANNEL');
+        }
+    }
+    for (const locale of ['fr', 'pt'] as const) {
+        expect(APP_CATALOGS[locale]['editorLook.parameter.tint']).not.toBe(APP_CATALOGS[locale]['editorLook.parameter.hue']);
+    }
+});
+test.each([['es', 'Imagen'], ['fr', 'Image'], ['pt', 'Imagem'], ['ru', 'Изображение']])('background Image is capitalized in %s', (locale, label) => {
+    expect(APP_CATALOGS[locale as keyof typeof APP_CATALOGS]['editorLook.background.image']).toBe(label);
+});
+
+test('French HSL labels avoid elision errors and Hindi hue uses रंगत', () => {
+    const fr = createTranslator('fr', CATALOGS), hi = createTranslator('hi', CATALOGS);
+    for (const [key, label] of [['hue', 'teinte'], ['saturation', 'saturation'], ['luminance', 'luminance']]) {
+        expect(APP_CATALOGS.fr[`editorLook.hsl.${key}` as keyof typeof APP_CATALOGS.fr]).toBe(`{channel} : ${label}`);
+        for (const channel of ['red', 'orange']) {
+            expect(fr.t(`editorLook.hsl.${key}`, { channel: fr.t(`editorLook.channel.${channel}`) }))
+                .toBe(`${fr.t(`editorLook.channel.${channel}`)} : ${label}`);
+        }
+    }
+    expect(APP_CATALOGS.hi['editorLook.hsl.hue']).toBe('{channel} की रंगत');
+    expect(hi.t('editorLook.hsl.hue', { channel: hi.t('editorLook.channel.red') })).toBe(`${hi.t('editorLook.channel.red')} की रंगत`);
 });

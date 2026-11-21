@@ -78,3 +78,57 @@ Frozen-order deviations and unresolved qualification:
 The goal is met when all required host proof passes, source-hold interleavings
 and replay are verified, 375 px and 1280 px sheets are checked in both themes,
 and the owner approves D6, migration application and a staging-first flag flip.
+
+**Amendment 2 (2026-11-20, native N8; touches money routes).** No new flag is
+introduced. Generation quotes check `musicBeatAiEnabled()` immediately after
+JSON decoding, before parsing or an RPC, when the body selects `ace-step-loop`.
+With the flag off the response is 404 `beat_ai_unavailable`, with no quote row.
+
+For submission, only while Beat AI is off, the service-role select first resolves
+the authenticated user's internal id, then reads that user's quote by its already
+validated UUID (`model_id,consumed_at`, limit one). An own, unconsumed beat quote
+gets 503 `beat_ai_unavailable`, `Retry-After: 60`, before `music_submit_pair`.
+This is deliberately retryable: the read can race an original transaction that
+has not yet committed. The web and phone keep the receipt and idempotency key.
+Consumed quotes continue to the atomic replay RPC without a new debit. Other
+models and foreign/missing quote ids continue unchanged; ownership is not
+revealed. A failed select logs no vendor error text and fails closed with 502
+`temporarily_unavailable` for every key: the model is unknown and the client
+chooses the idempotency key, so a key prefix cannot be trusted. While Beat AI is
+off, a failed read therefore also refuses ordinary Create. With Beat AI on, neither select runs. Responses are no-store.
+
+The phone probes with exactly `{"model_id":"ace-step-loop"}`. A 400 means on;
+a 404 or `_unavailable` code means off; a 401 means signed out; a transport error
+means offline; any other response (including 2xx) fails closed. The probe is per
+editor mount and account, never shared across accounts. The incomplete body
+cannot create a quote. The phone uses the existing API owner fence for every
+request, and fences async state, placement and receipt retirement by editor mount
+and authentication generation.
+
+Phone receipts include the original server quote and persist before submission,
+under owner + beat namespaces. One key per quote is reused after ambiguous
+failures, 401, rate-limit Retry-After, or flag changes. Relaunch recovery only GETs;
+unacknowledged requests show the original price before an explicit retry. AI
+results use shared deterministic placement ids and the N2 history/store path;
+retirement follows flush and verification of the saved document. Magic success
+candidates remain durable until a layer is saved or the person discards results.
+
+Native parity gaps agreed for N8: Split stems remains disabled with web-editor
+copy because React Native lacks the ZIP loader's streaming decompression APIs.
+Target stem remains available.
+
+Repository configuration at this amendment: `wrangler.jsonc` sets `beatAi: true`
+and `magicBar: false` for production and staging (the live Worker was not read).
+With that configuration the guards take their on branch and add no reads, the
+probe reports on, and a phone build containing N8 can quote and charge for
+Generate, Target stem, Extend and Replace. The phone Magic Bar is built but off
+(`MAGIC_BAR_ON_PHONE`): `magicBar` has no API-visible state and its quotes use the
+public `ace-step-1.5` Create model, which the guard does not cover. Magic layers are owner-scoped sidecar files, at most four; playback
+is explicitly unavailable in this slice. AI audio track playback depends on
+N6/N7; audio tracks show no drum kit picker in the native mixer. Source
+operations use an additive audio-region picker until region selection lands.
+Native metadata decoding is not device-qualified by this work order. Encoded
+size, header/channel/duration and PCM admission precede decoding; one decoder
+runs at a time and temporary files/contexts are cleaned up. The native adapter
+requires a valid bounded range response for header inspection (including when
+signing supplied size); a server without range support fails closed.

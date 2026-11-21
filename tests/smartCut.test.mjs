@@ -295,3 +295,15 @@ test('Smart Cut has a mobile-first path from home to a review-ready editor', () 
   assert.match(library, /smartCut=\{smartCutIntent\}/);
   assert.match(library, /bottom-\[calc\(4\.5rem\+env\(safe-area-inset-bottom,0px\)\)\]/);
 });
+
+test('Smart Cut leads the Library page, ahead of the title, filters and every asset list', () => {
+  const library = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
+  const entry = readFileSync(new URL('../app/veyrnox/_components/SmartCutEntry.js', import.meta.url), 'utf8');
+  const smartCut = library.indexOf('<SmartCutEntry');
+  assert.ok(smartCut > 0);
+  for (const later of ['data-testid="library-title"', '<DeviceLibrary', '<EditorLibraryRenders', '<FilmLibraryMasters', 'id="library-assets"']) {
+    assert.ok(smartCut < library.indexOf(later), `Smart Cut renders before ${later}`);
+  }
+  assert.match(library, /smartCutIntent\s+\? <h2 data-testid="library-title"[^\n]+\n\s+: <h1 data-testid="library-title"/);
+  assert.match(entry, /<h1 id="smart-cut-entry-title"/);
+});

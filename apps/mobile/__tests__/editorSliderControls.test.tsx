@@ -23,7 +23,7 @@ beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = c
 afterEach(async () => { await act(async () => root.unmount()); });
 test('adjustable announces value and commits one accessible step, respecting disabled and bounds', async () => {
     const onChange = jest.fn();
-    for (const [value, disabled, expected] of [[1, false, 1.1], [8, false, 8], [1, true, null]] as const) {
+    for (const [value, disabled, expected] of [[1, false, 1.1], [8, false, null], [1, true, null]] as const) {
         onChange.mockClear();
         await act(async () => root.render(<Slider label="Speed" value={value} min={.1} max={8} step={.1}
             format={v => `${v}×`} disabled={disabled} onChange={onChange} />));
@@ -173,4 +173,12 @@ test.each([[2, 1], [1, 1]])('empty slider interval %s..%s blocks drag and access
         });
         expect(onChange).not.toHaveBeenCalled();
     } finally { spy.mockRestore(); }
+});
+
+test.each([[0, 'decrement'], [1, 'increment']] as const)('accessibility action at bound %s does not call onChange', async (value, actionName) => {
+    const onChange = jest.fn();
+    await act(async () => root.render(<Slider label="Bound" value={value} min={0} max={1} step={.1} format={String} onChange={onChange} />));
+    const node = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0];
+    await act(async () => node.props.onAccessibilityAction({ nativeEvent: { actionName } }));
+    expect(onChange).not.toHaveBeenCalled();
 });

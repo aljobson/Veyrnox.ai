@@ -1,5 +1,29 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "منخفض",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "متوسط",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.pitch",
+    "english": "Pitch",
+    "translation": "طبقة الصوت",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
     "id": "beatLabs.audition",
     "english": "Audition",
     "translation": "استماع تجريبي",
@@ -2190,6 +2214,18 @@
     "ratio": 1.63
   },
   {
+    "id": "beatAi.magic",
+    "english": "Magic Bar",
+    "translation": "المازورة السحرية",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "المقام",
+    "ratio": 2
+  },
+  {
     "id": "speech.audition.generate.zero",
     "english": "Generate {count} auditions",
     "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
@@ -2326,6 +2362,96 @@
     "english": "Ease out",
     "translation": "نهاية تدريجية",
     "ratio": 1.63
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "المزج",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "المسارات المفصولة",
+    "ratio": 3.4
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "حفظ في مكتبة الموسيقى",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorLook.hsl",
+    "english": "HSL",
+    "translation": "تدرج اللون والتشبع والإضاءة",
+    "ratio": 9
+  },
+  {
+    "id": "editorLook.resetCrop",
+    "english": "Reset crop",
+    "translation": "إعادة ضبط الاقتصاص",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.parameter.hue",
+    "english": "Hue",
+    "translation": "درجة اللون",
+    "ratio": 3.33
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "التمويه",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "صبغة اللون",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.channel.cyan",
+    "english": "Cyan",
+    "translation": "السماوي",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.effect.strobe",
+    "english": "Strobe",
+    "translation": "وميض متكرر",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.effect.posterize",
+    "english": "Posterize",
+    "translation": "تقليل درجات اللون",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorLook.transition.slide-up",
+    "english": "Slide up",
+    "translation": "انزلاق للأعلى",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorLook.transition.blinds",
+    "english": "Blinds",
+    "translation": "ستائر شرائح",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "دوران للداخل",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "التمويه",
+    "ratio": 1.75
   },
   {
     "id": "oauth.signIn",

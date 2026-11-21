@@ -17,8 +17,8 @@ build 1, including f36fe15f from main d726add). So the app on the simulator show
 - `apps/mobile/app.config.js` sets `ios.buildNumber` from the EAS variable
   `VEYRNOX_SIMULATOR_BUILD_NUMBER`, and only when `EAS_BUILD_PROFILE` is `production-simulator`.
   Every other profile returns `app.json` unchanged, so the production counter and its behaviour are
-  not touched. `ios.buildNumber` is excluded from the Expo fingerprint, so the runtime version (OTA
-  compatibility) does not change.
+  not touched. ADR-0369 uses the `appVersion` runtime policy, so the runtime version (OTA
+  compatibility) is `expo.version`; an iOS build-number change does not change it.
 - `apps/mobile/scripts/simulator-build-number.mjs` reads the production number with
   `eas build:version:get -p ios --profile production` (read only, never increments) and stores it
   in that variable (`eas env:set production`, plain text, not secret).
@@ -51,6 +51,7 @@ plutil -extract CFBundleShortVersionString raw "$P"
 
 ## Not covered
 
-The About screen shows the version only. The git commit is not exposed to the app: putting it in
-Expo `extra` would change the fingerprint (and so the runtime version) on every commit, so it was
-left out. The EAS build page shows the commit for each build.
+The About screen shows the version only. The git commit is not exposed to the app because the EAS
+build page already records it. Under ADR-0369, neither Expo `extra` nor a build-number change affects
+the runtime version. Any native library, plugin, SDK or app-config compatibility change must instead
+increment `expo.version` before a production build.

@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Tiefen",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Mitten",
+    "ratio": 2
+  },
+  {
     "id": "beatLabs.controls",
     "english": "Controls",
     "translation": "Bedienelemente",
@@ -4344,6 +4356,72 @@
     "ratio": 3.22
   },
   {
+    "id": "beatAi.extend",
+    "english": "Extend",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonart",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Preis für zwei Loops ermitteln",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatAi.waiting",
+    "english": "Working…",
+    "translation": "Wird bearbeitet…",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.failed",
+    "english": "A result failed or was refunded.",
+    "translation": "Ein Ergebnis ist fehlgeschlagen oder wurde erstattet.",
+    "ratio": 1.66
+  },
+  {
+    "id": "beatAi.mute",
+    "english": "Mute {name}",
+    "translation": "{name} stummschalten",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatAi.a29",
+    "english": "AI parts need an active paid plan.",
+    "translation": "KI-Parts benötigen einen aktiven kostenpflichtigen Tarif.",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatAi.a37",
+    "english": "This price changed. Get a new price.",
+    "translation": "Dieser Preis hat sich geändert. Hole einen neuen Preis ein.",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.a41",
+    "english": "Extend",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
     "id": "speech.audition.addOne",
     "english": "Add one more voice",
     "translation": "Eine weitere Stimme hinzufügen",
@@ -4482,6 +4560,78 @@
     "ratio": 1.63
   },
   {
+    "id": "beatExport.title",
+    "english": "Export",
+    "translation": "Exportieren",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatExport.kind",
+    "english": "Export",
+    "translation": "Exportieren",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mischung",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Einzelspuren",
+    "ratio": 2.4
+  },
+  {
+    "id": "beatExport.loops",
+    "english": "Loops",
+    "translation": "Wiederholungen",
+    "ratio": 2.8
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Exportwerkzeuge werden geladen…",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatExport.renderError",
+    "english": "Could not render this mix. Try again.",
+    "translation": "Dieser Mix konnte nicht gerendert werden. Versuche es erneut.",
+    "ratio": 1.65
+  },
+  {
+    "id": "beatExport.shareError",
+    "english": "Could not share this file. Try again.",
+    "translation": "Diese Datei konnte nicht geteilt werden. Versuche es erneut.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "In Musikbibliothek speichern",
+    "ratio": 2.15
+  },
+  {
+    "id": "beatExport.commit",
+    "english": "Finishing the save…",
+    "translation": "Wird zur Bibliothek hinzugefügt…",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.expired",
+    "english": "This save expired. Try again to start a new save.",
+    "translation": "Dieser Speichervorgang ist abgelaufen. Erneut versuchen, um einen neuen zu starten.",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatExport.changed",
+    "english": "This save changed. Try again to start a new save.",
+    "translation": "Dieser Speichervorgang wurde geändert. Erneut versuchen, um einen neuen zu starten.",
+    "ratio": 1.69
+  },
+  {
     "id": "musicExport.save",
     "english": "Save",
     "translation": "Speichern",
@@ -4504,6 +4654,186 @@
     "english": "The file could not be shared. Tap Save to try again.",
     "translation": "Die Datei konnte nicht geteilt werden. Tippen Sie auf Speichern, um es erneut zu versuchen.",
     "ratio": 1.75
+  },
+  {
+    "id": "editorLook.blend",
+    "english": "Blend",
+    "translation": "Mischmodus",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.crop",
+    "english": "Crop",
+    "translation": "Zuschneiden",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorLook.resetCrop",
+    "english": "Reset crop",
+    "translation": "Zuschnitt zurücksetzen",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorLook.addPoint",
+    "english": "Add point",
+    "translation": "Punkt hinzufügen",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorLook.parameter.hue",
+    "english": "Hue",
+    "translation": "Farbton",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "Unschärfe",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "Farbtonkorrektur",
+    "ratio": 4
+  },
+  {
+    "id": "editorLook.category.Basic",
+    "english": "Basic",
+    "translation": "Grundlagen",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.category.Glitch",
+    "english": "Glitch",
+    "translation": "Bildstörung",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorLook.category.Blend",
+    "english": "Blend",
+    "translation": "Mischmodus",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.category.Wipe",
+    "english": "Wipe",
+    "translation": "Wischen",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.category.Move",
+    "english": "Move",
+    "translation": "Bewegung",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.effect.soft-glow",
+    "english": "Soft glow",
+    "translation": "Sanftes Leuchten",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorLook.effect.strobe",
+    "english": "Strobe",
+    "translation": "Stroboskop",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.dip-black",
+    "english": "Dip to black",
+    "translation": "Über Schwarz blenden",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.blur",
+    "english": "Blur dissolve",
+    "translation": "Unscharfes Überblenden",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorLook.transition.wipe-left",
+    "english": "Wipe left",
+    "translation": "Nach links wischen",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.wipe-right",
+    "english": "Wipe right",
+    "translation": "Nach rechts wischen",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.wipe-up",
+    "english": "Wipe up",
+    "translation": "Nach oben wischen",
+    "ratio": 2.43
+  },
+  {
+    "id": "editorLook.transition.wipe-down",
+    "english": "Wipe down",
+    "translation": "Nach unten wischen",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.slide-left",
+    "english": "Slide left",
+    "translation": "Nach links schieben",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.slide-right",
+    "english": "Slide right",
+    "translation": "Nach rechts gleiten",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorLook.transition.slide-up",
+    "english": "Slide up",
+    "translation": "Nach oben gleiten",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorLook.transition.slide-down",
+    "english": "Slide down",
+    "translation": "Nach unten gleiten",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.transition.push",
+    "english": "Push",
+    "translation": "Schieben",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.glitch",
+    "english": "Glitch",
+    "translation": "Bildstörung",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorLook.blend.multiply",
+    "english": "Multiply",
+    "translation": "Multiplizieren",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.blend.screen",
+    "english": "Screen",
+    "translation": "Negativ multiplizieren",
+    "ratio": 3.67
+  },
+  {
+    "id": "editorLook.background.solid",
+    "english": "Solid",
+    "translation": "Einfarbig",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "Unschärfe",
+    "ratio": 2.25
   },
   {
     "id": "recovery.retry",

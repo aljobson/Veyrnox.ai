@@ -61,3 +61,12 @@ export function editorSourceTimeSeconds(clip: Clip, frame: number, fps: number):
 export function editorPlaybackRate(clip: Clip, frame: number): number {
     return clip.freezeFrame !== undefined ? 0 : Math.max(.1, Math.min(16, speedAt(clip, Math.max(0, frame - clip.start))));
 }
+
+/** Schema-3 fades multiply, including their overlap, before the native player's final clamp. */
+export function editorClipGain(clip: Clip, frame: number): number {
+    const clamp = (n: number) => Math.max(0, Math.min(1, n));
+    const end = clip.start + clip.len, fadeOutStart = Math.max(clip.start, end - (clip.fadeOut ?? 0));
+    const entering = clip.fadeIn ? clamp((frame - clip.start) / clip.fadeIn) : 1;
+    const leaving = clip.fadeOut ? clamp((end - frame) / Math.max(1, end - fadeOutStart)) : 1;
+    return clamp((clip.volume ?? 1) * entering * leaving);
+}

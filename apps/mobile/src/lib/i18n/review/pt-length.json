@@ -1,5 +1,65 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Médios",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.none",
+    "english": "None",
+    "translation": "Nenhuma",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "editorAudioTools.tremoloRate",
+    "english": "Tremolo rate",
+    "translation": "Frequência do tremolo",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.tremoloDepth",
+    "english": "Tremolo depth",
+    "translation": "Profundidade do tremolo",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorAudioTools.echoDecay",
+    "english": "Echo decay",
+    "translation": "Decaimento do eco",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorAudioTools.echoMix",
+    "english": "Echo mix",
+    "translation": "Mistura do eco",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.noMatches",
+    "english": "No sounds match.",
+    "translation": "Nenhum som correspondente.",
+    "ratio": 1.63
+  },
+  {
     "id": "beatLabs.unavailable",
     "english": "Not on the phone editor yet.",
     "translation": "Ainda não está disponível no editor do telemóvel.",
@@ -4014,6 +4074,36 @@
     "ratio": 1.82
   },
   {
+    "id": "beatAi.magic",
+    "english": "Magic Bar",
+    "translation": "Compasso mágico",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalidade",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calcular preço de dois loops",
+    "ratio": 1.87
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Verificar novamente",
+    "ratio": 1.73
+  },
+  {
     "id": "beat.region.later",
     "english": "Move later",
     "translation": "Mover para depois",
@@ -4152,6 +4242,72 @@
     "ratio": 1.86
   },
   {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Tentar salvar no Music novamente",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.range",
+    "english": "Range",
+    "translation": "Intervalo",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatExport.cycle",
+    "english": "Cycle range",
+    "translation": "Intervalo do ciclo",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mixagem",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Faixas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "beatExport.depth",
+    "english": "Bit depth",
+    "translation": "Profundidade de bits",
+    "ratio": 2.22
+  },
+  {
+    "id": "beatExport.loops",
+    "english": "Loops",
+    "translation": "Repetições",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Carregando ferramentas de exportação…",
+    "ratio": 2.18
+  },
+  {
+    "id": "beatExport.retryShare",
+    "english": "Retry render and share",
+    "translation": "Tentar renderizar e compartilhar novamente",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatExport.shareError",
+    "english": "Could not share this file. Try again.",
+    "translation": "Não foi possível compartilhar este arquivo. Tente novamente.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "Salvar na biblioteca de Música",
+    "ratio": 2.31
+  },
+  {
     "id": "musicExport.choose",
     "english": "File format",
     "translation": "Formato do arquivo",
@@ -4162,6 +4318,198 @@
     "english": "Try again",
     "translation": "Tentar novamente",
     "ratio": 1.78
+  },
+  {
+    "id": "editorLook.blend",
+    "english": "Blend",
+    "translation": "Mesclagem",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.crop",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.resetCrop",
+    "english": "Reset crop",
+    "translation": "Redefinir recorte",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorLook.addPoint",
+    "english": "Add point",
+    "translation": "Adicionar ponto",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.parameter.hue",
+    "english": "Hue",
+    "translation": "Matiz",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "Desfoque",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "Tonalidade",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.channel.red",
+    "english": "Red",
+    "translation": "Vermelho",
+    "ratio": 2.67
+  },
+  {
+    "id": "editorLook.category.Glitch",
+    "english": "Glitch",
+    "translation": "Interferência",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.category.Blend",
+    "english": "Blend",
+    "translation": "Mesclagem",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.category.Wipe",
+    "english": "Wipe",
+    "translation": "Varredura",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.category.Move",
+    "english": "Move",
+    "translation": "Movimento",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.effect.grain",
+    "english": "Film grain",
+    "translation": "Granulação de filme",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.effect.scanlines",
+    "english": "Scanlines",
+    "translation": "Linhas de varredura",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorLook.effect.tiles",
+    "english": "Motion tiles",
+    "translation": "Mosaico em movimento",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.dip-black",
+    "english": "Dip to black",
+    "translation": "Transição para preto",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.wipe-left",
+    "english": "Wipe left",
+    "translation": "Varredura à esquerda",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorLook.transition.wipe-right",
+    "english": "Wipe right",
+    "translation": "Varredura à direita",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.wipe-up",
+    "english": "Wipe up",
+    "translation": "Varredura para cima",
+    "ratio": 2.71
+  },
+  {
+    "id": "editorLook.transition.wipe-down",
+    "english": "Wipe down",
+    "translation": "Varredura para baixo",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorLook.transition.slide-left",
+    "english": "Slide left",
+    "translation": "Deslizar à esquerda",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.slide-right",
+    "english": "Slide right",
+    "translation": "Deslizar para a direita",
+    "ratio": 2.09
+  },
+  {
+    "id": "editorLook.transition.slide-up",
+    "english": "Slide up",
+    "translation": "Deslizar para cima",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.transition.slide-down",
+    "english": "Slide down",
+    "translation": "Deslizar para baixo",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.clock-wipe",
+    "english": "Clock wipe",
+    "translation": "Varredura de relógio",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.push",
+    "english": "Push",
+    "translation": "Empurrar",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "Entrada giratória",
+    "ratio": 2.43
+  },
+  {
+    "id": "editorLook.transition.whip-pan",
+    "english": "Whip pan",
+    "translation": "Panorâmica rápida",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorLook.transition.glitch",
+    "english": "Glitch",
+    "translation": "Interferência",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.crop.x",
+    "english": "Left",
+    "translation": "Esquerda",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.solid",
+    "english": "Solid",
+    "translation": "Cor sólida",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "Desfoque",
+    "ratio": 2
   },
   {
     "id": "chrome.privacyPolicy",
