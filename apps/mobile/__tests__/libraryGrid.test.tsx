@@ -6,7 +6,8 @@ import Library from '../src/app/(app)/(tabs)/library';
 import { ApiError } from '../src/lib/api';
 import type { Job } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
-const mockApi = {};
+const mockApi = { request: jest.fn() };
+let mockModality = 'text-to-image';
 const mockMedia = { listJobs: jest.fn(), getJob: jest.fn(), getAsset: jest.fn() };
 const mockPlayer = { addListener: () => ({ remove: jest.fn() }), pause: jest.fn(), play: jest.fn(), replaceAsync: jest.fn().mockResolvedValue(undefined), muted: true };
 let mockAccountChanged: () => void;
@@ -17,7 +18,7 @@ jest.mock('expo-video', () => ({ useVideoPlayer: () => mockPlayer }));
 jest.mock('expo-image', () => ({ Image: (props: any) => require('react').createElement(require('react-native').View, { ...props, testID: 'media-image' }) }));
 jest.mock('../src/lib/videoPoster', () => ({ clearPosters: jest.fn(), posterFor: jest.fn().mockResolvedValue(null) }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: (cb: any) => { mockAccountChanged = cb; return () => {}; }, appCache: { read: async () => null, swr: async ({ fetcher, onData }: any) => { const page = await fetcher(); onData(page); return { meta: null }; } } }));
-jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), mediaApi: () => mockMedia, fetchCatalogCached: async (cb: any) => cb([{ id: 'm', name: 'Model', modality: 'text-to-image' }]) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), mediaApi: () => mockMedia, fetchCatalogCached: async (cb: any) => cb([{ id: 'm', name: 'Model', modality: mockModality }]) }));
 jest.mock('react-native/Libraries/Lists/FlatList', () => ({ __esModule: true, default: (props: any) => {
     mockList = props; const React = require('react'); const { View } = require('react-native');
     return React.createElement(View, null, props.ListHeaderComponent, ...props.data.map((item: Job) => React.createElement(View, { key: item.job_id }, props.renderItem({ item }))), props.ListFooterComponent);
@@ -31,6 +32,10 @@ async function tick(ms = 3000) { await act(async () => { await jest.advanceTimer
 async function render(rows: Job[] = [row('a')], next: any = null) { mockMedia.listJobs.mockResolvedValueOnce({ jobs: rows, next }); await act(async () => root.render(<Library />)); }
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks();
+    mockModality = 'text-to-image'; mockApi.request.mockReset().mockImplementation(async (path: string) => {
+        if (path.endsWith('/shapes')) return { shapes: [] };
+        throw new Error('offline');
+    });
     Object.defineProperty(RN.AppState, 'currentState', { configurable: true, value: 'active' });
     mockMedia.getJob.mockResolvedValue({ state: 'succeeded', credits: 3, model_id: 'm' }); mockMedia.getAsset.mockResolvedValue(file); root = createRoot();
 });
@@ -159,4 +164,46 @@ test('switching to an empty type filter and back keeps today first after older p
     await act(async () => mockList.onEndReached());
     await press(t('library.type.all'));
     expect(mockList.data.map((j: Job) => j.job_id)).toEqual(['today-running', 'today-done', 'nov-10']);
+});
+
+test('Portrait measures a loaded older video that has no viewable id, then shows it', async () => {
+    mockModality = 'text-to-video';
+    const today = { ...row('today', 'succeeded'), video_width: 1920, video_height: 1080 };
+    await render([today], { before: '2026-11-14', before_id: 'today' });
+    const press = (label: string) => act(async () => root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.onClick)[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    await press(t('library.type.video')); await press(t('videoShape.portrait'));
+    expect(mockList.data).toHaveLength(0);
+    let finish!: (value: unknown) => void;
+    mockApi.request.mockImplementation(async (path: string) => {
+        if (path.endsWith('/shapes')) return new Promise(resolve => { finish = resolve; });
+        throw new Error('offline');
+    });
+    const shapeCalls = () => mockApi.request.mock.calls.filter(([path]) => path.endsWith('/shapes'));
+    mockMedia.listJobs.mockResolvedValueOnce({ jobs: [{ ...row('older', 'succeeded'), created_at: '2026-11-10' }], next: null });
+    await act(async () => mockList.onEndReached());
+    expect(mockList.data).toHaveLength(0);
+    expect(shapeCalls()).toHaveLength(1);
+    expect(JSON.parse(shapeCalls()[0][1].body).job_ids).toEqual(['older']);
+    await act(async () => finish({ shapes: [{ job_id: 'older', width: 1080, height: 1920 }] }));
+    expect(mockList.data.map((j: Job) => j.job_id)).toEqual(['older']);
+    await press(t('videoShape.all')); await press(t('videoShape.portrait'));
+    expect(shapeCalls()).toHaveLength(1);
+});
+
+test('Library retries a failed shape batch only after pull-to-refresh completes', async () => {
+    mockModality = 'text-to-video';
+    const video = row('video', 'succeeded');
+    mockApi.request.mockRejectedValue(new Error('offline'));
+    await render([video]);
+    await act(async () => mockList.onViewableItemsChanged({ viewableItems: [{ item: video }] }));
+    const shapeCalls = () => mockApi.request.mock.calls.filter(([path]) => path.endsWith('/shapes'));
+    expect(shapeCalls()).toHaveLength(1);
+    let finish!: (page: { jobs: Job[]; next: null }) => void, refreshed!: Promise<void>;
+    mockMedia.listJobs.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await act(async () => { refreshed = mockList.onRefresh(); });
+    expect(shapeCalls()).toHaveLength(1);
+    await act(async () => { finish({ jobs: [video], next: null }); await refreshed; });
+    expect(shapeCalls()).toHaveLength(2);
+    await tick(60_000);
+    expect(shapeCalls()).toHaveLength(2);
 });

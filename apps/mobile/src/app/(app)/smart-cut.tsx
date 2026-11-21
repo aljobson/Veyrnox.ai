@@ -1,3 +1,5 @@
+import { VideoShapeBadge } from '../../components/VideoShapeBadge';
+import { shapeMismatch, shapeValue } from '../../lib/videoShape';
 import { rawText } from '../../lib/i18n/translate';
 import { randomUUID } from 'expo-crypto';
 import { Stack, useRouter } from 'expo-router';
@@ -18,7 +20,7 @@ import {
     STEP_S,
     clipSeconds,
     editErrorKey,
-    fetchClipShape,
+    fetchClipDimensions,
     mixedShapes,
     moveClip,
     priceChanged,
@@ -196,11 +198,16 @@ export default function SmartCutRoute() {
         setProblem(null);
         setPendingIds((ids) => [...ids, jobId]);
         try {
-            const [media, aspect] = await Promise.all([libraryMedia(api, { jobId, name }, 'video'), fetchClipShape(api, jobId)]);
+            const stored = jobs?.find(job => job.job_id === jobId);
+            const info = stored?.shape_ambiguous || shapeValue(stored?.video_width, stored?.video_height)
+                ? Promise.resolve(null) : fetchClipDimensions(api, jobId);
+            const [media, measured] = await Promise.all([libraryMedia(api, { jobId, name }, 'video'), info]);
+            const video_width = stored?.video_width ?? measured?.width, video_height = stored?.video_height ?? measured?.height;
+            const aspect = stored?.shape_ambiguous ? null : Number(shapeValue(video_width, video_height)) || null;
             if (!alive.current || !task.current()) return;
             if (!media?.frames) { setProblem(t('edit.unreadable')); return; }
             const length = media.frames / 30;
-            const added: Clip = { jobId, label: name, length, start: 0, end: Math.floor(length * 100) / 100, aspect };
+            const added: Clip = { jobId, label: name, length, start: 0, end: Math.floor(length * 100) / 100, aspect, video_width, video_height, shape_ambiguous: stored?.shape_ambiguous };
             setClips((current) => [...current, added]);
             setPlan(null);
             setSnapshot(null);
@@ -231,6 +238,7 @@ export default function SmartCutRoute() {
     }
 
     function createPlan() {
+        if (mixedShapes(clips)) { setProblem(t('edit.problem.mixed_shape')); return; }
         setProblem(null);
         try {
             setPlan(analysisReady ? buildSpeechAwareCutPlan({
@@ -351,10 +359,12 @@ export default function SmartCutRoute() {
                     {jobs === null ? <Text tone="secondary">{t('common.loading')}</Text> : videos.length === 0 ? <Text tone="secondary">{t('edit.none')}</Text> : videos.map((video) => {
                         const selected = clips.some((clip) => clip.jobId === video.jobId);
                         const pending = pendingIds.includes(video.jobId);
+                        const shape = clips.find(clip => clip.jobId === video.jobId) ?? jobs?.find(job => job.job_id === video.jobId);
                         return <Card key={video.jobId} style={styles.libraryRow}>
                             <JobThumb links={links} jobId={video.jobId} size={64} />
                             <View style={styles.rowCopy}>
                                 <Text variant="bodyStrong" numberOfLines={1}>{video.name}</Text>
+                                <VideoShapeBadge item={shape ?? {}} mismatch={shapeMismatch(shape, clips[0])} />
                                 <Text variant="footnote" tone="secondary">{new Date(video.createdAt).toLocaleDateString(formatLocale())}</Text>
                             </View>
                             <Button label={selected ? t('edit.remove') : pending ? t('edit.reading') : t('editorSimple.add')} accessibilityLabel={selected || pending ? undefined : t('edit.add')} size="md" variant={selected ? 'tertiary' : 'secondary'} loading={pending} disabled={analysisBusy || pending || (!selected && selectedCount >= MAX_CLIPS)} onPress={() => selected ? removeTake(video.jobId) : void addTake(video.jobId, video.name)} />
@@ -365,7 +375,7 @@ export default function SmartCutRoute() {
                 </> : null}
 
                 <View style={stage === 'plan' ? undefined : styles.hidden} accessibilityElementsHidden={stage !== 'plan'} importantForAccessibility={stage === 'plan' ? 'auto' : 'no-hide-descendants'}>
-                    <SmartCutAnalysisCard clips={analysisClips}
+                    <SmartCutAnalysisCard clips={analysisClips} disabled={mixedShapes(clips)}
                         analyses={analyses} onAnalysed={recordAnalysis} onBusyChange={setAnalysisBusy} />
                 </View>
 
@@ -384,7 +394,7 @@ export default function SmartCutRoute() {
                     </>}
                     <Text variant="footnote" tone="secondary">{t('app.smartCut.pacing')}</Text>
                     <View style={styles.chips}>{(Object.keys(SMART_CUT_PACING) as SmartCutPacing[]).map((value) => <Chip key={value} selected={pacing === value} label={t(`app.smartCut.pacing.${value}`)} onPress={() => changePacing(value)} />)}</View>
-                    <Button label={t(analysisReady ? 'app.smartCut.action.removePauses' : 'app.smartCut.action.createPreview')} disabled={!clips.length || pendingIds.length > 0 || analysisBusy} onPress={createPlan} />
+                    <Button label={t(analysisReady ? 'app.smartCut.action.removePauses' : 'app.smartCut.action.createPreview')} disabled={!clips.length || pendingIds.length > 0 || analysisBusy || mixedShapes(clips)} onPress={createPlan} />
 
                     {plan ? <Card style={styles.planCard}>
                         <Text variant="caption" tone="accent">{t(plan.mode === 'transcript-silence' ? 'app.smartCut.mode.speechAware' : 'app.smartCut.mode.localPreview')}</Text>
@@ -418,6 +428,7 @@ export default function SmartCutRoute() {
                     {snapshot ? <Button label={t('app.smartCut.action.undo')} variant="secondary" onPress={undoPlan} /> : null}
                     <Text variant="title2">{t('app.smartCut.summary.title')}</Text>
                     {clips.map((clip, index) => <Card key={`${clip.jobId}-${index}`} style={styles.stack}>
+                        <VideoShapeBadge item={clip} mismatch={shapeMismatch(clip, clips[0])} />
                         <View style={styles.segmentTop}><View style={styles.rowCopy}><Text variant="bodyStrong">{clip.label}</Text><Text variant="footnote" tone="secondary">{t('app.smartCut.sourceDuration', { duration: seconds(clip.length ?? 0) })} · {t('edit.uses', { seconds: seconds(clipSeconds(clip)) })}</Text></View><Button label={t('app.smartCut.preview', { name: clip.label })} size="sm" variant="tertiary" loading={previewBusy === `${clip.jobId}:${clip.start}`} onPress={() => void openPreview(clip.jobId, clip.label, clip.start, clip.end)} /></View>
                         <RangeStepper label={t('edit.start')} value={clip.start} lessLabel={t('edit.startEarlier')} moreLabel={t('edit.startLater')} onLess={() => setClips((current) => current.map((item, itemIndex) => itemIndex === index ? stepStart(item, -STEP_S) : item))} onMore={() => setClips((current) => current.map((item, itemIndex) => itemIndex === index ? stepStart(item, STEP_S) : item))} />
                         <RangeStepper label={t('edit.end')} value={clip.end} lessLabel={t('edit.endEarlier')} moreLabel={t('edit.endLater')} onLess={() => setClips((current) => current.map((item, itemIndex) => itemIndex === index ? stepEnd(item, -STEP_S) : item))} onMore={() => setClips((current) => current.map((item, itemIndex) => itemIndex === index ? stepEnd(item, STEP_S) : item))} />

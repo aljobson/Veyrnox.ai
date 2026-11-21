@@ -40,6 +40,9 @@ export interface CatalogModel {
 export type JobState = 'queued' | 'running' | 'succeeded' | 'failed';
 
 export interface Job {
+    readonly video_width?: number;
+    readonly video_height?: number;
+    readonly shape_ambiguous?: boolean;
     readonly job_id: string;
     readonly state: JobState;
     readonly refunded?: boolean;

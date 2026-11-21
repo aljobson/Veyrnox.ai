@@ -19,6 +19,7 @@ export function serverRow(j, h) {
   return { ...hydrateFromHistory({ ...h, job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
     name: h.name || j.label, prompt: h.prompt || j.label,
     submitted_at: h.submitted_at || Date.parse(j.created_at) || undefined,
+    video_width: j.video_width, video_height: j.video_height, shape_ambiguous: j.shape_ambiguous,
     state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, held: j.held, ...(j.held ? { asset_url: undefined } : {}), asset_expires_at: j.asset_expires_at };
 }
 

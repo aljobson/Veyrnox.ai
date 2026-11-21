@@ -1,3 +1,4 @@
+import { VideoShapeBadge } from './VideoShapeBadge';
 import { rawText } from '../lib/i18n/translate';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
 import { useReducedMotion } from './ui/useReducedMotion';
@@ -81,6 +82,7 @@ export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starre
                 </View>
                 <View style={styles.copy}>
                 <Text variant="bodyStrong" tone="primary" style={styles.name} numberOfLines={grid ? 2 : 1}>{name}</Text>
+                <VideoShapeBadge item={job} />
                 {!grid ? <Text variant="body" tone="accent" style={[styles.status, bad && styles.statusBad]}>{statusText}</Text> : null}
                 <Text variant="footnote" tone="tertiary">{t('libraryCreate.costDate', { cost, date: when })}</Text>
                 {retentionText ? <Text variant="footnote" tone={urgent ? 'danger' : 'tertiary'}>{retentionText}</Text> : null}

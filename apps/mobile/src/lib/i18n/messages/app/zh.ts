@@ -1,6 +1,16 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "videoShape.all": "所有画面比例",
+  "videoShape.portrait": "竖屏",
+  "videoShape.landscape": "横屏",
+  "videoShape.square": "正方形",
+  "videoShape.different": "画面比例不同",
+  "videoShape.hint": "为 Smart Cut 制作：最近的视频为{previous}，本次视频将为{chosen}。",
+  "videoShape.match": "使用{shape}",
+  "videoShape.unsupported": "此模型无法生成{shape}。",
+  "videoShape.warning": "请求的画面比例为{requested}，成片为{actual}。",
+
   "editorAudioTools.description": "{category} · {time}秒",
   "editorAudioTools.bpm": " · {value} BPM",
   "editorAudioTools.db": "{value} dB",
@@ -2130,7 +2140,8 @@ export default {
   "edit.err.credits": "你的积分不足以进行此次编辑。",
   "edit.err.gone": "其中一个视频已不可用。",
   "edit.err.invalid": "无法提交此次编辑。请检查后重试。未扣费。",
-  "edit.err.mixedAspect": "这些视频的画幅不同。请拼接画幅相同的视频。未扣费。",
+  "edit.err.mixedAspect": "请移除标记为与第一个片段不匹配的片段。",
+  "edit.err.serverMixedAspect": "其中一个视频的宽高比与第一个片段不一致。未扣除任何积分。",
   "edit.err.mixedAudio": "这些片段无法拼接：有的有声音，有的是静音。请选择全部有声或全部静音的片段。未扣费。",
   "edit.openLocal": "在编辑器中打开（免费）",
   "edit.err.network": "网络未连接。未扣费。请重试。",
@@ -2149,7 +2160,7 @@ export default {
   "edit.problem.no_clips": "请至少添加一个视频。",
   "edit.problem.nothing_to_do": "裁剪视频、拼接两段视频或添加字幕。",
   "edit.problem.too_long": "成片最长为 60 秒。",
-  "edit.problem.mixed_shape": "这些视频的形状不同，无法拼接。请选择全部竖屏、全部横屏或全部方形的视频。",
+  "edit.problem.mixed_shape": "请移除标记为与第一个片段不匹配的片段。",
   "edit.problem.too_many": "最多可拼接 10 段视频。",
   "edit.problem.unknown_length": "请等待所有视频时长读取完成。",
   "edit.reading": "正在读取视频时长…",

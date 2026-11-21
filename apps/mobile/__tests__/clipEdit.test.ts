@@ -169,7 +169,7 @@ describe('editErrorKey', () => {
         expect(k(400, 'clip_range')).toBe('edit.err.clipRange');
         expect(k(400, 'too_long')).toBe('edit.err.tooLong');
         expect(k(400, 'nothing_to_do')).toBe('edit.err.nothingToDo');
-        expect(k(400, 'mixed_aspect')).toBe('edit.err.mixedAspect');
+        expect(k(400, 'mixed_aspect')).toBe('edit.err.serverMixedAspect');
     expect(k(400, 'mixed_audio')).toBe('edit.err.mixedAudio');
         expect(k(400, 'clip_not_video')).toBe('edit.err.notVideo');
         expect(k(400, 'clip_unreadable')).toBe('edit.err.unreadable');
@@ -269,7 +269,7 @@ describe('QA build 50 F12: clip shapes', () => {
     });
     test('an unknown shape never blocks; the server checks again', () => {
         expect(mixedShapes([v(null), v(1280 / 720), v(undefined)])).toBe(false);
-        expect(mixedShapes([v(null), v(0.5625), v(1.7778)])).toBe(true);
+        expect(mixedShapes([v(null), v(0.5625), v(1.7778)])).toBe(false);
     });
     test('validateEdit refuses mixed shapes before any quote', () => {
         expect(validateEdit([v(0.5625), v(1.7778)], null)).toBe('mixed_shape');

@@ -18,6 +18,7 @@ import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { clipCredits, modelAspectRatios, templateModelId } from '../../_lib/tokens';
 import { ResolutionVariantChoice } from '../../_components/ResolutionVariantChoice';
+import { SmartCutShapeHint, SmartCutShapeSession } from '../../_components/SmartCutShapeHint';
 import { takesFrame } from '../../../../lib/aspectFrame.mjs';
 import { FrameChoice } from '../../_components/FrameChoice';
 import { frameUploader } from '../../_lib/reframeImage';
@@ -855,7 +856,7 @@ function CreateStudio() {
   if (swapId !== null && (swap.loading || !swap.scene || !model)) return <div className="min-h-dvh">{swapEntry}<AppNav balance={balance} active="create" /><Main><p role="status">{swap.loading || catalogLoading ? t('app.create.openingTemplate') : t('app.chat.error.model_not_found')}</p></Main></div>;
 
   return (
-    <div className="min-h-dvh">
+    <SmartCutShapeSession key={accountEpoch}><div className="min-h-dvh">
       {swapEntry}
       {openingTemplate && <TemplateOpening name={openingTemplate.name} />}
       <AppNav balance={balance} active="create" />
@@ -873,6 +874,7 @@ function CreateStudio() {
           </div>
 
           <div data-assistant-target="create.result" className="scroll-mt-24">
+          <SmartCutShapeHint actor={accountEpoch} jobs={jobs} />
           {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={resultAspect} /> : (
             <div
               className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
@@ -958,6 +960,7 @@ function CreateStudio() {
                   formatOption={(option) => t('presets.use.lengthCost', { length: outputDurationLabel(model, Number(option.replace('s', ''))), credits: clipCredits(model.credits, Number(option.replace('s', ''))) })}
                   formatValue={(option) => outputDurationLabel(model, Number(option.replace('s', '')))} />
               )}
+              <SmartCutShapeHint actor={accountEpoch} video={model?.kind === 'video'} options={aspectOptions} value={aspect} onChange={setAspect} />
               {aspectOptions.length > 0 && <ChipSelect assistantTarget="create.aspect" aria-label={t("app.create.aspectHeading")} options={aspectOptions} value={aspect} onChange={setAspect} formatOption={aspectLabel} formatValue={(option) => option} />}
               {tierOptions.length > 1 && (
                 <ChipSelect assistantTarget="create.resolution" aria-label={t('app.create.resolutionHeading')} options={tierOptions.map((o) => o.id)} value={activeTier?.id} onChange={setResolution}
@@ -1256,6 +1259,6 @@ function CreateStudio() {
           )}
         </aside>
       </Main>
-    </div>
+    </div></SmartCutShapeSession>
   );
 }
