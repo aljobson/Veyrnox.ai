@@ -190,7 +190,7 @@ export default [
     "chat.stop.nothing", "chat.stop.pending", "chat.lost.nothing", "chat.again.one", "chat.again.other", "chat.againLabel.one",
     "chat.againLabel.other", "chat.replyCost.one", "chat.replyCost.other", "chat.pin", "chat.unpin", "chat.pinned",
     "chat.rename", "chat.renamePlaceholder", "chat.renameSave", "chat.renameCancel", "chat.renameInvalid", "chat.updateFailed",
-    "chat.attach.library", "chat.attach.photos", "chat.attach.extra.one", "chat.attach.extra.other", "chat.attach.hint.one", "chat.attach.hint.other",
+    "chat.attach.library", "chat.attach.photos", "chat.attach.files", "chat.attach.extra.one", "chat.attach.extra.other", "chat.attach.hint.one", "chat.attach.hint.other",
     "chat.attach.imageN", "chat.attach.removeN", "chat.attach.libraryFailed", "chat.attach.libraryEmpty", "chat.attach.libraryImage", "chat.attach.done",
     "chat.attach.needsUpdate", "chat.attach.uploadFailed", "chat.draft.open", "chat.draft.price.one", "chat.draft.price.other", "chat.draft.needs",
     "chat.skills.title", "chat.skills.help", "chat.skills.group.Make", "chat.skills.group.Edit", "chat.skills.group.Plan", "chat.skills.start",

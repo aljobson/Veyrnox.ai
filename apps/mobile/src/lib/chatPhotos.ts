@@ -1,5 +1,7 @@
 import { extractFrames } from './chatVideoFrames';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import { Image } from 'react-native';
 import { MAX_IMAGE_EDGE, RESIZE_UNAVAILABLE, type ChatImage, type ImageResizer } from './chatAttach';
 import { createResizer } from './chatResizer';
 import { File } from 'expo-file-system';
@@ -25,6 +27,25 @@ export async function pickPhotos(room: number, resizer: ImageResizer = createRes
         try {
             const prepared = await resizer.prepare({ uri: a.uri, width: a.width, height: a.height }, maxEdge);
             images.push({ id: `f-${images.length}-${Date.now()}`, uri: prepared.uri, preview: prepared.uri, width: a.width, height: a.height });
+        } catch (err) {
+            return { images, problem: err instanceof Error && err.message === RESIZE_UNAVAILABLE ? 'resize_unavailable' : 'failed' };
+        }
+    }
+    return { images, problem: null };
+}
+
+// Image files from the phone's Files app (local storage, iCloud Drive, other providers). Same preparation as photos: the
+// resizer re-encodes each as JPEG, so what is attached never carries the original file or its location data.
+export async function pickFiles(room: number, resizer: ImageResizer = createResizer(), maxEdge: number = MAX_IMAGE_EDGE): Promise<PhotoResult> {
+    if (room <= 0) return { images: [], problem: null };
+    const res = await DocumentPicker.getDocumentAsync({ type: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'], multiple: true, copyToCacheDirectory: true });
+    if (res.canceled) return { images: [], problem: null };
+    const images: ChatImage[] = [];
+    for (const a of res.assets.slice(0, room)) {
+        try {
+            const size = await new Promise<{ width: number; height: number }>((ok, no) => Image.getSize(a.uri, (width, height) => ok({ width, height }), no)).catch(() => ({ width: 0, height: 0 }));
+            const prepared = await resizer.prepare({ uri: a.uri, ...size }, maxEdge);
+            images.push({ id: `f-${images.length}-${Date.now()}`, uri: prepared.uri, preview: prepared.uri, width: size.width, height: size.height });
         } catch (err) {
             return { images, problem: err instanceof Error && err.message === RESIZE_UNAVAILABLE ? 'resize_unavailable' : 'failed' };
         }

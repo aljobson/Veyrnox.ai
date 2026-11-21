@@ -1013,6 +1013,8 @@ export default {
   "chat.attach.needsUpdate": "手机照片需要最新版应用才能发送。请改为从素材库中选择。",
   "chat.attach.photos": "照片",
   "chat.attach.photosLabel": "附加此设备上的照片",
+  "chat.attach.files": "文件",
+  "chat.attach.filesLabel": "从此设备附加文件",
   "chat.attach.removeN": "移除图像 {n}",
   "chat.attach.uploadFailed": "有图像上传失败。未发送任何内容，也未扣费。",
   "chat.attach.modelImages": "此模型无法读取图像。请移除图像，或选择可以读取的模型。",

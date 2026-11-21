@@ -31,6 +31,7 @@ interface Props {
     readonly onOptions: (value: ReplyOptions) => void;
     readonly onLibrary: () => void;
     readonly onPhotos: () => void;
+    readonly onFiles?: () => void;
     readonly onRemoveImage: (id: string) => void;
     readonly onMake: (kind: Kind) => void;
     readonly onSend: () => void;
@@ -120,7 +121,7 @@ export function ChatComposerDeck(props: Props) {
                     </View>
                     {props.imageExtra !== null ? (
                         <AttachStrip hideThumbs items={props.images} extra={props.imageExtra} max={props.maxImages} disabled={props.sending}
-                            onLibrary={pick(props.onLibrary)} onPhotos={pick(props.onPhotos)} onVideo={props.onVideo ? pick(props.onVideo) : undefined} onRemove={props.onRemoveImage} />
+                            onLibrary={pick(props.onLibrary)} onPhotos={pick(props.onPhotos)} onFiles={props.onFiles ? pick(props.onFiles) : undefined} onVideo={props.onVideo ? pick(props.onVideo) : undefined} onRemove={props.onRemoveImage} />
                     ) : null}
                     <Button variant="tertiary" size="md" label={t('chat.make.close')} onPress={() => setSheet(false)} />
                 </View>
