@@ -18,10 +18,11 @@ import { ClipBadge } from './ClipBadge';
 // nothing on load. A clip that fails to load keeps its still poster.
 // The tile is the link, so the whole card is one target and the video is
 // decoration only (aria-hidden, no controls, not focusable).
+// `badge` replaces the clip's source disclosure in its corner (ClipBadge).
 
 import { useClipPlayback } from '../_lib/useClipPlayback';
 
-export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, children, uncroppedOnMobile = false, ambient = false, imageSizes = '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw' }) {
+export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, badge = null, children, uncroppedOnMobile = false, ambient = false, imageSizes = '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw' }) {
   const rootRef = useRef(null);
   const videoRef = useRef(null);
   const [failed, setFailed] = useState(false);
@@ -87,7 +88,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
           />
         )}
         {children}
-        {clip && <ClipBadge clip={clip} />}
+        {clip && <ClipBadge clip={clip} label={badge} />}
       </div>
       {footer && <Fragment key="footer">{footer}</Fragment>}
     </Link>
