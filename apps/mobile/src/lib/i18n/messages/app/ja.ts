@@ -1023,6 +1023,8 @@ export default {
   "chat.attach.needsUpdate": "端末の写真を送信するには、最新バージョンのアプリが必要です。代わりにライブラリから選んでください。",
   "chat.attach.photos": "写真",
   "chat.attach.photosLabel": "この端末の写真を添付",
+  "chat.attach.files": "ファイル",
+  "chat.attach.filesLabel": "この端末からファイルを添付",
   "chat.attach.removeN": "画像 {n} を削除",
   "chat.attach.uploadFailed": "画像をアップロードできませんでした。何も送信されておらず、料金も発生していません。",
   "chat.attach.modelImages": "このモデルは画像を読み取れません。画像を外すか、読み取れるモデルを選んでください。",
