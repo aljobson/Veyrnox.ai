@@ -307,6 +307,7 @@
   "app.smartCut.native.fillers.wordTimingRequired": "Exact English retained for native Smart Cut billing, privacy, and recovery wording pending professional de translation; this avoids changing legal or credit meaning.",
   "app.smartCut.native.analyse.failedConfirmed": "Exact English retained for native Smart Cut billing, privacy, and recovery wording pending professional de translation; this avoids changing legal or credit meaning.",
   "app.smartCut.native.analyse.ineligibleBlocked": "Exact English retained for native Smart Cut billing, privacy, and recovery wording pending professional de translation; this avoids changing legal or credit meaning.",
+  "app.smartCut.native.analyse.terminalBlocked": "Exact English retained for native Smart Cut recovery wording pending professional de translation.",
   "app.smartCut.fillers.row": "Exact English retained for native Smart Cut timing wording pending professional de translation.",
   "app.smartCut.native.analyse.quoteFailed": "Exact English retained for native Smart Cut recovery wording pending professional de translation.",
   "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional de translation."

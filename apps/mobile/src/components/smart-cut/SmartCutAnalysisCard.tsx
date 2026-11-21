@@ -105,10 +105,14 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     const analysed = (clip: SmartCutAnalysisClip) => validSmartCutAnalysis(analyses.get(clip.jobId), clip.jobId, clip.duration);
     const pending = clips.filter((clip) => !analysed(clip) && !ineligible.includes(clip));
     const actionable = pending.filter((clip) => !terminalMessages.has(clip.jobId));
+    const terminal = pending.filter((clip) => terminalMessages.has(clip.jobId));
     const maximum = actionable.length * activeQuote.credits;
 
     function settle(clip: SmartCutAnalysisClip, outcome: SpeechOutcome, key: string, confirmed = false): boolean {
-        if (!creditsByKey.current.has(key) && typeof outcome.credits === 'number' && outcome.credits >= 0) creditsByKey.current.set(key, outcome.credits);
+        if (typeof outcome.credits === 'number' && outcome.credits >= 0) {
+            const previous = creditsByKey.current.get(key);
+            if (previous === undefined || outcome.credits > previous) creditsByKey.current.set(key, outcome.credits);
+        }
         const firstCredits = creditsByKey.current.get(key);
         const settled: SpeechOutcome = firstCredits === undefined ? outcome : { ...outcome, credits: firstCredits };
         const net = smartCutNetCredits(settled);
@@ -221,7 +225,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                     } else if (error instanceof ApiError && error.code === 'bad_response' && attempted) {
                         settleBadResponse(attempted);
                     } else {
-                        const canRecover = error instanceof ApiError && ['outcome_pending', 'poll_timeout'].includes(error.code);
+                        const canRecover = error instanceof ApiError && (['outcome_pending', 'poll_timeout'].includes(error.code) || error.status === 0 || error.status >= 500);
                         if (!canRecover) setRecovery(null);
                         if (error instanceof ApiError && error.code === 'result_expired' && attempted) {
                             forgetSpeechKey(account, attempted.clip.jobId);
@@ -299,9 +303,9 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
             <Button label={t('app.smartCut.native.analyse.start')} onPress={() => void analyse()} />
         </>}
         <View style={styles.messages}>{messages.map((message, index) => <Text key={`${message}:${index}`} variant="footnote" accessibilityLiveRegion="polite">{message}</Text>)}</View>
-        {!ready && clips.length > 0 ? <Text variant="footnote" tone="secondary">{ineligible.length
-            ? t('app.smartCut.native.analyse.ineligibleBlocked', { names: ineligible.map((clip) => clip.label).join(', ') })
-            : t('app.smartCut.native.analyse.blocked', { names: pending.map((clip) => clip.label).join(', ') })}</Text> : null}
+        {!ready && ineligible.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.ineligibleBlocked', { names: ineligible.map((clip) => clip.label).join(', ') })}</Text> : null}
+        {!ready && actionable.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.blocked', { names: actionable.map((clip) => clip.label).join(', ') })}</Text> : null}
+        {!ready && terminal.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.terminalBlocked', { names: terminal.map((clip) => clip.label).join(', ') })}</Text> : null}
     </Card>;
 }
 

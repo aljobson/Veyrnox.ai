@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); });
 
-test('requires an accessible explicit confirmation and carries zero-credit evidence through polling', async () => {
+test('requires explicit confirmation and never understates conflicting later debit evidence', async () => {
     mockStart.mockResolvedValue({ id: 'request', status: 'queued', credits: 0 });
     mockPoll.mockResolvedValue({ id: 'request', status: 'completed', analysis, credits: 7 });
     await render();
@@ -61,7 +61,7 @@ test('requires an accessible explicit confirmation and carries zero-credit evide
     await press(t('app.smartCut.native.analyse.start'));
     expect(mockStart).toHaveBeenCalledTimes(1); expect(mockPoll).toHaveBeenCalledTimes(1);
     expect(onAnalysed).toHaveBeenCalledWith(clip.jobId, analysis);
-    expect(lines()).toContain(t('app.smartCut.native.analyse.reused', { name: clip.label }));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.charged', { name: clip.label, credits: 7 }));
 });
 
 test('a transient quote failure explains that nothing started and can retry', async () => {
@@ -103,6 +103,14 @@ test('an outcome whose acceptance is unknown stays recoverable', async () => {
     expect(onBusyChange).toHaveBeenLastCalledWith(false);
 });
 
+test('a transient polling failure keeps the accepted request recoverable', async () => {
+    mockStart.mockResolvedValue({ id: 'request', status: 'queued', credits: 7 });
+    mockPoll.mockRejectedValue(new ApiError(503, 'internal'));
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+    expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeDefined();
+    expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
+});
+
 test('adding a clip preserves a pending recovery key and its billing guidance', async () => {
     const second = { jobId: '55555555-5555-4555-8555-555555555555', label: 'Second take', duration: 9 };
     mockStart.mockRejectedValueOnce(new ApiError(503, 'outcome_pending'));
@@ -124,6 +132,8 @@ test('no speech is terminal for this clip and does not strand a status action', 
     expect(lines()).toContain(t('app.smartCut.native.analyse.noSpeech', { name: clip.label }));
     expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeUndefined();
     expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
+    expect(lines()).toContain(t('app.smartCut.native.analyse.terminalBlocked', { names: clip.label }));
+    expect(lines()).not.toContain(t('app.smartCut.native.analyse.blocked', { names: clip.label }));
 });
 
 test('missing billing evidence stays a per-clip maximum instead of being called free', async () => {
