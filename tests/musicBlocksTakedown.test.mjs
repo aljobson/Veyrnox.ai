@@ -89,11 +89,11 @@ for (const status of ['blocked', 'published', 'unpublished']) {
         const publication = { slug: 'a'.repeat(24), status };
         const state = { busy: false, error: 'previous error', notice: 'previous notice', publication: null };
         const notices = [], requests = [], attemptRef = { current: 'publish.original-retry' };
-        let keysMinted = 0;
+        const mintedAttempts = [];
         const scope = {
             rights: true, busy: false, attemptRef, song: { id, version_id: id },
             handle: 'creator', displayName: 'Creator', comments: false, remixes: false,
-            key: () => `publish.fresh-${++keysMinted}`,
+            key: () => { const minted = `publish.fresh-${mintedAttempts.length + 1}`; mintedAttempts.push(minted); return minted; },
             t: name => {
                 assert.ok(['music.publication.blocked', 'music.publication.notPublic'].includes(name));
                 return name === 'music.publication.blocked' ? 'Taken down message' : 'This track is not public.';
@@ -127,7 +127,7 @@ for (const status of ['blocked', 'published', 'unpublished']) {
             }
         }
         await publish();
-        assert.equal(requests[1].idempotency_key, 'publish.fresh-1');
+        assert.equal(requests[1].idempotency_key, mintedAttempts[0]);
         assert.equal(attemptRef.current, null);
     });
 }
