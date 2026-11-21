@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import {
     FIRST_ROLES, FIRST_DESTINATIONS, FIRST_PROFILE_SLOT, parseFirstProfile, serializeFirstProfile, readRemoteFirstProfile,
     parseFirstOnboarding, serializeFirstOnboarding, readRemoteFirstOnboarding,
-    needsFirstRun, orderStarts, exampleSetFor, defaultAspectFor, hasRealAnswer,
+    needsFirstRun, onboardingUiComplete, orderStarts, exampleSetFor, defaultAspectFor, hasRealAnswer,
 } from '../app/veyrnox/_lib/firstProfile.js';
 import { FIRST_ROLE_VALUES, FIRST_DESTINATION_VALUES, cleanFirstAnswers } from '../lib/firstGoal.js';
 
@@ -60,6 +60,23 @@ test('the flow is for someone with no goal and no role on record', () => {
     assert.equal(needsFirstRun({ goal: 'video', role: 'creator' }), false);
     assert.equal(needsFirstRun({ goal: 'video', role: null, completed: false }), true, 'account progress outranks the old heuristic');
     assert.equal(needsFirstRun({ goal: null, role: null, completed: true }), false, 'grandfathered legacy accounts stay complete');
+});
+
+test('a persisted completion request closes the UI while its truthful pending outbox keeps replaying', () => {
+    assert.equal(onboardingUiComplete({ completed: false, pending: true, completeRequested: true }), true);
+    assert.equal(onboardingUiComplete({ completed: false, pending: true, completeRequested: false }), false);
+    assert.equal(onboardingUiComplete({ completed: false, completeRequested: true }), false);
+    assert.equal(onboardingUiComplete({ completed: true }), true);
+});
+
+test('migration 0578 materialises only established, non-deleted no-row accounts as version-0 complete', async () => {
+    const sql = await readFile(new URL('../packages/db/schema/supabase/0578_first_run_progress.sql', import.meta.url), 'utf8');
+    assert.match(sql, /INSERT INTO public\.first_goals[\s\S]*SELECT u\.id, NULL, NULL, NULL, 0, NULL, true/);
+    assert.match(sql, /u\.deleted_at IS NULL/);
+    assert.match(sql, /NOT EXISTS \(SELECT 1 FROM public\.first_goals g WHERE g\.user_id = u\.id\)/);
+    assert.match(sql, /ON CONFLICT \(user_id\) DO NOTHING/);
+    assert.ok(sql.indexOf('INSERT INTO public.first_goals') < sql.indexOf('CREATE OR REPLACE FUNCTION public.get_first_answers'),
+        'the one-time cohort materialisation precedes the read RPC');
 });
 
 test('home start options: every role keeps all four, once, and a real goal moves its area first', () => {

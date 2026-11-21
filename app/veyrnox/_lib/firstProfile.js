@@ -78,6 +78,10 @@ export function parseFirstOnboarding(raw, owner) {
 export const needsFirstRun = ({ goal = null, role: r = null, completed } = {}) =>
   typeof completed === 'boolean' ? !completed : goal === null && r === null;
 
+// A durable completion request closes the UI immediately while its owner-fenced outbox continues to reconcile.
+// This never changes the persisted/account `completed` bit.
+export const onboardingUiComplete = (state) => state?.completed === true || (state?.pending === true && state?.completeRequested === true);
+
 export const hasRealAnswer = (profile) => !!profile && [profile.goal, profile.role, profile.destination].some((word) => word && word !== 'skipped' && word !== 'unsure');
 
 // Home start options in the order this person should see them. Goal puts its own area first; no answer keeps the default.

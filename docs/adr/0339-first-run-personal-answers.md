@@ -46,6 +46,11 @@ resumes at the first missing canonical step. A goal-only row is grandfathered as
 cannot safely be distinguished from a phone closed after the newer goal screen, and re-asking every such account would
 collect unnecessary profile answers. No completion timestamp, device identifier, free text or answer telemetry is added.
 
+Migration 0578 also materialises a nullable-answer, version-0 completed `first_goals` row for every existing non-deleted
+account that lacks one. Accounts created after that one-time statement remain rowless, so the same RPC starts them at
+version 1 `goal`. This durable migration boundary avoids guessing from device state, activity, credits, purchases, age,
+or any new profile signal; replay is harmless and deleted accounts are excluded.
+
 `GET /api/v1/first-goal` appends `version`, `current_step` and `completed`. Old PUT bodies retain their exact contract;
 version-1 clients send the displayed step with its one answer, and send a separate recap completion. The database locks
 the account row, applies the existing answer ranks and derives the next step, so replay, Back edits and concurrent devices

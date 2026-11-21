@@ -37,6 +37,12 @@ test('the web account read has a bounded fallback and retries again when connect
   assert.match(hook, /failures\.current <= 3/);
   assert.match(hook, /addEventListener\('online'/);
   assert.match(hook, /addEventListener\('visibilitychange'/);
+  assert.match(hook, /offline\.kind === 'signed-out'[\s\S]{0,160}readDeviceAnswers\(\)/,
+    'signed-out browsing keeps this device\'s non-account personalization');
+  assert.match(hook, /completed: offline\.completed, uiComplete: onboardingUiComplete\(offline\)/,
+    'pending completion requests stay visually complete without changing authoritative completion');
+  const flow = await readFile(new URL('../app/veyrnox/_components/FirstRunFlow.js', import.meta.url), 'utf8');
+  assert.match(flow, /!profile\.uiComplete/);
 });
 
 test('every first-run word has copy in all 11 locales', async () => {

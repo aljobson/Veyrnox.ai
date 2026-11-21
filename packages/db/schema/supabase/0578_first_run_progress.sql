@@ -48,6 +48,17 @@ ALTER TABLE public.first_goals ADD CONSTRAINT first_goals_onboarding_state_check
     ))
 );
 
+-- The migration boundary itself is the cohort signal. Materialise a version-0 completion for every established,
+-- non-deleted account that has no answer row; accounts created after this statement remain rowless and therefore begin
+-- version 1 at goal. Goal has been nullable since 0499. The conflict guard makes a replay harmless.
+INSERT INTO public.first_goals (
+    user_id, goal, role, destination, onboarding_version, onboarding_current_step, onboarding_completed)
+SELECT u.id, NULL, NULL, NULL, 0, NULL, true
+  FROM public.users u
+ WHERE u.deleted_at IS NULL
+   AND NOT EXISTS (SELECT 1 FROM public.first_goals g WHERE g.user_id = u.id)
+ON CONFLICT (user_id) DO NOTHING;
+
 CREATE OR REPLACE FUNCTION private.first_onboarding_next(p_goal TEXT, p_role TEXT, p_destination TEXT)
 RETURNS TEXT
 LANGUAGE sql

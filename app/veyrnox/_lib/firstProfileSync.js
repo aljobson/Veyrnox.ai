@@ -158,22 +158,6 @@ export async function fetchRemoteAnswers(fetcher = gatewayFetch, session = getSt
   }
 }
 
-let onboardingPushes = Promise.resolve();
-export function pushOnboarding({ currentStep, completed = false, answer }, fetcher = gatewayFetch, owner = getStoredUserId()) {
-  const run = async () => {
-    if (!owner || getStoredUserId() !== owner) return null;
-    const body = { version: 1, current_step: currentStep, completed, ...(answer ? { [currentStep]: answer } : {}) };
-    try {
-      const result = await fetcher('/first-goal', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      return getStoredUserId() === owner ? result : null;
-    }
-    catch { return null; }
-  };
-  const result = onboardingPushes.then(run, run);
-  onboardingPushes = result.then(() => undefined, () => undefined);
-  return result;
-}
-
 /** Best effort and safe to repeat: the server never lowers an answer and treats the same words again as a replay. */
 export async function pushAnswers(answers, fetcher = gatewayFetch, session = getStoredSession) {
   const body = Object.fromEntries(['goal', 'role', 'destination'].filter((key) => typeof answers[key] === 'string').map((key) => [key, answers[key]]));

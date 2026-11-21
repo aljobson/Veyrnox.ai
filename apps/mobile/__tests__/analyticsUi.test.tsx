@@ -7,14 +7,16 @@ import { AnalyticsChoices } from '../src/components/AnalyticsChoices';
 import { PaywallPrompt } from '../src/components/PaywallPrompt';
 import { CheckInModal } from '../src/components/CheckInModal';
 import { FirstRunGate } from '../src/components/FirstRunGate';
-import { afterAnalyticsChoice, isFirstRunPending, setFirstRunPending, setFirstRunUser } from '../src/lib/firstRunPending';
+import { afterAnalyticsChoice, firstRunDestination, isFirstRunPending, setFirstRunPending, setFirstRunUser } from '../src/lib/firstRunPending';
 import { bindCacheUser, wipeCache } from '../src/lib/appCache';
 import { getAnalyticsChoice, writeConsent } from '../src/lib/analytics/consent';
+import { resetWelcomeRedirect } from '../src/lib/firstRun';
 import * as SecureStore from 'expo-secure-store';
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
+let mockPathname = '/';
 const mockRequest = jest.fn(async (path: string) => path.includes('checkin') ? { ok: true, claimed_today: false, streak: 0, next_day: 1, next_credits: 1, rewards: [1,2,3,4,5,6] } : { created_at: new Date().toISOString() });
 const mockApi = { request: mockRequest };
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, usePathname: () => '/', useRootNavigationState: () => ({ key: 'ready' }) }));
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, usePathname: () => mockPathname, useRootNavigationState: () => ({ key: 'ready' }) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', api: mockApi, generation: 0, beginSessionTask: () => {
     const owner = require('../src/lib/appCache').getCacheUser();
     return { gen: 0, user: owner, current: () => owner === require('../src/lib/appCache').getCacheUser() };
@@ -29,6 +31,7 @@ let root: Root;
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     process.env.EXPO_PUBLIC_POSTHOG_KEY = 'phc_test';
+    mockPathname = '/';
     mockRouter.push.mockClear(); mockRouter.replace.mockClear(); mockFactory.mockClear();
     mockRequest.mockImplementation(async (path: string) => path.includes('checkin') ? { ok: true, claimed_today: false, streak: 0, next_day: 1, next_credits: 1, rewards: [1,2,3,4,5,6] } : { created_at: new Date().toISOString() });
     jest.mocked(SecureStore.getItemAsync).mockResolvedValue(null);
@@ -138,4 +141,22 @@ test('a new account reaches its partial onboarding even when this device already
     await wipeCache(); await bindCacheUser('second-on-device');
     await act(async () => root.render(<FirstRunGate />));
     expect(mockRouter.replace).toHaveBeenCalledWith('/first-run');
+});
+
+test.each(['/analytics-consent', '/welcome', '/first-run', '/legal/privacy'])('foreground onboarding gate does not replace its owned route %s', async route => {
+    const owner = `owned-${route}`;
+    setFirstRunUser(owner);
+    await wipeCache(); await bindCacheUser(owner);
+    resetWelcomeRedirect();
+    await writeConsent('denied');
+    jest.mocked(SecureStore.getItemAsync).mockResolvedValue(null);
+    expect(await firstRunDestination()).toBe('/welcome');
+    mockPathname = route;
+    mockRequest.mockImplementation(async (path: string): Promise<any> => path === '/api/v1/first-goal'
+        ? { goal: null, role: null, destination: null, version: 1, current_step: 'goal', completed: false }
+        : { created_at: new Date().toISOString() });
+    const before = mockRequest.mock.calls.filter(([path]) => path === '/api/v1/first-goal').length;
+    await act(async () => root.render(<FirstRunGate />));
+    expect(mockRequest.mock.calls.filter(([path]) => path === '/api/v1/first-goal')).toHaveLength(before);
+    expect(mockRouter.replace).not.toHaveBeenCalled();
 });

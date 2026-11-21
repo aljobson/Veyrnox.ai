@@ -120,6 +120,19 @@ try {
         const { goal, role, destination, ok, error } = await getProgress(authId);
         return error ? { ok, error } : { ok, goal, role, destination };
     };
+    // 0578 materialises this exact row for established accounts. A new post-migration account remains rowless.
+    const legacyNoAnswers = await signUp();
+    await c.query(`INSERT INTO public.first_goals (
+        user_id, goal, role, destination, onboarding_version, onboarding_current_step, onboarding_completed)
+        VALUES ($1, NULL, NULL, NULL, 0, NULL, true)`, [legacyNoAnswers.userId]);
+    assert.deepEqual(await getProgress(legacyNoAnswers.authId), { ok: true, goal: null, role: null, destination: null,
+        version: 0, current_step: null, completed: true });
+    assert.deepEqual(await set(legacyNoAnswers.authId, 'image'), { ok: true, changed: true, goal: 'image' });
+    assert.deepEqual(await getProgress(legacyNoAnswers.authId), { ok: true, goal: 'image', role: null, destination: null,
+        version: 0, current_step: null, completed: true }, 'a legacy write never reopens the journey');
+    const postMigration = await signUp();
+    assert.deepEqual(await getProgress(postMigration.authId), { ok: true, goal: null, role: null, destination: null,
+        version: 1, current_step: 'goal', completed: false });
     const carol = await signUp();
     assert.deepEqual(await getAll(carol.authId), { ok: true, goal: null, role: null, destination: null });
     // A role alone creates the row with no goal: the goal still reads as "never chose" on both read paths.

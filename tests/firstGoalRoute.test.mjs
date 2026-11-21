@@ -93,6 +93,14 @@ test('GET returns the stored answers, or null, never anything else', async () =>
     stub({ ok: true, goal: null });
     res = await route.GET(req('GET'));
     assert.deepEqual(await res.json(), { goal: null, role: null, destination: null });
+    stub({ ok: true, goal: null, role: null, destination: null, version: 0, current_step: null, completed: true });
+    res = await route.GET(req('GET'));
+    assert.deepEqual(await res.json(), { goal: null, role: null, destination: null, version: 0, current_step: null, completed: true },
+        'an established no-answer account receives its migration-materialised completion');
+    stub({ ok: true, goal: null, role: null, destination: null, version: 1, current_step: 'goal', completed: false });
+    res = await route.GET(req('GET'));
+    assert.deepEqual(await res.json(), { goal: null, role: null, destination: null, version: 1, current_step: 'goal', completed: false },
+        'a post-migration no-row account starts the journey');
 });
 
 test('GET falls back to the goal alone while migration 0499 is not applied', async () => {

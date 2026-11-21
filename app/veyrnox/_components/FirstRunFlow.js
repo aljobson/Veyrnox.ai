@@ -59,7 +59,7 @@ export function FirstRunFlow() {
 
   // The answers on record only change when the session does, so "is it needed" is read straight off them.
   const dismissed = !!profile.userId && (closedFor === profile.userId || isFirstRunDismissed(profile.userId));
-  const open = !dismissed && !profile.unresolved && profile.ready && profile.signedIn && needsFirstRun(profile);
+  const open = !dismissed && !profile.uiComplete && !profile.unresolved && profile.ready && profile.signedIn && needsFirstRun(profile);
   useEffect(() => {
     hydratedFor.current = null;
   }, [profile.userId]);
