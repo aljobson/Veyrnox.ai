@@ -1,5 +1,8 @@
 import { BeatExportSheet } from '../../../components/beats/BeatExportSheet';
 import { releaseExportPlayback } from '../../../lib/beatNative/exportPlayback';
+import { BeatLabsBar } from '../../../components/beats/BeatLabsBar';
+import { PHONE_CAPABILITIES } from '../../../lib/beatNative/controls';
+import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
 import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
 import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
 import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
@@ -32,6 +35,7 @@ import { ds } from '../../../theme';
 
 import { createHistory, record, replacePresent, travel, canUndo, canRedo, type History } from '../../../lib/beatNative/history';
 import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
+import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
@@ -131,6 +135,8 @@ export default function BeatEditor() {
             <Button label={t('beatExport.title')} onPress={() => setExporting(true)} />
             {exporting && <BeatExportSheet doc={doc} replacing={replacing} recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status)}
                 prepare={() => releaseExportPlayback(audio, recordingRef, stop)} onClose={() => setExporting(false)} />}
+            <BeatAiPanel doc={doc} apply={apply} />
+            <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
             <Button label={t('beat.undo')} disabled={locked || !history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
             <Button label={t('beat.redo')} disabled={locked || !history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
             {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}

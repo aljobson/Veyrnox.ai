@@ -31,11 +31,15 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
   const href = templateHref(preset);
   const roller = variant === 'roller';
   const title = presetTitle(preset.name);
+  // The theme (or category) label: on the clip's corner badge when the card has a clip, else in the caption line.
+  const categoryLabel = t.messages?.[`presets.cat.${preset.category}`] ?? null;
+  const badge = clip ? categoryLabel : null;
   return (
     <MediaTile
       href={href}
       clip={clip && { ...clip, objectFit: 'contain' }}
       onClick={onClick}
+      badge={badge}
       ariaLabel={t('mobile.templateOpen', { name: title })}
       className={`${roller ? 'h-full min-h-0' : 'block w-full'} text-start ${className}`}
       mediaClassName={`${roller ? 'h-full' : ''} rounded-2xl`}
@@ -48,7 +52,7 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
             <span aria-hidden className="vx-leader flex-1 text-vx-fg-muted" />
             <div className="shrink-0 font-vx-mono text-[14px] font-bold text-vx-money vx-num">{presetCredits(preset, catalog) ?? '—'} cr</div>
           </div>
-          <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{t.messages?.[`presets.cat.${preset.category}`] ? `${t.messages[`presets.cat.${preset.category}`]} · ` : ''}{preset.model}{preset.durationSeconds ? t(DURATION_KEY, { n: preset.durationSeconds }) : ''}</div>
+          <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{categoryLabel && !badge ? `${categoryLabel} · ` : ''}{preset.model}{preset.durationSeconds ? t(DURATION_KEY, { n: preset.durationSeconds }) : ''}</div>
           <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
         </div>
       }

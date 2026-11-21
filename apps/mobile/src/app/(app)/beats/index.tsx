@@ -1,3 +1,5 @@
+import { BeatTemplatePicker } from '../../../components/beats/BeatTemplatePicker';
+import { createTemplateBeat } from '../../../lib/beatNative/templates';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -6,7 +8,7 @@ import { Button, ListRow, Text, themedStyles, useThemedStyles } from '../../../c
 import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { MusicNotice } from '../../../components/music/MusicNotice';
-import { beatStore, hydrateBeats, dropBeat, listBeats, newBeat, subscribeBeats } from '../../../lib/beatNative/store';
+import { beatStore, hydrateBeats, dropBeat, listBeats, subscribeBeats } from '../../../lib/beatNative/store';
 import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
 import { userIdFromToken } from '../../../lib/appCache';
 import { isRemoved } from '../../../lib/beatNative/rules';
@@ -44,17 +46,25 @@ export default function BeatsHome() {
     }, [api, getAccessToken, generation]));
     useAnnouncement(state !== 'checking' && state !== 'off' ? t('beat.home.loaded', { count: beats.length }) : null, { everywhere: true });
     const open = (id: string) => router.push({ pathname: '/beats/[id]', params: { id } } as never);
-    const create = () => open(newBeat(t('beat.home.untitled', { n: beats.length + 1 })).id);
+    const [picker, setPicker] = useState(false), [creationFailed, setCreationFailed] = useState(false);
     return (
         <ScrollView style={s.screen} contentContainerStyle={s.content}>
             <Stack.Screen options={{ title: t('beat.title') }} />
+            {picker ? <BeatTemplatePicker onClose={() => setPicker(false)} onPick={async template => {
+                setCreationFailed(false);
+                try {
+                    const doc = await createTemplateBeat(beatStore, template, t('beat.home.untitled', { n: beats.length + 1 }));
+                    setPicker(false); open(doc.id);
+                } catch { setPicker(false); setCreationFailed(true); }
+            }} /> : null}
+            {creationFailed ? <MusicNotice message={t('beatLabs.createFailed')} /> : null}
             {state === 'checking' ? <VeyLoader label={t('beat.home.checking')} showLabel /> : null}
             {state === 'signed_out' ? <MusicNotice message={t('beat.cloud.signed_out')} /> : null}
             {state === 'off' ? <MusicNotice message={t('beat.cloud.off')} /> : null}
             {state === 'error' ? <><MusicNotice message={t('beat.cloud.error')} /><Button label={t('beat.retry')} onPress={() => void probeBeats(api).then(result => setState(result.state))} /></> : null}
             {beatStore.hydrationState() === 'error' ? <><MusicNotice message={t('beat.local.loadError')} /><Button label={t('beat.retry')} onPress={() => void hydrateBeats().catch(() => undefined)} /></> : null}
                 {state === 'offline' ? <MusicNotice message={t('beat.offline')} /> : null}
-                <Button label={t('beat.home.new')} onPress={create} />
+                <Button label={t('beat.home.new')} onPress={() => setPicker(true)} />
                 {beats.length === 0 ? <EmptyState title={t('beat.home.empty')} body={t('beat.home.emptyBody')} /> : beats.map(beat => (
                     <View key={beat.id} style={s.row}>
                         <View style={s.grow}>

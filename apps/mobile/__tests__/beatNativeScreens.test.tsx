@@ -32,6 +32,7 @@ const mockPush = jest.fn();
 let mockParams: { id: string } = { id: 'x' };
 const mockAudio = { play: jest.fn(async () => undefined), stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined) };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: mockGeneration }) }));
+jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
 jest.mock('../src/lib/beatNative/audio', () => ({ ...jest.requireActual('../src/lib/beatNative/audio'), createBeatAudio: () => mockAudio }));
@@ -62,6 +63,8 @@ describe('beats home', () => {
         await act(async () => root.render(<BeatsHome />));
         expect(text(t('beat.home.empty')).length).toBeGreaterThan(0);
         await press(t('beat.home.new'));
+        expect(mockPush).not.toHaveBeenCalled();
+        await press(t('beatLabs.template.blank'));
         expect(mockPush).toHaveBeenCalledTimes(1);
         const id = (mockPush.mock.calls[0][0] as { params: { id: string } }).params.id;
         expect(getBeat(id)?.title).toBe(t('beat.home.untitled', { n: 1 }));

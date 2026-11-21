@@ -1,7 +1,7 @@
 import { MusicPublication } from '../../../components/music/MusicPublication';
 import { MusicSongActions } from '../../../components/music/MusicSongActions';
 import { subscribeSongChanges } from '../../../lib/music/songChanges';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
@@ -21,7 +21,7 @@ import { ds } from '../../../theme';
 
 export default function SongDetail() {
     const { id, revision } = useLocalSearchParams<{ id: string; revision?: string }>();
-    const { api } = useAuth(); const s = useThemedStyles(sheets);
+    const { api } = useAuth(); const s = useThemedStyles(sheets); const router = useRouter();
     const [result, setResult] = useState<MusicProbe<MusicSongDetail> | null>(null);
     const [previous, setPrevious] = useState<MusicSongDetail | null>(null);
     const [lifecycle, setLifecycle] = useState<LifecycleState | null>(() => routeRevision(revision));
@@ -79,6 +79,7 @@ export default function SongDetail() {
         </View> : song ? <>
             {!busy && playback ? <MusicPlayer input={playback} /> : !busy ? <MusicNotice message={t('music.player.error')} /> : null}
             <MusicSongActions song={song} />
+            <Button variant="secondary" label={t('beatLabs.makeBeat')} onPress={() => router.push({ pathname: '/beats/new', params: { song: song.id } } as never)} />
             <MusicPublication song={song} />
             <Text variant="title3" accessibilityRole="header">{t('music.versions')}</Text>
             <Text variant="footnote" tone="secondary">{t('music.versionsBody')}</Text>

@@ -1,7 +1,7 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
 import {
-    musicGenerationEnabled, musicPromptPolicy, musicRpcStatus, parseMusicQuote, publicMusicError,
+    MUSIC_BEAT_MODEL_ID, musicBeatAiEnabled, musicGenerationEnabled, musicPromptPolicy, musicRpcStatus, parseMusicQuote, publicMusicError,
     readMusicJson, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
@@ -17,6 +17,11 @@ export async function POST(request) {
 
     const decoded = await readMusicJson(request);
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
+    // Gate before parsing: the incomplete phone probe must never create a quote.
+    if (decoded.value && typeof decoded.value === 'object' && !Array.isArray(decoded.value)
+        && decoded.value.model_id === MUSIC_BEAT_MODEL_ID && !musicBeatAiEnabled()) {
+        return reply({ error: 'beat_ai_unavailable' }, 404);
+    }
     const input = parseMusicQuote(decoded.value, { longSongs: musicRuntimeFlag('longSongs') });
     if (!input.ok) return reply({ error: input.error }, 400);
     const cfg = envConfig();

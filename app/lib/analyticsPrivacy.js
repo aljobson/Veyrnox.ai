@@ -81,21 +81,42 @@ export function sanitisePostHogEvent(event, origin = 'https://veyrnox.ai') {
   // Browser error messages can contain rejected provider responses, prompt
   // fragments, or values interpolated by application code. Error type and
   // frame locations are enough for grouping and source maps; source context
-  // and captured variables are deliberately discarded.
+  // and captured variables are deliberately discarded. The one message kept
+  // is our own operational error code (captureOperationalError), which is a
+  // fixed snake_case name, never free text.
   if (Array.isArray(properties.$exception_list)) {
     properties.$exception_list = properties.$exception_list.map(sanitiseException);
   }
-  if ('$exception_message' in properties) properties.$exception_message = 'Browser error';
+  const keptValues = Array.isArray(properties.$exception_list)
+    ? properties.$exception_list.map((exception) => exception?.value)
+    : [];
+  if ('$exception_message' in properties) {
+    properties.$exception_message = keptValues[0] === properties.$exception_message
+      ? properties.$exception_message : BROWSER_ERROR;
+  }
   if (Array.isArray(properties.$exception_values)) {
-    properties.$exception_values = properties.$exception_values.map(() => 'Browser error');
+    properties.$exception_values = properties.$exception_values.map((value, index) => (
+      keptValues[index] === value ? value : BROWSER_ERROR
+    ));
   }
 
   return scrubTelemetryTree({ ...event, properties });
 }
 
+const BROWSER_ERROR = 'Browser error';
+const OPERATIONAL_ERROR_TYPE = 'VeyrnoxOperationalError';
+const OPERATIONAL_ERROR_CODE = /^[a-z][a-z0-9_]{1,63}$/;
+
+function safeExceptionValue(exception) {
+  return exception.type === OPERATIONAL_ERROR_TYPE
+    && typeof exception.value === 'string'
+    && OPERATIONAL_ERROR_CODE.test(exception.value)
+    ? exception.value : BROWSER_ERROR;
+}
+
 function sanitiseException(exception) {
   if (!exception || typeof exception !== 'object') return exception;
-  const next = { ...exception, value: 'Browser error' };
+  const next = { ...exception, value: safeExceptionValue(exception) };
   const frames = exception.stacktrace?.frames;
   if (!Array.isArray(frames)) return next;
   next.stacktrace = {

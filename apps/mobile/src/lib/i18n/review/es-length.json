@@ -1,5 +1,89 @@
 [
   {
+    "id": "beatLabs.category.All",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.stop",
+    "english": "Stop",
+    "translation": "Detener",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Añadir",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.template.blank",
+    "english": "Blank",
+    "translation": "En blanco",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatLabs.next",
+    "english": "Next",
+    "translation": "Siguiente",
+    "ratio": 2.25
+  },
+  {
+    "id": "beatLabs.replay",
+    "english": "Show tips again",
+    "translation": "Mostrar consejos de nuevo",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.category.Synth",
+    "english": "Synth",
+    "translation": "Sintetizador",
+    "ratio": 2.4
+  },
+  {
+    "id": "beatLabs.context.grid",
+    "english": "Step grid",
+    "translation": "Cuadrícula de pasos",
+    "ratio": 2.11
+  },
+  {
+    "id": "beatLabs.control.play",
+    "english": "Play / Stop",
+    "translation": "Reproducir / Detener",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatLabs.control.ripple",
+    "english": "Ripple edit",
+    "translation": "Edición con desplazamiento",
+    "ratio": 2.36
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Deshacer",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Rehacer",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.control.pianoSelectAll",
+    "english": "Select all notes",
+    "translation": "Seleccionar todas las notas",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatLabs.control.pads",
+    "english": "Drum pads",
+    "translation": "Pads de batería",
+    "ratio": 1.67
+  },
+  {
     "id": "editorCaptionTools.transcriptChoose",
     "english": "Select a transcript word or caption range.",
     "translation": "Selecciona una palabra de la transcripción o un intervalo de subtítulos.",
@@ -3874,6 +3958,54 @@
     "english": "Shared song",
     "translation": "Canción compartida",
     "ratio": 1.64
+  },
+  {
+    "id": "beatAi.targetStems",
+    "english": "Target stem",
+    "translation": "Aislar instrumento",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalidad",
+    "ratio": 3
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calcular precio de dos bucles",
+    "ratio": 1.93
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Comprobar de nuevo",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.unmute",
+    "english": "Unmute {name}",
+    "translation": "Activar sonido de {name}",
+    "ratio": 1.85
+  },
+  {
+    "id": "beatAi.a2",
+    "english": "Target stem",
+    "translation": "Aislar instrumento",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.a27",
+    "english": "Stems need an MP3 song of 10 MB or less",
+    "translation": "Las pistas separadas necesitan una canción MP3 de 10 MB o menos",
+    "ratio": 1.62
   },
   {
     "id": "beat.view.song",
