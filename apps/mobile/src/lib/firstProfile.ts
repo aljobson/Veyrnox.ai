@@ -2,8 +2,13 @@
 // "skipped"); never free text, never in a URL. They only order and pre-fill screens: no price, model or access.
 // Mirrors app/veyrnox/_lib/firstProfile.js; __tests__/firstProfile.test.ts checks the two agree.
 import { FILM_STUDIO_ENABLED } from './filmStudioSwitch';
+import { FIRST_GOALS, type StoredFirstGoal } from './firstGoal';
 export const FIRST_PROFILE_VERSION = 1;
 export const FIRST_PROFILE_SLOT = `veyrnox.firstProfile.v${FIRST_PROFILE_VERSION}`;
+export const FIRST_ONBOARDING_VERSION = 1;
+export const FIRST_ONBOARDING_SLOT = 'veyrnox.firstOnboarding.v1';
+export const FIRST_ONBOARDING_STEPS = ['goal', 'destination', 'role', 'recap'] as const;
+export type FirstOnboardingStep = (typeof FIRST_ONBOARDING_STEPS)[number];
 
 export const FIRST_ROLES = ['creator', 'business', 'pro', 'hobbyist', 'beginner'] as const;
 export const FIRST_DESTINATIONS = ['tiktok', 'reels', 'youtube', 'private'] as const;
@@ -18,7 +23,12 @@ const role = (value: unknown): StoredRole | null => (typeof value === 'string' &
 const destination = (value: unknown): StoredDestination | null => (typeof value === 'string' && DESTINATION_IDS.has(value) ? (value as StoredDestination) : null);
 
 export interface FirstProfile { readonly role: StoredRole | null; readonly destination: StoredDestination | null }
-export interface FirstAnswers extends FirstProfile { readonly goal: string | null }
+export interface FirstAnswers extends FirstProfile { readonly goal: StoredFirstGoal | null }
+export interface FirstOnboarding extends FirstAnswers {
+    readonly version: 0 | 1;
+    readonly currentStep: FirstOnboardingStep | null;
+    readonly completed: boolean;
+}
 
 export function serializeFirstProfile({ role: r = null, destination: d = null }: Partial<FirstProfile> = {}): string {
     if ((r !== null && !ROLE_IDS.has(r)) || (d !== null && !DESTINATION_IDS.has(d))) throw new Error('unknown first-run answer');
@@ -47,8 +57,37 @@ export function readRemoteFirstProfile(body: unknown): RemoteFirstProfile {
     return { kind: 'profile', role: r as StoredRole | null, destination: d as StoredDestination | null };
 }
 
+export function readRemoteFirstOnboarding(body: unknown): Pick<FirstOnboarding, 'version' | 'currentStep' | 'completed'> | null {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+    const { version, current_step: currentStep = null, completed } = body as { version?: unknown; current_step?: unknown; completed?: unknown };
+    if ((version !== 0 && version !== 1) || typeof completed !== 'boolean') return null;
+    if (completed ? currentStep !== null : typeof currentStep !== 'string' || !(FIRST_ONBOARDING_STEPS as readonly string[]).includes(currentStep)) return null;
+    return { version, currentStep: currentStep as FirstOnboardingStep | null, completed };
+}
+
+export function serializeFirstOnboarding(owner: string, state: FirstOnboarding): string {
+    if (!owner) throw new Error('invalid onboarding owner');
+    return JSON.stringify({ owner, version: state.version, goal: state.goal, role: state.role, destination: state.destination,
+        currentStep: state.currentStep, completed: state.completed });
+}
+
+export function parseFirstOnboarding(raw: string | null | undefined, owner: string | null | undefined): FirstOnboarding | null {
+    if (!raw || !owner) return null;
+    try {
+        const value = JSON.parse(raw) as Record<string, unknown>;
+        if (!value || Array.isArray(value) || value.owner !== owner) return null;
+        const progress = readRemoteFirstOnboarding({ version: value.version, current_step: value.currentStep, completed: value.completed });
+        const profile = readRemoteFirstProfile(value);
+        const goalIds = new Set<string>([...FIRST_GOALS, 'skipped']);
+        const goal = value.goal == null ? null : typeof value.goal === 'string' && goalIds.has(value.goal) ? value.goal as StoredFirstGoal : null;
+        if (!progress || profile.kind !== 'profile' || (value.goal != null && goal === null)) return null;
+        return { goal, role: profile.role, destination: profile.destination, ...progress };
+    } catch { return null; }
+}
+
 // Asked only of someone with no goal and no role on record, so an account that answered before is never asked again.
-export const needsFirstRun = ({ goal = null, role: r = null }: { readonly goal?: string | null; readonly role?: string | null } = {}): boolean => goal === null && r === null;
+export const needsFirstRun = ({ goal = null, role: r = null, completed }: { readonly goal?: string | null; readonly role?: string | null; readonly completed?: boolean } = {}): boolean =>
+    typeof completed === 'boolean' ? !completed : goal === null && r === null;
 
 export const hasRealAnswer = (a: { readonly goal?: string | null; readonly role?: string | null; readonly destination?: string | null } | null): boolean =>
     !!a && [a.goal, a.role, a.destination].some((word) => !!word && word !== 'skipped' && word !== 'unsure');

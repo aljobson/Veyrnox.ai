@@ -143,6 +143,9 @@ try {
     // 0500 (ADR-0340) wraps the 0499 wrapper, so it comes after it.
     const withLibrarySync = await readFile(new URL('../packages/db/schema/supabase/0500_library_sync.sql', import.meta.url), 'utf8');
     await q(withLibrarySync); await q(withLibrarySync);
+    // 0578 preserves the complete wrapper chain while adding account onboarding progress to first_goal.
+    const withFirstRunProgress = await readFile(new URL('../packages/db/schema/supabase/0578_first_run_progress.sql', import.meta.url), 'utf8');
+    await q(withFirstRunProgress); await q(withFirstRunProgress);
     await q('ALTER TABLE public.chat_messages ALTER COLUMN seq RESTART WITH 3000000000');
     const alice = await person('alice'), bob = await person('bob-private');
     otherIds.push(bob.id, bob.auth); secrets.push(bob.email);

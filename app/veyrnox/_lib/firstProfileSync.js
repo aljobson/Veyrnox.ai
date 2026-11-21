@@ -3,10 +3,10 @@
 // First-run answers (ADR-0339) on this device and on the account. The server answers 404 while FIRST_GOAL_SYNC_ENABLED is
 // off and a signed-out browser has no account to ask, so every failure means "unavailable" and the device copy decides.
 // Nothing here ever blocks a page or throws.
-import { getStoredSession } from '../../lib/authClient.js';
+import { getStoredSession, getStoredUserId } from '../../lib/authClient.js';
 import { gatewayFetch } from './gateway.js';
 import { FIRST_GOAL_SLOT, parseFirstGoal, readRemoteFirstGoal, serializeFirstGoal } from './firstGoal.js';
-import { FIRST_PROFILE_SLOT, parseFirstProfile, readRemoteFirstProfile, serializeFirstProfile } from './firstProfile.js';
+import { FIRST_ONBOARDING_SLOT, FIRST_PROFILE_SLOT, parseFirstOnboarding, parseFirstProfile, readRemoteFirstOnboarding, readRemoteFirstProfile, serializeFirstOnboarding, serializeFirstProfile } from './firstProfile.js';
 
 /** { goal, role, destination } from this browser; a missing or unreadable copy is null. */
 export function readDeviceAnswers(storage) {
@@ -34,6 +34,25 @@ export function saveDeviceAnswers(answers, storage) {
   return merged;
 }
 
+export function readDeviceOnboarding(owner, storage) {
+  try { return parseFirstOnboarding((storage ?? window.localStorage).getItem(FIRST_ONBOARDING_SLOT), owner); }
+  catch { return null; }
+}
+
+export function saveDeviceOnboarding(owner, state, storage) {
+  if (!owner) return;
+  try { (storage ?? window.localStorage).setItem(FIRST_ONBOARDING_SLOT, serializeFirstOnboarding(owner, state)); }
+  catch { /* account state remains authoritative */ }
+}
+
+// An account-level gate may fall back only to an envelope stamped for that account. A missing match is unresolved, not
+// "complete": the unowned legacy answer slots may contain another account's preferences on a shared browser.
+export function readOfflineOnboarding(owner, storage) {
+  if (!owner) return { kind: 'signed-out' };
+  const state = readDeviceOnboarding(owner, storage);
+  return state ? { kind: 'answers', ...state } : { kind: 'unresolved' };
+}
+
 /** { kind: 'answers', goal, role, destination } | { kind: 'unavailable' }. Signed out: unavailable, without opening the sign-in dialog. */
 // "Signed in" is the stored session, not a live access token: the token is absent or expired for a moment on every page
 // load and the gateway refreshes it. Asking for the live token here made a signed-in person look unanswerable and opened the questions.
@@ -44,10 +63,28 @@ export async function fetchRemoteAnswers(fetcher = gatewayFetch, session = getSt
     const profile = readRemoteFirstProfile(body);
     const goal = readRemoteFirstGoal(body);
     if (profile.kind !== 'profile' || goal.kind === 'unavailable') return { kind: 'unavailable' };
-    return { kind: 'answers', goal: goal.kind === 'goal' ? goal.goal : null, role: profile.role, destination: profile.destination };
+    const progress = readRemoteFirstOnboarding(body);
+    return { kind: 'answers', goal: goal.kind === 'goal' ? goal.goal : null, role: profile.role, destination: profile.destination,
+      ...(progress.kind === 'progress' ? { version: progress.version, currentStep: progress.currentStep, completed: progress.completed } : {}) };
   } catch {
     return { kind: 'unavailable' };
   }
+}
+
+let onboardingPushes = Promise.resolve();
+export function pushOnboarding({ currentStep, completed = false, answer }, fetcher = gatewayFetch, owner = getStoredUserId()) {
+  const run = async () => {
+    if (!owner || getStoredUserId() !== owner) return null;
+    const body = { version: 1, current_step: currentStep, completed, ...(answer ? { [currentStep]: answer } : {}) };
+    try {
+      const result = await fetcher('/first-goal', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      return getStoredUserId() === owner ? result : null;
+    }
+    catch { return null; }
+  };
+  const result = onboardingPushes.then(run, run);
+  onboardingPushes = result.then(() => undefined, () => undefined);
+  return result;
 }
 
 /** Best effort and safe to repeat: the server never lowers an answer and treats the same words again as a replay. */

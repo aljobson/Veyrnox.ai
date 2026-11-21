@@ -30,6 +30,8 @@ beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     process.env.EXPO_PUBLIC_POSTHOG_KEY = 'phc_test';
     mockRouter.push.mockClear(); mockRouter.replace.mockClear(); mockFactory.mockClear();
+    mockRequest.mockImplementation(async (path: string) => path.includes('checkin') ? { ok: true, claimed_today: false, streak: 0, next_day: 1, next_credits: 1, rewards: [1,2,3,4,5,6] } : { created_at: new Date().toISOString() });
+    jest.mocked(SecureStore.getItemAsync).mockResolvedValue(null);
     setFirstRunPending(true);
     setFirstRunUser('analytics-ui');
     await wipeCache(); await bindCacheUser('analytics-ui');
@@ -124,4 +126,16 @@ test('the mounted gate recomputes after account changes and stays quiet on sign-
     await act(async () => setFirstRunUser(null));
     expect(isFirstRunPending()).toBe(false);
     expect(mockRouter.replace).not.toHaveBeenCalled();
+});
+
+test('a new account reaches its partial onboarding even when this device already saw welcome', async () => {
+    await writeConsent('denied');
+    jest.mocked(SecureStore.getItemAsync).mockImplementation(async (key: string) => key === 'veyrnox.welcome.seen.v2' ? '{"version":2,"seen":true}' : null);
+    mockRequest.mockImplementation(async (path: string) => path === '/api/v1/first-goal'
+        ? { goal: 'video', role: null, destination: 'youtube', version: 1, current_step: 'role', completed: false }
+        : { created_at: new Date().toISOString() });
+    setFirstRunUser('second-on-device');
+    await wipeCache(); await bindCacheUser('second-on-device');
+    await act(async () => root.render(<FirstRunGate />));
+    expect(mockRouter.replace).toHaveBeenCalledWith('/first-run');
 });

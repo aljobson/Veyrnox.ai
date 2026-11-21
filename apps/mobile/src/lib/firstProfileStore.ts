@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { appStorage } from './appCache';
-import type { ApiClient } from './api';
-import { FIRST_PROFILE_SLOT, defaultAspectFor, parseFirstProfile, serializeFirstProfile, type FirstAnswers, type FirstProfile, type StoredDestination, type StoredRole } from './firstProfile';
+import type { ApiClient, ClientTask } from './api';
+import { FIRST_ONBOARDING_SLOT, FIRST_PROFILE_SLOT, defaultAspectFor, parseFirstOnboarding, parseFirstProfile, serializeFirstOnboarding, serializeFirstProfile, type FirstAnswers, type FirstOnboarding, type FirstProfile, type StoredDestination, type StoredRole } from './firstProfile';
 import { readFirstGoal, writeFirstGoal } from './firstGoalStore';
 import { fetchRemoteFirstAnswers } from './firstProfileSync';
 import type { StoredFirstGoal } from './firstGoal';
@@ -25,6 +25,41 @@ export async function writeFirstProfile(answers: { readonly role?: StoredRole | 
         await Promise.all([SecureStore.setItemAsync(FIRST_PROFILE_SLOT, raw).catch(() => undefined), appStorage.set(FIRST_PROFILE_SLOT, raw).catch(() => undefined)]);
     }
     return merged;
+}
+
+export async function readFirstOnboarding(owner: string): Promise<FirstOnboarding | null> {
+    const secure = parseFirstOnboarding(await SecureStore.getItemAsync(FIRST_ONBOARDING_SLOT).catch(() => null), owner);
+    if (secure) return secure;
+    return parseFirstOnboarding(await appStorage.get(FIRST_ONBOARDING_SLOT).catch(() => null), owner);
+}
+
+let onboardingWrites: Promise<void> = Promise.resolve();
+export function writeFirstOnboarding(owner: string, state: FirstOnboarding, task?: ClientTask): Promise<void> {
+    const run = async () => {
+        if (!owner || (task && !task.current())) return;
+        const raw = serializeFirstOnboarding(owner, state);
+        await SecureStore.setItemAsync(FIRST_ONBOARDING_SLOT, raw).catch(() => undefined);
+        if (task && !task.current()) return;
+        await appStorage.set(FIRST_ONBOARDING_SLOT, raw).catch(() => undefined);
+    };
+    onboardingWrites = onboardingWrites.then(run, run);
+    return onboardingWrites;
+}
+
+export async function loadFirstOnboarding(api: Pick<ApiClient, 'request'>, task: ClientTask): Promise<FirstOnboarding | null> {
+    if (!task.user || !task.current()) return null;
+    const remote = await fetchRemoteFirstAnswers(api, task, task.user);
+    if (!task.current()) return null;
+    if (remote.kind === 'answers' && remote.version !== undefined && remote.completed !== undefined) {
+        const state: FirstOnboarding = { goal: remote.goal, role: remote.role, destination: remote.destination,
+            version: remote.version, currentStep: remote.currentStep ?? null, completed: remote.completed };
+        await writeFirstOnboarding(task.user, state, task);
+        if (!task.current()) return null;
+        if (remote.goal) void writeFirstGoal(remote.goal as StoredFirstGoal);
+        await writeFirstProfile({ role: remote.role, destination: remote.destination });
+        return task.current() ? state : null;
+    }
+    return readFirstOnboarding(task.user);
 }
 
 // Goal, role and destination as this person has them: the account's words when the server can be asked (including "none

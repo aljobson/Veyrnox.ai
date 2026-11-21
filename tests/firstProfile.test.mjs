@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
     FIRST_ROLES, FIRST_DESTINATIONS, FIRST_PROFILE_SLOT, parseFirstProfile, serializeFirstProfile, readRemoteFirstProfile,
+    parseFirstOnboarding, serializeFirstOnboarding, readRemoteFirstOnboarding,
     needsFirstRun, orderStarts, exampleSetFor, defaultAspectFor, hasRealAnswer,
 } from '../app/veyrnox/_lib/firstProfile.js';
 import { FIRST_ROLE_VALUES, FIRST_DESTINATION_VALUES, cleanFirstAnswers } from '../lib/firstGoal.js';
@@ -35,11 +36,26 @@ test('the server body is read as role and destination, or unavailable', () => {
     assert.deepEqual(readRemoteFirstProfile(null), { kind: 'unavailable' });
 });
 
+test('progress is strict and the device envelope is fenced to one account owner', () => {
+    assert.deepEqual(readRemoteFirstOnboarding({ version: 1, current_step: 'destination', completed: false }),
+        { kind: 'progress', version: 1, currentStep: 'destination', completed: false });
+    assert.deepEqual(readRemoteFirstOnboarding({ version: 0, current_step: null, completed: true }),
+        { kind: 'progress', version: 0, currentStep: null, completed: true });
+    for (const bad of [{ version: 1, current_step: null, completed: false }, { version: 1, current_step: 'goal', completed: true }, { version: 2, current_step: 'goal', completed: false }]) {
+        assert.deepEqual(readRemoteFirstOnboarding(bad), { kind: 'unavailable' });
+    }
+    const raw = serializeFirstOnboarding('alice', { goal: 'video', role: null, destination: null, version: 1, currentStep: 'destination', completed: false });
+    assert.deepEqual(parseFirstOnboarding(raw, 'alice'), { goal: 'video', role: null, destination: null, version: 1, currentStep: 'destination', completed: false });
+    assert.equal(parseFirstOnboarding(raw, 'bob'), null);
+});
+
 test('the flow is for someone with no goal and no role on record', () => {
     assert.equal(needsFirstRun({ goal: null, role: null }), true);
     assert.equal(needsFirstRun({ goal: 'skipped', role: null }), false, 'a home start option already answered');
     assert.equal(needsFirstRun({ goal: null, role: 'skipped' }), false);
     assert.equal(needsFirstRun({ goal: 'video', role: 'creator' }), false);
+    assert.equal(needsFirstRun({ goal: 'video', role: null, completed: false }), true, 'account progress outranks the old heuristic');
+    assert.equal(needsFirstRun({ goal: null, role: null, completed: true }), false, 'grandfathered legacy accounts stay complete');
 });
 
 test('home start options: every role keeps all four, once, and a real goal moves its area first', () => {
@@ -94,7 +110,7 @@ test('the PUT body is any non-empty subset of goal, role, destination, every wor
 const memory = () => { const m = new Map(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v), removeItem: (k) => m.delete(k) }; };
 
 test('web device copy: saves each word, never lowers a real one to "skipped", reads goal, role and destination together', async () => {
-  const { readDeviceAnswers, saveDeviceAnswers } = await import('../app/veyrnox/_lib/firstProfileSync.js');
+  const { readDeviceAnswers, readOfflineOnboarding, saveDeviceAnswers, saveDeviceOnboarding } = await import('../app/veyrnox/_lib/firstProfileSync.js');
   const slot = memory();
   assert.deepEqual(readDeviceAnswers(slot), { goal: null, role: null, destination: null });
   assert.deepEqual(saveDeviceAnswers({ role: 'creator' }, slot), { goal: null, role: 'creator', destination: null });
@@ -105,6 +121,10 @@ test('web device copy: saves each word, never lowers a real one to "skipped", re
   const blocked = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
   assert.deepEqual(readDeviceAnswers(blocked), { goal: null, role: null, destination: null });
   assert.doesNotThrow(() => saveDeviceAnswers({ role: 'pro' }, blocked));
+  saveDeviceOnboarding('alice', { goal: 'video', role: null, destination: null, version: 1, currentStep: 'destination', completed: false }, slot);
+  assert.deepEqual(readOfflineOnboarding('alice', slot), { kind: 'answers', goal: 'video', role: null, destination: null, version: 1, currentStep: 'destination', completed: false });
+  assert.deepEqual(readOfflineOnboarding('bob', slot), { kind: 'unresolved' }, 'another account never inherits Alice\'s progress or completion');
+  assert.deepEqual(readOfflineOnboarding(null, slot), { kind: 'signed-out' });
 });
 
 test('web sync: signed out asks nothing; the account\'s answers are read whole; a push sends only listed words', async () => {

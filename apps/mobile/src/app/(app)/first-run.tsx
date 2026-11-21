@@ -13,9 +13,9 @@ import { starterModel } from '../../lib/createOptions';
 import { firstGoalTarget, FIRST_GOALS, type FirstGoal, type StoredFirstGoal } from '../../lib/firstGoal';
 import { writeFirstGoal } from '../../lib/firstGoalStore';
 import { FIRST_DESTINATIONS, FIRST_ROLES, needsFirstRun, type StoredDestination, type StoredRole } from '../../lib/firstProfile';
-import { loadFirstAnswers, writeFirstProfile } from '../../lib/firstProfileStore';
+import { loadFirstOnboarding, writeFirstOnboarding, writeFirstProfile } from '../../lib/firstProfileStore';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
-import { pushFirstAnswers } from '../../lib/firstProfileSync';
+import { pushFirstOnboarding } from '../../lib/firstProfileSync';
 import { firstRunExample } from '../../lib/firstRunExamples';
 import { HARD_PAYWALL_STARTER_CREDITS, afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
@@ -63,7 +63,7 @@ const DESTINATION_ICON: Record<(typeof FIRST_DESTINATIONS)[number], MenuIcon> = 
 
 // The first-run journey (ADR-0339), the first screen a new person sees after sign-in: Vey says hello above what to make
 // first, then where it will go, then which describes you best, then a recap of the idea to start from. One per screen,
-// each skippable, asked once of someone whose account has no goal and no role on record.
+// each skippable and resumed from the account's versioned step.
 export default function FirstRun() {
     const router = useRouter();
     const styles = useThemedStyles(sheets);
@@ -80,9 +80,9 @@ export default function FirstRun() {
     // Account writes go out one after another, so a quick Back and re-pick can never let an older request land last.
     const writes = useRef<Promise<unknown>>(Promise.resolve());
     // Remote writes only: each is dropped if the session that made the answer has ended by the time its turn comes.
-    const queueWrite = useCallback((job: () => Promise<unknown>) => {
+    const queueWrite = useCallback((job: (task: ReturnType<typeof beginSessionTask>) => Promise<unknown>) => {
         const task = beginSessionTask();
-        const run = () => (task.current() ? job() : Promise.resolve());
+        const run = () => (task.current() ? job(task) : Promise.resolve());
         writes.current = writes.current.then(run, run).catch(() => {});
     }, [beginSessionTask]);
     // Local saves go straight out (not behind the network) and finish() waits for them, so Create reads the answers.
@@ -133,19 +133,39 @@ export default function FirstRun() {
     useEffect(() => {
         let alive = true;
         captureEvent('onboarding_step', { step: 'questions', action: 'view' });
-        loadFirstAnswers(api).then((known) => {
-            if (!alive) return;
-            if (needsFirstRun(known)) setAsking(true);
-            else leave();
+        const task = beginSessionTask();
+        loadFirstOnboarding(api, task).then((known) => {
+            if (!alive || !task.current()) return;
+            if (!known) { setAsking(true); return; }
+            if (needsFirstRun(known)) {
+                answers.current = { goal: known.goal as StoredFirstGoal | undefined, role: known.role ?? undefined, destination: known.destination ?? undefined };
+                setShown(answers.current);
+                const next = known.currentStep === 'recap' ? STEPS.length : Math.max(0, STEPS.indexOf(known.currentStep as Step));
+                setStep(next);
+                setAsking(true);
+            } else leave();
         }).catch(() => { if (alive) setAsking(true); });
         return () => { alive = false; };
-    }, [api, leave]);
+    }, [api, beginSessionTask, leave]);
 
     const finish = useCallback(async () => {
         if (finishing.current) return;
         finishing.current = true;
+        const task = beginSessionTask();
         const goal = answers.current.goal;
         await saved.current;
+        await writes.current;
+        if (!task.current()) return;
+        if (goal && goal !== 'skipped') {
+            const result = await pushFirstOnboarding(api, task, { currentStep: 'recap', completed: true }) as any;
+            if (!task.current()) return;
+            await writeFirstOnboarding(task.user!, result && (result.version === 0 || result.version === 1)
+                ? { goal: result.goal, role: result.role, destination: result.destination, version: result.version,
+                    currentStep: result.current_step, completed: result.completed === true }
+                : { goal: answers.current.goal ?? null, role: answers.current.role ?? null, destination: answers.current.destination ?? null,
+                    version: 1, currentStep: null, completed: true }, task);
+        }
+        if (!task.current()) return;
         leave();
         if (!goal) return;
         const target = firstGoalTarget(goal);
@@ -155,7 +175,7 @@ export default function FirstRun() {
         const models = await fetchCatalogCached(() => undefined).then((r) => r.value).catch(() => null);
         const model = models ? starterModel(models, target.goal) : null;
         if (model) router.push({ pathname: '/create/[modelId]', params: { modelId: model.id, prompt: firstRunExample(answers.current.role, target.goal) } });
-    }, [leave, router]);
+    }, [api, beginSessionTask, leave, router]);
 
     // A real answer already given is not replaced by a skip or "not sure" when someone goes Back, so what the recap shows,
     // what is stored here and what the account holds stay the same.
@@ -171,15 +191,22 @@ export default function FirstRun() {
             if (key === 'role') {
                 answers.current = { ...answers.current, role: next as StoredRole };
                 saveLocal(() => writeFirstProfile({ role: next as StoredRole }));
-                queueWrite(() => pushFirstAnswers(api, { role: next }));
+                queueWrite((task) => pushFirstOnboarding(api, task, { currentStep: 'role', answer: next }));
             } else if (key === 'goal') {
                 answers.current = { ...answers.current, goal: next as StoredFirstGoal };
                 saveLocal(() => writeFirstGoal(next as StoredFirstGoal));
-                queueWrite(() => pushFirstAnswers(api, { goal: next }));
+                queueWrite((task) => pushFirstOnboarding(api, task, { currentStep: 'goal', answer: next }));
             } else {
                 answers.current = { ...answers.current, destination: next as StoredDestination };
                 saveLocal(() => writeFirstProfile({ destination: next as StoredDestination }));
-                queueWrite(() => pushFirstAnswers(api, { destination: next }));
+                queueWrite((task) => pushFirstOnboarding(api, task, { currentStep: 'destination', answer: next }));
+            }
+            const task = beginSessionTask();
+            if (task.user) {
+                const nextStep = step < STEPS.length - 1 ? STEPS[step + 1] : answers.current.goal === 'skipped' ? null : 'recap';
+                const completed = step === STEPS.length - 1 && answers.current.goal === 'skipped';
+                saveLocal(() => writeFirstOnboarding(task.user!, { goal: answers.current.goal ?? null, role: answers.current.role ?? null,
+                    destination: answers.current.destination ?? null, version: 1, currentStep: nextStep, completed }, task));
             }
         }
         setShown(answers.current);
@@ -193,7 +220,7 @@ export default function FirstRun() {
             if (hasRecap(answers.current.goal)) setStep(STEPS.length);
             else void finish();
         }, reduced || word === 'skipped' ? 0 : 220);
-    }, [api, finish, queueWrite, reduced, saveLocal, step]);
+    }, [api, beginSessionTask, finish, queueWrite, reduced, saveLocal, step]);
 
     // Back cancels a pending hop, so a quick pick-then-Back never jumps forward again.
     const goBack = useCallback((to: number) => {

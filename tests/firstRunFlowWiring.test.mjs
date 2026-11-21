@@ -12,6 +12,8 @@ test('the flow is a modal dialog mounted on the app home, inside the age gate\'s
   assert.match(flow, /aria-modal="true"/);
   assert.match(flow, /data-testid="first-run-skip"/);
   assert.match(flow, /Escape/);
+  assert.ok(!/skipRest/.test(flow), 'Escape dismisses without fabricating skipped answers');
+  assert.match(flow, /const STEPS = \['goal', 'destination', 'role'\]/);
   const home = await read('app/veyrnox/app/page.js');
   assert.match(home, /<FirstRunFlow \/>/);
   const template = await read('app/veyrnox/app/template.js');

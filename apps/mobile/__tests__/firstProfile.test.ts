@@ -5,9 +5,9 @@ const path = require('path') as { join: (...p: string[]) => string };
 
 import {
     FIRST_DESTINATIONS, FIRST_PROFILE_SLOT, FIRST_ROLES, defaultAspectFor, exampleSetFor, hasRealAnswer, needsFirstRun, orderStarts, parseFirstProfile,
-    phoneStarts, readRemoteFirstProfile, serializeFirstProfile,
+    parseFirstOnboarding, phoneStarts, readRemoteFirstOnboarding, readRemoteFirstProfile, serializeFirstOnboarding, serializeFirstProfile,
 } from '../src/lib/firstProfile';
-import { fetchRemoteFirstAnswers, pushFirstAnswers } from '../src/lib/firstProfileSync';
+import { fetchRemoteFirstAnswers, pushFirstAnswers, pushFirstOnboarding } from '../src/lib/firstProfileSync';
 
 const web = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'app', 'veyrnox', '_lib', 'firstProfile.js'), 'utf8');
 
@@ -35,10 +35,21 @@ describe('the first-run answers (role, destination)', () => {
         expect(readRemoteFirstProfile(null)).toEqual({ kind: 'unavailable' });
     });
 
+    test('progress is strict and the offline envelope belongs to one account', () => {
+        expect(readRemoteFirstOnboarding({ version: 1, current_step: 'role', completed: false })).toEqual({ version: 1, currentStep: 'role', completed: false });
+        expect(readRemoteFirstOnboarding({ version: 1, current_step: null, completed: false })).toBeNull();
+        const raw = serializeFirstOnboarding('A', { goal: 'video', role: null, destination: 'youtube', version: 1, currentStep: 'role', completed: false });
+        expect(parseFirstOnboarding(raw, 'A')).toEqual({ goal: 'video', role: null, destination: 'youtube', version: 1, currentStep: 'role', completed: false });
+        expect(parseFirstOnboarding(raw, 'B')).toBeNull();
+        expect(parseFirstOnboarding('{"owner":"A","version":1,"goal":"private prompt","role":null,"destination":null,"currentStep":"destination","completed":false}', 'A')).toBeNull();
+    });
+
     test('the questions are for an account with no goal and no role', () => {
         expect(needsFirstRun({ goal: null, role: null })).toBe(true);
         expect(needsFirstRun({ goal: 'skipped', role: null })).toBe(false);
         expect(needsFirstRun({ goal: null, role: 'skipped' })).toBe(false);
+        expect(needsFirstRun({ goal: 'video', role: null, completed: false })).toBe(true);
+        expect(needsFirstRun({ goal: null, role: null, completed: true })).toBe(false);
     });
 
     test('start options: all kept, once; a role and a goal move one first; the phone shows create, audio, chat and film', () => {
@@ -91,5 +102,15 @@ describe('first-run answers on the server', () => {
         expect(api.request).toHaveBeenCalledTimes(1);
         expect(api.request).toHaveBeenCalledWith('/api/v1/first-goal', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{"role":"pro","destination":"youtube"}' });
         await expect(pushFirstAnswers({ request: async () => { throw new Error('down'); } } as never, { role: 'pro' })).resolves.toBeUndefined();
+    });
+
+    test('a versioned push is fenced to its captured account task', async () => {
+        const api = { request: jest.fn(async () => ({ version: 1, current_step: 'destination', completed: false })) };
+        const task = { gen: 1, user: 'A', current: () => true };
+        await pushFirstOnboarding(api as never, task, { currentStep: 'goal', answer: 'video' });
+        expect(api.request).toHaveBeenCalledWith('/api/v1/first-goal', expect.objectContaining({ body: '{"version":1,"current_step":"goal","completed":false,"goal":"video"}' }), { task, owner: 'A' });
+        const stale = { ...task, current: () => false };
+        await pushFirstOnboarding(api as never, stale, { currentStep: 'goal', answer: 'audio' });
+        expect(api.request).toHaveBeenCalledTimes(1);
     });
 });

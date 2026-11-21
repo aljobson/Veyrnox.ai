@@ -4,8 +4,8 @@ import FirstRun from '../src/app/(app)/first-run';
 import { fetchCatalogCached, type CatalogModel } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
 import { writeFirstGoal } from '../src/lib/firstGoalStore';
-import { loadFirstAnswers, writeFirstProfile } from '../src/lib/firstProfileStore';
-import { pushFirstAnswers } from '../src/lib/firstProfileSync';
+import { loadFirstOnboarding, writeFirstOnboarding, writeFirstProfile } from '../src/lib/firstProfileStore';
+import { pushFirstOnboarding } from '../src/lib/firstProfileSync';
 import { markWelcomeSeen } from '../src/lib/markWelcomeSeen';
 
 // The first test pays for loading the screen and its modules cold, which can pass 5 s on a busy machine.
@@ -18,12 +18,12 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () =
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn() }));
 jest.mock('../src/lib/firstGoalStore', () => ({ writeFirstGoal: jest.fn(async () => undefined) }));
-jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstAnswers: jest.fn(), writeFirstProfile: jest.fn(async () => ({})) }));
+jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstOnboarding: jest.fn(), writeFirstOnboarding: jest.fn(async () => undefined), writeFirstProfile: jest.fn(async () => ({})) }));
 jest.mock('../src/lib/markWelcomeSeen', () => ({ markWelcomeSeen: jest.fn(async () => undefined) }));
-jest.mock('../src/lib/firstProfileSync', () => ({ pushFirstAnswers: jest.fn(async () => undefined) }));
+jest.mock('../src/lib/firstProfileSync', () => ({ pushFirstOnboarding: jest.fn(async () => undefined) }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
 jest.mock('../src/lib/presets', () => ({ fetchPresets: jest.fn(async () => []) }));
-jest.mock('../src/auth/AuthProvider', () => { const api = { getBalance: async () => ({ free_credits: 10 }) }; const task = { current: () => true }; return { useAuth: () => ({ api, beginSessionTask: () => task }) }; });
+jest.mock('../src/auth/AuthProvider', () => { const api = { getBalance: async () => ({ free_credits: 10 }) }; const task = { user: 'A', gen: 1, current: () => true }; return { useAuth: () => ({ api, beginSessionTask: () => task }) }; });
 
 let root: Root;
 const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
@@ -39,8 +39,8 @@ beforeEach(async () => {
     jest.useFakeTimers();
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     root = createRoot();
-    for (const fn of [mockPush, mockReplace, writeFirstGoal, writeFirstProfile, pushFirstAnswers, markWelcomeSeen] as jest.Mock[]) fn.mockClear();
-    jest.mocked(loadFirstAnswers).mockReset().mockResolvedValue({ goal: null, role: null, destination: null });
+    for (const fn of [mockPush, mockReplace, writeFirstGoal, writeFirstProfile, writeFirstOnboarding, pushFirstOnboarding, markWelcomeSeen] as jest.Mock[]) fn.mockClear();
+    jest.mocked(loadFirstOnboarding).mockReset().mockResolvedValue({ goal: null, role: null, destination: null, version: 1, currentStep: 'goal', completed: false });
     jest.mocked(fetchCatalogCached).mockReset().mockResolvedValue({ value: [mockPrompt], meta: { fromCache: false, stale: false, savedAt: Date.now(), ageMs: 0 } } as never);
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
@@ -52,7 +52,7 @@ test('asks the goal first (under Vey\'s hello), then where it will go, then the 
     expect(hasText(t('welcome.hello.title'))).toBe(true);
     await press(t('create.firstGoal.video'));
     expect(writeFirstGoal).toHaveBeenCalledWith('video');
-    expect(pushFirstAnswers).toHaveBeenCalledWith(expect.anything(), { goal: 'video' });
+    expect(pushFirstOnboarding).toHaveBeenCalledWith(expect.anything(), expect.anything(), { currentStep: 'goal', answer: 'video' });
     expect(hasText(t('create.firstRun.destTitle'))).toBe(true);
     await press(t('create.firstRun.dest.reels'));
     expect(writeFirstProfile).toHaveBeenLastCalledWith({ destination: 'reels' });
@@ -107,10 +107,21 @@ test('every screen can be skipped; skipping all three records "skipped" and land
 });
 
 test('an account that already answered is not asked again and goes straight on', async () => {
-    jest.mocked(loadFirstAnswers).mockResolvedValue({ goal: 'video', role: 'creator', destination: null });
+    jest.mocked(loadFirstOnboarding).mockResolvedValue({ goal: 'video', role: 'creator', destination: null, version: 1, currentStep: null, completed: true });
     await act(async () => root.render(<FirstRun />));
     expect(mockReplace).toHaveBeenCalledWith('/');
     expect(hasText(t('create.firstRun.roleTitle'))).toBe(false);
+});
+
+test('a partial account resumes at the authoritative step and completes through recap', async () => {
+    jest.mocked(loadFirstOnboarding).mockResolvedValue({ goal: 'video', role: null, destination: 'youtube', version: 1, currentStep: 'role', completed: false });
+    await act(async () => root.render(<FirstRun />));
+    expect(hasText(t('create.firstRun.roleTitle'))).toBe(true);
+    expect(hasText(t('create.firstGoal.title'))).toBe(false);
+    await press(t('create.firstRun.role.creator'));
+    expect(hasText(t('create.firstRun.suggested'))).toBe(true);
+    await start();
+    expect(pushFirstOnboarding).toHaveBeenCalledWith(expect.anything(), expect.anything(), { currentStep: 'recap', completed: true });
 });
 
 test('the welcome is marked seen only when the questions end, so quitting part-way brings them back next launch', async () => {
@@ -125,7 +136,7 @@ test('the welcome is marked seen only when the questions end, so quitting part-w
 });
 
 test('an account that already answered is marked seen at once, so it is never looped back to the welcome', async () => {
-    jest.mocked(loadFirstAnswers).mockResolvedValue({ goal: null, role: 'skipped', destination: null });
+    jest.mocked(loadFirstOnboarding).mockResolvedValue({ goal: null, role: 'skipped', destination: null, version: 0, currentStep: null, completed: true });
     await act(async () => root.render(<FirstRun />));
     expect(markWelcomeSeen).toHaveBeenCalledTimes(1);
     expect(mockReplace).toHaveBeenCalledWith('/');
@@ -147,8 +158,8 @@ test('Back after a pick cancels the pending hop, and a real answer is not replac
 test('account writes go out in order, one after another', async () => {
     const order: string[] = [];
     let release: () => void = () => {};
-    jest.mocked(pushFirstAnswers).mockImplementationOnce(() => new Promise<void>((resolve) => { release = () => { order.push('goal-done'); resolve(); }; }));
-    jest.mocked(pushFirstAnswers).mockImplementation(async (_api, a) => { order.push(Object.keys(a)[0]); });
+    jest.mocked(pushFirstOnboarding).mockImplementationOnce(() => new Promise<void>((resolve) => { release = () => { order.push('goal-done'); resolve(); }; }));
+    jest.mocked(pushFirstOnboarding).mockImplementation(async (_api, _task, a) => { order.push(a.currentStep); return undefined; });
     await act(async () => root.render(<FirstRun />));
     await press(t('create.firstGoal.video'));
     await press(t('create.firstRun.dest.reels'));

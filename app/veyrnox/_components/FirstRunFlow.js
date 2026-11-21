@@ -5,15 +5,16 @@ import { tOr } from '../../../lib/i18n/translate.mjs';
 import { useI18n } from '../../../components/I18nProvider';
 import { FIRST_GOALS, firstGoalTarget } from '../_lib/firstGoal';
 import { FIRST_DESTINATIONS, FIRST_ROLES, needsFirstRun } from '../_lib/firstProfile';
-import { pushAnswers, saveDeviceAnswers, setFirstRunHandoff } from '../_lib/firstProfileSync';
+import { pushOnboarding, saveDeviceAnswers, saveDeviceOnboarding, setFirstRunHandoff } from '../_lib/firstProfileSync';
 import { useFirstProfile } from '../_lib/useFirstProfile';
 import { signalVeyMood } from '../../../lib/veyMood';
+import { getStoredUserId } from '../../lib/authClient';
 
-const STEPS = ['role', 'goal', 'destination'];
+const STEPS = ['goal', 'destination', 'role'];
 
-// The first-run questions (ADR-0339): which describes you best, what to make first, where it will go. One per screen,
-// each skippable, asked once of someone with no goal and no role on record. It sits inside the age gate, so it never
-// comes before it. Every answer is one fixed word, saved on this device and (when the account copy is on) the account.
+// The first-run questions (ADR-0339): what to make first, where it will go, which describes you best. One per screen,
+// each skippable and resumed from the account's versioned step. It sits inside the age gate, so it never comes before it.
+// Every answer is one fixed word, saved on this device and (when the account copy is on) the account.
 export function FirstRunFlow() {
   const { t } = useI18n();
   const router = useRouter();
@@ -22,13 +23,35 @@ export function FirstRunFlow() {
   const [step, setStep] = useState(0);
   const answers = useRef({});
   const heading = useRef(null);
+  const hydratedFor = useRef(null);
 
   // The answers on record only change when the session does, so "is it needed" is read straight off them.
   const open = !closed && profile.ready && profile.signedIn && needsFirstRun(profile);
+  useEffect(() => {
+    setClosed(false);
+    hydratedFor.current = null;
+  }, [profile.userId]);
+  useEffect(() => {
+    if (!open || hydratedFor.current === profile.userId) return;
+    hydratedFor.current = profile.userId;
+    answers.current = { goal: profile.goal, role: profile.role, destination: profile.destination };
+    const next = profile.currentStep === 'recap' ? STEPS.length : Math.max(0, STEPS.indexOf(profile.currentStep));
+    setStep(next);
+  }, [open, profile.currentStep, profile.destination, profile.goal, profile.role, profile.userId]);
   useEffect(() => { if (open) heading.current?.focus(); }, [open, step]);
   useEffect(() => { if (open && step === 0) signalVeyMood('first-sign-in', 9000); }, [open, step]);
 
-  function finish() {
+  async function finish() {
+    const owner = profile.userId;
+    if (owner && step >= STEPS.length) {
+      const result = await pushOnboarding({ currentStep: 'recap', completed: true }, undefined, owner);
+      if (getStoredUserId() !== owner) return;
+      if (result?.version !== undefined) saveDeviceOnboarding(owner, {
+        goal: result.goal, role: result.role, destination: result.destination, version: result.version,
+        currentStep: result.current_step, completed: result.completed,
+      });
+    }
+    if (getStoredUserId() !== owner) return;
     setClosed(true);
     const goal = answers.current.goal;
     const target = goal ? firstGoalTarget(goal) : null;
@@ -40,25 +63,39 @@ export function FirstRunFlow() {
   }
 
   function answer(word) {
+    const owner = profile.userId;
     const key = STEPS[step];
     answers.current = { ...answers.current, [key]: word };
     saveDeviceAnswers({ [key]: word });
-    void pushAnswers({ [key]: word });
+    const nextStep = step < STEPS.length - 1 ? STEPS[step + 1] : answers.current.goal === 'skipped' ? null : 'recap';
+    const completed = step === STEPS.length - 1 && answers.current.goal === 'skipped';
+    if (owner) saveDeviceOnboarding(owner, { ...answers.current, version: 1, currentStep: nextStep, completed });
+    void pushOnboarding({ currentStep: key, answer: word }, undefined, owner).then((result) => {
+      if (result?.version !== undefined && owner && getStoredUserId() === owner) saveDeviceOnboarding(owner, {
+        goal: result.goal, role: result.role, destination: result.destination, version: result.version,
+        currentStep: result.current_step, completed: result.completed,
+      });
+    });
     if (step < STEPS.length - 1) setStep(step + 1);
-    else finish();
-  }
-
-  // Escape is "skip the rest": whatever is left is recorded as skipped so nobody is asked again.
-  function skipRest() {
-    for (const key of STEPS.slice(step)) {
-      answers.current = { ...answers.current, [key]: 'skipped' };
-      saveDeviceAnswers({ [key]: 'skipped' });
-    }
-    void pushAnswers(answers.current);
-    setClosed(true);
+    else if (answers.current.goal === 'skipped') void finish();
+    else setStep(STEPS.length);
   }
 
   if (!open) return null;
+  if (step >= STEPS.length) return (
+    <div role="dialog" aria-modal="true" aria-label={t('app.create.firstRun.label')} data-testid="first-run-flow"
+      onKeyDown={(event) => { if (event.key === 'Escape') setClosed(true); }}
+      className="vx-overlay vx-overlay-sheet fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center">
+      <div className="w-full max-w-[460px] rounded-[20px] border border-vx-border bg-vx-panel p-6 shadow-2xl">
+        <h2 ref={heading} tabIndex={-1} data-testid="first-run-title" className="vx-display text-balance text-[28px] outline-none">{t('app.create.firstRun.suggested')}</h2>
+        <p className="mt-3 text-sm text-vx-fg-muted">{t('app.create.firstRun.personalise')}</p>
+        <button type="button" data-testid="first-run-continue" onClick={() => { void finish(); }}
+          className="mt-6 min-h-12 w-full rounded-xl bg-vx-accent px-4 py-3 text-sm font-bold text-black vx-press">
+          {t('app.age.continue')}
+        </button>
+      </div>
+    </div>
+  );
   const key = STEPS[step];
   const options = key === 'role' ? FIRST_ROLES : key === 'goal' ? FIRST_GOALS.map(({ id }) => id) : FIRST_DESTINATIONS;
   const title = key === 'role' ? t('app.create.firstRun.roleTitle') : key === 'goal' ? t('app.create.firstGoal.title') : t('app.create.firstRun.destTitle');
@@ -70,7 +107,7 @@ export function FirstRunFlow() {
       aria-modal="true"
       aria-label={t('app.create.firstRun.label')}
       data-testid="first-run-flow"
-      onKeyDown={(event) => { if (event.key === 'Escape') skipRest(); }}
+      onKeyDown={(event) => { if (event.key === 'Escape') setClosed(true); }}
       className="vx-overlay vx-overlay-sheet fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
     >
       <div className="w-full max-w-[460px] rounded-[20px] border border-vx-border bg-vx-panel p-6 shadow-2xl">
