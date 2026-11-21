@@ -190,7 +190,7 @@ One easing: `--vx-ease-out: cubic-bezier(0.23, 1, 0.32, 1)`.
 | `.vx-tile` | 200 ms; hover 1.015 only on fine pointers; active .98 | tiles, preset cards |
 | `.vx-rise` | 300 ms, stagger `--vx-i × 50 ms` | hero feature cards |
 | `.vx-print` | 900 ms `cubic-bezier(.32,.72,0,1)`, 150 ms delay; clip-path reveal from the slot plus `rotateX(7deg → 2deg → 0)` pivoted at the top edge | PriceSlip only — the one authored entrance |
-| `.vx-tick` | 220 ms rise + unblur, re-keyed on change | prices on the slip |
+| `.vx-tick` | 220 ms rise with no fade, re-keyed when the value changes | prices on the slip |
 | `.vx-shimmer` | 1.6 s linear loop | progress only (generating, loading) |
 | `.vx-particle` | 0.6 s | Studio Generate burst |
 
