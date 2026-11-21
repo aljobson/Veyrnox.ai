@@ -115,8 +115,17 @@ Keep the public wrappers: they mint opaque actor ids after successful writes.
 Replacing a public wrapper without calling `private.music_actor_id` loses that
 guarantee; `tests/musicBlocksProjection.test.mjs` guards later migrations.
 Migration 0576 adds the per-song takedown refusal in the private publication
-implementation only. Moderation must UPDATE the existing publication row so
-the publish lock serializes with the takedown (ADR-0369).
+implementation only, and installs a private AFTER INSERT OR UPDATE OF status
+trigger that blocks every published sibling when a row becomes blocked.
+Moderation must UPDATE an existing publication row so the publish lock
+serializes with the takedown; for an unpublished slug, also set
+`unpublished_at=NULL` to satisfy the existing CHECK. After waiting for a
+concurrent publish, the trigger takes down its newly inserted live sibling too.
+INSERTing a separate blocked row handles committed siblings but is not the
+concurrent moderation protocol. Clearing a takedown requires clearing every
+blocked row for that song. The migration does not repair existing blocked/live
+pairs: the owner/operator must review the required read-only preflight in
+ADR-0369 before or right after apply; any repair is a separate decision.
 
 ### Every applied migration must be accounted for
 

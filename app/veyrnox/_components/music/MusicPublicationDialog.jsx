@@ -72,6 +72,10 @@ export function MusicPublicationDialog({ song, onClose }) {
       });
       attemptRef.current = null;
       setPublication(result.publication);
+      if (result.publication.status === 'blocked') {
+        setError(t('music.publication.blocked'));
+        return;
+      }
       setNotice('Published. You can unpublish immediately without affecting the private original.');
     } catch (reason) {
       const messages = {

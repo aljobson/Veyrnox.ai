@@ -63,3 +63,62 @@ test('takedown changes only the private implementation by adding the serialized 
     assert.doesNotMatch(migration, /(?:FUNCTION public\.|GRANT\s)/);
     assert.match(migration, /REVOKE ALL ON FUNCTION private\.music_publish_song_pre_0570\(TEXT,UUID,UUID,TEXT,TEXT,BOOLEAN,BOOLEAN,TEXT,TEXT\) FROM PUBLIC, anon, authenticated, service_role;/);
 });
+
+test('takedown trigger propagates only to live siblings and has no caller grants', async () => {
+    const migration = await readFile(new URL('../packages/db/schema/supabase/0576_music_publish_respects_takedown.sql', import.meta.url), 'utf8');
+    const trigger = migration.split('CREATE OR REPLACE FUNCTION private.music_block_publication_siblings()')[1];
+    assert.ok(trigger);
+    assert.match(trigger, /RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS \$\$/);
+    assert.match(trigger, /UPDATE public\.music_publications SET status='blocked',updated_at=now\(\)\s+WHERE song_id=NEW\.song_id AND status='published';/);
+    assert.match(trigger, /REVOKE ALL ON FUNCTION private\.music_block_publication_siblings\(\) FROM PUBLIC, anon, authenticated, service_role;/);
+    assert.match(trigger, /DROP TRIGGER IF EXISTS music_block_publication_siblings ON public\.music_publications;/);
+    assert.match(trigger, /AFTER INSERT OR UPDATE OF status ON public\.music_publications\s+FOR EACH ROW WHEN \(NEW\.status='blocked'\)\s+EXECUTE FUNCTION private\.music_block_publication_siblings\(\);/);
+    assert.doesNotMatch(trigger, /\bGRANT\b/);
+    const afterFunction = trigger.split('END $$;')[1];
+    assert.doesNotMatch(afterFunction, /(?:^|;)\s*(?:UPDATE|INSERT|DELETE)\b/mi, 'migration performs no data cleanup');
+});
+
+for (const status of ['blocked', 'published']) {
+    test(`dialog handles a successful ${status} receipt and clears its attempt key`, async () => {
+        const source = await readFile(new URL('../app/veyrnox/_components/music/MusicPublicationDialog.jsx', import.meta.url), 'utf8');
+        // Execute the actual submit handler without a browser or a JSX dependency.
+        const handler = source.slice(source.indexOf('  async function publish()'), source.indexOf('  async function unpublish()'));
+        assert.ok(handler.startsWith('  async function publish()'));
+        const publication = { slug: 'a'.repeat(24), status };
+        const state = { busy: false, error: 'previous error', notice: 'previous notice', publication: null };
+        const notices = [], requests = [], attemptRef = { current: 'publish.original-retry' };
+        let keysMinted = 0;
+        const scope = {
+            rights: true, busy: false, attemptRef, song: { id, version_id: id },
+            handle: 'creator', displayName: 'Creator', comments: false, remixes: false,
+            key: () => `publish.fresh-${++keysMinted}`,
+            t: name => { assert.equal(name, 'music.publication.blocked'); return 'Taken down message'; },
+            gatewayFetch: async (url, options) => {
+                assert.equal(url, `/music/songs/${id}/publication`);
+                assert.equal(options.method, 'POST');
+                requests.push(JSON.parse(options.body));
+                return { publication };
+            },
+            setBusy: value => { state.busy = value; },
+            setError: value => { state.error = value; },
+            setNotice: value => { state.notice = value; notices.push(value); },
+            setPublication: value => { state.publication = value; },
+        };
+        const publish = new Function(...Object.keys(scope), `${handler}\nreturn publish;`)(...Object.values(scope));
+        await publish();
+        assert.equal(requests[0].idempotency_key, 'publish.original-retry');
+        assert.equal(attemptRef.current, null);
+        assert.equal(state.publication, publication);
+        assert.equal(state.busy, false, 'finally must run even after the blocked early return');
+        if (status === 'blocked') {
+            assert.equal(state.error, 'Taken down message');
+            assert.deepEqual(notices, [''], 'a blocked receipt must never announce Published');
+        } else {
+            assert.equal(state.error, '');
+            assert.match(state.notice, /^Published\./);
+        }
+        await publish();
+        assert.equal(requests[1].idempotency_key, 'publish.fresh-1');
+        assert.equal(attemptRef.current, null);
+    });
+}

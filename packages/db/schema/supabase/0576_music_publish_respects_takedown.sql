@@ -73,3 +73,20 @@ EXCEPTION WHEN unique_violation THEN
     RETURN jsonb_build_object('ok',false,'code','HANDLE_TAKEN');
 END $$;
 REVOKE ALL ON FUNCTION private.music_publish_song_pre_0570(TEXT,UUID,UUID,TEXT,TEXT,BOOLEAN,BOOLEAN,TEXT,TEXT) FROM PUBLIC, anon, authenticated, service_role;
+
+-- Taking down any slug also takes down the song's currently published sibling.
+-- Only published rows are updated, so recursive trigger calls stop naturally.
+CREATE OR REPLACE FUNCTION private.music_block_publication_siblings()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+BEGIN
+    UPDATE public.music_publications SET status='blocked',updated_at=now()
+        WHERE song_id=NEW.song_id AND status='published';
+    RETURN NEW;
+END $$;
+REVOKE ALL ON FUNCTION private.music_block_publication_siblings() FROM PUBLIC, anon, authenticated, service_role;
+
+DROP TRIGGER IF EXISTS music_block_publication_siblings ON public.music_publications;
+CREATE TRIGGER music_block_publication_siblings
+AFTER INSERT OR UPDATE OF status ON public.music_publications
+FOR EACH ROW WHEN (NEW.status='blocked')
+EXECUTE FUNCTION private.music_block_publication_siblings();

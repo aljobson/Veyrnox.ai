@@ -9,6 +9,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const signature = '(text,uuid,uuid,text,text,boolean,boolean,text,text)';
 const privateName = `private.music_publish_song_pre_0570${signature}`;
 const publicName = `public.music_publish_song${signature}`;
+const triggerName = 'private.music_block_publication_siblings()';
 const blocked = { ok: false, code: 'PUBLICATION_BLOCKED' };
 describe('Music publication takedown (0576)', { skip: !DATABASE_URL && 'DATABASE_URL not set', concurrency: false }, () => {
     let db, isolated, pg, migration;
@@ -32,7 +33,7 @@ describe('Music publication takedown (0576)', { skip: !DATABASE_URL && 'DATABASE
         return call('music_publish_song', [u.auth, input.song, input.version, input.handle, input.display,
             input.comments, input.remixes, 'test-takedown', input.key], client);
     };
-    const takeDown = (slug, client = db) => client.query("UPDATE public.music_publications SET status='blocked' WHERE slug=$1", [slug]);
+    const takeDown = (slug, client = db) => client.query("UPDATE public.music_publications SET status='blocked',unpublished_at=NULL WHERE slug=$1", [slug]);
     // Compare complete rows, including timestamps and profile names, not just counts.
     async function snapshot(u, client = db) {
         const result = {};
@@ -99,6 +100,39 @@ describe('Music publication takedown (0576)', { skip: !DATABASE_URL && 'DATABASE
         assert.deepEqual(await publish(u, track), { ok: false, code: 'NOT_FOUND' });
         assert.deepEqual(await snapshot(u), before);
     });
+    it('blocking an old unpublished slug also takes down the newer live sibling', async () => {
+        const { u, track, slug } = await fixture();
+        assert.equal((await call('music_unpublish_song', [u.auth, track.song, randomUUID()])).ok, true);
+        const newer = await publish(u, track, { key: randomUUID() });
+        assert.equal(newer.ok, true);
+        assert.equal(newer.idempotent, false);
+        assert.notEqual(newer.publication.slug, slug);
+        assert.equal((await call('music_resolve_publication', [newer.publication.slug])).ok, true);
+        const otherTrack = await song(u), other = await publish(u, otherTrack);
+        await takeDown(slug);
+        for (const takenDown of [slug, newer.publication.slug]) {
+            assert.deepEqual(await call('music_resolve_publication', [takenDown]), { ok: false, code: 'NOT_FOUND' });
+            assert.equal(await value('SELECT status FROM public.music_publications WHERE slug=$1', [takenDown]), 'blocked');
+        }
+        assert.equal((await call('music_resolve_publication', [other.publication.slug])).ok, true);
+        const before = await snapshot(u);
+        assert.deepEqual(await publish(u, track, { key: randomUUID() }), blocked);
+        assert.deepEqual(await snapshot(u), before);
+    });
+    it('inserting a blocked row takes down an already committed live sibling', async () => {
+        const { u, track, slug } = await fixture();
+        const insertedSlug = randomUUID().replaceAll('-', '').slice(0, 24);
+        await db.query(`INSERT INTO public.music_publications
+            (user_id,song_id,song_version_id,attestation_id,slug,status,allow_comments,allow_remixes,
+             policy_version,commercial_status,idempotency_key)
+            SELECT user_id,song_id,song_version_id,attestation_id,$2,'blocked',allow_comments,allow_remixes,
+                   policy_version,commercial_status,$3 FROM public.music_publications WHERE slug=$1`,
+        [slug, insertedSlug, randomUUID()]);
+        for (const takenDown of [slug, insertedSlug]) {
+            assert.deepEqual(await call('music_resolve_publication', [takenDown]), { ok: false, code: 'NOT_FOUND' });
+        }
+        assert.deepEqual(await publish(u, track, { key: randomUUID() }), blocked);
+    });
     async function connections(run) {
         const a = new pg.Client({ connectionString: isolated.connectionString });
         const b = new pg.Client({ connectionString: isolated.connectionString });
@@ -163,20 +197,52 @@ describe('Music publication takedown (0576)', { skip: !DATABASE_URL && 'DATABASE
         assert.deepEqual(await publish(u, track, { key: randomUUID() }), blocked);
         assert.deepEqual(await snapshot(u), before);
     });
+    it('a concurrent publish INSERT is taken down when moderation of the old slug resumes', async () => {
+        const { u, track, slug } = await fixture();
+        await call('music_unpublish_song', [u.auth, track.song, randomUUID()]);
+        let newerSlug;
+        await connections(async (a, b) => {
+            const aPid = await value('SELECT pg_backend_pid()', [], a), bPid = await value('SELECT pg_backend_pid()', [], b);
+            await b.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+            const newer = await publish(u, track, { key: randomUUID() }, b);
+            assert.equal(newer.ok, true);
+            assert.equal(newer.idempotent, false, 'publish must INSERT a new row, not return the old slug');
+            newerSlug = newer.publication.slug;
+            assert.notEqual(newerSlug, slug);
+            await a.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+            const pending = takeDown(slug, a).then(result => ({ result }), error => ({ error }));
+            await waitForLock(aPid, bPid);
+            await b.query('COMMIT');
+            const outcome = await pending;
+            if (outcome.error) throw outcome.error;
+            assert.equal(outcome.result.rowCount, 1);
+            await a.query('COMMIT');
+        });
+        for (const takenDown of [slug, newerSlug]) {
+            assert.deepEqual(await call('music_resolve_publication', [takenDown]), { ok: false, code: 'NOT_FOUND' });
+            assert.equal(await value('SELECT status FROM public.music_publications WHERE slug=$1', [takenDown]), 'blocked');
+        }
+        const before = await snapshot(u);
+        assert.deepEqual(await publish(u, track, { key: randomUUID() }), blocked);
+        assert.deepEqual(await snapshot(u), before);
+    });
     it('replays twice with the private body, public wrapper and grants intact', async () => {
         const definition = name => value('SELECT pg_get_functiondef($1::regprocedure)', [name]);
         const acl = name => value('SELECT proacl::text FROM pg_proc WHERE oid=$1::regprocedure', [name]);
         const originalWrapper = await definition(publicName), originalPrivate = await definition(privateName);
-        const originalAcls = [await acl(privateName), await acl(publicName)];
+        const originalTrigger = await definition(triggerName);
+        const originalAcls = [await acl(privateName), await acl(publicName), await acl(triggerName)];
         await db.query(migration); await db.query(migration);
         assert.equal(await definition(publicName), originalWrapper);
         assert.equal(await definition(privateName), originalPrivate);
-        assert.deepEqual([await acl(privateName), await acl(publicName)], originalAcls);
+        assert.equal(await definition(triggerName), originalTrigger);
+        assert.deepEqual([await acl(privateName), await acl(publicName), await acl(triggerName)], originalAcls);
         for (const role of ['anon', 'authenticated', 'service_role']) {
             assert.equal(await value('SELECT has_function_privilege($1,$2,\'EXECUTE\')', [role, privateName]), false);
+            assert.equal(await value('SELECT has_function_privilege($1,$2,\'EXECUTE\')', [role, triggerName]), false);
             assert.equal(await value('SELECT has_function_privilege($1,$2,\'EXECUTE\')', [role, publicName]), role === 'service_role');
         }
-        for (const name of [privateName, publicName]) {
+        for (const name of [privateName, publicName, triggerName]) {
             assert.equal(await value(`SELECT EXISTS(SELECT 1 FROM pg_proc p,
                 LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
                 WHERE p.oid=$1::regprocedure AND a.grantee=0 AND a.privilege_type='EXECUTE')`, [name]), false);
@@ -188,7 +254,11 @@ describe('Music publication takedown (0576)', { skip: !DATABASE_URL && 'DATABASE
         assert.ok(addition.includes('PUBLICATION_BLOCKED'));
         assert.equal(source.replace(addition, ''), oldBody, 'all existing implementation bytes are preserved');
         const { u, track, slug } = await fixture();
+        await call('music_unpublish_song', [u.auth, track.song, randomUUID()]);
+        const newer = await publish(u, track, { key: randomUUID() });
+        assert.equal(newer.ok, true);
         await takeDown(slug);
+        assert.deepEqual(await call('music_resolve_publication', [newer.publication.slug]), { ok: false, code: 'NOT_FOUND' });
         assert.deepEqual(await publish(u, track, { key: randomUUID() }), blocked);
     });
 });
