@@ -1,20 +1,16 @@
 const feature = (definition) => Object.freeze(definition);
 
-// Exact public template/example media shown on the corresponding LipSync.video
-// pages during the 2026-10-25 reference audit. Keep the source page beside the
-// asset so the UI is transparent about provenance and reviewers can re-check it.
+// Reference media shown on the corresponding LipSync.video pages during the
+// 2026-10-25 audit. Audio-section workflows (text to speech, voice cloning,
+// talking photo, singing photo, dubbing) have none: we show only media we made
+// ourselves, so each gets an entry here once an owned example exists.
 export const CREATIVE_FEATURE_EXAMPLES = Object.freeze({
   'ai-avatar-generator': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-avatar-genetator/howto/portrait-transformed-into-a-reusable-digital-presenter-with-the-same-identity.webp' },
   'talking-avatar': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-avatar/sample-display/Talkingavatarvideoforeducation_01.webm' },
   'ai-human-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-human-generator/example/AI-Human-Social-Influencer-Video-Example.mp4' },
   'ai-influencer-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-influencer-generator/preview/beauty-ai-influencer-video.mp4' },
-  'text-to-speech': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/text-to-speech/Convert-text-to-natural-AI-speech.webp' },
-  'ai-voice-cloning': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-voice-cloning/introduction.webp' },
   'lip-sync': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/cdn/template/preview/studio/studio_19_preview.webp?x-oss-process=image/resize,l_144' },
-  'ai-talking-photo-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talkingPhoto-1/examples/Turn-portrait-to-talking-video.mp4' },
-  'singing-photo': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/sing-photo/singing-3-example-video.webm' },
   'avatar-dialogue': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/avatar-dialogue/H1-showcase-video.webm' },
-  'video-dubbing': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-dubbing/template/video-English.mp4' },
   'talking-cartoon': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-cartoon/video-sample/Talking-Cartoon-Demo1.mp4' },
   'talking-animals': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-animals/sample-display/talkingcatvideo.webm' },
   'ai-baby-podcast': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-baby-podcast/Baby-Podcast.mp4' },

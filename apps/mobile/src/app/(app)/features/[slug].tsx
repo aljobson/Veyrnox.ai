@@ -74,7 +74,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: feature.title }} />
         <View style={styles.hero}><Text style={styles.kicker}>{feature.group.toUpperCase()} · {feature.kind.toUpperCase()}</Text><Text style={styles.title} accessibilityRole="header">{feature.title}</Text><Text style={styles.lead}>{t('features.followtheguidedsetupthenreviewuploads')}</Text></View>
-        <Example feature={feature} />
+        {feature.example ? <Example feature={feature} example={feature.example} /> : null}
         <View style={styles.card}>
             <View style={styles.row}><Text style={styles.cardTitle}>{feature.input}</Text><Text style={styles.counter}>{brief.length}/1000</Text></View>
             {feature.scriptUpload ? <><Pressable accessibilityRole="button" style={styles.secondary} onPress={() => void chooseScript()}><Text style={styles.secondaryText}>{script ? t('features.replacescript') : t('features.uploadTXTorMarkdownscript')}</Text></Pressable>{script ? <Text style={styles.note}>{script}</Text> : null}</> : null}
@@ -86,8 +86,8 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     </ScrollView>;
 }
 
-function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View></View>{examplePlaysOn(feature.example, Platform.OS) ? <ExampleVideo url={feature.example.url} poster={feature.example.posterUrl} title={feature.title} /> : <ExampleStill uri={feature.example.kind === 'video' ? feature.example.posterUrl ?? feature.example.url : feature.example.url} title={feature.title} />}</View>;
+function Example({ feature, example }: { feature: CreativeFeature; example: NonNullable<CreativeFeature['example']> }) {
+    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View></View>{examplePlaysOn(example, Platform.OS) ? <ExampleVideo url={example.url} poster={example.posterUrl} title={feature.title} /> : <ExampleStill uri={example.kind === 'video' ? example.posterUrl ?? example.url : example.url} title={feature.title} />}</View>;
 }
 function ExampleStill({ uri, title }: { uri: string; title: string }) {
     return <Image source={{ uri }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: title }))} accessibilityIgnoresInvertColors />;

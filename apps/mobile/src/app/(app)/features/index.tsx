@@ -29,8 +29,8 @@ export default function CreativeFeatures() {
                     <View style={styles.grid}>{features.map((feature) => (
                         <Pressable key={feature.slug} accessibilityRole="button" accessibilityLabel={rawText(`${feature.title}. ${feature.steps.join('. ')}`)} style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push(reuse ? creativeReuseTargetHref(feature.slug, reuse) : { pathname: '/features/[slug]', params: { slug: feature.slug } })}>
                             <View style={styles.mediaFrame}>
-                                <Image source={{ uri: feature.example.posterUrl ?? feature.example.url }} style={styles.thumb} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: feature.title }))} accessibilityIgnoresInvertColors />
-                                {feature.example.kind === 'video' ? <View style={styles.playBadge} accessibilityElementsHidden><Text style={styles.play}>▶</Text></View> : null}
+                                {feature.example ? <Image source={{ uri: feature.example.posterUrl ?? feature.example.url }} style={styles.thumb} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: feature.title }))} accessibilityIgnoresInvertColors /> : <Text style={styles.noExample}>{t(`mediaKind.${feature.kind}`)}</Text>}
+                                {feature.example?.kind === 'video' ? <View style={styles.playBadge} accessibilityElementsHidden><Text style={styles.play}>▶</Text></View> : null}
                             </View>
                                 <View style={styles.cardCopy}>
                                     <Text style={styles.kind}>{t(`mediaKind.${feature.kind}`)}</Text>
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     group: { gap: 12 }, groupHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', borderBottomWidth: 2, borderBottomColor: colors.text, paddingBottom: 8 },
     groupTitle: { color: colors.text, fontSize: 23, fontWeight: '900' }, count: { color: colors.muted, fontSize: 11, fontWeight: '700' },
     grid: { gap: 12 }, card: { width: '100%', overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    mediaFrame: { width: '100%', height: 210, alignItems: 'center', justifyContent: 'center', backgroundColor: '#09090B' }, thumb: { width: '100%', height: '100%' },
+    mediaFrame: { width: '100%', height: 210, alignItems: 'center', justifyContent: 'center', backgroundColor: '#09090B' }, thumb: { width: '100%', height: '100%' }, noExample: { color: colors.muted, fontSize: 12, fontWeight: '900', letterSpacing: 1.4, textTransform: 'uppercase' },
     playBadge: { position: 'absolute', width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.72)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
     play: { color: colors.accent, fontSize: 22, marginStart: 3 }, cardCopy: { padding: 16, gap: 5 }, kind: { color: colors.accent, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
     name: { color: colors.text, fontSize: 17, fontWeight: '800' }, summary: { color: colors.muted, fontSize: 12, lineHeight: 17 }, pressed: { opacity: 0.72 },

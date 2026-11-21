@@ -40,9 +40,12 @@ test('every workflow exposes a real, required upload control', () => {
   }
 });
 
+const AUDIO_NO_EXAMPLE = ['text-to-speech', 'ai-voice-cloning', 'ai-talking-photo-generator', 'singing-photo', 'video-dubbing'];
+
 test('every workflow has an exact, attributable reference example', () => {
   for (const item of CREATIVE_FEATURES) {
     const example = creativeFeatureExample(item.slug);
+    if (AUDIO_NO_EXAMPLE.includes(item.slug)) { assert.equal(example, null, `${item.slug} must not hotlink competitor media`); continue; }
     assert.ok(example, `${item.slug} needs an example`);
     assert.ok(['image', 'video'].includes(example.kind));
     assert.match(example.url, /^https:\/\/cdn\.lipsync\.video\//);

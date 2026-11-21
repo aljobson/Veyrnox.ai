@@ -18,6 +18,7 @@ describe('guided creative feature registry', () => {
         for (const feature of CREATIVE_FEATURES) {
             expect(feature.model).toMatch(/^[a-z0-9][a-z0-9.-]+$/);
             expect(feature.steps).toHaveLength(3);
+            if (!feature.example) continue;
             expect(feature.example.url).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
             if (feature.example.kind === 'video') expect(feature.example.posterUrl).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
             expect('sourceUrl' in feature.example).toBe(false);
@@ -34,7 +35,7 @@ describe('guided creative feature registry', () => {
         expect(hub).toContain('CREATIVE_FEATURE_GROUPS');
         expect(hub).toContain('feature.example.posterUrl ?? feature.example.url');
         expect(hub).toContain('contentFit="contain"');
-        expect(detail).toContain('<Example feature={feature} />');
+        expect(detail).toContain('<Example feature={feature} example={feature.example} />');
         expect(detail).toContain('DocumentPicker.getDocumentAsync');
         expect(detail).toContain("pathname: '/create/[modelId]'");
         expect(detail).toContain("t('features.rEQUIREDSOURCES')");
@@ -88,6 +89,8 @@ describe('reuse a finished creation in a compatible guided tool', () => {
     });
 });
 
+const AUDIO_NO_EXAMPLE = ['text-to-speech', 'ai-voice-cloning', 'ai-talking-photo-generator', 'singing-photo', 'video-dubbing'];
+
 describe('example clips the phone can play', () => {
     const video = (url: string) => ({ kind: 'video' as const, url, posterUrl: 'https://cdn.lipsync.video/a.webp' });
     test('iOS cannot play WebM, so those examples show their still; MP4 plays', () => {
@@ -97,9 +100,12 @@ describe('example clips the phone can play', () => {
         expect(examplePlaysOn(video('https://cdn.lipsync.video/x/clip.webm'), 'android')).toBe(true);
         expect(examplePlaysOn({ ...video('https://cdn.lipsync.video/x/still.webp'), kind: 'image' }, 'ios')).toBe(false);
     });
+    test('Audio workflows show no competitor-hosted example until we have our own', () => {
+        for (const slug of AUDIO_NO_EXAMPLE) expect(creativeFeature(slug)?.example).toBeUndefined();
+    });
     test('every video example that iOS cannot play has a still to show instead', () => {
-        const unplayable = CREATIVE_FEATURES.filter((f) => f.example.kind === 'video' && !examplePlaysOn(f.example, 'ios'));
+        const unplayable = CREATIVE_FEATURES.filter((f) => f.example?.kind === 'video' && !examplePlaysOn(f.example, 'ios'));
         expect(unplayable.length).toBeGreaterThan(0);
-        expect(unplayable.filter((f) => !f.example.posterUrl).map((f) => f.slug)).toEqual([]);
+        expect(unplayable.filter((f) => !f.example?.posterUrl).map((f) => f.slug)).toEqual([]);
     });
 });
