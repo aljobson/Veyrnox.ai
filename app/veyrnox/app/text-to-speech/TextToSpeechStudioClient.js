@@ -8,6 +8,7 @@ import { getStoredUserId } from '../../../lib/authClient.js';
 import { AppNav } from '../../_components/NavBar';
 import { Button } from '../../_components/Button';
 import { Chip } from '../../_components/Chip';
+import StudioExampleCard from '../../_components/StudioExampleCard';
 import { JobAssetPreview } from '../../_components/JobAssetPreview';
 import { DownloadAsset } from '../../_components/DownloadAsset';
 import { OutputFileDisclosure } from '../../_components/OutputFileDisclosure';
@@ -155,6 +156,8 @@ export default function TextToSpeechStudio() {
           <h1 className="vx-display mt-3 text-[40px] leading-[0.95] sm:text-[58px]">Give the script a voice.</h1>
           <p className="mt-4 max-w-3xl text-sm leading-6 text-vx-fg-muted sm:text-base">Write up to {TTS_SCRIPT_LIMIT} characters, choose one of 17 stock voices, tune language and delivery, then approve one exact audio-job price. This studio never clones a real person&apos;s voice.</p>
         </header>
+
+        <StudioExampleCard slug="text-to-speech" title="Text to Speech" />
 
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div>

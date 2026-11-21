@@ -11,6 +11,8 @@ import { fetchCatalog, estimateCredits, type CatalogModel } from '../../lib/medi
 import { useBalance } from '../../lib/useBalance';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { t } from '../../lib/i18n';
+import { Example } from '../ExampleCard';
+import { creativeFeature } from '../../lib/creativeFeatures';
 import { DEFAULT_TTS_SETTINGS, TTS_EXAMPLES, TTS_SCRIPT_LIMIT, auditionCost, toggleAuditionVoice, voiceAuditionScript, type SpeechSettings } from '../../lib/speech/shared';
 import { buildSpeechRequest, insertCue, validateSpeech } from '../../lib/speech/studio';
 import { auditionQuote, buildAuditionRequest, validateAudition } from '../../lib/speech/audition';
@@ -25,6 +27,9 @@ import { SpeechPricePanel } from './SpeechPricePanel';
 import { useSpeechSubmission } from './useSpeechSubmission';
 import { useStudioReopen } from './useStudioReopen';
 import { restoreSpeech } from '../../lib/speech/restore';
+
+// The owned example still, shown before the first script so the result is visible up front.
+const textToSpeechExample = creativeFeature('text-to-speech');
 
 export function SpeechStudio({ reopen }: { reopen?: string | string[] }) {
     const { api } = useAuth();
@@ -88,6 +93,7 @@ export function SpeechStudio({ reopen }: { reopen?: string | string[] }) {
             <SpeechLabel icon="microphone" label={t('speech.title')} />
             <Text tone="secondary">{t('speech.intro')}</Text>
             {restored.unavailable && <Text accessibilityLiveRegion="polite">{t('dialogue.restoreUnavailable')}</Text>}
+            {textToSpeechExample ? <Example feature={textToSpeechExample} /> : null}
             {result || complete ? <><Text accessibilityLiveRegion="polite">{t('speech.accepted')}</Text>{result ? <CreateResult api={api} batch={result} catalog={catalog ?? []} onTerminal={settled} /> : <AuditionResults api={api} jobs={jobs} modelId={model.id} catalog={catalog ?? []} onTerminal={settled} />}
                 <Button label={t('speech.adjust')} disabled={busy} onPress={resetAttempt} /></> : <>
                 <TextField label={t('speech.script')} value={script} onChangeText={editScript} maxLength={TTS_SCRIPT_LIMIT} multiline editable={!busy && !restored.loading} style={styles.script} />
