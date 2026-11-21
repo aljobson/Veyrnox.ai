@@ -871,6 +871,8 @@ export default {
   "chat.attach.photosLabel": "إرفاق صور من هذا الجهاز",
   "chat.attach.removeN": "إزالة الصورة {n}",
   "chat.attach.uploadFailed": "تعذّر رفع إحدى الصور. لم يُرسل شيء ولم تُحصّل منك رسوم.",
+  "chat.attach.modelImages": "لا يستطيع هذا النموذج قراءة الصور. أزلها أو اختر نموذجًا يستطيع ذلك.",
+  "chat.attach.photoFailed": "تعذّرت قراءة إحدى الصور. جرّب صورة أخرى أو تأكد من أن Veyrnox.ai يمكنه فتح صورك.",
   "chat.cancelrename": "إلغاء إعادة التسمية",
   "chat.chat": "الدردشة",
   "chat.chat2": "الدردشة",

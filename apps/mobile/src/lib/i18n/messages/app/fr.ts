@@ -843,6 +843,8 @@ export default {
   "chat.attach.photosLabel": "Joindre des photos de cet appareil",
   "chat.attach.removeN": "Supprimer l’image {n}",
   "chat.attach.uploadFailed": "Une image n’a pas pu être téléversée. Rien n’a été envoyé et rien ne vous a été facturé.",
+  "chat.attach.modelImages": "Ce modèle ne peut pas lire les images. Retirez-les ou choisissez un modèle qui le peut.",
+  "chat.attach.photoFailed": "Une photo n’a pas pu être lue. Essayez-en une autre, ou vérifiez que Veyrnox.ai peut ouvrir vos photos.",
   "chat.cancelrename": "Annuler le changement de nom",
   "chat.chat": "discussion",
   "chat.chat2": "Chat",

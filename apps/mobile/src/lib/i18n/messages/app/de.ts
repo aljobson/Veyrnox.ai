@@ -832,6 +832,8 @@ export default {
   "chat.attach.photosLabel": "Fotos von diesem Gerät anhängen",
   "chat.attach.removeN": "Bild {n} entfernen",
   "chat.attach.uploadFailed": "Ein Bild konnte nicht hochgeladen werden. Es wurde nichts gesendet oder berechnet.",
+  "chat.attach.modelImages": "Dieses Modell kann keine Bilder lesen. Entferne sie oder wähle ein Modell, das es kann.",
+  "chat.attach.photoFailed": "Ein Foto konnte nicht gelesen werden. Versuche ein anderes oder prüfe, ob Veyrnox.ai auf deine Fotos zugreifen darf.",
   "chat.cancelrename": "Umbenennen abbrechen",
   "chat.chat": "Chat",
   "chat.chat2": "Chat",

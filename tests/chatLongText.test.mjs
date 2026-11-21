@@ -76,7 +76,7 @@ function fakes({ model = LONG, replies = {}, stream } = {}) {
         read_user_credits: { balance: 8 }, chat_stops_before_text: 0,
     };
     const rpc = async (name, args) => { calls.push([name, args]); return name in replies ? replies[name] : base[name]; };
-    const select = async (_t, q) => [Object.fromEntries(String(q.columns).split(',').filter((c) => c in model).map((c) => [c, model[c]]))];
+    const select = async (_t, q) => _t === 'jobs' ? [] : [Object.fromEntries(String(q.columns).split(',').filter((c) => c in model).map((c) => [c, model[c]]))];
     const s = stream || (async function* () { yield { delta: 'Hi.' }; });
     return { calls, deps: { rpc, select, stream: s } };
 }

@@ -73,6 +73,31 @@ frame is an ordinary upload: the same checks, the same 2,048 px cap, the same on
    measured price per model (a video is many times the input tokens of an image) and its own limits.
 4. **Disclosure.** The composer adds "Your video is not uploaded: only a few frames from it, taken on your device, are", and the privacy notice says the same.
 
+## Amendment 4 (2026-11-20): image order, and a retry after the sweep
+
+- **Order.** A turn that mixes upload keys and Library images now reaches the model, and the thread's `attachments`
+  metadata, in the order the request named them (`order` from `parseAttachments`, present only when both kinds are
+  mixed). The job's `image_N` labels in `source_keys` / `source_assets` keep their keys-then-assets numbering, because
+  they are part of the request identity a retried send is matched on (0399); renumbering them would turn a retry of a
+  job admitted before this change into `idempotency_conflict`.
+- **A retry is answered from its job first.** A retry of a send (same idempotency key) used to pass through checks
+  meant for a fresh send before the ledger could see it was a replay: the image check failed once the sweeper had
+  removed the finished job's uploads (after 16 minutes), the balance check failed when the first send had spent the
+  last Credits, and the search ran again. Each refusal reads to a client as "never charged" and invites a second,
+  charged send. The turn now reads the caller's own job under that key (service role, `jobs` by `user_id` and
+  `idempotency_key`) right after the chat context. When one exists it skips the stop limit, the image check, the
+  eligibility and balance checks, the search and the free allowance, and hands `ledger_debit` the request's identity:
+  its own thread, options and text hash, plus the stored attachment record when the request names exactly the same
+  images under the same `image_N` labels. The ledger then replays the job (it answers a replay before its own balance
+  and account checks); other images under the same key are refused as `idempotency_conflict` without a debit. A lookup
+  that fails answers `replay_check_unavailable` (503) and charges nothing. A stored job the ledger does not replay is
+  refunded (`refund:replay_mismatch`) and refused, never streamed. No migration; the ledger and its RPCs are unchanged.
+- **The phone keeps an unsure retry.** Any refusal of a retry (the same key as a send whose outcome is not known) is
+  looked for like a cut-off send, which closes a send that never started, instead of being given back as free. Its key
+  and upload references are kept until that look settles.
+- **Not changed:** a custom API client that reuses a key with the same images reordered across uploads and Library images
+  gets the first job back (no charge). The ledger identity (0399) carries no cross-kind order; neither app can send it.
+
 ## Consequences
 
 - No new bucket, no new signing code: the work is the turn body, one resolver, one adapter change (content parts),

@@ -821,6 +821,8 @@ export default {
   "chat.attach.photosLabel": "この端末の写真を添付",
   "chat.attach.removeN": "画像 {n} を削除",
   "chat.attach.uploadFailed": "画像をアップロードできませんでした。何も送信されておらず、料金も発生していません。",
+  "chat.attach.modelImages": "このモデルは画像を読み取れません。画像を外すか、読み取れるモデルを選んでください。",
+  "chat.attach.photoFailed": "写真を読み取れませんでした。別の写真を試すか、Veyrnox.ai が写真を開けるか確認してください。",
   "chat.cancelrename": "名前の変更をキャンセル",
   "chat.chat": "チャット",
   "chat.chat2": "チャット",
