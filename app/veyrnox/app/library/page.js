@@ -245,7 +245,7 @@ export default function Library() {
   const shown = shapedRows.slice(0, visible);
   const list = filterRows(shown, { state: tab, kind, shape, favourites: favOnly ? favourites : null }, models, selected);
   const hasMore = rows.length > visible;
-  const filtered = tab !== 'all' || kind !== 'all' || shape !== 'all' || favOnly;
+  const filtered = tab !== 'all' || kind !== 'all' || favOnly;
   // The button that was pressed leaves with the empty state: focus goes to the filter now in force, not to the page.
   const clearFilters = () => { setTab('all'); setKind('all'); setShape('all'); setFavOnly(false); document.querySelector('[data-testid="library-state-all"]')?.focus(); };
   const canSelect = (r) => editorOn && r.state === 'succeeded' && (isVideo(r) || isAudio(r));
