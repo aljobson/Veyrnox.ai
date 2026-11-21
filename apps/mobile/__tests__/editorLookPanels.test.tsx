@@ -144,8 +144,8 @@ describe('FullEditorScreen look commits', () => {
     });
     test('applying an unchanged background with a locked track leaves no problem, revision, history or dirty change', async () => {
         const tl = timeline();
-        tl.tracks.push({ ...tl.tracks[0], id: 'video-locked', locked: true });
-        tl.video[0].trackId = 'video-locked';
+        tl.tracks.push({ ...tl.tracks[0], id: 'video-9', locked: true });
+        tl.video[0].trackId = 'video-9';
         await open(tl); await press('Effects');
         const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
         await press(t('editorLook.applyAll'));
