@@ -9,7 +9,7 @@ import { outsideRepositories, normaliseSwapClip, validateSwapMedia } from '../sc
 import { measure } from '../scripts/import-swap-scenes.mjs';
 import { sha256Hex } from '../packages/adapters/r2.js';
 import { TEMPLATE_CLIPS } from '../app/veyrnox/_lib/templateClips.js';
-import { id } from './fixtures/templateSwapClips.mjs';
+const id = 'community-action-hero-strut'; // The importer reads this clip's source prompt, so it keeps its own fixture id.
 const decision = { id, approved: true };
 const temp = () => mkdtemp(path.join(tmpdir(), 'swap-clip-proof-'));
 function synthetic(file, seconds = 5, fps = 12, dimensions = '480x854') {

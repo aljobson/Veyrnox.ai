@@ -5,7 +5,7 @@ import { createSwapActions } from '../app/veyrnox/_lib/templateSwapActions.mjs';
 import { fetchSwapAvailability, swapRequest } from '../app/veyrnox/_lib/templateSwapClient.mjs';
 const png = name => Object.assign(new Blob([name], { type: 'image/png' }), { tag: name });
 const two = { id: 'basketball-3', model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: 'the green character', roles: ['the green character', 'the red character'], people: 2, images: 4 };
-const one = { id: 'community-action-hero-strut', model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: 'the main character', images: 2 };
+const one = { id: 'community-athlete-identity-swap', model: 'kling-o1-reference', credits: 47, durationSeconds: 5, role: 'the main character', images: 2 };
 function setup(offer = two) {
   const revoked = [], store = createSwapStore({ revoke: url => revoked.push(url) }); store.session('A');
   let n = 0; const posted = [], uploaded = [];

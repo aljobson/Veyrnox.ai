@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { TESTED_SWAP_GALLERY_TEMPLATE_IDS } from '../app/veyrnox/_lib/videoTemplateGallery.js';
 import assert from 'node:assert/strict';
 import { PRESETS, GALLERY_PRESETS, galleryTemplates } from '../app/veyrnox/_lib/templates.js';
 import { templateCards, templateCategories, templateDetail, searchTemplateIds } from '../lib/clientTemplates.js';
@@ -65,7 +66,7 @@ test('the studio and its template cover never import the catalog: the browser re
 });
 
 test('templates that need a source video we cannot supply come after every one that can generate', () => {
-    const blocked = (card) => templateDetail(card.id).sourcePromptIssues?.includes('reference-video-not-supported') === true;
+    const blocked = (card) => !TESTED_SWAP_GALLERY_TEMPLATE_IDS.includes(card.id) && templateDetail(card.id).sourcePromptIssues?.includes('reference-video-not-supported') === true;
     const flags = templateCards().map(blocked);
     // Since the 2026-11-14 cap the gallery lists none that need a source video; the ordering still holds if one returns.
     assert.ok(flags.some((flag) => !flag));
