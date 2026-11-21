@@ -97,7 +97,8 @@ export function useDialogueEditor({ reopen, blocked, editAttempt, resetAttempt, 
             // The displaced speaker is saved only when both sides of the swap were real choices.
             const keep = item.speaker === speaker || (persistable(item.origin) && persistable(selected.origin));
             if (keep) persist.push(next);
-            return { ...next, origin: keep ? 'explicit' as const : 'default' as const };
+            const ownSaved = preferences.current.some(pref => key(pref.speaker) === key(next.speaker) && pref.voice === next.voice);
+            return { ...next, origin: keep ? 'explicit' as const : ownSaved ? 'saved' as const : 'default' as const };
         });
         for (const item of persist) preferenceEdits.current.set(key(item.speaker), item);
         preferences.current = normalizeDialogueCastMap([...persist, ...preferences.current]);

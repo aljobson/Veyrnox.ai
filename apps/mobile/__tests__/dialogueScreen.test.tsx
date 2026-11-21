@@ -347,6 +347,13 @@ test('a default voice handed over in a swap cannot be saved by a later swap', as
     await click(button(t('dialogue.chooseVoice', { speaker: 'Ana', voice: 'Aria' })));
     expect(mockSaveCast).toHaveBeenLastCalledWith([{ speaker: 'Ana', voice: 'Aria' }]);
 });
+test('a speaker handed back their saved voice can take part in a full swap', async () => {
+    mockLoadCast.mockResolvedValue([{ speaker: 'Ben', voice: 'George' }]);
+    await render(); await click(button(t('dialogue.chooseVoice', { speaker: 'Ana', voice: 'George' })));
+    await click(button(t('dialogue.chooseVoice', { speaker: 'Ana', voice: 'Aria' })));
+    await click(button(t('dialogue.chooseVoice', { speaker: 'Ben', voice: 'Aria' })));
+    expect(mockSaveCast).toHaveBeenLastCalledWith([{ speaker: 'Ana', voice: 'George' }, { speaker: 'Ben', voice: 'Aria' }]);
+});
 test('choosing a saved voice for a renamed speaker never saves the carried voice on the other speaker', async () => {
     mockLoadCast.mockResolvedValue([{ speaker: 'Ana', voice: 'George' }, { speaker: 'Ben', voice: 'Aria' }]);
     await render(); await fill(); await rename('Zoe');
