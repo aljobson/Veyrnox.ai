@@ -1,3 +1,5 @@
+import { BeatExportSheet } from '../../../components/beats/BeatExportSheet';
+import { releaseExportPlayback } from '../../../lib/beatNative/exportPlayback';
 import { BeatLabsBar } from '../../../components/beats/BeatLabsBar';
 import { PHONE_CAPABILITIES } from '../../../lib/beatNative/controls';
 import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
@@ -53,6 +55,7 @@ export default function BeatEditor() {
     const [held, setHeld] = useState(false);
     const [pad, setPad] = useState<PadId>('kick');
     const [mixer, setMixer] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -129,6 +132,9 @@ export default function BeatEditor() {
         <ScrollView scrollEnabled={!held} style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: doc.title }} />
             <BeatSaveControls id={doc.id} apply={apply} />
+            <Button label={t('beatExport.title')} onPress={() => setExporting(true)} />
+            {exporting && <BeatExportSheet doc={doc} replacing={replacing} recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status)}
+                prepare={() => releaseExportPlayback(audio, recordingRef, stop)} onClose={() => setExporting(false)} />}
             <BeatAiPanel doc={doc} apply={apply} />
             <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
             <Button label={t('beat.undo')} disabled={locked || !history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />

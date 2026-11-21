@@ -4182,6 +4182,72 @@
     "ratio": 1.86
   },
   {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Tentar salvar no Music novamente",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.range",
+    "english": "Range",
+    "translation": "Intervalo",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatExport.cycle",
+    "english": "Cycle range",
+    "translation": "Intervalo do ciclo",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mixagem",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Faixas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "beatExport.depth",
+    "english": "Bit depth",
+    "translation": "Profundidade de bits",
+    "ratio": 2.22
+  },
+  {
+    "id": "beatExport.loops",
+    "english": "Loops",
+    "translation": "Repetições",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Carregando ferramentas de exportação…",
+    "ratio": 2.18
+  },
+  {
+    "id": "beatExport.retryShare",
+    "english": "Retry render and share",
+    "translation": "Tentar renderizar e compartilhar novamente",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatExport.shareError",
+    "english": "Could not share this file. Try again.",
+    "translation": "Não foi possível compartilhar este arquivo. Tente novamente.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "Salvar na biblioteca de Música",
+    "ratio": 2.31
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

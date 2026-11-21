@@ -71,8 +71,9 @@ const { loadBeatTake: loadShared, putBeatTake: putShared, appendBeatTake: append
     reconcileBeatTakes(doc: BeatDoc): Promise<void>;
     discardBeatTakes(ids: string[]): Promise<void>;
 };
-export const { configureBeatTakeStorage, hydrateBeatTakes, pendingBeatTakes, documentHasTake, beatTakeBytes, BEAT_TAKE_BYTES, subscribeBeatTakes } = storage as unknown as {
+export const { beatTakes, configureBeatTakeStorage, hydrateBeatTakes, pendingBeatTakes, documentHasTake, beatTakeBytes, BEAT_TAKE_BYTES, subscribeBeatTakes } = storage as unknown as {
     configureBeatTakeStorage(adapter: BeatTakeStorage): void;
+    beatTakes(): TakeRow[];
     hydrateBeatTakes(): Promise<void>;
     pendingBeatTakes(id: string): TakeRow[];
     documentHasTake(doc: BeatDoc, row: TakeRow): boolean;
