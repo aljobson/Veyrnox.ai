@@ -273,5 +273,6 @@
   "editorLook.blend.source-over": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
-  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
+  "musicRender.fade": "Established audio term shared with English; machine translation, native review pending."
 }

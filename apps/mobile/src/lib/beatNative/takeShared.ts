@@ -1,7 +1,8 @@
 // Typed boundary only: document/session/storage rules remain owned by the web editor.
 // Browser capture and IndexedDB are imported transitively but are never invoked here.
 import './takeRuntime';
-import { createTakeFiles, eraseAccountTakes, nativeTakeIO, noAccountTakeIO } from './takeFiles';
+import { createTakeFiles, eraseAccountTakes, noAccountTakeIO } from './takeFiles';
+import { migratedTakeIO } from './legacyMigration';
 import { getCacheUser, subscribeCacheUser } from '../appCache';
 import type { BeatDoc, Edit } from './doc';
 import type { EngineContext } from './shared';
@@ -111,7 +112,7 @@ const fenced = (check?: () => void) => {
     return () => { if (owner !== takeOwner) throw new Error('account_changed'); check?.(); };
 };
 const installTakes = (owner: string | null) => {
-    configureBeatTakeStorage(owner ? createTakeFiles(nativeTakeIO(owner), owner) : createTakeFiles(noAccountTakeIO));
+    configureBeatTakeStorage(owner ? createTakeFiles(migratedTakeIO(owner), owner) : createTakeFiles(noAccountTakeIO));
 };
 function switchTakeOwner(next: string | null) {
     if (next === takeOwner) return;

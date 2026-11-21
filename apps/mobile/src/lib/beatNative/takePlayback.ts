@@ -10,7 +10,7 @@ export type PlaybackContext = EngineContext & {
     createGain(): Node & { gain: ParamLike };
     createStereoPanner(): Node & { pan: ParamLike };
 };
-export function createTakePlayback(context: PlaybackContext, load: (id: string) => Promise<AudioTake | null> = loadBeatTake, output?: (id: string, doc: BeatDoc) => unknown) {
+export function createTakePlayback(context: PlaybackContext, load: (id: string) => Promise<AudioTake | null> = loadBeatTake, output?: (id: string, doc: BeatDoc, untilTime: number) => unknown) {
     const buffers = new Map<string, BufferLike>();
     const loading = new Map<string, Promise<BufferLike | null>>();
     const active = new Set<{ source: Source; gain: Node; pan: Node }>();
@@ -43,8 +43,9 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
                 if (duration <= 0) return;
                 const track = doc.tracks.find(t => t.id === piece.trackId)!;
                 const source = context.createBufferSource(), gain = context.createGain(), pan = context.createStereoPanner();
-                source.buffer = decoded; source.connect(gain); gain.connect(pan); pan.connect(output ? output(piece.trackId, doc) : context.destination);
                 const start = at + late;
+                // The end time keeps a replaced mix run alive until this piece has finished playing.
+                source.buffer = decoded; source.connect(gain); gain.connect(pan); pan.connect(output ? output(piece.trackId, doc, start + duration) : context.destination);
                 gain.gain.setValueAtTime(piece.gain * (output ? 1 : track.gain), start);
                 gain.gain.linearRampToValueAtTime(piece.endGain * (output ? 1 : track.gain), start + duration);
                 pan.pan.value = output ? 0 : track.pan;

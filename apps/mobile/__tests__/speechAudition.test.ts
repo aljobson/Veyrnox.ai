@@ -45,7 +45,7 @@ test('settings validation, trimmed text and per-voice identity', () => {
 });
 test.each(['en', 'es', 'ar', 'de', 'fr', 'hi', 'ja', 'ko', 'pt', 'ru', 'zh'])('%s partial batch notices use translated plural forms', locale => {
     setLocaleFromDevice([locale]);
-    expect(auditionBatchNote(1, voices.slice(0, 3))).toBe(plural('speech.audition.stopped', 3, { started: 1, next: 2 }));
-    expect(auditionBatchNote(1, voices.slice(0, 3), true)).toBe(plural('speech.audition.uncertain', 3, { started: 1, next: 2 }));
-    expect(auditionBatchNote(0, [])).toBe('');
+    expect(auditionBatchNote(1, voices.slice(0, 3), 1)).toBe(plural('speech.audition.stopped', 3, { started: 1, next: 2 }));
+    expect(auditionBatchNote(1, voices.slice(0, 3), 1, true)).toBe(plural('speech.audition.uncertain', 3, { started: 1, next: 2 }));
+    expect(auditionBatchNote(0, [], 0)).toBe('');
 });

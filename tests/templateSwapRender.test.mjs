@@ -6,6 +6,7 @@ import React from 'react';
 import * as jsx from 'react/jsx-runtime';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { translator } from '../lib/i18n/translate.mjs';
+import { swapImageCounts, swapFullBody } from '../app/veyrnox/_lib/templateSwapClient.mjs';
 const t = translator('en');
 let available = false;
 const offer = { id:'test',model:'kling-o1-reference',credits:73,durationSeconds:5,images:2,role:'the dancer' };
@@ -29,7 +30,7 @@ const boundary=load('app/veyrnox/_components/TemplateSwapBoundary.js',shared);
 const attempts={SwapAttemptStatus:()=>null,swapControl:'min-h-11'};
 const composer=load('app/veyrnox/_components/SwapComposer.js',{
   ...shared,'../_lib/useSwapDraft.js':{useSwapDraft:()=>({accountId:'A',attempts:[]})},
-  '../_lib/templateSwapRuntime.js':{swapActions:{}},'../_lib/templateSwapClient.mjs':{swapErrorKey:()=>'',unsettled:()=>false},
+  '../_lib/templateSwapRuntime.js':{swapActions:{}},'../_lib/templateSwapClient.mjs':{swapErrorKey:()=>'',unsettled:()=>false,swapImageCounts,swapFullBody},
   '../_lib/useOnlineStatus.js':{useOnlineStatus:()=>true},'./SwapAttemptStatus.js':attempts,
 });
 const recipe=load('app/veyrnox/_components/TemplateRecipe.js',{

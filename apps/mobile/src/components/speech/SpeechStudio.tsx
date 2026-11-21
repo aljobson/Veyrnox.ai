@@ -34,7 +34,7 @@ export function SpeechStudio() {
     const [script, setScript] = useState('');
     const [settings, setSettings] = useState<SpeechSettings>({ ...DEFAULT_TTS_SETTINGS });
     const [voices, setVoices] = useState<string[]>([]);
-    const { pending, sending, busy, result, jobs, complete, attempted, error, setError, priceOverride, resetAttempt, generate, settled } = useSpeechSubmission(api, () => {
+    const { pending, sending, busy, result, visibleJobs, complete, error, setError, priceFor, resetAttempt, editAttempt, generate, settled } = useSpeechSubmission(api, () => {
         setScript(''); setSettings({ ...DEFAULT_TTS_SETTINGS }); setVoices([]);
     });
     useAnnouncement(error ?? (busy ? t('speech.submitting') : result || complete ? t('speech.accepted') : null));
@@ -43,32 +43,35 @@ export function SpeechStudio() {
         void fetchCatalog().then(rows => { if (live) setCatalog(rows); }).catch(() => { if (live) setCatalogError(t('form.modelLoad')); });
         return () => { live = false; };
     }, []);
-    function editScript(next: string) { if (sending.current) return; if (next !== script) resetAttempt(); setScript(next); }
+    function editScript(next: string) { if (sending.current) return; editAttempt(next.trim() !== script.trim()); setScript(next); }
     function editSettings(next: SpeechSettings) {
         if (sending.current) return;
         const effectiveNext = voices.length > 0 ? { ...next, voice: settings.voice } : next;
-        if (JSON.stringify(effectiveNext) !== JSON.stringify(settings)) resetAttempt();
+        editAttempt(JSON.stringify(effectiveNext) !== JSON.stringify(settings));
         setSettings(next);
     }
     function editVoices(next: string[]) {
         if (sending.current || JSON.stringify(next) === JSON.stringify(voices)) return;
-        resetAttempt(); setVoices(next);
+        editAttempt(true); setVoices(next);
     }
     function testVoice(voice: string) {
         if (sending.current) return;
         const nextScript = voiceAuditionScript();
-        if (script !== nextScript || (voices.length === 0 && settings.voice !== voice)) resetAttempt();
+        editAttempt(script.trim() !== nextScript.trim() || (voices.length === 0 && settings.voice !== voice));
         setSettings({ ...settings, voice }); setScript(nextScript);
     }
     const model = speechModel(catalog ?? []);
     if (!model) return <ModelUnavailable title={t('speech.title')} recovery={{ label: t('speech.back'), onPress: () => router.canGoBack() ? router.back() : router.replace('/audio') }} fromTemplate={false} error={catalogError ?? (catalog ? t('form.modelGone') : null)} />;
     const boardActive = voices.length > 0, count = boardActive ? voices.length : 1;
     const validation = boardActive ? validateAudition(script, settings, voices) : validateSpeech(script, settings);
-    const unit = priceOverride ?? estimateCredits(model, null);
-    const request = validation ? null : { ...(boardActive ? buildAuditionRequest(script, settings, voices, model) : buildSpeechRequest(script, settings, model)), confirmedCredits: unit };
+    const unpriced = validation ? null : boardActive ? buildAuditionRequest(script, settings, voices, model) : buildSpeechRequest(script, settings, model);
+    const unit = priceFor(unpriced, count) ?? estimateCredits(model, null);
+    const request = unpriced ? { ...unpriced, confirmedCredits: unit } : null;
+    const jobs = visibleJobs(request, voices);
     const price = boardActive ? auditionCost(unit, voices) : unit;
     const quote = request ? boardActive ? auditionQuote(pending.current, request, unit) : pending.current.snapshot(request, 1, unit, 0)
         : { total: price, payable: price, ceilings: Array(count).fill(unit) };
+    const showRemaining = quote.total !== price || jobs.length > 0 || !!request && pending.current.hasUnknownOutcome(request, count);
     return <KeyboardScreen style={styles.screen}>
         <Stack.Screen options={{ title: t('speech.title') }} />
         <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
@@ -88,7 +91,7 @@ export function SpeechStudio() {
                     <SpeechControls value={settings} onChange={editSettings} />
                 </View>
                 {error && <Text tone="danger" accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text>}
-                <SpeechPricePanel price={boardActive ? price : quote.total} audition={boardActive ? { count, unit, remaining: attempted ? quote.total : null } : undefined} payable={quote.payable} balance={balance} disabled={!!validation} busy={busy} onGenerate={() => void generate(request, model, voices, quote, balance)} onCredits={() => router.push('/credits')} />
+                <SpeechPricePanel price={boardActive ? price : quote.total} audition={boardActive ? { count, unit, remaining: showRemaining ? quote.total : null } : undefined} payable={quote.payable} balance={balance} disabled={!!validation} busy={busy} onGenerate={() => void generate(request, model, voices, quote, balance)} onCredits={() => router.push('/credits')} />
                 {jobs.length > 0 && <AuditionResults api={api} jobs={jobs} modelId={model.id} catalog={catalog ?? []} onTerminal={settled} />}
             </>}
         </KeyboardFormScrollView>

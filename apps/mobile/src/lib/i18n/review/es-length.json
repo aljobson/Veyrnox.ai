@@ -4506,6 +4506,30 @@
     "ratio": 2.5
   },
   {
+    "id": "musicRender.operation",
+    "english": "Edit type",
+    "translation": "Tipo de edición",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicRender.fade",
+    "english": "Fade",
+    "translation": "Fundido",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicRender.speed",
+    "english": "Speed",
+    "translation": "Velocidad",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicRender.fadeIn",
+    "english": "Fade in (seconds)",
+    "translation": "Fundido de entrada (segundos)",
+    "ratio": 1.71
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

@@ -1,6 +1,7 @@
 import { createBeat, validateBeat, type BeatDoc } from './doc';
-import { accountBeatFiles, beatFile, loadRecords, type AccountBeatFiles, type BeatFiles } from './persist';
+import { beatFile, loadRecords, type AccountBeatFiles, type BeatFiles } from './persist';
 import { getCacheUser, subscribeCacheUser } from '../appCache';
+import { migratedBeatFiles } from './legacyMigration';
 import { validCloudLink, type BeatRecord, type CloudLink } from './rules';
 import { createPersistedListeners } from './persistedListeners';
 
@@ -8,7 +9,7 @@ export const newId = (): string => 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replac
 export type SaveState = 'saved' | 'saving' | 'error' | 'busy';
 const isAccountFiles = (source: BeatFiles | AccountBeatFiles): source is AccountBeatFiles => 'forOwner' in source;
 /** With account files, only the signed-in owner's records are loaded, shown or written. */
-export function createBeatStore(source: BeatFiles | AccountBeatFiles = accountBeatFiles) {
+export function createBeatStore(source: BeatFiles | AccountBeatFiles = migratedBeatFiles) {
     const accounts = isAccountFiles(source) ? source : null;
     let files: BeatFiles | null = isAccountFiles(source) ? null : source;
     let owner: string | null = null, hydrationWanted = false;
