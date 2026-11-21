@@ -148,7 +148,7 @@ test('lane taps snap to sixteenths and use envelope values; playing Add point us
 });
 test('an audio timer error shows the existing audio notice and resets transport', async () => {
     await open(); await press(t('beat.play'));
-    const error = mockAudio.play.mock.calls[0][2] as (error: unknown) => void;
+    const error = (mockAudio.play.mock.calls[0][4] as { onError: (error: unknown) => void }).onError;
     await act(async () => error(new Error('audio failed')));
     expect(text(t('beat.audioError')).length).toBeGreaterThan(0); expect(button(t('beat.play'))).toBeDefined();
 });

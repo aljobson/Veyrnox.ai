@@ -29,18 +29,22 @@ export type BeatTrackInstrument = { id: 'piano' | 'guitar' | 'bass' | 'synth' | 
 export type BeatTrack = { id: string; instrument: BeatTrackInstrument; gain: number; pan: number };
 export type BeatVoice = { endTime: number; ended: Promise<void>; release(at: number): void; stop(at: number): void };
 
-export type Run = { channels: Map<string, { schedule(window: { fromSec: number; toSec: number; contextTime: number }): void }> };
+/** Engine-owned run; callers only retain its identity. A doc run (N5 mix graph) also exposes its strips. */
+export type Run = object;
+export type MixRunHandle = Run & { channels: Map<string, { schedule(window: { fromSec: number; toSec: number; contextTime: number }): void }> };
+
 export type BeatEngine = {
     context: EngineContext;
     now(): number;
     resume(): Promise<void>;
     close(): Promise<void>;
-    startRun(doc: BeatDoc, opts?: { automationActive?: boolean; onError?: (message: string) => void }): Run;
+    startRun(doc: BeatDoc, opts?: { automationActive?: boolean; onError?: (message: string) => void }): MixRunHandle;
+    startRun(doc: null): Run;
     stopRun(run: Run): void;
     setTrackMix(run: Run, id: string, gain: number, pan: number, doc?: BeatDoc): unknown;
     meterTap(id: string): unknown;
-    live: { bus: unknown; channels: Map<string, unknown> };
-    playMidi(track: BeatTrack, pitch: number, velocity: number, at: number): BeatVoice;
+    live: Run;
+    playMidi(track: BeatTrack | { id: string; instrument: { engine: 'voice' | 'wavetable'; id: string; preset: string }; gain: number; pan: number }, pitch: number, velocity: number, at: number, run?: Run, gain?: number): BeatVoice;
     playPad(pad: string, velocity: number, at: number, destination?: unknown, kit?: string): void;
     click(at: number, accent: boolean, destination: unknown): void;
 };

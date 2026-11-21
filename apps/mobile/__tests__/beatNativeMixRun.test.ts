@@ -122,7 +122,7 @@ test.each(['sync', 'destination', 'schedule', 'playPad'])('timer errors in %s st
     const b = build(); let fire = () => {};
     let doc = make(); const onError = jest.fn(), timer = jest.fn(fn => { fire = fn; return 1; });
     const audio = createBeatAudioFromEngine({ engine: b.engine, setTimer: timer, clearTimer: jest.fn() });
-    await audio.play(() => doc, undefined, onError); const old = b.run();
+    await audio.play(() => doc, undefined, undefined, 0, { onError }); const old = b.run();
     const error = new Error('engine failure');
     if (phase === 'sync') { doc = addEffect(doc, 't1', 'eq'); b.start.mockImplementationOnce(() => { throw error; }); }
     if (phase === 'destination') {
@@ -151,10 +151,10 @@ test('an effect the native context cannot build is reported once per run, never 
 test('a UI stop or close never throws when a run fails to release', async () => {
     const b = build(); const onError = jest.fn(), error = new Error('release failed');
     const audio = createBeatAudioFromEngine({ engine: b.engine, setTimer: jest.fn(() => 1), clearTimer: jest.fn() });
-    await audio.play(() => make(), undefined, onError);
+    await audio.play(() => make(), undefined, undefined, 0, { onError });
     b.stop.mockImplementation(() => { throw error; });
     expect(() => audio.stop()).not.toThrow();
     expect(audio.isPlaying()).toBe(false); expect(onError).toHaveBeenCalledWith(error);
-    await audio.play(() => make(), undefined, onError);
+    await audio.play(() => make(), undefined, undefined, 0, { onError });
     await expect(audio.close()).resolves.toBeUndefined();
 });

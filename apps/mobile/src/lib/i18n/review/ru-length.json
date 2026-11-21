@@ -1,5 +1,35 @@
 [
   {
+    "id": "editorCaptionTools.correctChoose",
+    "english": "Choose one timed word to correct.",
+    "translation": "Выберите одно слово с временными метками для исправления.",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCaptionTools.length",
+    "english": "Word length",
+    "translation": "Длительность слова",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCaptionTools.align",
+    "english": "Align lyrics",
+    "translation": "Выровнять текст песни",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Все субтитры с временными метками",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorCaptionTools.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "Шестнадцатеричный цвет: {label}",
@@ -3696,6 +3726,12 @@
     "ratio": 2.25
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
+    "ratio": 3.21
+  },
+  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Отменить",
@@ -3736,6 +3772,72 @@
     "english": "Checkpoint",
     "translation": "Контрольная точка",
     "ratio": 1.7
+  },
+  {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Создать отдельную копию",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Привязка",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Выключено",
+    "ratio": 3
+  },
+  {
+    "id": "beatPiano.quantise",
+    "english": "Quantise",
+    "translation": "Квантизировать",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatPiano.zoomOut",
+    "english": "Zoom out",
+    "translation": "Уменьшить масштаб",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.zoomIn",
+    "english": "Zoom in",
+    "translation": "Увеличить масштаб",
+    "ratio": 2.43
+  },
+  {
+    "id": "beatPiano.toggle",
+    "english": "Toggle note at cursor",
+    "translation": "Добавить или убрать ноту у курсора",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Ударные установки",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "Подготовить {track} к записи",
+    "ratio": 2.55
+  },
+  {
+    "id": "beatTakes.locked",
+    "english": "Stop recording to edit",
+    "translation": "Остановите запись для редактирования",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatTakes.choose",
+    "english": "Use {name}",
+    "translation": "Использовать {name}",
+    "ratio": 1.9
   },
   {
     "id": "speech.pitch",

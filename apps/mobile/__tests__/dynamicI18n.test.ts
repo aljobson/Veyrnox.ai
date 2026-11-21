@@ -11,6 +11,9 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'editorCaptionTools.added.{}': ['one', 'other'],
+    'editorCaptionTools.range.{}': ['one', 'other'],
+    'editorCaptionTools.sources.{}': ['one', 'other'],
     'speech.tone.{}': [...new Set(TTS_VOICES.map(voice => voice.tone))],
     'speech.cue.{}': TTS_INTERJECTIONS.map(([, cue]) => cue.slice(1, -1)),
     'speech.emotion.{}': TTS_EMOTIONS,
@@ -44,6 +47,7 @@ const domains: Record<string, readonly string[]> = {
     'beatMix.lane.{}': ['gain', 'pan'],
     'beatMix.lane.show.{}': ['gain', 'pan'],
     'beatMix.send.{}': ['reverb', 'delay'],
+    'beatPiano.library.group.{}': ['piano', 'guitar', 'drums', 'bass', 'synth', 'wavetable'],
     'beat.local.{}': ['saved', 'saving', 'error', 'busy'],
     'beat.cloud.{}': ['checking', 'off', 'unlinked', 'other', 'signed_out', 'syncing', 'synced', 'conflict', 'paused_conflict', 'removed', 'limit', 'rate_limited', 'offline', 'error', 'takes'],
     'beat.pad.{}': ['kick', 'snare', 'hat', 'openhat', 'clap', 'tom', 'rim', 'crash'],
@@ -213,4 +217,16 @@ test('creator name uses translated id lookups even when the rendered words conta
         for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete spanish[key]; else spanish[key] = value; }
         setLocaleFromDevice(['en']);
     }
+});
+
+test.each([
+    ['en', 1, 'Added 1 caption.', '1 word selected, 0 to 2', '1 caption has word timing'],
+    ['en', 2, 'Added 2 captions.', '2 words selected, 0 to 2', '2 captions have word timing'],
+    ['ru', 1, 'Добавлен 1 субтитр.', 'Выбрано 1 слово, от 0 до 2', '1 субтитр со временем слов'],
+    ['ru', 2, 'Добавлено 2 субтитра.', 'Выбрано 2 слова, от 0 до 2', '2 субтитра со временем слов'],
+] as const)('%s caption plurals for count %s', (locale, count, added, range, sources) => {
+    const tr = createTranslator(locale, CATALOGS);
+    expect(tr.plural('editorCaptionTools.added', count)).toBe(added);
+    expect(tr.plural('editorCaptionTools.range', count, { start: 0, end: 2 })).toBe(range);
+    expect(tr.plural('editorCaptionTools.sources', count)).toBe(sources);
 });

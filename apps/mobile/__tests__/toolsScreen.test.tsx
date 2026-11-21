@@ -12,7 +12,6 @@ const mockModels: CatalogModel[] = [face('face-retouch'), face('face-age'), face
     { id: 'kling-3.0-i2v', name: 'Kling i2v', modality: 'image-to-video', credits: 32, durations: [5], gated: false, capabilities: { media: { image: { required: true } } } }];
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }), useLocalSearchParams: () => mockParams, Stack: { Screen: () => null } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (cb: any) => { cb(mockModels); return mockModels; } }));
-jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => true }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 let root: Root;
 const controls = () => root.container.queryAll(n => n.props.accessibilityRole === 'button');
@@ -20,17 +19,9 @@ const event = { nativeEvent: {}, currentTarget: 1, target: 1 };
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockPush.mockReset(); mockParams = {}; });
 afterEach(async () => { await act(async () => root.unmount()); });
 
-test('Face filters is one card in the web order, never one row per face model', async () => {
+test('there is no Face filters card on Tools', async () => {
     await act(async () => root.render(<Tools />));
-    const faces = controls().filter(n => String(n.props.accessibilityLabel).startsWith(`${t('toolDirectory.facefilters')}.`));
-    expect(faces).toHaveLength(1);
-    expect(controls().filter(n => String(n.props.accessibilityLabel).startsWith('Face face-'))).toHaveLength(0);
-    // Upscale, then Face filters, then Photo to video, as on the web page.
-    const labels = controls().map(n => String(n.props.accessibilityLabel));
-    expect(labels.findIndex(l => l.startsWith('Topaz Upscale.'))).toBeLessThan(labels.indexOf(faces[0].props.accessibilityLabel));
-    expect(labels.indexOf(faces[0].props.accessibilityLabel)).toBeLessThan(labels.findIndex(l => l.startsWith('Kling i2v.')));
-    await act(async () => faces[0].props.onClick(event));
-    expect(mockPush).toHaveBeenLastCalledWith('/face-filters');
+    expect(controls().filter(n => String(n.props.accessibilityLabel).startsWith(`${t('toolDirectory.facefilters')}.`))).toHaveLength(0);
 });
 
 test('every job keeps its models listed under it, each opening the Create form', async () => {
@@ -41,8 +32,8 @@ test('every job keeps its models listed under it, each opening the Create form',
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/create/[modelId]', params: { modelId: 'kling-3.0-i2v' } });
 });
 
-test.each([['photo', 1], ['reference', 0]] as const)('Start %s mode keeps Face filters only where a photo is transformed', async (mode, count) => {
+test.each(['photo', 'reference'] as const)('Start %s mode shows no Face filters card', async (mode) => {
     mockParams = { mode };
     await act(async () => root.render(<Tools />));
-    expect(controls().filter(n => String(n.props.accessibilityLabel).startsWith(`${t('toolDirectory.facefilters')}.`))).toHaveLength(count);
+    expect(controls().filter(n => String(n.props.accessibilityLabel).startsWith(`${t('toolDirectory.facefilters')}.`))).toHaveLength(0);
 });

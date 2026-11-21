@@ -419,3 +419,13 @@ Owner activation checklist (all previous blockers still apply):
 
 Verification limitations and per-line design criteria are recorded in
 `docs/template-clip-chips-review.md`. No browser/device proof is claimed.
+
+## Amendment 3 — the same kie endpoint sells long-prompt photo templates (2026-11-20)
+
+ADR-0309 amendment 3 adds a second, separately priced offer on `market:bytedance/seedance-2`: `seedance-2.0-photo-kie` (0573,
+58 credits per 5 s, no reference video, dark behind the `seedanceLongTemplates` runtime key). It reuses this ADR's capability record
+and kie shaping unchanged: one picture in `reference_image_urls`, no first/last frame, 720p, generated audio. The template-clip
+offer `seedance-2.0-reference-kie` and its open checklist above are unchanged. The owner's probe 3 (2026-11-20, task
+e19731441b78840a5df9fe08f8325708) answers two of that checklist's questions for image-only requests: kie accepted a real person's
+photo as a reference picture, and the literal `@Image1` token in an exact prompt was followed. Reference video and its price are
+still unverified.

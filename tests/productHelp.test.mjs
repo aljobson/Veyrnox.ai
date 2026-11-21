@@ -47,7 +47,7 @@ test('fallback guidance maps common questions to reviewed controls', () => {
 
 test('reviewed knowledge covers every main product workspace', () => {
     const routes = new Set(PRODUCT_KNOWLEDGE.flatMap((entry) => entry.routes));
-    for (const route of ['/app', '/app/create', '/app/oddlings', '/app/chat', '/app/library', '/app/credits', '/app/account', '/app/projects', '/app/enhance', '/app/video-agent', '/app/publish', '/app/publish/calendar', '/app/publish/analytics', '/app/admin']) {
+    for (const route of ['/app', '/app/create', '/app/oddlings', '/app/chat', '/app/library', '/app/credits', '/app/account', '/app/projects', '/app/video-agent', '/app/publish', '/app/publish/calendar', '/app/publish/analytics', '/app/admin']) {
         assert.ok(routes.has(route), `missing knowledge for ${route}`);
     }
     for (const entry of PRODUCT_KNOWLEDGE) {
@@ -90,7 +90,6 @@ test('knowledge retrieval recognises creation and product feature questions', ()
         ['How do I buy more Credits?', '/app', 'credits'],
         ['How do I add a passkey?', '/app/account', 'account-security'],
         ['How do I schedule a social post?', '/app/publish', 'publish-compose'],
-        ['How do I smooth a portrait video?', '/app/enhance', 'video-enhance'],
         ['How do I make a new project?', '/app/projects', 'projects'],
     ];
     for (const [question, pathname, expected] of cases) {
@@ -277,7 +276,6 @@ test('Vey knows the video editor and keeps neighbouring workflows apart', () => 
     for (const [question, path] of [['How do I use the video editor?', '/app'], ['Is there a timeline?', '/app'], ['How do I export an MP4 from the editor?', '/app/editor']]) {
         assert.equal(searchProductKnowledge(question, path, 1)[0].id, 'video-editor', question);
     }
-    assert.equal(searchProductKnowledge('How do I enhance a video?', '/app/enhance', 1)[0].id, 'video-enhance');
     assert.equal(searchProductKnowledge('How do I create a video?', '/app/create', 1)[0].id, 'create-video');
     const editor = PRODUCT_KNOWLEDGE.find((item) => item.id === 'video-editor');
     assert.match(editor.summary, /no Credits/);

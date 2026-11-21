@@ -1,5 +1,53 @@
 [
   {
+    "id": "editorCaptionTools.transcriptChoose",
+    "english": "Select a transcript word or caption range.",
+    "translation": "Sélectionnez un mot de la transcription ou une plage de sous-titres.",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorCaptionTools.treatAsCaptions",
+    "english": "Treat as captions",
+    "translation": "Traiter comme des sous-titres",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorCaptionTools.shareSrt",
+    "english": "Share SRT",
+    "translation": "Partager en SRT",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.shareVtt",
+    "english": "Share VTT",
+    "translation": "Partager en VTT",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.wordTiming",
+    "english": "Word timing",
+    "translation": "Synchronisation des mots",
+    "ratio": 2.18
+  },
+  {
+    "id": "editorCaptionTools.find",
+    "english": "Find captions",
+    "translation": "Rechercher des sous-titres",
+    "ratio": 2
+  },
+  {
+    "id": "editorCaptionTools.noMatches",
+    "english": "No captions match.",
+    "translation": "Aucun sous-titre ne correspond.",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Tous les sous-titres synchronisés",
+    "ratio": 1.83
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "Couleur hexadécimale de {label}",
@@ -5700,6 +5748,12 @@
     "ratio": 1.63
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Pas encore sauvegardé. Ce beat est perdu à la fermeture de l’app.",
+    "ratio": 3.42
+  },
+  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Annuler",
@@ -5776,6 +5830,138 @@
     "english": "Checkpoint",
     "translation": "Point de sauvegarde",
     "ratio": 1.9
+  },
+  {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Créer une copie unique",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Alignement",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
+    "id": "beatPiano.zoomOut",
+    "english": "Zoom out",
+    "translation": "Réduire le zoom",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.actions",
+    "english": "Selected note actions",
+    "translation": "Actions sur les notes sélectionnées",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Déplacer à gauche",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Déplacer à droite",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "Monter la hauteur",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.down",
+    "english": "Pitch down",
+    "translation": "Baisser la hauteur",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatPiano.selectAll",
+    "english": "Select all notes",
+    "translation": "Sélectionner toutes les notes",
+    "ratio": 1.81
+  },
+  {
+    "id": "beatPiano.resized",
+    "english": "Resized notes",
+    "translation": "Durée des notes modifiée",
+    "ratio": 1.85
+  },
+  {
+    "id": "beatPiano.cursorDown",
+    "english": "Cursor pitch down",
+    "translation": "Baisser la hauteur du curseur",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatPiano.cursorUp",
+    "english": "Cursor pitch up",
+    "translation": "Monter la hauteur du curseur",
+    "ratio": 1.87
+  },
+  {
+    "id": "beatPiano.toggle",
+    "english": "Toggle note at cursor",
+    "translation": "Activer ou retirer la note au curseur",
+    "ratio": 1.76
+  },
+  {
+    "id": "beatPiano.library.title",
+    "english": "Instruments",
+    "translation": "Bibliothèque d’instruments",
+    "ratio": 2.36
+  },
+  {
+    "id": "beatPiano.library.close",
+    "english": "Close library",
+    "translation": "Fermer la bibliothèque",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Kits de batterie",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatPiano.selected.octaveUp",
+    "english": "Selected notes octave up",
+    "translation": "Notes sélectionnées : une octave plus haut",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatTakes.record",
+    "english": "Record",
+    "translation": "Enregistrer",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatTakes.stop",
+    "english": "Stop recording",
+    "translation": "Arrêter l’enregistrement",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatTakes.locked",
+    "english": "Stop recording to edit",
+    "translation": "Arrêtez l’enregistrement pour modifier",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatTakes.recordingSaved",
+    "english": "Recording saved",
+    "translation": "Enregistrement sauvegardé",
+    "ratio": 1.67
   },
   {
     "id": "speech.addCredits",

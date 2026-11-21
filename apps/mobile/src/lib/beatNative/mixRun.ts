@@ -1,8 +1,8 @@
 import { audibleGain, type BeatDoc } from './doc';
 import { runKey } from './mix';
-import type { BeatEngine, Run } from './shared';
+import type { BeatEngine, MixRunHandle } from './shared';
 
-type Active = { run: Run; key: string; lastOnset: number };
+type Active = { run: MixRunHandle; key: string; lastOnset: number };
 export function createMixRun(engine: BeatEngine, onEffectError: (message: string) => void = () => undefined) {
     let current: Active | null = null;
     const retired = new Set<Active>();
@@ -36,7 +36,7 @@ export function createMixRun(engine: BeatEngine, onEffectError: (message: string
             return destination;
         },
         schedule(doc: BeatDoc, fromSec: number, toSec: number, contextTime: number) {
-            for (const t of doc.tracks) current?.run.channels.get(t.id)?.schedule({ fromSec, toSec, contextTime });
+            for (const t of doc.tracks) current?.run.channels?.get(t.id)?.schedule({ fromSec, toSec, contextTime });
         },
         stop() {
             const runs = [...retired, ...(current ? [current] : [])];
@@ -46,6 +46,7 @@ export function createMixRun(engine: BeatEngine, onEffectError: (message: string
             for (const { run } of runs) { try { engine.stopRun(run); } catch (error) { failure ??= error; } }
             if (failure) throw failure;
         },
+        run(): MixRunHandle | null { return current?.run ?? null; },
         meterTap(trackId: string): unknown | null { return current ? engine.meterTap(trackId) ?? null : null; },
     };
 }

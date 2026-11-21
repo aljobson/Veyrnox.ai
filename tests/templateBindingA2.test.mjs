@@ -18,6 +18,9 @@ import { fallbackCapabilitiesFor } from '../lib/fallbackModelCapabilities.js';
 import { templateInputs, submitTemplate, templateRun } from '../app/veyrnox/_lib/templateGenerate.js';
 import { checkTemplateRequest } from '../lib/templateFidelity.js';
 import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
+import { PEOPLE_BINDING_MODEL } from '../lib/templateBinding.js';
+import { SEEDANCE_LONG_MODEL_ID } from '../lib/seedanceLongTemplates.js';
+import { publicModelId } from '../lib/publicModelIds.js';
 const sha = text => createHash('sha256').update(text).digest('hex');
 for (const token of ['@image1', '@Image 1', '@IMAGE_1', '@image-1', '<<<image_1>>>', '<<< IMAGE 1 >>>', '<<<image-1>>>', 'Image 1:', 'image_1.png', 'image-1.jpeg']) {
   test(`binding grammar: ${token}`, () => {
@@ -42,8 +45,8 @@ test('shared detectors distinguish source dependencies from generated or negated
 });
 test('audit classification, reasons, source hashes and non-token bytes are locked', () => {
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61} /* 61 over the Kling 3.0 prompt cap (KLING_V3_PROMPT_MAX) moved to unsupported */);
-  assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 9, 'prompt-limit': 115 });
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49} /* 61 over the Kling 3.0 prompt cap moved to unsupported; 49 of them (one photo, at most 20,000 characters) bind to kie Seedance (ADR-0309 amendment 3) */);
+  assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 9 - 2, 'prompt-limit': 115 - 49 }); // ADR-0309 amendment 3
   for (const p of PRESETS) {
     const c = report.contracts[p.id];
     if (!c) continue;
@@ -73,21 +76,21 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
     const [feed] = toPublicPresets([model], [p]);
     const href = new URL(presetHref(p), 'https://veyrnox.test');
     const arrival = templateArrival(p, [model], href.searchParams, null);
-    assert.equal(feed.modelId, id); assert.equal(arrival.modelId, id);
+    assert.equal(feed.modelId, publicModelId(id)); assert.equal(arrival.modelId, id);
     assert.equal(feed.modality, model.modality); assert.equal(feed.slotCount, c.slotCount);
     assert.equal(feed.credits, presetCredits(p, [model]));
     assert.equal(feed.credits, 32 * Math.ceil(p.durationSeconds / 5));
     assert.equal(feed.available, true); assert.equal(toPublicPresets([], [p])[0].available, false);
     assert.equal(draftForTemplate(p, id).prompt, c.sourcePrompt);
     assert.equal(templateStartIdFor(p.id, p, id), p.id);
-    assert.equal(id, 'kling-3.0-i2v');
+    assert.equal(id, c.modelId); assert.ok([PEOPLE_BINDING_MODEL, SEEDANCE_LONG_MODEL_ID].includes(id), id);
     const refs = [{ slot: 'image', origin: 'upload', key: 'photo' }];
     const inputs = templateInputs(p, { ...model, kind: 'video' }, { prompt: c.sourcePrompt, aspect: c.aspect, aspectOptions: c.aspect ? [c.aspect] : [], durationSeconds: c.duration, withPhoto: true });
     let body;
     await submitTemplate({ preset: p, model, inputs, run: templateRun(null, p.id, 32, () => 'key'), quote: { ceilings: [32] }, deps: { sources: async () => ({ references: refs }), gatewayFetch: async (_, init) => { body = JSON.parse(init.body); return { job_id: 'job' }; }, onJob() {} } });
     if (c.slotCount === 1) { assert.equal(body.template_id, c.id); assert.equal(body.inputs.prompt, c.prompt); assert.equal(checkTemplateRequest(body).ok, !swapNeedsSourceVideo(c.sourcePrompt)); }
     else { assert.equal(body.template_id, undefined); assert.equal(body.inputs.prompt, c.sourcePrompt); }
-    assert.equal(templateRoute(p, id, c.slotCount).modelId, 'kling-3.0-i2v');
+    assert.equal(templateRoute(p, id, c.slotCount).modelId, c.modelId);
   }
 });
 test('the generated contract covers all exact-source templates', () => {
@@ -99,7 +102,7 @@ test('the generated contract covers all exact-source templates', () => {
 test('reviewed overlapping reason counts are pinned across all classes', () => {
   const counts = {};
   for (const c of Object.values(audit().contracts)) for (const reason of c.reasons) counts[reason] = (counts[reason] || 0) + 1;
-  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2, 'multi-photo-needs-people-model': 180, 'unsupported-aspect': 12, 'prompt-limit': 280 });
+  assert.deepEqual(counts, { 'reference-video-required': 355 + 37, 'source-audio-not-audited': 62 + 9, 'unmapped-image-reference': 27, 'unmapped-placeholder': 122, 'too-many-image-slots': 2, 'multi-photo-needs-people-model': 180, 'unsupported-aspect': 12 - 4, 'prompt-limit': 280 - 97 }); // ADR-0309 amendment 3: one-photo recipes up to 20,000 characters now target kie Seedance (aspect allowed); 49 became bound, the rest stay blocked for video
 });
 
 test('all bound detail pages offer exactly N fixed required slots', async t => {

@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { Button, SegmentedControl, Text, themedStyles, useThemedStyles } from '../ui';
 import { StrengthSlider } from '../StrengthSlider';
+import { instrumentLabel, type MidiTrackDoc } from '../../lib/beatNative/midi';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
 import { DRUM_KITS, type BeatTrackDoc } from '../../lib/beatNative/doc';
@@ -22,7 +23,7 @@ export function MixerStrip({ track, index, canRemove, onGain, onPan, onMute, onS
         <View style={s.strip} accessibilityLabel={name}>
             <Text variant="bodyStrong">{name}</Text>
             {!track.kind || track.kind === 'drums' ? <SegmentedControl value={track.kit ?? DRUM_KITS[0].id} onChange={onKit} options={DRUM_KITS.map(k => ({ value: k.id, label: t(`beat.kit.${k.id}`) }))}
-                accessibilityLabel={t('beat.kit', { track: name })} /> : <Text>{t(track.kind === 'audio' ? 'beat.kind.audio' : 'beat.kind.midi')}</Text>}
+                accessibilityLabel={t('beat.kit', { track: name })} /> : <Text>{track.kind === 'midi' ? instrumentLabel((track as unknown as MidiTrackDoc).instrument) : t('beat.kind.audio')}</Text>}
             <StrengthSlider tone="surface" label={t('beat.gain', { track: name })} value={track.gain} disabled={!!gainLocked} onChange={onGain} />
             {gainLocked ? <Text variant="footnote" tone="secondary">{gainLocked}</Text> : null}
             <StrengthSlider tone="surface" label={t('beat.pan', { track: name })} value={toSlider(track.pan)} disabled={!!panLocked} onChange={v => onPan(fromSlider(v))} />

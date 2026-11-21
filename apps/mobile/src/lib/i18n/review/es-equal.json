@@ -185,6 +185,7 @@
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "editorText.preset2": "Standard notation or established style name, retained in this locale.",
+  "editorCaptionTools.karaoke": "Established borrowed term, retained in this language.",
   "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
   "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
   "beatMix.fx.param": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",

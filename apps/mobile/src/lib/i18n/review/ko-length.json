@@ -30,6 +30,12 @@
     "ratio": 2.33
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "아직 저장되지 않았습니다. 앱을 닫으면 이 비트가 사라집니다.",
+    "ratio": 1.79
+  },
+  {
     "id": "beatMix.fx.eq",
     "english": "EQ",
     "translation": "이퀄라이저",

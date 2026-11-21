@@ -1,5 +1,77 @@
 [
   {
+    "id": "editorCaptionTools.transcriptChoose",
+    "english": "Select a transcript word or caption range.",
+    "translation": "Selecciona una palabra de la transcripción o un intervalo de subtítulos.",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorCaptionTools.wordTiming",
+    "english": "Word timing",
+    "translation": "Tiempos de palabras",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCaptionTools.mode",
+    "english": "Word display",
+    "translation": "Visualización de palabras",
+    "ratio": 2.08
+  },
+  {
+    "id": "editorCaptionTools.none",
+    "english": "None",
+    "translation": "Ninguno",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.word",
+    "english": "Word",
+    "translation": "Palabra",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCaptionTools.spread",
+    "english": "Spread words evenly",
+    "translation": "Repartir palabras uniformemente",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorCaptionTools.start",
+    "english": "Word start",
+    "translation": "Inicio de palabra",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorCaptionTools.length",
+    "english": "Word length",
+    "translation": "Duración de palabra",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCaptionTools.allTracks",
+    "english": "All",
+    "translation": "Todas",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.cut",
+    "english": "Cut selected words",
+    "translation": "Cortar palabras seleccionadas",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorCaptionTools.noMatches",
+    "english": "No captions match.",
+    "translation": "No hay subtítulos que coincidan.",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Todos los subtítulos con tiempos",
+    "ratio": 1.78
+  },
+  {
     "id": "editorTools.speed",
     "english": "Speed",
     "translation": "Velocidad",
@@ -3498,6 +3570,12 @@
     "ratio": 2.25
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Aún sin guardar. Este beat se pierde al cerrar la app.",
+    "ratio": 2.84
+  },
+  {
     "id": "beat.undo",
     "english": "Undo",
     "translation": "Deshacer",
@@ -3526,6 +3604,54 @@
     "english": "Autosave",
     "translation": "Guardado automático",
     "ratio": 2.38
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Ajuste de rejilla",
+    "ratio": 4.25
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Desactivado",
+    "ratio": 3.67
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Mover a la izquierda",
+    "ratio": 2.22
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Mover a la derecha",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatPiano.selectAll",
+    "english": "Select all notes",
+    "translation": "Seleccionar todas las notas",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatPiano.resized",
+    "english": "Resized notes",
+    "translation": "Duración de notas modificada",
+    "ratio": 2.15
+  },
+  {
+    "id": "beatPiano.selected.octaveUp",
+    "english": "Selected notes octave up",
+    "translation": "Subir octava de las notas seleccionadas",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatTakes.countIn",
+    "english": "One-bar count-in",
+    "translation": "Cuenta previa de un compás",
+    "ratio": 1.63
   },
   {
     "id": "speech.speed",

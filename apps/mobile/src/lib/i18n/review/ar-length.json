@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorCaptionTools.align",
+    "english": "Align lyrics",
+    "translation": "محاذاة كلمات الأغنية",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.lyrics",
+    "english": "Lyrics",
+    "translation": "كلمات الأغنية",
+    "ratio": 2.17
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "لون {label} بالنظام الست عشري",
@@ -2016,6 +2028,12 @@
     "ratio": 1.88
   },
   {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "لم يُحفظ بعد. سيضيع هذا الإيقاع عند إغلاق التطبيق.",
+    "ratio": 2.63
+  },
+  {
     "id": "beat.retry",
     "english": "Retry",
     "translation": "إعادة المحاولة",
@@ -2032,6 +2050,42 @@
     "english": "Keep mine",
     "translation": "الاحتفاظ بنسختي",
     "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.cursorLeft",
+    "english": "Cursor earlier",
+    "translation": "نقل المؤشر إلى وقت أسبق",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatPiano.cursorRight",
+    "english": "Cursor later",
+    "translation": "نقل المؤشر إلى وقت لاحق",
+    "ratio": 1.92
+  },
+  {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "تجهيز {track} للتسجيل",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatTakes.latency",
+    "english": "Latency: {ms} ms",
+    "translation": "زمن التأخير: {ms} مللي ثانية",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatTakes.crossfade",
+    "english": "Crossfade: {ms} ms",
+    "translation": "تلاشي متداخل: {ms} مللي ثانية",
+    "ratio": 1.61
   },
   {
     "id": "speech.volume",
