@@ -27,7 +27,8 @@ export type SmartCutAnalysisClip = { readonly jobId: string; readonly label: str
 type Recovery = { readonly clip: SmartCutAnalysisClip; readonly key: string };
 
 /** Quote, confirm, recover and report optional speech analysis for the selected Smart Cut clips. */
-export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange }: {
+export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange, disabled = false }: {
+    readonly disabled?: boolean;
     readonly clips: readonly SmartCutAnalysisClip[];
     readonly analyses: ReadonlyMap<string, SpeechAnalysis>;
     readonly onAnalysed: (jobId: string, analysis: SpeechAnalysis) => void;
@@ -195,7 +196,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     }
 
     async function analyse() {
-        if (running || !actionable.length || ineligible.length) return;
+        if (disabled || running || !actionable.length || ineligible.length) return;
         const startedFor = signature;
         const abort = new AbortController();
         controller.current = abort;
@@ -319,7 +320,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
         </> : recovery ? <Button label={t('app.smartCut.native.analyse.checkStatus')} variant="secondary" onPress={() => void checkStatus()} /> : <>
             <Text tone="secondary">{t('app.smartCut.native.analyse.privacy')}</Text>
             <Text variant="bodyStrong" tone="accent">{t('app.smartCut.native.analyse.maximum', { total: maximum, credits: activeQuote.credits })}</Text>
-            <Button label={t('app.smartCut.native.analyse.start')} onPress={() => void analyse()} />
+            <Button label={t('app.smartCut.native.analyse.start')} disabled={disabled} onPress={() => void analyse()} />
         </>}
         <View style={styles.messages}>{messages.map((message, index) => <Text key={`${message}:${index}`} variant="footnote" accessibilityLiveRegion="polite">{message}</Text>)}</View>
         {!ready && ineligible.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.ineligibleBlocked', { names: ineligible.map((clip) => clip.label).join(', '), max: activeQuote.max_seconds })}</Text> : null}

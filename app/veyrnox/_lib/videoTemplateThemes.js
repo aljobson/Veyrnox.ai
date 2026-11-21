@@ -10,8 +10,8 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'CARS',
     templateIds: [
-      // Hidden from the gallery 2026-11-21 (videoTemplateGallery.js) as near-duplicates of community-supercar-midnight-refuel; kept
-      // here so re-listing one needs only its id back in VIDEO_GALLERY_TEMPLATE_IDS.
+      // All three refuel templates are hidden from the gallery (videoTemplateGallery.js, 2026-11-21); kept here so re-listing one
+      // needs only its id back in VIDEO_GALLERY_TEMPLATE_IDS.
       'community-midnight-supercar-refuel', 'community-supercar-night-fueling', 'community-supercar-midnight-refuel',
       'community-midnight-sports-drive', 'car-sky-fall', 'desert-rider', 'community-drive-thru-dialogue',
       'community-truck-window-confrontation',

@@ -1,5 +1,6 @@
 'use client';
 
+import LipSyncExampleCard from '../../_components/LipSyncExampleCard';
 import { PromptBox } from '../../_components/PromptBox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -1719,6 +1720,8 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
             <Link href="/app/create" className="mt-3 inline-block text-xs font-black text-vx-accent underline underline-offset-4">Explore all 24 creation recipes</Link>
           </div>
         </header>
+
+        {dedicatedLipSync && workflow.id === 'video-lip-sync' && <LipSyncExampleCard />}
 
         {activeRecipe && (
           <section aria-label={`${activeRecipe.title} recipe`} className="mt-6 rounded-2xl border border-vx-accent/35 bg-vx-accent/[0.06] p-4 sm:p-5">

@@ -1,5 +1,11 @@
 [
   {
+    "id": "videoShape.square",
+    "english": "Square",
+    "translation": "Quadratisch",
+    "ratio": 1.83
+  },
+  {
     "id": "editorAudioTools.low",
     "english": "Low",
     "translation": "Tiefen",

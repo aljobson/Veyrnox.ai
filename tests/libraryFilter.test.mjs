@@ -38,7 +38,24 @@ test('the saved layout is read safely', () => {
 
 test('the Library page filters through the helper and offers both controls', () => {
     const page = readFileSync(new URL('../app/veyrnox/app/library/page.js', import.meta.url), 'utf8');
-    assert.match(page, /filterRows\(shown, \{ state: tab, kind, favourites: favOnly \? favourites : null \}, models\)/);
+    assert.match(page, /filterRows\(shown, \{ state: tab, kind, shape, favourites: favOnly \? favourites : null \}, models, selected\)/);
     assert.match(page, /data-testid="library-types"/);
     assert.match(page, /data-testid="library-layout"/);
+});
+
+test('shape filters apply to Video only; unknown and ambiguous match only All shapes', () => {
+    const rows = [{ video_width: 1080, video_height: 1920 }, { video_width: 1920, video_height: 1080 }, { video_width: 1000, video_height: 1000 }, {}, { shape_ambiguous: true, video_width: 1000, video_height: 1000 }].map((row, i) => ({ ...row, job_id: String(i), mime_type: 'video/mp4' }));
+    for (const [shape, id] of [['portrait', '0'], ['landscape', '1'], ['square', '2']]) assert.deepEqual(filterRows(rows, { kind: 'video', shape }, []).map(r => r.job_id), [id]);
+    assert.equal(filterRows(rows, { kind: 'video', shape: 'all' }, []).length, 5);
+    assert.equal(filterRows(rows, { kind: 'all', shape: 'square' }, []).length, 5);
+});
+
+test('selected mismatches remain visible under a shape filter until unticked', () => {
+    const portrait = { job_id: 'portrait', state: 'succeeded', mime_type: 'video/mp4', video_width: 1080, video_height: 1920 };
+    const landscape = { ...portrait, job_id: 'landscape', video_width: 1920, video_height: 1080 };
+    const rows = [portrait, landscape], filters = { kind: 'video', shape: 'portrait' };
+    assert.deepEqual(filterRows(rows, filters, [], ['portrait', 'landscape']), rows);
+    assert.deepEqual(filterRows(rows, filters, [], ['portrait']), [portrait]);
+    assert.deepEqual(filterRows(rows, { ...filters, state: 'failed' }, [], ['landscape']), []);
+    assert.deepEqual(filterRows(rows, { ...filters, favourites: ['portrait'] }, [], ['landscape']), [portrait]);
 });

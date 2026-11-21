@@ -1,5 +1,11 @@
 [
   {
+    "id": "videoShape.all",
+    "english": "All shapes",
+    "translation": "Todos os formatos",
+    "ratio": 1.7
+  },
+  {
     "id": "editorAudioTools.low",
     "english": "Low",
     "translation": "Graves",

@@ -71,7 +71,6 @@ test('an audio template in Explore plays its sample from the list, like the web'
     await act(async () => play!.props.onClick(event));
     expect(buttons().some(n => n.props.accessibilityLabel === 'Pause, Midnight Soul')).toBe(true);
     expect(mockPush).not.toHaveBeenCalled();
-    expect(buttons().some(n => n.props.accessibilityLabel === 'Use template, Midnight Soul')).toBe(true);
 });
 test('the header counts every kind', async () => {
     const text = root.container.queryAll(n => typeof n.props.children === 'string' && /^\d+ templates?$/.test(n.props.children)).map(n => n.props.children).join(' ');

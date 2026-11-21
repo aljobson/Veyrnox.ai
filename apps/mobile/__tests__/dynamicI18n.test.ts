@@ -191,6 +191,7 @@ const domains: Record<string, readonly string[]> = {
     "vibe.{}.title": ["goal", "look", "pace", "chaos", "destination", "audience", "voice"],
     "vibe.{}.{}": ["look|neon_rain", "look|sunlit_kitchen", "look|retro_vhs", "look|dream_anime", "look|glossy_product", "look|doc_grit", "pace|fox", "pace|owl", "pace|octopus", "pace|jellyfish", "destination|tiktok", "destination|reels", "destination|youtube", "destination|cinema", "destination|roll", "audience|me", "audience|audience", "audience|customers", "audience|kids", "audience|nobody_yet"],
     "vibe.{}.{}.sub": ["pace|fox", "pace|owl", "pace|octopus", "pace|jellyfish"],
+    "videoShape.{}": ["all", "portrait", "landscape", "square"],
     "videoAgent.step{}.body": ["1", "2", "3"],
     "videoAgent.step{}.title": ["1", "2", "3"],
     "videoAgent.tip{}": ["1", "2", "3", "4"],

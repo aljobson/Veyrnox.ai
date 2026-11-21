@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '../../../components/I18nProvider';
+import { pluralKey } from '../../../lib/i18n/translate.mjs';
+import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { creativeFeatureExample, creativeFeatureExampleAssetPath, translatedCreativeFeature } from '../_lib/creativeFeatures';
 import { gatewayFetch } from '../_lib/gateway';
@@ -19,7 +21,7 @@ const card = 'rounded-2xl border border-vx-border bg-vx-panel';
 
 export default function CreativeFeatureStudio({ feature }) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const copy = translatedCreativeFeature(feature, t);
   const example = creativeFeatureExample(feature.slug);
   const exampleAsset = creativeFeatureExampleAssetPath(feature.slug);
@@ -35,6 +37,10 @@ export default function CreativeFeatureStudio({ feature }) {
   const prompt = `${copy.prompt}${brief.trim()}`.trim();
   const catalog = useCatalog();
   const selectedModel = catalog.models.find(model => model.id === feature.model);
+  const credits = catalog.live && Number.isFinite(selectedModel?.credits) && selectedModel.credits >= 0 ? selectedModel.credits : null;
+  const priceLabel = catalog.loading ? t('app.create.checkingPrices')
+    : credits === null ? t('app.create.pricesUnavailable')
+      : t(pluralKey(t, locale, 'app.create.credits', credits), { count: credits.toLocaleString(localeTag(locale)) });
   const media = useMemo(() => Object.fromEntries(feature.media.map(slot => [slot, { ...selectedModel?.media?.[slot], required: true }])), [feature.media, selectedModel]);
   const hasUpload = feature.media.length > 0 || feature.scriptUpload;
 
@@ -165,7 +171,7 @@ export default function CreativeFeatureStudio({ feature }) {
           {example.kind === 'video'
             ? <video controls playsInline preload="metadata" referrerPolicy="no-referrer" src={exampleAsset} className="aspect-video w-full bg-black object-contain" aria-label={t('app.features.exampleAria', { title: copy.title })} />
             : <img loading="lazy" referrerPolicy="no-referrer" src={exampleAsset} alt={t('app.features.exampleAria', { title: copy.title })} className="max-h-[520px] w-full bg-black object-contain" />}
-          <p className="px-5 py-3 text-[11px] leading-4 text-vx-fg-faint sm:px-6">{t('app.features.exampleNote')}</p>
+          {!exampleAsset.startsWith('/') && <p className="px-5 py-3 text-[11px] leading-4 text-vx-fg-faint sm:px-6">{t('app.features.exampleNote')}</p>}
         </section>}
 
         <section className={`${card} p-5 sm:p-6`}>
@@ -214,7 +220,7 @@ export default function CreativeFeatureStudio({ feature }) {
         </section>
 
         <section className={`${card} p-5`}>
-          {feature.blocked ? <><p className="text-sm font-black text-vx-danger">{t('app.features.safeguard')}</p><p className="mt-2 text-xs leading-5 text-vx-fg-muted">{copy.blockedReason}</p><Link href="/app/features/text-to-speech" className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-vx-accent px-5 text-sm font-black text-vx-accent">{t('app.features.useTts')}</Link></> : <><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('app.features.liveModel')}</p><p className="mt-2 text-sm font-black">{copy.title}</p>{error && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{error}</p>}{uploadProgress && <p role="status" className="mt-4 text-xs font-bold text-vx-accent">{uploadProgress}</p>}<button type="button" disabled={uploading || sourcesConverting} onClick={launch} className="mt-5 min-h-12 w-full rounded-full bg-vx-accent px-5 text-sm font-black text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-wait disabled:opacity-60">{uploading ? t('app.features.uploadingAction') : t('app.features.continue')}</button><p className="mt-3 text-center text-[11px] leading-4 text-vx-fg-faint">{t('app.features.finalReview')}</p></>}
+          {feature.blocked ? <><p className="text-sm font-black text-vx-danger">{t('app.features.safeguard')}</p><p className="mt-2 text-xs leading-5 text-vx-fg-muted">{copy.blockedReason}</p><Link href="/app/features/text-to-speech" className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-vx-accent px-5 text-sm font-black text-vx-accent">{t('app.features.useTts')}</Link></> : <><p className="font-vx-mono text-[10px] font-bold uppercase tracking-[0.14em] text-vx-fg-muted">{t('app.features.liveModel')}</p><p className="mt-2 text-sm font-black">{copy.title}</p><p role="status" className="mt-2 text-sm text-vx-fg-muted">{priceLabel}</p>{error && <p role="alert" className="mt-4 rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-xs leading-5 text-vx-danger">{error}</p>}{uploadProgress && <p role="status" className="mt-4 text-xs font-bold text-vx-accent">{uploadProgress}</p>}<button type="button" disabled={uploading || sourcesConverting} onClick={launch} className="mt-5 min-h-12 w-full rounded-full bg-vx-accent px-5 text-sm font-black text-vx-accent-ink hover:bg-vx-accent-hover disabled:cursor-wait disabled:opacity-60">{uploading ? t('app.features.uploadingAction') : t('app.features.continue')}</button><p className="mt-3 text-center text-[11px] leading-4 text-vx-fg-faint">{t('app.features.finalReview')}</p></>}
         </section>
 
         <Link href="/app/features" className="block text-center text-xs font-bold text-vx-accent underline underline-offset-4">{t('app.features.browse')}</Link>

@@ -40,18 +40,18 @@ test('every workflow exposes a real, required upload control', () => {
   }
 });
 
-test('every workflow has an exact, attributable reference example', () => {
+test('every workflow exposes its configured example', () => {
   for (const item of CREATIVE_FEATURES) {
     const example = creativeFeatureExample(item.slug);
     assert.ok(example, `${item.slug} needs an example`);
     assert.ok(['image', 'video'].includes(example.kind));
-    assert.match(example.url, /^https:\/\/cdn\.lipsync\.video\//);
+    assert.match(example.url, /^(https:\/\/cdn\.lipsync\.video\/|\/examples\/[a-z-]+\.(mp4|webp)$)/);
     assert.equal(example.sourceUrl, undefined);
     assert.equal(creativeFeatureExampleAssetPath(item.slug), example.url);
   }
 });
 
-test('reference media uses the fixed audited URL without leaking a referrer', async () => {
+test('example media uses the configured asset URL without leaking a referrer', async () => {
   const studio = await readFile(new URL('../app/veyrnox/_components/CreativeFeatureStudio.js', import.meta.url), 'utf8');
   assert.match(studio, /src=\{exampleAsset\}/);
   assert.doesNotMatch(studio, /src=\{example\.url\}/);

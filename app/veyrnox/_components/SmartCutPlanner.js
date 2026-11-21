@@ -16,7 +16,7 @@ function analysisOf(analyses, assetId) {
   return analyses?.[assetId];
 }
 
-export function SmartCutPlanner({ clips, analyses = null, disabled = false, applyRevision = 0, onApply, onUndo, startOpen = false }) {
+export function SmartCutPlanner({ clips, analyses = null, disabled = false, planningDisabled = false, applyRevision = 0, onApply, onUndo, startOpen = false }) {
   const { t, locale } = useI18n();
   const number = (value, options) => Number(value).toLocaleString(localeTag(locale), options);
   const [open, setOpen] = useState(startOpen);
@@ -27,6 +27,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, appl
   const [view, setView] = useState('cut');
   const [notice, setNotice] = useState('');
   const lastApplyRevision = useRef(applyRevision);
+  const planDisabled = disabled || planningDisabled;
   const ready = clips.length > 0 && clips.every((clip) => Number.isFinite(Number(clip.duration)) && Number(clip.duration) > 0);
   const analysisReady = ready && analyses && clips.every((clip) => {
     if (analyses instanceof Map) return analyses.has(clip.job_id);
@@ -56,7 +57,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, appl
   }
 
   function createPlan() {
-    if (disabled) return;
+    if (planDisabled) return;
     try {
       setPlan(analysisReady
         ? buildSpeechAwareCutPlan({
@@ -102,7 +103,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, appl
   }, [applyRevision, t]);
 
   function apply() {
-    if (disabled) return;
+    if (planDisabled) return;
     if (!smartCutPlanWithinLimits(plan)) {
       setNotice(t('app.smartCut.notice.outsideLimits'));
       return;
@@ -137,7 +138,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, appl
           </div>
           <div className="flex flex-wrap gap-2">
             {onUndo && <button type="button" disabled={disabled} onClick={onUndo} className="min-h-11 rounded-full border border-vx-border px-4 text-xs font-extrabold hover:border-vx-accent disabled:opacity-40">{t('app.smartCut.action.undo')}</button>}
-            <button type="button" disabled={disabled || !ready} onClick={() => setOpen(true)} className="min-h-11 rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t('app.smartCut.action.plan')}</button>
+            <button type="button" disabled={planDisabled || !ready} onClick={() => setOpen(true)} className="min-h-11 rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t('app.smartCut.action.plan')}</button>
           </div>
         </div>
         {!ready && <p className="mt-2 text-xs text-vx-fg-muted">{t('app.smartCut.wait')}</p>}
@@ -205,7 +206,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, appl
             </div>
           </fieldset>
           {!ready && <p role="status" className="text-xs text-vx-fg-muted">{t('app.smartCut.reading')}</p>}
-          <button type="button" disabled={disabled || !ready} onClick={createPlan} className="min-h-11 justify-self-start rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t(analysisReady ? 'app.smartCut.action.removePauses' : 'app.smartCut.action.createPreview')}</button>
+          <button type="button" disabled={planDisabled || !ready} onClick={createPlan} className="min-h-11 justify-self-start rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-40">{t(analysisReady ? 'app.smartCut.action.removePauses' : 'app.smartCut.action.createPreview')}</button>
         </div>
       ) : (
         <div className="mt-4">
@@ -257,7 +258,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, appl
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" disabled={disabled} onClick={apply} className="min-h-11 rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:opacity-40">{t('app.smartCut.action.apply')}</button>
+            <button type="button" disabled={planDisabled} onClick={apply} className="min-h-11 rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:opacity-40">{t('app.smartCut.action.apply')}</button>
             <button type="button" disabled={disabled} onClick={restart} className="min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold hover:border-vx-accent disabled:opacity-40">{t('app.smartCut.action.restart')}</button>
           </div>
         </div>

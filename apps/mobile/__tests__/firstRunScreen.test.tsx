@@ -89,6 +89,10 @@ test('a hobbyist gets the everyday example, and Edit goes to its tab', async () 
     await press(t('create.firstGoal.edit'));
     await press(t('create.firstRun.dest.tiktok'));
     await press(t('create.firstRun.role.pro'));
+    // Edit is an answered goal, so it ends on the recap (a sample before the paywall) and only Continue leaves it.
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(hasText(t('create.firstRun.suggested'))).toBe(true);
+    await start();
     expect(mockPush).toHaveBeenCalledWith('/editor');
 });
 
