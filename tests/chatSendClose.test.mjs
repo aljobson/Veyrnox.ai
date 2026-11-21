@@ -167,7 +167,7 @@ function turn({ replies = {}, model = MODEL, env = { OPENROUTER_API_KEY: 'sk-tes
     const rpcs = []; let streamed = 0;
     const base = { check_generation_rate_limit: { ok: true }, chat_turn_context: { ok: true, user_id: 'user-1', model_id: 'chat-fast', system_prompt: '', history: [] }, ledger_debit: { ok: true, job_id: JOB, balance_after: 8 } };
     const rpc = async (name, args) => { rpcs.push(name); const r = name in replies ? replies[name] : base[name] ?? { ok: true }; if (r instanceof Error) throw r; return typeof r === 'function' ? r(args) : r; };
-    const select = async (_t, q) => [Object.fromEntries(String(q.columns).split(',').map((c) => c.trim()).filter((c) => c in model).map((c) => [c, model[c]]))];
+    const select = async (_t, q) => _t === 'jobs' ? [] : [Object.fromEntries(String(q.columns).split(',').map((c) => c.trim()).filter((c) => c in model).map((c) => [c, model[c]]))];
     const stream = async function* () { streamed += 1; yield { delta: 'Hi' }; };
     const go = () => runChatTurn({ authId: AUTH, threadId: THREAD, body: { text: 'Hello there', idempotency_key: KEY }, cfg: {}, env, deps: { rpc, select, stream } });
     return { rpcs, go, streamed: () => streamed };

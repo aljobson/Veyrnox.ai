@@ -5,7 +5,7 @@
 //   1. wrap the native context so the few things the native library lacks behave (see GAPS), and
 //   2. hand that wrapper to `createBeatEngine()` by answering `window.AudioContext` for the length of the call.
 // No web code is copied or edited. Anything the native library cannot do is reported in `report.gaps`, never hidden.
-import { createBeatEngine as sharedCreateBeatEngine, type BeatEngine, type EngineContext } from './shared';
+import { createBeatEngine as sharedCreateBeatEngine, type BeatEngine, type EngineContext, type ParamLike } from './shared';
 
 export type NativeContextCtor = new (options?: { sampleRate?: number; latencyHint?: 'interactive' | 'balanced' | 'playback' }) => EngineContext;
 
@@ -36,7 +36,16 @@ export function chainable<T>(node: T): T {
     return node;
 }
 
-type Params = Record<'threshold' | 'knee' | 'ratio' | 'attack' | 'release', { value: number }>;
+type Params = Record<'threshold' | 'knee' | 'ratio' | 'attack' | 'release', ParamLike>;
+function inertParam(value: number): ParamLike {
+    return { value,
+        setValueAtTime(v) { this.value = v; return this; },
+        setTargetAtTime(v) { this.value = v; return this; },
+        linearRampToValueAtTime(v) { this.value = v; return this; },
+        exponentialRampToValueAtTime(v) { this.value = v; return this; },
+        cancelScheduledValues() { return this; },
+    };
+}
 
 // react-native-audio-api 1.0.1 has no DynamicsCompressorNode (docs: web-audio-api-coverage). The engine builds one on the
 // master output (beatOutput.js), in the master limiter (beatMixGraph.js) and in the per-track compressor effect (beatEffects.js).
@@ -44,7 +53,7 @@ type Params = Record<'threshold' | 'knee' | 'ratio' | 'attack' | 'release', { va
 // throw. It does not compress; the headroom stays in the master gain. This is gap G1 in the audit, and the first thing to hear on a device.
 export function passThroughCompressor(context: Record<string, unknown>): unknown {
     const node = chainable((context.createGain as () => Record<string, unknown>).call(context));
-    const params: Params = { threshold: { value: -24 }, knee: { value: 30 }, ratio: { value: 12 }, attack: { value: 0.003 }, release: { value: 0.25 } };
+    const params: Params = { threshold: inertParam(-24), knee: inertParam(30), ratio: inertParam(12), attack: inertParam(0.003), release: inertParam(0.25) };
     for (const [name, param] of Object.entries(params)) {
         Object.defineProperty(node, name, { value: param, configurable: true });
     }

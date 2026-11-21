@@ -2244,6 +2244,66 @@
     "ratio": 1.92
   },
   {
+    "id": "beatMix.master.feedback",
+    "english": "Delay feedback",
+    "translation": "التغذية الراجعة للتأخير",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatMix.limiter",
+    "english": "Limiter",
+    "translation": "محدد المستوى",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "معادل الصوت",
+    "ratio": 5.5
+  },
+  {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "منخفض",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "متوسط",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatMix.param.feedback",
+    "english": "Feedback",
+    "translation": "التغذية الراجعة",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "المزج",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "إظهار خط التحريك المجسم",
+    "ratio": 1.77
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "التحريك المجسم",
+    "ratio": 4.67
+  },
+  {
+    "id": "beatMix.curve.out",
+    "english": "Ease out",
+    "translation": "نهاية تدريجية",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

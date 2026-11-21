@@ -6456,6 +6456,90 @@
     "ratio": 1.67
   },
   {
+    "id": "beatMix.master.room",
+    "english": "Reverb room size",
+    "translation": "Taille de la pièce de réverbération",
+    "ratio": 2.19
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "Égaliseur",
+    "ratio": 4.5
+  },
+  {
+    "id": "beatMix.fx.reverb",
+    "english": "Reverb",
+    "translation": "Réverbération",
+    "ratio": 2.17
+  },
+  {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "Médiums",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "Mixage",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.size",
+    "english": "Room size",
+    "translation": "Taille de la pièce",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.send.reverb",
+    "english": "Reverb send",
+    "translation": "Envoi réverbération",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatMix.lane.show.gain",
+    "english": "Show gain lane",
+    "translation": "Afficher la ligne de gain",
+    "ratio": 1.79
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "Afficher la ligne de panoramique",
+    "ratio": 2.46
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "Panoramique",
+    "ratio": 3.67
+  },
+  {
+    "id": "beatMix.lane.add",
+    "english": "Add point",
+    "translation": "Ajouter un point",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatMix.lane.hide",
+    "english": "Hide lane",
+    "translation": "Masquer la ligne",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatMix.curve.in",
+    "english": "Ease in",
+    "translation": "Accélération",
+    "ratio": 1.71
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

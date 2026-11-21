@@ -262,3 +262,9 @@ export function threadSubtitle(thread: Pick<ChatThread, 'model_id' | 'updated_at
     const when = sameDay ? at.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' }) : at.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     return `${name} · ${when}`;
 }
+
+// A refusal of a retry (the same send key as a send whose outcome is not known yet) never proves the first try was not
+// charged: the server can refuse the retry for reasons of its own (a failed look for the stored send, a model switched off
+// since). So it is looked for like a cut-off send, which closes a send that never started, instead of being given back as
+// free (REPLAY-01, EARLY-REPLAY-01). A first send's refusal ends it as before.
+export const retryRefusalIsUnsettled = (isRetry: boolean, _status: number): boolean => isRetry;

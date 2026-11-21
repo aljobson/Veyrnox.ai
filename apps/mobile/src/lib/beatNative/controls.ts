@@ -1,5 +1,5 @@
 export type PhoneCapability = 'transport' | 'history' | 'pads' | 'stepGrid' | 'stepVelocity' | 'mixer' | 'save' | 'controls' | 'regions' | 'ruler' | 'pianoRoll' | 'automation' | 'takes' | 'keyboard' | 'ripple' | 'dragCancel' | 'takeComp';
-export const PHONE_CAPABILITIES: ReadonlySet<PhoneCapability> = new Set(['transport', 'history', 'pads', 'stepGrid', 'mixer', 'save', 'controls', 'regions', 'ruler', 'pianoRoll', 'keyboard']);
+export const PHONE_CAPABILITIES: ReadonlySet<PhoneCapability> = new Set(['transport', 'history', 'pads', 'stepGrid', 'mixer', 'save', 'controls', 'regions', 'ruler', 'pianoRoll', 'automation', 'keyboard']);
 export const SHORTCUT_CAPABILITY: Readonly<Record<string, PhoneCapability>> = {
     help: 'controls', play: 'transport', ripple: 'ripple', undo: 'history', redo: 'history',
     gridMove: 'stepGrid', gridToggle: 'stepGrid', gridVelocity: 'stepVelocity',

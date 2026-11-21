@@ -14,7 +14,7 @@ import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { takeTemplateChatDraft } from '../../_lib/chatTemplateDraft';
 import { longTextState } from '../../_lib/chatLongText';
 import { CHAT_USER_TEXT_MAX } from '../../../../lib/chatLimits.js';
-import { attachmentLabel } from '../../_lib/chatImages';
+import { admitLibraryImage, attachmentLabel } from '../../_lib/chatImages';
 import { NEW_CHAT, addToDraft, clearNotice, readCreditsWarning, readDraft, readNotice, writeDraft, writeNotice, readStars, toggleStar } from '../../_lib/chatLocal';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
@@ -112,6 +112,7 @@ export function ChatWorkspace() {
   const [limits, setLimits] = useState({ maxAttachments: 4, maxEdge: 2048 });
   const att = useAttachments(limits.maxAttachments);
   const [pickingLibrary, setPickingLibrary] = useState(false);
+  const libraryStamp = useRef(0); // the attachment stamp when the Library picker opened: a pick made after a chat change is dropped
   const [skillIds, setSkillIds] = useState([]); // Studio skills composed for a chat that has not started (ADR-0073)
   const [oddlingContext, setOddlingContext] = useState(null);
   const [oddlingCanonBlocked, setOddlingCanonBlocked] = useState(false);
@@ -236,6 +237,10 @@ export function ChatWorkspace() {
       // Another chat was pressed while this one was read: that one is the one to show. A re-read of the chat still on screen refreshes it in place.
       if (chatView.current.asked !== id) { if (chatView.current.shown === id) setMessages(r.messages); return false; }
       settleKept(id, asked); // in the store, so the notice and the box read from it below are what the server now says
+      // Images picked for the chat that was on screen stay with it: they must never go out with this chat's message.
+      // A re-read of the same chat (after a send) keeps them.
+      const switched = chatView.current.shown !== id;
+      if (switched) { att.clear(); setPickingLibrary(false); } // a Library picker open for the chat that was on screen closes too
       oddlingLaunchRef.current = ''; oddlingGenerationRef.current += 1;
       const boundOddling = readOddlingThreadContext(store(), getStoredUserId(), id);
       setPersonaId(''); setActive(r.thread); setSkillIds([]); setOddlingLaunchId(''); setOddlingContext(boundOddling);
@@ -254,7 +259,7 @@ export function ChatWorkspace() {
   };
   useEffect(() => { settleNew(); }, []); // once: a page that has just loaded shows New chat
   // A chat that has not started. A notice waits for it too: one about a message that was sent before a chat was made, or whose chat no longer exists.
-  const clear = () => { oddlingLaunchRef.current = ''; oddlingGenerationRef.current += 1; setPersonaId(''); setActive(null); setSkillIds([]); setOddlingContext(null); setOddlingCanonBlocked(false); setOddlingLaunchId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
+  const clear = () => { att.clear(); setPickingLibrary(false); oddlingLaunchRef.current = ''; oddlingGenerationRef.current += 1; setPersonaId(''); setActive(null); setSkillIds([]); setOddlingContext(null); setOddlingCanonBlocked(false); setOddlingLaunchId(''); setMessages([]); setInstr(''); land(chatView.current, NEW_CHAT); setError(waiting(NEW_CHAT)); setDrawer(false); setText(readDraft(store(), getStoredUserId(), NEW_CHAT)); setStars([]); setStarredOnly(false); settleNew(); };
   const blank = () => { ask(chatView.current, NEW_CHAT); clear(); };
   const star = (id) => { if (active) setStars(toggleStar(store(), getStoredUserId(), active.id, id)); };
   const returnLyricsToMusic = (reply) => {
@@ -320,14 +325,16 @@ export function ChatWorkspace() {
     assetFromUrl.current = true;
     const id = new URLSearchParams(window.location.search).get('asset');
     if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return;
+    const since = att.stamp(); // a chat opened while the image is looked up drops it
     (async () => {
       try {
         const a = await gatewayFetch(`/jobs/${encodeURIComponent(id)}/asset`);
+        if (!att.isCurrent(since)) return;
         if (!String(a.mime_type).startsWith('image/')) { att.setNotice(t("app.chat.workspace.imagesOnly")); return; }
-        await pickFromLibrary({ id, url: a.url, label: t("app.chat.workspace.libraryImage") });
-        document.getElementById('chat-msg')?.focus();
+        await pickFromLibrary({ id, url: a.url, label: t("app.chat.workspace.libraryImage") }, since);
+        if (att.isCurrent(since)) document.getElementById('chat-msg')?.focus();
       } catch {
-        att.setNotice(t("app.chat.workspace.imageExpired"));
+        if (att.isCurrent(since)) att.setNotice(t("app.chat.workspace.imageExpired"));
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -463,19 +470,20 @@ export function ChatWorkspace() {
 
   // A Library image goes by id and is read from storage by the server, which cannot shrink it, so one over the size cap
   // is said so here, before it is chosen, instead of failing at Send.
-  async function pickFromLibrary(it) {
+  // `since` is the attachment stamp taken when the pick began: a chat opened or New chat pressed while the image loads
+  // drops the pick, so it can never join another chat's message.
+  async function pickFromLibrary(it, since = att.stamp()) {
     setPickingLibrary(false);
-    const size = await new Promise((resolve) => {
-      const im = new Image();
-      im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
-      im.onerror = () => resolve(null);
-      im.src = it.url;
+    await admitLibraryImage(it, {
+      since, isCurrent: att.isCurrent, maxEdge: limits.maxEdge, add: att.addAsset,
+      measure: (url) => new Promise((resolve) => {
+        const im = new Image();
+        im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
+        im.onerror = () => resolve(null);
+        im.src = url;
+      }),
+      tooBig: (size) => att.setNotice(t('app.chat.workspace.imageSize', { width: number(size.w), height: number(size.h), limit: number(limits.maxEdge) })),
     });
-    if (size && Math.max(size.w, size.h) > limits.maxEdge) {
-      att.setNotice(t('app.chat.workspace.imageSize', { width: number(size.w), height: number(size.h), limit: number(limits.maxEdge) }));
-      return;
-    }
-    att.addAsset(it);
   }
 
   // Sending, and every way a send can end, is its own hook (useChatSend.js): this file is kept under 500 lines.
@@ -658,7 +666,7 @@ export function ChatWorkspace() {
               <div className="flex items-center gap-2 border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
                 <ComposerControls compact models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
-                  onLibrary={() => setPickingLibrary(true)} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
+                  onLibrary={() => { libraryStamp.current = att.stamp(); setPickingLibrary(true); }} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
                 <DictateButton disabled={busy} onText={(spoken) => setText((current) => appendSpoken(current, spoken).slice(0, MAX_TEXT))} />
                 <EnhanceButton disabled={busy} text={text} />
                 {busy
@@ -673,7 +681,7 @@ export function ChatWorkspace() {
           </div>
         </div>
       </section>
-            {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={pickFromLibrary} onClose={() => setPickingLibrary(false)} />}
+            {composerKind === COMPOSER_KINDS.CHAT && pickingLibrary && <LibraryPicker onPick={(it) => pickFromLibrary(it, libraryStamp.current)} onClose={() => setPickingLibrary(false)} />}
       {settingsOpen && (
         <Modal onCancel={() => setSettingsOpen(false)} initialFocusRef={settingsCloseRef} role="dialog" aria-modal="true" aria-label={t("label.Chat settings")} className="vx-overlay-side justify-end">
           <div className="relative w-[340px] max-w-[90vw] bg-vx-base">

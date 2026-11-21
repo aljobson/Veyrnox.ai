@@ -32,6 +32,8 @@ export default {
   "beatLabs.touch.gridMove": "Touch a step to focus it with a screen reader; swipe to move between steps.",
   "beatLabs.touch.gridToggle": "Tap a step to turn its hit on or off.",
   "beatLabs.touch.pads": "Tap a drum pad to hear it and select its step row.",
+  "beatLabs.touch.automationMove": "Select a point in an automation lane and use the earlier, later, decrease and increase buttons.",
+  "beatLabs.touch.automationDelete": "Select a point in an automation lane and use delete point.",
   "beatLabs.touch.regionMove": "Hold a region, then drag it. Or select it and use the move and track buttons in the region inspector.",
   "beatLabs.touch.regionResize": "Select a region and use the length buttons in the region inspector.",
   "beatLabs.touch.regionTrim": "Select a region and use the trim start and extend start buttons in the region inspector.",
