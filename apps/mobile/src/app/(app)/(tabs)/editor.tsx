@@ -10,6 +10,7 @@ import { FlatList, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { useAssetLinks } from '../../../components/JobThumb';
 import { ProjectThumb } from '../../../components/CreationThumbs';
+import { BestCutEntry } from '../../../components/editor/BestCutEntry';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { formatLocale, t } from '../../../lib/i18n';
 import { MENU_ICONS } from '../../../lib/menuIcons';
@@ -139,6 +140,7 @@ export default function EditorHome() {
                             </View>
                             <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                         </Button>
+                        <BestCutEntry />
                         {workspaces && workspaces.length > 1 ? (
                             <View style={styles.chips} accessibilityRole="tablist">
                                 {workspaces.map((workspace) => (

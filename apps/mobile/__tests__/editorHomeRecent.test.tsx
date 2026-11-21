@@ -7,6 +7,11 @@ jest.setTimeout(30000);
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }), useFocusEffect: (callback: () => void | (() => void)) => require('react').useEffect(() => callback(), [callback]) }));
 jest.mock('../src/lib/editorFlag', () => ({ __esModule: true, EDITOR_ENABLED: true }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
+jest.mock('../src/components/editor/BestCutEntry', () => {
+    const React = jest.requireActual<typeof import('react')>('react');
+    const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+    return { BestCutEntry: () => React.createElement(Text, { testID: 'editor-home-best-cut' }, 'Best Cut entry') };
+});
 let projects: unknown[] = [];
 const requests: string[] = [];
 const mockApi = { request: async (path: string) => {
@@ -33,6 +38,7 @@ test('rows show the latest saved version and sort by last saved', async () => {
     expect(lines.find(l => l.startsWith('Version 19'))).toBeTruthy();
     expect(lines.find(l => /^Version 2 /.test(l))).toBeTruthy();
     expect(lines.filter(l => /^Version 1 /.test(l)).length).toBe(1);
+    expect(root.container.queryAll(node => node.props.testID === 'editor-home-best-cut')).toHaveLength(1);
 });
 
 test('a save that finishes after the focus fetch refreshes the list without clearing rows', async () => {

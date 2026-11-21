@@ -1,6 +1,8 @@
 // Typed seam over the web studio and server contract; Metro watches both shared directories.
 // @ts-ignore shared plain JavaScript
 import * as web from '../../../../../app/veyrnox/_lib/textToSpeech.js';
+// @ts-ignore shared plain JavaScript
+import * as auditions from '../../../../../app/veyrnox/_lib/voiceAuditions.js';
 // @ts-ignore shared plain JavaScript (its only dependency, dialogue.js, is also pure)
 import * as server from '../../../../../lib/speechInputs.js';
 
@@ -19,9 +21,16 @@ const shared = web as unknown as {
     DEFAULT_TTS_SETTINGS: Readonly<SpeechSettings>; TTS_EXAMPLES: readonly { title: string; text: string }[];
     appendSpeechCue: (script: string, cue: string, limit?: number) => string;
     pauseCue: (seconds: number) => string; ttsGenerationInputs: (settings: SpeechSettings) => SpeechInputs;
+    voiceAuditionScript: (limit?: number) => string;
 };
 export const { TTS_SCRIPT_LIMIT, TTS_VOICES, voiceGenderOptions, TTS_LANGUAGES, TTS_EMOTIONS, TTS_PAUSES,
-    TTS_INTERJECTIONS, DEFAULT_TTS_SETTINGS, TTS_EXAMPLES, appendSpeechCue, pauseCue, ttsGenerationInputs } = shared;
+    TTS_INTERJECTIONS, DEFAULT_TTS_SETTINGS, TTS_EXAMPLES, appendSpeechCue, pauseCue, ttsGenerationInputs, voiceAuditionScript } = shared;
+export const { MIN_AUDITION_VOICES, MAX_AUDITION_VOICES, normalizeAuditionVoices, toggleAuditionVoice, auditionCost } = auditions as unknown as {
+    MIN_AUDITION_VOICES: number; MAX_AUDITION_VOICES: number;
+    normalizeAuditionVoices: (value: unknown) => string[];
+    toggleAuditionVoice: (value: readonly string[], voice: string) => string[];
+    auditionCost: (unit: number, voices: readonly string[]) => number;
+};
 export const TTS_INPUT_RULES = server.TTS_INPUT_RULES as Record<keyof SpeechInputs, InputRule>;
 
 // Native steppers match TextToSpeechControls.js on the web.

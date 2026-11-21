@@ -46,8 +46,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, appl
       const takeId = String(clip.uid || clip.job_id);
       const low = Math.max(0, Number(clip.in_s) || 0);
       const high = Number.isFinite(Number(clip.out_s)) ? Number(clip.out_s) : Number(clip.duration);
-      return smartCutFillerRanges(parsed.analysis)
-        .filter((range) => range.end > low && range.start < high)
+      return smartCutFillerRanges(parsed.analysis, { start: low, end: high })
         .map((range) => ({ ...range, takeId, key: `${takeId}:${range.start}` }));
     });
   }, [analysisReady, analyses, clips]);
