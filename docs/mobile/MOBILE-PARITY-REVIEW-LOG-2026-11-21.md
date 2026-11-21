@@ -196,3 +196,36 @@ Reviewer limitations: no proof commands or builds were run; the reviewer did not
 Claude confirmed `F15`–`F17` are closed, `F1`–`F14` remain closed, and found no new material defect. The approved scope now includes Wave 2D onboarding/paywall conversion and colour polish, Wave 3A Professional Editor S7–S14, and Wave 3B production-capability-gated Music Beats Editing parity. Final inspection remains enabled for every implementation slice.
 
 Approval limitations: Claude did not reproduce the migration-ledger output or run tests/builds, did not independently locate the cold-launch forced-light reset, and did not deeply inspect onboarding/paywall source, the complete Beats inventory, PR #2533, Wave 3A, template contracts, or WebView removal.
+
+## Wave 2 batch 1 inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `c83e3e46-298b-4bda-a386-644695981ed0`
+- Base: `a170e38c52264c09a0f73b72f746439ad5b94809`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `cd33194b2c07a2174ebe43f8806c040aa0d0fb816ed17714031d29ae09534a43`
+- Inspected diff SHA-256: `34aa8d4a59e7246f8e8394ecf083d81392258ce4e3518cf0707c21155046e991`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave2-batch1-inspect/claudex-rce9t7od/result.json`
+
+### Findings and host dispositions
+
+1. `MUSIC-ADV-HIDDEN-STATE` medium: a mode switch or remount could collapse active advanced values, including an invalid BPM that disabled Review with no visible explanation. Accepted; the section now initially opens whenever an advanced value is active or BPM is invalid, and the Simple → Custom → Simple regression is covered.
+2. `I18N-HI-KEY` low: Hindi used the genitive postposition `की` for musical key. Accepted; the label is now the musical term `सुर`.
+
+Focused post-fix proof: Music create, core i18n and Music-publication i18n suites passed (3 suites / 39 tests); mobile TypeScript passed; `git diff --check` passed.
+
+## Wave 2 batch 1 inspection round 2
+
+- Result: `APPROVED` with one low-severity advisory
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `ff0d67a6-5f9c-4d25-b4dd-95cece5401f8`
+- Base: `a170e38c52264c09a0f73b72f746439ad5b94809`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `e54a1370a9bb96ea47505bb85625cbc61761977854a2bf4b6badabf23212e2da`
+- Inspected diff SHA-256: `011f5d08adabc01c54d885f2f85b8e9541b7141923b81ab36e3aef7557ca1c30`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave2-batch1-inspect-r2/claudex-gm1q73v2/result.json`
+
+Claude found no material defect and independently confirmed the server/web Music wire contract, simple-only capability gating, prepared-attempt snapshot behavior, appearance restoration and registry translation coverage. The one advisory, `MUSIC-ADV-01`, noted that a user could manually collapse the section after entering an invalid BPM. It was accepted after the approved snapshot: the collapsed disclosure now keeps the localized validation message visible as an alert, and the screen regression explicitly collapses the section and verifies both the hidden field and visible reason. The bounded two-round inspection budget is exhausted; this six-line advisory fix is covered by the same 3 suites / 39 tests and a passing mobile TypeScript check, but was not sent through a third Claude inspection.
+
+Inspector limitations: Claude did not run tests, typecheck, registry generation or a simulator; later Publish, authentication, onboarding/paywall, editor, template, WebView and release waves were outside this batch. Codex ran the focused proof and typecheck described above, plus the broader Music and i18n proofs recorded in the implementation commits.
+
+The final serial all-mobile run completed 792 of 793 suites with all 17,367 executed assertions passing. The sole suite failed during module resolution before executing because the reused installed dependency tree lacks `react-native-audio-api@1.0.1`, although that package is pinned in both `apps/mobile/package.json` and the current lockfile. No compatible existing installed environment contains it, so the PR's clean `npm ci` Mobile CI job is the authoritative proof for that native-export suite and the iOS/Android bundle boundary; no duplicate local install was created.
