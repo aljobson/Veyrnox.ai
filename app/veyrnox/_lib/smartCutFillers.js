@@ -28,19 +28,24 @@ const normalise = (text, language) => String(text || '')
  * Needs word-level timing: a phrase-level record, an unknown or unsupported language,
  * or a record without words returns no suggestions rather than a guess.
  */
-export function smartCutFillerRanges(analysis) {
+export function smartCutFillerRanges(analysis, selectedRange) {
   if (!analysis || analysis.timingQuality === 'phrase' || !Array.isArray(analysis.chunks)) return [];
   const list = SMART_CUT_FILLER_WORDS[analysis.language];
   if (!list) return [];
+  const range = selectedRange && Number.isFinite(selectedRange.start) && Number.isFinite(selectedRange.end) && selectedRange.end > selectedRange.start
+    ? selectedRange : null;
   const fillers = new Set(list);
   const chunks = analysis.chunks;
   const found = [];
   chunks.forEach((chunk, index) => {
     if (!fillers.has(normalise(chunk.text, analysis.language))) return;
+    if (range && (chunk.end <= range.start || chunk.start >= range.end)) return;
     const previousEnd = index > 0 ? chunks[index - 1].end : 0;
     const nextStart = index < chunks.length - 1 ? chunks[index + 1].start : analysis.duration;
-    const start = Math.min(chunk.start, Math.max(previousEnd, floorHundredth(chunk.start - SMART_CUT_FILLER_PADDING_SECONDS)));
-    const end = Math.max(chunk.end, Math.min(nextStart, ceilHundredth(chunk.end + SMART_CUT_FILLER_PADDING_SECONDS)));
+    const paddedStart = Math.min(chunk.start, Math.max(previousEnd, floorHundredth(chunk.start - SMART_CUT_FILLER_PADDING_SECONDS)));
+    const paddedEnd = Math.max(chunk.end, Math.min(nextStart, ceilHundredth(chunk.end + SMART_CUT_FILLER_PADDING_SECONDS)));
+    const start = range ? Math.max(range.start, paddedStart) : paddedStart;
+    const end = range ? Math.min(range.end, paddedEnd) : paddedEnd;
     if (end - start < 0.02) return;
     const last = found.at(-1);
     if (last && start <= last.end) {
