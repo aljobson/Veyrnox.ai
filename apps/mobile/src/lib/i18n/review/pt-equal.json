@@ -255,5 +255,8 @@
   "app.smartCut.fillers.row": "Exact English retained for native Smart Cut timing wording pending professional pt translation.",
   "app.smartCut.native.analyse.quoteFailed": "Exact English retained for native Smart Cut recovery wording pending professional pt translation.",
   "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional pt translation.",
-  "speech.audition.count": "Shared numeric board capacity notation; no language-specific words."
+  "speech.audition.count": "Shared numeric board capacity notation; no language-specific words.",
+  "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
 }

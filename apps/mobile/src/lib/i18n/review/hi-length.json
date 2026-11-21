@@ -2376,6 +2376,12 @@
     "ratio": 1.67
   },
   {
+    "id": "musicExport.retry",
+    "english": "Try again",
+    "translation": "फिर प्रयास करें",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

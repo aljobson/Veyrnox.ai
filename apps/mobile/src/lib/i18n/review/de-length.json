@@ -4482,6 +4482,30 @@
     "ratio": 1.63
   },
   {
+    "id": "musicExport.save",
+    "english": "Save",
+    "translation": "Speichern",
+    "ratio": 2.25
+  },
+  {
+    "id": "musicExport.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicExport.offline",
+    "english": "You are offline. Connect and try again.",
+    "translation": "Sie sind offline. Stellen Sie eine Verbindung her und versuchen Sie es erneut.",
+    "ratio": 2
+  },
+  {
+    "id": "musicExport.transfer",
+    "english": "The file could not be shared. Tap Save to try again.",
+    "translation": "Die Datei konnte nicht geteilt werden. Tippen Sie auf Speichern, um es erneut zu versuchen.",
+    "ratio": 1.75
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

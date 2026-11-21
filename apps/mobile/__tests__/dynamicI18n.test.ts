@@ -11,6 +11,8 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'musicExport.format.{}': ['mp3', 'wav', 'flac'],
+    'musicExport.{}': ['loading', 'reviewing', 'confirming', 'saving'],
     'speech.audition.{}': ['add', 'remove', 'addOne', 'invalidVoices'],
     'beatLabs.seed.error.{}': ['r34', 'r35', 'r36', 'r37', 'unsupported'],
     'beatLabs.touch.{}': ['help', 'play', 'undo', 'redo', 'gridMove', 'gridToggle', 'pads', 'regionMove', 'regionResize', 'regionTrim', 'regionDuplicate', 'regionSplit', 'regionDelete', 'regionEdit', 'rulerMove', 'pianoSelectAll', 'pianoMove', 'pianoResize', 'pianoToggle', 'pianoDelete', 'pianoVelocity', 'automationMove', 'automationDelete', 'notes', 'octave', 'velocity'],

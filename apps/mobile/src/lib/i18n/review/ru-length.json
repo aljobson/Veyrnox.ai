@@ -4296,6 +4296,12 @@
     "ratio": 2.13
   },
   {
+    "id": "musicExport.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
