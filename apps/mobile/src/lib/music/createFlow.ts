@@ -2,11 +2,12 @@ import { ApiError, type ApiClient } from '../api';
 import { conflictDraft, createQuote, getCustomDraft, getEntitlements, saveCustomDraft } from './client';
 import { createGenerationAttempts } from './attempts';
 import { createGenerationTracker } from './queue';
-import { buildCustomQuote, buildSimpleQuote, clampDuration, normalizeInput, quoteBlockers } from './createForm';
+import { buildCustomQuote, buildSimpleQuote, clampDuration, effectiveInput, normalizeInput, quoteBlockers } from './createForm';
 import { createQuoteGate } from './shared';
 import { isMusicOff, probeMusic } from './probe';
 import type { MusicDraft, MusicEntitlements, MusicInputSnapshot } from './types';
-const empty: MusicInputSnapshot = { mode: 'simple', model_id: '', prompt: '', title: '', lyrics: '', styles: '', instrumental: true, duration: 60 };
+const empty: MusicInputSnapshot = { mode: 'simple', model_id: '', prompt: '', title: '', lyrics: '', styles: '', instrumental: true, duration: 60,
+    variety: 50, styleInfluence: 0, excludeStyles: '', bpm: '', keyScale: '', timeSignature: '' };
 type State = Readonly<{
     status: 'loading' | 'on' | 'off' | 'error'; entitlements: MusicEntitlements | null;
     input: MusicInputSnapshot; rights: boolean; draft: MusicDraft | null; conflict: MusicDraft | null;
@@ -85,11 +86,7 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 const model = result.data.models.find(m => m.id === state.input.model_id);
                 const controls = model?.controls;
                 const duration = model ? clampDuration(state.input.duration, model) : state.input.duration;
-                if (duration !== state.input.duration
-                    || previous?.duration_seconds.min !== controls?.duration_seconds.min
-                    || previous?.duration_seconds.max !== controls?.duration_seconds.max
-                    || previous?.duration_seconds.default !== controls?.duration_seconds.default
-                    || previous?.duration_price_block_seconds !== controls?.duration_price_block_seconds) {
+                if (duration !== state.input.duration || controlsChanged(previous, controls)) {
                     gate.invalidate();
                     // invalidate keeps ambiguous and in-flight attempts, including their original input/key.
                     attempts.invalidate();
@@ -103,7 +100,7 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
             const blockers = quoteBlockers({ input, entitlements: e, rights, activeCount: tracker.activeCount() });
             if (blockers.length) { update({ error: blockers[0] }); return; }
             const model = e.models.find(m => m.id === input.model_id)!;
-            const captured = normalizeInput(input, model);
+            const captured = effectiveInput(input, model);
             const token = gate.start(); attempts.invalidate(); update({ busy: true, error: null, conflict: null });
             try {
                 let payload;
@@ -159,4 +156,14 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
         },
         dispose() { disposed = true; gate.invalidate(); attempts.reset(); tracker.dispose(); stopTracker(); listeners.clear(); },
     };
+}
+
+function controlsChanged(previous: MusicEntitlements['models'][number]['controls'] | undefined, next: MusicEntitlements['models'][number]['controls'] | undefined): boolean {
+    if (!previous || !next) return previous !== next;
+    return previous.description !== next.description || previous.seed !== next.seed || previous.variety !== next.variety
+        || previous.style_influence !== next.style_influence || previous.exclude_styles !== next.exclude_styles
+        || previous.tempo_key_meter !== next.tempo_key_meter || previous.lyrics !== next.lyrics || previous.styles !== next.styles
+        || previous.instrumental !== next.instrumental || previous.duration_seconds.min !== next.duration_seconds.min
+        || previous.duration_seconds.max !== next.duration_seconds.max || previous.duration_seconds.default !== next.duration_seconds.default
+        || previous.duration_price_block_seconds !== next.duration_price_block_seconds;
 }

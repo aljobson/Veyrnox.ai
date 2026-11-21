@@ -138,6 +138,33 @@ test('locked model is visible, disabled and cannot submit', async () => {
     await act(async () => locked.props.onClick({ nativeEvent: {} })); await edit('prompt', 'Piano');
     await click(t('music.create.review')); expect(mockApi.request.mock.calls.filter(([p]) => /generation/.test(p))).toHaveLength(0);
 });
+test('advanced controls are capability-gated progressive disclosure and never render in Custom', async () => {
+    await mount();
+    expect(button(t('music.create.advanced.show'))).toBeUndefined();
+    await click('ACE-Step 1.5');
+    const disclosure = button(t('music.create.advanced.show'));
+    expect(disclosure.props.accessibilityState.expanded).toBe(false);
+    await click(t('music.create.advanced.show'));
+    const variety = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable'
+        && n.props.accessibilityLabel === t('music.create.advanced.variety'))[0];
+    await act(async () => variety.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    expect(getMusicCreateSession(mockApi as unknown as ApiClient).snapshot().input.variety).toBe(51);
+    expect(field(t('music.create.advanced.excludeStyles'))).toBeDefined();
+    const bpm = field(t('music.create.advanced.bpm'));
+    await act(async () => bpm.props.onChangeText('221'));
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
+    expect(button(t('music.create.review')).props.accessibilityState.disabled).toBe(true);
+    await click(t('music.create.advanced.hide'));
+    expect(field(t('music.create.advanced.bpm'))).toBeUndefined();
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
+    await mode('custom');
+    expect(button(t('music.create.advanced.hide'))).toBeUndefined();
+    expect(field(t('music.create.advanced.excludeStyles'))).toBeUndefined();
+    expect(field(t('music.create.advanced.bpm'))).toBeUndefined();
+    await mode('simple');
+    expect(button(t('music.create.advanced.hide')).props.accessibilityState.expanded).toBe(true);
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
+});
 test('custom saves draft then quotes saved revision and resolves conflict', async () => {
     await mount(); await mode('custom'); await edit('lyrics', 'My lyrics');
     let conflicted = false;

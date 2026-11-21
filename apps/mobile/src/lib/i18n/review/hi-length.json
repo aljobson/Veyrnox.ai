@@ -2070,6 +2070,18 @@
     "ratio": 1.67
   },
   {
+    "id": "music.create.advanced.percent",
+    "english": "{value}%",
+    "translation": "{value} प्रतिशत",
+    "ratio": 1.88
+  },
+  {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "मेरा संस्करण रखें",

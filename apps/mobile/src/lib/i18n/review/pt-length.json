@@ -3654,6 +3654,18 @@
     "ratio": 2.17
   },
   {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Tonalidade",
+    "ratio": 3.33
+  },
+  {
     "id": "musicActions.stems.title",
     "english": "Stems",
     "translation": "Faixas separadas",
