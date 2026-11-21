@@ -2,8 +2,8 @@ import { rawText } from '../../../lib/i18n/translate';
 import { displayLabel } from '../../../lib/displayLabels';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CREATIVE_FEATURE_GROUPS, CREATIVE_FEATURES } from '../../../lib/creativeFeatures';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { CREATIVE_FEATURE_GROUPS, CREATIVE_FEATURES, examplePlaysOn } from '../../../lib/creativeFeatures';
 import { compatibleCreativeFeatures, creativeReuseTargetHref, readCreativeReuse } from '../../../lib/creativeReuse';
 import { t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
@@ -30,7 +30,7 @@ export default function CreativeFeatures() {
                         <Pressable key={feature.slug} accessibilityRole="button" accessibilityLabel={rawText(`${feature.title}. ${feature.steps.join('. ')}`)} style={({ pressed }) => [styles.card, pressed && styles.pressed]} onPress={() => router.push(reuse ? creativeReuseTargetHref(feature.slug, reuse) : { pathname: '/features/[slug]', params: { slug: feature.slug } })}>
                             <View style={styles.mediaFrame}>
                                 <Image source={{ uri: feature.example.posterUrl ?? feature.example.url }} style={styles.thumb} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: feature.title }))} accessibilityIgnoresInvertColors />
-                                {feature.example.kind === 'video' ? <View style={styles.playBadge} accessibilityElementsHidden><Text style={styles.play}>▶</Text></View> : null}
+                                {examplePlaysOn(feature.example, Platform.OS) ? <View style={styles.playBadge} accessibilityElementsHidden><Text style={styles.play}>▶</Text></View> : null}
                             </View>
                                 <View style={styles.cardCopy}>
                                     <Text style={styles.kind}>{t(`mediaKind.${feature.kind}`)}</Text>
