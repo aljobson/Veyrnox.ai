@@ -132,3 +132,51 @@ export function loadNativeContext(): NativeContextCtor {
     const lib = require('react-native-audio-api') as { AudioContext: NativeContextCtor };
     return lib.AudioContext;
 }
+
+export type NativeOfflineContext = EngineContext & {
+    createBuffer(channels: number, length: number, sampleRate: number): import('./exportShared').PCMBuffer;
+    startRendering(): Promise<import('./exportShared').PCMBuffer>;
+};
+export type NativeOfflineCtor = new (channels: number, length: number, sampleRate: number) => NativeOfflineContext;
+export class OfflineUnavailable extends Error { constructor() { super('offline_unavailable'); } }
+export function loadNativeOfflineContext(): NativeOfflineCtor | null {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports -- no native import until export opens
+        const lib = require('react-native-audio-api') as { OfflineAudioContext?: NativeOfflineCtor };
+        return typeof lib.OfflineAudioContext === 'function' ? lib.OfflineAudioContext : null;
+    } catch { return null; }
+}
+type OfflineWindow = { OfflineAudioContext?: unknown; webkitOfflineAudioContext?: unknown };
+let offlineQueue: Promise<void> = Promise.resolve();
+/** Hold the override across awaits, including buffer loads. Every native export uses this same queue. */
+export async function withWindowOfflineContext<T>(Ctor: NativeOfflineCtor | null, report: AdapterReport,
+    fn: (make: (channels: number, length: number, rate: number) => NativeOfflineContext) => Promise<T>,
+    scope: { window?: OfflineWindow } = globalThis as { window?: OfflineWindow }): Promise<T> {
+    const previous = offlineQueue;
+    let release!: () => void;
+    offlineQueue = new Promise<void>(resolve => { release = resolve; });
+    await previous;
+    const hadWindow = scope.window !== undefined, win = scope.window ?? {};
+    const descriptors = ['OfflineAudioContext', 'webkitOfflineAudioContext'].map(key => Object.getOwnPropertyDescriptor(win, key));
+    const make = (channels: number, length: number, rate: number) => {
+        if (!Ctor) throw new OfflineUnavailable();
+        try { return wrapNativeContext(new Ctor(channels, length, rate), report) as NativeOfflineContext; }
+        catch { throw new OfflineUnavailable(); }
+    };
+    try {
+        if (!Ctor) throw new OfflineUnavailable();
+        win.OfflineAudioContext = function (channels: number, length: number, rate: number) { return make(channels, length, rate); };
+        win.webkitOfflineAudioContext = undefined;
+        if (!hadWindow) scope.window = win;
+        return await fn(make);
+    } finally {
+        try {
+            ['OfflineAudioContext', 'webkitOfflineAudioContext'].forEach((key, index) => {
+                const descriptor = descriptors[index];
+                if (descriptor) Object.defineProperty(win, key, descriptor);
+                else delete win[key as keyof OfflineWindow];
+            });
+            if (!hadWindow) delete scope.window;
+        } finally { release(); }
+    }
+}

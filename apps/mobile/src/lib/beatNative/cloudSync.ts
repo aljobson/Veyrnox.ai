@@ -158,6 +158,7 @@ export class BeatCloudSync {
             if (!token.current()) return false;
             const record = this.store.getRecord(this.id);
             if (!record) return false;
+            if (record.owner && record.owner !== this.userId) { this.show('other'); return false; }
             if (!maySync(record.cloud, this.userId)) {
                 this.show(record.cloud?.userId === this.userId && isRemoved(record.cloud) ? 'removed' : record.cloud ? 'other' : 'unlinked'); return false;
             }

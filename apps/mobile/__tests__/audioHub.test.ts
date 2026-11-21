@@ -202,8 +202,8 @@ test('literal icon props and badge assignments in the affected screens all exist
     }
 });
 
-test('song-action buttons pin the seven semantic icons without changing their labels', async () => {
-    const actions = ['add_section', 'replace_section', 'stems', 'crop', 'target_stem', 'extend', 'cover'];
+test('song-action buttons pin the eight semantic icons without changing their labels', async () => {
+    const actions = ['download_mp3', 'add_section', 'replace_section', 'stems', 'crop', 'target_stem', 'extend', 'cover'];
     const environment = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean };
     const previous = environment.IS_REACT_ACT_ENVIRONMENT;
     environment.IS_REACT_ACT_ENVIRONMENT = true;
@@ -214,7 +214,7 @@ test('song-action buttons pin the seven semantic icons without changing their la
         })));
         const buttons = root.container.queryAll(node => typeof node.props.label === 'string');
         expect(buttons.map(button => [button.props.label, button.props.icon])).toEqual([
-            ['musicSectionActions.add_section.title', 'plus'], ['musicSectionActions.replace_section.title', 'swap'],
+            ['musicExport.title', 'arrowDown'], ['musicSectionActions.add_section.title', 'plus'], ['musicSectionActions.replace_section.title', 'swap'],
             ['musicActions.stems.title', 'faders'], ['musicActions.crop.title', 'scissors'],
             ['musicTargetStems.title', 'crosshair'], ['musicGenerationActions.extend.title', 'arrowsHorizontal'],
             ['musicGenerationActions.cover.title', 'magicWand'],

@@ -30,7 +30,7 @@ export function TranscriptPanel({ timeline, selection, selections, selectClip, s
     'selections' | 'selectClip' | 'setFrame' | 'captionActions'>) {
     const legacy = timeline.text.filter(c => c.caption !== true);
     const rows = captionActions ? legacy : timeline.text;
-    const chosen = (selections.length ? selections : selection ? [selection] : []).filter(c => c.track === 'text').map(c => c.id);
+    const chosen = (selections.length ? selections : selection ? [selection] : []).filter(c => c.track === 'text' && legacy.some(item => item.id === c.id)).map(c => c.id);
     return <>
         <PanelHeading title={t('editor.transcript')} detail={t('editor.cues', { value1: timeline.text.length })} />
         {captionActions && timeline.text.some(c => c.caption) ? <TranscriptSection timeline={timeline} actions={captionActions} /> : null}

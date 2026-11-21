@@ -3,6 +3,7 @@ import { seedanceLongModelOpen } from '../../../../lib/seedanceLongTemplates.js'
 import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
+import { templateSwapImageCounts } from '../../../../lib/templateSwapFullBody.mjs';
 import { templateSwapPrompt, templateSwapPeoplePrompt } from '../../../../lib/templateSwapClipPrompt.mjs';
 import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
 import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
@@ -242,6 +243,8 @@ export async function POST(req) {
     const consent = body && body.consent === true;
     const references = readGenerationSources(body);
     if (!references.ok) return NextResponse.json({ error: references.error }, { status: 400 });
+    // Images in this admission: 2 per person, or 3 for a one-person full-body photo (amendment 18). Checked below before any debit.
+    const swapImages = templateSwap ? references.references.length : 0;
     const swapError = swap && checkSwapRequest(swap, body, references.references);
     if (swapError) return NextResponse.json({ error: swapError }, { status: 400 });
     if (templateClip) {
@@ -254,7 +257,7 @@ export async function POST(req) {
         if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
     }
     if (templateSwap) {
-        const error = checkTemplateSwapRequest(body, references.references, templateSwap.modelRow.id, swapPeople);
+        const error = checkTemplateSwapRequest(body, references.references, templateSwap.modelRow.id, swapPeople, templateSwapImageCounts(swapPeople, templateSwap.template.fullBody));
         if (error) return NextResponse.json({ error }, { status: 400 });
         inputs = { ...inputs, prompt: swapPeople === 2 ? templateSwapPeoplePrompt(templateSwap.template.roles) : templateSwapPrompt(templateSwap.source.role), duration_seconds: 5 };
         const checked = validateInputs(inputs);
@@ -299,7 +302,7 @@ export async function POST(req) {
     // No capability record = no known contract for this endpoint: refuse rather
     // than forward inputs the provider may bill differently for.
     const publicRecord = capabilityFor(modelRow.provider_endpoint);
-    const record = templateSwap && publicRecord ? templateSwapCapability(publicRecord, templateSwap, swapPeople) : publicRecord;
+    const record = templateSwap && publicRecord ? templateSwapCapability(publicRecord, templateSwap, swapPeople, swapImages) : publicRecord;
     if (!record || record.provider !== modelRow.provider) {
         console.error('[generations] no capability record for', modelRow.id, modelRow.provider_endpoint);
         return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
@@ -331,13 +334,13 @@ export async function POST(req) {
     const { sources } = resolved;
     Object.assign(inputs,resolved.inputs);
     if (templateSwap) {
-        const imageCheck = checkTemplateSwapImages(sources, swapPeople);
+        const imageCheck = checkTemplateSwapImages(sources, swapPeople, swapImages);
         if (!imageCheck.ok) return NextResponse.json({ error: imageCheck.error }, { status: 400 });
-        const urls = resolved.inputs.image_url;
-        inputs.elements = Array.from({ length: swapPeople }, (_, person) => ({ frontal_image_url: urls[person * 2], reference_image_urls: [urls[person * 2 + 1]] }));
+        const urls = resolved.inputs.image_url, each = swapImages / swapPeople;
+        inputs.elements = Array.from({ length: swapPeople }, (_, person) => ({ frontal_image_url: urls[person * each], reference_image_urls: urls.slice(person * each + 1, person * each + each) }));
         delete inputs.image_url;
     }
-    const swapVideo = templateSwap ? await resolveTemplateSwapVideo(templateSwap, record, r2cfg) : templateClip ? await resolveTemplateClipVideo(templateClip, record, r2cfg) : swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
+    const swapVideo = templateSwap ? await resolveTemplateSwapVideo(templateSwap, record, r2cfg, undefined, swapImages) : templateClip ? await resolveTemplateClipVideo(templateClip, record, r2cfg) : swap ? await resolveSwapVideo(swap, record, r2cfg) : null;
     if (swapVideo && !swapVideo.ok) return NextResponse.json({ error: swapVideo.error }, { status: sourceErrorStatus(swapVideo.error) });
     if (swapVideo) { inputs.video_url = swapVideo.url; sources.video_url = swapVideo.metadata; }
 

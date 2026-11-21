@@ -24,7 +24,7 @@ export function DialogueStudio({ reopen }: { reopen?: string | string[] }) {
     const { api } = useAuth(), router = useRouter(), styles = useThemedStyles(sheets), balance = useBalance();
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null), [catalogError, setCatalogError] = useState<string | null>(null);
     const submission = useSpeechSubmission(api, () => {});
-    const { pending, sending, busy, result, error, priceOverride, resetAttempt, editAttempt, generate, settled } = submission;
+    const { pending, sending, busy, result, error, priceFor, resetAttempt, editAttempt, generate, settled } = submission;
     const editor = useDialogueEditor({ reopen, blocked: () => sending.current, editAttempt, resetAttempt });
     const { turns, assignments, turnEdited, restored, editTurns, editTurn, chooseVoice, resetCast } = editor;
     useEffect(() => {
@@ -38,8 +38,10 @@ export function DialogueStudio({ reopen }: { reopen?: string | string[] }) {
     if (!model) return <ModelUnavailable title={t('dialogue.title')} fromTemplate={false}
         recovery={{ label: t('dialogue.back'), onPress: () => router.canGoBack() ? router.back() : router.replace('/audio') }}
         error={catalogError ?? (catalog ? t('form.modelGone') : null)} />;
-    const validation = validateDialogue(turns, assignments), unit = priceOverride ?? estimateCredits(model, null);
-    const request = validation ? null : { ...buildDialogueRequest(turns, assignments, model), confirmedCredits: unit };
+    const validation = validateDialogue(turns, assignments);
+    const unpriced = validation ? null : buildDialogueRequest(turns, assignments, model);
+    const unit = priceFor(unpriced, 1) ?? estimateCredits(model, null);
+    const request = unpriced ? { ...unpriced, confirmedCredits: unit } : null;
     const quote = request ? pending.current.snapshot(request, 1, unit, 0) : { total: unit, payable: unit, ceilings: [unit] };
     return <KeyboardScreen style={styles.screen}>
         <Stack.Screen options={{ title: t('dialogue.title') }} />

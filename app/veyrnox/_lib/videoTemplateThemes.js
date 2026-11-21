@@ -10,6 +10,8 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'CARS',
     templateIds: [
+      // Hidden from the gallery 2026-11-21 (videoTemplateGallery.js) as near-duplicates of community-supercar-midnight-refuel; kept
+      // here so re-listing one needs only its id back in VIDEO_GALLERY_TEMPLATE_IDS.
       'community-midnight-supercar-refuel', 'community-supercar-night-fueling', 'community-supercar-midnight-refuel',
       'community-midnight-sports-drive', 'car-sky-fall', 'desert-rider', 'community-drive-thru-dialogue',
       'community-truck-window-confrontation',
@@ -62,10 +64,12 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
     ],
   },
   // Movie-style scenes. MOVIES is a style category id, which a theme may not reuse, so this theme is FILM.
+  // community-modern-listing-dolly (a slow camera dolly through a room) was the only PROPERTY template; folded in here
+  // 2026-11-21 (owner, "tidy the cards") so no chip holds a single card. It is listed whatever the long-prompt key says.
   {
     id: 'FILM',
     templateIds: [
-      'noir-film', 'underground-lab-transformation', 'window-explode', 'seedance-glass-cube', 'x-ray-matter', 'game-character-rig',
+      'community-modern-listing-dolly', 'noir-film', 'underground-lab-transformation', 'window-explode', 'seedance-glass-cube', 'x-ray-matter', 'game-character-rig',
       'reflection-in-the-mirror',
     ],
   },
@@ -73,8 +77,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
     id: 'ANIMALS',
     templateIds: ['animal-pov-to-the-club', 'community-pet-affection-reveal', 'community-synchronized-pet-portrait'],
   },
-  // One template today (a room, no person), which fits none of the people themes; listing-style templates join it.
-  { id: 'PROPERTY', templateIds: ['community-modern-listing-dolly'] },
 ]);
 
 /** Theme ids in the order their chips show. */

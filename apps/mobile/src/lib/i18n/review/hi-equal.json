@@ -128,5 +128,13 @@
   "app.smartCut.fillers.row": "Exact English retained for native Smart Cut timing wording pending professional hi translation.",
   "app.smartCut.native.analyse.quoteFailed": "Exact English retained for native Smart Cut recovery wording pending professional hi translation.",
   "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional hi translation.",
-  "speech.audition.count": "Shared numeric board capacity notation; no language-specific words."
+  "speech.audition.count": "Shared numeric board capacity notation; no language-specific words.",
+  "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
+  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
+  "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale.",
+  "editorLook.degrees": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
 }

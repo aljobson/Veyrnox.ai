@@ -1,3 +1,6 @@
+import { VIDEO_EFFECTS, TRANSITIONS, EFFECT_CATEGORIES, TRANSITION_CATEGORIES } from '../../../app/veyrnox/_lib/editorEffects.mjs';
+import { HSL_CHANNELS, CURVE_CHANNELS } from '../../../app/veyrnox/_lib/editorColour.mjs';
+import { BLENDS } from '../../../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import { CATALOGS, createTranslator, startupLocale, setLocaleFromDevice } from '../src/lib/i18n';
 import { SKILL_GROUPS } from '../src/lib/studioSkills';
 import { CREATOR_ANSWERS } from '../src/lib/creatorAnswers';
@@ -12,6 +15,23 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
     'dialogue.{}': ['turnLimit', 'wordsRequired', 'speakerLimit', 'tooLong', 'invalid', 'castInvalid'],
+    'musicExport.format.{}': ['mp3', 'wav', 'flac'],
+    'musicExport.{}': ['loading', 'reviewing', 'confirming', 'saving'],
+    'musicRender.{}': ['fadeIn', 'fadeOut', 'speed', 'split', 'fade', 'reorder', 'remaster', 'reverse',
+        'auth', 'missing', 'editingOff', 'reverseOff', 'service', 'uncertain', 'request', 'fadeRange', 'speedRange', 'splitRange',
+        'peakRange', 'conflict', 'changed', 'format', 'wav', 'size', 'duration', 'source', 'silence', 'storage', 'measure', 'offline', 'refreshFailed'],
+    'editorLook.{}': ['locked', 'lockedAll', 'notAdjacent'],
+    'editor.{}': ['filters', 'effects', 'transitions'],
+    'editorLook.parameter.{}': ['brightness', 'contrast', 'saturate', 'hue', 'blur', 'exposure',
+        'temperature', 'tint', 'shadows', 'highlights', 'gamma', 'saturation', 'luminance'],
+    'editorLook.channel.{}': [...new Set([...HSL_CHANNELS, ...CURVE_CHANNELS])],
+    'editorLook.hsl.{}': ['hue', 'saturation', 'luminance'],
+    'editorLook.category.{}': [...new Set([...EFFECT_CATEGORIES, ...TRANSITION_CATEGORIES])].filter(c => c !== 'All'),
+    'editorLook.effect.{}': VIDEO_EFFECTS.map(e => e.id),
+    'editorLook.transition.{}': [...TRANSITIONS.map(e => e.id), 'slide'],
+    'editorLook.blend.{}': BLENDS,
+    'editorLook.crop.{}': ['x', 'y', 'width', 'height'],
+    'editorLook.background.{}': ['none', 'solid', 'blur', 'image'],
     'speech.audition.{}': ['add', 'remove', 'addOne', 'invalidVoices'],
     'beatLabs.seed.error.{}': ['r34', 'r35', 'r36', 'r37', 'unsupported'],
     'beatLabs.touch.{}': ['help', 'play', 'undo', 'redo', 'gridMove', 'gridToggle', 'pads', 'regionMove', 'regionResize', 'regionTrim', 'regionDuplicate', 'regionSplit', 'regionDelete', 'regionEdit', 'rulerMove', 'pianoSelectAll', 'pianoMove', 'pianoResize', 'pianoToggle', 'pianoDelete', 'pianoVelocity', 'automationMove', 'automationDelete', 'notes', 'octave', 'velocity'],
@@ -50,6 +70,7 @@ const domains: Record<string, readonly string[]> = {
     'musicActions.{}.title': ['stems', 'crop'],
     'musicActions.action.{}': ['rights', 'format', 'plan', 'model', 'notAffordable', 'expired', 'changed', 'consent', 'range', 'short', 'busy', 'source', 'recovery', 'network', 'error'],
     'music.create.{}': ['simple', 'custom', 'empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable', 'rights_required', 'error', 'queued', 'running', 'ready', 'failed', 'refunded', 'cancelled'],
+    'beatAi.{}': ['generate', 'stems', 'targetStems', 'extend', 'replace', ...Array.from({ length: 45 }, (_, n) => `a${n}`)],
     'beat.{}': ['gain', 'pan'],
     'beatMix.fx.{}': ['eq', 'compressor', 'distortion', 'delay', 'reverb'],
     'beatMix.param.{}': ['low', 'mid', 'high', 'threshold', 'ratio', 'time', 'feedback', 'mix', 'size'],

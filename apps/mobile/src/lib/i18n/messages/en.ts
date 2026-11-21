@@ -25,6 +25,8 @@ import area_audioTemplates from './en/audioTemplates';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
 import area_beat from './en/beat';
+import area_beatAi from './en/beatAi';
+import area_beatExport from './en/beatExport';
 import area_beatLabs from './en/beatLabs';
 import area_beatMix from './en/beatMix';
 import area_beatPiano from './en/beatPiano';
@@ -82,10 +84,12 @@ import area_draw from './en/draw';
 import area_edit from './en/edit';
 import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
+import area_editorAudioTools from './en/editorAudioTools';
 import area_editorCaptionTools from './en/editorCaptionTools';
 import area_editorCore from './en/editorCore';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
+import area_editorLook from './en/editorLook';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
@@ -146,10 +150,12 @@ import area_montage from './en/montage';
 import area_music from './en/music';
 import area_musicActions from './en/musicActions';
 import area_musicDiscover from './en/musicDiscover';
+import area_musicExport from './en/musicExport';
 import area_musicGenerationActions from './en/musicGenerationActions';
 import area_musicPlaylists from './en/musicPlaylists';
 import area_musicPublic from './en/musicPublic';
 import area_musicPublication from './en/musicPublication';
+import area_musicRender from './en/musicRender';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicTargetStems from './en/musicTargetStems';
 import area_musicTrackAdd from './en/musicTrackAdd';
@@ -268,6 +274,8 @@ const catalog = {
     ...area_authGate,
     ...area_autolists,
     ...area_beat,
+    ...area_beatAi,
+    ...area_beatExport,
     ...area_beatLabs,
     ...area_beatMix,
     ...area_beatPiano,
@@ -325,10 +333,12 @@ const catalog = {
     ...area_edit,
     ...area_editor,
     ...area_editorAi,
+    ...area_editorAudioTools,
     ...area_editorCaptionTools,
     ...area_editorCore,
     ...area_editorEditGate,
     ...area_editorExportRefusal,
+    ...area_editorLook,
     ...area_editorProjects,
     ...area_editorSave,
     ...area_editorServerExport,
@@ -389,10 +399,12 @@ const catalog = {
     ...area_music,
     ...area_musicActions,
     ...area_musicDiscover,
+    ...area_musicExport,
     ...area_musicGenerationActions,
     ...area_musicPlaylists,
     ...area_musicPublic,
     ...area_musicPublication,
+    ...area_musicRender,
     ...area_musicSectionActions,
     ...area_musicTargetStems,
     ...area_musicTrackAdd,

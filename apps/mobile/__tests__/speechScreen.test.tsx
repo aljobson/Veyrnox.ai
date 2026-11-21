@@ -27,7 +27,8 @@ jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscri
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: () => mockLoadCatalog() }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => mockBalance }));
 jest.mock('../src/lib/createResult', () => ({ useJobResult: () => mockResult, soundPassFor: () => null, refreshBalance: (...args: unknown[]) => mockRefresh(...args) }));
-jest.mock('../src/lib/submittedRequests', () => ({ submittedRequests: { list: () => mockSavedList() }, rememberSubmitted: (...args: unknown[]) => mockRemember(...args) }));
+jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: (...args: unknown[]) => mockRemember(...args),
+    submittedRequests: { list: async () => [...((await mockSavedList()) ?? []), ...mockRemember.mock.calls.map(([id]) => ({ id }))] } }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => {}, hasAgreed: async () => true } }));
 jest.mock('../src/lib/celebrate', () => ({ noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
 jest.mock('../src/lib/milestoneHistory', () => ({ settleFirstMilestones: async () => {} }));
@@ -56,7 +57,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     setLocaleFromDevice(['en']); mockTitles.length = 0; mockLoadCatalog.mockReset().mockImplementation(async () => mockCatalog);
     mockRouter.replace.mockClear(); mockRouter.back.mockClear(); mockRouter.canGoBack.mockReturnValue(false);
-    mockOwner = 'a'; mockReopen = undefined; mockSavedList.mockReset().mockResolvedValue([]); mockCatalog = [mockModel]; mockBalance = 10;
+    mockOwner = 'a'; mockSubscribers.forEach(fn => fn()); mockReopen = undefined; mockSavedList.mockReset().mockResolvedValue([]); mockCatalog = [mockModel]; mockBalance = 10;
     mockResult = { state: 'queued' }; mockRequest.mockReset().mockResolvedValue({ job_id: 'speech-job' });
     mockRemember.mockReset().mockResolvedValue(undefined); mockRefresh.mockReset(); mockRouter.push.mockClear();
     root = createRoot();
@@ -103,18 +104,32 @@ test('shared failed result shows refunded credits', async () => {
     expect(textOf(root.container)).toMatch(/refund/i);
     expect(textOf(root.container)).toContain('6');
 });
-test.each(['whitespace', 'revert'])('lost-response script %s edit preserves the key at zero balance', async change => {
+test('after a lost reply, a retry, a trailing space and an edit away and back all keep the key', async () => {
+    mockRequest.mockRejectedValue(new ApiError(0, 'network'));
+    await render(); await write('Hello'); await click(generate()); await click(generate());
+    await write('Hello '); await click(generate());
+    await write('Changed'); await write('Hello'); await click(generate());
+    const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
+    expect(bodies).toHaveLength(4);
+    expect(new Set(bodies.map(body => body.idempotency_key)).size).toBe(1);
+});
+test('after a lost reply, a really different script gets a new key', async () => {
     mockRequest.mockRejectedValue(new ApiError(0, 'network'));
     await render(); await write('Hello'); await click(generate());
-    mockBalance = 0; await render();
-    if (change === 'whitespace') await write('Hello ');
-    else { await write('Changed'); await write('Hello'); }
+    await write('Changed'); await click(generate());
+    const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1].idempotency_key).not.toBe(bodies[0].idempotency_key);
+});
+test('after a lost reply, the retry stays possible at zero balance once the edit is undone', async () => {
+    mockRequest.mockRejectedValueOnce(new ApiError(0, 'network'));
+    await render(); await write('Hello'); await click(generate());
+    mockBalance = 0; await write('Changed'); await write('Hello');
     expect(generate().props.accessibilityState.disabled).toBe(false);
     await click(generate());
     const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
-    expect(bodies).toHaveLength(2); expect(bodies[1]).toEqual(bodies[0]);
-    mockBalance = 10; await render(); await write('Actually changed'); await click(generate());
-    expect(JSON.parse(mockRequest.mock.calls[2][1].body).idempotency_key).not.toBe(bodies[0].idempotency_key);
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1].idempotency_key).toBe(bodies[0].idempotency_key);
 });
 test.each([new OfflineError(), new ApiError(400, 'consent_declined'), new ApiError(402, 'subscription_required')])('submission errors remain visible and retryable: %p', async error => {
     mockRequest.mockRejectedValueOnce(error);
@@ -196,4 +211,22 @@ test('corrupt speech restore opens empty with a translated note', async () => {
     expect(generate().props.accessibilityState.disabled).toBe(true); expect(mockRequest).not.toHaveBeenCalled();
     await write('New script'); expect(textOf(root.container)).not.toContain(t('dialogue.restoreUnavailable'));
     await click(generate()); expect(textOf(root.container)).not.toContain(t('dialogue.restoreUnavailable'));
+});
+test('leaving and reopening preserves an unknown key; no-op edits preserve its warning', async () => {
+    mockRequest.mockRejectedValueOnce(new ApiError(0, 'network'));
+    await render(); await write('Hello'); await click(generate());
+    await write('Hello ');
+    expect(textOf(root.container)).toContain(t('form.err.network'));
+    await act(async () => root.unmount()); root = createRoot();
+    await render(); await write('Hello'); await click(generate());
+    const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
+    expect(bodies[1].idempotency_key).toBe(bodies[0].idempotency_key);
+});
+
+test('Adjust after a completed take permits a new take with a fresh key', async () => {
+    await render(); await write('Hello'); await click(generate());
+    await click(button(t('speech.adjust'))); await click(generate());
+    const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1].idempotency_key).not.toBe(bodies[0].idempotency_key);
 });

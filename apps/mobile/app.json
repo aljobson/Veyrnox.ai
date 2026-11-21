@@ -2,7 +2,7 @@
   "expo": {
     "name": "Veyrnox.ai",
     "slug": "veyrnoxai",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "platforms": [
       "ios",
@@ -288,7 +288,7 @@
     ],
     "scheme": "ai.veyrnox.app",
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/92f5cecd-0926-48d7-a292-a8510b43e1d8",

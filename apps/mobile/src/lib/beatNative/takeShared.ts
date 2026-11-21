@@ -1,7 +1,9 @@
 // Typed boundary only: document/session/storage rules remain owned by the web editor.
 // Browser capture and IndexedDB are imported transitively but are never invoked here.
 import './takeRuntime';
-import { createTakeFiles } from './takeFiles';
+import { createTakeFiles, eraseAccountTakes, noAccountTakeIO } from './takeFiles';
+import { migratedTakeIO } from './legacyMigration';
+import { getCacheUser, subscribeCacheUser } from '../appCache';
 import type { BeatDoc, Edit } from './doc';
 import type { EngineContext } from './shared';
 // @ts-ignore shared JavaScript, signatures below are the native boundary
@@ -63,15 +65,18 @@ export const { calibrationFrames, detectClickOnsets, matchCalibration, readLaten
     readLatency(device: string, storage: SyncStorage, now?: number): { ms: number; measuredAt: number } | null;
     writeLatency(device: string, ms: number, storage: SyncStorage, now?: number): boolean;
 };
-export const { configureBeatTakeStorage, hydrateBeatTakes, loadBeatTake, putBeatTake, appendBeatTake, pendingBeatTakes, reconcileBeatTakes, discardBeatTakes, documentHasTake, beatTakeBytes, BEAT_TAKE_BYTES, subscribeBeatTakes } = storage as unknown as {
-    configureBeatTakeStorage(adapter: BeatTakeStorage): void;
-    hydrateBeatTakes(): Promise<void>;
+const { loadBeatTake: loadShared, putBeatTake: putShared, appendBeatTake: appendShared, reconcileBeatTakes: reconcileShared, discardBeatTakes: discardShared } = storage as unknown as {
     loadBeatTake(id: string): Promise<AudioTake | null>;
     putBeatTake(row: AudioTake, check?: () => void): Promise<AudioTake>;
     appendBeatTake(row: AudioTake, offset: number, check?: () => void): Promise<AudioTake>;
-    pendingBeatTakes(id: string): TakeRow[];
     reconcileBeatTakes(doc: BeatDoc): Promise<void>;
     discardBeatTakes(ids: string[]): Promise<void>;
+};
+export const { beatTakes, configureBeatTakeStorage, hydrateBeatTakes, pendingBeatTakes, documentHasTake, beatTakeBytes, BEAT_TAKE_BYTES, subscribeBeatTakes } = storage as unknown as {
+    configureBeatTakeStorage(adapter: BeatTakeStorage): void;
+    beatTakes(): TakeRow[];
+    hydrateBeatTakes(): Promise<void>;
+    pendingBeatTakes(id: string): TakeRow[];
     documentHasTake(doc: BeatDoc, row: TakeRow): boolean;
     beatTakeBytes(): number; BEAT_TAKE_BYTES: number;
     subscribeBeatTakes(listener: () => void): () => void;
@@ -91,9 +96,51 @@ export const { recoverTake, takeAssets } = cloud as {
 export const { beatReadOnly, assertBeatWritable } = compat as { beatReadOnly(doc?: BeatDoc): boolean; assertBeatWritable(doc: BeatDoc): void };
 export const addAudioTrack = beatOps.addAudioTrack as (doc: BeatDoc) => BeatDoc;
 
+// The shared store has one storage slot and finishes queued work against whatever is installed, so every
+// call is fenced to the account it started under. Its memory is rebuilt once the old account's work has settled.
 let configured = false;
+let takeOwner: string | null = null;
+const inFlight = new Set<Promise<unknown>>();
+const tracked = <T>(work: Promise<T>) => {
+    inFlight.add(work);
+    const done = () => { inFlight.delete(work); };
+    work.then(done, done);
+    return work;
+};
+const fenced = (check?: () => void) => {
+    const owner = takeOwner;
+    return () => { if (owner !== takeOwner) throw new Error('account_changed'); check?.(); };
+};
+const installTakes = (owner: string | null) => {
+    configureBeatTakeStorage(owner ? createTakeFiles(migratedTakeIO(owner), owner) : createTakeFiles(noAccountTakeIO));
+};
+function switchTakeOwner(next: string | null) {
+    if (next === takeOwner) return;
+    takeOwner = next;
+    installTakes(next);
+    const stale = [...inFlight];
+    if (stale.length) void Promise.allSettled(stale).then(() => { if (takeOwner === next) installTakes(next); });
+}
+export const putBeatTake = (row: AudioTake, check?: () => void) => tracked(putShared(row, fenced(check)));
+export const appendBeatTake = (row: AudioTake, offset: number, check?: () => void) => tracked(appendShared(row, offset, fenced(check)));
+export const reconcileBeatTakes = (doc: BeatDoc) => tracked(reconcileShared(doc));
+export const discardBeatTakes = (ids: string[]) => tracked(discardShared(ids));
+export async function loadBeatTake(id: string): Promise<AudioTake | null> {
+    const owner = takeOwner, row = await tracked(loadShared(id));
+    return owner === takeOwner ? row : null;
+}
+/** Account deletion only: nothing may be writing when the folder goes. */
+export async function eraseBeatTakes(owner: string) {
+    if (takeOwner === owner) switchTakeOwner(null);
+    await Promise.allSettled([...inFlight]);
+    eraseAccountTakes(owner);
+}
 export function configureNativeTakeStorage() {
-    if (!configured) { configureBeatTakeStorage(createTakeFiles()); configured = true; }
+    if (configured) return;
+    configured = true;
+    takeOwner = getCacheUser() ?? null;
+    installTakes(takeOwner);
+    subscribeCacheUser(user => switchTakeOwner(user ?? null));
 }
 // Synchronous installation only: no disk IO until a caller actually reads/writes a take.
 // Child effects may run before the editor's effects, so effect-time configuration is too late.

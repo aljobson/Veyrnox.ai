@@ -9,12 +9,27 @@ export interface BeatFiles {
     list(): Promise<string[]>;
 }
 
+/** Files for one account. Files directly under Documents/beats predate owner stamps and are never opened from here. */
+export interface AccountBeatFiles {
+    forOwner(owner: string): BeatFiles;
+    erase(owner: string): void | Promise<void>;
+}
+export const validOwner = (owner: string) => /^[a-zA-Z0-9_-]{1,128}$/.test(owner);
+const accountDirectory = (owner: string) => {
+    if (!validOwner(owner)) throw new Error('invalid_owner');
+    return new Directory(Paths.document, 'beats', 'accounts', owner);
+};
+export const accountBeatFiles: AccountBeatFiles = {
+    forOwner: owner => documentFiles(owner),
+    erase(owner) { const dir = accountDirectory(owner); if (dir.exists) dir.delete(); },
+};
+
 /** Expo overwrite is delete+move on iOS. A completed .pending file closes that recovery gap.
  * .tmp is never read: a killed write may have left partial text. No existing record is deleted
  * until the complete new text has moved to .pending. Startup promotes pending writes first.
  */
-export function documentFiles(): BeatFiles {
-    const root = () => { const dir = new Directory(Paths.document, 'beats'); dir.create({ intermediates: true, idempotent: true }); return dir; };
+export function documentFiles(owner?: string): BeatFiles {
+    const root = () => { const dir = owner ? accountDirectory(owner) : new Directory(Paths.document, 'beats'); dir.create({ intermediates: true, idempotent: true }); return dir; };
     const file = (name: string) => {
         if (!/^[a-zA-Z0-9_.-]+$/.test(name)) throw new Error('invalid_filename');
         return new File(root(), name);

@@ -217,3 +217,19 @@ test('marker write failure cleans its attempt before downloading or sharing', as
         expect(mockDelete).toHaveBeenCalledTimes(1);
     } finally { write.mockRestore(); }
 });
+
+test.each([
+    ['audio/mpeg', 'mp3', 'public.mp3'], ['audio/wav', 'wav', 'com.microsoft.waveform-audio'], ['audio/flac', 'flac', 'org.xiph.flac'],
+])('export shares %s using its native MIME and UTI', async (mimeType, extension, UTI) => {
+    await shareStemFile({ ...input, kind: 'export', mimeType });
+    const uri = download.mock.calls[0][1].uri;
+    expect(uri.endsWith(`-export.${extension}`)).toBe(true);
+    expect(share).toHaveBeenCalledWith(uri, { mimeType, UTI });
+});
+test('export size mismatch and native errors never expose the signed URL', async () => {
+    download.mockImplementationOnce(async (_url, dest) => persist(dest, 1));
+    await expect(shareStemFile({ ...input, kind: 'export' })).rejects.toEqual(new StemFileError('size_mismatch'));
+    download.mockRejectedValueOnce(Error(input.url));
+    await expect(shareStemFile({ ...input, kind: 'export' })).rejects.toEqual(new StemFileError('transfer_failed'));
+    expect(share).not.toHaveBeenCalled();
+});
