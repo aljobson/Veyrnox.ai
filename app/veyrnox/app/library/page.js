@@ -290,8 +290,13 @@ export default function Library() {
         </div>
       )}
 
+      {smartCutIntent && <SmartCutEntry enabled={editorOn} selectedCount={pickedClips.length} onEnable={enableEditorPreview} />}
+
       <section className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-10 pb-4">
-        <h1 data-testid="library-title" className="vx-display text-[40px] sm:text-[56px]">{t("app.library.title")}</h1>
+        {/* Smart Cut leads the page when it was asked for, so it holds the one h1. */}
+        {smartCutIntent
+          ? <h2 data-testid="library-title" className="vx-display text-[40px] sm:text-[56px]">{t("app.library.title")}</h2>
+          : <h1 data-testid="library-title" className="vx-display text-[40px] sm:text-[56px]">{t("app.library.title")}</h1>}
         <p className="text-vx-fg-body mt-3">
           {t("app.library.refundHelp")}</p>
 
@@ -335,8 +340,6 @@ export default function Library() {
       <DeviceLibrary visible={['all','succeeded'].includes(tab) && !favOnly} kind={kind} />
       <EditorLibraryRenders visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
       <FilmLibraryMasters visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
-
-      {smartCutIntent && <SmartCutEntry enabled={editorOn} selectedCount={pickedClips.length} onEnable={enableEditorPreview} />}
 
       <section id="library-assets" className="max-w-[1400px] mx-auto scroll-mt-24 px-4 sm:px-8 pb-16">
         {/* Nothing cached and the account list not answered yet is still loading, not an empty Library. */}

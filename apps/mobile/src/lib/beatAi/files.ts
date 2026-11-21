@@ -4,6 +4,13 @@ import type { BeatFiles } from '../beatNative/persist';
  * must not enumerate/promote another owner's AI receipts. Reads recover only
  * the explicitly requested owner namespace; storage.ts serializes replacements.
  */
+/** Account deletion only: receipts are named `ai.<owner>.<beat>.<kind>`, so only that owner's files match. */
+export function eraseAccountReceipts(owner: string) {
+    if (!/^[a-zA-Z0-9-]{1,128}$/.test(owner)) throw new Error('invalid_owner');
+    const directory = new Directory(Paths.document, 'beat-ai');
+    if (!directory.exists) return;
+    for (const entry of directory.list()) if (entry instanceof File && entry.name.startsWith(`ai.${owner}.`)) entry.delete();
+}
 export function receiptFiles(): BeatFiles {
     const file = (name: string) => {
         if (!/^[a-zA-Z0-9_.-]+$/.test(name)) throw new Error('invalid_filename');

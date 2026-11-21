@@ -3,7 +3,6 @@ import { AppState } from 'react-native';
 import { isOffline, subscribe } from '../networkState';
 import type { BeatStore } from '../beatNative/store';
 import type { BeatDoc, Edit } from '../beatNative/doc';
-import { documentFiles, beatFile } from '../beatNative/persist';
 import { t } from '../i18n';
 import { placedAlready, placeAiResults } from './shared';
 import { loadResults, type AssetMetadataPort } from './results';
@@ -25,7 +24,7 @@ export function createPartRequest(options: Omit<RequestOptions<Pending>, 'finish
             const placed = options.store.getBeat(options.beatId) as AiDoc;
             await options.store.flushBeat(options.beatId);
             if (!check()) return { keep: row, noticeKey: '' };
-            const saved = options.savedDoc ? await options.savedDoc() : await documentFiles().read(beatFile(options.beatId)).then(raw => raw ? JSON.parse(raw).doc as AiDoc : undefined);
+            const saved = options.savedDoc ? await options.savedDoc() : (await options.store.readSavedDoc(options.beatId)) as AiDoc | undefined;
             if (!check()) return { keep: row, noticeKey: '' };
             if (!saved || options.store.getBeat(options.beatId) !== placed || !loaded.results.every(r => placedAlready(saved, row, r.ordinal))) throw new Error('placement_not_saved');
         }

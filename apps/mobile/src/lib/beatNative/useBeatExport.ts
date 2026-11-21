@@ -7,7 +7,7 @@ import type { BeatDoc } from './doc';
 import { loadNativeOfflineContext, OfflineUnavailable, withWindowOfflineContext } from './nativeContext';
 import { ExportFailure, renderNativeExport } from './exportRender';
 import { shareBeatExport, sweepBeatExports } from './exportFiles';
-import { checkMixdownOwner, checkMixdownTask, createMixdownSaver, mixdownCode, mixdownErrorKey, ownedByOther, preflightMixdownSave, probeMixdownSave, type MixdownProbe, type MixdownTask, type SavedMixdown } from './mixdownSave';
+import { checkMixdownOwner, checkMixdownTask, createMixdownSaver, mixdownCode, mixdownErrorKey, ownedByOther, preflightMixdownSave, probeMixdownSave, recordOwner, type MixdownProbe, type MixdownTask, type SavedMixdown } from './mixdownSave';
 import type { ExportOptions } from './exportShared';
 import { replacementUnderway } from './recordingFinalizers';
 import { beatStore } from './store';
@@ -39,9 +39,9 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
     const saver = useMemo(() => createMixdownSaver(api), [api]);
     useAnnouncement(message, { everywhere: true });
     const busy = ['rendering', 'sharing', 'saving'].includes(state);
-    const cloudOwner = () => beatStore.getRecord(doc.id)?.cloud?.userId;
+    const beatOwner = () => recordOwner(beatStore.getRecord(doc.id));
     const viewer = beginSessionTask().user;
-    const foreign = !!viewer && ownedByOther(cloudOwner(), viewer); // Signed out shows the sign-in message instead.
+    const foreign = !!viewer && ownedByOther(beatOwner(), viewer); // Signed out shows the sign-in message instead.
     const savedGaps = useRef(false);
     useEffect(() => {
         alive.current = true;
@@ -104,14 +104,14 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
         };
         try {
             if (task) checkMixdownTask(task);
-            if (task) checkMixdownOwner(cloudOwner(), task.user);
+            if (task) checkMixdownOwner(beatOwner(), task.user);
             if (save) preflightMixdownSave(doc, options.range);
             if (replacementUnderway(doc.id)) throw new ExportFailure('beatTakes.replacing');
             await prepare();
             if (replacementUnderway(doc.id)) throw new ExportFailure('beatTakes.replacing');
             if (!current()) throw new ExportFailure('beatExport.signIn');
             if (save && task) {
-                const result = await saver.save({ doc, range: options.range, ...save, task, owner: cloudOwner,
+                const result = await saver.save({ doc, range: options.range, ...save, task, owner: beatOwner,
                     render: async () => {
                         let bytes: ArrayBuffer | undefined;
                         savedGaps.current = false;

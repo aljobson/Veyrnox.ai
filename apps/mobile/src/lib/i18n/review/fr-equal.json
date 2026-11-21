@@ -344,5 +344,8 @@
   "editorLook.effect.mono": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "editorLook.transition.flash": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "editorLook.transition.zoom": "Shared technical term or locale-independent notation, reviewed for this editor control.",
-  "editorLook.background.image": "Image is the established French noun, identical to English with this capitalization."
+  "editorLook.background.image": "Image is the established French noun, identical to English with this capitalization.",
+  "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
 }
