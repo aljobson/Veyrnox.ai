@@ -2112,6 +2112,18 @@
     "ratio": 2.33
   },
   {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "गीत के बोल",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
     "id": "beat.saveNote",
     "english": "Saved on this phone",
     "translation": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",

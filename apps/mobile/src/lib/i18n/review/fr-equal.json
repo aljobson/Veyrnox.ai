@@ -266,6 +266,8 @@
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "speech.volume": "Volume is the French noun for audio volume, with the same spelling as English.",
   "speech.tone.Expressive": "Expressive is the French feminine adjective describing an expressive voice, with the same spelling as English.",
+  "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending.",
+  "musicTrackAdd.gender.auto": "Music track add: established term retained in machine translation. Native review pending.",
   "beatMix.master": "Established audio term in fr, conventionally used unchanged: Master.",
   "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
   "beatMix.param.ratio": "Established audio term in fr, conventionally used unchanged: Ratio.",

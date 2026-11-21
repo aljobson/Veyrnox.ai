@@ -3726,6 +3726,18 @@
     "ratio": 2.25
   },
   {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "Текст песни",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Мужской",
+    "ratio": 1.75
+  },
+  {
     "id": "beat.saveNote",
     "english": "Saved on this phone",
     "translation": "Пока не сохранено. Этот бит пропадёт при закрытии приложения.",
