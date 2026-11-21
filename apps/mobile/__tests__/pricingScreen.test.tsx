@@ -5,10 +5,12 @@ import Pricing from '../src/app/(app)/pricing';
 import { setLocaleFromDevice, t } from '../src/lib/i18n';
 const mockAll = jest.fn(async () => [{ id: 'premium', name: 'Premium fixture', modality: 'image', gated: true, credits: 10, capabilities: null, durations: [] }]);
 const mockSupported = jest.fn(async () => []);
-const mockBilling = { status: 'ready', offerings: { all: {
+const offerings = () => ({ all: {
     generation: { availablePackages: [{ identifier: 'monthly', product: { identifier: 'ai.veyrnox.generation.starter.monthly', title: 'Starter', priceString: '£10.00' } }] },
     credits: { availablePackages: [{ identifier: 'pack', product: { identifier: 'ai.veyrnox.credits.156', title: 'Pack', priceString: '£10.00' } }] },
-} } };
+} });
+const mockRetryOfferings = jest.fn(), mockRefreshSales = jest.fn(async () => true);
+const mockBilling = { status: 'ready', offerings: offerings(), retryOfferings: mockRetryOfferings, refreshSales: mockRefreshSales };
 const mockRequest = jest.fn(async (_path: string): Promise<unknown> => ({ plans: [] }));
 const mockApi = { request: (path: string) => mockRequest(path) };
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
@@ -19,7 +21,7 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null } }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 let root: Root;
 const textOf = (node: TestInstance): string => node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); mockBilling.status = 'ready'; mockRequest.mockReset().mockImplementation(async () => ({ plans: [] })); mockAll.mockClear(); mockSupported.mockClear(); root = createRoot(); });
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); mockBilling.status = 'ready'; mockBilling.offerings = offerings(); mockRequest.mockReset().mockImplementation(async () => ({ plans: [] })); mockAll.mockClear(); mockSupported.mockClear(); mockRetryOfferings.mockClear(); mockRefreshSales.mockClear(); root = createRoot(); });
 afterEach(async () => act(async () => root.unmount()));
 test('shows gated models with a non-pressable Premium chip and read-only offers', async () => {
     await act(async () => root.render(<Pricing />)); const text = textOf(root.container);
@@ -30,6 +32,19 @@ test('shows gated models with a non-pressable Premium chip and read-only offers'
 test.each(['off', 'loading', 'unavailable'])('billing %s hides offer sections, leaving catalog visible', async status => {
     mockBilling.status = status; await act(async () => root.render(<Pricing />)); const text = textOf(root.container);
     expect(text).not.toContain('Monthly subscriptions'); expect(text).not.toContain('One-off credit packs'); expect(text).toContain('Premium model');
+    expect(root.container.queryAll(n => n.props.testID === `purchase-state-${status}`).length).toBe(status === 'off' ? 0 : 1);
+});
+test('ready with no store products explains the empty state and retries both offerings and sales', async () => {
+    mockBilling.offerings = { all: {} } as ReturnType<typeof offerings>;
+    await act(async () => root.render(<Pricing />));
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable')).toHaveLength(1);
+    expect(textOf(root.container)).toContain(t('credits.subscriptions.unavailable'));
+    expect(textOf(root.container)).toContain(t('credits.unavailable'));
+    const retry = root.container.queryAll(n => n.props.accessibilityLabel === t('credits.hardPaywall.retry') && n.props.onClick);
+    expect(retry).toHaveLength(1);
+    await act(async () => retry[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(mockRetryOfferings).toHaveBeenCalledTimes(1);
+    expect(mockRefreshSales).toHaveBeenCalledTimes(1);
 });
 test('plan credits show a loading line until the server answers', async () => {
     let answer!: (value: unknown) => void;

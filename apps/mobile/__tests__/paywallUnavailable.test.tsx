@@ -9,6 +9,7 @@ const mockRedirect = jest.fn((_props: unknown) => null);
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
 let mockCanGoBack = true;
+let mockPaywallsEnabled = true;
 const mockRetryOfferings = jest.fn();
 const mockRefreshSales = jest.fn(async () => true);
 let mockBilling: Record<string, unknown>;
@@ -18,7 +19,7 @@ jest.mock('react-native-purchases-ui', () => ({ __esModule: true, default: { Pay
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
 jest.mock('../src/billing/useStorePurchase', () => ({ useStorePurchase: () => ({ acquireAuxiliary: jest.fn() }) }));
-jest.mock('../src/billing/paywallGate', () => ({ ...jest.requireActual('../src/billing/paywallGate'), paywallsEnabled: () => true }));
+jest.mock('../src/billing/paywallGate', () => ({ ...jest.requireActual('../src/billing/paywallGate'), paywallsEnabled: () => mockPaywallsEnabled }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 
 let root: Root;
@@ -27,6 +28,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.clearAllMocks();
     mockCanGoBack = true;
+    mockPaywallsEnabled = true;
     mockBilling = { status: 'unavailable', offerings: null, canPurchase: false, salesOpen: true, retryOfferings: mockRetryOfferings, refreshSales: mockRefreshSales };
     root = createRoot();
 });
@@ -35,8 +37,10 @@ afterEach(async () => { await act(async () => root.unmount()); });
 test('QA-008: when purchases are not ready the paywall offers Try again and Close and announces why', async () => {
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
     await act(async () => root.render(<Paywall />));
+    expect(announce).toHaveBeenCalledTimes(1);
     expect(announce).toHaveBeenCalledWith('Purchases are not ready yet. Try again in a moment.');
     const retry = button('Try again'), close = button('Close');
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable')).toHaveLength(1);
     expect(retry.length).toBeGreaterThan(0);
     expect(close.length).toBeGreaterThan(0);
     await act(async () => retry[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
@@ -54,8 +58,11 @@ test('sales closed also shows the escape hatch', async () => {
 });
 
 test('Close stays visible while a retry is loading', async () => {
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
     mockBilling = { ...mockBilling, status: 'loading' };
     await act(async () => root.render(<Paywall />));
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-loading')).toHaveLength(1);
+    expect(announce).toHaveBeenCalledWith('Loading');
     expect(button('Close').length).toBeGreaterThan(0);
 });
 
@@ -65,6 +72,17 @@ test('Close falls back to the credits screen when there is no history (cold deep
     await act(async () => button('Close')[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     expect(mockBack).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith('/credits');
+});
+
+test('a build with dashboard paywalls disabled shows a terminal state without spinner or busy semantics', async () => {
+    mockPaywallsEnabled = false;
+    await act(async () => root.render(<Paywall />));
+    const state = root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable');
+    expect(state).toHaveLength(1);
+    expect(state[0].props.accessibilityState).toEqual({ busy: false });
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-spinner')).toHaveLength(0);
+    expect(button('Try again')).toHaveLength(0);
+    expect(button('Close')).toHaveLength(1);
 });
 
 test.each([true, false])('native paywall routes retired offerings to filtered custom Credits: %s', async retired => {
