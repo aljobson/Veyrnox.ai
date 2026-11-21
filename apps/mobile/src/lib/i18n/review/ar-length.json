@@ -2190,6 +2190,18 @@
     "ratio": 1.63
   },
   {
+    "id": "beatAi.magic",
+    "english": "Magic Bar",
+    "translation": "المازورة السحرية",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "المقام",
+    "ratio": 2
+  },
+  {
     "id": "speech.audition.generate.zero",
     "english": "Generate {count} auditions",
     "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",

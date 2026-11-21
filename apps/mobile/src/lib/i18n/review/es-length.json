@@ -3960,6 +3960,54 @@
     "ratio": 1.64
   },
   {
+    "id": "beatAi.targetStems",
+    "english": "Target stem",
+    "translation": "Aislar instrumento",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalidad",
+    "ratio": 3
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calcular precio de dos bucles",
+    "ratio": 1.93
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Comprobar de nuevo",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.unmute",
+    "english": "Unmute {name}",
+    "translation": "Activar sonido de {name}",
+    "ratio": 1.85
+  },
+  {
+    "id": "beatAi.a2",
+    "english": "Target stem",
+    "translation": "Aislar instrumento",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.a27",
+    "english": "Stems need an MP3 song of 10 MB or less",
+    "translation": "Las pistas separadas necesitan una canción MP3 de 10 MB o menos",
+    "ratio": 1.62
+  },
+  {
     "id": "beat.view.song",
     "english": "Song",
     "translation": "Canción",

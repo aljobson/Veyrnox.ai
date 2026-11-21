@@ -30,6 +30,7 @@ const mockDecode = jest.fn();
 let mockParams = { id: PROJECT, song: PROJECT, revision: '2' };
 let mockPreviewFinish = () => {};
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush, replace: mockReplace }), useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
+jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0 }) }));
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 jest.mock('../src/lib/beatNative/soundPreview', () => ({ createSoundPreview: (_port: unknown, onFinish: () => void) => { mockPreviewFinish = onFinish; return { toggle: mockToggle, stop: mockStop }; } }));

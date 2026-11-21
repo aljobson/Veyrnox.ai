@@ -112,5 +112,7 @@
   "app.smartCut.fillers.row": "Exact English retained for native Smart Cut timing wording pending professional ar translation.",
   "app.smartCut.native.analyse.quoteFailed": "Exact English retained for native Smart Cut recovery wording pending professional ar translation.",
   "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional ar translation.",
-  "speech.audition.count": "Shared numeric board capacity notation; no language-specific words."
+  "speech.audition.count": "Shared numeric board capacity notation; no language-specific words.",
+  "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
+  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
 }

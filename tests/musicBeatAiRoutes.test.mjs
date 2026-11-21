@@ -17,7 +17,7 @@ const hooks=registerHooks({load(url,context,next){
   if(url.endsWith('/lib/resolveSource.js'))return {format:'module',shortCircuit:true,source:'export const { inspectStoredSource } = globalThis.beatAiRouteFixture;'};
   return next(url,context);
 }});
-Object.assign(process.env,{MUSIC_RUNTIME_FLAGS:JSON.stringify({schema:true,generation:true,dispatch:true,library:true,stems:true,targetStems:true,extend:true,replace:true})});
+Object.assign(process.env,{MUSIC_RUNTIME_FLAGS:JSON.stringify({schema:true,generation:true,dispatch:true,ui:true,beatEditor:true,beatAi:true,library:true,stems:true,targetStems:true,extend:true,replace:true})});
 const routes=[];
 for(const [op,path,body] of [
  ['generate','generation-quotes',{mode:'simple',model_id:'ace-step-loop',prompt:'Keys',bpm:120,key_scale:'C Major',time_signature:'4',duration_seconds:10}],

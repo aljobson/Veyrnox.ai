@@ -1,0 +1,26 @@
+import { act } from 'react';
+import { createRoot } from 'test-renderer';
+import * as RN from 'react-native';
+import { BeatAiSheet } from '../../src/components/beats/ai/BeatAiSheet';
+import { ReceiptRequest } from '../../src/lib/beatAi/request';
+import { pendingStore } from '../../src/lib/beatAi/pending';
+import { t } from '../../src/lib/i18n';
+import { client, files, owner, beatId, doc, quote, row } from './fixtures';
+import type { Pending } from '../../src/lib/beatAi/types';
+jest.mock('expo-crypto', () => ({ randomUUID: () => '00000000-0000-4000-8000-000000000042' }));
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }));
+void [RN.View, RN.Text, RN.Modal, RN.ScrollView, RN.TextInput];
+test('sheet displays the exact server quote and restored original quote', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
+    const root = createRoot(), c = client(), storage = pendingStore(files().port);
+    const request = new ReceiptRequest<Pending>({ owner, beatId, client: c.client, storage, current: () => true, off: jest.fn(), finish: async () => ({ noticeKey: '' }) });
+    request.open(); await request.price(async () => quote, () => row());
+    await act(async () => root.render(<BeatAiSheet request={request} client={c.client} doc={doc()} op="generate" onClose={request.close} />));
+    const contains = (value: string) => root.container.queryAll(n => n.children.includes(value)).length;
+    expect(contains(t('beatAi.priceValue', { credits: 37 }))).toBeGreaterThan(0);
+    expect(contains(t('beatAi.balance', { balance: 100, after: 63 }))).toBeGreaterThan(0);
+    await storage.put(row()); await act(async () => { await request.resume(row()); });
+    expect(contains(t('beatAi.original'))).toBeGreaterThan(0);
+    expect(c.request).not.toHaveBeenCalled(); await act(async () => root.unmount());
+});

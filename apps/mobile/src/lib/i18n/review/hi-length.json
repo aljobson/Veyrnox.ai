@@ -2352,6 +2352,24 @@
     "ratio": 1.62
   },
   {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "स्वर कुंजी",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.unmute",
+    "english": "Unmute {name}",
+    "translation": "{name} की आवाज़ चालू करें",
+    "ratio": 1.92
+  },
+  {
     "id": "speech.audition.test",
     "english": "Test",
     "translation": "परीक्षण",

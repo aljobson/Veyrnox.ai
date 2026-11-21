@@ -1,8 +1,8 @@
 import { retryAfterSeconds } from '../../../../../lib/rateLimitHeaders.js';
-import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
+import { rpc, select, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { publishFalDispatchWakeup } from '../../../../../lib/falDispatchWakeup.js';
 import {
-    musicGenerationEnabled, musicRpcStatus, parseMusicGeneration, publicMusicError,
+    MUSIC_BEAT_MODEL_ID, musicBeatAiEnabled, musicGenerationEnabled, musicRpcStatus, parseMusicGeneration, publicMusicError,
     readMusicJson, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
@@ -23,6 +23,29 @@ export async function POST(request) {
 
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
+    if (!musicBeatAiEnabled()) {
+        try {
+            const users = await select('users', { columns: 'id', filter: `auth_id=eq.${encodeURIComponent(authId)}`, limit: 1 }, cfg);
+            if (!Array.isArray(users)) throw new Error('invalid_guard_read');
+            const userId = users[0]?.id;
+            if (users.length && !validMusicAuthId(userId)) throw new Error('invalid_guard_user');
+            const quotes = userId ? await select('music_generation_quotes', {
+                columns: 'model_id,consumed_at',
+                filter: `id=eq.${encodeURIComponent(input.quoteId)}&user_id=eq.${encodeURIComponent(userId)}`,
+                limit: 1,
+            }, cfg) : [];
+            if (!Array.isArray(quotes)) throw new Error('invalid_guard_read');
+            // This read can race the original transaction. Keep the receipt/key on
+            // refusal; a consumed quote must reach the atomic replay path below.
+            if (quotes?.[0]?.model_id === MUSIC_BEAT_MODEL_ID && quotes[0].consumed_at === null) {
+                return reply({ error: 'beat_ai_unavailable' }, 503, { 'Retry-After': '60' });
+            }
+        } catch {
+            console.error('[music/generations] beat quote guard unavailable');
+            // The model is unknown and the client chooses the key, so every key fails closed.
+            return reply({ error: 'temporarily_unavailable' }, 502);
+        }
+    }
     let result;
     try {
         result = await rpc('music_submit_pair', {
