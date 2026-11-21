@@ -2448,6 +2448,54 @@
     "ratio": 2
   },
   {
+    "id": "editorLook.hsl",
+    "english": "HSL",
+    "translation": "रंग, संतृप्ति और चमक",
+    "ratio": 6.67
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "धुंधलापन",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.effect.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.effect.old-film",
+    "english": "Old film",
+    "translation": "पुरानी फ़िल्म",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorLook.transition.blinds",
+    "english": "Blinds",
+    "translation": "झिलमिलियाँ",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "घूमकर प्रवेश",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorLook.background.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "धुंधलापन",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

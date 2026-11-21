@@ -323,5 +323,19 @@
   "editorAudioTools.hz": "Standard audio term or unit notation, retained in this locale.",
   "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale.",
   "editorAudioTools.radio": "Standard audio term or unit notation, retained in this locale.",
-  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale."
+  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale.",
+  "editorLook.hsl": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.degrees": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.parameter.gamma": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.master": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.orange": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.cyan": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.magenta": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.category.Retro": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.effect.vignette": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.effect.sepia": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.transition.zoom": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.blend.source-over": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.filter": "Shared technical term or locale-independent notation, reviewed for this editor control."
 }

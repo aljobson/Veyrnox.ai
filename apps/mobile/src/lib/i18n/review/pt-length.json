@@ -4308,6 +4308,198 @@
     "ratio": 2.31
   },
   {
+    "id": "editorLook.blend",
+    "english": "Blend",
+    "translation": "Mesclagem",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.crop",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.resetCrop",
+    "english": "Reset crop",
+    "translation": "Redefinir recorte",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorLook.addPoint",
+    "english": "Add point",
+    "translation": "Adicionar ponto",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.parameter.hue",
+    "english": "Hue",
+    "translation": "Matiz",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "Desfoque",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "Tonalidade",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.channel.red",
+    "english": "Red",
+    "translation": "Vermelho",
+    "ratio": 2.67
+  },
+  {
+    "id": "editorLook.category.Glitch",
+    "english": "Glitch",
+    "translation": "Interferência",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.category.Blend",
+    "english": "Blend",
+    "translation": "Mesclagem",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.category.Wipe",
+    "english": "Wipe",
+    "translation": "Varredura",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.category.Move",
+    "english": "Move",
+    "translation": "Movimento",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.effect.grain",
+    "english": "Film grain",
+    "translation": "Granulação de filme",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.effect.scanlines",
+    "english": "Scanlines",
+    "translation": "Linhas de varredura",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorLook.effect.tiles",
+    "english": "Motion tiles",
+    "translation": "Mosaico em movimento",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.dip-black",
+    "english": "Dip to black",
+    "translation": "Transição para preto",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.wipe-left",
+    "english": "Wipe left",
+    "translation": "Varredura à esquerda",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorLook.transition.wipe-right",
+    "english": "Wipe right",
+    "translation": "Varredura à direita",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.wipe-up",
+    "english": "Wipe up",
+    "translation": "Varredura para cima",
+    "ratio": 2.71
+  },
+  {
+    "id": "editorLook.transition.wipe-down",
+    "english": "Wipe down",
+    "translation": "Varredura para baixo",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorLook.transition.slide-left",
+    "english": "Slide left",
+    "translation": "Deslizar à esquerda",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.slide-right",
+    "english": "Slide right",
+    "translation": "Deslizar para a direita",
+    "ratio": 2.09
+  },
+  {
+    "id": "editorLook.transition.slide-up",
+    "english": "Slide up",
+    "translation": "Deslizar para cima",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.transition.slide-down",
+    "english": "Slide down",
+    "translation": "Deslizar para baixo",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.clock-wipe",
+    "english": "Clock wipe",
+    "translation": "Varredura de relógio",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.push",
+    "english": "Push",
+    "translation": "Empurrar",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "Entrada giratória",
+    "ratio": 2.43
+  },
+  {
+    "id": "editorLook.transition.whip-pan",
+    "english": "Whip pan",
+    "translation": "Panorâmica rápida",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorLook.transition.glitch",
+    "english": "Glitch",
+    "translation": "Interferência",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.crop.x",
+    "english": "Left",
+    "translation": "Esquerda",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.solid",
+    "english": "Solid",
+    "translation": "Cor sólida",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "Desfoque",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

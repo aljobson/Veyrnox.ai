@@ -328,5 +328,21 @@
   "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale.",
   "editorAudioTools.radio": "Standard audio term or unit notation, retained in this locale.",
   "editorAudioTools.robot": "Standard audio term or unit notation, retained in this locale.",
-  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale."
+  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale.",
+  "editorLook.transition": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.degrees": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.parameter.saturate": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.parameter.gamma": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.parameter.saturation": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.parameter.luminance": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.master": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.orange": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.cyan": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.magenta": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.category.Style": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.effect.mono": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.transition.flash": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.transition.zoom": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.background.image": "Image is the established French noun, identical to English with this capitalization."
 }

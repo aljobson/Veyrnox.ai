@@ -263,5 +263,12 @@
   "editorAudioTools.description": "Standard audio term or unit notation, retained in this locale.",
   "editorAudioTools.hz": "Standard audio term or unit notation, retained in this locale.",
   "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale.",
-  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale."
+  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale.",
+  "editorLook.hsl": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.degrees": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.master": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.channel.magenta": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.transition.zoom": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "editorLook.blend.source-over": "Shared technical term or locale-independent notation, reviewed for this editor control."
 }

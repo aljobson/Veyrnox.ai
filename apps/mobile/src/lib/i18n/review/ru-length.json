@@ -4404,6 +4404,198 @@
     "ratio": 2.62
   },
   {
+    "id": "editorLook.hsl.hue",
+    "english": "{channel} hue",
+    "translation": "{channel}: цветовой тон",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorLook.blend",
+    "english": "Blend",
+    "translation": "Наложение",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.crop",
+    "english": "Crop",
+    "translation": "Обрезка",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.parameter.hue",
+    "english": "Hue",
+    "translation": "Цветовой тон",
+    "ratio": 4
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "Размытие",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "Оттенок",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.channel.red",
+    "english": "Red",
+    "translation": "Красный",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorLook.channel.cyan",
+    "english": "Cyan",
+    "translation": "Голубой",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.channel.purple",
+    "english": "Purple",
+    "translation": "Фиолетовый",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.category.Blend",
+    "english": "Blend",
+    "translation": "Наложение",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.category.Wipe",
+    "english": "Wipe",
+    "translation": "Вытеснение",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.category.Move",
+    "english": "Move",
+    "translation": "Движение",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.effect.soft-glow",
+    "english": "Soft glow",
+    "translation": "Мягкое свечение",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.effect.strobe",
+    "english": "Strobe",
+    "translation": "Стробоскоп",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.effect.old-film",
+    "english": "Old film",
+    "translation": "Старая плёнка",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorLook.effect.scanlines",
+    "english": "Scanlines",
+    "translation": "Строки развёртки",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorLook.effect.mirror",
+    "english": "Mirror split",
+    "translation": "Зеркальное разделение",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.transition.wipe-left",
+    "english": "Wipe left",
+    "translation": "Вытеснение влево",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorLook.transition.wipe-right",
+    "english": "Wipe right",
+    "translation": "Вытеснение вправо",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorLook.transition.wipe-up",
+    "english": "Wipe up",
+    "translation": "Вытеснение вверх",
+    "ratio": 2.29
+  },
+  {
+    "id": "editorLook.transition.wipe-down",
+    "english": "Wipe down",
+    "translation": "Вытеснение вниз",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.zoom",
+    "english": "Zoom",
+    "translation": "Масштаб",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.transition.iris-open",
+    "english": "Iris open",
+    "translation": "Открытие диафрагмы",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.iris-close",
+    "english": "Iris close",
+    "translation": "Закрытие диафрагмы",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.transition.barn-doors",
+    "english": "Barn doors",
+    "translation": "Двустворчатые двери",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "Вращение внутрь",
+    "ratio": 2.14
+  },
+  {
+    "id": "editorLook.transition.whip-pan",
+    "english": "Whip pan",
+    "translation": "Резкая панорама",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorLook.blend.darken",
+    "english": "Darken",
+    "translation": "Затемнение",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.crop.y",
+    "english": "Top",
+    "translation": "Сверху",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.solid",
+    "english": "Solid",
+    "translation": "Однотонная",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "Размытие",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.image",
+    "english": "Image",
+    "translation": "Изображение",
+    "ratio": 2.2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

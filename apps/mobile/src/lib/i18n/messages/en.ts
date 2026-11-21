@@ -88,6 +88,7 @@ import area_editorCaptionTools from './en/editorCaptionTools';
 import area_editorCore from './en/editorCore';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
+import area_editorLook from './en/editorLook';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorServerExport from './en/editorServerExport';
@@ -333,6 +334,7 @@ const catalog = {
     ...area_editorCore,
     ...area_editorEditGate,
     ...area_editorExportRefusal,
+    ...area_editorLook,
     ...area_editorProjects,
     ...area_editorSave,
     ...area_editorServerExport,

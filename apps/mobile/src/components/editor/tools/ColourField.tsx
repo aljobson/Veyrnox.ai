@@ -13,13 +13,13 @@ export function ColourField({ label, value, swatches, onChange }: {
         <Text style={styles.label}>{label}</Text>
         <View style={styles.swatches}>{swatches.map(hex => <Pressable key={hex} accessibilityRole="button"
             accessibilityLabel={rawText(t('editorTools.colourSwatch', { hex }))} accessibilityState={{ selected: value.toLowerCase() === hex.toLowerCase() }}
-            onPress={() => { setDraft(hex); setInvalid(false); onChange(hex); }}
+            onPress={() => { setDraft(hex); setInvalid(false); if (hex.toLowerCase() !== value.toLowerCase()) onChange(hex); }}
             style={[touchTarget, styles.swatch, { backgroundColor: hex, borderColor: value.toLowerCase() === hex.toLowerCase() ? colors.accent : colors.border }]} />)}</View>
         <TextInput accessibilityLabel={rawText(t('editorTools.colourHex', { label }))} value={draft} autoCapitalize="none" maxLength={7}
             onChangeText={setDraft} onEndEditing={event => {
                 const hex = event.nativeEvent.text;
                 const valid = /^#[0-9a-fA-F]{6}$/.test(hex); setInvalid(!valid);
-                if (valid) onChange(hex);
+                if (valid && hex.toLowerCase() !== value.toLowerCase()) onChange(hex);
             }} style={[touchTarget, styles.input]} />
         {invalid ? <AnnouncedText variant="inherit" accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{t('editorTools.colourError')}</AnnouncedText> : null}
     </View>;
