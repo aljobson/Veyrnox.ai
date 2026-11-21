@@ -55,3 +55,9 @@ test('a nonstandard previous shape names its exact dimensions in the hint and un
     }
     expect(root.container.queryAll(node => node.props.accessibilityRole === 'button')).toHaveLength(0);
 });
+test('a finished 1280x768 video requested as 16:9 warns with Landscape 1280x768', async () => {
+    request.mockResolvedValue({ shapes: [{ job_id: 'new', width: 1280, height: 768 }] });
+    await act(async () => root.render(<FinishedShapeWarning api={api} id="new" requested="16:9" />));
+    const warning = rawText(t('videoShape.warning', { requested: '16:9', actual: 'Landscape 1280x768' }));
+    expect(root.container.queryAll(node => node.children.includes(warning))).toHaveLength(1);
+});

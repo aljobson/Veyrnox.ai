@@ -45,5 +45,5 @@ export function FinishedShapeWarning({ api, id, requested }: { api: ApiClient; i
         if (owner) measureFinishedVideo((path, opts) => api.request(path, opts), id).then(item => { if (live) { setActual(item); if (item) measured(id); } }).catch(() => {});
         return () => { live = false; };
     }, [api, owner, id, measured]);
-    return actual && requestedMismatch(actual, requested) ? <Text>{t('videoShape.warning', { requested: requested ?? '', actual: videoShapeLabel(actual) ?? '' })}</Text> : null;
+    return actual && requestedMismatch(actual, requested) ? <Text>{t('videoShape.warning', { requested: requested ?? '', actual: videoShapeLabel(actual, true) ?? '' })}</Text> : null;
 }

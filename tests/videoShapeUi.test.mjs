@@ -25,6 +25,7 @@ function hooks(context = () => null) {
     const values = [], deps = [], cleanups = [];
     let cursor = 0, effects = [];
     const react = { ...React, useContext: context, useCallback: fn => fn, useMemo: fn => fn(),
+        useSyncExternalStore(_subscribe, getSnapshot) { return getSnapshot(); },
         useState(initial) {
             const i = cursor++;
             if (!(i in values)) values[i] = typeof initial === 'function' ? initial() : initial;
@@ -65,13 +66,13 @@ test('web measures older unknown videos before Portrait filtering within the loa
     assert.deepEqual(libraryFilter.filterRows(render(), filters, []).map(row => row.job_id), ['older']);
     await h.flush(); assert.equal(calls.length, 1, 'the tried id is not requested again');
 });
-test('web Create names a nonstandard previous shape with dimensions in both hint sentences', async () => {
+test('web Create loads with a stored owner and null session, naming exact dimensions in both hint sentences', async () => {
     const h = hooks(() => ['', () => {}]);
     const t = translator('en', english);
     const i18n = { useI18n: () => ({ t }) };
     const badge = load('app/veyrnox/_components/VideoShapeBadge.js', { '../../../components/I18nProvider': i18n, '../../../lib/videoShape.mjs': shapes });
     const { SmartCutShapeHint } = load('app/veyrnox/_components/SmartCutShapeHint.js', {
-        react: h.react, '../../lib/authClient.js': { getSession: () => ({ user: { id: 'owner' } }) },
+        react: h.react, '../../lib/authClient.js': { getSession: () => null, getStoredUserId: () => 'owner', onSessionChange: () => () => {} },
         '../../../components/I18nProvider': i18n, '../../../lib/videoShape.mjs': shapes,
         '../../../lib/videoShapeQueries.mjs': queries, './VideoShapeBadge': badge,
         '../_lib/gateway': { gatewayFetch: async () => ({ jobs: [{ job_id: 'old', state: 'succeeded', has_asset: true, video_width: 1280, video_height: 768 }] }) },
@@ -84,6 +85,59 @@ test('web Create names a nonstandard previous shape with dimensions in both hint
     const paragraphs = nodes(render()).filter(node => node.type === 'p');
     assert.equal(paragraphs.length, 2);
     for (const paragraph of paragraphs) assert.match(paragraph.props.children, /Landscape 1280x768/);
+});
+test('web Create subscribes to stored identity and does not cache a missing session', async () => {
+    const h = hooks(() => ['', () => {}]);
+    let owner = null, changed, calls = 0;
+    const onSessionChange = fn => { changed = fn; return () => {}; };
+    const getStoredUserId = () => owner;
+    const { SmartCutShapeHint } = load('app/veyrnox/_components/SmartCutShapeHint.js', {
+        react: { ...h.react, useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot) {
+            assert.equal(subscribe, onSessionChange); assert.equal(getSnapshot, getStoredUserId);
+            assert.equal(getServerSnapshot(), null); subscribe(() => {}); return getSnapshot();
+        } },
+        '../../lib/authClient.js': { getSession: () => null, getStoredUserId, onSessionChange },
+        '../../../components/I18nProvider': { useI18n: () => ({ t: key => key }) },
+        '../../../lib/videoShape.mjs': shapes, '../../../lib/videoShapeQueries.mjs': queries,
+        './VideoShapeBadge': { videoShapeLabel: item => shapes.itemShape(item) },
+        '../_lib/gateway': { gatewayFetch: async () => {
+            calls++; return { jobs: [{ state: 'succeeded', has_asset: true, video_width: 1080, video_height: 1920 }] };
+        } },
+    });
+    const render = () => h.render(() => {
+        const element = SmartCutShapeHint({ video: true, options: ['16:9', '9:16'], value: '16:9' });
+        return element.type(element.props);
+    });
+    assert.equal(render(), null); await h.flush(); assert.equal(calls, 0);
+    owner = 'owner'; changed(); render(); await h.flush();
+    assert.ok(render()); assert.equal(calls, 1);
+    owner = null; changed(); assert.equal(render(), null); await h.flush();
+    owner = 'other'; changed(); assert.equal(render(), null); await h.flush();
+    assert.ok(render()); assert.equal(calls, 2);
+});
+test('web finished warning names Landscape 1280x768 when 16:9 was requested', async () => {
+    const parent = hooks(() => ['', () => {}]), child = hooks(() => ['', () => {}]);
+    let active = parent;
+    const react = { ...React };
+    for (const key of ['useState', 'useEffect', 'useContext', 'useSyncExternalStore']) react[key] = (...args) => active.react[key](...args);
+    const t = translator('en', english);
+    const i18n = { useI18n: () => ({ t }) };
+    const badge = load('app/veyrnox/_components/VideoShapeBadge.js', { '../../../components/I18nProvider': i18n, '../../../lib/videoShape.mjs': shapes });
+    const { SmartCutShapeHint } = load('app/veyrnox/_components/SmartCutShapeHint.js', {
+        react, '../../lib/authClient.js': { getStoredUserId: () => 'owner', onSessionChange: () => () => {} },
+        '../../../components/I18nProvider': i18n, '../../../lib/videoShape.mjs': shapes,
+        '../../../lib/videoShapeQueries.mjs': queries, './VideoShapeBadge': badge,
+        '../_lib/gateway': { gatewayFetch: async () => ({ shapes: [{ job_id: 'new', width: 1280, height: 768 }] }) },
+    });
+    const element = parent.render(() => {
+        const hint = SmartCutShapeHint({ jobs: [{ job_id: 'new', state: 'succeeded', mime_type: 'video/mp4', aspect_ratio: '16:9' }] });
+        return hint.type(hint.props).props.children[0];
+    });
+    active = child;
+    const render = () => child.render(() => element.type(element.props));
+    render(); await child.flush();
+    assert.match(render().props.children, /Landscape 1280x768/);
+    assert.match(render().props.children, /16:9/);
 });
 test('applying a plan can change the shape anchor; planning blocks but Undo restores the snapshot', async () => {
     const sheet = hooks(), planner = hooks();
@@ -170,7 +224,7 @@ test('web Create refreshes its cached hint only after successful measurement on 
         calls++;
         return { jobs: [{ job_id: measured ? 'new' : 'old', state: 'succeeded', has_asset: true, video_width: measured ? 1920 : 1080, video_height: measured ? 1080 : 1920, shape_ambiguous: false }] };
     };
-    const mocks = react => ({ react, '../../lib/authClient.js': { getSession: () => ({ user: { id: 'owner' } }) },
+    const mocks = react => ({ react, '../../lib/authClient.js': { getSession: () => null, getStoredUserId: () => 'owner', onSessionChange: () => () => {} },
         '../../../components/I18nProvider': { useI18n: () => ({ t: key => key }) }, '../_lib/gateway': { gatewayFetch: request },
         '../../../lib/videoShape.mjs': shapes, '../../../lib/videoShapeQueries.mjs': queries,
         './VideoShapeBadge': { videoShapeLabel: item => shapes.itemShape(item) },

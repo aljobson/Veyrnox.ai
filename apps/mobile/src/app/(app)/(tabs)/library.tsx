@@ -63,9 +63,10 @@ export default function Library() {
     const kinds = useMemo(() => kindMap(models), [models]);
     const names = useMemo(() => new Map(models.map((m) => [m.id, m.name])), [models]);
     const [focused, setFocused] = useState(false);
+    const [shapeRefreshKey, setShapeRefreshKey] = useState(0);
     const [active, setActive] = useState(AppState.currentState === 'active');
     const measurementIds = shapeMeasurementIds(jobs ?? [], { state: stateFilter, kind: kindFilter, shape: shapeFilter, favourites: favOnly ? favourites : null }, kinds, visibleShapeIds);
-    const shapedJobs = useLibraryShapes(api, jobs ?? [], measurementIds, kinds, getCacheUser(), focused && active);
+    const shapedJobs = useLibraryShapes(api, jobs ?? [], measurementIds, kinds, getCacheUser(), focused && active, shapeRefreshKey);
     const shown = useMemo(() => filterJobs(shapedJobs, { state: stateFilter, kind: kindFilter, shape: shapeFilter, favourites: favOnly ? favourites : null }, kinds), [shapedJobs, stateFilter, kindFilter, shapeFilter, favOnly, favourites, kinds]);
 
     const [unreachable, setUnreachable] = useState(false);
@@ -201,7 +202,7 @@ export default function Library() {
     const [refreshing, setRefreshing] = useState(false);
     const refresh = useCallback(async () => {
         setRefreshing(true);
-        try { await load(); } finally { setRefreshing(false); }
+        try { await load(); } finally { setRefreshing(false); setShapeRefreshKey(key => key + 1); }
     }, [load]);
 
     // What is switched on in the filter row, in its own words, so an empty result can say what was asked for.

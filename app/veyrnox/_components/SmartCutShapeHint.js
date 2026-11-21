@@ -1,6 +1,6 @@
 'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { getSession } from '../../lib/authClient.js';
+import { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
+import { getStoredUserId, onSessionChange } from '../../lib/authClient.js';
 import { useI18n } from '../../../components/I18nProvider';
 import { gatewayFetch } from '../_lib/gateway';
 import { matchingOption, requestedMismatch, requestedShape } from '../../../lib/videoShape.mjs';
@@ -19,16 +19,16 @@ export function SmartCutShapeHint(props) {
 }
 function ShapeHint({ completedJobKey, video, options = [], value, onChange, actor, jobs }) {
   const { t } = useI18n();
+  const account = useSyncExternalStore(onSessionChange, getStoredUserId, () => null);
   const [cachedVideo] = useState(createMeasuredVideoCache);
   const [snapshot, setSnapshot] = useState(null);
-  const previous = snapshot?.actor === actor ? snapshot.item : null;
+  const previous = snapshot?.account === account ? snapshot.item : null;
   const enabled = video && options.length > 0 && !jobs;
   useEffect(() => {
     let live = true;
-    const account = getSession()?.user?.id;
-    if (enabled && account) cachedVideo(request, account, completedJobKey, () => getSession()?.user?.id === account).then(item => { if (live) setSnapshot({ actor, item }); }).catch(() => {});
+    if (enabled && account) cachedVideo(request, account, completedJobKey, () => getStoredUserId() === account).then(item => { if (live) setSnapshot({ account, item }); }).catch(() => {});
     return () => { live = false; };
-  }, [actor, enabled, completedJobKey, cachedVideo]);
+  }, [account, enabled, completedJobKey, cachedVideo]);
   if (jobs) return <>{jobs.filter(job => job.state === 'succeeded' && job.mime_type?.startsWith('video/')).map(job => <FinishedShapeWarning key={`${actor}:${job.job_id}`} job={job} />)}</>;
   if (!enabled || !previous || !requestedMismatch(previous, value)) return null;
   const match = matchingOption(previous, options);
@@ -49,5 +49,5 @@ function FinishedShapeWarning({ job }) {
     return () => { live = false; };
   }, [job.job_id, measured]);
   return actual && requestedMismatch(actual, job.aspect_ratio)
-    ? <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('app.library.shape.warning', { requested: job.aspect_ratio, actual: videoShapeLabel(actual, t) })}</p> : null;
+    ? <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('app.library.shape.warning', { requested: job.aspect_ratio, actual: videoShapeLabel(actual, t, true) })}</p> : null;
 }

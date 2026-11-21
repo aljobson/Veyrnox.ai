@@ -189,3 +189,21 @@ test('Portrait measures a loaded older video that has no viewable id, then shows
     await press(t('videoShape.all')); await press(t('videoShape.portrait'));
     expect(shapeCalls()).toHaveLength(1);
 });
+
+test('Library retries a failed shape batch only after pull-to-refresh completes', async () => {
+    mockModality = 'text-to-video';
+    const video = row('video', 'succeeded');
+    mockApi.request.mockRejectedValue(new Error('offline'));
+    await render([video]);
+    await act(async () => mockList.onViewableItemsChanged({ viewableItems: [{ item: video }] }));
+    const shapeCalls = () => mockApi.request.mock.calls.filter(([path]) => path.endsWith('/shapes'));
+    expect(shapeCalls()).toHaveLength(1);
+    let finish!: (page: { jobs: Job[]; next: null }) => void, refreshed!: Promise<void>;
+    mockMedia.listJobs.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await act(async () => { refreshed = mockList.onRefresh(); });
+    expect(shapeCalls()).toHaveLength(1);
+    await act(async () => { finish({ jobs: [video], next: null }); await refreshed; });
+    expect(shapeCalls()).toHaveLength(2);
+    await tick(60_000);
+    expect(shapeCalls()).toHaveLength(2);
+});
