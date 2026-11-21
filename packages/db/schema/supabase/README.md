@@ -114,6 +114,29 @@ Later publication/comment changes must target the private implementations
 Keep the public wrappers: they mint opaque actor ids after successful writes.
 Replacing a public wrapper without calling `private.music_actor_id` loses that
 guarantee; `tests/musicBlocksProjection.test.mjs` guards later migrations.
+Migration 0576 adds the per-song takedown refusal in the private publication
+implementation only, and installs a private AFTER INSERT OR UPDATE OF status
+trigger that blocks every published sibling when a row becomes blocked.
+The owner read keeps its signature/security/grants and gives blocked rows
+priority over newer unpublished rows. Publish locks all existing song rows in
+id order before checking for a block or writing. Moderation must UPDATE an
+existing publication row; use the same statement for every status:
+
+```sql
+UPDATE public.music_publications SET status='blocked', unpublished_at=NULL, updated_at=now() WHERE slug=$1;
+```
+
+In the same transaction, moderation should first lock the song's rows with
+`SELECT id FROM public.music_publications WHERE song_id=$1 ORDER BY id FOR UPDATE`.
+A direct slug UPDATE may otherwise take locks in a different order through the
+sibling trigger. Retry the whole transaction on SQLSTATE `40P01` with bounded
+backoff; an aborted transaction has not completed a takedown. After waiting for
+a concurrent publish, the trigger takes down its newly inserted live sibling too.
+INSERTing a separate blocked row handles committed siblings but is not the
+concurrent moderation protocol. Clearing a takedown requires clearing every
+blocked row for that song. The migration does not repair existing blocked/live
+pairs: the owner/operator must review the required read-only preflight in
+ADR-0370 before or right after apply; any repair is a separate decision.
 
 ### Every applied migration must be accounted for
 

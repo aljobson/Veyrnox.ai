@@ -7,6 +7,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { PRIVACY_EMAIL } from '../../lib/account';
+import { getCacheUser } from '../../lib/appCache';
+import { eraseLocalBeats } from '../../lib/beatNative/eraseLocal';
 import { blockerText, confirmDeletion, prepareDeletion, type Forfeit, type Prepared } from '../../lib/accountDeletion';
 import { colors, fonts } from '../../theme';
 
@@ -39,10 +41,12 @@ export default function DeleteAccount() {
         try {
             setNote(null);
             setView({ step: 'erasing' });
+            const owner = getCacheUser();
             const out = await confirmDeletion(api, token);
             if (!task.current()) return;
             if (out.kind === 'deleted') {
                 // The server has removed the sign-in; this only clears what the app holds.
+                if (owner) await eraseLocalBeats(owner);
                 const done = signOut(task.gen);
                 const ended = sessionGeneration();
                 await done.catch(() => undefined);

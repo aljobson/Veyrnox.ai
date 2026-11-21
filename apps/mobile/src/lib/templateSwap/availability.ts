@@ -23,10 +23,12 @@ export async function fetchSwapAvailability(id: string, options: { enabled?: boo
             if (response.status !== 200) return { kind: 'transient' };
             const c = await response.json();
             if (c?.id !== id || c.model !== 'kling-o1-reference' || !Number.isInteger(c.credits) || c.credits <= 0 || c.durationSeconds !== 5 || typeof c.role !== 'string' || !c.role.trim()) return { kind: 'transient' };
-            const onePerson = c.images === 2 && c.people === undefined;
+            const onePerson = c.images === 2 && c.people === undefined && (c.fullBody === undefined || c.fullBody === true);
             const twoPeople = c.images === 4 && c.people === 2 && Array.isArray(c.roles) && c.roles.length === 2 && c.roles.every((r: unknown) => typeof r === 'string' && r.trim());
             if (!onePerson && !twoPeople) return { kind: 'transient' };
-            return { kind: 'offer', offer: c };
+            // The phone still makes the two-image set (face crop path): drop the full-body hint, which the server also accepts (ADR-0351 amendment 18).
+            const { fullBody: _fullBody, ...offer } = c;
+            return { kind: 'offer', offer };
         } catch { return { kind: 'transient' }; }
     };
     try { return await Promise.race([read(), deadline]); }

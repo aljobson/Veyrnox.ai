@@ -16,8 +16,9 @@ const validName = (name: string) => {
     if (!/^[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*$/.test(name) || name.length > 256) throw new Error('invalid_take_filename');
     return name;
 };
-export function nativeTakeIO(): TakeFileIO {
-    const root = () => { const dir = new Directory(Paths.document, 'beat-takes'); dir.create({ intermediates: true, idempotent: true }); return dir; };
+const accountTakeDirectory = (owner: string) => new Directory(Paths.document, 'beat-takes', 'accounts', validId(owner));
+const takeIOAt = (directory: () => Directory): TakeFileIO => {
+    const root = () => { const dir = directory(); dir.create({ intermediates: true, idempotent: true }); return dir; };
     const file = (name: string) => new File(root(), validName(name));
     return {
         async list() { return root().list().filter(e => e instanceof File).map(e => e.name); },
@@ -26,11 +27,26 @@ export function nativeTakeIO(): TakeFileIO {
         async remove(name) { const f = file(name); if (f.exists) f.delete(); },
         async move(from, to) { file(from).move(file(to), { overwrite: true }); },
     };
+};
+export const nativeTakeIO = (owner: string): TakeFileIO => takeIOAt(() => accountTakeDirectory(owner));
+/** Takes directly under Documents/beat-takes predate owner stamps. Only legacyMigration.ts may open them. */
+export const legacyTakeIO = (): TakeFileIO => takeIOAt(() => new Directory(Paths.document, 'beat-takes'));
+export function eraseAccountTakes(owner: string) {
+    const dir = accountTakeDirectory(owner);
+    if (dir.exists) dir.delete();
 }
+/** With nobody signed in there is nothing to read and nowhere to write. */
+export const noAccountTakeIO: TakeFileIO = {
+    list: async () => [], read: async () => null,
+    write: async () => { throw new Error('account_required'); },
+    move: async () => { throw new Error('account_required'); },
+};
 export const jsonBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
 export const parseBytes = (bytes: Uint8Array) => JSON.parse(new TextDecoder().decode(bytes));
 // One queue per adapter serializes promotion with replacement, including startup reads.
-export function createTakeFiles(io: TakeFileIO = nativeTakeIO()): BeatTakeStorage {
+export function createTakeFiles(io: TakeFileIO, owner?: string): BeatTakeStorage {
+    const stamped = <T extends object>(row: T) => owner ? { ...row, owner } : row;
+    const owned = (row: { owner?: unknown }) => !owner || row.owner === owner;
     let pending = Promise.resolve<unknown>(undefined);
     const serial = <T>(work: () => Promise<T>): Promise<T> => {
         const next = pending.catch(() => undefined).then(work); pending = next; return next;
@@ -71,7 +87,8 @@ export function createTakeFiles(io: TakeFileIO = nativeTakeIO()): BeatTakeStorag
         const bytes = await io.read(name);
         if (!bytes) return null;
         try {
-            const row = parseBytes(bytes) as TakeRow;
+            const row = parseBytes(bytes) as TakeRow & { owner?: unknown };
+            if (!owned(row)) return null;
             validId(row.id);
             if (!(row.sampleRate > 0 && Number.isSafeInteger(row.length) && row.length > 0 && row.length * 4 <= 1_000_000_000)) return null;
             return row;
@@ -88,13 +105,14 @@ export function createTakeFiles(io: TakeFileIO = nativeTakeIO()): BeatTakeStorag
         // Audio must be durable before publishing its manifest. A previous manifest stays usable
         // if a new write dies before .pending; incomplete .tmp files are never promoted.
         await publish(audioName(stem, audioVersion), bytes, check);
-        await publish(stem + '.json', jsonBytes({ ...meta, length: samples.length, audioVersion }), check);
+        await publish(stem + '.json', jsonBytes(stamped({ ...meta, length: samples.length, audioVersion })), check);
         if (previous) await io.remove?.(audioName(stem, previous));
         return true;
     }
     async function readAudio(stem: string): Promise<AudioTake | null> {
         const bytes = await io.read(stem + '.json'); if (!bytes) return null;
-        const meta = parseBytes(bytes) as AudioTake & { audioVersion: string };
+        const meta = parseBytes(bytes) as AudioTake & { audioVersion: string; owner?: unknown };
+        if (!owned(meta)) return null;
         if (!Number.isSafeInteger(meta.length) || meta.length <= 0 || meta.length * 4 > 1_000_000_000 || !(meta.sampleRate > 0)) throw new Error('invalid_take_metadata');
         const raw = await io.read(audioName(stem, meta.audioVersion));
         if (!raw || raw.length % 4 || raw.length < meta.length * 4) throw new Error('invalid_take_audio');
@@ -109,7 +127,8 @@ export function createTakeFiles(io: TakeFileIO = nativeTakeIO()): BeatTakeStorag
             for (const name of names.filter(n => /\.(whole|chunk\.\d+)\.json$/.test(n))) {
                 const bytes = await io.read(name); if (!bytes) continue;
                 try {
-                    const row = parseBytes(bytes) as TakeChunk;
+                    const row = parseBytes(bytes) as TakeChunk & { owner?: unknown };
+                    if (!owned(row)) continue;
                     const id = validId(row.takeId ?? row.id), length = (row.offset ?? 0) + row.length;
                     if (!(row.sampleRate > 0 && Number.isSafeInteger(length) && length > 0 && length * 4 <= 1_000_000_000)) continue;
                     if (name !== `${id}.${row.takeId ? `chunk.${row.offset}` : 'whole'}.json`) continue;
@@ -123,7 +142,7 @@ export function createTakeFiles(io: TakeFileIO = nativeTakeIO()): BeatTakeStorag
             }
             return [...rows.values()];
         }),
-        putState: (row, check = () => {}) => serial(async () => { await promote(); await publish(`${validId(row.id)}.state.json`, jsonBytes(row), check); return true; }),
+        putState: (row, check = () => {}) => serial(async () => { await promote(); await publish(`${validId(row.id)}.state.json`, jsonBytes(stamped(row)), check); return true; }),
         get: id => serial(async () => { await promote(); return readAudio(`${validId(id)}.whole`); }),
         put: (row, check = () => {}) => serial(async () => { await promote(); return writeAudio(row, `${validId(row.id)}.whole`, check); }),
         listChunksFor: id => serial(async () => {

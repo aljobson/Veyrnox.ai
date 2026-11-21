@@ -4314,6 +4314,222 @@
     "ratio": 2.38
   },
   {
+    "id": "musicExport.choose",
+    "english": "File format",
+    "translation": "Formato de archivo",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicExport.save",
+    "english": "Save",
+    "translation": "Guardar",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.crop",
+    "english": "Crop",
+    "translation": "Recortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.resetCrop",
+    "english": "Reset crop",
+    "translation": "Restablecer recorte",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "Desenfoque",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.category.Glitch",
+    "english": "Glitch",
+    "translation": "Interferencia",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.category.Wipe",
+    "english": "Wipe",
+    "translation": "Barrido",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.category.Move",
+    "english": "Move",
+    "translation": "Movimiento",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.effect.none",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.effect.grain",
+    "english": "Film grain",
+    "translation": "Grano de película",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorLook.effect.soft-glow",
+    "english": "Soft glow",
+    "translation": "Resplandor suave",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorLook.effect.strobe",
+    "english": "Strobe",
+    "translation": "Estroboscopio",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.effect.old-film",
+    "english": "Old film",
+    "translation": "Película antigua",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.effect.scanlines",
+    "english": "Scanlines",
+    "translation": "Líneas de barrido",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorLook.effect.tiles",
+    "english": "Motion tiles",
+    "translation": "Mosaico en movimiento",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.transition.blur",
+    "english": "Blur dissolve",
+    "translation": "Fundido con desenfoque",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorLook.transition.wipe-left",
+    "english": "Wipe left",
+    "translation": "Barrido a la izquierda",
+    "ratio": 2.44
+  },
+  {
+    "id": "editorLook.transition.wipe-right",
+    "english": "Wipe right",
+    "translation": "Barrido a la derecha",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.wipe-up",
+    "english": "Wipe up",
+    "translation": "Barrido hacia arriba",
+    "ratio": 2.86
+  },
+  {
+    "id": "editorLook.transition.wipe-down",
+    "english": "Wipe down",
+    "translation": "Barrido hacia abajo",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorLook.transition.slide-left",
+    "english": "Slide left",
+    "translation": "Deslizar a la izquierda",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorLook.transition.slide-right",
+    "english": "Slide right",
+    "translation": "Deslizar a la derecha",
+    "ratio": 1.91
+  },
+  {
+    "id": "editorLook.transition.slide-up",
+    "english": "Slide up",
+    "translation": "Deslizar hacia arriba",
+    "ratio": 2.63
+  },
+  {
+    "id": "editorLook.transition.slide-down",
+    "english": "Slide down",
+    "translation": "Deslizar hacia abajo",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.push",
+    "english": "Push",
+    "translation": "Empujar",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "Giro de entrada",
+    "ratio": 2.14
+  },
+  {
+    "id": "editorLook.transition.whip-pan",
+    "english": "Whip pan",
+    "translation": "Barrido rápido",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.transition.glitch",
+    "english": "Glitch",
+    "translation": "Interferencia",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.crop.x",
+    "english": "Left",
+    "translation": "Izquierda",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.crop.y",
+    "english": "Top",
+    "translation": "Arriba",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.none",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "Desenfoque",
+    "ratio": 2.5
+  },
+  {
+    "id": "musicRender.operation",
+    "english": "Edit type",
+    "translation": "Tipo de edición",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicRender.fade",
+    "english": "Fade",
+    "translation": "Fundido",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicRender.speed",
+    "english": "Speed",
+    "translation": "Velocidad",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicRender.fadeIn",
+    "english": "Fade in (seconds)",
+    "translation": "Fundido de entrada (segundos)",
+    "ratio": 1.71
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

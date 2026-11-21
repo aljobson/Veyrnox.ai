@@ -20,6 +20,7 @@ import { deferred, memoryFiles, project, version, USER, OTHER } from './beatNati
 import { versionReason, versionTime } from '../src/lib/beatNative/versions';
 import type { ApiClient } from '../src/lib/api';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
+beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner(USER));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => undefined, remove: async () => undefined, list: async () => [] }) }));
 

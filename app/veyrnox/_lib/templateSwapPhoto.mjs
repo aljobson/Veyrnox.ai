@@ -4,7 +4,7 @@ import { faceBoxFromResult } from './templateSwapClient.mjs';
 import { createVisionProcessor } from './editorVisionWorkerClient.mjs';
 import { createFaceProcessor } from './liveEdit/faceClient.mjs';
 export const checkAbort = signal => { if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError'); };
-const requireOk = result => { if (!result.ok) throw Error(result.error); return result; };
+export const requireOk = result => { if (!result.ok) throw Error(result.error); return result; };
 
 // Only header-inspectable formats are offered. Refuse unknown dimensions BEFORE
 // allocating a decoded image. JPEG metadata reads are bounded by the file cap.
@@ -43,7 +43,7 @@ export async function photoHeader(file) {
   if (orientation < 1 || orientation > 8) throw Error('invalid_image');
   return { ...size, orientation, rotation: [5, 6].includes(orientation) ? 90 : [7, 8].includes(orientation) ? 270 : [3, 4].includes(orientation) ? 180 : 0 };
 }
-function bodyBounds(masks, size) {
+export function bodyBounds(masks, size) {
   if (!masks.body) return null;
   let left = masks.width, top = masks.height, right = -1, bottom = -1;
   for (let y = 0; y < masks.height; y++) for (let x = 0; x < masks.width; x++) if (masks.body[y * masks.width + x] >= .5) {
@@ -52,18 +52,19 @@ function bodyBounds(masks, size) {
   return right < left ? null : { x: left * size.width / masks.width, y: top * size.height / masks.height,
     width: (right - left + 1) * size.width / masks.width, height: (bottom - top + 1) * size.height / masks.height };
 }
-function canvas(size) {
+export function canvas(size) {
   const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(size.width, size.height) : document.createElement('canvas');
   c.width = size.width; c.height = size.height; return c;
 }
-async function png(c) {
+export async function png(c) {
   const blob = c.convertToBlob ? await c.convertToBlob({ type: 'image/png' }) : await new Promise(resolve => c.toBlob(resolve, 'image/png'));
   if (!blob || blob.type !== 'image/png' || blob.size > 20 * 1024 * 1024) throw Error('photo_too_large');
   return blob;
 }
-export async function encodeSwapPair(bitmap, alpha, crop, signal) {
-  const size = requireOk(outputSize(bitmap)), c = canvas(size), ctx = c.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(bitmap, 0, 0, size.width, size.height);
+/** Draws `picture` at `size` over flat grey through the person matte; returns the canvas. */
+export function greyCutout(picture, alpha, size) {
+  const c = canvas(size), ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(picture, 0, 0, size.width, size.height);
   const pixels = ctx.getImageData(0, 0, size.width, size.height), matte = resampleAlpha(alpha, size).data;
   // Flat neutral grey is an output-image contract, not a UI colour token.
   for (let i = 0; i < matte.length; i++) {
@@ -71,13 +72,19 @@ export async function encodeSwapPair(bitmap, alpha, crop, signal) {
     for (let ch = 0; ch < 3; ch++) pixels.data[i * 4 + ch] = Math.round(pixels.data[i * 4 + ch] * a + 128 * (1 - a));
     pixels.data[i * 4 + 3] = 255;
   }
-  ctx.putImageData(pixels, 0, 0); checkAbort(signal);
+  ctx.putImageData(pixels, 0, 0);
+  return c;
+}
+export async function encodeSwapPair(bitmap, alpha, crop, signal) {
+  const size = requireOk(outputSize(bitmap)), c = greyCutout(bitmap, alpha, size); checkAbort(signal);
   const cc = canvas(requireOk(outputSize(crop.output, 'crop'))), box = crop.box;
   cc.getContext('2d').drawImage(c, box.x, box.y, box.width, box.height, 0, 0, cc.width, cc.height);
   try { return [await png(c), await png(cc)]; }
   finally { c.width = c.height = cc.width = cc.height = 1; }
 }
-export async function processSwapPhoto(file, { signal, deps = {} } = {}) {
+// `fullBody` (amendment 18, set only when the offer says so): three PNGs [face, head-and-shoulders, full body] instead of two.
+export async function processSwapPhoto(file, { signal, deps = {}, fullBody = false } = {}) {
+  if (fullBody) return (await import('./templateSwapFullBodyPhoto.mjs')).processFullBodyPhoto(file, { signal, deps });
   checkAbort(signal);
   const header = await (deps.header || photoHeader)(file); checkAbort(signal);
   const transform = requireOk(inputTransform(header, header.rotation || 0));

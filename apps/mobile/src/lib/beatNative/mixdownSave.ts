@@ -24,7 +24,12 @@ export function mixdownCode(error: unknown): string {
 export function checkMixdownTask(task: MixdownTask) {
     if (!task.user || !task.current() || task.signal.aborted) throw new ApiError(401, 'account_changed');
 }
-/** A beat last synced to another account must never become this account's song. Never-synced beats carry no owner stamp. */
+/** The account a local record belongs to: its stamp, unless its cloud link names a different account. */
+export function recordOwner(record: { owner?: string; cloud?: { userId: string } } | undefined): string | undefined {
+    const stamp = record?.owner, linked = record?.cloud?.userId;
+    return stamp !== undefined && linked !== undefined && linked !== stamp ? linked : stamp ?? linked;
+}
+/** A beat that belongs to another account must never become this account's song. */
 export const ownedByOther = (cloudUserId: string | undefined, user: string | null | undefined) => cloudUserId !== undefined && cloudUserId !== user;
 export function checkMixdownOwner(cloudUserId: string | undefined, user: string | null | undefined) {
     if (ownedByOther(cloudUserId, user)) throw new ApiError(403, 'beat_not_owned');

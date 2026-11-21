@@ -351,3 +351,5 @@ d720f7b2fb2f85d66b9aa98047ee3b3a58dff50b:tests/jobsLookup.test.mjs:generic-api-k
 878283ef4af4fb2e82a64ee1690e033aeaffd2a5:docs/mobile/NATIVE-VISION-STAGE3B-IMPLEMENTATION.md:generic-api-key:41
 # Synthetic latency-storage name (veyrnox.beat.latency.v1) in an N6 test, not a credential; renamed in a later commit.
 f2c6250aa9b629ae515dc0d21f032a98d3f0eac6:apps/mobile/__tests__/beatNativeLatency.test.ts:generic-api-key:30
+# Test literal (assert on an idempotency key) in the takedown dialog test, not a credential; the literal was removed in the next commit.
+154faa32fa7071a85132e67087d10898b9f45203:tests/musicBlocksTakedown.test.mjs:generic-api-key:121

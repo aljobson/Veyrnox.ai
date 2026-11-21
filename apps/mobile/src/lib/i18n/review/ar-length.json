@@ -2382,6 +2382,102 @@
     "ratio": 1.62
   },
   {
+    "id": "editorLook.hsl",
+    "english": "HSL",
+    "translation": "تدرج اللون والتشبع والإضاءة",
+    "ratio": 9
+  },
+  {
+    "id": "editorLook.resetCrop",
+    "english": "Reset crop",
+    "translation": "إعادة ضبط الاقتصاص",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.parameter.hue",
+    "english": "Hue",
+    "translation": "درجة اللون",
+    "ratio": 3.33
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "التمويه",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "صبغة اللون",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.channel.cyan",
+    "english": "Cyan",
+    "translation": "السماوي",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.effect.strobe",
+    "english": "Strobe",
+    "translation": "وميض متكرر",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.effect.posterize",
+    "english": "Posterize",
+    "translation": "تقليل درجات اللون",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorLook.transition.slide-up",
+    "english": "Slide up",
+    "translation": "انزلاق للأعلى",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorLook.transition.blinds",
+    "english": "Blinds",
+    "translation": "ستائر شرائح",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "دوران للداخل",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "التمويه",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicRender.title",
+    "english": "Edit master",
+    "translation": "تعديل النسخة الرئيسية",
+    "ratio": 1.91
+  },
+  {
+    "id": "musicRender.reorder",
+    "english": "Reorder",
+    "translation": "إعادة الترتيب",
+    "ratio": 1.86
+  },
+  {
+    "id": "musicRender.remaster",
+    "english": "Remaster",
+    "translation": "إعادة الإتقان",
+    "ratio": 1.63
+  },
+  {
+    "id": "musicRender.saving",
+    "english": "Saving new master…",
+    "translation": "جارٍ حفظ النسخة الرئيسية الجديدة…",
+    "ratio": 1.83
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

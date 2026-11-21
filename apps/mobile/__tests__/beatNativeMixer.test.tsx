@@ -10,6 +10,7 @@ import { newBeat, getBeat, putBeat, resetBeats } from '../src/lib/beatNative/sto
 import { tryOp, validateBeat } from '../src/lib/beatNative/doc';
 import * as history from '../src/lib/beatNative/history';
 import { addAutomationPoint, addEffect, type MixDoc, type MixApply, type MixTrack } from '../src/lib/beatNative/mix';
+beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => undefined, remove: async () => undefined, list: async () => [] }) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));

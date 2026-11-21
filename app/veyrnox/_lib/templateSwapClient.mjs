@@ -1,6 +1,7 @@
 import { checkFaces } from '../../../lib/templateSwapCutout.mjs';
 import { JOB_STATES, publicJobState } from '../../../lib/jobState.js';
 import { submitErrorCode } from './imageBatch.js';
+import { templateSwapImageCounts } from '../../../lib/templateSwapFullBody.mjs';
 
 export async function fetchSwapAvailability(id, fetcher = fetch, signal) {
   if (!id) return null;
@@ -12,8 +13,8 @@ export async function fetchSwapAvailability(id, fetcher = fetch, signal) {
     const c = await response.json();
     return c?.id === id && c.model === 'kling-o1-reference' && Number.isInteger(c.credits) && c.credits > 0
       && c.durationSeconds === 5 && typeof c.role === 'string' && c.role.trim()
-      && ((c.images === 2 && c.people === undefined)
-        || (c.images === 4 && c.people === 2 && Array.isArray(c.roles) && c.roles.length === 2 && c.roles.every(r => typeof r === 'string' && r.trim()))) ? c : null;
+      && ((c.images === 2 && c.people === undefined && (c.fullBody === undefined || c.fullBody === true))
+        || (c.images === 4 && c.fullBody === undefined && c.people === 2 && Array.isArray(c.roles) && c.roles.length === 2 && c.roles.every(r => typeof r === 'string' && r.trim()))) ? c : null;
   } catch { return null; }
 }
 
@@ -31,8 +32,12 @@ export function faceBoxFromResult(result, size) {
   return checkFaces([{ x: left * size.width, y: top * size.height, width: (right - left) * size.width, height: (bottom - top) * size.height }], size);
 }
 
+/** Photos one attempt may send for `offer`: 4 for two people; 2, or 3 with a full-body photo (amendment 18); else 2. */
+export const swapImageCounts = offer => templateSwapImageCounts(offer?.people === 2 ? 2 : 1, offer?.fullBody === true);
+export const swapFullBody = offer => offer?.people !== 2 && offer?.fullBody === true;
+
 export function swapRequest(offer, key, references) {
-  if (!offer?.id || !offer.model || !Number.isInteger(offer.credits) || !key || references?.length !== (offer.people === 2 ? 4 : 2)
+  if (!offer?.id || !offer.model || !Number.isInteger(offer.credits) || !key || !swapImageCounts(offer).includes(references?.length)
       || references.some(r => r.slot !== 'image' || r.origin !== 'upload' || typeof r.key !== 'string' || !r.key)) throw Error('invalid_swap_request');
   return { template_swap: offer.id, model_id: offer.model, idempotency_key: key, inputs: {},
     max_charge_credits: offer.credits, references: references.map(r => ({ ...r })), consent: true };
@@ -81,6 +86,6 @@ export function swapErrorKey(code) {
     invalid_mask: 'cutout_failed', invalid_face: 'no_face', no_token: 'session', unauthenticated: 'session',
     NotAllowedError: 'permission', SecurityError: 'permission', network_error: 'offline', upload_failed: 'upload_failed', insufficient_balance: 'insufficient_balance', rate_limited: 'rate_limited',
     mfa_required: 'access_denied', account_frozen: 'access_denied', forbidden: 'access_denied', provider_input_rejected: 'rejected', provider_moderation: 'rejected', provider_submit_failed: 'rejected' };
-  const allowed = ['busy_background', 'ragged_matte', 'several_people', 'no_face', 'face_too_small', 'photo_too_large', 'photo_too_small', 'invalid_image', 'price_changed'];
+  const allowed = ['busy_background', 'ragged_matte', 'several_people', 'no_face', 'face_too_small', 'face_too_small_full', 'photo_too_large', 'photo_too_small', 'invalid_image', 'price_changed'];
   return `presets.swap.${aliases[code] || (allowed.includes(code) ? code : 'cutout_failed')}`;
 }

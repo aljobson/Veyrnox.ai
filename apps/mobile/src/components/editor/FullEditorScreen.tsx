@@ -1,4 +1,4 @@
-import { useAudioSettingsActions } from './tools/useAudioSettingsActions';
+import { useLookActions } from './tools/useLookActions'; import { useAudioSettingsActions } from './tools/useAudioSettingsActions';
 import { useOriginalAudio } from './tools/useOriginalAudio';
 import { useCaptionActions } from './tools/useCaptionActions';
 import { useTextActions } from './tools/useTextActions';
@@ -69,7 +69,6 @@ import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelectio
     removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from
     '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
-
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
 import { JobThumb, useAssetLinks } from '../JobThumb';
@@ -124,6 +123,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         frameStore, setSelection, setSelections, setTool });
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
+    const lookActions = useLookActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
     const audioActions = useAudioSettingsActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
     const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, playing, setProblem: message => { if (sync.live()) setProblem(message); },
         insertMedia: returns.place, frameStore, currentTimeline: () => timelineOf(currentDocument()?.timeline), onPlacement: message => { setProblem(message); setPlacement(value => value + 1); } });
@@ -235,7 +235,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
-    const panelProps: ToolPanelProps = {
+    const panelProps: ToolPanelProps = { lookActions,
         audioActions, originalAudio, timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,

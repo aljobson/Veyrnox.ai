@@ -176,6 +176,12 @@ test('the owner is rechecked inside save, after the render', async () => {
     expect(mockRender).toHaveBeenCalledTimes(1); expect(posts('reserve')).toHaveLength(0); expect(upload.makeRequest).not.toHaveBeenCalled();
     expect(view.message).toBe(t('beatExport.otherAccount'));
 });
+test('a never-synced beat stamped to another account cannot be saved; its own owner can', async () => {
+    const owner = jest.spyOn(beatStore, 'getRecord').mockReturnValue({ ...record(), owner: OTHER }); await mount();
+    expect(view.foreign).toBe(true);
+    owner.mockReturnValue({ ...record(), owner: USER }); await act(async () => root.render(<Harness />));
+    expect(view.foreign).toBe(false);
+});
 test('a never-synced beat has no owner stamp and can still be saved', async () => {
     jest.spyOn(beatStore, 'getRecord').mockReturnValue(record()); await mount(); expect(view.foreign).toBe(false);
     mockRequest.mockResolvedValueOnce({ ...reservation, committed: true });

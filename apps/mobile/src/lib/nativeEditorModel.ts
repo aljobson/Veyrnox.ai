@@ -24,7 +24,14 @@ export type TimedFields = {
     speedCurve?: { frame: number; rate: number }[]; freezeFrame?: number;
 };
 export type Animation = { in?: string; out?: string; duration?: number; combo?: string; period?: number; amount?: number; offset?: number; span?: number };
+export type ColourAdjustment = {
+    exposure: number; temperature: number; tint: number; shadows: number; highlights: number; gamma: number;
+    hsl: Record<string, { hue: number; saturation: number; luminance: number }>;
+    curves: Record<string, { x: number; y: number }[]>;
+};
 export type Clip = TimedFields & {
+    colourAdjustment?: ColourAdjustment; crop?: { x: number; y: number; width: number; height: number }; blend?: string;
+    background?: { type: 'none' | 'solid' | 'blur' | 'image'; color: string; blur: number; mediaId: string };
     id: string; mediaId?: string; start: number; in?: number; len: number; trackId?: string;
     volume?: number; transition?: number; transitionType?: string; rate?: number; reverse?: boolean; preservePitch?: boolean;
     fadeIn?: number; fadeOut?: number; pan?: number; groupId?: string; fit?: 'contain' | 'cover';
