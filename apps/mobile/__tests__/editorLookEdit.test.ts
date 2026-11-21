@@ -144,6 +144,16 @@ test.each([false, true])('bulk default background preserves the original timelin
     expect(result.timeline).toBe(tl);
     expect(tl.video.every(c => !Object.hasOwn(c, 'background'))).toBe(true);
 });
+test('bulk background on locked tracks preserves the original timeline when all clips already match', () => {
+    const tl = fixture(); tl.tracks[0].locked = true;
+    tl.video[1].background = { ...BACKGROUND_DEFAULTS };
+    const before = JSON.stringify(tl), result = look.backgroundAll(tl, { ...BACKGROUND_DEFAULTS });
+    expect(result).toEqual({ timeline: tl });
+    if (!('timeline' in result)) throw Error('refused');
+    expect(result.timeline).toBe(tl);
+    expect(JSON.stringify(tl)).toBe(before);
+    expect(look.backgroundAll(tl, { ...BACKGROUND_DEFAULTS, type: 'solid' })).toEqual({ refused: 'lockedAll' });
+});
 test('bulk background retains matching explicit and implicit clips and only replaces changed clips', () => {
     const tl = fixture();
     tl.video[1].background = { ...BACKGROUND_DEFAULTS };

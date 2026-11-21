@@ -7,10 +7,9 @@ import type { Colour } from '../../../lib/editorLookEdit';
 import type { LookActions } from './useLookActions';
 import { LookChoice } from './LookPanels';
 import { CurveEditor } from './CurveEditor';
-export const CurvesSection = memo(function CurvesSection({ colour, actions, disabled }: { colour: Colour; actions: LookActions; disabled: boolean }) {
+export const CurvesSection = memo(function CurvesSection({ colour, onCurve, disabled }: { colour: Colour; onCurve: LookActions['curve']; disabled: boolean }) {
     const [channel, setChannel] = useState(CURVE_CHANNELS[0]);
-    const changeCurve = actions.curve;
-    const onChange = useCallback((points: Parameters<LookActions['curve']>[1]) => changeCurve(channel, points), [changeCurve, channel]);
+    const onChange = useCallback((points: Parameters<LookActions['curve']>[1]) => onCurve(channel, points), [onCurve, channel]);
     return <View style={{ gap: ds.space.md }}>
         <LookChoice label={t('editorLook.curves')} value={channel} onChange={setChannel}
             options={CURVE_CHANNELS.map(id => ({ value: id, label: t(`editorLook.channel.${id}`) }))} />

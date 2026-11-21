@@ -142,7 +142,18 @@ describe('FullEditorScreen look commits', () => {
         expect(mockSession.history).toEqual({ canUndo: false, canRedo: false }); expect(mockSession.dirty).toBe(false);
         expect(mockSession.problem).toBeNull();
     });
-    test.each([false, true])('mounted panel channels survive session undo that restores keyframes %s', async animatedBefore => {
+    test('applying an unchanged background with a locked track leaves no problem, revision, history or dirty change', async () => {
+        const tl = timeline();
+        tl.tracks.push({ ...tl.tracks[0], id: 'video-locked', locked: true });
+        tl.video[0].trackId = 'video-locked';
+        await open(tl); await press('Effects');
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        await press(t('editorLook.applyAll'));
+        expect(mockSession.problem).toBeNull();
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.history).toEqual({ canUndo: false, canRedo: false }); expect(mockSession.dirty).toBe(false);
+    });
+    test.each([false, true])('channels are kept when parameterKeyframes change while the panel stays mounted (initially animated %s)', async animatedBefore => {
         const tl: Timeline = timeline();
         if (animatedBefore) tl.video[1].parameterKeyframes = [parameterKeyframe(tl.video[1], 0)];
         const doc = envelope(tl), selection = { track: 'video' as const, id: 'v2' };
@@ -282,6 +293,39 @@ describe('FullEditorScreen look commits', () => {
         expect(mockSession.dirty).toBe(false); expect(mockSession.getEditRevision()).toBe(revision);
         expect(mockSession.problem).toBe(t('editorEditGate.tooLarge'));
     });
+});
+
+test.each([false, true])('parent renders with an unchanged clip skip curves and curve commits use the latest timeline (stored colour %s)', async storedColour => {
+    const root = createRoot(), frameStore = createFrameStore(), timeline = emptyTimeline();
+    timeline.media.m = { id: 'm', kind: 'video', frames: 900, width: 640, height: 360, hasAudio: true, name: 'Movie' };
+    timeline.video = [{ id: 'v1', start: 0, len: 90, in: 0, trackId: 'video-0', mediaId: 'm', transition: 0, volume: 1 }];
+    if (storedColour) timeline.video[0].colourAdjustment = { ...colourDefaults(), shadows: .2, gamma: 1.5 };
+    const selection = { track: 'video' as const, id: 'v1' }, applyTimeline = jest.fn((_next: Timeline) => true), setProblem = jest.fn();
+    let parentRenders = 0;
+    function Harness({ timeline }: { timeline: Timeline }) {
+        parentRenders++;
+        const lookActions = useLookActions({ timeline, selection, frameStore, applyTimeline, setProblem });
+        return <FiltersPanel {...{ timeline, selection, lookActions } as ToolPanelProps} />;
+    }
+    try {
+        await act(async () => root.render(<Harness timeline={timeline} />));
+        const curves = mockCurveRender.mock.calls.length, renders = parentRenders;
+        const latest = { ...timeline, background: '#aabbcc' };
+        expect(latest.video[0]).toBe(timeline.video[0]);
+        await act(async () => root.render(<Harness timeline={latest} />));
+        expect(parentRenders).toBe(renders + 1);
+        expect(mockCurveRender).toHaveBeenCalledTimes(curves);
+        const add = root.container.queryAll(n => n.props.accessibilityLabel === 'Add point' && typeof n.props.onClick === 'function');
+        expect(add).toHaveLength(1);
+        await act(async () => add[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+        expect(applyTimeline).toHaveBeenCalledTimes(1);
+        const committed = applyTimeline.mock.calls[0][0];
+        expect(committed.background).toBe(latest.background);
+        expect(committed.video[0].colourAdjustment!.curves.master).toHaveLength(3);
+        expect(setProblem).toHaveBeenCalledWith(null);
+    } finally {
+        await act(async () => root.unmount());
+    }
 });
 
 test.each([false, true])('frame updates never render curves, with stored colour %s, and static filters never subscribe', async storedColour => {

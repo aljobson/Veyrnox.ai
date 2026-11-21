@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import { colourDefaults } from '../../../../../../app/veyrnox/_lib/editorColour.mjs';
 import { PARAMETER_BOUNDS } from '../../../../../../app/veyrnox/_lib/editorAnimation.mjs';
@@ -19,6 +19,9 @@ export function FiltersPanel(props: LookContentProps) {
 }
 function FilterControls(props: LookContentProps) {
     const { clip, actions, disabled } = props;
+    const curve = useRef(actions.curve);
+    useLayoutEffect(() => { curve.current = actions.curve; }, [actions.curve]);
+    const onCurve = useCallback<LookContentProps['actions']['curve']>((channel, points) => curve.current(channel, points), []);
     const colour = useMemo(() => clip.colourAdjustment ?? colourDefaults(), [clip.colourAdjustment]);
     return <View style={{ gap: ds.space.md }}>
         {clip.parameterKeyframes?.length ? <LookMessage>{t('editorLook.keyframes')}</LookMessage> : null}
@@ -27,7 +30,7 @@ function FilterControls(props: LookContentProps) {
             min={key === 'gamma' ? .1 : -1} max={key === 'gamma' ? 4 : 1} step={key === 'gamma' ? .05 : .01}
             snaps={key === 'gamma' ? [1] : undefined} format={number} onChange={value => actions.colour(key, value)} />)}
         <HslSection colour={colour} actions={actions} disabled={disabled} />
-        <CurvesSection colour={colour} actions={actions} disabled={disabled} />
+        <CurvesSection colour={colour} onCurve={onCurve} disabled={disabled} />
         <Action label={t('editorLook.resetColour')} disabled={disabled} onPress={actions.resetColour} />
     </View>;
 }
