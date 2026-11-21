@@ -45,7 +45,7 @@ test('shared detectors distinguish source dependencies from generated or negated
 });
 test('audit classification, reasons, source hashes and non-token bytes are locked', () => {
   const report = audit();
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49} /* 61 over the Kling 3.0 prompt cap moved to unsupported; 49 of them (one photo, at most 20,000 characters) bind to kie Seedance (ADR-0309 amendment 3) */);
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49 + 8,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49} /* 61 over the Kling 3.0 prompt cap moved to unsupported; 49 of them (one photo, at most 20,000 characters) bind to kie Seedance (ADR-0309 amendment 3) */);
   assert.deepEqual(report.unsupportedReasons, { 'multi-photo-needs-people-model': 96, 'unsupported-aspect': 9 - 2, 'prompt-limit': 115 - 49 }); // ADR-0309 amendment 3
   for (const p of PRESETS) {
     const c = report.contracts[p.id];
@@ -96,7 +96,7 @@ test('default feed/detail/Create routing, price, attribution and exact-count adm
 test('the generated contract covers all exact-source templates', () => {
   // The repository's English markup baseline exercises rendering separately.
   const { templates } = contractData(JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url))));
-  assert.equal(Object.keys(templates).length, 749 + 46 + 30 + 59);
+  assert.equal(Object.keys(templates).length, 749 + 46 + 30 + 59 + 8);
 });
 
 test('reviewed overlapping reason counts are pinned across all classes', () => {

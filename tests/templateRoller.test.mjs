@@ -13,7 +13,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const publicCommunityCount = SOURCE_TEMPLATES.filter(p => isPublishableSourcePromptTemplate(p.id) && !BROKEN_TEMPLATE_IDS.includes(publicTemplateId(p.id))).length;
 
 test('gallery video eligibility excludes recipes with missing previews', () => {
-  assert.equal(PRESETS.filter(hasTemplateVideo).length, publicCommunityCount);
+  assert.equal(PRESETS.filter(hasTemplateVideo).length, publicCommunityCount + 8); // plus the eight Veyrnox originals
   assert.equal(hasTemplateVideo({}), false);
   assert.equal(hasTemplateVideo({ clipKey: 'missing-preview' }), false);
   assert.equal(hasTemplateVideo(PRESETS.find((preset) => preset.clipKey)), true);
@@ -25,7 +25,7 @@ test('gallery video eligibility excludes recipes with missing previews', () => {
 test('preview-backed templates contain unique local videos', () => {
   const videos = new Set();
   const previewBacked = PRESETS.filter((preset) => preset.clipKey);
-  assert.equal(previewBacked.length, publicCommunityCount);
+  assert.equal(previewBacked.length, publicCommunityCount + 8);
   for (const preset of previewBacked) {
     const clip = SHOWCASE_CLIPS[preset.clipKey];
     assert.ok(clip?.video, preset.id);

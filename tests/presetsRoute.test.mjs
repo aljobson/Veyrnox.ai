@@ -81,7 +81,8 @@ test('the payload carries source framing and exact public source prompts but no 
     assert.equal(exact.filter((p) => genjutsuRecord(p.id)).length, 55);
     assert.equal(exact.filter((p) => sourceRecord(p.id) && !genjutsuRecord(p.id)).length, 694 + 46 + 30 + 59);
     const statuses = Object.groupBy(toPublicPresets(catalog, PRESETS), (p) => p.sourcePromptStatus);
-    assert.equal(statuses.exact.length, 749 + 46 + 30 + 59);
+    assert.equal(statuses.exact.length, 749 + 46 + 30 + 59 + 8); // plus the eight Veyrnox-written originals
+    assert.equal(statuses.exact.filter((p) => p.sourcePromptOrigin === 'veyrnox-original').length, 8);
     assert.equal(statuses['adaptation-only'], undefined);
     assert.equal(statuses['exact-truncated'], undefined);
     assert.equal(statuses.unavailable, undefined);
