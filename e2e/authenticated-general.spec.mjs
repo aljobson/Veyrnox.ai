@@ -41,7 +41,7 @@ test('Dashboard authenticated balance, template pagination and filters remain re
   // 71 listed video templates without the long-prompt key (20 Nov 2026: 45 over the Kling 3.0 cap hidden; 21 Nov 2026: three supercar refuels and five clip-dependent prompts hidden), so one page of 50 holds them all and there is no "Show more".
   await expect(page.locator('#preset-gallery-results > a')).toHaveCount(50);
   await page.getByRole('button', { name: 'Show more templates', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(71);
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(61);
   await expect(page.getByRole('button', { name: 'Show more templates', exact: true })).toHaveCount(0);
   const filters = page.getByRole('group', { name: 'Filter templates', exact: true });
   await filters.getByRole('button', { name: 'New', exact: true }).click();
