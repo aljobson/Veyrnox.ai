@@ -78,6 +78,7 @@ import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
 import area_developers from './en/developers';
 import area_devs1editor from './en/devs1editor';
+import area_dialogue from './en/dialogue';
 import area_drafts from './en/drafts';
 import area_draw from './en/draw';
 import area_edit from './en/edit';
@@ -327,6 +328,7 @@ const catalog = {
     ...area_dev,
     ...area_developers,
     ...area_devs1editor,
+    ...area_dialogue,
     ...area_drafts,
     ...area_draw,
     ...area_edit,

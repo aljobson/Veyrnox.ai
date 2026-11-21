@@ -4314,6 +4314,18 @@
     "ratio": 2.31
   },
   {
+    "id": "dialogue.add",
+    "english": "Add turn",
+    "translation": "Adicionar fala",
+    "ratio": 1.75
+  },
+  {
+    "id": "dialogue.addCredits",
+    "english": "Add credits",
+    "translation": "Adicionar créditos",
+    "ratio": 1.64
+  },
+  {
     "id": "musicExport.choose",
     "english": "File format",
     "translation": "Formato do arquivo",

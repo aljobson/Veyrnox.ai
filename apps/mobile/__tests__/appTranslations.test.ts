@@ -24,7 +24,7 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(101);
+    expect(unused).toHaveLength(108);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
@@ -99,6 +99,15 @@ test.each([
     }
 });
 
+
+test('Portuguese dialogue copy uses the Brazilian catalog register', () => {
+    expect(APP_CATALOGS.pt['dialogue.resetCast']).toBe('Redefinir vozes');
+    expect(APP_CATALOGS.pt['dialogue.accepted']).toBe('Seu diálogo está na biblioteca.');
+    expect(APP_CATALOGS.pt['dialogue.tooLong']).toBe('O roteiro completo deve ter no máximo 1000 caracteres.');
+    expect(APP_CATALOGS.pt['dialogue.characters.other']).toBe('{count} de {max} caracteres');
+    const copy = Object.entries(APP_CATALOGS.pt).filter(([key]) => key.startsWith('dialogue.')).map(([, value]) => value).join(' ');
+    expect(copy).not.toMatch(/guião|Repor|carateres|hífenes/);
+});
 test('Korean shortened sound announcement preserves both name particle forms and slots', () => {
     const template = '{time}에 {name}을(를) 추가하고 동영상과 함께 끝나도록 줄였습니다.';
     expect(CATALOGS.ko!['editorAudioTools.addedTrimmed']).toBe(template);

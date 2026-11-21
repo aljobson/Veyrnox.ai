@@ -2382,6 +2382,12 @@
     "ratio": 1.62
   },
   {
+    "id": "dialogue.turnLimit",
+    "english": "Use 2 to 12 turns.",
+    "translation": "استخدم من مقطعين إلى 12 مقطعًا.",
+    "ratio": 1.72
+  },
+  {
     "id": "editorLook.hsl",
     "english": "HSL",
     "translation": "تدرج اللون والتشبع والإضاءة",

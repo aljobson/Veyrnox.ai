@@ -2454,6 +2454,12 @@
     "ratio": 2
   },
   {
+    "id": "dialogue.cast",
+    "english": "Cast voices",
+    "translation": "वक्ताओं की आवाज़ें",
+    "ratio": 1.64
+  },
+  {
     "id": "musicExport.retry",
     "english": "Try again",
     "translation": "फिर प्रयास करें",
