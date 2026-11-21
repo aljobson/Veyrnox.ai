@@ -9,12 +9,12 @@ export function SmartCutEntry({ enabled, selectedCount, onEnable }) {
   const number = selectedCount.toLocaleString(localeTag(locale));
   const steps = ['pick', 'review', 'create'];
   return (
-    <section aria-labelledby="smart-cut-entry-title" className="mx-auto max-w-[1400px] px-4 pb-2 sm:px-8">
+    <section id="smart-cut" aria-labelledby="smart-cut-entry-title" className="mx-auto max-w-[1400px] scroll-mt-24 px-4 pt-6 sm:px-8 sm:pt-10">
       <div className="overflow-hidden rounded-[1.75rem] border border-vx-accent/40 bg-vx-panel-raised shadow-[0_1px_0_rgb(var(--vx-border)),0_18px_48px_rgb(0_0_0/0.12)]">
         <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="p-5 sm:p-7">
             <p className="font-vx-mono text-[10px] font-bold tracking-[0.15em] text-vx-accent">{t('app.smartCut.entry.eyebrow')}</p>
-            <h2 id="smart-cut-entry-title" className="vx-display mt-2 max-w-[13ch] text-[34px] sm:text-[44px]">{t('app.smartCut.entry.title')}</h2>
+            <h1 id="smart-cut-entry-title" className="vx-display mt-2 max-w-[13ch] text-[34px] sm:text-[44px]">{t('app.smartCut.entry.title')}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-vx-fg-body">
               {t('app.smartCut.entry.intro')}
             </p>
