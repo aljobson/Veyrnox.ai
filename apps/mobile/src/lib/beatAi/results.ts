@@ -68,7 +68,7 @@ export async function loadResults(record: Pending, status: Status, doc: AiDoc, p
         if (['failed', 'refunded'].includes(c.state)) { messages.push(ordinal === 0 ? 'beatAi.failedA' : 'beatAi.failedB'); continue; }
         if (!['ready', 'succeeded', 'stored'].includes(c.state.toLowerCase())) continue;
         const name = pair ? `✦ ${record.prompt.slice(0, 24)} ${label}` : ordinal === 0 ? record.instrument! : `Without ${record.instrument}`;
-        if (placedAlready(doc, record, ordinal)) { results.push({ ordinal, name, asset: doc.assets[record.placementIds[ordinal].asset] }); continue; }
+        if (placedAlready(doc, record, ordinal)) { results.push({ ordinal, name, asset: doc.assets[record.placementIds[ordinal].asset] as Asset }); continue; }
         if (pair && ![c.song_id, c.version_id, c.job_id].every(uuid)) throw new Error('missing_result_ref');
         const ref: Record<string, string> = pair ? { songId: c.song_id!, versionId: c.version_id!, jobId: c.job_id! }
             : { songId: record.source!.songId, versionId: record.source!.versionId, requestId: record.requestId!, kind: ordinal === 0 ? 'target' : 'residual', instrument: record.instrument! };

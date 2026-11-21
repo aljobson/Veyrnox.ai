@@ -30,7 +30,7 @@ export function BeatAiSheet({ request, client, doc, op, onClose }: { request: Re
     const locked = !draftReady || !!view.quote || !!view.record || view.busy;
     const regions: Selection[] = doc.tracks.filter(track => track.kind === 'audio').flatMap(track => track.regions.map(r => {
         const region = r as AudioRegion; return { track, region, asset: doc.assets[region.assetId] };
-    })).filter(item => item.asset?.source === 'song');
+    })).filter((item): item is Selection => item.asset?.source === 'song');
     useEffect(() => {
         let live = true; setSong(null); setSongError(false);
         if (selected) void client.song(selected.asset.ref.songId).then(value => { if (live && request.current()) setSong(value); }, () => { if (live && request.current()) setSongError(true); });

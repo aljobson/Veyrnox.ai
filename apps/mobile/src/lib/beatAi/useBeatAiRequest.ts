@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import { isOffline, subscribe } from '../networkState';
 import type { BeatStore } from '../beatNative/store';
-import type { Edit } from '../beatNative/doc';
+import type { BeatDoc, Edit } from '../beatNative/doc';
 import { documentFiles, beatFile } from '../beatNative/persist';
 import { t } from '../i18n';
 import { placedAlready, placeAiResults } from './shared';
@@ -21,7 +21,7 @@ export function createPartRequest(options: Omit<RequestOptions<Pending>, 'finish
         const loaded = await loadResults(row, status, doc, options.port, options.signal);
         if (!check()) return { keep: row, message: '' };
         if (loaded.results.length) {
-            if (!options.apply(d => placeAiResults(d as AiDoc, row, loaded.results), t(`beatAi.${row.op}`))) throw new Error('placement_refused');
+            if (!options.apply(d => placeAiResults(d as unknown as AiDoc, row, loaded.results) as unknown as BeatDoc, t(`beatAi.${row.op}`))) throw new Error('placement_refused');
             const placed = options.store.getBeat(options.beatId) as AiDoc;
             await options.store.flushBeat(options.beatId);
             if (!check()) return { keep: row, message: '' };
