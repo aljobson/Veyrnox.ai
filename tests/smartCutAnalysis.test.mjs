@@ -173,7 +173,23 @@ test('speech-aware planning stops at sixty seconds without extending past source
   const plan = buildSpeechAwareCutPlan({ clips: [{ job_id: 'long', duration }], analyses: { long: normalized } });
   assert.equal(plan.totalDuration, 60);
   assert.equal(plan.segments[0].end, 60);
+  assert.equal(plan.silenceRemoved, 0, 'speech and silence beyond the rendered cap are not reported as removed');
+  assert.equal(buildSpeechAwareCutPlan({
+    clips: [{ job_id: 'long', duration }], analyses: { long: normalized },
+    removals: [{ takeId: 'long', start: 70, end: 71 }, { takeId: 'long', start: 85, end: 86 }],
+  }).removalsApplied, 0, 'removals beyond the rendered cap or transcript range are not reported as applied');
   assert.ok(plan.warnings.some((warning) => /60-second/i.test(warning)));
+});
+
+test('pauses in a later take beyond the output cap are not reported as removed', () => {
+  const clips = [{ job_id: 'first', duration: 59 }, { job_id: 'later', duration: 40 }];
+  const analyses = {
+    first: { version: 1, assetId: 'first', duration: 59, provider: 'fal-wizper', transcript: 'first', language: 'en', chunks: [{ start: 0, end: 59, text: 'first' }] },
+    later: { version: 1, assetId: 'later', duration: 40, provider: 'fal-wizper', transcript: 'later', language: 'en', chunks: Array.from({ length: 10 }, (_, index) => ({ start: index * 3, end: index * 3 + 1, text: `later ${index}` })) },
+  };
+  const plan = buildSpeechAwareCutPlan({ clips, analyses });
+  assert.equal(plan.totalDuration, 60);
+  assert.equal(plan.silenceRemoved, 0);
 });
 
 test('missing analysis and speech-free ranges fail before a plan is produced', () => {
@@ -276,6 +292,7 @@ test('a standalone filler between long pauses disappears and malformed removals 
   assert.equal(buildSpeechAwareCutPlan(base).segments.length, 3);
   const removed = buildSpeechAwareCutPlan({ ...base, removals: [{ takeId: clip.job_id, start: 2.47, end: 2.83 }] });
   assert.equal(removed.segments.length, 2);
+  assert.equal(removed.removalsApplied, 1, 'a fully removed standalone filler is still reported as applied');
   const ignored = buildSpeechAwareCutPlan({ ...base, removals: [null, { takeId: 5, start: 1, end: 2 }, { takeId: clip.job_id, start: 3, end: 2 }, { takeId: 'other-take', start: 2.4, end: 2.9 }] });
   assert.deepEqual(ignored.segments, buildSpeechAwareCutPlan(base).segments);
   assert.equal(ignored.removalsApplied, 0);

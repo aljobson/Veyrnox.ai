@@ -52,7 +52,7 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
         setPhase('planning');
         const start = (target.clip.in || 0) / current.timeline.fps, end = Math.min(duration, start + target.clip.len * (target.clip.rate || 1) / current.timeline.fps);
         const proposals = mode === 'silences' ? keptAfterRemovals(silenceRanges(parsed.analysis, start, end), start, end)
-            : (mode === 'fillers' ? fillerRanges(parsed.analysis) : retakeRanges(parsed.analysis)).filter(r => r.end > start && r.start < end);
+            : mode === 'fillers' ? fillerRanges(parsed.analysis, { start, end }) : retakeRanges(parsed.analysis).filter(r => r.end > start && r.start < end);
         setRemovals(proposals); setChecked(proposals.map(() => true)); setPhase('preview');
         setMessage(proposals.length ? '' : t('editorSpeech.noChanges'));
     };
