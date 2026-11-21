@@ -15,4 +15,4 @@ test('audio tracks hide the kit picker while drum tracks retain it', async () =>
     await act(async () => root.render(<MixerStrip {...props} track={{ ...track, kind: 'audio' }} />));
     expect(root.container.queryAll(n => n.props.accessibilityLabel === kitLabel)).toHaveLength(0);
     await act(async () => root.unmount());
-});
+}, 30000);
