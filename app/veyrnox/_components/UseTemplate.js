@@ -47,23 +47,26 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
   const originalId = templateClip ? templateClip.model : templateModelId(preset);
   const catalogModel = models.find((m) => m.id === originalId) || null;
   const original = templateClip && catalogModel ? { ...catalogModel, credits: templateClip.credits, durations: [5], media: { image: { ...catalogModel.media?.image, required: true, maxFiles: 1 } } } : catalogModel;
+  // Hook order is part of the test harness contract: keep these states together and in this order.
+  const [pickedModel, setPickedModel] = useState(originalId);
+  const [pickedAspect, setPickedAspect] = useState(preset.aspect);
+  const [pickedSeconds, setDurationSeconds] = useState(preset.durationSeconds || 5);
+  const [targetSeconds, setTargetSeconds] = useState(60);
+  const [handoffError, setHandoffError] = useState('');
+  const [opening, setOpening] = useState(false);
+  const [photo, setPhoto] = useState(null);
   const modelOptions = original && (!imagePhotoRequired || live) && imageTemplateModelAvailable(preset, original) && !original.gated && !original.premium && createPromptModelAvailable(original)
     ? [original, ...(!templateClip && live ? models.filter((m) => m.id !== originalId && templateModelEligible(m, original) && imageTemplateModelAvailable(preset, m)) : [])] : [];
-  const [photo, setPhoto] = useState(null);
   // A text-to-image template has no image input. Adding a reference image runs it on the image-edit model instead (as a video template runs on its photo model), at that model's catalog price.
   const referenceModel = !templateClip && !imagePhotoRequired && live && preset.kind === 'image' && original && !original.media?.image?.required
     ? models.find((m) => m.id === REFERENCE_IMAGE_MODEL && imageTemplateModelAvailable({ kind: 'image', photo: { required: true } }, m) && !m.gated && !m.premium && createPromptModelAvailable(m)) || null : null;
-  const [pickedModel, setPickedModel] = useState(originalId);
   const model = (photo && referenceModel) || modelOptions.find((m) => m.id === pickedModel) || modelOptions[0] || null;
   const modelId = model?.id;
   const aspectOptions = templateClip ? [] : modelAspectRatios(model);
-  const [pickedAspect, setPickedAspect] = useState(preset.aspect);
   const aspect = nearestOption(pickedAspect || preset.clip?.aspectRatio || preset.previewAspect, aspectOptions) || aspectOptions[0] || null;
   const isVideo = model ? model.kind === 'video' : Boolean(preset.durationSeconds);
   const durationOptions = model?.durations?.length ? model.durations : [5, 10];
-  const [pickedSeconds, setDurationSeconds] = useState(preset.durationSeconds || 5);
   const durationSeconds = templateClip ? 5 : isVideo ? (durationOptions.includes(pickedSeconds) ? pickedSeconds : durationOptions[0]) : undefined;
-  const [targetSeconds, setTargetSeconds] = useState(60);
   const costFor = (seconds) => model ? (isVideo ? clipCredits(model.credits, seconds) : model.credits) : presetCredits(preset, models, seconds);
   const credits = costFor(durationSeconds);
   const href = presetHref(preset, durationSeconds, { model: modelId, aspect, templateClip });
@@ -72,8 +75,6 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
     setPickedAspect(preset.aspect);
     setDurationSeconds(preset.durationSeconds || 5);
   }
-  const [handoffError, setHandoffError] = useState('');
-  const [opening, setOpening] = useState(false);
   const [clipPrompt, setClipPrompt] = useState(() => templateClipPhotoPrompt(TEMPLATE_CLIP_PROMPT, false));
   const [singlePhotoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState('');
