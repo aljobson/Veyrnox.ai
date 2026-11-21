@@ -1,3 +1,4 @@
+import { ORIGINAL_SEEDANCE_TEMPLATE_IDS } from '../app/veyrnox/_lib/originalSeedanceTemplates.js';
 import './helpers/exactOnlyAssertions.mjs';
 import './helpers/higgsfield300Assertions.mjs';
 import test from 'node:test';
@@ -264,11 +265,11 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
 test('public community templates are exact and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 749 + 46 + 30 + 59);
+  assert.equal(groups.exact.length, 749 + 46 + 30 + 59 + 8);
   assert.equal(groups['adaptation-only'], undefined);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 749 + 46 + 30 + 59);
+  assert.equal(audit.length, 749 + 46 + 30 + 59 + 8);
   assert.ok(audit.some(([, record]) => record.runnable === true));
   assert.ok(audit.some(([, record]) => record.runnable === false));
   assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
@@ -447,10 +448,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 749 + 46 + 30 + 59);
+  assert.equal(PRESETS.length, 749 + 46 + 30 + 59 + 8);
   assert.equal(WALL_PRESETS.length, 13);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 749 + 46 + 30 + 59);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 749 + 46 + 30 + 59 + 8);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -465,7 +466,11 @@ test('removed Veyrnox Originals are no longer addressable', () => {
     assert.equal(isUnknownStaticPage(`/presets/${id}`), true, id);
   }
   assert.ok(ALL_TEMPLATES.every((preset) => preset.original !== true));
-  assert.ok(ALL_TEMPLATES.every((preset) => preset.promptOrigin !== 'veyrnox-original'));
+  // The only records with this origin are the new set the owner approved on 2026-11-21; no removed id may come back through it.
+  const currentOriginals = ALL_TEMPLATES.filter((preset) => preset.promptOrigin === 'veyrnox-original').map((preset) => preset.id);
+  assert.deepEqual(currentOriginals, [...ORIGINAL_SEEDANCE_TEMPLATE_IDS]);
+  assert.equal(currentOriginals.length, 8);
+  for (const id of currentOriginals) assert.equal(REMOVED_ORIGINAL_IDS.includes(id), false, id);
 });
 
 test('removed legacy recipes stay unavailable while effect recipes are addressable', () => {
@@ -481,7 +486,8 @@ test('removed legacy recipes stay unavailable while effect recipes are addressab
 });
 
 test('source-backed generation prompts equal their captured published text', () => {
-  for (const preset of PRESETS) {
+  // Veyrnox originals have no captured source; originalSeedanceTemplates.test.mjs pins their exact prompt.
+  for (const preset of PRESETS.filter((p) => p.promptOrigin !== 'veyrnox-original')) {
     assert.equal(preset.prompt, exactSourcePromptRecord(preset.id).prompt, preset.id);
     assert.equal(preset.sourcePrompt, preset.prompt, preset.id);
   }

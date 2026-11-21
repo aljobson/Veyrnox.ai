@@ -1,7 +1,7 @@
 {
   "source": "https://veyrnox.ai/api/catalog",
   "contractObservedAt": "2026-10-30",
-  "evidence": "Verified by the host against live https://veyrnox.ai/api/catalog on 2026-10-30: Seedance 2.0 Fast costs 19 credits, supports [5] seconds and accepts no media; Kling 3.0 I2V costs 32 credits, supports [5, 10] seconds, requires image and accepts optional endImage. All fixture model values match the live response.",
+  "evidence": "Verified by the host against live https://veyrnox.ai/api/catalog on 2026-10-30: Seedance 2.0 Fast costs 19 credits, supports [5] seconds and accepts no media; Kling 3.0 I2V costs 32 credits, supports [5, 10] seconds, requires image and accepts optional endImage. All fixture model values match the live response. seedance-2.0-photo-kie was added on 2026-11-21 from migration 0573 and MODELS (58 credits, [5, 10] seconds, required image); it is not part of the 2026-10-30 live capture.",
   "models": [
     {
       "id": "seedance-2.0-fast",
@@ -43,6 +43,20 @@
         }
       },
       "credits": 85
+    },
+    {
+      "id": "seedance-2.0-photo-kie",
+      "modality": "image-to-video",
+      "durations": [
+        5,
+        10
+      ],
+      "media": {
+        "image": {
+          "required": true
+        }
+      },
+      "credits": 58
     }
   ]
 }

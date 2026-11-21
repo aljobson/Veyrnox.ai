@@ -15,7 +15,7 @@ such as the literal `SYNTX.AI` in Frozen Time is preserved by that existing rule
 | Public community gallery | 694 | 884 |
 | Public complete exact prompts | 667 | 884 |
 | Hidden community rows | 43 | 92 |
-| All addressable recipes including independent catalogs | 1,736 | 1,926 |
+| All addressable recipes including independent catalogs | 1,736 | 1,934 |
 | Homepage wall templates | 24 | 13 |
 
 The 27 previously visible `adaptation-only` rows are now hidden everywhere.
