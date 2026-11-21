@@ -11,6 +11,7 @@ import { rawText } from '../src/lib/i18n/translate';
 import { auditionBatchNote } from '../src/lib/speech/audition';
 const mockRouter = { push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => false), back: jest.fn() };
 const mockTitles: string[] = [];
+const mockGenerateCallbacks: (() => void)[] = [];
 const mockLoadCatalog = jest.fn();
 const mockRequest = jest.fn(), mockRemember = jest.fn(), mockRefresh = jest.fn();
 const mockApi = { request: mockRequest, getBalance: jest.fn(), stream: jest.fn() };
@@ -21,9 +22,17 @@ jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi })
 jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: { options: { title: string } }) => { mockTitles.push(options.title); return null; } }, useRouter: () => mockRouter, useFocusEffect: jest.fn() }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => { mockSubscribers.add(fn); return () => mockSubscribers.delete(fn); } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: () => mockLoadCatalog() }));
+jest.mock('../src/components/speech/SpeechPricePanel', () => {
+    const actual = jest.requireActual('../src/components/speech/SpeechPricePanel');
+    return { SpeechPricePanel: (props: { onGenerate: () => void }) => {
+        mockGenerateCallbacks.push(props.onGenerate);
+        return jest.requireActual('react').createElement(actual.SpeechPricePanel, props);
+    } };
+});
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => mockBalance }));
 jest.mock('../src/lib/createResult', () => ({ useJobResult: () => mockResult, soundPassFor: () => null, refreshBalance: (...args: unknown[]) => mockRefresh(...args) }));
-jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: (...args: unknown[]) => mockRemember(...args) }));
+jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: (...args: unknown[]) => mockRemember(...args),
+    submittedRequests: { list: async () => mockRemember.mock.calls.map(([id]) => ({ id })) } }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => {}, hasAgreed: async () => true } }));
 jest.mock('../src/lib/celebrate', () => ({ noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
 jest.mock('../src/lib/milestoneHistory', () => ({ settleFirstMilestones: async () => {} }));
@@ -49,9 +58,9 @@ const write = async (value: string) => {
 };
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-    setLocaleFromDevice(['en']); mockTitles.length = 0; mockLoadCatalog.mockReset().mockImplementation(async () => mockCatalog);
+    setLocaleFromDevice(['en']); mockTitles.length = 0; mockGenerateCallbacks.length = 0; mockLoadCatalog.mockReset().mockImplementation(async () => mockCatalog);
     mockRouter.replace.mockClear(); mockRouter.back.mockClear(); mockRouter.canGoBack.mockReturnValue(false);
-    mockPlayers.length = 0; mockOwner = 'a'; mockCatalog = [mockModel]; mockBalance = 10;
+    mockPlayers.length = 0; mockOwner = 'a'; mockSubscribers.forEach(fn => fn()); mockCatalog = [mockModel]; mockBalance = 10;
     mockResult = { state: 'queued' }; let nextJob = 0; mockRequest.mockReset().mockImplementation(async () => ({ job_id: `speech-job-${++nextJob}` }));
     mockRemember.mockReset().mockResolvedValue(undefined); mockRefresh.mockReset(); mockRouter.push.mockClear();
     root = createRoot();
@@ -137,7 +146,7 @@ test('lost item 2 reply after 12 credits: zero-balance retry retains its key and
     mockBalance = 12;
     mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockImplementationOnce(async () => { mockBalance = 0; throw new ApiError(0, 'network'); }).mockResolvedValueOnce({ job_id: 'two' });
     await setupBoard(2); await click(generate(2));
-    expect(textOf(root.container)).toContain(auditionBatchNote(1, TTS_VOICES.slice(0, 2).map(voice => voice.id), true));
+    expect(textOf(root.container)).toContain(auditionBatchNote(1, TTS_VOICES.slice(0, 2).map(voice => voice.id), 1, true));
     expect(textOf(root.container)).toContain(plural('speech.audition.price', 2, { unit: 6, total: 12 }));
     expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
     expect(generate(2).props.accessibilityState.disabled).toBe(false);
@@ -163,14 +172,24 @@ test.each(['script', 'settings', 'board'])('editing %s away and back after a los
     expect(bodies()).toHaveLength(3);
     expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
 });
-test('a known refusal after an accepted voice: editing away and back never resends the accepted voice', async () => {
+test.each([
+    { count: 2, code: 'rate_limited' }, { count: 3, code: 'rate_limited' },
+    { count: 2, code: 'provider_input_rejected' }, { count: 3, code: 'provider_input_rejected' },
+])('$code on the last of $count voices never resends accepted voices after editing', async ({ count, code }) => {
     mockBalance = 30;
-    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(429, 'rate_limited'));
-    await setupBoard(2); await click(generate(2));
-    await write('Changed'); await write('Hello'); await click(generate(2));
-    expect(bodies()).toHaveLength(3);
-    expect(bodies()[2].inputs.tts_voice).toBe(bodies()[1].inputs.tts_voice);
-    expect(bodies()[2].inputs.tts_voice).not.toBe(bodies()[0].inputs.tts_voice);
+    for (let index = 0; index < count - 1; index++) mockRequest.mockResolvedValueOnce({ job_id: `accepted-${index}` });
+    mockRequest.mockRejectedValueOnce(new ApiError(400, code));
+    await setupBoard(count); await click(generate(count));
+    await write('Changed'); await write('Hello');
+    for (let index = 0; index < count - 1; index++) {
+        expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: TTS_VOICES[index].label }));
+    }
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
+    await click(generate(count));
+    expect(bodies()).toHaveLength(count + 1);
+    expect(bodies()[count].inputs.tts_voice).toBe(TTS_VOICES[count - 1].id);
+    expect(bodies()[count].idempotency_key).not.toBe(bodies()[count - 1].idempotency_key);
+    for (let index = 0; index < count - 1; index++) expect(mockRemember.mock.calls.filter(([id]) => id === `accepted-${index}`)).toHaveLength(1);
 });
 test('at phone width each voice has a single full-width audio result with its own play and seek controls', async () => {
     mockBalance = 18;
@@ -208,6 +227,252 @@ test('a later preflight refusal does not misreport an earlier unknown item as de
     mockBalance = 12;
     mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network')).mockRejectedValueOnce(new ApiError(402, 'subscription_required'));
     await setupBoard(2); await click(generate(2)); await click(generate(2));
-    expect(textOf(root.container)).toContain(auditionBatchNote(1, TTS_VOICES.slice(0, 2).map(voice => voice.id), true));
+    expect(textOf(root.container)).toContain(auditionBatchNote(1, TTS_VOICES.slice(0, 2).map(voice => voice.id), 1, true));
     expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
+});
+
+test.each(['price_changed', 'network'])('reordered board reports the exact failing voice for %s and restores both cards', async code => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'))
+        .mockRejectedValueOnce(new ApiError(code === 'network' ? 0 : 409, code))
+        .mockResolvedValueOnce({ job_id: 'two' });
+    await setupBoard(2); await click(generate(2));
+    await click(button(t('speech.audition.remove', { voice: TTS_VOICES[0].label })));
+    expect(textOf(root.container)).not.toContain(t('speech.audition.result', { voice: TTS_VOICES[0].label }));
+    await add(0);
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
+    await click(generate(2));
+    const alert = root.container.queryAll(node => node.props.accessibilityRole === 'alert', { matchDeepestOnly: true })[0];
+    const suffix = code === 'network' ? 'may have too. Check Library.' : 'did not.';
+    const message = code === 'network' ? t('form.err.network') : t('app.create.error.price_changed');
+    expect(textOf(alert)).toBe(`1 of 2 auditions started; voice 1 ${suffix} ${message}`);
+    expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
+    await click(generate(2));
+    expect(bodies()).toHaveLength(4);
+    expect(bodies()[3].idempotency_key).toBe(bodies()[1].idempotency_key);
+    const results = root.container.queryAll(node => String(node.props.testID ?? '').startsWith('speech-audition-result-'), { matchDeepestOnly: true });
+    expect(results.map(textOf)).toEqual([
+        expect.stringContaining(t('speech.audition.result', { voice: TTS_VOICES[1].label })),
+        expect.stringContaining(t('speech.audition.result', { voice: TTS_VOICES[0].label })),
+    ]);
+    expect(mockRemember.mock.calls.map(([id]) => id)).toEqual(['one', 'two']);
+});
+
+test('partial A → completed B → partial A restores accepted cards and counts without duplicate history', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'));
+    await setupBoard(2); await click(generate(2));
+    await write('Other');
+    expect(textOf(root.container)).not.toContain(t('speech.audition.result', { voice: TTS_VOICES[0].label }));
+    await click(generate(2)); await click(button(t('speech.adjust'))); await write('Hello');
+    expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: TTS_VOICES[0].label }));
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
+    mockRequest.mockRejectedValueOnce(new ApiError(0, 'network'));
+    await click(generate(2));
+    expect(textOf(root.container)).toContain('1 of 2 auditions started; voice 2 may have too. Check Library.');
+    expect(bodies()).toHaveLength(5);
+    expect(bodies()[4].idempotency_key).toBe(bodies()[1].idempotency_key);
+    expect(mockRemember.mock.calls.filter(([id]) => id === 'one')).toHaveLength(1);
+});
+
+test('single mode resumes once, allows a new take after Adjust, and preserves the original board job', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'))
+        .mockResolvedValueOnce({ job_id: 'another-one' }).mockResolvedValueOnce({ job_id: 'two' });
+    await setupBoard(2); await click(generate(2));
+    mockBalance = 0; await click(button(t('speech.audition.clear')));
+    const resume = button(plural('speech.generate', 0));
+    expect(resume.props.accessibilityState.disabled).toBe(false); await click(resume);
+    expect(bodies()).toHaveLength(2);
+    await click(button(t('publishReporting.open')));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/job/[id]', params: { id: 'one', fromCreate: '1' } });
+    mockBalance = 30; await click(button(t('speech.adjust'))); await click(generate());
+    expect(bodies()).toHaveLength(3);
+    expect(bodies()[2].idempotency_key).not.toBe(bodies()[0].idempotency_key);
+    await click(button(t('publishReporting.open')));
+    expect(mockRouter.push).toHaveBeenLastCalledWith({ pathname: '/job/[id]', params: { id: 'another-one', fromCreate: '1' } });
+    await click(button(t('speech.adjust'))); await click(selectedVoice()); await add(0); await add(1);
+    expect(root.container.queryAll(node => node.props.testID === 'speech-audition-result-one', { matchDeepestOnly: true })).toHaveLength(1);
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
+    await click(generate(2));
+    expect(bodies()).toHaveLength(4);
+    expect(bodies()[3].inputs.tts_voice).toBe(TTS_VOICES[1].id);
+    expect(bodies()[3].idempotency_key).toBe(bodies()[1].idempotency_key);
+    const cards = root.container.queryAll(node => String(node.props.testID ?? '').startsWith('speech-audition-result-'), { matchDeepestOnly: true });
+    expect(cards.map(card => card.props.testID)).toEqual(['speech-audition-result-one', 'speech-audition-result-two']);
+    expect(mockRemember.mock.calls.map(([id]) => id)).toEqual(['one', 'another-one', 'two']);
+    await click(button(t('speech.adjust'))); await click(generate(2));
+    expect(bodies()).toHaveLength(6);
+    for (const body of bodies().slice(4)) expect(bodies().slice(0, 4).map(old => old.idempotency_key)).not.toContain(body.idempotency_key);
+});
+
+test('a lost board voice in single mode reconciles with its original key at zero balance', async () => {
+    mockBalance = 12;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'));
+    await setupBoard(2); await click(generate(2));
+    mockBalance = 0; await click(button(t('speech.audition.clear')));
+    const voice = TTS_VOICES[1];
+    await click(button(`${voice.label}, ${t(`speech.tone.${voice.tone}`)}, ${t(`speech.gender.${voice.gender}`)}`));
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+    await click(generate());
+    expect(bodies()).toHaveLength(3);
+    expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
+});
+
+test('unmount before acceptance records history once, and reopening resumes the partial board', async () => {
+    mockBalance = 30;
+    let resolve!: (value: { job_id: string }) => void;
+    const response = new Promise<{ job_id: string }>(done => { resolve = done; });
+    mockRequest.mockReturnValueOnce(response).mockRejectedValueOnce(new ApiError(0, 'network'));
+    await setupBoard(2); await click(generate(2));
+    expect(bodies()).toHaveLength(1);
+    await act(async () => root.unmount());
+    await act(async () => { resolve({ job_id: 'one' }); await response; });
+    expect(bodies()).toHaveLength(2);
+    expect(mockRemember.mock.calls.map(([id]) => id)).toEqual(['one']);
+    root = createRoot(); await setupBoard(2);
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
+    expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: TTS_VOICES[0].label }));
+    await click(generate(2));
+    expect(bodies()).toHaveLength(3);
+    expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
+    expect(mockRemember.mock.calls.filter(([id]) => id === 'one')).toHaveLength(1);
+});
+
+test('a reopened studio shows the existing error while an unmounted studio holds the account lock', async () => {
+    mockBalance = 30;
+    let reject!: (cause: unknown) => void;
+    mockRequest.mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+    await setupBoard(2); await click(generate(2));
+    await act(async () => root.unmount()); root = createRoot();
+    await setupBoard(2); await click(generate(2));
+    expect(bodies()).toHaveLength(1);
+    const alert = root.container.queryAll(node => node.props.accessibilityRole === 'alert', { matchDeepestOnly: true })[0];
+    expect(textOf(alert)).toBe(t('form.err.default'));
+    await act(async () => reject(new ApiError(0, 'network')));
+    await click(generate(2));
+    expect(bodies()).toHaveLength(3);
+    expect(bodies()[1].idempotency_key).toBe(bodies()[0].idempotency_key);
+});
+
+test('overlapping board can make another take while the original board retains its earlier jobs', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'))
+        .mockResolvedValueOnce({ job_id: 'two' }).mockResolvedValueOnce({ job_id: 'three' })
+        .mockResolvedValueOnce({ job_id: 'another-two' }).mockResolvedValueOnce({ job_id: 'another-three' });
+    await setupBoard(2); await click(generate(2));
+    await click(button(t('speech.audition.remove', { voice: TTS_VOICES[0].label }))); await add(2);
+    await click(generate(2));
+    expect(bodies()).toHaveLength(4);
+    expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
+    await click(button(t('speech.adjust'))); await click(generate(2));
+    expect(bodies()).toHaveLength(6);
+    for (const body of bodies().slice(4)) expect(bodies().slice(0, 4).map(old => old.idempotency_key)).not.toContain(body.idempotency_key);
+    await click(button(t('speech.adjust'))); await click(selectedVoice());
+    await click(button(t('speech.audition.remove', { voice: TTS_VOICES[2].label }))); await add(0);
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 0));
+    await click(generate(2));
+    expect(bodies()).toHaveLength(6);
+    const cards = root.container.queryAll(node => String(node.props.testID ?? '').startsWith('speech-audition-result-'), { matchDeepestOnly: true });
+    expect(cards.map(card => card.props.testID)).toEqual(['speech-audition-result-two', 'speech-audition-result-one']);
+    await click(button(t('speech.adjust'))); await click(generate(2));
+    expect(bodies()).toHaveLength(8);
+    for (const body of bodies().slice(6)) expect(bodies().slice(0, 6).map(old => old.idempotency_key)).not.toContain(body.idempotency_key);
+});
+
+test('detached completion restores finished jobs and the attached resume costs nothing', async () => {
+    mockBalance = 30;
+    let resolve!: (value: { job_id: string }) => void;
+    const response = new Promise<{ job_id: string }>(done => { resolve = done; });
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockReturnValueOnce(response);
+    await setupBoard(2); await click(generate(2));
+    await act(async () => root.unmount()); root = createRoot(); await setupBoard(2);
+    const staleGenerate = mockGenerateCallbacks.at(-1)!;
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
+    expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: TTS_VOICES[0].label }));
+    await act(async () => { resolve({ job_id: 'two' }); await response; });
+    expect(textOf(root.container)).not.toContain(plural('speech.audition.remaining', 6));
+    expect(textOf(root.container)).toContain(plural('speech.audition.price', 2, { unit: 6, total: 12 }));
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 0));
+    for (const voice of TTS_VOICES.slice(0, 2)) expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: voice.label }));
+    await act(async () => staleGenerate());
+    expect(bodies()).toHaveLength(2);
+    expect(textOf(root.container)).toContain(t('form.err.default'));
+    await click(generate(2));
+    expect(bodies()).toHaveLength(2);
+    expect(button(t('speech.adjust'))).toBeDefined();
+    expect(mockRemember.mock.calls.map(([id]) => id)).toEqual(['one', 'two']);
+    await click(button(t('speech.adjust'))); await click(generate(2));
+    expect(bodies()).toHaveLength(4);
+    expect(bodies().slice(2).map(body => body.max_charge_credits)).toEqual([6, 6]);
+});
+
+test('a detached partial acceptance updates reopened cards and remaining price without an edit', async () => {
+    mockBalance = 30;
+    let resolve!: (value: { job_id: string }) => void;
+    const response = new Promise<{ job_id: string }>(done => { resolve = done; });
+    mockRequest.mockReturnValueOnce(response).mockRejectedValueOnce(new ApiError(0, 'network'));
+    await setupBoard(2); await click(generate(2));
+    await act(async () => root.unmount()); root = createRoot(); await setupBoard(2);
+    expect(textOf(root.container)).not.toContain(plural('speech.audition.remaining', 6));
+    await act(async () => { resolve({ job_id: 'one' }); await response; });
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 6));
+    expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: TTS_VOICES[0].label }));
+    expect(bodies()).toHaveLength(2);
+});
+
+
+test('a server-corrected price applies only to its own request while work is unresolved', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' })
+        .mockRejectedValueOnce(new ApiError(409, 'price_changed', { expected_credits: 8 }))
+        .mockResolvedValueOnce({ job_id: 'two' });
+    await setupBoard(2); await click(generate(2));
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 8));
+    await write('Other');
+    expect(textOf(root.container)).toContain(plural('speech.audition.price', 2, { unit: 6, total: 12 }));
+    await write('Hello');
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 8));
+    expect(root.container.queryAll(node => node.props.accessibilityRole === 'alert')).toHaveLength(0);
+    await click(generate(2));
+    expect(bodies()).toHaveLength(3);
+    expect(bodies()[2]).toMatchObject({ confirmed_credits: 8, max_charge_credits: 8, idempotency_key: bodies()[1].idempotency_key });
+});
+
+test('a different request after price_changed is shown and sent at the current catalog price', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' })
+        .mockRejectedValueOnce(new ApiError(409, 'price_changed', { expected_credits: 8 }))
+        .mockResolvedValueOnce({ job_id: 'other-one' }).mockResolvedValueOnce({ job_id: 'other-two' });
+    await setupBoard(2); await click(generate(2));
+    await write('Other');
+    expect(textOf(root.container)).toContain(plural('speech.audition.price', 2, { unit: 6, total: 12 }));
+    await click(generate(2));
+    expect(bodies()).toHaveLength(4);
+    for (const body of bodies().slice(2)) {
+        expect(body).toMatchObject({ confirmed_credits: 6, max_charge_credits: 6 });
+        expect([bodies()[0].idempotency_key, bodies()[1].idempotency_key]).not.toContain(body.idempotency_key);
+    }
+});
+
+test('a second price_changed on another request keeps the first corrected price', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' })
+        .mockRejectedValueOnce(new ApiError(409, 'price_changed', { expected_credits: 8 }))
+        .mockRejectedValueOnce(new ApiError(409, 'price_changed', { expected_credits: 9 }));
+    await setupBoard(2); await click(generate(2));
+    await write('Other'); await click(generate(2));
+    await write('Hello');
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 8));
+});
+test('finishing another request and pressing Adjust keeps the unresolved corrected price', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' })
+        .mockRejectedValueOnce(new ApiError(409, 'price_changed', { expected_credits: 8 }))
+        .mockResolvedValueOnce({ job_id: 'other-one' }).mockResolvedValueOnce({ job_id: 'other-two' });
+    await setupBoard(2); await click(generate(2));
+    await write('Other'); await click(generate(2));
+    await click(button(t('speech.adjust')));
+    await write('Hello');
+    expect(textOf(root.container)).toContain(plural('speech.audition.remaining', 8));
 });

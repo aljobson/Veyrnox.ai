@@ -25,7 +25,8 @@ jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscri
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: () => mockLoadCatalog() }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => mockBalance }));
 jest.mock('../src/lib/createResult', () => ({ useJobResult: () => mockResult, soundPassFor: () => null, refreshBalance: (...args: unknown[]) => mockRefresh(...args) }));
-jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: (...args: unknown[]) => mockRemember(...args) }));
+jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: (...args: unknown[]) => mockRemember(...args),
+    submittedRequests: { list: async () => mockRemember.mock.calls.map(([id]) => ({ id })) } }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => {}, hasAgreed: async () => true } }));
 jest.mock('../src/lib/celebrate', () => ({ noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
 jest.mock('../src/lib/milestoneHistory', () => ({ settleFirstMilestones: async () => {} }));
@@ -54,7 +55,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     setLocaleFromDevice(['en']); mockTitles.length = 0; mockLoadCatalog.mockReset().mockImplementation(async () => mockCatalog);
     mockRouter.replace.mockClear(); mockRouter.back.mockClear(); mockRouter.canGoBack.mockReturnValue(false);
-    mockOwner = 'a'; mockCatalog = [mockModel]; mockBalance = 10;
+    mockOwner = 'a'; mockSubscribers.forEach(fn => fn()); mockCatalog = [mockModel]; mockBalance = 10;
     mockResult = { state: 'queued' }; mockRequest.mockReset().mockResolvedValue({ job_id: 'speech-job' });
     mockRemember.mockReset().mockResolvedValue(undefined); mockRefresh.mockReset(); mockRouter.push.mockClear();
     root = createRoot();
@@ -190,4 +191,23 @@ test.each([1, 2])('price panel uses credit plurals for %s', async count => {
 test('unknown balance is not formatted as a numeric plural', async () => {
     mockBalance = null; await render();
     expect(textOf(root.container)).toContain(t('speech.balanceUnknown'));
+});
+
+test('leaving and reopening preserves an unknown key; no-op edits preserve its warning', async () => {
+    mockRequest.mockRejectedValueOnce(new ApiError(0, 'network'));
+    await render(); await write('Hello'); await click(generate());
+    await write('Hello ');
+    expect(textOf(root.container)).toContain(t('form.err.network'));
+    await act(async () => root.unmount()); root = createRoot();
+    await render(); await write('Hello'); await click(generate());
+    const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
+    expect(bodies[1].idempotency_key).toBe(bodies[0].idempotency_key);
+});
+
+test('Adjust after a completed take permits a new take with a fresh key', async () => {
+    await render(); await write('Hello'); await click(generate());
+    await click(button(t('speech.adjust'))); await click(generate());
+    const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
+    expect(bodies).toHaveLength(2);
+    expect(bodies[1].idempotency_key).not.toBe(bodies[0].idempotency_key);
 });

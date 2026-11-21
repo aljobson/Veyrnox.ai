@@ -21,8 +21,8 @@ export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiEr
     || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)
     // An untyped server error is not proof that nothing was charged.
     || (err.code === 'unknown' && err.status >= 500);
-const REFUNDED_REFUSALS = new Set(['provider_moderation', 'provider_input_rejected', 'provider_submit_failed']);
-const NO_JOB_REFUSALS = new Set(['price_changed', 'insufficient_balance', 'insufficient_credits']);
+export const REFUNDED_REFUSALS = new Set(['provider_moderation', 'provider_input_rejected', 'provider_submit_failed']);
+export const NO_JOB_REFUSALS = new Set(['price_changed', 'insufficient_balance', 'insufficient_credits']);
 export type ChargeSnapshot = { ceilings: (number | null)[]; total: number; payable: number };
 export function createGenerationSubmit() {
     let pending: { signature: string; keys: string[]; accepted: (string | null)[]; unknown: Set<number> } | null = null;
