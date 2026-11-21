@@ -1,3 +1,6 @@
+import { BeatLabsBar } from '../../../components/beats/BeatLabsBar';
+import { PHONE_CAPABILITIES } from '../../../lib/beatNative/controls';
+import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
 import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
 import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
 import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
@@ -127,6 +130,7 @@ export default function BeatEditor() {
             <Stack.Screen options={{ title: doc.title }} />
             <BeatSaveControls id={doc.id} apply={apply} />
             <BeatAiPanel doc={doc} apply={apply} />
+            <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
             <Button label={t('beat.undo')} disabled={locked || !history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
             <Button label={t('beat.redo')} disabled={locked || !history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
             {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}

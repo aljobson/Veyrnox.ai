@@ -87,5 +87,6 @@
   "beatMix.unit.percent": "Standard audio unit or numerical notation, identical in this locale.",
   "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
   "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatLabs.category.FX": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
   "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
 }

@@ -61,6 +61,8 @@ describe('beats home', () => {
         await act(async () => root.render(<BeatsHome />));
         expect(text(t('beat.home.empty')).length).toBeGreaterThan(0);
         await press(t('beat.home.new'));
+        expect(mockPush).not.toHaveBeenCalled();
+        await press(t('beatLabs.template.blank'));
         expect(mockPush).toHaveBeenCalledTimes(1);
         const id = (mockPush.mock.calls[0][0] as { params: { id: string } }).params.id;
         expect(getBeat(id)?.title).toBe(t('beat.home.untitled', { n: 1 }));
