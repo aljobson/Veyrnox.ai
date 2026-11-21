@@ -73,6 +73,21 @@ test('a completed cache reuse explicitly reports zero newly charged', async () =
     expect(lines()).toContain(t('app.smartCut.native.analyse.reused', { name: clip.label }));
 });
 
+test('a successful paid result retires its key so a later mount can use zero-credit cache reuse', async () => {
+    mockSpeechKeyFor.mockReturnValueOnce('paid-key').mockReturnValueOnce('fresh-cache-key');
+    mockStart.mockResolvedValueOnce({ id: 'paid', status: 'completed', analysis, credits: 7 });
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+    expect(mockForget).toHaveBeenCalledWith('owner', clip.jobId);
+
+    await act(async () => root.unmount());
+    root = createRoot();
+    mockStart.mockResolvedValueOnce({ id: 'cached', status: 'completed', analysis, credits: 0 });
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+
+    expect(mockStart.mock.calls[1][1]).toMatchObject({ key: 'fresh-cache-key' });
+    expect(lines()).toContain(t('app.smartCut.native.analyse.reused', { name: clip.label }));
+});
+
 test('a transient quote failure explains that nothing started and can retry', async () => {
     mockFetchQuote.mockRejectedValueOnce(new ApiError(503, 'unavailable'))
         .mockResolvedValueOnce({ credits: 7, max_seconds: 60, languages: ['en'] });
@@ -214,6 +229,16 @@ test('a repeatedly confirmed non-refunded failure becomes terminal instead of lo
 test('a repeatedly malformed accepted result becomes terminal instead of looping forever', async () => {
     mockStart.mockRejectedValue(new ApiError(503, 'outcome_pending'));
     mockRecover.mockRejectedValue(new ApiError(200, 'bad_response'));
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+    await press(t('app.smartCut.native.analyse.checkStatus'));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: 7 }));
+    expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeUndefined();
+    expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
+});
+
+test('a server-rejected stored analysis becomes terminal instead of looping forever', async () => {
+    mockStart.mockRejectedValue(new ApiError(503, 'outcome_pending'));
+    mockRecover.mockRejectedValue(new ApiError(502, 'analysis_invalid'));
     await render(); await press(t('app.smartCut.native.analyse.start'));
     await press(t('app.smartCut.native.analyse.checkStatus'));
     expect(lines()).toContain(t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: 7 }));
