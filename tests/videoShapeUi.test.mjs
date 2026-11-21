@@ -278,7 +278,7 @@ test('no paid Smart Cut step is open while the clips\' sound is still being read
     assert.equal(same.analyse().disabled, true);
     await same.sheet.flush();
     assert.equal(same.planning(), false, 'open once both clips have sound');
-    assert.equal(same.analyse().disabled, false);
+    assert.equal(same.analyse().disabled, true, 'the paid analysis stays off while Smart Cut Create is paused');
     const mixed = build((id) => sound[id]);
     await mixed.sheet.flush();
     assert.equal(mixed.planning(), true, 'blocked for sound beside silence');

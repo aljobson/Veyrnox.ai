@@ -164,6 +164,9 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const audioFlags = items.map((x) => audioByJob[x.job_id]).filter((v) => typeof v === 'boolean');
   const mixedAudio = audioFlags.some((v) => v !== audioFlags[0]);
   // Until every clip's sound has been read, a pair could still turn out mixed: no paid step may start in that gap.
+  // Smart Cut's render ran on supplier steps; editing is Veyrnox.ai's own work, so Create (and the paid analysis that only
+  // feeds it) stay off until the own render replaces them. The free local plan still works.
+  const createPaused = smartCut;
   const audioPending = items.length > 1 && items.some((x) => audioByJob[x.job_id] === undefined);
   const badRange = items.some((x) => x.duration != null && !(x.in_s >= 0 && x.out_s > x.in_s && x.out_s <= x.duration));
   const tooManyClips = items.length > MAX_CLIPS;
@@ -175,7 +178,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     + items.reduce((n, x) => n + (slowOf(x) > 1 ? SLOW_UNITS_PER_SECOND * Math.ceil((x.out_s ?? 0) - x.in_s - 1e-9) : 0), 0);
   const units = Math.max(1, Math.ceil(output / UNIT_S), steps);
   const cost = credits5s != null && output > 0 ? credits5s * units : null;
-  const blocked = !items.length || !loaded || mixed || mixedAudio || audioPending || badRange || tooManyClips || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
+  const blocked = createPaused || !items.length || !loaded || mixed || mixedAudio || audioPending || badRange || tooManyClips || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
 
   useEffect(() => {
     if (confirmCreate && (cost == null || blocked)) setConfirmCreate(false);
@@ -223,8 +226,9 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
           {smartCut && <SmartCutWorkbench items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
+          {createPaused && <p role="status" className="mb-4 rounded-xl border border-vx-border bg-vx-base p-3 text-xs font-semibold leading-5 text-vx-fg-muted">{t('app.smartCut.create.paused')}</p>}
           {smartCut && (mixed || mixedAudio) && <p role="alert" className="mb-4 rounded-xl border border-vx-danger/50 bg-vx-danger/10 p-3 text-xs font-semibold leading-5 text-vx-danger">{t(mixed ? 'app.editor.sheet.error.mixed_aspect' : 'app.editor.sheet.error.mixed_audio')}</p>}
-          {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy || mixed || mixedAudio || audioPending} />}
+          {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy || mixed || mixedAudio || audioPending || createPaused} />}
           {smartCut && <div id="smart-cut-panel" className="scroll-mt-4">
             <SmartCutPlanner
               clips={items}
