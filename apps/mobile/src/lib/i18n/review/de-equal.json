@@ -271,5 +271,11 @@
   "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
   "beatMix.unit.seconds": "Standard audio unit or numerical notation, identical in this locale.",
   "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatLabs.template.house": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.category.Bass": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.category.Synth": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.category.FX": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.context.global": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.control.pianoVelocity": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
   "speech.audition.count": "Shared numeric board capacity notation; no language-specific words."
 }

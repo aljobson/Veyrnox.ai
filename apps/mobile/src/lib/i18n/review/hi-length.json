@@ -1,5 +1,41 @@
 [
   {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.touch.help",
+    "english": "Tap Controls.",
+    "translation": "नियंत्रण पर टैप करें।",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "पहले जैसा करें पर टैप करें।",
+    "ratio": 3
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "दोबारा करें पर टैप करें।",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "पहले जैसा करें",
+    "ratio": 3.5
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "फिर करें",
+    "ratio": 2
+  },
+  {
     "id": "editorCaptionTools.none",
     "english": "None",
     "translation": "कोई नहीं",
