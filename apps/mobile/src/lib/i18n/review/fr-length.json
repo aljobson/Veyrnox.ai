@@ -1,5 +1,71 @@
 [
   {
+    "id": "editorAudioTools.previewNote",
+    "english": "The phone preview plays volume and fades. EQ, pan, voice, noise and effects are saved but not heard on the phone yet.",
+    "translation": "L’aperçu sur le téléphone restitue le volume et les fondus. L’égalisation, le panoramique, la voix, le bruit et les effets sont enregistrés mais ne sont pas encore audibles sur le téléphone.",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Médiums",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorAudioTools.keepPitch",
+    "english": "Keep pitch when speed changes",
+    "translation": "Conserver la hauteur lors des changements de vitesse",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorAudioTools.usePlayhead",
+    "english": "Use playhead as noise start",
+    "translation": "Utiliser la tête de lecture comme début du bruit",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
+    "id": "editorAudioTools.tremoloRate",
+    "english": "Tremolo rate",
+    "translation": "Fréquence du trémolo",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.tremoloDepth",
+    "english": "Tremolo depth",
+    "translation": "Profondeur du trémolo",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorAudioTools.echoRepeats",
+    "english": "Echo repeats",
+    "translation": "Répétitions de l’écho",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.echoDecay",
+    "english": "Echo decay",
+    "translation": "Atténuation de l’écho",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorAudioTools.echoMix",
+    "english": "Echo mix",
+    "translation": "Mixage de l’écho",
+    "ratio": 2
+  },
+  {
     "id": "beatLabs.unavailable",
     "english": "Not on the phone editor yet.",
     "translation": "Pas encore disponible dans l’éditeur du téléphone.",

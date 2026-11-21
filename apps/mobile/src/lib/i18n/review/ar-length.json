@@ -1,5 +1,29 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "منخفض",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "متوسط",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.pitch",
+    "english": "Pitch",
+    "translation": "طبقة الصوت",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
     "id": "beatLabs.audition",
     "english": "Audition",
     "translation": "استماع تجريبي",

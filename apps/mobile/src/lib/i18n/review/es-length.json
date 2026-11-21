@@ -1,5 +1,89 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Medios",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.none",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "Desactivado",
+    "ratio": 3.67
+  },
+  {
+    "id": "editorAudioTools.resetProcessing",
+    "english": "Reset audio processing",
+    "translation": "Restablecer el procesamiento de audio",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorAudioTools.tremoloRate",
+    "english": "Tremolo rate",
+    "translation": "Frecuencia del trémolo",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorAudioTools.tremoloDepth",
+    "english": "Tremolo depth",
+    "translation": "Profundidad del trémolo",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorAudioTools.echoRepeats",
+    "english": "Echo repeats",
+    "translation": "Repeticiones del eco",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.echoDecay",
+    "english": "Echo decay",
+    "translation": "Decaimiento del eco",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorAudioTools.echoMix",
+    "english": "Echo mix",
+    "translation": "Mezcla del eco",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.resetEffects",
+    "english": "Reset audio effects",
+    "translation": "Restablecer los efectos de audio",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorAudioTools.all",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.noMatches",
+    "english": "No sounds match.",
+    "translation": "No hay sonidos coincidentes.",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.stop",
+    "english": "Stop preview",
+    "translation": "Detener vista previa",
+    "ratio": 1.67
+  },
+  {
     "id": "beatLabs.category.All",
     "english": "All",
     "translation": "Todos",

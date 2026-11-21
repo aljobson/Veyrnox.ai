@@ -1,3 +1,6 @@
+import { AUDIO_DEFAULTS } from '../../../app/veyrnox/_lib/editorAudioSettings.mjs';
+import { AUDIO_EFFECT_DEFAULTS } from '../../../app/veyrnox/_lib/editorAudioEffects.mjs';
+import { originalAudioMedia } from '../src/lib/editorOriginalAudio';
 import { ApiError, type ApiClient } from '../src/lib/api';
 import { SERVER_PLAIN_TEXT_STYLE, exportCopy, exportDurations, exportError, exportFeature, exportIdentity, exportSourceLink, freezeExport, renderStatus, sendExportAttempt } from '../src/lib/editorServerExport';
 import { DEFAULT_TEXT_STYLE, emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
@@ -113,4 +116,18 @@ test('plain captions strip neutral metadata; timed captions remain refused and t
     for (const text of out.text.filter(c => c.id !== 'timed')) expect(Object.keys(text).every(k => keys.includes(k))).toBe(true);
     expect(out.text[0]).toEqual(title); expect(out.text.find(c => c.id === 'timed')!.words).toHaveLength(1);
     expect(JSON.stringify(saved)).toBe(before);
+});
+
+test('export removes neutral web audio resets, retains active edits and blocks original audio first', () => {
+    const saved = fixture(), clip = (saved.timeline as Timeline).video[0];
+    Object.assign(clip, { eq: { low: 0, mid: 0, high: 0 }, audioProcessing: { ...AUDIO_DEFAULTS },
+        audioEffects: { ...AUDIO_EFFECT_DEFAULTS }, preservePitch: false });
+    const clean = (exportCopy(saved, { [`l-${id}`]: file }).document.timeline as Timeline).video[0];
+    for (const key of ['eq', 'audioProcessing', 'audioEffects', 'preservePitch']) expect(clean).not.toHaveProperty(key);
+    Object.assign(clip, { eq: { low: 1, mid: 0, high: 0 }, audioProcessing: { ...AUDIO_DEFAULTS, pitch: 2 },
+        audioEffects: { ...AUDIO_EFFECT_DEFAULTS, echoMix: .4 }, preservePitch: true });
+    const active = (exportCopy(saved, { [`l-${id}`]: file }).document.timeline as Timeline).video[0];
+    for (const key of ['eq', 'audioProcessing', 'audioEffects', 'preservePitch']) expect(active).toHaveProperty(key);
+    (saved.timeline as Timeline).media[`l-${id}`] = originalAudioMedia('soft-keys', `l-${id}`);
+    expect(exportCopy(saved, {}).blocked).toEqual([{ id: `l-${id}`, name: 'Soft keys', reason: 'originalAudio' }]);
 });

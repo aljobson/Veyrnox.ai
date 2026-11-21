@@ -1,5 +1,47 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Низкие",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Средние",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorAudioTools.high",
+    "english": "High",
+    "translation": "Высокие",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.pitch",
+    "english": "Pitch",
+    "translation": "Высота тона",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorAudioTools.usePlayhead",
+    "english": "Use playhead as noise start",
+    "translation": "Использовать позицию воспроизведения как начало шума",
+    "ratio": 1.93
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "Выкл.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.stop",
+    "english": "Stop preview",
+    "translation": "Остановить прослушивание",
+    "ratio": 2
+  },
+  {
     "id": "beatLabs.stop",
     "english": "Stop",
     "translation": "Остановить",

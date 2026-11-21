@@ -24,7 +24,7 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(98);
+    expect(unused).toHaveLength(99);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
@@ -97,4 +97,10 @@ test.each([
         const value = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(seconds);
         expect(tr.t(key, { value })).toBe(fill(template, { value }, locale === 'ar'));
     }
+});
+
+test('Korean shortened sound announcement preserves both name particle forms and slots', () => {
+    const template = '{time}에 {name}을(를) 추가하고 동영상과 함께 끝나도록 줄였습니다.';
+    expect(CATALOGS.ko!['editorAudioTools.addedTrimmed']).toBe(template);
+    expect(slots(template)).toEqual(['{name}', '{time}']);
 });
