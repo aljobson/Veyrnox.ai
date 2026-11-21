@@ -55,7 +55,10 @@ if (!body) {
       return Response.json({ jsonrpc: '2.0', id: request.id, result });
     };
     const response = await runChatTurn({ authId, threadId, body, cfg: {}, env, deps: {
-      rpc, select: async (table) => (table === 'jobs' ? [] : [model]), // a fresh send: no job is stored under its key yet stream: async function* (args) { state.modelCalls.push(args); yield { delta: answer }; },
+      rpc,
+      // A fresh send: no job is stored under its key yet.
+      select: async (table) => (table === 'jobs' ? [] : [model]),
+      stream: async function* (args) { state.modelCalls.push(args); yield { delta: answer }; },
     } });
     const responseBody = await response.text();
     process.stdout.write(JSON.stringify({ state, status: response.status, headers: Object.fromEntries(response.headers), body: responseBody }));
