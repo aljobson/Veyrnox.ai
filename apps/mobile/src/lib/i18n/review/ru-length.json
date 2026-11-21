@@ -4296,6 +4296,18 @@
     "ratio": 2.13
   },
   {
+    "id": "dialogue.add",
+    "english": "Add turn",
+    "translation": "Добавить реплику",
+    "ratio": 2
+  },
+  {
+    "id": "dialogue.turnLimit",
+    "english": "Use 2 to 12 turns.",
+    "translation": "Используйте от 2 до 12 реплик.",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

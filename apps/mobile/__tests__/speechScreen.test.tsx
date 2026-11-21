@@ -13,6 +13,8 @@ import { rawText } from '../src/lib/i18n/translate';
 import { OfflineError } from '../src/lib/network';
 const mockRouter = { push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => false), back: jest.fn() };
 const mockTitles: string[] = [];
+let mockReopen: string | undefined;
+const mockSavedList = jest.fn();
 const mockLoadCatalog = jest.fn();
 const mockRequest = jest.fn(), mockRemember = jest.fn(), mockRefresh = jest.fn();
 const mockApi = { request: mockRequest, getBalance: jest.fn(), stream: jest.fn() };
@@ -20,12 +22,12 @@ const mockModel: CatalogModel = { id: 'minimax-speech-2.6-hd', name: 'Speech', m
 let mockCatalog: CatalogModel[], mockBalance: number | null, mockResult: JobResult, mockOwner: string;
 const mockSubscribers = new Set<() => void>();
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
-jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: { options: { title: string } }) => { mockTitles.push(options.title); return null; } }, useRouter: () => mockRouter }));
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ reopen: mockReopen }), Stack: { Screen: ({ options }: { options: { title: string } }) => { mockTitles.push(options.title); return null; } }, useRouter: () => mockRouter }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => { mockSubscribers.add(fn); return () => mockSubscribers.delete(fn); } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: () => mockLoadCatalog() }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => mockBalance }));
 jest.mock('../src/lib/createResult', () => ({ useJobResult: () => mockResult, soundPassFor: () => null, refreshBalance: (...args: unknown[]) => mockRefresh(...args) }));
-jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: (...args: unknown[]) => mockRemember(...args) }));
+jest.mock('../src/lib/submittedRequests', () => ({ submittedRequests: { list: () => mockSavedList() }, rememberSubmitted: (...args: unknown[]) => mockRemember(...args) }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => {}, hasAgreed: async () => true } }));
 jest.mock('../src/lib/celebrate', () => ({ noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
 jest.mock('../src/lib/milestoneHistory', () => ({ settleFirstMilestones: async () => {} }));
@@ -33,7 +35,7 @@ jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: 
 jest.mock('../src/lib/generationProgress', () => ({ noteJobStarted: jest.fn() }));
 jest.mock('../src/components/GenerationProgress', () => ({ GenerationProgress: () => null }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
-jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'speech-player' }) }));
+jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: (props: object) => jest.requireActual('react').createElement(jest.requireActual('react-native').View, { ...props, testID: 'speech-player' }) }));
 jest.mock('../src/components/library/GeneratedChip', () => ({ GeneratedChip: () => null }));
 jest.mock('../src/components/KeyboardScreen', () => ({ KeyboardScreen: jest.requireActual('react-native').View }));
 jest.mock('../src/components/KeyboardFormScrollView', () => ({ KeyboardFormScrollView: jest.requireActual('react-native').View }));
@@ -54,7 +56,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     setLocaleFromDevice(['en']); mockTitles.length = 0; mockLoadCatalog.mockReset().mockImplementation(async () => mockCatalog);
     mockRouter.replace.mockClear(); mockRouter.back.mockClear(); mockRouter.canGoBack.mockReturnValue(false);
-    mockOwner = 'a'; mockCatalog = [mockModel]; mockBalance = 10;
+    mockOwner = 'a'; mockReopen = undefined; mockSavedList.mockReset().mockResolvedValue([]); mockCatalog = [mockModel]; mockBalance = 10;
     mockResult = { state: 'queued' }; mockRequest.mockReset().mockResolvedValue({ job_id: 'speech-job' });
     mockRemember.mockReset().mockResolvedValue(undefined); mockRefresh.mockReset(); mockRouter.push.mockClear();
     root = createRoot();
@@ -101,14 +103,18 @@ test('shared failed result shows refunded credits', async () => {
     expect(textOf(root.container)).toMatch(/refund/i);
     expect(textOf(root.container)).toContain('6');
 });
-test('unchanged screen retry keeps the key; editing away and back rotates it', async () => {
+test.each(['whitespace', 'revert'])('lost-response script %s edit preserves the key at zero balance', async change => {
     mockRequest.mockRejectedValue(new ApiError(0, 'network'));
-    await render(); await write('Hello'); await click(generate()); await click(generate());
-    await write('Changed'); await write('Hello'); await click(generate());
+    await render(); await write('Hello'); await click(generate());
+    mockBalance = 0; await render();
+    if (change === 'whitespace') await write('Hello ');
+    else { await write('Changed'); await write('Hello'); }
+    expect(generate().props.accessibilityState.disabled).toBe(false);
+    await click(generate());
     const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
-    expect(bodies).toHaveLength(3);
-    expect(bodies[0].idempotency_key).toBe(bodies[1].idempotency_key);
-    expect(bodies[2].idempotency_key).not.toBe(bodies[1].idempotency_key);
+    expect(bodies).toHaveLength(2); expect(bodies[1]).toEqual(bodies[0]);
+    mockBalance = 10; await render(); await write('Actually changed'); await click(generate());
+    expect(JSON.parse(mockRequest.mock.calls[2][1].body).idempotency_key).not.toBe(bodies[0].idempotency_key);
 });
 test.each([new OfflineError(), new ApiError(400, 'consent_declined'), new ApiError(402, 'subscription_required')])('submission errors remain visible and retryable: %p', async error => {
     mockRequest.mockRejectedValueOnce(error);
@@ -172,4 +178,22 @@ test.each([1, 2])('price panel uses credit plurals for %s', async count => {
 test('unknown balance is not formatted as a numeric plural', async () => {
     mockBalance = null; await render();
     expect(textOf(root.container)).toContain(t('speech.balanceUnknown'));
+});
+
+
+test('Make another restores all six speech controls as one voice with an empty audition board', async () => {
+    mockReopen = 'audition-job';
+    const inputs = { tts_voice: 'Wise_Woman', tts_language: 'English', tts_emotion: 'happy', tts_speed: 1.2, tts_volume: 2, tts_pitch: 3 };
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: mockModel.id, prompt: 'Remembered words', extraInputs: inputs } }]);
+    await render(); expect(mockRequest).not.toHaveBeenCalled();
+    expect(generate()).toBeDefined(); await click(generate());
+    expect(mockRequest).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body).inputs).toEqual({ prompt: 'Remembered words', ...inputs });
+});
+test('corrupt speech restore opens empty with a translated note', async () => {
+    mockReopen = 'broken-job'; mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: mockModel.id, prompt: 'Secret', extraInputs: { tts_voice: 'invalid' } } }]);
+    await render(); expect(textOf(root.container)).toContain(t('dialogue.restoreUnavailable'));
+    expect(generate().props.accessibilityState.disabled).toBe(true); expect(mockRequest).not.toHaveBeenCalled();
+    await write('New script'); expect(textOf(root.container)).not.toContain(t('dialogue.restoreUnavailable'));
+    await click(generate()); expect(textOf(root.container)).not.toContain(t('dialogue.restoreUnavailable'));
 });

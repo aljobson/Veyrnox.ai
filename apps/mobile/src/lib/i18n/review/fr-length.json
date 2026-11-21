@@ -6546,6 +6546,36 @@
     "ratio": 1.71
   },
   {
+    "id": "dialogue.cast",
+    "english": "Cast voices",
+    "translation": "Voix des personnages",
+    "ratio": 1.82
+  },
+  {
+    "id": "dialogue.resetCast",
+    "english": "Reset voices",
+    "translation": "Réinitialiser les voix",
+    "ratio": 1.83
+  },
+  {
+    "id": "dialogue.add",
+    "english": "Add turn",
+    "translation": "Ajouter une réplique",
+    "ratio": 2.5
+  },
+  {
+    "id": "dialogue.turnLimit",
+    "english": "Use 2 to 12 turns.",
+    "translation": "Utilisez de 2 à 12 répliques.",
+    "ratio": 1.61
+  },
+  {
+    "id": "dialogue.addCredits",
+    "english": "Add credits",
+    "translation": "Ajouter des crédits",
+    "ratio": 1.73
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

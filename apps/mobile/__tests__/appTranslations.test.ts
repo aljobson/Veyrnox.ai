@@ -24,7 +24,7 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(98);
+    expect(unused).toHaveLength(105);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
@@ -97,4 +97,14 @@ test.each([
         const value = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(seconds);
         expect(tr.t(key, { value })).toBe(fill(template, { value }, locale === 'ar'));
     }
+});
+
+
+test('Portuguese dialogue copy uses the Brazilian catalog register', () => {
+    expect(APP_CATALOGS.pt['dialogue.resetCast']).toBe('Redefinir vozes');
+    expect(APP_CATALOGS.pt['dialogue.accepted']).toBe('Seu diálogo está na biblioteca.');
+    expect(APP_CATALOGS.pt['dialogue.tooLong']).toBe('O roteiro completo deve ter no máximo 1000 caracteres.');
+    expect(APP_CATALOGS.pt['dialogue.characters.other']).toBe('{count} de {max} caracteres');
+    const copy = Object.entries(APP_CATALOGS.pt).filter(([key]) => key.startsWith('dialogue.')).map(([, value]) => value).join(' ');
+    expect(copy).not.toMatch(/guião|Repor|carateres|hífenes/);
 });

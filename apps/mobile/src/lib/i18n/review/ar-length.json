@@ -2328,6 +2328,12 @@
     "ratio": 1.63
   },
   {
+    "id": "dialogue.turnLimit",
+    "english": "Use 2 to 12 turns.",
+    "translation": "استخدم من مقطعين إلى 12 مقطعًا.",
+    "ratio": 1.72
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

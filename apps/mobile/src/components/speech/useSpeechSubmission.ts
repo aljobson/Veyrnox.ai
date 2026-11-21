@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ResultBatch } from '../create/CreateResult';
 import { ApiError, type ApiClient } from '../../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { refreshBalance } from '../../lib/createResult';
-import { createGenerationSubmit, generationMessage, type SubmitRequest, type ChargeSnapshot } from '../../lib/generationSubmit';
+import { createGenerationSubmit, generationMessage, generationSignature, type SubmitRequest, type ChargeSnapshot } from '../../lib/generationSubmit';
 import type { CatalogModel } from '../../lib/media';
 import { rememberSubmitted } from '../../lib/submittedRequests';
 import { DEFAULT_CINEMA } from '../../lib/cinemaCamera';
@@ -20,21 +20,32 @@ export function useSpeechSubmission(api: ApiClient, onOwnerChanged: () => void) 
     const [result, setResult] = useState<ResultBatch | null>(null);
     const [priceOverride, setPriceOverride] = useState<number | null>(null);
     const pending = useRef(createGenerationSubmit());
+    const uncertain = useRef<{ request: SubmitRequest; count: number } | null>(null);
     const epoch = useRef(0), balanceSeq = useRef(0), sending = useRef(false);
-    const ownerChanged = useRef(onOwnerChanged); ownerChanged.current = onOwnerChanged;
+    const ownerChanged = useRef(onOwnerChanged);
+    useEffect(() => { ownerChanged.current = onOwnerChanged; }, [onOwnerChanged]);
+    const invalidate = useCallback(() => { epoch.current++; balanceSeq.current++; }, []);
+    const resetAttempt = useCallback(() => {
+        invalidate(); pending.current.reset(); uncertain.current = null;
+        setResult(null); setJobs([]); setComplete(false); setAttempted(false); setError(null); setPriceOverride(null);
+    }, [invalidate]);
     useEffect(() => {
         const unsubscribe = subscribeCacheUser(() => { resetAttempt(); ownerChanged.current(); });
-        return () => { unsubscribe(); epoch.current++; balanceSeq.current++; };
-    }, []);
-    function resetAttempt() {
-        epoch.current++; balanceSeq.current++; pending.current.reset();
-        setResult(null); setJobs([]); setComplete(false); setAttempted(false); setError(null); setPriceOverride(null);
+        return () => { unsubscribe(); invalidate(); };
+    }, [invalidate, resetAttempt]);
+    function editAttempt(changed: boolean) {
+        // Keep the last submitted identity until run() actually submits a different one.
+        // This also preserves zero-balance reconciliation after an edit and revert.
+        if (!changed || uncertain.current) setError(null);
+        else resetAttempt();
     }
     async function generate(request: SubmitRequest | null, model: CatalogModel, voices: readonly string[], quote: ChargeSnapshot, balance: number | null) {
         const boardActive = voices.length > 0, count = boardActive ? voices.length : 1;
         if (!model || !request || sending.current || result || complete || shortfall(balance, quote.payable) > 0) return;
         sending.current = true; setBusy(true); setError(null); setAttempted(true);
-        let started = jobs.length;
+        const replacing = uncertain.current && generationSignature(uncertain.current.request, uncertain.current.count) !== generationSignature(request, count);
+        let started = replacing ? 0 : jobs.length;
+        if (replacing) setJobs([]);
         const generation = epoch.current, owner = getCacheUser();
         const current = () => generation === epoch.current && owner === getCacheUser();
         try {
@@ -56,10 +67,13 @@ export function useSpeechSubmission(api: ApiClient, onOwnerChanged: () => void) 
             setError(boardActive ? `${auditionBatchNote(started, voices, pending.current.hasUnknownOutcome(request, count))} ${generationMessage(cause)}` : generationMessage(cause));
         } finally {
             sending.current = false; setBusy(false);
-            if (current()) void refreshBalance(api, owner, current, balanceSeq);
+            if (current()) {
+                uncertain.current = pending.current.hasUnknownOutcome(request, count) ? { request, count } : null;
+                void refreshBalance(api, owner, current, balanceSeq);
+            }
         }
     }
     const generation = epoch.current, owner = getCacheUser();
     const settled = () => { if (generation === epoch.current && owner === getCacheUser()) void refreshBalance(api, owner, () => generation === epoch.current, balanceSeq); };
-    return { pending, sending, busy, result, jobs, complete, attempted, error, setError, priceOverride, resetAttempt, generate, settled };
+    return { pending, sending, busy, result, jobs, complete, attempted, error, setError, priceOverride, resetAttempt, editAttempt, generate, settled };
 }

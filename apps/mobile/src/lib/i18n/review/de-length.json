@@ -4482,6 +4482,30 @@
     "ratio": 1.63
   },
   {
+    "id": "dialogue.resetCast",
+    "english": "Reset voices",
+    "translation": "Stimmen zurücksetzen",
+    "ratio": 1.67
+  },
+  {
+    "id": "dialogue.add",
+    "english": "Add turn",
+    "translation": "Beitrag hinzufügen",
+    "ratio": 2.25
+  },
+  {
+    "id": "dialogue.modelLoad",
+    "english": "Could not load models. Try again later.",
+    "translation": "Modelle konnten nicht geladen werden. Versuche es später erneut.",
+    "ratio": 1.64
+  },
+  {
+    "id": "dialogue.addCredits",
+    "english": "Add credits",
+    "translation": "Credits hinzufügen",
+    "ratio": 1.64
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
