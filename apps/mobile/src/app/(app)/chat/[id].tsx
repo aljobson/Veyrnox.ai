@@ -59,8 +59,7 @@ export default function Conversation() {
     // Kept only while a send is unsettled, so a retry of the same message with the same choices is charged once.
     const { messageList, ...follow } = useChatAutoScroll(messages?.length ?? 0, sending, typing);
     const pendingKey = useRef<PendingSend | null>(null);
-    // The storage keys sent with pendingKey: a retry of a send whose outcome is not known reuses them (ATT-REVIEW-05).
-    const pendingRefs = useRef<SentRefs | null>(null);
+    const pendingRefs = useRef<SentRefs | null>(null); // storage keys sent with pendingKey (refsForSend)
     const [model, setModel] = useState<ChatModel | null>(null);
     const [options, setOptions] = useState<ReplyOptions>(NO_OPTIONS);
     const [images, setImages] = useState<ChatImage[]>([]);
@@ -169,8 +168,6 @@ export default function Conversation() {
             const isRetry = pending === pendingKey.current; // the same key as a send whose outcome is not known yet
             pendingKey.current = pending;
             setSending(true);
-            // Images from the phone go to storage first: a failed upload costs nothing and sends nothing.
-            // A retry of a send still unsettled reuses its refs, so it is the same request and finds the same job.
             let refs: readonly AttachmentRef[] = [];
             try {
                 pendingRefs.current = await refsForSend(pending.key, pendingRefs.current, attached, (files) => uploadChatImages(api, files, new AbortController().signal));
@@ -367,8 +364,7 @@ export default function Conversation() {
     async function addPhotos() {
         const r = await pickPhotos(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
         if (r.images.length) setImages((cur) => [...cur, ...r.images]);
-        const key = photoNoticeKey(r.problem);
-        if (key) setNotice(t(key));
+        const key = photoNoticeKey(r.problem); if (key) setNotice(t(key));
     }
     const videoAttempt = useRef(0);
     const [addVideo] = useState(() => createVideoAttach({
