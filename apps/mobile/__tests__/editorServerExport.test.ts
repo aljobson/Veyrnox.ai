@@ -2,8 +2,7 @@ import { AUDIO_DEFAULTS } from '../../../app/veyrnox/_lib/editorAudioSettings.mj
 import { AUDIO_EFFECT_DEFAULTS } from '../../../app/veyrnox/_lib/editorAudioEffects.mjs';
 import { originalAudioMedia } from '../src/lib/editorOriginalAudio';
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { SERVER_PLAIN_TEXT_STYLE, exportCopy, exportDurations, exportError, exportFeature, exportIdentity, exportSourceLink, freezeExport, renderStatus, sendExportAttempt } from
-    '../src/lib/editorServerExport';
+import { SERVER_PLAIN_TEXT_STYLE, exportCopy, exportDurations, exportError, exportFeature, exportIdentity, exportSourceLink, freezeExport, renderStatus, sendExportAttempt } from '../src/lib/editorServerExport';
 import { DEFAULT_TEXT_STYLE, emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import type { ProjectDocument } from '../src/lib/editorBridge';
 import { probeDuration } from '../src/lib/editorMediaDuration';
@@ -12,10 +11,7 @@ const owner = '11111111-1111-4111-8111-111111111111', id = '22222222-2222-4222-8
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => '11111111-1111-4111-8111-111111111111', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn() }));
 const file = { file: 'file://durable', type: 'video/mp4', size: 100, seconds: 4, verified: true as const };
-const fixture = (mediaId = `l-${id}`, len = 120): ProjectDocument => ({ project_id: id, schema_version: 3, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, timeline: { ...emptyTimeline(),
-    media: { [mediaId]: { id: mediaId, kind: 'video', name: 'Clip', frames: 300, assetSource: { projectId: id, assetId: owner } }, unused: { id: 'unused', kind: 'image' } }, video: [{ id: 'v1',
-    mediaId, in: 0, len, start: 0, trackId: 'video-0', rate: 1, groupId: 'g1' }], text: [{ id: 't1', text: 'Title', x: .5, y: .85, size: 6, len: 90, start: 0, style: { ...DEFAULT_TEXT_STYLE },
-    groupId: 'g1' }] } });
+const fixture = (mediaId = `l-${id}`, len = 120): ProjectDocument => ({ project_id: id, schema_version: 3, canvas: { aspect_ratio: '16:9', frame_rate: 30 }, timeline: { ...emptyTimeline(), media: { [mediaId]: { id: mediaId, kind: 'video', name: 'Clip', frames: 300, assetSource: { projectId: id, assetId: owner } }, unused: { id: 'unused', kind: 'image' } }, video: [{ id: 'v1', mediaId, in: 0, len, start: 0, trackId: 'video-0', rate: 1, groupId: 'g1' }], text: [{ id: 't1', text: 'Title', x: .5, y: .85, size: 6, len: 90, start: 0, style: { ...DEFAULT_TEXT_STYLE }, groupId: 'g1' }] } });
 test('export identity ignores only local backup metadata and leaves the document unchanged', () => {
     const saved = fixture(), before = JSON.stringify(saved), identity = exportIdentity(saved);
     expect(JSON.stringify(saved)).toBe(before);
@@ -56,8 +52,7 @@ test('blocks an overlong clip and unverified source', () => {
     expect(exportCopy(fixture(`l-${id}`, 121), { [`l-${id}`]: file }).blocked[0].reason).toBe('clipLongerThanFile');
     expect(exportCopy(fixture(), { [`l-${id}`]: { ...file, verified: undefined } }).blocked[0].reason).toBe('durationUnknown');
 });
-test.each([['j', 'audio', 'audio/mpeg', '/jobs/'], ['j', 'video', 'video/mp4', '/jobs/'], ['e', 'video', 'video/mp4', '/editor-renders/'], ['f', 'video', 'video/mp4',
-    '/masters/']])('resolves %s %s source links', async (prefix, kind, mime, path) => {
+test.each([['j', 'audio', 'audio/mpeg', '/jobs/'], ['j', 'video', 'video/mp4', '/jobs/'], ['e', 'video', 'video/mp4', '/editor-renders/'], ['f', 'video', 'video/mp4', '/masters/']])('resolves %s %s source links', async (prefix, kind, mime, path) => {
     const request = jest.fn().mockResolvedValue({ url: 'https://files.test/source', mime_type: mime });
     expect(await exportSourceLink({ request } as unknown as ApiClient, { id: `${prefix}-${id}`, kind })).toBe('https://files.test/source'); expect(request.mock.calls[0][0]).toContain(path);
 });

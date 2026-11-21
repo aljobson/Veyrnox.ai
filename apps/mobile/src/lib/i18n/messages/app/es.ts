@@ -55,6 +55,7 @@ export default {
   "editorAudioTools.insert": "Insertar {name}",
   "editorAudioTools.audioLaneNote": "Las pistas de audio aún no se oyen en la vista previa del teléfono. Usa la vista previa del sonido para escucharlo.",
   "editorAudioTools.added": "Se añadió {name} en {time}.",
+  "editorAudioTools.addedTrimmed": "Se añadió {name} en {time}, acortado para terminar con el vídeo.",
   "editorAudioTools.prepareFailed": "No se pudo preparar este sonido. Inténtalo de nuevo.",
   "editorAudioTools.locked": "Desbloquea primero esta pista.",
   "editorAudioTools.lockedAll": "Desbloquea primero las pistas con sonido.",

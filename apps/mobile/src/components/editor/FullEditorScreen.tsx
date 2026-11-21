@@ -108,7 +108,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' }));
             return result.error; }
         const commit = markDocument({ ...current, schema_version: 3, timeline: result.timeline });
-        if (commit.status !== 'accepted') return commit; if (result.trimmed) setProblem(t('editor.musicTrimmed'));
+        if (commit.status !== 'accepted') return commit; if (result.trimmed && !media.originalAudio) setProblem(t('editor.musicTrimmed'));
         if (select || media.kind === 'audio') { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
     const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() }); useAnnouncement(problem);

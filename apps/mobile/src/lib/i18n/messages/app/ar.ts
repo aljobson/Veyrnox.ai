@@ -54,6 +54,7 @@ export default {
   "editorAudioTools.insert": "إدراج {name}",
   "editorAudioTools.audioLaneNote": "لا تعمل الأصوات على المسارات الصوتية في معاينة الهاتف بعد. استخدم معاينة الصوت لسماعه.",
   "editorAudioTools.added": "تمت إضافة {name} عند {time}.",
+  "editorAudioTools.addedTrimmed": "تمت إضافة {name} عند {time}، مع تقصيره لينتهي مع الفيديو.",
   "editorAudioTools.prepareFailed": "تعذّر تجهيز هذا الصوت. حاول مجددًا.",
   "editorAudioTools.locked": "افتح قفل هذا المسار أولًا.",
   "editorAudioTools.lockedAll": "افتح قفل المسارات التي تحتوي على صوت أولًا.",

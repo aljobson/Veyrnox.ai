@@ -55,6 +55,7 @@ export default {
   "editorAudioTools.insert": "Insérer {name}",
   "editorAudioTools.audioLaneNote": "Les pistes audio ne sont pas encore audibles dans l’aperçu du téléphone. Utilisez l’aperçu du son pour l’écouter.",
   "editorAudioTools.added": "{name} ajouté à {time}.",
+  "editorAudioTools.addedTrimmed": "{name} ajouté à {time}, raccourci pour se terminer avec la vidéo.",
   "editorAudioTools.prepareFailed": "Impossible de préparer ce son. Réessayez.",
   "editorAudioTools.locked": "Déverrouillez d’abord cette piste.",
   "editorAudioTools.lockedAll": "Déverrouillez d’abord les pistes avec du son.",

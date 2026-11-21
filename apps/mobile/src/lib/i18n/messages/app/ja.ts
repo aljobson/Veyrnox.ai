@@ -54,6 +54,7 @@ export default {
   "editorAudioTools.insert": "{name}を挿入",
   "editorAudioTools.audioLaneNote": "音声トラックの音はまだスマートフォンのプレビューで再生されません。試聴で確認してください。",
   "editorAudioTools.added": "{name}を{time}の位置に追加しました。",
+  "editorAudioTools.addedTrimmed": "{time}に{name}を追加し、動画と同時に終わるように短縮しました。",
   "editorAudioTools.prepareFailed": "この音を準備できませんでした。もう一度お試しください。",
   "editorAudioTools.locked": "まずこのトラックのロックを解除してください。",
   "editorAudioTools.lockedAll": "まず音のあるトラックのロックを解除してください。",

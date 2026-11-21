@@ -1,4 +1,5 @@
 import { ensureOriginalAudioFile, createAudition } from '../src/lib/editorOriginalAudioFiles';
+import { setAudioModeAsync } from 'expo-audio';
 const mockFiles = new Map<string, number>();
 const mockWrite = jest.fn();
 const mockPlayers: any[] = [];
@@ -18,7 +19,15 @@ jest.mock('expo-audio', () => ({ setAudioModeAsync: jest.fn(async () => {}), cre
     const p = { play: jest.fn(), remove: jest.fn(), addListener: jest.fn((_event, callback) => { p.finish = callback; return { remove: jest.fn() }; }), finish: (_s: any) => {} };
     mockPlayers.push(p); return p;
 }) }));
-beforeEach(() => { mockFiles.clear(); mockWrite.mockReset(); mockPlayers.length = 0; });
+let consoleSpies: jest.SpyInstance[];
+beforeEach(() => {
+    mockFiles.clear(); mockWrite.mockReset(); mockPlayers.length = 0;
+    consoleSpies = (['log', 'warn', 'error'] as const).map(method => jest.spyOn(console, method).mockImplementation(() => {}));
+});
+afterEach(() => {
+    try { for (const spy of consoleSpies) expect(spy).not.toHaveBeenCalled(); }
+    finally { for (const spy of consoleSpies) spy.mockRestore(); }
+});
 test('reuses correct file, rewrites short file, deletes failed partial write', async () => {
     const uri = await ensureOriginalAudioFile('tap-click'); await ensureOriginalAudioFile('tap-click');
     expect(mockWrite).toHaveBeenCalledTimes(1); mockFiles.set(uri, 1);
@@ -33,4 +42,6 @@ test('audition replaces, stops on finish, and releases the player', async () => 
     mockPlayers[1].finish({ didJustFinish: true }); expect(mockPlayers[1].remove).toHaveBeenCalledTimes(1);
     expect(changed).toHaveBeenLastCalledWith(false);
     await audition.play('third'); audition.release(); expect(mockPlayers[2].remove).toHaveBeenCalledTimes(1);
+    expect(setAudioModeAsync).toHaveBeenCalledTimes(1);
+    expect(setAudioModeAsync).toHaveBeenCalledWith({ playsInSilentMode: true });
 });

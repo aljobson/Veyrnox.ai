@@ -30,7 +30,8 @@ export function useOriginalAudio(props: Props) {
         const clip = timeline.audio.find(c => c.mediaId === media.id);
         if (clip) {
             inserted.current = null;
-            setProblem(t('editorAudioTools.added', { name: media.name!, time: formatTimecode(clip.start, timeline.fps) }));
+            const key = clip.len < media.frames! ? 'editorAudioTools.addedTrimmed' : 'editorAudioTools.added';
+            setProblem(t(key, { name: media.name!, time: formatTimecode(clip.start, timeline.fps) }));
         }
     }, [timeline, setProblem]);
     const missing = Object.values(props.timeline.media).filter(m => m.originalAudio && !originalAudioProblem(m.originalAudio) && !props.localMediaUris[m.id]);
@@ -63,6 +64,10 @@ export function useOriginalAudio(props: Props) {
                 if (result === 'placed') {
                     inserted.current = media;
                     current.setLocalMediaUris(uris => ({ ...uris, [media.id]: uri }));
+                } else if (typeof result === 'object' && result.status === 'refused') {
+                    current.setProblem(t(result.reason === 'tooLarge' ? 'editorEditGate.tooLarge' : 'editorEditGate.invalid'));
+                } else if (result === 'dropped' || (typeof result === 'object' && result.status === 'not-live')) {
+                    current.setProblem(t('editorAudioTools.prepareFailed'));
                 }
             } else if (token === previewToken.current && !current.playing) {
                 audition.current ??= createAudition(active => { if (!active && mounted.current) setPreview(null); });

@@ -34,6 +34,8 @@ export function audioApplyAll(timeline: Timeline, settings: NonNullable<Clip['au
     const apply = (clip: Clip) => affected(clip) ? { ...clip, audioProcessing: { ...AUDIO_DEFAULTS, ...clip.audioProcessing,
         voice: settings.voice, pitch: settings.pitch, gateDb: settings.gateDb } } : clip;
     const next = { ...timeline, video: timeline.video.map(apply), audio: timeline.audio.map(apply) };
+    // As with audioPatch, the S1 gate decides whether an edit to a legacy document can be kept.
+    if (validateSequence(timeline)) return { timeline: next };
     const problem = validateSequence(next);
     return problem ? refusal(problem) : { timeline: next };
 }

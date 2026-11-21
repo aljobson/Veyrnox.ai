@@ -53,3 +53,14 @@ test.each([{ rate: 2 }, { reverse: true }, { speedCurve: [{ frame: 0, rate: .5 }
     expect(noiseStartAtPlayhead(clip, tl.media.m, 29)).toBeNull();
     expect(noiseStartAtPlayhead(clip, tl.media.m, 120)).toBeNull();
 });
+test('apply all leaves an already-invalid legacy document for the S1 gate', () => {
+    const tl = webSequenceV3(); tl.media.m.frames = 0;
+    expect(validateSequence(tl)).not.toBeNull();
+    const before = JSON.stringify(tl), settings = { ...AUDIO_DEFAULTS, voice: 'radio', pitch: 3, gateDb: -30 };
+    const result = audioApplyAll(tl, settings);
+    expect(result).toEqual({ timeline: { ...tl, video: tl.video.map(clip => ({ ...clip,
+        audioProcessing: { ...AUDIO_DEFAULTS, ...clip.audioProcessing, voice: 'radio', pitch: 3, gateDb: -30 } })) } });
+    expect(JSON.stringify(tl)).toBe(before);
+    tl.tracks[0].locked = true;
+    expect(audioApplyAll(tl, settings)).toEqual({ refused: 'lockedAll' });
+});

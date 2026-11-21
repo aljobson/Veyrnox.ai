@@ -42,7 +42,8 @@ export function AdjustPanel({ timeline, selection, selected, selectedMedia, sele
                 value={(selected as Clip).fadeIn ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeIn) => patchSelected({ fadeIn })} /><Stepper
                 label={t('editor.fadeout')} value={(selected as Clip).fadeOut ?? 0} min={0} max={selected.len} step={1} suffix={t('editor.frames')} onChange={(fadeOut) => patchSelected({
                 fadeOut })} /><Stepper label={t('editor.pan')} value={(selected as Clip).pan ?? 0} min={-1} max={1} step={0.1} onChange={(pan) => patchSelected({ pan })} /></> : null}
-            {selection.track !== 'text' && audioActions ? <AudioSettingsSection clip={selected as Clip} media={selectedMedia} actions={audioActions} /> : null}
+            {selection.track !== 'text' && audioActions ?
+                <AudioSettingsSection clip={selected as Clip} media={selectedMedia} track={selection.track} actions={audioActions} /> : null}
             {selection.track === 'video' ? <><Stepper label={t('editor.scale')} value={transformOf(selected as Clip).scale * 100} min={5} max={800} step={5} suffix="%" onChange={(value) =>
                 patchSelected({ transform: { ...transformOf(selected as Clip), scale: value / 100 } })} /><Stepper label={t('editor.rotation')} value={transformOf(selected as
                 Clip).rotation} min={-360} max={360} step={5} suffix="°" onChange={(rotation) => patchSelected({ transform: { ...transformOf(selected as Clip), rotation } })} /><Stepper

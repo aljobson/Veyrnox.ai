@@ -50,6 +50,7 @@ export default {
     "editorAudioTools.bpm": " · {value} BPM",
     "editorAudioTools.audioLaneNote": "Sounds on audio tracks don't play in the phone preview yet. Use Preview to hear one.",
     "editorAudioTools.added": "Added {name} at {time}.",
+    "editorAudioTools.addedTrimmed": "Added {name} at {time}, shortened to end with the video.",
     "editorAudioTools.prepareFailed": "This sound couldn't be prepared. Try again.",
     "editorAudioTools.locked": "Unlock this track first.",
     "editorAudioTools.lockedAll": "Unlock the tracks with sound first.",

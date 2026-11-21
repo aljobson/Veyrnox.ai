@@ -9,7 +9,7 @@ import { Disclosure } from './Disclosure';
 import { Slider } from './Slider';
 import { SegmentedChoice } from './SegmentedChoice';
 import type { AudioSettingsActions } from './useAudioSettingsActions';
-export function AudioSettingsSection({ clip, media, actions }: { clip: Clip; media?: Media; actions: AudioSettingsActions }) {
+export function AudioSettingsSection({ clip, media, track, actions }: { clip: Clip; media?: Media; track: 'video' | 'audio'; actions: AudioSettingsActions }) {
     const eq = { low: 0, mid: 0, high: 0, ...clip.eq }, processing = { ...AUDIO_DEFAULTS, ...clip.audioProcessing };
     const effects = { ...AUDIO_EFFECT_DEFAULTS, ...clip.audioEffects };
     const db = (value: number) => t('editorAudioTools.db', { value: formatNumber(value, 0) });
@@ -19,7 +19,8 @@ export function AudioSettingsSection({ clip, media, actions }: { clip: Clip; med
     const effect = (patch: Partial<typeof effects>) => actions.patch({ audioEffects: { ...effects, ...patch } });
     const sourceSeconds = (media?.frames ?? 0) / 30;
     return <View style={{ gap: ds.space.sm }}>
-        <Text style={styles.body}>{t('editorAudioTools.previewNote')}</Text>
+        {track === 'audio' ? <Text style={styles.body}>{t('editorAudioTools.audioLaneNote')}</Text> :
+            media?.kind !== 'image' && audioSectionsVisible(clip, media) ? <Text style={styles.body}>{t('editorAudioTools.previewNote')}</Text> : null}
         <Disclosure title={t('editorAudioTools.equaliser')}>
             {([{ key: 'low', label: t('editorAudioTools.low') }, { key: 'mid', label: t('editorAudioTools.mid') },
                 { key: 'high', label: t('editorAudioTools.high') }] as const).map(({ key, label }) =>

@@ -54,6 +54,7 @@ export default {
   "editorAudioTools.insert": "Вставить {name}",
   "editorAudioTools.audioLaneNote": "Звуки на аудиодорожках пока не слышны в предпросмотре телефона. Используйте прослушивание звука.",
   "editorAudioTools.added": "{name} добавлен на {time}.",
+  "editorAudioTools.addedTrimmed": "{name} добавлен в {time} и сокращён, чтобы закончиться вместе с видео.",
   "editorAudioTools.prepareFailed": "Не удалось подготовить этот звук. Попробуйте ещё раз.",
   "editorAudioTools.locked": "Сначала разблокируйте эту дорожку.",
   "editorAudioTools.lockedAll": "Сначала разблокируйте дорожки со звуком.",

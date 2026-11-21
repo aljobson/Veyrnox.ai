@@ -13,6 +13,7 @@ import { originalAudioMedia } from '../src/lib/editorOriginalAudio';
 import { webSequenceV3, envelope } from './fixtures/webSequenceV3';
 import { documentProblem } from '../src/lib/editorDocumentGate';
 import { type Timeline } from '../src/lib/nativeEditorModel';
+import type { InsertResult } from '../src/components/editor/useEditorGenerationReturns';
 // Match the existing screen suites' allowance for cold React Native rendering on shared hosts.
 jest.setTimeout(30000);
 const mockEnsure = jest.fn(async (_id: string) => 'file://sound');
@@ -21,10 +22,10 @@ jest.mock('../src/lib/editorOriginalAudioFiles', () => ({
     ensureOriginalAudioFile: (id: string) => mockEnsure(id), createAudition: () => ({ play: mockPlay, stop: mockStop, release: mockRelease }),
 }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'new' }));
-let root: Root, timeline: Timeline, commits: Timeline[], message: string | null, dirty: boolean;
+let root: Root, timeline: Timeline, commits: Timeline[], message: string | null, dirty: boolean, localUris: Record<string, string>;
 let actions: ReturnType<typeof useAudioSettingsActions>;
 const store = createFrameStore();
-function Harness({ catalog = false, playing = false }: { catalog?: boolean; playing?: boolean }) {
+function Harness({ catalog = false, playing = false, insertResult }: { catalog?: boolean; playing?: boolean; insertResult?: InsertResult }) {
     const [, render] = useState(0), [uris, setUris] = useState<Record<string, string>>({});
     const clip = timeline.video[0] ?? timeline.audio[0];
     const handlers = useAudioSettingsActions({ timeline, selection: { track: timeline.video.length ? 'video' : 'audio', id: clip.id }, frameStore: store,
@@ -32,12 +33,13 @@ function Harness({ catalog = false, playing = false }: { catalog?: boolean; play
             commits.push(next); timeline = next; dirty = true; render(n => n + 1); return true; }, setProblem: next => { message = next; } });
     const original = useOriginalAudio({ timeline, localMediaUris: uris, setLocalMediaUris: setUris, frameStore: store, playing,
         setProblem: next => { message = next; }, insertMedia: (media, at) => {
+            if (insertResult) return insertResult;
             const result = insertMediaAt(timeline, media, at); if ('error' in result) return result.error;
             timeline = result.timeline; commits.push(timeline); render(n => n + 1); return 'placed';
         } });
-    useLayoutEffect(() => { actions = handlers; });
+    useLayoutEffect(() => { actions = handlers; localUris = uris; });
     return catalog ? <OriginalAudioSection actions={original} /> :
-        <AudioSettingsSection clip={clip} media={timeline.media.m} actions={handlers} />;
+        <AudioSettingsSection clip={clip} media={timeline.media.m} track={timeline.video.length ? 'video' : 'audio'} actions={handlers} />;
 }
 beforeEach(() => { jest.useFakeTimers(); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); timeline = webSequenceV3();
     commits = []; message = null; dirty = false; store.set(30); jest.clearAllMocks(); });
@@ -62,6 +64,36 @@ test('refused noise edit leaves document, undo and dirty unchanged', async () =>
     await act(async () => actions.patch({ audioProcessing: { pitch: 0, voice: 'none', noiseReduction: .5, noiseStart: 30, noiseLength: .3, gateDb: -96 } }));
     expect(JSON.stringify(timeline)).toBe(before); expect(commits).toEqual([]); expect(dirty).toBe(false);
     expect(message).toBe('Choose a noise sample inside this file.');
+});
+test.each([
+    ['dropped', "This sound couldn't be prepared. Try again."],
+    [{ status: 'not-live' }, "This sound couldn't be prepared. Try again."],
+    [{ status: 'refused', reason: 'invalid' }, "That change can't be kept in this project."],
+    [{ status: 'refused', reason: 'tooLarge' }, 'This project is too large to save. Remove some clips or keyframes first.'],
+] as const)('announces insertion failure %j even when the insert callback sets no problem', async (insertResult, expected) => {
+    const before = JSON.stringify(timeline);
+    await act(async () => root.render(<Harness catalog insertResult={insertResult} />));
+    await press('Insert Soft keys');
+    expect(message).toBe(expected);
+    expect(JSON.stringify(timeline)).toBe(before); expect(commits).toEqual([]); expect(localUris).toEqual({});
+    expect(named('Insert Soft keys')[0].props.accessibilityState.disabled).toBe(false);
+});
+test('preview wording follows the selected lane and is absent for images', async () => {
+    const videoNote = 'The phone preview plays volume and fades. EQ, pan, voice, noise and effects are saved but not heard on the phone yet.';
+    const audioNote = "Sounds on audio tracks don't play in the phone preview yet. Use Preview to hear one.";
+    const text = (value: string) => root.container.queryAll(n => n.children.includes(value));
+    await screen(); await act(async () => mockSession.setSelection({ track: 'video', id: 'v1' })); await press('Adjust');
+    expect(text(videoNote).length).toBeGreaterThan(0); expect(text(audioNote)).toHaveLength(0);
+    await press('Audio'); await press('Insert Tap click'); await press('Adjust');
+    expect(text(audioNote).length).toBeGreaterThan(0); expect(text(videoNote)).toHaveLength(0);
+    await act(async () => {
+        const doc = mockSession.currentDocument()!, tl = doc.timeline as Timeline;
+        expect(mockSession.markDocument({ ...doc, timeline: { ...tl, media: { ...tl.media,
+            still: { id: 'still', kind: 'image', name: 'Still image', hasAudio: false, frames: 90, width: 640, height: 360 } },
+            video: [...tl.video, { id: 'v12', mediaId: 'still', trackId: 'video-0', start: 300, in: 0, len: 90, volume: 1, transition: 0 }], seq: 12 } })).toEqual({ status: 'accepted' });
+        mockSession.setSelection({ track: 'video', id: 'v12' });
+    });
+    expect(text(videoNote)).toHaveLength(0); expect(text(audioNote)).toHaveLength(0);
 });
 test('playhead shortens sample for tap-click and refuses below the minimum', async () => {
     timeline.media.m = { ...originalAudioMedia('tap-click', 'm') };
@@ -94,7 +126,7 @@ test.each([[240, 'text'], [500, 'text'], [240, 'audio'], [500, 'audio']] as cons
         else { timeline.audio = [{ id: 'a11', mediaId: 'm', start: 540, len: 60, in: 0, volume: 1, trackId: 'audio-0' }]; timeline.seq = 11; }
         store.set(frame); await act(async () => root.render(<Harness catalog />));
         await press('Insert Soft keys'); expect(timeline.audio.find(c => c.mediaId === 'l-new')!.start).toBe(0);
-        expect(message).toBe('Added Soft keys at 00:00:00:00.');
+        expect(message).toBe('Added Soft keys at 00:00:00:00, shortened to end with the video.');
     });
 test('existing caption selection cannot be treated as a legacy caption', async () => {
     const captionActions = { busy: false } as any;
@@ -154,6 +186,14 @@ test('real screen insert is one undo step, selects both representations and rest
     expect(mockSession.localMediaUris['l-new']).toBe('file://sound');
     await press('Undo'); expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
     expect(mockSession.history.canUndo).toBe(false);
+});
+test('real screen announces both placement and shortening inside a shorter video', async () => {
+    await screen(); await act(async () => mockSession.frameStore.set(30));
+    await press('Audio'); await press('Insert Soft keys');
+    const tl = mockSession.currentDocument()!.timeline as Timeline, clip = tl.audio[0];
+    expect(clip.start).toBe(30); expect(clip.len).toBe(210);
+    expect(clip.len).toBeLessThan(tl.media[clip.mediaId!].frames!);
+    expect(mockSession.problem).toBe('Added Soft keys at 00:00:01:00, shortened to end with the video.');
 });
 test('after tapping an existing caption word Treat as captions stays disabled', async () => {
     const tl = webSequenceV3(); tl.text[0].wordsEstimated = false; tl.text.push({ ...tl.text[0], id: 't11', caption: false, words: undefined }); tl.seq = 11;
