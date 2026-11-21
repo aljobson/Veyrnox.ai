@@ -3,11 +3,13 @@ import { View, Text, Pressable, TextInput, Switch } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { MotionPanel } from '../src/components/editor/tools/MotionPanel';
 import { MaskPanel } from '../src/components/editor/tools/MaskPanel';
+import { useLookActions } from '../src/components/editor/tools/useLookActions';
 import { useMotionActions } from '../src/components/editor/tools/useMotionActions';
 import { useMaskActions } from '../src/components/editor/tools/useMaskActions';
 import { createFrameStore } from '../src/components/editor/editorFrameStore';
 import { timelineOf, type Selection } from '../src/lib/nativeEditorModel';
-import { evaluatedTransform, motionPreset } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { colourDefaults } from '../../../app/veyrnox/_lib/editorColour.mjs';
+import { evaluatedParameters, evaluatedTransform, FILTER_DEFAULTS, motionPreset, parameterKeyframe } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { webSequenceV3 } from './fixtures/webSequenceV3';
 void [View, Text, Pressable, TextInput, Switch];
 let root: Root;
@@ -35,6 +37,10 @@ test('video panels expose named controls and headings, Push in commits exactly o
     for (const node of root.container.queryAll(n => ['button', 'adjustable', 'switch', 'radiogroup'].includes(n.props.accessibilityRole))) {
         expect(node.props.accessibilityLabel).toBeTruthy();
         if (node.props.accessibilityRole === 'adjustable') expect(node.props.accessible).toBe(true);
+    }
+    for (const label of ['Invert mask', 'Remove background by colour']) {
+        expect(root.container.queryAll(n => n.children.includes(label) && n.props.accessible === false)).toHaveLength(1);
+        expect(root.container.queryAll(n => n.props.accessibilityRole === 'switch' && n.props.accessibilityLabel === label)).toHaveLength(1);
     }
     await press('Push in'); await press('Apply motion path'); expect(applyTimeline).toHaveBeenCalledTimes(1);
     const result = (applyTimeline.mock.calls as unknown as [[typeof tl]])[0][0];
@@ -67,9 +73,6 @@ test('only one point expands; Go pauses and seeks, while outside anchors stay ed
     } finally { tl.video[0].keyframes = original; }
 });
 
-import { useLookActions } from '../src/components/editor/tools/useLookActions';
-import { colourDefaults } from '../../../app/veyrnox/_lib/editorColour.mjs';
-import { evaluatedParameters, FILTER_DEFAULTS, parameterKeyframe } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
 test('resetting already neutral S6 picture controls does not seed a key or commit', () => {
     const timeline = timelineOf(webSequenceV3()), clip = timeline.video[0]; clip.colourAdjustment = colourDefaults();
     clip.parameterKeyframes = [parameterKeyframe({ ...clip, parameterKeyframes: [] }, 0), parameterKeyframe({ ...clip, parameterKeyframes: [] }, 89)];

@@ -354,3 +354,34 @@ Post-fix proof before round 2: nine focused suites / 132 tests passed, mobile Ty
 7. `F7` low: the tested action policy was not driving the three purchase surfaces. Accepted; buy, restore, manage and close decisions now use the shared discriminated policy in Credits, the contextual sheet and the RevenueCat screen.
 
 The configured two-round inspection budget is exhausted, so these final accepted corrections are not labelled independently approved. Host proof on the final correction snapshot: 11 focused suites / 322 tests passed, including complete-locale parity, slow StoreKit completion, Publish-only management, rejected-CustomerInfo pack confirmation and independent Publish access; mobile TypeScript passed; locale generators and `git diff --check` passed. Changed-file ESLint had zero errors and only the same legacy warnings recorded for the touched files. Simulator accessibility and visual qualification remains the final Wave 2D gate.
+
+## Wave 3A Editor S7 inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `519d1a6b-8683-49ab-aacc-7eba760101ad`
+- Base: `879ba415b0e0490778beb793b49f49ccca37c7de`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `cf52d8a657f1033aed32926596721c86f01dcfff37a86ce5452d427ac35185b2`
+- Inspected diff SHA-256: `2926ef4cee6cefef86788ec17852c8619ba0eab628347d560a61197b9aca86e7`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave3a-s7-inspect-r1/claudex-rvg4ae5s/result.json`
+
+### Findings and host dispositions
+
+1. `S7-RTL-HANDLE` medium: the motion handle used physical `left` positioning without opting out of RTL mirroring. Accepted; the motion handle and transform layer now force LTR geometry, with an RTL regression covering physical position and positive drag direction.
+2. `S7-IMAGE-COVER-FLASH` low: an image with unknown decoded dimensions temporarily ignored the clip's `cover` fit. Accepted; the preview keeps the clip fit until decoding and then contains the image inside the correctly fitted layer, with before/after decode coverage.
+
+Post-fix proof before round 2: 10 focused suites / 156 tests passed, mobile TypeScript passed, app-i18n and locale-registry checks passed, and `git diff --check` passed.
+
+## Wave 3A Editor S7 inspection round 2
+
+- Result: `APPROVED` with one low-severity accessibility advisory
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `3228140c-83f0-4e1e-b914-343b73ad6323`
+- Base: `879ba415b0e0490778beb793b49f49ccca37c7de`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `993ddf7e1b5e598c1fbd27e7babc3783899dcb8a41edfd59870dd33a0aed3c95`
+- Inspected diff SHA-256: `2db8318bf3571f118746c1cd7f986fedaed6628fae22120c6692122203204945`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave3a-s7-inspect-r2/claudex-nh5df8_6/result.json`
+
+Claude found no material defect and confirmed the transform, motion-path, picture-key, mask, Smart Picture, bounds, export-cleanup, RTL and decoded-fit contracts against the corresponding web implementation. The low advisory, `S7-SWITCH-DUP-LABEL`, identified duplicate VoiceOver stops for the visible Invert mask and Remove background by colour labels beside identically labelled switches. Accepted after the approved snapshot: the visible labels are now accessibility-decorative while each switch remains the single labelled control, with a regression assertion.
+
+Final host proof: 10 focused suites / 156 tests passed; the two directly affected suites passed 28/28; mobile TypeScript passed; changed-file ESLint has zero warnings; app-i18n, web-locale sync and English-registry checks passed; and `git diff --check` passed. Device gesture, VoiceOver order, Dynamic Type and rotated portrait metadata remain part of the later integrated simulator qualification.

@@ -20,7 +20,7 @@ export function SmartPictureSection({ clip, actions }: { clip: Clip; actions: Ma
     return <View style={{ gap: ds.space.sm }}>
         <PanelHeading detail="" title={t('editorMotion.smart')} />
         {slider('denoise', 0, 1, .05)}
-        <Text style={styles.fieldLabel}>{t('editorMotion.keyEnabled')}</Text>
+        <Text accessible={false} style={styles.fieldLabel}>{t('editorMotion.keyEnabled')}</Text>
         <Switch accessibilityLabel={rawText(t('editorMotion.keyEnabled'))} value={value.keyEnabled} onValueChange={v => { actions.smart('keyEnabled', v); }}
             style={{ minHeight: 44, minWidth: 44 }} />
         {value.keyEnabled ? <>

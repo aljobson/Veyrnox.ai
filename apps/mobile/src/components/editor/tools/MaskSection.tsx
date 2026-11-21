@@ -26,7 +26,7 @@ export function MaskSection({ clip, fps, actions }: { clip: Clip; fps: number; a
         <SegmentedChoice label={t('editorMotion.shape')} value={clip.mask ?? 'none'} onChange={actions.shape}
             options={Object.entries(shapes).map(([value, label]) => ({ value, label }))} />
         {active ? <>
-            <Text style={styles.fieldLabel}>{t('editorMotion.inverted')}</Text>
+            <Text accessible={false} style={styles.fieldLabel}>{t('editorMotion.inverted')}</Text>
             <Switch accessibilityLabel={rawText(t('editorMotion.inverted'))} value={value.inverted} onValueChange={v => { actions.edit('inverted', v); }}
                 style={{ minHeight: 44, minWidth: 44 }} />
             {fields.map(field => <Slider key={field.key} label={t(field.label)} value={value[field.key] * (field.key === 'rotation' ? 1 : 100)}
