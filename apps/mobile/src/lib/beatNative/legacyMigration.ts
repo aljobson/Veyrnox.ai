@@ -104,20 +104,27 @@ export function startLegacyMigration(owner: string): Promise<void> {
     running.set(owner, run);
     return run;
 }
-/** Account deletion: remove old beats linked to this account and takes recorded in them that nothing else uses. */
+/** One failed file must not stop the rest of an account's deletion. */
+const attempt = async <T>(work: () => Promise<T>): Promise<T | undefined> => {
+    try { return await work(); } catch { return undefined; }
+};
+/** Account deletion. A take's recorded origin proves whose it is, so it goes even if another old beat still references it.
+ * A take with an unknown origin, or one recorded in someone else's beat, is never removed. */
 export function eraseLegacyOwner(owner: string): Promise<void> {
     return serial(async () => {
         const beats = documentFiles(), takes = legacyTakeIO();
-        const { rows, unreadable } = await readLegacy(beats);
+        const { rows } = await readLegacy(beats);
         const mine = rows.filter(record => record.cloud?.userId === owner);
-        if (!mine.length) return;
-        const names = await legacyTakeNames(takes), mineIds = new Set(mine.map(record => record.id));
-        const stillUsed = new Set(rows.filter(record => !mineIds.has(record.id)).flatMap(record => takeRefs(record.doc)));
-        if (!unreadable) for (const ref of new Set(mine.flatMap(record => takeRefs(record.doc)))) {
-            const files = filesOf(names, ref), origin = await originOf(takes, files);
-            if (!stillUsed.has(ref) && origin && mineIds.has(origin)) for (const name of files) await takes.remove?.(name);
+        const migrated = await attempt(() => documentFiles(owner).list()) ?? [];
+        const beatIds = migrated.filter(name => /^[a-zA-Z0-9_-]+\.json$/.test(name)).map(name => name.slice(0, -5));
+        const mineIds = new Set([...mine.map(record => record.id), ...beatIds]);
+        await attempt(() => legacyTakeNames(takes));
+        const names = await attempt(() => takes.list()) ?? [];
+        for (const ref of new Set(names.map(name => name.split('.')[0]))) {
+            const files = filesOf(names, ref), origin = await attempt(() => originOf(takes, files));
+            if (origin && mineIds.has(origin)) for (const name of files) await attempt(async () => takes.remove?.(name));
         }
-        for (const record of mine) await beats.remove(beatFile(record.id));
+        for (const record of mine) await attempt(() => beats.remove(beatFile(record.id)));
     });
 }
 const gatedBeats = (files: BeatFiles, ready: Promise<void>): BeatFiles => ({

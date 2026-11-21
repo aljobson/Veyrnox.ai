@@ -36,7 +36,7 @@ async function seedTake(id: string, origin: string) {
     await files.putState({ ...state, state: 'committed' });
     return row;
 }
-beforeEach(async () => { await signOut(); resetCacheUser(); beatStore.resetBeats(); resetLegacyMigration(); mockDisk.clear(); diskFaults.write = diskFaults.move = undefined; });
+beforeEach(async () => { await signOut(); resetCacheUser(); beatStore.resetBeats(); resetLegacyMigration(); mockDisk.clear(); diskFaults.write = diskFaults.move = diskFaults.read = diskFaults.remove = undefined; });
 
 test('a linked old beat and its take go to the linked account, and every gate sees that owner', async () => {
     const id = beatId(1), take = await seedTake(takeId(1), id); seedBeat(docWith(id, 'Old linked', [take]), ALICE);
@@ -128,4 +128,35 @@ test('account deletion erases migrated and still-unmigrated beats for that accou
     expect(paths(`accounts/${ALICE}`)).toEqual([]); expect(mockDisk.has(legacyPath(stuck))).toBe(false); expect(paths(`beat-takes/${stuckTake.id}`)).toEqual([]);
     await signIn(BOB);
     expect(beatStore.getBeat(theirs)?.title).toBe('Theirs'); expect((await loadBeatTake(theirTake.id))?.samples).toEqual(theirTake.samples);
+});
+
+describe.each([['after', true], ['before', false]])('account deletion %s migration', (_when, migrateFirst) => {
+    test.each([['a never-synced beat', undefined], ['another account\'s beat', BOB]])('removes the owner\'s recording shared with %s', async (_label, otherUser) => {
+        const mine = beatId(20), other = beatId(21), bobs = beatId(22);
+        const shared = await seedTake(takeId(20), mine), bobTake = await seedTake(takeId(22), bobs), unknown = await seedTake(takeId(23), beatId(99));
+        seedBeat(docWith(mine, 'Mine', [shared]), ALICE); seedBeat(docWith(other, 'Other', [shared]), otherUser); seedBeat(docWith(bobs, 'Bob own', [bobTake]), BOB);
+        if (migrateFirst) await signIn(ALICE); else await bindCacheUser(BOB);
+        if (!migrateFirst) await beatStore.hydrateBeats();
+        await signOut();
+        await eraseLocalBeats(ALICE);
+        expect(paths(`beat-takes/${shared.id}`)).toEqual([]); expect(paths(`accounts/${ALICE}`)).toEqual([]); expect(mockDisk.has(legacyPath(mine))).toBe(false);
+        if (!otherUser) expect(mockDisk.has(legacyPath(other))).toBe(true);
+        expect([...paths(`beat-takes/${unknown.id}`), ...paths(`${bobTake.id}`)].length).toBeGreaterThan(1);
+        await signIn(BOB);
+        expect((await loadBeatTake(bobTake.id))?.samples).toEqual(bobTake.samples);
+        expect(await loadBeatTake(shared.id)).toBeNull(); expect(await loadBeatTake(unknown.id)).toBeNull();
+    });
+});
+
+test.each(['read', 'remove'] as const)('a %s failure on one take does not stop the rest of the deletion', async fault => {
+    const first = beatId(30), second = beatId(31), bobs = beatId(32);
+    const failing = await seedTake(takeId(30), first), other = await seedTake(takeId(31), second), bobTake = await seedTake(takeId(32), bobs);
+    seedBeat(docWith(first, 'First', [failing]), ALICE); seedBeat(docWith(second, 'Second', [other]), ALICE); seedBeat(docWith(bobs, 'Bob', [bobTake]), BOB);
+    const bobFiles = paths(`beat-takes/${bobTake.id}`);
+    diskFaults[fault] = uri => uri.includes(`beat-takes/${failing.id}`);
+    await eraseLocalBeats(ALICE);
+    diskFaults[fault] = undefined;
+    expect(paths(`beat-takes/${other.id}`)).toEqual([]);
+    expect(mockDisk.has(legacyPath(first))).toBe(false); expect(mockDisk.has(legacyPath(second))).toBe(false);
+    expect(mockDisk.has(legacyPath(bobs))).toBe(true); expect(paths(`beat-takes/${bobTake.id}`)).toEqual(bobFiles);
 });
