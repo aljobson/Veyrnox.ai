@@ -2,6 +2,7 @@ import { ApiError, type ApiClient } from '../src/lib/api';
 import { createMusicCreateFlow } from '../src/lib/music/createFlow';
 import { createGenerationTracker } from '../src/lib/music/queue';
 import { createGenerationAttempts } from '../src/lib/music/attempts';
+import { MUSIC_KEY_SCALES, MUSIC_TIME_SIGNATURES } from '../src/lib/music/shared';
 import { custom, draft, entitlements, generation, input, quote, view } from './fixtures/musicCreate';
 const deferred = () => { let resolve!: (value: any) => void; const promise = new Promise<any>(r => { resolve = r; }); return { promise, resolve }; };
 let request: jest.Mock, flow: ReturnType<typeof createMusicCreateFlow>;
@@ -29,6 +30,58 @@ const reviewLongCustom = async () => {
     await customFlow(); flow.edit({ duration: 135, styles: 'Warm strings' }); await flow.review();
     expect(flow.attempts.snapshot()).toMatchObject({ phase: 'UNSUBMITTED', input: { duration: 135 } });
 };
+test('simple advanced controls use the exact capability-gated wire body', async () => {
+    const premium = entitlements.models[1];
+    flow.edit({ ...input, model_id: premium.id, variety: 73, styleInfluence: 24, excludeStyles: '  brass, choir  ',
+        bpm: '96', keyScale: MUSIC_KEY_SCALES[19], timeSignature: MUSIC_TIME_SIGNATURES[2].value });
+    request.mockResolvedValueOnce({ ...quote, model_id: premium.id });
+    await flow.review();
+    const call = request.mock.calls.find(([path]) => path.endsWith('/generation-quotes'))!;
+    expect(JSON.parse(call[1].body)).toEqual({
+        mode: 'simple', prompt: input.prompt, title: input.title, instrumental: true, model_id: premium.id, duration_seconds: input.duration,
+        variety: 73, style_influence: 24, exclude_styles: 'brass, choir', bpm: 96,
+        key_scale: MUSIC_KEY_SCALES[19], time_signature: '6',
+    });
+    expect(flow.attempts.snapshot()?.input).toMatchObject({ variety: 73, styleInfluence: 24, excludeStyles: 'brass, choir',
+        bpm: '96', keyScale: MUSIC_KEY_SCALES[19], timeSignature: '6' });
+});
+test('blank and unsupported advanced controls have exact null-or-absent wire shapes', async () => {
+    const premium = entitlements.models[1];
+    flow.edit({ ...input, model_id: premium.id, excludeStyles: '   ' });
+    request.mockResolvedValueOnce({ ...quote, model_id: premium.id }); await flow.review();
+    expect(JSON.parse(request.mock.calls.find(([path]) => path.endsWith('/generation-quotes'))![1].body)).toEqual({
+        mode: 'simple', prompt: input.prompt, title: input.title, instrumental: true, model_id: premium.id, duration_seconds: input.duration,
+        variety: 50, style_influence: 0, exclude_styles: null, bpm: null, key_scale: null, time_signature: null,
+    });
+    flow.edit({ model_id: input.model_id, variety: 99, styleInfluence: 88, excludeStyles: 'x'.repeat(501), bpm: '999', keyScale: 'H Major', timeSignature: '5' });
+    request.mockClear(); await flow.review();
+    expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({
+        mode: 'simple', prompt: input.prompt, title: input.title, instrumental: true, model_id: input.model_id, duration_seconds: input.duration,
+    });
+});
+test.each(['39', '221', '96.5', 'words'])('invalid premium BPM %s blocks before a request', async bpm => {
+    flow.edit({ model_id: entitlements.models[1].id, bpm }); request.mockClear(); await flow.review();
+    expect(flow.snapshot().error).toBe('bpm_invalid'); expect(request).not.toHaveBeenCalled();
+});
+test.each(['UNSUBMITTED', 'AMBIGUOUS'] as const)('capability refresh invalidates only %s advanced quote when safe', async phase => {
+    const premium = entitlements.models[1];
+    flow.edit({ ...input, model_id: premium.id, variety: 71, styleInfluence: 29, bpm: '104', keyScale: 'A Minor', timeSignature: '3' });
+    request.mockResolvedValueOnce({ ...quote, model_id: premium.id }); await flow.review();
+    if (phase === 'AMBIGUOUS') { request.mockRejectedValueOnce(new ApiError(0, 'network')); await flow.confirm(); }
+    const pending = flow.attempts.snapshot();
+    const changed = { ...entitlements, models: entitlements.models.map(model => model.id === premium.id
+        ? { ...model, controls: { ...model.controls, tempo_key_meter: false } } : model) };
+    request.mockResolvedValueOnce(changed); await flow.refreshEntitlements();
+    expect(flow.snapshot().input).toMatchObject({ variety: 71, styleInfluence: 29, bpm: '104', keyScale: 'A Minor', timeSignature: '3' });
+    expect(flow.attempts.snapshot()).toBe(phase === 'UNSUBMITTED' ? null : pending);
+    if (phase === 'AMBIGUOUS') {
+        flow.edit({ variety: 1, styleInfluence: 2, bpm: '', keyScale: '', timeSignature: '' });
+        await flow.confirm();
+        const sends = request.mock.calls.filter(([path]) => path.endsWith('/generations'));
+        expect(sends.map(([, init]) => JSON.parse(init.body))).toEqual(Array(2).fill({ quote_id: pending!.quote.quote_id, idempotency_key: pending!.key }));
+        expect(flow.tracker.snapshot().entries[0].input).toMatchObject({ variety: 71, styleInfluence: 29, bpm: '104', keyScale: 'A Minor', timeSignature: '3' });
+    }
+});
 test.each(['UNSUBMITTED', 'AMBIGUOUS'] as const)('refresh clamps duration and preserves form fields with an %s quote', async phase => {
     await reviewLongCustom();
     if (phase === 'AMBIGUOUS') {
@@ -67,7 +120,7 @@ test('a refresh during submission preserves the attempt and acknowledgement upda
     expect(request.mock.calls.filter(([path]) => path.endsWith('/generations'))).toHaveLength(1);
 });
 test('custom saves then quotes with returned revision and immutable input', async () => {
-    await customFlow(); await flow.review();
+    await customFlow(); flow.edit({ variety: 99, styleInfluence: 88, excludeStyles: 'choir', bpm: '120', keyScale: 'C Major', timeSignature: '4' }); await flow.review();
     const calls = request.mock.calls.filter(([path]) => path.endsWith('/drafts/custom') || path.endsWith('/generation-quotes'));
     expect(calls.map(([, init]) => init?.method ?? 'GET')).toEqual(['GET', 'PUT', 'POST']);
     expect(JSON.parse(calls[2][1].body)).toEqual({ mode: 'custom', draft_revision: 1, instrumental: false, rights_confirmed: true, duration_seconds: 30 });

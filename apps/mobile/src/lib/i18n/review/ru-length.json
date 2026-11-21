@@ -3720,6 +3720,18 @@
     "ratio": 1.83
   },
   {
+    "id": "music.create.advanced.variety",
+    "english": "Variety",
+    "translation": "Разнообразие",
+    "ratio": 1.71
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Тональность",
+    "ratio": 3.67
+  },
+  {
     "id": "musicActions.action.reload",
     "english": "Reload song",
     "translation": "Загрузить песню заново",

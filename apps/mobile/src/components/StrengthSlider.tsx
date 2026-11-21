@@ -4,13 +4,13 @@ import { colors } from '../theme';
 import { themedStyles, useThemedStyles } from './ui/AppearanceContext';
 import { useReducedMotion } from './ui/useReducedMotion';
 
-const STEP = 0.1;
+const DEFAULT_STEP = 0.1;
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
-export interface StrengthSliderProps { value: number; valueText?: string; tone?: 'media' | 'surface'; label: string; disabled?: boolean; onChange: (value: number) => void; onChangeStart?: () => void; onChangeEnd?: () => void }
+export interface StrengthSliderProps { value: number; valueText?: string; tone?: 'media' | 'surface'; label: string; disabled?: boolean; step?: number; onChange: (value: number) => void; onChangeStart?: () => void; onChangeEnd?: () => void }
 
 // An Instagram-style strength line: drag anywhere along it, or use the screen reader's up and down.
-export function StrengthSlider({ value, valueText, label, disabled, onChange, onChangeStart, onChangeEnd, tone = 'media' }: StrengthSliderProps) {
+export function StrengthSlider({ value, valueText, label, disabled, step = DEFAULT_STEP, onChange, onChangeStart, onChangeEnd, tone = 'media' }: StrengthSliderProps) {
     const themed = useThemedStyles(sheets);
     const reduced = useReducedMotion();
     const surface = tone === 'surface';
@@ -19,6 +19,7 @@ export function StrengthSlider({ value, valueText, label, disabled, onChange, on
     const live = useRef({ disabled, onChange, onChangeStart, onChangeEnd });
     live.current = { disabled, onChange, onChangeStart, onChangeEnd };
     const [active, setActive] = useState(false);
+    const accessibilityStep = Number.isFinite(step) && step > 0 ? step : DEFAULT_STEP;
     const move = (x: number) => { if (!live.current.disabled) live.current.onChange(clamp(x / width.current)); };
     const responder = useRef(PanResponder.create({
         onStartShouldSetPanResponder: () => !live.current.disabled,
@@ -35,7 +36,8 @@ export function StrengthSlider({ value, valueText, label, disabled, onChange, on
             accessibilityValue={{ min: 0, max: 100, now: percent, text: valueText ?? `${percent}%` }}
             accessibilityState={{ disabled: !!disabled }}
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-            onAccessibilityAction={event => { if (!disabled) { onChangeStart?.(); onChange(clamp(value + (event.nativeEvent.actionName === 'increment' ? STEP : -STEP))); onChangeEnd?.(); } }}
+            onAccessibilityAction={event => { if (!disabled) { onChangeStart?.();
+                onChange(clamp(Math.round((value + (event.nativeEvent.actionName === 'increment' ? accessibilityStep : -accessibilityStep)) * 10000) / 10000)); onChangeEnd?.(); } }}
             style={styles.wrap}
         >
             <Text style={[styles.value, surface && themed.value]}>{percent}</Text>

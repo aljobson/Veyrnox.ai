@@ -126,6 +126,12 @@ export type MusicSimpleQuoteInput = {
     readonly instrumental: true;
     readonly model_id: string;
     readonly duration_seconds: number;
+    readonly variety?: number;
+    readonly style_influence?: number;
+    readonly exclude_styles?: string | null;
+    readonly bpm?: number | null;
+    readonly key_scale?: string | null;
+    readonly time_signature?: string | null;
 };
 export type MusicCustomQuoteInput = {
     readonly mode: 'custom';
@@ -167,6 +173,8 @@ export type MusicGenerationView = {
 export type MusicInputSnapshot = Readonly<{
     mode: MusicQuoteMode; title: string; lyrics: string; styles: string; prompt: string;
     instrumental: boolean; duration: number; model_id: string;
+    variety: number; styleInfluence: number; excludeStyles: string;
+    bpm: string; keyScale: string; timeSignature: string;
 }>;
 
 // POST /api/v1/music/generation-quotes answers 201 with this.

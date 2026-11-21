@@ -27,7 +27,7 @@ Object.assign(process.env, {
 });
 const { POST } = await import('../app/api/v1/generations/route.js');
 const { GET } = await import('../app/api/catalog/route.js');
-const ID = 'basketball-3', ONE = 'community-action-hero-strut';
+const ID = 'basketball-3', ONE = 'community-athlete-identity-swap';
 const manifest = { [ID]: { ...fixtureSource, role: 'the green character', key: `template-swap-clips/${ID}/${fixtureSource.sha256}.mp4` }, [ONE]: fixtureSource };
 const AUTH = '11111111-1111-4111-8111-111111111111', JOB = '22222222-2222-4222-8222-222222222222';
 const PHOTO = '33333333-3333-4333-8333-333333333333';

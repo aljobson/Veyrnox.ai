@@ -1,4 +1,4 @@
-import { paletteForScheme, resolveScheme, THEME_PREFERENCES, toggledTheme } from '../src/theme';
+import { DEFAULT_APPEARANCE, paletteForScheme, resolveScheme, THEME_PREFERENCES, toggledTheme } from '../src/theme';
 
 const light = {
     background: '#ffffff',
@@ -20,6 +20,7 @@ const ratio = (a: string, b: string): number => (Math.max(lum(a), lum(b)) + 0.05
 describe('light and dark', () => {
     test('offers System, Light and Dark', () => {
         expect(THEME_PREFERENCES).toEqual(['system', 'light', 'dark', 'oled']);
+        expect(DEFAULT_APPEARANCE.theme).toBe('system');
     });
 
     test('provides concrete navigation colours for both resolved appearances', () => {

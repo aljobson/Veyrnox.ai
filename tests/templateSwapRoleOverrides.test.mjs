@@ -14,7 +14,7 @@ const clip = id => ({ ...source, role: 'the cat', key: `template-swap-clips/${id
 
 test('every reviewed role is a usable, distinct-from-default role for a live one-photo id', () => {
   const entries = Object.entries(TEMPLATE_SWAP_ROLE_OVERRIDES);
-  assert.equal(entries.length, 21);
+  assert.equal(entries.length, 69);
   for (const [id, role] of entries) {
     assert.ok(TEMPLATE_SWAP_CLIPS.includes(id), `${id} is in the live registry`);
     const safe = normaliseSwapRole(role);
@@ -26,7 +26,7 @@ test('every reviewed role is a usable, distinct-from-default role for a live one
 
 test('a listed id uses its reviewed role; any other id keeps the manifest role', () => {
   assert.equal(effectiveSwapRole(ID, 'the cat'), NEW);
-  assert.equal(effectiveSwapRole('community-action-hero-strut', 'The Main  Character'), 'the main character');
+  assert.equal(effectiveSwapRole('community-athlete-identity-swap', 'The Main  Character'), 'the main character');
   assert.equal(effectiveSwapRole('__proto__', 'the man'), 'the man');
   assert.equal(effectiveSwapRole('x', 'the cat', { x: 'bad\nrole' }), null);
 });
@@ -38,6 +38,6 @@ test('the gate projects, prompts and records the reviewed role, never the manife
   assert.equal(live.template.images, 2);
   const resolved = await resolveTemplateSwapVideo(live, capabilityFor(catalog[0].provider_endpoint), {}, async () => ({ url: 'signed' }));
   assert.equal(resolved.identity.role, NEW);
-  const other = 'community-action-hero-strut';
-  assert.equal(templateSwapAvailable(other, { env, catalog, registry: [other], manifest: { [other]: { ...source, role: 'the main character' } } }).template.role, 'the main character');
+  const other = 'community-athlete-identity-swap';
+  assert.equal(templateSwapAvailable(other, { env, catalog, registry: [other], manifest: { [other]: { ...clip(other), role: 'the main character' } } }).template.role, 'the main character');
 });

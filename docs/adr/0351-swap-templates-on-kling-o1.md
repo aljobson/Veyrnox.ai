@@ -622,3 +622,11 @@ The importer copied each one-photo clip's role from its source prompt, which des
 **Decision.** The owner approved the ten clips, roles and hashes. The importer gains a `bound_source` kind, reached only with `--kinds bound_source`, and `--add-to-live`, which reads the pinned live manifest first and adds to it without replacing a clip. The registry goes from 276 to 286 ids and the manifest from 411 to 421 clips. Price and prompt follow the existing swap path (47 credits per 5 s).
 
 **Proof.** All ten clips and the new manifest were read back from production R2 and matched by SHA-256. One paid fal run per template (ten runs, about $8.40) used the same photo, prompt and element shape as the route, and each result was compared frame by frame with its source. All ten kept the scene and motion and replaced the named person. These were direct provider calls: the signed-in product flow was not run for these ids before merge. Known limits: the model may carry an object from the photo into the clip and invent footwear when the photo does not show feet.
+
+## Amendment 20 (2026-11-21): tested swap templates join the gallery, and the phone composer turns on
+
+**Decision.** The owner asked that the gallery list only templates that work. `TESTED_SWAP_GALLERY_TEMPLATE_IDS` holds 51 registered swap clips. Each passed one paid Kling O1 run with a real photo and a frame comparison with its source clip, and its exact role is in `TEMPLATE_SWAP_ROLE_OVERRIDES`. Of 60 clips tested, 3 failed, 5 were weak and 1 redirects to a duplicate, so those 9 stay unlisted. The listed video gallery goes from 20 to 71.
+
+The phone flag `TEMPLATE_SWAP_RUNTIME` turns on. Its old comment described a WebView package that was removed. The composer's cut-out now runs on the native `veyrnox-vision` module, whose models are added and hash-checked at prebuild, so an installed phone build needs a new native build to include this change.
+
+**Limits.** Runs were direct provider calls with one photo per clip; four clips also passed with a second photo. A signed-in web and phone job must still be run after deployment.

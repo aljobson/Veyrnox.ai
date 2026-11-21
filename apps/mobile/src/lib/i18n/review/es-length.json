@@ -3582,6 +3582,18 @@
     "ratio": 2
   },
   {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Tonalidad",
+    "ratio": 3
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "Conservar la mía",

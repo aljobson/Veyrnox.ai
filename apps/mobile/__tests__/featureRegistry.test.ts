@@ -59,12 +59,10 @@ describe('mobile feature registry', () => {
         expect(off.find((feature) => feature.id === 'tools')?.keywords).not.toContain('face filters');
     });
 
-    test('every searchable feature has translated copy and a real native route', () => {
+    test('every feature has translated copy and a real native route', () => {
         const catalog = en as Record<string, string>;
         for (const feature of MOBILE_FEATURES) {
-            if (feature.keywords) {
-                expect({ id: feature.id, key: feature.titleKey, value: catalog[feature.titleKey] }).toEqual({ id: feature.id, key: feature.titleKey, value: expect.any(String) });
-            }
+            expect({ id: feature.id, key: feature.titleKey, value: catalog[feature.titleKey] }).toEqual({ id: feature.id, key: feature.titleKey, value: expect.any(String) });
             expect({ id: feature.id, href: feature.href, exists: nativeRouteExists(feature.href) }).toEqual({ id: feature.id, href: feature.href, exists: true });
         }
     });

@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GALLERY_PRESETS as PRESETS, ALL_TEMPLATES, galleryTemplates, templateById } from '../app/veyrnox/_lib/templates.js';
-import { VIDEO_TEMPLATE_CAP, VIDEO_GALLERY_TEMPLATE_IDS } from '../app/veyrnox/_lib/videoTemplateGallery.js';
+import { VIDEO_TEMPLATE_CAP, VIDEO_GALLERY_TEMPLATE_IDS, TESTED_SWAP_GALLERY_TEMPLATE_IDS } from '../app/veyrnox/_lib/videoTemplateGallery.js';
 import { publishedImageTemplates } from '../app/veyrnox/_lib/imageTemplates.js';
 import { isEnglishPrompt } from '../scripts/lib/english-prompt.mjs';
 import { createTemplatesFor } from '../app/veyrnox/_lib/createTemplates.js';
@@ -16,8 +16,11 @@ import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlo
 import { imageSlots } from '../lib/templateBinding.js';
 import { templateContract } from '../lib/templateContract.js';
 import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
+import { TEMPLATE_SWAP_CLIPS } from '../app/veyrnox/_lib/templateSwapClips.js';
+import { effectiveSwapRole } from '../lib/templateSwapRoleOverrides.mjs';
 
 const CAP = 150, IMAGE_CAP = 150, AUDIO_CAP = 100;
+const PHOTO_ROUTE_PRESETS = PRESETS.filter((preset) => !TESTED_SWAP_GALLERY_TEMPLATE_IDS.includes(preset.id));
 const VIDEO_REF = /@video\d*/i;
 const MULTI_PHOTO_EXCLUSIONS = Object.freeze([
     'community-spinning-wardrobe-swap',
@@ -43,7 +46,7 @@ test('the video gallery lists exactly the keep list, at most 150', () => {
 });
 
 test('every listed video template binds the person\'s photo, needs no @video, and can generate', () => {
-    for (const preset of PRESETS) {
+    for (const preset of PHOTO_ROUTE_PRESETS) {
         const detail = templateDetail(preset.id);
         const citedSlots = imageSlots(detail.prompt);
         assert.ok(citedSlots.length >= 1, `${preset.id} refers to the person's photo`);
@@ -61,11 +64,20 @@ test('every listed video template binds the person\'s photo, needs no @video, an
 test('no listed video template is a swap recipe the server refuses before charging', () => {
     // A swap recipe ("Replace X in the video with <<<image_1>>>") needs the template's own source clip. The generations
     // route answers template_blocked for it (lib/templateFidelity.js), so listing it only shows people an error.
-    const refused = PRESETS.filter((preset) => {
+    const refused = PHOTO_ROUTE_PRESETS.filter((preset) => {
         const contract = templateContract(preset.id);
         return contract && swapNeedsSourceVideo(contract.sourcePrompt);
     }).map((preset) => preset.id);
     assert.deepEqual(refused, []);
+});
+
+test('every tested swap template is a registered clip with a reviewed role, so it runs on the swap path', () => {
+    assert.equal(TESTED_SWAP_GALLERY_TEMPLATE_IDS.length, 51);
+    for (const id of TESTED_SWAP_GALLERY_TEMPLATE_IDS) {
+        assert.ok(VIDEO_GALLERY_TEMPLATE_IDS.includes(id), id);
+        assert.ok(TEMPLATE_SWAP_CLIPS.includes(id), id);
+        assert.notEqual(effectiveSwapRole(id, 'the main character'), 'the main character', id);
+    }
 });
 
 test('the three audited multi-photo templates stay hidden but keep resolving by direct link', () => {
@@ -86,7 +98,7 @@ test('Create lists no video starts: none of them used the person\'s photo', () =
 });
 
 test('every listed video prompt is English', () => {
-    for (const preset of PRESETS) assert.ok(isEnglishPrompt(templateDetail(preset.id).prompt), preset.id + ' is not English');
+    for (const preset of PHOTO_ROUTE_PRESETS) assert.ok(isEnglishPrompt(templateDetail(preset.id).prompt), preset.id + ' is not English');
 });
 
 test('images list at most 150, every prompt English', () => {
