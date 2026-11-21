@@ -6,7 +6,7 @@ import { lipSyncSourceHref, readCreativeReuse } from '../src/lib/creativeReuse';
 const mockParams = lipSyncSourceHref('job_123').params;
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams, useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
-jest.mock('expo-video', () => ({ useVideoPlayer: () => ({}), VideoView: () => null }));
+jest.mock('expo-video', () => ({ useVideoPlayer: () => ({ addListener: () => ({ remove: () => undefined }) }), VideoView: () => null }));
 jest.mock('expo-image', () => ({ Image: () => null }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [{ id: 'latentsync' }] }));
 jest.mock('../src/lib/sources', () => ({ ...jest.requireActual('../src/lib/sources'), requiredNamedSlots: () => [{ slot: 'video', required: true }, { slot: 'audio', required: true }] }));

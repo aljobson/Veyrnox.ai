@@ -18,8 +18,8 @@ describe('guided creative feature registry', () => {
         for (const feature of CREATIVE_FEATURES) {
             expect(feature.model).toMatch(/^[a-z0-9][a-z0-9.-]+$/);
             expect(feature.steps).toHaveLength(3);
-            expect(feature.example.url).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
-            if (feature.example.kind === 'video') expect(feature.example.posterUrl).toMatch(/^https:\/\/cdn\.lipsync\.video\//);
+            expect(feature.example.url).toMatch(/^https:\/\/(cdn\.lipsync\.video|veyrnox\.ai\/examples)\//);
+            if (feature.example.kind === 'video') expect(feature.example.posterUrl).toMatch(/^https:\/\/(cdn\.lipsync\.video|veyrnox\.ai\/examples)\//);
             expect('sourceUrl' in feature.example).toBe(false);
             expect(creativeFeature(feature.slug)).toBe(feature);
         }
