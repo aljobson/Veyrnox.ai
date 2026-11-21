@@ -119,5 +119,6 @@
   "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional ru translation.",
   "speech.audition.count": "Shared numeric board capacity notation; no language-specific words.",
   "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
-  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
+  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
+  "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale."
 }

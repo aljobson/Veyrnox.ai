@@ -1,3 +1,4 @@
+import { exportRefusal } from '../../lib/editorExportRefusal';
 import { rawText } from '../../lib/i18n/translate';
 import { Text as StatusText } from '../ui/Text';
 import { Alert, Platform, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -29,7 +30,9 @@ export function ServerExportSheet(props: ServerExportProps) {
             </View> : null}
             {state.blocked.length ? <View>
                 {state.blocked.some(item => item.reason === 'notOnPhone') ? <Text style={styles.text}>{t('editorServerExport.notOnPhone')}</Text> : null}
-                {state.blocked.map((item, index) => <Text key={`${item.id}-${index}`} style={styles.text}>{item.name ? `${item.name}: ` : ''}{t(`editorServerExport.${item.reason}` as Parameters<typeof t>[0])}</Text>)}
+                {state.blocked.map((item, index) => <Text key={`${item.id}-${index}`} style={styles.text}>{item.name ? `${item.name}: ` : ''}{item.reason === 'originalAudio' ?
+                    exportRefusal('media.originalAudio') :
+                    t(`editorServerExport.${item.reason}` as Parameters<typeof t>[0])}</Text>)}
             </View> : null}
             {state.phase === 'quoted' && state.quote ? <View>
                 <Text style={styles.text}>{t('editorServerExport.confirm', { credits: state.quote.credits, resolution: state.resolution })}</Text>

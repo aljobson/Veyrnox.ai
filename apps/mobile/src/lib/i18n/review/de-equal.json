@@ -316,5 +316,12 @@
   "speech.audition.count": "Shared numeric board capacity notation; no language-specific words.",
   "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
   "beatAi.priceValue": "Credits is the product currency name; the amount is a localized placeholder.",
-  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
+  "beatAi.candidate": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose.",
+  "editorAudioTools.bpm": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.db": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.description": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.hz": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.percent": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.radio": "Standard audio term or unit notation, retained in this locale.",
+  "editorAudioTools.seconds": "Standard audio term or unit notation, retained in this locale."
 }
