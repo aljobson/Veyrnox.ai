@@ -49,7 +49,7 @@ test('takedown changes only the private implementation by adding the serialized 
     const oldBody = old.split("SET search_path='' AS $$")[1].split('$$;')[0];
     const newBody = migration.split("SET search_path='' AS $$")[1].split('$$;')[0];
     const addition = `    -- Serialize with moderation UPDATEs, including an in-flight takedown.
-    PERFORM 1 FROM public.music_publications WHERE song_id=p_song_id FOR UPDATE;
+    PERFORM 1 FROM public.music_publications WHERE song_id=p_song_id ORDER BY id FOR UPDATE;
     -- A separate statement observes the committed status at READ COMMITTED.
     IF EXISTS(SELECT 1 FROM public.music_publications WHERE song_id=p_song_id AND status='blocked') THEN
         RETURN jsonb_build_object('ok',false,'code','PUBLICATION_BLOCKED');
@@ -60,13 +60,15 @@ test('takedown changes only the private implementation by adding the serialized 
     assert.ok(newBody.indexOf(addition) > newBody.indexOf("'slug',v_existing.slug"), 'replay branch stays first');
     assert.ok(newBody.indexOf(addition) < newBody.indexOf('INSERT INTO public.music_creator_profiles'), 'refusal precedes writes');
     assert.match(migration, /CREATE OR REPLACE FUNCTION private\.music_publish_song_pre_0570\(/);
-    assert.doesNotMatch(migration, /(?:FUNCTION public\.|GRANT\s)/);
+    assert.doesNotMatch(migration, /FUNCTION public\.music_(?:publish_song|comment_mutate)\(/);
+    assert.doesNotMatch(migration, /GRANT[^;]*private\.music_publish_song_pre_0570/);
     assert.match(migration, /REVOKE ALL ON FUNCTION private\.music_publish_song_pre_0570\(TEXT,UUID,UUID,TEXT,TEXT,BOOLEAN,BOOLEAN,TEXT,TEXT\) FROM PUBLIC, anon, authenticated, service_role;/);
 });
 
 test('takedown trigger propagates only to live siblings and has no caller grants', async () => {
     const migration = await readFile(new URL('../packages/db/schema/supabase/0576_music_publish_respects_takedown.sql', import.meta.url), 'utf8');
-    const trigger = migration.split('CREATE OR REPLACE FUNCTION private.music_block_publication_siblings()')[1];
+    const trigger = migration.split('CREATE OR REPLACE FUNCTION private.music_block_publication_siblings()')[1]
+        .split('CREATE OR REPLACE FUNCTION public.music_read_song_publication(')[0];
     assert.ok(trigger);
     assert.match(trigger, /RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS \$\$/);
     assert.match(trigger, /UPDATE public\.music_publications SET status='blocked',updated_at=now\(\)\s+WHERE song_id=NEW\.song_id AND status='published';/);
@@ -78,7 +80,7 @@ test('takedown trigger propagates only to live siblings and has no caller grants
     assert.doesNotMatch(afterFunction, /(?:^|;)\s*(?:UPDATE|INSERT|DELETE)\b/mi, 'migration performs no data cleanup');
 });
 
-for (const status of ['blocked', 'published']) {
+for (const status of ['blocked', 'published', 'unpublished']) {
     test(`dialog handles a successful ${status} receipt and clears its attempt key`, async () => {
         const source = await readFile(new URL('../app/veyrnox/_components/music/MusicPublicationDialog.jsx', import.meta.url), 'utf8');
         // Execute the actual submit handler without a browser or a JSX dependency.
@@ -92,7 +94,10 @@ for (const status of ['blocked', 'published']) {
             rights: true, busy: false, attemptRef, song: { id, version_id: id },
             handle: 'creator', displayName: 'Creator', comments: false, remixes: false,
             key: () => `publish.fresh-${++keysMinted}`,
-            t: name => { assert.equal(name, 'music.publication.blocked'); return 'Taken down message'; },
+            t: name => {
+                assert.ok(['music.publication.blocked', 'music.publication.notPublic'].includes(name));
+                return name === 'music.publication.blocked' ? 'Taken down message' : 'This track is not public.';
+            },
             gatewayFetch: async (url, options) => {
                 assert.equal(url, `/music/songs/${id}/publication`);
                 assert.equal(options.method, 'POST');
@@ -115,10 +120,32 @@ for (const status of ['blocked', 'published']) {
             assert.deepEqual(notices, [''], 'a blocked receipt must never announce Published');
         } else {
             assert.equal(state.error, '');
-            assert.match(state.notice, /^Published\./);
+            if (status === 'published') assert.match(state.notice, /^Published\./);
+            else {
+                assert.equal(state.notice, 'This track is not public.');
+                assert.ok(notices.every(notice => !notice.startsWith('Published.')));
+            }
         }
         await publish();
         assert.equal(requests[1].idempotency_key, 'publish.fresh-1');
         assert.equal(attemptRef.current, null);
     });
 }
+
+test('owner publication read preserves 0463 except for blocked-first ordering and keeps its grants', async () => {
+    const read = name => readFile(new URL(`../packages/db/schema/supabase/${name}`, import.meta.url), 'utf8');
+    const original = await read('0463_music_publication.sql');
+    const migration = await read('0576_music_publish_respects_takedown.sql');
+    const definition = source => source.match(/CREATE OR REPLACE FUNCTION public\.music_read_song_publication\([\s\S]*?\$\$;/)[0];
+    assert.equal(definition(migration).replace("ORDER BY (p.status='blocked') DESC, p.created_at DESC", 'ORDER BY p.created_at DESC'), definition(original));
+    for (const grant of original.matchAll(/(?:REVOKE|GRANT)[^;]*FUNCTION public\.music_read_song_publication\(TEXT,UUID\)[^;]*;/g)) {
+        assert.ok(migration.includes(grant[0]));
+    }
+});
+
+test('dialog renders a loaded blocked status instead of the publication form without a duplicate error', async () => {
+    const source = await readFile(new URL('../app/veyrnox/_components/music/MusicPublicationDialog.jsx', import.meta.url), 'utf8');
+    assert.match(source, /const blocked = publication\?\.status === 'blocked';/);
+    assert.match(source, /\{blocked \? <p role="status"[^>]*>\{t\('music.publication.blocked'\)\}<\/p> : live \?/);
+    assert.match(source, /\{error && !blocked \? <p role="alert"/);
+});

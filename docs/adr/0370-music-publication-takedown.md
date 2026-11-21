@@ -1,4 +1,4 @@
-# ADR-0369: Music publication takedowns survive republishing
+# ADR-0370: Music publication takedowns survive republishing
 
 Status: Proposed (frozen work order; migration not applied)
 Date: 2026-11-21
@@ -21,8 +21,8 @@ REVOKE includes PUBLIC, anon, authenticated and service_role. Public execution
 remains service_role only, and its grants are untouched.
 
 After ownership/current-version validation and the existing key-replay branch,
-publish locks every existing publication row for the song with FOR UPDATE,
-regardless of status. A separate statement checks for any blocked row. If one
+publish locks every existing publication row for the song in id order with
+ORDER BY id FOR UPDATE, regardless of status. A separate statement checks for any blocked row. If one
 exists, it returns `PUBLICATION_BLOCKED` before the creator-profile upsert,
 attestation insert or publication insert. The wrapper sees a failure and does
 not mint an actor. HTTP maps this to 403 `publication_blocked`: the operation is
@@ -38,7 +38,10 @@ takedown). It does not reconstruct the original receipt or make the song
 public. If the current version has changed, validation still returns
 `NOT_FOUND` before replay. The successful-replay actor-minting behavior of the
 wrapper is unchanged. Unpublish remains a harmless no-op for blocked rows;
-public track reads remain not found.
+public track reads remain not found. The owner read, `music_read_song_publication`,
+keeps 0463's signature, STABLE/SECURITY DEFINER settings and service_role-only
+grants, but orders by `(p.status='blocked') DESC, p.created_at DESC` so a newer
+unpublished row cannot hide an older takedown.
 
 The same migration installs `music_block_publication_siblings`, an idempotent
 AFTER INSERT OR UPDATE OF status trigger, firing only when NEW.status is blocked.
@@ -52,10 +55,25 @@ when the migration is applied.
 
 ## Concurrent moderation
 
-Moderation tooling must UPDATE an existing publication row to blocked, taking
-the same row lock. When targeting an unpublished slug it must also set
-`unpublished_at=NULL`: the existing CHECK constraint requires that timestamp
-only for unpublished rows. If that UPDATE is in flight, publish waits; the subsequent
+Moderation tooling must UPDATE an existing publication row, taking the same
+row lock. Use this one takedown statement for every publication status:
+
+```sql
+UPDATE public.music_publications SET status='blocked', unpublished_at=NULL, updated_at=now() WHERE slug=$1;
+```
+
+Clearing unpublished_at satisfies the existing CHECK constraint for an old
+unpublished slug as well as a live one. For multi-row songs, moderation should
+first lock all of the song's rows in the same transaction with
+`SELECT id FROM public.music_publications WHERE song_id=$1 ORDER BY id FOR UPDATE`,
+then run the takedown UPDATE. Publish uses that same deterministic id ordering.
+A direct slug UPDATE can acquire its target before the trigger locks a sibling,
+so it can still deadlock against publish or another moderation transaction.
+Callers/tooling must retry the entire transaction on SQLSTATE `40P01` with bounded
+backoff; a deadlock abort is not a successful takedown. No new automatic retry
+is added to the existing HTTP route.
+
+If the takedown UPDATE is in flight, publish waits; the subsequent
 blocked check sees the committed status under READ COMMITTED. If publish gets
 the lock and commits first, moderation waits and then takes the row down. The
 trigger's UPDATE sees and blocks the newly committed live sibling even if the
@@ -75,7 +93,12 @@ The web publication dialog already maps error codes to copy. Its new message,
 `musicEnglish.mjs`, the existing Music English fallback for every locale.
 An HTTP-successful replay with publication.status='blocked' clears the attempt
 key and stores the returned publication, but shows that same error message and
-does not announce Published. Ordinary successful publication is unchanged.
+does not announce Published. A loaded blocked publication renders the same
+message instead of the form; the status is shown once, with a status role.
+Only a receipt with status='published' announces Published. Other successful
+receipts, including status='unpublished', show the neutral “This track is not
+public.” message through the same i18n fallback. Ordinary successful publication
+is unchanged.
 The phone already hides Publish for a blocked row; a stale client now receives
 the typed refusal. No mobile code changes.
 
@@ -111,7 +134,9 @@ the Music blocks suite in CI, excluded from the migrate-base acceptance glob.
 It checks normal publication, actor minting, full-row snapshots on refusal,
 fresh keys and changed versions/permissions, exact replay semantics, unchanged
 unpublish/public reads, independent songs/owners, both concurrent lock orders,
-function grants and two migration reapplications. It also checks takedown of
+function grants and two migration reapplications. Both lock orders are tested
+with an unpublished and a live row present, and the owner read is tested with
+an older blocked row and a newer unpublished row. It also checks takedown of
 an old unpublished slug with a live sibling, insertion of a blocked row beside
 an already committed live sibling, and the two-connection publish INSERT race
 against moderation of the old slug. Lock waits are observed via
@@ -123,8 +148,10 @@ storage); it does not install dependencies. Run heavy validation through
 Node proof: `node --test tests/musicBlocks*.test.mjs`. This includes the existing
 wrapper drift guard, the 403/code mapping, the POST response boundary, and an
 exact-body comparison against 0504 with only the added block removed, trigger
-structure/grants, and execution of the dialog submit handler for blocked replay
-and ordinary success. The agreed focused command is
+structure/grants, and execution of the dialog submit handler for blocked replay,
+ordinary success and an unpublished receipt, plus the loaded blocked render
+branch. The owner-read definition is compared with 0463, allowing only its
+ordering change. The agreed focused command is
 `node --test tests/musicBlocksTakedown.test.mjs`. The SQL
 suite also checks the replayed pg_proc body against that baseline. Host checks
 must include default privileges, account deletion, privacy export, route-gate,
@@ -132,16 +159,16 @@ ADR/docs checks and lint.
 
 ## Implementation environment and plan deviations
 
-The initial implementation found 0576 and 0369 free across 1,906 local refs.
-The fix-round recheck covered 1,910 locally available main/remote refs (1,063
-distinct directory trees). No 0576 migration was found, but origin/main now
-contains `0369-mobile-ota-app-version-runtime.md` (b757d1cc4). This work retains
-ADR 0369 as explicitly requested by the frozen fix round; the host must resolve
-that numeric collision before integration. GitHub DNS access failed, so current
-remote branches and open PRs still require independent verification.
+The final fix round retains unapplied migration 0576 and renumbers this ADR to
+0370 because main owns `0369-mobile-ota-app-version-runtime.md`. A read-only
+check of 1,910 locally available main/remote refs (1,063 distinct directory
+trees) found no competing 0576 migration or 0370 ADR. The current
+remote branch inventory could not be refreshed: `git ls-remote --heads origin`
+failed because github.com could not be resolved. Fresh remote and open-PR
+numbering checks remain with the host before integration.
 
-Local PostgreSQL TCP access was denied and no default Unix socket was present.
-Consequently the implementation body was copied exactly from 0504's source as
+The initial implementation recorded denied PostgreSQL TCP access and no default
+Unix socket. Consequently the implementation body was copied exactly from 0504's source as
 renamed by 0570, rather than extracted from a database replay here. The host
 must run the disposable acceptance suite and database audits; those results
 are not implied by the Node proof.
@@ -149,8 +176,8 @@ are not implied by the Node proof.
 The above database limitation records the initial implementation. The accepted
 fix round explicitly prohibits running PostgreSQL here; only cheap Node checks
 are run, with database replay, concurrency and privilege audits left to the host.
-0576 and 0369 are retained as requested. The operator/test UPDATE of an old
-unpublished slug includes unpublished_at=NULL to satisfy the existing constraint;
+0576 is edited in place and the takedown ADR is now 0370 as requested. The
+operator/test UPDATE includes unpublished_at=NULL to satisfy the existing constraint;
 no constraint or applied migration is changed.
 
 The requested ADR baseline update conflicts with the repository's frozen

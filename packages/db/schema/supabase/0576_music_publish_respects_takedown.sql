@@ -35,7 +35,7 @@ BEGIN
             'handle',p_handle,'display_name',p_display_name));
     END IF;
     -- Serialize with moderation UPDATEs, including an in-flight takedown.
-    PERFORM 1 FROM public.music_publications WHERE song_id=p_song_id FOR UPDATE;
+    PERFORM 1 FROM public.music_publications WHERE song_id=p_song_id ORDER BY id FOR UPDATE;
     -- A separate statement observes the committed status at READ COMMITTED.
     IF EXISTS(SELECT 1 FROM public.music_publications WHERE song_id=p_song_id AND status='blocked') THEN
         RETURN jsonb_build_object('ok',false,'code','PUBLICATION_BLOCKED');
@@ -90,3 +90,17 @@ CREATE TRIGGER music_block_publication_siblings
 AFTER INSERT OR UPDATE OF status ON public.music_publications
 FOR EACH ROW WHEN (NEW.status='blocked')
 EXECUTE FUNCTION private.music_block_publication_siblings();
+
+-- ADR-0370: owner reads must not hide a takedown behind a newer unpublished row.
+CREATE OR REPLACE FUNCTION public.music_read_song_publication(p_auth_id TEXT,p_song_id UUID)
+RETURNS JSONB LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+    SELECT jsonb_build_object('ok',true,'publication',COALESCE((SELECT jsonb_build_object(
+        'slug',p.slug,'status',p.status,'allow_comments',p.allow_comments,'allow_remixes',p.allow_remixes,
+        'commercial_status',p.commercial_status,'handle',cp.handle,'display_name',cp.display_name,
+        'published_at',p.published_at) FROM public.music_publications p
+        JOIN public.users u ON u.id=p.user_id JOIN public.music_creator_profiles cp ON cp.user_id=p.user_id
+        WHERE u.auth_id=p_auth_id AND p.song_id=p_song_id ORDER BY (p.status='blocked') DESC, p.created_at DESC LIMIT 1),'null'::jsonb));
+$$;
+
+REVOKE ALL ON FUNCTION public.music_read_song_publication(TEXT,UUID) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.music_read_song_publication(TEXT,UUID) TO service_role;
