@@ -1,9 +1,11 @@
 import { Text } from './ui';
 import { t } from '../lib/i18n';
 import { shapeLabelParts, type ShapeItem } from '../lib/videoShape';
-export function videoShapeLabel(item: ShapeItem): string | null {
+export function videoShapeLabel(item: ShapeItem, exactFallback = false): string | null {
     const parts = shapeLabelParts(item);
-    return parts ? `${t(`videoShape.${parts.orientation}`)}${parts.ratio ? ` ${parts.ratio}` : ''}` : null;
+    const w = item.video_width ?? item.width, h = item.video_height ?? item.height;
+    const detail = parts?.ratio || (exactFallback && w && h ? `${w}x${h}` : '');
+    return parts ? `${t(`videoShape.${parts.orientation}`)}${detail ? ` ${detail}` : ''}` : null;
 }
 export function VideoShapeBadge({ item, mismatch = false }: { item: ShapeItem; mismatch?: boolean }) {
     const label = videoShapeLabel(item);

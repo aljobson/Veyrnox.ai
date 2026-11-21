@@ -41,6 +41,13 @@ export function filterJobs(jobs: readonly Job[], f: Filters, kinds: ReadonlyMap<
     );
 }
 
+// A shape filter hides unknown rows, so measure the loaded window before applying it.
+export function shapeMeasurementIds(jobs: readonly Job[], filters: Filters, kinds: ReadonlyMap<string, Kind>, visibleIds: readonly string[]): string[] {
+    const shapeActive = filters.kind === 'video' && filters.shape && filters.shape !== 'all';
+    return filterJobs(jobs, { ...filters, shape: 'all' }, kinds)
+        .filter(job => shapeActive || visibleIds.includes(job.job_id)).map(job => job.job_id);
+}
+
 export const RETENTION_URGENT_MS = 7 * 86_400_000;
 export type Retention =
     | { kind: 'none' } | { kind: 'held' } | { kind: 'unavailable' } | { kind: 'default' }

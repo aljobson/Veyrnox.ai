@@ -29,7 +29,7 @@ function ShapeHint({ api, video, options, value, onChange, completedJobKey }: Hi
         return () => { live = false; };
     }, [api, owner, enabled, completedJobKey, cachedVideo]);
     if (!enabled || !previous || !requestedMismatch(previous, value)) return null;
-    const match = matchingOption(previous, options), label = videoShapeLabel(previous) ?? '';
+    const match = matchingOption(previous, options), label = videoShapeLabel(previous, true) ?? '';
     return <Card>
         <Text>{t('videoShape.hint', { previous: label, chosen: videoShapeLabel({ aspect: requestedShape(value) }) ?? '' })}</Text>
         {match ? <Button variant="secondary" label={t('videoShape.match', { shape: label })} onPress={() => onChange(match)} /> : <Text>{t('videoShape.unsupported', { shape: label })}</Text>}

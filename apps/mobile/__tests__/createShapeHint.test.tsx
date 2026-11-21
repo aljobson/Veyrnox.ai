@@ -45,3 +45,13 @@ test('another account never sees the mounted account cache', async () => {
     mockOwner = 'other'; request.mockResolvedValue({ jobs: [] });
     await render(); expect(button()).toHaveLength(0); expect(request).toHaveBeenCalledTimes(2);
 });
+test('a nonstandard previous shape names its exact dimensions in the hint and unsupported sentence', async () => {
+    request.mockResolvedValue({ jobs: [{ ...old, video_width: 1280, video_height: 768 }] });
+    await render();
+    const previous = `${t('videoShape.landscape')} 1280x768`;
+    const chosen = `${t('videoShape.landscape')} 16:9`;
+    for (const value of [t('videoShape.hint', { previous, chosen }), t('videoShape.unsupported', { shape: previous })]) {
+        expect(root.container.queryAll(node => node.children.includes(rawText(value)))).toHaveLength(1);
+    }
+    expect(root.container.queryAll(node => node.props.accessibilityRole === 'button')).toHaveLength(0);
+});

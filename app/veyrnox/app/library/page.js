@@ -243,7 +243,7 @@ export default function Library() {
 
   const shapedRows = useLibraryShapes(rows, visible, actor, models, { state: tab, kind, shape, favourites: favOnly ? favourites : null });
   const shown = shapedRows.slice(0, visible);
-  const list = filterRows(shown, { state: tab, kind, shape, favourites: favOnly ? favourites : null }, models);
+  const list = filterRows(shown, { state: tab, kind, shape, favourites: favOnly ? favourites : null }, models, selected);
   const hasMore = rows.length > visible;
   const filtered = tab !== 'all' || kind !== 'all' || shape !== 'all' || favOnly;
   // The button that was pressed leaves with the empty state: focus goes to the filter now in force, not to the page.

@@ -1,5 +1,5 @@
 import { useLibraryShapes } from '../../../lib/useLibraryShapes';
-import { SHAPE_FILTERS, type ShapeFilter } from '../../../lib/libraryView';
+import { SHAPE_FILTERS, shapeMeasurementIds, type ShapeFilter } from '../../../lib/libraryView';
 import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
 import { Image } from 'expo-image';
 import type { VideoThumbnail } from 'expo-video';
@@ -64,7 +64,8 @@ export default function Library() {
     const names = useMemo(() => new Map(models.map((m) => [m.id, m.name])), [models]);
     const [focused, setFocused] = useState(false);
     const [active, setActive] = useState(AppState.currentState === 'active');
-    const shapedJobs = useLibraryShapes(api, jobs ?? [], visibleShapeIds, kinds, getCacheUser(), focused && active);
+    const measurementIds = shapeMeasurementIds(jobs ?? [], { state: stateFilter, kind: kindFilter, shape: shapeFilter, favourites: favOnly ? favourites : null }, kinds, visibleShapeIds);
+    const shapedJobs = useLibraryShapes(api, jobs ?? [], measurementIds, kinds, getCacheUser(), focused && active);
     const shown = useMemo(() => filterJobs(shapedJobs, { state: stateFilter, kind: kindFilter, shape: shapeFilter, favourites: favOnly ? favourites : null }, kinds), [shapedJobs, stateFilter, kindFilter, shapeFilter, favOnly, favourites, kinds]);
 
     const [unreachable, setUnreachable] = useState(false);

@@ -209,7 +209,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
             <SmartCutPlanner
               clips={items}
               analyses={analyses.size ? analyses : null}
-              disabled={busy || mixed}
+              disabled={busy}
+              planningDisabled={mixed}
               applyRevision={smartCutApplyRevision}
               onApply={applySmartCut}
               onUndo={smartCutSnapshot ? undoSmartCut : null}

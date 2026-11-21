@@ -4,7 +4,7 @@ import type { Job, Kind } from './media';
 import { validDimension } from './videoShape';
 
 type Dimensions = { video_width: number; video_height: number };
-export function useLibraryShapes(api: ApiClient, jobs: readonly Job[], visibleIds: readonly string[], kinds: ReadonlyMap<string, Kind>, owner: string | undefined, enabled = true): Job[] {
+export function useLibraryShapes(api: ApiClient, jobs: readonly Job[], candidateIds: readonly string[], kinds: ReadonlyMap<string, Kind>, owner: string | undefined, enabled = true): Job[] {
     const [snapshot, setSnapshot] = useState<{ owner: string | undefined; items: Record<string, Dimensions> }>({ owner, items: {} });
     const measured = snapshot.owner === owner ? snapshot.items : {};
     const [, wake] = useState(0);
@@ -17,7 +17,7 @@ export function useLibraryShapes(api: ApiClient, jobs: readonly Job[], visibleId
     useEffect(() => {
         const state = run.current;
         if (!enabled || !owner || !state?.live || state.owner !== owner || state.busy || state.stopped) return;
-        const ids = jobs.filter(job => visibleIds.includes(job.job_id) && job.state === 'succeeded' && !job.held && !job.shape_ambiguous
+        const ids = jobs.filter(job => candidateIds.includes(job.job_id) && job.state === 'succeeded' && !job.held && !job.shape_ambiguous
             && job.has_asset && (kinds.get(job.model_id) === 'video' || job.output_type === 'editor-render') && !job.video_width && !measured[job.job_id]
             && (!job.asset_expires_at || Date.parse(job.asset_expires_at) > Date.now()) && !state.tried.has(job.job_id)).slice(0, 12).map(job => job.job_id);
         if (!ids.length) return;

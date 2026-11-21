@@ -18,7 +18,7 @@ export function useLibraryShapes(rows, visible, actor, models, filters) {
   useEffect(() => {
     const state = run.current;
     if (!actor || !state?.live || state.actor !== actor || state.busy || state.stopped) return;
-    const ids = filterRows(rows.slice(0, visible), filters, models).filter(row => row.state === 'succeeded' && !row.held && !row.shape_ambiguous
+    const ids = filterRows(rows.slice(0, visible), { ...filters, shape: 'all' }, models).filter(row => row.state === 'succeeded' && !row.held && !row.shape_ambiguous
       && row.has_asset !== false && kindOfRow(row, models) === 'video' && !row.video_width && !measured[row.job_id]
       && (!row.asset_expires_at || Date.parse(row.asset_expires_at) > Date.now()) && !state.tried.has(row.job_id)).slice(0, 12).map(row => row.job_id);
     if (!ids.length) return;

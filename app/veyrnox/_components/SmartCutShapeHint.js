@@ -32,7 +32,7 @@ function ShapeHint({ completedJobKey, video, options = [], value, onChange, acto
   if (jobs) return <>{jobs.filter(job => job.state === 'succeeded' && job.mime_type?.startsWith('video/')).map(job => <FinishedShapeWarning key={`${actor}:${job.job_id}`} job={job} />)}</>;
   if (!enabled || !previous || !requestedMismatch(previous, value)) return null;
   const match = matchingOption(previous, options);
-  const label = videoShapeLabel(previous, t);
+  const label = videoShapeLabel(previous, t, true);
   return <div role="status" className="mt-3 text-sm text-vx-fg-muted">
     <p>{t('app.library.shape.hint', { previous: label, chosen: videoShapeLabel({ aspect: requestedShape(value) }, t) })}</p>
     {match ? <button type="button" className="mt-2 min-h-11 rounded-full border border-vx-border px-4 text-vx-fg" onClick={() => onChange(match)}>{t('app.library.shape.match', { shape: label })}</button>
