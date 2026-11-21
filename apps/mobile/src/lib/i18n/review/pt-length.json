@@ -4308,6 +4308,18 @@
     "ratio": 2.31
   },
   {
+    "id": "musicExport.choose",
+    "english": "File format",
+    "translation": "Formato do arquivo",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicExport.retry",
+    "english": "Try again",
+    "translation": "Tentar novamente",
+    "ratio": 1.78
+  },
+  {
     "id": "editorLook.blend",
     "english": "Blend",
     "translation": "Mesclagem",

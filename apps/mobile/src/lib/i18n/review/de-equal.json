@@ -337,5 +337,9 @@
   "editorLook.effect.sepia": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "editorLook.transition.zoom": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "editorLook.blend.source-over": "Shared technical term or locale-independent notation, reviewed for this editor control.",
-  "editorLook.filter": "Shared technical term or locale-independent notation, reviewed for this editor control."
+  "editorLook.filter": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
+  "musicExport.quoteFormat": "Format is also the German label; placeholder retained. Native review pending."
 }
