@@ -12,7 +12,7 @@ export function BeatCoachCard({ id, last, onNext, onSkip }: { id: TipId; last: b
         AccessibilityInfo.announceForAccessibility(text);
     }, [id, text]);
     return <View>
-        <View ref={card} accessible accessibilityRole="text" accessibilityLabel={text} accessibilityLiveRegion="polite"><Text>{text}</Text></View>
+        <View ref={card} accessible accessibilityRole="text" accessibilityLabel={text}><Text>{text}</Text></View>
         <Button label={t(last ? 'beatLabs.done' : 'beatLabs.next')} onPress={onNext} />
         <Button label={t('beatLabs.skip')} onPress={onSkip} />
     </View>;
