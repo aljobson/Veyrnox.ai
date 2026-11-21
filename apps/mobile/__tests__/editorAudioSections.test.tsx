@@ -15,7 +15,9 @@ import { originalAudioMedia } from '../src/lib/editorOriginalAudio';
 import { webSequenceV3, envelope } from './fixtures/webSequenceV3';
 import { documentProblem } from '../src/lib/editorDocumentGate';
 import { type Timeline } from '../src/lib/nativeEditorModel';
-import type { InsertResult } from '../src/components/editor/useEditorGenerationReturns';
+import type { DocumentCommitFailure } from '../src/lib/editorDocumentGate';
+import { nearLimit } from './fixtures/editorNearLimit';
+import { useEditorGenerationReturns, type InsertResult } from '../src/components/editor/useEditorGenerationReturns';
 // Match the existing screen suites' allowance for cold React Native rendering on shared hosts.
 jest.setTimeout(30000);
 const mockEnsure = jest.fn(async (_id: string) => 'file://sound');
@@ -33,9 +35,9 @@ function Harness({ catalog = false, playing = false, insertResult }: { catalog?:
     const handlers = useAudioSettingsActions({ timeline, selection: { track: timeline.video.length ? 'video' : 'audio', id: clip.id }, frameStore: store,
         applyTimeline: next => { if (documentProblem(envelope(next))) return false;
             commits.push(next); timeline = next; dirty = true; render(n => n + 1); return true; }, setProblem: next => { message = next; } });
-    const original = useOriginalAudio({ timeline, localMediaUris: uris, setLocalMediaUris: setUris, frameStore: store, playing,
-        setProblem: next => { message = next; }, insertMedia: (media, at, _select, onPlaced) => {
-            if (insertResult) return insertResult;
+    const original = useOriginalAudio({ currentTimeline: () => timeline, onPlacement: next => { message = next; }, timeline, localMediaUris: uris, setLocalMediaUris: setUris, frameStore: store, playing,
+        setProblem: next => { message = next; }, insertMedia: (media, at, _select, onPlaced, onFailed) => {
+            if (insertResult) { if (insertResult === 'dropped' || typeof insertResult === 'object') onFailed(insertResult); return insertResult; }
             const result = insertMediaAt(timeline, media, at); if ('error' in result) return result.error;
             timeline = result.timeline; commits.push(timeline); onPlaced(result.trimmed); render(n => n + 1); return 'placed';
         } });
@@ -44,7 +46,7 @@ function Harness({ catalog = false, playing = false, insertResult }: { catalog?:
         <AudioSettingsSection clip={clip} media={timeline.media.m} track={timeline.video.length ? 'video' : 'audio'} actions={handlers} />;
 }
 beforeEach(() => { jest.useFakeTimers(); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); timeline = webSequenceV3();
-    commits = []; message = null; dirty = false; store.set(30); jest.clearAllMocks(); jest.mocked(randomUUID).mockReset().mockReturnValue('new'); });
+    mockOwner = 'owner'; mockReady = true; mockKeepNotice = false; mockCommitFailure = null; commits = []; message = null; dirty = false; store.set(30); jest.clearAllMocks(); jest.mocked(randomUUID).mockReset().mockReturnValue('new'); });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
 async function press(label: string) {
     const node = root.container.queryAll(n => n.props.accessibilityLabel === label && typeof n.props.onClick === 'function')[0];
@@ -143,13 +145,26 @@ test('existing caption selection cannot be treated as a legacy caption', async (
 
 // Observe the real session to verify gate, history and both selection representations.
 let mockSession: ReturnType<typeof useFullEditorSession>;
+let mockReady = true, mockKeepNotice = false, mockCommitFailure: DocumentCommitFailure | null = null;
 jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: unknown) => {
-    mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args); return mockSession;
+    mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args);
+    return { ...mockSession, currentDocument: () => mockReady ? mockSession.currentDocument() : null,
+        markDocument: (...values: Parameters<typeof mockSession.markDocument>) => {
+            if (mockCommitFailure) return mockCommitFailure;
+            const notice = mockSession.problem, result = mockSession.markDocument(...values);
+            // Exercise leftover notices independently of the session's usual clearing on commit.
+            if (mockKeepNotice) mockSession.setProblem(notice);
+            return result;
+        } };
 } }));
 const mockRequest = jest.fn(), mockApi = { request: mockRequest };
 const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
 const mockBeginSessionTask = () => ({ current: () => true });
-jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
+let mockOwner = 'owner';
+const mockOwnerListeners = new Set<() => void>();
+jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => {
+    mockOwnerListeners?.add(fn); return () => mockOwnerListeners?.delete(fn);
+} }));
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true),
     removeDraft: jest.fn().mockResolvedValue(undefined) }));
@@ -282,9 +297,9 @@ test.each(['drag', 'trim'])('real screen queues original audio during a clip %s 
     expect((mockSession.currentDocument()!.timeline as Timeline).video).toEqual(placed.video);
 });
 test('real screen announces two consecutive catalog placements with identical sentences once each', async () => {
-    await screen(); await press('Audio');
+    await screen(); await act(async () => mockSession.markDocument({ ...mockSession.currentDocument()!, brief: 'edit' })); await press('Audio');
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
-    const placements = () => announce.mock.calls.filter(([text]) => text.startsWith('Added '));
+    const placements = () => announce.mock.calls;
     jest.mocked(randomUUID).mockReturnValueOnce('first').mockReturnValueOnce('second');
     await press('Insert Soft keys');
     expect(placements()).toEqual([['Added Soft keys at 00:00:00:00, shortened to end with the video.']]);
@@ -304,4 +319,92 @@ test('real screen audio-only insertion at frame 17,900 does not claim a trim to 
     const inserted = (mockSession.currentDocument()!.timeline as Timeline).audio[1];
     expect(inserted).toMatchObject({ mediaId: 'l-new', start: 17900, len: 100 });
     expect(mockSession.problem).toBe('Added Soft keys at 00:09:56:20.');
+});
+
+test('real screen announces each catalog placement sentence once at different playheads', async () => {
+    await screen(); await act(async () => mockSession.markDocument({ ...mockSession.currentDocument()!, brief: 'edit' }));
+    await press('Audio'); mockKeepNotice = true;
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    jest.mocked(randomUUID).mockReturnValueOnce('first').mockReturnValueOnce('second');
+    await act(async () => mockSession.frameStore.set(30)); await press('Insert Soft keys');
+    await act(async () => mockSession.frameStore.set(60)); await press('Insert Soft keys');
+    expect(announce.mock.calls).toEqual([
+        ['Added Soft keys at 00:00:01:00, shortened to end with the video.'],
+        ['Added Soft keys at 00:00:02:00, shortened to end with the video.'],
+    ]);
+});
+test('real screen success after prepareFailed never re-announces the failure', async () => {
+    await screen(); await act(async () => mockSession.markDocument({ ...mockSession.currentDocument()!, brief: 'edit' }));
+    await press('Audio'); mockKeepNotice = true;
+    mockEnsure.mockRejectedValueOnce(new Error('prepare failed'));
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    await press('Insert Soft keys');
+    expect(mockSession.problem).toBe("This sound couldn't be prepared. Try again.");
+    await press('Insert Soft keys');
+    expect(announce.mock.calls).toEqual([
+        ["This sound couldn't be prepared. Try again."],
+        ['Added Soft keys at 00:00:00:00, shortened to end with the video.'],
+    ]);
+});
+test('real screen untrimmed Media add does not re-announce a leftover notice', async () => {
+    await screen(); await press('Audio'); await press('Insert Tap click'); mockKeepNotice = true;
+    await press('Media');
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    await press('Add Tap click to timeline');
+    expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(2);
+    expect(announce.mock.calls).toEqual([]);
+});
+test.each(['dropped', 'not-live', 'invalid', 'tooLarge', 'pause'] as const)(
+    'real screen queued catalog failure is visible on release (%s)', async failure => {
+        let finish!: (uri: string) => void;
+        mockEnsure.mockImplementationOnce(() => new Promise<string>(resolve => { finish = resolve; }));
+        await screen(); await press('Audio'); await press('Insert Soft keys');
+        const node = root.container.queryAll(n => n.props.testID === 'clip-v1')[0];
+        const event = { nativeEvent: { pageX: 10, pageY: 40, locationY: 10 } };
+        await act(async () => node.props.onResponderGrant(event));
+        await act(async () => finish('file://queued-sound'));
+        expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
+        const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+        if (failure === 'dropped' || failure === 'pause') mockReady = false;
+        else mockCommitFailure = failure === 'not-live' ? { status: 'not-live' } : { status: 'refused', reason: failure };
+        if (failure === 'pause') await act(async () => mockSession.setTool('media'));
+        await act(async () => node.props.onResponderRelease(event));
+        const expected = failure === 'invalid' ? "That change can't be kept in this project." : failure === 'tooLarge' ?
+            'This project is too large to save. Remove some clips or keyframes first.' : "This sound couldn't be prepared. Try again.";
+        expect(mockSession.problem).toBe(expected);
+        expect(root.container.queryAll(n => n.children.includes(expected)).length).toBeGreaterThan(0);
+        expect(announce.mock.calls).toEqual([[expected]]);
+        expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
+        expect(mockSession.localMediaUris['l-new']).toBeUndefined();
+    });
+test('real screen immediate catalog refusal has one announcement and leaves no Generate note', async () => {
+    const doc = nearLimit(false); await screen(doc.timeline as Timeline); await press('Audio');
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    await press('Insert Soft keys');
+    const expected = 'This project is too large to save. Remove some clips or keyframes first.';
+    expect(mockSession.problem).toBe(expected);
+    expect(announce.mock.calls).toEqual([[expected]]);
+    await act(async () => mockSession.setProblem(null)); await press('Generate');
+    expect(root.container.queryAll(n => n.children.includes(expected))).toHaveLength(0);
+    expect(announce.mock.calls).toEqual([[expected]]);
+});
+
+test.each(['unmount', 'account change'] as const)('queued catalog callbacks stay silent during %s', async teardown => {
+    const failed = jest.fn(), placed = jest.fn(), insert = jest.fn<InsertResult, []>(() => 'placed'), doc = envelope(timeline);
+    let returns!: ReturnType<typeof useEditorGenerationReturns>;
+    function QueueHarness() {
+        const service = useEditorGenerationReturns({ api: { ...mockApi, stream: jest.fn(), getBalance: jest.fn() }, projectId: doc.project_id, ready: true, dirty: false, saving: false,
+            revision: 0, currentDocument: () => doc, beginImport: () => ({ valid: () => true, end: () => {} }), insert });
+        useLayoutEffect(() => { returns = service; });
+        return null;
+    }
+    await act(async () => root.render(<QueueHarness />));
+    await act(async () => {
+        returns.gestureActive(true);
+        expect(returns.place(originalAudioMedia('soft-keys', 'queued'), 30, true, placed, failed)).toBe('queued');
+    });
+    if (teardown === 'unmount') await act(async () => root.unmount());
+    else await act(async () => { mockOwner = 'other'; mockOwnerListeners.forEach(fn => fn()); });
+    await act(async () => { returns.pause(); returns.gestureActive(false); });
+    expect(failed).not.toHaveBeenCalled(); expect(placed).not.toHaveBeenCalled(); expect(insert).not.toHaveBeenCalled();
 });
