@@ -355,3 +355,5 @@ f2c6250aa9b629ae515dc0d21f032a98d3f0eac6:apps/mobile/__tests__/beatNativeLatency
 154faa32fa7071a85132e67087d10898b9f45203:tests/musicBlocksTakedown.test.mjs:generic-api-key:121
 # Template filename pair "whiskey-gun-trick" / "viral-whiskey-gun-trick.mp4" on a rewrapped generated line, not a credential; the line is back to its main form.
 a06eb781d7ff2d08309e24f4c4320b294674678b:app/veyrnox/_lib/templateClips.js:generic-api-key:305
+# Same template filename pair after the registry line returned to its main form, not a credential.
+46896160f8b9c4ad0b4430f401b3ef8fe4f72995:app/veyrnox/_lib/templateClips.js:generic-api-key:302
