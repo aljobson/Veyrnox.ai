@@ -12,12 +12,13 @@ import zh from '../src/lib/i18n/messages/app/zh';
 import { TTS_VOICES, TTS_EMOTIONS, TTS_INTERJECTIONS, TTS_EXAMPLES, voiceGenderOptions } from '../src/lib/speech/shared';
 const keys = Object.keys(en).sort();
 const creditFamilies = ['speech.price', 'speech.balance', 'speech.shortfall', 'speech.generate'];
-const isCreditForm = (key: string) => creditFamilies.some(base => key.startsWith(base + '.'));
+const pluralFamilies = [...creditFamilies, ...['price', 'remaining', 'generate', 'stopped', 'uncertain'].map(key => `speech.audition.${key}`)];
+const isCreditForm = (key: string) => pluralFamilies.some(base => key.startsWith(base + '.'));
 const sourceFor = (key: string) => (en as Record<string, string>)[key] ?? (en as Record<string, string>)[key.replace(/\.[^.]+$/, '.other')];
 const slots = (text: string) => (text.match(/\{\w+\}/g) ?? []).sort();
 test.each(Object.entries({ ar, de, es, fr, hi, ja, ko, pt, ru, zh }))('%s speech keys and placeholders match English', (locale, messages) => {
     const categories = new Intl.PluralRules(locale).resolvedOptions().pluralCategories;
-    const expected = [...keys.filter(key => !isCreditForm(key)), ...creditFamilies.flatMap(base => categories.map(category => `${base}.${category}`))].sort();
+    const expected = [...keys.filter(key => !isCreditForm(key)), ...pluralFamilies.flatMap(base => categories.map(category => `${base}.${category}`))].sort();
     expect(Object.keys(messages).filter(key => key.startsWith('speech.')).sort()).toEqual(expected);
     for (const key of expected) {
         const value = (messages as Record<string, string>)[key];

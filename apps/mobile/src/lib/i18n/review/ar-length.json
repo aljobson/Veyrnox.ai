@@ -2202,6 +2202,30 @@
     "ratio": 2
   },
   {
+    "id": "speech.audition.generate.zero",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
+    "id": "speech.audition.generate.two",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
+    "id": "speech.audition.generate.many",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
+    "id": "speech.audition.generate.other",
+    "english": "Generate {count} auditions",
+    "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
+    "ratio": 1.65
+  },
+  {
     "id": "beat.region.later",
     "english": "Move later",
     "translation": "تحريك إلى وقت لاحق",

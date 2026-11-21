@@ -2370,6 +2370,12 @@
     "ratio": 1.92
   },
   {
+    "id": "speech.audition.test",
+    "english": "Test",
+    "translation": "परीक्षण",
+    "ratio": 1.75
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "ग्रिड से मिलाएँ",
