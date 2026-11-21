@@ -21,7 +21,7 @@ import { TemplateGenerate } from './TemplateGenerate';
 import { TemplateClipComposer } from './TemplateClipComposer';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt } from '../../../lib/templateClipPrompt.mjs';
 import { inlineBlockReason, clipInlineEligible, templateInputs } from '../_lib/templateGenerate';
-import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../_lib/imageTemplateModels.js';
+import { imageTemplateNeedsPhoto, imageTemplateModelAvailable, REFERENCE_IMAGE_MODEL } from '../_lib/imageTemplateModels.js';
 import { SwapComposer } from './SwapComposer.js';
 import { SwapAttemptStatus } from './SwapAttemptStatus.js';
 import { useResolvedSwap, TemplateSwapBoundary, TemplateSwapSummary } from './TemplateSwapBoundary.js';
@@ -49,8 +49,12 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
   const original = templateClip && catalogModel ? { ...catalogModel, credits: templateClip.credits, durations: [5], media: { image: { ...catalogModel.media?.image, required: true, maxFiles: 1 } } } : catalogModel;
   const modelOptions = original && (!imagePhotoRequired || live) && imageTemplateModelAvailable(preset, original) && !original.gated && !original.premium && createPromptModelAvailable(original)
     ? [original, ...(!templateClip && live ? models.filter((m) => m.id !== originalId && templateModelEligible(m, original) && imageTemplateModelAvailable(preset, m)) : [])] : [];
+  const [photo, setPhoto] = useState(null);
+  // A text-to-image template has no image input. Adding a reference image runs it on the image-edit model instead (as a video template runs on its photo model), at that model's catalog price.
+  const referenceModel = !templateClip && !imagePhotoRequired && live && preset.kind === 'image' && original && !original.media?.image?.required
+    ? models.find((m) => m.id === REFERENCE_IMAGE_MODEL && imageTemplateModelAvailable({ kind: 'image', photo: { required: true } }, m) && !m.gated && !m.premium && createPromptModelAvailable(m)) || null : null;
   const [pickedModel, setPickedModel] = useState(originalId);
-  const model = modelOptions.find((m) => m.id === pickedModel) || modelOptions[0] || null;
+  const model = (photo && referenceModel) || modelOptions.find((m) => m.id === pickedModel) || modelOptions[0] || null;
   const modelId = model?.id;
   const aspectOptions = templateClip ? [] : modelAspectRatios(model);
   const [pickedAspect, setPickedAspect] = useState(preset.aspect);
@@ -70,7 +74,6 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
   }
   const [handoffError, setHandoffError] = useState('');
   const [opening, setOpening] = useState(false);
-  const [photo, setPhoto] = useState(null);
   const [clipPrompt, setClipPrompt] = useState(() => templateClipPhotoPrompt(TEMPLATE_CLIP_PROMPT, false));
   const [singlePhotoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState('');
@@ -89,6 +92,8 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
   const generationDisabled = (imagePhotoRequired && !photo) || generationBlocked || promptBlocked || !model || photoBusy || !boundReady;
   const chatBlocked = !prompt.trim() || prompt.length > CHAT_USER_TEXT_MAX;
   const requiredImage = imagePhotoRequired || model?.media?.image?.required === true;
+  const optionalReference = Boolean(referenceModel);
+  const takesPhoto = requiredImage || optionalReference;
   // Photo image recipes continue to Create; supported template clips generate inline with their fixed model.
   const inline = templateClip ? clipInlineEligible(templateClip, model) : !imagePhotoRequired && inlineBlockReason(preset, model, { photo: true }) === null;
 
@@ -146,7 +151,7 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
       if (!saved && prompt !== preset.prompt) { setHandoffError('studio'); return; }
     }
     if (!clearTemplateMediaHandoff(window)
-      || (boundCount ? !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, images: photos }) : requiredImage && photo && !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, image: photo }))) {
+      || (boundCount ? !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, images: photos }) : takesPhoto && photo && !writeTemplateMediaHandoff(window, { templateId: preset.id, modelId, image: photo }))) {
       setHandoffError('media');
       return;
     }
@@ -180,14 +185,14 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
     <div className="mt-8">
       <dl className="grid grid-cols-2 gap-3 text-[14px]">
         <div><dt className="text-vx-fg-muted">{t("presets.use.cost")}</dt><dd className="font-vx-mono vx-num text-[22px] font-bold text-vx-money">{credits == null ? "—" : `${credits} cr`}</dd></div>
-        {modelOptions.length > 1 && <div className="col-span-2"><dt className="text-vx-fg-muted">{t("label.Models")}</dt><dd><select aria-label={t("label.Model picker")} value={modelId} onChange={(event) => pickModel(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{modelOptions.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select></dd></div>}
+        {modelOptions.length > 1 && !(photo && referenceModel) && <div className="col-span-2"><dt className="text-vx-fg-muted">{t("label.Models")}</dt><dd><select aria-label={t("label.Model picker")} value={modelId} onChange={(event) => pickModel(event.target.value)} className="mt-1 min-h-11 w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{modelOptions.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select></dd></div>}
         {aspectOptions.length > 0 && <div><dt className="text-vx-fg-muted">{t("presets.use.aspect")}</dt><dd><select aria-label={t("presets.use.aspect")} value={aspect} onChange={(event) => setPickedAspect(event.target.value)} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{aspectOptions.map((option) => <option key={option} value={option}>{option}</option>)}</select></dd></div>}
         {isVideo && <div><dt className="text-vx-fg-muted">{t("presets.use.clip")}</dt><dd><select aria-label={t("presets.use.clipLength")} value={durationSeconds} onChange={(event) => setDurationSeconds(Number(event.target.value))} className="mt-1 min-h-11 max-w-full rounded-xl border border-vx-border bg-vx-panel px-3 py-2 font-vx-mono font-bold focus-visible:outline-2 focus-visible:outline-vx-accent">{durationOptions.map((seconds) => <option key={seconds} value={seconds}>{t('presets.use.lengthCost', { length: t('presets.use.seconds', { count: seconds }), credits: costFor(seconds) })}</option>)}</select></dd></div>}
       </dl>
       {boundCount > 0 && !photosUnavailable && <TemplatePhotoSlots key={preset.id} count={boundCount} hints={templatePhotoHints(contract)} files={photos} onChange={(index, file) => setPhotos(previous => Array.from({ length: boundCount }, (_, i) => i === index ? file : previous[i] || null))} onBusy={(index, busy) => setSlotBusy(previous => ({ ...previous, [index]: busy }))} />}
-      {requiredImage && !boundCount && (
+      {takesPhoto && !boundCount && (
         <fieldset className="mt-5 rounded-xl border border-vx-border bg-vx-panel/40 p-4">
-          <legend className="px-1 text-sm font-bold">{t('presets.use.photoTitle')}</legend>
+          <legend className="px-1 text-sm font-bold">{optionalReference ? t('label.Optional reference') : t('presets.use.photoTitle')}</legend>
           <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>
           {templateClip && <p role="note" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
           <div className="mt-3 flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-vx-border bg-vx-base p-2.5">
@@ -204,13 +209,14 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
       {imagePhotoRequired && !photo && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
       {templateClip && inline && <TemplateClipComposer preset={preset} photo={photo} value={clipPrompt} onChange={setClipPrompt} onRemove={() => choosePhoto(null)} />}
       {imagePhotoRequired && !model && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.blocked')}</p>}
-      {model && pickedModel !== originalId && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
+      {photo && referenceModel && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
+      {model && pickedModel !== originalId && !(photo && referenceModel) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
       {(preset.kind !== 'image' && live && model && !generationBlocked && !auditedTemplateId) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
       {photo && contract && !boundCount && <p className="mt-3 text-sm text-vx-fg-muted">{t(contract.photoGuidance)}</p>}
       {generationBlocked && !sourceGenerationBlocked && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t(photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
       {photoError && <p role="alert" className="mt-3 text-sm text-vx-danger">{t(photoError)}</p>}
       {inline && !(generationBlocked || promptBlocked || !model) && (
-        <TemplateGenerate preset={preset} model={model} prompt={templateClip ? clipPrompt : prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={requiredImage ? photo : null} photos={boundCount ? photos : undefined} requiredCount={boundCount} preparing={photoBusy} needsPhoto={requiredImage} templateClip={templateClip} />
+        <TemplateGenerate preset={preset} model={model} prompt={templateClip ? clipPrompt : prompt} aspect={aspect} aspectOptions={aspectOptions} durationSeconds={durationSeconds} unitCost={credits} photo={takesPhoto ? photo : null} photos={boundCount ? photos : undefined} requiredCount={boundCount} preparing={photoBusy} needsPhoto={requiredImage} templateClip={templateClip} />
       )}
       {!templateClip && <button
         type="button"
@@ -219,7 +225,7 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
         aria-busy={opening || undefined}
         className={`${inline ? 'vx-press mt-6 ms-3 inline-flex items-center gap-4 rounded-full border border-vx-accent px-6 py-3.5 font-extrabold text-vx-accent hover:bg-vx-accent/10' : 'vx-press mt-6 inline-flex items-center gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover'} ${opening ? 'cursor-wait' : 'disabled:opacity-50'}`}
       >
-        <span>{inline ? t('presets.use.editBeforeGenerating') : requiredImage && photo ? t('presets.use.withPhoto') : preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
+        <span>{inline ? t('presets.use.editBeforeGenerating') : takesPhoto && photo ? t('presets.use.withPhoto') : preset.inspired ? t("presets.use.similar") : t("presets.use.template")}</span>
         {opening
           ? <span className="grid w-[3.5ch] place-items-center"><Spinner size={18} /></span>
           : <span className="font-vx-mono vx-num text-[15px] font-bold">{credits == null ? "—" : `${credits} cr`}</span>}
