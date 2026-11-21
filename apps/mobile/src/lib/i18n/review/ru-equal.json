@@ -74,5 +74,12 @@
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
   "musicPublic.reactionCount": "Locale-neutral numeric reaction count format; placeholders are unchanged. Native layout review pending.",
   "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.fx.param": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.lane.title": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.slider.value": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.unit.percent": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale.",
   "speech.audition.count": "Shared numeric board capacity notation; no language-specific words."
 }

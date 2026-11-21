@@ -20,6 +20,8 @@ export function useAttachments(max) {
   const [items, setItems] = useState([]);
   const [notice, setNotice] = useState(null);
   const live = useRef([]);
+  // Moves on every clear(): frames still being read from a video picked before then belong to images that were dropped.
+  const generation = useRef(0);
   useEffect(() => { live.current = items; }, [items]);
   useEffect(() => () => { for (const i of live.current) if (!i.asset) URL.revokeObjectURL(i.preview); }, []);
 
@@ -28,15 +30,17 @@ export function useAttachments(max) {
     const room = addableCount(live.current.length, max);
     if (room < 2) { setNotice(t('app.chat.attach.videoRoom', {count:locale === 'en' ? max : new Intl.NumberFormat(localeTag(locale)).format(max)})); return; }
     setNotice(t("app.chat.attach.reading"));
+    const started = generation.current;
     try {
       const frames = await extractFrames(file, Math.min(FRAMES_PER_VIDEO, room));
+      if (generation.current !== started) return;
       setItems((cur) => {
         const take = frames.slice(0, addableCount(cur.length, max));
         return [...cur, ...take.map((f) => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file: f, preview: URL.createObjectURL(f), video: true }))];
       });
       setNotice(more ? t("app.chat.attach.first") : null);
     } catch {
-      setNotice(t("app.chat.attach.failed"));
+      if (generation.current === started) setNotice(t("app.chat.attach.failed"));
     }
   }, [max,t,locale]);
 
@@ -58,6 +62,7 @@ export function useAttachments(max) {
     setNotice(null);
   }, []);
   const clear = useCallback(() => {
+    generation.current += 1;
     setItems((cur) => { for (const i of cur) if (!i.asset) URL.revokeObjectURL(i.preview); return []; });
     setNotice(null);
   }, []);
@@ -70,7 +75,10 @@ export function useAttachments(max) {
       return [...cur, { id: `asset-${id}`, asset: id, preview: url, label }];
     });
   }, [max,t,locale]);
-  return { items, notice, setNotice, add, addAsset, remove, clear };
+  /** Taken before any slow step that ends in an add (a Library lookup, an image load); `isCurrent` says whether a clear() came since. */
+  const stamp = useCallback(() => generation.current, []);
+  const isCurrent = useCallback((since) => since === generation.current, []);
+  return { items, notice, setNotice, add, addAsset, remove, clear, stamp, isCurrent };
 }
 
 /** The paperclip: opens the file picker. Shown only for a model that reads images. */

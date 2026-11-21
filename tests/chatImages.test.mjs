@@ -37,14 +37,14 @@ test('a sent attachment is labelled by its size, never a file name', () => {
 });
 
 // ── prepareImage always redraws, so the original file's EXIF (GPS, camera, time) never leaves the browser ──
-function withCanvas(run, { bitmap = { width: 800, height: 600 }, ctx = true } = {}) {
+function withCanvas(run, { bitmap = { width: 800, height: 600 }, ctx = true, encode = (type) => type } = {}) {
     const saved = { createImageBitmap: globalThis.createImageBitmap, document: globalThis.document };
     const seen = { options: null, canvas: null, drawn: null, blobType: null, closed: false };
     globalThis.createImageBitmap = async (_file, options) => { seen.options = options; return { ...bitmap, close() { seen.closed = true; } }; };
     globalThis.document = { createElement: () => {
         const canvas = { width: 0, height: 0,
             getContext: () => (ctx ? { drawImage: (...a) => { seen.drawn = a; } } : null),
-            toBlob: (cb, type) => { seen.blobType = type; cb(new Blob(['redrawn'], { type })); } };
+            toBlob: (cb, type) => { seen.blobType = type; cb(new Blob(['redrawn'], { type: encode(type) })); } };
         seen.canvas = canvas;
         return canvas;
     } };
@@ -75,3 +75,15 @@ test('a picture the browser cannot decode or draw is image_unreadable', async ()
     try { await assert.rejects(prepareImage(new File(['x'], 'a.jpg', { type: 'image/jpeg' }), 2048), { message: 'image_unreadable' }); }
     finally { globalThis.createImageBitmap = saved; }
 });
+
+// ATT-02: a browser that cannot encode WebP hands back PNG from toBlob. The file must say PNG, or the server reads PNG bytes
+// under a WebP key and refuses the image (upload_type_mismatch -> attachment_invalid).
+test('the redrawn file carries the type the browser actually encoded, not the one asked for', () => withCanvas(async (seen) => {
+    const out = await prepareImage(new File(['x'], 'a.webp', { type: 'image/webp' }), 2048);
+    assert.equal(seen.blobType, 'image/webp', 'WebP is still asked for first');
+    assert.equal(out.type, 'image/png');
+}, { encode: (type) => (type === 'image/webp' ? 'image/png' : type) }));
+
+test('a redraw encoded as a type the server does not take is image_unreadable', () => withCanvas(async () => {
+    await assert.rejects(prepareImage(new File(['x'], 'a.png', { type: 'image/png' }), 2048), { message: 'image_unreadable' });
+}, { encode: () => '' }));

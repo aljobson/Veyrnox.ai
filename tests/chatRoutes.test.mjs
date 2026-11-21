@@ -33,6 +33,8 @@ beforeEach(() => {
             return Response.json(rpcName in rpcReplies ? (typeof r === 'function' ? r(JSON.parse(init.body)) : r) : { ok: true });
         }
         if (url.pathname.endsWith('/model_catalog')) return Response.json(catalogRows);
+        // A fresh send: no job is stored under its key yet (the turn looks before anything that could refuse a retry).
+        if (url.pathname.endsWith('/jobs')) return Response.json([]);
         throw new Error(`unexpected request ${url.href}`);
     };
 });

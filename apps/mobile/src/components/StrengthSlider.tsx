@@ -7,10 +7,10 @@ import { useReducedMotion } from './ui/useReducedMotion';
 const STEP = 0.1;
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
-export interface StrengthSliderProps { value: number; tone?: 'media' | 'surface'; label: string; disabled?: boolean; onChange: (value: number) => void; onChangeStart?: () => void; onChangeEnd?: () => void }
+export interface StrengthSliderProps { value: number; valueText?: string; tone?: 'media' | 'surface'; label: string; disabled?: boolean; onChange: (value: number) => void; onChangeStart?: () => void; onChangeEnd?: () => void }
 
 // An Instagram-style strength line: drag anywhere along it, or use the screen reader's up and down.
-export function StrengthSlider({ value, label, disabled, onChange, onChangeStart, onChangeEnd, tone = 'media' }: StrengthSliderProps) {
+export function StrengthSlider({ value, valueText, label, disabled, onChange, onChangeStart, onChangeEnd, tone = 'media' }: StrengthSliderProps) {
     const themed = useThemedStyles(sheets);
     const reduced = useReducedMotion();
     const surface = tone === 'surface';
@@ -32,7 +32,7 @@ export function StrengthSlider({ value, label, disabled, onChange, onChangeStart
     return (
         <View
             accessible accessibilityRole="adjustable" accessibilityLabel={label}
-            accessibilityValue={{ min: 0, max: 100, now: percent, text: `${percent}%` }}
+            accessibilityValue={{ min: 0, max: 100, now: percent, text: valueText ?? `${percent}%` }}
             accessibilityState={{ disabled: !!disabled }}
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={event => { if (!disabled) { onChangeStart?.(); onChange(clamp(value + (event.nativeEvent.actionName === 'increment' ? STEP : -STEP))); onChangeEnd?.(); } }}
