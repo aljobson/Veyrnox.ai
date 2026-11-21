@@ -1046,6 +1046,8 @@ export default {
   "chat.attach.needsUpdate": "As fotos do seu celular precisam da versão mais recente do aplicativo para serem enviadas. Escolha uma da Biblioteca.",
   "chat.attach.photos": "Fotos",
   "chat.attach.photosLabel": "Anexar fotos deste dispositivo",
+  "chat.attach.files": "Arquivos",
+  "chat.attach.filesLabel": "Anexar arquivos deste dispositivo",
   "chat.attach.removeN": "Remover imagem {n}",
   "chat.attach.uploadFailed": "Não foi possível enviar uma imagem. Nada foi enviado e nada foi cobrado.",
   "chat.attach.modelImages": "Este modelo não lê imagens. Remova-as ou escolha um modelo que leia.",

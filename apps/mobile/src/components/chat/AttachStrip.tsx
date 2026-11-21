@@ -17,11 +17,12 @@ interface Props {
     readonly onLibrary: () => void;
     readonly onVideo?: () => void;
     readonly onPhotos: () => void;
+    readonly onFiles?: () => void;
     readonly onRemove: (id: string) => void;
 }
 
 // The images for the next reply, and how to add more. The extra credits are shown here, before anything is sent.
-export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, embedded = false, hideThumbs = false, onLibrary, onPhotos, onVideo, onRemove }: Props) {
+export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, embedded = false, hideThumbs = false, onLibrary, onPhotos, onFiles, onVideo, onRemove }: Props) {
     const styles = useThemedStyles(sheets);
     const full = roomFor(items.length, max) === 0;
     return (
@@ -35,6 +36,7 @@ export function AttachStrip({ items, extra, max = MAX_ATTACHMENTS, disabled, emb
                     <Icon name="paperclip" size={20} />
                     <Text variant="footnote" style={styles.btnText}>{t('chat.attach.photos')}</Text>
                 </Button>
+                {onFiles ? <Button accessibilityRole="button" accessibilityLabel={t('chat.attach.filesLabel')} disabled={disabled || full} containerStyle={styles.btn} onPress={onFiles} variant="secondary" size="md" label={t('chat.attach.filesLabel')}><Icon name="paperclip" size={20} /><Text variant="footnote" style={styles.btnText}>{t('chat.attach.files')}</Text></Button> : null}
                 {onVideo ? <Button variant="secondary" label={t('chatDepth.video')} accessibilityLabel={t('chatDepth.videoLabel')} disabled={disabled} containerStyle={styles.btn} onPress={onVideo}><Icon name="paperclip" size={20} /><Text variant="footnote">{t('chatDepth.video')}</Text></Button> : null}
                 <Text variant="caption" tone="warning" style={styles.note}>{items.length > 0 ? <>{plural('chat.attach.extra', extra)}<Text variant="caption" tone="tertiary"> · {items.length}/{max}</Text></> : plural('chat.attach.hint', extra)}</Text>
             </View>

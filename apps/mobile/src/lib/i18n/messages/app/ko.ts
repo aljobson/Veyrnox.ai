@@ -1023,6 +1023,8 @@ export default {
   "chat.attach.needsUpdate": "휴대폰 사진을 전송하려면 최신 앱 버전이 필요합니다. 대신 라이브러리에서 선택하세요.",
   "chat.attach.photos": "사진",
   "chat.attach.photosLabel": "이 기기에서 사진 첨부",
+  "chat.attach.files": "파일",
+  "chat.attach.filesLabel": "이 기기에서 파일 첨부",
   "chat.attach.removeN": "이미지 {n} 삭제",
   "chat.attach.uploadFailed": "이미지를 업로드하지 못했습니다. 전송된 내용과 청구된 비용이 없습니다.",
   "chat.attach.modelImages": "이 모델은 이미지를 읽을 수 없습니다. 이미지를 빼거나 읽을 수 있는 모델을 고르세요.",

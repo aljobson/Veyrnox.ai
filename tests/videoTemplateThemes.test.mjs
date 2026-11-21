@@ -43,9 +43,8 @@ test('every theme has a label in every locale', async () => {
   }
 });
 
-test('tidy 2026-11-21: one supercar refuel stays listed, the two near-duplicates are hidden but still filed, and no theme holds a lone card', () => {
-  assert.ok(VIDEO_GALLERY_TEMPLATE_IDS.includes('community-supercar-midnight-refuel'));
-  for (const id of ['community-midnight-supercar-refuel', 'community-supercar-night-fueling']) {
+test('tidy 2026-11-21: all three supercar refuels are hidden but still filed, and no theme holds a lone card', () => {
+  for (const id of ['community-supercar-midnight-refuel', 'community-midnight-supercar-refuel', 'community-supercar-night-fueling']) {
     assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.includes(id), false, `${id} is hidden`);
     assert.ok(PRESETS.some((p) => p.id === id), `${id} keeps its data and link`);
     assert.equal(videoTemplateTheme(id), 'CARS', `${id} keeps its theme so re-listing needs only its id`);
