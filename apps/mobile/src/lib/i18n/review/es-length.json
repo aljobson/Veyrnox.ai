@@ -4044,6 +4044,60 @@
     "ratio": 1.86
   },
   {
+    "id": "beatExport.range",
+    "english": "Range",
+    "translation": "Intervalo",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatExport.cycle",
+    "english": "Cycle range",
+    "translation": "Intervalo del ciclo",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mezcla",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Pistas separadas",
+    "ratio": 3.2
+  },
+  {
+    "id": "beatExport.depth",
+    "english": "Bit depth",
+    "translation": "Profundidad de bits",
+    "ratio": 2.11
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Cargando herramientas de exportación…",
+    "ratio": 2.18
+  },
+  {
+    "id": "beatExport.retryShare",
+    "english": "Retry render and share",
+    "translation": "Reintentar renderizado y uso compartido",
+    "ratio": 1.77
+  },
+  {
+    "id": "beatExport.songTitle",
+    "english": "Song title",
+    "translation": "Título de la canción",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "Guardar en biblioteca de Música",
+    "ratio": 2.38
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

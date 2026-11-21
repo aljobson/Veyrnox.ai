@@ -6432,6 +6432,54 @@
     "ratio": 1.71
   },
   {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Réessayer l’enregistrement dans Music",
+    "ratio": 1.95
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mixage",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Pistes séparées",
+    "ratio": 3
+  },
+  {
+    "id": "beatExport.depth",
+    "english": "Bit depth",
+    "translation": "Profondeur de bits",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Chargement des outils d’export…",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatExport.saveOpening",
+    "english": "Checking Music saving…",
+    "translation": "Vérification de l’enregistrement dans Music…",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "Enregistrer dans la bibliothèque Musique",
+    "ratio": 3.08
+  },
+  {
+    "id": "beatExport.saved",
+    "english": "Saved to Music as {title}",
+    "translation": "Enregistré dans Music sous le nom {title}",
+    "ratio": 1.64
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

@@ -4380,6 +4380,78 @@
     "ratio": 1.63
   },
   {
+    "id": "beatExport.title",
+    "english": "Export",
+    "translation": "Exportieren",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatExport.kind",
+    "english": "Export",
+    "translation": "Exportieren",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mischung",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Einzelspuren",
+    "ratio": 2.4
+  },
+  {
+    "id": "beatExport.loops",
+    "english": "Loops",
+    "translation": "Wiederholungen",
+    "ratio": 2.8
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Exportwerkzeuge werden geladen…",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatExport.renderError",
+    "english": "Could not render this mix. Try again.",
+    "translation": "Dieser Mix konnte nicht gerendert werden. Versuche es erneut.",
+    "ratio": 1.65
+  },
+  {
+    "id": "beatExport.shareError",
+    "english": "Could not share this file. Try again.",
+    "translation": "Diese Datei konnte nicht geteilt werden. Versuche es erneut.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "In Musikbibliothek speichern",
+    "ratio": 2.15
+  },
+  {
+    "id": "beatExport.commit",
+    "english": "Finishing the save…",
+    "translation": "Wird zur Bibliothek hinzugefügt…",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.expired",
+    "english": "This save expired. Try again to start a new save.",
+    "translation": "Dieser Speichervorgang ist abgelaufen. Erneut versuchen, um einen neuen zu starten.",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatExport.changed",
+    "english": "This save changed. Try again to start a new save.",
+    "translation": "Dieser Speichervorgang wurde geändert. Erneut versuchen, um einen neuen zu starten.",
+    "ratio": 1.69
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
