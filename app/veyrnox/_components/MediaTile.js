@@ -22,12 +22,13 @@ import { ClipBadge } from './ClipBadge';
 
 import { useClipPlayback } from '../_lib/useClipPlayback';
 
-export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, badge = null, children, uncroppedOnMobile = false, ambient = false, imageSizes = '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw' }) {
+export function MediaTile({ playLabel, href, clip, mediaClassName = '', mediaStyle, className = '', style, ariaLabel, onClick, footer, badge = null, children, uncroppedOnMobile = false, ambient = false, imageSizes = '(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 25vw' }) {
   const rootRef = useRef(null);
   const videoRef = useRef(null);
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [nearViewport, setNearViewport] = useState(false);
+  const [player, setPlayer] = useState(false);
   const clipVideo = clip?.video;
 
   // Posters are cheap and useful immediately. Video elements and their
@@ -44,7 +45,7 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
     return () => observer.disconnect();
   }, [clipVideo]);
 
-  useClipPlayback(rootRef, videoRef, nearViewport);
+  useClipPlayback(rootRef, videoRef, nearViewport && !player);
 
   const showVideo = clip && nearViewport && !failed;
   const mediaFit = uncroppedOnMobile ? 'object-contain lg:object-cover' : 'object-cover';
@@ -86,6 +87,18 @@ export function MediaTile({ href, clip, mediaClassName = '', mediaStyle, classNa
               playing || clip.poster ? 'opacity-100' : 'opacity-0'
             }`}
           />
+        )}
+        {/* A full player on request: sound and controls, over the tile. The tile stays a link everywhere else. */}
+        {playLabel && clipVideo && !failed && !player && (
+          <button type="button" aria-label={playLabel} onClick={(event) => { event.preventDefault(); event.stopPropagation(); setPlayer(true); }}
+            className="absolute start-3 bottom-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-white backdrop-blur-sm hover:bg-black/85">
+            <svg aria-hidden viewBox="0 0 24 24" className="h-5 w-5 fill-current"><path d="M8 5v14l11-7z" /></svg>
+          </button>
+        )}
+        {player && (
+          <div className="absolute inset-0 z-20 bg-black" onClick={(event) => { event.preventDefault(); event.stopPropagation(); }}>
+            <video src={clipVideo} poster={clip.poster} controls autoPlay playsInline aria-label={playLabel} onError={() => { setFailed(true); setPlayer(false); }} className="h-full w-full object-contain" />
+          </div>
         )}
         {children}
         {clip && <ClipBadge clip={clip} label={badge} />}

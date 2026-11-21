@@ -39,6 +39,7 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
       href={href}
       clip={clip && { ...clip, objectFit: 'contain' }}
       onClick={onClick}
+      playLabel={!roller && clip?.video ? t('mobile.templatePlay', { name: title }) : undefined}
       badge={badge}
       ariaLabel={t('mobile.templateOpen', { name: title })}
       className={`${roller ? 'h-full min-h-0' : 'block w-full'} text-start ${className}`}
