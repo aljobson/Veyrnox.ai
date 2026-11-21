@@ -1,41 +1,54 @@
-import { View } from 'react-native';
-import { t } from '../../../lib/i18n';
-
+import type { ReactNode } from 'react';
+import { Pressable, View } from 'react-native';
+import { Text } from '../../ui/Text';
+import { t, rawText, formatNumber } from '../../../lib/i18n';
+import { colors, ds, type } from '../../../theme';
+import { touchTarget } from '../../../lib/a11y';
 import { styles } from '../fullEditorStyles';
-import { Choice, Stepper, PanelHeading, EmptyPanel } from '../EditorControls';
-
-import { type Clip } from '../../../lib/nativeEditorModel';
-
+import { EmptyPanel, PanelHeading } from '../EditorControls';
+import { createFrameStore } from '../editorFrameStore';
+import { SegmentedChoice } from './SegmentedChoice';
+import { useLookActions, type LookActions } from './useLookActions';
+import { FiltersPanel as Filters } from './FiltersPanel';
+import { EffectsPanel as Effects } from './EffectsPanel';
+import { TransitionsPanel as Transitions } from './TransitionsPanel';
 import type { ToolPanelProps } from './types';
-export function EffectsPanel({ selection, selected, patchSelected }: Pick<ToolPanelProps, 'selection' | 'selected' | 'patchSelected'>) {
-    return <>
-        <PanelHeading title={t('editor.effects')} detail={selection ? t('editor.selectedlayer') : t('editor.selectaclip')} />
-        {selection && selected && selection.track !== 'text' ? <><View style={styles.choices}>{[{ id: 'none', label: t('editor.none') }, { id: 'soft-glow', label: t('editor.softglow') },
-            { id: 'grain', label: t('editor.filmgrain') }, { id: 'vignette', label: t('editor.vignette') }, { id: 'old-film', label: t('editor.oldfilm') }].map(({ id, label }) => <Choice
-            key={id} label={label} selected={(selected as Clip).effect?.type === id || (id === 'none' && !(selected as Clip).effect)} onPress={() => patchSelected({ effect: id === 'none'
-            ? undefined : { type: id, intensity: .5 } })} />)}</View>{(selected as Clip).effect ? <Stepper label={t('editor.effectintensity')} value={(selected as Clip).effect!.intensity
-            * 100} min={0} max={100} step={5} suffix="%" onChange={(value) => patchSelected({ effect: { ...(selected as Clip).effect!, intensity: value / 100 } })} /> : null}</> :
-            <EmptyPanel title={t('editor.choosevideooraudio')} body={t('editor.effectsarestoredontheselectedlayer')} />}
-    </>;
+import type { Clip, Timeline } from '../../../lib/nativeEditorModel';
+export type LookContentProps = { timeline: Timeline; clip: Clip; actions: LookActions; disabled: boolean };
+export const percent = (v: number) => t('editorTools.positionValue', { value: formatNumber(v * 100, 1) });
+export const number = (v: number) => formatNumber(v, 2);
+export const degrees = (v: number) => t('editorLook.degrees', { value: formatNumber(v, 0) });
+export function LookHeading({ children }: { children: ReactNode }) {
+    return <Text variant="inherit" accessibilityRole="header" style={{ ...type.label, color: colors.text }}>{children}</Text>;
 }
-export function TransitionsPanel({ selection, selected, patchSelected }: Pick<ToolPanelProps, 'selection' | 'selected' | 'patchSelected'>) {
-    return <>
-        <PanelHeading title={t('editor.transitions')} detail={selection?.track === 'video' ? t('editor.videoclipselected') : t('editor.selectavideoclip')} />
-        {selection?.track === 'video' && selected ? <><View style={styles.choices}>{[{ id: 'dissolve', label: t('editor.dissolve') }, { id: 'dip-black', label: t('editor.diptoblack') },
-            { id: 'wipe-left', label: t('editor.wipeleft') }, { id: 'slide-left', label: t('editor.slideleft') }].map(({ id, label }) => <Choice key={id} label={label}
-            selected={((selected as Clip).transitionType ?? 'dissolve') === id} onPress={() => patchSelected({ transitionType: id })} />)}</View><Stepper label={t('editor.duration2')}
-            value={(selected as Clip).transition ?? 0} min={0} max={60} step={5} suffix={t('editor.frames')} onChange={(transition) => patchSelected({ transition })} /></> : <EmptyPanel
-            title={t('editor.chooseavideoclip')} body={t('editor.transitionsjoinadjacentclipsonthesame')} />}
-    </>;
+export function LookMessage({ children }: { children: ReactNode }) {
+    return <Text variant="inherit" style={{ ...type.body, color: colors.text }}>{children}</Text>;
 }
-export function FiltersPanel({ selection, selected, patchSelected }: Pick<ToolPanelProps, 'selection' | 'selected' | 'patchSelected'>) {
-    const filterOf = (clip: Clip) => ({ brightness: 1, contrast: 1, saturate: 1, hue: 0, blur: 0, ...clip.filter });
-    return <>
-        <PanelHeading title={t('editor.filters')} detail={selection?.track === 'video' ? t('editor.colourcontrols') : t('editor.selectavideoclip')} />
-        {selection?.track === 'video' && selected ? <>{(['brightness', 'contrast', 'saturate'] as const).map((key) => <Stepper key={key} label={key} value={filterOf(selected as
-            Clip)[key]} min={0} max={3} step={0.1} onChange={(value) => patchSelected({ filter: { ...filterOf(selected as Clip), [key]: value } })} />)}<Stepper label={t('editor.hue')}
-            value={filterOf(selected as Clip).hue} min={-180} max={180} step={10} suffix="°" onChange={(value) => patchSelected({ filter: { ...filterOf(selected as Clip), hue: value }
-            })} /><Stepper label={t('editor.blur')} value={filterOf(selected as Clip).blur} min={0} max={30} step={1} onChange={(value) => patchSelected({ filter: { ...filterOf(selected as
-                Clip), blur: value } })} /></> : <EmptyPanel title={t('editor.chooseavideoclip')} body={t('editor.brightnesscontrastsaturationhueandblurmatch')} />}
-    </>;
+// S2's choice has no disabled prop. Keep its enabled UI; locked choices expose a true disabled state.
+export function LookChoice(props: Parameters<typeof SegmentedChoice>[0] & { disabled?: boolean }) {
+    if (!props.disabled) return <SegmentedChoice {...props} onChange={value => { if (value !== props.value) props.onChange(value); }} />;
+    return <View><LookHeading>{props.label}</LookHeading><View style={styles.choices}>
+        {props.options.map(option => <Pressable key={option.value} disabled accessibilityRole="button"
+            accessibilityLabel={rawText(option.label)} accessibilityState={{ disabled: true, selected: props.value === option.value }}
+            style={[styles.choice, touchTarget, styles.disabled]}><Text variant="inherit" style={styles.choiceText}>{option.label}</Text></Pressable>)}
+    </View></View>;
 }
+const idleFrame = createFrameStore();
+function LookPanel({ props, kind }: { props: ToolPanelProps; kind: 'filters' | 'effects' | 'transitions' }) {
+    const fallback = useLookActions({ timeline: props.timeline, selection: props.selection, applyTimeline: props.applyTimeline,
+        setProblem: () => {}, frameStore: idleFrame });
+    const actions = props.lookActions ?? fallback;
+    const clip = props.selection?.track === 'video' ? props.timeline.video.find(c => c.id === props.selection?.id) : undefined;
+    const disabled = !!props.timeline.tracks.find(track => track.id === clip?.trackId)?.locked;
+    const Content = kind === 'filters' ? Filters : kind === 'effects' ? Effects : Transitions;
+    return <View style={{ gap: ds.space.md }}>
+        <PanelHeading title={t(`editor.${kind}`)} detail={t(clip ? 'editor.videoclipselected' : 'editor.selectavideoclip')} />
+        {clip ? <><LookMessage>{t('editorLook.preview')}</LookMessage>
+            {disabled ? <LookMessage>{t('editorLook.locked')}</LookMessage> : null}
+            <Content timeline={props.timeline} clip={clip} actions={actions} disabled={disabled} />
+        </> : <EmptyPanel title={t('editor.chooseavideoclip')} body={t('editor.selectavideoclip')} />}
+    </View>;
+}
+export const FiltersPanel = (props: ToolPanelProps) => <LookPanel props={props} kind="filters" />;
+export const EffectsPanel = (props: ToolPanelProps) => <LookPanel props={props} kind="effects" />;
+export const TransitionsPanel = (props: ToolPanelProps) => <LookPanel props={props} kind="transitions" />;

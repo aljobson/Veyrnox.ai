@@ -117,7 +117,7 @@ const panelCases = [
     [MediaPanel, 'Project media', 'Library video'], [AudioPanel, 'Audio', 'Generate voice or music'],
     [TextPanel, 'Text', 'Add text'], [CaptionsPanel, 'Captions', 'Add caption at playhead'],
     [TranscriptPanel, 'Transcript', '00:00:00:00 Hello world'], [EffectsPanel, 'Effects', 'None'],
-    [TransitionsPanel, 'Transitions', 'Dissolve'], [FiltersPanel, 'Filters', 'Increase brightness'],
+    [TransitionsPanel, 'Transitions', 'Dissolve'], [FiltersPanel, 'Filters', 'Brightness'],
     [AnimationPanel, 'Animation', 'Zoom'], [MarkersPanel, 'Markers', 'Add marker'], [AdjustPanel, 'Source', 'Move left'],
 ] as const;
 function panelFixture(): ToolPanelProps {

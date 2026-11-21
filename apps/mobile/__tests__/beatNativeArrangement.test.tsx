@@ -6,10 +6,13 @@ import { t } from '../src/lib/i18n';
 import { beatStore, newBeat, resetBeats, getBeat, putBeat } from '../src/lib/beatNative/store';
 import { addAudioRegion, addKitTrack, addRegion, copyRegion, deleteRegion, duplicateRegion, moveRegion, resizeRegion, selectPattern, setCycle, setAudioRegion, setRegionPattern, setView, splitRegion, trimRegionStart, validateBeat, type BeatDoc, type Edit } from '../src/lib/beatNative/doc';
 import { position, regionLabel } from '../src/lib/beatNative/regionActions';
+beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 jest.mock('../src/components/beats/BeatSaveControls', () => ({ BeatSaveControls: () => null }));
+jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('../src/components/beats/BeatLabsBar', () => ({ BeatLabsBar: () => null }));
+jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: () => null }));
 jest.mock('../src/lib/beatNative/useLocalBeatLifecycle', () => ({ useLocalBeatLifecycle: () => {} }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 const mockAnnounce = jest.fn();

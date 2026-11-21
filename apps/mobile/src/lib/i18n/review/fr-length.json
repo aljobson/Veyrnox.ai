@@ -1,5 +1,71 @@
 [
   {
+    "id": "editorAudioTools.previewNote",
+    "english": "The phone preview plays volume and fades. EQ, pan, voice, noise and effects are saved but not heard on the phone yet.",
+    "translation": "L’aperçu sur le téléphone restitue le volume et les fondus. L’égalisation, le panoramique, la voix, le bruit et les effets sont enregistrés mais ne sont pas encore audibles sur le téléphone.",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "editorAudioTools.mid",
+    "english": "Mid",
+    "translation": "Médiums",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorAudioTools.keepPitch",
+    "english": "Keep pitch when speed changes",
+    "translation": "Conserver la hauteur lors des changements de vitesse",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorAudioTools.usePlayhead",
+    "english": "Use playhead as noise start",
+    "translation": "Utiliser la tête de lecture comme début du bruit",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorAudioTools.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
+    "id": "editorAudioTools.tremoloRate",
+    "english": "Tremolo rate",
+    "translation": "Fréquence du trémolo",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.tremoloDepth",
+    "english": "Tremolo depth",
+    "translation": "Profondeur du trémolo",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorAudioTools.echoRepeats",
+    "english": "Echo repeats",
+    "translation": "Répétitions de l’écho",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorAudioTools.echoDecay",
+    "english": "Echo decay",
+    "translation": "Atténuation de l’écho",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorAudioTools.echoMix",
+    "english": "Echo mix",
+    "translation": "Mixage de l’écho",
+    "ratio": 2
+  },
+  {
     "id": "beatLabs.unavailable",
     "english": "Not on the phone editor yet.",
     "translation": "Pas encore disponible dans l’éditeur du téléphone.",
@@ -6336,6 +6402,66 @@
     "ratio": 1.62
   },
   {
+    "id": "beatAi.stems",
+    "english": "Split stems",
+    "translation": "Séparer les pistes",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalité",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calculer le prix de deux boucles",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatAi.buy",
+    "english": "Buy Credits",
+    "translation": "Acheter des Crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatAi.retry",
+    "english": "Send again",
+    "translation": "Envoyer à nouveau",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.waiting",
+    "english": "Working…",
+    "translation": "Traitement en cours…",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.mute",
+    "english": "Mute {name}",
+    "translation": "Couper le son de {name}",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatAi.unmute",
+    "english": "Unmute {name}",
+    "translation": "Réactiver le son de {name}",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.a1",
+    "english": "Split stems",
+    "translation": "Séparer les pistes",
+    "ratio": 1.64
+  },
+  {
     "id": "speech.audition.clear",
     "english": "Clear board",
     "translation": "Vider la sélection",
@@ -6543,6 +6669,252 @@
     "id": "beatMix.curve.in",
     "english": "Ease in",
     "translation": "Accélération",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Réessayer l’enregistrement dans Music",
+    "ratio": 1.95
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mixage",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Pistes séparées",
+    "ratio": 3
+  },
+  {
+    "id": "beatExport.depth",
+    "english": "Bit depth",
+    "translation": "Profondeur de bits",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Chargement des outils d’export…",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatExport.saveOpening",
+    "english": "Checking Music saving…",
+    "translation": "Vérification de l’enregistrement dans Music…",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "Enregistrer dans la bibliothèque Musique",
+    "ratio": 3.08
+  },
+  {
+    "id": "beatExport.saved",
+    "english": "Saved to Music as {title}",
+    "translation": "Enregistré dans Music sous le nom {title}",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorLook.export",
+    "english": "Phone export includes Dissolve only for now.",
+    "translation": "L’export du téléphone inclut uniquement le fondu enchaîné pour le moment.",
+    "ratio": 1.66
+  },
+  {
+    "id": "editorLook.crop",
+    "english": "Crop",
+    "translation": "Recadrage",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.resetFilter",
+    "english": "Reset filter",
+    "translation": "Réinitialiser le filtre",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorLook.resetColour",
+    "english": "Reset colour",
+    "translation": "Réinitialiser la couleur",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.resetCrop",
+    "english": "Reset crop",
+    "translation": "Réinitialiser le recadrage",
+    "ratio": 2.6
+  },
+  {
+    "id": "editorLook.addPoint",
+    "english": "Add point",
+    "translation": "Ajouter un point",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorLook.parameter.hue",
+    "english": "Hue",
+    "translation": "Teinte",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.parameter.tint",
+    "english": "Tint",
+    "translation": "Correction de dominante",
+    "ratio": 5.75
+  },
+  {
+    "id": "editorLook.channel.red",
+    "english": "Red",
+    "translation": "Rouge",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.category.Glitch",
+    "english": "Glitch",
+    "translation": "Interférence",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.category.Wipe",
+    "english": "Wipe",
+    "translation": "Balayage",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.category.Move",
+    "english": "Move",
+    "translation": "Mouvement",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.effect.grain",
+    "english": "Film grain",
+    "translation": "Grain de pellicule",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorLook.effect.strobe",
+    "english": "Strobe",
+    "translation": "Stroboscope",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorLook.effect.scanlines",
+    "english": "Scanlines",
+    "translation": "Lignes de balayage",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.dissolve",
+    "english": "Dissolve",
+    "translation": "Fondu enchaîné",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.transition.wipe-left",
+    "english": "Wipe left",
+    "translation": "Balayage vers la gauche",
+    "ratio": 2.56
+  },
+  {
+    "id": "editorLook.transition.wipe-right",
+    "english": "Wipe right",
+    "translation": "Balayage à droite",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorLook.transition.wipe-up",
+    "english": "Wipe up",
+    "translation": "Balayage vers le haut",
+    "ratio": 3
+  },
+  {
+    "id": "editorLook.transition.wipe-down",
+    "english": "Wipe down",
+    "translation": "Balayage vers le bas",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorLook.transition.slide-left",
+    "english": "Slide left",
+    "translation": "Glisser vers la gauche",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorLook.transition.slide-right",
+    "english": "Slide right",
+    "translation": "Glisser vers la droite",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.transition.slide-up",
+    "english": "Slide up",
+    "translation": "Glisser vers le haut",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorLook.transition.slide-down",
+    "english": "Slide down",
+    "translation": "Glisser vers le bas",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.iris-open",
+    "english": "Iris open",
+    "translation": "Ouverture en iris",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorLook.transition.iris-close",
+    "english": "Iris close",
+    "translation": "Fermeture en iris",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorLook.transition.clock-wipe",
+    "english": "Clock wipe",
+    "translation": "Balayage circulaire",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorLook.transition.push",
+    "english": "Push",
+    "translation": "Poussée",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "Entrée en rotation",
+    "ratio": 2.57
+  },
+  {
+    "id": "editorLook.transition.whip-pan",
+    "english": "Whip pan",
+    "translation": "Panoramique rapide",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorLook.transition.glitch",
+    "english": "Glitch",
+    "translation": "Interférence",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.blend.screen",
+    "english": "Screen",
+    "translation": "Superposition",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorLook.blend.overlay",
+    "english": "Overlay",
+    "translation": "Incrustation",
     "ratio": 1.71
   },
   {

@@ -1,3 +1,5 @@
+import { useLookActions } from './tools/useLookActions'; import { useAudioSettingsActions } from './tools/useAudioSettingsActions';
+import { useOriginalAudio } from './tools/useOriginalAudio';
 import { useCaptionActions } from './tools/useCaptionActions';
 import { useTextActions } from './tools/useTextActions';
 import { useSpeedActions } from './tools/useSpeedActions';
@@ -67,7 +69,6 @@ import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelectio
     removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from
     '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
-
 import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
 import { JobThumb, useAssetLinks } from '../JobThumb';
@@ -91,6 +92,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const bestCut = useBestCutEditor(session, projectId, startBestCut); const thumbLinks = useAssetLinks(api);
     const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
     const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
+    const [placement, setPlacement] = useState(0);
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
     const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() }); const guard = useEditorLeaveGuard(leaveEditor, router.back);
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string; prompt?: string } | null>(null);
@@ -99,17 +101,19 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const liveProject = useRef(projectId), readiness = useRef(ready); liveProject.current = projectId; readiness.current = ready;
     useEffect(() => { setGenerate(null); setStemChoice(null); return subscribeCacheUser(() => { setGenerate(null); setStemChoice(null); }); }, [projectId]);
     const returns = useEditorGenerationReturns({ api, projectId, announce: tool !== 'generate', get ready() { return isReady(); }, currentDocument, get dirty() { return sync.dirty; }, get
-        saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, insert: insertMedia });
-    function insertMedia(media: Media, at: number, select = false): InsertResult {
+        saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, sessionLive: () => sync.live(), insert: insertMedia });
+    function insertMedia(media: Media, at: number, select = false, onPlaced?: (trimmed: boolean) => void): InsertResult {
         const current = currentDocument(); if (!isReady() || !current || current.project_id !== projectId) return 'dropped';
         const result = insertMediaAt(timelineOf(current.timeline), media, at);
         if ('error' in result) { setProblem(result.error === 'full' ? t('editorAi.projectFull') : t('editor.unlockoraddatrackfirst', { value1: media.kind === 'audio' ? 'audio' : 'video' }));
             return result.error; }
         const commit = markDocument({ ...current, schema_version: 3, timeline: result.timeline });
-        if (commit.status !== 'accepted') return commit; if (result.trimmed) setProblem(t('editor.musicTrimmed'));
+        if (commit.status !== 'accepted') return commit;
+        if (result.trimmed && (!media.originalAudio || Object.hasOwn(timelineOf(current.timeline).media, media.id))) { setProblem(t('editor.musicTrimmed')); setPlacement(value => value + 1); }
+        onPlaced?.(result.trimmed);
         if (select || media.kind === 'audio') { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
-    const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() }); useAnnouncement(problem);
+    const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions(); const insets = useContext(SafeAreaInsetsContext);
     const budget = editorLayoutBudget({ windowHeight, topInset: insets?.top ?? 0, bottomInset: insets?.bottom ?? 0, trackCount: document ? timelineOf(document.timeline).tracks.length : 1 });
@@ -119,6 +123,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         frameStore, setSelection, setSelections, setTool });
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
+    const lookActions = useLookActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
+    const audioActions = useAudioSettingsActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
+    const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, playing, setProblem: message => { if (sync.live()) setProblem(message); },
+        insertMedia: returns.place, frameStore, currentTimeline: () => timelineOf(currentDocument()?.timeline), onPlacement: message => { setProblem(message); setPlacement(value => value + 1); } });
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const total = framesIn(timeline); const selected = clipAt(timeline, selection);
@@ -227,8 +235,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
-    const panelProps: ToolPanelProps = {
-        timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
+    const panelProps: ToolPanelProps = { lookActions,
+        audioActions, originalAudio, timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };
@@ -247,7 +255,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate
                 })}</Text></View></> : null}
         </View>
-        {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
+        {problem ? <StatusText key={placement} variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
         {advanced ? null : <View style={styles.simpleActions}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />

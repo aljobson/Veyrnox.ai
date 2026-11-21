@@ -1,6 +1,6 @@
 # ADR-0306: Mobile over-the-air updates
 
-Status: Accepted; takes effect with the next native build
+Status: Accepted; only the fingerprint `runtimeVersion` decision is superseded by [ADR-0369](0369-mobile-ota-app-version-runtime.md) for version 1.0.1 and later
 
 ## Context
 

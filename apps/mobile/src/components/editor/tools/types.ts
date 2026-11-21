@@ -1,3 +1,6 @@
+import type { LookActions } from './useLookActions';
+import type { AudioSettingsActions } from './useAudioSettingsActions';
+import type { OriginalAudioActions } from './useOriginalAudio';
 import type { CaptionActions } from './useCaptionActions';
 import type { TextActions } from './useTextActions';
 import type { SpeedActions } from './useSpeedActions';
@@ -8,6 +11,8 @@ import type { SlotKind } from '../../../lib/sources';
 import type { Kind } from '../../../lib/media';
 
 export type ToolPanelProps = {
+    lookActions?: LookActions;
+    audioActions?: AudioSettingsActions; originalAudio?: OriginalAudioActions;
     textActions?: TextActions; captionActions?: CaptionActions;
     timeline: Timeline; selection: Selection | null; selected: Clip | TextClip | undefined;
     selections: Selection[]; selectedMedia: Media | undefined; selectedTrack: EditorTrack | undefined;
