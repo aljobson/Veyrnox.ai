@@ -75,6 +75,8 @@ export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
 // seedanceLongTemplates runtime key is on (lib/seedanceLongTemplates.js, templates.js galleryVideoPresets); impact and
 // cake-in-the-fridge stay out (over 20,000), and jellyfish-airlines (kie's copyright filter refused it in the 2026-11-20
 // probe, nothing charged; runnable by link). They count toward VIDEO_TEMPLATE_CAP when listed.
+// Hidden 2026-11-21 (owner, "only templates which work"): sea-snakes and community-parkour-vault-shift were weak or failed a paid test; thrille, underground-lab-transformation,
+// the-spirit and office-kitchen name or depict outside properties or real people; community-subway-combat-strike is a male-only gun fight. Links still resolve.
 export const LONG_PROMPT_GALLERY_TEMPLATE_IDS = Object.freeze([
   'trick-or-skin', 'seedance-rescue-myself', 'ruins-escape-run', 'born-from-sand', 'community-shockwave-horizon-shift',
   'community-dragon-rider-encounter', 'community-dragon-awakening', 'seedance-glass-cube', 'theater-ceiling-horror',
@@ -82,7 +84,4 @@ export const LONG_PROMPT_GALLERY_TEMPLATE_IDS = Object.freeze([
   'enchanted-forest-selfie', 'fashion-halloween', 'pizzeria-hide-and-seek', 'seedance-subway-fight', 'x-ray-matter',
   'reflection-in-the-mirror', 'dandelion-ball', 'rooftop-agent-pursuit', 'game-character-rig', 'sm-brand-new-day',
   'seedance-roof-jump', 'window-explode', 'ocean-car-sinking', 'seedance-bunny-taxi', 'the-crown',
-  'office-kitchen', 'dragon-lord', 'studio-ballerina-turns', 'community-subway-combat-strike', 'noir-film', 'the-spirit',
-  'underground-lab-transformation', 'freefall', 'sea-snakes', 'seedance-quick-change-2', 'community-parkour-vault-shift',
-  'thrille',
-]);
+  'dragon-lord', 'studio-ballerina-turns', 'noir-film', 'freefall', 'seedance-quick-change-2', ]);
