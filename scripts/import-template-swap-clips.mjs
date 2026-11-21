@@ -10,7 +10,7 @@ import { TEMPLATE_CLIPS } from '../app/veyrnox/_lib/templateClips.js';
 import { templateContract } from '../lib/templateContract.js';
 import { swapNeedsSourceVideo } from '../lib/templateSwapGuard.js';
 import { checkTemplateSwapVideoSource } from '../lib/templateSwapClipGeneration.js';
-import { TEMPLATE_SWAP_CLIP_ENDPOINT } from '../app/veyrnox/_lib/templateSwapClips.js';
+import { TEMPLATE_SWAP_CLIP_ENDPOINT, TEMPLATE_SWAP_CLIPS, TEMPLATE_SWAP_CLIP_MANIFEST_SHA256 } from '../app/veyrnox/_lib/templateSwapClips.js';
 import { capabilityFor } from '../lib/modelCapabilities.js';
 import { envConfig, isConfigured, sha256Hex, putObject, getObject } from '../packages/adapters/r2.js';
 import { readBoundedBody } from '../lib/boundedBody.js';
@@ -29,9 +29,29 @@ const likenessNote = 'This is a community creator result, not the original input
 export const kindOf = contract => !contract ? null
   : contract.class === 'blocked-needs-video' ? (swapNeedsSourceVideo(contract.sourcePrompt) ? 'video_swap' : 'motion')
     : swapNeedsSourceVideo(contract.sourcePrompt) ? 'swap' : null;
+// Bound photo templates whose short prompt only works beside their source clip ("recreate the scene", "same moves"). Owner approved these
+// ten on 2026-11-21. Reached only with --kinds bound_source, so the default candidate set is unchanged.
+export const BOUND_SOURCE_CLIP_IDS = Object.freeze([
+  'community-boardwalk-dance-routine', 'community-canyon-groove', 'community-championship-slap-duel', 'community-london-gentleman-walk',
+  'community-mansion-raid-swap', 'community-midnight-forest-run', 'community-midnight-sports-drive', 'community-street-shuffle-walk',
+  'community-truck-window-confrontation', 'community-urban-dance-walk',
+]);
+const candidateKind = c => kindOf(c) ?? (BOUND_SOURCE_CLIP_IDS.includes(c.id) ? 'bound_source' : null);
 export async function swapCandidates({ kinds = ['swap', 'video_swap', 'motion'] } = {}) {
   return [...new Set(TEMPLATE_CLIPS.map(clip => clip.id))].map(templateContract)
-    .map(c => c && Object.assign({}, c, { kind: kindOf(c) })).filter(c => c && kinds.includes(c.kind));
+    .map(c => c && Object.assign({}, c, { kind: candidateKind(c) })).filter(c => c && kinds.includes(c.kind));
+}
+
+// The manifest the site runs on, verified against its pin. --add-to-live merges into it so a small batch cannot drop the live clips.
+export async function readLiveManifest(pin, r2, storage) {
+  if (!/^[a-f0-9]{64}$/.test(pin || '')) fail('live_manifest_pin_invalid');
+  const read = await storage.getObject(`template-swap-clips/manifests/${pin}.json`, r2);
+  if (!read.ok || read.response.status !== 200) fail('live_manifest_unreadable');
+  const bytes = await readBoundedBody(read.response.body, TEMPLATE_SWAP_MANIFEST_MAX_BYTES, AbortSignal.timeout(10000));
+  if (await sha256Hex(bytes) !== pin) fail('live_manifest_hash_mismatch');
+  const document = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  if (document?.version !== 1 || !document.clips || typeof document.clips !== 'object' || Array.isArray(document.clips)) fail('live_manifest_invalid');
+  return document.clips;
 }
 
 // Every audit file that records a preview hash, tagged with its origin (the file-name prefix: higgsfield, seedance, syntx, ...).
@@ -76,8 +96,9 @@ async function posterFor(root, previewFile) {
 }
 
 // Tier letters: A swap template whose clip hash an audit record vouches for, B a swap template with no audit record, C a swap-style
-// template the video guard refuses, D another video-dependent template (motion transfer; lower fit for O1).
-export const tierFor = (kind, verification) => kind === 'video_swap' ? 'C' : kind === 'motion' ? 'D' : verification === 'audit_hash' ? 'A' : 'B';
+// template the video guard refuses, D another video-dependent template (motion transfer; lower fit for O1), E a bound template whose
+// prompt depends on its source clip.
+export const tierFor = (kind, verification) => kind === 'bound_source' ? 'E' : kind === 'video_swap' ? 'C' : kind === 'motion' ? 'D' : verification === 'audit_hash' ? 'A' : 'B';
 // Clips whose origin is a competitor's hosted trend feed stay out unless the owner opts in (ADR-0333: no Syntx media).
 const EXCLUDED_ORIGINS = new Set(['syntx']);
 
@@ -104,7 +125,8 @@ export function renderSwapRegistry(registry, ids, pin) {
 }
 
 export async function importTemplateSwapClips({ decisions, outDir, upscale = false, upload = false, reviewAll = false, confirmBucket,
-  showcaseDir = path.join(repo, 'public/showcase'), records, kinds, includeSyntx = false, r2 = envConfig(), storage = { putObject, getObject } } = {}) {
+  showcaseDir = path.join(repo, 'public/showcase'), records, kinds, includeSyntx = false, r2 = envConfig(), storage = { putObject, getObject },
+  addToLive = false, livePin = TEMPLATE_SWAP_CLIP_MANIFEST_SHA256, liveIds = TEMPLATE_SWAP_CLIPS } = {}) {
   // Validate every caller-controlled output path before any decisions or source work.
   const base = await outsideRepositories(outDir);
   if (!Array.isArray(decisions)) fail('decisions_must_be_array');
@@ -185,9 +207,14 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
         if (!normaliseSwapRole(decision?.role) || reviewed.get(item.id) !== source.sha256
             || decision.reviewFingerprint !== await reviewFingerprint(source.sha256, source.role)) fail('reviewed_role_mismatch');
       }
+      // Read the live manifest before any write, so an unreadable one stops the run with nothing uploaded.
+      const live = addToLive ? await readLiveManifest(livePin, r2, storage) : {};
+      if (Object.keys(manifest).some(id => Object.hasOwn(live, id))) fail('live_manifest_id_conflict');
       for (const item of files) await verifyUpload(manifest[item.id], await readFile(item.file), r2, storage);
-      const ids = Object.keys(manifest).sort();
-      const manifestBytes = new TextEncoder().encode(json({ version: 1, clips: Object.fromEntries(ids.map(id => [id, manifest[id]])) }));
+      const clips = { ...live, ...manifest }, manifestIds = Object.keys(clips).sort();
+      // The registry is narrower than the manifest (clips hidden by amendments 13 and 17 stay in it), so it grows from the installed list.
+      const ids = addToLive ? [...new Set([...liveIds, ...Object.keys(manifest)])].sort() : manifestIds;
+      const manifestBytes = new TextEncoder().encode(json({ version: 1, clips: Object.fromEntries(manifestIds.map(id => [id, clips[id]])) }));
       if (manifestBytes.length > TEMPLATE_SWAP_MANIFEST_MAX_BYTES) fail('manifest_too_large');
       const pin = await sha256Hex(manifestBytes), key = `template-swap-clips/manifests/${pin}.json`;
       const put = await storage.putObject(key, manifestBytes, 'application/json', r2, { onlyIfAbsent: true });
@@ -218,7 +245,7 @@ export async function importTemplateSwapClips({ decisions, outDir, upscale = fal
 export async function cli(args = process.argv.slice(2)) {
   const { values } = parseArgs({ args, options: {
     decisions: { type: 'string' }, 'out-dir': { type: 'string' }, upscale: { type: 'boolean' },
-    'dry-run': { type: 'boolean' }, 'review-all': { type: 'boolean' }, 'include-syntx': { type: 'boolean' }, kinds: { type: 'string' }, upload: { type: 'boolean' }, 'confirm-bucket': { type: 'string' },
+    'dry-run': { type: 'boolean' }, 'review-all': { type: 'boolean' }, 'include-syntx': { type: 'boolean' }, kinds: { type: 'string' }, upload: { type: 'boolean' }, 'confirm-bucket': { type: 'string' }, 'add-to-live': { type: 'boolean' },
   } });
   if (values.upload && values['dry-run']) fail('conflicting_modes');
   // Both paths checked before reading decisions or creating any output.
@@ -227,7 +254,7 @@ export async function cli(args = process.argv.slice(2)) {
   const decisions = JSON.parse(await readFile(decisionsPath, 'utf8'));
   const result = await importTemplateSwapClips({ decisions, outDir, upscale: values.upscale === true,
     upload: values.upload === true, reviewAll: values['review-all'] === true, includeSyntx: values['include-syntx'] === true,
-    kinds: values.kinds?.split(',').filter(Boolean), confirmBucket: values['confirm-bucket'] });
+    kinds: values.kinds?.split(',').filter(Boolean), confirmBucket: values['confirm-bucket'], addToLive: values['add-to-live'] === true });
   console.log(JSON.stringify({ runDir: result.runDir, publishable: result.report.publishable, total: result.report.total }));
   return result;
 }
