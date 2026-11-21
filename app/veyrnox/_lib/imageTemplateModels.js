@@ -7,3 +7,6 @@ export const imageTemplateNeedsPhoto = preset => preset?.kind === 'image' && pre
 export const imageTemplateModelAvailable = (preset, model) => !imageTemplateNeedsPhoto(preset) || Boolean(
   model?.kind === 'image' && model.media?.image && !(model.media.image.minFiles > 1)
   && !Object.entries(model.media).some(([slot, spec]) => slot !== 'image' && spec?.required));
+
+// The image-edit model a text-to-image template switches to when the person adds a reference image.
+export const REFERENCE_IMAGE_MODEL = 'nano-banana-pro-edit-grsai';
