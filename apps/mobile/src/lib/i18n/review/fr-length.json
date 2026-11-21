@@ -6918,6 +6918,36 @@
     "ratio": 1.71
   },
   {
+    "id": "musicRender.title",
+    "english": "Edit master",
+    "translation": "Modifier le master",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicRender.operation",
+    "english": "Edit type",
+    "translation": "Type de modification",
+    "ratio": 2.22
+  },
+  {
+    "id": "musicRender.save",
+    "english": "Save new version",
+    "translation": "Enregistrer une nouvelle version",
+    "ratio": 2
+  },
+  {
+    "id": "musicRender.saving",
+    "english": "Saving new master…",
+    "translation": "Enregistrement du nouveau master…",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicRender.refresh",
+    "english": "Refresh song",
+    "translation": "Actualiser la chanson",
+    "ratio": 1.75
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

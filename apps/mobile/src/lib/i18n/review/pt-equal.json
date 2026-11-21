@@ -270,5 +270,6 @@
   "editorLook.channel.master": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "editorLook.channel.magenta": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "editorLook.transition.zoom": "Shared technical term or locale-independent notation, reviewed for this editor control.",
-  "editorLook.blend.source-over": "Shared technical term or locale-independent notation, reviewed for this editor control."
+  "editorLook.blend.source-over": "Shared technical term or locale-independent notation, reviewed for this editor control.",
+  "musicRender.fade": "Established audio term shared with English; machine translation, native review pending."
 }

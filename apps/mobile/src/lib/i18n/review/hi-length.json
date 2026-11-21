@@ -2496,6 +2496,18 @@
     "ratio": 2
   },
   {
+    "id": "musicRender.title",
+    "english": "Edit master",
+    "translation": "मास्टर संपादित करें",
+    "ratio": 1.73
+  },
+  {
+    "id": "musicRender.operation",
+    "english": "Edit type",
+    "translation": "संपादन का प्रकार",
+    "ratio": 1.78
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

@@ -1,0 +1,23 @@
+import { createApiClient } from '../src/lib/api';
+import { aiConsent } from '../src/lib/aiConsentStore';
+import { sendsContent } from '../src/lib/aiConsent';
+import { isPaidAction, setHardPaywallLocked } from '../src/lib/hardPaywall';
+import { guardedBeforeSend } from '../src/lib/guardedBeforeSend';
+import { renderSong } from '../src/lib/music/renderClient';
+import { initialRenderForm, renderInput, RENDER_OPERATIONS } from '../src/lib/music/renderForm';
+import { renderCreated } from './fixtures/musicRender';
+import { SONG_ID, VERSION_ID } from './fixtures/musicActions';
+const originalFetch = global.fetch;
+jest.mock('expo-secure-store', () => ({ getItemAsync: async () => null, setItemAsync: async () => {}, deleteItemAsync: async () => {} }));
+afterEach(() => { global.fetch = originalFetch; setHardPaywallLocked(false); aiConsent.setPrompter(null); });
+test.each(RENDER_OPERATIONS)('%s bypasses consent and paywall through the real guardedBeforeSend', async operation => {
+    const prompt = jest.fn(async () => false); aiConsent.setUser('render-guard-user'); aiConsent.setPrompter(prompt); setHardPaywallLocked(true);
+    const path = `/api/v1/music/songs/${SONG_ID}/render`;
+    expect(sendsContent(path, 'POST')).toBe(false); expect(isPaidAction(path, 'POST')).toBe(false);
+    const fetchMock = jest.fn(async () => ({ ok: true, status: 201, headers: new Headers(), json: async () => ({ ...renderCreated, operation }) }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const api = createApiClient({ baseUrl: 'https://mock.test', getAccessToken: async () => 'token', onSessionLost: jest.fn(), beforeSend: guardedBeforeSend });
+    await renderSong(api, SONG_ID, renderInput({ ...initialRenderForm, operation }, VERSION_ID), 'render.fixed');
+    expect(prompt).not.toHaveBeenCalled(); expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]).toEqual(expect.arrayContaining([expect.stringContaining('/render')]));
+});

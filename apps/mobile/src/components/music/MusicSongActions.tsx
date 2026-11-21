@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { isTrackAddUnavailable, subscribeTrackAddAvailability } from '../../lib/music/trackAddAvailability';
+import { renderAvailability, subscribeRenderAvailability } from '../../lib/music/renderAvailability';
 import { useRouter } from 'expo-router';
 import { Button } from '../ui';
 import { t } from '../../lib/i18n';
@@ -7,8 +8,10 @@ import type { MusicSongDetail } from '../../lib/music/types';
 export function MusicSongActions({ song }: { song: MusicSongDetail }) {
     const router = useRouter();
     const trackAddOff = useSyncExternalStore(subscribeTrackAddAvailability, isTrackAddUnavailable, isTrackAddUnavailable);
+    const render = useSyncExternalStore(subscribeRenderAvailability, renderAvailability, renderAvailability);
     if (song.lifecycle_status === 'trashed') return null;
-    return <>{!trackAddOff && song.actions.includes('add_track') ? <Button variant="secondary" icon="plus" label={t('musicTrackAdd.title')}
+    return <>{render.editing && song.actions.includes('render') ? <Button variant="secondary" icon="faders" label={t('musicRender.title')}
+        onPress={() => router.push({ pathname: '/music/render', params: { id: song.id } } as never)} /> : null}{!trackAddOff && song.actions.includes('add_track') ? <Button variant="secondary" icon="plus" label={t('musicTrackAdd.title')}
         onPress={() => router.push({ pathname: '/music/track-add', params: { id: song.id } } as never)} /> : null}{(['add_section', 'replace_section'] as const).filter(name => song.actions.includes(name)).map(name =>
         <Button key={name} variant="secondary" icon={name === 'add_section' ? 'plus' : 'swap'} label={t(`musicSectionActions.${name}.title`)}
             onPress={() => router.push({ pathname: name === 'add_section' ? '/music/add-section' : '/music/replace-section', params: { id: song.id } } as never)} />)}{(['stems', 'crop'] as const).filter(name => song.actions.includes(name)).map(name =>
