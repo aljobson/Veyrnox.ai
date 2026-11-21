@@ -60,6 +60,8 @@ export default {
     'chat.attach.libraryLabel': 'Choose an image from your Veyrnox.ai Library',
     'chat.attach.photos': 'Photos',
     'chat.attach.photosLabel': 'Attach photos from this device',
+    'chat.attach.files': 'Files',
+    'chat.attach.filesLabel': 'Attach image files from this device',
     'chat.attach.extra.one': 'Images add {count} credit',
     'chat.attach.extra.other': 'Images add {count} credits',
     'chat.attach.hint.one': 'Attach images: adds {count} credit',

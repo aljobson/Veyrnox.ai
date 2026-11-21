@@ -236,3 +236,13 @@ test('speech studio takes priority and prices its actual catalog model; missing 
         expect(fromCredits(models, 'speech', false, true)).toBe(2);
     }
 });
+
+
+test('native dialogue takes priority and prices its exact model; unavailable retains fallback', () => {
+    const studio = model('elevenlabs-dialogue', 'Dialogue', 6);
+    const fallback = model('other-dialogue', 'Dialogue', 2);
+    expect(audioTarget('dialogue', [fallback, studio])).toEqual({ pathname: '/dialogue' });
+    expect(fromCredits([fallback, studio], 'dialogue', false, true)).toBe(6);
+    expect(fromCredits([studio], 'dialogue', false, false)).toBeNull();
+    expect(audioTarget('dialogue', [fallback, { ...studio, gated: true }])).toEqual({ pathname: '/create/[modelId]', params: { modelId: fallback.id } });
+});

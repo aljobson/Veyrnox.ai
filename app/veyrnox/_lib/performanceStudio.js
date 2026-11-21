@@ -221,9 +221,25 @@ export function availablePerformanceModels(models, workflow) {
   return (Array.isArray(models) ? models : []).filter((model) => wanted.includes(model.id) && !model.gated);
 }
 
-export function estimatedSpeechSeconds(text, wordsPerSecond = 2.35) {
-  const words = String(text || '').trim().split(/\s+/).filter(Boolean).length;
-  return words ? Math.max(1, Math.ceil(words / wordsPerSecond)) : 0;
+// Scripts written without spaces are counted by character, at ordinary speaking rates.
+const UNSPACED_SCRIPTS = [
+  { pattern: /[\p{Script=Han}]/gu, perSecond: 5 },
+  { pattern: /[\p{Script=Hiragana}\p{Script=Katakana}]/gu, perSecond: 7 },
+  { pattern: /[\p{Script=Hangul}]/gu, perSecond: 6 },
+];
+
+export function estimatedSpeechSeconds(text, wordsPerSecond = 2.35, speed = 1) {
+  let remaining = String(text || '');
+  let seconds = 0;
+  for (const { pattern, perSecond } of UNSPACED_SCRIPTS) {
+    seconds += (remaining.match(pattern)?.length || 0) / perSecond;
+    remaining = remaining.replace(pattern, ' ');
+  }
+  const words = remaining.trim().split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
+  seconds += words / wordsPerSecond;
+  if (seconds <= 0) return 0;
+  const rate = Number.isFinite(speed) && speed > 0 ? speed : 1;
+  return Math.max(1, Math.ceil(seconds / rate));
 }
 
 export function knownAudioTooLong(duration, maxSeconds) {

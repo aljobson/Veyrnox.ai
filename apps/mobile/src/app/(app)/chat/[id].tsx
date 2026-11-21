@@ -26,7 +26,7 @@ import { ApiError } from '../../../lib/api';
 import { MIN_TARGET } from '../../../lib/a11y';
 import { chatApi, cleanOptions, cleanTitle, imagesExtra, retryRefusalIsUnsettled, isLongText, isModelSwitch, longTextState, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { imagesBlocked, MAX_ATTACHMENTS, photoNoticeKey, refsForSend, roomFor, type AttachmentRef, type ChatImage, type SentRefs } from '../../../lib/chatAttach';
-import { pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
+import { pickFiles, pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
 import { createVideoAttach } from '../../../lib/chatVideoAttempt';
 import { fetchCatalog, type CatalogModel, type Kind } from '../../../lib/media';
 import { skillsInstructions, fittingSkills, selectedSkillIds, skillById, MAX_SELECTED_SKILLS, type Skill } from '../../../lib/studioSkills';
@@ -361,8 +361,8 @@ export default function Conversation() {
 
     const imageExtra = model ? imagesExtra(model) : null;
     const price = model ? replyPrice(model, options, imageExtra !== null ? images.length : 0, draft.trim()) : null;
-    async function addPhotos() {
-        const r = await pickPhotos(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
+    async function addImages(pick: typeof pickPhotos) {
+        const r = await pick(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
         if (r.images.length) setImages((cur) => [...cur, ...r.images]);
         const key = photoNoticeKey(r.problem); if (key) setNotice(t(key));
     }
@@ -462,7 +462,8 @@ export default function Conversation() {
                         onModel={() => setPickerModelsOpen(true)}
                         onOptions={setOptions}
                         onLibrary={() => { flushDraft(); setPickerOpen(true); }}
-                        onPhotos={() => { flushDraft(); void addPhotos(); }}
+                        onPhotos={() => { flushDraft(); void addImages(pickPhotos); }}
+                        onFiles={() => { flushDraft(); void addImages(pickFiles); }}
                         onRemoveImage={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))}
                         onMake={openMake}
                         onSend={() => void send()}

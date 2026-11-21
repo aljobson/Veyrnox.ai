@@ -1,4 +1,5 @@
 import { speechModel } from './speech/model';
+import { dialogueModel } from './speech/dialogue';
 import { priceLines } from './catalogPages';
 import { creativeFeature } from './creativeFeatures';
 import type { MenuIcon } from './menuIcons';
@@ -19,7 +20,7 @@ const FEATURE_SLUGS: Partial<Record<AudioStudioId, string>> = {
     talkingPhoto: 'ai-talking-photo-generator', singingPhoto: 'singing-photo',
 };
 
-export type AudioTarget = { pathname: '/music' | '/music/create' | '/speech' } | { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
+export type AudioTarget = { pathname: '/music' | '/music/create' | '/speech' | '/dialogue' } | { pathname: '/create/[modelId]'; params: { modelId: string } } | { pathname: '/features/[slug]'; params: { slug: string } } | { pathname: '/create' };
 
 // A catalog name like "ACE-Step (music/SFX)" trips the effects heuristic in audioFamily, so music is matched by name first.
 const isMusic = (m: CatalogModel): boolean => {
@@ -38,6 +39,7 @@ const dialogue = (models: readonly CatalogModel[]): CatalogModel | null =>
 export function audioTarget(id: AudioStudioId, models: readonly CatalogModel[] | null, musicAvailable = false): AudioTarget {
     if (id === 'music' && musicAvailable) return { pathname: '/music/create' };
     if (id === 'speech' && models && speechModel(models)) return { pathname: '/speech' };
+    if (id === 'dialogue' && models && dialogueModel(models)) return { pathname: '/dialogue' };
     if (id === 'yourMusic') return { pathname: '/music' };
     const slug = FEATURE_SLUGS[id];
     if (slug) return { pathname: '/features/[slug]', params: { slug } };
@@ -52,9 +54,9 @@ export function fromCredits(models: readonly CatalogModel[] | null, id: AudioStu
     const target = audioTarget(id, models, musicAvailable);
     const modelId = target.pathname === '/create/[modelId]' ? target.params.modelId
         : target.pathname === '/features/[slug]' ? creativeFeature(target.params.slug)?.model : undefined;
-    const model = target.pathname === '/speech' ? speechModel(models) : models.find((item) => item.id === modelId);
+    const model = target.pathname === '/speech' ? speechModel(models) : target.pathname === '/dialogue' ? dialogueModel(models) : models.find((item) => item.id === modelId);
     if (!model || !Number.isFinite(model.credits) || model.credits < 0) return null;
-    const credits = target.pathname === '/speech' ? estimateCredits(model, null) : target.pathname === '/features/[slug]'
+    const credits = target.pathname === '/speech' || target.pathname === '/dialogue' ? estimateCredits(model, null) : target.pathname === '/features/[slug]'
         ? estimateCredits(model, model.durations?.includes(5) ? 5 : (model.durations?.[0] ?? null))
         : priceLines(model)[0].credits;
     return Number.isFinite(credits) && credits >= 0 ? credits : null;

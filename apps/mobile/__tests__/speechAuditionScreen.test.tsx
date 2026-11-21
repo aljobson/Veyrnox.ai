@@ -19,7 +19,7 @@ const mockModel: CatalogModel = { id: 'minimax-speech-2.6-hd', name: 'Speech', m
 let mockCatalog: CatalogModel[], mockBalance: number | null, mockResult: JobResult, mockOwner: string;
 const mockSubscribers = new Set<() => void>();
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
-jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: { options: { title: string } }) => { mockTitles.push(options.title); return null; } }, useRouter: () => mockRouter, useFocusEffect: jest.fn() }));
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({}), Stack: { Screen: ({ options }: { options: { title: string } }) => { mockTitles.push(options.title); return null; } }, useRouter: () => mockRouter, useFocusEffect: jest.fn() }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => { mockSubscribers.add(fn); return () => mockSubscribers.delete(fn); } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: () => mockLoadCatalog() }));
 jest.mock('../src/components/speech/SpeechPricePanel', () => {
@@ -160,7 +160,6 @@ test.each(['script', 'settings', 'board'])('editing %s away and back after a los
     mockBalance = 30;
     mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'));
     await setupBoard(2); await click(generate(2));
-    if (field === 'script') { await write('Changed'); await write('Hello'); }
     if (field === 'settings') {
         await click(button(t('speech.increase', { label: t('speech.speed') })));
         await click(button(t('speech.decrease', { label: t('speech.speed') })));
@@ -190,6 +189,16 @@ test.each([
     expect(bodies()[count].inputs.tts_voice).toBe(TTS_VOICES[count - 1].id);
     expect(bodies()[count].idempotency_key).not.toBe(bodies()[count - 1].idempotency_key);
     for (let index = 0; index < count - 1; index++) expect(mockRemember.mock.calls.filter(([id]) => id === `accepted-${index}`)).toHaveLength(1);
+});
+test('script edit and revert after a lost batch reply retains the pending key and accepted item', async () => {
+    mockBalance = 12;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network')).mockResolvedValueOnce({ job_id: 'two' });
+    await setupBoard(2); await click(generate(2));
+    mockBalance = 0; await write('Changed'); await write('Hello');
+    expect(generate(2).props.accessibilityState.disabled).toBe(false);
+    await click(generate(2)); expect(bodies()).toHaveLength(3); expect(bodies()[2]).toEqual(bodies()[1]);
+    expect(mockRemember.mock.calls.map(([id]) => id)).toEqual(['one', 'two']);
+    for (const voice of TTS_VOICES.slice(0, 2)) expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: voice.label }));
 });
 test('at phone width each voice has a single full-width audio result with its own play and seek controls', async () => {
     mockBalance = 18;
