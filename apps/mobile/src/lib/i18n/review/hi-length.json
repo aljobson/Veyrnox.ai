@@ -2448,6 +2448,12 @@
     "ratio": 2
   },
   {
+    "id": "musicExport.retry",
+    "english": "Try again",
+    "translation": "फिर प्रयास करें",
+    "ratio": 1.67
+  },
+  {
     "id": "editorLook.hsl",
     "english": "HSL",
     "translation": "रंग, संतृप्ति और चमक",

@@ -55,14 +55,14 @@ export function sweepStemFiles(): void {
 
 type StemFile = {
     url: string; mimeType: string; sizeBytes: number; requestId: string;
-    kind: 'archive' | 'target' | 'residual'; isCurrent(): boolean;
+    kind: 'archive' | 'target' | 'residual' | 'export'; isCurrent(): boolean;
 };
 export async function shareStemFile({ url, mimeType, sizeBytes, requestId, kind, isCurrent }: StemFile): Promise<void> {
     sweepStemFiles();
     if (!isCurrent()) return;
     const format = Object.hasOwn(formats, mimeType) ? formats[mimeType] : { extension: 'bin' };
     const id = UUID.test(requestId) ? requestId.toLowerCase() : 'request';
-    const part = kind === 'target' || kind === 'residual' ? kind : 'archive';
+    const part = kind === 'target' || kind === 'residual' || kind === 'export' ? kind : 'archive';
     const attempt = new Directory(stagingRoot(), randomUUID());
     let created = false, handedOver = false;
     active.add(attempt.uri);

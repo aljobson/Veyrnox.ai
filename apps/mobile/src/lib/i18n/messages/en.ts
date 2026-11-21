@@ -149,6 +149,7 @@ import area_montage from './en/montage';
 import area_music from './en/music';
 import area_musicActions from './en/musicActions';
 import area_musicDiscover from './en/musicDiscover';
+import area_musicExport from './en/musicExport';
 import area_musicGenerationActions from './en/musicGenerationActions';
 import area_musicPlaylists from './en/musicPlaylists';
 import area_musicPublic from './en/musicPublic';
@@ -395,6 +396,7 @@ const catalog = {
     ...area_music,
     ...area_musicActions,
     ...area_musicDiscover,
+    ...area_musicExport,
     ...area_musicGenerationActions,
     ...area_musicPlaylists,
     ...area_musicPublic,

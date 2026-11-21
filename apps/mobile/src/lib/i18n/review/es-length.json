@@ -4314,6 +4314,18 @@
     "ratio": 2.38
   },
   {
+    "id": "musicExport.choose",
+    "english": "File format",
+    "translation": "Formato de archivo",
+    "ratio": 1.64
+  },
+  {
+    "id": "musicExport.save",
+    "english": "Save",
+    "translation": "Guardar",
+    "ratio": 1.75
+  },
+  {
     "id": "editorLook.crop",
     "english": "Crop",
     "translation": "Recortar",
