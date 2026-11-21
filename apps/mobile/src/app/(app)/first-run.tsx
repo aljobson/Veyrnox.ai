@@ -26,7 +26,7 @@ import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui
 import { OnboardingShell } from '../../components/OnboardingShell';
 import { OnboardingChoice } from '../../components/OnboardingChoice';
 import { VeyCharacter } from '../../components/VeyCharacter';
-import { creditsCardKeys, journeyTotalFor } from '../../lib/firstRun';
+import { creditsCardKeys, hasRecap, journeyTotalFor } from '../../lib/firstRun';
 import type { MenuIcon } from '../../lib/menuIcons';
 
 // Goal first: it is the one answer that changes what happens next, and the picture grid is the strongest first screen.
@@ -189,9 +189,8 @@ export default function FirstRun() {
             hop.current = null;
             picking.current = false;
             if (step < STEPS.length - 1) { setStep(step + 1); return; }
-            // After the last question: a creation goal gets a recap with the idea it will start from; any other goes straight on.
-            const goal = answers.current.goal;
-            if (goal === 'image' || goal === 'video' || goal === 'audio') setStep(STEPS.length);
+            // After the last question: any answered goal gets the recap with a sample result before the paywall; a skipped one goes straight on.
+            if (hasRecap(answers.current.goal)) setStep(STEPS.length);
             else void finish();
         }, reduced || word === 'skipped' ? 0 : 220);
     }, [api, finish, queueWrite, reduced, saveLocal, step]);
@@ -214,7 +213,8 @@ export default function FirstRun() {
     // chips, and the credits promise in the paywall's own words.
     if (step >= STEPS.length) {
         const goal = shown.goal === 'image' || shown.goal === 'video' || shown.goal === 'audio' ? shown.goal : 'image';
-        const sample = sampleBroken ? null : photos[goal] ?? null;
+        // Audio has no still of its own, and the goals that are not a creation kind borrow the video or image sample.
+        const sample = sampleBroken ? null : photos[goal] ?? photos.video ?? photos.image ?? null;
         const credits = creditsCardKeys(free, hardPaywallEnabled() ? HARD_PAYWALL_STARTER_CREDITS : null);
         const creditsLine = credits.count !== null ? plural(credits.body, credits.count) : t(credits.body, credits.params);
         const chips = [

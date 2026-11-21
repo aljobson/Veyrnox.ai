@@ -11,11 +11,14 @@ export type WelcomeCard = (typeof WELCOME_CARDS)[number];
 export const FIRST_RUN_QUESTIONS = 3;
 export const ONBOARDING_TOTAL = FIRST_RUN_QUESTIONS + 1;
 
-// Only a creation goal (image, video, audio) ends on the recap; any other answer, or a skipped goal, finishes after the
-// last question, so the bar counts one fewer screen. Before a goal is known (first screen, nothing picked) it assumes the long way.
+// Any goal that was answered ends on the recap, so the person sees a sample result before the paywall (a creation goal
+// shows its own kind, "not sure" and the edit/publish goals show a general one). Only a skipped or missing goal finishes
+// after the last question, so the bar counts one fewer screen. Before a goal is known (first screen, nothing picked) it assumes the long way.
+export const hasRecap = (goal: string | undefined): boolean => !!goal && goal !== 'skipped';
+
 export function journeyTotalFor(goal: string | undefined, step: number): number {
     if (step === 0 && !goal) return ONBOARDING_TOTAL;
-    return goal === 'image' || goal === 'video' || goal === 'audio' ? ONBOARDING_TOTAL : ONBOARDING_TOTAL - 1;
+    return hasRecap(goal) ? ONBOARDING_TOTAL : ONBOARDING_TOTAL - 1;
 }
 
 // Goal gradient: the bar starts part-filled (step 1 is already a fraction of the way), and near the end it names what is

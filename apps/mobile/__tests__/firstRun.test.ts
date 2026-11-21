@@ -144,9 +144,11 @@ describe('the bar names what is left near the end (goal gradient)', () => {
     });
 });
 
-test('the journey is one screen shorter when the goal has no recap', () => {
+test('every answered goal ends on the recap; the journey is one screen shorter only when the goal is skipped', () => {
     expect(journeyTotalFor(undefined, 0)).toBe(ONBOARDING_TOTAL);
     expect(journeyTotalFor('video', 1)).toBe(ONBOARDING_TOTAL);
-    expect(journeyTotalFor('publish', 1)).toBe(ONBOARDING_TOTAL - 1);
+    expect(journeyTotalFor('publish', 1)).toBe(ONBOARDING_TOTAL);
+    expect(journeyTotalFor('unsure', 1)).toBe(ONBOARDING_TOTAL);
+    expect(journeyTotalFor('skipped', 1)).toBe(ONBOARDING_TOTAL - 1);
     expect(journeyTotalFor(undefined, 1)).toBe(ONBOARDING_TOTAL - 1);
 });
