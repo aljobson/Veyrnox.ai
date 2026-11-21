@@ -18,7 +18,7 @@ export type GenerationRow = PendingGeneration & { status: 'queued' | 'running' |
 type Token = { valid(): boolean; end(): void };
 type Options = {
     api: ApiClient; projectId: string; announce?: boolean; ready: boolean; dirty: boolean; saving: boolean; revision: number;
-    currentDocument(): ProjectDocument | null; beginImport(): Token | null;
+    currentDocument(): ProjectDocument | null; beginImport(): Token | null; sessionLive(): boolean;
     insert(media: Media, frame: number, select?: boolean, onPlaced?: (trimmed: boolean) => void): InsertResult;
 };
 type Entry = { media: Media; frame: number; select: boolean; item?: PendingGeneration; onPlaced?: (trimmed: boolean) => void; onFailed?: (result: InsertFailure) => void };
@@ -47,7 +47,7 @@ export function useEditorGenerationReturns(options: Options) {
         function stop(notify = false) {
             for (const controller of watching.values()) controller.abort();
             watching.clear(); const entries = queue; queue = [];
-            if (notify && live()) for (const entry of entries) entry.onFailed?.('dropped');
+            if (notify) for (const entry of entries) if (live() && o().sessionLive()) entry.onFailed?.('dropped');
         }
         function clear() {
             generation++; stop(); delivered.clear(); notAdded.clear(); pending = []; gesture = false;
@@ -64,7 +64,7 @@ export function useEditorGenerationReturns(options: Options) {
         }
         function apply(entry: Entry): InsertResult {
             const epoch = generation, result = applyEntry(entry);
-            if (live(epoch) && (result === 'dropped' || typeof result === 'object')) entry.onFailed?.(result);
+            if (live(epoch) && o().sessionLive() && (result === 'dropped' || typeof result === 'object')) entry.onFailed?.(result);
             return result;
         }
         function applyEntry(entry: Entry): InsertResult {

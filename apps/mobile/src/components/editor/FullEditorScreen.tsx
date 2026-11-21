@@ -102,7 +102,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const liveProject = useRef(projectId), readiness = useRef(ready); liveProject.current = projectId; readiness.current = ready;
     useEffect(() => { setGenerate(null); setStemChoice(null); return subscribeCacheUser(() => { setGenerate(null); setStemChoice(null); }); }, [projectId]);
     const returns = useEditorGenerationReturns({ api, projectId, announce: tool !== 'generate', get ready() { return isReady(); }, currentDocument, get dirty() { return sync.dirty; }, get
-        saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, insert: insertMedia });
+        saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, sessionLive: () => sync.live(), insert: insertMedia });
     function insertMedia(media: Media, at: number, select = false, onPlaced?: (trimmed: boolean) => void): InsertResult {
         const current = currentDocument(); if (!isReady() || !current || current.project_id !== projectId) return 'dropped';
         const result = insertMediaAt(timelineOf(current.timeline), media, at);

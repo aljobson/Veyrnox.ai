@@ -46,7 +46,7 @@ function Harness({ catalog = false, playing = false, insertResult }: { catalog?:
         <AudioSettingsSection clip={clip} media={timeline.media.m} track={timeline.video.length ? 'video' : 'audio'} actions={handlers} />;
 }
 beforeEach(() => { jest.useFakeTimers(); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); timeline = webSequenceV3();
-    mockOwner = 'owner'; mockReady = true; mockKeepNotice = false; mockCommitFailure = null; commits = []; message = null; dirty = false; store.set(30); jest.clearAllMocks(); jest.mocked(randomUUID).mockReset().mockReturnValue('new'); });
+    mockOwner = 'owner'; mockSessionCurrent = true; mockReady = true; mockKeepNotice = false; mockCommitFailure = null; commits = []; message = null; dirty = false; store.set(30); jest.clearAllMocks(); jest.mocked(randomUUID).mockReset().mockReturnValue('new'); });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
 async function press(label: string) {
     const node = root.container.queryAll(n => n.props.accessibilityLabel === label && typeof n.props.onClick === 'function')[0];
@@ -159,7 +159,8 @@ jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEdito
 } }));
 const mockRequest = jest.fn(), mockApi = { request: mockRequest };
 const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
-const mockBeginSessionTask = () => ({ current: () => true });
+let mockSessionCurrent = true;
+const mockBeginSessionTask = () => ({ current: () => mockSessionCurrent });
 let mockOwner = 'owner';
 const mockOwnerListeners = new Set<() => void>();
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => {
@@ -367,7 +368,10 @@ test.each(['dropped', 'not-live', 'invalid', 'tooLarge', 'pause'] as const)(
         const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
         if (failure === 'dropped' || failure === 'pause') mockReady = false;
         else mockCommitFailure = failure === 'not-live' ? { status: 'not-live' } : { status: 'refused', reason: failure };
-        if (failure === 'pause') await act(async () => mockSession.setTool('media'));
+        if (failure === 'pause') {
+            expect(mockSession.sync.live()).toBe(true);
+            await act(async () => mockSession.setTool('media'));
+        }
         await act(async () => node.props.onResponderRelease(event));
         const expected = failure === 'invalid' ? "That change can't be kept in this project." : failure === 'tooLarge' ?
             'This project is too large to save. Remove some clips or keyframes first.' : "This sound couldn't be prepared. Try again.";
@@ -377,6 +381,40 @@ test.each(['dropped', 'not-live', 'invalid', 'tooLarge', 'pause'] as const)(
         expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
         expect(mockSession.localMediaUris['l-new']).toBeUndefined();
     });
+test.each(['gesture release', 'pause'] as const)('real screen queued catalog failure stays silent after session teardown then %s', async action => {
+    let finish!: (uri: string) => void;
+    mockEnsure.mockImplementationOnce(() => new Promise<string>(resolve => { finish = resolve; }));
+    await screen(); await press('Audio'); await press('Insert Soft keys');
+    const node = root.container.queryAll(n => n.props.testID === 'clip-v1')[0];
+    const event = { nativeEvent: { pageX: 10, pageY: 40, locationY: 10 } };
+    await act(async () => node.props.onResponderGrant(event));
+    await act(async () => finish('file://queued-sound'));
+    expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    mockSessionCurrent = false;
+    expect(mockOwner).toBe('owner'); expect(mockSession.sync.live()).toBe(false);
+    if (action === 'pause') await act(async () => mockSession.setTool('media'));
+    else await act(async () => node.props.onResponderRelease(event));
+    expect(mockSession.problem).toBeNull();
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'alert')).toHaveLength(0);
+    expect(announce).not.toHaveBeenCalled();
+    expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
+    expect(mockSession.localMediaUris['l-new']).toBeUndefined();
+});
+test('real screen pending catalog preparation stays silent when the owner switches before it resolves', async () => {
+    let finish!: (uri: string) => void;
+    mockEnsure.mockImplementationOnce(() => new Promise<string>(resolve => { finish = resolve; }));
+    await screen(); await press('Audio'); await press('Insert Soft keys');
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    await act(async () => { mockOwner = 'other'; mockOwnerListeners.forEach(fn => fn()); });
+    expect(mockSession.sync.live()).toBe(false);
+    await act(async () => finish('file://late-sound'));
+    expect(mockSession.problem).toBeNull();
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'alert')).toHaveLength(0);
+    expect(announce).not.toHaveBeenCalled();
+    expect(mockSession.currentDocument()).toBeNull();
+    expect(mockSession.localMediaUris['l-new']).toBeUndefined();
+});
 test('real screen immediate catalog refusal has one announcement and leaves no Generate note', async () => {
     const doc = nearLimit(false); await screen(doc.timeline as Timeline); await press('Audio');
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
@@ -394,7 +432,7 @@ test.each(['unmount', 'account change'] as const)('queued catalog callbacks stay
     let returns!: ReturnType<typeof useEditorGenerationReturns>;
     function QueueHarness() {
         const service = useEditorGenerationReturns({ api: { ...mockApi, stream: jest.fn(), getBalance: jest.fn() }, projectId: doc.project_id, ready: true, dirty: false, saving: false,
-            revision: 0, currentDocument: () => doc, beginImport: () => ({ valid: () => true, end: () => {} }), insert });
+            revision: 0, currentDocument: () => doc, beginImport: () => ({ valid: () => true, end: () => {} }), sessionLive: () => true, insert });
         useLayoutEffect(() => { returns = service; });
         return null;
     }
