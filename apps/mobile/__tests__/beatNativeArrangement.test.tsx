@@ -11,6 +11,7 @@ jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../sr
 jest.mock('../src/components/beats/BeatSaveControls', () => ({ BeatSaveControls: () => null }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('../src/components/beats/BeatLabsBar', () => ({ BeatLabsBar: () => null }));
+jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: () => null }));
 jest.mock('../src/lib/beatNative/useLocalBeatLifecycle', () => ({ useLocalBeatLifecycle: () => {} }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 const mockAnnounce = jest.fn();

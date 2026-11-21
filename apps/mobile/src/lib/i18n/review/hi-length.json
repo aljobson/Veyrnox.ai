@@ -2394,6 +2394,48 @@
     "ratio": 1.67
   },
   {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Music में सेव करने की फिर कोशिश करें",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatExport.title",
+    "english": "Export",
+    "translation": "एक्सपोर्ट करें",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.kind",
+    "english": "Export",
+    "translation": "एक्सपोर्ट करें",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "मिक्स",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "एक्सपोर्ट टूल लोड हो रहे हैं…",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatExport.saveOpening",
+    "english": "Checking Music saving…",
+    "translation": "Music में सेव करने की जाँच हो रही है…",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "संगीत लाइब्रेरी में सहेजें",
+    "ratio": 2
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

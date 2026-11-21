@@ -63,8 +63,9 @@ export const { calibrationFrames, detectClickOnsets, matchCalibration, readLaten
     readLatency(device: string, storage: SyncStorage, now?: number): { ms: number; measuredAt: number } | null;
     writeLatency(device: string, ms: number, storage: SyncStorage, now?: number): boolean;
 };
-export const { configureBeatTakeStorage, hydrateBeatTakes, loadBeatTake, putBeatTake, appendBeatTake, pendingBeatTakes, reconcileBeatTakes, discardBeatTakes, documentHasTake, beatTakeBytes, BEAT_TAKE_BYTES, subscribeBeatTakes } = storage as unknown as {
+export const { beatTakes, configureBeatTakeStorage, hydrateBeatTakes, loadBeatTake, putBeatTake, appendBeatTake, pendingBeatTakes, reconcileBeatTakes, discardBeatTakes, documentHasTake, beatTakeBytes, BEAT_TAKE_BYTES, subscribeBeatTakes } = storage as unknown as {
     configureBeatTakeStorage(adapter: BeatTakeStorage): void;
+    beatTakes(): TakeRow[];
     hydrateBeatTakes(): Promise<void>;
     loadBeatTake(id: string): Promise<AudioTake | null>;
     putBeatTake(row: AudioTake, check?: () => void): Promise<AudioTake>;
