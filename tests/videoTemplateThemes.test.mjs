@@ -42,3 +42,14 @@ test('every theme has a label in every locale', async () => {
     for (const theme of VIDEO_THEME_IDS) assert.ok(messages[`presets.cat.${theme}`], `${locale}: presets.cat.${theme}`);
   }
 });
+
+test('tidy 2026-11-21: one supercar refuel stays listed, the two near-duplicates are hidden but still filed, and no theme holds a lone card', () => {
+  assert.ok(VIDEO_GALLERY_TEMPLATE_IDS.includes('community-supercar-midnight-refuel'));
+  for (const id of ['community-midnight-supercar-refuel', 'community-supercar-night-fueling']) {
+    assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.includes(id), false, `${id} is hidden`);
+    assert.ok(PRESETS.some((p) => p.id === id), `${id} keeps its data and link`);
+    assert.equal(videoTemplateTheme(id), 'CARS', `${id} keeps its theme so re-listing needs only its id`);
+  }
+  assert.equal(VIDEO_THEME_IDS.includes('PROPERTY'), false);
+  assert.equal(videoTemplateTheme('community-modern-listing-dolly'), 'FILM');
+});
