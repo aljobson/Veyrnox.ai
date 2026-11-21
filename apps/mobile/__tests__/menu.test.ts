@@ -59,7 +59,7 @@ describe('grouped menu', () => {
     test('the two editors are named in the drawer with a one-line description each', () => {
         const tools = MENU_SECTIONS.find((section) => section.id === 'tools')?.items ?? [];
         expect(tools).toContainEqual(expect.objectContaining({ key: 'smartCut', href: '/smart-cut', label: 'menu.smartCut', hint: 'menu.smartCutHint' }));
-        expect(tools).toContainEqual(expect.objectContaining({ key: 'editor', href: '/editor', label: 'menu.professional', hint: 'menu.professionalHint' }));
+        expect(tools).toContainEqual(expect.objectContaining({ key: 'editor', href: '/editor', label: 'tabs.studio', icon: 'scissors' }));
     });
 
     test('every entry opens a screen that exists', () => {

@@ -5,9 +5,8 @@ import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
 import { MenuButton } from '../../../components/MenuDrawer';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
-import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { t } from '../../../lib/i18n';
-import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
+import { type MenuIcon } from '../../../lib/menuIcons';
 import { paletteForScheme } from '../../../theme';
 import { Text, Icon, useAppearance } from '../../../components/ui';
 
@@ -29,7 +28,7 @@ function tabIcon(name: MenuIcon) {
     };
 }
 
-// Five bottom tabs. Editor is a top-level destination; Cinema remains available from the main menu without
+// Five bottom tabs. Studio is a top-level destination at the stable /editor route; Cinema remains available from the main menu without
 // crowding the bar with a sixth item. The (tabs) folder is a group, so each tab keeps its short public URL.
 export default function TabsLayout() {
     const { settings, scheme } = useAppearance();
@@ -67,7 +66,7 @@ export default function TabsLayout() {
             />
             <Tabs.Screen
                 name="editor"
-                options={{ href: EDITOR_ENABLED ? undefined : null, tabBarIcon: tabIcon('slate'), title: t('tabs.editor'), tabBarLabel: tabLabel('tabs.editor'), tabBarAccessibilityLabel: t('tabs.editor') }}
+                options={{ tabBarIcon: tabIcon('scissors'), title: t('tabs.studio'), tabBarLabel: tabLabel('tabs.studio'), tabBarAccessibilityLabel: t('tabs.studio') }}
             />
             <Tabs.Screen
                 name="library"

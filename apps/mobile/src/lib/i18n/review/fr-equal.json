@@ -348,5 +348,6 @@
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
-  "videoShape.portrait": "Same word in French for vertical orientation; machine translation, native review pending."
+  "videoShape.portrait": "Same word in French for vertical orientation; machine translation, native review pending.",
+  "tabs.studio": "Studio is the established French product label for this creative workspace."
 }

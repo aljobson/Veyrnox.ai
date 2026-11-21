@@ -228,6 +228,7 @@ import area_srch from './en/srch';
 import area_start from './en/start';
 import area_stem from './en/stem';
 import area_stems from './en/stems';
+import area_studio from './en/studio';
 import area_studioSkills from './en/studioSkills';
 import area_tabs from './en/tabs';
 import area_team from './en/team';
@@ -478,6 +479,7 @@ const catalog = {
     ...area_start,
     ...area_stem,
     ...area_stems,
+    ...area_studio,
     ...area_studioSkills,
     ...area_tabs,
     ...area_team,
