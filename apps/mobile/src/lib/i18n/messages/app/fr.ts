@@ -2226,6 +2226,7 @@ export default {
   "edit.err.gone": "L’une de ces vidéos n’est plus disponible.",
   "edit.err.invalid": "Ce montage n’a pas pu être envoyé. Vérifiez-le et réessayez. Rien n’a été facturé.",
   "edit.err.mixedAspect": "Retirez les clips signalés comme incompatibles avec le premier.",
+  "edit.err.serverMixedAspect": "Une des vidéos n’a pas le même rapport largeur/hauteur que le premier clip. Aucun crédit n’a été débité.",
   "edit.err.mixedAudio": "Ces clips ne peuvent pas être assemblés : certains ont du son, d’autres sont muets. Choisissez des clips tous sonores ou tous muets. Rien n’a été facturé.",
   "edit.openLocal": "Ouvrir dans l’éditeur (gratuit)",
   "edit.err.network": "Aucune connexion. Rien n’a été facturé. Réessayez.",

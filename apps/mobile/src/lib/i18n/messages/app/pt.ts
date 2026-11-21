@@ -2224,6 +2224,7 @@ export default {
   "edit.err.gone": "Um desses vídeos não está mais disponível.",
   "edit.err.invalid": "Não foi possível enviar esta edição. Verifique e tente novamente. Nada foi cobrado.",
   "edit.err.mixedAspect": "Remova os clipes marcados como incompatíveis com o primeiro.",
+  "edit.err.serverMixedAspect": "Um dos vídeos não tem a mesma proporção do primeiro clipe. Nenhum crédito foi cobrado.",
   "edit.err.mixedAudio": "Estes clipes não podem ser juntados: alguns têm som e outros são mudos. Escolha clipes todos com som ou todos mudos. Nada foi cobrado.",
   "edit.openLocal": "Abrir no editor (grátis)",
   "edit.err.network": "Sem conexão. Nada foi cobrado. Tente novamente.",

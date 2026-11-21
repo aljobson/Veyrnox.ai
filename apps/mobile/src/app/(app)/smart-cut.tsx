@@ -375,7 +375,7 @@ export default function SmartCutRoute() {
                 </> : null}
 
                 <View style={stage === 'plan' ? undefined : styles.hidden} accessibilityElementsHidden={stage !== 'plan'} importantForAccessibility={stage === 'plan' ? 'auto' : 'no-hide-descendants'}>
-                    <SmartCutAnalysisCard clips={analysisClips}
+                    <SmartCutAnalysisCard clips={analysisClips} disabled={mixedShapes(clips)}
                         analyses={analyses} onAnalysed={recordAnalysis} onBusyChange={setAnalysisBusy} />
                 </View>
 

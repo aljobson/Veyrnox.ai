@@ -4,11 +4,11 @@ type ShapeResponse = { shapes?: { job_id: string; width: number; height: number 
 type RequestShapes = (path: string, options?: RequestInit) => Promise<ShapeResponse>;
 import { itemShape } from './videoShape';
 
-// The list is newest first. Walk only until the newest measured finished video is found.
+// The list is newest first. Inspect at most two pages for a measured finished video.
 export async function newestMeasuredVideo(request: RequestShapes, current = () => true) {
     let path = '/api/v1/jobs?limit=50';
     const seen = new Set();
-    while (current()) {
+    for (let pageIndex = 0; pageIndex < 2 && current(); pageIndex++) {
         const page = await request(path);
         if (!current()) return null;
         const found = page.jobs?.find(job => job.state === 'succeeded' && !job.held && job.has_asset && !job.shape_ambiguous
@@ -22,6 +22,15 @@ export async function newestMeasuredVideo(request: RequestShapes, current = () =
         seen.add(path);
     }
     return null;
+}
+// Each Create mount owns its cache, including empty results and failed lookups.
+export function createMeasuredVideoCache() {
+    const entries = new Map<string, Promise<Job | null>>();
+    return (request: RequestShapes, account: string, completedJobKey = '', current = () => true) => {
+        const key = JSON.stringify([account, completedJobKey]);
+        if (!entries.has(key)) entries.set(key, newestMeasuredVideo(request, current).catch(() => null));
+        return entries.get(key)!;
+    };
 }
 export async function measureFinishedVideo(request: RequestShapes, id: string): Promise<ShapeItem | null> {
     const result = await request('/api/v1/jobs/shapes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_ids: [id] }) });

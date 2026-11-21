@@ -5,6 +5,7 @@ import { rawText, t } from '../src/lib/i18n';
 
 jest.setTimeout(30000);
 const mockPush = jest.fn(), mockReplace = jest.fn(), mockListJobs = jest.fn(), mockFetchCatalog = jest.fn(), mockQuoteEdit = jest.fn();
+let mockAnalysisDisabled = false;
 let mockOwner: string, mockOwnerListeners: Set<() => void>;
 const mockApi = {};
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush, replace: mockReplace }) }));
@@ -32,7 +33,8 @@ jest.mock('../src/components/smart-cut/SmartCutAnalysisCard', () => {
         version: 1, assetId: clip.jobId, duration: clip.duration, provider: 'fal-scribe-v2', transcript: 'hello um there', language: 'en', timingQuality: 'word',
         chunks: [{ start: 1, end: 1.5, text: 'hello' }, { start: 2, end: 2.2, text: 'um' }, { start: 3, end: 3.5, text: 'there' }],
     });
-    return { SmartCutAnalysisCard: ({ clips, onAnalysed, onBusyChange }: { clips: { jobId: string; duration: number }[]; onAnalysed: (id: string, value: unknown) => void; onBusyChange?: (busy: boolean) => void }) => {
+    return { SmartCutAnalysisCard: ({ clips, onAnalysed, onBusyChange, disabled }: { disabled?: boolean; clips: { jobId: string; duration: number }[]; onAnalysed: (id: string, value: unknown) => void; onBusyChange?: (busy: boolean) => void }) => {
+        mockAnalysisDisabled = !!disabled;
         const [recovery, setRecovery] = React.useState(false);
         return React.createElement(React.Fragment, null,
         React.createElement(Pressable, { accessibilityRole: 'button', accessibilityLabel: 'Analyse first', onPress: () => clips[0] && onAnalysed(clips[0].jobId, analyse(clips[0])) }, React.createElement(Text, null, 'Analyse first')),
@@ -126,4 +128,18 @@ test('mixed timing names clips that cannot be checked for filler sounds', async 
     await press(buttons('Analyse second')[0]);
     expect(text()).toContain(t('app.smartCut.native.fillers.wordTimingRequired', { names: 'Take One' }));
     expect(text()).not.toContain(t('app.smartCut.fillers.none'));
+});
+
+test('selecting a known mismatch disables analysis and removing it clears the block', async () => {
+    mockListJobs.mockResolvedValue({ jobs: [
+        { job_id: '11111111-1111-4111-8111-111111111111', video_width: 1080, video_height: 1920 },
+        { job_id: '22222222-2222-4222-8222-222222222222', video_width: 1920, video_height: 1080 },
+    ], next: null });
+    await act(async () => root.render(<SmartCutRoute />));
+    await addBoth();
+    expect(mockAnalysisDisabled).toBe(true);
+    expect(text()).toContain(t('edit.problem.mixed_shape'));
+    await press(buttons(t('edit.remove'))[1]);
+    expect(mockAnalysisDisabled).toBe(false);
+    expect(text()).not.toContain(t('edit.problem.mixed_shape'));
 });

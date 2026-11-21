@@ -2184,6 +2184,7 @@ export default {
   "edit.err.gone": "Eines der Videos ist nicht mehr verfügbar.",
   "edit.err.invalid": "Diese Bearbeitung konnte nicht gesendet werden. Prüfe sie und versuche es erneut. Es wurde nichts berechnet.",
   "edit.err.mixedAspect": "Entferne die Clips, die als unpassend zum ersten Clip markiert sind.",
+  "edit.err.serverMixedAspect": "Eines der Videos hat ein anderes Seitenverhältnis als der erste Clip. Es wurden keine Credits berechnet.",
   "edit.err.mixedAudio": "Diese Clips lassen sich nicht verbinden: Einige haben Ton, andere sind stumm. Wähle nur Clips mit Ton oder nur stumme Clips. Es wurde nichts berechnet.",
   "edit.openLocal": "Im Editor öffnen (kostenlos)",
   "edit.err.network": "Keine Verbindung. Es wurde nichts berechnet. Versuche es erneut.",

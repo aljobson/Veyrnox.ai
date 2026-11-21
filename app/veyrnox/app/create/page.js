@@ -18,7 +18,7 @@ import { Main } from '../../_components/Main';
 import { Chip } from '../../_components/Chip';
 import { clipCredits, modelAspectRatios, templateModelId } from '../../_lib/tokens';
 import { ResolutionVariantChoice } from '../../_components/ResolutionVariantChoice';
-import { SmartCutShapeHint } from '../../_components/SmartCutShapeHint';
+import { SmartCutShapeHint, SmartCutShapeSession } from '../../_components/SmartCutShapeHint';
 import { takesFrame } from '../../../../lib/aspectFrame.mjs';
 import { FrameChoice } from '../../_components/FrameChoice';
 import { frameUploader } from '../../_lib/reframeImage';
@@ -856,7 +856,7 @@ function CreateStudio() {
   if (swapId !== null && (swap.loading || !swap.scene || !model)) return <div className="min-h-dvh">{swapEntry}<AppNav balance={balance} active="create" /><Main><p role="status">{swap.loading || catalogLoading ? t('app.create.openingTemplate') : t('app.chat.error.model_not_found')}</p></Main></div>;
 
   return (
-    <div className="min-h-dvh">
+    <SmartCutShapeSession key={accountEpoch}><div className="min-h-dvh">
       {swapEntry}
       {openingTemplate && <TemplateOpening name={openingTemplate.name} />}
       <AppNav balance={balance} active="create" />
@@ -1259,6 +1259,6 @@ function CreateStudio() {
           )}
         </aside>
       </Main>
-    </div>
+    </div></SmartCutShapeSession>
   );
 }

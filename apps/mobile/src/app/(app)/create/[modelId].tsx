@@ -1,4 +1,4 @@
-import { SmartCutShapeHint } from '../../../components/create/SmartCutShapeHint';
+import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/create/SmartCutShapeHint';
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
@@ -376,7 +376,7 @@ export default function CreateWithModel() {
     const expectedMinutes = isVideo && (busy || inProgress) ? Math.max(1, Math.round(expectedDurationMs(model.id, 'video') / 60000)) : 0;
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
     return (
-        <KeyboardScreen style={styles.screen}>
+        <SmartCutShapeSession key={owner}><KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
             <KeyboardFormScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <RevealOnFirstLayout scroll={scrollRef}><CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /></RevealOnFirstLayout> : undefined}
@@ -495,6 +495,6 @@ export default function CreateWithModel() {
                     </View>
                 </Card>
             </KeyboardFormScrollView>
-        </KeyboardScreen>
+        </KeyboardScreen></SmartCutShapeSession>
     );
 }

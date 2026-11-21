@@ -2141,6 +2141,7 @@ export default {
   "edit.err.gone": "其中一个视频已不可用。",
   "edit.err.invalid": "无法提交此次编辑。请检查后重试。未扣费。",
   "edit.err.mixedAspect": "请移除标记为与第一个片段不匹配的片段。",
+  "edit.err.serverMixedAspect": "其中一个视频的宽高比与第一个片段不一致。未扣除任何积分。",
   "edit.err.mixedAudio": "这些片段无法拼接：有的有声音，有的是静音。请选择全部有声或全部静音的片段。未扣费。",
   "edit.openLocal": "在编辑器中打开（免费）",
   "edit.err.network": "网络未连接。未扣费。请重试。",

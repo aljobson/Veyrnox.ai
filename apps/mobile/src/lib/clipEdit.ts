@@ -191,7 +191,7 @@ export function editErrorKey(err: unknown): string {
         case 'nothing_to_do':
             return 'edit.err.nothingToDo';
         case 'mixed_aspect':
-            return 'edit.err.mixedAspect';
+            return 'edit.err.serverMixedAspect';
         case 'mixed_audio':
             return 'edit.err.mixedAudio';
         case 'clip_not_video':

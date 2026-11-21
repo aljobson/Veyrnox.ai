@@ -2226,6 +2226,7 @@ export default {
   "edit.err.gone": "Uno de esos vídeos ya no está disponible.",
   "edit.err.invalid": "No se pudo enviar esta edición. Revísala e inténtalo de nuevo. No se cobró nada.",
   "edit.err.mixedAspect": "Quita los clips marcados que no coinciden con el primero.",
+  "edit.err.serverMixedAspect": "Uno de los vídeos no tiene la misma relación de aspecto que el primer clip. No se cobró nada.",
   "edit.err.mixedAudio": "Estos clips no se pueden unir: unos tienen sonido y otros son mudos. Elige clips que tengan todos sonido o todos sin sonido. No se cobró nada.",
   "edit.openLocal": "Abrir en el editor (gratis)",
   "edit.err.network": "Sin conexión. No se cobró nada. Inténtalo de nuevo.",

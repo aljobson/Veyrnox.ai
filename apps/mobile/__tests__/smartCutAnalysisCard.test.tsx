@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import { ApiError } from '../src/lib/api';
+import { mixedShapes } from '../src/lib/videoShape';
 import { SmartCutAnalysisCard } from '../src/components/smart-cut/SmartCutAnalysisCard';
 import { rawText, t } from '../src/lib/i18n';
 import type { SpeechAnalysis } from '../src/lib/speechCut';
@@ -268,4 +269,21 @@ test('a missing accepted request leaves recovery and allows a newly confirmed at
     expect(lines()).toContain(t('app.smartCut.native.analyse.notAccepted', { name: clip.label }));
     expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeUndefined();
     expect(button(t('app.smartCut.native.analyse.start'))).toBeDefined();
+});
+
+test('known mismatches cannot start paid analysis; removing the marked clip enables it', async () => {
+    const portrait = { ...clip, width: 1080, height: 1920 };
+    const landscape = { ...clip, jobId: 'other', width: 1920, height: 1080 };
+    const show = async (clips: typeof portrait[]) => {
+        await act(async () => root.render(<SmartCutAnalysisCard clips={clips} disabled={mixedShapes(clips)} analyses={new Map()} onAnalysed={onAnalysed} />));
+    };
+    mockStart.mockResolvedValue({ id: 'request', status: 'completed', analysis, credits: 7 });
+    await show([portrait, landscape]);
+    expect(button(t('app.smartCut.native.analyse.start')).props.accessibilityState.disabled).toBe(true);
+    await press(t('app.smartCut.native.analyse.start'));
+    expect(mockStart).not.toHaveBeenCalled();
+    await show([portrait]);
+    expect(button(t('app.smartCut.native.analyse.start')).props.accessibilityState.disabled).toBe(false);
+    await press(t('app.smartCut.native.analyse.start'));
+    expect(mockStart).toHaveBeenCalledTimes(1);
 });

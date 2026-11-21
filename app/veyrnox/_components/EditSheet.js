@@ -63,7 +63,7 @@ function EditorIcon({ name }) {
 export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smartCut = false }) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
-  const errorCopy = code => code === 'rate_limited' ? t('cinema.creatorApplication.tooManyRequestsWaitAMinute') : tOr(t, `app.editor.sheet.error.${code}`, t('app.editor.sheet.fallback'), { limit: number(code === 'too_long' ? MAX_OUTPUT_S : SLOW_MAX_SOURCE_S) });
+  const errorCopy = code => code === 'mixed_aspect' ? t('app.editor.sheet.error.server_mixed_aspect') : code === 'rate_limited' ? t('cinema.creatorApplication.tooManyRequestsWaitAMinute') : tOr(t, `app.editor.sheet.error.${code}`, t('app.editor.sheet.fallback'), { limit: number(code === 'too_long' ? MAX_OUTPUT_S : SLOW_MAX_SOURCE_S) });
   const [editState, setEditState] = useState(() => ({
     items: clips.map((c, i) => ({ ...c, uid: `${c.job_id}#${i}`, in_s: 0, out_s: null, duration: null, ratio: null })),
     smartCutSnapshot: null,

@@ -2,9 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from './gateway';
 import { getStoredUserId } from '../../lib/authClient';
+import { serverRow } from './libraryRows';
 import { jobsPagePath } from '../../../lib/jobListCursor';
 
-export function useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows, setVisible, hydrateFromHistory, pageSize }) {
+export function useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows, setVisible, pageSize }) {
   const request = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -23,12 +24,7 @@ export function useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows,
       if (!Array.isArray(page.jobs) || (page.next && jobsPagePath(page.next) === jobsPagePath(nextCursor))) throw new Error('invalid_page');
       setRows((prev) => {
         const seen = new Set(prev.map((r) => r.job_id));
-        const older = page.jobs.filter((j) => !seen.has(j.job_id)).map((j) => ({
-          ...hydrateFromHistory({ job_id: j.job_id, model_id: j.model_id, credits: j.credits }),
-          name: j.label, prompt: j.label, submitted_at: Date.parse(j.created_at) || undefined,
-          state: j.state, refunded: j.refunded, error_code: j.error_code, has_asset: j.has_asset, held: j.held,
-          asset_expires_at: j.asset_expires_at,
-        }));
+        const older = page.jobs.filter((j) => !seen.has(j.job_id)).map((j) => serverRow(j, {}));
         return [...prev, ...older];
       });
       setVisible((v) => v + pageSize * 2); setNextCursor(page.next || null);
@@ -39,6 +35,6 @@ export function useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows,
     } finally {
       if (current()) { request.current = null; setLoading(false); }
     }
-  }, [actor, nextCursor, setNextCursor, setRows, setVisible, hydrateFromHistory, pageSize]);
+  }, [actor, nextCursor, setNextCursor, setRows, setVisible, pageSize]);
   return { loadOlder, loadingOlder: loading, olderError: error };
 }

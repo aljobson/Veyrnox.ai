@@ -239,7 +239,7 @@ export default function Library() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [rows, visible,actor]);
 
-  const { loadOlder, loadingOlder, olderError } = useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows, setVisible, hydrateFromHistory, pageSize: PAGE });
+  const { loadOlder, loadingOlder, olderError } = useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows, setVisible, pageSize: PAGE });
 
   const shapedRows = useLibraryShapes(rows, visible, actor, models, { state: tab, kind, shape, favourites: favOnly ? favourites : null });
   const shown = shapedRows.slice(0, visible);
@@ -343,7 +343,10 @@ export default function Library() {
       </section>
 
       {kind === 'video' && <div className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-4 flex flex-wrap gap-2">
-        {['all', 'portrait', 'landscape', 'square'].map(value => <button key={value} type="button" aria-pressed={shape === value} onClick={() => setShape(value)} className="min-h-11 rounded-full border border-vx-border px-4 text-sm aria-pressed:bg-vx-fg aria-pressed:text-vx-base">{t(`app.library.shape.${value}`)}</button>)}
+        <button type="button" aria-pressed={shape === 'all'} onClick={() => setShape('all')} className="min-h-11 rounded-full border border-vx-border px-4 text-sm aria-pressed:bg-vx-fg aria-pressed:text-vx-base">{t('app.library.shape.all')}</button>
+        <button type="button" aria-pressed={shape === 'portrait'} onClick={() => setShape('portrait')} className="min-h-11 rounded-full border border-vx-border px-4 text-sm aria-pressed:bg-vx-fg aria-pressed:text-vx-base">{t('app.library.shape.portrait')}</button>
+        <button type="button" aria-pressed={shape === 'landscape'} onClick={() => setShape('landscape')} className="min-h-11 rounded-full border border-vx-border px-4 text-sm aria-pressed:bg-vx-fg aria-pressed:text-vx-base">{t('app.library.shape.landscape')}</button>
+        <button type="button" aria-pressed={shape === 'square'} onClick={() => setShape('square')} className="min-h-11 rounded-full border border-vx-border px-4 text-sm aria-pressed:bg-vx-fg aria-pressed:text-vx-base">{t('app.library.shape.square')}</button>
       </div>}
       {mixed && <p role="alert" className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-4 text-sm text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</p>}
       <DeviceLibrary visible={(kind !== 'video' || shape === 'all') && ['all','succeeded'].includes(tab) && !favOnly} kind={kind} />

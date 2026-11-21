@@ -45,6 +45,7 @@ export default {
     'edit.err.gone': 'One of those videos is no longer available.',
     'edit.err.invalid': 'This edit could not be sent. Check it and try again. Nothing was charged.',
     'edit.err.mixedAspect': "Remove the clips marked as not matching the first clip.",
+  "edit.err.serverMixedAspect": "One of the videos does not match the first clip’s shape. Nothing was charged.",
     'edit.err.mixedAudio': 'These clips can\'t be joined: some have sound and some are silent. Pick clips that all have sound, or all silent. Nothing was charged.',
     'edit.openLocal': 'Open in the editor (free)',
     'edit.err.network': 'No connection. Nothing was charged. Try again.',

@@ -69,7 +69,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
                     ? failure : failedJobMessage(result.job?.error_code, refunded, failure)}</Text>
                 : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text style={styles.centred}>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><GenerationProgress jobId={id} modelId={batch.modelId} kind={batch.kind} compact={batchTile} leaveNote={false} /><Text style={styles.centred}>{t('job.keepsRunning')}</Text></>}
         </View>
-        {file?.mime_type.startsWith('video/') && !result.held ? <FinishedShapeWarning api={api} id={id} requested={requestedAspect} /> : null}
+        {result.state === 'succeeded' && file?.mime_type.startsWith('video/') && !result.held ? <FinishedShapeWarning api={api} id={id} requested={requestedAspect} /> : null}
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
         {sound?.kind === 'tooLong' ? <Text>{t('libraryCreate.soundTooLong', { seconds: String(sound.seconds) })}</Text> : sound ? <Card>
             <Text variant="caption">{t('libraryCreate.soundEyebrow')}</Text><Text accessibilityRole="header" variant="title3">{t('libraryCreate.soundTitle')}</Text>

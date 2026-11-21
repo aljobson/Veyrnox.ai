@@ -1,4 +1,4 @@
-import { VideoShapeBadge } from './VideoShapeBadge';
+import { VideoShapeBadge, videoShapeLabel } from './VideoShapeBadge';
 import Link from 'next/link';
 import { useRef } from 'react';
 import { AssetFooter } from './AssetFooter';
@@ -116,7 +116,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
           </button>
         </div>
       </div>
-      <div className="mx-4 mb-3"><VideoShapeBadge item={row} mismatch={shapeMismatch} /></div>
+      {videoShapeLabel(row, t) && <div className="mx-4 mb-3"><VideoShapeBadge item={row} mismatch={shapeMismatch} /></div>}
       <ScheduleGeneration job={row} className="mx-4 mb-3" />
       {selectable && onSmartCut && row.mime_type?.startsWith('video/') && (
         <div className="mx-4 mb-3">
