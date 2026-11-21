@@ -46,6 +46,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     const [terminalMessages, setTerminalMessages] = useState<ReadonlyMap<string, string>>(() => new Map());
     const controller = useRef<AbortController | null>(null);
     const creditsByKey = useRef(new Map<string, number>());
+    const conflictingCredits = useRef(new Set<string>());
     const live = useRef(true);
     const signature = useMemo(() => JSON.stringify([account, clips.map((clip) => [clip.jobId, clip.duration])]), [account, clips]);
     const signatureRef = useRef(signature);
@@ -86,6 +87,8 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                 setMessages([]);
                 setRecovery(null);
                 setTerminalMessages(new Map());
+                creditsByKey.current.clear();
+                conflictingCredits.current.clear();
                 return;
             }
             setRecovery((current) => current && selectedIds.has(current.clip.jobId) ? current : null);
@@ -111,15 +114,18 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     function settle(clip: SmartCutAnalysisClip, outcome: SpeechOutcome, key: string, confirmed = false): boolean {
         if (typeof outcome.credits === 'number' && outcome.credits >= 0) {
             const previous = creditsByKey.current.get(key);
-            if (previous === undefined || outcome.credits > previous) creditsByKey.current.set(key, outcome.credits);
+            if (previous === undefined) creditsByKey.current.set(key, outcome.credits);
+            else if (outcome.credits !== previous) conflictingCredits.current.add(key);
         }
         const firstCredits = creditsByKey.current.get(key);
         const settled: SpeechOutcome = firstCredits === undefined ? outcome : { ...outcome, credits: firstCredits };
-        const net = smartCutNetCredits(settled);
+        const creditConflict = conflictingCredits.current.has(key);
+        const net = creditConflict ? null : smartCutNetCredits(settled);
         if (settled.status === 'failed') {
             if (settled.refunded) {
                 forgetSpeechKey(account, clip.jobId);
                 creditsByKey.current.delete(key);
+                conflictingCredits.current.delete(key);
                 setMessages((current) => [...current, t('app.smartCut.native.analyse.refunded', { name: clip.label })]);
                 setRecovery(null);
             } else {
@@ -163,7 +169,9 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
             if (!current.has(clip.jobId)) return current;
             const next = new Map(current); next.delete(clip.jobId); return next;
         });
-        setMessages((current) => [...current, net === 0
+        setMessages((current) => [...current, creditConflict
+            ? t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: activeQuote.credits })
+            : net === 0
             ? t('app.smartCut.native.analyse.reused', { name: clip.label })
             : net !== null ? t('app.smartCut.native.analyse.charged', { name: clip.label, credits: net }) : t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: activeQuote.credits })]);
         setRecovery(null);
@@ -172,7 +180,9 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
 
     function settleBadResponse(current: Recovery) {
         const credits = creditsByKey.current.get(current.key);
-        const message = credits === 0
+        const message = conflictingCredits.current.has(current.key)
+            ? t('app.smartCut.native.analyse.clipMaximum', { name: current.clip.label, credits: activeQuote.credits })
+            : credits === 0
             ? t('app.smartCut.native.analyse.mismatchNoCharge', { name: current.clip.label, reason: 'bad_response' })
             : credits !== undefined
                 ? t('app.smartCut.native.analyse.mismatchCharged', { name: current.clip.label, reason: 'bad_response', credits })
@@ -216,6 +226,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                     if (error instanceof ApiError && error.body.refunded === true && attempted) {
                         forgetSpeechKey(account, attempted.clip.jobId);
                         creditsByKey.current.delete(attempted.key);
+                        conflictingCredits.current.delete(attempted.key);
                         setRecovery(null);
                         setMessages((current) => [...current, t('app.smartCut.native.analyse.refunded', { name: attempted!.clip.label })]);
                     } else if (error instanceof ApiError && error.code === 'price_changed' && Number.isSafeInteger(error.body.credits) && Number(error.body.credits) > 0) {
@@ -230,6 +241,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                         if (error instanceof ApiError && error.code === 'result_expired' && attempted) {
                             forgetSpeechKey(account, attempted.clip.jobId);
                             creditsByKey.current.delete(attempted.key);
+                            conflictingCredits.current.delete(attempted.key);
                             setRecovery(null);
                         }
                         setMessages((current) => [...current, speechMessage(error)]);
@@ -259,17 +271,20 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                 if (error instanceof ApiError && error.body.refunded === true) {
                     forgetSpeechKey(account, recovery.clip.jobId);
                     creditsByKey.current.delete(recovery.key);
+                    conflictingCredits.current.delete(recovery.key);
                     setRecovery(null);
                     setMessages((current) => [...current, t('app.smartCut.native.analyse.refunded', { name: recovery.clip.label })]);
                 } else {
                     if (error instanceof ApiError && error.code === 'request_not_found') {
                         forgetSpeechKey(account, recovery.clip.jobId);
                         creditsByKey.current.delete(recovery.key);
+                        conflictingCredits.current.delete(recovery.key);
                         setRecovery(null);
                         setMessages((current) => [...current, t('app.smartCut.native.analyse.notAccepted', { name: recovery.clip.label })]);
                     } else if (error instanceof ApiError && error.code === 'result_expired') {
                         forgetSpeechKey(account, recovery.clip.jobId);
                         creditsByKey.current.delete(recovery.key);
+                        conflictingCredits.current.delete(recovery.key);
                         setRecovery(null);
                         setMessages((current) => [...current, speechMessage(error)]);
                     } else if (error instanceof ApiError && error.code === 'bad_response') {

@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); });
 
-test('requires explicit confirmation and never understates conflicting later debit evidence', async () => {
+test('requires explicit confirmation and does not claim a charge when later evidence conflicts', async () => {
     mockStart.mockResolvedValue({ id: 'request', status: 'queued', credits: 0 });
     mockPoll.mockResolvedValue({ id: 'request', status: 'completed', analysis, credits: 7 });
     await render();
@@ -61,7 +61,16 @@ test('requires explicit confirmation and never understates conflicting later deb
     await press(t('app.smartCut.native.analyse.start'));
     expect(mockStart).toHaveBeenCalledTimes(1); expect(mockPoll).toHaveBeenCalledTimes(1);
     expect(onAnalysed).toHaveBeenCalledWith(clip.jobId, analysis);
-    expect(lines()).toContain(t('app.smartCut.native.analyse.charged', { name: clip.label, credits: 7 }));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: 7 }));
+    expect(lines()).not.toContain(t('app.smartCut.native.analyse.reused', { name: clip.label }));
+    expect(lines()).not.toContain(t('app.smartCut.native.analyse.charged', { name: clip.label, credits: 7 }));
+});
+
+test('a completed cache reuse explicitly reports zero newly charged', async () => {
+    mockStart.mockResolvedValue({ id: 'request', status: 'completed', analysis, credits: 0 });
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+    expect(onAnalysed).toHaveBeenCalledWith(clip.jobId, analysis);
+    expect(lines()).toContain(t('app.smartCut.native.analyse.reused', { name: clip.label }));
 });
 
 test('a transient quote failure explains that nothing started and can retry', async () => {
