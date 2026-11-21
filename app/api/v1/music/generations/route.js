@@ -42,8 +42,8 @@ export async function POST(request) {
             }
         } catch {
             console.error('[music/generations] beat quote guard unavailable');
-            // Ordinary Create must not depend on this read. A beat quote cannot be minted while off.
-            if (input.idempotencyKey.startsWith('beat-ai.')) return reply({ error: 'temporarily_unavailable' }, 502);
+            // The model is unknown and the client chooses the key, so every key fails closed.
+            return reply({ error: 'temporarily_unavailable' }, 502);
         }
     }
     let result;

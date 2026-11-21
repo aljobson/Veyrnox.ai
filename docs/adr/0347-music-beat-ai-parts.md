@@ -92,11 +92,10 @@ This is deliberately retryable: the read can race an original transaction that
 has not yet committed. The web and phone keep the receipt and idempotency key.
 Consumed quotes continue to the atomic replay RPC without a new debit. Other
 models and foreign/missing quote ids continue unchanged; ownership is not
-revealed. A failed select logs no vendor error text. A `beat-ai.` idempotency key fails
-closed with 502 `temporarily_unavailable`; any other key continues to the RPC, so
-ordinary Create never depends on this read. Residual risk: a beat quote minted
-while on (five-minute expiry) and sent under another key during a flip and a read
-failure. With Beat AI on, neither select runs. Responses are no-store.
+revealed. A failed select logs no vendor error text and fails closed with 502
+`temporarily_unavailable` for every key: the model is unknown and the client
+chooses the idempotency key, so a key prefix cannot be trusted. While Beat AI is
+off, a failed read therefore also refuses ordinary Create. With Beat AI on, neither select runs. Responses are no-store.
 
 The phone probes with exactly `{"model_id":"ace-step-loop"}`. A 400 means on;
 a 404 or `_unavailable` code means off; a 401 means signed out; a transport error
