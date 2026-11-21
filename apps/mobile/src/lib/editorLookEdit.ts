@@ -90,7 +90,13 @@ export function backgroundAll(tl: Timeline, background: Background): LookResult 
     if (tl.video.some(c => tl.tracks.some(t => t.id === c.trackId && t.locked))) return { refused: 'lockedAll' };
     const bad = backgroundProblem(background, tl.media); if (bad) return { refused: lookRefusal(bad) };
     return result(() => {
-        const next = { ...tl, video: tl.video.map(clip => ({ ...clip, background: { ...background } })) };
+        const video = tl.video.map(clip => {
+            const current = clip.background ?? BACKGROUND_DEFAULTS;
+            return current.type === background.type && current.color === background.color && current.blur === background.blur && current.mediaId === background.mediaId
+                ? clip : { ...clip, background: { ...background } };
+        });
+        if (video.every((clip, index) => clip === tl.video[index])) return tl;
+        const next = { ...tl, video };
         const error = validateSequence(next);
         return error ? { error } : next;
     });

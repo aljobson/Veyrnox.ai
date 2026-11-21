@@ -1,4 +1,4 @@
-import { sequenceTransition } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
+import { effectiveTransition } from '../../../../app/veyrnox/_lib/editorTimeline.mjs';
 import { neutralColour } from '../../../../app/veyrnox/_lib/editorColour.mjs';
 import { FILTER_DEFAULTS } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { audioProcessingActive } from '../../../../app/veyrnox/_lib/editorAudioSettings.mjs';
@@ -64,7 +64,7 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
     const uploads: ExportFile[] = [], blocked: Blocked[] = [];
     const timeline = document.timeline as Timeline | undefined;
     if (!timeline) return { document, uploads, blocked };
-    timeline.video.forEach((clip, index) => { if (sequenceTransition(timeline, index) === 0) delete clip.transitionType; });
+    timeline.video.forEach((clip, index) => { if (effectiveTransition(timeline, index) === 0) delete clip.transitionType; });
     const clips = [...timeline.video, ...timeline.audio];
     const used = new Set(clips.map(c => c.mediaId));
     timeline.media = Object.fromEntries(Object.entries(timeline.media).filter(([id]) => used.has(id)));

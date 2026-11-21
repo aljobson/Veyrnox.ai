@@ -118,3 +118,16 @@ test('HSL labels include the channel in every catalog, and Tint differs from Hue
 test.each([['es', 'Imagen'], ['fr', 'Image'], ['pt', 'Imagem'], ['ru', 'Изображение']])('background Image is capitalized in %s', (locale, label) => {
     expect(APP_CATALOGS[locale as keyof typeof APP_CATALOGS]['editorLook.background.image']).toBe(label);
 });
+
+test('French HSL labels avoid elision errors and Hindi hue uses रंगत', () => {
+    const fr = createTranslator('fr', CATALOGS), hi = createTranslator('hi', CATALOGS);
+    for (const [key, label] of [['hue', 'teinte'], ['saturation', 'saturation'], ['luminance', 'luminance']]) {
+        expect(APP_CATALOGS.fr[`editorLook.hsl.${key}` as keyof typeof APP_CATALOGS.fr]).toBe(`{channel} : ${label}`);
+        for (const channel of ['red', 'orange']) {
+            expect(fr.t(`editorLook.hsl.${key}`, { channel: fr.t(`editorLook.channel.${channel}`) }))
+                .toBe(`${fr.t(`editorLook.channel.${channel}`)} : ${label}`);
+        }
+    }
+    expect(APP_CATALOGS.hi['editorLook.hsl.hue']).toBe('{channel} की रंगत');
+    expect(hi.t('editorLook.hsl.hue', { channel: hi.t('editorLook.channel.red') })).toBe(`${hi.t('editorLook.channel.red')} की रंगत`);
+});

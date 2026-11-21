@@ -183,3 +183,17 @@ test.each([[0, 120], [15, 121], [15, 120]])('export handles transition %s at sta
     expect(JSON.stringify(saved)).toBe(before);
     expect(timeline.video[1].transitionType).toBe('clock-wipe');
 });
+
+test('schema 2 clock wipe survives export so the server refuses the unsupported transition', () => {
+    const { translateEditorRender } = require('../../../lib/editorServerRenderTranslate');
+    const timeline = structuredClone(require('../../../tests/fixtures/editorServerRender/v2.json'));
+    timeline.video[1].transitionType = 'clock-wipe';
+    const saved: ProjectDocument = { ...fixture(), schema_version: 2, timeline };
+    const before = JSON.stringify(saved);
+    const durations = Object.fromEntries(Object.keys(timeline.media).map(mediaId => [mediaId, 10]));
+    const result = exportCopy(saved, {}, durations);
+    expect(result.blocked).toEqual([]);
+    expect((result.document.timeline as Timeline).video[1].transitionType).toBe('clock-wipe');
+    expect(translateEditorRender(result.document.timeline)).toEqual({ error: 'editor_render_unsupported', feature: 'transitionType' });
+    expect(JSON.stringify(saved)).toBe(before);
+});

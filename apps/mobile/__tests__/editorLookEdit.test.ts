@@ -128,3 +128,30 @@ test('bulk backgrounds validate the final array even when the first replacement 
     expect(look.backgroundAll(tl, background)).toEqual({ timeline: next });
     expect(JSON.stringify(tl)).toBe(before);
 });
+
+test.each([false, true])('bulk default background preserves the original timeline (near cap %s)', nearCap => {
+    const tl = fixture();
+    if (nearCap) {
+        const { nearLimit } = require('./fixtures/editorNearLimit');
+        tl.text = (nearLimit(false).timeline as Timeline).text;
+        tl.text[27].text = tl.text[27].text.slice(0, -1000);
+        tl.text[27].text += 'x'.repeat(29999 - JSON.stringify(tl).length);
+    }
+    expect(validateSequence(tl)).toBeNull();
+    const result = look.backgroundAll(tl, { ...BACKGROUND_DEFAULTS });
+    expect(result).toEqual({ timeline: tl });
+    if (!('timeline' in result)) throw Error('refused');
+    expect(result.timeline).toBe(tl);
+    expect(tl.video.every(c => !Object.hasOwn(c, 'background'))).toBe(true);
+});
+test('bulk background retains matching explicit and implicit clips and only replaces changed clips', () => {
+    const tl = fixture();
+    tl.video[1].background = { ...BACKGROUND_DEFAULTS };
+    tl.video[2].background = { ...BACKGROUND_DEFAULTS, type: 'solid' };
+    const before = JSON.stringify(tl), result = look.backgroundAll(tl, { ...BACKGROUND_DEFAULTS });
+    if (!('timeline' in result)) throw Error('refused');
+    expect(result.timeline.video[0]).toBe(tl.video[0]); expect(result.timeline.video[1]).toBe(tl.video[1]);
+    expect(result.timeline.video[2]).not.toBe(tl.video[2]);
+    expect(result.timeline.video[2].background).toEqual(BACKGROUND_DEFAULTS);
+    expect(JSON.stringify(tl)).toBe(before);
+});

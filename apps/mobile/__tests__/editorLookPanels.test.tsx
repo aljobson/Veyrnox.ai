@@ -1,5 +1,6 @@
 import { act } from 'react';
 import * as lookEdit from '../src/lib/editorLookEdit';
+import { colourDefaults } from '../../../app/veyrnox/_lib/editorColour.mjs';
 import { BACKGROUND_DEFAULTS } from '../../../app/veyrnox/_lib/editorBackground.mjs';
 import { createRoot } from 'test-renderer';
 import { FiltersPanel, EffectsPanel, TransitionsPanel } from '../src/components/editor/tools/LookPanels';
@@ -51,7 +52,7 @@ test('look panels show video-only controls; evaluated readouts follow a paused s
 });
 
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
-import type { useFullEditorSession } from '../src/components/editor/useFullEditorSession';
+import { useFullEditorSession } from '../src/components/editor/useFullEditorSession';
 import { envelope } from './fixtures/webSequenceV3';
 import { nearLimit } from './fixtures/editorNearLimit';
 import { t } from '../src/lib/i18n';
@@ -112,6 +113,63 @@ describe('FullEditorScreen look commits', () => {
             expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
             expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false);
         });
+    test.each([['Filters', 'Blur', 'decrement', false], ['Effects', 'Width', 'increment', false],
+        ['Filters', 'Blur', 'decrement', true]] as const)('%s / %s %s at a bound preserves document, history and keys (animated %s)', async (panel, label, actionName, animated) => {
+        const tl: Timeline = timeline();
+        if (animated) tl.video[1].parameterKeyframes = [parameterKeyframe(tl.video[1], 0), parameterKeyframe(tl.video[1], 89)];
+        await open(tl as ReturnType<typeof timeline>);
+        await act(async () => mockSession.setFrame(120));
+        await press(panel);
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        const keys = (before!.timeline as Timeline).video[1].parameterKeyframes;
+        const slider = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === label)[0];
+        expect(slider.props.accessibilityValue.now).toBe(label === 'Width' ? 1 : 0);
+        await act(async () => slider.props.onAccessibilityAction({ nativeEvent: { actionName } }));
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.history).toEqual({ canUndo: false, canRedo: false }); expect(mockSession.dirty).toBe(false);
+        expect((mockSession.currentDocument()!.timeline as Timeline).video[1].parameterKeyframes).toBe(keys);
+    });
+    test.each([false, true])('applying default background to all is a clean no-op (near cap %s)', async nearCap => {
+        const tl = timeline(), doc = nearCap ? nearLimit(true) : envelope(tl);
+        if (nearCap) {
+            (doc.timeline as Timeline).video = tl.video;
+            doc.brief = 'b'.repeat(32760 - (JSON.stringify(doc).length - doc.brief.length));
+        }
+        await open(tl, doc); await press('Effects');
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        await press(t('editorLook.applyAll'));
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.history).toEqual({ canUndo: false, canRedo: false }); expect(mockSession.dirty).toBe(false);
+        expect(mockSession.problem).toBeNull();
+    });
+    test.each([false, true])('mounted panel channels survive session undo that restores keyframes %s', async animatedBefore => {
+        const tl: Timeline = timeline();
+        if (animatedBefore) tl.video[1].parameterKeyframes = [parameterKeyframe(tl.video[1], 0)];
+        const doc = envelope(tl), selection = { track: 'video' as const, id: 'v2' };
+        mockRequest.mockImplementation(async (path: string) => path.endsWith('/document') ? { revision: 1, document: doc }
+            : { project: { id: doc.project_id, workspace_id: 'workspace', name: 'Look test' } });
+        // Production undo clears selection and unmounts the panel. Keep it mounted here to test the whitelisted controls.
+        function Harness() {
+            const session = useFullEditorSession({ projectId: doc.project_id });
+            const snapshot = (session.document?.timeline as Timeline | undefined) ?? tl;
+            const props: Partial<ToolPanelProps> = { timeline: snapshot, selection, applyTimeline: () => false };
+            return <FiltersPanel {...props as ToolPanelProps} />;
+        }
+        await act(async () => root.render(<Harness />));
+        const before = mockSession.currentDocument()!, current = before.timeline as Timeline;
+        const changed = { ...current.video[1] };
+        if (animatedBefore) delete changed.parameterKeyframes;
+        else changed.parameterKeyframes = [parameterKeyframe(changed, 0)];
+        await act(async () => { mockSession.markDocument({ ...before, timeline: { ...current, video: [current.video[0], changed] } }); });
+        const blue = () => root.container.queryAll(n => n.props.accessibilityLabel === 'Blue' && typeof n.props.onClick === 'function');
+        expect(blue()).toHaveLength(2);
+        for (let i = 0; i < 2; i++) await act(async () => blue()[i].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+        await act(async () => mockSession.travel('undo'));
+        expect(mockSession.currentDocument()).toEqual(before);
+        expect(blue().map(n => n.props.accessibilityState.selected)).toEqual([true, true]);
+        expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === 'Blue hue')).toHaveLength(1);
+        expect(root.container.queryAll(n => n.props.accessibilityRole === 'image' && n.props.accessibilityLabel === 'Curve for Blue: 2 points')).toHaveLength(1);
+    });
     test('reselecting Image retains the second image without revision, history or dirty change', async () => {
         const tl: Timeline = timeline();
         for (const id of ['first', 'second']) tl.media[id] = { id, kind: 'image', frames: 90, name: id, width: 50, height: 50, hasAudio: false };
@@ -226,9 +284,10 @@ describe('FullEditorScreen look commits', () => {
     });
 });
 
-test('static filters do not subscribe or render curves on playback, and reuse evaluated values on parent renders', async () => {
+test.each([false, true])('frame updates never render curves, with stored colour %s, and static filters never subscribe', async storedColour => {
     const root = createRoot(), frameStore = createFrameStore(), timeline = emptyTimeline();
     timeline.video = [{ id: 'v1', start: 0, len: 90, in: 0, trackId: 'video-0', mediaId: 'm', transition: 0, volume: 1 }];
+    if (storedColour) timeline.video[0].colourAdjustment = { ...colourDefaults(), shadows: .2, gamma: 1.5 };
     const selection = { track: 'video' as const, id: 'v1' }, applyTimeline = jest.fn(() => true);
     const actions = useLookActions({ timeline, selection, frameStore, applyTimeline, setProblem: jest.fn() });
     const subscribe = jest.spyOn(frameStore, 'subscribe'), values = jest.spyOn(lookEdit, 'lookValues');
@@ -243,8 +302,8 @@ test('static filters do not subscribe or render curves on playback, and reuse ev
         { ...parameterKeyframe(timeline.video[0], 89), brightness: 2 }] };
     await act(async () => render()); expect(subscribe).toHaveBeenCalledTimes(1);
     const animatedRenders = mockCurveRender.mock.calls.length;
-    await act(async () => frameStore.set(0));
-    expect(mockCurveRender.mock.calls.length).toBeGreaterThan(animatedRenders);
+    for (const frame of [0, 15, 30, 89, 0]) await act(async () => frameStore.set(frame));
+    expect(mockCurveRender).toHaveBeenCalledTimes(animatedRenders);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === 'Brightness')[0]
         .props.accessibilityValue.now).toBe(1);
     await act(async () => root.unmount()); values.mockRestore(); subscribe.mockRestore();

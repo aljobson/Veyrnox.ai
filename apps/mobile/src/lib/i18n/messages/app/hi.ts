@@ -7820,7 +7820,7 @@ export default {
   "editorLook.filter": "फ़िल्टर",
   "editorLook.colour": "रंग",
   "editorLook.hsl": "रंग, संतृप्ति और चमक",
-  "editorLook.hsl.hue": "{channel} का रंग",
+  "editorLook.hsl.hue": "{channel} की रंगत",
   "editorLook.hsl.saturation": "{channel} की संतृप्ति",
   "editorLook.hsl.luminance": "{channel} की चमक",
   "editorLook.curves": "कर्व",
