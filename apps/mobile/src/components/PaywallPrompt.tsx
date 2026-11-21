@@ -109,8 +109,7 @@ function AccountPaywall({ owner, session }: { owner: string; session: PromptSess
 
     if (!openReason) return null;
     return <PaywallSheet reason={openReason} onClose={close}
-        onOptions={() => { if (close()) router.push('/credits'); }}
-        onLegal={index => {
+        onOptions={() => { if (close()) router.push('/credits'); }} onLegal={index => {
             if (!close()) return;
             setSuspendedForLegal(true);
             router.push(LEGAL_LINKS[index].route);

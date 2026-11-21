@@ -21,7 +21,8 @@ const mockApi = { getBalance: jest.fn(async () => ({ balance: mockBalance, free_
     if (path === '/api/v1/subscriptions') return { subscription: mockSubscription };
     return { plans: [{ id: 'starter-monthly', credits: 200 }] };
 }) };
-const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, paidAccess: false, generationActive: false,
+const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, salesOpen: true, paidAccess: false, generationActive: false,
+    generationSource: null as 'store' | 'web' | 'both' | 'complimentary' | null, generationPeriodEnd: null as string | null,
     generationPurchaseReady: true, generationAccessResolved: true, refreshSales: jest.fn(async () => true), refreshGenerationAccess: jest.fn(async () => false),
     retryOfferings: jest.fn(), managementURL: null as string | null,
     offerings: { all: { credits: { availablePackages: packs }, generation: { availablePackages: plans } } },
@@ -55,7 +56,8 @@ const tick = async (ms: number) => { await act(async () => jest.advanceTimersByT
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); setLocaleFromDevice(['en']);
     await wipeCache(); await bindCacheUser(`paywall-${++serial}`); mockGeneration++; mockBalance = 0; mockPath = '/'; mockCreated = new Date().toISOString(); mockSubscription = null;
-    mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.paidAccess = false; mockBilling.managementURL = null;
+    mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.salesOpen = true; mockBilling.paidAccess = false; mockBilling.managementURL = null;
+    mockBilling.generationSource = null; mockBilling.generationPeriodEnd = null;
     mockBilling.offerings = { all: { credits: { availablePackages: packs }, generation: { availablePackages: plans } } };
     mockBilling.purchase.mockReset().mockResolvedValue('cancelled');
     mockBilling.restore.mockReset().mockResolvedValue(true);
@@ -124,7 +126,8 @@ test('billing-off builds explain that purchases are unavailable without dead ret
     expect(nodes('link')).toHaveLength(2);
 });
 test('an existing subscriber with no packs sees active status and the provider management action', async () => {
-    mockBilling.paidAccess = true; mockBilling.generationActive = true; mockBilling.managementURL = 'https://apps.apple.com/account/subscriptions';
+    mockBilling.paidAccess = true; mockBilling.generationActive = true; mockBilling.generationSource = 'store';
+    mockBilling.generationPeriodEnd = '2026-11-27T00:00:00Z'; mockBilling.managementURL = 'https://apps.apple.com/account/subscriptions';
     mockSubscription = { id: '11111111-1111-1111-1111-111111111111', plan_id: 'starter-monthly', status: 'active', price_usd_cents: 999,
         credits: 200, current_period_end: '2026-11-27T00:00:00Z', cancel_at_period_end: false, started_at: '2026-10-27T00:00:00Z', ended_at: null, end_reason: null };
     mockBilling.offerings.all.credits.availablePackages = [];
@@ -133,7 +136,7 @@ test('an existing subscriber with no packs sees active status and the provider m
     expect(text()).toContain(t('creditsPage.periodEnd', { date: 'Nov 27, 2026' }));
     expect(button(t('credits.hardPaywall.retry'))).toBeUndefined();
     expect(root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable')).toHaveLength(0);
-    expect(root.container.queryAll(n => n.props.accessibilityRole === 'link' && n.props.accessibilityLabel === t('credits.manage'))).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'link' && n.props.accessibilityLabel === t('billing.paywall.manageStore'))).toHaveLength(1);
 });
 test('Publish-only access does not masquerade as an AI Generation subscription', async () => {
     mockBilling.paidAccess = true; mockBilling.generationActive = false; mockBilling.offerings.all.credits.availablePackages = [];

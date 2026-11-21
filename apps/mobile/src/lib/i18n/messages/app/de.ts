@@ -6207,6 +6207,8 @@ export default {
   "billing.paywall.busy": "Ein anderer Kauf läuft gerade. Warte, bis er abgeschlossen ist.",
   "billing.paywall.salesClosed": "Käufe sind noch nicht geöffnet.",
   "billing.paywall.alreadyActive": "Du hast bereits einen KI-Generierungstarif.",
+  "billing.paywall.manageStore": "Store-Abonnement verwalten",
+  "billing.paywall.manageWeb": "Web-Abonnement verwalten",
   "billing.paywall.vey.hello.generation": "Wähle einen Tarif, und ich bringe dir jeden Monat frische Credits.",
   "billing.paywall.vey.hello.credits": "Fast leer? Wähle ein Paket. Diese Credits verfallen nie.",
   "billing.paywall.vey.hello.publish": "Bereit, überall zu posten? Wähle, wie du zahlen möchtest.",

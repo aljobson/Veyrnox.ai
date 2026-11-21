@@ -6123,6 +6123,8 @@ export default {
   "billing.paywall.busy": "다른 구매가 진행 중입니다. 완료될 때까지 기다리세요.",
   "billing.paywall.salesClosed": "구매가 아직 열리지 않았습니다.",
   "billing.paywall.alreadyActive": "이미 AI 생성 플랜을 이용 중입니다.",
+  "billing.paywall.manageStore": "스토어 구독 관리",
+  "billing.paywall.manageWeb": "웹 구독 관리",
   "billing.paywall.vey.hello.generation": "플랜을 고르면 매달 새 크레딧을 가져다줄게요.",
   "billing.paywall.vey.hello.credits": "크레딧이 부족한가요? 팩을 골라요. 이 크레딧은 만료되지 않아요.",
   "billing.paywall.vey.hello.publish": "어디에나 게시할 준비 됐나요? 결제 방식을 골라요.",

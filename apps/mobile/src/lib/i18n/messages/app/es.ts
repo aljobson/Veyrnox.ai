@@ -6290,6 +6290,8 @@ export default {
   "billing.paywall.busy": "Hay otra compra en curso. Espera a que termine.",
   "billing.paywall.salesClosed": "Las compras aún no están abiertas.",
   "billing.paywall.alreadyActive": "Ya tienes un plan de Generación con IA.",
+  "billing.paywall.manageStore": "Gestionar la suscripción de la tienda",
+  "billing.paywall.manageWeb": "Gestionar la suscripción web",
   "billing.paywall.vey.hello.generation": "Elige un plan y te traeré créditos nuevos cada mes.",
   "billing.paywall.vey.hello.credits": "¿Te quedan pocos? Elige un paquete. Estos créditos no caducan.",
   "billing.paywall.vey.hello.publish": "¿Listo para publicar en todas partes? Elige cómo quieres pagar.",
