@@ -197,3 +197,20 @@ test('schema 2 clock wipe survives export so the server refuses the unsupported 
     expect(translateEditorRender(result.document.timeline)).toEqual({ error: 'editor_render_unsupported', feature: 'transitionType' });
     expect(JSON.stringify(saved)).toBe(before);
 });
+
+test('S7 export copy drops only inactive defaults and empty arrays, without touching saved fields', () => {
+    const saved = fixture(), tl = saved.timeline as Timeline;
+    Object.assign(tl.video[0], { transform: { x: .5, y: .5, scale: 1, rotation: 0, opacity: 1, flipX: false, flipY: false },
+        keyframes: [], parameterKeyframes: [], mask: 'none', maskSettings: { x: .7, y: .5, width: 1, height: 1, rotation: 0, feather: .1, inverted: true },
+        maskKeyframes: [], smartPicture: { denoise: 0, keyEnabled: false, keyColor: '#0000ff', keyTolerance: .12, keyFeather: .1,
+            despill: .5, light: 0, lightX: .5, lightY: .5, lightRadius: .6 } });
+    const before = JSON.stringify(saved), exported = exportCopy(saved, {}).document.timeline as Timeline;
+    for (const key of ['transform', 'keyframes', 'parameterKeyframes', 'mask', 'maskSettings', 'maskKeyframes', 'smartPicture']) {
+        expect(Object.hasOwn(exported.video[0], key)).toBe(false);
+    }
+    expect(JSON.stringify(saved)).toBe(before);
+    tl.video[0].transform!.x = .7; tl.video[0].mask = 'circle'; tl.video[0].smartPicture!.keyEnabled = true;
+    const active = exportCopy(saved, {}).document.timeline as Timeline;
+    expect(active.video[0].transform).toEqual(tl.video[0].transform); expect(active.video[0].mask).toBe('circle');
+    expect(active.video[0].maskSettings).toEqual(tl.video[0].maskSettings); expect(active.video[0].smartPicture).toEqual(tl.video[0].smartPicture);
+});

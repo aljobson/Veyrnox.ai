@@ -4656,6 +4656,54 @@
     "ratio": 2.25
   },
   {
+    "id": "editorMotion.opacity",
+    "english": "Opacity",
+    "translation": "Непрозрачность",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Панорама вправо",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Переместить к курсору воспроизведения",
+    "ratio": 2.31
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Интерполяция",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Плавное начало",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.ease-out",
+    "english": "Ease out",
+    "translation": "Плавное окончание",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorMotion.ease-in-out",
+    "english": "Ease in and out",
+    "translation": "Плавное ускорение и замедление",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.inverted",
+    "english": "Invert mask",
+    "translation": "Инвертировать маску",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

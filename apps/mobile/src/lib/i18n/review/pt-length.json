@@ -4554,6 +4554,102 @@
     "ratio": 1.63
   },
   {
+    "id": "editorMotion.mask",
+    "english": "Mask",
+    "translation": "Máscara",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.picture",
+    "english": "Picture keys",
+    "translation": "Fotogramas-chave de imagem",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Panorâmica à direita",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Mover para o cursor de reprodução",
+    "ratio": 2.06
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Interpolação",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Entrada suave",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorMotion.deletePicture",
+    "english": "Delete picture key {n}",
+    "translation": "Excluir fotograma-chave de imagem {n}",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorMotion.feather",
+    "english": "Mask feather",
+    "translation": "Suavização da máscara",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.width",
+    "english": "Mask width",
+    "translation": "Largura da máscara",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorMotion.deleteMask",
+    "english": "Delete mask key {n}",
+    "translation": "Excluir fotograma-chave de máscara {n}",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.resetMask",
+    "english": "Reset mask",
+    "translation": "Redefinir máscara",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorMotion.keyFeather",
+    "english": "Key edge feather",
+    "translation": "Suavização da borda de recorte",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorMotion.left",
+    "english": "Move left",
+    "translation": "Mover para a esquerda",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorMotion.right",
+    "english": "Move right",
+    "translation": "Mover para a direita",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.up",
+    "english": "Move up",
+    "translation": "Mover para cima",
+    "ratio": 2.14
+  },
+  {
+    "id": "editorMotion.down",
+    "english": "Move down",
+    "translation": "Mover para baixo",
+    "ratio": 1.78
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

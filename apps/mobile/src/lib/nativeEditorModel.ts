@@ -30,6 +30,10 @@ export type ColourAdjustment = {
     curves: Record<string, { x: number; y: number }[]>;
 };
 export type Clip = TimedFields & {
+    mask?: string;
+    maskSettings?: { x: number; y: number; width: number; height: number; rotation: number; feather: number; inverted: boolean };
+    smartPicture?: { denoise: number; keyEnabled: boolean; keyColor: string; keyTolerance: number; keyFeather: number; despill: number;
+        light: number; lightX: number; lightY: number; lightRadius: number };
     colourAdjustment?: ColourAdjustment; crop?: { x: number; y: number; width: number; height: number }; blend?: string;
     background?: { type: 'none' | 'solid' | 'blur' | 'image'; color: string; blur: number; mediaId: string };
     id: string; mediaId?: string; start: number; in?: number; len: number; trackId?: string;

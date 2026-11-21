@@ -4542,6 +4542,138 @@
     "ratio": 1.71
   },
   {
+    "id": "editorMotion.motion",
+    "english": "Motion",
+    "translation": "Movimiento",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorMotion.mask",
+    "english": "Mask",
+    "translation": "Máscara",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.picture",
+    "english": "Picture keys",
+    "translation": "Fotogramas clave de imagen",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Paneo a la derecha",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.rise",
+    "english": "Rise",
+    "translation": "Ascenso",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.push-in",
+    "english": "Push in",
+    "translation": "Acercamiento",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Mover al cabezal de reproducción",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Interpolación",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Entrada suave",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorMotion.deletePicture",
+    "english": "Delete picture key {n}",
+    "translation": "Eliminar fotograma clave de imagen {n}",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorMotion.shape",
+    "english": "Mask shape",
+    "translation": "Forma de la máscara",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorMotion.none",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.feather",
+    "english": "Mask feather",
+    "translation": "Difuminado de la máscara",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.width",
+    "english": "Mask width",
+    "translation": "Ancho de la máscara",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorMotion.height",
+    "english": "Mask height",
+    "translation": "Alto de la máscara",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorMotion.addMask",
+    "english": "Add mask keyframe at playhead",
+    "translation": "Añadir fotograma clave de máscara en el cabezal",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorMotion.deleteMask",
+    "english": "Delete mask key {n}",
+    "translation": "Eliminar fotograma clave de máscara {n}",
+    "ratio": 2.05
+  },
+  {
+    "id": "editorMotion.resetMask",
+    "english": "Reset mask",
+    "translation": "Restablecer máscara",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorMotion.keyFeather",
+    "english": "Key edge feather",
+    "translation": "Suavizado del borde de recorte",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorMotion.left",
+    "english": "Move left",
+    "translation": "Mover a la izquierda",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorMotion.right",
+    "english": "Move right",
+    "translation": "Mover a la derecha",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorMotion.up",
+    "english": "Move up",
+    "translation": "Mover arriba",
+    "ratio": 1.71
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

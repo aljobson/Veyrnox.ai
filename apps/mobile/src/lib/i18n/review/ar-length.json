@@ -2490,6 +2490,30 @@
     "ratio": 1.83
   },
   {
+    "id": "editorMotion.picture",
+    "english": "Picture keys",
+    "translation": "إطارات الصورة الرئيسية",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "تحريك أفقي لليمين",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorMotion.go",
+    "english": "Go to point",
+    "translation": "الانتقال إلى النقطة",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorMotion.ease-out",
+    "english": "Ease out",
+    "translation": "نهاية تدريجية",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

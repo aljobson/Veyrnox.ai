@@ -342,5 +342,9 @@
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
   "musicExport.quoteFormat": "Format is also the German label; placeholder retained. Native review pending.",
-  "tabs.studio": "Studio is the established German product label for this creative workspace."
+  "tabs.studio": "Studio is the established German product label for this creative workspace.",
+  "editorMotion.linear": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.x": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.y": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending."
 }
