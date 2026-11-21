@@ -187,5 +187,11 @@
   "editorText.preset2": "Standard notation or established style name, retained in this locale.",
   "editorCaptionTools.karaoke": "Established borrowed term, retained in this language.",
   "speech.value": "Label/value formatting only: the label is already translated and the value is numeric; the colon separator contains no English prose.",
-  "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending."
+  "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending.",
+  "beatLabs.template.hiphop": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.template.lofi": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.template.house": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.category.FX": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.context.global": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.context.piano": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog."
 }
