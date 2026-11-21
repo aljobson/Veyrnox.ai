@@ -417,3 +417,56 @@ test('the slow-motion flag is only on for the exact string "true"', () => {
     for (const v of ['false', '', 'TRUE', '1', undefined]) assert.equal(clipSlowEnabled({ CLIP_EDIT_SLOW_ENABLED: v }), false);
     assert.equal(clipSlowEnabled(undefined), false);
 });
+
+// The audio step failing to submit after a paid merge (job 1c90b2ee, 2026-11-21) refunded the whole edit at once.
+const twoClipsWithSound = () => validateEdit({ clips: [clip('a', 0, 10), clip('b', 0, 10)], audio: { key: 'm', offset_s: 0 } });
+const failNextSubmit = (w, times, answer) => {
+    const real = w.deps.submit;
+    let left = times;
+    w.deps.submit = async (...args) => (left-- > 0 ? answer : real(...args));
+};
+
+test('a next step that fal does not take (timeout or 5xx) is submitted once more, and the edit goes on', async () => {
+    const w = world(twoClipsWithSound());
+    await start({ jobId: JOB, edit: twoClipsWithSound() }, w.deps);
+    failNextSubmit(w, 1, { ok: false, outcome: 'unknown', error: 'fal 503: busy' });
+    assert.equal((await w.deliver()).advanced, 'audio');
+    assert.equal(w.calls.refunds, 0);
+    assert.equal(w.steps.find((x) => x.step === 'audio').provider_job_id != null, true);
+});
+
+test('a next step that fal refuses (4xx) is not retried: the reason is kept on the step and the job is refunded once', async () => {
+    const w = world(twoClipsWithSound());
+    await start({ jobId: JOB, edit: twoClipsWithSound() }, w.deps);
+    let attempts = 0;
+    w.deps.submit = async () => { attempts += 1; return { ok: false, outcome: 'rejected', error: 'fal 422: {"detail":"bad audio"}' }; };
+    const r = await w.deliver();
+    assert.equal(r.refunded, true);
+    assert.equal(attempts, 1);
+    const audio = w.steps.find((x) => x.step === 'audio');
+    assert.equal(audio.state, 'FAILED');
+    assert.equal(w.calls.refunds, 1);
+});
+
+test('a failed submit stays refunded after one failed retry, and the step keeps the reason slug', async () => {
+    const edit = twoClipsWithSound();
+    const w = world(edit);
+    const recorded = [];
+    const rpc = w.deps.rpc;
+    w.deps.rpc = async (name, a) => { if (name === 'job_step_failed') recorded.push(a.p_error_code); return rpc(name, a); };
+    await start({ jobId: JOB, edit }, w.deps);
+    failNextSubmit(w, 2, { ok: false, outcome: 'unknown', error: 'fal 503: busy' });
+    assert.equal((await w.deliver()).refunded, true);
+    assert.deepEqual(recorded, ['submit_unknown_503']);
+    assert.equal(w.calls.refunds, 1);
+});
+
+test('the dear captions step is not submitted twice when its first submit is unclear', async () => {
+    const edit = validateEdit({ clips: [clip('a', 0, 10), clip('b', 0, 10)], captions: { preset: 'simple' } });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    let attempts = 0;
+    w.deps.submit = async () => { attempts += 1; return { ok: false, outcome: 'unknown', error: 'transport: timeout' }; };
+    assert.equal((await w.deliver()).refunded, true);
+    assert.equal(attempts, 1);
+});
