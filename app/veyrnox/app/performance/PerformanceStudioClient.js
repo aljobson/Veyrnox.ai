@@ -1,6 +1,6 @@
 'use client';
 
-import LipSyncExampleCard from '../../_components/LipSyncExampleCard';
+import StudioExampleCard from '../../_components/StudioExampleCard';
 import { PromptBox } from '../../_components/PromptBox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -1730,7 +1730,8 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
           </div>
         </header>
 
-        {dedicatedLipSync && workflow.id === 'video-lip-sync' && <LipSyncExampleCard />}
+        {dedicatedLipSync && workflow.id === 'video-lip-sync' && <StudioExampleCard slug="lip-sync" title="AI Lip Sync" poster="/examples/lip-sync.jpg" />}
+        {dedicatedCharacterWorkflow === 'talking-object' && <StudioExampleCard slug="talking-objects" title="Talking Objects" />}
 
         {activeRecipe && (
           <section aria-label={`${activeRecipe.title} recipe`} className="mt-6 rounded-2xl border border-vx-accent/35 bg-vx-accent/[0.06] p-4 sm:p-5">

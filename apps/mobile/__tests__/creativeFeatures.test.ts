@@ -103,3 +103,19 @@ describe('example clips the phone can play', () => {
         expect(unplayable.filter((f) => !f.example.posterUrl).map((f) => f.slug)).toEqual([]);
     });
 });
+
+describe('studio example cards on the phone', () => {
+    const read = (...parts: string[]) => readFileSync(join(__dirname, '..', 'src', ...parts), 'utf8');
+    test('the Example card is one shared component used by the tools page and Text to speech', () => {
+        const card = read('components', 'ExampleCard.tsx');
+        expect(card).toContain('export function Example(');
+        expect(card).toContain('examplePlaysOn(feature.example, Platform.OS)');
+        expect(read('app', '(app)', 'features', '[slug].tsx')).toContain("from '../../../components/ExampleCard'");
+        const speech = read('components', 'speech', 'SpeechStudio.tsx');
+        expect(speech).toContain("creativeFeature('text-to-speech')");
+        expect(speech).toContain('<Example feature={textToSpeechExample} />');
+    });
+    test('the Text to speech example is media we host', () => {
+        expect(creativeFeature('text-to-speech')!.example.url).toMatch(/^https:\/\/veyrnox\.ai\/examples\//);
+    });
+});
