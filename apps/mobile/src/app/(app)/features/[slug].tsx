@@ -2,14 +2,13 @@ import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
-import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { Example } from '../../../components/ExampleCard';
 import { SourcePicker } from '../../../components/SourcePicker';
-import { creativeFeature, examplePlaysOn, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
+import { creativeFeature, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
 import { readCreativeReuse, type CreativeReuse } from '../../../lib/creativeReuse';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
@@ -86,31 +85,12 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
     </ScrollView>;
 }
 
-function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View></View>{examplePlaysOn(feature.example, Platform.OS) ? <ExampleVideo url={feature.example.url} poster={feature.example.posterUrl} title={feature.title} /> : <ExampleStill uri={feature.example.kind === 'video' ? feature.example.posterUrl ?? feature.example.url : feature.example.url} title={feature.title} />}</View>;
-}
-function ExampleStill({ uri, title }: { uri: string; title: string }) {
-    return <Image source={{ uri }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: title }))} accessibilityIgnoresInvertColors />;
-}
-// The example starts on its own, muted and looping like the web preview, so it is visibly a moving result; the native
-// controls still unmute or pause it. A clip that cannot load falls back to its first-frame still.
-function ExampleVideo({ url, poster, title }: { url: string; poster?: string; title: string }) {
-    const [failed, setFailed] = useState(false);
-    const player = useVideoPlayer(url, (instance) => { instance.loop = true; instance.muted = true; instance.play(); });
-    useEffect(() => {
-        const subscription = player.addListener('statusChange', (event) => { if (event.status === 'error') setFailed(true); });
-        return () => subscription.remove();
-    }, [player]);
-    if (failed && poster) return <ExampleStill uri={poster} title={title} />;
-    return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={rawText(t('features.examplevideo', { value1: title }))} />;
-}
-
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background }, content: { padding: 16, paddingBottom: 80, gap: 14 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: 24 },
     hero: { gap: 9, paddingVertical: 8 }, kicker: { color: colors.accent, fontSize: 10, fontWeight: '900', letterSpacing: 1.4 }, title: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 38, lineHeight: 40 }, lead: { color: colors.body, fontSize: 15, lineHeight: 23 },
     card: { gap: 12, padding: 16, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, cardTitle: { color: colors.text, fontSize: 19, fontWeight: '900' }, row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 }, counter: { color: colors.muted, fontSize: 11 },
     input: { minHeight: 132, color: colors.text, borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.background, padding: 13, fontSize: 15, lineHeight: 22, textAlignVertical: 'top' }, note: { color: colors.muted, fontSize: 12, lineHeight: 18 },
     step: { flexDirection: 'row', gap: 12 }, number: { color: colors.accent, fontSize: 12, fontWeight: '900' }, stepText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
-    example: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: '#050506' }, exampleHead: { padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface }, exampleMedia: { width: '100%', height: 260, backgroundColor: '#050506' }, link: { color: colors.accent, fontSize: 13, fontWeight: '800', textDecorationLine: 'underline' },
+    link: { color: colors.accent, fontSize: 13, fontWeight: '800', textDecorationLine: 'underline' },
     primary: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.accent, paddingHorizontal: 16 }, primaryText: { color: colors.accentInk, fontSize: 15, fontWeight: '900', textAlign: 'center' }, secondary: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.accent }, secondaryText: { color: colors.accent, fontSize: 14, fontWeight: '800' }, off: { opacity: 0.45 }, error: { color: colors.danger, fontSize: 13, lineHeight: 19 },
 });
