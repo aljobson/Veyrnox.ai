@@ -26,7 +26,7 @@ Object.assign(process.env, {
 const { POST } = await import('../app/api/v1/generations/route.js');
 const { GET } = await import('../app/api/catalog/route.js');
 const EFFECTIVE_PROMPT = templateSwapPrompt('the main character');
-const ID = 'community-action-hero-strut';
+const ID = 'community-athlete-identity-swap';
 const AUTH = '11111111-1111-4111-8111-111111111111', JOB = '22222222-2222-4222-8222-222222222222';
 const PHOTO = '33333333-3333-4333-8333-333333333333';
 const photo = { slot: 'image', origin: 'asset', asset_id: PHOTO };
@@ -118,7 +118,7 @@ function network(t, options = {}) {
   return { freeAdmissions, debits, submits, calls, refunds, charges: () => charges };
 }
 function post(overrides = {}) {
-  return POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH }, body: JSON.stringify({ model_id: 'kling-o1-reference', template_swap: 'community-action-hero-strut',
+  return POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH }, body: JSON.stringify({ model_id: 'kling-o1-reference', template_swap: 'community-athlete-identity-swap',
     inputs: {}, consent: true, references: [photo, crop], idempotency_key: 'scene-proof-key', ...overrides }) }));
 }
 function get(id, auth = true) {

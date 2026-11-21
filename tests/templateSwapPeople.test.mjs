@@ -21,7 +21,7 @@ test('roles come only from the reviewed table and must be two different usable r
   // Eye-checked: cliffside-rescue-hero shows one person, so it stays one-person.
   assert.equal(templateSwapPeopleRoles('community-cliffside-rescue-hero', on), null);
   assert.equal(templateSwapPeopleRoles('basketball-3', { TEMPLATE_SWAP_CLIP_ENABLED: 'true' }), null);
-  assert.equal(templateSwapPeopleRoles('community-action-hero-strut', on), null);
+  assert.equal(templateSwapPeopleRoles('community-athlete-identity-swap', on), null);
   assert.equal(templateSwapPeopleRoles('__proto__', on), null);
   assert.equal(templateSwapPeopleRoles('x', on, { x: ['the main character', 'the main character'] }), null);
   assert.equal(templateSwapPeopleRoles('x', on, { x: ['the man', 'a'] }), null);
