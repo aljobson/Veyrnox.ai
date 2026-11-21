@@ -1,0 +1,151 @@
+import { act } from 'react';
+import { createRoot } from 'test-renderer';
+import { FiltersPanel, EffectsPanel, TransitionsPanel } from '../src/components/editor/tools/LookPanels';
+import { useLookActions } from '../src/components/editor/tools/useLookActions';
+import { createFrameStore } from '../src/components/editor/editorFrameStore';
+import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
+import { parameterKeyframe } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
+import type { ToolPanelProps } from '../src/components/editor/tools/types';
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+test('look panels show video-only controls; evaluated readouts follow a paused seek', async () => {
+    const root = createRoot(), frameStore = createFrameStore(), applyTimeline = jest.fn((_next: Timeline) => true), setProblem = jest.fn();
+    const timeline = emptyTimeline(); timeline.media.m = { id: 'm', kind: 'video', frames: 900, width: 640, height: 360, hasAudio: true, name: 'Movie' };
+    timeline.video = [{ id: 'v1', start: 0, len: 90, in: 0, trackId: 'video-0', mediaId: 'm', transition: 0, volume: 1 }];
+    const clip = timeline.video[0]; clip.parameterKeyframes = [parameterKeyframe(clip, 0), { ...parameterKeyframe(clip, 89), brightness: 2 }];
+    let parentRenders = 0;
+    function Harness({ Panel, audio = false }: { Panel: typeof FiltersPanel; audio?: boolean }) {
+        parentRenders++;
+        const selection = { track: audio ? 'audio' as const : 'video' as const, id: 'v1' };
+        const lookActions = useLookActions({ timeline, selection, frameStore, applyTimeline, setProblem });
+        return <Panel {...{ timeline, selection, selected: clip, lookActions } as ToolPanelProps} />;
+    }
+    for (const Panel of [FiltersPanel, EffectsPanel, TransitionsPanel]) {
+        await act(async () => root.render(<Harness Panel={Panel} />));
+        expect(root.container.queryAll(n => n.props.accessibilityRole === 'header').length).toBeGreaterThan(0);
+        for (const control of root.container.queryAll(n => ['button', 'adjustable', 'radiogroup'].includes(n.props.accessibilityRole))) {
+            expect(typeof control.props.accessibilityLabel).toBe('string'); expect(control.props.accessibilityLabel.length).toBeGreaterThan(0);
+        }
+        expect(root.container.queryAll(n => n.children.includes("The phone preview doesn't show looks yet. They are kept in your project.")).length).toBeGreaterThan(0);
+        await act(async () => root.render(<Harness Panel={Panel} audio />));
+        expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')).toHaveLength(0);
+    }
+    await act(async () => root.render(<Harness Panel={FiltersPanel} />));
+    const rendered = parentRenders;
+    await act(async () => frameStore.set(89)); expect(parentRenders).toBe(rendered);
+    const slider = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === 'Brightness')[0];
+    expect(slider.props.accessibilityValue.now).toBe(2);
+    await act(async () => slider.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    expect(applyTimeline).toHaveBeenCalledTimes(1); expect(applyTimeline.mock.calls[0][0].video[0].filter!.brightness).toBe(2.05);
+    await act(async () => root.unmount());
+});
+
+import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
+import type { useFullEditorSession } from '../src/components/editor/useFullEditorSession';
+import { envelope } from './fixtures/webSequenceV3';
+import { nearLimit } from './fixtures/editorNearLimit';
+import { t } from '../src/lib/i18n';
+let mockSession: ReturnType<typeof useFullEditorSession>;
+const mockRequest = jest.fn(), mockApi = { request: mockRequest };
+const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
+const mockBeginSessionTask = () => ({ current: () => true });
+const mockScreenRender = jest.fn(), mockStackOptions = jest.fn();
+jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
+jest.mock('../src/components/editor/useFullEditorSession', () => {
+    const real = jest.requireActual('../src/components/editor/useFullEditorSession');
+    return { ...real, useFullEditorSession: (props: any) => { mockSession = real.useFullEditorSession(props); return mockSession; } };
+});
+jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
+jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null),
+    backup: jest.fn().mockResolvedValue(null) } }));
+jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
+jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
+jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
+jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
+jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockStackOptions(options); return options?.headerRight?.() ?? null; } },
+    usePreventRemove: () => () => {}, useRouter: () => mockRouter }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => { mockScreenRender(); return { api: mockApi, beginSessionTask: mockBeginSessionTask }; } }));
+jest.mock('../src/components/editor/EditorMediaPreview', () => ({ EditorMediaPreview: ({ media, localUri }: any) => require('react').createElement(require('react-native').View,
+    { accessibilityLabel: `Real preview ${media.name}`, testID: localUri }) }));
+jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: ({ onPick }: any) => require('react').createElement(require('react-native').Pressable,
+    { accessibilityRole: 'button', accessibilityLabel: 'Choose Library item', onPress: () => onPick({ jobId: '22222222-2222-2222-2222-222222222222', name: 'Library shot',
+    createdAt: '2026-10-23T00:00:00Z' }) }) }));
+describe('FullEditorScreen look commits', () => {
+    let root: ReturnType<typeof createRoot>;
+    beforeEach(() => { jest.useFakeTimers(); jest.clearAllMocks(); root = createRoot(); });
+    afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
+    const clip = (id: string, start = 0) => ({ id, mediaId: 'm', start, len: 90, in: 0, volume: 1, transition: 0, trackId: 'video-0' });
+    const timeline = () => ({ ...emptyTimeline(), media: {
+        m: { id: 'm', name: 'Movie', kind: 'video', frames: 900, width: 640, height: 360, hasAudio: true },
+    }, video: [clip('v1'), clip('v2', 90)] });
+    async function open(tl = timeline(), doc = envelope(tl)) {
+        mockRequest.mockImplementation(async (path: string) => path.endsWith('/document') ? { revision: 1, document: doc }
+            : { project: { id: doc.project_id, workspace_id: 'workspace', name: 'Look test' } });
+        await act(async () => root.render(<FullEditorScreen projectId={doc.project_id} startAdvanced />));
+        await act(async () => { mockSession.setSelection({ track: 'video', id: 'v2' }); mockSession.setSelections([{ track: 'video', id: 'v2' }]); });
+    }
+    async function press(label: string) {
+        const nodes = root.container.queryAll(n => n.props.accessibilityLabel === label && typeof n.props.onClick === 'function');
+        expect(nodes).toHaveLength(1);
+        await act(async () => nodes[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    }
+    test.each([['Effects', 'Motion tiles', 'effect'], ['Effects', 'Screen', 'blend'],
+        ['Transitions', 'Clock wipe', 'transitionType'], ['Effects', 'Solid', 'background']])('%s / %s creates exactly one undo entry', async (panel, label, field) => {
+        await open(); const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        await press(panel); await press(label);
+        expect(mockSession.getEditRevision()).toBe(revision + 1);
+        expect((mockSession.currentDocument()!.timeline as Timeline).video[1]).toHaveProperty(field);
+        await act(async () => mockSession.travel('undo'));
+        expect(mockSession.currentDocument()).toEqual(before); expect(mockSession.history.canUndo).toBe(false);
+    });
+    test('non-adjacent transition has mapped error, no history and announced text', async () => {
+        await open(); await act(async () => mockSession.setSelection({ track: 'video', id: 'v1' }));
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        await press('Transitions'); await press('Clock wipe');
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.history.canUndo).toBe(false); expect(mockSession.problem).toBe(t('editorLook.notAdjacent'));
+        expect(root.container.queryAll(n => n.props.accessibilityRole === 'alert' && n.children.includes(t('editorLook.notAdjacent'))).length).toBeGreaterThan(0);
+    });
+    test('locked panels disable every edit', async () => {
+        const tl = timeline(); tl.tracks[0].locked = true;
+        await open(tl); const before = mockSession.currentDocument();
+        for (const panel of ['Effects', 'Filters', 'Transitions']) {
+            await press(panel);
+            expect(root.container.queryAll(n => n.children.includes(t('editorLook.locked'))).length).toBeGreaterThan(0);
+            const sliders = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable');
+            for (const slider of sliders.filter(n => !['Playhead', 'Timeline zoom'].includes(n.props.accessibilityLabel))) {
+                if (['Intensity', 'Brightness', 'Duration'].includes(slider.props.accessibilityLabel)) expect(slider.props.accessibilityState.disabled).toBe(true);
+            }
+            const buttonLabel = panel === 'Effects' ? 'Motion tiles' : panel === 'Filters' ? 'Reset colour' : 'Clock wipe';
+            const button = root.container.queryAll(n => n.props.accessibilityLabel === buttonLabel)[0];
+            expect(button.props.accessibilityState.disabled).toBe(true);
+        }
+        expect(mockSession.currentDocument()).toBe(before);
+    });
+    test('audio selection keeps a pre-existing effect and shows no look controls', async () => {
+        const tl = timeline();
+        tl.audio = [{ ...clip('a1'), trackId: 'audio-0', effect: { type: 'tiles', intensity: .5 } }];
+        delete tl.audio[0].transition;
+        await open(tl); await act(async () => mockSession.setSelection({ track: 'audio', id: 'a1' }));
+        const before = mockSession.currentDocument();
+        for (const panel of ['Effects', 'Filters', 'Transitions']) {
+            await press(panel);
+            expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Intensity')).toHaveLength(0);
+            expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Brightness')).toHaveLength(0);
+            expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Clock wipe')).toHaveLength(0);
+        }
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.history.canUndo).toBe(false);
+    });
+    test('envelope refusal through a look action preserves document, undo and dirty', async () => {
+        const doc = nearLimit(true), tl = doc.timeline as Timeline;
+        tl.video = [clip('v1'), clip('v2', 90)];
+        doc.brief = 'b'.repeat(32760 - (JSON.stringify(doc).length - doc.brief.length));
+        await open(tl as ReturnType<typeof timeline>, doc);
+        const before = mockSession.currentDocument(), revision = mockSession.getEditRevision();
+        await press('Effects'); await press('Motion tiles');
+        expect(mockSession.currentDocument()).toBe(before); expect(mockSession.history.canUndo).toBe(false);
+        expect(mockSession.dirty).toBe(false); expect(mockSession.getEditRevision()).toBe(revision);
+        expect(mockSession.problem).toBe(t('editorEditGate.tooLarge'));
+    });
+});

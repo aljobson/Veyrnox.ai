@@ -131,3 +131,40 @@ test('export removes neutral web audio resets, retains active edits and blocks o
     (saved.timeline as Timeline).media[`l-${id}`] = originalAudioMedia('soft-keys', `l-${id}`);
     expect(exportCopy(saved, {}).blocked).toEqual([{ id: `l-${id}`, name: 'Soft keys', reason: 'originalAudio' }]);
 });
+
+test('neutral looks disappear only from the export copy and keep the translator clip contract', () => {
+    const { colourDefaults } = require('../../../app/veyrnox/_lib/editorColour.mjs');
+    const { FILTER_DEFAULTS } = require('../../../app/veyrnox/_lib/editorAnimation.mjs');
+    const { BACKGROUND_DEFAULTS } = require('../../../app/veyrnox/_lib/editorBackground.mjs');
+    const saved = fixture(), clip = (saved.timeline as Timeline).video[0];
+    Object.assign(clip, { colourAdjustment: colourDefaults(), filter: FILTER_DEFAULTS, effect: { type: 'tiles', intensity: 0 },
+        blend: 'source-over', crop: { x: 0, y: 0, width: 1, height: 1 }, background: BACKGROUND_DEFAULTS, transitionType: 'dissolve' });
+    const before = JSON.stringify(saved), clean = (exportCopy(saved, {}).document.timeline as Timeline).video[0];
+    const allowed = ['id', 'mediaId', 'in', 'len', 'volume', 'transition', 'start', 'trackId', 'transitionType'];
+    expect(Object.keys(clean).every(key => allowed.includes(key))).toBe(true);
+    expect(clean.transitionType).toBe('dissolve'); expect(JSON.stringify(saved)).toBe(before);
+    clip.effect = { type: 'none', intensity: .5 };
+    expect((exportCopy(saved, {}).document.timeline as Timeline).video[0]).not.toHaveProperty('effect');
+});
+test('active looks retain their S1 export refusal and animated neutral colour/filter stay intact', () => {
+    const { colourDefaults } = require('../../../app/veyrnox/_lib/editorColour.mjs');
+    const { FILTER_DEFAULTS, parameterKeyframe } = require('../../../app/veyrnox/_lib/editorAnimation.mjs');
+    const { exportRefusal } = require('../src/lib/editorExportRefusal');
+    const { t } = require('../src/lib/i18n');
+    const edits = [
+        ['colourAdjustment', { ...colourDefaults(), exposure: .5 }, 'colour'], ['filter', { ...FILTER_DEFAULTS, brightness: 2 }, 'colour'],
+        ['effect', { type: 'tiles', intensity: .5 }, 'effects'], ['blend', 'screen', 'blend'],
+        ['crop', { x: .1, y: 0, width: .9, height: 1 }, 'crop'], ['background', { type: 'solid', color: '#15211f', blur: 18, mediaId: '' }, 'background'],
+        ['transitionType', 'clock-wipe', 'transitions'],
+    ] as const;
+    for (const [key, value, reason] of edits) {
+        const saved = fixture(); Object.assign((saved.timeline as Timeline).video[0], { [key]: value });
+        const copy = exportCopy(saved, {}).document;
+        expect((copy.timeline as Timeline).video[0]).toHaveProperty(key, value);
+        expect(exportRefusal(key)).toBe(t(`editorExportRefusal.${reason}`));
+    }
+    const saved = fixture(), clip = (saved.timeline as Timeline).video[0];
+    clip.colourAdjustment = colourDefaults(); clip.filter = FILTER_DEFAULTS; clip.parameterKeyframes = [parameterKeyframe(clip, 0)];
+    const clean = (exportCopy(saved, {}).document.timeline as Timeline).video[0];
+    expect(clean.colourAdjustment).toEqual(clip.colourAdjustment); expect(clean.filter).toEqual(clip.filter);
+});

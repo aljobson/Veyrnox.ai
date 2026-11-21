@@ -1,3 +1,5 @@
+import { neutralColour } from '../../../../app/veyrnox/_lib/editorColour.mjs';
+import { FILTER_DEFAULTS } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { audioProcessingActive } from '../../../../app/veyrnox/_lib/editorAudioSettings.mjs';
 import { audioEffectsActive } from '../../../../app/veyrnox/_lib/editorAudioEffects.mjs';
 import { exportRefusal } from './editorExportRefusal';
@@ -65,6 +67,14 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
     const used = new Set(clips.map(c => c.mediaId));
     timeline.media = Object.fromEntries(Object.entries(timeline.media).filter(([id]) => used.has(id)));
     for (const clip of clips) {
+        if (!clip.parameterKeyframes?.length) {
+            if (clip.colourAdjustment && neutralColour(clip.colourAdjustment)) delete clip.colourAdjustment;
+            if (clip.filter && Object.entries(FILTER_DEFAULTS).every(([key, value]) => clip.filter?.[key as keyof typeof FILTER_DEFAULTS] === value)) delete clip.filter;
+        }
+        if (clip.effect && (clip.effect.type === 'none' || clip.effect.intensity === 0)) delete clip.effect;
+        if (clip.blend === 'source-over') delete clip.blend;
+        if (clip.crop && clip.crop.x === 0 && clip.crop.y === 0 && clip.crop.width === 1 && clip.crop.height === 1) delete clip.crop;
+        if (clip.background?.type === 'none') delete clip.background;
         if (clip.eq && clip.eq.low === 0 && clip.eq.mid === 0 && clip.eq.high === 0) delete clip.eq;
         if (!audioProcessingActive({ audioProcessing: clip.audioProcessing })) delete clip.audioProcessing;
         if (!audioEffectsActive(clip.audioEffects)) delete clip.audioEffects;

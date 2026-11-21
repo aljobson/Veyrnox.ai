@@ -1,3 +1,6 @@
+import { VIDEO_EFFECTS, TRANSITIONS, EFFECT_CATEGORIES, TRANSITION_CATEGORIES } from '../../../app/veyrnox/_lib/editorEffects.mjs';
+import { HSL_CHANNELS, CURVE_CHANNELS } from '../../../app/veyrnox/_lib/editorColour.mjs';
+import { BLENDS } from '../../../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import { CATALOGS, createTranslator, startupLocale, setLocaleFromDevice } from '../src/lib/i18n';
 import { SKILL_GROUPS } from '../src/lib/studioSkills';
 import { CREATOR_ANSWERS } from '../src/lib/creatorAnswers';
@@ -11,6 +14,17 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'editorLook.{}': ['locked', 'lockedAll', 'notAdjacent'],
+    'editor.{}': ['filters', 'effects', 'transitions'],
+    'editorLook.parameter.{}': ['brightness', 'contrast', 'saturate', 'hue', 'blur', 'exposure',
+        'temperature', 'tint', 'shadows', 'highlights', 'gamma', 'saturation', 'luminance'],
+    'editorLook.channel.{}': [...new Set([...HSL_CHANNELS, ...CURVE_CHANNELS])],
+    'editorLook.category.{}': [...new Set([...EFFECT_CATEGORIES, ...TRANSITION_CATEGORIES])].filter(c => c !== 'All'),
+    'editorLook.effect.{}': VIDEO_EFFECTS.map(e => e.id),
+    'editorLook.transition.{}': [...TRANSITIONS.map(e => e.id), 'slide'],
+    'editorLook.blend.{}': BLENDS,
+    'editorLook.crop.{}': ['x', 'y', 'width', 'height'],
+    'editorLook.background.{}': ['none', 'solid', 'blur', 'image'],
     'speech.audition.{}': ['add', 'remove', 'addOne', 'invalidVoices'],
     'beatLabs.seed.error.{}': ['r34', 'r35', 'r36', 'r37', 'unsupported'],
     'beatLabs.touch.{}': ['help', 'play', 'undo', 'redo', 'gridMove', 'gridToggle', 'pads', 'regionMove', 'regionResize', 'regionTrim', 'regionDuplicate', 'regionSplit', 'regionDelete', 'regionEdit', 'rulerMove', 'pianoSelectAll', 'pianoMove', 'pianoResize', 'pianoToggle', 'pianoDelete', 'pianoVelocity', 'automationMove', 'automationDelete', 'notes', 'octave', 'velocity'],

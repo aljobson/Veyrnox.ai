@@ -34,5 +34,11 @@
     "english": "PDF",
     "translation": "PDF 文档",
     "ratio": 2
+  },
+  {
+    "id": "editorLook.hsl",
+    "english": "HSL",
+    "translation": "色相、饱和度和亮度",
+    "ratio": 3
   }
 ]
