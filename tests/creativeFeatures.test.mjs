@@ -45,7 +45,7 @@ test('every workflow exposes its configured example', () => {
     const example = creativeFeatureExample(item.slug);
     assert.ok(example, `${item.slug} needs an example`);
     assert.ok(['image', 'video'].includes(example.kind));
-    assert.ok(example.url, `${item.slug} needs an example URL`);
+    assert.match(example.url, /^(https:\/\/cdn\.lipsync\.video\/|\/examples\/[a-z-]+\.(mp4|webp)$)/);
     assert.equal(example.sourceUrl, undefined);
     assert.equal(creativeFeatureExampleAssetPath(item.slug), example.url);
   }

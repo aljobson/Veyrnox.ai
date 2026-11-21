@@ -10,7 +10,7 @@ export const CREATIVE_FEATURE_EXAMPLES = Object.freeze({
   'ai-influencer-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-influencer-generator/preview/beauty-ai-influencer-video.mp4' },
   'text-to-speech': { kind: 'image', url: '/examples/text-to-speech.webp' },
   'ai-voice-cloning': { kind: 'image', url: '/examples/ai-voice-cloning.webp' },
-  'lip-sync': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/cdn/template/preview/studio/studio_19_preview.webp?x-oss-process=image/resize,l_144' },
+  'lip-sync': { kind: 'video', url: '/examples/lip-sync.mp4' },
   'ai-talking-photo-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talkingPhoto-1/examples/Turn-portrait-to-talking-video.mp4' },
   'singing-photo': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/sing-photo/singing-3-example-video.webm' },
   'avatar-dialogue': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/avatar-dialogue/H1-showcase-video.webm' },

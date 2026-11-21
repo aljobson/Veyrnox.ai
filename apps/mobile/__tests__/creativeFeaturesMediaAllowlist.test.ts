@@ -6,10 +6,10 @@ const ORIGINAL_STILLS = [
 ];
 
 // Shrinking exception list: remove each slug when its original media lands.
-// A1 leaves 12 other videos, singing-photo (separate session), and lip-sync (PR #2584).
+// A1 leaves 12 other videos, singing-photo (separate session) (Lip Sync is local since PR #2584).
 const LEGACY_EXCEPTIONS = new Set([
     'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
-    'lip-sync', 'ai-talking-photo-generator', 'singing-photo', 'avatar-dialogue',
+    'ai-talking-photo-generator', 'singing-photo', 'avatar-dialogue',
     'video-dubbing', 'talking-cartoon', 'talking-animals', 'ai-baby-podcast',
     'ai-ad-clone', 'product-avatar', 'product-video-generator',
 ]);
