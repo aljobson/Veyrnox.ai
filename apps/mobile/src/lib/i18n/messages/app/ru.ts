@@ -6369,6 +6369,8 @@ export default {
   "billing.paywall.busy": "Идёт другая покупка. Дождитесь её завершения.",
   "billing.paywall.salesClosed": "Покупки пока не открыты.",
   "billing.paywall.alreadyActive": "У вас уже есть тариф ИИ-генерации.",
+  "billing.paywall.manageStore": "Управлять подпиской в магазине",
+  "billing.paywall.manageWeb": "Управлять веб-подпиской",
   "billing.paywall.vey.hello.generation": "Выберите тариф, и я буду приносить свежие кредиты каждый месяц.",
   "billing.paywall.vey.hello.credits": "Кредиты заканчиваются? Выберите пакет. Эти кредиты не сгорают.",
   "billing.paywall.vey.hello.publish": "Готовы публиковать везде? Выберите, как платить.",

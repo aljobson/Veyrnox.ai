@@ -9,6 +9,8 @@ export type PaywallVeyEvent =
     | { type: 'refused'; result: Exclude<PaywallGateResult, 'ok'> }
     | { type: 'store' }
     | { type: 'cancelled' }
+    | { type: 'pending' }
+    | { type: 'restored'; restored: boolean }
     | { type: 'failed' }
     | { type: 'purchased'; offering: PaywallOffering }
     | { type: 'poke' };
@@ -32,6 +34,8 @@ export function paywallVey(state: PaywallVeyState | null, event: PaywallVeyEvent
         case 'refused': return { mood: 'worried', line: REFUSED[event.result] };
         case 'store': return { mood: 'working', line: 'billing.paywall.vey.store' };
         case 'cancelled': return { mood: 'idle', line: 'billing.paywall.vey.cancelled' };
+        case 'pending': return { mood: 'working', line: 'credits.pending' };
+        case 'restored': return { mood: event.restored ? 'cheer' : 'idle', line: event.restored ? 'credits.restored' : 'credits.nothingToRestore' };
         case 'failed': return { mood: 'worried', line: 'billing.paywall.vey.failed' };
         case 'purchased': return { mood: 'clap', line: `billing.paywall.vey.done.${event.offering}` };
         case 'poke': return { mood: 'hop', line: state?.line ?? 'billing.paywall.vey.pick' };

@@ -6206,6 +6206,8 @@ export default {
   "billing.paywall.busy": "एक और खरीदारी चल रही है। उसके पूरा होने तक रुकें।",
   "billing.paywall.salesClosed": "खरीदारी अभी खुली नहीं है।",
   "billing.paywall.alreadyActive": "आपके पास पहले से एक AI जनरेशन प्लान है।",
+  "billing.paywall.manageStore": "स्टोर सदस्यता प्रबंधित करें",
+  "billing.paywall.manageWeb": "वेब सदस्यता प्रबंधित करें",
   "billing.paywall.vey.hello.generation": "एक प्लान चुनें, मैं हर महीने नए क्रेडिट लाऊँगा।",
   "billing.paywall.vey.hello.credits": "क्रेडिट कम हैं? एक पैक चुनें। ये क्रेडिट कभी खत्म नहीं होते।",
   "billing.paywall.vey.hello.publish": "हर जगह पोस्ट करने के लिए तैयार? भुगतान का तरीका चुनें।",

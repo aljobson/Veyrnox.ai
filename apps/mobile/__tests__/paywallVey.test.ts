@@ -31,6 +31,12 @@ test('Vey claps after a purchase and nothing but a new paywall interrupts it', (
     expect(paywallVey(done, { type: 'open', offering: 'publish' }).mood).toBe('wave');
 });
 
+test('pending and restore outcomes keep their honest shared-state copy', () => {
+    expect(paywallVey(open, { type: 'pending' })).toEqual({ mood: 'working', line: 'credits.pending' });
+    expect(paywallVey(open, { type: 'restored', restored: true })).toEqual({ mood: 'cheer', line: 'credits.restored' });
+    expect(paywallVey(open, { type: 'restored', restored: false })).toEqual({ mood: 'idle', line: 'credits.nothingToRestore' });
+});
+
 test('a tap on Vey hops without changing what Vey is saying', () => {
     const s = paywallVey(paywallVey(open, { type: 'failed' }), { type: 'poke' });
     expect(s).toEqual({ mood: 'hop', line: 'billing.paywall.vey.failed' });

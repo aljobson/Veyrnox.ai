@@ -14,6 +14,8 @@ export default {
     'billing.paywall.busy': 'Another purchase is in progress. Wait for it to finish.',
     'billing.paywall.salesClosed': 'Purchases are not open yet.',
     'billing.paywall.alreadyActive': 'You already have an AI Generation plan.',
+    'billing.paywall.manageStore': 'Manage store subscription',
+    'billing.paywall.manageWeb': 'Manage web subscription',
     "billing.paywall.vey.hello.generation": "Pick a plan and I'll bring fresh credits every month.",
     "billing.paywall.vey.hello.credits": "Running low? Pick a pack. These credits never expire.",
     "billing.paywall.vey.hello.publish": "Ready to post everywhere? Pick how you want to pay.",

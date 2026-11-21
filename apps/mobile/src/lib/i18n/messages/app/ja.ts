@@ -6123,6 +6123,8 @@ export default {
   "billing.paywall.busy": "別の購入を処理中です。完了するまでお待ちください。",
   "billing.paywall.salesClosed": "購入はまだ受け付けていません。",
   "billing.paywall.alreadyActive": "AI 生成プランはすでに有効です。",
+  "billing.paywall.manageStore": "ストアのサブスクリプションを管理",
+  "billing.paywall.manageWeb": "ウェブのサブスクリプションを管理",
   "billing.paywall.vey.hello.generation": "プランを選んでね。毎月新しいクレジットを届けるよ。",
   "billing.paywall.vey.hello.credits": "残りわずか？パックを選んでね。このクレジットは期限なしだよ。",
   "billing.paywall.vey.hello.publish": "どこにでも投稿する準備はできた？支払い方法を選んでね。",

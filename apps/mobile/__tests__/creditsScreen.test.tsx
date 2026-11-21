@@ -20,7 +20,7 @@ const mockApi = { getBalance: jest.fn(async () => mockBalance), request: jest.fn
     if (path === '/api/v1/subscriptions') return { subscription: mockRow };
     return mockPlans();
 }) };
-const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
+const mockBilling = { status: 'ready', salesOpen: true, canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
     activeProductIds: [] as string[], managementURL: null, offerings: { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.156', 10), pkg('large', 'ai.veyrnox.credits.1177', 70)] } } },
     purchase: jest.fn(), restore: jest.fn(), refreshGenerationAccess: jest.fn(), retryOfferings: jest.fn(),
 };
@@ -51,7 +51,7 @@ beforeEach(async () => {
     await wipeCache(); await bindCacheUser(`credits-${++serial}`); root = createRoot();
     mockRow = null; mockPlans = mockPlansOk; mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
     mockApi.getBalance.mockReset().mockImplementation(async () => mockBalance); mockApi.request.mockClear(); mockPost.mockReset();
-    mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.refreshSales.mockClear(); mockBilling.retryOfferings.mockClear();
+    mockBilling.status = 'ready'; mockBilling.salesOpen = true; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.refreshSales.mockClear(); mockBilling.retryOfferings.mockClear();
     mockBilling.offerings = { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.156', 10), pkg('large', 'ai.veyrnox.credits.1177', 70)] } } };
     mockBilling.generationActive = false; mockBilling.activeProductIds = []; mockBilling.offerings.all.generation.availablePackages = [monthly, annual];
     mockBilling.purchase.mockReset().mockResolvedValue('purchased'); mockBilling.restore.mockReset().mockResolvedValue(undefined); mockBilling.refreshGenerationAccess.mockReset().mockResolvedValue(false);
