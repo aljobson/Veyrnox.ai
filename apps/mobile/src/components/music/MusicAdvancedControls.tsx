@@ -15,11 +15,16 @@ type Picker = 'key' | 'meter' | null;
 
 const keyChoices: readonly PickChoice[] = MUSIC_KEY_SCALES.map(value => ({ value, label: value }));
 const meterChoices: readonly PickChoice[] = MUSIC_TIME_SIGNATURES.map(({ value, label }) => ({ value, label: label ?? value }));
+const hasActiveValues = (input: AdvancedInput): boolean => input.variety !== 50 || input.styleInfluence !== 0
+    || !!input.excludeStyles.trim() || !!input.bpm.trim() || !!input.keyScale || !!input.timeSignature;
 
 export function MusicAdvancedControls({ input, controls, onChange }: {
     input: AdvancedInput; controls: MusicModelControls; onChange: (patch: AdvancedPatch) => void;
 }) {
-    const [expanded, setExpanded] = useState(false), [picker, setPicker] = useState<Picker>(null);
+    // A remount (mode switch, navigation away/back) must not hide settings that still affect the quote,
+    // especially an invalid BPM that disables Review.
+    const [expanded, setExpanded] = useState(() => hasActiveValues(input) || bpmInvalid(input.bpm));
+    const [picker, setPicker] = useState<Picker>(null);
     const available = controls.variety || controls.style_influence || controls.exclude_styles || controls.tempo_key_meter;
     if (!available) return null;
     const invalidBpm = controls.tempo_key_meter && bpmInvalid(input.bpm);

@@ -158,6 +158,9 @@ test('advanced controls are capability-gated progressive disclosure and never re
     expect(button(t('music.create.advanced.hide'))).toBeUndefined();
     expect(field(t('music.create.advanced.excludeStyles'))).toBeUndefined();
     expect(field(t('music.create.advanced.bpm'))).toBeUndefined();
+    await mode('simple');
+    expect(button(t('music.create.advanced.hide')).props.accessibilityState.expanded).toBe(true);
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
 });
 test('custom saves draft then quotes saved revision and resolves conflict', async () => {
     await mount(); await mode('custom'); await edit('lyrics', 'My lyrics');

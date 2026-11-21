@@ -6707,7 +6707,7 @@ export default {
     "music.create.advanced.bpm": "टेम्पो (BPM)",
     "music.create.advanced.bpmInvalid": "{min} से {max} तक की पूर्ण संख्या दर्ज करें, या खाली छोड़ दें।",
     "music.create.advanced.auto": "स्वचालित",
-    "music.create.advanced.key": "की",
+    "music.create.advanced.key": "सुर",
     "music.create.advanced.meter": "ताल चिह्न",
     "music.create.review": "कीमत देखें",
     "music.create.confirm": "पुष्टि करें · {credits} क्रेडिट",
