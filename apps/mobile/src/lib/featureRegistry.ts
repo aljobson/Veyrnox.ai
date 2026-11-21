@@ -39,7 +39,7 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'editor', titleKey: 'tabs.studio', href: '/editor', icon: 'scissors', keywords: 'studio professional editor edit trim join captions clip timeline cut projects', menu: { section: 'tools', order: 3, labelKey: 'tabs.studio' }, webRoutes: ['/app/editor'] },
     { id: 'editorReview', titleKey: 'preview.title', href: '/editor', webRoutes: ['/app/editor/review'], status: 'gap', gapReason: 'Native saved-version review is not implemented; Studio is the safe fallback.' },
     { id: 'publish', titleKey: 'srch.s.publish', href: '/publish', icon: 'send', keywords: 'post schedule social calendar', menu: { section: 'tools', order: 4, labelKey: 'menu.publish' }, webRoutes: ['/app/publish', '/publish'] },
-    { id: 'publishPlan', titleKey: 'plan.title', href: '/publish', webRoutes: ['/app/publish/plan'], status: 'gap', gapReason: 'Native plan status and safe period-end cancellation are scheduled for Wave 2; Publish is the safe fallback.' },
+    { id: 'publishPlan', titleKey: 'plan.navTitle', href: '/publish', webRoutes: ['/app/publish/plan'], status: 'gap', gapReason: 'Native plan status and safe period-end cancellation are scheduled for Wave 2; Publish is the safe fallback.' },
     { id: 'cinema', titleKey: 'srch.s.cinema', href: '/cinema', icon: 'slate', keywords: 'watch films vote community', menu: { section: 'tools', order: 5, labelKey: 'menu.cinema' }, webRoutes: ['/social-cinema', '/social-cinema/creator', '/social-cinema/pass', '/social-cinema/series/[slug]', '/social-cinema/title/[id]', '/social-cinema/watch/[id]'] },
     { id: 'library', titleKey: 'srch.s.library', href: '/library', icon: 'play', keywords: 'creations files downloads saved', menu: { section: 'assets', order: 0, labelKey: 'menu.library' }, webRoutes: ['/app/library'] },
     { id: 'brandKit', titleKey: 'srch.s.brand', href: '/brand-kit', icon: 'palette', keywords: 'brand colours colors fonts palette', menu: { section: 'assets', order: 1, labelKey: 'menu.brandKit' }, webRoutes: ['/app/brand-kit'] },
@@ -74,7 +74,7 @@ const MOBILE_FEATURE_DEFINITIONS = [
     { id: 'talkingPhoto', titleKey: 'audioHub.talkingPhoto.title', href: '/features/ai-talking-photo-generator', icon: 'userSound', keywords: 'talking photo portrait', audio: { group: 'performance', order: 2 } },
     { id: 'singingPhoto', titleKey: 'audioHub.singingPhoto.title', href: '/features/singing-photo', icon: 'pianoKeys', keywords: 'singing photo portrait', audio: { group: 'performance', order: 3 } },
 
-    { id: 'publishActivity', titleKey: 'plan.menu.activity', href: '/publish/activity', entryPoint: 'publish', webRoutes: ['/app/publish/activity'] },
+    { id: 'publishActivity', titleKey: 'activity.title', href: '/publish/activity', entryPoint: 'publish', webRoutes: ['/app/publish/activity'] },
     { id: 'publishAds', titleKey: 'ads.title', href: '/publish/ads', entryPoint: 'publish', webRoutes: ['/app/publish/ads'] },
     { id: 'publishAnalytics', titleKey: 'analytics.title', href: '/publish/analytics', entryPoint: 'publish', webRoutes: ['/app/publish/analytics'] },
     { id: 'publishAutolists', titleKey: 'autolists.title', href: '/publish/autolists', entryPoint: 'publish', webRoutes: ['/app/publish/autolists'] },
