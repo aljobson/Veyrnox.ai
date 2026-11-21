@@ -171,7 +171,7 @@
   0% { opacity: 0; }
   10% { opacity: 1; }
   72% { opacity: 1; }
-  100% { opacity: 0.55; }
+  /* No 100% stop: it settles on each theme's own resting opacity. */
 }
 /* On a light page a glow is a smudge: the seam stays, as a hairline. */
 :root[data-theme='light'] .vx-slot::after { box-shadow: none; opacity: 0.8; }
@@ -219,10 +219,11 @@
   .vx-reel { animation: none; }
 }
 
-/* A changed figure rolls in from below, so the eye catches the new price. */
+/* A changed figure rises into place, so the eye catches the new price. No
+   fade: a quick second change restarts this, and a price must never blank. */
 @keyframes vxTick {
-  from { opacity: 0; transform: translateY(45%); filter: blur(2px); }
-  to   { opacity: 1; transform: none; filter: none; }
+  from { transform: translateY(25%); }
+  to   { transform: none; }
 }
 .vx-tick { display: inline-block; animation: vxTick 220ms var(--vx-ease-out) backwards; }
 
