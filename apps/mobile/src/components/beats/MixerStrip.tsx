@@ -7,6 +7,7 @@ import { t } from '../../lib/i18n';
 import { DRUM_KITS, type BeatTrackDoc } from '../../lib/beatNative/doc';
 
 export interface MixerStripProps {
+    gainLocked?: string; panLocked?: string;
     track: BeatTrackDoc; index: number; canRemove: boolean;
     onGain: (value: number) => void; onPan: (value: number) => void;
     onMute: (value: boolean) => void; onSolo: (value: boolean) => void; onKit: (kit: string) => void; onRemove: () => void;
@@ -15,7 +16,7 @@ export interface MixerStripProps {
 const toSlider = (pan: number) => (pan + 1) / 2;
 const fromSlider = (value: number) => Math.round((value * 2 - 1) * 100) / 100;
 
-export function MixerStrip({ track, index, canRemove, onGain, onPan, onMute, onSolo, onKit, onRemove }: MixerStripProps) {
+export function MixerStrip({ track, index, canRemove, onGain, onPan, onMute, onSolo, onKit, onRemove, gainLocked, panLocked }: MixerStripProps) {
     const s = useThemedStyles(sheets);
     const name = t('beat.track', { n: index + 1 });
     return (
@@ -23,8 +24,10 @@ export function MixerStrip({ track, index, canRemove, onGain, onPan, onMute, onS
             <Text variant="bodyStrong">{name}</Text>
             {!track.kind || track.kind === 'drums' ? <SegmentedControl value={track.kit ?? DRUM_KITS[0].id} onChange={onKit} options={DRUM_KITS.map(k => ({ value: k.id, label: t(`beat.kit.${k.id}`) }))}
                 accessibilityLabel={t('beat.kit', { track: name })} /> : <Text>{track.kind === 'midi' ? instrumentLabel((track as unknown as MidiTrackDoc).instrument) : t('beat.kind.audio')}</Text>}
-            <StrengthSlider tone="surface" label={t('beat.gain', { track: name })} value={track.gain} onChange={onGain} />
-            <StrengthSlider tone="surface" label={t('beat.pan', { track: name })} value={toSlider(track.pan)} onChange={v => onPan(fromSlider(v))} />
+            <StrengthSlider tone="surface" label={t('beat.gain', { track: name })} value={track.gain} disabled={!!gainLocked} onChange={onGain} />
+            {gainLocked ? <Text variant="footnote" tone="secondary">{gainLocked}</Text> : null}
+            <StrengthSlider tone="surface" label={t('beat.pan', { track: name })} value={toSlider(track.pan)} disabled={!!panLocked} onChange={v => onPan(fromSlider(v))} />
+            {panLocked ? <Text variant="footnote" tone="secondary">{panLocked}</Text> : null}
             <View style={s.buttons}>
                 <Button size="md" variant={track.mute ? 'primary' : 'secondary'} label={t('beat.mute.short')} accessibilityLabel={t('beat.mute', { track: name })}
                     accessibilityState={{ selected: track.mute }} onPress={() => onMute(!track.mute)} containerStyle={s.flex} />

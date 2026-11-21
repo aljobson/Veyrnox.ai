@@ -19,13 +19,14 @@ function setup(instrument = piano, tick = 0) {
             const voice = { run, release: jest.fn(), stop: jest.fn(), endTime: Infinity, ended: new Promise<void>(() => {}) }; voices.push(voice); return voice;
         }),
     };
-    const audio = createBeatAudioFromEngine({ engine: engine as BeatEngine, setTimer: fn => { fire = fn; return 1; }, clearTimer: jest.fn() });
+    const audio = createBeatAudioFromEngine({ engine: engine as unknown as BeatEngine, setTimer: fn => { fire = fn; return 1; }, clearTimer: jest.fn() });
     return { audio, engine, voices, track, read: () => doc, edit: (op: (d: BeatDoc) => BeatDoc) => { doc = op(doc); }, advance: (t: number) => { now = t; fire(); } };
 }
 test('MIDI schedules at song offsets with release, on a cancellable transport run', async () => {
     const f = setup(piano, 60); await f.audio.play(f.read);
     const run = f.engine.startRun.mock.results[0].value;
-    expect(f.engine.startRun).toHaveBeenCalledWith(null);
+    // N5: MIDI plays through the song's mix run (strips, effects, automation), not a bare run.
+    expect(f.engine.startRun).toHaveBeenCalledWith(expect.objectContaining({ kind: 'veyrnox.music.beat' }), expect.objectContaining({ onError: expect.any(Function) }));
     const at = 0.1 + 60 * 60 / (92 * 960);
     expect(f.engine.playMidi).toHaveBeenCalledWith(expect.objectContaining({ instrument: piano }), 60, 100, at, run, 1);
     expect(f.voices[0].release).toHaveBeenCalledWith(at + 1920 * 60 / (92 * 960));
