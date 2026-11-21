@@ -361,13 +361,8 @@ export default function Conversation() {
 
     const imageExtra = model ? imagesExtra(model) : null;
     const price = model ? replyPrice(model, options, imageExtra !== null ? images.length : 0, draft.trim()) : null;
-    async function addPhotos() {
-        const r = await pickPhotos(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
-        if (r.images.length) setImages((cur) => [...cur, ...r.images]);
-        const key = photoNoticeKey(r.problem); if (key) setNotice(t(key));
-    }
-    async function addFiles() {
-        const r = await pickFiles(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
+    async function addImages(pick: typeof pickPhotos) {
+        const r = await pick(roomFor(images.length, maxImages)).catch(() => ({ images: [] as ChatImage[], problem: 'failed' as const }));
         if (r.images.length) setImages((cur) => [...cur, ...r.images]);
         const key = photoNoticeKey(r.problem); if (key) setNotice(t(key));
     }
@@ -467,8 +462,8 @@ export default function Conversation() {
                         onModel={() => setPickerModelsOpen(true)}
                         onOptions={setOptions}
                         onLibrary={() => { flushDraft(); setPickerOpen(true); }}
-                        onPhotos={() => { flushDraft(); void addPhotos(); }}
-                        onFiles={() => { flushDraft(); void addFiles(); }}
+                        onPhotos={() => { flushDraft(); void addImages(pickPhotos); }}
+                        onFiles={() => { flushDraft(); void addImages(pickFiles); }}
                         onRemoveImage={(rid) => setImages((cur) => cur.filter((x) => x.id !== rid))}
                         onMake={openMake}
                         onSend={() => void send()}

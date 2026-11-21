@@ -1025,6 +1025,8 @@ export default {
   "chat.attach.needsUpdate": "फ़ोन की फ़ोटो भेजने के लिए ऐप का नवीनतम संस्करण चाहिए। इसके बजाय अपनी लाइब्रेरी से चुनें।",
   "chat.attach.photos": "फ़ोटो",
   "chat.attach.photosLabel": "इस डिवाइस से फ़ोटो जोड़ें",
+  "chat.attach.files": "फ़ाइलें",
+  "chat.attach.filesLabel": "इस डिवाइस से फ़ाइलें जोड़ें",
   "chat.attach.removeN": "इमेज {n} हटाएँ",
   "chat.attach.uploadFailed": "एक इमेज अपलोड नहीं हो सकी। कुछ नहीं भेजा गया और कोई शुल्क नहीं लिया गया।",
   "chat.attach.modelImages": "यह मॉडल इमेज नहीं पढ़ सकता। उन्हें हटाएँ या ऐसा मॉडल चुनें जो पढ़ सके।",
