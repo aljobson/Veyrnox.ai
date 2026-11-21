@@ -101,7 +101,7 @@ export const CREATION_RECIPES = Object.freeze([
   {
     id: 'singing-photo', family: 'performance', title: 'Singing photo', status: 'live', icon: 'performance',
     description: 'Align a cleared song clip to one permitted portrait with an honest 10-second model limit.',
-    outputKind: 'video', href: '/app/singing-photo?recipe=singing-photo', sourceSlots: ['Performer portrait', 'Cleared song clip'],
+    outputKind: 'video', href: '/app/features/singing-photo', sourceSlots: ['Performer portrait', 'Cleared song clip'],
     steps: ['Verify music rights', 'Choose one portrait', 'Upload or record a song clip', 'Render and review the performance'],
     rights: ['likeness', 'music', 'performance'], riskLevel: 'high',
   },

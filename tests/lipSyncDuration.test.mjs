@@ -31,6 +31,12 @@ test('a simple shortened edit constrains visual coverage; nonzero/empty starts a
   }
 });
 
+test('an edit rounded up to the next movie tick keeps the proven frame time; a longer edit stays unknown', async () => {
+  const clip = edit => info(lipSyncMp4({ video: 5.022, movie: 5.03, movieScale: 100, edit: { seconds: edit } }));
+  assert.equal((await clip(5.03)).videoSeconds, 5.022);
+  assert.equal((await clip(5.04)).videoSeconds ?? null, null);
+});
+
 test('a constant presentation offset is supported only when its plain edit exactly cancels it', async () => {
   assert.equal((await info(lipSyncMp4({ compositionOffset: 0.2, edit: { seconds: 7.2, start: 0.2 } }))).videoSeconds, 7.2);
   for (const edit of [null, { seconds: 7.2, start: 0 }, { seconds: 7.2, start: 0.3 }]) {
