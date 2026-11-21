@@ -4122,6 +4122,12 @@
     "ratio": 2
   },
   {
+    "id": "speech.audition.test",
+    "english": "Test",
+    "translation": "Проверить",
+    "ratio": 2.25
+  },
+  {
     "id": "beat.view.song",
     "english": "Song",
     "translation": "Композиция",

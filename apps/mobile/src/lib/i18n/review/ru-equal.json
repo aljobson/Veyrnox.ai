@@ -116,5 +116,6 @@
   "app.smartCut.native.analyse.mismatchMaximum": "Exact English retained for native Smart Cut billing and recovery wording pending professional ru translation.",
   "app.smartCut.fillers.row": "Exact English retained for native Smart Cut timing wording pending professional ru translation.",
   "app.smartCut.native.analyse.quoteFailed": "Exact English retained for native Smart Cut recovery wording pending professional ru translation.",
-  "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional ru translation."
+  "app.smartCut.native.analyse.quoteRetry": "Exact English retained for native Smart Cut recovery wording pending professional ru translation.",
+  "speech.audition.count": "Shared numeric board capacity notation; no language-specific words."
 }
