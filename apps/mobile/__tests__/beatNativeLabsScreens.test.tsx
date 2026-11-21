@@ -22,6 +22,7 @@ import { beatStore, resetBeats } from '../src/lib/beatNative/store';
 import { createTemplateBeat } from '../src/lib/beatNative/templates';
 import { fixedDoc, USER, PROJECT, deferred } from './beatNativeFixtures';
 import type { MusicSongDetail } from '../src/lib/music/types';
+beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 const mockPush = jest.fn(), mockReplace = jest.fn(), mockStop = jest.fn(), mockToggle = jest.fn(async () => 'pad');
 const mockApi = { request: jest.fn(async () => ({ projects: [] })) };
 const mockGetAccessToken = jest.fn(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`);

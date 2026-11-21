@@ -5,7 +5,7 @@ import * as rules from '../../../../../app/veyrnox/_lib/music/beat/beatCloudRule
 import * as storage from '../../../../../app/veyrnox/_lib/music/beat/beatStoreRules.mjs';
 import type { BeatDoc } from './doc';
 export type CloudLink = { userId: string; projectId: string | null; revision: number; syncedUpdatedAt?: number };
-export type BeatRecord = { id: string; revision: number; cloud?: CloudLink; doc: BeatDoc; updatedAt: number };
+export type BeatRecord = { id: string; revision: number; owner?: string; cloud?: CloudLink; doc: BeatDoc; updatedAt: number };
 export type SaveBody = { expected_revision: number; doc_json: string; mode: 'autosave' | 'checkpoint' | 'stash' };
 export type FailureState = 'removed' | 'conflict' | 'limit' | 'rate_limited' | 'offline' | 'error';
 export const validRecord = storage.validRecord as (record: unknown) => record is BeatRecord;
