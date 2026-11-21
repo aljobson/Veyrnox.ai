@@ -353,3 +353,5 @@ d720f7b2fb2f85d66b9aa98047ee3b3a58dff50b:tests/jobsLookup.test.mjs:generic-api-k
 f2c6250aa9b629ae515dc0d21f032a98d3f0eac6:apps/mobile/__tests__/beatNativeLatency.test.ts:generic-api-key:30
 # Test literal (assert on an idempotency key) in the takedown dialog test, not a credential; the literal was removed in the next commit.
 154faa32fa7071a85132e67087d10898b9f45203:tests/musicBlocksTakedown.test.mjs:generic-api-key:121
+# Template filename pair "whiskey-gun-trick" / "viral-whiskey-gun-trick.mp4" on a rewrapped generated line, not a credential; the line is back to its main form.
+a06eb781d7ff2d08309e24f4c4320b294674678b:app/veyrnox/_lib/templateClips.js:generic-api-key:305

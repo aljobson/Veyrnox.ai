@@ -12,7 +12,8 @@ export function registryEntries(templates = ALL_TEMPLATES, showcase = SHOWCASE_C
     const model = MODELS.find(m => m.id === templateModelId(p));
     if (model?.kind !== 'video' || !/^\/showcase\/[a-zA-Z0-9_-]+\.mp4$/.test(video || '')) return [];
     return [[p.id, video.slice('/showcase/'.length)]];
-  }).sort(([a], [b]) => a.localeCompare(b, 'en'));
+  // Veyrnox-written templates sort after the catalog so adding one never rewraps the existing registry lines.
+  }).sort(([a], [b]) => a.startsWith('original-') - b.startsWith('original-') || a.localeCompare(b, 'en'));
   if (new Set(entries.map(([id]) => id)).size !== entries.length) throw Error('duplicate_template_id');
   return entries;
 }
