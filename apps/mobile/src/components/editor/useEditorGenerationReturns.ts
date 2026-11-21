@@ -12,15 +12,16 @@ import { mediaApi, waitForJob } from '../../lib/media';
 import { timelineOf, type Media } from '../../lib/nativeEditorModel';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 
+export type InsertFailure = 'dropped' | DocumentCommitFailure;
 export type InsertResult = 'placed' | 'queued' | 'track' | 'full' | 'dropped' | DocumentCommitFailure;
 export type GenerationRow = PendingGeneration & { status: 'queued' | 'running' | 'notAdded' | 'removed' | 'placed' };
 type Token = { valid(): boolean; end(): void };
 type Options = {
     api: ApiClient; projectId: string; announce?: boolean; ready: boolean; dirty: boolean; saving: boolean; revision: number;
-    currentDocument(): ProjectDocument | null; beginImport(): Token | null;
-    insert(media: Media, frame: number, select?: boolean): InsertResult;
+    currentDocument(): ProjectDocument | null; beginImport(): Token | null; sessionLive(): boolean;
+    insert(media: Media, frame: number, select?: boolean, onPlaced?: (trimmed: boolean) => void): InsertResult;
 };
-type Entry = { media: Media; frame: number; select: boolean; item?: PendingGeneration };
+type Entry = { media: Media; frame: number; select: boolean; item?: PendingGeneration; onPlaced?: (trimmed: boolean) => void; onFailed?: (result: InsertFailure) => void };
 
 export function useEditorGenerationReturns(options: Options) {
     const latest = useRef(options); latest.current = options;
@@ -43,9 +44,10 @@ export function useEditorGenerationReturns(options: Options) {
             if (value === 'placed') notAdded.delete(jobId);
             setRows(all => all.map(row => row.jobId === jobId ? { ...row, status: value } : row));
         }
-        function stop() {
+        function stop(notify = false) {
             for (const controller of watching.values()) controller.abort();
-            watching.clear(); queue = [];
+            watching.clear(); const entries = queue; queue = [];
+            if (notify) for (const entry of entries) if (live() && o().sessionLive()) entry.onFailed?.('dropped');
         }
         function clear() {
             generation++; stop(); delivered.clear(); notAdded.clear(); pending = []; gesture = false;
@@ -61,6 +63,11 @@ export function useEditorGenerationReturns(options: Options) {
             void markPlaced(projectId, item.jobId, undefined, () => ready(epoch) && token.valid());
         }
         function apply(entry: Entry): InsertResult {
+            const epoch = generation, result = applyEntry(entry);
+            if (live(epoch) && o().sessionLive() && (result === 'dropped' || typeof result === 'object')) entry.onFailed?.(result);
+            return result;
+        }
+        function applyEntry(entry: Entry): InsertResult {
             if (!ready()) return 'dropped';
             if (gesture) {
                 if (!entry.item || !queue.some(value => value.item?.jobId === entry.item?.jobId)) queue.push(entry);
@@ -70,10 +77,10 @@ export function useEditorGenerationReturns(options: Options) {
             if (!token) return 'dropped';
             try {
                 if (!ready() || !token.valid()) return 'dropped';
-                const result = o().insert(entry.media, clampFrame(entry.frame), entry.select);
+                const result = o().insert(entry.media, clampFrame(entry.frame), entry.select, entry.onPlaced);
                 if (typeof result === 'object') {
                     if (result.status === 'not-live') return result;
-                    setNote(t(`editorEditGate.${result.reason}`));
+                    if (!entry.onFailed) setNote(t(`editorEditGate.${result.reason}`));
                 }
                 if (entry.item) {
                     if (result === 'placed') placed(entry.item, token);
@@ -173,7 +180,7 @@ export function useEditorGenerationReturns(options: Options) {
         }
         return {
             isCurrent: live, refresh,
-            place: (media: Media, frame: number, select = false) => apply({ media, frame: clampFrame(frame), select }),
+            place: (media: Media, frame: number, select = false, onPlaced?: (trimmed: boolean) => void, onFailed?: (result: InsertFailure) => void) => apply({ media, frame: clampFrame(frame), select, onPlaced, onFailed }),
             gestureActive(active: boolean) {
                 gesture = active;
                 if (active) return;
@@ -199,7 +206,7 @@ export function useEditorGenerationReturns(options: Options) {
                 notAdded.delete(jobId);
                 await refresh(false);
             },
-            pause() { generation++; stop(); notAdded.clear(); refreshing = null; refreshAgain = false; watchAgain = false; },
+            pause() { generation++; stop(true); notAdded.clear(); refreshing = null; refreshAgain = false; watchAgain = false; },
             attach() {
                 mounted = true; owner = getCacheUser(); projectId = o().projectId; setRows([]); setNote(null);
                 const unsubscribe = subscribeCacheUser(() => { clear(); owner = getCacheUser(); });

@@ -6,7 +6,7 @@ import { useVideoPlayer, VideoView, type VideoPlayer } from 'expo-video';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
-import { editorPlaybackRate, editorSourceTimeSeconds, resolveEditorMediaSource, type EditorMediaSource } from '../../lib/editorPreview';
+import { editorClipGain, editorPlaybackRate, editorSourceTimeSeconds, resolveEditorMediaSource, type EditorMediaSource } from '../../lib/editorPreview';
 import type { Clip, Media } from '../../lib/nativeEditorModel';
 
 interface Props {
@@ -70,7 +70,7 @@ function EditorVideo({ source, clip, frameStore, fps, playing, label }: { source
 
     useEffect(() => {
         const wanted = editorSourceTimeSeconds(clip, frame, fps);
-        syncPlayer(player, clip, wanted, playing, fps, editorPlaybackRate(clip, frame));
+        syncPlayer(player, clip, wanted, playing, fps, editorPlaybackRate(clip, frame), editorClipGain(clip, frame));
     }, [clip, fps, frame, player, playing]);
 
     if (failed) return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text></View>;
@@ -78,13 +78,13 @@ function EditorVideo({ source, clip, frameStore, fps, playing, label }: { source
         style={StyleSheet.absoluteFill} />;
 }
 
-function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number, rate: number) {
+function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number, rate: number, gain: number) {
     const still = clip.freezeFrame !== undefined;
     if (Math.abs(player.currentTime - wanted) > (playing ? 0.2 : 0.5 * rate / fps) || clip.reverse || still) player.currentTime = wanted;
     // Freeze is represented by pausing; native playback parameters require a positive rate.
     player.playbackRate = still ? 1 : Math.max(.1, rate);
     player.preservesPitch = clip.preservePitch === true;
-    player.volume = Math.max(0, Math.min(1, clip.volume ?? 1));
+    player.volume = gain;
     if (playing && !clip.reverse && !still) player.play(); else player.pause();
 }
 

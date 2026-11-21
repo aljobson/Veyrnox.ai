@@ -52,6 +52,15 @@ jobs:
             echo "No mobile files changed; the mobile job is skipped."
           fi
 
+      - name: Require an app version bump for native mobile changes
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --test apps/mobile/scripts/check-native-version-bump.test.mjs
+          node apps/mobile/scripts/check-native-version-bump.mjs "$BASE_SHA" "$HEAD_SHA"
+
   mobile:
     needs: changes
     if: needs.changes.outputs.relevant == 'true'

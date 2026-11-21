@@ -3,7 +3,7 @@ import { act } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { EditorMediaPreview } from '../src/components/editor/EditorMediaPreview';
-import { activeEditorMedia, editorSourceTimeSeconds, resolveEditorMediaSource } from '../src/lib/editorPreview';
+import { editorClipGain, activeEditorMedia, editorSourceTimeSeconds, resolveEditorMediaSource } from '../src/lib/editorPreview';
 import { emptyTimeline, type Clip, type Media, type Timeline } from '../src/lib/nativeEditorModel';
 
 void [ActivityIndicator, StyleSheet, Text, View];
@@ -158,4 +158,23 @@ test.each([false, true])('ramps use timeline offset and pitch; freezes seek and 
         expect(mockPlayer.play).not.toHaveBeenCalled(); expect(mockPlayer.pause).toHaveBeenCalled();
         expect((mockPlayer as any).preservesPitch).toBe(false);
     } finally { await act(async () => root.unmount()); }
+});
+
+
+test('timeline gain handles fade midpoints, overlapping ramps and volume clamp', () => {
+    const c = { ...clip, volume: 1, fadeIn: 60, fadeOut: 60 };
+    expect(editorClipGain(c, 60)).toBe(.5); expect(editorClipGain(c, 90)).toBe(.5);
+    expect(editorClipGain(c, 75)).toBe(.75 * .75);
+    expect(editorClipGain({ ...clip, volume: 1.5 }, 45)).toBe(1);
+    expect(editorClipGain({ ...clip, volume: .7 }, 45)).toBe(.7);
+});
+test('player gain follows timeline frames with in-point and speed curve', async () => {
+    const root = createRoot(), store = createFrameStore();
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; store.set(45);
+    const c = { ...clip, in: 120, fadeIn: 30, fadeOut: 60, speedCurve: [{ frame: 0, rate: .5 }, { frame: 89, rate: 2 }] };
+    await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={c}
+        media={{ id: 'media', kind: 'video' }} frameStore={store} fps={30} playing localUri="file://clip" />));
+    expect(mockPlayer.volume).toBe(.5);
+    await act(async () => store.set(90)); expect(mockPlayer.volume).toBe(.5);
+    await act(async () => root.unmount());
 });

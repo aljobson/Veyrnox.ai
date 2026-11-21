@@ -15,7 +15,7 @@ import { formatTimecode } from '../src/lib/editorTimeline';
 
 void [Text, View, Pressable];
 const projectId = '11111111-1111-1111-1111-111111111111', jobId = '22222222-2222-2222-2222-222222222222';
-let mockCommitNotLive = false;
+let mockCommitNotLive = false, mockKeepNotice = false;
 let mockOwner = 'owner', mockSession: ReturnType<typeof useFullEditorSession>, mockMake: any;
 const mockListeners = new Set<() => void>(), mockStorage = new Map<string, string>();
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() }, mockRequest = jest.fn(), mockPut = jest.fn();
@@ -25,8 +25,13 @@ jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscri
 } }));
 jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: any) => {
     mockSession = jest.requireActual('../src/components/editor/useFullEditorSession').useFullEditorSession(args);
-    return { ...mockSession, markDocument: (...values: Parameters<typeof mockSession.markDocument>) =>
-        mockCommitNotLive ? { status: 'not-live' } : mockSession.markDocument(...values) };
+    return { ...mockSession, markDocument: (...values: Parameters<typeof mockSession.markDocument>) => {
+        if (mockCommitNotLive) return { status: 'not-live' };
+        const notice = mockSession.problem, result = mockSession.markDocument(...values);
+        // Exercise leftover notices independently of the session's usual clearing on commit.
+        if (mockKeepNotice) mockSession.setProblem(notice);
+        return result;
+    } };
 } }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
@@ -79,7 +84,7 @@ function gesture(edge?: 'in' | 'out') {
 }
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks();
-    mockCommitNotLive = false; mockOwner = 'owner'; mockMake = null; mockStorage.clear(); polls = new Map(); active = new Set();
+    mockCommitNotLive = false; mockKeepNotice = false; mockOwner = 'owner'; mockMake = null; mockStorage.clear(); polls = new Map(); active = new Set();
     head = { revision: 4, document: { schema_version: 3, project_id: projectId, timeline: emptyTimeline() } };
     jest.mocked(readDraft).mockReset().mockResolvedValue(null);
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
@@ -330,4 +335,14 @@ test('a not-live generation commit keeps the pending item without a new refusal 
     mockCommitNotLive = false;
     await act(async () => mockSession.setProblem(null));
     await foreground(); await finish(); expect(generated()).toHaveLength(1);
+});
+
+test('generation return does not re-announce a leftover screen notice', async () => {
+    await open(); await act(async () => mockSession.markDocument({ ...mockSession.currentDocument()!, brief: 'edit' }));
+    await generate(); await press('Media');
+    await act(async () => mockSession.setProblem('Leftover placement notice'));
+    mockKeepNotice = true;
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    await finish(); expect(generated()).toHaveLength(1);
+    expect(announce.mock.calls).toEqual([['Generated result was added to the timeline.']]);
 });

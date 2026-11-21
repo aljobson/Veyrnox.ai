@@ -1,5 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import { createCache, type Cache, type CacheStorage } from './cache';
+import { clearBeatExports } from './beatNative/exportFiles';
 
 // The app's one cache: a small file per key under the private cache directory (the OS may reclaim it, which only
 // costs a refetch). Library labels are personal data, so every per-user entry is keyed by user id and the whole
@@ -106,7 +107,7 @@ export async function bindCacheUser(userId: string | null, cache: Cache = appCac
     const last = activeUser ?? (await storage.get(USER_KEY).catch(() => null));
     if (!live()) return;
     setCacheUser(userId);
-    if (last !== userId) { clearExportFiles(); clearInstrumentTakeFiles(); await cache.clear(live); }
+    if (last !== userId) { clearExportFiles(); clearBeatExports(); clearInstrumentTakeFiles(); await cache.clear(live); }
     if (!live()) return;
     await sweepUserDocs(userId, docs, live).catch(() => undefined);
     if (!live()) return;
@@ -119,6 +120,7 @@ export async function wipeCache(cache: Cache = appCache, docs: CacheStorage = us
     const live = () => ticket === ownerTicket;
     setCacheUser(null, reason);
     clearExportFiles();
+    clearBeatExports();
     clearInstrumentTakeFiles();
     await Promise.all([cache.clear(live), docs.keys().then(keys => Promise.all(keys.map(key => live() ? docs.remove(key) : undefined)))]);
 }

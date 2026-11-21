@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorAudioTools.low",
+    "english": "Low",
+    "translation": "निम्न",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorAudioTools.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
     "id": "beatLabs.add",
     "english": "Add",
     "translation": "जोड़ें",
@@ -2392,6 +2404,96 @@
     "english": "Mix",
     "translation": "मिक्स",
     "ratio": 1.67
+  },
+  {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Music में सेव करने की फिर कोशिश करें",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatExport.title",
+    "english": "Export",
+    "translation": "एक्सपोर्ट करें",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.kind",
+    "english": "Export",
+    "translation": "एक्सपोर्ट करें",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "मिक्स",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "एक्सपोर्ट टूल लोड हो रहे हैं…",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatExport.saveOpening",
+    "english": "Checking Music saving…",
+    "translation": "Music में सेव करने की जाँच हो रही है…",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "संगीत लाइब्रेरी में सहेजें",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.hsl",
+    "english": "HSL",
+    "translation": "रंग, संतृप्ति और चमक",
+    "ratio": 6.67
+  },
+  {
+    "id": "editorLook.parameter.blur",
+    "english": "Blur",
+    "translation": "धुंधलापन",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.effect.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.effect.old-film",
+    "english": "Old film",
+    "translation": "पुरानी फ़िल्म",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorLook.transition.blinds",
+    "english": "Blinds",
+    "translation": "झिलमिलियाँ",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorLook.transition.spin",
+    "english": "Spin in",
+    "translation": "घूमकर प्रवेश",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorLook.background.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorLook.background.blur",
+    "english": "Blur",
+    "translation": "धुंधलापन",
+    "ratio": 2
   },
   {
     "id": "oauth.signIn",

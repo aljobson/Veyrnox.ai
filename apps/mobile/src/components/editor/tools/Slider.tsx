@@ -50,7 +50,10 @@ export function Slider(props: SliderProps) {
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={event => {
                 const name = event.nativeEvent.actionName;
-                if (!disabled && (name === 'increment' || name === 'decrement')) onChange(stepValue(value, name === 'increment' ? 1 : -1, min, max, step));
+                if (!disabled && (name === 'increment' || name === 'decrement')) {
+                    const next = stepValue(value, name === 'increment' ? 1 : -1, min, max, step);
+                    if (next !== value) onChange(next);
+                }
             }} style={[touchTarget, styles.track, disabled && styles.disabled]}>
             <View pointerEvents="none" style={styles.rail} />
             <View pointerEvents="none" style={[styles.thumb, { left: `${percent}%` }]} />

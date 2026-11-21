@@ -1,3 +1,8 @@
+import { effectiveTransition } from '../../../../app/veyrnox/_lib/editorTimeline.mjs';
+import { neutralColour } from '../../../../app/veyrnox/_lib/editorColour.mjs';
+import { FILTER_DEFAULTS } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { audioProcessingActive } from '../../../../app/veyrnox/_lib/editorAudioSettings.mjs';
+import { audioEffectsActive } from '../../../../app/veyrnox/_lib/editorAudioEffects.mjs';
 import { exportRefusal } from './editorExportRefusal';
 import { ApiError, type ApiClient } from './api';
 import { getCacheUser, subscribeCacheUser } from './appCache';
@@ -27,7 +32,7 @@ export function exportIdentity(document: ProjectDocument): string {
     return documentIdentity(copy);
 }
 const SOURCE = /^([jef])-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-export type BlockReason = 'notOnPhone' | 'unsupported' | 'durationUnknown' | 'clipLongerThanFile' | 'localType' | 'localSize' | 'localCount';
+export type BlockReason = 'originalAudio' | 'notOnPhone' | 'unsupported' | 'durationUnknown' | 'clipLongerThanFile' | 'localType' | 'localSize' | 'localCount';
 export type Blocked = { id: string; name?: string; reason: BlockReason };
 export async function exportSourceLink(api: ApiClient, media: Media): Promise<string | null> {
     const match = SOURCE.exec(media.id);
@@ -59,9 +64,24 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
     const uploads: ExportFile[] = [], blocked: Blocked[] = [];
     const timeline = document.timeline as Timeline | undefined;
     if (!timeline) return { document, uploads, blocked };
+    timeline.video.forEach((clip, index) => { if (effectiveTransition(timeline, index) === 0) delete clip.transitionType; });
     const clips = [...timeline.video, ...timeline.audio];
     const used = new Set(clips.map(c => c.mediaId));
     timeline.media = Object.fromEntries(Object.entries(timeline.media).filter(([id]) => used.has(id)));
+    for (const clip of clips) {
+        if (!clip.parameterKeyframes?.length) {
+            if (clip.colourAdjustment && neutralColour(clip.colourAdjustment)) delete clip.colourAdjustment;
+            if (clip.filter && Object.entries(FILTER_DEFAULTS).every(([key, value]) => clip.filter?.[key as keyof typeof FILTER_DEFAULTS] === value)) delete clip.filter;
+        }
+        if (clip.effect && (clip.effect.type === 'none' || clip.effect.intensity === 0)) delete clip.effect;
+        if (clip.blend === 'source-over') delete clip.blend;
+        if (clip.crop && clip.crop.x === 0 && clip.crop.y === 0 && clip.crop.width === 1 && clip.crop.height === 1) delete clip.crop;
+        if (clip.background?.type === 'none') delete clip.background;
+        if (clip.eq && clip.eq.low === 0 && clip.eq.mid === 0 && clip.eq.high === 0) delete clip.eq;
+        if (!audioProcessingActive({ audioProcessing: clip.audioProcessing })) delete clip.audioProcessing;
+        if (!audioEffectsActive(clip.audioEffects)) delete clip.audioEffects;
+        if (!clip.preservePitch) delete clip.preservePitch;
+    }
     for (const clip of [...clips, ...timeline.text]) {
         if ('rate' in clip && clip.rate === 1) delete clip.rate;
         // Neutral defaults (written by trim and fit-to-file) mean "no edit"; the server only accepts keys that carry one.
@@ -74,6 +94,7 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
     for (const text of timeline.text) if (documentIdentity(text.style) === documentIdentity(SERVER_PLAIN_TEXT_STYLE)) delete text.style;
     for (const [id, media] of Object.entries(timeline.media)) {
         const block = (reason: BlockReason) => blocked.push({ id, name: media.name, reason });
+        if (media.originalAudio) { block('originalAudio'); continue; }
         const file = localFiles[id];
         if (id.startsWith('p-') || (id.startsWith('l-') && !file)) { block('notOnPhone'); continue; }
         if (id.startsWith('l-') && UUID.test(id.slice(2))) {
