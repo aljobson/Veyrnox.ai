@@ -151,3 +151,9 @@ describe('retentionOf', () => {
         expect(retentionOf(job({ asset_expires_at: date.toISOString() }), NOW)).toEqual({ kind: 'expires', date, urgent });
     });
 });
+
+test('shape filter excludes unknown and ambiguous videos except under All shapes', () => {
+    const jobs = [job({ model_id: 'vid', video_width: 1080, video_height: 1920 }), job({ model_id: 'vid', job_id: B }), job({ model_id: 'vid', job_id: 'c', video_width: 1080, video_height: 1920, shape_ambiguous: true })];
+    expect(filterJobs(jobs, { state: 'all', kind: 'video', shape: 'portrait', favourites: null }, kinds).map(j => j.job_id)).toEqual([A]);
+    expect(filterJobs(jobs, { state: 'all', kind: 'video', shape: 'all', favourites: null }, kinds)).toHaveLength(3);
+});

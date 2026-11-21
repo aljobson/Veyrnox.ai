@@ -1,6 +1,16 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "videoShape.all": "모든 화면 비율",
+  "videoShape.portrait": "세로",
+  "videoShape.landscape": "가로",
+  "videoShape.square": "정사각형",
+  "videoShape.different": "다른 화면 비율",
+  "videoShape.hint": "Smart Cut용 만들기: 최근 동영상은 {previous}이며, 이 동영상은 {chosen}입니다.",
+  "videoShape.match": "{shape} 사용",
+  "videoShape.unsupported": "이 모델은 {shape} 형식을 만들 수 없습니다.",
+  "videoShape.warning": "요청한 형식: {requested}. 완성된 동영상: {actual}.",
+
   "editorAudioTools.description": "{category} · {time}초",
   "editorAudioTools.bpm": " · {value} BPM",
   "editorAudioTools.db": "{value} dB",
@@ -2130,7 +2140,7 @@ export default {
   "edit.err.credits": "이 편집에 필요한 크레딧이 부족합니다.",
   "edit.err.gone": "영상 중 하나를 더 이상 사용할 수 없습니다.",
   "edit.err.invalid": "편집을 전송하지 못했습니다. 확인하고 다시 시도해 주세요. 청구된 비용이 없습니다.",
-  "edit.err.mixedAspect": "영상의 화면 비율이 다릅니다. 같은 비율의 영상을 연결하세요. 청구된 비용이 없습니다.",
+  "edit.err.mixedAspect": "첫 번째 클립과 맞지 않는다고 표시된 클립을 제거하세요.",
   "edit.err.mixedAudio": "이 클립들은 연결할 수 없습니다. 소리가 있는 클립과 무음 클립이 섞여 있습니다. 모두 소리가 있거나 모두 무음인 클립을 고르세요. 청구된 비용이 없습니다.",
   "edit.openLocal": "편집기에서 열기(무료)",
   "edit.err.network": "연결되지 않았습니다. 청구된 비용이 없습니다. 다시 시도해 주세요.",
@@ -2149,7 +2159,7 @@ export default {
   "edit.problem.no_clips": "영상을 하나 이상 추가하세요.",
   "edit.problem.nothing_to_do": "영상을 자르거나 두 영상을 연결하거나 자막을 추가하세요.",
   "edit.problem.too_long": "결과는 최대 60초까지 가능합니다.",
-  "edit.problem.mixed_shape": "영상의 모양이 서로 달라 이어 붙일 수 없어요. 모두 세로, 모두 가로 또는 모두 정사각형인 영상을 고르세요.",
+  "edit.problem.mixed_shape": "첫 번째 클립과 맞지 않는다고 표시된 클립을 제거하세요.",
   "edit.problem.too_many": "영상을 최대 10개까지 연결할 수 있습니다.",
   "edit.problem.unknown_length": "모든 영상의 길이를 읽을 때까지 기다려 주세요.",
   "edit.reading": "영상 길이 읽는 중...",

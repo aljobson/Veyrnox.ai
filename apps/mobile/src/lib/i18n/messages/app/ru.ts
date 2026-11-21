@@ -1,6 +1,16 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "videoShape.all": "Все форматы",
+  "videoShape.portrait": "Вертикальный",
+  "videoShape.landscape": "Горизонтальный",
+  "videoShape.square": "Квадратный",
+  "videoShape.different": "Другой формат",
+  "videoShape.hint": "Создание для Smart Cut: последнее видео — {previous}; это будет {chosen}.",
+  "videoShape.match": "Использовать {shape}",
+  "videoShape.unsupported": "Эта модель не поддерживает формат {shape}.",
+  "videoShape.warning": "Запрошено: {requested}; готовое видео: {actual}.",
+
   "editorAudioTools.description": "{category} · {time} с",
   "editorAudioTools.bpm": " · {value} уд/мин",
   "editorAudioTools.db": "{value} дБ",
@@ -2253,7 +2263,7 @@ export default {
   "edit.err.credits": "Недостаточно кредитов для этого монтажа.",
   "edit.err.gone": "Одно из видео больше недоступно.",
   "edit.err.invalid": "Не удалось отправить монтаж. Проверьте его и повторите попытку. Списаний не было.",
-  "edit.err.mixedAspect": "У видео разное соотношение сторон. Объединяйте видео с одинаковым соотношением сторон. Списаний не было.",
+  "edit.err.mixedAspect": "Удалите клипы с отметкой о несовпадении с первым клипом.",
   "edit.err.mixedAudio": "Эти клипы нельзя объединить: у одних есть звук, другие без звука. Выберите клипы только со звуком или только без звука. Списаний не было.",
   "edit.openLocal": "Открыть в редакторе (бесплатно)",
   "edit.err.network": "Нет соединения. Списаний не было. Повторите попытку.",
@@ -2272,7 +2282,7 @@ export default {
   "edit.problem.no_clips": "Добавьте хотя бы одно видео.",
   "edit.problem.nothing_to_do": "Обрежьте видео, объедините два или добавьте субтитры.",
   "edit.problem.too_long": "Результат должен быть не длиннее 60 секунд.",
-  "edit.problem.mixed_shape": "У этих видео разная форма, их нельзя склеить. Выберите только вертикальные, только горизонтальные или только квадратные видео.",
+  "edit.problem.mixed_shape": "Удалите клипы с отметкой о несовпадении с первым клипом.",
   "edit.problem.too_many": "Можно объединить до 10 видео.",
   "edit.problem.unknown_length": "Дождитесь определения длительности всех видео.",
   "edit.reading": "Определение длительности видео...",

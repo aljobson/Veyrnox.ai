@@ -134,3 +134,9 @@ Implementation, deviations and unrun validation are recorded in
 [BEST_CUT_HANDOVER.md](BEST_CUT_HANDOVER.md). Activation requires independent
 review, applying migration 0455 through the approved workflow, and device/database
 acceptance. On-device speech and B-roll remain separate future work.
+
+### Video shape (ADR-0373)
+
+Web and phone show measured video shapes before planning. Compatibility uses the server's rounded width/height ratio and 3% tolerance against the first selected clip, rather than orientation or label equality. Remove clips marked as different; their exact dimensions help distinguish similarly labelled shapes. Unknown and multi-asset shapes never block locally. The server still validates the stored files at submit.
+
+Migration 0577 stores write-once MP4 dimensions lazily from visible Library pages and finished Create results. Both Libraries can filter measured videos by orientation. Create can offer the latest measured video's shape when the model supports it, and disclose a finished result that differs from its requested shape. It never changes shape automatically or prevents generation. No migration is applied by this implementation.

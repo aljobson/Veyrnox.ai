@@ -1,3 +1,5 @@
+import { useLibraryShapes } from '../../../lib/useLibraryShapes';
+import { SHAPE_FILTERS, type ShapeFilter } from '../../../lib/libraryView';
 import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
 import { Image } from 'expo-image';
 import type { VideoThumbnail } from 'expo-video';
@@ -51,6 +53,8 @@ export default function Library() {
     const [saved, setSaved] = useState<CacheMeta | null>(null);
     const loadingMore = useRef(false);
     const [stateFilter, setStateFilter] = useState<StateFilter>('all');
+    const [shapeFilter, setShapeFilter] = useState<ShapeFilter>('all');
+    const [visibleShapeIds, setVisibleShapeIds] = useState<string[]>([]);
     const [kindFilter, setKindFilter] = useState<KindFilter>('all');
     const [favOnly, setFavOnly] = useState(false);
     const [view, setView] = useState<LayoutView>('grid');
@@ -58,10 +62,11 @@ export default function Library() {
     const [models, setModels] = useState<CatalogModel[]>([]);
     const kinds = useMemo(() => kindMap(models), [models]);
     const names = useMemo(() => new Map(models.map((m) => [m.id, m.name])), [models]);
-    const shown = useMemo(() => filterJobs(jobs ?? [], { state: stateFilter, kind: kindFilter, favourites: favOnly ? favourites : null }, kinds), [jobs, stateFilter, kindFilter, favOnly, favourites, kinds]);
-
     const [focused, setFocused] = useState(false);
     const [active, setActive] = useState(AppState.currentState === 'active');
+    const shapedJobs = useLibraryShapes(api, jobs ?? [], visibleShapeIds, kinds, getCacheUser(), focused && active);
+    const shown = useMemo(() => filterJobs(shapedJobs, { state: stateFilter, kind: kindFilter, shape: shapeFilter, favourites: favOnly ? favourites : null }, kinds), [shapedJobs, stateFilter, kindFilter, shapeFilter, favOnly, favourites, kinds]);
+
     const [unreachable, setUnreachable] = useState(false);
     const [olderFailed, setOlderFailed] = useState(false);
     const [media, setMedia] = useState<Record<string, { link: AssetLink; poster?: VideoThumbnail | null }>>({});
@@ -101,6 +106,8 @@ export default function Library() {
     }, [links]);
     const resolveRef = useRef(resolveAsset); resolveRef.current = resolveAsset;
     const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: Job }[] }) => {
+        const ids = viewableItems.map(({ item }) => item.job_id);
+        setVisibleShapeIds(current => current.length === ids.length && current.every((id, index) => id === ids[index]) ? current : ids);
         for (const { item } of viewableItems) {
             if (item.state === 'succeeded' && item.has_asset && !item.held && expiryOf(item).kind !== 'gone') void resolveRef.current(item.job_id);
         }
@@ -198,11 +205,13 @@ export default function Library() {
 
     // What is switched on in the filter row, in its own words, so an empty result can say what was asked for.
     const activeFilters = [
+        kindFilter === 'video' && shapeFilter !== 'all' ? t(`videoShape.${shapeFilter}`) : null,
         kindFilter !== 'all' ? t(`library.type.${kindFilter}`) : null,
         favOnly ? t('library.type.favourites') : null,
         stateFilter !== 'all' ? t(`library.state.${stateFilter}`) : null,
     ].filter((label): label is string => label !== null);
     function clearFilters() {
+        setShapeFilter('all');
         setKindFilter('all');
         setStateFilter('all');
         setFavOnly(false);
@@ -263,6 +272,7 @@ export default function Library() {
                 {KIND_FILTERS.map((f) => (
                     <Chip key={f} label={t(`library.type.${f}`)} selected={kindFilter === f} onPress={() => setKindFilter(f)} />
                 ))}
+                {kindFilter === 'video' ? SHAPE_FILTERS.map(f => <Chip key={f} label={t(`videoShape.${f}`)} selected={shapeFilter === f} onPress={() => setShapeFilter(f)} />) : null}
                 <Chip label={t('library.type.favourites')} selected={favOnly} onPress={() => setFavOnly(!favOnly)} />
                 {STATE_FILTERS.filter((f) => f !== 'all').map((f) => (
                     <Chip key={f} label={t(`library.state.${f}`)} selected={stateFilter === f} onPress={() => setStateFilter(stateFilter === f ? 'all' : f)} />

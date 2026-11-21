@@ -1,0 +1,169 @@
+[
+  {
+    "name": "near-equal portrait",
+    "items": [
+      {
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "width": 1088,
+        "height": 1920
+      }
+    ],
+    "mixed": false
+  },
+  {
+    "name": "both portrait but incompatible",
+    "items": [
+      {
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "width": 1080,
+        "height": 1350
+      }
+    ],
+    "mixed": true
+  },
+  {
+    "name": "unknown first",
+    "items": [
+      {},
+      {
+        "aspect": 1.0
+      },
+      {
+        "aspect": 1.06
+      }
+    ],
+    "mixed": false
+  },
+  {
+    "name": "first resolves between later clips",
+    "items": [
+      {
+        "aspect": 1.03
+      },
+      {
+        "aspect": 1.0
+      },
+      {
+        "aspect": 1.06
+      }
+    ],
+    "mixed": false
+  },
+  {
+    "name": "same rounded label incompatible",
+    "items": [
+      {
+        "width": 1740,
+        "height": 1000
+      },
+      {
+        "width": 1820,
+        "height": 1000
+      }
+    ],
+    "mixed": true
+  },
+  {
+    "name": "ambiguous first ignores live playback",
+    "items": [
+      {
+        "shape_ambiguous": true,
+        "width": 1920,
+        "height": 1080,
+        "ratio": "1.78"
+      },
+      {
+        "width": 1080,
+        "height": 1920
+      }
+    ],
+    "mixed": false
+  },
+  {
+    "name": "ambiguous later ignores live playback",
+    "items": [
+      {
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "shape_ambiguous": true,
+        "width": 1080,
+        "height": 1920,
+        "aspect": 0.56
+      }
+    ],
+    "mixed": false
+  },
+  {
+    "name": "square and landscape",
+    "items": [
+      {
+        "width": 1000,
+        "height": 1000
+      },
+      {
+        "width": 1920,
+        "height": 1080
+      }
+    ],
+    "mixed": true
+  },
+  {
+    "name": "exact tolerance boundary",
+    "items": [
+      {
+        "aspect": 0.97
+      },
+      {
+        "aspect": 1
+      }
+    ],
+    "mixed": true
+  },
+  {
+    "name": "rounded within tolerance",
+    "items": [
+      {
+        "width": 971,
+        "height": 1000
+      },
+      {
+        "width": 1000,
+        "height": 1000
+      }
+    ],
+    "mixed": true
+  },
+  {
+    "name": "unknown later",
+    "items": [
+      {
+        "width": 1080,
+        "height": 1920
+      },
+      {}
+    ],
+    "mixed": false
+  },
+  {
+    "name": "very narrow measured videos preserve server zero rounding",
+    "items": [
+      {
+        "width": 1,
+        "height": 1000
+      },
+      {
+        "width": 10,
+        "height": 1000
+      }
+    ],
+    "mixed": true
+  }
+]

@@ -1,3 +1,4 @@
+import { shapeOrientation } from '../../../lib/videoShape.mjs';
 // Library filters (app/library): by job state, and by what was made.
 
 export const STATE_TABS = ['all', 'succeeded', 'running', 'queued', 'failed'];
@@ -22,9 +23,10 @@ export function kindOfRow(row, models) {
  * Rows matching every filter; 'all' matches everything, unknown kinds only
  * match 'all'. `favourites` (job ids), when given, keeps only starred rows.
  */
-export function filterRows(rows, { state = 'all', kind = 'all', favourites = null }, models) {
+export function filterRows(rows, { state = 'all', kind = 'all', shape = 'all', favourites = null }, models) {
   return rows.filter((r) => (state === 'all' || r.state === state)
     && (kind === 'all' || kindOfRow(r, models) === kind)
+    && (kind !== 'video' || shape === 'all' || shapeOrientation(r) === shape)
     && (!favourites || favourites.includes(r.job_id)));
 }
 

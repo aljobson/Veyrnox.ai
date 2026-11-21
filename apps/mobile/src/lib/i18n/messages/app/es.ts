@@ -1,6 +1,16 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "videoShape.all": "Todas las formas",
+  "videoShape.portrait": "Vertical",
+  "videoShape.landscape": "Horizontal",
+  "videoShape.square": "Cuadrado",
+  "videoShape.different": "Forma diferente",
+  "videoShape.hint": "Creando para Smart Cut: tu último vídeo es {previous}; este será {chosen}.",
+  "videoShape.match": "Usar {shape}",
+  "videoShape.unsupported": "Este modelo no puede crear {shape}.",
+  "videoShape.warning": "Se pidió {requested}; el vídeo terminado es {actual}.",
+
   "editorAudioTools.description": "{category} · {time} s",
   "editorAudioTools.bpm": " · {value} BPM",
   "editorAudioTools.db": "{value} dB",
@@ -2215,7 +2225,7 @@ export default {
   "edit.err.credits": "No tienes suficientes créditos para esta edición.",
   "edit.err.gone": "Uno de esos vídeos ya no está disponible.",
   "edit.err.invalid": "No se pudo enviar esta edición. Revísala e inténtalo de nuevo. No se cobró nada.",
-  "edit.err.mixedAspect": "Estos vídeos tienen distintas proporciones. Une vídeos con las mismas proporciones. No se cobró nada.",
+  "edit.err.mixedAspect": "Quita los clips marcados que no coinciden con el primero.",
   "edit.err.mixedAudio": "Estos clips no se pueden unir: unos tienen sonido y otros son mudos. Elige clips que tengan todos sonido o todos sin sonido. No se cobró nada.",
   "edit.openLocal": "Abrir en el editor (gratis)",
   "edit.err.network": "Sin conexión. No se cobró nada. Inténtalo de nuevo.",
@@ -2234,7 +2244,7 @@ export default {
   "edit.problem.no_clips": "Añade al menos un vídeo.",
   "edit.problem.nothing_to_do": "Recorta un vídeo, une dos o añade subtítulos.",
   "edit.problem.too_long": "El resultado puede durar como máximo 60 segundos.",
-  "edit.problem.mixed_shape": "Estos vídeos tienen formas distintas y no se pueden unir. Elige vídeos que sean todos verticales, todos horizontales o todos cuadrados.",
+  "edit.problem.mixed_shape": "Quita los clips marcados que no coinciden con el primero.",
   "edit.problem.too_many": "Puedes unir hasta 10 vídeos.",
   "edit.problem.unknown_length": "Espera hasta que se haya leído la duración de todos los vídeos.",
   "edit.reading": "Leyendo la duración del vídeo...",

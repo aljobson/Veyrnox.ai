@@ -269,7 +269,7 @@ describe('QA build 50 F12: clip shapes', () => {
     });
     test('an unknown shape never blocks; the server checks again', () => {
         expect(mixedShapes([v(null), v(1280 / 720), v(undefined)])).toBe(false);
-        expect(mixedShapes([v(null), v(0.5625), v(1.7778)])).toBe(true);
+        expect(mixedShapes([v(null), v(0.5625), v(1.7778)])).toBe(false);
     });
     test('validateEdit refuses mixed shapes before any quote', () => {
         expect(validateEdit([v(0.5625), v(1.7778)], null)).toBe('mixed_shape');

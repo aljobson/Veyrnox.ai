@@ -1,3 +1,5 @@
+import { mixedShapes, shapeValue, type ShapeItem } from './videoShape';
+export { sameShape, SAME_SHAPE_TOLERANCE, mixedShapes } from './videoShape';
 import { noteLocalSubmission } from './celebrate';
 import { ApiError, type ApiClient } from './api';
 import { ensureOnline } from './network';
@@ -21,7 +23,7 @@ export const CAPTION_PRESETS = [
 ] as const;
 export const DEFAULT_CAPTION_PRESET = 'simple';
 
-export interface Clip {
+export interface Clip extends ShapeItem {
     readonly jobId: string;
     readonly label: string;
     // The video's real length in seconds, read from the video itself; null when it could not be read.
@@ -70,25 +72,19 @@ export async function fetchClipLength(api: ApiClient, jobId: string): Promise<nu
     }
 }
 
-// Same 3% rule as the server (lib/clipEdit.js sameShape): two "9:16" files a few pixels apart are one shape. QA F12.
-export const SAME_SHAPE_TOLERANCE = 0.03;
-export const sameShape = (a: number, b: number): boolean => Math.abs(a - b) / Math.max(a, b) <= SAME_SHAPE_TOLERANCE;
-
-// True when a clip with a known shape differs from the first clip with a known shape.
-export function mixedShapes(clips: readonly Pick<Clip, 'aspect'>[]): boolean {
-    const known = clips.map((c) => c.aspect).filter((a): a is number => typeof a === 'number' && a > 0);
-    return known.some((a) => !sameShape(a, known[0] as number));
-}
-
 // The video's width / height from GET /api/v1/jobs/:id/media-info, or null on any failure (the server checks again).
-export async function fetchClipShape(api: ApiClient, jobId: string): Promise<number | null> {
+export async function fetchClipDimensions(api: ApiClient, jobId: string): Promise<{ width: number; height: number } | null> {
     try {
-        const res = await api.request<{ width?: unknown; height?: unknown } | null>(`/api/v1/jobs/${encodeURIComponent(jobId)}/media-info`);
-        const w = res?.width, h = res?.height;
-        return typeof w === 'number' && typeof h === 'number' && w > 0 && h > 0 ? w / h : null;
+        const res = await api.request<{ width: number; height: number } | null>(`/api/v1/jobs/${encodeURIComponent(jobId)}/media-info`);
+        return res && shapeValue(res.width, res.height) ? { width: res.width, height: res.height } : null;
     } catch {
         return null;
     }
+}
+export async function fetchClipShape(api: ApiClient, jobId: string): Promise<number | null> {
+    const info = await fetchClipDimensions(api, jobId);
+    const value = shapeValue(info?.width, info?.height);
+    return value ? Number(value) : null;
 }
 
 export function stepStart(c: Clip, delta: number): Clip {

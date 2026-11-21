@@ -1,3 +1,4 @@
+import { SmartCutShapeHint } from '../../../components/create/SmartCutShapeHint';
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
@@ -385,6 +386,7 @@ export default function CreateWithModel() {
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
                 {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
                 {template && !fidelityBlocked(contract, text) && !request.templateId && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.previewNotice')}</Text>}
+                <SmartCutShapeHint api={api} video={isVideo} options={options.aspects} value={opts.aspect} onChange={aspect => setOpts(current => ({ ...current, aspect }))} />
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}

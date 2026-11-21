@@ -244,6 +244,7 @@ import area_vibe from './en/vibe';
 import area_vibeInvite from './en/vibeInvite';
 import area_videoAgent from './en/videoAgent';
 import area_videoAgentBalance from './en/videoAgentBalance';
+import area_videoShape from './en/videoShape';
 import area_welcome from './en/welcome';
 import area_whenPicker from './en/whenPicker';
 import area_wins from './en/wins';
@@ -491,6 +492,7 @@ const catalog = {
     ...area_vibeInvite,
     ...area_videoAgent,
     ...area_videoAgentBalance,
+    ...area_videoShape,
     ...area_welcome,
     ...area_whenPicker,
     ...area_wins,

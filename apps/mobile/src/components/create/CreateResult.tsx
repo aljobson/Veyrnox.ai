@@ -1,3 +1,5 @@
+import { optionsFor } from '../../lib/createOptions';
+import { FinishedShapeWarning } from './SmartCutShapeHint';
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -46,6 +48,8 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
     useEffect(() => { if (terminal && result.job) callback.current(); }, [terminal, !!result.job, refunded]);
     useEffect(() => { if (result.asset) success.current(id, result.asset.mime_type); }, [id, result.asset]);
     const file = result.asset;
+    const generatedModel = catalog.find(model => model.id === batch.modelId);
+    const requestedAspect = generatedModel && optionsFor(generatedModel).aspects.includes(batch.aspect ?? '') ? batch.aspect : null;
     // A 2-up grid only suits finished pictures. A job still running (or failed) takes the full row, so its text and bar
     // are not squeezed into half the screen inside a square frame.
     const batchTile = batch.count > 1 && !!file;
@@ -65,6 +69,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
                     ? failure : failedJobMessage(result.job?.error_code, refunded, failure)}</Text>
                 : <><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><VeyCharacter width={batchTile ? 40 : 48} mood="working" /></View><Text style={styles.centred}>{t(result.state === 'queued' ? 'job.queued' : 'job.running')}</Text><GenerationProgress jobId={id} modelId={batch.modelId} kind={batch.kind} compact={batchTile} leaveNote={false} /><Text style={styles.centred}>{t('job.keepsRunning')}</Text></>}
         </View>
+        {file?.mime_type.startsWith('video/') && !result.held ? <FinishedShapeWarning api={api} id={id} requested={requestedAspect} /> : null}
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
         {sound?.kind === 'tooLong' ? <Text>{t('libraryCreate.soundTooLong', { seconds: String(sound.seconds) })}</Text> : sound ? <Card>
             <Text variant="caption">{t('libraryCreate.soundEyebrow')}</Text><Text accessibilityRole="header" variant="title3">{t('libraryCreate.soundTitle')}</Text>

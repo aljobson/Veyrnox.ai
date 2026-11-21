@@ -1,6 +1,16 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "videoShape.all": "すべての形状",
+  "videoShape.portrait": "縦長",
+  "videoShape.landscape": "横長",
+  "videoShape.square": "正方形",
+  "videoShape.different": "形状が異なります",
+  "videoShape.hint": "Smart Cut向けに作成：前回の動画は{previous}、この動画は{chosen}になります。",
+  "videoShape.match": "{shape}を使う",
+  "videoShape.unsupported": "このモデルでは{shape}を作成できません。",
+  "videoShape.warning": "指定した形状は{requested}、完成した動画は{actual}です。",
+
   "editorAudioTools.description": "{category} · {time}秒",
   "editorAudioTools.bpm": " · {value} BPM",
   "editorAudioTools.db": "{value} dB",
@@ -2130,7 +2140,7 @@ export default {
   "edit.err.credits": "この編集に必要なクレジットが不足しています。",
   "edit.err.gone": "動画のいずれかがご利用いただけなくなりました。",
   "edit.err.invalid": "編集を送信できませんでした。内容を確認してもう一度お試しください。料金は発生していません。",
-  "edit.err.mixedAspect": "動画の縦横比が異なります。同じ縦横比の動画を結合してください。料金は発生していません。",
+  "edit.err.mixedAspect": "最初のクリップと形状が合わないと表示されたクリップを外してください。",
   "edit.err.mixedAudio": "これらのクリップは結合できません。音声ありと無音が混在しています。すべて音声あり、またはすべて無音のクリップを選んでください。料金は発生していません。",
   "edit.openLocal": "エディターで開く（無料）",
   "edit.err.network": "接続できません。料金は発生していません。もう一度お試しください。",
@@ -2149,7 +2159,7 @@ export default {
   "edit.problem.no_clips": "動画を1本以上追加してください。",
   "edit.problem.nothing_to_do": "動画のトリミング、2本の結合、または字幕の追加を行ってください。",
   "edit.problem.too_long": "完成動画は最大60秒です。",
-  "edit.problem.mixed_shape": "動画の形が異なるため、つなげられません。すべて縦長、すべて横長、またはすべて正方形の動画を選んでください。",
+  "edit.problem.mixed_shape": "最初のクリップと形状が合わないと表示されたクリップを外してください。",
   "edit.problem.too_many": "最大10本の動画を結合できます。",
   "edit.problem.unknown_length": "すべての動画の長さを読み込むまでお待ちください。",
   "edit.reading": "動画の長さを読み込み中…",

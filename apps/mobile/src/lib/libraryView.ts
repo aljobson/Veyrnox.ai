@@ -1,3 +1,4 @@
+import { shapeOrientation } from './videoShape';
 import { formatNumber } from './i18n';
 import { POLICIES, type Cache } from './cache';
 import { publicModelId, publicModelName } from './publicModelIds';
@@ -24,7 +25,10 @@ export function kindMap(models: readonly CatalogModel[]): Map<string, Kind> {
     return out;
 }
 
+export const SHAPE_FILTERS = ['all', 'portrait', 'landscape', 'square'] as const;
+export type ShapeFilter = (typeof SHAPE_FILTERS)[number];
 export interface Filters {
+    readonly shape?: ShapeFilter;
     readonly state: StateFilter;
     readonly kind: KindFilter;
     // Job ids, when only starred creations should show.
@@ -33,7 +37,7 @@ export interface Filters {
 
 export function filterJobs(jobs: readonly Job[], f: Filters, kinds: ReadonlyMap<string, Kind>): Job[] {
     return jobs.filter(
-        (j) => (f.state === 'all' || j.state === (f.state as JobState)) && (f.kind === 'all' || kinds.get(j.model_id) === f.kind) && (!f.favourites || f.favourites.includes(j.job_id)),
+        (j) => (f.state === 'all' || j.state === (f.state as JobState)) && (f.kind === 'all' || kinds.get(j.model_id) === f.kind) && (f.kind !== 'video' || !f.shape || f.shape === 'all' || shapeOrientation(j) === f.shape) && (!f.favourites || f.favourites.includes(j.job_id)),
     );
 }
 

@@ -1,3 +1,4 @@
+import { VideoShapeBadge } from './VideoShapeBadge';
 import Link from 'next/link';
 import { useRef } from 'react';
 import { AssetFooter } from './AssetFooter';
@@ -30,7 +31,7 @@ const STATE_UI = {
   unknown:   { chip: 'neutral', glyph: '?' },
 };
 
-export function LibraryJobCard({ row, models, selectable, selected, onToggle, starred, onStar, onSmartCut }) {
+export function LibraryJobCard({ row, models, selectable, selected, onToggle, starred, onStar, onSmartCut, shapeMismatch }) {
   const asset = useAssetUrl(row.job_id, row.asset_url);
   const { t, locale } = useI18n();
   const editorEnabled = useEditorEnabled();
@@ -115,6 +116,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
           </button>
         </div>
       </div>
+      <div className="mx-4 mb-3"><VideoShapeBadge item={row} mismatch={shapeMismatch} /></div>
       <ScheduleGeneration job={row} className="mx-4 mb-3" />
       {selectable && onSmartCut && row.mime_type?.startsWith('video/') && (
         <div className="mx-4 mb-3">

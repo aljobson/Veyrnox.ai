@@ -237,6 +237,8 @@ export function patchSmartCutMetadataState(state, uid, patch) {
       if (next.out_s == null) next.out_s = patch.duration;
     }
     if (Object.hasOwn(patch, 'ratio')) next.ratio = patch.ratio;
+    if (Object.hasOwn(patch, 'width')) next.width = patch.width;
+    if (Object.hasOwn(patch, 'height')) next.height = patch.height;
     return next;
   }) || items;
   return {

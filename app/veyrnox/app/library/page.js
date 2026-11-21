@@ -1,4 +1,6 @@
 'use client';
+import { mixedShapes, shapeMismatch } from '../../../../lib/videoShape.mjs';
+import { useLibraryShapes } from '../../_lib/useLibraryShapes';
 import { useI18n } from '../../../../components/I18nProvider';
 import { pluralKey } from '../../../../lib/i18n/translate.mjs';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
@@ -49,6 +51,7 @@ export default function Library() {
   const number = value => locale === 'en' ? String(value) : value.toLocaleString(localeTag(locale));
   const { models } = useCatalog();
   const [tab, setTab] = useState('all');
+  const [shape, setShape] = useState('all');
   const [kind, setKind] = useState('all');
   // Starred job ids: this browser's copy shows first (_lib/favourites.js); with library sync on (ADR-0340) the account's
   // list replaces it, so a star made on the phone is here too. Sync off or unreachable: the local copy stands.
@@ -238,16 +241,18 @@ export default function Library() {
 
   const { loadOlder, loadingOlder, olderError } = useOlderLibraryJobs({ actor, nextCursor, setNextCursor, setRows, setVisible, hydrateFromHistory, pageSize: PAGE });
 
-  const shown = rows.slice(0, visible);
-  const list = filterRows(shown, { state: tab, kind, favourites: favOnly ? favourites : null }, models);
+  const shapedRows = useLibraryShapes(rows, visible, actor, models, { state: tab, kind, shape, favourites: favOnly ? favourites : null });
+  const shown = shapedRows.slice(0, visible);
+  const list = filterRows(shown, { state: tab, kind, shape, favourites: favOnly ? favourites : null }, models);
   const hasMore = rows.length > visible;
-  const filtered = tab !== 'all' || kind !== 'all' || favOnly;
+  const filtered = tab !== 'all' || kind !== 'all' || shape !== 'all' || favOnly;
   // The button that was pressed leaves with the empty state: focus goes to the filter now in force, not to the page.
-  const clearFilters = () => { setTab('all'); setKind('all'); setFavOnly(false); document.querySelector('[data-testid="library-state-all"]')?.focus(); };
+  const clearFilters = () => { setTab('all'); setKind('all'); setShape('all'); setFavOnly(false); document.querySelector('[data-testid="library-state-all"]')?.focus(); };
   const canSelect = (r) => editorOn && r.state === 'succeeded' && (isVideo(r) || isAudio(r));
   const toggle = (id) => setSelected((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
-  const picked = selected.map((id) => rows.find((r) => r.job_id === id)).filter(Boolean);
+  const picked = selected.map((id) => shapedRows.find((r) => r.job_id === id)).filter(Boolean);
   const pickedClips = picked.filter(isVideo);
+  const mixed = mixedShapes(pickedClips);
   // Audio the user ticked comes first in the picker, then the rest of the Library's.
   const audios = [...picked.filter(isAudio), ...rows.filter((r) => r.state === 'succeeded' && isAudio(r) && !selected.includes(r.job_id))];
   const editCredits = models.find((m) => m.id === 'clip-edit')?.credits ?? null;
@@ -337,9 +342,13 @@ export default function Library() {
         </div>
       </section>
 
-      <DeviceLibrary visible={['all','succeeded'].includes(tab) && !favOnly} kind={kind} />
-      <EditorLibraryRenders visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
-      <FilmLibraryMasters visible={['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
+      {kind === 'video' && <div className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-4 flex flex-wrap gap-2">
+        {['all', 'portrait', 'landscape', 'square'].map(value => <button key={value} type="button" aria-pressed={shape === value} onClick={() => setShape(value)} className="min-h-11 rounded-full border border-vx-border px-4 text-sm aria-pressed:bg-vx-fg aria-pressed:text-vx-base">{t(`app.library.shape.${value}`)}</button>)}
+      </div>}
+      {mixed && <p role="alert" className="max-w-[1400px] mx-auto px-4 sm:px-8 pb-4 text-sm text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</p>}
+      <DeviceLibrary visible={(kind !== 'video' || shape === 'all') && ['all','succeeded'].includes(tab) && !favOnly} kind={kind} />
+      <EditorLibraryRenders visible={(kind !== 'video' || shape === 'all') && ['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
+      <FilmLibraryMasters visible={(kind !== 'video' || shape === 'all') && ['all','succeeded'].includes(tab) && ['all','video'].includes(kind) && !favOnly}/>
 
       <section id="library-assets" className="max-w-[1400px] mx-auto scroll-mt-24 px-4 sm:px-8 pb-16">
         {/* Nothing cached and the account list not answered yet is still loading, not an empty Library. */}
@@ -347,7 +356,7 @@ export default function Library() {
           <div className={view === 'list' ? 'grid grid-cols-1 gap-3 max-w-[760px]' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'}>
             {list.map((r) => (
               <LibraryJobCard key={r.job_id} row={r} models={models} starred={favourites.includes(r.job_id)} onStar={() => star(r.job_id)}
-                selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} onSmartCut={() => { setSelected([r.job_id]); markSmartCutIntent(); setEditing(true); }} />
+                shapeMismatch={shapeMismatch(r, pickedClips[0])} selectable={canSelect(r)} selected={selected.includes(r.job_id)} onToggle={() => toggle(r.job_id)} onSmartCut={() => { setSelected([r.job_id]); markSmartCutIntent(); setEditing(true); }} />
             ))}
           </div>
         )}
@@ -378,7 +387,7 @@ export default function Library() {
             </span>
             <span className="flex gap-2">
               <button onClick={() => setSelected([])} className="rounded-full px-4 py-2 text-sm border border-vx-border text-vx-fg-muted hover:text-vx-fg">{t("app.library.clear")}</button>
-              <button onClick={() => setEditing(true)} disabled={!pickedClips.length}
+              <button onClick={() => setEditing(true)} disabled={!pickedClips.length || mixed}
                 className="rounded-full px-5 py-2 text-sm font-bold bg-vx-accent text-vx-accent-ink disabled:opacity-40">
                 {smartCutIntent
                   ? `${t('app.library.openSmartCut')} (${number(pickedClips.length)})`
