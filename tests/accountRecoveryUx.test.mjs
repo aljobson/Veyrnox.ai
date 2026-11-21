@@ -99,6 +99,7 @@ function libraryHtml({ hydrated, actor }) {
   mocks['../../_lib/useCatalog'].useCatalog = () => ({ models: [] });
   mocks['../../_lib/useOlderLibraryJobs'].useOlderLibraryJobs = () => ({});
   mocks['../../_lib/libraryFilter'].filterRows = () => [];
+  mocks['../../_lib/useLibraryShapes'].useLibraryShapes = rows => rows;
   const { default: Library } = component(path, mocks);
   const previous = globalThis.window;
   globalThis.window = { localStorage: { getItem: () => null } };

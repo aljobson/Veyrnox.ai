@@ -1,4 +1,4 @@
-// Paid request shapes and the retry rule for the Performance studio (ADR-0373).
+// Paid request shapes and the retry rule for the Performance studio (ADR-0374).
 
 // Mirrors CAPTIONS_UNITS and MAX_OUTPUT_S in lib/clipEdit.js, which is server code.
 export const CAPTION_UNITS = 7;

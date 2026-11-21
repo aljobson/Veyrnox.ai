@@ -15,6 +15,7 @@
  *              created_at, label, has_asset, asset_expires_at }], next: {before, before_id}|null }
  */
 
+import { publicShapeFields } from '../../../../lib/jobVideoShapes.js';
 import { NextResponse } from 'next/server';
 import { lookupJobByKey } from '../../../../lib/jobLookup.js';
 import { jobReadLimitResponse } from '../../../../lib/jobReadLimit.js';
@@ -102,6 +103,7 @@ export async function GET(req) {
 
     const jobs = row.jobs.map((j) => ({
         job_id: j.job_id,
+        ...publicShapeFields(j),
         ...(j.output_type === 'editor-render' ? { output_type: j.output_type, render_id: j.render_id ?? null } : {}),
         state: mapState(j.state),
         // FAILED is not REFUNDED; the Library shows the difference.

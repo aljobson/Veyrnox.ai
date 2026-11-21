@@ -120,3 +120,11 @@ test('held jobs expose the review state with no asset', async () => {
     assert.equal(body.jobs[0].held, true);
     assert.equal(body.jobs[0].has_asset, false);
 });
+
+test('list returns measured dimensions, suppresses held or ambiguous dimensions, and supports pre-0577 rows', async () => {
+    stub([{ ...row(1), video_width: 1080, video_height: 1920 }, { ...row(2), held: true, video_width: 1080, video_height: 1920 }, { ...row(3), shape_ambiguous: true, video_width: 1920, video_height: 1080 }, row(4)]);
+    const { jobs } = await (await get()).json();
+    assert.equal(jobs[0].video_width, 1080); assert.equal(jobs[0].video_height, 1920);
+    for (const job of jobs.slice(1)) { assert.equal(job.video_width, undefined); assert.equal(job.video_height, undefined); }
+    assert.equal(jobs[2].shape_ambiguous, true);
+});

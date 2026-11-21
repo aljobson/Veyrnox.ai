@@ -1,3 +1,4 @@
+import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/create/SmartCutShapeHint';
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
@@ -45,7 +46,7 @@ import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore'
 import { SAVED_DRAFT_VERSION, modelChoices, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect, readDestinationAspect } from '../../../lib/creatorTaste';
-import { nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
+import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -61,8 +62,6 @@ import { plural, t } from '../../../lib/i18n';
 import { creativeFeature } from '../../../lib/creativeFeatures';
 import { consumeCreativeSourceHandoff, readCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
-// The host part of an address, or '' when it is not one.
-const hostOf = (url: string): string => { try { return new URL(url).hostname; } catch { return ''; } };
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
     const { modelId: linkedModelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>(); useSwapRedirect(tid); const modelId = /* a link carries the public id (nano-banana-a1); the catalog uses the internal one */ typeof linkedModelId === 'string' ? internalModelId(linkedModelId) : linkedModelId;
@@ -375,7 +374,7 @@ export default function CreateWithModel() {
     const expectedMinutes = isVideo && (busy || inProgress) ? Math.max(1, Math.round(expectedDurationMs(model.id, 'video') / 60000)) : 0;
     const generateLabel = matchingRetry?.quote ? t('app.create.confirmPrice', { credits: String(price) }) : `${n > 1 ? t('opt.generateCount', { count: String(n) }) : t('slip.generate')}. ${costLine(price, n, freeLeft, unit)}`;
     return (
-        <KeyboardScreen style={styles.screen}>
+        <SmartCutShapeSession key={owner}><KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('label.Create') }} />
             <KeyboardFormScrollView ref={scrollRef} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <FormHeader modelLabel={modelLabel} modality={kindOf(model.modality) ?? model.modality} stageLine={stageLine} stage={results ? <RevealOnFirstLayout scroll={scrollRef}><CreateResult api={api} batch={results} catalog={catalog} onTerminal={resultSettled} /></RevealOnFirstLayout> : undefined}
@@ -385,6 +384,7 @@ export default function CreateWithModel() {
                 {contractMissing && (contractLoading ? <ActivityIndicator /> : <><Text accessibilityLiveRegion="polite">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={retryContract} /></>)}
                 {fidelityBlocked(contract, template ? text : '') && <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.sourceVideoUnsupported')}</Text>} {template && !templatePreset && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.modelSwitch')}</Text>}
                 {template && !fidelityBlocked(contract, text) && !request.templateId && <Text accessibilityLiveRegion="polite">{t('presets.fidelity.previewNotice')}</Text>}
+                <SmartCutShapeHint api={api} video={isVideo} options={options.aspects} value={opts.aspect} onChange={aspect => setOpts(current => ({ ...current, aspect }))} />
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}
@@ -493,6 +493,6 @@ export default function CreateWithModel() {
                     </View>
                 </Card>
             </KeyboardFormScrollView>
-        </KeyboardScreen>
+        </KeyboardScreen></SmartCutShapeSession>
     );
 }

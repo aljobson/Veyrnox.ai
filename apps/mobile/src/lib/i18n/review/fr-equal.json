@@ -347,5 +347,6 @@
   "editorLook.background.image": "Image is the established French noun, identical to English with this capitalization.",
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
-  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
+  "videoShape.portrait": "Same word in French for vertical orientation; machine translation, native review pending."
 }

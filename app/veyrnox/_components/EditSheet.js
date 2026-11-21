@@ -1,4 +1,6 @@
 'use client';
+import { mixedShapes, shapeMismatch, shapeValue } from '../../../lib/videoShape.mjs';
+import { VideoShapeBadge } from './VideoShapeBadge';
 import { useI18n } from '../../../components/I18nProvider';
 import { useEffect, useRef, useState } from 'react';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
@@ -61,7 +63,7 @@ function EditorIcon({ name }) {
 export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smartCut = false }) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
-  const errorCopy = code => code === 'rate_limited' ? t('cinema.creatorApplication.tooManyRequestsWaitAMinute') : tOr(t, `app.editor.sheet.error.${code}`, t('app.editor.sheet.fallback'), { limit: number(code === 'too_long' ? MAX_OUTPUT_S : SLOW_MAX_SOURCE_S) });
+  const errorCopy = code => code === 'mixed_aspect' ? t('app.editor.sheet.error.server_mixed_aspect') : code === 'rate_limited' ? t('cinema.creatorApplication.tooManyRequestsWaitAMinute') : tOr(t, `app.editor.sheet.error.${code}`, t('app.editor.sheet.fallback'), { limit: number(code === 'too_long' ? MAX_OUTPUT_S : SLOW_MAX_SOURCE_S) });
   const [editState, setEditState] = useState(() => ({
     items: clips.map((c, i) => ({ ...c, uid: `${c.job_id}#${i}`, in_s: 0, out_s: null, duration: null, ratio: null })),
     smartCutSnapshot: null,
@@ -143,7 +145,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const slowedSource = round(items.reduce((s, x) => s + (slowOf(x) > 1 ? Math.max(0, (x.out_s ?? 0) - x.in_s) : 0), 0));
   const slowNoAudio = slowedSource > 0 && !audioId;
   const slowTooLong = slowedSource > SLOW_MAX_SOURCE_S;
-  const mixed = new Set(items.filter((x) => x.ratio).map((x) => x.ratio)).size > 1;
+  const mixed = mixedShapes(items);
   const badRange = items.some((x) => x.duration != null && !(x.in_s >= 0 && x.out_s > x.in_s && x.out_s <= x.duration));
   const tooManyClips = items.length > MAX_CLIPS;
   const noop = items.length === 1 && !audioId && !captions && slowOf(items[0]) === 1 && loaded && items[0].in_s === 0 && items[0].out_s >= items[0].duration;
@@ -182,7 +184,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   }
 
   const clipRows = items.map((x, i) => (
-    <ClipRow key={x.uid} item={x} index={i} count={items.length}
+    <ClipRow key={x.uid} item={x} mismatch={shapeMismatch(x, items[0])} index={i} count={items.length}
       showSlow={showSlow} onChange={(p, group) => update(i, p, group)} onEditEnd={finishEditGroup} onMetadata={(p) => updateMetadata(x.uid, p)} onMove={(d) => move(i, d)} onRemove={() => remove(i)} />
   ));
 
@@ -202,12 +204,13 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
           {smartCut && <SmartCutWorkbench items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
-          {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy} />}
+          {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy || mixed} />}
           {smartCut && <div id="smart-cut-panel" className="scroll-mt-4">
             <SmartCutPlanner
               clips={items}
               analyses={analyses.size ? analyses : null}
               disabled={busy}
+              planningDisabled={mixed}
               applyRevision={smartCutApplyRevision}
               onApply={applySmartCut}
               onUndo={smartCutSnapshot ? undoSmartCut : null}
@@ -323,7 +326,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   </>);
 }
 
-function ClipRow({ item, index, count, showSlow, onChange, onEditEnd, onMetadata, onMove, onRemove }) {
+function ClipRow({ item, mismatch, index, count, showSlow, onChange, onEditEnd, onMetadata, onMove, onRemove }) {
   const { t, locale } = useI18n();
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const asset = useAssetUrl(item.job_id, item.asset_url);
@@ -341,7 +344,7 @@ function ClipRow({ item, index, count, showSlow, onChange, onEditEnd, onMetadata
           onLoadedMetadata={(e) => {
             asset.onLoad();
             const v = e.currentTarget;
-            onMetadata({ duration: v.duration, ratio: v.videoHeight ? (v.videoWidth / v.videoHeight).toFixed(2) : null });
+            onMetadata({ duration: v.duration, ratio: item.shape_ambiguous ? null : shapeValue(v.videoWidth, v.videoHeight), width: v.videoWidth, height: v.videoHeight });
           }} />
         <AssetLoadStatus asset={asset} />
       </div>
@@ -354,6 +357,7 @@ function ClipRow({ item, index, count, showSlow, onChange, onEditEnd, onMetadata
             <button onClick={onRemove} aria-label={t("app.editor.sheet.remove")} className="grid min-h-11 min-w-11 place-items-center rounded-lg border border-vx-border text-vx-fg-muted hover:border-vx-danger hover:text-vx-danger"><span aria-hidden="true" className="sr-only">✕</span><EditorIcon name="remove" /></button>
           </span>
         </div>
+        <VideoShapeBadge item={item} mismatch={mismatch} />
         {POINTS.map((key) => (
           <div key={key} className="flex items-center gap-2 text-xs text-vx-fg-muted">
             <label className="flex items-center gap-2">

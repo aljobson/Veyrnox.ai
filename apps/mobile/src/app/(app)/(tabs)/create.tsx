@@ -128,6 +128,7 @@ export default function Create() {
 
                     <SectionLabel style={styles.sectionTop}>{t('create.startFrom')}</SectionLabel>
                     <View style={styles.entries}>
+                        <EntryTile icon="squares" label={t('features.creativetools')} onPress={() => router.push('/features')} />
                         <EntryTile icon="squares" label={`${t('templates.kind.video')} ${t('label.Templates')}`} onPress={() => router.push('/create/presets')} />
                         <EntryTile icon="squares" label={`${t('templates.kind.image')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'image' } })} />
                         <EntryTile icon="audio" label={`${t('templates.kind.audio')} ${t('label.Templates')}`} onPress={() => router.push({ pathname: '/create/presets', params: { kind: 'audio' } })} />

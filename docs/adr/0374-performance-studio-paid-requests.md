@@ -1,4 +1,4 @@
-# ADR-0373: Performance studio paid requests
+# ADR-0374: Performance studio paid requests
 
 Status: Implemented in source; not yet exercised against a live server.
 Date: 2026-11-21

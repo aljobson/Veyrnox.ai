@@ -1,4 +1,4 @@
-import { retentionOf, RETENTION_URGENT_MS, MAX_FAVOURITES, canReuse, canSchedule, expiryOf, filterJobs, kindMap, parseProvenance, readFavourites, rowStatus, sizeLabel, toggled, writeFavourites } from '../src/lib/libraryView';
+import { retentionOf, RETENTION_URGENT_MS, MAX_FAVOURITES, canReuse, canSchedule, expiryOf, filterJobs, shapeMeasurementIds, kindMap, parseProvenance, readFavourites, rowStatus, sizeLabel, toggled, writeFavourites } from '../src/lib/libraryView';
 import { createCache, createMemoryStorage } from '../src/lib/cache';
 import type { CatalogModel, Job } from '../src/lib/media';
 
@@ -9,6 +9,15 @@ const NOW = Date.parse('2026-10-19T12:00:00Z');
 const job = (over: Partial<Job> = {}): Job => ({ job_id: A, state: 'succeeded', credits: 5, model_id: 'img', created_at: '2026-10-01T00:00:00Z', has_asset: true, asset_expires_at: '2027-01-09T00:00:00Z', ...over });
 const model = (id: string, modality: string): CatalogModel => ({ id, name: id, modality, credits: 1, gated: false, durations: [], capabilities: null });
 const kinds = kindMap([model('img', 'text-to-image'), model('vid', 'text-to-video'), model('aud', 'text-to-speech'), model('odd', 'mystery')]);
+
+test('shape measurement preserves state, kind, favourites and the loaded window', () => {
+    const jobs = [job({ job_id: A, model_id: 'vid' }), job({ job_id: B, model_id: 'vid' }),
+        job({ job_id: 'failed', model_id: 'vid', state: 'failed' }), job({ job_id: 'image' })];
+    const filters = { state: 'succeeded', kind: 'video', shape: 'portrait', favourites: [A, 'failed', 'image', 'not-loaded'] } as const;
+    expect(shapeMeasurementIds(jobs, filters, kinds, [])).toEqual([A]);
+    expect(shapeMeasurementIds(jobs, { ...filters, shape: 'all' }, kinds, [])).toEqual([]);
+    expect(shapeMeasurementIds(jobs, { ...filters, shape: 'all' }, kinds, [A, B])).toEqual([A]);
+});
 
 describe('filters', () => {
     const jobs = [job({ job_id: A }), job({ job_id: B, state: 'failed', model_id: 'vid' }), job({ job_id: 'c', state: 'running', model_id: 'aud' }), job({ job_id: 'd', model_id: 'gone' })];
@@ -150,4 +159,10 @@ describe('retentionOf', () => {
         const date = new Date(NOW + Number(offset));
         expect(retentionOf(job({ asset_expires_at: date.toISOString() }), NOW)).toEqual({ kind: 'expires', date, urgent });
     });
+});
+
+test('shape filter excludes unknown and ambiguous videos except under All shapes', () => {
+    const jobs = [job({ model_id: 'vid', video_width: 1080, video_height: 1920 }), job({ model_id: 'vid', job_id: B }), job({ model_id: 'vid', job_id: 'c', video_width: 1080, video_height: 1920, shape_ambiguous: true })];
+    expect(filterJobs(jobs, { state: 'all', kind: 'video', shape: 'portrait', favourites: null }, kinds).map(j => j.job_id)).toEqual([A]);
+    expect(filterJobs(jobs, { state: 'all', kind: 'video', shape: 'all', favourites: null }, kinds)).toHaveLength(3);
 });

@@ -104,3 +104,5 @@ export function activeTemplate(params: Params, modelId: string, posterHosts: rea
 export function templateOnOriginalModel(params: Params, modelId: string): boolean {
     return (one(params.tmodel) ?? modelId) === modelId;
 }
+// The host part of an address, or '' when it is not one.
+export const hostOf = (url: string): string => { try { return new URL(url).hostname; } catch { return ''; } };

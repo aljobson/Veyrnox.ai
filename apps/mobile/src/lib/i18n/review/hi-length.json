@@ -1,5 +1,11 @@
 [
   {
+    "id": "videoShape.match",
+    "english": "Use {shape}",
+    "translation": "{shape} इस्तेमाल करें",
+    "ratio": 1.91
+  },
+  {
     "id": "editorAudioTools.low",
     "english": "Low",
     "translation": "निम्न",
