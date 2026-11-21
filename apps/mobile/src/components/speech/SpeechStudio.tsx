@@ -34,7 +34,7 @@ export function SpeechStudio() {
     const [script, setScript] = useState('');
     const [settings, setSettings] = useState<SpeechSettings>({ ...DEFAULT_TTS_SETTINGS });
     const [voices, setVoices] = useState<string[]>([]);
-    const { pending, sending, busy, result, jobs, complete, attempted, error, setError, priceOverride, resetAttempt, generate, settled } = useSpeechSubmission(api, () => {
+    const { pending, sending, busy, result, jobs, complete, attempted, error, setError, priceOverride, resetAttempt, editAttempt, generate, settled } = useSpeechSubmission(api, () => {
         setScript(''); setSettings({ ...DEFAULT_TTS_SETTINGS }); setVoices([]);
     });
     useAnnouncement(error ?? (busy ? t('speech.submitting') : result || complete ? t('speech.accepted') : null));
@@ -43,21 +43,21 @@ export function SpeechStudio() {
         void fetchCatalog().then(rows => { if (live) setCatalog(rows); }).catch(() => { if (live) setCatalogError(t('form.modelLoad')); });
         return () => { live = false; };
     }, []);
-    function editScript(next: string) { if (sending.current) return; if (next !== script) resetAttempt(); setScript(next); }
+    function editScript(next: string) { if (sending.current) return; editAttempt(next.trim() !== script.trim()); setScript(next); }
     function editSettings(next: SpeechSettings) {
         if (sending.current) return;
         const effectiveNext = voices.length > 0 ? { ...next, voice: settings.voice } : next;
-        if (JSON.stringify(effectiveNext) !== JSON.stringify(settings)) resetAttempt();
+        editAttempt(JSON.stringify(effectiveNext) !== JSON.stringify(settings));
         setSettings(next);
     }
     function editVoices(next: string[]) {
         if (sending.current || JSON.stringify(next) === JSON.stringify(voices)) return;
-        resetAttempt(); setVoices(next);
+        editAttempt(true); setVoices(next);
     }
     function testVoice(voice: string) {
         if (sending.current) return;
         const nextScript = voiceAuditionScript();
-        if (script !== nextScript || (voices.length === 0 && settings.voice !== voice)) resetAttempt();
+        editAttempt(script.trim() !== nextScript.trim() || (voices.length === 0 && settings.voice !== voice));
         setSettings({ ...settings, voice }); setScript(nextScript);
     }
     const model = speechModel(catalog ?? []);

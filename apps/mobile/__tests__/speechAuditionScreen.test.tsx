@@ -147,7 +147,7 @@ test('lost item 2 reply after 12 credits: zero-balance retry retains its key and
     for (const voice of TTS_VOICES.slice(0, 2)) expect(textOf(root.container)).toContain(t('speech.audition.result', { voice: voice.label }));
     expect(button(t('speech.adjust'))).toBeDefined();
 });
-test.each(['script', 'settings', 'board'])('editing %s away and back after partial failure starts fresh keys', async field => {
+test.each(['script', 'settings', 'board'])('editing %s away and back after a lost reply retries only the unfinished voice with its key', async field => {
     mockBalance = 30;
     mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(0, 'network'));
     await setupBoard(2); await click(generate(2));
@@ -160,9 +160,17 @@ test.each(['script', 'settings', 'board'])('editing %s away and back after parti
         await click(button(t('speech.audition.remove', { voice: TTS_VOICES[1].label }))); await add(1);
     }
     await click(generate(2));
-    expect(bodies()).toHaveLength(4);
-    const oldKeys = bodies().slice(0, 2).map(body => body.idempotency_key);
-    for (const body of bodies().slice(2)) expect(oldKeys).not.toContain(body.idempotency_key);
+    expect(bodies()).toHaveLength(3);
+    expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
+});
+test('a known refusal after an accepted voice: editing away and back never resends the accepted voice', async () => {
+    mockBalance = 30;
+    mockRequest.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(new ApiError(429, 'rate_limited'));
+    await setupBoard(2); await click(generate(2));
+    await write('Changed'); await write('Hello'); await click(generate(2));
+    expect(bodies()).toHaveLength(3);
+    expect(bodies()[2].inputs.tts_voice).toBe(bodies()[1].inputs.tts_voice);
+    expect(bodies()[2].inputs.tts_voice).not.toBe(bodies()[0].inputs.tts_voice);
 });
 test('at phone width each voice has a single full-width audio result with its own play and seek controls', async () => {
     mockBalance = 18;
