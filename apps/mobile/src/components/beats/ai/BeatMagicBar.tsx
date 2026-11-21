@@ -14,8 +14,8 @@ export function BeatMagicBar({ doc, client, owner, current, off }: { doc: AiDoc;
     const layersStore = useMemo(() => magicLayers(), []);
     const request = useMemo(() => new ReceiptRequest<MagicPending>({ owner, beatId: doc.id, client, current, off, storage: magicPendingStore(),
         async finish(row, status) {
-            if (['failed', 'refunded'].includes(status.state)) return { message: 'beatAi.failed' };
-            return { keep: { ...row, terminal: status.state, candidates: status.candidates ?? [] }, message: 'beatAi.results' };
+            if (['failed', 'refunded'].includes(status.state)) return { noticeKey: 'beatAi.failed' };
+            return { keep: { ...row, terminal: status.state, candidates: status.candidates ?? [] }, noticeKey: 'beatAi.results' };
         },
     }), [owner, doc.id, client, current, off]);
     const view = useBeatAiRequest(request);

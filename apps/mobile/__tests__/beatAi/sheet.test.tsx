@@ -14,7 +14,7 @@ test('sheet displays the exact server quote and restored original quote', async 
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }));
     const root = createRoot(), c = client(), storage = pendingStore(files().port);
-    const request = new ReceiptRequest<Pending>({ owner, beatId, client: c.client, storage, current: () => true, off: jest.fn(), finish: async () => ({ message: '' }) });
+    const request = new ReceiptRequest<Pending>({ owner, beatId, client: c.client, storage, current: () => true, off: jest.fn(), finish: async () => ({ noticeKey: '' }) });
     request.open(); await request.price(async () => quote, () => row());
     await act(async () => root.render(<BeatAiSheet request={request} client={c.client} doc={doc()} op="generate" onClose={request.close} />));
     const contains = (value: string) => root.container.queryAll(n => n.children.includes(value)).length;

@@ -9,7 +9,7 @@ import type { AiDoc, Asset } from '../../src/lib/beatAi/types';
 import type { Edit } from '../../src/lib/beatNative/doc';
 test('poll → place one history step → flush → verify saved placement → retire; replay places once', async () => {
     const f = files(), c = client(), store = createBeatStore(f.port), storage = pendingStore(f.port);
-    f.data.set(`${beatId}.json`, JSON.stringify({ id: beatId, doc: doc(), revision: 1, updatedAt: doc().updatedAt }));
+    f.data.set(`${beatId}.json`, (() => { const d = doc(); return JSON.stringify({ id: beatId, doc: d, revision: 1, updatedAt: d.updatedAt }); })());
     await store.hydrateBeats(); let history = createHistory(store.getBeat(beatId)!);
     const apply = jest.fn((edit: Edit) => {
         const next = tryOp(store.getBeat(beatId)!, edit); if (next.refused) return false;
@@ -27,7 +27,7 @@ test('poll → place one history step → flush → verify saved placement → r
 });
 test('owner generation changes during asset load: no placement or retirement', async () => {
     const f = files(), c = client(), store = createBeatStore(f.port), storage = pendingStore(f.port), wait = deferred<Asset>();
-    f.data.set(`${beatId}.json`, JSON.stringify({ id: beatId, doc: doc(), revision: 1, updatedAt: doc().updatedAt }));
+    f.data.set(`${beatId}.json`, (() => { const d = doc(); return JSON.stringify({ id: beatId, doc: d, revision: 1, updatedAt: d.updatedAt }); })());
     await store.hydrateBeats(); await store.flushBeat(beatId);
     let current = true; const apply = jest.fn(() => true), load = jest.fn(() => wait.promise);
     const accepted = { ...row(), requestId: id(8) }; await storage.put(accepted);
@@ -41,7 +41,7 @@ test('owner generation changes during asset load: no placement or retirement', a
 test('refused placement and failed flush keep the receipt for a later check', async () => {
     for (const refused of [true, false]) {
         const f = files(), c = client(), storage = pendingStore(f.port);
-        f.data.set(`${beatId}.json`, JSON.stringify({ id: beatId, doc: doc(), revision: 1, updatedAt: doc().updatedAt }));
+        f.data.set(`${beatId}.json`, (() => { const d = doc(); return JSON.stringify({ id: beatId, doc: d, revision: 1, updatedAt: d.updatedAt }); })());
         const store = createBeatStore(f.port); await store.hydrateBeats();
         const accepted = { ...row(), requestId: id(8) }; await storage.put(accepted);
         c.request.mockResolvedValue({ state: 'succeeded', candidates: [{ ordinal: 1, state: 'succeeded', song_id: id(5), version_id: id(6), job_id: id(7) }] });
@@ -53,7 +53,7 @@ test('refused placement and failed flush keep the receipt for a later check', as
 });
 test('empty terminal success retires after the library note without a placement', async () => {
     const f = files(), c = client(), storage = pendingStore(f.port);
-    f.data.set(`${beatId}.json`, JSON.stringify({ id: beatId, doc: doc(), revision: 1, updatedAt: doc().updatedAt }));
+    f.data.set(`${beatId}.json`, (() => { const d = doc(); return JSON.stringify({ id: beatId, doc: d, revision: 1, updatedAt: d.updatedAt }); })());
     const store = createBeatStore(f.port); await store.hydrateBeats();
     const accepted = { ...row(), requestId: id(8) }; await storage.put(accepted);
     c.request.mockResolvedValue({ state: 'succeeded', candidates: [] });

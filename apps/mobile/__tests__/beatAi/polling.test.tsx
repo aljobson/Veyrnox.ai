@@ -27,7 +27,7 @@ afterEach(async () => {
 async function setup() {
     const c = client(), storage = pendingStore(files().port), accepted = { ...row(), requestId: id(8) };
     const flow = new ReceiptRequest<Pending>({ owner, beatId, client: c.client, storage, current: () => true,
-        off: jest.fn(), finish: async () => ({ message: 'beatAi.failed' }) });
+        off: jest.fn(), finish: async () => ({ noticeKey: 'beatAi.failed' }) });
     await storage.put(accepted); c.request.mockResolvedValue({ state: 'running' });
     await act(async () => root.render(<Harness flow={flow} />));
     await act(async () => { await flow.resume(accepted); }); c.request.mockClear();

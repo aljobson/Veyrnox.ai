@@ -5,7 +5,7 @@ import { AI_TERMINAL, singleFlight } from './shared';
 import type { BeatAiClient } from './client';
 import type { MagicPending, Pending, Quote, Status } from './types';
 export type Receipt = Pending | MagicPending;
-export type View<R extends Receipt> = { rows: R[]; record: R | null; quote: Quote | null; open: boolean; busy: boolean; message: string; error: string; terminal: boolean; status?: Status; messages: string[]; errorParams?: Record<string, number>; pollRefused: boolean; retryAt: number };
+export type View<R extends Receipt> = { rows: R[]; record: R | null; quote: Quote | null; open: boolean; busy: boolean; noticeKey: string; error: string; terminal: boolean; status?: Status; messages: string[]; errorParams?: Record<string, number>; pollRefused: boolean; retryAt: number };
 export interface ReceiptStorage<R extends Receipt> {
     read(owner: string, beatId: string): Promise<R[]>;
     put(row: R, current?: () => boolean): Promise<void>;
@@ -14,11 +14,11 @@ export interface ReceiptStorage<R extends Receipt> {
 export interface RequestOptions<R extends Receipt> {
     owner: string; beatId: string; client: BeatAiClient; storage: ReceiptStorage<R>;
     current(): boolean; off(): void;
-    finish(row: R, status: Status): Promise<{ keep?: R; message: string; messages?: string[] }>;
+    finish(row: R, status: Status): Promise<{ keep?: R; noticeKey: string; messages?: string[] }>;
 }
 /** One instance belongs to exactly one owner, editor mount and auth generation. */
 export class ReceiptRequest<R extends Receipt> {
-    private view: View<R> = { rows: [], record: null, quote: null, open: false, busy: false, message: '', error: '', terminal: false, messages: [], pollRefused: false, retryAt: 0 };
+    private view: View<R> = { rows: [], record: null, quote: null, open: false, busy: false, noticeKey: '', error: '', terminal: false, messages: [], pollRefused: false, retryAt: 0 };
     private listeners = new Set<() => void>();
     private gate = singleFlight();
     private fresh: R | null = null;
@@ -44,9 +44,9 @@ export class ReceiptRequest<R extends Receipt> {
         });
     }
     initialize = () => this.run(() => this.refreshRows());
-    open = () => { if (!this.view.busy) { this.fresh = null; this.set({ open: true, record: null, quote: null, error: '', message: '', terminal: false, status: undefined, messages: [], pollRefused: false, retryAt: 0 }); } };
+    open = () => { if (!this.view.busy) { this.fresh = null; this.set({ open: true, record: null, quote: null, error: '', noticeKey: '', terminal: false, status: undefined, messages: [], pollRefused: false, retryAt: 0 }); } };
     close = () => { if (!this.view.busy) this.set({ open: false }); };
-    reset = () => { if (!this.view.busy && !this.view.record) { this.fresh = null; this.set({ quote: null, error: '', message: '' }); } };
+    reset = () => { if (!this.view.busy && !this.view.record) { this.fresh = null; this.set({ quote: null, error: '', noticeKey: '' }); } };
     resume = (row: R) => this.run(async () => {
         if (row.owner !== this.options.owner || row.beatId !== this.options.beatId) return;
         const rows = await this.options.storage.read(row.owner, row.beatId);
@@ -55,7 +55,7 @@ export class ReceiptRequest<R extends Receipt> {
         if (!stored) return;
         this.fresh = null;
         const retryAt = this.view.record?.key === stored.key ? this.view.retryAt : 0;
-        this.set({ record: stored, quote: { ...stored.quote, quote_id: stored.quoteId }, open: true, status: undefined, messages: [], pollRefused: false, retryAt, message: stored.requestId ? '' : 'beatAi.original', terminal: 'terminal' in stored && !!stored.terminal });
+        this.set({ record: stored, quote: { ...stored.quote, quote_id: stored.quoteId }, open: true, status: undefined, messages: [], pollRefused: false, retryAt, noticeKey: stored.requestId ? '' : 'beatAi.original', terminal: 'terminal' in stored && !!stored.terminal });
         // Resume NEVER posts. Accepted requests are checked using GET only.
         if (stored.requestId && !('terminal' in stored && stored.terminal)) await this.pollRow(stored);
     });
@@ -66,7 +66,7 @@ export class ReceiptRequest<R extends Receipt> {
         const row = make(quote, randomUUID());
         if (row.owner !== this.options.owner || row.beatId !== this.options.beatId) throw new Error('owner_mismatch');
         this.fresh = row;
-        this.set({ quote, terminal: false, message: '' });
+        this.set({ quote, terminal: false, noticeKey: '' });
     });
     send = () => this.run(async () => {
         if (isOffline()) { this.set({ error: 'beatAi.offline' }); return; }
@@ -89,7 +89,7 @@ export class ReceiptRequest<R extends Receipt> {
         const accepted = { ...row, requestId: response.generation_id ?? response.request_id, ...('op' in row ? { state: 'accepted' as const } : {}) };
         await this.options.storage.put(accepted, this.current);
         if (!this.current()) return;
-        this.set({ record: accepted, message: 'beatAi.waiting' });
+        this.set({ record: accepted, noticeKey: 'beatAi.waiting' });
         await this.refreshRows();
     });
     check = () => Date.now() < this.view.retryAt ? Promise.resolve() : this.run(async () => { if (this.view.record?.requestId) await this.pollRow(this.view.record); });
@@ -105,12 +105,12 @@ export class ReceiptRequest<R extends Receipt> {
         }
         if (!this.current()) return;
         this.set({ status, pollRefused: false, retryAt: 0 });
-        if (!AI_TERMINAL.has(status.state)) { this.set({ message: 'beatAi.waiting' }); return; }
+        if (!AI_TERMINAL.has(status.state)) { this.set({ noticeKey: 'beatAi.waiting' }); return; }
         // Terminal status stops periodic polling, including a refused placement.
         this.set({ terminal: true });
         const outcome = await this.options.finish(row, status);
         if (!this.current()) return;
-        this.set({ message: outcome.message, messages: outcome.messages ?? [] });
+        this.set({ noticeKey: outcome.noticeKey, messages: outcome.messages ?? [] });
         if (outcome.keep) {
             await this.options.storage.put(outcome.keep, this.current);
             if (!this.current()) return;

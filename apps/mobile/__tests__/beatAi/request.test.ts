@@ -11,7 +11,7 @@ import { resetNetworkState } from '../../src/lib/networkState';
 import { files, client, owner, beatId, quote, row, magicRow, id, deferred, asset } from './fixtures';
 import type { Pending, MagicPending } from '../../src/lib/beatAi/types';
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => '00000000-0000-4000-8000-000000000042') }));
-const finish = jest.fn(async () => ({ message: 'beatAi.placed' }));
+const finish = jest.fn(async () => ({ noticeKey: 'beatAi.placed' }));
 function setup() {
     const f = files(), c = client(), storage = pendingStore(f.port); let current = true;
     const off = jest.fn();
@@ -39,7 +39,7 @@ for (const error of [new ApiError(0, 'network'), new ApiError(401, 'not_authenti
         expect((await x.storage.read(owner, beatId))[0].key).toBe(row().key);
         const resumed = setup(); // use the original store for the restarted controller
         const flow = new ReceiptRequest<Pending>({ owner, beatId, storage: x.storage, client: resumed.client, current: () => true, off: jest.fn(), finish });
-        await flow.resume(row()); expect(resumed.request).not.toHaveBeenCalled(); expect(flow.snapshot().quote?.total_credits).toBe(37); expect(flow.snapshot().message).toBe('beatAi.original');
+        await flow.resume(row()); expect(resumed.request).not.toHaveBeenCalled(); expect(flow.snapshot().quote?.total_credits).toBe(37); expect(flow.snapshot().noticeKey).toBe('beatAi.original');
         resumed.request.mockResolvedValue({ generation_id: id(8), state: 'queued' }); await flow.send();
         expect(JSON.parse(resumed.request.mock.calls[0][1].body).idempotency_key).toBe(row().key);
     });
@@ -63,22 +63,22 @@ test('Magic terminal candidates survive relaunch; saved layer precedes retiremen
     const f = files(), c = client(), storage = magicPendingStore(f.port), layers = magicLayers(f.port);
     const accepted: MagicPending = { ...magicRow(), requestId: id(8) };
     const candidates = [{ ordinal: 1, state: 'succeeded', song_id: id(5), version_id: id(6), job_id: id(7) }];
-    const create = () => new ReceiptRequest<MagicPending>({ owner, beatId, storage, client: c.client, current: () => true, off: jest.fn(), finish: async (row, status) => ({ keep: { ...row, terminal: status.state, candidates: status.candidates }, message: 'beatAi.results' }) });
+    const create = () => new ReceiptRequest<MagicPending>({ owner, beatId, storage, client: c.client, current: () => true, off: jest.fn(), finish: async (row, status) => ({ keep: { ...row, terminal: status.state, candidates: status.candidates }, noticeKey: 'beatAi.results' }) });
     await storage.put(accepted); c.request.mockResolvedValue({ state: 'succeeded', candidates });
     await create().resume(accepted); const saved = (await storage.read(owner, beatId))[0];
     c.request.mockClear(); const restarted = create(); await restarted.resume(saved);
-    expect(restarted.snapshot().record?.candidates).toEqual(candidates); expect(restarted.snapshot().message).toBe(''); expect(c.request).not.toHaveBeenCalled();
+    expect(restarted.snapshot().record?.candidates).toEqual(candidates); expect(restarted.snapshot().noticeKey).toBe(''); expect(c.request).not.toHaveBeenCalled();
     await layers.change(owner, beatId, () => [{ songId: id(5), audioUrl: `/api/v1/jobs/${id(7)}/asset`, title: 'Keys', bars: 4, bpm: 120, muted: false }]);
     expect(await layers.read(owner, beatId)).toHaveLength(1); await restarted.discard(); expect(await storage.read(owner, beatId)).toEqual([]);
 });
 test('Magic quote/confirm is single-flight with its own durable key, and failed terminal retires', async () => {
     const f = files(), c = client(), storage = magicPendingStore(f.port);
-    const flow = new ReceiptRequest<MagicPending>({ owner, beatId, storage, client: c.client, current: () => true, off: jest.fn(), finish: async () => ({ message: 'beatAi.failed' }) });
+    const flow = new ReceiptRequest<MagicPending>({ owner, beatId, storage, client: c.client, current: () => true, off: jest.fn(), finish: async () => ({ noticeKey: 'beatAi.failed' }) });
     await flow.price(async () => quote, () => magicRow());
     c.request.mockImplementation(async () => { expect((await storage.read(owner, beatId))[0].key).toBe(magicRow().key); return { generation_id: id(8), state: 'queued' }; });
     await Promise.all([flow.send(), flow.send()]); expect(c.request).toHaveBeenCalledTimes(1);
     c.request.mockResolvedValue({ state: 'refunded' }); await flow.check();
-    expect(flow.snapshot().message).toBe('beatAi.failed'); expect(await storage.read(owner, beatId)).toEqual([]);
+    expect(flow.snapshot().noticeKey).toBe('beatAi.failed'); expect(await storage.read(owner, beatId)).toEqual([]);
 });
 test('receipt cap and corrupt rows fail closed; B never touches A namespace', async () => {
     const x = setup();
@@ -157,6 +157,6 @@ for (const kind of ['AI', 'Magic'] as const) {
 test('resuming an accepted request has no resend wording even when its GET fails', async () => {
     const x = setup(), accepted = { ...row(), requestId: id(8) }; await x.storage.put(accepted);
     x.request.mockRejectedValue(new ApiError(0, 'network')); await x.flow.resume(accepted);
-    expect(x.flow.snapshot().message).toBe(''); expect(x.flow.snapshot().record?.requestId).toBe(id(8));
+    expect(x.flow.snapshot().noticeKey).toBe(''); expect(x.flow.snapshot().record?.requestId).toBe(id(8));
     expect(x.request).toHaveBeenCalledTimes(1); expect(x.request.mock.calls[0][1].method).toBeUndefined();
 });

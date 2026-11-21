@@ -18,7 +18,7 @@ export function RequestControls<R extends Receipt>({ request, view, elapsed, off
         </> : null}
         {view.record ? <Button label={t('beatAi.discard')} disabled={view.busy} onPress={() => confirmDiscard(() => void request.discard())} /> : null}
         {view.busy || view.record?.requestId ? <Text accessibilityLiveRegion="polite">{t('beatAi.elapsed', { seconds: elapsed })}</Text> : null}
-        {view.message ? <Text accessibilityLiveRegion="polite">{t(view.message)}</Text> : null}
+        {view.noticeKey ? <Text accessibilityLiveRegion="polite">{t(view.noticeKey)}</Text> : null}
         {view.messages.map((key, index) => <Text key={`${key}.${index}`} accessibilityLiveRegion="polite">{t(key)}</Text>)}
         {view.error ? <Text accessibilityRole="alert">{t(view.error, view.errorParams)}</Text> : null}
         <Text variant="footnote">{t('beatAi.library')}</Text>

@@ -19,17 +19,17 @@ export function createPartRequest(options: Omit<RequestOptions<Pending>, 'finish
         const doc = options.store.getBeat(options.beatId) as AiDoc | undefined;
         if (!doc) throw new Error('missing_beat');
         const loaded = await loadResults(row, status, doc, options.port, options.signal);
-        if (!check()) return { keep: row, message: '' };
+        if (!check()) return { keep: row, noticeKey: '' };
         if (loaded.results.length) {
             if (!options.apply(d => placeAiResults(d as unknown as AiDoc, row, loaded.results) as unknown as BeatDoc, t(`beatAi.${row.op}`))) throw new Error('placement_refused');
             const placed = options.store.getBeat(options.beatId) as AiDoc;
             await options.store.flushBeat(options.beatId);
-            if (!check()) return { keep: row, message: '' };
+            if (!check()) return { keep: row, noticeKey: '' };
             const saved = options.savedDoc ? await options.savedDoc() : await documentFiles().read(beatFile(options.beatId)).then(raw => raw ? JSON.parse(raw).doc as AiDoc : undefined);
-            if (!check()) return { keep: row, message: '' };
+            if (!check()) return { keep: row, noticeKey: '' };
             if (!saved || options.store.getBeat(options.beatId) !== placed || !loaded.results.every(r => placedAlready(saved, row, r.ordinal))) throw new Error('placement_not_saved');
         }
-        return { message: loaded.results.length ? 'beatAi.placed' : '', messages: loaded.messages };
+        return { noticeKey: loaded.results.length ? 'beatAi.placed' : '', messages: loaded.messages };
     } });
 }
 export function useBeatAiRequest<R extends Receipt>(request: ReceiptRequest<R>) {
