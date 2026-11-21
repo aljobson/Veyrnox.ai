@@ -32,7 +32,31 @@ export const VIDEO_TEMPLATE_CAP = 150;
 // cannot produce the scene, and two paid swap tests failed (original man left in the wide shots; then the scene was lost). Link still resolves.
 // Hidden 2026-11-21 (owner, "only templates which work"): community-skyline-flamingo-prank, community-drive-thru-dialogue, community-skyline-terrace-groove,
 // community-subway-mascot-dance and community-cartoon-puppet-swap. Their short prompts depend on a source clip that image-to-video never receives. Links still resolve.
+// Swap templates proven before listing (owner, 2026-11-21, "only have templates which work"; ADR-0351 amendment 20). Each passed a paid
+// Kling O1 run with a real photo and a shot-by-shot comparison with its source clip. They run on the swap path, which supplies that clip.
+// An id joins this list only after the same test. tests/videoTemplateCap.test.mjs requires each one to be a registered swap clip.
+export const TESTED_SWAP_GALLERY_TEMPLATE_IDS = Object.freeze([
+  'community-action-hero-strut', 'community-alleyway-identity-swap', 'community-apocalypse-lounge',
+  'community-arctic-water-pour', 'community-ballroom-dance-switch', 'community-ballroom-tuxedo-shift',
+  'community-beachside-dance', 'community-black-dress-walk', 'community-blonde-sport-set',
+  'community-bottle-topple-kick', 'community-brooklyn-bridge-groove', 'community-burgundy-stride',
+  'community-cardigan-groove', 'community-cash-burner', 'community-ceiling-fan-transition',
+  'community-chandelier-lounge-performance', 'community-city-plaza-dance', 'community-costume-basketball-swap',
+  'community-currency-phone-call', 'community-equestrian-sunset-gallop', 'community-extreme-pizza-freefall',
+  'community-festival-stage-presence', 'community-folding-ancient-city', 'community-formal-dance-swap',
+  'community-gentleman-branch-chop', 'community-golden-gown-walk', 'community-identity-swap',
+  'community-kitchen-dance-swap', 'community-marble-hallway-pose', 'community-marble-vanity-mirror',
+  'community-metropolitan-crosswalk', 'community-midnight-city-shuffle', 'community-minimalist-cafe-swap',
+  'community-mirror-flip-transition', 'community-natural-face-swap', 'community-neon-selfie-swap',
+  'community-nightlife-dj-set', 'community-noir-espionage-flow', 'community-parkside-dance-reimagined',
+  'community-party-dancer-swap', 'community-private-jet-swap', 'community-retro-housewife-dance',
+  'community-retro-tracksuit-groove', 'community-skyline-rhythm-walk', 'community-skyscraper-ledge-spin',
+  'community-sour-drink-reaction', 'community-street-dance-recast', 'community-street-dance-swap',
+  'community-street-dancer-recast', 'community-street-style-strut', 'community-suit-walk',
+]);
+
 export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
+  ...TESTED_SWAP_GALLERY_TEMPLATE_IDS,
   'community-explosive-exit',
   'community-mansion-raid-swap', 'animal-pov-to-the-club',
   'car-sky-fall', 'desert-rider', 'community-pet-affection-reveal',

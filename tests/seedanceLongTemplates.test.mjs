@@ -211,7 +211,8 @@ test('themes: every long-prompt gallery template has a theme; the new theme chip
     const offThemes = new Set(GALLERY_PRESETS.map(p => videoTemplateTheme(p.id)));
     for (const theme of ['HORROR', 'MAGIC']) assert.equal(offThemes.has(theme), false, `${theme} would show empty while off`);
     // FILM also holds community-modern-listing-dolly (2026-11-21), which is listed either way, so its chip shows with the key off too.
-    assert.deepEqual(GALLERY_PRESETS.filter(p => videoTemplateTheme(p.id) === 'FILM').map(p => p.id), ['community-modern-listing-dolly']);
+    const { TESTED_SWAP_GALLERY_TEMPLATE_IDS } = await import('../app/veyrnox/_lib/videoTemplateGallery.js');
+    assert.deepEqual(GALLERY_PRESETS.filter(p => videoTemplateTheme(p.id) === 'FILM' && !TESTED_SWAP_GALLERY_TEMPLATE_IDS.includes(p.id)).map(p => p.id), ['community-modern-listing-dolly']);
 });
 
 test('production APP_RUNTIME_FLAGS turns the long templates on beside the existing keys, with no separate var (ADR-0309 amendment 4)', async () => {
