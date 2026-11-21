@@ -329,12 +329,29 @@ test('swapping restored voices writes only the chosen speaker and keeps the othe
     await rename('Guest', 2); await click(button(t('dialogue.add'))); await rename('Ben', 3);
     turnVoice(3, 'George');
 });
-test.each(['saved', 'explicit'])('swaps persist both speakers when the other voice is %s', async origin => {
+test.each(['saved', 'explicit'])('choosing a %s voice from a default speaker never overwrites the other speaker', async origin => {
     if (origin === 'saved') mockLoadCast.mockResolvedValue([{ speaker: 'Ben', voice: 'George' }]);
     await render();
     if (origin === 'explicit') await click(button(t('dialogue.chooseVoice', { speaker: 'Ben', voice: 'George' })));
     await click(button(t('dialogue.chooseVoice', { speaker: 'Ana', voice: 'George' })));
-    expect(mockSaveCast).toHaveBeenLastCalledWith([{ speaker: 'Ana', voice: 'George' }, { speaker: 'Ben', voice: 'Aria' }]);
+    expect(mockSaveCast).toHaveBeenLastCalledWith([{ speaker: 'Ana', voice: 'George' }]);
+});
+test('swapping two saved voices persists both speakers', async () => {
+    mockLoadCast.mockResolvedValue([{ speaker: 'Ana', voice: 'Sarah' }, { speaker: 'Ben', voice: 'George' }]);
+    await render(); await click(button(t('dialogue.chooseVoice', { speaker: 'Ana', voice: 'George' })));
+    expect(mockSaveCast).toHaveBeenLastCalledWith([{ speaker: 'Ana', voice: 'George' }, { speaker: 'Ben', voice: 'Sarah' }]);
+});
+test('a default voice handed over in a swap cannot be saved by a later swap', async () => {
+    mockLoadCast.mockResolvedValue([{ speaker: 'Ben', voice: 'George' }]);
+    await render(); await click(button(t('dialogue.chooseVoice', { speaker: 'Ana', voice: 'George' })));
+    await click(button(t('dialogue.chooseVoice', { speaker: 'Ana', voice: 'Aria' })));
+    expect(mockSaveCast).toHaveBeenLastCalledWith([{ speaker: 'Ana', voice: 'Aria' }]);
+});
+test('choosing a saved voice for a renamed speaker never saves the carried voice on the other speaker', async () => {
+    mockLoadCast.mockResolvedValue([{ speaker: 'Ana', voice: 'George' }, { speaker: 'Ben', voice: 'Aria' }]);
+    await render(); await fill(); await rename('Zoe');
+    await click(button(t('dialogue.chooseVoice', { speaker: 'Zoe', voice: 'Aria' })));
+    expect(mockSaveCast).toHaveBeenLastCalledWith([{ speaker: 'Zoe', voice: 'Aria' }]);
 });
 test('rename carry survives a temporary merge and unrelated words edits while blank', async () => {
     mockLoadCast.mockResolvedValue([{ speaker: 'Sam', voice: 'Aria' }, { speaker: 'Ben', voice: 'George' }]);

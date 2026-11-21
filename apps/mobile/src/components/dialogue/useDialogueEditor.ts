@@ -8,6 +8,7 @@ import { loadDialogueCast, saveDialogueCast, forgetDialogueCastSpeakers } from '
 import { useStudioReopen } from '../speech/useStudioReopen';
 
 const key = (name: string) => name.trim().toLowerCase();
+const persistable = (origin: EditingAssignment['origin']) => origin === 'saved' || origin === 'explicit';
 const fresh = () => {
     const turns = emptyDialogueTurns();
     return { turns, cast: assignmentOrigins(resolveDialogueCastAssignments(turns, []), [], []), edited: false, turnEdited: false, perJob: false };
@@ -93,9 +94,10 @@ export function useDialogueEditor({ reopen, blocked, editAttempt, resetAttempt, 
         const cast = state.cast.map(item => {
             if (item.speaker !== speaker && item.voice !== voice) return item;
             const next = { speaker: item.speaker, voice: item.speaker === speaker ? voice : selected.voice };
-            const keep = item.speaker === speaker || item.origin === 'saved' || item.origin === 'explicit';
+            // The displaced speaker is saved only when both sides of the swap were real choices.
+            const keep = item.speaker === speaker || (persistable(item.origin) && persistable(selected.origin));
             if (keep) persist.push(next);
-            return { ...next, origin: keep ? 'explicit' as const : item.origin };
+            return { ...next, origin: keep ? 'explicit' as const : 'default' as const };
         });
         for (const item of persist) preferenceEdits.current.set(key(item.speaker), item);
         preferences.current = normalizeDialogueCastMap([...persist, ...preferences.current]);
