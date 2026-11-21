@@ -82,12 +82,12 @@ test('a finished sample stops its card', async () => {
     mockFinished = false;
 });
 
-test('an audio template card shows the track credit line and a Use template button, as on the web', async () => {
+test('an audio template row keeps the track credit line and opens from the row', async () => {
     const onOpen = jest.fn();
     await act(async () => root.render(<AudioTemplateCard template={{ ...template, attribution: 'Music by cdk, CC BY 3.0' }} onOpen={onOpen} />));
     expect(text()).toContain('Music by cdk, CC BY 3.0');
-    const use = root.container.queryAll(n => n.props.accessibilityLabel === 'Use template, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
-    await act(async () => use.props.onClick());
+    const row = root.container.queryAll(n => n.props.accessibilityLabel === 'Audio, Lo-fi loop' && typeof n.props.onClick === 'function')[0];
+    await act(async () => row.props.onClick());
     expect(onOpen).toHaveBeenCalledTimes(1);
 });
 
