@@ -10,6 +10,7 @@ import { t } from '../src/lib/i18n';
 import { Button } from '../src/components/ui';
 import { noteLengthUnits, notePosition } from '../src/lib/beatNative/rollGeometry';
 import { validateBeat } from '../src/lib/beatNative/doc';
+beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 let mockParams = { id: '', region: '' };
