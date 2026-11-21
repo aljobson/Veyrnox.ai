@@ -18,9 +18,9 @@ type Token = { valid(): boolean; end(): void };
 type Options = {
     api: ApiClient; projectId: string; announce?: boolean; ready: boolean; dirty: boolean; saving: boolean; revision: number;
     currentDocument(): ProjectDocument | null; beginImport(): Token | null;
-    insert(media: Media, frame: number, select?: boolean): InsertResult;
+    insert(media: Media, frame: number, select?: boolean, onPlaced?: (trimmed: boolean) => void): InsertResult;
 };
-type Entry = { media: Media; frame: number; select: boolean; item?: PendingGeneration };
+type Entry = { media: Media; frame: number; select: boolean; item?: PendingGeneration; onPlaced?: (trimmed: boolean) => void };
 
 export function useEditorGenerationReturns(options: Options) {
     const latest = useRef(options); latest.current = options;
@@ -70,7 +70,7 @@ export function useEditorGenerationReturns(options: Options) {
             if (!token) return 'dropped';
             try {
                 if (!ready() || !token.valid()) return 'dropped';
-                const result = o().insert(entry.media, clampFrame(entry.frame), entry.select);
+                const result = o().insert(entry.media, clampFrame(entry.frame), entry.select, entry.onPlaced);
                 if (typeof result === 'object') {
                     if (result.status === 'not-live') return result;
                     setNote(t(`editorEditGate.${result.reason}`));
@@ -173,7 +173,7 @@ export function useEditorGenerationReturns(options: Options) {
         }
         return {
             isCurrent: live, refresh,
-            place: (media: Media, frame: number, select = false) => apply({ media, frame: clampFrame(frame), select }),
+            place: (media: Media, frame: number, select = false, onPlaced?: (trimmed: boolean) => void) => apply({ media, frame: clampFrame(frame), select, onPlaced }),
             gestureActive(active: boolean) {
                 gesture = active;
                 if (active) return;

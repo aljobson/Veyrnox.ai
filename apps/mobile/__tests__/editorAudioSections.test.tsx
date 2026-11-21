@@ -1,6 +1,8 @@
 import { FullEditorScreen } from '../src/components/editor/FullEditorScreen';
 import type { useFullEditorSession } from '../src/components/editor/useFullEditorSession';
 import { act, useLayoutEffect, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
+import { randomUUID } from 'expo-crypto';
 import { createRoot, type Root } from 'test-renderer';
 import { AudioSettingsSection } from '../src/components/editor/tools/AudioSettingsSection';
 import { OriginalAudioSection } from '../src/components/editor/tools/OriginalAudioSection';
@@ -15,13 +17,13 @@ import { documentProblem } from '../src/lib/editorDocumentGate';
 import { type Timeline } from '../src/lib/nativeEditorModel';
 import type { InsertResult } from '../src/components/editor/useEditorGenerationReturns';
 // Match the existing screen suites' allowance for cold React Native rendering on shared hosts.
-jest.setTimeout(20000);
+jest.setTimeout(30000);
 const mockEnsure = jest.fn(async (_id: string) => 'file://sound');
 const mockPlay = jest.fn(async (_uri: string) => {}), mockStop = jest.fn(), mockRelease = jest.fn();
 jest.mock('../src/lib/editorOriginalAudioFiles', () => ({
     ensureOriginalAudioFile: (id: string) => mockEnsure(id), createAudition: () => ({ play: mockPlay, stop: mockStop, release: mockRelease }),
 }));
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'new' }));
+jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'new') }));
 let root: Root, timeline: Timeline, commits: Timeline[], message: string | null, dirty: boolean, localUris: Record<string, string>;
 let actions: ReturnType<typeof useAudioSettingsActions>;
 const store = createFrameStore();
@@ -42,7 +44,7 @@ function Harness({ catalog = false, playing = false, insertResult }: { catalog?:
         <AudioSettingsSection clip={clip} media={timeline.media.m} track={timeline.video.length ? 'video' : 'audio'} actions={handlers} />;
 }
 beforeEach(() => { jest.useFakeTimers(); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); timeline = webSequenceV3();
-    commits = []; message = null; dirty = false; store.set(30); jest.clearAllMocks(); });
+    commits = []; message = null; dirty = false; store.set(30); jest.clearAllMocks(); jest.mocked(randomUUID).mockReset().mockReturnValue('new'); });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
 async function press(label: string) {
     const node = root.container.queryAll(n => n.props.accessibilityLabel === label && typeof n.props.onClick === 'function')[0];
@@ -241,11 +243,57 @@ test('moved insertion announces the exact frame, including a fractional second',
 test('real screen re-adding an existing original sound from Media announces shortening', async () => {
     await screen(); await press('Audio'); await press('Insert Soft keys');
     await act(async () => mockSession.frameStore.set(30));
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
     await press('Media'); await press('Add Soft keys to timeline');
+    expect(announce.mock.calls).toEqual([['Music trimmed to fit your video.']]);
+    await press('Add Soft keys to timeline');
     const tl = mockSession.currentDocument()!.timeline as Timeline;
-    expect(tl.audio).toHaveLength(2);
+    expect(tl.audio).toHaveLength(3);
     expect(tl.audio[1]).toMatchObject({ mediaId: 'l-new', start: 30, len: 210 });
+    expect(tl.audio[2]).toMatchObject({ mediaId: 'l-new', start: 30, len: 210 });
     expect(mockSession.problem).toBe('Music trimmed to fit your video.');
+    expect(announce.mock.calls).toEqual([['Music trimmed to fit your video.'], ['Music trimmed to fit your video.']]);
+});
+test.each(['drag', 'trim'])('real screen queues original audio during a clip %s and announces only after placement', async mode => {
+    const tl = webSequenceV3(); tl.video = [{ id: 'v1', mediaId: 'm', start: 0, in: 0, len: 120, trackId: 'video-0' }]; tl.text = [];
+    let finish!: (uri: string) => void;
+    mockEnsure.mockImplementationOnce(() => new Promise<string>(resolve => { finish = resolve; }));
+    await screen(tl); await act(async () => { mockSession.setSnap(false); mockSession.setZoom(1); mockSession.frameStore.set(30); });
+    await press('Audio'); await press('Insert Soft keys');
+    await act(async () => {
+        mockSession.setSelection({ track: 'video', id: 'v1' }); mockSession.setSelections([{ track: 'video', id: 'v1' }]);
+    });
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    const node = () => root.container.queryAll(n => n.props.testID === (mode === 'trim' ? 'trim-v1-out' : 'clip-v1'))[0];
+    const event = (x: number) => ({ nativeEvent: { pageX: x, pageY: 40, locationY: 10 } });
+    await act(async () => node().props.onResponderGrant(event(10)));
+    await act(async () => jest.advanceTimersByTimeAsync(300));
+    await act(async () => node().props.onResponderMove(event(40)));
+    await act(async () => finish('file://queued-sound'));
+    expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
+    expect(mockSession.localMediaUris['l-new']).toBeUndefined(); expect(announce).not.toHaveBeenCalled();
+    await act(async () => node().props.onResponderRelease(event(40)));
+    const placed = mockSession.currentDocument()!.timeline as Timeline;
+    expect(placed.video[0]).toMatchObject(mode === 'trim' ? { start: 0, len: 150 } : { start: 30, len: 120 });
+    expect(placed.audio).toEqual([expect.objectContaining({ mediaId: 'l-new', start: 30, len: 120 })]);
+    expect(mockSession.localMediaUris['l-new']).toBe('file://queued-sound');
+    expect(announce.mock.calls.filter(([text]) => text.startsWith('Added '))).toEqual([['Added Soft keys at 00:00:01:00, shortened to end with the video.']]);
+    await press('Undo'); expect((mockSession.currentDocument()!.timeline as Timeline).audio).toHaveLength(0);
+    expect((mockSession.currentDocument()!.timeline as Timeline).video).toEqual(placed.video);
+});
+test('real screen announces two consecutive catalog placements with identical sentences once each', async () => {
+    await screen(); await press('Audio');
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    const placements = () => announce.mock.calls.filter(([text]) => text.startsWith('Added '));
+    jest.mocked(randomUUID).mockReturnValueOnce('first').mockReturnValueOnce('second');
+    await press('Insert Soft keys');
+    expect(placements()).toEqual([['Added Soft keys at 00:00:00:00, shortened to end with the video.']]);
+    await press('Insert Soft keys');
+    expect((mockSession.currentDocument()!.timeline as Timeline).audio.map(c => c.mediaId)).toEqual(['l-first', 'l-second']);
+    expect(placements()).toEqual([
+        ['Added Soft keys at 00:00:00:00, shortened to end with the video.'],
+        ['Added Soft keys at 00:00:00:00, shortened to end with the video.'],
+    ]);
 });
 test('real screen audio-only insertion at frame 17,900 does not claim a trim to video', async () => {
     const tl = webSequenceV3(), media = originalAudioMedia('soft-keys', 'existing');

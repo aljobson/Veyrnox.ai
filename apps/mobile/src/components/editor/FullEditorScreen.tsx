@@ -93,6 +93,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const bestCut = useBestCutEditor(session, projectId, startBestCut); const thumbLinks = useAssetLinks(api);
     const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
     const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
+    const [placement, setPlacement] = useState(0);
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
     const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() }); const guard = useEditorLeaveGuard(leaveEditor, router.back);
     const [generate, setGenerate] = useState<{ visible: boolean; kind: Kind; frame: number; owner?: string; prompt?: string } | null>(null);
@@ -109,11 +110,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             return result.error; }
         const commit = markDocument({ ...current, schema_version: 3, timeline: result.timeline });
         if (commit.status !== 'accepted') return commit;
+        setPlacement(value => value + 1);
         if (result.trimmed && (!media.originalAudio || Object.hasOwn(timelineOf(current.timeline).media, media.id))) setProblem(t('editor.musicTrimmed'));
         onPlaced?.(result.trimmed);
         if (select || media.kind === 'audio') { setSelection(result.selection); setSelections([result.selection]); } return 'placed';
     }
-    const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() }); useAnnouncement(problem);
+    const openGenerate = (kind: Kind, prompt = '') => setGenerate({ visible: true, kind, prompt, frame: clampFrame(frameStore.get()), owner: getCacheUser() });
     // Short phones: shrink the preview so the toolbars and tool rail are never pushed off screen.
     const { height: windowHeight } = useWindowDimensions(); const insets = useContext(SafeAreaInsetsContext);
     const budget = editorLayoutBudget({ windowHeight, topInset: insets?.top ?? 0, bottomInset: insets?.bottom ?? 0, trackCount: document ? timelineOf(document.timeline).tracks.length : 1 });
@@ -124,7 +126,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
     const audioActions = useAudioSettingsActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
-    const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, insertMedia, frameStore, playing, setProblem });
+    const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, insertMedia: returns.place, frameStore, playing, setProblem });
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const total = framesIn(timeline); const selected = clipAt(timeline, selection);
@@ -253,7 +255,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 style={styles.formatBadge}><Text style={styles.formatText}>{canvas.aspect_ratio}</Text><Text style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate
                 })}</Text></View></> : null}
         </View>
-        {problem ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
+        {problem ? <StatusText key={placement} variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
         {advanced ? null : <View style={styles.simpleActions}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
             <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />

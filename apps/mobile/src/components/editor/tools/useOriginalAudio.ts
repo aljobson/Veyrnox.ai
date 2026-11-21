@@ -61,10 +61,13 @@ export function useOriginalAudio(props: Props) {
             const current = latest.current;
             if (insert) {
                 const media = originalAudioMedia(id, `l-${randomUUID()}`), at = clampFrame(current.frameStore.get());
-                const result = current.insertMedia(media, at, true, trimmed => { inserted.current = { media, trimmed }; });
-                if (result === 'placed') {
-                    current.setLocalMediaUris(uris => ({ ...uris, [media.id]: uri }));
-                } else if (typeof result === 'object' && result.status === 'refused') {
+                const result = current.insertMedia(media, at, true, trimmed => {
+                    if (!mounted.current || lifetime.current !== life) return;
+                    inserted.current = { media, trimmed };
+                    latest.current.setLocalMediaUris(uris => ({ ...uris, [media.id]: uri }));
+                });
+                if (result === 'placed' || result === 'queued') return;
+                if (typeof result === 'object' && result.status === 'refused') {
                     current.setProblem(t(result.reason === 'tooLarge' ? 'editorEditGate.tooLarge' : 'editorEditGate.invalid'));
                 } else if (result === 'dropped' || (typeof result === 'object' && result.status === 'not-live')) {
                     current.setProblem(t('editorAudioTools.prepareFailed'));
