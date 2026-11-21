@@ -1,8 +1,9 @@
 import type { BeatDoc, BeatTrackDoc } from '../beatNative/doc';
+import type { TakeAsset } from '../beatNative/takeShared';
 export type Op = 'generate' | 'stems' | 'targetStems' | 'extend' | 'replace';
 export type Asset = { source: 'song' | 'target'; ref: Record<string, string>; name: string; bpm: number | null; durationSec: number; sourceChannels: number; encodedBytes: number };
 export type AudioRegion = { id: string; start: number; length: number; assetId: string; phaseSec: number; reverse: boolean };
-export type AiDoc = BeatDoc & { cycle: { start: number; end: number }; assets: Record<string, Asset> };
+export type AiDoc = Omit<BeatDoc, 'assets'> & { cycle: { start: number; end: number }; assets: Record<string, Asset | TakeAsset> };
 export type Source = { songId: string; versionId: string; assetId: string; asset: Asset };
 export type Placement = { afterTrackId: string | null; sourceTrackId: string | null; regionId?: string; start: number; length: number; phaseSec: number; cycle: { start: number; end: number } };
 export type QuoteSnapshot = { total_credits: number; balance: number; balance_after: number; affordable: boolean; expires_at: string };
