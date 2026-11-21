@@ -268,6 +268,15 @@
   "speech.tone.Expressive": "Expressive is the French feminine adjective describing an expressive voice, with the same spelling as English.",
   "musicTrackAdd.mode.instrumental": "Music track add: established term retained in machine translation. Native review pending.",
   "musicTrackAdd.gender.auto": "Music track add: established term retained in machine translation. Native review pending.",
+  "beatMix.master": "Established audio term in fr, conventionally used unchanged: Master.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.param.ratio": "Established audio term in fr, conventionally used unchanged: Ratio.",
+  "beatMix.lane.gain": "Established audio term in fr, conventionally used unchanged: Gain.",
+  "beatMix.lane.selected": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.seconds": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale.",
   "beatAi.auto": "Auto is the same established selector label in French.",
   "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
 }

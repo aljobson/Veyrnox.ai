@@ -81,5 +81,11 @@
   "editorTools.rateValue": "Standard mathematical notation shared across languages.",
   "editorTools.positionValue": "Standard mathematical notation shared across languages.",
   "editorText.percent": "Standard notation or established style name, retained in this locale.",
+  "beatMix.fx.eq": "Established audio term in ja, conventionally used unchanged: EQ.",
+  "beatMix.fx.name": "Formatting template contains only translated placeholders and locale-appropriate punctuation.",
+  "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.percent": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale.",
   "beatAi.source": "Only user-provided names, identifiers or translated state placeholders and punctuation; no English prose."
 }

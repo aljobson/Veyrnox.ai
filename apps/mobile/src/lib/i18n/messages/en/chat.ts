@@ -72,6 +72,8 @@ export default {
     'chat.attach.done': 'Done',
     'chat.attach.needsUpdate': 'Photos from your phone need the latest app version before they can be sent. Choose from your Library instead.',
     'chat.attach.uploadFailed': 'An image could not be uploaded. Nothing was sent and you were not charged.',
+    'chat.attach.modelImages': 'This model cannot read images. Remove them or choose a model that can.',
+    'chat.attach.photoFailed': 'A photo could not be read. Try another, or check that Veyrnox.ai can open your photos.',
     'chat.draft.open': 'Open in Create',
     'chat.draft.price.one': '{count} credit',
     'chat.draft.price.other': '{count} credits',

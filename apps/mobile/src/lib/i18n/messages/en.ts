@@ -26,6 +26,7 @@ import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
 import area_beat from './en/beat';
 import area_beatAi from './en/beatAi';
+import area_beatMix from './en/beatMix';
 import area_beatPiano from './en/beatPiano';
 import area_beatTakes from './en/beatTakes';
 import area_bestCut from './en/bestCut';
@@ -267,6 +268,7 @@ const catalog = {
     ...area_autolists,
     ...area_beat,
     ...area_beatAi,
+    ...area_beatMix,
     ...area_beatPiano,
     ...area_beatTakes,
     ...area_bestCut,

@@ -4,7 +4,7 @@ import type { BeatDoc } from './doc';
 export type History = { present: BeatDoc; past: { doc: BeatDoc; label: string }[]; future: { doc: BeatDoc; label: string }[] };
 export const { createHistory, record, undo, redo, canUndo, canRedo, replacePresent } = shared as {
     createHistory(doc: BeatDoc): History;
-    record(history: History, doc: BeatDoc, options?: { label?: string }): History;
+    record(history: History, doc: BeatDoc, options?: { label?: string; key?: string }): History;
     undo(history: History): History;
     redo(history: History): History;
     canUndo(history: History): boolean;
