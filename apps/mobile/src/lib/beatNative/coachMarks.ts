@@ -1,5 +1,5 @@
 import { BEAT_TIP_STEPS, beatTipsSeenKey, type TipId } from './labs';
-export const PHONE_TIP_TARGETS: ReadonlySet<TipId> = new Set(['grid', 'library', 'play', 'shortcuts']);
+export const PHONE_TIP_TARGETS: ReadonlySet<TipId> = new Set(['grid', 'library', 'play', 'arrangement', 'shortcuts']);
 export const phoneTipSteps = (available: ReadonlySet<TipId>) => BEAT_TIP_STEPS.filter(step => available.has(step.id));
 export const nextTip = (index: number, available: ReadonlySet<TipId>) => phoneTipSteps(available)[index + 1] ?? null;
 export type TipStorage = { getItem(key: string): string | null; setItem(key: string, value: string): void };

@@ -96,8 +96,8 @@ test('coach buttons advance, skip and finish; each card announces phone-specific
 test('tips persist per account, skip absent targets, and replay from Controls', async () => {
     const props = { doc: fixedDoc(), apply: () => true, targets: PHONE_TIP_TARGETS, capabilities: PHONE_CAPABILITIES };
     await act(async () => root.render(<BeatLabsBar {...props} />));
-    for (const id of ['grid', 'library', 'play']) { expect(text(t(`beatLabs.tip.${id}`)).length).toBeGreaterThan(0); await press(t('beatLabs.next')); }
-    expect(text(t('beatLabs.tip.arrangement'))).toHaveLength(0); await press(t('beatLabs.done'));
+    for (const id of ['grid', 'library', 'play', 'arrangement']) { expect(text(t(`beatLabs.tip.${id}`)).length).toBeGreaterThan(0); await press(t('beatLabs.next')); }
+    expect(text(t('beatLabs.tip.export'))).toHaveLength(0); await press(t('beatLabs.done'));
     expect(mockSeen.size).toBe(1); await act(async () => root.unmount()); root = createRoot(); await act(async () => root.render(<BeatLabsBar {...props} />));
     expect(text(t('beatLabs.tip.grid'))).toHaveLength(0); await press(t('beatLabs.controls')); await press(t('beatLabs.replay'));
     expect(text(t('beatLabs.tip.grid')).length).toBeGreaterThan(0); await press(t('beatLabs.skip')); expect(text(t('beatLabs.tip.grid'))).toHaveLength(0);

@@ -36,6 +36,12 @@
     "ratio": 1.89
   },
   {
+    "id": "beatLabs.touch.pianoDelete",
+    "english": "Select notes and use delete notes.",
+    "translation": "Sélectionnez des notes et utilisez Supprimer les notes.",
+    "ratio": 1.62
+  },
+  {
     "id": "beatLabs.sound.bells",
     "english": "Music box",
     "translation": "Boîte à musique",

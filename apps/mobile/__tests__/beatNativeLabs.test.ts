@@ -92,8 +92,8 @@ test('every shortcut has a capability; only available capabilities have real tou
 });
 test('coach skips missing targets; seen key is per user, safe storage failures hide tips', () => {
     const data = new Map<string, string>(), storage = { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); } };
-    expect(phoneTipSteps(PHONE_TIP_TARGETS).map(s => s.id)).toEqual(['grid', 'library', 'play', 'shortcuts']);
-    expect(nextTip(2, PHONE_TIP_TARGETS)?.id).toBe('shortcuts'); expect(nextTip(3, PHONE_TIP_TARGETS)).toBeNull();
+    expect(phoneTipSteps(PHONE_TIP_TARGETS).map(s => s.id)).toEqual(['grid', 'library', 'play', 'arrangement', 'shortcuts']);
+    expect(nextTip(2, PHONE_TIP_TARGETS)?.id).toBe('arrangement'); expect(nextTip(3, PHONE_TIP_TARGETS)?.id).toBe('shortcuts'); expect(nextTip(4, PHONE_TIP_TARGETS)).toBeNull();
     for (const step of BEAT_TIP_STEPS) expect((en as Record<string, string>)[`beatLabs.tip.${step.id}`]).toBeTruthy();
     expect(tipsSeen(storage, null)).toBe(true); expect(tipsSeen(storage, USER)).toBe(false);
     markTipsSeen(storage, USER); expect(data.get(beatTipsSeenKey(USER)!)).toBe('1'); expect(tipsSeen(storage, USER)).toBe(true);
