@@ -160,6 +160,12 @@ test('no speech is terminal for this clip and does not strand a status action', 
     expect(lines()).not.toContain(t('app.smartCut.native.analyse.blocked', { names: clip.label }));
 });
 
+test('no speech with pending billing evidence names both the outcome and maximum', async () => {
+    mockStart.mockResolvedValue({ id: 'request', status: 'completed', speech: false });
+    await render(); await press(t('app.smartCut.native.analyse.start'));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.noSpeechMaximum', { name: clip.label, credits: 7 }));
+});
+
 test('missing billing evidence stays a per-clip maximum instead of being called free', async () => {
     mockStart.mockResolvedValue({ id: 'request', status: 'completed', analysis });
     await render(); await press(t('app.smartCut.native.analyse.start'));
@@ -231,7 +237,7 @@ test('a repeatedly malformed accepted result becomes terminal instead of looping
     mockRecover.mockRejectedValue(new ApiError(200, 'bad_response'));
     await render(); await press(t('app.smartCut.native.analyse.start'));
     await press(t('app.smartCut.native.analyse.checkStatus'));
-    expect(lines()).toContain(t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: 7 }));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.mismatchMaximum', { name: clip.label, reason: 'bad_response', credits: 7 }));
     expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeUndefined();
     expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
 });
@@ -241,7 +247,7 @@ test('a server-rejected stored analysis becomes terminal instead of looping fore
     mockRecover.mockRejectedValue(new ApiError(502, 'analysis_invalid'));
     await render(); await press(t('app.smartCut.native.analyse.start'));
     await press(t('app.smartCut.native.analyse.checkStatus'));
-    expect(lines()).toContain(t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: 7 }));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.mismatchMaximum', { name: clip.label, reason: 'analysis_invalid', credits: 7 }));
     expect(button(t('app.smartCut.native.analyse.checkStatus'))).toBeUndefined();
     expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
 });

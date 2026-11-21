@@ -148,7 +148,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                 ? t('app.smartCut.native.analyse.noSpeech', { name: clip.label })
                 : net !== null
                     ? t('app.smartCut.native.analyse.noSpeechCharged', { name: clip.label, credits: net })
-                    : t('app.smartCut.native.analyse.clipMaximum', { name: clip.label, credits: activeQuote.credits });
+                    : t('app.smartCut.native.analyse.noSpeechMaximum', { name: clip.label, credits: activeQuote.credits });
             setTerminalMessages((current) => new Map(current).set(clip.jobId, message));
             setRecovery(null);
             return false;
@@ -189,7 +189,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
             ? t('app.smartCut.native.analyse.mismatchNoCharge', { name: current.clip.label, reason })
             : credits !== undefined
                 ? t('app.smartCut.native.analyse.mismatchCharged', { name: current.clip.label, reason, credits })
-                : t('app.smartCut.native.analyse.clipMaximum', { name: current.clip.label, credits: activeQuote.credits });
+                : t('app.smartCut.native.analyse.mismatchMaximum', { name: current.clip.label, reason, credits: activeQuote.credits });
         setTerminalMessages((messages) => new Map(messages).set(current.clip.jobId, message));
         setRecovery(null);
     }
@@ -216,6 +216,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
                 if (first.status === 'queued') first = await pollSpeech(api, key, account, abort.signal, () => undefined);
                 if (signatureRef.current !== startedFor || getCacheUser() !== account) throw new ApiError(0, 'cancelled');
                 if (!settle(clip, first, key)) break;
+                attempted = null;
                 setProgress({ done: index + 1, total: actionable.length });
             }
         } catch (error) {
