@@ -98,8 +98,8 @@ describe('example clips the phone can play', () => {
         expect(examplePlaysOn({ ...video('https://cdn.lipsync.video/x/still.webp'), kind: 'image' }, 'ios')).toBe(false);
     });
     test('every video example that iOS cannot play has a still to show instead', () => {
+        // Holds with zero unplayable examples too: it must keep passing when the last WebM is replaced.
         const unplayable = CREATIVE_FEATURES.filter((f) => f.example.kind === 'video' && !examplePlaysOn(f.example, 'ios'));
-        expect(unplayable.length).toBeGreaterThan(0);
         expect(unplayable.filter((f) => !f.example.posterUrl).map((f) => f.slug)).toEqual([]);
     });
 });

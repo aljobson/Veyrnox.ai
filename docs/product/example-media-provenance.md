@@ -39,21 +39,8 @@ The remaining competitor-hosted example is `singing-photo` (separate session, ne
 
 Web URLs are `/examples/<slug>.mp4` and `.jpg`; mobile URLs are `https://veyrnox.ai/examples/...`. Deploy the web assets before a phone build uses them.
 
-The shared example note is localized as an illustrative-example disclaimer, rather than attributing every example to Veyrnox: the 13 deferred entries below still use their original external URLs. Both registries and all their existing posters are unchanged for these entries:
+The shared example note is localized as an illustrative-example disclaimer. It shows only beside non-local examples, so after A2 it appears only for `singing-photo`, the single entry that still uses its original external URL (separate session; it needs a vocal file we own). The media allowlist tests enumerate that one exception; remove it when its replacement lands, then remove the CSP origin and update the security-header assertions.
 
-- `talking-avatar`
-- `ai-human-generator`
-- `ai-influencer-generator`
-- (`lip-sync` is already local since PR #2584 and is not deferred.)
-- `ai-talking-photo-generator`
-- `singing-photo` (separate session)
-- `avatar-dialogue`
-- `video-dubbing`
-- `talking-cartoon`
-- `talking-animals`
-- `ai-baby-podcast`
-- `ai-ad-clone`
-- `product-avatar`
-- `product-video-generator`
+## Open rights question: speech in the A2 clips
 
-These entries are exceptions, not covered by the original-media rights statement above. The web and mobile media allowlist tests explicitly enumerate them; shrink those lists as subsequent stages land. Keep the existing CSP origin until the remaining external media has been replaced.
+Ten of the twelve A2 clips carry speech made with the built-in macOS voices (see the table). Apple's macOS licence limits System Voice output to personal, non-commercial use, so publishing these clips as product examples needs either a separate grant or replacement with a licensed or owned voice. This is a pending owner decision; the picture, motion and lip sync are original, but the audio track is the open item. Regenerating those ten with a licensed voice costs about 32 credits per clip plus the speech.

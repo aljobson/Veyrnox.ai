@@ -6,8 +6,9 @@ import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { VideoView, useVideoPlayer } from 'expo-video';
 import { useAuth } from '../../../auth/AuthProvider';
+import { ExampleStill } from '../../../components/ExampleStill';
+import { ExampleVideo } from '../../../components/ExampleVideo';
 import { SourcePicker } from '../../../components/SourcePicker';
 import { creativeFeature, examplePlaysOn, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
 import { readCreativeReuse, type CreativeReuse } from '../../../lib/creativeReuse';
@@ -89,28 +90,6 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
 function Example({ feature }: { feature: CreativeFeature }) {
     return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View></View>{examplePlaysOn(feature.example, Platform.OS) ? <ExampleVideo url={feature.example.url} poster={feature.example.posterUrl} title={feature.title} /> : <ExampleStill uri={feature.example.kind === 'video' ? feature.example.posterUrl ?? feature.example.url : feature.example.url} title={feature.title} />}</View>;
 }
-function ExampleStill({ uri, title }: { uri: string; title: string }) {
-    return <Image source={{ uri }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: title }))} accessibilityIgnoresInvertColors />;
-}
-// The example starts on its own, muted and looping like the web preview, so it is visibly a moving result; the native
-// controls still unmute or pause it. The poster shows until the first frame renders; a clip that cannot load falls back to it.
-function ExampleVideo({ url, poster, title }: { url: string; poster?: string; title: string }) {
-    const [failed, setFailed] = useState(false);
-    const [rendered, setRendered] = useState(false);
-    const player = useVideoPlayer(url, (instance) => { instance.loop = true; instance.muted = true; instance.play(); });
-    useEffect(() => {
-        const subscription = player.addListener('statusChange', (event) => { if (event.status === 'error') setFailed(true); });
-        return () => subscription.remove();
-    }, [player]);
-    if (failed && poster) return <ExampleStill uri={poster} title={title} />;
-    return (
-        <View style={styles.exampleMedia}>
-            <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" onFirstFrameRender={() => setRendered(true)} accessibilityLabel={rawText(t('features.examplevideo', { value1: title }))} />
-            {poster && !rendered ? <Image source={{ uri: poster }} style={[styles.exampleMedia, StyleSheet.absoluteFill]} contentFit="contain" pointerEvents="none" accessibilityIgnoresInvertColors /> : null}
-        </View>
-    );
-}
-
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background }, content: { padding: 16, paddingBottom: 80, gap: 14 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: 24 },
     hero: { gap: 9, paddingVertical: 8 }, kicker: { color: colors.accent, fontSize: 10, fontWeight: '900', letterSpacing: 1.4 }, title: { color: colors.text, fontFamily: fonts.displayHeavy, fontSize: 38, lineHeight: 40 }, lead: { color: colors.body, fontSize: 15, lineHeight: 23 },
