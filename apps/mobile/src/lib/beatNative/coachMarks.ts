@@ -1,6 +1,14 @@
 import { BEAT_TIP_STEPS, beatTipsSeenKey, type TipId } from './labs';
 export const PHONE_TIP_TARGETS: ReadonlySet<TipId> = new Set(['grid', 'library', 'play', 'arrangement', 'shortcuts']);
 export const phoneTipSteps = (available: ReadonlySet<TipId>) => BEAT_TIP_STEPS.filter(step => available.has(step.id));
+/** The step grid is only on screen in Pattern view and the arrangement only in Song view. */
+export function tipTargetsForView(targets: ReadonlySet<TipId>, view: 'pattern' | 'song'): ReadonlySet<TipId> {
+    return new Set([...targets].filter(id => id !== (view === 'song' ? 'grid' : 'arrangement')));
+}
+const order = (id: TipId) => BEAT_TIP_STEPS.findIndex(step => step.id === id);
+/** The step to show when the tour is at `current`: itself if on screen, else the next one that is (so a view change mid-tour never repeats or skips back). */
+export const tipAt = (current: TipId, available: ReadonlySet<TipId>) => phoneTipSteps(available).find(step => order(step.id) >= order(current)) ?? null;
+export const tipAfter = (current: TipId, available: ReadonlySet<TipId>) => phoneTipSteps(available).find(step => order(step.id) > order(current)) ?? null;
 export const nextTip = (index: number, available: ReadonlySet<TipId>) => phoneTipSteps(available)[index + 1] ?? null;
 export type TipStorage = { getItem(key: string): string | null; setItem(key: string, value: string): void };
 // SecureStore disallows colons. Encode every non-alphanumeric character injectively,

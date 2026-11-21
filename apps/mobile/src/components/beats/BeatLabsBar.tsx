@@ -9,11 +9,12 @@ import { BeatSoundsSheet } from './BeatSoundsSheet';
 import { BeatControlsSheet } from './BeatControlsSheet';
 import { BeatCoachCard } from './BeatCoachCard';
 import { useBeatCoachMarks } from './useBeatCoachMarks';
+import { tipTargetsForView } from '../../lib/beatNative/coachMarks';
 export function BeatLabsBar({ doc, apply, targets, capabilities }: {
     doc: BeatDoc; apply(operation: Edit, announce?: string): boolean; targets: ReadonlySet<TipId>; capabilities: ReadonlySet<PhoneCapability>;
 }) {
     const [sheet, setSheet] = useState<'sounds' | 'controls' | null>(null);
-    const coach = useBeatCoachMarks(targets);
+    const coach = useBeatCoachMarks(tipTargetsForView(targets, doc.view === 'song' ? 'song' : 'pattern'));
     return <View>
         <Button label={t('beatLabs.sounds')} onPress={() => setSheet('sounds')} />
         <Button label={t('beatLabs.controls')} onPress={() => setSheet('controls')} />

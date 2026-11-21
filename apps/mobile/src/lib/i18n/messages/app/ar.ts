@@ -47,7 +47,6 @@ export default {
   "beatLabs.touch.pianoToggle": "اضغط على شبكة لفافة البيانو لإضافة نوتة أو تحديدها.",
   "beatLabs.touch.pianoDelete": "حدّد النوتات واستخدم حذف النوتات.",
   "beatLabs.touch.pianoVelocity": "اضغط مطولًا على شريط السرعة ثم اسحب لأعلى أو لأسفل. أو استخدم أزرار السرعة للنوتات المحددة.",
-  "beatLabs.touch.takeAssign": "في مجموعة التسجيلات، استخدم زر التسجيل الذي تريده.",
   "beatLabs.touch.notes": "اعزف النوتات على لوحة المفاتيح ذات الأوكتافين.",
   "beatLabs.touch.octave": "استخدم زرّي خفض الأوكتاف ورفعه في لوحة المفاتيح.",
   "beatLabs.touch.velocity": "استخدم أزرار السرعة في لوحة المفاتيح.",

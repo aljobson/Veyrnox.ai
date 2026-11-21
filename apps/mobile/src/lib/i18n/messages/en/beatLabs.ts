@@ -46,7 +46,6 @@ export default {
   "beatLabs.touch.pianoToggle": "Tap the piano roll grid to add a note or select one.",
   "beatLabs.touch.pianoDelete": "Select notes and use delete notes.",
   "beatLabs.touch.pianoVelocity": "Hold a velocity bar, then drag up or down. Or use the velocity buttons for selected notes.",
-  "beatLabs.touch.takeAssign": "In a take group, use the button for the take you want.",
   "beatLabs.touch.notes": "Play notes on the two-octave keyboard.",
   "beatLabs.touch.octave": "Use the keyboard's octave down and up buttons.",
   "beatLabs.touch.velocity": "Use the keyboard's velocity buttons.",

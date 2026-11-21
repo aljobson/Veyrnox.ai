@@ -47,7 +47,6 @@ export default {
   "beatLabs.touch.pianoToggle": "Tippe auf das Raster der Pianorolle, um eine Note hinzuzufügen oder auszuwählen.",
   "beatLabs.touch.pianoDelete": "Wähle Noten aus und nutze „Noten löschen“.",
   "beatLabs.touch.pianoVelocity": "Halte einen Anschlagsbalken gedrückt und ziehe nach oben oder unten. Oder nutze die Anschlagstasten für ausgewählte Noten.",
-  "beatLabs.touch.takeAssign": "Nutze in einer Take-Gruppe die Taste des gewünschten Takes.",
   "beatLabs.touch.notes": "Spiele Noten auf der Tastatur mit zwei Oktaven.",
   "beatLabs.touch.octave": "Nutze die Tasten der Tastatur für Oktave runter und hoch.",
   "beatLabs.touch.velocity": "Nutze die Anschlagstasten der Tastatur.",

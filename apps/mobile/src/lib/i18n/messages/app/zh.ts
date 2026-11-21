@@ -47,7 +47,6 @@ export default {
   "beatLabs.touch.pianoToggle": "点击钢琴卷帘网格即可添加或选中音符。",
   "beatLabs.touch.pianoDelete": "选中音符，然后使用删除音符。",
   "beatLabs.touch.pianoVelocity": "按住力度条后上下拖动。或者对所选音符使用力度按钮。",
-  "beatLabs.touch.takeAssign": "在录音组中，使用你想要的那条录音的按钮。",
   "beatLabs.touch.notes": "在两个八度的键盘上弹奏音符。",
   "beatLabs.touch.octave": "使用键盘的降八度和升八度按钮。",
   "beatLabs.touch.velocity": "使用键盘的力度按钮。",

@@ -47,7 +47,6 @@ export default {
   "beatLabs.touch.pianoToggle": "피아노 롤 격자를 탭해 노트를 추가하거나 선택하세요.",
   "beatLabs.touch.pianoDelete": "노트를 선택하고 노트 삭제를 사용하세요.",
   "beatLabs.touch.pianoVelocity": "벨로시티 막대를 길게 누른 다음 위나 아래로 드래그하세요. 또는 선택한 노트의 벨로시티 버튼을 사용하세요.",
-  "beatLabs.touch.takeAssign": "테이크 그룹에서 원하는 테이크의 버튼을 사용하세요.",
   "beatLabs.touch.notes": "2옥타브 키보드에서 노트를 연주하세요.",
   "beatLabs.touch.octave": "키보드의 옥타브 내리기 및 올리기 버튼을 사용하세요.",
   "beatLabs.touch.velocity": "키보드의 벨로시티 버튼을 사용하세요.",

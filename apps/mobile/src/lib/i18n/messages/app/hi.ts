@@ -47,7 +47,6 @@ export default {
   "beatLabs.touch.pianoToggle": "नोट जोड़ने या चुनने के लिए पियानो रोल ग्रिड पर टैप करें।",
   "beatLabs.touch.pianoDelete": "नोट्स चुनें और नोट्स डिलीट करें इस्तेमाल करें।",
   "beatLabs.touch.pianoVelocity": "वेलोसिटी बार को दबाए रखें, फिर ऊपर या नीचे खींचें। या चुने गए नोट्स के लिए वेलोसिटी बटन इस्तेमाल करें।",
-  "beatLabs.touch.takeAssign": "किसी टेक समूह में, जो टेक चाहिए उसका बटन इस्तेमाल करें।",
   "beatLabs.touch.notes": "दो-ऑक्टेव कीबोर्ड पर नोट्स बजाएँ।",
   "beatLabs.touch.octave": "कीबोर्ड के ऑक्टेव नीचे और ऊपर वाले बटन इस्तेमाल करें।",
   "beatLabs.touch.velocity": "कीबोर्ड के वेलोसिटी बटन इस्तेमाल करें।",

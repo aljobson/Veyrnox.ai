@@ -94,13 +94,27 @@ test('coach buttons advance, skip and finish; each card announces phone-specific
     await act(async () => root.render(<BeatCoachCard id="shortcuts" last onNext={next} onSkip={skip} />)); await press(t('beatLabs.done')); expect(next).toHaveBeenCalledTimes(2);
 });
 test('tips persist per account, skip absent targets, and replay from Controls', async () => {
-    const props = { doc: fixedDoc(), apply: () => true, targets: PHONE_TIP_TARGETS, capabilities: PHONE_CAPABILITIES };
+    const song = { ...fixedDoc(), view: 'song' as const };
+    const props = { doc: song, apply: () => true, targets: PHONE_TIP_TARGETS, capabilities: PHONE_CAPABILITIES };
     await act(async () => root.render(<BeatLabsBar {...props} />));
-    for (const id of ['grid', 'library', 'play', 'arrangement']) { expect(text(t(`beatLabs.tip.${id}`)).length).toBeGreaterThan(0); await press(t('beatLabs.next')); }
-    expect(text(t('beatLabs.tip.export'))).toHaveLength(0); await press(t('beatLabs.done'));
+    // Song view: the step grid is not on screen, so its tip is skipped.
+    expect(text(t('beatLabs.tip.grid'))).toHaveLength(0);
+    for (const id of ['library', 'play', 'arrangement']) { expect(text(t(`beatLabs.tip.${id}`)).length).toBeGreaterThan(0); await press(t('beatLabs.next')); }
+    expect(text(t('beatLabs.tip.shortcuts')).length).toBeGreaterThan(0); expect(text(t('beatLabs.tip.export'))).toHaveLength(0); await press(t('beatLabs.done'));
     expect(mockSeen.size).toBe(1); await act(async () => root.unmount()); root = createRoot(); await act(async () => root.render(<BeatLabsBar {...props} />));
-    expect(text(t('beatLabs.tip.grid'))).toHaveLength(0); await press(t('beatLabs.controls')); await press(t('beatLabs.replay'));
-    expect(text(t('beatLabs.tip.grid')).length).toBeGreaterThan(0); await press(t('beatLabs.skip')); expect(text(t('beatLabs.tip.grid'))).toHaveLength(0);
+    expect(text(t('beatLabs.tip.library'))).toHaveLength(0); await press(t('beatLabs.controls')); await press(t('beatLabs.replay'));
+    expect(text(t('beatLabs.tip.library')).length).toBeGreaterThan(0); await press(t('beatLabs.skip')); expect(text(t('beatLabs.tip.library'))).toHaveLength(0);
+});
+test('pattern view shows the grid tip, never the arrangement tip, and a view change mid-tour moves forward', async () => {
+    const pattern = { ...fixedDoc(), view: 'pattern' as const };
+    const props = { apply: () => true, targets: PHONE_TIP_TARGETS, capabilities: PHONE_CAPABILITIES };
+    await act(async () => root.render(<BeatLabsBar doc={pattern} {...props} />));
+    for (const id of ['grid', 'library']) { expect(text(t(`beatLabs.tip.${id}`)).length).toBeGreaterThan(0); await press(t('beatLabs.next')); }
+    expect(text(t('beatLabs.tip.play')).length).toBeGreaterThan(0); await press(t('beatLabs.next'));
+    expect(text(t('beatLabs.tip.arrangement'))).toHaveLength(0); expect(text(t('beatLabs.tip.shortcuts')).length).toBeGreaterThan(0);
+    // Switching to Song view while on the last pattern tip does not go back to earlier tips.
+    await act(async () => root.render(<BeatLabsBar doc={{ ...pattern, view: 'song' }} {...props} />));
+    expect(text(t('beatLabs.tip.shortcuts')).length).toBeGreaterThan(0); expect(text(t('beatLabs.tip.library'))).toHaveLength(0);
 });
 test('signed-out editor hides first-run tips and the replay action', async () => {
     mockGetAccessToken.mockResolvedValue('');

@@ -47,7 +47,6 @@ export default {
   "beatLabs.touch.pianoToggle": "ピアノロールのグリッドをタップしてノートを追加または選択します。",
   "beatLabs.touch.pianoDelete": "ノートを選択し、ノートを削除を使います。",
   "beatLabs.touch.pianoVelocity": "ベロシティバーを長押ししてから上下にドラッグします。または選択したノートのベロシティボタンを使います。",
-  "beatLabs.touch.takeAssign": "テイクグループで、使いたいテイクのボタンを使います。",
   "beatLabs.touch.notes": "2オクターブのキーボードでノートを弾きます。",
   "beatLabs.touch.octave": "キーボードのオクターブ下げ・上げボタンを使います。",
   "beatLabs.touch.velocity": "キーボードのベロシティボタンを使います。",

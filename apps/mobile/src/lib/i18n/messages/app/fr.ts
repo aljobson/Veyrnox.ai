@@ -47,7 +47,6 @@ export default {
   "beatLabs.touch.pianoToggle": "Touchez la grille du piano roll pour ajouter ou sélectionner une note.",
   "beatLabs.touch.pianoDelete": "Sélectionnez des notes et utilisez Supprimer les notes.",
   "beatLabs.touch.pianoVelocity": "Maintenez une barre de vélocité, puis faites glisser vers le haut ou le bas. Ou utilisez les boutons de vélocité des notes sélectionnées.",
-  "beatLabs.touch.takeAssign": "Dans un groupe de prises, utilisez le bouton de la prise souhaitée.",
   "beatLabs.touch.notes": "Jouez des notes sur le clavier de deux octaves.",
   "beatLabs.touch.octave": "Utilisez les boutons d’octave inférieure et supérieure du clavier.",
   "beatLabs.touch.velocity": "Utilisez les boutons de vélocité du clavier.",
