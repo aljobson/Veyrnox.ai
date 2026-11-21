@@ -7,18 +7,24 @@ import { tickSeconds } from './takeShared';
 import { songEnd } from './doc';
 import { configureNativeTakeStorage } from './takeShared';
 import { type BeatEngine as NativeBeatEngine } from './shared';
+import { createMixRun } from './mixRun';
 import { createNativeBeatEngine, loadNativeContext, type NativeContextCtor } from './nativeContext';
-import type { BeatEngine, BeatVoice, EngineContext, Run } from './shared';
+import type { BeatEngine, BeatVoice, EngineContext } from './shared';
 import { DRUM_KITS, audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
 
 import { midiNoteOnsInWindow, midiTracks, type Instrument, type MidiSoundTrack } from './midi';
 
 export type TrackMix = { gain: number; pan: number };
+/** `onError`: an engine error stopped playback. `onEffectError`: an effect the native context cannot build was skipped. */
+export type PlayHandlers = { onError?: (error: unknown) => void; onEffectError?: (message: string) => void };
 export interface BeatAudio {
     recordingEngine?(): NativeBeatEngine;
     playRange?(options: PlayRange): Promise<{ contextStart: number }>;
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number): Promise<void>;
+    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number, handlers?: PlayHandlers): Promise<void>;
+    readonly context: EngineContext;
+    /** The node a level meter reads (the web engine's meter tap); null while nothing plays. */
+    meterTap(trackId: string | 'master'): unknown | null;
     stop(): void;
     isPlaying(): boolean;
     hitPad(pad: PadId, kit: string, velocity?: number): void;
@@ -56,7 +62,10 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     const strips = new Map<string, Strip>();
     const levels = new Map<string, TrackMix>();
     let timer: unknown = null;
-    let run: Run | null = null;
+    let handlers: PlayHandlers = {};
+    // N5: the song plays through the shared web mix graph (strips, effects, sends, master, automation).
+    const mixRun = createMixRun(engine, message => { try { handlers.onEffectError?.(message); } catch { /* A consumer callback cannot escape the timer. */ } });
+    let playing = false;
     let starting = false;
     let closed = false;
     const keys = new Map<string, { voice?: BeatVoice }>();
@@ -66,6 +75,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     let onStep: ((step: number) => void) | undefined;
     let windowCallback: ((window: SongWindow) => void) | undefined;
     const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc) => {
+        if (mixRun.run()) return mixRun.destination(id, doc);
         const track = doc.tracks.find(t => t.id === id)!;
         const s = strip(id); s.gain.value = audibleGain(doc, track); s.pan.value = track.pan; return s.input;
     });
@@ -95,50 +105,63 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     function syncMidi(doc: BeatDoc) {
         for (const track of midiTracks(doc)) {
             const gain = audibleGain(doc, track);
-            if (run) engine.setTrackMix(run, track.id, gain, track.pan);
             engine.setTrackMix(engine.live, track.id, gain, track.pan);
         }
     }
+    function halt() {
+        playGeneration++; starting = false; playing = false;
+        range.stop(); takes.stop();
+        if (timer !== null) clearTimer(timer);
+        timer = null;
+        mixRun.stop();
+    }
+    function fail(error: unknown) {
+        try { halt(); } catch { /* Preserve the original engine error. */ }
+        try { handlers.onError?.(error); } catch { /* A consumer callback cannot escape the timer. */ }
+    }
     function tick() {
-        if (!getDoc || !run) return;
-        const current = getDoc();
-        if (current) syncMidi(current);
-        const horizon = engine.now() + LOOKAHEAD_S;
-        while (nextTime < horizon) {
-            const doc = getDoc();
-            // The beat can leave the store while it plays (deleted, account reset): stop scheduling instead of throwing in a timer.
-            if (!doc) { timer = null; return; }
-            const { from, to } = playRange(doc);
-            const step = from + (cursor % (to - from));
-            for (const track of doc.tracks) {
-                levels.set(track.id, { gain: audibleGain(doc, track), pan: track.pan });
-                kitOf.set(track.id, track.kit ?? DRUM_KITS[0].id);
+        timer = null;
+        if (!getDoc || !playing) return;
+        try {
+            const current = getDoc();
+            // The beat can leave the store while it plays (deleted, account reset): stop instead of throwing in a timer.
+            if (!current) { halt(); return; }
+            mixRun.sync(current); syncMidi(current);
+            const horizon = engine.now() + LOOKAHEAD_S;
+            while (nextTime < horizon) {
+                const doc = getDoc();
+                if (!doc) { halt(); return; }
+                const { from, to } = playRange(doc);
+                const step = from + (cursor % (to - from));
+                const seconds = stepSeconds(doc.tempo.bpm);
+                const fromSec = step * seconds;
+                mixRun.schedule(doc, fromSec, fromSec + seconds, nextTime);
+                for (const event of eventsAtStep(doc, step)) {
+                    const at = eventTime(nextTime, step, doc.tempo.bpm, doc.swing);
+                    engine.playPad(event.pad, event.velocity, at, mixRun.destination(event.trackId, doc, at), doc.tracks.find(t => t.id === event.trackId)?.kit ?? DRUM_KITS[0].id);
+                }
+                for (const event of midiNoteOnsInWindow(doc, fromSec, fromSec + seconds)) {
+                    const track = midiTracks(doc).find(t => t.id === event.trackId);
+                    if (!track) continue;
+                    const at = nextTime + event.songTimeSec - fromSec;
+                    mixRun.destination(track.id, doc, at);
+                    engine.playMidi(track, event.pitch, event.velocity, at, mixRun.run()!, audibleGain(doc, track)).release(at + event.durationSec);
+                }
+                const window = { fromSec, toSec: fromSec + seconds, contextTime: nextTime };
+                windowCallback?.(window);
+                void takes.window(doc, window, { startSec: 0, endSec: tickSeconds(songEnd(doc), doc.tempo.bpm) }).catch(() => undefined);
+                onStep?.(step);
+                if (!playing) return;
+                cursor += 1;
+                nextTime += seconds;
             }
-            for (const event of eventsAtStep(doc, step)) {
-                const s = strip(event.trackId);
-                s.gain.value = levels.get(event.trackId)?.gain ?? 1;
-                s.pan.value = levels.get(event.trackId)?.pan ?? 0;
-                engine.playPad(event.pad, event.velocity, eventTime(nextTime, step, doc.tempo.bpm, doc.swing) , s.input, kitOf.get(event.trackId));
-            }
-            const stepStart = step * stepSeconds(doc.tempo.bpm);
-            for (const event of midiNoteOnsInWindow(doc, stepStart, stepStart + stepSeconds(doc.tempo.bpm))) {
-                const track = midiTracks(doc).find(t => t.id === event.trackId);
-                if (!track) continue;
-                const at = nextTime + event.songTimeSec - stepStart;
-                engine.playMidi(track, event.pitch, event.velocity, at, run, audibleGain(doc, track)).release(at + event.durationSec);
-            }
-            const fromSec = step * stepSeconds(doc.tempo.bpm);
-            const window = { fromSec, toSec: fromSec + stepSeconds(doc.tempo.bpm), contextTime: nextTime };
-            windowCallback?.(window);
-            void takes.window(doc, window, { startSec: 0, endSec: tickSeconds(songEnd(doc), doc.tempo.bpm) }).catch(() => undefined);
-            onStep?.(step);
-            cursor += 1;
-            nextTime += stepSeconds(doc.tempo.bpm);
-        }
-        timer = setTimer(tick, TICK_MS);
+            timer = setTimer(tick, TICK_MS);
+        } catch (error) { fail(error); }
     }
 
     return {
+        context: engine.context,
+        meterTap: trackId => playing ? mixRun.meterTap(trackId) : null,
         recordingEngine: () => engine,
         async playRange(options) {
             this.stop(); const token = playGeneration; configureNativeTakeStorage();
@@ -146,26 +169,20 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
             if (token !== playGeneration) throw new Error('transport_cancelled');
             return range.play(options);
         },
-        async play(read, step, onWindow, startOffsetSec = 0) {
-            if (timer !== null || starting || closed) return;
+        async play(read, step, onWindow, startOffsetSec = 0, on = {}) {
+            if (playing || starting || closed) return;
             const token = ++playGeneration;
             starting = true;
             try { await engine.resume(); } finally { if (token === playGeneration) starting = false; }
             if (token !== playGeneration || closed) return;
-            run = engine.startRun(null);
+            handlers = on; playing = true;
             windowCallback = onWindow;
             getDoc = read; onStep = step; cursor = 0; nextTime = engine.now() + 0.1 + startOffsetSec;
             tick();
         },
-        stop() {
-            playGeneration++; starting = false;
-            range.stop(); takes.stop();
-            if (timer !== null) clearTimer(timer);
-            timer = null;
-            if (run) engine.stopRun(run);
-            run = null;
-        },
-        isPlaying: () => timer !== null || range.isPlaying(),
+        // A UI stop or close never throws: the player is already stopped when a node fails to release.
+        stop() { try { halt(); } catch (error) { try { handlers.onError?.(error); } catch { /* ignore */ } } },
+        isPlaying: () => playing || range.isPlaying(),
         hitPad(pad, kit, velocity = PAD_VELOCITY) {
             void engine.resume();
             engine.playPad(pad, velocity, engine.now(), bus(), kit);
@@ -175,8 +192,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
             const s = strips.get(trackId);
             if (s) { s.gain.value = mix.gain; s.pan.value = mix.pan; }
             const doc = getDoc?.();
-            if (doc) syncMidi(doc);
-            if (run) engine.setTrackMix(run, trackId, mix.gain, mix.pan);
+            if (doc) { syncMidi(doc); if (playing) { try { mixRun.sync(doc); } catch (error) { fail(error); } } }
             engine.setTrackMix(engine.live, trackId, mix.gain, mix.pan);
         },
         async noteOn(key, track, pitch, velocity) {

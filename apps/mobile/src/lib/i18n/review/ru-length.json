@@ -4092,6 +4092,114 @@
     "ratio": 1.64
   },
   {
+    "id": "beatMix.master.room",
+    "english": "Reverb room size",
+    "translation": "Размер комнаты реверберации",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatMix.master.feedback",
+    "english": "Delay feedback",
+    "translation": "Обратная связь задержки",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "Эквалайзер",
+    "ratio": 5
+  },
+  {
+    "id": "beatMix.fx.reverb",
+    "english": "Reverb",
+    "translation": "Реверберация",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.fx.up",
+    "english": "Move {effect} up",
+    "translation": "Переместить {effect} вверх",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "Низкие",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "Средние",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatMix.param.high",
+    "english": "High",
+    "translation": "Высокие",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatMix.param.ratio",
+    "english": "Ratio",
+    "translation": "Степень сжатия",
+    "ratio": 2.8
+  },
+  {
+    "id": "beatMix.param.feedback",
+    "english": "Feedback",
+    "translation": "Обратная связь",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "Смесь",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatMix.send.reverb",
+    "english": "Reverb send",
+    "translation": "Посыл реверберации",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatMix.lane.show.gain",
+    "english": "Show gain lane",
+    "translation": "Показать линию усиления",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "Показать линию панорамы",
+    "ratio": 1.77
+  },
+  {
+    "id": "beatMix.lane.gain",
+    "english": "Gain",
+    "translation": "Усиление",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "Панорама",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatMix.curve.in",
+    "english": "Ease in",
+    "translation": "Плавное начало",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.curve.out",
+    "english": "Ease out",
+    "translation": "Плавное окончание",
+    "ratio": 2.13
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",
