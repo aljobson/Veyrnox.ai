@@ -203,7 +203,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
-          {smartCut && <SmartCutWorkbench items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
+          {smartCut && <SmartCutWorkbench showText={showCaptions} items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
           {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy || mixed} />}
           {smartCut && <div id="smart-cut-panel" className="scroll-mt-4">
             <SmartCutPlanner
@@ -244,7 +244,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
               {t("app.editor.sheet.slowHelp")}</p>
           )}
 
-          {(showCaptions || smartCut) && <div id={smartCut ? 'clip-text-controls' : undefined} className={`mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3${smartCut ? ' scroll-mt-4' : ''}`}>
+          {showCaptions && <div id={smartCut ? 'clip-text-controls' : undefined} className={`mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3${smartCut ? ' scroll-mt-4' : ''}`}>
             {showCaptions ? <>
               <label className="flex min-h-11 items-center gap-2 text-sm text-vx-fg">
                 <input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />
@@ -260,7 +260,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
                 <p className="text-xs text-vx-fg-muted basis-full">
                   {t("app.editor.sheet.captionHelp")}</p>
               )}
-            </> : smartCut ? <p className="text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.workbench.textUnavailable')}</p> : null}
+            </> : null}
           </div>}
 
           <div role="status" className="mt-3 text-sm min-h-[1.25rem]">
