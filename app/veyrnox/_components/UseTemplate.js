@@ -209,7 +209,8 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
       {imagePhotoRequired && !photo && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
       {templateClip && inline && <TemplateClipComposer preset={preset} photo={photo} value={clipPrompt} onChange={setClipPrompt} onRemove={() => choosePhoto(null)} />}
       {imagePhotoRequired && !model && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.blocked')}</p>}
-      {photo && referenceModel && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
+      {referenceModel && !photo && <p className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.referenceNote', { model: referenceModel.name, credits: referenceModel.credits })}</p>}
+      {photo && referenceModel && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.referenceSwitched', { model: referenceModel.name })}</p>}
       {model && pickedModel !== originalId && !(photo && referenceModel) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.modelSwitch')}</p>}
       {(preset.kind !== 'image' && live && model && !generationBlocked && !auditedTemplateId) && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.fidelity.previewNotice')}</p>}
       {photo && contract && !boundCount && <p className="mt-3 text-sm text-vx-fg-muted">{t(contract.photoGuidance)}</p>}
