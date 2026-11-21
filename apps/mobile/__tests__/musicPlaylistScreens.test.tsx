@@ -131,10 +131,10 @@ test('invalid sample does not prefill', async () => {
 });
 test('Music entry rows appear only when the songs probe is on and navigate natively', async () => {
     mockApi.request.mockImplementation(async (path: string) => path.includes('library-tabs') ? Promise.reject(new ApiError(404, 'music_library_tabs_unavailable')) : { songs: [] });
-    await mount(<MusicLibrary />); await click(t('musicPlaylists.title')); await click(t('musicDiscover.title')); await click(t('musicPublic.explore'));
-    expect(mockPush.mock.calls).toEqual([['/music/playlists'], ['/music/discover'], ['/music/explore']]);
+    await mount(<MusicLibrary />); await click(t('beat.title')); await click(t('musicPlaylists.title')); await click(t('musicDiscover.title')); await click(t('musicPublic.explore'));
+    expect(mockPush.mock.calls).toEqual([['/beats'], ['/music/playlists'], ['/music/discover'], ['/music/explore']]);
     await act(async () => root.unmount()); root = createRoot(); mockApi.request.mockRejectedValue(new ApiError(404, 'music_unavailable'));
-    await mount(<MusicLibrary />); expect(button(t('musicPlaylists.title'))).toBeUndefined(); expect(button(t('musicDiscover.title'))).toBeUndefined();
+    await mount(<MusicLibrary />); expect(button(t('beat.title'))).toBeUndefined(); expect(button(t('musicPlaylists.title'))).toBeUndefined(); expect(button(t('musicDiscover.title'))).toBeUndefined();
 });
 
 const focus = async (focused: boolean) => {
