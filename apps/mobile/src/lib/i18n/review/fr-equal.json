@@ -276,5 +276,10 @@
   "beatMix.meter.value": "Standard audio unit or numerical notation, identical in this locale.",
   "beatMix.unit.db": "Standard audio unit or numerical notation, identical in this locale.",
   "beatMix.unit.seconds": "Standard audio unit or numerical notation, identical in this locale.",
-  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale."
+  "beatMix.unit.ratio": "Standard audio unit or numerical notation, identical in this locale.",
+  "beatLabs.template.hiphop": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.template.lofi": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.template.house": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.category.FX": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog.",
+  "beatLabs.context.piano": "Established musical genre, instrument or control term also used unchanged in this locale’s web catalog."
 }
