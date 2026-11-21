@@ -38,14 +38,14 @@ test('Dashboard authenticated balance, template pagination and filters remain re
   const fixture = await fixtureFor(page);
   await open(fixture, page, '/app', 'Explore presets');
   await expect(page.getByTestId('app-credit-balance')).toBeVisible();
-  // 26 listed video templates without the long-prompt key (20 Nov 2026: 45 over the Kling 3.0 cap hidden; 21 Nov 2026: two near-duplicate supercar refuels hidden), so one page of 50 holds them all and there is no "Show more".
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(26);
+  // 11 listed video templates without the long-prompt key (20 Nov 2026: 45 over the Kling 3.0 cap hidden; 21 Nov 2026: two near-duplicate supercar refuels and 15 prompts that need their source video hidden), so one page of 50 holds them all and there is no "Show more".
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(11);
   await expect(page.getByRole('button', { name: 'Show more templates', exact: true })).toHaveCount(0);
   const filters = page.getByRole('group', { name: 'Filter templates', exact: true });
   await filters.getByRole('button', { name: 'New', exact: true }).click();
   await expect(filters.getByRole('button', { name: 'New', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await filters.getByRole('button', { name: 'All', exact: true }).click();
-  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(26);
+  await expect(page.locator('#preset-gallery-results > a')).toHaveCount(11);
   expect(writes(fixture)).toEqual([]);
 });
 

@@ -11,13 +11,15 @@ import { templateContract } from '../lib/templateContract.js';
 // They stay hidden while the seedanceLongTemplates runtime key is off (this report reads the off state).
 // 21 Nov 2026 (owner, "tidy the cards"): two near-duplicate supercar refuel templates left the gallery: listed 28 -> 26, hidden +2
 // (both bound Kling I2V photo recipes: bound 134 -> 136, kling_i2v_photo 83 -> 85, kind none 1374 -> 1376).
+// 21 Nov 2026 (owner, "hide the video templates that cannot work"): 15 bound Kling I2V prompts that need their source video left the gallery: listed 26 -> 11,
+// hidden +15 (bound 136 -> 151, kling_i2v_photo 85 -> 100, kind none 1376 -> 1391).
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
-    addressable: 1926, listed: 26, hidden: 1900,
-    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 110, 'like-for-like-safe': 220, bound: 136, none: 1042 },
-    hiddenRouteFits: { o1_clip: 524, none_unsupported: 89, seedance_long_photo: 48, text_only_other_model: 112, kling_i2v_photo: 85, none_no_contract: 1042 },
-    hiddenKinds: { video_swap: 314, none: 1376, motion: 78, swap: 132 },
+    addressable: 1926, listed: 11, hidden: 1915,
+    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 110, 'like-for-like-safe': 220, bound: 151, none: 1042 },
+    hiddenRouteFits: { o1_clip: 524, none_unsupported: 89, seedance_long_photo: 48, text_only_other_model: 112, kling_i2v_photo: 100, none_no_contract: 1042 },
+    hiddenKinds: { video_swap: 314, none: 1391, motion: 78, swap: 132 },
     seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 2, withdrawn_or_absent: 6, hidden: 192 },
     seedanceHiddenRouteFits: { none_unsupported: 32, seedance_long_photo: 23, o1_clip: 53, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
   });

@@ -53,3 +53,20 @@ test('tidy 2026-11-21: one supercar refuel stays listed, the two near-duplicates
   assert.equal(VIDEO_THEME_IDS.includes('PROPERTY'), false);
   assert.equal(videoTemplateTheme('community-modern-listing-dolly'), 'FILM');
 });
+
+const NEEDS_SOURCE_VIDEO = [
+  'truck-window-confrontation', 'drive-thru-dialogue', 'championship-slap-duel', 'skyline-terrace-groove', 'boardwalk-dance-routine',
+  'skyline-flamingo-prank', 'canyon-groove', 'cartoon-puppet-swap', 'street-shuffle-walk', 'midnight-forest-run', 'urban-dance-walk',
+  'synchronized-pet-portrait', 'mansion-raid-swap', 'midnight-sports-drive', 'london-gentleman-walk',
+].map((id) => `community-${id}`);
+
+test('2026-11-21: the 15 prompts that need their source video are not listed, but keep their data, link and theme', () => {
+  assert.equal(new Set(NEEDS_SOURCE_VIDEO).size, 15);
+  const cards = new Set(templateCards().map((card) => card.id));
+  for (const id of NEEDS_SOURCE_VIDEO) {
+    assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.includes(id), false, `${id} is hidden`);
+    assert.equal(cards.has(id), false, `${id} has no gallery card`);
+    assert.ok(PRESETS.some((p) => p.id === id), `${id} keeps its data and link`);
+    assert.ok(videoTemplateTheme(id), `${id} keeps its theme`);
+  }
+});
