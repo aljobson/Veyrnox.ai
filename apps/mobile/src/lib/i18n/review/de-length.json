@@ -12,6 +12,102 @@
     "ratio": 2
   },
   {
+    "id": "beatLabs.controls",
+    "english": "Controls",
+    "translation": "Bedienelemente",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.stop",
+    "english": "Stop",
+    "translation": "Anhalten",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Hinzufügen",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatLabs.addNamed",
+    "english": "Add {name}",
+    "translation": "{name} hinzufügen",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatLabs.touch.help",
+    "english": "Tap Controls.",
+    "translation": "Tippe auf Bedienelemente.",
+    "ratio": 1.92
+  },
+  {
+    "id": "beatLabs.touch.play",
+    "english": "Tap Play or Stop.",
+    "translation": "Tippe auf Abspielen oder Stopp.",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "Tippe auf Rückgängig.",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "Tippe auf Wiederholen.",
+    "ratio": 2.44
+  },
+  {
+    "id": "beatLabs.touch.gridToggle",
+    "english": "Tap a step to turn its hit on or off.",
+    "translation": "Tippe auf einen Schritt, um den Schlag ein- oder auszuschalten.",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatLabs.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatLabs.skip",
+    "english": "Skip",
+    "translation": "Überspringen",
+    "ratio": 3
+  },
+  {
+    "id": "beatLabs.control.help",
+    "english": "Controls",
+    "translation": "Bedienelemente",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.control.play",
+    "english": "Play / Stop",
+    "translation": "Wiedergabe / Stopp",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatLabs.control.ripple",
+    "english": "Ripple edit",
+    "translation": "Ripple-Bearbeitung",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Rückgängig",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Wiederholen",
+    "ratio": 2.75
+  },
+  {
     "id": "editorCaptionTools.allSources",
     "english": "All timed captions",
     "translation": "Alle Untertitel mit Zeitangaben",
@@ -3900,6 +3996,18 @@
     "ratio": 1.77
   },
   {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Männlich",
+    "ratio": 2
+  },
+  {
     "id": "beat.saveNote",
     "english": "Saved on this phone",
     "translation": "Noch nicht gespeichert. Dieser Beat geht verloren, wenn die App geschlossen wird.",
@@ -3952,6 +4060,60 @@
     "english": "Autosave",
     "translation": "Automatische Speicherung",
     "ratio": 3
+  },
+  {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Eigenständige Kopie erstellen",
+    "ratio": 2.64
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Einrasten",
+    "ratio": 2.25
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Nach links verschieben",
+    "ratio": 2.44
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Nach rechts verschieben",
+    "ratio": 2.3
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "Tonhöhe erhöhen",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.longer",
+    "english": "Longer",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.hint",
+    "english": "Tap to add or select. Hold a note before dragging to move it. Hold a selected note’s right edge before dragging to resize. Hold a velocity bar before dragging vertically to adjust velocity. Pinch to zoom.",
+    "translation": "Tippen zum Hinzufügen oder Auswählen. Eine Note vor dem Ziehen gedrückt halten, um sie zu verschieben. Den rechten Rand einer ausgewählten Note vor dem Ziehen gedrückt halten, um ihre Länge zu ändern. Einen Anschlagstärkebalken vor dem vertikalen Ziehen gedrückt halten, um die Anschlagstärke anzupassen. Mit zwei Fingern zoomen.",
+    "ratio": 1.61
+  },
+  {
+    "id": "beatPiano.library.title",
+    "english": "Instruments",
+    "translation": "Instrumentenbibliothek",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.library.addNamed",
+    "english": "Add {name}",
+    "translation": "{name} hinzufügen",
+    "ratio": 1.7
   },
   {
     "id": "beatTakes.arm",
@@ -4194,6 +4356,78 @@
     "ratio": 3.22
   },
   {
+    "id": "beatAi.extend",
+    "english": "Extend",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonart",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Preis für zwei Loops ermitteln",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatAi.waiting",
+    "english": "Working…",
+    "translation": "Wird bearbeitet…",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.failed",
+    "english": "A result failed or was refunded.",
+    "translation": "Ein Ergebnis ist fehlgeschlagen oder wurde erstattet.",
+    "ratio": 1.66
+  },
+  {
+    "id": "beatAi.mute",
+    "english": "Mute {name}",
+    "translation": "{name} stummschalten",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatAi.a29",
+    "english": "AI parts need an active paid plan.",
+    "translation": "KI-Parts benötigen einen aktiven kostenpflichtigen Tarif.",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatAi.a37",
+    "english": "This price changed. Get a new price.",
+    "translation": "Dieser Preis hat sich geändert. Hole einen neuen Preis ein.",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.a41",
+    "english": "Extend",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "speech.audition.addOne",
+    "english": "Add one more voice",
+    "translation": "Eine weitere Stimme hinzufügen",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.view.song",
     "english": "Song",
     "translation": "Songansicht",
@@ -4252,6 +4486,150 @@
     "english": "Gain (dB)",
     "translation": "Verstärkung (dB)",
     "ratio": 1.78
+  },
+  {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "Tiefen",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "Mitten",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.ratio",
+    "english": "Ratio",
+    "translation": "Verhältnis",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "Mischung",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatMix.lane.show.gain",
+    "english": "Show gain lane",
+    "translation": "Gain-Automationsspur zeigen",
+    "ratio": 1.93
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "Panorama-Automationsspur zeigen",
+    "ratio": 2.38
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "Panorama",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatMix.lane.add",
+    "english": "Add point",
+    "translation": "Punkt hinzufügen",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatMix.lane.clear",
+    "english": "Clear lane",
+    "translation": "Automationsspur leeren",
+    "ratio": 2.2
+  },
+  {
+    "id": "beatMix.lane.hide",
+    "english": "Hide lane",
+    "translation": "Automationsspur ausblenden",
+    "ratio": 2.89
+  },
+  {
+    "id": "beatMix.curve.in",
+    "english": "Ease in",
+    "translation": "Langsam beginnen",
+    "ratio": 2.29
+  },
+  {
+    "id": "beatMix.curve.out",
+    "english": "Ease out",
+    "translation": "Langsam enden",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatExport.title",
+    "english": "Export",
+    "translation": "Exportieren",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatExport.kind",
+    "english": "Export",
+    "translation": "Exportieren",
+    "ratio": 1.83
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mischung",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Einzelspuren",
+    "ratio": 2.4
+  },
+  {
+    "id": "beatExport.loops",
+    "english": "Loops",
+    "translation": "Wiederholungen",
+    "ratio": 2.8
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Exportwerkzeuge werden geladen…",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatExport.renderError",
+    "english": "Could not render this mix. Try again.",
+    "translation": "Dieser Mix konnte nicht gerendert werden. Versuche es erneut.",
+    "ratio": 1.65
+  },
+  {
+    "id": "beatExport.shareError",
+    "english": "Could not share this file. Try again.",
+    "translation": "Diese Datei konnte nicht geteilt werden. Versuche es erneut.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "In Musikbibliothek speichern",
+    "ratio": 2.15
+  },
+  {
+    "id": "beatExport.commit",
+    "english": "Finishing the save…",
+    "translation": "Wird zur Bibliothek hinzugefügt…",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.expired",
+    "english": "This save expired. Try again to start a new save.",
+    "translation": "Dieser Speichervorgang ist abgelaufen. Erneut versuchen, um einen neuen zu starten.",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatExport.changed",
+    "english": "This save changed. Try again to start a new save.",
+    "translation": "Dieser Speichervorgang wurde geändert. Erneut versuchen, um einen neuen zu starten.",
+    "ratio": 1.69
   },
   {
     "id": "recovery.retry",

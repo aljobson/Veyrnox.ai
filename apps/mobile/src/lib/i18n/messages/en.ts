@@ -25,6 +25,11 @@ import area_audioTemplates from './en/audioTemplates';
 import area_authGate from './en/authGate';
 import area_autolists from './en/autolists';
 import area_beat from './en/beat';
+import area_beatAi from './en/beatAi';
+import area_beatExport from './en/beatExport';
+import area_beatLabs from './en/beatLabs';
+import area_beatMix from './en/beatMix';
+import area_beatPiano from './en/beatPiano';
 import area_beatTakes from './en/beatTakes';
 import area_bestCut from './en/bestCut';
 import area_billing from './en/billing';
@@ -149,6 +154,7 @@ import area_musicPublic from './en/musicPublic';
 import area_musicPublication from './en/musicPublication';
 import area_musicSectionActions from './en/musicSectionActions';
 import area_musicTargetStems from './en/musicTargetStems';
+import area_musicTrackAdd from './en/musicTrackAdd';
 import area_nativeEditorModel from './en/nativeEditorModel';
 import area_net from './en/net';
 import area_network from './en/network';
@@ -264,6 +270,11 @@ const catalog = {
     ...area_authGate,
     ...area_autolists,
     ...area_beat,
+    ...area_beatAi,
+    ...area_beatExport,
+    ...area_beatLabs,
+    ...area_beatMix,
+    ...area_beatPiano,
     ...area_beatTakes,
     ...area_bestCut,
     ...area_billing,
@@ -388,6 +399,7 @@ const catalog = {
     ...area_musicPublication,
     ...area_musicSectionActions,
     ...area_musicTargetStems,
+    ...area_musicTrackAdd,
     ...area_nativeEditorModel,
     ...area_net,
     ...area_network,

@@ -1,3 +1,8 @@
+import { BeatExportSheet } from '../../../components/beats/BeatExportSheet';
+import { releaseExportPlayback } from '../../../lib/beatNative/exportPlayback';
+import { BeatLabsBar } from '../../../components/beats/BeatLabsBar';
+import { PHONE_CAPABILITIES } from '../../../lib/beatNative/controls';
+import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
 import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
 import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
 import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
@@ -13,6 +18,9 @@ import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { PadGrid } from '../../../components/beats/PadGrid';
 import { StepGrid } from '../../../components/beats/StepGrid';
+import { BeatMixerSheet } from '../../../components/beats/BeatMixerSheet';
+import { automationControl, type MixDoc } from '../../../lib/beatNative/mix';
+import { BeatInstrumentsSection, openPiano } from '../../../components/beats/BeatInstrumentsSection';
 import { BeatArrangement } from '../../../components/beats/BeatArrangement';
 import { MixerStrip } from '../../../components/beats/MixerStrip';
 import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
@@ -27,6 +35,7 @@ import { ds } from '../../../theme';
 
 import { createHistory, record, replacePresent, travel, canUndo, canRedo, type History } from '../../../lib/beatNative/history';
 import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
+import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
@@ -45,6 +54,8 @@ export default function BeatEditor() {
     docRef.current = doc;
     const [held, setHeld] = useState(false);
     const [pad, setPad] = useState<PadId>('kick');
+    const [mixer, setMixer] = useState(false);
+    const [exporting, setExporting] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -58,7 +69,10 @@ export default function BeatEditor() {
         if (audio.current) return audio.current;
         try { audio.current = createBeatAudio(); return audio.current; } catch { setNotice(t('beat.audioError')); return null; }
     }, []);
-    const apply = useCallback((operation: Edit, announce?: string, options?: { recordingCommit?: boolean }) => {
+    // Third argument: N5's history key (a slider drag is one undo step) or N6's options; both forms are accepted.
+    const apply = useCallback((operation: Edit, announce?: string, third?: string | { recordingCommit?: boolean; key?: string }) => {
+        const options = typeof third === 'string' ? { key: third } : third ?? {};
+        const key = options.key;
         const current = docRef.current;
         if (!current) return false;
         if ((recordingRef.current?.locked() || replacementUnderway(current.id)) && !options?.recordingCommit) { setNotice(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : 'beatTakes.locked')); return false; }
@@ -68,7 +82,7 @@ export default function BeatEditor() {
         if (result.doc !== current) {
             if (!putBeat(result.doc)) { setNotice(t('beat.local.busy')); return false; }
             docRef.current = getBeat(current.id)!;
-            history.current = record(history.current ?? createHistory(current), docRef.current, { label: announce });
+            history.current = record(history.current ?? createHistory(current), docRef.current, { label: announce, key });
         }
         setNotice(null); setSaid(announce ?? null); return true;
     }, []);
@@ -99,7 +113,7 @@ export default function BeatEditor() {
     if (!doc) return <EmptyState title={t('beat.missing')} body={t('beat.missingBody')} actionLabel={t('beat.back')} href="/beats" />;
     const play = async () => {
         const a = engine(); if (!a) return;
-        try { await a.play(() => docRef.current as BeatDoc, n => setStep(n)); manualRun.current = false; setPlaying(true); setSaid(t('beat.playing')); } catch { setNotice(t('beat.audioError')); }
+        try { let failed = false; await a.play(() => docRef.current as BeatDoc, n => setStep(n), undefined, 0, { onError: () => { failed = true; setPlaying(false); setStep(null); setNotice(t('beat.audioError')); }, onEffectError: () => setNotice(t('beatMix.fx.unavailable')) }); if (!failed) { manualRun.current = false; setPlaying(true); setSaid(t('beat.playing')); } } catch { setNotice(t('beat.audioError')); }
     };
     const stop = () => { audio.current?.stop(); setPlaying(false); setStep(null); setSaid(t('beat.stopped')); };
     const hit = (p: PadId) => { setPad(p); engine()?.hitPad(p, doc.tracks.find(track => !track.kind || track.kind === 'drums')?.kit ?? DRUM_KITS[0].id); };
@@ -107,8 +121,8 @@ export default function BeatEditor() {
         const track = next.tracks.find(x => x.id === trackId);
         if (track) audio.current?.setTrackMix(trackId, { gain: audibleGain(next, track), pan: track.pan });
     };
-    const mix = (trackId: string, operation: Edit, announce?: string) => {
-        apply(operation, announce);
+    const mix = (trackId: string, operation: Edit, announce?: string, key?: string) => {
+        apply(operation, announce, key);
         const next = getBeat(doc.id); if (next) { mixOf(trackId, next); next.tracks.forEach(x => mixOf(x.id, next)); }
     };
     const nameOf = (i: number) => t('beat.track', { n: i + 1 });
@@ -118,6 +132,11 @@ export default function BeatEditor() {
         <ScrollView scrollEnabled={!held} style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: doc.title }} />
             <BeatSaveControls id={doc.id} apply={apply} />
+            <Button label={t('beatExport.title')} onPress={() => setExporting(true)} />
+            {exporting && <BeatExportSheet doc={doc} replacing={replacing} recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status)}
+                prepare={() => releaseExportPlayback(audio, recordingRef, stop)} onClose={() => setExporting(false)} />}
+            <BeatAiPanel doc={doc} apply={apply} />
+            <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
             <Button label={t('beat.undo')} disabled={locked || !history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
             <Button label={t('beat.redo')} disabled={locked || !history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
             {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
@@ -145,10 +164,14 @@ export default function BeatEditor() {
             <StepGrid doc={doc} pad={pad} current={playing ? step : null} onToggle={n => apply(d => toggleStep(d, pad, n))} />
             </>}
             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.mixer')}</Text>
+            <Button label={t('beatMix.title')} onPress={() => setMixer(true)} />
+            {mixer && <BeatMixerSheet doc={doc} audio={audio.current} apply={apply} playing={playing} step={step} notice={notice} onClose={() => setMixer(false)} />}
             {doc.tracks.map((track, i) => (
                 <View key={track.id}><MixerStrip track={track} index={i} canRemove={doc.tracks.length > 1}
-                    onGain={v => mix(track.id, d => setTrackGain(d, track.id, Math.round(v * 100) / 100))}
-                    onPan={v => mix(track.id, d => setTrackPan(d, track.id, v))}
+                    gainLocked={automationControl(track, 'gain', (doc as MixDoc).view).disabled ? t('beatMix.locked.gain') : undefined}
+                    panLocked={automationControl(track, 'pan', (doc as MixDoc).view).disabled ? t('beatMix.locked.pan') : undefined}
+                    onGain={v => mix(track.id, d => setTrackGain(d, track.id, Math.round(v * 100) / 100), undefined, `${track.id}:gain`)}
+                    onPan={v => mix(track.id, d => setTrackPan(d, track.id, v), undefined, `${track.id}:pan`)}
                     onMute={v => mix(track.id, d => setTrackMute(d, track.id, v), t(v ? 'beat.muted' : 'beat.unmuted', { track: nameOf(i) }))}
                     onSolo={v => mix(track.id, d => setTrackSolo(d, track.id, v), t(v ? 'beat.soloOn' : 'beat.soloOff', { track: nameOf(i) }))}
                     onKit={kit => apply(d => setTrackKit(d, track.id, kit))}
@@ -156,6 +179,7 @@ export default function BeatEditor() {
                     <BeatTakeLanes doc={doc} track={track} apply={apply} locked={locked} />
                 </View>
             ))}
+            <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
             <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
                 onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
             <Button variant="secondary" label={t('beatTakes.addTrack')} disabled={locked || doc.tracks.length >= MAX_TRACKS} onPress={() => apply(d => addAudioTrack(d))} />

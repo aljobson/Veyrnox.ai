@@ -8,12 +8,14 @@ import { mediaApi, type GenerationRequest } from './media';
 import { plural, t } from './i18n';
 import { createErrorMessage } from './failedJob';
 
-export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'>;
+export type SubmitRequest = Omit<GenerationRequest, 'idempotencyKey'> & {
+    readonly inputsByIndex?: readonly NonNullable<GenerationRequest['extraInputs']>[];
+};
 
 // Price/allowance metadata never changes request identity or retry keys.
 export function generationSignature(request: SubmitRequest, count: number) {
     const { modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap, templateClip, template_swap } = request;
-    return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap, templateClip, ...(template_swap === undefined ? {} : { template_swap }), count });
+    return JSON.stringify({ modelId, prompt, textKey, durationSeconds, extraInputs, references, sources, assets, sourceRights, preset, templateId, swap, templateClip, ...(template_swap === undefined ? {} : { template_swap }), ...(request.inputsByIndex === undefined ? {} : { inputsByIndex: request.inputsByIndex }), count });
 }
 export const unknownGenerationOutcome = (err: unknown) => !(err instanceof ApiError)
     || ['network', 'internal', 'gateway_error', 'debit_failed', 'account_changed', 'dispatch_acceptance_unknown', 'admission_unknown', 'outcome_unknown', 'bad_response'].includes(err.code)
@@ -28,6 +30,9 @@ export function createGenerationSubmit() {
     let epoch = 0;
     return {
         reset() { pending = null; epoch++; },
+        hasUnknownOutcome(request: SubmitRequest, count: number): boolean {
+            return pending?.signature === generationSignature(request, count) && pending.unknown.size > 0;
+        },
         snapshot(request: SubmitRequest, count: number, unit: number, freeNow: number): ChargeSnapshot {
             const same = pending?.signature === generationSignature(request, count) ? pending : null;
             let free = Math.max(0, Math.floor(freeNow));
@@ -46,6 +51,7 @@ export function createGenerationSubmit() {
         },
         async run(api: ApiClient, request: SubmitRequest, count = 1, onStarted?: (count: number) => void, onJob?: (jobId: string, index: number) => void, quote?: ChargeSnapshot) {
             if (running) throw new ApiError(409, 'submission_in_progress');
+            if (request.inputsByIndex && request.inputsByIndex.length !== count) throw new ApiError(400, 'invalid_inputs');
             const signature = generationSignature(request, count);
             if (pending?.signature !== signature) pending = { signature, keys: Array.from({ length: count }, () => Crypto.randomUUID()), accepted: Array(count).fill(null), unknown: new Set() };
             const run = pending;
@@ -58,9 +64,10 @@ export function createGenerationSubmit() {
                     if (run.accepted[i]) continue;
                     let result;
                     try {
-                        result = await mediaApi(api).createGeneration({ ...request,
+                        const { inputsByIndex, ...itemRequest } = request;
+                        result = await mediaApi(api).createGeneration({ ...itemRequest,
                             ...(quote ? { maxCharge: quote.ceilings[i] ?? 0 } : {}),
-                            idempotencyKey: run.keys[i], extraInputs: inputsForIndex(request.extraInputs ?? {}, i, count) });
+                            idempotencyKey: run.keys[i], extraInputs: inputsByIndex ? inputsByIndex[i] : inputsForIndex(request.extraInputs ?? {}, i, count) });
                     } catch (err) {
                         const wasUnknown = run.unknown.has(i);
                         if (unknownGenerationOutcome(err)) run.unknown.add(i);

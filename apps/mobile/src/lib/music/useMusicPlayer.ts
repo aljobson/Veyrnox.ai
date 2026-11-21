@@ -3,8 +3,9 @@ import { useFocusEffect } from 'expo-router';
 import { AppState } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { useAuth } from '../../auth/AuthProvider';
+import { subscribeCacheUser } from '../appCache';
 import { mediaApi } from '../media';
-import { recordListen } from './client';
+import { recordListen, getTrackAddAudio } from './client';
 import { createMusicPlayer, type PlaybackInput, type PlayerState } from './player';
 
 const idle: PlayerState = { state: 'idle', position: 0, duration: 0 };
@@ -14,8 +15,9 @@ export function useMusicPlayer() {
     const ref = useRef<ReturnType<typeof createMusicPlayer> | null>(null);
     const loaded = useRef<PlaybackInput | null>(null);
     useFocusEffect(useCallback(() => {
-        const controller = createMusicPlayer({
+        const build = () => createMusicPlayer({
             getAsset: mediaApi(api).getAsset,
+            getTrackAddAudio: id => getTrackAddAudio(api, id),
             factory: url => createAudioPlayer({ uri: url }, { updateInterval: 100 }),
             setAudioMode: setAudioModeAsync,
             recordListen: songId => recordListen(api, songId),
@@ -27,8 +29,11 @@ export function useMusicPlayer() {
             },
             onState: setState,
         });
+        let controller = build();
+        // An account change drops the old account's audio and builds a fresh controller so Play keeps working.
+        const stopAccount = subscribeCacheUser(() => { controller.dispose(); controller = build(); ref.current = controller; loaded.current = null; setState(idle); });
         ref.current = controller; loaded.current = null; setState(idle);
-        return () => { controller.dispose(); ref.current = null; loaded.current = null; };
+        return () => { stopAccount(); controller.dispose(); ref.current = null; loaded.current = null; };
     }, [api]));
     return {
         state,

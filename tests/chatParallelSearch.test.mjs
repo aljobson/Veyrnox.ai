@@ -36,7 +36,7 @@ function fixture({ model = {}, replies = {}, web = true, env = {}, stream } = {}
     };
     const run = () => runChatTurn({ authId: AUTH, threadId: THREAD, cfg: {}, env: { OPENROUTER_API_KEY: 'model-fixture', ...env },
         body: { text: 'Find current Node release facts', idempotency_key: 'key-parallel-test', options: { web } },
-        deps: { rpc, select: async () => [row], stream: async function* (args) { modelCalls.push(args); if (stream) yield* stream(args); else yield { delta: 'The release is current.' }; } } });
+        deps: { rpc, select: async (table) => (table === 'jobs' ? [] : [row]), stream: async function* (args) { modelCalls.push(args); if (stream) yield* stream(args); else yield { delta: 'The release is current.' }; } } });
     return { run, calls, modelCalls, requests };
 }
 

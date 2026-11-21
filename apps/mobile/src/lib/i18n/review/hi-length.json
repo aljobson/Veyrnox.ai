@@ -12,6 +12,42 @@
     "ratio": 2
   },
   {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.touch.help",
+    "english": "Tap Controls.",
+    "translation": "नियंत्रण पर टैप करें।",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "पहले जैसा करें पर टैप करें।",
+    "ratio": 3
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "दोबारा करें पर टैप करें।",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "पहले जैसा करें",
+    "ratio": 3.5
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "फिर करें",
+    "ratio": 2
+  },
+  {
     "id": "editorCaptionTools.none",
     "english": "None",
     "translation": "कोई नहीं",
@@ -2124,6 +2160,18 @@
     "ratio": 2.33
   },
   {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "गीत के बोल",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
     "id": "beat.saveNote",
     "english": "Saved on this phone",
     "translation": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",
@@ -2164,6 +2212,30 @@
     "english": "Autosave",
     "translation": "अपने आप सहेजा गया",
     "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.uses",
+    "english": "Regions using this clip: {n}",
+    "translation": "इस क्लिप का उपयोग करने वाले क्षेत्रों की संख्या: {n}",
+    "ratio": 1.86
+  },
+  {
+    "id": "beatPiano.quantise",
+    "english": "Quantise",
+    "translation": "क्वांटाइज़ करें",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "सुर ऊँचा करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatPiano.cursorRight",
+    "english": "Cursor later",
+    "translation": "कर्सर बाद में ले जाएँ",
+    "ratio": 1.75
   },
   {
     "id": "beatTakes.arm",
@@ -2292,10 +2364,88 @@
     "ratio": 1.62
   },
   {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "स्वर कुंजी",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatAi.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.unmute",
+    "english": "Unmute {name}",
+    "translation": "{name} की आवाज़ चालू करें",
+    "ratio": 1.92
+  },
+  {
+    "id": "speech.audition.test",
+    "english": "Test",
+    "translation": "परीक्षण",
+    "ratio": 1.75
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "ग्रिड से मिलाएँ",
     "ratio": 3.75
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "ईक्यू",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "मिक्स",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Music में सेव करने की फिर कोशिश करें",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatExport.title",
+    "english": "Export",
+    "translation": "एक्सपोर्ट करें",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.kind",
+    "english": "Export",
+    "translation": "एक्सपोर्ट करें",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "मिक्स",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "एक्सपोर्ट टूल लोड हो रहे हैं…",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatExport.saveOpening",
+    "english": "Checking Music saving…",
+    "translation": "Music में सेव करने की जाँच हो रही है…",
+    "ratio": 1.68
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "संगीत लाइब्रेरी में सहेजें",
+    "ratio": 2
   },
   {
     "id": "oauth.signIn",

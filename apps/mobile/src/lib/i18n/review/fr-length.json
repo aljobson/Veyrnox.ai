@@ -66,6 +66,114 @@
     "ratio": 2
   },
   {
+    "id": "beatLabs.unavailable",
+    "english": "Not on the phone editor yet.",
+    "translation": "Pas encore disponible dans l’éditeur du téléphone.",
+    "ratio": 1.79
+  },
+  {
+    "id": "beatLabs.stop",
+    "english": "Stop",
+    "translation": "Arrêter",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Ajouter",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatLabs.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "Touchez Annuler.",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "Touchez Rétablir.",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatLabs.touch.pianoDelete",
+    "english": "Select notes and use delete notes.",
+    "translation": "Sélectionnez des notes et utilisez Supprimer les notes.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beatLabs.sound.bells",
+    "english": "Music box",
+    "translation": "Boîte à musique",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.next",
+    "english": "Next",
+    "translation": "Suivant",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.done",
+    "english": "Done",
+    "translation": "Terminé",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.category.Keys",
+    "english": "Keys",
+    "translation": "Claviers",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.ripple",
+    "english": "Ripple edit",
+    "translation": "Montage avec décalage",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Annuler",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Rétablir",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.regionSplit",
+    "english": "Split at playhead",
+    "translation": "Scinder à la tête de lecture",
+    "ratio": 1.65
+  },
+  {
+    "id": "beatLabs.control.rulerCancel",
+    "english": "Cancel cycle drag",
+    "translation": "Annuler le déplacement du cycle",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatLabs.control.pianoSelectAll",
+    "english": "Select all notes",
+    "translation": "Sélectionner toutes les notes",
+    "ratio": 1.81
+  },
+  {
+    "id": "beatLabs.control.pads",
+    "english": "Drum pads",
+    "translation": "Pads de batterie",
+    "ratio": 1.78
+  },
+  {
     "id": "editorCaptionTools.transcriptChoose",
     "english": "Select a transcript word or caption range.",
     "translation": "Sélectionnez un mot de la transcription ou une plage de sous-titres.",
@@ -5814,6 +5922,18 @@
     "ratio": 1.63
   },
   {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Masculin",
+    "ratio": 2
+  },
+  {
+    "id": "musicTrackAdd.checkAgain",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
     "id": "beat.saveNote",
     "english": "Saved on this phone",
     "translation": "Pas encore sauvegardé. Ce beat est perdu à la fermeture de l’app.",
@@ -5896,6 +6016,114 @@
     "english": "Checkpoint",
     "translation": "Point de sauvegarde",
     "ratio": 1.9
+  },
+  {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Créer une copie unique",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Alignement",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
+    "id": "beatPiano.zoomOut",
+    "english": "Zoom out",
+    "translation": "Réduire le zoom",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.actions",
+    "english": "Selected note actions",
+    "translation": "Actions sur les notes sélectionnées",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Déplacer à gauche",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Déplacer à droite",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "Monter la hauteur",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.down",
+    "english": "Pitch down",
+    "translation": "Baisser la hauteur",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatPiano.selectAll",
+    "english": "Select all notes",
+    "translation": "Sélectionner toutes les notes",
+    "ratio": 1.81
+  },
+  {
+    "id": "beatPiano.resized",
+    "english": "Resized notes",
+    "translation": "Durée des notes modifiée",
+    "ratio": 1.85
+  },
+  {
+    "id": "beatPiano.cursorDown",
+    "english": "Cursor pitch down",
+    "translation": "Baisser la hauteur du curseur",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatPiano.cursorUp",
+    "english": "Cursor pitch up",
+    "translation": "Monter la hauteur du curseur",
+    "ratio": 1.87
+  },
+  {
+    "id": "beatPiano.toggle",
+    "english": "Toggle note at cursor",
+    "translation": "Activer ou retirer la note au curseur",
+    "ratio": 1.76
+  },
+  {
+    "id": "beatPiano.library.title",
+    "english": "Instruments",
+    "translation": "Bibliothèque d’instruments",
+    "ratio": 2.36
+  },
+  {
+    "id": "beatPiano.library.close",
+    "english": "Close library",
+    "translation": "Fermer la bibliothèque",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatPiano.library.group.drums",
+    "english": "Drum kits",
+    "translation": "Kits de batterie",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatPiano.selected.octaveUp",
+    "english": "Selected notes octave up",
+    "translation": "Notes sélectionnées : une octave plus haut",
+    "ratio": 1.75
   },
   {
     "id": "beatTakes.record",
@@ -6174,6 +6402,72 @@
     "ratio": 1.62
   },
   {
+    "id": "beatAi.stems",
+    "english": "Split stems",
+    "translation": "Séparer les pistes",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.key",
+    "english": "Key",
+    "translation": "Tonalité",
+    "ratio": 2.67
+  },
+  {
+    "id": "beatAi.priceLoops",
+    "english": "Price two loops",
+    "translation": "Calculer le prix de deux boucles",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatAi.buy",
+    "english": "Buy Credits",
+    "translation": "Acheter des Crédits",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatAi.retry",
+    "english": "Send again",
+    "translation": "Envoyer à nouveau",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatAi.check",
+    "english": "Check again",
+    "translation": "Vérifier à nouveau",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatAi.waiting",
+    "english": "Working…",
+    "translation": "Traitement en cours…",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatAi.mute",
+    "english": "Mute {name}",
+    "translation": "Couper le son de {name}",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatAi.unmute",
+    "english": "Unmute {name}",
+    "translation": "Réactiver le son de {name}",
+    "ratio": 2
+  },
+  {
+    "id": "beatAi.a1",
+    "english": "Split stems",
+    "translation": "Séparer les pistes",
+    "ratio": 1.64
+  },
+  {
+    "id": "speech.audition.clear",
+    "english": "Clear board",
+    "translation": "Vider la sélection",
+    "ratio": 1.64
+  },
+  {
     "id": "beat.view.song",
     "english": "Song",
     "translation": "Morceau",
@@ -6292,6 +6586,138 @@
     "english": "Moving cycle edge, drag then lift",
     "translation": "Déplacement du bord de la boucle, glissez puis relâchez",
     "ratio": 1.67
+  },
+  {
+    "id": "beatMix.master.room",
+    "english": "Reverb room size",
+    "translation": "Taille de la pièce de réverbération",
+    "ratio": 2.19
+  },
+  {
+    "id": "beatMix.fx.eq",
+    "english": "EQ",
+    "translation": "Égaliseur",
+    "ratio": 4.5
+  },
+  {
+    "id": "beatMix.fx.reverb",
+    "english": "Reverb",
+    "translation": "Réverbération",
+    "ratio": 2.17
+  },
+  {
+    "id": "beatMix.param.low",
+    "english": "Low",
+    "translation": "Graves",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.mid",
+    "english": "Mid",
+    "translation": "Médiums",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatMix.param.mix",
+    "english": "Mix",
+    "translation": "Mixage",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.param.size",
+    "english": "Room size",
+    "translation": "Taille de la pièce",
+    "ratio": 2
+  },
+  {
+    "id": "beatMix.send.reverb",
+    "english": "Reverb send",
+    "translation": "Envoi réverbération",
+    "ratio": 1.73
+  },
+  {
+    "id": "beatMix.lane.show.gain",
+    "english": "Show gain lane",
+    "translation": "Afficher la ligne de gain",
+    "ratio": 1.79
+  },
+  {
+    "id": "beatMix.lane.show.pan",
+    "english": "Show pan lane",
+    "translation": "Afficher la ligne de panoramique",
+    "ratio": 2.46
+  },
+  {
+    "id": "beatMix.lane.pan",
+    "english": "Pan",
+    "translation": "Panoramique",
+    "ratio": 3.67
+  },
+  {
+    "id": "beatMix.lane.add",
+    "english": "Add point",
+    "translation": "Ajouter un point",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatMix.lane.hide",
+    "english": "Hide lane",
+    "translation": "Masquer la ligne",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatMix.curve.in",
+    "english": "Ease in",
+    "translation": "Accélération",
+    "ratio": 1.71
+  },
+  {
+    "id": "beatExport.retrySave",
+    "english": "Retry save to Music",
+    "translation": "Réessayer l’enregistrement dans Music",
+    "ratio": 1.95
+  },
+  {
+    "id": "beatExport.mix",
+    "english": "Mix",
+    "translation": "Mixage",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.stems",
+    "english": "Stems",
+    "translation": "Pistes séparées",
+    "ratio": 3
+  },
+  {
+    "id": "beatExport.depth",
+    "english": "Bit depth",
+    "translation": "Profondeur de bits",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.opening",
+    "english": "Preparing export…",
+    "translation": "Chargement des outils d’export…",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatExport.saveOpening",
+    "english": "Checking Music saving…",
+    "translation": "Vérification de l’enregistrement dans Music…",
+    "ratio": 2
+  },
+  {
+    "id": "beatExport.save",
+    "english": "Save to Music",
+    "translation": "Enregistrer dans la bibliothèque Musique",
+    "ratio": 3.08
+  },
+  {
+    "id": "beatExport.saved",
+    "english": "Saved to Music as {title}",
+    "translation": "Enregistré dans Music sous le nom {title}",
+    "ratio": 1.64
   },
   {
     "id": "label.Terms",

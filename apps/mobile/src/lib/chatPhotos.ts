@@ -2,8 +2,9 @@ import { extractFrames } from './chatVideoFrames';
 import * as ImagePicker from 'expo-image-picker';
 import { MAX_IMAGE_EDGE, RESIZE_UNAVAILABLE, type ChatImage, type ImageResizer } from './chatAttach';
 import { createResizer } from './chatResizer';
-import type { ApiClient } from './api';
-import { uploadSource } from './uploads';
+import { File } from 'expo-file-system';
+import { ApiError, type ApiClient } from './api';
+import { uploadSource, type PutFile } from './uploads';
 
 export type PhotoResult = { readonly images: ChatImage[]; readonly problem: 'resize_unavailable' | 'failed' | null };
 
@@ -31,10 +32,23 @@ export async function pickPhotos(room: number, resizer: ImageResizer = createRes
     return { images, problem: null };
 }
 
+export interface ChatUploadDeps {
+    readonly sizeOf?: (uri: string) => number;
+    readonly put?: PutFile;
+}
+
 // Uploads the prepared files before anything is charged, so a failed upload costs nothing. Returns the storage keys in order.
-export async function uploadChatImages(api: ApiClient, files: readonly ChatImage[], signal: AbortSignal, contentType = 'image/jpeg'): Promise<string[]> {
+// The upload route refuses a request without the file's byte size, so each prepared file (resized photo or video frame) is
+// measured on disk first; one that cannot be measured is refused here rather than sent.
+export async function uploadChatImages(api: ApiClient, files: readonly ChatImage[], signal: AbortSignal, contentType = 'image/jpeg', deps: ChatUploadDeps = {}): Promise<string[]> {
+    const sizeOf = deps.sizeOf ?? ((uri: string) => new File(uri).size);
     const keys: string[] = [];
-    for (const f of files) keys.push(await uploadSource(api, { uri: f.uri ?? '' }, contentType, () => undefined, signal));
+    for (const f of files) {
+        const uri = f.uri ?? '';
+        const size = sizeOf(uri);
+        if (!Number.isInteger(size) || size <= 0) throw new ApiError(0, 'upload_failed');
+        keys.push(await uploadSource(api, { uri, size }, contentType, () => undefined, signal, deps.put));
+    }
     return keys;
 }
 

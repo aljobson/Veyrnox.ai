@@ -7,13 +7,13 @@ import { createActionAttempts } from './actionAttempts';
 import { pollUntil, type PollOptions, type PollState } from './actionPoll';
 import { createQuoteGate } from './shared';
 import { isMusicOff, probeMusic } from './probe';
-import type { ActionInput, ActionSpec } from './actionTypes';
+import type { ActionInput, ActionSpec, MusicActionQuote, MusicActionQuoteBase } from './actionTypes';
 import type { MusicSongDetail } from './types';
 type State<R, S> = Readonly<{
     status: 'loading' | 'on' | 'off' | 'error'; song: MusicSongDetail | null; input: ActionInput;
     busy: boolean; error: string | null; errorMetadata: ActionErrorMetadata | null; result: R | null; balance: number | null; poll: PollState<S> | null;
 }>;
-export function createSongActionFlow<R extends { balance_after?: number }, S>(api: ApiClient, spec: ActionSpec<R, S>, songId: string,
+export function createSongActionFlow<R extends { balance_after?: number }, S, Q extends MusicActionQuoteBase = MusicActionQuote>(api: ApiClient, spec: ActionSpec<R, S, Q>, songId: string,
     options: { mintKey?: () => string; poll?: Partial<Pick<PollOptions<S>, 'initialAppState' | 'subscribeAppState' | 'ceilingMs'>> } = {}) {
     const attempts = createActionAttempts(api, spec, options.mintKey), gate = createQuoteGate();
     const empty: State<R, S> = { status: 'loading', song: null, input: { song_id: songId, version_id: '', rights_confirmed: false },

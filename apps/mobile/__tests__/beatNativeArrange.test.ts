@@ -29,7 +29,11 @@ test('audio reports global cycle steps and re-reads edits even inside one lookah
     let now = 0, fire = () => {};
     const node = () => ({ gain: { value: 1 }, pan: { value: 0 }, connect: jest.fn() });
     const playPad = jest.fn();
-    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, playPad };
+    // N5 plays through the shared mix run, so the stand-in answers the run methods too.
+    const run = { channels: new Map<string, { input: unknown; schedule: jest.Mock }>() };
+    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, playPad, playMidi: jest.fn(() => ({ release: jest.fn() })),
+        startRun: () => run, stopRun: jest.fn(), meterTap: () => null, live: { bus: {}, channels: new Map() },
+        setTrackMix: (_run: unknown, id: string) => { if (!run.channels.has(id)) run.channels.set(id, { input: node(), schedule: jest.fn() }); return run.channels.get(id)!.input; } };
     let doc = setCycle(beat(), { on: true, start: 960, end: 1920 });
     const steps: number[] = [];
     const audio = createBeatAudioFromEngine({ engine: engine as never, setTimer: fn => { fire = fn; return 1; }, clearTimer: () => {} });
@@ -49,7 +53,7 @@ test('audio reports global cycle steps and re-reads edits even inside one lookah
 test('audio stops scheduling instead of throwing when the beat leaves the store mid-play', async () => {
     let now = 0, fire = () => {};
     const node = () => ({ gain: { value: 1 }, pan: { value: 0 }, connect: jest.fn() });
-    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, playPad: jest.fn() };
+    const engine = { now: () => now, context: { destination: {}, createGain: node, createStereoPanner: node }, resume: async () => {}, close: async () => {}, live: {}, startRun: () => ({}), stopRun: jest.fn(), setTrackMix: jest.fn(), playMidi: jest.fn(), playPad: jest.fn() };
     let doc: ReturnType<typeof beat> | undefined = beat();
     const audio = createBeatAudioFromEngine({ engine: engine as never, setTimer: fn => { fire = fn; return 1; }, clearTimer: () => {} });
     await audio.play(() => doc);

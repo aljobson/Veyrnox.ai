@@ -3,6 +3,7 @@
 // Pattern: src/lib/instrumentShared.ts. Metro and Jest both resolve the web folder (metro.config.js watchFolders).
 // @ts-ignore plain-JS web module, typed by the casts below
 import * as engine from '../../../../../app/veyrnox/_lib/music/beat/beatEngine.js';
+import type { BeatDoc } from './doc';
 
 export type ParamLike = {
     value: number;
@@ -28,12 +29,22 @@ export type BeatTrackInstrument = { id: 'piano' | 'guitar' | 'bass' | 'synth' | 
 export type BeatTrack = { id: string; instrument: BeatTrackInstrument; gain: number; pan: number };
 export type BeatVoice = { endTime: number; ended: Promise<void>; release(at: number): void; stop(at: number): void };
 
+/** Engine-owned run; callers only retain its identity. A doc run (N5 mix graph) also exposes its strips. */
+export type Run = object;
+export type MixRunHandle = Run & { channels: Map<string, { schedule(window: { fromSec: number; toSec: number; contextTime: number }): void }> };
+
 export type BeatEngine = {
     context: EngineContext;
     now(): number;
     resume(): Promise<void>;
     close(): Promise<void>;
-    playMidi(track: BeatTrack, pitch: number, velocity: number, at: number): BeatVoice;
+    startRun(doc: BeatDoc, opts?: { automationActive?: boolean; onError?: (message: string) => void }): MixRunHandle;
+    startRun(doc: null): Run;
+    stopRun(run: Run): void;
+    setTrackMix(run: Run, id: string, gain: number, pan: number, doc?: BeatDoc): unknown;
+    meterTap(id: string): unknown;
+    live: Run;
+    playMidi(track: BeatTrack | { id: string; instrument: { engine: 'voice' | 'wavetable'; id: string; preset: string }; gain: number; pan: number }, pitch: number, velocity: number, at: number, run?: Run, gain?: number): BeatVoice;
     playPad(pad: string, velocity: number, at: number, destination?: unknown, kit?: string): void;
     click(at: number, accent: boolean, destination: unknown): void;
 };

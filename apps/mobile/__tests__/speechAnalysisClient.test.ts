@@ -6,6 +6,7 @@ import { OFFLINE_PAID_MESSAGE } from '../src/lib/network';
 import { isPaidAction } from '../src/lib/hardPaywall';
 import { sendsContent } from '../src/lib/aiConsent';
 let mockOwner = 'owner';
+// eslint-disable-next-line no-var -- Jest hoists the mock factory above lexical declarations.
 var mockListeners: Set<() => void>;
 jest.mock('../src/lib/appCache', () => {
     mockListeners = new Set<() => void>();
@@ -32,6 +33,26 @@ test('lost reply recovers by key without another POST; confirmed refund remains 
     expect((await startSpeech(api(request), args())).status).toBe('queued'); expect(request.mock.calls[1][0]).toBe(`${SPEECH_PATH}/by-key/speech-key`); expect(request).toHaveBeenCalledTimes(2);
     request.mockReset().mockRejectedValue(new ApiError(502, 'provider_rejected', { refunded: true }));
     await expect(startSpeech(api(request), args())).rejects.toMatchObject({ body: { refunded: true } }); expect(request).toHaveBeenCalledTimes(1);
+});
+test('ambiguous POST recovery preserves the durable 0455 credit evidence', async () => {
+    const analysis = { version: 1, assetId: args().jobId, duration: 12, provider: 'fal-scribe-v2', transcript: 'hello', language: 'en', timingQuality: 'word', chunks: [{ start: 1, end: 2, text: 'hello' }] };
+    const request = jest.fn().mockRejectedValueOnce(new ApiError(0, 'network')).mockResolvedValueOnce({ id: 'job', status: 'completed', credits: 7, analysis });
+    await expect(startSpeech(api(request), args())).resolves.toMatchObject({ status: 'completed', credits: 7, analysis });
+    expect(request.mock.calls.map(call => call[0])).toEqual([SPEECH_PATH, `${SPEECH_PATH}/by-key/speech-key`]);
+});
+test('0455 joined, charged-new and missing-credit response shapes stay distinct', async () => {
+    const analysis = { version: 1, assetId: args().jobId, duration: 12, provider: 'fal-scribe-v2', transcript: 'hello', language: 'en', timingQuality: 'word', chunks: [{ start: 1, end: 2, text: 'hello' }] };
+    const joined = jest.fn().mockResolvedValueOnce({ id: 'joined', status: 'queued', credits: 0 }).mockResolvedValueOnce({ id: 'joined', status: 'completed', credits: 0, analysis });
+    const first = await startSpeech(api(joined), args());
+    expect(first).toMatchObject({ status: 'queued', credits: 0 });
+    await expect(pollSpeech(api(joined), 'speech-key', 'owner', new AbortController().signal, jest.fn())).resolves.toMatchObject({ status: 'completed', credits: 0, analysis });
+
+    const charged = jest.fn().mockResolvedValue({ id: 'new', status: 'completed', credits: 7, analysis });
+    await expect(startSpeech(api(charged), args())).resolves.toMatchObject({ status: 'completed', credits: 7, analysis });
+
+    const missing = jest.fn().mockResolvedValue({ id: 'legacy', status: 'completed', analysis });
+    const legacy = await startSpeech(api(missing), args());
+    expect(legacy.status).toBe('completed'); expect(legacy.credits).toBeUndefined();
 });
 test('keys are stable per account/source/duration; refund forget and account change clear memory', () => {
     const make = jest.fn().mockReturnValueOnce('one').mockReturnValueOnce('two').mockReturnValueOnce('three');

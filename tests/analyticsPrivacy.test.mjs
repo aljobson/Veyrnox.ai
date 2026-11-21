@@ -127,3 +127,38 @@ test('gateway diagnostics collapse ids and discard query values', () => {
     assert.equal(normaliseGatewayPath('/jobs/123e4567-e89b-12d3-a456-426614174000/result'), '/jobs/:id/result');
     assert.equal(normaliseGatewayPath('/catalog/models'), '/catalog/models');
 });
+
+test('operational errors keep their snake_case code; other messages stay hidden', () => {
+    const event = sanitisePostHogEvent({
+        event: '$exception',
+        properties: {
+            $exception_message: 'gateway_network_error',
+            $exception_values: ['gateway_network_error', 'Prompt contained private words'],
+            $exception_list: [
+                { type: 'VeyrnoxOperationalError', value: 'gateway_network_error' },
+                { type: 'TypeError', value: 'Prompt contained private words' },
+            ],
+        },
+    });
+
+    assert.equal(event.properties.$exception_message, 'gateway_network_error');
+    assert.deepEqual(event.properties.$exception_values, ['gateway_network_error', 'Browser error']);
+    assert.deepEqual(event.properties.$exception_list.map((e) => e.value), ['gateway_network_error', 'Browser error']);
+});
+
+test('an operational error with free text or a snake_case value on another type is hidden', () => {
+    const event = sanitisePostHogEvent({
+        event: '$exception',
+        properties: {
+            $exception_message: 'contains private words',
+            $exception_values: ['contains private words', 'private_token_value'],
+            $exception_list: [
+                { type: 'VeyrnoxOperationalError', value: 'contains private words' },
+                { type: 'Error', value: 'private_token_value' },
+            ],
+        },
+    });
+
+    assert.equal(event.properties.$exception_message, 'Browser error');
+    assert.deepEqual(event.properties.$exception_values, ['Browser error', 'Browser error']);
+});

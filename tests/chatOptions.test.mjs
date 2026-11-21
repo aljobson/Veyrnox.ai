@@ -88,6 +88,9 @@ test('a Library image is named by its job id; `assets` appears only when there a
     const mixed = validateTurn(turn({ attachments: [{ source_key: KEY(1) }, { source_asset: A2 }, { source_key: KEY(2) }, { source_asset: A1 }] }));
     assert.deepEqual(mixed.attachments, [KEY(1), KEY(2)]);
     assert.deepEqual(mixed.assets, [A2, A1]);
+    assert.deepEqual(mixed.order, ['key', 'asset', 'key', 'asset'], 'the order as sent, so the model sees what the person arranged (ATT-06)');
+    assert.equal('order' in only, false, 'one kind only: the shape it always had');
+    assert.equal('order' in validateTurn(turn({ attachments: [{ source_key: KEY(1) }] })), false);
     assert.equal('assets' in validateTurn(turn({ attachments: [{ source_key: KEY(1) }] })), false, 'a turn without assets keeps its old shape');
     assert.equal('assets' in validateTurn(turn()), false);
     assert.deepEqual(validateTurn(turn({ attachments: [{ source_asset: A1.toUpperCase() }] })).assets, [A1], 'ids are compared in lower case');

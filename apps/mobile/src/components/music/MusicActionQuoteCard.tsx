@@ -2,9 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Button, Card, Text } from '../ui';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
-import type { MusicActionQuote } from '../../lib/music/actionTypes';
-export function MusicActionQuoteCard({ quote, ambiguous, busy, onConfirm, children }: {
-    quote: MusicActionQuote; ambiguous: boolean; busy: boolean; onConfirm(): void; children?: ReactNode;
+import type { MusicActionQuoteBase } from '../../lib/music/actionTypes';
+export function MusicActionQuoteCard<Q extends MusicActionQuoteBase>({ quote, ambiguous, busy, onConfirm, children }: {
+    quote: Q; ambiguous: boolean; busy: boolean; onConfirm(): void; children?: ReactNode;
 }) {
     const [now, setNow] = useState(Date.now);
     useEffect(() => {

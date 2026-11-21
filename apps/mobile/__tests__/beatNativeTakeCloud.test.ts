@@ -16,7 +16,7 @@ test('reserve → signed PUT → confirm, ready short-circuit, and pending missi
     await putBeatTake(takeRow()); const events: string[] = []; let rows: CloudTake[] = [];
     const api = { request: jest.fn(async (path: string, init: RequestInit) => {
         if (!init.method) return { takes: rows };
-        if (path.endsWith('/takes')) { events.push('reserve'); return { take_id: 'server-take', status: 'pending', upload_url: 'https://signed.test/upload', upload_headers: { 'Content-Type': 'audio/wav' } }; }
+        if (path.endsWith('/takes')) { events.push('reserve'); return { take_id: 'server-take', status: 'pending', upload_url: 'https://acct.r2.cloudflarestorage.com/bucket/upload', upload_headers: { 'Content-Type': 'audio/wav' } }; }
         events.push('confirm'); return { status: 'ready' };
     }) };
     const put = jest.fn(async (_url, init) => { events.push('put'); expect(init.body.byteLength).toBe(2044); return { ok: true, status: 200 }; });
@@ -32,7 +32,7 @@ test('over-limit takes remain local and strict preservation fails, downloaded WA
     const api = { request: jest.fn(async () => ({ takes: [] })) }; const cloud = createTakeCloud(api as unknown as ApiClient, jest.fn() as never, () => {});
     expect(await cloud.upload(docWithTake(), token)).toBe(false); await expect(cloud.upload(docWithTake(), token, true)).rejects.toMatchObject({ code: 'TAKE_LOCAL_ONLY' });
     configureBeatTakeStorage(createTakeFiles(takeIO()));
-    const read = { request: jest.fn(async (path: string) => path.endsWith('/takes') ? { takes: [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] } : { url: 'https://signed.test/download' }) };
+    const read = { request: jest.fn(async (path: string) => path.endsWith('/takes') ? { takes: [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] } : { url: 'https://acct.r2.cloudflarestorage.com/bucket/download' }) };
     const down = createTakeCloud(read as unknown as ApiClient, jest.fn(async () => ({ ok: true, arrayBuffer: async () => encodeWav(takeRow().samples, 1000) })) as never, () => {});
     await down.download(docWithTake(), token); expect((await loadBeatTake('take-1'))?.state).toBe('committed'); expect((await loadBeatTake('take-1'))?.samples.length).toBe(1000);
 });
@@ -41,7 +41,7 @@ test('first link saves document first; failed media retries without another docu
     const order: string[] = []; let failUpload = true, ready = false;
     const api = { request: jest.fn(async (path: string, init: RequestInit) => {
         if (init.method === 'PUT') { order.push('document'); return { project: project(doc.id, 1) }; }
-        if (path.endsWith('/takes') && init.method === 'POST') { order.push('reserve'); return { take_id: 'server-take', status: 'pending', upload_url: 'https://signed.test/upload', upload_headers: {} }; }
+        if (path.endsWith('/takes') && init.method === 'POST') { order.push('reserve'); return { take_id: 'server-take', status: 'pending', upload_url: 'https://acct.r2.cloudflarestorage.com/bucket/upload', upload_headers: {} }; }
         if (init.method === 'POST') { ready = true; order.push('confirm'); return { status: 'ready' }; }
         if (path.endsWith('/takes')) return { takes: ready ? [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] : [] };
         return { projects: [] };
@@ -57,7 +57,7 @@ test.each([false, true])('Load theirs preserves outgoing finalized media before 
     const order: string[] = []; const incoming = { ...doc, title: 'Theirs' };
     const api = { request: jest.fn(async (path: string, init: RequestInit) => {
         if (init.method === 'PUT') { const body = JSON.parse(String(init.body)); if (body.mode !== 'stash') throw new ApiError(409, 'VERSION_CONFLICT'); order.push('stash'); return { project: project(doc.id, 2) }; }
-        if (path.endsWith('/takes') && init.method === 'POST') { order.push('reserve'); return { take_id: 'server-take', status: 'pending', upload_url: 'https://signed.test/upload', upload_headers: {} }; }
+        if (path.endsWith('/takes') && init.method === 'POST') { order.push('reserve'); return { take_id: 'server-take', status: 'pending', upload_url: 'https://acct.r2.cloudflarestorage.com/bucket/upload', upload_headers: {} }; }
         if (init.method === 'POST') { order.push('confirm'); return { status: 'ready' }; }
         if (path.endsWith('/takes')) return { takes: [] };
         if (path.endsWith(doc.id)) return { project: project(doc.id, 2), doc_json: JSON.stringify(incoming) };
@@ -107,7 +107,7 @@ test.each(['LIMIT_REACHED', 'TAKE_UNAVAILABLE'])('take %s never halts document s
 });
 
 test.each(['expired', 'invalid'])('a permanently %s download is refused without endless media retries', async kind => {
-    const api = { request: jest.fn(async (path: string) => path.endsWith('/takes') ? { takes: [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] } : { url: 'https://signed.test/download' }) };
+    const api = { request: jest.fn(async (path: string) => path.endsWith('/takes') ? { takes: [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] } : { url: 'https://acct.r2.cloudflarestorage.com/bucket/download' }) };
     const fetcher = jest.fn(async () => ({ ok: kind !== 'expired', status: 403, arrayBuffer: async () => new ArrayBuffer(3) }));
     const cloud = createTakeCloud(api as unknown as ApiClient, fetcher as never, () => {});
     expect(await cloud.download(docWithTake(), token)).toBe(false); expect(await cloud.download(docWithTake(), token)).toBe(false);
@@ -150,7 +150,7 @@ test.each(['fetch', 'body'])('a download %s network failure backs off for 60 s w
     store.setCloudLink(doc.id, { userId: USER, projectId: project(doc.id).id, revision: 1, syncedUpdatedAt: saved.updatedAt });
     const api = { request: jest.fn(async (path: string, init: RequestInit) => {
         if (init.method === 'PUT') return { project: project(doc.id, 2) };
-        if (path.endsWith('/server-take')) return { url: 'https://signed.test/download' };
+        if (path.endsWith('/server-take')) return { url: 'https://acct.r2.cloudflarestorage.com/bucket/download' };
         if (path.endsWith('/takes')) return { takes: [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] };
         if (path.endsWith(doc.id)) return { project: project(doc.id, 1), doc_json: JSON.stringify(saved) };
         return { projects: [] };
@@ -195,7 +195,7 @@ test.each(['absent', 'pending'])('an initially %s take downloads automatically w
     let ready = false;
     const api = { request: jest.fn(async (path: string) => {
         if (path.endsWith('/takes')) return { takes: ready || initial === 'pending' ? [{ id: 'server-take', take_ref: 'take-1', status: ready ? 'ready' : 'pending' }] : [] };
-        if (path.endsWith('/server-take')) return { url: 'https://signed.test/download' };
+        if (path.endsWith('/server-take')) return { url: 'https://acct.r2.cloudflarestorage.com/bucket/download' };
         if (path.endsWith(doc.id)) return { project: project(doc.id, 1), doc_json: JSON.stringify(saved) };
         return { projects: [] };
     }) };
@@ -212,4 +212,20 @@ test.each(['absent', 'pending'])('an initially %s take downloads automatically w
         expect(sync.takes.nextRetryAt(doc.id)).toBe(0);
         expect((await loadBeatTake('take-1'))?.state).toBe('committed');
     } finally { sync.dispose(); download.mockRestore(); }
+});
+test('signed media URLs outside our R2 storage are refused and never fetched; only the take headers are sent', async () => {
+    await putBeatTake(takeRow());
+    const reserve = (url: string) => ({ request: jest.fn(async (path: string, init: RequestInit) => !init.method ? { takes: [] }
+        : path.endsWith('/takes') ? { take_id: 'server-take', status: 'pending', upload_url: url, upload_headers: { 'Content-Type': 'audio/wav', 'If-None-Match': '*', Authorization: 'x' } } : { status: 'ready' }) });
+    const blocked = jest.fn();
+    expect(await createTakeCloud(reserve('https://evil.example/upload') as unknown as ApiClient, blocked as never, () => {}).upload(docWithTake(), token)).toBe(false);
+    expect(blocked).not.toHaveBeenCalled();
+    const put = jest.fn(async () => ({ ok: true, status: 200 }));
+    await createTakeCloud(reserve('https://acct.r2.cloudflarestorage.com/bucket/upload') as unknown as ApiClient, put as never, () => {}).upload(docWithTake(), token);
+    expect(put).toHaveBeenCalledWith('https://acct.r2.cloudflarestorage.com/bucket/upload', expect.objectContaining({ headers: { 'Content-Type': 'audio/wav', 'If-None-Match': '*' } }));
+    configureBeatTakeStorage(createTakeFiles(takeIO()));
+    const read = { request: jest.fn(async (path: string) => path.endsWith('/takes') ? { takes: [{ id: 'server-take', take_ref: 'take-1', status: 'ready' }] } : { url: 'http://evil.example/download' }) };
+    const fetcher = jest.fn();
+    expect(await createTakeCloud(read as unknown as ApiClient, fetcher as never, () => {}).download(docWithTake(), token)).toBe(false);
+    expect(fetcher).not.toHaveBeenCalled();
 });
