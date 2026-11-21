@@ -415,6 +415,20 @@ test('real screen pending catalog preparation stays silent when the owner switch
     expect(mockSession.currentDocument()).toBeNull();
     expect(mockSession.localMediaUris['l-new']).toBeUndefined();
 });
+test.each(['owner switch', 'session invalidation'] as const)('real screen pending catalog rejection stays silent after %s', async teardown => {
+    let reject!: (error: Error) => void;
+    mockEnsure.mockImplementationOnce(() => new Promise<string>((_resolve, fail) => { reject = fail; }));
+    await screen(); await press('Audio'); await press('Insert Soft keys');
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    if (teardown === 'owner switch') await act(async () => { mockOwner = 'other'; mockOwnerListeners.forEach(fn => fn()); });
+    else { mockSessionCurrent = false; expect(mockOwner).toBe('owner'); }
+    expect(mockSession.sync.live()).toBe(false);
+    await act(async () => reject(new Error('prepare failed after teardown')));
+    expect(mockSession.problem).toBeNull();
+    expect(root.container.queryAll(n => n.children.includes("This sound couldn't be prepared. Try again."))).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'alert')).toHaveLength(0);
+    expect(announce).not.toHaveBeenCalled();
+});
 test('real screen immediate catalog refusal has one announcement and leaves no Generate note', async () => {
     const doc = nearLimit(false); await screen(doc.timeline as Timeline); await press('Audio');
     const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();

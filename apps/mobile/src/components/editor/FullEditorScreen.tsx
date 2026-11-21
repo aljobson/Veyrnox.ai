@@ -125,7 +125,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
     const audioActions = useAudioSettingsActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
-    const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, insertMedia: returns.place, frameStore, playing, setProblem,
+    const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, insertMedia: returns.place, frameStore, playing, setProblem: message => { if (sync.live()) setProblem(message); },
         currentTimeline: () => timelineOf(currentDocument()?.timeline), onPlacement: message => { setProblem(message); setPlacement(value => value + 1); } });
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
