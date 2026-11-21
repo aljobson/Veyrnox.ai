@@ -8,7 +8,7 @@
  * clip editor uses to validate an edit), never from the client or the catalog.
  * No link is minted and no bytes are returned.
  *
- * Response: { seconds, width, height, size_bytes, mime_type }
+ * Response: { seconds, width, height, size_bytes, mime_type, has_audio? } (has_audio only when the header says)
  */
 
 import { NextResponse } from 'next/server';
@@ -70,5 +70,6 @@ export async function GET(req, { params }) {
     return NextResponse.json({
         seconds: info.seconds, width: info.width, height: info.height,
         size_bytes: Number(asset.size_bytes), mime_type: asset.mime_type,
+        ...(typeof info.audio === 'boolean' ? { has_audio: info.audio } : {}),
     }, { headers: NO_STORE });
 }
