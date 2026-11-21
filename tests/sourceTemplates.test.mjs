@@ -265,11 +265,11 @@ test('the 200 Seedance templates preserve full prompts and paired unique videos'
 test('public community templates are exact and all source-gap records are removed', () => {
   const audit = PRESETS.map((preset) => [preset.id, sourcePromptAuditRecord(preset.id)]);
   const groups = Object.groupBy(audit, ([, record]) => record.status);
-  assert.equal(groups.exact.length, 749 + 46 + 30 + 59 + 8);
+  assert.equal(groups.exact.length, 749 + 46 + 30 + 59 + 8 + 12);
   assert.equal(groups['adaptation-only'], undefined);
   assert.equal(groups['exact-truncated'], undefined);
   assert.equal(groups.unavailable, undefined);
-  assert.equal(audit.length, 749 + 46 + 30 + 59 + 8);
+  assert.equal(audit.length, 749 + 46 + 30 + 59 + 8 + 12);
   assert.ok(audit.some(([, record]) => record.runnable === true));
   assert.ok(audit.some(([, record]) => record.runnable === false));
   assert.equal(audit.filter(([, record]) => record.issues.includes('prompt-over-30000')).length, 0);
@@ -448,10 +448,10 @@ test('source-aspect orientation agrees with every community preview', () => {
 });
 
 test('gallery and homepage templates have reachable recipe URLs', () => {
-  assert.equal(PRESETS.length, 749 + 46 + 30 + 59 + 8);
+  assert.equal(PRESETS.length, 749 + 46 + 30 + 59 + 8 + 12);
   assert.equal(WALL_PRESETS.length, 13);
   const visible = [...PRESETS, ...WALL_PRESETS];
-  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 749 + 46 + 30 + 59 + 8);
+  assert.equal(new Set(visible.map((p) => p.clipKey).filter(Boolean)).size, 749 + 46 + 30 + 59 + 8 + 12);
   for (const preset of visible) {
     assert.equal(templateById(preset.id), preset);
     assert.equal(isUnknownStaticPage(`/presets/${preset.id}`), false);
@@ -469,7 +469,7 @@ test('removed Veyrnox Originals are no longer addressable', () => {
   // The only records with this origin are the new set the owner approved on 2026-11-21; no removed id may come back through it.
   const currentOriginals = ALL_TEMPLATES.filter((preset) => preset.promptOrigin === 'veyrnox-original').map((preset) => preset.id);
   assert.deepEqual(currentOriginals, [...ORIGINAL_SEEDANCE_TEMPLATE_IDS]);
-  assert.equal(currentOriginals.length, 8);
+  assert.equal(currentOriginals.length, 20);
   for (const id of currentOriginals) assert.equal(REMOVED_ORIGINAL_IDS.includes(id), false, id);
 });
 
