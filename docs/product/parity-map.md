@@ -8,6 +8,8 @@ Key: **Yes** = present, **Part** = partly, **No** = missing.
 
 ## 1. Headline finding (rights and reliability)
 
+> Status 2026-11-21: Lip Sync is local (PR 2584); five stills are local (PR 2587, stage A1). Twelve videos and Singing Photo are still hotlinked pending a media cost approval. The text below is the original finding.
+
 Every example on the guided feature pages, on web (`app/veyrnox/_lib/creativeFeatures.js`) and on the phone (`apps/mobile/src/lib/creativeFeatures.ts`), is hotlinked from the competitor's CDN. The web file's own comment says the examples were copied from LipSync.video. That is a provenance problem and a reliability problem: if their CDN changes or blocks hotlinks, our examples vanish, which is probably what happened to the missing Lip Sync and Singing Photo videos. Fix this first, by replacing each example with original Veyrnox-made media stored in our own storage.
 
 ## 2. Matrix

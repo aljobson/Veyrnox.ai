@@ -16,12 +16,12 @@ Recreate from this checkout with `python3 scripts/create-still-examples.py`. Thi
 
 Web URLs are `/examples/<slug>.webp`; mobile URLs are `https://veyrnox.ai/examples/<slug>.webp`. **Deploy the web assets before shipping a mobile build that uses these URLs.** Nothing is deployed by this work order.
 
-The shared example note is localized as an illustrative-example disclaimer, rather than attributing every example to Veyrnox: the 14 deferred entries below still use their original external URLs. Both registries and all their existing posters are unchanged for these entries:
+The shared example note is localized as an illustrative-example disclaimer, rather than attributing every example to Veyrnox: the 13 deferred entries below still use their original external URLs. Both registries and all their existing posters are unchanged for these entries:
 
 - `talking-avatar`
 - `ai-human-generator`
 - `ai-influencer-generator`
-- `lip-sync` (PR #2584)
+- (`lip-sync` is already local since PR #2584 and is not deferred.)
 - `ai-talking-photo-generator`
 - `singing-photo` (separate session)
 - `avatar-dialogue`

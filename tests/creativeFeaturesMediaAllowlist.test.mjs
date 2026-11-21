@@ -9,7 +9,7 @@ const ORIGINAL_STILLS = [
 ];
 
 // Shrinking exception list: remove each slug when its original media lands.
-// A1 leaves 12 other videos, singing-photo (separate session)(Lip Sync is local since PR #2584).
+// A1 leaves 12 other videos plus singing-photo (separate session) on competitor media. Lip Sync is local since PR #2584.
 const LEGACY_EXCEPTIONS = new Set([
   'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
   'ai-talking-photo-generator', 'singing-photo', 'avatar-dialogue',
