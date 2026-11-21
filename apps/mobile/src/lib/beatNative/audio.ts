@@ -74,15 +74,22 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     let getDoc: (() => BeatDoc | undefined) | null = null;
     let onStep: ((step: number) => void) | undefined;
     let windowCallback: ((window: SongWindow) => void) | undefined;
-    const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc) => {
-        if (mixRun.run()) return mixRun.destination(id, doc);
+    const plainOutput = (id: string, doc: BeatDoc) => {
         const track = doc.tracks.find(t => t.id === id)!;
         const s = strip(id); s.gain.value = audibleGain(doc, track); s.pan.value = track.pan; return s.input;
+    };
+    // A mixer failure during recording falls back to the plain strip: it must never end the take.
+    const rangeOutput = (id: string, doc: BeatDoc, at: number) => {
+        try { return mixRun.destination(id, doc, at); } catch { return plainOutput(id, doc); }
+    };
+    const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc, untilTime) => {
+        if (range.isPlaying()) return rangeOutput(id, doc, untilTime);
+        return mixRun.run() ? mixRun.destination(id, doc, untilTime) : plainOutput(id, doc);
     });
-    const range = createRecordingTransport(engine, (id, doc) => {
-        const track = doc.tracks.find(t => t.id === id)!;
-        const s = strip(id); s.gain.value = audibleGain(doc, track); s.pan.value = track.pan; return s.input;
-    }, (doc, w, bounds) => { void takes.window(doc, w, bounds).catch(() => undefined); }, setTimer, clearTimer);
+    const range = createRecordingTransport(engine, rangeOutput, (doc, w, bounds) => {
+        try { mixRun.sync(doc); mixRun.schedule(doc, w.fromSec, w.toSec, w.contextTime); } catch { /* rangeOutput falls back. */ }
+        void takes.window(doc, w, bounds).catch(() => undefined);
+    }, setTimer, clearTimer);
     let playGeneration = 0;
     const kitOf = new Map<string, string>();
 
@@ -161,7 +168,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
 
     return {
         context: engine.context,
-        meterTap: trackId => playing ? mixRun.meterTap(trackId) : null,
+        meterTap: trackId => playing || range.isPlaying() ? mixRun.meterTap(trackId) : null,
         recordingEngine: () => engine,
         async playRange(options) {
             this.stop(); const token = playGeneration; configureNativeTakeStorage();

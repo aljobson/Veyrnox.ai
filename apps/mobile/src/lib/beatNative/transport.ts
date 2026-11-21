@@ -2,7 +2,7 @@ import { eventsAtStep, eventTime, stepSeconds, type BeatDoc } from './doc';
 import type { BeatEngine } from './shared';
 import { songWindowToContext, tickSeconds, type SongWindow } from './takeShared';
 export type PlayRange = { getDoc(): BeatDoc; startTick: number; endTick: number; cycle: { start: number; end: number } | null; countInBars: 0 | 1; onWindow(w: SongWindow): void };
-export function createRecordingTransport(engine: BeatEngine, output: (id: string, doc: BeatDoc) => unknown,
+export function createRecordingTransport(engine: BeatEngine, output: (id: string, doc: BeatDoc, at: number) => unknown,
     takes: (doc: BeatDoc, window: SongWindow, bounds: { startSec: number; endSec: number }) => void,
     setTimer: (fn: () => void, ms: number) => unknown, clearTimer: (id: unknown) => void) {
     let timer: unknown = null, generation = 0, running = false;
@@ -34,7 +34,7 @@ export function createRecordingTransport(engine: BeatEngine, output: (id: string
                     const at = eventTime(next, step, bpm, latest.swing);
                     if (at >= engine.now()) for (const event of eventsAtStep(latest, step)) {
                         const track = latest.tracks.find(t => t.id === event.trackId)!;
-                        engine.playPad(event.pad, event.velocity, at, output(track.id, latest), track.kit);
+                        engine.playPad(event.pad, event.velocity, at, output(track.id, latest, at), track.kit);
                     }
                     next += stepDuration; step++;
                 }
