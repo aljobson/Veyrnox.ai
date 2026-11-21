@@ -62,5 +62,5 @@ test('a keeper that sat in the gallery stays in it, and nothing is backfilled', 
         const inGallery = VIDEO_GALLERY_TEMPLATE_IDS.includes(keeper);
         assert.equal(GALLERY_PRESETS.some((t) => t.id === keeper), inGallery);
     }
-    assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.length, 26, '150, minus the gallery duplicate (community-midnight-fridge-feast), minus 76 swap recipes the server refuses (2026-11-18), minus 45 over the Kling 3.0 prompt cap (2026-11-20), minus 2 near-duplicate supercar refuels (2026-11-21)');
+    assert.equal(VIDEO_GALLERY_TEMPLATE_IDS.length, 20, '150, minus the gallery duplicate (community-midnight-fridge-feast), minus 76 swap recipes the server refuses (2026-11-18), minus 45 over the Kling 3.0 prompt cap (2026-11-20), minus 2 near-duplicate supercar refuels, the supercar refuel that failed its swap tests and five clip-dependent prompts (2026-11-21)');
 });

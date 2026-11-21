@@ -1036,6 +1036,8 @@ export default {
   "chat.attach.needsUpdate": "Fotos von deinem Telefon benötigen die neueste App-Version, bevor sie gesendet werden können. Wähle stattdessen aus deiner Bibliothek.",
   "chat.attach.photos": "Fotos",
   "chat.attach.photosLabel": "Fotos von diesem Gerät anhängen",
+  "chat.attach.files": "Dateien",
+  "chat.attach.filesLabel": "Dateien von diesem Gerät anhängen",
   "chat.attach.removeN": "Bild {n} entfernen",
   "chat.attach.uploadFailed": "Ein Bild konnte nicht hochgeladen werden. Es wurde nichts gesendet oder berechnet.",
   "chat.attach.modelImages": "Dieses Modell kann keine Bilder lesen. Entferne sie oder wähle ein Modell, das es kann.",

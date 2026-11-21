@@ -1078,6 +1078,8 @@ export default {
   "chat.attach.needsUpdate": "تحتاج صور هاتفك إلى أحدث إصدار من التطبيق لإرسالها. اختر من مكتبتك بدلًا من ذلك.",
   "chat.attach.photos": "الصور",
   "chat.attach.photosLabel": "إرفاق صور من هذا الجهاز",
+  "chat.attach.files": "الملفات",
+  "chat.attach.filesLabel": "إرفاق ملفات من هذا الجهاز",
   "chat.attach.removeN": "إزالة الصورة {n}",
   "chat.attach.uploadFailed": "تعذّر رفع إحدى الصور. لم يُرسل شيء ولم تُحصّل منك رسوم.",
   "chat.attach.modelImages": "لا يستطيع هذا النموذج قراءة الصور. أزلها أو اختر نموذجًا يستطيع ذلك.",
