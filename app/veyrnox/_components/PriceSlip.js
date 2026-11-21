@@ -85,7 +85,7 @@ export function PriceSlip({ models }) {
   return (
     <div className="relative">
       {/* The printer mouth the slip feeds out of. */}
-      <div key={`${model.id}-${seconds}`} aria-hidden className="vx-slot mx-auto h-3 w-[calc(100%+12px)] -translate-x-[6px] rounded-full" />
+      <div aria-hidden className="vx-slot mx-auto h-3 w-[calc(100%+12px)] -translate-x-[6px] rounded-full" />
       <div className="vx-paper-shadow -mt-1.5">
       <form onSubmit={onSubmit} className="vx-paper vx-print relative px-5 sm:px-7 pt-8 pb-9" aria-label={t('slip.aria')}>
         <label htmlFor="slip-prompt" className="block text-[13px] font-bold text-vx-fg">
@@ -165,14 +165,13 @@ export function PriceSlip({ models }) {
         {/* One short announcement per change, not the whole slip re-read. */}
         <p className="sr-only" aria-live="polite">{`${nameOf(model)}, ${unit}: ${creditLabel(cost)}.`}</p>
         <dl className="mt-4 space-y-1.5 font-vx-mono text-[13px] vx-num">
-          <SlipLine label={`${nameOf(model)}, ${unit}`} value={`${cost} cr`} tick={`${model.id}-${seconds}`} />
-          <SlipLine label={t('slip.fails')} value={t('slip.back', { n: cost })} muted tick={`${model.id}-${seconds}-r`} />
+          <SlipLine label={`${nameOf(model)}, ${unit}`} value={`${cost} cr`} />
+          <SlipLine label={t('slip.fails')} value={t('slip.back', { n: cost })} muted />
           {!model.gated && (
             <SlipLine
               label={free.fits ? t('slip.freeAfter') : t('slip.freeCover')}
               value={free.fits ? t('slip.freeLeft', { n: free.left }) : t('slip.freeOf', { free: free.covered, cost: free.cost })}
               muted
-              tick={`${model.id}-${seconds}-f`}
             />
           )}
           {model.gated && <SlipLine label={t('slip.premium')} value={t('slip.signupNeeded')} muted />}
@@ -195,12 +194,12 @@ export function PriceSlip({ models }) {
   );
 }
 
-function SlipLine({ label, value, muted = false, tick }) {
+function SlipLine({ label, value, muted = false }) {
   return (
     <div className="flex items-baseline gap-2">
       <dt className={`min-w-0 truncate ${muted ? 'text-vx-fg-muted' : 'text-vx-fg'}`}>{label}</dt>
       <span aria-hidden className="vx-leader flex-1" />
-      <dd key={tick} className={`vx-tick shrink-0 ${muted ? 'text-vx-fg-muted' : 'font-bold text-vx-money'}`}>{value}</dd>
+      <dd key={value} className={`vx-tick shrink-0 ${muted ? 'text-vx-fg-muted' : 'font-bold text-vx-money'}`}>{value}</dd>
     </div>
   );
 }
