@@ -3876,6 +3876,12 @@
     "ratio": 2
   },
   {
+    "id": "speech.audition.test",
+    "english": "Test",
+    "translation": "Проверить",
+    "ratio": 2.25
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

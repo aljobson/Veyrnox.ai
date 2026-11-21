@@ -2196,6 +2196,12 @@
     "ratio": 1.62
   },
   {
+    "id": "speech.audition.test",
+    "english": "Test",
+    "translation": "परीक्षण",
+    "ratio": 1.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

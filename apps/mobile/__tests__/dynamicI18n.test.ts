@@ -11,6 +11,7 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'speech.audition.{}': ['add', 'remove', 'addOne', 'invalidVoices'],
     'speech.tone.{}': [...new Set(TTS_VOICES.map(voice => voice.tone))],
     'speech.cue.{}': TTS_INTERJECTIONS.map(([, cue]) => cue.slice(1, -1)),
     'speech.emotion.{}': TTS_EMOTIONS,
