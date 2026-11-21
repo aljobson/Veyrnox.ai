@@ -13,13 +13,14 @@ import { templateContract } from '../lib/templateContract.js';
 // (both bound Kling I2V photo recipes: bound 134 -> 136, kling_i2v_photo 83 -> 85, kind none 1374 -> 1376).
 // 21 Nov 2026 (owner): community-supercar-midnight-refuel failed two paid swap tests and left the gallery: listed 26 -> 25, hidden +1
 // (bound 136 -> 137, kling_i2v_photo 85 -> 86, kind none 1376 -> 1377).
+// 21 Nov 2026 (owner): five clip-dependent prompts left the gallery: listed 25 -> 20, hidden +5.
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
-    addressable: 1926, listed: 25, hidden: 1901,
-    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 110, 'like-for-like-safe': 220, bound: 137, none: 1042 },
-    hiddenRouteFits: { o1_clip: 524, none_unsupported: 89, seedance_long_photo: 48, text_only_other_model: 112, kling_i2v_photo: 86, none_no_contract: 1042 },
-    hiddenKinds: { video_swap: 314, none: 1377, motion: 78, swap: 132 },
+    addressable: 1926, listed: 20, hidden: 1906,
+    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 110, 'like-for-like-safe': 220, bound: 142, none: 1042 },
+    hiddenRouteFits: { o1_clip: 524, none_unsupported: 89, seedance_long_photo: 48, text_only_other_model: 112, kling_i2v_photo: 91, none_no_contract: 1042 },
+    hiddenKinds: { video_swap: 314, none: 1382, motion: 78, swap: 132 },
     seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 2, withdrawn_or_absent: 6, hidden: 192 },
     seedanceHiddenRouteFits: { none_unsupported: 32, seedance_long_photo: 23, o1_clip: 53, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
   });
