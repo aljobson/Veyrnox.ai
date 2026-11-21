@@ -8,7 +8,6 @@ import { t } from '../src/lib/i18n';
 const mockPrompt: CatalogModel = { id: 'prompt-image', name: 'Prompt image', modality: 'text-to-image', credits: 2, durations: [], gated: false, capabilities: { inputs: { prompt: {} } } };
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: jest.fn() }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn() }));
-jest.mock('../src/lib/useFaceFiltersAvailable', () => ({ useFaceFiltersAvailable: () => false }));
 jest.mock('../src/lib/montage', () => ({ fetchAgentListing: async () => null }));
 jest.mock('../src/lib/firstGoalStore', () => ({ readFirstGoal: async () => 'skipped', writeFirstGoal: async () => undefined, homeStartRecorded: () => false })); // the first-goal question is already answered
 jest.mock('../src/auth/AuthProvider', () => { const api = {}; return { useAuth: () => ({ api }) }; }); // a stable client, so the first-goal effect runs once

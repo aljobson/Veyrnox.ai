@@ -1,3 +1,4 @@
+import { useCaptionActions } from './tools/useCaptionActions';
 import { useTextActions } from './tools/useTextActions';
 import { useSpeedActions } from './tools/useSpeedActions';
 import type { VoiceoverProps } from './useVoiceoverRecorder';
@@ -116,6 +117,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const timeline = timelineOf(document?.timeline);
     const textActions = useTextActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         frameStore, setSelection, setSelections, setTool });
+    const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
+        setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const total = framesIn(timeline); const selected = clipAt(timeline, selection);
@@ -153,7 +156,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         const caption = kind === 'caption';
         const span = caption ? overlaySpan(timeline, frameStore.get(), Math.round(timeline.fps * 2)) : placeTitle(frameStore.get(), mediaFrames(timeline), total);
         const item: TextClip = { id: `t${seq}`, text: caption ? t('editor.captiondefault') : t('editor.yourtitle'), ...span, x: 0.5, y: caption ? 0.92 : 0.85, size: caption ? 4 : 6, trackId,
-            style: DEFAULT_TEXT_STYLE }; if (!applyTimeline({ ...timeline, seq, text: [...timeline.text, item] })) return; setSelection({ track: 'text', id: item.id });
+            style: DEFAULT_TEXT_STYLE, ...(caption ? { caption: true } : {}) }; if (!applyTimeline({ ...timeline, seq, text: [...timeline.text, item] })) return;
+        setSelection({ track: 'text', id: item.id });
         setSelections([{ track: 'text', id: item.id }]); setTool(caption ? 'captions' : 'text'); };
     const addText = () => addOverlay('title'), addCaption = () => addOverlay('caption'); const updateSelectedText = (text: string) => { if (selection?.track !== 'text') return;
         const value = text.slice(0, 1000);
@@ -224,7 +228,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
     const panelProps: ToolPanelProps = {
-        timeline, selection, selected, textActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
+        timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };

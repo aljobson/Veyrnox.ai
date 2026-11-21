@@ -6,15 +6,18 @@ import { swapCandidates, auditRecords } from '../scripts/import-template-swap-cl
 import { templateContract } from '../lib/templateContract.js';
 // 17 Nov 2026: withdrawing the duplicate community-midnight-fridge-feast (PR 2379) took it out of the gallery: listed 150 -> 149, hidden +1.
 // 18 Nov 2026: hiding the 71 swap recipes the server refuses (owner) took them out of the gallery: listed 149 -> 73, hidden +76 (71 refused by the guard + 5 it missed; the guard now also reads 14 hidden templates as video swaps).
+// 20 Nov 2026 (ADR-0309 amendment 3): 49 long one-photo recipes bind to the dark kie Seedance offer: unsupported 159 -> 110,
+// hidden bound 85 -> 134 (route fit seedance_long_photo, 48 + 1 that stays an O1 clip candidate), bound over 2,000 characters 4 -> 53.
+// They stay hidden while the seedanceLongTemplates runtime key is off (this report reads the off state).
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
     addressable: 1926, listed: 28, hidden: 1898,
-    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 159, 'like-for-like-safe': 220, bound: 85, none: 1042 },
-    hiddenRouteFits: { o1_clip: 524, none_unsupported: 137, text_only_other_model: 112, kling_i2v_photo: 83, none_no_contract: 1042 },
+    hiddenClasses: { 'blocked-needs-video': 392, unsupported: 110, 'like-for-like-safe': 220, bound: 134, none: 1042 },
+    hiddenRouteFits: { o1_clip: 524, none_unsupported: 89, seedance_long_photo: 48, text_only_other_model: 112, kling_i2v_photo: 83, none_no_contract: 1042 },
     hiddenKinds: { video_swap: 314, none: 1374, motion: 78, swap: 132 },
     seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { listed: 2, withdrawn_or_absent: 6, hidden: 192 },
-    seedanceHiddenRouteFits: { none_unsupported: 55, o1_clip: 53, text_only_other_model: 84 }, boundOverBudget: 4, seedanceLabels: 238,
+    seedanceHiddenRouteFits: { none_unsupported: 32, seedance_long_photo: 23, o1_clip: 53, text_only_other_model: 84 }, boundOverBudget: 53, seedanceLabels: 238,
   });
   assert.equal(report.becomesRunnableAfterClipApproval.length, 524);
   assert.equal(report.overBudget.find(r => r.id === 'community-supercar-midnight-refuel').length, 2454);

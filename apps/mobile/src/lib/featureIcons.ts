@@ -4,7 +4,7 @@ import type { FeatureHue } from '../theme';
 import { KUBAI_SKILL_ART } from './kubaiSkillArt';
 import type { ImageSourcePropType } from 'react-native';
 
-// The icon and colour each Tools task, Face filter and Studio skill shows on its row. Colour follows what the item
+// The icon and colour each Tools task and Studio skill shows on its row. Colour follows what the item
 // works on, so a page reads at a glance: blue for photos, violet for video and film, pink for sound and faces, green for
 // writing and anything else. Amber is money only, never a feature.
 export type Hue = FeatureHue;
@@ -20,7 +20,6 @@ const TOOL_ICONS: Readonly<Record<string, FeatureIcon>> = {
     background: { icon: 'cutout', hue: 'sky' },
     expand: { icon: 'expand', hue: 'sky' },
     edit: { icon: 'magicWand', hue: 'sky' },
-    'face-filters': { icon: 'smiley', hue: 'rose' },
     animate: { icon: 'filmReel', hue: 'iris' },
     avatar: { icon: 'userSound', hue: 'iris' },
     lipsync: { icon: 'waveform', hue: 'iris' },
@@ -31,15 +30,6 @@ const TOOL_ICONS: Readonly<Record<string, FeatureIcon>> = {
 const OTHER_TOOL: FeatureIcon = { icon: 'squares', hue: 'mint' };
 export const toolIcon = (taskKey: string): FeatureIcon => TOOL_ICONS[taskKey] ?? OTHER_TOOL;
 
-const FACE_ICONS: Readonly<Record<string, MenuIcon>> = {
-    'face-retouch': 'drop',
-    'face-enhance': 'sparkle',
-    'face-relight': 'lightbulb',
-    'face-makeup': 'brush',
-    'face-age': 'hourglass',
-    'face-costume': 'magicWand',
-};
-export const faceIcon = (modelId: string): FeatureIcon => ({ icon: FACE_ICONS[modelId] ?? 'smiley', hue: 'rose' });
 
 const SKILL_ICONS: Readonly<Record<string, MenuIcon>> = {
     'prompt-writer': 'penNib',

@@ -117,5 +117,5 @@ test('actual web Create preparation accepts only exactly N filled slots for ever
       else await assert.rejects(run({ ...inputs }), { code: 'template_references_invalid' });
     }
   }
-  assert.equal(tested, 70 + 3 + 30 + 59 - 49, 'single-photo bound contracts (ADR-0309 amendment 2: multi-photo recipes take the legacy route)');
+  assert.equal(tested, 70 + 3 + 30 + 59 - 49 + 49, 'single-photo bound contracts (ADR-0309 amendment 2: multi-photo recipes take the legacy route; amendment 3: 49 long ones on kie Seedance)');
 });

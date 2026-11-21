@@ -29,6 +29,8 @@ export const AI_CONSENT_TEXT = {
 
 // Calls that carry the person's own content toward a provider. Reads, balance and account calls do not.
 const CONTENT_POSTS: readonly RegExp[] = [
+    /^\/api\/v1\/music\/songs\/[^/?]+\/track-adds(?:\?|$)/,
+    /^\/api\/v1\/music\/songs\/[^/?]+\/track-add-quotes(?:\?|$)/,
     /^\/api\/v1\/music\/songs\/[^/?]+\/target-stems(\?|$)/,
     /^\/api\/v1\/music\/songs\/[^/?]+\/stems(\?|$)/,
     /^\/api\/v1\/music\/songs\/[^/?]+\/extends(\?|$)/,

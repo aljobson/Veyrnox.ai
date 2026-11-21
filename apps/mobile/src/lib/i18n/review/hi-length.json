@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorCaptionTools.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorCaptionTools.lyrics",
+    "english": "Lyrics",
+    "translation": "गीत के बोल",
+    "ratio": 1.67
+  },
+  {
     "id": "editorExportRefusal.position",
     "english": "Phone export can't include text positioning yet.",
     "translation": "फ़ोन से एक्सपोर्ट में टेक्स्ट की स्थिति तय करने की सुविधा अभी उपलब्ध नहीं है।",
@@ -2100,6 +2112,114 @@
     "ratio": 2.33
   },
   {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "गीत के बोल",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "अभी सेव नहीं हुआ। ऐप बंद करने पर यह बीट खो जाएगा।",
+    "ratio": 2.58
+  },
+  {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "पहले जैसा करें",
+    "ratio": 3.5
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "फिर से करें",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "सहेजा जा रहा है",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.cloud.checking",
+    "english": "Checking cloud saving…",
+    "translation": "क्लाउड में सहेजने की उपलब्धता जाँची जा रही है…",
+    "ratio": 2.09
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "अपने आप सहेजा गया",
+    "ratio": 2.13
+  },
+  {
+    "id": "beatPiano.uses",
+    "english": "Regions using this clip: {n}",
+    "translation": "इस क्लिप का उपयोग करने वाले क्षेत्रों की संख्या: {n}",
+    "ratio": 1.86
+  },
+  {
+    "id": "beatPiano.quantise",
+    "english": "Quantise",
+    "translation": "क्वांटाइज़ करें",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "सुर ऊँचा करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatPiano.cursorRight",
+    "english": "Cursor later",
+    "translation": "कर्सर बाद में ले जाएँ",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "{track} को रिकॉर्डिंग के लिए तैयार करें",
+    "ratio": 3.55
+  },
+  {
+    "id": "beatTakes.disarm",
+    "english": "Disarm {track}",
+    "translation": "{track} की रिकॉर्डिंग तैयारी हटाएँ",
+    "ratio": 2.43
+  },
+  {
+    "id": "beatTakes.notCalibrated",
+    "english": "Not calibrated",
+    "translation": "कैलिब्रेट नहीं किया गया",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatTakes.record",
+    "english": "Record",
+    "translation": "रिकॉर्ड करें",
+    "ratio": 2
+  },
+  {
+    "id": "beatTakes.choose",
+    "english": "Use {name}",
+    "translation": "{name} उपयोग करें",
+    "ratio": 1.7
+  },
+  {
     "id": "speech.volume",
     "english": "Volume",
     "translation": "आवाज़ की मात्रा",
@@ -2200,6 +2320,12 @@
     "english": "Test",
     "translation": "परीक्षण",
     "ratio": 1.75
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "ग्रिड से मिलाएँ",
+    "ratio": 3.75
   },
   {
     "id": "oauth.signIn",

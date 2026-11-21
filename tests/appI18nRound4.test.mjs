@@ -24,7 +24,7 @@ test('round 4 completes twelve files without syntax errors, translated machine v
   }
 });
 
-test('twenty-two English render states remain byte-identical to main', async () => {
+test('nineteen English render states remain byte-identical to main', async () => {
   const baseline = JSON.parse(readFileSync('tests/fixtures/app-round4-english-main.json', 'utf8'));
   const messages = await appMessagesFor('en');
   assert.equal(baseline.length, scenarios.length);

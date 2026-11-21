@@ -1,5 +1,17 @@
 [
   {
+    "id": "editorCaptionTools.align",
+    "english": "Align lyrics",
+    "translation": "محاذاة كلمات الأغنية",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCaptionTools.lyrics",
+    "english": "Lyrics",
+    "translation": "كلمات الأغنية",
+    "ratio": 2.17
+  },
+  {
     "id": "editorTools.colourHex",
     "english": "{label} hex colour",
     "translation": "لون {label} بالنظام الست عشري",
@@ -2016,6 +2028,72 @@
     "ratio": 1.88
   },
   {
+    "id": "musicTrackAdd.lyrics",
+    "english": "Lyrics",
+    "translation": "كلمات الأغنية",
+    "ratio": 2.17
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "لم يُحفظ بعد. سيضيع هذا الإيقاع عند إغلاق التطبيق.",
+    "ratio": 2.63
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "جارٍ الحفظ",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.conflict.mine",
+    "english": "Keep mine",
+    "translation": "الاحتفاظ بنسختي",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.cursorLeft",
+    "english": "Cursor earlier",
+    "translation": "نقل المؤشر إلى وقت أسبق",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatPiano.cursorRight",
+    "english": "Cursor later",
+    "translation": "نقل المؤشر إلى وقت لاحق",
+    "ratio": 1.92
+  },
+  {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "تجهيز {track} للتسجيل",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatTakes.latency",
+    "english": "Latency: {ms} ms",
+    "translation": "زمن التأخير: {ms} مللي ثانية",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatTakes.crossfade",
+    "english": "Crossfade: {ms} ms",
+    "translation": "تلاشي متداخل: {ms} مللي ثانية",
+    "ratio": 1.61
+  },
+  {
     "id": "speech.volume",
     "english": "Volume",
     "translation": "مستوى الصوت",
@@ -2098,6 +2176,60 @@
     "english": "Generate {count} auditions",
     "translation": "عدد اختبارات الصوت المطلوب إنشاؤها: {count}",
     "ratio": 1.65
+  },
+  {
+    "id": "beat.region.later",
+    "english": "Move later",
+    "translation": "تحريك إلى وقت لاحق",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "محاذاة للشبكة",
+    "ratio": 3.25
+  },
+  {
+    "id": "beat.snap.bar",
+    "english": "Bar",
+    "translation": "مازورة",
+    "ratio": 2
+  },
+  {
+    "id": "beat.snap.sixteenth",
+    "english": "1/16 note",
+    "translation": "نغمة جزء من ستة عشر",
+    "ratio": 2.11
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "المازورة التالية",
+    "ratio": 2
+  },
+  {
+    "id": "beat.ruler.end",
+    "english": "End",
+    "translation": "النهاية",
+    "ratio": 2.33
+  },
+  {
+    "id": "beat.cycle.on",
+    "english": "Cycle on",
+    "translation": "التكرار مفعّل",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.audio.fadeIn",
+    "english": "Fade in (ms)",
+    "translation": "تلاشي الدخول (مللي ثانية)",
+    "ratio": 2.08
+  },
+  {
+    "id": "beat.audio.fadeOut",
+    "english": "Fade out (ms)",
+    "translation": "تلاشي الخروج (مللي ثانية)",
+    "ratio": 1.92
   },
   {
     "id": "oauth.signIn",

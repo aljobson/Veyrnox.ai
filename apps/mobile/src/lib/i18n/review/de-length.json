@@ -1,5 +1,11 @@
 [
   {
+    "id": "editorCaptionTools.allSources",
+    "english": "All timed captions",
+    "translation": "Alle Untertitel mit Zeitangaben",
+    "ratio": 1.72
+  },
+  {
     "id": "editorTools.speed",
     "english": "Speed",
     "translation": "Geschwindigkeit",
@@ -3882,6 +3888,156 @@
     "ratio": 1.77
   },
   {
+    "id": "musicTrackAdd.gender.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "musicTrackAdd.gender.male",
+    "english": "Male",
+    "translation": "Männlich",
+    "ratio": 2
+  },
+  {
+    "id": "beat.saveNote",
+    "english": "Saved on this phone",
+    "translation": "Noch nicht gespeichert. Dieser Beat geht verloren, wenn die App geschlossen wird.",
+    "ratio": 4.26
+  },
+  {
+    "id": "beat.undo",
+    "english": "Undo",
+    "translation": "Rückgängig",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.redo",
+    "english": "Redo",
+    "translation": "Wiederholen",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "beat.local.saving",
+    "english": "Saving",
+    "translation": "Wird gespeichert",
+    "ratio": 2.67
+  },
+  {
+    "id": "beat.local.loadError",
+    "english": "Could not load saved beats. Retry loading.",
+    "translation": "Gespeicherte Beats konnten nicht geladen werden. Versuche es erneut.",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.cloud.error",
+    "english": "Cloud saving could not finish. Retry when ready.",
+    "translation": "Die Cloud-Speicherung konnte nicht abgeschlossen werden. Versuche es erneut, wenn du bereit bist.",
+    "ratio": 2.02
+  },
+  {
+    "id": "beat.conflict.busy",
+    "english": "Saving your choice…",
+    "translation": "Deine Auswahl wird gespeichert…",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.versions.autosave",
+    "english": "Autosave",
+    "translation": "Automatische Speicherung",
+    "ratio": 3
+  },
+  {
+    "id": "beatPiano.unique",
+    "english": "Make unique",
+    "translation": "Eigenständige Kopie erstellen",
+    "ratio": 2.64
+  },
+  {
+    "id": "beatPiano.snap",
+    "english": "Snap",
+    "translation": "Einrasten",
+    "ratio": 2.25
+  },
+  {
+    "id": "beatPiano.left",
+    "english": "Move left",
+    "translation": "Nach links verschieben",
+    "ratio": 2.44
+  },
+  {
+    "id": "beatPiano.right",
+    "english": "Move right",
+    "translation": "Nach rechts verschieben",
+    "ratio": 2.3
+  },
+  {
+    "id": "beatPiano.up",
+    "english": "Pitch up",
+    "translation": "Tonhöhe erhöhen",
+    "ratio": 1.88
+  },
+  {
+    "id": "beatPiano.longer",
+    "english": "Longer",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatPiano.hint",
+    "english": "Tap to add or select. Hold a note before dragging to move it. Hold a selected note’s right edge before dragging to resize. Hold a velocity bar before dragging vertically to adjust velocity. Pinch to zoom.",
+    "translation": "Tippen zum Hinzufügen oder Auswählen. Eine Note vor dem Ziehen gedrückt halten, um sie zu verschieben. Den rechten Rand einer ausgewählten Note vor dem Ziehen gedrückt halten, um ihre Länge zu ändern. Einen Anschlagstärkebalken vor dem vertikalen Ziehen gedrückt halten, um die Anschlagstärke anzupassen. Mit zwei Fingern zoomen.",
+    "ratio": 1.61
+  },
+  {
+    "id": "beatPiano.library.title",
+    "english": "Instruments",
+    "translation": "Instrumentenbibliothek",
+    "ratio": 2
+  },
+  {
+    "id": "beatPiano.library.addNamed",
+    "english": "Add {name}",
+    "translation": "{name} hinzufügen",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatTakes.arm",
+    "english": "Arm {track}",
+    "translation": "{track} scharf schalten",
+    "ratio": 2.09
+  },
+  {
+    "id": "beatTakes.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatTakes.recover.one",
+    "english": "Recover {count} unsaved take",
+    "translation": "{count} ungespeicherten Take wiederherstellen",
+    "ratio": 1.61
+  },
+  {
+    "id": "beatTakes.recoveryError",
+    "english": "Could not read unsaved takes. Try again.",
+    "translation": "Ungespeicherte Takes konnten nicht gelesen werden. Versuche es erneut.",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatTakes.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
     "id": "speech.speed",
     "english": "Speed",
     "translation": "Geschwindigkeit",
@@ -4096,6 +4252,66 @@
     "english": "Add one more voice",
     "translation": "Eine weitere Stimme hinzufügen",
     "ratio": 1.67
+  },
+  {
+    "id": "beat.view.song",
+    "english": "Song",
+    "translation": "Songansicht",
+    "ratio": 2.75
+  },
+  {
+    "id": "beat.region.later",
+    "english": "Move later",
+    "translation": "Später verschieben",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.region.longer",
+    "english": "Longer",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.region.copy",
+    "english": "Copy on drop",
+    "translation": "Beim Ablegen kopieren",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.snap.label",
+    "english": "Snap",
+    "translation": "Einrasten",
+    "ratio": 2.25
+  },
+  {
+    "id": "beat.snap.sixteenth",
+    "english": "1/16 note",
+    "translation": "Sechzehntelnote",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ruler.next",
+    "english": "Next bar",
+    "translation": "Nächster Takt",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.ruler.left",
+    "english": "Playhead left",
+    "translation": "Abspielkopf nach links",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.ruler.right",
+    "english": "Playhead right",
+    "translation": "Abspielkopf nach rechts",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.audio.gain",
+    "english": "Gain (dB)",
+    "translation": "Verstärkung (dB)",
+    "ratio": 1.78
   },
   {
     "id": "recovery.retry",
