@@ -1,5 +1,107 @@
 [
   {
+    "id": "beatLabs.unavailable",
+    "english": "Not on the phone editor yet.",
+    "translation": "Pas encore disponible dans l’éditeur du téléphone.",
+    "ratio": 1.79
+  },
+  {
+    "id": "beatLabs.stop",
+    "english": "Stop",
+    "translation": "Arrêter",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Ajouter",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatLabs.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "Touchez Annuler.",
+    "ratio": 1.78
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "Touchez Rétablir.",
+    "ratio": 1.89
+  },
+  {
+    "id": "beatLabs.sound.bells",
+    "english": "Music box",
+    "translation": "Boîte à musique",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.next",
+    "english": "Next",
+    "translation": "Suivant",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.done",
+    "english": "Done",
+    "translation": "Terminé",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.category.Keys",
+    "english": "Keys",
+    "translation": "Claviers",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.ripple",
+    "english": "Ripple edit",
+    "translation": "Montage avec décalage",
+    "ratio": 1.91
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Annuler",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Rétablir",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.regionSplit",
+    "english": "Split at playhead",
+    "translation": "Scinder à la tête de lecture",
+    "ratio": 1.65
+  },
+  {
+    "id": "beatLabs.control.rulerCancel",
+    "english": "Cancel cycle drag",
+    "translation": "Annuler le déplacement du cycle",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatLabs.control.pianoSelectAll",
+    "english": "Select all notes",
+    "translation": "Sélectionner toutes les notes",
+    "ratio": 1.81
+  },
+  {
+    "id": "beatLabs.control.pads",
+    "english": "Drum pads",
+    "translation": "Pads de batterie",
+    "ratio": 1.78
+  },
+  {
     "id": "editorCaptionTools.transcriptChoose",
     "english": "Select a transcript word or caption range.",
     "translation": "Sélectionnez un mot de la transcription ou une plage de sous-titres.",
@@ -6346,108 +6448,6 @@
     "english": "Moving cycle edge, drag then lift",
     "translation": "Déplacement du bord de la boucle, glissez puis relâchez",
     "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.unavailable",
-    "english": "Not on the phone editor yet.",
-    "translation": "Pas encore disponible dans l’éditeur du téléphone.",
-    "ratio": 1.79
-  },
-  {
-    "id": "beatLabs.stop",
-    "english": "Stop",
-    "translation": "Arrêter",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.add",
-    "english": "Add",
-    "translation": "Ajouter",
-    "ratio": 2.33
-  },
-  {
-    "id": "beatLabs.clear",
-    "english": "Clear search",
-    "translation": "Effacer la recherche",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.touch.undo",
-    "english": "Tap Undo.",
-    "translation": "Touchez Annuler.",
-    "ratio": 1.78
-  },
-  {
-    "id": "beatLabs.touch.redo",
-    "english": "Tap Redo.",
-    "translation": "Touchez Rétablir.",
-    "ratio": 1.89
-  },
-  {
-    "id": "beatLabs.sound.bells",
-    "english": "Music box",
-    "translation": "Boîte à musique",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.next",
-    "english": "Next",
-    "translation": "Suivant",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.done",
-    "english": "Done",
-    "translation": "Terminé",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.category.Keys",
-    "english": "Keys",
-    "translation": "Claviers",
-    "ratio": 2
-  },
-  {
-    "id": "beatLabs.control.ripple",
-    "english": "Ripple edit",
-    "translation": "Montage avec décalage",
-    "ratio": 1.91
-  },
-  {
-    "id": "beatLabs.control.undo",
-    "english": "Undo",
-    "translation": "Annuler",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.control.redo",
-    "english": "Redo",
-    "translation": "Rétablir",
-    "ratio": 2
-  },
-  {
-    "id": "beatLabs.control.regionSplit",
-    "english": "Split at playhead",
-    "translation": "Scinder à la tête de lecture",
-    "ratio": 1.65
-  },
-  {
-    "id": "beatLabs.control.rulerCancel",
-    "english": "Cancel cycle drag",
-    "translation": "Annuler le déplacement du cycle",
-    "ratio": 1.82
-  },
-  {
-    "id": "beatLabs.control.pianoSelectAll",
-    "english": "Select all notes",
-    "translation": "Sélectionner toutes les notes",
-    "ratio": 1.81
-  },
-  {
-    "id": "beatLabs.control.pads",
-    "english": "Drum pads",
-    "translation": "Pads de batterie",
-    "ratio": 1.78
   },
   {
     "id": "label.Terms",

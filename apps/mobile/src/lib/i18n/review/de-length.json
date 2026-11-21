@@ -1,5 +1,101 @@
 [
   {
+    "id": "beatLabs.controls",
+    "english": "Controls",
+    "translation": "Bedienelemente",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.stop",
+    "english": "Stop",
+    "translation": "Anhalten",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Hinzufügen",
+    "ratio": 3.33
+  },
+  {
+    "id": "beatLabs.addNamed",
+    "english": "Add {name}",
+    "translation": "{name} hinzufügen",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatLabs.touch.help",
+    "english": "Tap Controls.",
+    "translation": "Tippe auf Bedienelemente.",
+    "ratio": 1.92
+  },
+  {
+    "id": "beatLabs.touch.play",
+    "english": "Tap Play or Stop.",
+    "translation": "Tippe auf Abspielen oder Stopp.",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "Tippe auf Rückgängig.",
+    "ratio": 2.33
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "Tippe auf Wiederholen.",
+    "ratio": 2.44
+  },
+  {
+    "id": "beatLabs.touch.gridToggle",
+    "english": "Tap a step to turn its hit on or off.",
+    "translation": "Tippe auf einen Schritt, um den Schlag ein- oder auszuschalten.",
+    "ratio": 1.7
+  },
+  {
+    "id": "beatLabs.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatLabs.skip",
+    "english": "Skip",
+    "translation": "Überspringen",
+    "ratio": 3
+  },
+  {
+    "id": "beatLabs.control.help",
+    "english": "Controls",
+    "translation": "Bedienelemente",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.control.play",
+    "english": "Play / Stop",
+    "translation": "Wiedergabe / Stopp",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatLabs.control.ripple",
+    "english": "Ripple edit",
+    "translation": "Ripple-Bearbeitung",
+    "ratio": 1.64
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Rückgängig",
+    "ratio": 2.5
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Wiederholen",
+    "ratio": 2.75
+  },
+  {
     "id": "editorCaptionTools.allSources",
     "english": "All timed captions",
     "translation": "Alle Untertitel mit Zeitangaben",
@@ -4306,102 +4402,6 @@
     "english": "Gain (dB)",
     "translation": "Verstärkung (dB)",
     "ratio": 1.78
-  },
-  {
-    "id": "beatLabs.controls",
-    "english": "Controls",
-    "translation": "Bedienelemente",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.stop",
-    "english": "Stop",
-    "translation": "Anhalten",
-    "ratio": 2
-  },
-  {
-    "id": "beatLabs.add",
-    "english": "Add",
-    "translation": "Hinzufügen",
-    "ratio": 3.33
-  },
-  {
-    "id": "beatLabs.addNamed",
-    "english": "Add {name}",
-    "translation": "{name} hinzufügen",
-    "ratio": 1.7
-  },
-  {
-    "id": "beatLabs.touch.help",
-    "english": "Tap Controls.",
-    "translation": "Tippe auf Bedienelemente.",
-    "ratio": 1.92
-  },
-  {
-    "id": "beatLabs.touch.play",
-    "english": "Tap Play or Stop.",
-    "translation": "Tippe auf Abspielen oder Stopp.",
-    "ratio": 1.82
-  },
-  {
-    "id": "beatLabs.touch.undo",
-    "english": "Tap Undo.",
-    "translation": "Tippe auf Rückgängig.",
-    "ratio": 2.33
-  },
-  {
-    "id": "beatLabs.touch.redo",
-    "english": "Tap Redo.",
-    "translation": "Tippe auf Wiederholen.",
-    "ratio": 2.44
-  },
-  {
-    "id": "beatLabs.touch.gridToggle",
-    "english": "Tap a step to turn its hit on or off.",
-    "translation": "Tippe auf einen Schritt, um den Schlag ein- oder auszuschalten.",
-    "ratio": 1.7
-  },
-  {
-    "id": "beatLabs.close",
-    "english": "Close",
-    "translation": "Schließen",
-    "ratio": 1.8
-  },
-  {
-    "id": "beatLabs.skip",
-    "english": "Skip",
-    "translation": "Überspringen",
-    "ratio": 3
-  },
-  {
-    "id": "beatLabs.control.help",
-    "english": "Controls",
-    "translation": "Bedienelemente",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.control.play",
-    "english": "Play / Stop",
-    "translation": "Wiedergabe / Stopp",
-    "ratio": 1.64
-  },
-  {
-    "id": "beatLabs.control.ripple",
-    "english": "Ripple edit",
-    "translation": "Ripple-Bearbeitung",
-    "ratio": 1.64
-  },
-  {
-    "id": "beatLabs.control.undo",
-    "english": "Undo",
-    "translation": "Rückgängig",
-    "ratio": 2.5
-  },
-  {
-    "id": "beatLabs.control.redo",
-    "english": "Redo",
-    "translation": "Wiederholen",
-    "ratio": 2.75
   },
   {
     "id": "recovery.retry",

@@ -1,5 +1,41 @@
 [
   {
+    "id": "beatLabs.audition",
+    "english": "Audition",
+    "translation": "استماع تجريبي",
+    "ratio": 1.63
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "إضافة",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.touch.help",
+    "english": "Tap Controls.",
+    "translation": "اضغط على عناصر التحكم.",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatLabs.touch.undo",
+    "english": "Tap Undo.",
+    "translation": "اضغط على تراجع.",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.touch.redo",
+    "english": "Tap Redo.",
+    "translation": "اضغط على إعادة.",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.category.FX",
+    "english": "FX",
+    "translation": "مؤثرات",
+    "ratio": 3
+  },
+  {
     "id": "editorCaptionTools.align",
     "english": "Align lyrics",
     "translation": "محاذاة كلمات الأغنية",
@@ -2206,42 +2242,6 @@
     "english": "Fade out (ms)",
     "translation": "تلاشي الخروج (مللي ثانية)",
     "ratio": 1.92
-  },
-  {
-    "id": "beatLabs.audition",
-    "english": "Audition",
-    "translation": "استماع تجريبي",
-    "ratio": 1.63
-  },
-  {
-    "id": "beatLabs.add",
-    "english": "Add",
-    "translation": "إضافة",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.touch.help",
-    "english": "Tap Controls.",
-    "translation": "اضغط على عناصر التحكم.",
-    "ratio": 1.69
-  },
-  {
-    "id": "beatLabs.touch.undo",
-    "english": "Tap Undo.",
-    "translation": "اضغط على تراجع.",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.touch.redo",
-    "english": "Tap Redo.",
-    "translation": "اضغط على إعادة.",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.category.FX",
-    "english": "FX",
-    "translation": "مؤثرات",
-    "ratio": 3
   },
   {
     "id": "oauth.signIn",

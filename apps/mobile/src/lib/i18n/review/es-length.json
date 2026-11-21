@@ -1,5 +1,89 @@
 [
   {
+    "id": "beatLabs.category.All",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.stop",
+    "english": "Stop",
+    "translation": "Detener",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.add",
+    "english": "Add",
+    "translation": "Añadir",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.template.blank",
+    "english": "Blank",
+    "translation": "En blanco",
+    "ratio": 1.8
+  },
+  {
+    "id": "beatLabs.next",
+    "english": "Next",
+    "translation": "Siguiente",
+    "ratio": 2.25
+  },
+  {
+    "id": "beatLabs.replay",
+    "english": "Show tips again",
+    "translation": "Mostrar consejos de nuevo",
+    "ratio": 1.67
+  },
+  {
+    "id": "beatLabs.category.Synth",
+    "english": "Synth",
+    "translation": "Sintetizador",
+    "ratio": 2.4
+  },
+  {
+    "id": "beatLabs.context.grid",
+    "english": "Step grid",
+    "translation": "Cuadrícula de pasos",
+    "ratio": 2.11
+  },
+  {
+    "id": "beatLabs.control.play",
+    "english": "Play / Stop",
+    "translation": "Reproducir / Detener",
+    "ratio": 1.82
+  },
+  {
+    "id": "beatLabs.control.ripple",
+    "english": "Ripple edit",
+    "translation": "Edición con desplazamiento",
+    "ratio": 2.36
+  },
+  {
+    "id": "beatLabs.control.undo",
+    "english": "Undo",
+    "translation": "Deshacer",
+    "ratio": 2
+  },
+  {
+    "id": "beatLabs.control.redo",
+    "english": "Redo",
+    "translation": "Rehacer",
+    "ratio": 1.75
+  },
+  {
+    "id": "beatLabs.control.pianoSelectAll",
+    "english": "Select all notes",
+    "translation": "Seleccionar todas las notas",
+    "ratio": 1.69
+  },
+  {
+    "id": "beatLabs.control.pads",
+    "english": "Drum pads",
+    "translation": "Pads de batería",
+    "ratio": 1.67
+  },
+  {
     "id": "editorCaptionTools.transcriptChoose",
     "english": "Select a transcript word or caption range.",
     "translation": "Selecciona una palabra de la transcripción o un intervalo de subtítulos.",
@@ -3945,90 +4029,6 @@
     "id": "beat.audio.fadeIn",
     "english": "Fade in (ms)",
     "translation": "Entrada gradual (ms)",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.category.All",
-    "english": "All",
-    "translation": "Todos",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.stop",
-    "english": "Stop",
-    "translation": "Detener",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.add",
-    "english": "Add",
-    "translation": "Añadir",
-    "ratio": 2
-  },
-  {
-    "id": "beatLabs.template.blank",
-    "english": "Blank",
-    "translation": "En blanco",
-    "ratio": 1.8
-  },
-  {
-    "id": "beatLabs.next",
-    "english": "Next",
-    "translation": "Siguiente",
-    "ratio": 2.25
-  },
-  {
-    "id": "beatLabs.replay",
-    "english": "Show tips again",
-    "translation": "Mostrar consejos de nuevo",
-    "ratio": 1.67
-  },
-  {
-    "id": "beatLabs.category.Synth",
-    "english": "Synth",
-    "translation": "Sintetizador",
-    "ratio": 2.4
-  },
-  {
-    "id": "beatLabs.context.grid",
-    "english": "Step grid",
-    "translation": "Cuadrícula de pasos",
-    "ratio": 2.11
-  },
-  {
-    "id": "beatLabs.control.play",
-    "english": "Play / Stop",
-    "translation": "Reproducir / Detener",
-    "ratio": 1.82
-  },
-  {
-    "id": "beatLabs.control.ripple",
-    "english": "Ripple edit",
-    "translation": "Edición con desplazamiento",
-    "ratio": 2.36
-  },
-  {
-    "id": "beatLabs.control.undo",
-    "english": "Undo",
-    "translation": "Deshacer",
-    "ratio": 2
-  },
-  {
-    "id": "beatLabs.control.redo",
-    "english": "Redo",
-    "translation": "Rehacer",
-    "ratio": 1.75
-  },
-  {
-    "id": "beatLabs.control.pianoSelectAll",
-    "english": "Select all notes",
-    "translation": "Seleccionar todas las notas",
-    "ratio": 1.69
-  },
-  {
-    "id": "beatLabs.control.pads",
-    "english": "Drum pads",
-    "translation": "Pads de batería",
     "ratio": 1.67
   },
   {
