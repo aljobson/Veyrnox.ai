@@ -9,13 +9,11 @@ const ORIGINAL_STILLS = [
 ];
 
 // Shrinking exception list: remove each slug when its original media lands.
-// A1 leaves 12 other videos plus singing-photo (separate session) on competitor media. Lip Sync is local since PR #2584.
-const LEGACY_EXCEPTIONS = new Set([
-  'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
-  'ai-talking-photo-generator', 'singing-photo', 'avatar-dialogue',
-  'video-dubbing', 'talking-cartoon', 'talking-animals', 'ai-baby-podcast',
-  'ai-ad-clone', 'product-avatar', 'product-video-generator',
-]);
+// Only singing-photo (separate session) is still on competitor media. Lip Sync is local since PR #2584.
+const LEGACY_EXCEPTIONS = new Set(['singing-photo']);
+const ORIGINAL_VIDEOS = [
+  'talking-avatar', 'ai-human-generator', 'ai-influencer-generator', 'ai-talking-photo-generator', 'avatar-dialogue', 'video-dubbing', 'talking-cartoon', 'talking-animals', 'ai-baby-podcast', 'ai-ad-clone', 'product-avatar', 'product-video-generator',
+];
 
 test('only explicitly deferred slugs may use competitor example media', () => {
   for (const [slug, example] of Object.entries(CREATIVE_FEATURE_EXAMPLES)) {
@@ -45,5 +43,18 @@ test('the five original stills resolve to shipped WebP files below 200 KB', asyn
     assert.equal(bytes.toString('ascii', 0, 4), 'RIFF', slug);
     assert.equal(bytes.toString('ascii', 8, 12), 'WEBP', slug);
     assert.ok((await stat(file)).size < 200_000, slug);
+  }
+});
+
+test('the twelve original videos are local H.264 MP4s with JPEG posters', async () => {
+  for (const slug of ORIGINAL_VIDEOS) {
+    assert.deepEqual(CREATIVE_FEATURE_EXAMPLES[slug], { kind: 'video', url: `/examples/${slug}.mp4`, posterUrl: `/examples/${slug}.jpg` });
+    const mp4 = new URL(`../public/examples/${slug}.mp4`, import.meta.url);
+    const head = await readFile(mp4);
+    assert.equal(head.toString('ascii', 4, 8), 'ftyp', slug);
+    assert.ok(head.includes(Buffer.from('avc1')), `${slug} must be H.264`);
+    assert.ok((await stat(mp4)).size < 3_000_000, slug);
+    const jpg = await readFile(new URL(`../public/examples/${slug}.jpg`, import.meta.url));
+    assert.deepEqual([...jpg.subarray(0, 2)], [0xff, 0xd8], slug);
   }
 });

@@ -16,6 +16,29 @@ Recreate from this checkout with `python3 scripts/create-still-examples.py`. Thi
 
 Web URLs are `/examples/<slug>.webp`; mobile URLs are `https://veyrnox.ai/examples/<slug>.webp`. **Deploy the web assets before shipping a mobile build that uses these URLs.** Nothing is deployed by this work order.
 
+## Stage A2: twelve original videos (2026-11-21)
+
+Generated on the Veyrnox account with its own models, from original inputs only; no competitor media, showcase clips or stock footage. Spend: 378 credits in total (7 stills at 2, 9 avatar clips and 2 image-to-video clips at 32, 1 lip-sync at 12), inside the owner-approved cap of 600. The owner confirmed rights to the inputs and the acceptable use policy in chat before any upload or spend. Output was transcoded locally with ffmpeg to H.264 (High) and AAC, 960 to 1280 px, `+faststart`, each under 800 KB, with a JPEG poster from a single frame.
+
+| Slug | Model | Source image | Speech |
+| --- | --- | --- | --- |
+| `talking-avatar` | kling-avatar-v2 | fictional portrait `kenji` | built-in macOS voice (Samantha) |
+| `ai-human-generator` | kling-avatar-v2 | fictional portrait `ellis` | macOS voice (Daniel) |
+| `ai-influencer-generator` | kling-avatar-v2 | Nano Banana still, fictional adult | macOS voice (Samantha) |
+| `ai-talking-photo-generator` | kling-avatar-v2 | fictional portrait `nia` | macOS voice (Karen) |
+| `avatar-dialogue` | kling-avatar-v2 | Nano Banana still, two fictional adults | macOS voice (Samantha) |
+| `talking-cartoon` | kling-avatar-v2 | Nano Banana still, original fox mascot | macOS voice (Daniel) |
+| `talking-animals` | kling-avatar-v2 | Nano Banana still, tabby cat | macOS voice (Samantha) |
+| `ai-baby-podcast` | kling-avatar-v2 | Nano Banana still, fictional baby | macOS voice (Daniel) |
+| `product-avatar` | kling-avatar-v2 | Nano Banana still, fictional presenter, unbranded bottle | macOS voice (Samantha) |
+| `ai-ad-clone` | kling-3.0-i2v | Nano Banana still, unbranded bottle | none |
+| `product-video-generator` | kling-3.0-i2v | same bottle still, different motion prompt | none |
+| `video-dubbing` | latentsync | our own `lip-sync.mp4` (PR #2584), re-encoded without an edit list | macOS voice (Paulina, Spanish) |
+
+The remaining competitor-hosted example is `singing-photo` (separate session, needs a vocal file we own). `lip-sync` is local since PR #2584.
+
+Web URLs are `/examples/<slug>.mp4` and `.jpg`; mobile URLs are `https://veyrnox.ai/examples/...`. Deploy the web assets before a phone build uses them.
+
 The shared example note is localized as an illustrative-example disclaimer, rather than attributing every example to Veyrnox: the 13 deferred entries below still use their original external URLs. Both registries and all their existing posters are unchanged for these entries:
 
 - `talking-avatar`

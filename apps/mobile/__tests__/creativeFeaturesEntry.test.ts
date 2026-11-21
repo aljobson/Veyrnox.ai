@@ -6,10 +6,9 @@ const read = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8');
 
 describe('guided features entry and play badge', () => {
     it('shows no play badge for a WebM example on iOS but does on Android', () => {
-        const webm = CREATIVE_FEATURES.find(f => f.example.kind === 'video' && /\.webm/i.test(f.example.url));
-        expect(webm).toBeDefined();
-        expect(examplePlaysOn(webm!.example, 'ios')).toBe(false);
-        expect(examplePlaysOn(webm!.example, 'android')).toBe(true);
+        const webm = { kind: 'video' as const, url: 'https://example.test/clip.webm', posterUrl: 'https://example.test/clip.jpg' };
+        expect(examplePlaysOn(webm, 'ios')).toBe(false);
+        expect(examplePlaysOn(webm, 'android')).toBe(true);
     });
 
     it('shows a play badge for an MP4 example on iOS and none for a still', () => {

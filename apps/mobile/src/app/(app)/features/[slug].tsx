@@ -93,16 +93,22 @@ function ExampleStill({ uri, title }: { uri: string; title: string }) {
     return <Image source={{ uri }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: title }))} accessibilityIgnoresInvertColors />;
 }
 // The example starts on its own, muted and looping like the web preview, so it is visibly a moving result; the native
-// controls still unmute or pause it. A clip that cannot load falls back to its first-frame still.
+// controls still unmute or pause it. The poster shows until the first frame renders; a clip that cannot load falls back to it.
 function ExampleVideo({ url, poster, title }: { url: string; poster?: string; title: string }) {
     const [failed, setFailed] = useState(false);
+    const [rendered, setRendered] = useState(false);
     const player = useVideoPlayer(url, (instance) => { instance.loop = true; instance.muted = true; instance.play(); });
     useEffect(() => {
         const subscription = player.addListener('statusChange', (event) => { if (event.status === 'error') setFailed(true); });
         return () => subscription.remove();
     }, [player]);
     if (failed && poster) return <ExampleStill uri={poster} title={title} />;
-    return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={rawText(t('features.examplevideo', { value1: title }))} />;
+    return (
+        <View style={styles.exampleMedia}>
+            <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" onFirstFrameRender={() => setRendered(true)} accessibilityLabel={rawText(t('features.examplevideo', { value1: title }))} />
+            {poster && !rendered ? <Image source={{ uri: poster }} style={[styles.exampleMedia, StyleSheet.absoluteFill]} contentFit="contain" pointerEvents="none" accessibilityIgnoresInvertColors /> : null}
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({

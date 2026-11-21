@@ -1,4 +1,4 @@
-import { CREATIVE_FEATURES, creativeFeature } from '../src/lib/creativeFeatures';
+import { CREATIVE_FEATURES, creativeFeature, examplePlaysOn } from '../src/lib/creativeFeatures';
 
 const ORIGINAL_STILLS = [
     'ai-avatar-generator', 'text-to-speech', 'ai-voice-cloning',
@@ -6,13 +6,11 @@ const ORIGINAL_STILLS = [
 ];
 
 // Shrinking exception list: remove each slug when its original media lands.
-// A1 leaves 12 other videos plus singing-photo (separate session) on competitor media. Lip Sync is local since PR #2584.
-const LEGACY_EXCEPTIONS = new Set([
-    'talking-avatar', 'ai-human-generator', 'ai-influencer-generator',
-    'ai-talking-photo-generator', 'singing-photo', 'avatar-dialogue',
-    'video-dubbing', 'talking-cartoon', 'talking-animals', 'ai-baby-podcast',
-    'ai-ad-clone', 'product-avatar', 'product-video-generator',
-]);
+// Only singing-photo (separate session) is still on competitor media. Lip Sync is local since PR #2584.
+const LEGACY_EXCEPTIONS = new Set(['singing-photo']);
+const ORIGINAL_VIDEOS = [
+    'talking-avatar', 'ai-human-generator', 'ai-influencer-generator', 'ai-talking-photo-generator', 'avatar-dialogue', 'video-dubbing', 'talking-cartoon', 'talking-animals', 'ai-baby-podcast', 'ai-ad-clone', 'product-avatar', 'product-video-generator',
+];
 
 test('only explicitly deferred slugs may use competitor examples or posters', () => {
     for (const { slug, example } of CREATIVE_FEATURES) {
@@ -39,5 +37,15 @@ test('the five original stills use the public web deployment URLs', () => {
         expect(creativeFeature(slug)?.example).toEqual({
             kind: 'image', url: `https://veyrnox.ai/examples/${slug}.webp`,
         });
+    }
+});
+
+test('the twelve original videos use the web deployment and play on iOS', () => {
+    for (const slug of ORIGINAL_VIDEOS) {
+        const example = creativeFeature(slug)!.example;
+        expect(example).toEqual({
+            kind: 'video', url: `https://veyrnox.ai/examples/${slug}.mp4`, posterUrl: `https://veyrnox.ai/examples/${slug}.jpg`,
+        });
+        expect(examplePlaysOn(example, 'ios')).toBe(true);
     }
 });
