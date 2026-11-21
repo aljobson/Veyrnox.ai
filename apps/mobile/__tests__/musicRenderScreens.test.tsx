@@ -62,7 +62,7 @@ test.each(['speed', 'reorder', 'remaster', 'reverse'])('%s controls submit exact
     mockDuration = 12; await mount(); await click(t(`musicRender.${operation}`), 'radio');
     if (operation === 'speed') await click(t('musicRender.more', { field: t('musicRender.speed') }));
     if (operation === 'reorder') await click(t('musicRender.more', { field: t('musicRender.split') }));
-    if (operation === 'remaster') await click('-3 dBFS', 'radio');
+    if (operation === 'remaster') await click('-3', 'radio');
     await click(t('musicRender.save'));
     const body = JSON.parse(posts()[0][1].body);
     expect(body.operation).toBe(operation);
@@ -82,6 +82,11 @@ test('pending and ambiguous states lock inputs, retry uses exact body, replay mi
     expect(text(t('musicRender.saved', { number: 2 })).length).toBeGreaterThan(0);
     expect(text(t('musicRender.currentChanged')).length).toBeGreaterThan(0); expect(button(t('music.play'))).toBeUndefined();
     await click(t('musicRender.openCurrent')); expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/[id]', params: { id: SONG_ID } });
+});
+test('an unresolved attempt can leave for the song without sending anything', async () => {
+    mockDuration = 12; await mount(); mockApi.request.mockRejectedValueOnce(new ApiError(502, 'temporarily_unavailable'));
+    await click(t('musicRender.save')); const sent = posts().length; await click(t('musicRender.openCurrent'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/[id]', params: { id: SONG_ID } }); expect(posts()).toHaveLength(sent);
 });
 test('exact refreshed result offers explicit playback and Back to song', async () => {
     mockDuration = 12; await mount(); mockApi.request.mockResolvedValueOnce(renderCreated).mockResolvedValueOnce(renderedSong);

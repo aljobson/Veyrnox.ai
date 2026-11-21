@@ -52,6 +52,8 @@ export function MusicRenderBody({ flow, state }: { flow: RenderFlow; state: Rend
         <Text>{t('musicRender.session')}</Text>
         <Button label={t(state.busy ? 'musicRender.saving' : state.ambiguous ? 'musicRender.retry' : 'musicRender.save')}
             disabled={state.busy || (!state.ambiguous && (!!invalid || (state.form.operation === 'reverse' && !reverse)))} onPress={() => void flow.confirm()} />
+        {state.ambiguous && !state.busy ? <Button label={t('musicRender.openCurrent')}
+            onPress={() => router.push({ pathname: '/music/[id]', params: { id: state.song!.id } } as never)} /> : null}
         {state.error && !state.ambiguous ? <Button label={t('musicRender.refresh')} disabled={state.busy} onPress={() => void flow.load()} /> : null}
     </>;
 }

@@ -56,6 +56,14 @@ test.each(['network', 'temporarily_unavailable', 'bad_response', 'unknown_server
     request.mockResolvedValueOnce(renderEarlyReplay).mockResolvedValueOnce(renderedSong); await flow.confirm();
     expect(posts()[1][1].body).toBe(posts()[0][1].body);
 });
+test.each(['not_authenticated', 'music_editing_unavailable', 'music_reverse_unavailable', 'gateway_not_configured'])('%s on a retry keeps the key because the first POST may have committed', async code => {
+    measured(); request.mockRejectedValueOnce(new ApiError(502, 'temporarily_unavailable')); await flow.confirm();
+    request.mockRejectedValueOnce(new ApiError(code === 'gateway_not_configured' ? 503 : code === 'not_authenticated' ? 401 : 404, code)); await flow.confirm();
+    expect(flow.snapshot()).toMatchObject({ ambiguous: true, status: 'on', error: null }); expect(renderAvailability().editing).toBe(true);
+    flow.edit({ operation: 'speed' }); expect(flow.snapshot().form.operation).toBe('fade');
+    request.mockResolvedValueOnce(renderEarlyReplay).mockResolvedValueOnce(renderedSong); await flow.confirm();
+    expect(posts()[2][1].body).toBe(posts()[0][1].body); expect(mint).toHaveBeenCalledTimes(1);
+});
 test('definitive error followed by input change uses a fresh signature and key', async () => {
     measured(); request.mockRejectedValueOnce(new ApiError(400, 'fade_range_invalid')); await flow.confirm(); flow.edit({ fadeIn: 0.5 });
     request.mockResolvedValueOnce(renderCreated).mockResolvedValueOnce(renderedSong); await flow.confirm();

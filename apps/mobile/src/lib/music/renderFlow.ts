@@ -6,7 +6,7 @@ import { getSong } from './client';
 import { renderSong } from './renderClient';
 import { initialRenderForm, renderFormError, renderInput, type RenderForm, type RenderInput } from './renderForm';
 import { renderAvailability, markRenderUnavailable } from './renderAvailability';
-import { isDefinitiveRenderError } from './renderMessages';
+import { isDefinitiveRenderError, isPreCommitRefusal } from './renderMessages';
 import { notifySongChanged } from './songChanges';
 import type { MusicSongDetail } from './types';
 import type { RenderResult } from './validateRender';
@@ -82,6 +82,7 @@ export function createRenderFlow(api: ApiClient, songId: string, mintKey = rando
             if (!attempt && invalid) { update({ error: invalid }); return; }
             update({ busy: true, error: null });
             let sent = false;
+            const retry = attempt !== null;
             try {
                 await ensureOnline();
                 if (disposed) return;
@@ -96,6 +97,8 @@ export function createRenderFlow(api: ApiClient, songId: string, mintKey = rando
                 try { await refreshResult(); } catch { update({ error: 'refresh_failed' }); }
             } catch (error) {
                 if (disposed) return;
+                // These refusals come before the receipt lookup, so they say nothing about the earlier POST.
+                if (sent && retry && isPreCommitRefusal(error)) { update({ error: null }); return; }
                 if (sent && isDefinitiveRenderError(error)) {
                     const version = attempt?.input.version_id;
                     if (error instanceof ApiError && ['fade_range_invalid', 'reorder_range_invalid'].includes(error.code)

@@ -31,7 +31,7 @@ export function MusicRenderForm({ form, duration, reverse, locked, edit }: {
             <View accessibilityRole="radiogroup" accessibilityLabel={t('musicRender.peak')}>
                 <Text>{t('musicRender.peak')}</Text>
                 {[-3, -2, -1].map(peak => <Button key={peak} variant="secondary" accessibilityRole="radio"
-                    accessibilityState={{ checked: form.peak === peak }} label={`${peak} dBFS`} disabled={locked} onPress={() => edit({ peak })} />)}
+                    accessibilityState={{ checked: form.peak === peak }} label={String(peak)} disabled={locked} onPress={() => edit({ peak })} />)}
             </View><Text>{t('musicRender.remasterHint')}</Text>
         </> : null}
         {form.operation === 'reverse' ? <Text>{t('musicRender.reverseHint')}</Text> : null}

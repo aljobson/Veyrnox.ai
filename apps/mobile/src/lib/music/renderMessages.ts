@@ -14,6 +14,8 @@ export const RENDER_DEFINITIVE_CODES = [
 ] as const;
 export const isDefinitiveRenderError = (error: unknown) => error instanceof ApiError && error.status >= 400
     && (RENDER_DEFINITIVE_CODES as readonly string[]).includes(error.code);
+const PRE_COMMIT_REFUSALS = ['not_authenticated', 'music_editing_unavailable', 'music_reverse_unavailable', 'gateway_not_configured'];
+export const isPreCommitRefusal = (error: unknown) => error instanceof ApiError && PRE_COMMIT_REFUSALS.includes(error.code);
 const messages = {
     not_authenticated: 'auth', not_found: 'missing', song_id_invalid: 'missing',
     music_editing_unavailable: 'editingOff', music_reverse_unavailable: 'reverseOff',
