@@ -13,9 +13,9 @@ const fresh = () => {
     return { turns, cast: assignmentOrigins(resolveDialogueCastAssignments(turns, []), [], []), edited: false, turnEdited: false, perJob: false };
 };
 
-export function useDialogueEditor({ reopen, blocked, editAttempt, resetAttempt }: {
+export function useDialogueEditor({ reopen, blocked, editAttempt, resetAttempt, markReopened }: {
     reopen?: string | string[]; blocked: () => boolean;
-    editAttempt: (changed: boolean) => void; resetAttempt: () => void;
+    editAttempt: (changed: boolean) => void; resetAttempt: () => void; markReopened: (jobId: string) => void;
 }) {
     const [state, setState] = useState(fresh);
     const [ownerVersion, setOwnerVersion] = useState(0);
@@ -29,7 +29,7 @@ export function useDialogueEditor({ reopen, blocked, editAttempt, resetAttempt }
         if (!saved) return false;
         setState({ turns: saved.turns, cast: saved.assignments.map(item => ({ ...item, origin: 'restored' })), edited: false, turnEdited: false, perJob: true });
         return true;
-    }, () => { resetAttempt(); carries.current.clear(); setState(fresh()); });
+    }, () => { resetAttempt(); carries.current.clear(); setState(fresh()); }, markReopened);
 
     function resetOwner() {
         preferences.current = []; preferenceEdits.current.clear(); carries.current.clear(); setState(fresh());
@@ -73,7 +73,7 @@ export function useDialogueEditor({ reopen, blocked, editAttempt, resetAttempt }
             carry = carries.current.get(renamedIndex);
             if (!carry) {
                 const original = state.cast.find(item => key(item.speaker) === key(state.turns[renamedIndex].speaker));
-                carry = { index: renamedIndex, voice: original?.voice, origin: original?.origin };
+                carry = { index: renamedIndex, voice: original?.voice };
                 carries.current.set(renamedIndex, carry);
             }
         }

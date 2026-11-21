@@ -43,7 +43,7 @@ export function SpeechStudio({ reopen }: { reopen?: string | string[] }) {
         const saved = restoreSpeech(request);
         if (!saved) return false;
         setScript(saved.script); setSettings(saved.settings); setVoices([]); return true;
-    }, () => { resetAttempt(); setScript(''); setSettings({ ...DEFAULT_TTS_SETTINGS }); setVoices([]); });
+    }, () => { resetAttempt(); setScript(''); setSettings({ ...DEFAULT_TTS_SETTINGS }); setVoices([]); }, jobId => pending.current.markDelivered(jobId));
     useAnnouncement(error ?? (busy ? t('speech.submitting') : result || complete ? t('speech.accepted') : null));
     useEffect(() => {
         let live = true;

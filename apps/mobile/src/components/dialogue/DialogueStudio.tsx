@@ -25,7 +25,8 @@ export function DialogueStudio({ reopen }: { reopen?: string | string[] }) {
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null), [catalogError, setCatalogError] = useState<string | null>(null);
     const submission = useSpeechSubmission(api, () => {});
     const { pending, sending, busy, result, error, priceFor, resetAttempt, editAttempt, generate, settled } = submission;
-    const editor = useDialogueEditor({ reopen, blocked: () => sending.current, editAttempt, resetAttempt });
+    const editor = useDialogueEditor({ reopen, blocked: () => sending.current, editAttempt, resetAttempt,
+        markReopened: jobId => pending.current.markDelivered(jobId) });
     const { turns, assignments, turnEdited, restored, editTurns, editTurn, chooseVoice, resetCast } = editor;
     useEffect(() => {
         let live = true;

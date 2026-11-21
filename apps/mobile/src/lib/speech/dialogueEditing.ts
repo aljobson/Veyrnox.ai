@@ -36,15 +36,16 @@ export function dialogueEditSignature(turns: readonly DialogueTurn[], cast: read
     return JSON.stringify([compileDialogueTurns(clean), dialogueCastInputs(resolveDialogueCastAssignments(clean, cast))]);
 }
 
-export type VoiceOrigin = 'default' | 'saved' | 'explicit' | 'restored';
+// 'renamed' is a voice carried to a new name: shown, but never saved for that name.
+export type VoiceOrigin = 'default' | 'saved' | 'explicit' | 'restored' | 'renamed';
 export type EditingAssignment = CastAssignment & { origin: VoiceOrigin };
-export type RenameCarry = { index: number; voice?: string; origin?: VoiceOrigin };
+export type RenameCarry = { index: number; voice?: string };
 export function assignmentOrigins(assignments: readonly CastAssignment[], previous: readonly EditingAssignment[], preferences: readonly CastAssignment[],
     renamedSpeaker?: string, carry?: RenameCarry): EditingAssignment[] {
     return assignments.map(item => {
         const known = previous.find(old => key(old.speaker) === key(item.speaker) && old.voice === item.voice);
         const inherited = renamedSpeaker !== undefined && key(item.speaker) === key(renamedSpeaker) && item.voice === carry?.voice;
         const saved = preferences.some(pref => key(pref.speaker) === key(item.speaker) && pref.voice === item.voice);
-        return { ...item, origin: known?.origin ?? (inherited ? carry?.origin : undefined) ?? (saved ? 'saved' : 'default') };
+        return { ...item, origin: known?.origin ?? (saved ? 'saved' : inherited ? 'renamed' : 'default') };
     });
 }

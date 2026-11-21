@@ -353,3 +353,29 @@ test('routine character count is quiet while validation stays live', async () =>
     expect(counters.every(node => node.props.accessibilityLiveRegion === undefined)).toBe(true);
     expect(root.container.queryAll(node => textOf(node) === t('dialogue.wordsRequired') && node.props.accessibilityLiveRegion === 'polite').length).toBeGreaterThan(0);
 });
+
+test.each(['Zoe', 'Zo'])('a voice carried by a rename to %s is never saved for that name on a swap', async name => {
+    mockLoadCast.mockResolvedValue([{ speaker: 'Ana', voice: 'George' }, { speaker: 'Ben', voice: 'Aria' }, { speaker: 'Zoe', voice: 'Sarah' }]);
+    await render(); await fill();
+    await rename(name); turnVoice(1, 'George');
+    await click(button(t('dialogue.chooseVoice', { speaker: 'Ben', voice: 'George' })));
+    expect(mockSaveCast).toHaveBeenCalledTimes(1);
+    expect(mockSaveCast.mock.calls[0][0]).toEqual([{ speaker: 'Ben', voice: 'George' }]);
+});
+test('Make another on a job accepted after leaving the screen creates a new take with a new key', async () => {
+    let release!: (value: unknown) => void;
+    mockRequest.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    await render(); await fill(); await click(generate());
+    await act(async () => root.unmount()); root = createRoot();
+    await act(async () => { release({ job_id: 'detached-job' }); await new Promise(resolve => setTimeout(resolve, 0)); });
+    const turns = [{ speaker: 'Ana', text: 'Hello' }, { speaker: 'Ben', text: 'Hi' }];
+    const cast = [{ speaker: 'Ana', voice: 'Aria' }, { speaker: 'Ben', voice: 'Roger' }];
+    mockReopen = 'detached-job'; mockSavedList.mockResolvedValue([{ id: mockReopen, request: buildDialogueRequest(turns, cast, mockModel) }]);
+    await render(); expect(mockRequest).toHaveBeenCalledTimes(1);
+    await click(generate());
+    expect(mockRequest).toHaveBeenCalledTimes(2);
+    const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
+    expect(bodies[1].inputs).toEqual(bodies[0].inputs);
+    expect(bodies[1].idempotency_key).not.toBe(bodies[0].idempotency_key);
+});
+

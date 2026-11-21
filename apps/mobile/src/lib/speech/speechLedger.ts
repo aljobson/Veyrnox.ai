@@ -133,6 +133,17 @@ export function createSpeechSubmit() {
             const account = accountForOwner(), signatures = fingerprints(request, count);
             return signatures.some(signature => lookup(account, signature, batchIdentity(signatures))?.state === 'unknown');
         },
+        // A reopened job is known to the person, so the next Generate outside its own batch is a new take.
+        markDelivered(jobId: string) {
+            const account = accountForOwner();
+            for (const entry of [...account.entries.values()]) {
+                if (entry.state !== 'accepted' || entry.jobId !== jobId) continue;
+                entry.delivered = true;
+                // A run in progress may still adopt this entry into its batch; it cleans up when it ends.
+                if (entry.batches.size === 0 && !account.lock) removeEntry(account, entry);
+                publish(account);
+            }
+        },
         hasUnresolvedEntries() {
             const account = accountForOwner();
             return [...account.entries.values()].some(entry => entry.state !== 'accepted')
