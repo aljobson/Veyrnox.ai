@@ -15,7 +15,7 @@ export function PictureKeysSection({ clip, fps, actions }: { clip: Clip; fps: nu
         <Action label={t('editorMotion.addPicture')} disabled={at < 0 || at >= clip.len || keys.length >= 40} onPress={actions.addPicture} />
         {keys.map((key, index) => <View key={index} style={{ gap: ds.space.sm }}>
             <Text style={styles.fieldLabel}>{t('editorMotion.point', { n: index + 1, s: formatNumber(key.frame / fps, 2) })}</Text>
-            <EasingChoice value={String(key.easing)} onChange={value => actions.pictureEasing(index, value)} />
+            <EasingChoice label={t('editorMotion.pointEasing', { n: index + 1 })} value={String(key.easing)} onChange={value => actions.pictureEasing(index, value)} />
             <Action label={t('editorMotion.deletePicture', { n: index + 1 })} onPress={() => actions.removePicture(index)} />
         </View>)}
         <Action label={t('editorMotion.clearPicture')} disabled={!keys.length} onPress={actions.clearPicture} />

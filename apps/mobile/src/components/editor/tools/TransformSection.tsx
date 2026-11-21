@@ -23,7 +23,7 @@ export function TransformSliders({ value, onChange }: { value: Pick<Transform, '
         format={n => `${formatNumber(n, 0)}${field.factor === 1 ? '°' : '%'}`} onChange={n => onChange(field.key, n / field.factor)} />)}</>;
 }
 export function TransformSection({ clip, actions }: { clip: Clip; actions: MotionActions }) {
-    const frame = useEditorFrame(actions.frameStore), value = evaluatedAt(clip, frame).transform;
+    const frame = useEditorFrame(actions.frameStore), value = evaluatedAt(clip, Math.max(clip.start, frame)).transform;
     const active = !!clip.keyframes?.length || Object.entries(TRANSFORM_DEFAULTS).some(([key, v]) => clip.transform?.[key as keyof Transform] !== undefined
         && clip.transform[key as keyof Transform] !== v);
     return <View style={{ gap: ds.space.sm }}>

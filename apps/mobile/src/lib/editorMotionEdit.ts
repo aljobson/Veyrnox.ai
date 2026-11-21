@@ -29,10 +29,11 @@ export function clipPatch(tl: Timeline, sel: Selection, frame: number, next: Par
     const bad = refusal(tl, sel); if (bad) return bad;
     const clip = clipAt(tl, sel)!, at = frame - clip.start;
     const evaluated = evaluatedAt(clip, frame);
-    if (Object.entries(next).every(([key, value]) => equal(key === 'transform' ? evaluated.transform
+    if (Object.entries(next).every(([key, value]) => equal(key === 'transform' ? evaluatedAt(clip, Math.max(clip.start, frame)).transform
         : key === 'filter' ? evaluated.parameters.filter : key === 'colourAdjustment' ? evaluated.parameters.colour
         : (clip as Record<string, unknown>)[key], value))) return { timeline: tl };
     if (next.transform && clip.keyframes?.length && at >= 0 && at < clip.len) {
+        if (clip.keyframes.length >= 40 && !clip.keyframes.some(k => k.frame === at)) return { refused: 'full' };
         const { x, y, scale, rotation, opacity } = next.transform;
         const key = { frame: at, x, y, scale, rotation, opacity, easing: 'linear' };
         next = { ...next, keyframes: [...clip.keyframes.filter(k => k.frame !== at), key].sort((a, b) => a.frame - b.frame) };
@@ -49,7 +50,8 @@ export function clipPatch(tl: Timeline, sel: Selection, frame: number, next: Par
 export function transformEdit(tl: Timeline, sel: Selection, frame: number, key: keyof Transform, value: number | boolean): MotionResult {
     const bad = refusal(tl, sel); if (bad) return bad;
     if (sel.track !== 'video') return { refused: 'invalid' };
-    const transform = evaluatedAt(clipAt(tl, sel)!, frame).transform;
+    const clip = clipAt(tl, sel)!;
+    const transform = evaluatedAt(clip, Math.max(clip.start, frame)).transform;
     return transform[key] === value ? { timeline: tl } : clipPatch(tl, sel, frame, { transform: { ...transform, [key]: value } });
 }
 export function motionPresetApply(tl: Timeline, sel: Selection, name: string): MotionResult {
@@ -101,6 +103,7 @@ export function maskEdit(tl: Timeline, sel: Selection, frame: number, key: keyof
     if (current[key] === value) return { timeline: tl };
     const maskSettings = { ...current, [key]: value };
     const keys = clip.maskKeyframes;
+    if (keys && keys.length >= 40 && at >= 0 && at < clip.len && key !== 'inverted' && !keys.some(k => k.frame === at)) return { refused: 'full' };
     return clipPatch(tl, sel, frame, { maskSettings, ...(keys?.length && at >= 0 && at < clip.len && key !== 'inverted'
         ? { maskKeyframes: [...keys.filter(k => k.frame !== at), maskKeyframe({ ...clip, maskSettings, maskKeyframes: [] }, at)].sort((a, b) => a.frame - b.frame) } : {}) });
 }

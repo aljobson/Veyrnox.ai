@@ -66,6 +66,7 @@ test('handle visibility follows the rendered clip, and drag/action commits use s
     for (const [name, x, y] of [['left', .34, .5], ['right', .36, .5], ['up', .35, .49], ['down', .35, .51]] as const) {
         applyTimeline.mockClear();
         const handle = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0];
+        expect(handle.props.accessible).toBe(true);
         await act(async () => handle.props.onAccessibilityAction({ nativeEvent: { actionName: name } }));
         expect(applyTimeline).toHaveBeenCalledTimes(1);
         expect((applyTimeline.mock.calls as unknown as [[typeof tl]])[0][0].video[0].transform).toMatchObject({ x, y });
@@ -85,13 +86,17 @@ test('handle visibility follows the rendered clip, and drag/action commits use s
     await act(async () => root.unmount());
 });
 
-const mockVideo = { loop: false, keepScreenOnWhilePlaying: false, timeUpdateEventInterval: 0, currentTime: 0, playbackRate: 1, volume: 1,
+const mockVideo = { status: 'readyToPlay', videoTrack: { size: { width: 1920, height: 1080 } },
+    generateThumbnailsAsync: jest.fn(async () => [] as { width: number; height: number; release: () => void }[]),
+    loop: false, keepScreenOnWhilePlaying: false, timeUpdateEventInterval: 0, currentTime: 0, playbackRate: 1, volume: 1,
     play: jest.fn(), pause: jest.fn(), addListener: jest.fn((_name: string, _callback: (event: any) => void) => ({ remove: jest.fn() })) };
 jest.mock('expo-image', () => ({ Image: (props: any) => require('react').createElement(require('react-native').View, { ...props, testID: 'decoded-image' }) }));
 jest.mock('expo-video', () => ({ useVideoPlayer: () => mockVideo,
     VideoView: (props: any) => require('react').createElement(require('react-native').View, { ...props, testID: 'decoded-video' }) }));
 import { EditorMediaPreview } from '../src/components/editor/EditorMediaPreview';
-test.each(['image', 'video'])('decoded %s dimensions fix Cover fitting when catalog dimensions are unknown', async kind => {
+beforeEach(() => { mockVideo.generateThumbnailsAsync.mockReset().mockResolvedValue([]); mockVideo.addListener.mockClear(); mockVideo.status = 'readyToPlay'; });
+test('decoded image dimensions fix Cover fitting when catalog dimensions are unknown', async () => {
+    const kind = 'image';
     const root = createRoot(), frameStore = createFrameStore(), c = { ...clip, transform: { x: .75 } };
     mockVideo.addListener.mockClear();
     await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={c}
@@ -99,9 +104,90 @@ test.each(['image', 'video'])('decoded %s dimensions fix Cover fitting when cata
     const outer = root.container.queryAll(n => n.props.testID === 'editor-transform-layout')[0];
     await act(async () => outer.props.onLayout({ nativeEvent: { layout: { width: 200, height: 200 } } }));
     await act(async () => {
-        if (kind === 'image') root.container.queryAll(n => n.props.testID === 'decoded-image')[0].props.onLoad({ source: { width: 400, height: 200 } });
-        else mockVideo.addListener.mock.calls.find(([name]) => name === 'sourceLoad')![1]({ availableVideoTracks: [{ size: { width: 400, height: 200 } }] });
+        root.container.queryAll(n => n.props.testID === 'decoded-image')[0].props.onLoad({ source: { width: 400, height: 200 } });
     });
     expect(StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'editor-transform-picture')[0].props.style)).toMatchObject({ width: 400, height: 200, left: -100 });
+    await act(async () => root.unmount());
+});
+
+
+test.each(['cover', 'contain'] as const)('portrait video uses decoded display dimensions under %s, never the unrotated track size', async fit => {
+    const root = createRoot(), frameStore = createFrameStore(), release = jest.fn();
+    mockVideo.addListener.mockClear();
+    let decode!: (sizes: { width: number; height: number; release: () => void }[]) => void;
+    mockVideo.generateThumbnailsAsync.mockImplementationOnce(() => new Promise(resolve => { decode = resolve; }));
+    await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, fit }}
+        media={{ id: 'm', kind: 'video', width: 1920, height: 1080 }} frameStore={frameStore} fps={30} playing={false} localUri="file://portrait" />));
+    const outer = root.container.queryAll(n => n.props.testID === 'editor-transform-layout')[0];
+    await act(async () => outer.props.onLayout({ nativeEvent: { layout: { width: 200, height: 200 } } }));
+    const picture = () => StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'editor-transform-picture')[0].props.style);
+    const video = () => root.container.queryAll(n => n.props.testID === 'decoded-video')[0];
+    expect(picture()).toMatchObject({ width: 200, height: 200, left: 0, top: 0 });
+    expect(video().props.contentFit).toBe(fit);
+    expect(video().props.surfaceType).toBe('textureView');
+    await act(async () => {
+        for (const [name, callback] of mockVideo.addListener.mock.calls) {
+            if (name === 'sourceLoad') callback({ availableVideoTracks: [mockVideo.videoTrack] });
+            if (name === 'videoTrackChange') callback({ videoTrack: mockVideo.videoTrack });
+        }
+    });
+    expect(picture()).toMatchObject({ width: 200, height: 200 });
+    await act(async () => decode([{ width: 108, height: 192, release }]));
+    const expected = fit === 'cover' ? { width: 200, height: 200 * 192 / 108, left: 0, top: (200 - 200 * 192 / 108) / 2 }
+        : { width: 112.5, height: 200, left: 43.75, top: 0 };
+    for (const field of ['width', 'height', 'left', 'top'] as const) expect(picture()[field]).toBeCloseTo(expected[field]);
+    expect(video().props.contentFit).toBe('contain');
+    expect(release).toHaveBeenCalledTimes(1);
+    await act(async () => root.unmount());
+});
+
+test.each(['cover', 'contain'] as const)('unknown video dimensions preserve native %s when thumbnail decoding fails', async fit => {
+    const root = createRoot(); mockVideo.generateThumbnailsAsync.mockRejectedValueOnce(new Error('No thumbnail'));
+    await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, fit }}
+        media={{ id: 'm', kind: 'video' }} frameStore={createFrameStore()} fps={30} playing={false} localUri="file://unknown" />));
+    expect(root.container.queryAll(n => n.props.testID === 'decoded-video')[0].props.contentFit).toBe(fit);
+    await act(async () => root.unmount());
+});
+
+test('video error is outside the invisible flipped picture and clears on recovery or source change', async () => {
+    const root = createRoot(), frameStore = createFrameStore(); mockVideo.addListener.mockClear();
+    const render = (uri: string) => root.render(<EditorMediaPreview api={{ request: jest.fn() }}
+        clip={{ ...clip, transform: { opacity: 0, flipX: true } }} media={{ id: 'm', kind: 'video' }}
+        frameStore={frameStore} fps={30} playing={false} localUri={uri} />);
+    await act(async () => render('file://broken'));
+    const status = mockVideo.addListener.mock.calls.find(([name]) => name === 'statusChange')![1];
+    const unavailable = () => root.container.queryAll(n => n.children.includes('Preview unavailable'));
+    await act(async () => status({ status: 'error' }));
+    expect(unavailable()).toHaveLength(1);
+    const picture = root.container.queryAll(n => n.props.testID === 'editor-transform-picture')[0];
+    expect(StyleSheet.flatten(picture.props.style)).toMatchObject({ opacity: 0 });
+    expect(picture.queryAll(n => n.children.includes('Preview unavailable'))).toHaveLength(0);
+    await act(async () => status({ status: 'readyToPlay' })); expect(unavailable()).toHaveLength(0);
+    await act(async () => status({ status: 'error' })); expect(unavailable()).toHaveLength(1);
+    await act(async () => render('file://replacement')); expect(unavailable()).toHaveLength(0);
+    await act(async () => root.unmount());
+});
+
+
+test('video always uses a texture surface', async () => {
+    const root = createRoot();
+    await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={clip}
+        media={{ id: 'm', kind: 'video' }} frameStore={createFrameStore()} fps={30} playing={false} localUri="file://surface" />));
+    expect(root.container.queryAll(n => n.props.testID === 'decoded-video')[0].props.surfaceType).toBe('textureView');
+    await act(async () => root.unmount());
+});
+
+
+test('a late thumbnail from the previous source is released without changing the replacement fit', async () => {
+    const root = createRoot(), frameStore = createFrameStore(), release = jest.fn();
+    let decode!: (sizes: { width: number; height: number; release: () => void }[]) => void;
+    mockVideo.generateThumbnailsAsync.mockImplementationOnce(() => new Promise(resolve => { decode = resolve; }));
+    const render = (uri: string) => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={clip}
+        media={{ id: 'm', kind: 'video' }} frameStore={frameStore} fps={30} playing={false} localUri={uri} />);
+    await act(async () => render('file://old'));
+    await act(async () => render('file://new'));
+    await act(async () => decode([{ width: 108, height: 192, release }]));
+    expect(root.container.queryAll(n => n.props.testID === 'decoded-video')[0].props.contentFit).toBe('cover');
+    expect(release).toHaveBeenCalledTimes(1);
     await act(async () => root.unmount());
 });

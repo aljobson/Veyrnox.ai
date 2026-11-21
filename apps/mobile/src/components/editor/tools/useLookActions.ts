@@ -26,11 +26,15 @@ export function useLookActions({ timeline, selection, applyTimeline, setProblem,
         colour: (key: edit.ColourKey, value: number) => commit(edit.colourSet(timeline, id, key, value, offset())),
         hsl: (channel: string, key: edit.HslKey, value: number) => commit(edit.hslSet(timeline, id, channel, key, value, offset())),
         curve: (channel: string, points: Parameters<typeof edit.curveSet>[3]) => commit(edit.curveSet(timeline, id, channel, points, offset())),
-        resetColour: () => { const c = timeline.video.find(c => c.id === id); return c && documentIdentity(edit.lookValues(c, offset()).colour) === documentIdentity(colourDefaults())
-            ? false : commit(edit.colourReset(timeline, id, offset())); },
+        resetColour: () => { const c = timeline.video.find(c => c.id === id), neutral = documentIdentity(colourDefaults());
+            return c && documentIdentity(edit.lookValues(c, offset()).colour) === neutral
+                && documentIdentity(edit.lookValues({ ...c, parameterKeyframes: [] }, 0).colour) === neutral
+                ? false : commit(edit.colourReset(timeline, id, offset())); },
         filter: (key: edit.FilterKey, value: number) => commit(edit.filterSet(timeline, id, key, value, offset())),
-        resetFilter: () => { const c = timeline.video.find(c => c.id === id); return c && documentIdentity(edit.lookValues(c, offset()).filter) === documentIdentity(FILTER_DEFAULTS)
-            ? false : commit(edit.filterReset(timeline, id, offset())); },
+        resetFilter: () => { const c = timeline.video.find(c => c.id === id), neutral = documentIdentity(FILTER_DEFAULTS);
+            return c && documentIdentity(edit.lookValues(c, offset()).filter) === neutral
+                && documentIdentity(edit.lookValues({ ...c, parameterKeyframes: [] }, 0).filter) === neutral
+                ? false : commit(edit.filterReset(timeline, id, offset())); },
         effect: (type: string) => commit(edit.effectSet(timeline, id, type, timeline.video.find(c => c.id === id)?.effect?.intensity ?? .5)),
         intensity: (value: number) => commit(edit.effectIntensity(timeline, id, value)),
         blend: (value: string) => commit(edit.blendSet(timeline, id, value)),

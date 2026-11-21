@@ -43,7 +43,7 @@ export function EditorMotionHandle({ timeline, selection, actions }: MotionHandl
     const labels = { left: t('editorMotion.left'), right: t('editorMotion.right'), up: t('editorMotion.up'), down: t('editorMotion.down') };
     return <View testID="editor-motion-layout" pointerEvents="box-none" style={StyleSheet.absoluteFill}
         onLayout={event => { const { width, height } = event.nativeEvent.layout; setSize({ width, height }); }}>
-        <View {...responder.panHandlers} accessibilityRole="adjustable" accessibilityLabel={rawText(t('editorMotion.position'))}
+        <View {...responder.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel={rawText(t('editorMotion.position'))}
             accessibilityValue={{ text: rawText(t('editorMotion.positionValue', { x: formatNumber(position.x * 100, 0), y: formatNumber(position.y * 100, 0) })) }}
             accessibilityActions={(['left', 'right', 'up', 'down'] as const).map(name => ({ name, label: rawText(labels[name]) }))}
             onAccessibilityAction={event => {

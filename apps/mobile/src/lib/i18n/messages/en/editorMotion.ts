@@ -29,6 +29,7 @@ export default {
     'editorMotion.delete': 'Delete point {n}',
     'editorMotion.clear': 'Clear motion path',
     'editorMotion.easing': 'Easing',
+    'editorMotion.pointEasing': 'Easing, point {n}',
     'editorMotion.linear': 'Linear',
     'editorMotion.ease-in': 'Ease in',
     'editorMotion.ease-out': 'Ease out',

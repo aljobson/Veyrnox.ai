@@ -31,7 +31,11 @@ export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing,
         if (size && size.width > 0 && size.height > 0) setDimensions(current => current.key === key && current.width === size.width && current.height === size.height
             ? current : { key, width: size.width, height: size.height });
     }, [key]);
-    const fittedMedia = dimensions.key === key ? { ...media, width: dimensions.width, height: dimensions.height } : media;
+    // Video catalog/track sizes may be unrotated. Only a decoded thumbnail establishes display dimensions.
+    const fittedMedia = dimensions.key === key ? { ...media, width: dimensions.width, height: dimensions.height }
+        : media.kind === 'video' ? { ...media, width: 0, height: 0 } : media;
+    const [videoFailure, setVideoFailure] = useState('');
+    const onFailure = useCallback((failed: boolean) => setVideoFailure(failed ? key : ''), [key]);
     const remoteMedia = useMemo<Media>(() => ({ id: media.id, kind: media.kind, assetSource: sourceProjectId && sourceAssetId ? { projectId: sourceProjectId, assetId: sourceAssetId } : undefined
         }), [media.id, media.kind, sourceAssetId, sourceProjectId]);
     const localSource: EditorMediaSource | null = localUri && localKind ? { uri: localUri, kind: localKind } : null;
@@ -60,17 +64,19 @@ export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing,
                 alt={media.name || t('editor.imagePreviewAlt')} source={{ uri:
         source.uri }} onLoad={event => onDimensions(event.source)} contentFit="contain" style={StyleSheet.absoluteFill} /></EditorTransformLayer>;
     }
-    return <EditorTransformLayer clip={clip} media={fittedMedia} frameStore={frameStore}>
-        <EditorVideo source={source} clip={clip} frameStore={frameStore} fps={fps} playing={playing} label={media.name || t('editor.video')} onDimensions={onDimensions} />
-    </EditorTransformLayer>;
+    return <><EditorTransformLayer clip={clip} media={fittedMedia} frameStore={frameStore}>
+        <EditorVideo key={key} source={source} clip={clip} frameStore={frameStore} fps={fps} playing={playing} label={media.name || t('editor.video')}
+            contentFit={dimensions.key === key ? 'contain' : clip.fit ?? 'contain'} onDimensions={onDimensions} onFailure={onFailure} />
+    </EditorTransformLayer>
+        {videoFailure === key ? <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}>
+            <Text style={styles.problem}>{t('editor.previewunavailable')}</Text></View> : null}</>;
 }
 
-function EditorVideo({ source, clip, frameStore, fps, playing, label, onDimensions }: {
+function EditorVideo({ source, clip, frameStore, fps, playing, label, contentFit, onDimensions, onFailure }: {
     source: EditorMediaSource; clip: Clip; frameStore: FrameStore; fps: number; playing: boolean; label: string;
-    onDimensions(size?: { width: number; height: number }): void;
+    contentFit: 'contain' | 'cover'; onDimensions(size?: { width: number; height: number }): void; onFailure(failed: boolean): void;
 }) {
     const frame = useEditorFrame(frameStore);
-    const [failed, setFailed] = useState(false);
     const player = useVideoPlayer(source.uri, (next) => {
         next.loop = false;
         next.keepScreenOnWhilePlaying = true;
@@ -78,24 +84,33 @@ function EditorVideo({ source, clip, frameStore, fps, playing, label, onDimensio
     });
 
     useEffect(() => {
-        onDimensions(player.videoTrack?.size ?? player.availableVideoTracks?.[0]?.size);
-        const loaded = player.addListener('sourceLoad', event => onDimensions(event.availableVideoTracks[0]?.size));
-        const changed = player.addListener('videoTrackChange', event => onDimensions(event.videoTrack?.size));
-        return () => { loaded.remove(); changed.remove(); };
+        let active = true, requested = false;
+        const decodeDimensions = async () => {
+            if (requested) return;
+            requested = true;
+            try {
+                const thumbnails = await player.generateThumbnailsAsync(0, { maxWidth: 384, maxHeight: 384 });
+                try { if (active) onDimensions(thumbnails[0]); }
+                finally { thumbnails.forEach(thumbnail => thumbnail.release()); }
+            } catch { /* Keep native fit when a display size cannot be decoded. */ }
+        };
+        const loaded = player.addListener('sourceLoad', () => { void decodeDimensions(); });
+        if (player.status === 'readyToPlay') void decodeDimensions();
+        return () => { active = false; loaded.remove(); };
     }, [player, onDimensions]);
     useEffect(() => {
-        const subscription = player.addListener('statusChange', ({ status }) => setFailed(status === 'error'));
+        onFailure(player.status === 'error');
+        const subscription = player.addListener('statusChange', ({ status }) => onFailure(status === 'error'));
         return () => subscription.remove();
-    }, [player]);
+    }, [player, onFailure]);
 
     useEffect(() => {
         const wanted = editorSourceTimeSeconds(clip, frame, fps);
         syncPlayer(player, clip, wanted, playing, fps, editorPlaybackRate(clip, frame), editorClipGain(clip, frame));
     }, [clip, fps, frame, player, playing]);
 
-    if (failed) return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text></View>;
-    return <VideoView accessibilityLabel={rawText(t('editor.preview2', { value1: label }))} player={player} contentFit="contain" nativeControls={false}
-        style={StyleSheet.absoluteFill} />;
+    return <VideoView accessibilityLabel={rawText(t('editor.preview2', { value1: label }))} player={player} contentFit={contentFit} nativeControls={false}
+        surfaceType="textureView" style={StyleSheet.absoluteFill} />;
 }
 
 function syncPlayer(player: VideoPlayer, clip: Clip, wanted: number, playing: boolean, fps: number, rate: number, gain: number) {

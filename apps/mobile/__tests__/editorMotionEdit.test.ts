@@ -129,3 +129,42 @@ test('clearing absent motion and picture keys leaves the document unchanged', ()
     const tl = fixture();
     expect(edit.motionKeysClear(tl, sel)).toEqual({ timeline: tl }); expect(edit.parameterKeysClear(tl, sel)).toEqual({ timeline: tl });
 });
+
+
+test('transform before the clip uses the web clamped expression without upserting at the clamped frame', () => {
+    const tl = fixture(), c = tl.video[0], frame = 5;
+    c.keyframes = [{ frame: -10, x: 0, y: 0, scale: 1, rotation: 0, opacity: .2, easing: 'linear' },
+        { frame: 10, x: 1, y: 1, scale: 2, rotation: 90, opacity: 1, easing: 'linear' }];
+    const web = evaluatedTransform(c, Math.max(0, frame - c.start), false);
+    expect(web).not.toEqual(evaluatedTransform(c, frame - c.start, false));
+    same(tl, edit.transformEdit(tl, sel, frame, 'x', .7), { transform: { ...web, x: .7 } });
+    expect(edit.transformEdit(tl, sel, frame, 'x', web.x)).toEqual({ timeline: tl });
+});
+test.each(['transform', 'mask'] as const)('%s edit refuses a new key at capacity but permits replacement and outside writes', kind => {
+    const tl = fixture(), c = tl.video[0]; c.mask = 'circle';
+    c.keyframes = Array.from({ length: 40 }, (_, frame) => ({ frame, x: .5, y: .5, scale: 1, rotation: 0, opacity: 1, easing: 'linear' }));
+    c.maskKeyframes = Array.from({ length: 40 }, (_, frame) => maskKeyframe(c, frame));
+    const original = JSON.stringify(tl), field = kind === 'transform' ? 'keyframes' : 'maskKeyframes';
+    const change = (frame: number) => kind === 'transform' ? edit.transformEdit(tl, sel, frame, 'x', .7) : edit.maskEdit(tl, sel, frame, 'x', .7);
+    expect(change(c.start + 50)).toEqual({ refused: 'full' });
+    for (const frame of [c.start + 20, c.start - 1, c.start + c.len]) {
+        const result = change(frame);
+        expect('timeline' in result).toBe(true);
+        if ('timeline' in result) {
+            expect(validateSequence(result.timeline)).toBeNull();
+            expect(result.timeline.video[0][field]).toHaveLength(40);
+            if (frame === c.start + 20) expect(result.timeline.video[0][field]![20].x).toBe(.7);
+            else expect(result.timeline.video[0][field]).toEqual(c[field]);
+        }
+    }
+    expect('timeline' in edit.maskEdit(tl, sel, c.start + 50, 'inverted', true)).toBe(true);
+    expect(JSON.stringify(tl)).toBe(original);
+});
+
+test('a before-clip transform edit matching the negative anchor still writes the base', () => {
+    const tl = fixture(), c = tl.video[0], frame = c.start - 10;
+    c.keyframes = [{ frame: -10, x: .2, y: .5, scale: 1, rotation: 0, opacity: 1, easing: 'linear' },
+        { frame: 10, x: .8, y: .5, scale: 1, rotation: 0, opacity: 1, easing: 'linear' }];
+    const transform = { ...evaluatedTransform(c, Math.max(0, frame - c.start), false), x: .2 };
+    same(tl, edit.transformEdit(tl, sel, frame, 'x', .2), { transform });
+});

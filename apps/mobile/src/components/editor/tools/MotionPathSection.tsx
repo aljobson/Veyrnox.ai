@@ -11,10 +11,10 @@ import { useEditorFrame } from '../editorFrameStore';
 import { SegmentedChoice } from './SegmentedChoice';
 import { TransformSliders } from './TransformSection';
 import type { MotionActions } from './useMotionActions';
-export function EasingChoice({ value, onChange }: { value: string; onChange(value: string): void }) {
+export function EasingChoice({ label, value, onChange }: { label: string; value: string; onChange(value: string): void }) {
     const labels: Record<string, string> = { linear: t('editorMotion.linear'), 'ease-in': t('editorMotion.ease-in'),
         'ease-out': t('editorMotion.ease-out'), 'ease-in-out': t('editorMotion.ease-in-out') };
-    return <SegmentedChoice label={t('editorMotion.easing')} value={value} onChange={onChange}
+    return <SegmentedChoice label={label} value={value} onChange={onChange}
         options={EASINGS.map(value => ({ value, label: labels[value] }))} />;
 }
 function PointTimeStepper({ frame, fps, onChange }: { frame: number; fps: number; onChange(frame: number): void }) {
@@ -53,7 +53,7 @@ export function MotionPathSection({ clip, fps, actions, text }: { clip: Clip | T
                 <PointTimeStepper frame={key.frame} fps={fps} onChange={n => changeTime(index, n)} />
                 <Action label={t('editorMotion.move')} onPress={() => changeTime(index, actions.frameStore.get() - clip.start)} />
                 <TransformSliders value={key as unknown as Transform} onChange={(name, n) => actions.point(index, name, n)} />
-                <EasingChoice value={String(key.easing)} onChange={n => actions.point(index, 'easing', n)} />
+                <EasingChoice label={t('editorMotion.pointEasing', { n: index + 1 })} value={String(key.easing)} onChange={n => actions.point(index, 'easing', n)} />
                 <Action label={t('editorMotion.go')} disabled={key.frame < 0 || key.frame >= clip.len} onPress={() => actions.go(index)} />
                 <Action label={t('editorMotion.delete', { n: index + 1 })} onPress={() => { if (actions.remove(index)) setExpanded(null); }} />
             </> : null}
