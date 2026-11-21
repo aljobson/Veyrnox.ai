@@ -30,17 +30,19 @@ export const VIDEO_TEMPLATE_CAP = 150;
 // in this list; its theme (CARS) is still on file in videoTemplateThemes.js.
 // Hidden 2026-11-21 (owner): community-supercar-midnight-refuel. Its prompt never describes the car or the refuel, so the photo route
 // cannot produce the scene, and two paid swap tests failed (original man left in the wide shots; then the scene was lost). Link still resolves.
+// Hidden 2026-11-21 (owner, "only templates which work"): community-skyline-flamingo-prank, community-drive-thru-dialogue, community-skyline-terrace-groove,
+// community-subway-mascot-dance and community-cartoon-puppet-swap. Their short prompts depend on a source clip that image-to-video never receives. Links still resolve.
 export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
   'community-explosive-exit',
   'community-mansion-raid-swap', 'animal-pov-to-the-club',
   'car-sky-fall', 'desert-rider', 'community-pet-affection-reveal',
   'seedance-anothers-opinion',
-  'seedance-quick-change', 'community-skyline-flamingo-prank', 'community-championship-slap-duel',
+  'seedance-quick-change', 'community-championship-slap-duel',
   'community-truck-window-confrontation', 'community-street-shuffle-walk',
-  'community-drive-thru-dialogue', 'community-urban-dance-walk', 'community-skyline-terrace-groove',
+  'community-urban-dance-walk',
   'community-london-gentleman-walk', 'community-synchronized-pet-portrait', 'community-dramatic-office-outburst',
   'community-midnight-forest-run', 'community-midnight-sports-drive', 'community-boardwalk-dance-routine',
-  'community-subway-mascot-dance', 'community-cartoon-puppet-swap', 'community-modern-listing-dolly',
+  'community-modern-listing-dolly',
   'community-canyon-groove',
 ]);
 
