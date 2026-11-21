@@ -9,7 +9,7 @@ export const CREATIVE_FEATURE_EXAMPLES = Object.freeze({
   'talking-avatar': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-avatar/sample-display/Talkingavatarvideoforeducation_01.webm' },
   'ai-human-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-human-generator/example/AI-Human-Social-Influencer-Video-Example.mp4' },
   'ai-influencer-generator': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/ai-influencer-generator/preview/beauty-ai-influencer-video.mp4' },
-  'lip-sync': { kind: 'image', url: 'https://cdn.lipsync.video/lipsync/cdn/template/preview/studio/studio_19_preview.webp?x-oss-process=image/resize,l_144' },
+  'lip-sync': { kind: 'video', url: '/examples/lip-sync.mp4' },
   'avatar-dialogue': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/avatar-dialogue/H1-showcase-video.webm' },
   'talking-cartoon': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-cartoon/video-sample/Talking-Cartoon-Demo1.mp4' },
   'talking-animals': { kind: 'video', url: 'https://cdn.lipsync.video/lipsync/web/assets/talking-animals/sample-display/talkingcatvideo.webm' },

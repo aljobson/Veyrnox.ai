@@ -53,6 +53,24 @@ export function listedTemplates(presets: readonly Preset[], images: readonly Ima
     return [...presets, ...templatesWithCatalogModel(images, known).map((i) => imageAsPreset(i, models)), ...templatesWithCatalogModel(audio, known).map((a) => audioAsPreset(a, models))];
 }
 
+// Audio tiles take a whole row and the others sit two across. A full row that lands after one half tile waits until that
+// pair is complete, so the grid never leaves a hole. Everything else keeps its order.
+export function packFullRows<T>(items: readonly T[], isFullRow: (item: T) => boolean): T[] {
+    const packed: T[] = [];
+    let waiting: T[] = [];
+    let halfRow = false;
+    for (const item of items) {
+        if (isFullRow(item)) {
+            if (halfRow) waiting = [...waiting, item]; else packed.push(item);
+            continue;
+        }
+        packed.push(item);
+        halfRow = !halfRow;
+        if (!halfRow) { packed.push(...waiting); waiting = []; }
+    }
+    return [...packed, ...waiting];
+}
+
 // "All" shows each kind, not only the biggest list: one of each in turn, every kind keeping its own order.
 export function mixKinds(presets: readonly Preset[]): Preset[] {
     const lanes = new Map<string, Preset[]>();

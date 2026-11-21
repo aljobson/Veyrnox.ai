@@ -48,7 +48,7 @@ test('every workflow has an exact, attributable reference example', () => {
     if (AUDIO_NO_EXAMPLE.includes(item.slug)) { assert.equal(example, null, `${item.slug} must not hotlink competitor media`); continue; }
     assert.ok(example, `${item.slug} needs an example`);
     assert.ok(['image', 'video'].includes(example.kind));
-    assert.match(example.url, /^https:\/\/cdn\.lipsync\.video\//);
+    assert.match(example.url, /^(https:\/\/cdn\.lipsync\.video\/|\/examples\/[a-z-]+\.mp4$)/);
     assert.equal(example.sourceUrl, undefined);
     assert.equal(creativeFeatureExampleAssetPath(item.slug), example.url);
   }

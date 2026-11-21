@@ -5,11 +5,11 @@ const box = (type, payload) => {
   return bytes;
 };
 const join = (...parts) => Buffer.concat(parts);
-export function lipSyncMp4({ video = 7.2, movie = video, audio = null, duplicateVideo = false, handler = 'vide', enabled = true, edit = null, composition = false, compositionOffset = null, sampleCount = 180, duplicateHandler = false } = {}) {
+export function lipSyncMp4({ movieScale = 10000, video = 7.2, movie = video, audio = null, duplicateVideo = false, handler = 'vide', enabled = true, edit = null, composition = false, compositionOffset = null, sampleCount = 180, duplicateHandler = false } = {}) {
   const scale = 10000;
   function track(seconds, kind) {
     const tkhd = Buffer.alloc(84); tkhd[3] = enabled ? 3 : 0;
-    tkhd.writeUInt32BE(Math.round(seconds * scale), 20);
+    tkhd.writeUInt32BE(Math.ceil(seconds * movieScale - 1e-6), 20);
     if (kind !== 'soun') { tkhd.writeUInt32BE(640 * 65536, 76); tkhd.writeUInt32BE(360 * 65536, 80); }
     const mdhd = Buffer.alloc(24); mdhd.writeUInt32BE(scale, 12); mdhd.writeUInt32BE(Math.round(seconds * scale), 16);
     const hdlr = Buffer.alloc(24); hdlr.write(kind, 8);
@@ -20,13 +20,13 @@ export function lipSyncMp4({ video = 7.2, movie = video, audio = null, duplicate
     const mdia = box('mdia', join(box('mdhd', mdhd), box('hdlr', hdlr), duplicateHandler ? box('hdlr', hdlr) : Buffer.alloc(0), box('minf', box('stbl', join(box('stts', stts), box('stsz', stsz), ctts)))));
     let edts = Buffer.alloc(0);
     if (edit && kind !== 'soun') {
-      const elst = Buffer.alloc(20); elst.writeUInt32BE(1, 4); elst.writeUInt32BE(Math.round(edit.seconds * scale), 8);
+      const elst = Buffer.alloc(20); elst.writeUInt32BE(1, 4); elst.writeUInt32BE(Math.round(edit.seconds * movieScale), 8);
       elst.writeInt32BE(Math.round((edit.start || 0) * scale), 12); elst.writeUInt16BE(edit.rate ?? 1, 16);
       edts = box('edts', box('elst', elst));
     }
     return box('trak', join(box('tkhd', tkhd), edts, mdia));
   }
-  const mvhd = Buffer.alloc(100); mvhd.writeUInt32BE(scale, 12); mvhd.writeUInt32BE(Math.round(movie * scale), 16);
+  const mvhd = Buffer.alloc(100); mvhd.writeUInt32BE(movieScale, 12); mvhd.writeUInt32BE(Math.round(movie * movieScale), 16);
   const tracks = [track(video, handler)];
   if (duplicateVideo) tracks.push(track(video, 'vide'));
   if (audio !== null) tracks.push(track(audio, 'soun'));
