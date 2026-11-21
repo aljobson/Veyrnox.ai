@@ -165,7 +165,7 @@ export default function CreativeFeatureStudio({ feature }) {
           {example.kind === 'video'
             ? <video controls playsInline preload="metadata" referrerPolicy="no-referrer" src={exampleAsset} className="aspect-video w-full bg-black object-contain" aria-label={t('app.features.exampleAria', { title: copy.title })} />
             : <img loading="lazy" referrerPolicy="no-referrer" src={exampleAsset} alt={t('app.features.exampleAria', { title: copy.title })} className="max-h-[520px] w-full bg-black object-contain" />}
-          <p className="px-5 py-3 text-[11px] leading-4 text-vx-fg-faint sm:px-6">{t('app.features.exampleNote')}</p>
+          {!exampleAsset.startsWith('/') && <p className="px-5 py-3 text-[11px] leading-4 text-vx-fg-faint sm:px-6">{t('app.features.exampleNote')}</p>}
         </section>}
 
         <section className={`${card} p-5 sm:p-6`}>

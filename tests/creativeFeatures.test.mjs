@@ -45,7 +45,7 @@ test('every workflow has an exact, attributable reference example', () => {
     const example = creativeFeatureExample(item.slug);
     assert.ok(example, `${item.slug} needs an example`);
     assert.ok(['image', 'video'].includes(example.kind));
-    assert.match(example.url, /^https:\/\/cdn\.lipsync\.video\//);
+    assert.match(example.url, /^(https:\/\/cdn\.lipsync\.video\/|\/examples\/[a-z-]+\.mp4$)/);
     assert.equal(example.sourceUrl, undefined);
     assert.equal(creativeFeatureExampleAssetPath(item.slug), example.url);
   }
