@@ -154,6 +154,9 @@ test('advanced controls are capability-gated progressive disclosure and never re
     await act(async () => bpm.props.onChangeText('221'));
     expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
     expect(button(t('music.create.review')).props.accessibilityState.disabled).toBe(true);
+    await click(t('music.create.advanced.hide'));
+    expect(field(t('music.create.advanced.bpm'))).toBeUndefined();
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
     await mode('custom');
     expect(button(t('music.create.advanced.hide'))).toBeUndefined();
     expect(field(t('music.create.advanced.excludeStyles'))).toBeUndefined();

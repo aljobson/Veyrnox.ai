@@ -36,6 +36,9 @@ export function MusicAdvancedControls({ input, controls, onChange }: {
     return <View style={styles.section}>
         <Button variant="secondary" label={t(expanded ? 'music.create.advanced.hide' : 'music.create.advanced.show')}
             accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} />
+        {!expanded && invalidBpm ? <Text variant="footnote" tone="danger" accessibilityRole="alert">
+            {t('music.create.advanced.bpmInvalid', { min: MUSIC_BPM_MIN, max: MUSIC_BPM_MAX })}
+        </Text> : null}
         {expanded ? <View style={styles.controls}>
             {controls.variety ? <View style={styles.field}>
                 <Text variant="bodyStrong">{t('music.create.advanced.variety')}</Text>
