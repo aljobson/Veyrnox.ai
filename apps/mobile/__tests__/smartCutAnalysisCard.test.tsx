@@ -249,7 +249,7 @@ test('a server-rejected stored analysis becomes terminal instead of looping fore
 test('an ineligible clip is named in the blocker and cannot expose a paid confirmation', async () => {
     const long = { ...clip, label: 'Long interview', duration: 61 };
     await render([long]);
-    expect(lines()).toContain(t('app.smartCut.native.analyse.ineligibleBlocked', { names: long.label }));
+    expect(lines()).toContain(t('app.smartCut.native.analyse.ineligibleBlocked', { names: long.label, max: 60 }));
     expect(button(t('app.smartCut.native.analyse.start'))).toBeUndefined();
 });
 

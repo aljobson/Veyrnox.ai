@@ -307,9 +307,9 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
     return <Card style={styles.card}>
         <Text variant="title2" accessibilityRole="header">{t('app.smartCut.native.analyse.title')}</Text>
         <Text tone="secondary">{t('app.smartCut.native.analyse.body')}</Text>
-        <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.limits')}</Text>
+        <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.limits', { max: activeQuote.max_seconds })}</Text>
         {clips.map((clip) => ineligible.includes(clip)
-            ? <Text key={clip.jobId} tone="danger" accessibilityRole="alert">{t('app.smartCut.native.analyse.tooLong', { name: clip.label })}</Text>
+            ? <Text key={clip.jobId} tone="danger" accessibilityRole="alert">{t('app.smartCut.native.analyse.tooLong', { name: clip.label, max: activeQuote.max_seconds })}</Text>
             : <Text key={clip.jobId} variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.eligible', { name: clip.label, duration: Math.round(clip.duration * 10) / 10 })}</Text>)}
         {[...terminalMessages].map(([jobId, message]) => <Text key={jobId} variant="footnote" tone="danger" accessibilityRole="alert">{message}</Text>)}
         {ready ? <Text accessibilityLiveRegion="polite">{t('app.smartCut.native.analyse.done')}</Text> : ineligible.length > 0 || !actionable.length ? null : running ? <>
@@ -321,7 +321,7 @@ export function SmartCutAnalysisCard({ clips, analyses, onAnalysed, onBusyChange
             <Button label={t('app.smartCut.native.analyse.start')} onPress={() => void analyse()} />
         </>}
         <View style={styles.messages}>{messages.map((message, index) => <Text key={`${message}:${index}`} variant="footnote" accessibilityLiveRegion="polite">{message}</Text>)}</View>
-        {!ready && ineligible.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.ineligibleBlocked', { names: ineligible.map((clip) => clip.label).join(', ') })}</Text> : null}
+        {!ready && ineligible.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.ineligibleBlocked', { names: ineligible.map((clip) => clip.label).join(', '), max: activeQuote.max_seconds })}</Text> : null}
         {!ready && actionable.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.blocked', { names: actionable.map((clip) => clip.label).join(', ') })}</Text> : null}
         {!ready && terminal.length > 0 ? <Text variant="footnote" tone="secondary">{t('app.smartCut.native.analyse.terminalBlocked', { names: terminal.map((clip) => clip.label).join(', ') })}</Text> : null}
     </Card>;
