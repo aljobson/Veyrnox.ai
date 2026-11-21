@@ -6720,6 +6720,42 @@
     "ratio": 1.64
   },
   {
+    "id": "musicExport.review",
+    "english": "Review download",
+    "translation": "Vérifier le téléchargement",
+    "ratio": 1.73
+  },
+  {
+    "id": "musicExport.freeReview",
+    "english": "Reviewing is free and uses no downloads.",
+    "translation": "La vérification est gratuite et ne consomme aucun téléchargement.",
+    "ratio": 1.63
+  },
+  {
+    "id": "musicExport.confirm",
+    "english": "Confirm download",
+    "translation": "Confirmer le téléchargement",
+    "ratio": 1.69
+  },
+  {
+    "id": "musicExport.save",
+    "english": "Save",
+    "translation": "Enregistrer",
+    "ratio": 2.75
+  },
+  {
+    "id": "musicExport.loading",
+    "english": "Loading song…",
+    "translation": "Chargement du morceau…",
+    "ratio": 1.69
+  },
+  {
+    "id": "musicExport.reviewing",
+    "english": "Reviewing download…",
+    "translation": "Vérification du téléchargement…",
+    "ratio": 1.63
+  },
+  {
     "id": "editorLook.export",
     "english": "Phone export includes Dissolve only for now.",
     "translation": "L’export du téléphone inclut uniquement le fondu enchaîné pour le moment.",

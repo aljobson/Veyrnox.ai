@@ -4404,6 +4404,12 @@
     "ratio": 2.62
   },
   {
+    "id": "musicExport.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
     "id": "editorLook.hsl.hue",
     "english": "{channel} hue",
     "translation": "{channel}: цветовой тон",
