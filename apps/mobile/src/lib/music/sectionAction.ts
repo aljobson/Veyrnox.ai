@@ -31,7 +31,8 @@ export function sectionAction(kind: SectionActionKind, songId: string) {
         confirm: ((api, quoteId, key) => (kind === 'add_section' ? startAddSection : startReplace)(api, songId, quoteId, key)) as typeof base.confirm,
         accepted: ((api, result, input, quote) => {
             getMusicCreateSession(api).tracker.add(result, { mode: 'simple', model_id: quote.model_id,
-                prompt: String(input.parameters?.prompt ?? '').trim(), title: '', lyrics: '', styles: '', instrumental: true, duration: 30 }, kind);
+                prompt: String(input.parameters?.prompt ?? '').trim(), title: '', lyrics: '', styles: '', instrumental: true, duration: 30,
+                variety: 50, styleInfluence: 0, excludeStyles: '', bpm: '', keyScale: '', timeSignature: '' }, kind);
         }) as NonNullable<typeof base.accepted>,
     };
 }

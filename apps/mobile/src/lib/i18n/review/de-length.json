@@ -3762,6 +3762,24 @@
     "ratio": 1.83
   },
   {
+    "id": "music.create.advanced.bpm",
+    "english": "Tempo (BPM)",
+    "translation": "Geschwindigkeit (BPM)",
+    "ratio": 1.91
+  },
+  {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Tonart",
+    "ratio": 2
+  },
+  {
     "id": "music.create.locked_plan",
     "english": "This model requires a paid plan.",
     "translation": "Dieses Modell erfordert einen kostenpflichtigen Tarif.",

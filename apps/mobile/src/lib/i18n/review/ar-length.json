@@ -1962,6 +1962,12 @@
     "ratio": 2.17
   },
   {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "المقام",
+    "ratio": 2
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "الاحتفاظ بنسختي",

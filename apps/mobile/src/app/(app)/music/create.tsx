@@ -7,11 +7,12 @@ import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
 import { MusicQueue } from '../../../components/music/MusicQueue';
 import { MusicLyricsPanel } from '../../../components/music/MusicLyricsPanel';
 import { MusicNotice } from '../../../components/music/MusicNotice';
+import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
-const KNOWN = new Set(['empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
+const KNOWN = new Set(['empty_prompt', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
@@ -72,6 +73,7 @@ export default function MusicCreate() {
                         </View>
                         {model?.controls.duration_price_block_seconds === 60 ? <Text>{t('music.create.durationPriceHint')}</Text> : null}
                         {input.duration > 60 ? <Text>{t('music.create.longerGenerationHint')}</Text> : null}
+                        {input.mode === 'simple' && model ? <MusicAdvancedControls input={input} controls={model.controls} onChange={edit} /> : null}
                         {state.conflict ? <View style={s.content}>
                             <Text>{t('music.create.conflict')}</Text>
                             <Text selectable>{state.conflict.title}</Text><Text selectable>{state.conflict.lyrics}</Text><Text selectable>{state.conflict.styles}</Text>

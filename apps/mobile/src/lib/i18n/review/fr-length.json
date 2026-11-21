@@ -5688,6 +5688,18 @@
     "ratio": 2
   },
   {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "Automatique",
+    "ratio": 2.75
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Tonalité",
+    "ratio": 2.67
+  },
+  {
     "id": "music.create.useServer",
     "english": "Use server version",
     "translation": "Utiliser la version du serveur",
