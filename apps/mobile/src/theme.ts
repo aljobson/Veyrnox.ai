@@ -41,7 +41,7 @@ export type Typeface = (typeof TYPEFACES)[number];
 export type TextSize = (typeof TEXT_SIZES)[number];
 export type Scheme = 'light' | 'dark';
 export type AppearanceSettings = { theme: ThemePreference; accent: Accent; typeface: Typeface; textSize: TextSize };
-export const DEFAULT_APPEARANCE: AppearanceSettings = { theme: 'light', accent: 'mint', typeface: 'studio', textSize: 'm' };
+export const DEFAULT_APPEARANCE: AppearanceSettings = { theme: 'system', accent: 'mint', typeface: 'studio', textSize: 'm' };
 const parse = <T extends string>(value: unknown, options: readonly T[], fallback: T): T => (options.includes(value as T) ? (value as T) : fallback);
 export const parseThemePreference = (v: unknown) => parse(v, THEME_PREFERENCES, 'system');
 export const parseAccent = (v: unknown) => parse(v, ACCENTS, 'mint');
@@ -57,12 +57,9 @@ export function readAppearance(): AppearanceSettings {
         textSize: parseTextSize(read('veyrnox.textSize')),
     };
 }
-// Every cold launch starts in light mode, whatever was saved or the phone uses. The one exception is the reload that an
-// Appearance change triggers: it leaves a one-shot flag so the person's choice survives that reload.
-const KEEP_THEME_KEY = 'veyrnox.themeKeep';
-const keepThemeOnce = read(KEEP_THEME_KEY) === '1';
-if (keepThemeOnce) save(KEEP_THEME_KEY, '');
-let current: AppearanceSettings = keepThemeOnce ? readAppearance() : { ...readAppearance(), theme: 'light' };
+// SecureStore's synchronous read lets the first rendered frame use the saved device preference.
+// With no saved preference, System follows the phone from the first frame onward.
+let current: AppearanceSettings = readAppearance();
 const listeners = new Set<() => void>();
 export const subscribeAppearance = (listener: () => void) => {
     listeners.add(listener);
@@ -118,7 +115,6 @@ export async function applyAppearance(partial: Partial<AppearanceSettings>, retu
     }
     listeners.forEach((fn) => fn());
     if (reload) {
-        save(KEEP_THEME_KEY, '1');
         if (returnPath?.startsWith('/') && !(await saveThemeReturnPath(returnPath))) return;
         try {
             await require('expo').reloadAppAsync('Veyrnox appearance changed');
