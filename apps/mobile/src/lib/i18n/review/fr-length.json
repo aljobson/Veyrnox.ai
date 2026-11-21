@@ -6336,6 +6336,12 @@
     "ratio": 1.62
   },
   {
+    "id": "speech.audition.clear",
+    "english": "Clear board",
+    "translation": "Vider la sélection",
+    "ratio": 1.64
+  },
+  {
     "id": "beat.view.song",
     "english": "Song",
     "translation": "Morceau",

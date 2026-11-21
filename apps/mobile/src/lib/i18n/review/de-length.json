@@ -4344,6 +4344,12 @@
     "ratio": 3.22
   },
   {
+    "id": "speech.audition.addOne",
+    "english": "Add one more voice",
+    "translation": "Eine weitere Stimme hinzufügen",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.view.song",
     "english": "Song",
     "translation": "Songansicht",
