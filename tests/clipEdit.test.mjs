@@ -470,3 +470,31 @@ test('the dear captions step is not submitted twice when its first submit is unc
     assert.equal((await w.deliver()).refunded, true);
     assert.equal(attempts, 1);
 });
+
+// A whole successful Smart Cut: two clips with timed speech -> the speech-aware plan -> the exact clip-edit request
+// the sheet sends (one entry per kept section, same source more than once) -> every step to a stored result.
+test('a successful two-video Smart Cut: plan, validate, trim every section, merge in order, add sound, store once', async () => {
+    const { buildSpeechAwareCutPlan } = await import('../app/veyrnox/_lib/smartCutAnalysis.js');
+    const analysis = (id, duration) => ({ version: 1, assetId: id, duration, provider: 'fal-scribe-v2', transcript: 'hello world', language: 'en',
+        chunks: [{ start: 0.5, end: 1, text: 'hello' }, { start: 3, end: 4, text: 'world' }] });
+    const sources = [{ uid: 'a#0', job_id: 'ja', duration: 10, name: 'A' }, { uid: 'b#1', job_id: 'jb', duration: 8, name: 'B' }];
+    const plan = buildSpeechAwareCutPlan({ clips: sources, analyses: new Map([['ja', analysis('ja', 10)], ['jb', analysis('jb', 8)]]) });
+    assert.deepEqual(plan.segments.map((s) => s.takeId), ['a#0', 'a#0', 'b#1', 'b#1']);
+    const keyOf = { 'a#0': 'keyA', 'b#1': 'keyB' }, lengthOf = { 'a#0': 10, 'b#1': 8 };
+    const request = plan.segments.map((s) => ({ key: keyOf[s.takeId], in_s: s.start, out_s: s.end, duration_s: lengthOf[s.takeId], aspect: '0.56' }));
+    const edit = validateEdit({ clips: request, audio: { key: 'm', offset_s: 0 } });
+    assert.equal(edit.ok, true);
+    assert.equal(edit.output_s, plan.totalDuration);
+    assert.deepEqual(planEdit(edit).map((p) => p.step), ['trim', 'trim', 'trim', 'trim', 'merge', 'audio']);
+
+    const w = world(edit);
+    assert.deepEqual(await start({ jobId: JOB, edit }, w.deps), { ok: true });
+    for (let i = 0; i < 4; i += 1) await w.deliver();            // four trims, one at a time
+    assert.equal((await w.deliver()).advanced, 'audio');          // merge done
+    const merge = w.calls.submits.find((c) => c.endpoint.includes('merge-videos'));
+    assert.deepEqual(merge.inputs.video_urls, [0, 1, 2, 3].map((i) => `https://r2.example/edits/${JOB}/trim-${i}.mp4`));
+    assert.equal((await w.deliver()).stored, true);               // audio done -> parent stored
+    assert.equal(w.job.state, 'STORED');
+    assert.equal(w.calls.refunds, 0);
+    assert.equal(w.steps.every((s) => s.state === 'STORED'), true);
+});
