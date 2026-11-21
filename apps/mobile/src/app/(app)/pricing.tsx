@@ -4,8 +4,9 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { CatalogList, kindTitleKey } from '../../components/CatalogList';
 import { PlanCards } from '../../components/credits/PlanCards';
 import { PlanCatalogNotice } from '../../components/credits/PlanCatalogNotice';
+import { PurchaseState } from '../../components/credits/PurchaseState';
 import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
-import { Chip, Text, themedStyles, useThemedStyles } from '../../components/ui';
+import { Button, Chip, Text, themedStyles, useThemedStyles } from '../../components/ui';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { webParityPacks, toDisplayPackages } from '../../lib/billing';
@@ -22,9 +23,15 @@ export default function Pricing() {
     const { catalog, status: catalogStatus, retry: retryCatalog } = usePlanCatalog(api);
     const plans = useMemo(() => toDisplayPackages(billing.offerings?.all.generation?.availablePackages ?? []).filter(p => p.generationPlan), [billing.offerings]);
     const packs = useMemo(() => webParityPacks(toDisplayPackages(billing.offerings?.all.credits?.availablePackages ?? [])), [billing.offerings]);
+    const offersUnavailable = billing.status === 'unavailable' || (billing.status === 'ready' && plans.length === 0 && packs.length === 0);
+    const retryOffers = () => { billing.retryOfferings(); void billing.refreshSales(); };
     return <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Stack.Screen options={{ title: t('prc.title') }} />
         <Text variant="body" tone="secondary">{t('prc.intro')}</Text>
+        {billing.status === 'loading' ? <PurchaseState kind="loading" text={t('common.loading')} /> : null}
+        {offersUnavailable ? <PurchaseState kind="unavailable" text={`${t('credits.subscriptions.unavailable')} ${t('credits.unavailable')}`}>
+            <Button variant="secondary" label={t('credits.hardPaywall.retry')} onPress={retryOffers} />
+        </PurchaseState> : null}
         {billing.status === 'ready' && plans.length > 0 ? <View style={styles.section}>
             <Text variant="title2" accessibilityRole="header">{t('creditsPage.subscriptions')}</Text>
             <PlanCatalogNotice status={catalogStatus} onRetry={retryCatalog} />

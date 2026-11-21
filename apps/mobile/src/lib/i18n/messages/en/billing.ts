@@ -10,6 +10,7 @@ export default {
     'billing.paywall.seePacks': 'See credit packs',
     'billing.paywall.seePublish': 'See Publish plans',
     'billing.paywall.notReady': 'Purchases are not ready yet. Try again in a moment.',
+    'billing.paywall.unavailableBuild': 'Purchases are not available in this app version.',
     'billing.paywall.busy': 'Another purchase is in progress. Wait for it to finish.',
     'billing.paywall.salesClosed': 'Purchases are not open yet.',
     'billing.paywall.alreadyActive': 'You already have an AI Generation plan.',

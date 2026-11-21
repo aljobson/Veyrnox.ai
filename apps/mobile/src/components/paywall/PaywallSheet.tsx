@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
@@ -8,13 +9,17 @@ import { LEGAL_LINKS } from '../../lib/account';
 import { webParityPacks, parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../../lib/billing';
 import { bestPackId, packSavingPercent, planName, typicalCosts } from '../../lib/creditOffers';
 import { fetchCatalog } from '../../lib/media';
-import { t } from '../../lib/i18n';
+import { formatLocale, t } from '../../lib/i18n';
+import { readSubscription } from '../../lib/creditSubscription';
 import type { PaywallReason } from '../../lib/paywallPrompt';
+import { ds } from '../../theme';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 import { VeyCharacter } from '../VeyCharacter';
 import { VeyCardPeek } from '../VeyCardPeek';
 import { PackCard, PackTaxNote } from '../credits/PackCard';
 import { PlanCards, initialCadence, type Cadence } from '../credits/PlanCards';
+import { PurchaseState } from '../credits/PurchaseState';
+import { PurchaseOutcomeState } from '../credits/PurchaseOutcomeState';
 import { usePaywallFeedback } from './PaywallFeedback';
 
 export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
@@ -47,9 +52,12 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     const packs = useMemo(() => webParityPacks(toDisplayPackages(packPackages)), [packPackages]);
     const plans = useMemo(() => toDisplayPackages(planPackages).filter(plan => plan.generationPlan !== null && plan.interval !== null), [planPackages]);
     const subscriptionsOpen = billing.status === 'ready' && plans.length > 0;
-    const showToggle = subscriptionsOpen && !billing.paidAccess;
+    const showToggle = subscriptionsOpen && !billing.generationActive;
     const showingPlans = showToggle && (mode === 'plans' || packs.length === 0);
     const hasProducts = billing.status === 'ready' && (packs.length > 0 || showToggle);
+    const subscriberOnly = billing.status === 'ready' && billing.generationActive && packs.length === 0;
+    const storeEmpty = billing.status === 'ready' && packPackages.length === 0 && planPackages.length === 0;
+    const canRetryStore = !subscriberOnly && (billing.status === 'unavailable' || storeEmpty);
     const cadence = cadenceChoice ?? initialCadence(plans);
     const chosenPack = packs.find(pack => pack.id === chosenId) ?? packs.find(pack => pack.id === bestPackId(packs)) ?? packs[0];
     const chosenPlan = plans.find(plan => plan.id === chosenPlanId && plan.interval === cadence)
@@ -62,6 +70,9 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
         low: { title: t('credits.paywall.lowTitle'), body: t('credits.paywall.lowBody') },
         depleted: { title: t('credits.paywall.emptyTitle'), body: t('credits.paywall.emptyBody') },
     }[reason];
+    const unavailableCopy = billing.status === 'off' ? t('billing.paywall.unavailableBuild')
+        : billing.canRestore ? t('credits.hardPaywall.unavailable')
+        : `${t('credits.subscriptions.unavailable')} ${t('credits.unavailable')}`;
     const primaryLabel = showingPlans ? t('credits.paywall.buyPlan', { plan: planName(chosenPlan?.generationPlan ?? ''),
         price: chosenPlan?.priceString ?? '', period: t(chosenPlan?.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') })
         : t('credits.paywall.buyPack', { credits: chosenPack?.credits ?? 0, price: chosenPack?.priceString ?? '' });
@@ -84,6 +95,10 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
         const phase = getPurchaseSnapshot().phase;
         if (phase !== 'idle' && phase !== 'done') return;
         action(); feedback.choose();
+    }
+    function retryStore() {
+        billing.retryOfferings();
+        void billing.refreshSales();
     }
     return <Modal transparent visible animationType={feedback.still ? 'none' : 'fade'} onRequestClose={onClose}>
         <View style={s.backdrop} onAccessibilityEscape={onClose}>
@@ -115,8 +130,14 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
                             </PackCard>)}
                             <Text variant="caption" tone="tertiary">{t('credits.paywall.packsNeverExpire')}</Text>
                         </>}
-                    </> : null}
-                    {feedback.message ? <Text tone={outcome?.kind === 'error' ? 'danger' : 'secondary'}>{feedback.message}</Text> : null}
+                    </> : subscriberOnly ? <View style={s.subscriber}>
+                        <Text variant="bodyStrong">{t('credits.subscriptions.active')}</Text>
+                        <SubscriberPeriod />
+                    </View> : <PurchaseState kind={billing.status === 'loading' ? 'loading' : 'unavailable'} text={billing.status === 'loading' ? t('common.loading') : unavailableCopy}>
+                        {canRetryStore ? <Button variant="secondary" label={t('credits.hardPaywall.retry')} disabled={purchase.busy} onPress={retryStore} /> : null}
+                    </PurchaseState>}
+                    <PurchaseOutcomeState outcome={outcome} />
+                    {purchase.busy && purchase.operation.kind === 'restore' ? <PurchaseState kind="restoring" text={t('projectDocument.restoring')} /> : null}
                 </ScrollView>
                 <View style={s.footer}>
                     {hasProducts ? <>
@@ -125,20 +146,38 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
                     </> : null}
                     <ScrollView style={{ maxHeight: height * 0.3 }} contentContainerStyle={s.actions}>
                         <Button variant="secondary" label={t('credits.paywall.allOptions')} disabled={nativeBusy} onPress={onOptions} />
+                        {subscriberOnly && billing.managementURL ? <Button variant="tertiary" accessibilityRole="link" label={t('credits.manage')}
+                            disabled={nativeBusy} onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} /> : null}
                         <Button variant="tertiary" label={t('credits.paywall.later')} accessibilityState={{ busy: nativeBusy }} disabled={nativeBusy} onPress={onClose} />
-                        {hasProducts ? <>
-                            <View style={s.legal}>
-                                {LEGAL_LINKS.slice(0, 2).map((item, index) => <Button key={item.route} variant="tertiary" accessibilityRole="link"
-                                    label={t(item.labelKey)} disabled={nativeBusy} onPress={() => onLegal(index)} />)}
-                                <Button variant="tertiary" label={t('credits.restore')} disabled={purchase.busy || !billing.canRestore} onPress={() => start({ kind: 'restore' })} />
-                            </View>
-                            <PackTaxNote />
-                        </> : null}
+                        <View style={s.legal}>
+                            {LEGAL_LINKS.slice(0, 2).map((item, index) => <Button key={item.route} variant="tertiary" accessibilityRole="link"
+                                label={t(item.labelKey)} disabled={nativeBusy} onPress={() => onLegal(index)} />)}
+                            {billing.canRestore ? <Button variant="tertiary" label={t('credits.restore')} loading={purchase.busy && purchase.operation.kind === 'restore'} disabled={purchase.busy} onPress={() => start({ kind: 'restore' })} /> : null}
+                        </View>
+                        {hasProducts ? <PackTaxNote /> : null}
                     </ScrollView>
                 </View>
             </View>
         </View>
     </Modal>;
+}
+
+function SubscriberPeriod() {
+    const { api, beginSessionTask } = useAuth();
+    const [periodEnd, setPeriodEnd] = useState<string | null>(null);
+    useEffect(() => {
+        let live = true;
+        const task = beginSessionTask();
+        void readSubscription(api).then(row => {
+            if (live && task.current()) setPeriodEnd(row?.current_period_end ?? null);
+        }).catch(() => { if (live && task.current()) setPeriodEnd(null); });
+        return () => { live = false; };
+    }, [api, beginSessionTask]);
+    if (!periodEnd) return null;
+    const label = t('creditsPage.periodEnd', {
+        date: new Date(periodEnd).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
+    });
+    return <Text variant="footnote" tone="secondary">{label}</Text>;
 }
 const sheets = themedStyles(p => ({
     backdrop: { flex: 1, justifyContent: 'center', padding: 16, backgroundColor: p.scrim },
@@ -147,5 +186,6 @@ const sheets = themedStyles(p => ({
     footer: { padding: 12, gap: 4, borderTopWidth: 1, borderColor: p.borderSubtle },
     toggle: { flexDirection: 'row', gap: 8 }, tab: { flex: 1 },
     actions: { gap: 4 },
+    subscriber: { gap: ds.space.xs, padding: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated2 },
     legal: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
 }));

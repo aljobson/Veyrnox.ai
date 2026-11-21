@@ -264,3 +264,49 @@ Post-fix proof before round 2: web/server contract tests 43/43, focused mobile t
 6. `F6` low: canonical mobile replay may resend earlier steps. The proposed global coalescing optimisation was rejected after host review because a shared result promise could cross account boundaries. The existing owner/session-fenced serial replay remains correct and replay-safe; request-count optimisation is deferred to a separately designed per-owner queue.
 
 The configured two-round inspection budget is exhausted. The accepted post-inspection corrections are therefore not labelled independently approved. Host verification on the final correction snapshot: focused mobile tests 55/55, web/server contract tests 45/45, mobile TypeScript, migration numbering and `git diff --check` all pass. A read-only mobile UX agent independently identified the consent-policy detour and authoritative-versus-visual completion distinction before those final tests; a schema archaeology agent independently confirmed migration-time materialisation as the safest legacy-account boundary.
+
+## Wave 2D paywall polish inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `55232de3-4b8d-4e6f-aa3e-3e8fa7257d4a`
+- Base: `666ceace1fc20fad7efbf063a675948ccec6d5a8`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `7423c7a50ff9ce0f1ee9d64c28887a91c049f2dc667811c66e8507daad2bb806`
+- Inspected diff SHA-256: `7983d84b1db810efdb85838b7acebc90945bfda5a620fe818d9667bb90a3ce3a`
+- Runner result: `/private/tmp/claudex-mobile-parity-paywall-inspect-r1/claudex-heetpn8z/result.json`
+
+### Findings and host dispositions
+
+1. `F1` medium: billing-off builds showed a retry action that could never change the state. Accepted; billing-off now has localized, build-specific unavailable copy with no retry, while failed and genuinely empty stores retain retry.
+2. `F2` medium: an existing subscriber with no eligible packs was shown acquisition-failure copy. Accepted; the sheet now renders active-plan status and the provider management link instead.
+3. `F3` low: loading/restoring purchase states did not announce on initial mount. Accepted; waiting states now explicitly announce on mount and the full-screen paywall regression covers loading.
+4. `F4` low: Credits could mount two alert states at once and offered no matching retry. Accepted; Credits now renders one combined store loading/unavailable state and retries offerings plus the sales gate.
+5. `F5` low: Recommended and selected plan cards used almost identical accent treatment. Accepted; recommendation is carried by the chip only, while accent border/elevated surface are reserved for selection.
+6. `F6` low: Spanish and French low-credit copy introduced gendered adjectives. Accepted; both use neutral constructions.
+7. `F7` low: this slice did not yet satisfy the plan's full cross-surface purchase-state-machine requirement. Accepted as a scope warning, not as permission to narrow the approved plan. This fix round removes the duplicate Credits “See plans/packs” path and centralises custom purchase outcome rendering, but RevenueCat dashboard-state unification remains open; Wave 2D must not be called complete until that follow-up is implemented and inspected.
+
+Post-fix host proof before round 2: five focused suites / 91 tests passed, mobile TypeScript passed, both `sync-web-i18n.mjs --check` and `gen-en-registry.mjs --check` passed, and `git diff --check` passed.
+
+## Wave 2D paywall polish inspection round 2
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `5f45141c-6bd6-4931-927f-4bf4e23328a0`
+- Base: `666ceace1fc20fad7efbf063a675948ccec6d5a8`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `0ce9d94d4bd31cc42f0dcf4146d7b6b0639e1a711198410919fecc23ead48c14`
+- Inspected diff SHA-256: `9e024f3f88973451c316481f1cc70168bbac4a66a9ec345e955b49b44d005039`
+- Runner result: `/private/tmp/claudex-mobile-parity-paywall-inspect-r2/claudex-v0a9lbsz/result.json`
+
+### Findings and host dispositions
+
+1. `R1` medium: terminal full-screen paywall states inferred `loading` from the absence of Retry and showed a permanent spinner; malformed offering links also used build-disabled copy. Accepted; the terminal kind is explicit, build-disabled state has no spinner/busy semantics, and invalid offering links redirect to Credits.
+2. `R2` medium: `paidAccess` conflated Publish-only and Generation subscribers. Accepted; Generation acquisition is suppressed only by `generationActive`, Publish-only access still sees Generation plans, and the subscriber state is gated by Generation entitlement.
+3. `R3` low: Credits rendered `notOpen` beside a stronger unavailable explanation. Accepted; the notice is limited to a ready store with sales closed.
+4. `R4` medium: polite purchase outcomes mounted without a VoiceOver announcement on iOS while PaywallSheet errors could announce twice. Accepted; the shared outcome component owns one explicit announcement policy for every result, and the paywall feedback hook no longer duplicates it.
+5. `R5` low: ordinary values and prices consumed accent/warning semantic colours. Accepted; unselected values and prices use primary/secondary ink, recommendation chips are neutral, and accent remains on the selected border/check and primary action.
+6. `R6` low: an active Generation subscriber with an empty store saw plan-unavailable acquisition copy. Accepted; that state now reports only pack availability beside the existing plan status.
+7. `R7` low: a healthy subscriber status was rendered as an alert and omitted the period end. Accepted within available data; it is now a neutral status card and displays the server subscription period end when present, beside the provider management action. A RevenueCat-only entitlement may still lack a server period date; the broader dashboard-state unification remains open under the original Wave 2D requirement.
+
+The configured two-round paywall inspection budget is exhausted. The corrections after this verdict are therefore not labelled independently approved. Host verification on the final corrected snapshot: five focused suites / 96 tests passed; mobile TypeScript passed; changed-file ESLint produced zero errors and the same 18 warnings as the base snapshot; `sync-web-i18n.mjs --check`, `gen-en-registry.mjs --check` and `git diff --check` passed. One mistaken root-level test invocation was stopped and is not counted as evidence. Wave 2D remains open for the full RevenueCat/custom state-machine unification and simulator accessibility/visual qualification.
+
+The first full Mobile CI run found two stale source-contract assertions after all targeted product tests had passed: the no-web-breakout allow-list did not yet enumerate the new store-management system flow, and `paywallUi` still required the rejected `paidAccess` conflation. The contracts now require the explicit management exception and `generationActive` entitlement boundary. Their focused rerun passed 2 suites / 8 tests; changed-test ESLint produced zero errors and the same two legacy `require()` warnings as the base file.

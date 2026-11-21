@@ -21,7 +21,7 @@ describe('paywall UI wiring', () => {
         expect(prompt).toContain("pathname?.startsWith('/credits')");
         expect(prompt).toContain('depletedKey(owner)');
         expect(prompt).toContain('SecureStore.deleteItemAsync(depletedKey(owner))');
-        expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('subscriptionsOpen && !billing.paidAccess');
+        expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('subscriptionsOpen && !billing.generationActive');
         expect(prompt).toContain("pathname?.startsWith('/legal/')");
     });
 

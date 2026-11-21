@@ -1,6 +1,6 @@
 import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RevenueCatUI from 'react-native-purchases-ui';
 import type { PurchasesPackage } from 'react-native-purchases';
@@ -13,12 +13,12 @@ import { VeyCharacter } from '../../components/VeyCharacter';
 import { touchTarget } from '../../lib/a11y';
 import { playSuccess } from '../../lib/haptics';
 import { Button, Text, themedStyles, useThemedStyles } from '../../components/ui';
-import { useAnnouncement } from '../../lib/useAnnouncement';
 import { getCacheUser } from '../../lib/appCache';
 import { publishBalance } from '../../lib/balanceEvents';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { hasRetiredGenerationPackages } from '../../lib/billing';
+import { PurchaseState } from '../../components/credits/PurchaseState';
 
 // The RevenueCat dashboard paywall for one offering (ADR-0108 amendment 4). Off unless the build sets
 // EXPO_PUBLIC_RC_PAYWALLS_ENABLED; the Credits and Publish screens stay the fallback.
@@ -65,9 +65,10 @@ export default function Paywall() {
     }, [api, close, finish, offeringId]);
 
     const retry = useCallback(() => { billing.retryOfferings(); void billing.refreshSales(); }, [billing]);
-    if (!paywallsEnabled() || !offeringId) return <Unavailable text={t('billing.paywall.notReady')} onRetry={retry} onClose={close} />;
-    if (billing.status === 'loading') return <Unavailable text={t('common.loading')} onClose={close} />;
-    if (!offering || !billing.canPurchase) return <Unavailable text={t(billing.salesOpen ? 'billing.paywall.notReady' : 'billing.paywall.salesClosed')} onRetry={retry} onClose={close} />;
+    if (!paywallsEnabled()) return <Unavailable kind="unavailable" text={t('billing.paywall.unavailableBuild')} onClose={close} />;
+    if (!offeringId) return <Redirect href="/credits" />;
+    if (billing.status === 'loading') return <Unavailable kind="loading" text={t('common.loading')} onClose={close} />;
+    if (!offering || !billing.canPurchase) return <Unavailable kind="unavailable" text={t(billing.salesOpen ? 'billing.paywall.notReady' : 'billing.paywall.salesClosed')} onRetry={retry} onClose={close} />;
     // The custom Credits screen filters retired packages even when the dashboard offering is stale.
     if (hasRetiredGenerationPackages(offering.availablePackages)) return <Redirect href="/credits" />;
     return (
@@ -99,17 +100,17 @@ export default function Paywall() {
 }
 
 // A dead end is never acceptable: the person can always retry the store load or leave.
-function Unavailable({ text, onRetry, onClose }: { text: string; onRetry?: () => void; onClose(): void }) {
-    useAnnouncement(text, { onMount: true });
+function Unavailable({ kind, text, onRetry, onClose }: { kind: 'loading' | 'unavailable'; text: string; onRetry?: () => void; onClose(): void }) {
+    const themed = useThemedStyles(sheets);
     return (
-        <View style={styles.center}>
+        <View style={[styles.center, themed.page]}>
             <Stack.Screen options={{ title: t('billing.paywall.title'), presentation: 'modal' }} />
-            {onRetry ? null : <ActivityIndicator />}
-            <Text variant="body" tone="secondary" accessibilityRole="alert">{text}</Text>
-            <View style={styles.actions}>
-                {onRetry ? <Button variant="primary" label={t('recovery.retry')} onPress={onRetry} /> : null}
-                <Button variant="secondary" label={t('common.close')} onPress={onClose} />
-            </View>
+            <PurchaseState kind={kind} text={text}>
+                <View style={styles.actions}>
+                    {onRetry ? <Button variant="primary" label={t('recovery.retry')} onPress={onRetry} /> : null}
+                    <Button variant="secondary" label={t('common.close')} onPress={onClose} />
+                </View>
+            </PurchaseState>
         </View>
     );
 }
@@ -117,7 +118,7 @@ function Unavailable({ text, onRetry, onClose }: { text: string; onRetry?: () =>
 const styles = StyleSheet.create({
     screen: { flex: 1 },
     close: { alignSelf: 'flex-start', alignItems: 'center' },
-    actions: { marginTop: ds.space.xl, gap: ds.space.md, alignSelf: 'stretch' },
+    actions: { gap: ds.space.md, alignSelf: 'stretch' },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: ds.space.xxl },
 });
 const sheets = themedStyles(p => ({
