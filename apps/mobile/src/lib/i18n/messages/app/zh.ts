@@ -6123,6 +6123,8 @@ export default {
   "billing.paywall.busy": "另一笔购买正在进行，请等待其完成。",
   "billing.paywall.salesClosed": "购买尚未开放。",
   "billing.paywall.alreadyActive": "你已拥有 AI 生成方案。",
+  "billing.paywall.manageStore": "管理商店订阅",
+  "billing.paywall.manageWeb": "管理网页订阅",
   "billing.paywall.vey.hello.generation": "选个方案吧，我每个月都会送来新积分。",
   "billing.paywall.vey.hello.credits": "积分不多了？选个积分包吧，这些积分永不过期。",
   "billing.paywall.vey.hello.publish": "准备好到处发布了吗？选择付款方式吧。",

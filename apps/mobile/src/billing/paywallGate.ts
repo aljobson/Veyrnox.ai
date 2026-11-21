@@ -16,28 +16,23 @@ export function parsePaywallOffering(value: unknown): PaywallOffering | null {
 export interface PaywallGateDeps {
     readonly canPurchase: boolean;
     readonly generationActive: boolean;
-    acquireLock(): (() => void) | null;
     refreshSales(): Promise<boolean>;
     refreshGenerationAccess(): Promise<boolean>;
 }
 
-// On 'ok' the returned release must be called when the purchase ends, whatever the outcome.
-export async function checkPaywallPurchase(pkg: PurchasesPackage, deps: PaywallGateDeps): Promise<{ result: PaywallGateResult; release: () => void }> {
-    const none = () => undefined;
-    if (isRetiredGenerationProduct(pkg.product.identifier)) return { result: 'not_ready', release: none };
-    if (!deps.canPurchase) return { result: 'not_ready', release: none };
-    const release = deps.acquireLock();
-    if (!release) return { result: 'busy', release: none };
+// The shared purchase store owns locking. This preflight only performs fresh server checks before
+// RevenueCat is allowed to resume the native purchase.
+export async function checkPaywallPurchase(pkg: PurchasesPackage, deps: PaywallGateDeps): Promise<PaywallGateResult> {
+    if (isRetiredGenerationProduct(pkg.product.identifier)) return 'not_ready';
+    if (!deps.canPurchase) return 'not_ready';
     try {
-        if (!(await deps.refreshSales())) { release(); return { result: 'sales_closed', release: none }; }
+        if (!(await deps.refreshSales())) return 'sales_closed';
         if (generationPlanFor(pkg.product.identifier) !== null && (deps.generationActive || await deps.refreshGenerationAccess())) {
-            release();
-            return { result: 'generation_already_active', release: none };
+            return 'generation_already_active';
         }
-        return { result: 'ok', release };
+        return 'ok';
     } catch {
         // An unresolved web plan or sales read fails closed.
-        release();
-        return { result: 'not_ready', release: none };
+        return 'not_ready';
     }
 }

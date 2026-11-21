@@ -6533,6 +6533,8 @@ export default {
   "billing.paywall.busy": "هناك عملية شراء أخرى قيد التنفيذ. انتظر حتى تنتهي.",
   "billing.paywall.salesClosed": "عمليات الشراء غير متاحة بعد.",
   "billing.paywall.alreadyActive": "لديك بالفعل خطة توليد بالذكاء الاصطناعي.",
+  "billing.paywall.manageStore": "إدارة اشتراك المتجر",
+  "billing.paywall.manageWeb": "إدارة اشتراك الويب",
   "billing.paywall.vey.hello.generation": "اختر خطة وسأحضر لك رصيدًا جديدًا كل شهر.",
   "billing.paywall.vey.hello.credits": "رصيدك قليل؟ اختر باقة. هذا الرصيد لا تنتهي صلاحيته.",
   "billing.paywall.vey.hello.publish": "مستعد للنشر في كل مكان؟ اختر طريقة الدفع.",

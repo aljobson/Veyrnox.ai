@@ -310,3 +310,47 @@ Post-fix host proof before round 2: five focused suites / 91 tests passed, mobil
 The configured two-round paywall inspection budget is exhausted. The corrections after this verdict are therefore not labelled independently approved. Host verification on the final corrected snapshot: five focused suites / 96 tests passed; mobile TypeScript passed; changed-file ESLint produced zero errors and the same 18 warnings as the base snapshot; `sync-web-i18n.mjs --check`, `gen-en-registry.mjs --check` and `git diff --check` passed. One mistaken root-level test invocation was stopped and is not counted as evidence. Wave 2D remains open for the full RevenueCat/custom state-machine unification and simulator accessibility/visual qualification.
 
 The first full Mobile CI run found two stale source-contract assertions after all targeted product tests had passed: the no-web-breakout allow-list did not yet enumerate the new store-management system flow, and `paywallUi` still required the rejected `paidAccess` conflation. The contracts now require the explicit management exception and `generationActive` entitlement boundary. Their focused rerun passed 2 suites / 8 tests; changed-test ESLint produced zero errors and the same two legacy `require()` warnings as the base file.
+
+## Wave 2D unified purchase state inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `acb94328-ee90-4493-a234-2290eb2c5599`
+- Base: `353801c3d8fbdb9ee65264e591b9f36f7ff4e04f`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `3b790f23c481d699c307f1cd229f77e420fa1e90ed8efd791550dbd67a9d889b`
+- Inspected diff SHA-256: `50c7277ec463a3c02f9c829ce8abe429f981168406269e5c1ae0dac3fd2134d0`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave2d-billing-inspect-r1/claudex-vy_8nyv0/result.json`
+
+### Findings and host dispositions
+
+1. `F1` high: external operations could remain in `store` on RevenueCat product-ID mismatch, unmount or a rejected `CustomerInfo`; Android base-plan IDs made the mismatch predictable. Accepted; product IDs are normalized, mismatch becomes a non-success outcome, preparation is bounded, and unmount handling distinguishes preparation, StoreKit and server confirmation.
+2. `F2` medium: Close was disabled throughout every busy phase. Accepted; only the native StoreKit phase blocks dismissal, while preparation can abort and server reconciliation continues globally.
+3. `F3` medium: unresolved access could display a permanent spinner with no recovery. Accepted; access failure is a retryable unavailable state backed by a unified server-access refresh.
+4. `F4` medium: active subscribers lacked provider-correct management and renewal information. Accepted; the provider now exposes store/web/both/complimentary source and period end for Generation and Publish, with store links limited to store-backed access and web routes remaining in-app.
+5. `F5` medium: the quiet `All options` route had been removed. Accepted; the tertiary route to Credits is restored.
+6. `F6` low: a RevenueCat restore that could not acquire the app lock could lose successful returned access. Accepted; returned `CustomerInfo` and restored/nothing-to-restore feedback are still applied even when the shared restore operation cannot be tracked.
+7. `F7` low: internal and RevenueCat purchase paths duplicated guard and reconciliation logic. Accepted; both now use the same operation core, identity fence, lock and 40-second pack webhook reconciliation.
+
+Post-fix proof before round 2: nine focused suites / 132 tests passed, mobile TypeScript passed, changed-file ESLint had zero errors, both locale-generator checks passed, and `git diff --check` passed.
+
+## Wave 2D unified purchase state inspection round 2
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `27065787-985e-4427-913c-fcc0f27cf41c`
+- Base: `353801c3d8fbdb9ee65264e591b9f36f7ff4e04f`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `34924413499ed0ce8f9ae0c772151aeb1f9ff17aa50cd17f0feb72951decbde2`
+- Inspected diff SHA-256: `6b90b4435e54e2c5ece87a490a8ac0c706cd6ff07eecbe31a0c93022f3ed185e`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave2d-billing-inspect-r2/claudex-08am_fek/result.json`
+
+### Findings and host dispositions
+
+1. `F1` medium: Credits hid management from a store-Publish-only subscriber. Accepted; management is shown when either Generation or Publish has store/both source, with an explicit source-contract regression.
+2. `F2` medium: a two-minute callback timeout released the lock while StoreKit could still be open and skipped late pack confirmation. Accepted; StoreKit remains locked until RevenueCat delivers a callback or the screen unmounts, and a slow-callback regression proves no second purchase can start before the matching completion.
+3. `F3` low: rejected `CustomerInfo` skipped valid pack reconciliation and misreported successful restore. Accepted; packs always reconcile against server balance, while restore reports returned access and refreshes access if local application was fenced.
+4. `F4` low: failed external preparation left Vey in a checking state. Accepted; the failure event is rendered and StoreKit is not resumed.
+5. `F5` low: Publish resolution was coupled to the Generation read and Retry could not recover the rendered state. Accepted; Publish has an independent server-resolution bit combined with the resolved store read, and a Generation-failure/Publish-success provider regression passes.
+6. `F6` low: the two management labels were English-only. Accepted; both labels are present in all ten complete app locale catalogues and complete-locale parity passes.
+7. `F7` low: the tested action policy was not driving the three purchase surfaces. Accepted; buy, restore, manage and close decisions now use the shared discriminated policy in Credits, the contextual sheet and the RevenueCat screen.
+
+The configured two-round inspection budget is exhausted, so these final accepted corrections are not labelled independently approved. Host proof on the final correction snapshot: 11 focused suites / 322 tests passed, including complete-locale parity, slow StoreKit completion, Publish-only management, rejected-CustomerInfo pack confirmation and independent Publish access; mobile TypeScript passed; locale generators and `git diff --check` passed. Changed-file ESLint had zero errors and only the same legacy warnings recorded for the touched files. Simulator accessibility and visual qualification remains the final Wave 2D gate.

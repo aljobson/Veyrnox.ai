@@ -14,8 +14,9 @@ describe('paywall UI wiring', () => {
         expect(layout).toContain('<HardPaywallGate>');
         expect(eas).not.toMatch(/EXPO_PUBLIC_HARD_PAYWALL_ENABLED"\s*:\s*"true"/);
         expect(prompt).toContain('hardPaywallEnabled()');
-        expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('onRequestClose={onClose}');
+        expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('onRequestClose={close}');
         expect(prompt).toContain("if (operation.phase === 'store') return false");
+        expect(source('src/components/paywall/PaywallSheet.tsx')).toContain('variant="tertiary" label={t(\'credits.paywall.allOptions\')}');
         expect(prompt).toContain("router.push('/credits')");
         expect(prompt).toContain("pathname === '/welcome'");
         expect(prompt).toContain("pathname?.startsWith('/credits')");
@@ -41,7 +42,9 @@ describe('paywall UI wiring', () => {
         expect(source('src/billing/storePurchaseStore.ts')).toContain('deps.billing.restore()');
         expect(credits).toContain('!billing.generationPurchaseReady');
         expect(credits).toContain('billing.refreshGenerationAccess()');
-        expect(source('src/billing/storePurchaseStore.ts')).toContain('minimumIncrease: expectedCredits, deadlineMs: Date.now() + 40_000');
+        expect(source('src/billing/storePurchaseStore.ts')).toContain('minimumIncrease: pack.expectedCredits, deadlineMs: Date.now() + 40_000');
+        expect(credits).toContain('[billing.generationSource, billing.publishSource]');
+        expect(credits).toContain('purchase.actions.manage');
         expect(credits).toContain('LEGAL_LINKS.slice(0, 2)');
     });
 

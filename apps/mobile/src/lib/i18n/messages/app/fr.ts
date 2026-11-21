@@ -6290,6 +6290,8 @@ export default {
   "billing.paywall.busy": "Un autre achat est en cours. Attends qu’il se termine.",
   "billing.paywall.salesClosed": "Les achats ne sont pas encore ouverts.",
   "billing.paywall.alreadyActive": "Tu as déjà un forfait Génération IA.",
+  "billing.paywall.manageStore": "Gérer l’abonnement via la boutique",
+  "billing.paywall.manageWeb": "Gérer l’abonnement web",
   "billing.paywall.vey.hello.generation": "Choisis un forfait et je t’apporte des crédits neufs chaque mois.",
   "billing.paywall.vey.hello.credits": "Presque à sec ? Choisis un pack. Ces crédits n’expirent jamais.",
   "billing.paywall.vey.hello.publish": "Prêt à publier partout ? Choisis comment payer.",

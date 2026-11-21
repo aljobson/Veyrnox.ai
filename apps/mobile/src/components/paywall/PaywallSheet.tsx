@@ -10,7 +10,6 @@ import { webParityPacks, parseGenerationCatalog, renewalTerms, toDisplayPackages
 import { bestPackId, packSavingPercent, planName, typicalCosts } from '../../lib/creditOffers';
 import { fetchCatalog } from '../../lib/media';
 import { formatLocale, t } from '../../lib/i18n';
-import { readSubscription } from '../../lib/creditSubscription';
 import type { PaywallReason } from '../../lib/paywallPrompt';
 import { ds } from '../../theme';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
@@ -29,24 +28,25 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     const { height } = useWindowDimensions();
     const { api } = useAuth();
     const billing = useBilling();
-    const purchase = useStorePurchase();
+    const { refreshSales } = billing;
+    const { abortPreparing, actions, busy, operation, start: startPurchase, viewState } = useStorePurchase();
     const [observedOpId, setObservedOpId] = useState<number | null>(null);
     const observed = useRef<number | null>(null);
-    const outcome = purchase.operation.opId === observedOpId ? purchase.operation.outcome : null;
-    const feedback = usePaywallFeedback(reason, outcome, purchase.busy, onClose);
+    const outcome = operation.opId === observedOpId ? operation.outcome : null;
+    const feedback = usePaywallFeedback(reason, outcome, busy, onClose);
     const [mode, setMode] = useState<'packs' | 'plans'>('packs');
     const [chosenId, setChosenId] = useState<string | null>(null);
     const [chosenPlanId, setChosenPlanId] = useState<string | null>(null);
     const [cadenceChoice, setCadence] = useState<Cadence | null>(null);
     const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
     const [costs, setCosts] = useState<ReturnType<typeof typicalCosts> | null>(null);
-    useEffect(() => { void billing.refreshSales(); }, [billing.refreshSales]);
+    useEffect(() => { void refreshSales(); }, [refreshSales]);
     useEffect(() => {
         let live = true;
         void api.request<unknown>('/api/credit-subscription-plans').then(value => { if (live) setCatalog(parseGenerationCatalog(value)); }).catch(() => {});
         void fetchCatalog().then(models => { if (live) setCosts(typicalCosts(models)); }).catch(() => {});
-        return () => { live = false; if (observed.current !== null) purchase.abortPreparing(observed.current); };
-    }, [api, purchase.abortPreparing]);
+        return () => { live = false; if (observed.current !== null) abortPreparing(observed.current); };
+    }, [api, abortPreparing]);
     const packPackages = useMemo(() => (billing.offerings?.all.credits?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const planPackages = useMemo(() => (billing.offerings?.all.generation?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const packs = useMemo(() => webParityPacks(toDisplayPackages(packPackages)), [packPackages]);
@@ -62,9 +62,14 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     const chosenPack = packs.find(pack => pack.id === chosenId) ?? packs.find(pack => pack.id === bestPackId(packs)) ?? packs[0];
     const chosenPlan = plans.find(plan => plan.id === chosenPlanId && plan.interval === cadence)
         ?? (cadenceChoice === null ? plans.find(plan => plan.generationPlan === 'starter' && plan.interval === cadence) ?? plans.find(plan => plan.interval === cadence) : null);
-    const nativeBusy = purchase.operation.phase === 'store';
+    const nativeBusy = viewState.tag === 'store';
+    const storeSubscription = billing.generationSource === 'store' || billing.generationSource === 'both';
+    const webSubscription = billing.generationSource === 'web' || billing.generationSource === 'both';
+    const subscriptionPeriod = billing.generationPeriodEnd ? t('creditsPage.periodEnd', {
+        date: new Date(billing.generationPeriodEnd).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
+    }) : null;
     const selected = showingPlans ? chosenPlan : chosenPack;
-    const canBuy = billing.canPurchase && (!showingPlans || billing.generationPurchaseReady) && !!selected && !purchase.busy;
+    const canBuy = actions.buy && billing.canPurchase && (!showingPlans || billing.generationPurchaseReady) && !!selected && !busy;
     const copy = {
         first: { title: t('credits.paywall.firstTitle'), body: t('credits.paywall.firstBody') },
         low: { title: t('credits.paywall.lowTitle'), body: t('credits.paywall.lowBody') },
@@ -77,7 +82,7 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
         price: chosenPlan?.priceString ?? '', period: t(chosenPlan?.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') })
         : t('credits.paywall.buyPack', { credits: chosenPack?.credits ?? 0, price: chosenPack?.priceString ?? '' });
     function start(request: PurchaseRequest) {
-        const started = purchase.start(request);
+        const started = startPurchase(request);
         if (typeof started === 'string') return;
         observed.current = started.opId; setObservedOpId(started.opId);
     }
@@ -100,8 +105,9 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
         billing.retryOfferings();
         void billing.refreshSales();
     }
-    return <Modal transparent visible animationType={feedback.still ? 'none' : 'fade'} onRequestClose={onClose}>
-        <View style={s.backdrop} onAccessibilityEscape={onClose}>
+    const close = () => { if (actions.close) onClose(); };
+    return <Modal transparent visible animationType={feedback.still ? 'none' : 'fade'} onRequestClose={close}>
+        <View style={s.backdrop} onAccessibilityEscape={close}>
             <View style={s.card} accessibilityViewIsModal>
                 <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
                     <View style={s.vey} pointerEvents={nativeBusy ? 'none' : 'auto'} accessibilityElementsHidden={nativeBusy} importantForAccessibility={nativeBusy ? 'no-hide-descendants' : 'auto'}>
@@ -109,35 +115,36 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
                     </View>
                     <Text variant="title1" accessibilityRole="header">{copy.title}</Text>
                     {!(showingPlans && reason === 'depleted') ? <Text tone="secondary">{copy.body}</Text> : null}
+                    {billing.generationActive ? <View style={s.subscriber}>
+                        <Text variant="bodyStrong">{t('credits.subscriptions.active')}</Text>
+                        {subscriptionPeriod ? <Text variant="footnote" tone="secondary">{subscriptionPeriod}</Text> : null}
+                    </View> : null}
                     {hasProducts ? <>
                         {showToggle ? <View style={s.toggle} accessibilityRole="tablist">
                             {(['packs', 'plans'] as const).map(value => <Button key={value} variant={showingPlans === (value === 'plans') ? 'primary' : 'secondary'}
-                                accessibilityRole="tab" accessibilityState={{ selected: showingPlans === (value === 'plans'), disabled: purchase.busy }}
-                                disabled={purchase.busy} containerStyle={s.tab} label={t(value === 'packs' ? 'credits.paywall.packTab' : 'credits.paywall.planTab')}
+                                accessibilityRole="tab" accessibilityState={{ selected: showingPlans === (value === 'plans'), disabled: busy }}
+                                disabled={busy} containerStyle={s.tab} label={t(value === 'packs' ? 'credits.paywall.packTab' : 'credits.paywall.planTab')}
                                 onPress={() => choose(() => setMode(value))} />)}
                         </View> : null}
                         {showingPlans ? <>
                             <PlanCards plans={plans} packs={packs} credits={new Map(catalog.map(plan => [plan.id, plan.credits]))}
-                                cadence={cadence} chosenId={chosenPlan?.id} disabled={purchase.busy}
+                                cadence={cadence} chosenId={chosenPlan?.id} disabled={busy}
                                 onCadence={next => choose(() => { setCadence(next); setChosenPlanId(null); })}
                                 onChoose={id => choose(() => setChosenPlanId(id))} />
                             {chosenPlan?.interval ? <Text variant="caption" tone="tertiary" accessibilityLanguage="en">{renewalTerms(chosenPlan.interval, chosenPlan.priceString, Platform.OS === 'ios' ? 'ios' : 'android')}</Text> : null}
                         </> : <>
                             {packs.map(pack => <PackCard key={pack.id} compact selectionMode="radio" selected={pack.id === chosenPack?.id}
                                 pack={pack} best={pack.id === bestPackId(packs)} saving={packSavingPercent(pack, packs)} costs={costs}
-                                disabled={purchase.busy} onPress={() => choose(() => setChosenId(pack.id))}>
+                                disabled={busy} onPress={() => choose(() => setChosenId(pack.id))}>
                                 {pack.id === chosenPack?.id ? <VeyCardPeek /> : null}
                             </PackCard>)}
                             <Text variant="caption" tone="tertiary">{t('credits.paywall.packsNeverExpire')}</Text>
                         </>}
-                    </> : subscriberOnly ? <View style={s.subscriber}>
-                        <Text variant="bodyStrong">{t('credits.subscriptions.active')}</Text>
-                        <SubscriberPeriod />
-                    </View> : <PurchaseState kind={billing.status === 'loading' ? 'loading' : 'unavailable'} text={billing.status === 'loading' ? t('common.loading') : unavailableCopy}>
-                        {canRetryStore ? <Button variant="secondary" label={t('credits.hardPaywall.retry')} disabled={purchase.busy} onPress={retryStore} /> : null}
+                    </> : subscriberOnly ? null : <PurchaseState kind={billing.status === 'loading' ? 'loading' : 'unavailable'} text={billing.status === 'loading' ? t('common.loading') : unavailableCopy}>
+                        {canRetryStore ? <Button variant="secondary" label={t('credits.hardPaywall.retry')} disabled={busy} onPress={retryStore} /> : null}
                     </PurchaseState>}
                     <PurchaseOutcomeState outcome={outcome} />
-                    {purchase.busy && purchase.operation.kind === 'restore' ? <PurchaseState kind="restoring" text={t('projectDocument.restoring')} /> : null}
+                    {busy && operation.kind === 'restore' ? <PurchaseState kind="restoring" text={t('projectDocument.restoring')} /> : null}
                 </ScrollView>
                 <View style={s.footer}>
                     {hasProducts ? <>
@@ -145,14 +152,15 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
                         <Button label={primaryLabel} disabled={!canBuy} onPress={buy} />
                     </> : null}
                     <ScrollView style={{ maxHeight: height * 0.3 }} contentContainerStyle={s.actions}>
-                        <Button variant="secondary" label={t('credits.paywall.allOptions')} disabled={nativeBusy} onPress={onOptions} />
-                        {subscriberOnly && billing.managementURL ? <Button variant="tertiary" accessibilityRole="link" label={t('credits.manage')}
-                            disabled={nativeBusy} onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} /> : null}
-                        <Button variant="tertiary" label={t('credits.paywall.later')} accessibilityState={{ busy: nativeBusy }} disabled={nativeBusy} onPress={onClose} />
+                        <Button variant="tertiary" label={t('credits.paywall.allOptions')} disabled={!actions.manage} onPress={onOptions} />
+                        {storeSubscription && billing.managementURL ? <Button variant="tertiary" accessibilityRole="link" label={t('billing.paywall.manageStore')}
+                            disabled={!actions.manage} onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} /> : null}
+                        {webSubscription ? <Button variant="tertiary" label={t('billing.paywall.manageWeb')} disabled={!actions.manage} onPress={onOptions} /> : null}
+                        <Button variant="tertiary" label={t('credits.paywall.later')} accessibilityState={{ busy: !actions.close }} disabled={!actions.close} onPress={close} />
                         <View style={s.legal}>
                             {LEGAL_LINKS.slice(0, 2).map((item, index) => <Button key={item.route} variant="tertiary" accessibilityRole="link"
-                                label={t(item.labelKey)} disabled={nativeBusy} onPress={() => onLegal(index)} />)}
-                            {billing.canRestore ? <Button variant="tertiary" label={t('credits.restore')} loading={purchase.busy && purchase.operation.kind === 'restore'} disabled={purchase.busy} onPress={() => start({ kind: 'restore' })} /> : null}
+                                label={t(item.labelKey)} disabled={!actions.manage} onPress={() => onLegal(index)} />)}
+                            {billing.canRestore ? <Button variant="tertiary" label={t('credits.restore')} loading={busy && operation.kind === 'restore'} disabled={!actions.restore || busy} onPress={() => start({ kind: 'restore' })} /> : null}
                         </View>
                         {hasProducts ? <PackTaxNote /> : null}
                     </ScrollView>
@@ -160,24 +168,6 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
             </View>
         </View>
     </Modal>;
-}
-
-function SubscriberPeriod() {
-    const { api, beginSessionTask } = useAuth();
-    const [periodEnd, setPeriodEnd] = useState<string | null>(null);
-    useEffect(() => {
-        let live = true;
-        const task = beginSessionTask();
-        void readSubscription(api).then(row => {
-            if (live && task.current()) setPeriodEnd(row?.current_period_end ?? null);
-        }).catch(() => { if (live && task.current()) setPeriodEnd(null); });
-        return () => { live = false; };
-    }, [api, beginSessionTask]);
-    if (!periodEnd) return null;
-    const label = t('creditsPage.periodEnd', {
-        date: new Date(periodEnd).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
-    });
-    return <Text variant="footnote" tone="secondary">{label}</Text>;
 }
 const sheets = themedStyles(p => ({
     backdrop: { flex: 1, justifyContent: 'center', padding: 16, backgroundColor: p.scrim },

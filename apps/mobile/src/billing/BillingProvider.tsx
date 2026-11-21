@@ -17,6 +17,7 @@ const API_KEY = revenueCatKey(__DEV__, APP_ENV, process.env.EXPO_PUBLIC_REVENUEC
 
 export type BillingStatus = 'off' | 'loading' | 'ready' | 'unavailable';
 export type PurchaseResult = 'purchased' | 'cancelled' | 'pending';
+export type BillingSource = 'store' | 'web' | 'both' | 'complimentary' | null;
 
 interface BillingValue {
     readonly status: BillingStatus;
@@ -28,8 +29,13 @@ interface BillingValue {
     readonly salesOpen: boolean;
     refreshSales(): Promise<boolean>;
     readonly publishActive: boolean;
+    readonly publishAccessResolved: boolean;
+    readonly publishSource: BillingSource;
+    readonly publishPeriodEnd: string | null;
     readonly generationActive: boolean;
     readonly generationAccessResolved: boolean;
+    readonly generationSource: BillingSource;
+    readonly generationPeriodEnd: string | null;
     // Generation subscriptions fail closed until the server has conclusively ruled out an
     // existing web plan. Credit-pack purchases use canPurchase and remain independent.
     readonly generationPurchaseReady: boolean;
@@ -42,15 +48,20 @@ interface BillingValue {
     purchase(pkg: PurchasesPackage): Promise<PurchaseResult>;
     purchaseStayOffer(pkg: PurchasesPackage): Promise<PurchaseResult>;
     restore(): Promise<boolean>;
+    applyCustomerInfo(info: CustomerInfo): boolean;
     refreshGenerationAccess(): Promise<boolean>;
+    refreshAccess(): Promise<boolean>;
     // Re-runs the store offerings load after it failed (the paywall's Retry).
     retryOfferings(): void;
 }
 
 const BillingContext = createContext<BillingValue>({
-    status: 'off', offerings: null, canPurchase: false, canRestore: false, salesOpen: false, refreshSales: async () => false, publishActive: false, generationActive: false, generationAccessResolved: false, generationPurchaseReady: false,
+    status: 'off', offerings: null, canPurchase: false, canRestore: false, salesOpen: false, refreshSales: async () => false,
+    publishActive: false, publishAccessResolved: false, publishSource: null, publishPeriodEnd: null,
+    generationActive: false, generationAccessResolved: false, generationSource: null, generationPeriodEnd: null, generationPurchaseReady: false,
     paidAccess: false, accessResolved: false, activeProductIds: [], managementURL: null, debug: null,
-    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => false, refreshGenerationAccess: async () => false, retryOfferings: () => undefined,
+    purchase: async () => 'cancelled', purchaseStayOffer: async () => 'cancelled', restore: async () => false, applyCustomerInfo: () => false,
+    refreshGenerationAccess: async () => false, refreshAccess: async () => false, retryOfferings: () => undefined,
 });
 
 export const useBilling = () => useContext(BillingContext);
@@ -59,10 +70,23 @@ const isPublishActive = (info: CustomerInfo) => Boolean(info.entitlements.active
 const isGenerationActive = (info: CustomerInfo) => Boolean(info.entitlements.active.generation);
 
 const emptyStore = (gen: number) => ({ gen, canRestore: false, publishActive: false, generationActive: false,
+    publishPeriodEnd: null as string | null, generationPeriodEnd: null as string | null,
     productIds: [] as readonly string[], managementURL: null as string | null, resolved: false });
-const emptyServer = (gen: number) => ({ gen, resolved: false, publishActive: false, generationActive: false, generationResolved: false });
+const emptyServer = (gen: number) => ({ gen, resolved: false, publishResolved: false, publishActive: false, publishSource: null as 'stripe' | 'store' | 'complimentary' | null,
+    publishPeriodEnd: null as string | null, generationActive: false, generationPeriodEnd: null as string | null, generationResolved: false });
 const storeInfo = (gen: number, info: CustomerInfo) => ({ gen, canRestore: true, publishActive: isPublishActive(info),
-    generationActive: isGenerationActive(info), productIds: info.activeSubscriptions, managementURL: info.managementURL, resolved: true });
+    generationActive: isGenerationActive(info), publishPeriodEnd: info.entitlements.active.publish?.expirationDate ?? null,
+    generationPeriodEnd: info.entitlements.active.generation?.expirationDate ?? null,
+    productIds: info.activeSubscriptions, managementURL: info.managementURL, resolved: true });
+
+const sourceOf = (storeActive: boolean, serverActive: boolean, serverSource?: 'stripe' | 'store' | 'complimentary' | null): BillingSource => {
+    const store = storeActive || (serverActive && serverSource === 'store');
+    const web = serverActive && serverSource !== 'store' && serverSource !== 'complimentary';
+    if (store && web) return 'both';
+    if (store) return 'store';
+    if (web) return 'web';
+    return serverActive && serverSource === 'complimentary' ? 'complimentary' : null;
+};
 
 export function BillingProvider({ children }: { children: ReactNode }) {
     const { status: authStatus, api, generation, beginSessionTask } = useAuth();
@@ -74,9 +98,11 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     const [server, setServer] = useState(() => emptyServer(-1));
     const currentStore = store.gen === generation ? store : emptyStore(generation);
     const currentServer = server.gen === generation ? server : emptyServer(generation);
-    const { canRestore: storeReady, publishActive, generationActive, productIds: activeProductIds, managementURL, resolved: accessResolved } = currentStore;
+    const { canRestore: storeReady, publishActive, generationActive, publishPeriodEnd: storePublishPeriodEnd,
+        generationPeriodEnd: storeGenerationPeriodEnd, productIds: activeProductIds, managementURL, resolved: storeAccessResolved } = currentStore;
     const { publishActive: serverPublishActive, generationActive: serverGenerationActive,
-        generationResolved: serverGenerationResolved, resolved: serverAccessResolved } = currentServer;
+        publishSource: serverPublishSource, publishPeriodEnd: serverPublishPeriodEnd, generationPeriodEnd: serverGenerationPeriodEnd,
+        generationResolved: serverGenerationResolved, publishResolved: serverPublishResolved, resolved: serverAccessResolved } = currentServer;
     const [debug, setDebug] = useState<string | null>(null);
     const configured = useRef(false);
     const loggedIn = useRef(false);
@@ -130,21 +156,57 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         const owner = getCacheUser();
         if (!owner) throw new Error('generation_access_unresolved');
         try {
-            const response = await api.request<{ subscription?: { status?: unknown } | null }>('/api/v1/subscriptions', {}, { task });
+            const response = await api.request<{ subscription?: { status?: unknown; current_period_end?: unknown } | null }>('/api/v1/subscriptions', {}, { task });
             if (!task.current()) return false;
             if (owner !== getCacheUser()) throw new Error('generation_access_unresolved');
             const subscriptionStatus = response?.subscription?.status;
             const active = subscriptionStatus === 'active' || subscriptionStatus === 'past_due';
-            setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), generationActive: active, generationResolved: true }));
+            const periodEnd = typeof response?.subscription?.current_period_end === 'string' ? response.subscription.current_period_end : null;
+            setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), generationActive: active,
+                generationPeriodEnd: periodEnd, generationResolved: true }));
             return active;
         } catch (error) {
             if (!task.current() || isAccountChanged(error)) return false;
             if (owner === getCacheUser()) {
-                setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), generationActive: false, generationResolved: false }));
+                setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), generationActive: false,
+                    generationPeriodEnd: null, generationResolved: false }));
             }
             throw error;
         }
     }, [api, beginSessionTask]);
+
+    const refreshPublishAccess = useCallback(async (task: SessionTask = beginSessionTask()): Promise<boolean> => {
+        if (!task.current()) return false;
+        try {
+            const value = await api.request<{ entitlement?: { tier?: unknown; subscription?: {
+                source?: unknown; current_period_end?: unknown;
+            } | null } }>('/api/v1/social/plan', {}, { task });
+            if (!task.current()) return false;
+            const active = value?.entitlement?.tier === 'publish';
+            const rawSource = value?.entitlement?.subscription?.source;
+            const source = rawSource === 'stripe' || rawSource === 'store' || rawSource === 'complimentary' ? rawSource : null;
+            const rawPeriodEnd = value?.entitlement?.subscription?.current_period_end;
+            const periodEnd = typeof rawPeriodEnd === 'string' ? rawPeriodEnd : null;
+            setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), publishActive: active,
+                publishSource: source, publishPeriodEnd: periodEnd, publishResolved: true }));
+            return active;
+        } catch (error) {
+            if (!task.current() || isAccountChanged(error)) return false;
+            setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), publishActive: false,
+                publishSource: null, publishPeriodEnd: null, publishResolved: false }));
+            throw error;
+        }
+    }, [api, beginSessionTask]);
+
+    const refreshAccess = useCallback(async (task: SessionTask = beginSessionTask()): Promise<boolean> => {
+        if (authStatus !== 'signedIn' || !task.current()) return false;
+        const [generationResult, publishResult] = await Promise.allSettled([
+            refreshGenerationAccess(task), refreshPublishAccess(task),
+        ]);
+        const resolved = generationResult.status === 'fulfilled' && publishResult.status === 'fulfilled';
+        if (task.current()) setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), resolved }));
+        return resolved;
+    }, [authStatus, beginSessionTask, refreshGenerationAccess, refreshPublishAccess]);
 
     // The customer-info listener is registered once and outlives offerings reloads (Retry), so it follows the
     // provider's mount, not a single run of the effect below.
@@ -238,27 +300,12 @@ export function BillingProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const task = beginSessionTask();
         if (task.gen !== generation || !task.current()) return;
-        let cancelled = false;
-        const live = () => !cancelled && task.current();
         if (authStatus !== 'signedIn') {
             setServer(emptyServer(task.gen));
-            return () => { cancelled = true; };
+            return;
         }
-        const generationResult = refreshGenerationAccess(task).then(() => true).catch(() => false);
-        const publish = api.request<{ entitlement?: { tier?: unknown } }>('/api/v1/social/plan', {}, { task })
-            .then(value => {
-                if (live()) setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), publishActive: value?.entitlement?.tier === 'publish' }));
-                return true;
-            })
-            .catch(() => {
-                if (live()) setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), publishActive: false }));
-                return false;
-            });
-        void Promise.all([generationResult, publish]).then(([generationResolved, publishResolved]) => {
-            if (live()) setServer(previous => ({ ...(previous.gen === task.gen ? previous : emptyServer(task.gen)), resolved: generationResolved && publishResolved }));
-        });
-        return () => { cancelled = true; };
-    }, [authStatus, api, refreshGenerationAccess, generation, beginSessionTask]);
+        void refreshAccess(task);
+    }, [authStatus, refreshAccess, generation, beginSessionTask]);
 
     const purchase = useCallback(async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
         if (isRetiredGenerationProduct(pkg.product.identifier)) throw new Error('billing_not_ready');
@@ -323,15 +370,35 @@ export function BillingProvider({ children }: { children: ReactNode }) {
         return Object.keys(info.entitlements.active).length > 0 || info.activeSubscriptions.length > 0;
     }, [canRestore, beginSessionTask]);
 
+    // RevenueCat's dashboard Paywall performs StoreKit itself and returns the same trusted SDK
+    // CustomerInfo that purchasePackage/restorePurchases return. Apply it only to the bound account.
+    const applyCustomerInfo = useCallback((info: CustomerInfo) => {
+        const task = beginSessionTask();
+        if (!task.current() || bound.current?.gen !== task.gen) return false;
+        setStore(storeInfo(task.gen, info));
+        return true;
+    }, [beginSessionTask]);
+
     const publishEntitled = publishActive || serverPublishActive;
     const generationEntitled = generationActive || serverGenerationActive;
+    const publishAccessResolved = storeAccessResolved && serverPublishResolved;
+    const publishSource = sourceOf(publishActive, serverPublishActive, serverPublishSource);
+    const generationSource = sourceOf(generationActive, serverGenerationActive);
+    const publishPeriodEnd = publishSource === 'store' ? storePublishPeriodEnd : serverPublishPeriodEnd ?? storePublishPeriodEnd;
+    const generationPeriodEnd = generationSource === 'store' ? storeGenerationPeriodEnd : serverGenerationPeriodEnd ?? storeGenerationPeriodEnd;
     const generationPurchaseReady = canPurchase && serverGenerationResolved && !generationEntitled;
     const paidAccess = publishEntitled || generationEntitled;
-    const paidAccessResolved = accessResolved || serverAccessResolved;
+    const paidAccessResolved = storeAccessResolved || serverAccessResolved;
 
     const value = useMemo(
-        () => ({ status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishActive: publishEntitled, generationActive: generationEntitled, generationAccessResolved: serverGenerationResolved, generationPurchaseReady, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess, retryOfferings }),
-        [status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishEntitled, generationEntitled, serverGenerationResolved, generationPurchaseReady, paidAccess, paidAccessResolved, activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, refreshGenerationAccess, retryOfferings],
+        () => ({ status, offerings, canPurchase, canRestore, salesOpen, refreshSales,
+            publishActive: publishEntitled, publishAccessResolved, publishSource, publishPeriodEnd,
+            generationActive: generationEntitled, generationAccessResolved: serverGenerationResolved, generationSource, generationPeriodEnd,
+            generationPurchaseReady, paidAccess, accessResolved: paidAccessResolved, activeProductIds, managementURL, debug,
+            purchase, purchaseStayOffer, restore, applyCustomerInfo, refreshGenerationAccess, refreshAccess, retryOfferings }),
+        [status, offerings, canPurchase, canRestore, salesOpen, refreshSales, publishEntitled, publishAccessResolved, publishSource, publishPeriodEnd,
+            generationEntitled, serverGenerationResolved, generationSource, generationPeriodEnd, generationPurchaseReady, paidAccess, paidAccessResolved,
+            activeProductIds, managementURL, debug, purchase, purchaseStayOffer, restore, applyCustomerInfo, refreshGenerationAccess, refreshAccess, retryOfferings],
     );
     return <BillingContext.Provider value={value}>{children}</BillingContext.Provider>;
 }
