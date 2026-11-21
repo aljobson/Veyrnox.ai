@@ -1,5 +1,5 @@
 import en from '../src/lib/i18n/messages/en';
-import { CREATIVE_FEATURES, CREATIVE_FEATURE_GROUPS, creativeFeature, examplePlaysOn, featurePrompt } from '../src/lib/creativeFeatures';
+import { CREATIVE_FEATURES, CREATIVE_FEATURE_GROUPS, creativeFeature, examplePlaysOn } from '../src/lib/creativeFeatures';
 import { compatibleCreativeFeatures, creativeReuseHref, creativeReuseTargetHref, kindForMime, readCreativeReuse } from '../src/lib/creativeReuse';
 declare const require: (id: string) => any;
 declare const __dirname: string;

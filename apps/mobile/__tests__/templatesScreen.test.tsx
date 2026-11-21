@@ -32,7 +32,7 @@ jest.mock('../src/components/ui', () => ({ ...jest.requireActual('../src/compone
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
 jest.mock('expo-video', () => ({
     VideoView: jest.requireActual('react-native').View,
-    useVideoPlayer: (_url: string, setup: any) => require('react').useMemo(() => { const p = { play: jest.fn(), pause: jest.fn(), muted: false, loop: false }; setup(p); mockPlayers.push(p); return p; }, []),
+    useVideoPlayer: (_url: string, setup: any) => require('react').useMemo(() => { const p = { play: jest.fn(), pause: jest.fn(), addListener: () => ({ remove: jest.fn() }), muted: false, loop: false }; setup(p); mockPlayers.push(p); return p; }, []),
 }));
 jest.mock('react-native/Libraries/Lists/FlatList', () => ({ __esModule: true, default: (props: any) => {
     mockList = props; const React = require('react'); const { View } = require('react-native');
@@ -61,8 +61,8 @@ test('Popular is hidden on failed popular fetch and search uses the new placehol
 });
 test('only a deliberately selected preview plays, muted; selecting another pauses the first', async () => {
     await act(async () => root.render(<Templates />)); expect(mockPlayers).toHaveLength(0);
-    await click(t('cinemaBrowse.play')); expect(mockPlayers[0].muted).toBe(true); expect(mockPlayers[0].play).toHaveBeenCalledTimes(1);
-    await click(t('cinemaBrowse.play')); expect(mockPlayers[0].pause).toHaveBeenCalledTimes(1); expect(mockPlayers[1].play).toHaveBeenCalledTimes(1);
+    await click(`${t('music.play')}, Template 0`); expect(mockPlayers[0].muted).toBe(true); expect(mockPlayers[0].play).toHaveBeenCalledTimes(1);
+    await click(`${t('music.play')}, Template 1`); expect(mockPlayers[0].pause).toHaveBeenCalledTimes(1); expect(mockPlayers[1].play).toHaveBeenCalledTimes(1);
 });
 test('template page copies the edited prompt and uses it with the validated template id', async () => {
     await act(async () => root.render(<TemplatePage />));
