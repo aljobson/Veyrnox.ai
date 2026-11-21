@@ -131,7 +131,7 @@ test('the mounted gate recomputes after account changes and stays quiet on sign-
 test('a new account reaches its partial onboarding even when this device already saw welcome', async () => {
     await writeConsent('denied');
     jest.mocked(SecureStore.getItemAsync).mockImplementation(async (key: string) => key === 'veyrnox.welcome.seen.v2' ? '{"version":2,"seen":true}' : null);
-    mockRequest.mockImplementation(async (path: string) => path === '/api/v1/first-goal'
+    mockRequest.mockImplementation(async (path: string): Promise<any> => path === '/api/v1/first-goal'
         ? { goal: 'video', role: null, destination: 'youtube', version: 1, current_step: 'role', completed: false }
         : { created_at: new Date().toISOString() });
     setFirstRunUser('second-on-device');

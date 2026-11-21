@@ -56,3 +56,20 @@ Roll out in dependency order: apply 0578, deploy the additive route, then releas
 `FIRST_GOAL_SYNC_ENABLED` flag remains the emergency stop. A client/route backout is safe while the additive columns and
 RPC remain in place; do not reverse the data migration after version-1 writes exist. Old clients continue through the
 unchanged RPC signatures and response shapes throughout the rollout.
+
+Completion is never inferred from an unacknowledged client write. Web and mobile first persist an owner-stamped pending
+envelope, replay its fixed-word answers in canonical `goal`, `destination`, `role`, `recap` order with bounded requests,
+and clear pending only when the account read is authoritative. A conflict or transport failure is reconciled by GET and
+otherwise remains pending for the next launch, online event or foreground. The person can leave immediately while that
+bounded sync runs; no account switch may finish another owner's pending work.
+
+Escape on the web dismisses the flow for that owner in the current tab session only. It writes no skipped answers and a
+remount does not reopen it; another account in the same tab remains independent. A failed account read falls back to the
+ordinary signed-in shell with neutral ordering while it remains explicitly unresolved; web and mobile stop timer-driven
+launch retries after three attempts, and an online/foreground signal retries.
+Until an owner-matching account or device envelope exists, the flow remains unresolved and never borrows another user's
+global device answers.
+
+The pre-existing Home start action deliberately keeps sending the legacy `{ goal }` body. Under the migration's legacy
+classification that goal-only row is version 0 complete, so using Home does not later force the new optional destination
+or role questions. This is the only intentional shortcut; version-1 Escape and partial progress never fabricate skips.

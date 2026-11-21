@@ -1,5 +1,6 @@
 import { useRootNavigationState, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { firstRunDestination, useFirstRunUser } from '../lib/firstRunPending';
 import { useAuth } from '../auth/AuthProvider';
 import { loadFirstOnboarding } from '../lib/firstProfileStore';
@@ -20,10 +21,18 @@ export function FirstRunGate() {
             if (!task.current()) return;
             if (destination) { router.replace(destination); return; }
             const onboarding = await loadFirstOnboarding(api, task);
-            if (task.current() && onboarding && !onboarding.completed) router.replace('/first-run');
-            else if (task.current() && !onboarding) retryTimer = setTimeout(() => setRetry(value => value + 1), Math.min(15000, 2000 * (retry + 1)));
+            if (task.current() && onboarding && !onboarding.completed && !onboarding.completeRequested) router.replace('/first-run');
+            // A broken/offline account read must not leave launch in a permanent retry loop. Three bounded
+            // attempts are enough for the ordinary token-refresh window; the next foreground event tries again.
+            else if (task.current() && !onboarding && retry < 3) retryTimer = setTimeout(() => setRetry(value => value + 1), Math.min(15000, 2000 * (retry + 1)));
         });
         return () => clearTimeout(retryTimer);
     }, [api, beginSessionTask, ready, retry, router, user]);
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', state => {
+            if (state === 'active') setRetry(value => value + 1);
+        });
+        return () => subscription.remove();
+    }, []);
     return null;
 }

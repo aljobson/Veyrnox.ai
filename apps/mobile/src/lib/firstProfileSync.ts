@@ -12,7 +12,7 @@ export type RemoteAnswers =
 
 export async function fetchRemoteFirstAnswers(api: Pick<ApiClient, 'request'>, task?: ClientTask, owner?: string): Promise<RemoteAnswers> {
     try {
-        const body = await api.request<unknown>('/api/v1/first-goal', {}, { ...(task ? { task } : {}), ...(owner ? { owner } : {}) });
+        const body = await api.request<unknown>('/api/v1/first-goal', {}, { ...(task ? { task } : {}), ...(owner ? { owner } : {}), timeoutMs: 5000 });
         if (task && !task.current()) return { kind: 'unavailable' };
         const profile = readRemoteFirstProfile(body);
         const goal = readRemoteFirstGoal(body);
@@ -33,7 +33,7 @@ export async function pushFirstOnboarding(api: Pick<ApiClient, 'request'>, task:
     try {
         const result = await api.request<unknown>('/api/v1/first-goal', {
             method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-        }, { task, owner: task.user });
+        }, { task, owner: task.user, timeoutMs: 5000 });
         return task.current() ? result : null;
     } catch { return null; }
 }

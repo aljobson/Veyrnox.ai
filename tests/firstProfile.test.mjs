@@ -47,6 +47,10 @@ test('progress is strict and the device envelope is fenced to one account owner'
     const raw = serializeFirstOnboarding('alice', { goal: 'video', role: null, destination: null, version: 1, currentStep: 'destination', completed: false });
     assert.deepEqual(parseFirstOnboarding(raw, 'alice'), { goal: 'video', role: null, destination: null, version: 1, currentStep: 'destination', completed: false });
     assert.equal(parseFirstOnboarding(raw, 'bob'), null);
+    const pending = serializeFirstOnboarding('alice', { goal: 'video', role: 'creator', destination: 'youtube', version: 1,
+      currentStep: 'recap', completed: false, pending: true, completeRequested: true });
+    assert.deepEqual(parseFirstOnboarding(pending, 'alice'), { goal: 'video', role: 'creator', destination: 'youtube', version: 1,
+      currentStep: 'recap', completed: false, pending: true, completeRequested: true });
 });
 
 test('the flow is for someone with no goal and no role on record', () => {
@@ -165,4 +169,67 @@ test('web sync asks with the stored session, so an expired access token (refresh
   const src = await readFile(new URL('../app/veyrnox/_lib/firstProfileSync.js', import.meta.url), 'utf8');
   assert.match(src, /session = getStoredSession\)/);
   assert.ok(!/getSession\b/.test(src.replace(/getStoredSession/g, '')), 'no call asks for the live token session');
+});
+
+test('web outbox remains incomplete on failure, reconciles 409, and replays canonically after relaunch', async () => {
+  const { replayOnboarding, readDeviceOnboarding, saveDeviceOnboarding } = await import('../app/veyrnox/_lib/firstProfileSync.js');
+  const storage = memory();
+  const desired = { goal: 'video', destination: 'youtube', role: 'creator', version: 1, currentStep: 'recap',
+    completed: false, pending: true, completeRequested: true };
+  const down = async (path, init) => {
+    if (init?.method === 'PUT') throw new Error('offline');
+    return { goal: null, destination: null, role: null, version: 1, current_step: 'goal', completed: false };
+  };
+  const failed = await replayOnboarding('alice', desired, { fetcher: down, currentOwner: () => 'alice', storage, timeoutMs: 50 });
+  assert.equal(failed.completed, false);
+  assert.equal(failed.pending, true);
+  assert.equal(readDeviceOnboarding('alice', storage).completed, false, 'failure never fabricates local completion');
+
+  const order = [];
+  const success = async (path, init) => {
+    if (!init?.method) return { goal: 'video', destination: 'youtube', role: 'creator', version: 1, current_step: null, completed: true };
+    const body = JSON.parse(init.body); order.push(body.current_step);
+    return { goal: 'video', destination: 'youtube', role: 'creator', version: 1,
+      current_step: body.current_step === 'recap' ? null : 'recap', completed: body.current_step === 'recap' };
+  };
+  const settled = await replayOnboarding('alice', readDeviceOnboarding('alice', storage), { fetcher: success, currentOwner: () => 'alice', storage, timeoutMs: 100 });
+  assert.deepEqual(order, ['goal', 'destination', 'role', 'recap']);
+  assert.equal(settled.completed, true);
+  assert.equal(settled.pending, false);
+
+  const conflictCalls = [];
+  const conflict = async (path, init) => {
+    if (!init?.method) return { goal: 'video', destination: 'youtube', role: 'creator', version: 1, current_step: 'recap', completed: false };
+    const body = JSON.parse(init.body); conflictCalls.push(body.current_step);
+    if (body.current_step === 'recap') throw Object.assign(new Error('incomplete'), { status: 409 });
+    return { goal: 'video', destination: 'youtube', role: 'creator', version: 1, current_step: 'recap', completed: false };
+  };
+  const pending = await replayOnboarding('alice', desired, { fetcher: conflict, currentOwner: () => 'alice', storage, timeoutMs: 100 });
+  assert.deepEqual(conflictCalls, ['goal', 'destination', 'role', 'recap']);
+  assert.equal(pending.currentStep, 'recap');
+  assert.equal(pending.pending, true);
+
+  const first = { ...desired, destination: 'tiktok', currentStep: 'role', completeRequested: false };
+  saveDeviceOnboarding('alice', first, storage);
+  let advanced = false;
+  const superseded = async (path, init) => {
+    if (!advanced && init?.method === 'PUT') {
+      advanced = true;
+      saveDeviceOnboarding('alice', desired, storage);
+    }
+    return init?.method
+      ? { goal: 'video', destination: 'tiktok', role: 'creator', version: 1, current_step: 'recap', completed: false }
+      : { goal: 'video', destination: 'tiktok', role: 'creator', version: 1, current_step: 'recap', completed: false };
+  };
+  const newest = await replayOnboarding('alice', first, { fetcher: superseded, currentOwner: () => 'alice', storage, timeoutMs: 100 });
+  assert.equal(newest.destination, 'youtube');
+  assert.equal(newest.completeRequested, true, 'an older acknowledgement never erases a newer durable envelope');
+});
+
+test('web Escape dismissal belongs to one owner for this tab session', async () => {
+  const { dismissFirstRun, isFirstRunDismissed } = await import('../app/veyrnox/_lib/firstProfileSync.js');
+  const storage = memory();
+  dismissFirstRun('alice', storage);
+  assert.equal(isFirstRunDismissed('alice', storage), true);
+  assert.equal(isFirstRunDismissed('bob', storage), false);
 });

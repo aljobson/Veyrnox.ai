@@ -28,6 +28,8 @@ export interface FirstOnboarding extends FirstAnswers {
     readonly version: 0 | 1;
     readonly currentStep: FirstOnboardingStep | null;
     readonly completed: boolean;
+    readonly pending?: boolean;
+    readonly completeRequested?: boolean;
 }
 
 export function serializeFirstProfile({ role: r = null, destination: d = null }: Partial<FirstProfile> = {}): string {
@@ -68,7 +70,8 @@ export function readRemoteFirstOnboarding(body: unknown): Pick<FirstOnboarding, 
 export function serializeFirstOnboarding(owner: string, state: FirstOnboarding): string {
     if (!owner) throw new Error('invalid onboarding owner');
     return JSON.stringify({ owner, version: state.version, goal: state.goal, role: state.role, destination: state.destination,
-        currentStep: state.currentStep, completed: state.completed });
+        currentStep: state.currentStep, completed: state.completed, pending: state.pending === true,
+        completeRequested: state.completeRequested === true });
 }
 
 export function parseFirstOnboarding(raw: string | null | undefined, owner: string | null | undefined): FirstOnboarding | null {
@@ -81,7 +84,8 @@ export function parseFirstOnboarding(raw: string | null | undefined, owner: stri
         const goalIds = new Set<string>([...FIRST_GOALS, 'skipped']);
         const goal = value.goal == null ? null : typeof value.goal === 'string' && goalIds.has(value.goal) ? value.goal as StoredFirstGoal : null;
         if (!progress || profile.kind !== 'profile' || (value.goal != null && goal === null)) return null;
-        return { goal, role: profile.role, destination: profile.destination, ...progress };
+        return { goal, role: profile.role, destination: profile.destination, ...progress,
+            ...(value.pending === true ? { pending: true } : {}), ...(value.completeRequested === true ? { completeRequested: true } : {}) };
     } catch { return null; }
 }
 

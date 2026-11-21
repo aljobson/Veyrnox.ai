@@ -43,7 +43,8 @@ ALTER TABLE public.first_goals ADD CONSTRAINT first_goals_onboarding_state_check
     (onboarding_version = 1 AND (
         (onboarding_completed AND onboarding_current_step IS NULL)
         OR
-        (NOT onboarding_completed AND onboarding_current_step IN ('goal', 'destination', 'role', 'recap'))
+        (NOT onboarding_completed AND onboarding_current_step IS NOT NULL
+            AND onboarding_current_step IN ('goal', 'destination', 'role', 'recap'))
     ))
 );
 

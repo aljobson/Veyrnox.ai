@@ -1,7 +1,9 @@
 'use client';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { getStoredUserId, onSessionChange } from '../../lib/authClient';
-import { fetchRemoteAnswers, readOfflineOnboarding, saveDeviceAnswers, saveDeviceOnboarding } from './firstProfileSync';
+import { fetchRemoteAnswers, readOfflineOnboarding, saveDeviceAnswers, saveDeviceOnboarding, scheduleOnboardingReplay } from './firstProfileSync';
+
+const REMOTE_DEADLINE_MS = 5000;
 
 /**
  * What this person told us in the first-run questions: { ready, signedIn, goal, role, destination }. `ready` is false
@@ -11,23 +13,46 @@ import { fetchRemoteAnswers, readOfflineOnboarding, saveDeviceAnswers, saveDevic
 export function useFirstProfile() {
   const userId = useSyncExternalStore(onSessionChange, getStoredUserId, () => null);
   const [retry, setRetry] = useState(0);
+  const failures = useRef(0);
+  const previousUser = useRef(null);
   const [state, setState] = useState({ ready: false, unresolved: true, goal: null, role: null, destination: null, version: null, currentStep: null, completed: undefined });
   useEffect(() => {
+    if (previousUser.current !== userId) { previousUser.current = userId; failures.current = 0; }
     let alive = true;
     let retryTimer;
-    fetchRemoteAnswers().then((remote) => {
+    let deadlineTimer;
+    const deadline = new Promise((resolve) => {
+      deadlineTimer = setTimeout(() => resolve({ kind: 'unavailable' }), REMOTE_DEADLINE_MS);
+    });
+    Promise.race([fetchRemoteAnswers(), deadline]).then((remote) => {
+      clearTimeout(deadlineTimer);
       if (!alive) return;
+      const offline = readOfflineOnboarding(userId);
       if (remote.kind !== 'answers') {
-        const offline = readOfflineOnboarding(userId);
         if (offline.kind === 'answers') {
           setState({ ready: true, unresolved: false, goal: offline.goal, role: offline.role, destination: offline.destination,
             version: offline.version, currentStep: offline.currentStep, completed: offline.completed });
+          if (offline.pending) void scheduleOnboardingReplay(userId, offline).then((settled) => {
+            if (alive && settled && !settled.pending) setState({ ready: true, unresolved: false, ...settled });
+          });
         }
         else if (offline.kind === 'signed-out') setState({ ready: true, unresolved: false, goal: null, role: null, destination: null, version: null, currentStep: null, completed: undefined });
-        else {
-          setState({ ready: false, unresolved: true, goal: null, role: null, destination: null, version: null, currentStep: null, completed: undefined });
-          retryTimer = setTimeout(() => { if (alive) setRetry((attempt) => attempt + 1); }, Math.min(15000, 2000 * (retry + 1)));
+        else if (++failures.current <= 3) {
+          // Ownerless legacy slots are unsafe, but that must not freeze Home. Use neutral ordering while the
+          // account remains explicitly unresolved, retry a few times, and let an online event try again later.
+          setState({ ready: true, unresolved: true, goal: null, role: null, destination: null, version: null, currentStep: null, completed: undefined });
+          retryTimer = setTimeout(() => { if (alive) setRetry((attempt) => attempt + 1); }, 1500 * failures.current);
         }
+        else setState({ ready: true, unresolved: true, goal: null, role: null, destination: null, version: null, currentStep: null, completed: undefined });
+        return;
+      }
+      failures.current = 0;
+      if (offline.kind === 'answers' && offline.pending && remote.completed !== true) {
+        setState({ ready: true, unresolved: false, goal: offline.goal, role: offline.role, destination: offline.destination,
+          version: offline.version, currentStep: offline.currentStep, completed: false });
+        void scheduleOnboardingReplay(userId, offline).then((settled) => {
+          if (alive && settled && !settled.pending) setState({ ready: true, unresolved: false, ...settled });
+        });
         return;
       }
       // The account's words win, including "none yet": another account's copy on this browser must not answer for this one.
@@ -38,7 +63,14 @@ export function useFirstProfile() {
       if (userId && remote.version !== undefined) saveDeviceOnboarding(userId, next);
       setState(next);
     });
-    return () => { alive = false; clearTimeout(retryTimer); };
+    return () => { alive = false; clearTimeout(deadlineTimer); clearTimeout(retryTimer); };
   }, [retry, userId]);
+  useEffect(() => {
+    const retryNow = () => { failures.current = 0; setRetry((attempt) => attempt + 1); };
+    const visible = () => { if (document.visibilityState === 'visible') retryNow(); };
+    window.addEventListener('online', retryNow);
+    document.addEventListener('visibilitychange', visible);
+    return () => { window.removeEventListener('online', retryNow); document.removeEventListener('visibilitychange', visible); };
+  }, []);
   return { ...state, signedIn: !!userId, userId };
 }

@@ -14,6 +14,10 @@ test('the flow is a modal dialog mounted on the app home, inside the age gate\'s
   assert.match(flow, /Escape/);
   assert.ok(!/skipRest/.test(flow), 'Escape dismisses without fabricating skipped answers');
   assert.match(flow, /const STEPS = \['goal', 'destination', 'role'\]/);
+  assert.match(flow, /first-run-sample/);
+  assert.match(flow, /first-run-idea/);
+  assert.match(flow, /first-run-chips/);
+  assert.match(flow, /captureProductEvent\('onboarding_step'/);
   const home = await read('app/veyrnox/app/page.js');
   assert.match(home, /<FirstRunFlow \/>/);
   const template = await read('app/veyrnox/app/template.js');
@@ -25,6 +29,14 @@ test('Create reads the answers through one hook and the page stays small', async
   const create = await read('app/veyrnox/app/create/page.js');
   assert.match(create, /useFirstRunCreate\(/);
   assert.ok(!/firstProfile|firstRun/i.test(create.replace(/useFirstRunCreate/g, '')), 'no first-run logic grows the Create page');
+});
+
+test('the web account read has a bounded fallback and retries again when connectivity returns', async () => {
+  const hook = await readFile(new URL('../app/veyrnox/_lib/useFirstProfile.js', import.meta.url), 'utf8');
+  assert.match(hook, /REMOTE_DEADLINE_MS = 5000/);
+  assert.match(hook, /failures\.current <= 3/);
+  assert.match(hook, /addEventListener\('online'/);
+  assert.match(hook, /addEventListener\('visibilitychange'/);
 });
 
 test('every first-run word has copy in all 11 locales', async () => {

@@ -12,10 +12,9 @@ import { useReducedMotion } from '../../components/ui/useReducedMotion';
 import { starterModel } from '../../lib/createOptions';
 import { firstGoalTarget, FIRST_GOALS, type FirstGoal, type StoredFirstGoal } from '../../lib/firstGoal';
 import { writeFirstGoal } from '../../lib/firstGoalStore';
-import { FIRST_DESTINATIONS, FIRST_ROLES, needsFirstRun, type StoredDestination, type StoredRole } from '../../lib/firstProfile';
-import { loadFirstOnboarding, writeFirstOnboarding, writeFirstProfile } from '../../lib/firstProfileStore';
+import { FIRST_DESTINATIONS, FIRST_ROLES, needsFirstRun, type FirstOnboardingStep, type StoredDestination, type StoredRole } from '../../lib/firstProfile';
+import { loadFirstOnboarding, replayFirstOnboarding, writeFirstOnboarding, writeFirstProfile } from '../../lib/firstProfileStore';
 import { markWelcomeSeen } from '../../lib/markWelcomeSeen';
-import { pushFirstOnboarding } from '../../lib/firstProfileSync';
 import { firstRunExample } from '../../lib/firstRunExamples';
 import { HARD_PAYWALL_STARTER_CREDITS, afterWelcomeHref, hardPaywallEnabled } from '../../lib/hardPaywall';
 import { noteOnboardingCompleted } from '../../lib/celebrate';
@@ -76,16 +75,9 @@ export default function FirstRun() {
     // The bar's length follows the goal picked: a creation goal ends on the recap, anything else finishes a screen sooner.
     const journeyTotal = journeyTotalFor(shown.goal, step);
     const leaving = useRef(false);
+    const loadedFor = useRef<string | null>(null);
     const reduced = useReducedMotion();
-    // Account writes go out one after another, so a quick Back and re-pick can never let an older request land last.
-    const writes = useRef<Promise<unknown>>(Promise.resolve());
-    // Remote writes only: each is dropped if the session that made the answer has ended by the time its turn comes.
-    const queueWrite = useCallback((job: (task: ReturnType<typeof beginSessionTask>) => Promise<unknown>) => {
-        const task = beginSessionTask();
-        const run = () => (task.current() ? job(task) : Promise.resolve());
-        writes.current = writes.current.then(run, run).catch(() => {});
-    }, [beginSessionTask]);
-    // Local saves go straight out (not behind the network) and finish() waits for them, so Create reads the answers.
+    // Legacy personalization saves stay local; the owner-stamped onboarding outbox is written separately before replay.
     const saved = useRef<Promise<unknown>>(Promise.resolve());
     const saveLocal = useCallback((job: () => Promise<unknown>) => { saved.current = saved.current.then(job, job).catch(() => {}); }, []);
     const picking = useRef(false);
@@ -134,6 +126,9 @@ export default function FirstRun() {
         let alive = true;
         captureEvent('onboarding_step', { step: 'questions', action: 'view' });
         const task = beginSessionTask();
+        const loadKey = `${task.user ?? 'signed-out'}:${task.gen}`;
+        if (loadedFor.current === loadKey) return undefined;
+        loadedFor.current = loadKey;
         loadFirstOnboarding(api, task).then((known) => {
             if (!alive || !task.current()) return;
             if (!known) { setAsking(true); return; }
@@ -154,16 +149,14 @@ export default function FirstRun() {
         const task = beginSessionTask();
         const goal = answers.current.goal;
         await saved.current;
-        await writes.current;
         if (!task.current()) return;
-        if (goal && goal !== 'skipped') {
-            const result = await pushFirstOnboarding(api, task, { currentStep: 'recap', completed: true }) as any;
+        if (task.user) {
+            const pending = { goal: answers.current.goal ?? null, role: answers.current.role ?? null, destination: answers.current.destination ?? null,
+                version: 1 as const, currentStep: goal === 'skipped' ? 'role' as const : 'recap' as const,
+                completed: false, pending: true, completeRequested: true };
+            await writeFirstOnboarding(task.user, pending, task);
             if (!task.current()) return;
-            await writeFirstOnboarding(task.user!, result && (result.version === 0 || result.version === 1)
-                ? { goal: result.goal, role: result.role, destination: result.destination, version: result.version,
-                    currentStep: result.current_step, completed: result.completed === true }
-                : { goal: answers.current.goal ?? null, role: answers.current.role ?? null, destination: answers.current.destination ?? null,
-                    version: 1, currentStep: null, completed: true }, task);
+            void replayFirstOnboarding(api, task, pending);
         }
         if (!task.current()) return;
         leave();
@@ -191,22 +184,21 @@ export default function FirstRun() {
             if (key === 'role') {
                 answers.current = { ...answers.current, role: next as StoredRole };
                 saveLocal(() => writeFirstProfile({ role: next as StoredRole }));
-                queueWrite((task) => pushFirstOnboarding(api, task, { currentStep: 'role', answer: next }));
             } else if (key === 'goal') {
                 answers.current = { ...answers.current, goal: next as StoredFirstGoal };
                 saveLocal(() => writeFirstGoal(next as StoredFirstGoal));
-                queueWrite((task) => pushFirstOnboarding(api, task, { currentStep: 'goal', answer: next }));
             } else {
                 answers.current = { ...answers.current, destination: next as StoredDestination };
                 saveLocal(() => writeFirstProfile({ destination: next as StoredDestination }));
-                queueWrite((task) => pushFirstOnboarding(api, task, { currentStep: 'destination', answer: next }));
             }
             const task = beginSessionTask();
             if (task.user) {
-                const nextStep = step < STEPS.length - 1 ? STEPS[step + 1] : answers.current.goal === 'skipped' ? null : 'recap';
-                const completed = step === STEPS.length - 1 && answers.current.goal === 'skipped';
-                saveLocal(() => writeFirstOnboarding(task.user!, { goal: answers.current.goal ?? null, role: answers.current.role ?? null,
-                    destination: answers.current.destination ?? null, version: 1, currentStep: nextStep, completed }, task));
+                const completeRequested = step === STEPS.length - 1 && answers.current.goal === 'skipped';
+                const nextStep: FirstOnboardingStep = step < STEPS.length - 1 ? STEPS[step + 1] : completeRequested ? 'role' : 'recap';
+                const pending = { goal: answers.current.goal ?? null, role: answers.current.role ?? null,
+                    destination: answers.current.destination ?? null, version: 1 as const, currentStep: nextStep,
+                    completed: false, pending: true, completeRequested };
+                void writeFirstOnboarding(task.user, pending, task).then(() => replayFirstOnboarding(api, task, pending));
             }
         }
         setShown(answers.current);
@@ -220,7 +212,7 @@ export default function FirstRun() {
             if (hasRecap(answers.current.goal)) setStep(STEPS.length);
             else void finish();
         }, reduced || word === 'skipped' ? 0 : 220);
-    }, [api, beginSessionTask, finish, queueWrite, reduced, saveLocal, step]);
+    }, [api, beginSessionTask, finish, reduced, saveLocal, step]);
 
     // Back cancels a pending hop, so a quick pick-then-Back never jumps forward again.
     const goBack = useCallback((to: number) => {

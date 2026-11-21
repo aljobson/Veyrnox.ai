@@ -12,8 +12,9 @@
  * Version-1 PUT adds { version: 1, current_step, completed }; one answer must match a question step, while recap completion
  * carries no answer. Legacy bodies and replies remain unchanged for installed clients.
  *
- * Errors: 400 body_invalid | invalid_goal (+ field), 401 not_authenticated, 404 not_found (flag off) | account_not_found,
- *   502 first_goal_unavailable, 503 gateway_not_configured.
+ * Errors: 400 body_invalid | invalid_goal (+ field) | invalid_onboarding (+ field), 401 not_authenticated,
+ *   404 not_found (flag off) | account_not_found, 409 onboarding_version_unsupported | onboarding_incomplete
+ *   (with authoritative progress), 502 first_goal_unavailable, 503 gateway_not_configured.
  */
 
 import { NextResponse } from 'next/server';

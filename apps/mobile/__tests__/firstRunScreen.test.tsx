@@ -4,8 +4,7 @@ import FirstRun from '../src/app/(app)/first-run';
 import { fetchCatalogCached, type CatalogModel } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
 import { writeFirstGoal } from '../src/lib/firstGoalStore';
-import { loadFirstOnboarding, writeFirstOnboarding, writeFirstProfile } from '../src/lib/firstProfileStore';
-import { pushFirstOnboarding } from '../src/lib/firstProfileSync';
+import { loadFirstOnboarding, replayFirstOnboarding, writeFirstOnboarding, writeFirstProfile } from '../src/lib/firstProfileStore';
 import { markWelcomeSeen } from '../src/lib/markWelcomeSeen';
 
 // The first test pays for loading the screen and its modules cold, which can pass 5 s on a busy machine.
@@ -18,9 +17,8 @@ jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () =
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn() }));
 jest.mock('../src/lib/firstGoalStore', () => ({ writeFirstGoal: jest.fn(async () => undefined) }));
-jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstOnboarding: jest.fn(), writeFirstOnboarding: jest.fn(async () => undefined), writeFirstProfile: jest.fn(async () => ({})) }));
+jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstOnboarding: jest.fn(), replayFirstOnboarding: jest.fn(async () => null), writeFirstOnboarding: jest.fn(async () => undefined), writeFirstProfile: jest.fn(async () => ({})) }));
 jest.mock('../src/lib/markWelcomeSeen', () => ({ markWelcomeSeen: jest.fn(async () => undefined) }));
-jest.mock('../src/lib/firstProfileSync', () => ({ pushFirstOnboarding: jest.fn(async () => undefined) }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
 jest.mock('../src/lib/presets', () => ({ fetchPresets: jest.fn(async () => []) }));
 jest.mock('../src/auth/AuthProvider', () => { const api = { getBalance: async () => ({ free_credits: 10 }) }; const task = { user: 'A', gen: 1, current: () => true }; return { useAuth: () => ({ api, beginSessionTask: () => task }) }; });
@@ -39,7 +37,7 @@ beforeEach(async () => {
     jest.useFakeTimers();
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     root = createRoot();
-    for (const fn of [mockPush, mockReplace, writeFirstGoal, writeFirstProfile, writeFirstOnboarding, pushFirstOnboarding, markWelcomeSeen] as jest.Mock[]) fn.mockClear();
+    for (const fn of [mockPush, mockReplace, writeFirstGoal, writeFirstProfile, writeFirstOnboarding, replayFirstOnboarding, markWelcomeSeen] as jest.Mock[]) fn.mockClear();
     jest.mocked(loadFirstOnboarding).mockReset().mockResolvedValue({ goal: null, role: null, destination: null, version: 1, currentStep: 'goal', completed: false });
     jest.mocked(fetchCatalogCached).mockReset().mockResolvedValue({ value: [mockPrompt], meta: { fromCache: false, stale: false, savedAt: Date.now(), ageMs: 0 } } as never);
 });
@@ -52,7 +50,7 @@ test('asks the goal first (under Vey\'s hello), then where it will go, then the 
     expect(hasText(t('welcome.hello.title'))).toBe(true);
     await press(t('create.firstGoal.video'));
     expect(writeFirstGoal).toHaveBeenCalledWith('video');
-    expect(pushFirstOnboarding).toHaveBeenCalledWith(expect.anything(), expect.anything(), { currentStep: 'goal', answer: 'video' });
+    expect(replayFirstOnboarding).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining({ goal: 'video', completed: false, pending: true }));
     expect(hasText(t('create.firstRun.destTitle'))).toBe(true);
     await press(t('create.firstRun.dest.reels'));
     expect(writeFirstProfile).toHaveBeenLastCalledWith({ destination: 'reels' });
@@ -121,7 +119,7 @@ test('a partial account resumes at the authoritative step and completes through 
     await press(t('create.firstRun.role.creator'));
     expect(hasText(t('create.firstRun.suggested'))).toBe(true);
     await start();
-    expect(pushFirstOnboarding).toHaveBeenCalledWith(expect.anything(), expect.anything(), { currentStep: 'recap', completed: true });
+    expect(replayFirstOnboarding).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.objectContaining({ currentStep: 'recap', completed: false, pending: true, completeRequested: true }));
 });
 
 test('the welcome is marked seen only when the questions end, so quitting part-way brings them back next launch', async () => {
@@ -155,17 +153,16 @@ test('Back after a pick cancels the pending hop, and a real answer is not replac
     expect(writeFirstGoal).not.toHaveBeenCalledWith('skipped');
 });
 
-test('account writes go out in order, one after another', async () => {
-    const order: string[] = [];
-    let release: () => void = () => {};
-    jest.mocked(pushFirstOnboarding).mockImplementationOnce(() => new Promise<void>((resolve) => { release = () => { order.push('goal-done'); resolve(); }; }));
-    jest.mocked(pushFirstOnboarding).mockImplementation(async (_api, _task, a) => { order.push(a.currentStep); return undefined; });
+test('completion leaves immediately while failed background replay remains truthfully pending', async () => {
+    jest.mocked(replayFirstOnboarding).mockImplementation(() => new Promise(() => {}));
     await act(async () => root.render(<FirstRun />));
-    await press(t('create.firstGoal.video'));
-    await press(t('create.firstRun.dest.reels'));
-    expect(order).toEqual([]);
-    await act(async () => { release(); });
-    expect(order).toEqual(['goal-done', 'destination']);
+    await press(t('create.firstGoal.image'));
+    await press(t('create.firstRun.dest.youtube'));
+    await press(t('create.firstRun.role.business'));
+    await start();
+    expect(mockReplace).toHaveBeenCalledWith('/');
+    expect(writeFirstOnboarding).toHaveBeenLastCalledWith('A', expect.objectContaining({ completed: false, pending: true, completeRequested: true }), expect.anything());
+    expect(writeFirstOnboarding).not.toHaveBeenCalledWith('A', expect.objectContaining({ completed: true }), expect.anything());
 });
 
 test('tapping Start creating twice opens the starter form once', async () => {

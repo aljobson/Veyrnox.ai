@@ -15,7 +15,7 @@ const kind = oneOf('image', 'video', 'audio', 'speech', 'music', 'sound', 'text'
 const outcome = oneOf('succeeded', 'failed', 'cancelled');
 export const APPLICATION_EVENTS: Record<string, Record<string, (v: unknown) => boolean>> = {
     app_opened: { cold: v => typeof v === 'boolean' }, app_backgrounded: {},
-    onboarding_step: { step: oneOf('welcome', 'start', 'vibe'), action: oneOf('view', 'next', 'skip') },
+    onboarding_step: { step: oneOf('welcome', 'start', 'questions', 'recap', 'vibe'), action: oneOf('view', 'next', 'skip') },
     sign_in_completed: { method: oneOf('apple', 'google', 'email', 'passkey') },
     generation_submitted: { kind, model_id: identifier }, generation_finished: { kind, outcome },
     purchase_started: { product: oneOf('pack', 'subscription') },

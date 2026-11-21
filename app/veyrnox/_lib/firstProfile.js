@@ -53,7 +53,8 @@ export function readRemoteFirstOnboarding(body) {
 export function serializeFirstOnboarding(owner, state) {
   if (typeof owner !== 'string' || !owner || (state.version !== 0 && state.version !== 1)) throw new Error('invalid onboarding owner');
   return JSON.stringify({ owner, version: state.version, goal: state.goal ?? null, role: state.role ?? null,
-    destination: state.destination ?? null, currentStep: state.currentStep ?? null, completed: state.completed === true });
+    destination: state.destination ?? null, currentStep: state.currentStep ?? null, completed: state.completed === true,
+    pending: state.pending === true, completeRequested: state.completeRequested === true });
 }
 
 export function parseFirstOnboarding(raw, owner) {
@@ -68,7 +69,8 @@ export function parseFirstOnboarding(raw, owner) {
     const goalValue = value.goal ?? null;
     if (goalValue !== null && !['image', 'video', 'audio', 'edit', 'publish', 'unsure', 'skipped'].includes(goalValue)) return null;
     return { goal: goalValue, role: profile.role, destination: profile.destination, version: progress.version,
-      currentStep: progress.currentStep, completed: progress.completed };
+      currentStep: progress.currentStep, completed: progress.completed,
+      ...(value.pending === true ? { pending: true } : {}), ...(value.completeRequested === true ? { completeRequested: true } : {}) };
   } catch { return null; }
 }
 

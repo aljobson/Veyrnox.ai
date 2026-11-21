@@ -69,6 +69,10 @@ try {
     await c.query('SAVEPOINT chk');
     await assert.rejects(c.query("INSERT INTO public.first_goals(user_id, goal) VALUES ($1, 'bogus') ON CONFLICT (user_id) DO UPDATE SET goal = 'bogus'", [alice.userId]), (err) => err.code === '23514');
     await c.query('ROLLBACK TO SAVEPOINT chk');
+    await c.query('SAVEPOINT onboarding_check');
+    await assert.rejects(c.query(`UPDATE public.first_goals SET onboarding_version=1, onboarding_current_step=NULL,
+        onboarding_completed=false WHERE user_id=$1`, [bob.userId]), (err) => err.code === '23514');
+    await c.query('ROLLBACK TO SAVEPOINT onboarding_check');
 
     // Unknown accounts.
     assert.deepEqual(await set(randomUUID(), 'image'), { ok: false, error: 'account_not_found' });
@@ -102,6 +106,7 @@ try {
     assert.ok(Object.hasOwn(page.rows[0], 'create_draft'), 'the later draft wrapper survives');
     for (const role of ['anon', 'authenticated', 'service_role']) {
         assert.equal((await one('SELECT has_function_privilege($1, $2, $3) AS allowed', [role, 'private.read_privacy_export_page_without_first_goal(text,text,uuid,text,uuid,text,text,integer)', 'EXECUTE'])).allowed, false, role);
+        assert.equal((await one('SELECT has_function_privilege($1, $2, $3) AS allowed', [role, 'private.read_privacy_export_page_without_first_run_progress(text,text,uuid,text,uuid,text,text,integer)', 'EXECUTE'])).allowed, false, `${role} progress helper`);
     }
     // An export taken before the answer existed shows none.
     const early = (await one(`INSERT INTO public.privacy_export_requests(user_id, created_at, as_of, expires_at, aal)
