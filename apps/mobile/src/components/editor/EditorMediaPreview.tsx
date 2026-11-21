@@ -95,8 +95,9 @@ function EditorVideo({ source, clip, frameStore, fps, playing, label, contentFit
             } catch { /* Keep native fit when a display size cannot be decoded. */ }
         };
         const loaded = player.addListener('sourceLoad', () => { void decodeDimensions(); });
+        const ready = player.addListener('statusChange', ({ status }) => { if (status === 'readyToPlay') void decodeDimensions(); });
         if (player.status === 'readyToPlay') void decodeDimensions();
-        return () => { active = false; loaded.remove(); };
+        return () => { active = false; loaded.remove(); ready.remove(); };
     }, [player, onDimensions]);
     useEffect(() => {
         onFailure(player.status === 'error');

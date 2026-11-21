@@ -68,6 +68,8 @@ export function curveResetChannel(tl: Timeline, id: string, channel: string, off
 }
 export const colourReset = (tl: Timeline, id: string, offset = 0): LookResult =>
     clipPatch(tl, id, { colourAdjustment: colourDefaults() }, offset, ['colourAdjustment']);
+export const lookBaseReset = (tl: Timeline, id: string, field: 'colourAdjustment' | 'filter'): LookResult =>
+    clipPatch(tl, id, {}, 0, [field]);
 export function filterSet(tl: Timeline, id: string, key: FilterKey, value: number, offset = 0): LookResult {
     const bad = refusal(tl, id); if (bad) return { refused: bad };
     return clipPatch(tl, id, { filter: { ...lookValues(selected(tl, id)!, offset).filter, [key]: round(value) } }, offset);

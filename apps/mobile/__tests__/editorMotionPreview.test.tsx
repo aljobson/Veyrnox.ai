@@ -141,6 +141,34 @@ test.each(['cover', 'contain'] as const)('portrait video uses decoded display di
     await act(async () => root.unmount());
 });
 
+test('readyToPlay decodes dimensions once after mounting while loading without sourceLoad', async () => {
+    const root = createRoot(), release = jest.fn(); mockVideo.status = 'loading';
+    mockVideo.generateThumbnailsAsync.mockResolvedValueOnce([{ width: 108, height: 192, release }]);
+    try {
+        await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, fit: 'contain' }}
+            media={{ id: 'm', kind: 'video' }} frameStore={createFrameStore()} fps={30} playing={false} localUri="file://loading" />));
+        const outer = root.container.queryAll(n => n.props.testID === 'editor-transform-layout')[0];
+        await act(async () => outer.props.onLayout({ nativeEvent: { layout: { width: 200, height: 200 } } }));
+        const picture = () => StyleSheet.flatten(root.container.queryAll(n => n.props.testID === 'editor-transform-picture')[0].props.style);
+        const status = (value: string) => {
+            mockVideo.status = value;
+            for (const [name, callback] of mockVideo.addListener.mock.calls) if (name === 'statusChange') callback({ status: value });
+        };
+        await act(async () => status('loading'));
+        expect(mockVideo.generateThumbnailsAsync).not.toHaveBeenCalled();
+        expect(picture()).toMatchObject({ width: 200, height: 200 });
+        await act(async () => { status('readyToPlay'); status('readyToPlay'); });
+        expect(mockVideo.generateThumbnailsAsync).toHaveBeenCalledTimes(1);
+        expect(mockVideo.generateThumbnailsAsync).toHaveBeenCalledWith(0, { maxWidth: 384, maxHeight: 384 });
+        const expected = { width: 112.5, height: 200, left: 43.75, top: 0 };
+        for (const field of ['width', 'height', 'left', 'top'] as const) expect(picture()[field]).toBeCloseTo(expected[field]);
+        expect(release).toHaveBeenCalledTimes(1);
+        await act(async () => status('readyToPlay'));
+        expect(mockVideo.generateThumbnailsAsync).toHaveBeenCalledTimes(1);
+    } finally { await act(async () => root.unmount()); }
+    for (const subscription of mockVideo.addListener.mock.results) expect(subscription.value.remove).toHaveBeenCalledTimes(1);
+});
+
 test.each(['cover', 'contain'] as const)('unknown video dimensions preserve native %s when thumbnail decoding fails', async fit => {
     const root = createRoot(); mockVideo.generateThumbnailsAsync.mockRejectedValueOnce(new Error('No thumbnail'));
     await act(async () => root.render(<EditorMediaPreview api={{ request: jest.fn() }} clip={{ ...clip, fit }}
@@ -155,7 +183,9 @@ test('video error is outside the invisible flipped picture and clears on recover
         clip={{ ...clip, transform: { opacity: 0, flipX: true } }} media={{ id: 'm', kind: 'video' }}
         frameStore={frameStore} fps={30} playing={false} localUri={uri} />);
     await act(async () => render('file://broken'));
-    const status = mockVideo.addListener.mock.calls.find(([name]) => name === 'statusChange')![1];
+    const status = (event: { status: string }) => {
+        for (const [name, callback] of mockVideo.addListener.mock.calls) if (name === 'statusChange') callback(event);
+    };
     const unavailable = () => root.container.queryAll(n => n.children.includes('Preview unavailable'));
     await act(async () => status({ status: 'error' }));
     expect(unavailable()).toHaveLength(1);
