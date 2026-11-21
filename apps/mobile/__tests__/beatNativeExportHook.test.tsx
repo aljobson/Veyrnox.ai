@@ -13,6 +13,7 @@ import { ApiError } from '../src/lib/api';
 import { deferred, fixedDoc, tick, USER, OTHER, PROJECT, VERSION } from './beatNativeFixtures';
 import { exportOptions, offlineFixture } from './beatNativeExportFixtures';
 import { t } from '../src/lib/i18n';
+import { beatStore } from '../src/lib/beatNative/store';
 import * as native from '../src/lib/beatNative/nativeContext';
 const mockRequest = jest.fn(), mockRender = jest.fn(), mockShare = jest.fn(), mockSweep = jest.fn();
 let mockGeneration = 0, mockOwner = USER;
@@ -157,4 +158,51 @@ test('N7-RV-002: XHR upload progress appears in the saving state', async () => {
     await act(async () => upload.progress(37));
     expect(view.state).toBe('saving'); expect(view.percent).toBe(37); expect(view.message).toBe(t('beatExport.upload', { percent: 37 }));
     await act(async () => { upload.complete(); await saving; }); expect(view.state).toBe('saved');
+});
+const record = (userId?: string) => ({ id: doc.id, revision: 1, doc, updatedAt: doc.updatedAt, ...(userId ? { cloud: { userId, projectId: PROJECT, revision: 1 } } : {}) });
+const posts = (action: string) => mockRequest.mock.calls.filter(c => JSON.parse(c[1].body).action === action);
+test('a beat synced to another account cannot be saved, and playback is left alone', async () => {
+    jest.spyOn(beatStore, 'getRecord').mockReturnValue(record(OTHER)); await mount();
+    expect(view.foreign).toBe(true);
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: true }); });
+    expect(prepare).not.toHaveBeenCalled(); expect(mockRender).not.toHaveBeenCalled(); expect(posts('reserve')).toHaveLength(0);
+    expect(view.message).toBe(t('beatExport.otherAccount'));
+});
+test('the owner is rechecked inside save, after the render', async () => {
+    const owner = jest.spyOn(beatStore, 'getRecord').mockReturnValue(record(USER)); await mount();
+    expect(view.foreign).toBe(false);
+    mockRender.mockImplementationOnce(async (_doc, _options, consume) => { owner.mockReturnValue(record(OTHER)); await consume({ bytes: new ArrayBuffer(48), filename: 'Mix.wav', report: { gaps: [] } }); });
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: true }); });
+    expect(mockRender).toHaveBeenCalledTimes(1); expect(posts('reserve')).toHaveLength(0); expect(upload.makeRequest).not.toHaveBeenCalled();
+    expect(view.message).toBe(t('beatExport.otherAccount'));
+});
+test('a never-synced beat has no owner stamp and can still be saved', async () => {
+    jest.spyOn(beatStore, 'getRecord').mockReturnValue(record()); await mount(); expect(view.foreign).toBe(false);
+    mockRequest.mockResolvedValueOnce({ ...reservation, committed: true });
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: true }); }); expect(view.state).toBe('saved');
+});
+test('a lost commit response retries with the same rendered bytes and key', async () => {
+    await mount(); mockRequest.mockClear();
+    mockRequest.mockResolvedValueOnce(reservation).mockRejectedValueOnce(new ApiError(0, 'network'));
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: false }); });
+    expect(view.state).toBe('error'); expect(view.failedAction).toBe('save');
+    mockRequest.mockResolvedValueOnce({ ...reservation, committed: true });
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: false }); });
+    expect(view.state).toBe('saved'); expect(view.compressor).toBe(true); expect(mockRender).toHaveBeenCalledTimes(1);
+    const keys = posts('reserve').map(c => JSON.parse(c[1].body).idempotency_key);
+    expect(keys).toHaveLength(2); expect(keys[0]).toBe(keys[1]);
+});
+test('an edited beat is rendered again instead of reusing kept bytes', async () => {
+    await mount(); mockRequest.mockClear();
+    mockRequest.mockResolvedValueOnce(reservation).mockRejectedValueOnce(new ApiError(0, 'network'));
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: false }); });
+    doc = { ...doc }; await mount(); mockRequest.mockResolvedValueOnce({ ...reservation, committed: true });
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: false }); });
+    expect(mockRender).toHaveBeenCalledTimes(2);
+});
+test('the server switch going off during a save hides Save', async () => {
+    await mount(); expect(view.probe).toBe('on');
+    mockRequest.mockRejectedValueOnce(new ApiError(404, 'beat_library_save_unavailable'));
+    await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: false }); });
+    expect(view.probe).toBe('off'); expect(view.message).toBe(t('beatExport.saveOff'));
 });

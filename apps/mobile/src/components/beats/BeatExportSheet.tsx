@@ -64,7 +64,7 @@ export function BeatExportSheet({ doc, recording, replacing = false, prepare, on
         {x.compressor && <Text variant="footnote" tone="secondary">{t('beatExport.compressor')}</Text>}
         <Button label={t(x.state === 'error' && x.failedAction === 'share' ? 'beatExport.retryShare' : 'beatExport.render')} disabled={blocked || (song && empty) || (!song && !options.editTrackId)} onPress={() => void x.run(options)} />
         {x.offline && <Text>{t('beatExport.offline')}</Text>}
-        {x.probe === 'off' ? <Text variant="footnote" tone="secondary">{t('beatExport.saveOff')}</Text> : song && <>
+        {x.probe === 'off' ? <Text variant="footnote" tone="secondary">{t('beatExport.saveOff')}</Text> : song && x.foreign ? <Text>{t('beatExport.otherAccount')}</Text> : song && <>
             {x.probe === 'opening' ? <Text>{t('beatExport.saveOpening')}</Text> : x.probe !== 'on' ? <>
                 <Text>{t(x.probe === 'signedOut' ? 'beatExport.signIn' : x.probe === 'offline' ? 'beatExport.offline' : 'beatExport.saveError')}</Text>
                 <Button label={t('beat.retry')} disabled={x.busy} onPress={() => void x.retryProbe()} />

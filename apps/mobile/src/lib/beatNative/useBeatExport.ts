@@ -7,9 +7,10 @@ import type { BeatDoc } from './doc';
 import { loadNativeOfflineContext, OfflineUnavailable, withWindowOfflineContext } from './nativeContext';
 import { ExportFailure, renderNativeExport } from './exportRender';
 import { shareBeatExport, sweepBeatExports } from './exportFiles';
-import { checkMixdownTask, createMixdownSaver, mixdownErrorKey, preflightMixdownSave, probeMixdownSave, type MixdownProbe, type MixdownTask, type SavedMixdown } from './mixdownSave';
+import { checkMixdownOwner, checkMixdownTask, createMixdownSaver, mixdownCode, mixdownErrorKey, ownedByOther, preflightMixdownSave, probeMixdownSave, type MixdownProbe, type MixdownTask, type SavedMixdown } from './mixdownSave';
 import type { ExportOptions } from './exportShared';
 import { replacementUnderway } from './recordingFinalizers';
+import { beatStore } from './store';
 
 export type ExportState = 'opening' | 'ready' | 'unavailable' | 'rendering' | 'sharing' | 'shared' | 'saving' | 'saved' | 'error';
 const savePhaseKeys = { reserve: 'beatExport.reserve', upload: 'beatExport.upload', commit: 'beatExport.commit' } as const;
@@ -38,6 +39,10 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
     const saver = useMemo(() => createMixdownSaver(api), [api]);
     useAnnouncement(message, { everywhere: true });
     const busy = ['rendering', 'sharing', 'saving'].includes(state);
+    const cloudOwner = () => beatStore.getRecord(doc.id)?.cloud?.userId;
+    const viewer = beginSessionTask().user;
+    const foreign = !!viewer && ownedByOther(cloudOwner(), viewer); // Signed out shows the sign-in message instead.
+    const savedGaps = useRef(false);
     useEffect(() => {
         alive.current = true;
         sweepBeatExports();
@@ -83,6 +88,7 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
         const session = save ? beginSessionTask() : null;
         const current = () => alive.current && !controller.signal.aborted && (!session || session.current());
         const task = session ? { ...session, signal: controller.signal, current } : null;
+        saver.releaseStale(doc);
         setCompressor(false); setMessage(''); setPercent(0); setFailedAction(null); setState('rendering');
         let gaps = false;
         const progress = (seconds: number, total: number) => {
@@ -94,26 +100,30 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
             await renderNativeExport(doc, settings, async result => {
                 gaps ||= result.report.gaps.includes('dynamicsCompressor');
                 await consume(result);
-            }, { current, progress });
+            }, { current, progress, retainedBytes: saver.retainedBytes });
         };
         try {
             if (task) checkMixdownTask(task);
+            if (task) checkMixdownOwner(cloudOwner(), task.user);
             if (save) preflightMixdownSave(doc, options.range);
             if (replacementUnderway(doc.id)) throw new ExportFailure('beatTakes.replacing');
             await prepare();
             if (replacementUnderway(doc.id)) throw new ExportFailure('beatTakes.replacing');
             if (!current()) throw new ExportFailure('beatExport.signIn');
             if (save && task) {
-                const result = await saver.save({ doc, range: options.range, ...save, task,
+                const result = await saver.save({ doc, range: options.range, ...save, task, owner: cloudOwner,
                     render: async () => {
                         let bytes: ArrayBuffer | undefined;
+                        savedGaps.current = false;
                         await render(async result => { bytes = result.bytes; }, { ...options, kind: 'song', output: 'mix', bitDepth: 16 });
                         if (!bytes) throw new ExportFailure('beatExport.empty');
+                        savedGaps.current = gaps;
                         return bytes;
                     },
                     progress: (phase, value) => { if (current()) { setState('saving'); setPercent(value ?? 0); setMessage(t(savePhaseKeys[phase], { percent: value ?? 0 })); } },
                 });
                 checkMixdownTask(task);
+                gaps ||= savedGaps.current; savedGaps.current = false;
                 const title = save.title.normalize('NFKC').trim();
                 savedSelection.current = selection;
                 setSaved(result); setState('saved'); setMessage(t('beatExport.saved', { title }));
@@ -129,6 +139,7 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
             if (current()) setCompressor(gaps);
         } catch (error) {
             if (alive.current) {
+                if (save && mixdownCode(error) === 'beat_library_save_unavailable') setProbe('off');
                 setFailedAction(save ? 'save' : 'share');
                 setState(error instanceof OfflineUnavailable ? 'unavailable' : 'error');
                 setMessage(!current() ? t('beatExport.signIn') : error instanceof ExportFailure || error instanceof OfflineUnavailable || (error instanceof Error && error.message === 'recording_not_preserved') || (error as { displayCode?: string })?.displayCode
@@ -136,5 +147,5 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
             }
         } finally { running.current = false; if (request.current === controller) request.current = null; }
     }
-    return { state, probe, message, compressor, saved, failedAction, busy, percent, offline, retryProbe, resetSaved, run };
+    return { state, probe, foreign, message, compressor, saved, failedAction, busy, percent, offline, retryProbe, resetSaved, run };
 }

@@ -7609,6 +7609,7 @@ export default {
   "beatExport.sourceUnavailable": "이 믹스에 사용된 곡을 더 이상 사용할 수 없습니다. Music에서 복원하거나 WAV에 «렌더링 및 공유»를 사용하세요.",
   "beatExport.frozen": "계정이 일시 중지되었습니다. 이 믹스에 «렌더링 및 공유»는 계속 사용할 수 있습니다.",
   "beatExport.expired": "저장 기한이 만료되었습니다. 새로 저장하려면 다시 시도하세요.",
+  "beatExport.otherAccount": "이 비트는 다른 계정의 것입니다. Music에 저장하려면 해당 계정으로 로그인하세요.",
   "beatExport.changed": "저장 내용이 변경되었습니다. 새로 저장하려면 다시 시도하세요.",
   "beatExport.rate": "저장 요청이 너무 많습니다. 일 분 후 다시 시도하세요.",
     "app.smartCut.native.analyse.title": "Analyse speech",

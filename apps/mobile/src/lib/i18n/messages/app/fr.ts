@@ -7807,6 +7807,7 @@ export default {
   "beatExport.sourceUnavailable": "Un morceau du mix n’est plus disponible. Restaurez-le dans Music ou utilisez « Générer et partager » pour le WAV.",
   "beatExport.frozen": "Votre compte est en pause. Vous pouvez toujours utiliser « Générer et partager » pour ce mix.",
   "beatExport.expired": "Cet enregistrement a expiré. Réessayez pour en démarrer un nouveau.",
+  "beatExport.otherAccount": "Ce beat appartient à un autre compte. Connectez-vous à ce compte pour l’enregistrer dans Music.",
   "beatExport.changed": "Cet enregistrement a changé. Réessayez pour en démarrer un nouveau.",
   "beatExport.rate": "Trop d’enregistrements. Patientez une minute et réessayez.",
     "app.smartCut.native.analyse.title": "Analyse speech",

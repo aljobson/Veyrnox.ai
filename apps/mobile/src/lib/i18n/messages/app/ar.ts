@@ -8099,6 +8099,7 @@ export default {
   "beatExport.sourceUnavailable": "لم تعد أغنية مستخدمة في هذا المزيج متاحة. استعدها في Music أو استخدم «تصيير ومشاركة» لملف WAV.",
   "beatExport.frozen": "حسابك موقوف مؤقتًا. لا يزال بإمكانك استخدام «تصيير ومشاركة» لهذا المزيج.",
   "beatExport.expired": "انتهت صلاحية الحفظ. حاول مجددًا لبدء حفظ جديد.",
+  "beatExport.otherAccount": "هذا الإيقاع يخص حسابًا آخر. سجّل الدخول إلى ذلك الحساب لحفظه في Music.",
   "beatExport.changed": "تغيّر هذا الحفظ. حاول مجددًا لبدء حفظ جديد.",
   "beatExport.rate": "عمليات حفظ كثيرة. انتظر دقيقة وحاول مجددًا.",
     "app.smartCut.native.analyse.title": "Analyse speech",

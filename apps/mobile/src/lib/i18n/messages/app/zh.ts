@@ -7609,6 +7609,7 @@ export default {
   "beatExport.sourceUnavailable": "此混音中的歌曲已不可用。请在 Music 中恢复，或使用“渲染并分享”分享 WAV。",
   "beatExport.frozen": "你的账户已暂停。你仍可对此混音使用“渲染并分享”。",
   "beatExport.expired": "此次保存已过期。请重试以重新保存。",
+  "beatExport.otherAccount": "此节拍属于另一个账户。请登录该账户后再保存到 Music。",
   "beatExport.changed": "此次保存已更改。请重试以重新保存。",
   "beatExport.rate": "保存次数过多。请等一分钟后重试。",
     "app.smartCut.native.analyse.title": "Analyse speech",

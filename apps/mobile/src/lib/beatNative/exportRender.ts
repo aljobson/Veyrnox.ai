@@ -52,7 +52,7 @@ export async function prepareExportBuffers(doc: BeatDoc, context: NativeOfflineC
     return buffers;
 }
 export type RenderedExport = { bytes: ArrayBuffer; filename: string; report: AdapterReport };
-export type RenderDeps = { Context?: NativeOfflineCtor | null; progress?(seconds: number, total: number): void; current?(): boolean };
+export type RenderDeps = { Context?: NativeOfflineCtor | null; progress?(seconds: number, total: number): void; current?(): boolean; retainedBytes?(): number };
 /** Render/consume one stem at a time. No native buffer or output is retained in UI state. */
 export async function renderNativeExport(doc: BeatDoc, options: ExportOptions, consume: (result: RenderedExport) => Promise<void>, deps: RenderDeps = {}) {
     const report: AdapterReport = { gaps: [], latencyHint: 'offline' };
@@ -73,7 +73,7 @@ export async function renderNativeExport(doc: BeatDoc, options: ExportOptions, c
         configureNativeTakeStorage(); await hydrateBeatTakes(); check();
         const tracks = options.output === 'stems' ? plan.tracks.filter(t => t.audible) : [{ id: undefined, filename: exportFilename(doc.title) }];
         if (!tracks.length) throw new ExportFailure('beatExport.empty');
-        if (nativeExportBytes(doc, plan, beatTakes(), options.output === 'stems' ? tracks.map(track => track.id!) : undefined) > 300 * MB) throw new ExportFailure('beatExport.phone');
+        if (nativeExportBytes(doc, plan, beatTakes(), options.output === 'stems' ? tracks.map(track => track.id!) : undefined) + (deps.retainedBytes?.() ?? 0) > 300 * MB) throw new ExportFailure('beatExport.phone');
         // Verify the entire export before sharing its first stem. This populates only the shared JS sample cache.
         if (options.output === 'stems') { await checkExportTakes(doc); check(); }
         for (const track of tracks) {

@@ -56,6 +56,7 @@ export default {
     "beatExport.sourceUnavailable": "A song used in this mix is no longer available. Restore it in Music, or use Render and share for the WAV.",
     "beatExport.frozen": "Your account is paused. You can still use Render and share for this mix.",
     'beatExport.expired': 'This save expired. Try again to start a new save.',
+    'beatExport.otherAccount': 'This beat belongs to another account. Sign in to that account to save it to Music.',
     'beatExport.changed': 'This save changed. Try again to start a new save.',
     'beatExport.rate': 'Too many saves just now. Wait a minute and try again.',
     "beatExport.takeNotPreserved": "A recorded take could not be saved. Retry saving it or discard it before exporting.",
