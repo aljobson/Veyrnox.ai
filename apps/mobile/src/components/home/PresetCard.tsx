@@ -7,6 +7,7 @@ import { t } from '../../lib/i18n';
 import { kindOf, type Kind } from '../../lib/media';
 import type { Preset } from '../../lib/presets';
 import { ds, featureHue } from '../../theme';
+import { TemplatePlayButton, TemplateVideoLayer } from '../templates/TemplatePreviewControls';
 import { Card, IconBadge, Text, themedStyles, useAppearance, usePressStyle, useThemedStyles } from '../ui';
 
 // What stands in for a missing poster: the icon and colour of what the template makes.
@@ -17,7 +18,7 @@ const FALLBACK: Readonly<Record<Kind, FeatureIcon>> = {
 };
 const OTHER: FeatureIcon = { icon: 'squares', hue: 'mint' };
 
-export function PresetCard({ preset, price, onOpen }: { preset: Preset; price: string; onOpen: (preset: Preset) => void }) {
+export function PresetCard({ preset, price, playing = false, onPlay, onOpen }: { preset: Preset; price: string; playing?: boolean; onPlay?: () => void; onOpen: (preset: Preset) => void }) {
     const styles = useThemedStyles(sheets);
     const pressStyle = usePressStyle();
     const { scheme } = useAppearance();
@@ -27,7 +28,8 @@ export function PresetCard({ preset, price, onOpen }: { preset: Preset; price: s
     const wash = featureHue(fallback.hue, scheme).wash;
     const washStyle = useMemo(() => ({ backgroundColor: wash }), [wash]);
     return (
-        <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} style={({ pressed }) => [styles.presetCard, pressed && pressStyle]} onPress={() => onOpen(preset)}>
+        <View style={styles.presetCard}>
+        <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} style={({ pressed }) => [pressed && pressStyle]} onPress={() => onOpen(preset)}>
             <Card style={styles.mediaCard}>
                 <View style={styles.presetMedia}>
                     {preset.posterUrl ? (
@@ -39,6 +41,7 @@ export function PresetCard({ preset, price, onOpen }: { preset: Preset; price: s
                             </View>
                         </View>
                     )}
+                    {playing && onPlay && preset.previewUrl ? <TemplateVideoLayer url={preset.previewUrl} onFail={onPlay} /> : null}
                     {preset.isNew ? (
                         <View style={styles.newBadge}>
                             <Text variant="micro" style={styles.newBadgeText}>
@@ -60,6 +63,8 @@ export function PresetCard({ preset, price, onOpen }: { preset: Preset; price: s
                 </View>
             </Card>
         </Pressable>
+        {onPlay && preset.previewUrl ? <TemplatePlayButton title={preset.title} playing={playing} onPress={onPlay} /> : null}
+        </View>
     );
 }
 
