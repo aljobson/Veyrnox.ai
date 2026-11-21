@@ -170,3 +170,29 @@ The originally configured two-round inspection budget was exhausted. On 2026-11-
 Claude found no material defect and confirmed `W2-1`–`W2-3` are closed. One low-severity advisory, `W3-1`, remains: the non-rendered `publishPlan` and `publishActivity` registry entries use title keys that are not present in the English catalogue. This does not affect Wave 1 UI because neither entry is searchable or in the All Features directory. It is accepted for the Wave 2 Publish-plan slice: use `plan.navTitle` and `activity.title`, then extend the registry copy test to every entry and include the change in that slice's independent inspection.
 
 Inspector limitations: Claude did not run commands or device checks; compact-header fit, VoiceOver order, Dynamic Type and linguistic translation quality remain for simulator/device qualification. Codex proof for the approved code snapshot is 10 suites / 168 tests, mobile typecheck, zero-warning changed-file ESLint, i18n/registry checks and `git diff --check`.
+
+## Scope-expansion plan review round 1: Beats plus onboarding/paywall
+
+- Result: `REVISE`
+- Reviewer: Claude Code 2.1.309, observed model `claude-opus-5-5`, resumed plan-review session `432207f1-1771-4c6b-9ce3-83d1736faca0`
+- Reviewed plan SHA-256: `835f9ce942619ae4bf37a25d464f1f9f9438dd12d9b3e48fdd262cbe42ee7baa`
+- Runner result: `/private/tmp/claudex-mobile-parity-review-20261121-scope-expansion/claudex-ttm2j7c9/result.json`
+
+### Findings and host dispositions
+
+1. `F15` medium: the revised criterion required Magic Bar even though production `MUSIC_RUNTIME_FLAGS.magicBar` is false. Accepted; criterion 8 and Wave 3B now require only production-capability-enabled outcomes, false flag rows receive a gated/no-build disposition, and a contract test keeps matrix dispositions aligned with runtime flag keys.
+2. `F16` medium: the plan described a live web/mobile hard-paywall divergence, but the production web switch is omitted and every mobile EAS profile leaves it unset. Accepted; shipped value-first polish no longer waits on the hypothetical gate. A future revenue gate is a separate flagged slice and must enforce every paid quote/confirm/generation route on the server; the typed client boundary is UX only.
+3. `F17` low: migration 0514 was stated as applied without durable evidence. Accepted; the plan now records the read-only 2026-11-21 17:58:08Z production check through `scripts/check-migration-ledger.mjs`. The public `applied_migration_names` RPC returned 518 names and exactly `0514_music_tempo_key_meter` for the match, using no service-role credential and making no remote mutation.
+
+Reviewer limitations: no proof commands or builds were run; the reviewer did not deeply verify onboarding/paywall source, the complete Beats inventory, PR #2533, the cold-launch appearance issue, or later editor/template slices.
+
+## Scope-expansion plan review round 2: final approval
+
+- Result: `APPROVED`
+- Reviewer: Claude Code 2.1.309, observed model `claude-opus-5-5`, resumed plan-review session `432207f1-1771-4c6b-9ce3-83d1736faca0`
+- Approved plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Runner result: `/private/tmp/claudex-mobile-parity-review-20261121-scope-expansion-r2/claudex-lso5vv4x/result.json`
+
+Claude confirmed `F15`–`F17` are closed, `F1`–`F14` remain closed, and found no new material defect. The approved scope now includes Wave 2D onboarding/paywall conversion and colour polish, Wave 3A Professional Editor S7–S14, and Wave 3B production-capability-gated Music Beats Editing parity. Final inspection remains enabled for every implementation slice.
+
+Approval limitations: Claude did not reproduce the migration-ledger output or run tests/builds, did not independently locate the cold-launch forced-light reset, and did not deeply inspect onboarding/paywall source, the complete Beats inventory, PR #2533, Wave 3A, template contracts, or WebView removal.
