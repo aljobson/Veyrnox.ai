@@ -4938,6 +4938,90 @@
     "ratio": 1.91
   },
   {
+    "id": "editorMotion.scale",
+    "english": "Scale",
+    "translation": "Skalierung",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Schwenk nach rechts",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorMotion.rise",
+    "english": "Rise",
+    "translation": "Anstieg",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.arc",
+    "english": "Arc",
+    "translation": "Bogen",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Zum Abspielkopf verschieben",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorMotion.go",
+    "english": "Go to point",
+    "translation": "Zum Punkt springen",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Interpolation",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Langsam beginnen",
+    "ratio": 2.29
+  },
+  {
+    "id": "editorMotion.ease-out",
+    "english": "Ease out",
+    "translation": "Langsam enden",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorMotion.ease-in-out",
+    "english": "Ease in and out",
+    "translation": "Sanft beschleunigen und abbremsen",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorMotion.resetMask",
+    "english": "Reset mask",
+    "translation": "Maske zurücksetzen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorMotion.resetSmart",
+    "english": "Reset Smart picture",
+    "translation": "Intelligentes Bild zurücksetzen",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorMotion.left",
+    "english": "Move left",
+    "translation": "Nach links verschieben",
+    "ratio": 2.44
+  },
+  {
+    "id": "editorMotion.right",
+    "english": "Move right",
+    "translation": "Nach rechts verschieben",
+    "ratio": 2.3
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

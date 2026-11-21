@@ -1,20 +1,17 @@
+import { MotionPanel } from './tools/MotionPanel'; import { MaskPanel } from './tools/MaskPanel';
+import { useMotionActions } from './tools/useMotionActions'; import { useMaskActions } from './tools/useMaskActions';
 import { useLookActions } from './tools/useLookActions'; import { useAudioSettingsActions } from './tools/useAudioSettingsActions';
-import { useOriginalAudio } from './tools/useOriginalAudio';
-import { useCaptionActions } from './tools/useCaptionActions';
-import { useTextActions } from './tools/useTextActions';
-import { useSpeedActions } from './tools/useSpeedActions';
+import { useOriginalAudio } from './tools/useOriginalAudio'; import { useCaptionActions } from './tools/useCaptionActions';
+import { useTextActions } from './tools/useTextActions'; import { useSpeedActions } from './tools/useSpeedActions';
 import type { VoiceoverProps } from './useVoiceoverRecorder';
-import { ToolRail } from './tools/ToolRail';
-import type { Tool } from './tools/editorTools';
+import { ToolRail } from './tools/ToolRail'; import type { Tool } from './tools/editorTools';
 import type { ToolPanelProps } from './tools/types';
-import { MediaPanel } from './tools/MediaPanel';
-import { AudioPanel } from './tools/AudioPanel';
+import { MediaPanel } from './tools/MediaPanel'; import { AudioPanel } from './tools/AudioPanel';
 import { TextPanel } from './tools/TextPanel';
 import { CaptionsPanel, TranscriptPanel } from './tools/CaptionsPanels';
 import { EffectsPanel, TransitionsPanel, FiltersPanel } from './tools/LookPanels';
 import { AnimationPanel } from './tools/AnimationPanel';
-import { MarkersPanel } from './tools/MarkersPanel';
-import { AdjustPanel } from './tools/AdjustPanel';
+import { MarkersPanel } from './tools/MarkersPanel'; import { AdjustPanel } from './tools/AdjustPanel';
 import { useBestCutEditor } from './useBestCutEditor';
 import { EditorSpeechCutSheet } from './EditorSpeechCutSheet';
 import { useSpeechCutAvailability } from './useSpeechCutAvailability';
@@ -33,7 +30,6 @@ import { MakePanel } from '../chat/MakePanel';
 import { EditorGeneratePanel } from './EditorGeneratePanel';
 import { EditorStemSheet } from './EditorStemSheet';
 import { useEditorGenerationReturns, type InsertResult } from './useEditorGenerationReturns';
-
 import { Text as StatusText } from '../ui/Text';
 import { Command, Action, Choice, WorkflowPanel } from './EditorControls';
 import { useEditorTrackActions } from './useEditorTrackActions';
@@ -123,6 +119,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         frameStore, setSelection, setSelections, setTool });
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         setSelection, setSelections, frameStore, beginImport, currentDocument, getEpoch: () => sync.epoch });
+    const motionActions = useMotionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore, setFrame, setPlaying });
+    const maskActions = useMaskActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
     const lookActions = useLookActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
     const audioActions = useAudioSettingsActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
     const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, playing, setProblem: message => { if (sync.live()) setProblem(message); },
@@ -235,7 +233,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
-    const panelProps: ToolPanelProps = { lookActions,
+    const panelProps: ToolPanelProps = { lookActions, motionActions, maskActions,
         audioActions, originalAudio, timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
@@ -317,7 +315,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>}
             <View style={[styles.previewFrame, advanced || panelOpen ? { height: previewHeight } : styles.simpleFill]}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
-                    <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} />
+                    <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris}
+                        motionHandle={(advanced || panelOpen) && tool === 'motion' ? { selection, actions: motionActions } : undefined} />
                 </View>
             </View>
             <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} onSeek={setFrame} onPlaying={setPlaying} />
@@ -353,6 +352,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             {tool === 'effects' ? <EffectsPanel {...panelProps} /> : null}
             {tool === 'transitions' ? <TransitionsPanel {...panelProps} /> : null}
             {tool === 'filters' ? <FiltersPanel {...panelProps} /> : null}
+            {tool === 'motion' ? <MotionPanel {...panelProps} /> : null}{tool === 'mask' ? <MaskPanel {...panelProps} /> : null}
             {tool === 'animation' ? <AnimationPanel {...panelProps} /> : null}
             {tool === 'brand' ? <WorkflowPanel {...brandProps} /> : null}
             {tool === 'markers' ? <MarkersPanel {...panelProps} /> : null}

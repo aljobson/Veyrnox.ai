@@ -1,3 +1,4 @@
+import { EditorMotionHandle, type MotionHandleProps } from './EditorMotionHandle';
 import type { ComponentProps } from 'react';
 import { Text, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
@@ -20,16 +21,18 @@ export function PlaybackTimeline({ frameStore, ...props }: Playback & Omit<Compo
     const frame = useEditorFrame(frameStore);
     return <EditorTimeline {...props} frame={frame} />;
 }
-export function PlaybackPreview({ frameStore, timeline, api, playing, localMediaUris }: Playback & {
-    timeline: Timeline; api: Pick<ApiClient, 'request'>; playing: boolean; localMediaUris: Record<string, string>;
+export function PlaybackPreview({ frameStore, timeline, api, playing, localMediaUris, motionHandle }: Playback & {
+    motionHandle?: MotionHandleProps; timeline: Timeline; api: Pick<ApiClient, 'request'>; playing: boolean; localMediaUris: Record<string, string>;
 }) {
     const frame = useEditorFrame(frameStore);
     const active = activeEditorMedia(timeline, frame);
     const caption = timeline.text.find(item => frame >= item.start && frame < item.start + item.len) ?? timeline.text[0];
     return <>
+        <View pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: timeline.background ?? '#000000' }} />
         {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}
         <View style={styles.safeFrame} />
         {!active && !caption ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}
         {caption ? <EditorTextOverlay item={caption} frame={frame} /> : null}
+        {motionHandle ? <EditorMotionHandle timeline={timeline} {...motionHandle} /> : null}
     </>;
 }

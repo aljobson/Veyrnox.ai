@@ -28,6 +28,7 @@ test('adjustable announces value and commits one accessible step, respecting dis
         await act(async () => root.render(<Slider label="Speed" value={value} min={.1} max={8} step={.1}
             format={v => `${v}×`} disabled={disabled} onChange={onChange} />));
         const node = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable')[0];
+        expect(node.props.accessible).toBe(true);
         expect(node.props.accessibilityLabel).toBe('Speed');
         expect(node.props.accessibilityValue).toEqual({ min: .1, max: 8, now: value, text: `${value}×` });
         expect(node.props.accessibilityActions).toEqual([{ name: 'increment' }, { name: 'decrement' }]);

@@ -1,6 +1,6 @@
 import { effectiveTransition } from '../../../../app/veyrnox/_lib/editorTimeline.mjs';
 import { neutralColour } from '../../../../app/veyrnox/_lib/editorColour.mjs';
-import { FILTER_DEFAULTS } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { FILTER_DEFAULTS, TRANSFORM_DEFAULTS } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { audioProcessingActive } from '../../../../app/veyrnox/_lib/editorAudioSettings.mjs';
 import { audioEffectsActive } from '../../../../app/veyrnox/_lib/editorAudioEffects.mjs';
 import { exportRefusal } from './editorExportRefusal';
@@ -83,6 +83,15 @@ export function exportCopy(saved: ProjectDocument, localFiles: Record<string, De
         if (!clip.preservePitch) delete clip.preservePitch;
     }
     for (const clip of [...clips, ...timeline.text]) {
+        for (const field of ['keyframes', 'parameterKeyframes', 'maskKeyframes'] as const) if (clip[field]?.length === 0) delete clip[field];
+        if ('transform' in clip && clip.transform && Object.entries(TRANSFORM_DEFAULTS)
+            .every(([key, value]) => (clip.transform?.[key as keyof typeof TRANSFORM_DEFAULTS] ?? value) === value)) delete clip.transform;
+        if ('mask' in clip && clip.mask === 'none' || !('mask' in clip) || !clip.mask) {
+            delete (clip as import('./nativeEditorModel').Clip).mask;
+            delete (clip as import('./nativeEditorModel').Clip).maskSettings;
+            delete clip.maskKeyframes;
+        }
+        if ('smartPicture' in clip && clip.smartPicture && !clip.smartPicture.denoise && !clip.smartPicture.keyEnabled && !clip.smartPicture.light) delete clip.smartPicture;
         if ('rate' in clip && clip.rate === 1) delete clip.rate;
         // Neutral defaults (written by trim and fit-to-file) mean "no edit"; the server only accepts keys that carry one.
         for (const key of ['fadeIn', 'fadeOut', 'pan', 'reverse'] as const) if (key in clip && !(clip as Record<string, unknown>)[key]) delete (clip as Record<string, unknown>)[key];

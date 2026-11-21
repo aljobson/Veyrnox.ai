@@ -1,3 +1,5 @@
+import type { MotionActions } from './useMotionActions';
+import type { MaskActions } from './useMaskActions';
 import type { LookActions } from './useLookActions';
 import type { AudioSettingsActions } from './useAudioSettingsActions';
 import type { OriginalAudioActions } from './useOriginalAudio';
@@ -11,6 +13,7 @@ import type { SlotKind } from '../../../lib/sources';
 import type { Kind } from '../../../lib/media';
 
 export type ToolPanelProps = {
+    motionActions?: MotionActions; maskActions?: MaskActions;
     lookActions?: LookActions;
     audioActions?: AudioSettingsActions; originalAudio?: OriginalAudioActions;
     textActions?: TextActions; captionActions?: CaptionActions;
