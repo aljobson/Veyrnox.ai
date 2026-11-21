@@ -614,3 +614,11 @@ The importer copied each one-photo clip's role from its source prompt, which des
 - The phone app still makes and sends the two-image set: it drops the `fullBody` hint, and the server accepts two. Its photo step finds the face on a 384 px frame through the WebView protocol; a high-resolution second look there is a separate change.
 
 **Proof before switching on (owner).** Do one staging-key run ($0.84) of `community-kitchen-dance-swap` with a full-length photo. The runbook and the prepared images are in `~/Documents/Veyrnox-review/swap-full-body-probe-2026-11-20/`. Compare face likeness and outfit with the earlier face-crop runs.
+
+## Amendment 19 (2026-11-21): ten bound templates move to the swap route
+
+**Problem.** Ten community templates carry a short prompt that only works beside their source clip ("recreate the scene", "same moves"). They ran on Kling 3.0 image-to-video, which never received the clip. An owner job on `community-boardwalk-dance-routine` (64 credits, 2026-11-21) returned the owner's photo barely moving at the original wall.
+
+**Decision.** The owner approved the ten clips, roles and hashes. The importer gains a `bound_source` kind, reached only with `--kinds bound_source`, and `--add-to-live`, which reads the pinned live manifest first and adds to it without replacing a clip. The registry goes from 276 to 286 ids and the manifest from 411 to 421 clips. Price and prompt follow the existing swap path (47 credits per 5 s).
+
+**Proof.** All ten clips and the new manifest were read back from production R2 and matched by SHA-256. One paid fal run per template (ten runs, about $8.40) used the same photo, prompt and element shape as the route, and each result was compared frame by frame with its source. All ten kept the scene and motion and replaced the named person. These were direct provider calls: the signed-in product flow was not run for these ids before merge. Known limits: the model may carry an object from the photo into the clip and invent footwear when the photo does not show feet.
