@@ -2,16 +2,18 @@ import { createApiClient, ApiError } from '../src/lib/api';
 import { createConsentGate, type ConsentGate } from '../src/lib/aiConsent';
 import { guardedBeforeSend } from '../src/lib/guardedBeforeSend';
 import { setHardPaywallLocked } from '../src/lib/hardPaywall';
-import { createGenerationSubmit } from '../src/lib/generationSubmit';
+import { createSpeechSubmit } from '../src/lib/speech/speechLedger';
 import { mediaApi, type CatalogModel } from '../src/lib/media';
 import { buildSpeechRequest } from '../src/lib/speech/studio';
 import { DEFAULT_TTS_SETTINGS } from '../src/lib/speech/shared';
 let mockOwner = 'account-a';
+const mockSubscribers = new Set<() => void>();
 let mockGate: ConsentGate;
 const mockOnline = jest.fn();
-jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner }));
+jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => { mockSubscribers.add(fn); return () => mockSubscribers.delete(fn); } }));
 jest.mock('../src/lib/network', () => ({ ensureOnline: () => mockOnline(), markOnline: jest.fn(), markOffline: jest.fn() }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: (p: string, m: string) => mockGate.ensure(p, m), hasAgreed: () => mockGate.hasAgreed() } }));
+jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: async () => {}, submittedRequests: { list: async () => [] } }));
 jest.mock('../src/lib/celebrate', () => ({ noteLocalSubmission: jest.fn() }));
 jest.mock('../src/lib/generationProgress', () => ({ noteJobStarted: jest.fn() }));
 jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: jest.fn() }));
@@ -21,7 +23,7 @@ const request = () => buildSpeechRequest(' Hello ', DEFAULT_TTS_SETTINGS, model)
 const client = () => createApiClient({ baseUrl: 'https://speech.invalid', getAccessToken: async () => ['header', btoa(JSON.stringify({ sub: mockOwner })), 'signature'].join('.'), onSessionLost: jest.fn(), beforeSend: guardedBeforeSend });
 const savedFetch = globalThis.fetch;
 beforeEach(() => {
-    mockOwner = 'account-a'; mockOnline.mockReset().mockResolvedValue(undefined); setHardPaywallLocked(false);
+    mockOwner = 'account-a'; mockSubscribers.forEach(fn => fn()); mockOnline.mockReset().mockResolvedValue(undefined); setHardPaywallLocked(false);
     const map = new Map<string, string>();
     mockGate = createConsentGate({ get: async k => map.get(k) ?? null, set: async (k, v) => { map.set(k, v); }, remove: async k => { map.delete(k); } });
     mockGate.setUser(mockOwner); mockGate.setPrompter(async () => true);
@@ -29,7 +31,7 @@ beforeEach(() => {
 });
 afterEach(() => { globalThis.fetch = savedFetch; setHardPaywallLocked(false); jest.restoreAllMocks(); });
 test('real submit/media/API path sends exactly the six controls and displayed price ceiling', async () => {
-    const submit = createGenerationSubmit(), r = request();
+    const submit = createSpeechSubmit(), r = request();
     await submit.run(client(), r, 1, undefined, undefined, submit.snapshot(r, 1, 6, 0));
     expect(fetch).toHaveBeenCalledTimes(1);
     const [url, init] = jest.mocked(fetch).mock.calls[0];
@@ -39,12 +41,12 @@ test('real submit/media/API path sends exactly the six controls and displayed pr
 });
 test('real consent gate declines before any generation leaves', async () => {
     mockGate.setPrompter(async () => false);
-    await expect(createGenerationSubmit().run(client(), request())).rejects.toMatchObject({ code: 'consent_declined' });
+    await expect(createSpeechSubmit().run(client(), request())).rejects.toMatchObject({ code: 'consent_declined' });
     expect(fetch).not.toHaveBeenCalled();
 });
 test('real paid-action guard locks the API path before any request leaves', async () => {
     setHardPaywallLocked(true);
-    await expect(createGenerationSubmit().run(client(), request())).rejects.toMatchObject({ code: 'subscription_required' });
+    await expect(createSpeechSubmit().run(client(), request())).rejects.toMatchObject({ code: 'subscription_required' });
     expect(fetch).not.toHaveBeenCalled();
 });
 test.each(['online', 'consent', 'agreement'] as const)('account switch during %s preflight cannot POST A’s script as B', async stage => {
@@ -62,7 +64,7 @@ test.each(['online', 'consent', 'agreement'] as const)('account switch during %s
     expect(fetch).not.toHaveBeenCalled();
 });
 test('unchanged uncertain retry uses one key; a changed request uses another', async () => {
-    const submit = createGenerationSubmit(), api = client(), r = request();
+    const submit = createSpeechSubmit(), api = client(), r = request();
     jest.mocked(fetch).mockRejectedValueOnce(new Error('lost response'));
     await expect(submit.run(api, r)).rejects.toBeInstanceOf(ApiError);
     await submit.run(api, r);
