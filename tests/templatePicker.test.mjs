@@ -78,7 +78,7 @@ test('Create lists the gallery video templates, each with its poster and a link 
   assert.equal(templateButtons(html), runnable.length);
   assert.match(html, new RegExp(`TEMPLATES · ${runnable.length}`));
   assert.doesNotMatch(html, /create-template-picker-empty/);
-  assert.match(html, /src="\/showcase\/[^"]+\.jpg"/);
+  assert.match(html, /<video src="\/showcase\/[^"]+\.mp4" poster="\/showcase\/[^"]+\.jpg" controls=""/);
   assert.match(html, /href="\/presets"[^>]*>Open the template gallery</);
   assert.ok(runnable.every(({ model }) => model.kind === 'video'));
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { pluralKey } from '../../../lib/i18n/translate.mjs';
 import { createTemplatesFor } from '../_lib/createTemplates.js';
@@ -10,9 +10,16 @@ import { presetCredits, presetTitle } from '../_lib/tokens.js';
 import { useTemplateCards } from '../_lib/useTemplates.js';
 import { Modal } from './Modal';
 
+// A video template's preview plays in place with its own controls (sound on); the poster shows until it is played or if the clip fails to load.
+function VideoPreview({ src, poster, title }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return <img src={poster} alt={title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />;
+  return <video src={src} poster={poster} controls playsInline preload="none" aria-label={title} onError={() => setFailed(true)} className="absolute inset-0 h-full w-full bg-black object-cover" />;
+}
+
 // Video starts are the gallery's video templates (/api/templates cards, each using the person's own photo); a card's poster is its preview.
 function videoStarts(cards) {
-  return (cards || []).filter((card) => card.kind !== 'image').map((card) => ({ ...card, previewImage: card.clip?.poster || card.previewImage }));
+  return (cards || []).filter((card) => card.kind !== 'image').map((card) => ({ ...card, previewImage: card.clip?.poster || card.previewImage, previewVideo: card.clip?.video }));
 }
 
 /** Runnable starts for Create's selected medium: the gallery's video templates, curated image and audio ones; audio also links to Music Discover. */
@@ -52,7 +59,9 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
             return (
               <li key={preset.id} className="overflow-hidden rounded-2xl border border-vx-border bg-vx-base">
                 <div className="relative aspect-[4/3] overflow-hidden" style={{ background: preset.bg }}>
-                  <img src={preset.previewImage} alt={title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                  {kind === 'video'
+                    ? <VideoPreview src={preset.previewVideo} poster={preset.previewImage} title={title} />
+                    : <img src={preset.previewImage} alt={title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
                 </div>
                 {kind === 'audio' && (
                   <div className="border-b border-vx-border px-3 py-3">
