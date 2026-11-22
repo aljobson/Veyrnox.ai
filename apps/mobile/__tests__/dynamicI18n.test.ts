@@ -83,6 +83,7 @@ const domains: Record<string, readonly string[]> = {
     'beat.local.{}': ['saved', 'saving', 'error', 'busy'],
     'beat.cloud.{}': ['checking', 'off', 'unlinked', 'other', 'signed_out', 'syncing', 'synced', 'conflict', 'paused_conflict', 'removed', 'limit', 'rate_limited', 'offline', 'error', 'takes'],
     'beat.pad.{}': ['kick', 'snare', 'hat', 'openhat', 'clap', 'tom', 'rim', 'crash'],
+    'beat.padRecord.status.{}': ['off', 'armed', 'recording'],
     'beat.kit.{}': ['acoustic', '808', 'lofi'],
     'music.tab.{}': ['songs', 'history', 'hooks'],
     'music.empty.{}': ['songs', 'history', 'hooks'],
