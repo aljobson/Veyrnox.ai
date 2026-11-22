@@ -12,7 +12,7 @@ jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: 
 const fixtureData = JSON.parse(execFileSync(process.execPath, [resolve('../../tests/fixtures/templateFidelityParity.mjs')], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, env: { ...process.env, NODE_NO_WARNINGS: '1' } }));
 const fixtures = fixtureData.inventory;
 test('all exact templates have provider-field parity through feed, parser, handoff and request', async () => {
-    expect(fixtures).toHaveLength(749 + 46 + 30 + 59 + 20); // + 20 Veyrnox-written Seedance templates
+    expect(fixtures).toHaveLength(749 + 46 + 30 + 59 + 8); // + 8 Veyrnox-written Seedance templates
     const parity: Record<string, unknown> = {};
     for (const { feed, model, body, contract } of fixtures) {
         const [parsed] = parsePresets({ presets: [feed] });
@@ -100,7 +100,7 @@ const createRequest = new Function('context', `with (context) { ${ts.transpileMo
 
 test('all bound contracts use ordered references and the same bound transport on web and mobile', async () => {
     const { templateRoute } = require('../src/lib/templateFidelity');
-    expect(fixtureData.boundInventory).toHaveLength(70 + 3 + 30 + 59 - 126 + 48 + 20); // + 48 long one-photo recipes bound to the kie Seedance photo offer (ADR-0309 amendment 3) // minus the 78 swap templates the photo route refuses (template_blocked); 73 until the guard learned three more wordings (2026-11-18)
+    expect(fixtureData.boundInventory).toHaveLength(70 + 3 + 30 + 59 - 126 + 48 + 8); // + 48 long one-photo recipes bound to the kie Seedance photo offer (ADR-0309 amendment 3) // minus the 78 swap templates the photo route refuses (template_blocked); 73 until the guard learned three more wordings (2026-11-18)
     for (const { feed, model, body, contract, serverCheck } of fixtureData.boundInventory) {
         const [parsed] = parsePresets({ presets: [feed] });
         const route = templateRoute(parsed, parsed.modelId, body.references.length);

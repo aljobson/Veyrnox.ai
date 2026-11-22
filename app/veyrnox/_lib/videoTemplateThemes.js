@@ -36,9 +36,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
       'community-london-gentleman-walk',
       // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
       'studio-ballerina-turns',
-      // Written by Veyrnox and paid-tested (owner, 2026-11-21).
-      'original-rooftop-sunset-groove', 'original-disco-floor-spin', 'original-street-popping-solo', 'original-salsa-plaza-steps',
-      'original-neon-club-footwork', 'original-beach-barefoot-dance', 'original-studio-mirror-routine', 'original-rain-puddle-tap',
     ],
   },
   {
@@ -104,10 +101,6 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'ANIMALS',
     templateIds: ['animal-pov-to-the-club', 'community-pet-affection-reveal', 'community-synchronized-pet-portrait'],
-  },
-  {
-    id: 'ANIMATED',
-    templateIds: ['original-storybook-3d-hero', 'original-hand-drawn-meadow', 'original-anime-sky-run', 'original-pixel-quest'],
   },
 ]);
 

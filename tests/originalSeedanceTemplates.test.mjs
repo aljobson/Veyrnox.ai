@@ -15,17 +15,15 @@ import { templateRouteContract } from '../lib/templateRoute.js';
 import { fallbackCapabilitiesFor } from '../lib/fallbackModelCapabilities.js';
 import { toPublicPresets } from '../lib/publicPresets.js';
 import { templateDetail } from '../lib/clientTemplates.js';
-import { videoTemplateTheme } from '../app/veyrnox/_lib/videoTemplateThemes.js';
-import { LONG_PROMPT_GALLERY_TEMPLATE_IDS } from '../app/veyrnox/_lib/videoTemplateGallery.js';
 
 const OFFER = 'seedance-2.0-photo-kie';
 const offer = MODELS.find(model => model.id === OFFER);
 const catalog = [{ ...offer, modality: 'image-to-video' }];
 const reference = [{ slot: 'image', origin: 'upload', key: 'photo' }];
 
-test('the 20 originals have an exact prompt, their own preview, the offer and its 58-credit price', () => {
-  assert.equal(ORIGINAL_SEEDANCE_TEMPLATES.length, 20);
-  assert.equal(new Set(ORIGINAL_SEEDANCE_TEMPLATES.map(t => t.clipKey)).size, 20);
+test('the eight originals have an exact prompt, their own preview, the offer and its 58-credit price', () => {
+  assert.equal(ORIGINAL_SEEDANCE_TEMPLATES.length, 8);
+  assert.equal(new Set(ORIGINAL_SEEDANCE_TEMPLATES.map(t => t.clipKey)).size, 8);
   for (const source of ORIGINAL_SEEDANCE_TEMPLATES) {
     const preset = templateById(source.id);
     assert.ok(PRESETS.includes(preset), source.id);
@@ -79,23 +77,5 @@ test('the public feed and detail give a client the same bound contract', () => {
     assert.equal(fromFeed.modelId, OFFER, row.id);
     assert.equal(templateDetail(row.id).fidelity.prompt, full.prompt, row.id);
     assert.equal(templateDetail(row.id).sourcePromptRunnable, true, row.id);
-  }
-});
-
-test('the dance and animation originals sit in their themes and categories; unapproved concepts stay out', () => {
-  const dance = ['rooftop-sunset-groove', 'disco-floor-spin', 'street-popping-solo', 'salsa-plaza-steps', 'neon-club-footwork', 'beach-barefoot-dance', 'studio-mirror-routine', 'rain-puddle-tap'];
-  const animated = { 'storybook-3d-hero': 'CARTOONS', 'hand-drawn-meadow': 'CARTOONS', 'anime-sky-run': 'ANIME', 'pixel-quest': 'CARTOONS' };
-  for (const slug of dance) {
-    assert.equal(videoTemplateTheme(`original-${slug}`), 'DANCE', slug);
-    assert.equal(templateById(`original-${slug}`).category, 'REALISTIC', slug);
-    assert.ok(LONG_PROMPT_GALLERY_TEMPLATE_IDS.includes(`original-${slug}`), slug);
-  }
-  for (const [slug, category] of Object.entries(animated)) {
-    assert.equal(videoTemplateTheme(`original-${slug}`), 'ANIMATED', slug);
-    assert.equal(templateById(`original-${slug}`).category, category, slug);
-    assert.ok(LONG_PROMPT_GALLERY_TEMPLATE_IDS.includes(`original-${slug}`), slug);
-  }
-  for (const slug of ['clay-world-adventure', 'paper-cut-journey', 'comic-book-burst', 'toy-box-alive', 'comet-over-city', 'underwater-ballroom']) {
-    assert.equal(templateById(`original-${slug}`), null, slug);
   }
 });

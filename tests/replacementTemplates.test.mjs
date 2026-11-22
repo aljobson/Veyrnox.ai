@@ -105,8 +105,8 @@ test('all old records, recipes, visual signatures and hidden rows remain unchang
   assert.deepEqual(REMOVED_PROMPT_GAP_TEMPLATE_IDS, baseline.hidden);
   assert.equal(REMOVED_PROMPT_GAP_TEMPLATE_IDS.length, 70);
   assert.equal(SOURCE_TEMPLATES.length, 841 + 46 + 30 + 59);
-  assert.equal(PRESETS.length, 749 + 46 + 30 + 59 + 8 + 12);
-  assert.equal(ALL_TEMPLATES.length, 1791 + 46 + 30 + 59 + 8 + 12);
+  assert.equal(PRESETS.length, 749 + 46 + 30 + 59 + 8);
+  assert.equal(ALL_TEMPLATES.length, 1791 + 46 + 30 + 59 + 8);
   const deltas = { REALISTIC: 4, CINEMATIC: 2, UGC: 2, CARTOONS: 1, VFX: 1, MOVIES: 1, FASHION: 1, PRODUCTS: 1, FANTASY: 1 };
   const expansion = { MOVIES: 6, CINEMATIC: 15, REALISTIC: 23, FASHION: 1, CARTOONS: 1 };
   // The 2026-11-15 single-photo import (scripts/import-higgsfield-photo-30.mjs), by category.
@@ -114,9 +114,9 @@ test('all old records, recipes, visual signatures and hidden rows remain unchang
   for (const t of [...HF_PHOTO_30_TEMPLATES, ...HF_PHOTO_59_TEMPLATES]) photo30[t.category] = (photo30[t.category] || 0) + 1;
   const withdrawn = {};
   for (const t of new Map(SOURCE_TEMPLATES.concat(HF_REPLACEMENTS_TEMPLATES, SYNTX_REPLACEMENTS_TEMPLATES).map(t => [t.id, t])).values()) if (BROKEN_TEMPLATE_IDS.includes(publicTemplateId(t.id))) withdrawn[t.category] = (withdrawn[t.category] || 0) + 1;
-  // The category baseline is the community corpus; the 20 Veyrnox originals are pinned in originalSeedanceTemplates.test.mjs.
+  // The category baseline is the community corpus; the eight Veyrnox originals are pinned in originalSeedanceTemplates.test.mjs.
   const communityPresets = PRESETS.filter(t => t.promptOrigin !== 'veyrnox-original');
-  assert.equal(communityPresets.length, PRESETS.length - 20);
+  assert.equal(communityPresets.length, PRESETS.length - 8);
   for (const category of new Set([...Object.keys(baseline.categories), ...communityPresets.map(t => t.category)])) {
     assert.equal(communityPresets.filter(t => t.category === category).length, (baseline.categories[category] || 0) + (deltas[category] || 0) + (expansion[category] || 0) + (photo30[category] || 0) - (withdrawn[category] || 0), category);
   }
