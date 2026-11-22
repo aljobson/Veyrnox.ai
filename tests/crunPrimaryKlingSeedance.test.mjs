@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import { buildRequest, endpointKind, submitTask } from '../packages/adapters/crun.js';
 import { crunReferenceTags } from '../lib/crunSeedanceReference.js';
-import { crunInputRefusal } from '../lib/crunInputRefusal.js';
+import { crunInputRefusal, PHOTO_CHARACTER_LINE } from '../lib/crunInputRefusal.js';
 import { capabilityFor, publicCapabilities } from '../lib/modelCapabilities.js';
 import { ALL_TEMPLATES } from '../app/veyrnox/_lib/templates.js';
 import { TEMPLATE_FACE_WORDING_COMPACT } from '../lib/templateFaceWording.mjs';
@@ -25,11 +25,27 @@ test('a typed negative prompt is refused on the Crun Kling offer, and only there
   assert.equal(crunInputRefusal({ id: 'kling-3.0-i2v-kie', provider: 'crun' }, { negative_prompt: 'blur' }, {}), null);
 });
 
-test('a template with its own negative prompt is blocked instead of running without it', () => {
-  assert.equal(crunInputRefusal(crunRow, {}, { preset: withNegative.id }), 'template_blocked');
-  assert.equal(crunInputRefusal(crunRow, {}, { template_id: withNegative.id }), 'template_blocked');
-  assert.equal(crunInputRefusal(crunRow, {}, { preset: withoutNegative.id }), null);
-  assert.equal(crunInputRefusal(crunRow, {}, { preset: 'not-a-template' }), null);
+test('a template runs without its own negative prompt; nothing else gets through the template path', () => {
+  const own = { prompt: withNegative.prompt, negative_prompt: withNegative.negativePrompt };
+  const refused = 'inputs_key_not_allowed:negative_prompt';
+  assert.equal(crunInputRefusal(crunRow, { prompt: withNegative.prompt }, { preset: withNegative.id }), null, 'current clients send none');
+  assert.equal(crunInputRefusal(crunRow, own, { preset: withNegative.id }), null, 'an older client sends the template\'s own');
+  assert.equal(crunInputRefusal(crunRow, { ...own, prompt: `${withNegative.prompt}\n\n${PHOTO_CHARACTER_LINE}` }, { preset: withNegative.id }), null);
+  assert.equal(crunInputRefusal(crunRow, { ...own, negative_prompt: 'blurry' }, { preset: withNegative.id }), refused);
+  assert.equal(crunInputRefusal(crunRow, { ...own, prompt: 'a different prompt' }, { preset: withNegative.id }), refused);
+  assert.equal(crunInputRefusal(crunRow, { ...own, prompt: `${withNegative.prompt} extra` }, { preset: withNegative.id }), refused);
+  assert.equal(crunInputRefusal(crunRow, own, {}), refused, 'no template named');
+  assert.equal(crunInputRefusal(crunRow, own, { preset: 'not-a-template' }), refused);
+  assert.equal(crunInputRefusal(crunRow, own, { preset: withoutNegative.id }), refused, 'another template cannot vouch for it');
+  assert.equal(crunInputRefusal(crunRow, own, { preset: withNegative.id, template_id: withoutNegative.id }), refused, 'two names disagree');
+  assert.equal(crunInputRefusal(crunRow, { ...own, negative_prompt: ['x'] }, { preset: withNegative.id }), refused);
+  assert.equal(crunInputRefusal(crunRow, { prompt: withoutNegative.prompt }, { preset: withoutNegative.id }), null);
+});
+
+test('web and mobile append the same photo line the gateway recognises', () => {
+  for (const file of ['app/veyrnox/_lib/templateGenerate.js', 'apps/mobile/src/lib/templateGenerate.ts']) {
+    assert.ok(readFileSync(file, 'utf8').includes(PHOTO_CHARACTER_LINE), file);
+  }
 });
 
 test('the Kling offer no longer advertises a negative prompt or an end frame', () => {
