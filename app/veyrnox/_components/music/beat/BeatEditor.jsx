@@ -204,7 +204,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, v5Writes = f
       <BeatCloudConflictDialog sync={sync} />
     </section>}
     {!Object.values(doc.patterns).some(p => Object.values(p.rows).some(hits => hits.length)) && !Object.values(doc.clips).some(c => c.notes.length) && !Object.keys(doc.assets).length && <p>{t('app.music.beat.empty')}</p>}
-    <BeatTransport key={`transport-${reloadKey}`} doc={doc} edit={lockedEdit} selectPattern={project.selectPattern} playing={playback.playing} loading={playback.loading} toggle={playback.toggle} clear={clear} announce={announce} />
+    <BeatTransport key={`transport-${reloadKey}`} patternPanel={!mixerOpen && track.kind === 'drums'} doc={doc} edit={lockedEdit} selectPattern={project.selectPattern} playing={playback.playing} loading={playback.loading} toggle={playback.toggle} clear={clear} announce={announce} />
     {undo && undo.id === project.undoId && <div className="flex items-center gap-3 rounded-xl bg-vx-panel p-3">
       <p>{t('app.music.beat.ui.pattern')}{undo.slot}{t('app.music.beat.ui.cleared')}</p><button className={button} onClick={() => {
         project.undo(); setTitleDraft(null); setUndo(null); clearTimeout(undoTimer.current);

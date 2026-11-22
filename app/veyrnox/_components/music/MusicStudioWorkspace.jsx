@@ -59,6 +59,17 @@ export function MusicStudioWorkspace({ id }) {
   if (error) return <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6"><section role="alert" className="rounded-2xl border border-vx-border bg-vx-panel p-8"><h1 className="font-vx text-3xl font-black">Studio unavailable</h1><p className="mt-3 text-vx-fg-body">{error}</p><button type="button" onClick={load} className="mt-5 min-h-11 rounded-full border border-vx-border px-5 font-bold">Retry</button></section></div>;
   if (!song) return <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6" aria-busy="true"><div className="vx-shimmer h-[36rem] rounded-2xl bg-vx-panel" /></div>;
   const versions = Array.isArray(song.versions) ? song.versions : [];
+  // The seek button's accessible name starts with the text it shows, so the two cannot drift apart (WCAG 2.5.3).
+  const clipLabel = trackVisible ? `Version ${song.current_version?.version_number || 1} · full source clip` : 'Track hidden from timeline';
+  function seekTo(seconds) { if (audioRef.current && duration) audioRef.current.currentTime = Math.min(duration, Math.max(0, seconds)); }
+  function seekKey(event) {
+    // Relative steps start from the audio element's own clock: `current` only updates on timeupdate, so two quick
+    // arrow presses would both start from the same stale position.
+    const now = audioRef.current ? audioRef.current.currentTime : current;
+    const step = { ArrowLeft: now - 5, ArrowRight: now + 5, Home: 0, End: duration }[event.key];
+    if (step === undefined) return;
+    event.preventDefault(); seekTo(step);
+  }
   return (
     <div className={`mx-auto max-w-7xl px-3 py-6 sm:px-6 ${contrast === 'high' ? 'contrast-125' : ''}`}>
       <div className="flex flex-wrap items-center justify-between gap-3"><div><Link href={`/app/music/songs/${song.id}`} className="text-sm font-bold text-vx-fg-muted hover:text-vx-fg">← Song details</Link><p className="mt-3 font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Unsaved local session</p><h1 className="mt-1 font-vx text-3xl font-black sm:text-4xl">{song.title}</h1></div><span className="rounded-full border border-vx-warn/40 bg-vx-warn/[0.07] px-3 py-2 text-xs font-bold text-vx-fg-body">No project save</span></div>
@@ -82,8 +93,8 @@ export function MusicStudioWorkspace({ id }) {
               <div className="mb-2 flex h-6 justify-between font-vx-mono text-xs text-vx-fg-faint"><span>0:00</span><span>Project guide · {tempo} BPM · {signature}</span><span>{clock(duration)}</span></div>
               <div className="grid grid-cols-[9rem_minmax(0,1fr)] overflow-hidden rounded-2xl border border-vx-border bg-vx-base">
                 <div className="border-r border-vx-border p-3"><div className="flex items-center justify-between gap-2"><strong>Audio 1</strong><button type="button" onClick={() => setTrackVisible((value) => !value)} aria-pressed={!trackVisible} className="rounded-full border border-vx-border px-2 py-1 text-xs font-bold">{trackVisible ? 'Hide' : 'Show'}</button></div><label className="mt-3 flex items-center gap-2 text-xs"><input type="checkbox" checked={muted} onChange={(event) => setMuted(event.target.checked)} /> Mute</label><label className="mt-3 block text-xs">Volume<input aria-label="Track volume" type="range" min="0" max="1" step="0.05" value={volume} onChange={(event) => setVolume(Number(event.target.value))} className="mt-1 w-full" /></label></div>
-                <button type="button" aria-label="Seek within audio clip" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); if (audioRef.current && duration) audioRef.current.currentTime = ((event.clientX - rect.left) / rect.width) * duration; }} className="relative min-h-36 overflow-hidden p-3 text-left">
-                  {trackVisible ? <div className="h-full rounded-xl border border-vx-accent/40 bg-vx-accent/15 p-3"><p className="font-bold">Version {song.current_version?.version_number || 1} · full source clip</p><div className="mt-5 flex h-12 items-center gap-1" aria-hidden="true">{Array.from({ length: 48 }, (_, index) => <span key={index} className="w-full rounded-full bg-vx-accent" style={{ height: `${18 + ((index * 17) % 76)}%` }} />)}</div></div> : <div className="grid h-full place-items-center rounded-xl border border-dashed border-vx-border text-sm text-vx-fg-muted">Track hidden from timeline</div>}
+                <button type="button" aria-label={`${clipLabel}, seek within audio clip`} onKeyDown={seekKey} onClick={(event) => { if (event.detail === 0) return; const rect = event.currentTarget.getBoundingClientRect(); if (rect.width) seekTo(((event.clientX - rect.left) / rect.width) * duration); }} className="relative min-h-36 overflow-hidden p-3 text-left">
+                  {trackVisible ? <div className="h-full rounded-xl border border-vx-accent/40 bg-vx-accent/15 p-3"><p className="font-bold">{clipLabel}</p><div className="mt-5 flex h-12 items-center gap-1" aria-hidden="true">{Array.from({ length: 48 }, (_, index) => <span key={index} className="w-full rounded-full bg-vx-accent" style={{ height: `${18 + ((index * 17) % 76)}%` }} />)}</div></div> : <div className="grid h-full place-items-center rounded-xl border border-dashed border-vx-border text-sm text-vx-fg-muted">{clipLabel}</div>}
                   <span className="absolute inset-y-0 w-0.5 bg-white" style={{ left: `${duration ? Math.min(100, (current / duration) * 100) : 0}%` }} />
                 </button>
               </div>

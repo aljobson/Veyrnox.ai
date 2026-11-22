@@ -17,7 +17,7 @@
   },
   {
     "area": "tracks",
-    "text": "TRACKS0s1s2s3s4s5s6s7s8sUser caption unchanged0:03.0 · 1.5×",
+    "text": "TRACKS0s1s2s3s4s5s6s7s8sUser caption unchanged 0:03.0 · 1.5×",
     "labels": [
       "aria-label=\"Multitrack timeline\"",
       "aria-label=\"Rename User track unchanged\"",
@@ -35,7 +35,7 @@
       "title=\"User marker unchanged · 0:02.0\"",
       "aria-label=\"Go to User marker unchanged at 0:02.0\"",
       "aria-label=\"User track unchanged timeline\"",
-      "aria-label=\"User caption unchanged, User track unchanged, starts 0:01.0, duration 0:03.0\"",
+      "aria-label=\"User caption unchanged 0:03.0 · 1.5×, User track unchanged, starts 0:01.0, duration 0:03.0\"",
       "aria-label=\"Trim start of User caption unchanged\"",
       "aria-label=\"Trim end of User caption unchanged\""
     ]

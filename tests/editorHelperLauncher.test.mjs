@@ -24,7 +24,9 @@ test('the inline editor launcher retains the same accessible toggle state and fo
     assert.equal(portal.containerInfo, host);
     const button = portal.children;
     assert.equal(button.type, 'button'); assert.equal(button.props.type, 'button');
-    assert.equal(button.props['aria-label'], open ? 'Close Veyrnox.ai helper' : 'Ask Veyrnox.ai helper');
+    // The accessible name starts with the visible text, then names the helper in full (WCAG 2.5.3).
+    assert.equal(button.props['aria-label'], open ? 'Close Vey, Close Veyrnox.ai helper' : 'Ask Vey, Ask Veyrnox.ai helper');
+    assert.ok(button.props['aria-label'].startsWith(button.props.children));
     assert.equal(button.props['aria-expanded'], open); assert.equal(button.props.ref, launcherRef);
     assert.equal(button.props.children, open ? 'Close Vey' : 'Ask Vey');
     assert.match(button.props.className, /min-h-11/); button.props.onClick();
