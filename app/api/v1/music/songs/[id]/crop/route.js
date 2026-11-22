@@ -22,10 +22,13 @@ export async function POST(request, { params }) {
         if (!context?.ok) return reply({ error:publicMusicError(context?.code) },musicRpcStatus(context?.code));
         if (context.idempotent) return reply({ version_id:context.version_id,version_number:context.version_number,
             render_state:context.render_state,idempotent:true });
+        if (context.mime_type!=='audio/wav'||Number(context.size_bytes)>26214400) {
+            return reply({ error:'edit_unavailable_for_format' },409);
+        }
         const inspected=await inspectStoredSource(context.r2_key,{contentType:context.mime_type,field:'audio_url'},r2cfg);
         if (!inspected.ok||!Number.isFinite(inspected.seconds)) return reply({ error:inspected.error==='upload_too_large'?'source_too_large':'source_duration_unavailable' },400);
         if (input.end>inspected.seconds+0.05) return reply({ error:'crop_range_invalid',duration_seconds:inspected.seconds },400);
-        if (context.mime_type==='audio/wav' && Number(context.size_bytes)<=26214400) {
+        {
             const stored=await getObject(context.r2_key,r2cfg);
             if (!stored.ok) return reply({ error:'source_unavailable' },502);
             const source=new Uint8Array(await stored.response.arrayBuffer());

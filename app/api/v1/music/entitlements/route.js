@@ -1,6 +1,6 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
-import { readPublicCatalog } from '../../../../../lib/publicCatalog.js';
+import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
     musicEntitlementProjection, musicGenerationEnabled, musicSchemaEnabled, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
@@ -19,7 +19,7 @@ export async function GET(request) {
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
     try {
         const [models, credits, subscription] = await Promise.all([
-            readPublicCatalog({ cfg }),
+            readFreshMusicCatalog({ cfg }),
             rpc('read_user_credits', { p_auth_id: authId }, cfg),
             rpc('read_own_credit_subscription', { p_auth_id: authId }, cfg),
         ]);
