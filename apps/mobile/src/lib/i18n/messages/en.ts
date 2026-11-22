@@ -91,6 +91,7 @@ import area_editorCore from './en/editorCore';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorFont from './en/editorFont';
+import area_editorLocalExport from './en/editorLocalExport';
 import area_editorLook from './en/editorLook';
 import area_editorMotion from './en/editorMotion';
 import area_editorNativeMotion from './en/editorNativeMotion';
@@ -102,7 +103,6 @@ import area_editorScenes from './en/editorScenes';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
-import area_editorLocalExport from './en/editorLocalExport';
 import area_editorSpike from './en/editorSpike';
 import area_editorText from './en/editorText';
 import area_editorTools from './en/editorTools';
@@ -350,6 +350,7 @@ const catalog = {
     ...area_editorEditGate,
     ...area_editorExportRefusal,
     ...area_editorFont,
+    ...area_editorLocalExport,
     ...area_editorLook,
     ...area_editorMotion,
     ...area_editorNativeMotion,
@@ -361,7 +362,6 @@ const catalog = {
     ...area_editorServerExport,
     ...area_editorSimple,
     ...area_editorSpeech,
-    ...area_editorLocalExport,
     ...area_editorSpike,
     ...area_editorText,
     ...area_editorTools,
