@@ -31,6 +31,9 @@ const SOURCE_HOSTS = {
     // the sweep copies at once. Exact hosts only. Nothing fetches from them unless CRUN_ENABLED is "true" and a
     // Crun route is active.
     crun: { hosts: ['tempfile.mediaoss.bar', 'static.mediaoss.bar'], suffixes: [] },
+    // Suno audio is a separate, deliberately empty allowlist. A paid staging
+    // probe must verify the exact MP3 host before anything is added here.
+    crunAudio: { hosts: [], suffixes: [] },
 };
 // Providers whose output download carries our API key. The key may only go to
 // a host in that provider's list above, which for these is its own API host.

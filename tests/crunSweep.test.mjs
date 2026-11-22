@@ -92,6 +92,22 @@ test('every Crun endpoint has a capability record and the gateway check accepts 
     assert.equal(providerFor('crun').check(capabilityFor(ep), { provider_endpoint: ep }, { prompt: 'a boat' }).ok, true, ep);
   }
   assert.equal(providerFor('crun').check({}, { provider_endpoint: 'crun:google/unknown' }, { prompt: 'x' }).error, 'provider_unsupported');
+  assert.equal(capabilityFor('crun:suno/music-generate')?.kind, 'audio');
+});
+
+test('the unverified Suno audio host hook is empty and refuses every host', async () => {
+  const { copyUrlToR2 } = await import('../packages/adapters/r2Copy.js');
+  const real = globalThis.fetch;
+  let fetched = false;
+  globalThis.fetch = async () => { fetched = true; throw new Error('must not fetch'); };
+  const quiet = console.error; console.error = () => {};
+  try {
+    for (const host of ['static.mediaoss.bar', 'music.example', 'static.mediaoss.bar.evil.test']) {
+      const out = await copyUrlToR2(`https://${host}/song.mp3`, 'k', {}, { provider: 'crunAudio' });
+      assert.equal(out.error, 'source host not allowed');
+    }
+    assert.equal(fetched, false);
+  } finally { globalThis.fetch = real; console.error = quiet; }
 });
 
 test('the cron runs the sweep only when CRUN_ENABLED is "true", and R2 copies only from the observed hosts', () => {
@@ -144,4 +160,14 @@ test('an image offer completes as a picture: its own extension and no MP4 rule',
   assert.equal(image.copyOptions.maxBytes, 20 * 1024 * 1024);
   assert.equal(video.ext, '.mp4');
   assert.equal(video.copyOptions.expectMp4, true);
+});
+
+test('an audio (Suno) route is never swept as video: the video sweep skips audio-kind routes', async () => {
+  const routes = [{ model_id: 'ace-step', endpoint: 'crun:suno/music-generate' }];
+  await withRows([], async () => assert.deepEqual(await sweepCrun({ ...args, read: async () => assert.fail('audio must not be read here') }), { skipped: 'no_routes' }), routes);
+  const mixed = [...ROUTES, ...routes];
+  await withRows([], async (urls) => {
+    await sweepCrun({ ...args, read: async () => assert.fail('no jobs') });
+    assert.equal(urls.find((u) => u.pathname.endsWith('/jobs')).searchParams.get('model_id'), 'in.(veo-3.1-lite-kie)');
+  }, mixed);
 });

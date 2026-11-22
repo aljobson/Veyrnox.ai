@@ -122,3 +122,11 @@ test('the route submits through submitWithFailover and records the supplier that
   assert.match(src, /attemptNo: submitted\.attemptNo/);
   assert.doesNotMatch(src, /await provider\.submit\(/);
 });
+
+test('typed auth and rate refusals fail over only when the Crun adapter marked the result', () => {
+  for (const errorCode of ['provider_auth_failed', 'provider_rate_limited']) {
+    assert.equal(classifySubmitFailure({ ok: false, outcome: 'rejected', errorCode }), 'stop', `${errorCode} from another supplier keeps stopping`);
+    assert.equal(classifySubmitFailure({ ok: false, outcome: 'rejected', errorCode, scope: 'account' }), 'failover');
+  }
+  assert.equal(classifySubmitFailure({ ok: false, outcome: 'rejected', errorCode: 'provider_payment_required' }), 'failover');
+});

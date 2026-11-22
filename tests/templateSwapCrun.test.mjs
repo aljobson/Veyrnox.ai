@@ -143,19 +143,20 @@ test('an upstream message with a signed URL never leaves the adapter; failover c
     t.mock.method(globalThis, 'fetch', async () => Response.json({ code: status, message: `bad media ${SIGNED}` }, { status }));
     const out = await submitTask(job, { apiKey: 'k' });
     t.mock.restoreAll();
-    assert.equal(out.error, `crun ${status}/${status}`);
+    assert.equal(out.error, status === 429 ? 'provider_rate_limited' : 'provider_auth_failed');
+    assert.doesNotMatch(JSON.stringify(out), new RegExp(SIGNED.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.equal(classifySubmitFailure(out), 'failover');
   }
   t.mock.method(globalThis, 'fetch', async () => Response.json({ code: 400, message: `content policy ${SIGNED}` }, { status: 400 }));
-  assert.equal((await submitTask(job, { apiKey: 'k' })).error, 'crun 400/400: content_policy');
+  assert.equal((await submitTask(job, { apiKey: 'k' })).error, 'provider_refused');
   t.mock.restoreAll();
   t.mock.method(globalThis, 'fetch', async () => { throw new Error(`connect failed ${SIGNED}`); });
   const transport = await submitTask(job, { apiKey: 'k' });
-  assert.deepEqual([transport.outcome, transport.error], ['unknown', 'transport']);
+  assert.deepEqual([transport.outcome, transport.error], ['unknown', 'provider_unreachable']);
   t.mock.restoreAll();
   t.mock.method(globalThis, 'fetch', async () => Response.json({ code: 400, message: 'plain refusal' }, { status: 400 }));
   const other = await submitTask({ job_id: 'job-2', provider_endpoint: 'crun:kling/v2-6', inputs: { prompt: 'a cat' } }, { apiKey: 'k' });
-  assert.equal(other.error, 'crun 400/400: plain refusal', 'existing Crun models keep their message');
+  assert.equal(other.error, 'provider_refused', 'every Crun model uses the sanitized boundary');
 });
 
 test('with the private row active a swap debits it and submits one Crun task; the client sees only the public offer', async t => {
@@ -261,8 +262,8 @@ test('a refusal refunds, an ambiguous submit does not, and a signed URL reaches 
   const refused = network(t, { crun: () => Response.json({ code: 422, message: `rejected ${SIGNED}` }, { status: 422 }) });
   const res = await post({ idempotency_key: 'crun-refused' });
   const text = await res.text();
-  assert.equal(res.status, 502);
-  assert.deepEqual(JSON.parse(text), { error: 'provider_submit_failed', job_id: JOB });
+  assert.equal(res.status, 422);
+  assert.deepEqual(JSON.parse(text), { error: 'provider_input_rejected', job_id: JOB });
   assert.equal(refused.refunds.length, 1);
   assert.doesNotMatch(text + logs.join('\n'), /X-Amz|deadbeef|cloudflarestorage/);
   t.mock.restoreAll();

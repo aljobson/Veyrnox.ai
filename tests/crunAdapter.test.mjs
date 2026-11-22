@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { parseEndpoint, endpointKind, buildRequest, submitTask, interpretTask } from '../packages/adapters/crun.js';
+import { parseEndpoint, endpointKind, buildRequest, submitTask, interpretTask,
+  classifyCreateTaskResponse, classifyTaskInfoResponse, sanitizeCrunFailure } from '../packages/adapters/crun.js';
 import { SOURCE_PROMPT_RECORDS } from '../app/veyrnox/_lib/sourcePromptRecords.js';
 
 const job = (over = {}) => ({ job_id: 'job_1', provider_endpoint: 'crun:google/veo3-1-lite-t2v', inputs: { prompt: 'a city at dusk' }, ...over });
@@ -45,6 +46,54 @@ test('the request body matches the documented CreateTask shape and never sends a
   assert.equal('callback_url' in r.body, false);
 });
 
+test('Suno simple and custom payloads are strict, normalized, and bounded', () => {
+  const target = parseEndpoint('crun:suno/music-generate');
+  assert.deepEqual(target, { model: 'suno/music-generate' });
+  assert.equal(endpointKind('crun:suno/music-generate'), 'audio');
+  assert.deepEqual(buildRequest(target, { mode: 'simple', prompt: 'rain on glass', instrumental: false, suno_model: 'chirp-v6' }), {
+    ok: true, body: { model: 'suno/music-generate', input: { mode: 'simple', prompt: 'rain on glass', instrumental: false, model: 'v6' } },
+  });
+  assert.deepEqual(buildRequest(target, { mode: 'custom', instrumental: false, suno_model: 'v6_wild', title: 'Afterlight',
+    tags: 'dream pop', lyrics: 'Stay', negative_tags: 'harsh'.repeat(40), vocal_gender: 'f', style_weight: .75,
+    weirdness_constraint: .25, duration: 135, variety: 4 }).body.input, {
+    mode: 'custom', instrumental: false, model: 'v6_wild', tags: 'dream pop', title: 'Afterlight', lyrics: 'Stay',
+    negative_tags: 'harsh'.repeat(40), vocal_gender: 'f', style_weight: .75, weirdness_constraint: .25, duration: 135, variety: 4,
+  });
+  assert.equal(buildRequest(target, { mode: 'custom', instrumental: false, tags: 'rock' }).error, 'inputs_invalid:lyrics');
+  assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: 'x', lyrics: 'not simple' }).error, 'inputs_invalid:mode');
+  assert.equal(buildRequest(target, { mode: 'custom', instrumental: true, tags: 'x', duration: 136 }).error, 'inputs_invalid:duration');
+  assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: '🎵'.repeat(500) }).ok, true);
+  assert.equal(buildRequest(target, { mode: 'simple', instrumental: true, prompt: '🎵'.repeat(501) }).error, 'inputs_invalid:prompt');
+});
+
+test('CreateTask and TaskInfo classifiers never retain vendor text', () => {
+  const sentinel = 'SECRET-VENDOR-SENTINEL';
+  const rejected = classifyCreateTaskResponse(422, { code: 422, message: sentinel, msg: sentinel });
+  assert.deepEqual(rejected, { httpStatus: 422, bodyCode: 422, class: 'rejected', errorCode: 'provider_input_rejected' });
+  assert.doesNotMatch(JSON.stringify(sanitizeCrunFailure(rejected)), /SECRET-VENDOR-SENTINEL/);
+  assert.equal(classifyCreateTaskResponse(429, { code: 429, message: sentinel }).class, 'deferred');
+  assert.equal(classifyCreateTaskResponse(503, { code: 503, message: sentinel }).class, 'unknown');
+  assert.equal(classifyCreateTaskResponse(200, { code: 200, data: {} }).class, 'unknown');
+  assert.deepEqual(classifyTaskInfoResponse(200, { code: 501, message: sentinel }), {
+    httpStatus: 200, bodyCode: 501, ok: true, state: 'fail', errorCode: 'provider_task_failed',
+  });
+  assert.equal(classifyTaskInfoResponse(501, null).ok, false);
+  // A failed task may arrive as HTTP 501 with body code 501: still terminal, still refundable.
+  assert.deepEqual(classifyTaskInfoResponse(501, { code: 501, message: sentinel }), {
+    httpStatus: 501, bodyCode: 501, ok: true, state: 'fail', errorCode: 'provider_task_failed',
+  });
+  assert.equal(classifyTaskInfoResponse(200, { code: 200, data: { status: 'failed', result: { code: sentinel } } }).errorCode,
+    'provider_task_failed');
+  assert.equal(classifyCreateTaskResponse(503, { code: 422, message: sentinel }).class, 'unknown');
+  const unreadable = classifyTaskInfoResponse(403, { code: 403, message: sentinel });
+  assert.equal(unreadable.ok, false);
+  assert.equal(unreadable.errorCode, 'provider_status_unavailable');
+  assert.doesNotMatch(JSON.stringify(unreadable), /SECRET-VENDOR-SENTINEL/);
+  assert.equal(classifyTaskInfoResponse(200, { code: 200, data: { status: 'success', suno_data: [
+    { suno_audio_url: 'https://unverified.example/song.mp3' },
+  ] } }, 'audio').outputUrl, 'https://unverified.example/song.mp3');
+});
+
 test('a request the model cannot take is refused before any spend', () => {
   const t = { model: 'google/veo3-1-lite-t2v' };
   assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '1:1' }).error, 'aspect_ratio_unsupported');
@@ -79,6 +128,23 @@ test('failure classes: 4xx rejected, 5xx and transport ambiguous, no key refused
   t.mock.method(globalThis, 'fetch', reply(200, { code: 200, data: {} }));
   assert.equal((await submitTask(job(), { apiKey: 'k' })).outcome, 'unknown');
   assert.equal((await submitTask(job(), {})).error, 'provider_not_configured');
+});
+
+test('generic Crun callers retain rejected/unknown outcomes while music receives typed scopes', async (t) => {
+  const replies = [
+    [401, { code: 401, message: 'vendor secret' }],
+    [402, { code: 402, message: 'vendor secret' }],
+    [429, { code: 429, message: 'vendor secret' }],
+    [455, { code: 455, message: 'vendor secret' }],
+  ];
+  let index = 0;
+  t.mock.method(globalThis, 'fetch', async () => reply(...replies[index++])());
+  for (const scope of ['account', 'account', 'deferred', 'route']) {
+    const result = await submitTask(job(), { apiKey: 'k' });
+    assert.equal(result.outcome, 'rejected');
+    assert.equal(result.scope, scope);
+    assert.doesNotMatch(JSON.stringify(result), /vendor secret/);
+  }
 });
 
 test('task status: success needs an https output, failed is a failure, anything else is pending', () => {
