@@ -4134,6 +4134,42 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.ripple.label",
+    "english": "Ripple editing",
+    "translation": "Edición con desplazamiento",
+    "ratio": 1.86
+  },
+  {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Desplazamiento desactivado",
+    "ratio": 2.6
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Desplazamiento activado",
+    "ratio": 2.56
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Insertar un hueco de un compás",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ripple.changed",
+    "english": "Ripple editing changed",
+    "translation": "Edición con desplazamiento modificada",
+    "ratio": 1.68
+  },
+  {
+    "id": "beat.track.name",
+    "english": "Track name",
+    "translation": "Nombre de la pista",
+    "ratio": 1.8
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Ajuste a rejilla",

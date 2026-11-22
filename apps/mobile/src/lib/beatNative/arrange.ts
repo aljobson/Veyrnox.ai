@@ -1,4 +1,5 @@
 import { barTicks, snapTick, songEnd, type BeatDoc, type BeatRegionDoc } from './doc';
+export { guardedRippleDelete, guardedRippleInsert } from './ripple';
 export type DragMode = 'move' | 'trim' | 'resize';
 export type DragValue = BeatRegionDoc & { trackId: string };
 export const tickToX = (tick: number, zoom: number) => tick / barTicks * zoom;

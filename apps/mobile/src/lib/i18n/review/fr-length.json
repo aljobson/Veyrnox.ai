@@ -6564,6 +6564,24 @@
     "ratio": 1.66
   },
   {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Décalage désactivé",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Décalage activé",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Insérer un espace d’une mesure",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.snap.bar",
     "english": "Bar",
     "translation": "Mesure",

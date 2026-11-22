@@ -4146,6 +4146,30 @@
     "ratio": 1.7
   },
   {
+    "id": "beat.ripple.label",
+    "english": "Ripple editing",
+    "translation": "Edição com deslocamento",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Deslocamento desativado",
+    "ratio": 2.3
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Deslocamento ativado",
+    "ratio": 2.22
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Inserir espaço de um compasso",
+    "ratio": 1.61
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Ajuste à grade",
