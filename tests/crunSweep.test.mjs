@@ -9,7 +9,7 @@ const cfg = { supabaseUrl: 'https://db.test', serviceRoleKey: 'test-service' };
 const r2cfg = { accountId: 'acc', accessKeyId: 'key', secretAccessKey: 'secret', bucket: 'bucket' };
 const now = new Date('2026-10-24T12:00:00Z');
 const job = (id, state = 'SUBMITTED', age = 1) => ({ id, user_id: 'owner', credits: 9, state, provider_job_id: `task-${id}`, created_at: new Date(+now - age * 60000).toISOString() });
-const args = { cfg, r2cfg, apiKey: 'test-key', now };
+const args = { cfg, r2cfg, apiKey: 'test-key', now, pace: async () => true };
 const ROUTES = [
   { model_id: 'veo-3.1-lite-kie', endpoint: 'crun:google/veo3-1-lite-t2v' },
   { model_id: 'stray', endpoint: 'kie:not-ours' },

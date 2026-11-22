@@ -5,6 +5,7 @@ import { capabilityFor } from '../lib/modelCapabilities.js';
 import { FALLBACK_CONTRACT_ENDPOINTS } from '../lib/fallbackModelCapabilities.js';
 
 const sql = readFileSync(new URL('../packages/db/schema/supabase/0580_crun_suno_music_foundation.sql', import.meta.url), 'utf8');
+const consumers = readFileSync(new URL('../packages/db/schema/supabase/0581_crun_suno_music_consumers.sql', import.meta.url), 'utf8');
 
 test('Suno capability exists in the server registry and fallback contract copy', () => {
   const cap = capabilityFor('crun:suno/music-generate');
@@ -80,4 +81,35 @@ test('duration pricing is contract-aware and Crun remains flat', () => {
   assert.match(sql, /private\.music_duration_price_blocks\(q\.model_id,q\.provider_contract,p\.duration_seconds\)/);
   assert.match(sql, /provider_endpoint='crun:suno\/music-generate' AND provider_contract='crun-suno-v1'/);
   assert.match(sql, /p_credits\*0\.033 >= 2\*p_cost_per_request/);
+});
+
+test('0581 adds fenced account control and account-wide TaskInfo pacing', () => {
+  assert.match(consumers, /pause_crun_account_admission\(p_reason TEXT,p_observed_at TIMESTAMPTZ\)/);
+  assert.match(consumers, /resume_crun_account_admission\(p_expected_fence BIGINT\)/);
+  assert.match(consumers, /p_observed_at<=COALESCE\(v\.admission_resumed_at/);
+  assert.match(consumers, /CREATE TABLE IF NOT EXISTS public\.crun_taskinfo_reservations/);
+  assert.match(consumers, /v_count>=15/);
+  assert.match(consumers, /reserved_at<=v_now-interval '1 second'/);
+  assert.match(consumers, /FORCE ROW LEVEL SECURITY/);
+});
+
+test('0581 records authoritative status and exposes age-only health', () => {
+  assert.match(consumers, /ADD COLUMN IF NOT EXISTS last_authoritative_at TIMESTAMPTZ/);
+  assert.match(consumers, /record_crun_task_status\(p_job_id UUID,p_status TEXT,p_observed_at TIMESTAMPTZ\)/);
+  assert.match(consumers, /crun_dispatch_health\(p_accepted_unobservable_minutes INTEGER DEFAULT 5\)/);
+  for (const key of ['accepted_unobservable', 'authoritative_pending', 'unknown']) assert.match(consumers, new RegExp(`'${key}'`));
+  assert.doesNotMatch(consumers.slice(consumers.indexOf('CREATE OR REPLACE FUNCTION public.crun_dispatch_health'),
+    consumers.indexOf('CREATE OR REPLACE FUNCTION public.claim_crun_dispatch')), /payload|prompt|lyrics/);
+});
+
+test('0581 extends every current shared dispatch consumer without changing fal eligibility', () => {
+  assert.match(consumers, /'attempt_count',d\.attempt_count,'retry_at',v_retry_at/);
+  assert.match(consumers, /NOT \(v_result \? 'provider_contract'\)/);
+  assert.match(consumers, /v_crun\.state NOT IN \('READY','DEFERRED'\)/);
+  assert.match(consumers, /public\.get_user_job_cancel[\s\S]*crun_dispatch[\s\S]*'READY','DEFERRED'/);
+  assert.match(consumers, /public\.delete_user_job[\s\S]*UPDATE public\.crun_dispatch SET payload='\{\}'::jsonb/);
+  assert.match(consumers, /crun_dispatch_forget_erased_user/);
+  assert.match(consumers, /'crun_dispatch_unknown'/);
+  assert.match(consumers, /public\.ledger_refund/);
+  assert.doesNotMatch(consumers, /INSERT INTO public\.ledger_entries|UPDATE public\.credit_balances/);
 });

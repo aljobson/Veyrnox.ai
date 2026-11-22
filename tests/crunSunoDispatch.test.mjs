@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { submitCrunAtBoundary } from '../lib/crunSubmitBoundary.js';
-import { runCrunDispatchAttempt, runCrunDispatch, validCrunClaim } from '../lib/crunDispatch.js';
+import { crunDeferredRetrySeconds, runCrunDispatchAttempt, runCrunDispatch, validCrunClaim } from '../lib/crunDispatch.js';
 import { sweepCrunSunoMusic, SUNO_PENDING_ALERT_MINUTES } from '../lib/crunSunoSweep.js';
+import { paceCrunTaskInfo, resetCrunPollPacer } from '../lib/crunPollPacer.js';
 import { providerFor } from '../packages/provider-sdk/registry.js';
 
 const uuid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -80,6 +81,28 @@ test('the boundary trips the Suno endpoint breaker with sanitized evidence', asy
   assert.deepEqual(calls[1][1], { p_endpoint: 'crun:suno/music-generate', p_observed_at: '2026-11-22T12:00:00.000Z' });
 });
 
+test('an account refusal pauses the shared circuit with fenced sanitized evidence', async () => {
+  const calls = [];
+  await submitCrunAtBoundary({ job_id: uuid(1), provider_endpoint: 'crun:suno/music-generate', inputs: {} }, {
+    apiKey: 'key', cfg, reservationKey: `music:${uuid(2)}`, purpose: 'music.create',
+    rpc: async (name, args) => { calls.push([name, args]); return { ok: true, fence: 3 }; },
+    submit: async () => ({ ok: false, outcome: 'rejected', errorCode: 'provider_auth_failed', scope: 'account' }),
+    now: () => '2026-11-22T12:00:00.000Z',
+  });
+  assert.deepEqual(calls.map(([name]) => name), ['reserve_crun_create_slot', 'pause_crun_account_admission']);
+  assert.deepEqual(calls[1][1], { p_reason: 'provider_auth_failed', p_observed_at: '2026-11-22T12:00:00.000Z' });
+});
+
+test('TaskInfo pacing reserves a database slot and fails closed on an unavailable RPC', async () => {
+  resetCrunPollPacer(); const calls = [];
+  assert.equal(await paceCrunTaskInfo({ cfg, reservationKey: 'taskinfo:fixture-1', wait: async () => {},
+    rpc: async (name, args) => { calls.push([name, args]); return { ok: true }; } }), true);
+  assert.equal(calls[0][0], 'reserve_crun_taskinfo_slot');
+  resetCrunPollPacer();
+  assert.equal(await paceCrunTaskInfo({ cfg, reservationKey: 'taskinfo:fixture-2', wait: async () => {},
+    rpc: async () => { throw new Error('db unavailable'); } }), false);
+});
+
 test('a fenced music attempt submits once and records accepted, deferred, ready, rejected, or unknown', async () => {
   const cases = [
     [{ ok: true, providerJobId: 'task-a' }, 'ACCEPTED'],
@@ -98,9 +121,14 @@ test('a fenced music attempt submits once and records accepted, deferred, ready,
     const record = calls.find(([name]) => name === 'record_crun_dispatch')[1];
     assert.equal(record.p_outcome, expected);
     assert.equal(record.p_provider_job_id, expected === 'ACCEPTED' ? 'task-a' : null);
-    if (expected === 'DEFERRED') assert.equal(record.p_retry_after_seconds, 9);
+    if (expected === 'DEFERRED') assert.equal(record.p_retry_after_seconds, 30);
     assert.equal(result.outcome, expected);
   }
+});
+
+test('deferred retry backoff is progressive and capped', () => {
+  assert.deepEqual([0, 1, 2, 3, 9].map((n) => crunDeferredRetrySeconds(n, 9)), [30, 60, 120, 240, 600]);
+  assert.equal(crunDeferredRetrySeconds(0, 45), 45);
 });
 
 test('lost evidence never repeats a paid CreateTask and stale STARTED remains recoverable', async () => {
@@ -129,6 +157,7 @@ test('the minute backstop recovers, claims untargeted work, and stops on an empt
     if (name === 'claim_crun_dispatch') { if (claimed) return null; claimed = true; return claim(); }
     if (name === 'record_crun_dispatch') return { ok: true };
     if (name === 'reserve_crun_create_slot') return { ok: true };
+    if (name === 'record_worker_task_health') return null;
     throw new Error(name);
   };
   const out = await runCrunDispatch({ CRUN_ENABLED: 'true', CRUN_API_KEY: 'key', SUPABASE_URL: cfg.supabaseUrl,
@@ -182,9 +211,9 @@ function settlementRows(jobOverrides = {}, dispatchOverrides = {}) {
 }
 
 test('Suno settlement refunds only authoritative failure; unreadable and old pending remain held', async () => {
-  for (const [read, expected] of [
-    [async () => ({ ok: false, errorCode: 'provider_status_unavailable' }), { checked: 1, applied: 0, pending: 0, errors: 1 }],
-    [async () => ({ ok: true, state: 'pending' }), { checked: 1, applied: 0, pending: 1, errors: 0 }],
+  for (const [read, expected, expectedCalls] of [
+    [async () => ({ ok: false, errorCode: 'provider_status_unavailable' }), { checked: 1, applied: 0, pending: 0, errors: 1 }, []],
+    [async () => ({ ok: true, state: 'pending' }), { checked: 1, applied: 0, pending: 1, errors: 0 }, ['record_crun_task_status']],
   ]) {
     const rows = settlementRows({ created_at: new Date(Date.parse('2026-11-22T12:00:00.000Z') - (SUNO_PENDING_ALERT_MINUTES + 1) * 60_000).toISOString() });
     const calls = []; const quiet = console.error; console.error = () => {};
@@ -193,14 +222,14 @@ test('Suno settlement refunds only authoritative failure; unreadable and old pen
         rpc: async (name) => { calls.push(name); return { ok: true }; }, read, pace: async () => {},
         copy: async () => assert.fail('held tasks never copy') }), expected);
     } finally { console.error = quiet; }
-    assert.deepEqual(calls, []);
+    assert.deepEqual(calls, expectedCalls);
   }
   const rows = settlementRows(); const calls = [];
   const failed = await sweepCrunSunoMusic({ cfg, r2cfg, apiKey: 'key', now: rows.now, select: rows.select, listJobs: rows.listJobs,
     rpc: async (name, args) => { calls.push([name, args]); return { ok: true }; },
     read: async () => ({ ok: true, state: 'fail', errorCode: 'provider_task_failed' }), pace: async () => {} });
   assert.equal(failed.applied, 1);
-  assert.equal(calls[0][0], 'record_crun_task_failure');
+  assert.deepEqual(calls.map(([name]) => name), ['record_crun_task_status', 'record_crun_task_failure']);
 });
 
 test('successful Suno audio stores the detected real MIME; copy failures retry then terminate explicitly', async () => {
@@ -224,7 +253,7 @@ test('successful Suno audio stores the detected real MIME; copy failures retry t
       copy: async () => ({ ok: false, error: 'source host not allowed' }) });
     assert.deepEqual(out, { checked: 1, applied: 0, pending: 0, errors: 1 });
   } finally { console.error = quiet; }
-  assert.deepEqual(terminal, [], 'an unverified audio host stays held even after the copy window');
+  assert.deepEqual(terminal, ['record_crun_task_status'], 'status is durable while an unverified audio host stays held');
 
   const exhausted = []; console.error = () => {};
   try {
@@ -234,7 +263,7 @@ test('successful Suno audio stores the detected real MIME; copy failures retry t
       copy: async () => ({ ok: false, error: 'source too large' }) });
     assert.equal(out.applied, 1);
   } finally { console.error = quiet; }
-  assert.deepEqual(exhausted, ['record_crun_asset_failure']);
+  assert.deepEqual(exhausted, ['record_crun_task_status', 'record_crun_asset_failure']);
 
   const unknownAudio = []; console.error = () => {};
   try {
@@ -244,7 +273,7 @@ test('successful Suno audio stores the detected real MIME; copy failures retry t
       copy: async () => ({ ok: false, error: 'source not audio' }) });
     assert.deepEqual(out, { checked: 1, applied: 0, pending: 0, errors: 1 });
   } finally { console.error = quiet; }
-  assert.deepEqual(unknownAudio, [], 'an unknown audio container requires operator evidence and never auto-refunds');
+  assert.deepEqual(unknownAudio, ['record_crun_task_status'], 'an unknown audio container requires operator evidence and never auto-refunds');
 
   const transient = []; console.error = () => {};
   try {
@@ -254,7 +283,7 @@ test('successful Suno audio stores the detected real MIME; copy failures retry t
       copy: async () => ({ ok: false, error: 'fetch source: timeout' }) });
     assert.deepEqual(out, { checked: 1, applied: 0, pending: 0, errors: 1 });
   } finally { console.error = quiet; }
-  assert.deepEqual(transient, [], 'transient copy failures never auto-refund accepted work');
+  assert.deepEqual(transient, ['record_crun_task_status'], 'transient copy failures never auto-refund accepted work');
 });
 
 test('music route chooses wakeup by frozen contract and skips every replay wakeup', () => {
