@@ -3774,6 +3774,12 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "A gravação dos pads está desativada",
+    "ratio": 1.75
+  },
+  {
     "id": "beat.pad.openhat",
     "english": "Open hat",
     "translation": "Chimbal aberto",

@@ -3738,6 +3738,18 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "La grabación de pads está desactivada",
+    "ratio": 1.85
+  },
+  {
+    "id": "beat.padRecord.noTarget",
+    "english": "No drum region on {track} at the playhead.",
+    "translation": "No hay una región de batería en {track} en el cabezal de reproducción.",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.pad.openhat",
     "english": "Open hat",
     "translation": "Hi-hat abierto",

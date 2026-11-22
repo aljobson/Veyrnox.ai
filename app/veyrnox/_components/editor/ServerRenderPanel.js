@@ -10,6 +10,7 @@ import { SERVER_RENDER_PATH, serverRenderVisible, serverRenderDisabled, renderSn
     quoteRequest, renderAttempt, sendRenderAttempt, renderStatus, terminalRender, renderPollDelay, renderPollOutcome, retryRenderTransport,
     renderError, renderFeature, renderLibraryHref, renderDownloadPath } from '../../_lib/editorServerRenderClient.mjs';
 import { exportDocument, localRenderFiles, pendingRenderFiles, uploadRenderFiles, uploadedRenderAttempt } from '../../_lib/editorServerRenderUploads.mjs';
+import { estimatePercent, expectedDurationMs } from '../../_lib/generationProgress';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { Button } from '../Button';
 const noActor = () => null;
@@ -45,6 +46,30 @@ export function ServerRenderPanel(props) {
     }, [actor, enabled, refreshBalance]);
     const currentBalance = balanceInfo?.actor === actor ? balanceInfo : null;
     return enabled && actor ? <RenderSession key={actor} {...props} actor={actor} balanceInfo={currentBalance} onRefreshBalance={refreshBalance} /> : null;
+}
+
+// Percentage estimate for a running high-quality render: time spent against the
+// usual video time, capped until the job settles (same curve as the page-wide
+// status bar). The clock starts when this row appears, so a reload restarts it.
+function RenderProgress() {
+    const { t } = useI18n();
+    const [startedAt] = useState(() => Date.now());
+    const [now, setNow] = useState(startedAt);
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+    const percent = estimatePercent(now - startedAt, expectedDurationMs('editor-video-render'));
+    return <div className="space-y-1">
+        <p className="font-vx-mono text-[10px] tracking-[0.14em] text-vx-accent">
+            <span className="uppercase">{t('public.jobs.progress.title')}</span> · {t('public.jobs.progress.patient')}
+        </p>
+        <div className="flex items-baseline justify-between text-xs">
+            <span>{t('app.editor.server.progress')}</span>
+            <span className="font-vx-mono tabular-nums">{percent}%</span>
+        </div>
+        <progress value={percent} max={100} aria-label={t('app.editor.server.progress')} className="w-full" />
+    </div>;
 }
 
 function RenderSession({ actor, project, timeline, blobs, uploadCache, height, label, balanceInfo, state, onState, onCredits, onRefreshBalance }) {
@@ -228,7 +253,7 @@ function RenderSession({ actor, project, timeline, blobs, uploadCache, height, l
             <p>{t(statusUnavailable ? 'app.editor.server.statusUnavailable' : job.refunded ? 'app.editor.server.refunded' : `app.editor.server.${job.phase}`)}</p>
             {job.phase === 'failed' && !job.refunded && job.error && <p>{t(renderError({ code: job.error }))}</p>}
             {Number.isSafeInteger(job.credits) && <p>{t('app.editor.server.charged', { credits: number(job.credits) })}</p>}
-            {inFlight && !statusUnavailable && <progress aria-label={t('app.editor.server.progress')} className="w-full" />}
+            {inFlight && !statusUnavailable && <RenderProgress key={jobId} />}
         </div>}
         {fileErrors.map((item, index) => <p key={item.id || index} role="status" className="break-words">{item.name ? `${item.name}: ` : ''}{t(`app.editor.server.${item.code}`)}</p>)}
         {upload && <div role="status" className="space-y-2 break-words">
