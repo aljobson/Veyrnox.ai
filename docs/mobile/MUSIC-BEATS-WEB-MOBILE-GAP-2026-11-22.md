@@ -23,7 +23,7 @@ Production enables `beatEditor`, `beatAi`, `labs` and generic Music `collaborati
 | External hardware MIDI input | Missing capability | The on-screen capture slice does not add a native CoreMIDI/Android MIDI adapter or prove USB/Bluetooth controller input. | Design, permission-gate and verify external hardware MIDI separately; do not count on-screen capture as hardware parity. |
 | Mixer, effects, automation and meters | Mostly present | Native omits distortion Drive and uses a compressor stand-in; real-device fidelity is unproved. | Close controls, then qualify on device. |
 | Microphone recording and takes | Present in source | Count-in, takes, audition, keep/discard and recovery are implemented, but no current device proof covers interruption, permission and latency behaviour. | Integrated iPhone qualification required. |
-| Mixdown, export, share and Save to Music | Partial | Pattern export works; song export still rejects sound/song/stem/target assets, so generated or seeded audio is omitted. Save to Music is correctly gated while `beatLibrarySave` is off. | Port all supported asset rendering; retain product gate. |
+| Mixdown, export, share and Save to Music | Partial | Pattern export works. Native song export now renders built-in Starter Sounds through the same authoritative seeded 48 kHz stereo renderer as web, alongside takes, drums and MIDI. Signed song/target audio and stem ZIP parts remain fail-closed, and integrated device fidelity proof is outstanding. Save to Music is correctly gated while `beatLibrarySave` is off. | Retain shared Sound-renderer and memory contracts; add signed song/target export, then bounded stem extraction; keep the product gate. |
 | Beat AI | Partial | Generate, target, extend and replace are surfaced behind `beatAi`; split stems stays disabled and generated external audio inherits playback/export gaps. | Finish playback/export and bounded stem extraction. |
 | Magic Bar | Intentionally gated | Production `magicBar` is false on both platforms. | No exposure until the live flag is enabled. |
 | Sounds, templates, coach and controls | Present for editor scope | Four templates, starter Sounds, audition/add, song seed, coach and the controls sheet exist. Standalone Music Labs is a separate product surface. | Native; keep Labs capability-gated. |
@@ -45,7 +45,7 @@ Native baseline: #2428/#2524 (engine), #2467 (N1), #2526 (N2), #2540 (arrangemen
 ## Completion order
 
 1. Close pad recording/velocity and ripple/search/library gaps; retain the new on-screen capture contracts through integrated qualification.
-2. Render every supported audio source in mixdown/export, then add bounded stem extraction.
+2. Finish signed song/target mixdown/export, then add bounded stem extraction; retain the delivered authoritative Starter Sound path.
 3. Complete the piano/adaptive-orientation pass without coupling it to editor behavior work.
 4. Qualify recording, playback, export, accessibility and recovery on the consolidated iPhone simulator/native build.
 

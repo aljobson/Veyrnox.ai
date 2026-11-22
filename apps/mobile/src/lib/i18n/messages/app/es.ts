@@ -8018,7 +8018,7 @@ export default {
   "beatExport.shared": "WAV enviado a la hoja para compartir.",
   "beatExport.render": "Renderizar y compartir",
   "beatExport.retryShare": "Reintentar renderizado y uso compartido",
-  "beatExport.source": "Esta canción usa una pista de Music o un sonido de la biblioteca; expórtala desde la web por ahora",
+  "beatExport.source": "Esta canción usa una pista de Music o una pista separada; expórtala desde la web por ahora",
   "beatExport.missingOne": "Falta 1 sonido. Restáuralo antes de exportar.",
   "beatExport.missingMany": "Faltan {count} sonidos. Restáuralos antes de exportar.",
   "beatExport.phone": "Esta canción es demasiado larga para exportarla en este teléfono. Exporta un ciclo o usa un ordenador.",
