@@ -14,7 +14,7 @@ beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 let mockParams = { id: '', region: '' };
-const mockAudio = { context: {} as never, meterTap: () => null, play: jest.fn(async () => {}), stop: jest.fn(), isPlaying: jest.fn(() => true), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => {}), noteOn: jest.fn(async () => {}), noteOff: jest.fn(), releaseKeys: jest.fn(), audition: jest.fn(async () => {}) };
+const mockAudio = { context: {} as never, meterTap: () => null, play: jest.fn(async () => 'started' as const), stop: jest.fn(), isPlaying: jest.fn(() => true), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => {}), noteOn: jest.fn(async () => {}), noteOff: jest.fn(), releaseKeys: jest.fn(), audition: jest.fn(async () => {}) };
 jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => mockAudio }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, router: { push: jest.fn() }, useLocalSearchParams: () => mockParams }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));

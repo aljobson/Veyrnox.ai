@@ -28,7 +28,7 @@ test('record → durable save → undo → save → reopen retains committed aud
     jest.useFakeTimers(); const h = harness(); await h.store.flushBeat(h.id); await h.controller.arm(h.trackId); await h.controller.record(false);
     h.window({ fromSec: 0, toSec: 2, contextTime: 0 }); h.input.send({ frame: 0, samples: new Float32Array(2000).fill(0.3) }); await h.controller.finish();
     expect(h.edits).toHaveBeenCalledTimes(1); expect(h.edits.mock.calls[0][1].recordingCommit).toBe(true);
-    const ref = Object.values(h.store.getBeat(h.id)!.assets!)[0].ref;
+    const asset = Object.values(h.store.getBeat(h.id)!.assets!)[0]; if (asset.source !== 'take') throw new Error('expected_take'); const ref = asset.ref;
     expect(pendingBeatTakes(h.id)).toHaveLength(1); await h.store.flushBeat(h.id);
     h.undo(); await h.store.flushBeat(h.id); configureBeatTakeStorage(createTakeFiles(h.io)); await hydrateBeatTakes();
     expect(pendingBeatTakes(h.id)).toEqual([]); expect((await loadBeatTake(ref))?.samples.length).toBe(2000); await h.controller.dispose();
@@ -125,7 +125,7 @@ test('failed save, recovery refresh and Discard leave a live take pending until 
     await h.controller.arm(h.trackId); await h.controller.record(false);
     h.window({ fromSec: 0, toSec: 2, contextTime: 0 });
     h.input.send({ frame: 0, samples: new Float32Array(2000).fill(0.3) }); await h.controller.finish();
-    const ref = Object.values(h.store.getBeat(h.id)!.assets!)[0].ref;
+    const asset = Object.values(h.store.getBeat(h.id)!.assets!)[0]; if (asset.source !== 'take') throw new Error('expected_take'); const ref = asset.ref;
     jest.mocked(h.files.write).mockRejectedValueOnce(new Error('disk_full'));
     await expect(h.store.flushBeat(h.id)).rejects.toThrow('disk_full');
     await h.controller.refreshRecovery(h.store.getPersistedBeat(h.id));

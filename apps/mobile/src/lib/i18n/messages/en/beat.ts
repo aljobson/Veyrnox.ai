@@ -60,6 +60,8 @@ export default {
     'beat.track.max': 'A beat can have at most {max} tracks.',
     'beat.refused': 'That change was not applied: {reason}',
     'beat.audioError': 'Sound could not start on this device. You can keep editing.',
+    'beat.audioTooLarge': 'This beat uses too much audio to play on this device. Mute or remove audio regions and try again.',
+    'beat.audioUnavailable': '{name} is unavailable, so that region is silent.',
     'beat.saveNote': 'Saved on this phone',
     'beat.undo': 'Undo',
     'beat.redo': 'Redo',

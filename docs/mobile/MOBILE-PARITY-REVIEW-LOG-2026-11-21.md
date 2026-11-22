@@ -529,3 +529,40 @@ Post-fix proof before round 2: the renderer suite passed 40/40; the combined edi
 2. `S11F-2` low: the frame-invariant cache key omitted new reference geometry, so changing the off-screen first source clip could reuse a snapshot rendered with stale blur scale. Accepted; `referenceSize` is now part of request identity, and reference-only changes recompose from cached decoded sources without an approximation-badge flash.
 
 The configured two-round inspection budget is exhausted, so the final aspect/cache corrections are not labelled independently approved. Final host proof on the corrected snapshot: the renderer suite passed 44/44; the surface suite passed 23/23; the combined editor gate passed nine suites / 222 tests; the web compositor contract passed 1/1; full TypeScript again reported only known missing optional packages with no changed-file error; and `git diff --check` passed. Browser Canvas2D edge sampling was validated from the production source contract and existing browser-proof pattern, but the optional local Playwright oracle was not run because `@playwright/test` is deliberately installed ad hoc only in its dedicated CI workflow. Integrated iPhone visual comparison remains required for colour-space rounding and blur-kernel qualification; this slice claims basic brightness, contrast, saturation, hue and blur preview only, while advanced colour, Smart Picture, effects, transitions, video and text remain explicit fallbacks.
+
+## Wave 3B Beats audio-region playback inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `2a988a55-c3ad-4f85-82a4-09e6b1d2563f`
+- Base: `4462adfbb37a8f9e9b7ac372c6b13e639c812ceb`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `8e643163c165462df0eae84f9094841e25fe319b279b69324c69f8161883ad71`
+- Inspected diff SHA-256: `c21b1d4be66acab1f901937d287aa59772735b79cb101371c01c3fd7930698e3`
+- Runner result: `/private/tmp/claudex-mobile-beats-audio-regions-r1/claudex-bf67c8yl/result.json`
+
+### Findings and host dispositions
+
+1. `BEATS-STEM-REGRESSION` high: web-created stem regions returned ZIP archives and caused the entire native beat to fail. Accepted; stems remain deliberately silent until bounded native extraction exists, while every other track continues.
+2. `BEATS-CACHE-THRASH-MEMORY` medium: decoded buffers could evict and reload one another during a run. Accepted; the player now admits and pins the run's metadata-keyed decoded set under a 300 MB budget and fails once with beat-specific guidance instead of thrashing.
+3. `BEATS-PLAY-PRELOAD-UI-STATE` medium: network preload had no cancellable UI state and could announce playback falsely. Accepted; `play` returns `started`, `cancelled` or `busy`, the editor exposes Stop while starting, and intentional cancellation is silent.
+4. `BEATS-GENERATION-CLOSE-RECORDING` low: account-generation teardown could close the engine without disarming recording or resetting the UI. Accepted; the exact generation/engine/recording session is retained, the old recording controller finishes and disarms before close, and transport state resets.
+
+## Wave 3B Beats audio-region playback inspection round 2
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `4093e034-4e6b-4bf1-afd4-ba3ebf0377e5`
+- Base: `4462adfbb37a8f9e9b7ac372c6b13e639c812ceb`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `765732b8d772d8fc3b08e411cd4eb0da4887709fcba01b3e57d3ca540d8eb40c`
+- Inspected diff SHA-256: `31faf134278729e1ee1dd7c400d85850eaafcad511352508048d9e27b3d8dc25`
+- Runner result: `/private/tmp/claudex-mobile-beats-audio-regions-r2/claudex-k0ensct8/result.json`
+
+### Findings and host dispositions
+
+1. `F1` high: a non-take asset failure during recording could halt the range silently. Accepted; ordinary backing-asset failures now silence only that region and preserve the recording transport.
+2. `F2` medium: recording startup could wait on remote signing and decoding. Accepted; recording preload is take-only and remote backing audio loads lazily without blocking capture.
+3. `F3` medium: a held, missing or offline asset stopped the whole beat and held assets were re-signed on each Play. Accepted; failure state is per asset, permanent held/404/410 results persist without re-signing, retryable failures reset for the next run, and the unavailable region is named in the notice.
+4. `F4` low: muted or unsoloed regions were not preloaded, causing a first-onset miss when made audible. Accepted; all referenced audio is preloaded when the decoded set fits, with an audible-only plan used only when the complete set exceeds the device budget.
+5. `F5` low: the cache-budget failure reused misleading song-editing copy. Accepted; `beat.audioTooLarge` explains the beat-level condition and recovery in all complete mobile locale catalogs.
+
+The configured two-round inspection budget is exhausted, so the final per-asset failure corrections and their additional cache-overflow recording regression are not labelled independently approved. A separate read-only host audit found no blocker against the five findings. Final focused proof on the corrected snapshot: eleven mobile suites / 249 tests passed, including sound/song/target scheduling, held and retryable failures, recording continuity, cancellation, account fencing, arrangement/mixer screen contracts and complete locale coverage. The additional recording cache-overflow regression passed in the final suite rerun. Clean PR CI passed mobile TypeScript before exposing two older screen mocks that still used the pre-outcome audio/auth contract; both exact failures and the expanded gate pass after correction. Native audio fidelity, memory pressure and interruption behaviour still require the integrated iPhone qualification gate.

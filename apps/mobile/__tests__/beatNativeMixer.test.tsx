@@ -16,10 +16,10 @@ jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../sr
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 const mockGetAccessToken = jest.fn(async () => '');
 const mockApi = { request: jest.fn(async () => ({ projects: [] })) };
-const mockAudio = { play: jest.fn(async (..._args: unknown[]) => undefined), stop: jest.fn(), isPlaying: () => true, hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined), meterTap: () => null, context: {} };
+const mockAudio = { play: jest.fn(async (..._args: unknown[]) => 'started' as const), stop: jest.fn(), isPlaying: () => true, hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined), meterTap: () => null, context: {} };
 let mockParams = { id: 'x' };
 let mockReduced = true;
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0 }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0, beginSessionTask: () => ({}) }) }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams }));
 jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => mockAudio }));
 jest.mock('../src/components/ui/useReducedMotion', () => ({ useReducedMotion: () => mockReduced }));

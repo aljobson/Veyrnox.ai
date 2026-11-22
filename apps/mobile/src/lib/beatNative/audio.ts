@@ -9,6 +9,7 @@ import { configureNativeTakeStorage } from './takeShared';
 import { type BeatEngine as NativeBeatEngine } from './shared';
 import { createMixRun } from './mixRun';
 import { createNativeBeatEngine, loadNativeContext, type NativeContextCtor } from './nativeContext';
+import type { NativeAssetPort } from './nativeAssets';
 import type { BeatEngine, BeatVoice, EngineContext } from './shared';
 import { DRUM_KITS, audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
 
@@ -17,11 +18,12 @@ import { midiNoteOnsInWindow, midiTracks, type Instrument, type MidiSoundTrack }
 export type TrackMix = { gain: number; pan: number };
 /** `onError`: an engine error stopped playback. `onEffectError`: an effect the native context cannot build was skipped. */
 export type PlayHandlers = { onError?: (error: unknown) => void; onEffectError?: (message: string) => void };
+export type BeatPlayOutcome = 'started' | 'cancelled' | 'busy';
 export interface BeatAudio {
     recordingEngine?(): NativeBeatEngine;
     playRange?(options: PlayRange): Promise<{ contextStart: number }>;
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number, handlers?: PlayHandlers): Promise<void>;
+    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number, handlers?: PlayHandlers): Promise<BeatPlayOutcome>;
     readonly context: EngineContext;
     /** The node a level meter reads (the web engine's meter tap); null while nothing plays. */
     meterTap(trackId: string | 'master'): unknown | null;
@@ -52,11 +54,13 @@ type Ctx = EngineContext & { createGain(): { gain: Param; connect(n: unknown): u
 
 export type AudioDeps = {
     engine: BeatEngine;
+    assets?: NativeAssetPort;
+    onAssetError?: (name: string, error: unknown) => void;
     setTimer?: (fn: () => void, ms: number) => unknown;
     clearTimer?: (handle: unknown) => void;
 };
 
-export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTimeout(fn, ms), clearTimer = h => clearTimeout(h as never) }: AudioDeps): BeatAudio {
+export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTimer = (fn, ms) => setTimeout(fn, ms), clearTimer = h => clearTimeout(h as never) }: AudioDeps): BeatAudio {
     const ctx = engine.context as Ctx;
     let master: { gain: Param; connect(n: unknown): unknown } | null = null;
     const strips = new Map<string, Strip>();
@@ -85,10 +89,11 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc, untilTime) => {
         if (range.isPlaying()) return rangeOutput(id, doc, untilTime);
         return mixRun.run() ? mixRun.destination(id, doc, untilTime) : plainOutput(id, doc);
-    });
+    }, assets, (asset, error) => onAssetError?.(asset.name, error));
     const range = createRecordingTransport(engine, rangeOutput, (doc, w, bounds) => {
         try { mixRun.sync(doc); mixRun.schedule(doc, w.fromSec, w.toSec, w.contextTime); } catch { /* rangeOutput falls back. */ }
-        void takes.window(doc, w, bounds).catch(() => undefined);
+        const token = playGeneration;
+        void takes.window(doc, w, bounds, { recording: true }).catch(error => { if (token === playGeneration) fail(error); });
     }, setTimer, clearTimer);
     let playGeneration = 0;
     const kitOf = new Map<string, string>();
@@ -156,7 +161,9 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
                 }
                 const window = { fromSec, toSec: fromSec + seconds, contextTime: nextTime };
                 windowCallback?.(window);
-                void takes.window(doc, window, { startSec: 0, endSec: tickSeconds(songEnd(doc), doc.tempo.bpm) }).catch(() => undefined);
+                const token = playGeneration;
+                void takes.window(doc, window, { startSec: 0, endSec: tickSeconds(songEnd(doc), doc.tempo.bpm) })
+                    .catch(error => { if (token === playGeneration) fail(error); });
                 onStep?.(step);
                 if (!playing) return;
                 cursor += 1;
@@ -171,21 +178,33 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
         meterTap: trackId => playing || range.isPlaying() ? mixRun.meterTap(trackId) : null,
         recordingEngine: () => engine,
         async playRange(options) {
-            this.stop(); const token = playGeneration; configureNativeTakeStorage();
-            await takes.preload(options.getDoc());
+            this.stop(); handlers = {}; const token = playGeneration; configureNativeTakeStorage();
+            await takes.preload(options.getDoc(), { recording: true });
             if (token !== playGeneration) throw new Error('transport_cancelled');
             return range.play(options);
         },
         async play(read, step, onWindow, startOffsetSec = 0, on = {}) {
-            if (playing || starting || closed) return;
+            if (playing) return 'started';
+            if (starting) return 'busy';
+            if (closed) return 'cancelled';
             const token = ++playGeneration;
             starting = true;
-            try { await engine.resume(); } finally { if (token === playGeneration) starting = false; }
-            if (token !== playGeneration || closed) return;
-            handlers = on; playing = true;
+            handlers = on;
+            try {
+                const initial = read();
+                if (!initial) return 'cancelled';
+                await takes.preload(initial);
+                if (token === playGeneration && !closed) await engine.resume();
+            } catch (error) {
+                if (token !== playGeneration || closed || (error as { name?: string })?.name === 'AbortError') return 'cancelled';
+                throw error;
+            } finally { if (token === playGeneration) starting = false; }
+            if (token !== playGeneration || closed) return 'cancelled';
+            playing = true;
             windowCallback = onWindow;
             getDoc = read; onStep = step; cursor = 0; nextTime = engine.now() + 0.1 + startOffsetSec;
             tick();
+            return 'started';
         },
         // A UI stop or close never throws: the player is already stopped when a node fails to release.
         stop() { try { halt(); } catch (error) { try { handlers.onError?.(error); } catch { /* ignore */ } } },
@@ -233,6 +252,6 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
 }
 
 /** The shipping implementation: the shared web engine on `react-native-audio-api` (docs/mobile/spikes/N0-NATIVE-ENGINE.md). */
-export function createBeatAudio(Context: NativeContextCtor = loadNativeContext()): BeatAudio {
-    return createBeatAudioFromEngine({ engine: createNativeBeatEngine({ Context }).engine });
+export function createBeatAudio(Context: NativeContextCtor = loadNativeContext(), assets?: NativeAssetPort, onAssetError?: (name: string, error: unknown) => void): BeatAudio {
+    return createBeatAudioFromEngine({ engine: createNativeBeatEngine({ Context }).engine, assets, onAssetError });
 }
