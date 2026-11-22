@@ -10,7 +10,7 @@ import { phonePhotoHints } from '../../../lib/templatePhotoHintText';
 import { templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -37,9 +37,9 @@ export default function TemplatePage() {
     const styles = useThemedStyles(sheets);
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const scroll = useRef<ScrollView>(null), scrollY = useRef(0), revealAttempt = useRef<string | null>(null), resultTarget = useRef<View>(null), revealResult = useRef(false);
+    const scroll = useRef<ComponentRef<typeof ScrollView>>(null), scrollY = useRef(0), revealAttempt = useRef<string | null>(null), resultTarget = useRef<ComponentRef<typeof View>>(null), revealResult = useRef(false);
     // Place the node below the header; measured against the live offset so old history never decides the target.
-    const revealNode = (node: View | null) => node?.measureInWindow?.((_x, y) => scroll.current?.scrollTo({ y: Math.max(0, scrollY.current + y - 160), animated: true }));
+    const revealNode = (node: ComponentRef<typeof View> | null) => node?.measureInWindow?.((_x: number, y: number) => scroll.current?.scrollTo({ y: Math.max(0, scrollY.current + y - 160), animated: true }));
     const [preset, setPreset] = useState<Preset | null>(null);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);

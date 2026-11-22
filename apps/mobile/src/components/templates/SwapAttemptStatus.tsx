@@ -1,5 +1,5 @@
 import { useAnnouncement } from '../../lib/useAnnouncement';
-import { useEffect, useRef, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ComponentRef, type RefObject } from 'react';
 import { Linking, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Text } from '../ui';
@@ -9,9 +9,9 @@ import { t } from '../../lib/i18n';
 import { useSwapRuntime } from '../../lib/templateSwap/runtime';
 import { unsettled, swapErrorKey, type Attempt } from '../../../../../app/veyrnox/_lib/templateSwapClient.mjs';
 import { isOffline, subscribe } from '../../lib/networkState';
-type Reveal = { revealAttempt?: RefObject<string | null>; onReveal?: (node: View | null) => void };
+type Reveal = { revealAttempt?: RefObject<string | null>; onReveal?: (node: ComponentRef<typeof View> | null) => void };
 function Status({ attempt: a, revealAttempt, onReveal }: { attempt: Attempt } & Reveal) {
-    const box = useRef<View>(null);
+    const box = useRef<ComponentRef<typeof View>>(null);
     useEffect(() => {
         if (!revealAttempt || revealAttempt.current !== a.key) return;
         revealAttempt.current = null;

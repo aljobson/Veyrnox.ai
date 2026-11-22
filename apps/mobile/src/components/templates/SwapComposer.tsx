@@ -1,6 +1,6 @@
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { discardCacheCopy } from '../../lib/cacheFiles';
-import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentRef, type RefObject } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,7 +12,7 @@ import { isOffline, subscribe } from '../../lib/networkState';
 import { swapErrorKey, unsettled, type SwapOffer } from '../../../../../app/veyrnox/_lib/templateSwapClient.mjs';
 import { SwapVisionHost } from './SwapVisionHost';
 import { TemplatePhotoExample } from './TemplatePhotoExample';
-export function SwapComposer({ offer, revealAttempt, onReveal }: { offer: SwapOffer; revealAttempt?: RefObject<string | null>; onReveal?: (node: View | null) => void }) {
+export function SwapComposer({ offer, revealAttempt, onReveal }: { offer: SwapOffer; revealAttempt?: RefObject<string | null>; onReveal?: (node: ComponentRef<typeof View> | null) => void }) {
     const { actions, attempts, accountId, beginSessionTask } = useSwapRuntime(offer.id), router = useRouter();
     const a = attempts.at(-1), offline = useSyncExternalStore(subscribe, isOffline), styles = useThemedStyles(sheets);
     const busy = !!a && ['processing', 'uploading', 'submitting'].includes(a.state);
@@ -38,7 +38,7 @@ export function SwapComposer({ offer, revealAttempt, onReveal }: { offer: SwapOf
     }
     const error = a && ['photo_error', 'upload_error'].includes(a.state) ? a.errorCode : undefined, uploadError = a?.state === 'upload_error';
     const errorKey = error === 'photo_too_large' ? 'mobileSwap.photoTooLarge' : error === 'invalid_image' ? 'mobileSwap.invalidImage' : swapErrorKey(error);
-    const feedback = useRef<View>(null), tap = useRef<{ key: string | null; previous: string | null } | null>(null);
+    const feedback = useRef<ComponentRef<typeof View>>(null), tap = useRef<{ key: string | null; previous: string | null } | null>(null);
     useEffect(() => () => { tap.current = null; if (revealAttempt) revealAttempt.current = null; }, [accountId, offer.id, revealAttempt]);
     // Only this tap moves the screen: restored attempts and background updates never scroll.
     useEffect(() => {
