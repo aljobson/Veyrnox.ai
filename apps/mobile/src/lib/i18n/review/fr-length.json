@@ -7212,6 +7212,48 @@
     "ratio": 2.13
   },
   {
+    "id": "editorPack.title",
+    "english": "Asset Packs",
+    "translation": "Packs de ressources",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorPack.open",
+    "english": "Open Asset-Pack JSON",
+    "translation": "Ouvrir le JSON d’un pack de ressources",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorPack.emptyTitle",
+    "english": "No asset packs yet",
+    "translation": "Aucun pack de ressources pour le moment",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorPack.search",
+    "english": "Search this asset pack",
+    "translation": "Rechercher dans ce pack de ressources",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorPack.rights",
+    "english": "Usage rights",
+    "translation": "Droits d’utilisation",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPack.progress.creating",
+    "english": "Hashing local files… {done} of {total}",
+    "translation": "Calcul des empreintes des fichiers locaux… {done} sur {total}",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Choisir les fichiers multimédias du pack",
+    "ratio": 1.74
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

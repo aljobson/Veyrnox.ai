@@ -4758,6 +4758,30 @@
     "ratio": 1.73
   },
   {
+    "id": "editorPack.creator",
+    "english": "Creator or credit",
+    "translation": "Автор или указание авторства",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorPack.rights",
+    "english": "Usage rights",
+    "translation": "Права на использование",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorPack.progress.placing",
+    "english": "Adding at the playhead…",
+    "translation": "Добавление в позицию указателя воспроизведения…",
+    "ratio": 2.04
+  },
+  {
+    "id": "editorPack.packName",
+    "english": "Pack name",
+    "translation": "Название пакета",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

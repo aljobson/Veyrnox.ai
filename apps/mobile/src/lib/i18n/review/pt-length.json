@@ -4686,6 +4686,42 @@
     "ratio": 1.93
   },
   {
+    "id": "editorPack.title",
+    "english": "Asset Packs",
+    "translation": "Pacotes de recursos",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorPack.emptyTitle",
+    "english": "No asset packs yet",
+    "translation": "Ainda não existem pacotes de recursos",
+    "ratio": 2.06
+  },
+  {
+    "id": "editorPack.rights",
+    "english": "Usage rights",
+    "translation": "Direitos de utilização",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Escolher ficheiros multimédia do pacote",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorPack.category.All",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPack.category.Photos",
+    "english": "Photos",
+    "translation": "Fotografias",
+    "ratio": 1.83
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

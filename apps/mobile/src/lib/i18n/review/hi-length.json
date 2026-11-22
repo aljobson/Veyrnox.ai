@@ -2592,6 +2592,12 @@
     "ratio": 1.79
   },
   {
+    "id": "editorPack.review",
+    "english": "Review {name}",
+    "translation": "{name} की समीक्षा करें",
+    "ratio": 1.69
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

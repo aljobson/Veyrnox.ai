@@ -2520,6 +2520,12 @@
     "ratio": 2.17
   },
   {
+    "id": "editorPack.category.Avatars",
+    "english": "Avatars",
+    "translation": "الصور الرمزية",
+    "ratio": 1.86
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

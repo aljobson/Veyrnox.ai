@@ -9,12 +9,28 @@ import type { ProjectDocument } from './editorBridge';
 import type { Media, Timeline } from './nativeEditorModel';
 
 export type DeviceFile = { file: string; type: string; size: number; seconds?: number; verified?: true };
+export type MediaCopyOptions = { expectedSha256?: string; expectedKind?: 'image' | 'video' | 'audio'; onProgress?(stage: 'copying' | 'verifying'): void; live?(): boolean };
 type RecordData = { owner: string; projectId: string; items: Record<string, DeviceFile> };
 const PREFIX = 'editor-device-media.';
 const TOMB = 'editor-device-media-delete.';
 const EXT: Record<string, string> = { 'video/mp4': 'mp4', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'video/quicktime': 'mov', 'audio/mp4': 'm4a' };
 const root = () => new Directory(Paths.document, 'veyrnox-editor-media');
 const erase = (entry: Directory | File) => { if (entry.exists) entry.delete(); };
+const ascii = (bytes: Uint8Array, start: number, value: string) => [...value].every((char, index) => bytes[start + index] === char.charCodeAt(0));
+export function matchesMediaSignature(type: string, bytes: Uint8Array) {
+    type = canonicalType(type);
+    if (type === 'image/png') return bytes.length >= 8 && [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((value, index) => bytes[index] === value);
+    if (type === 'image/jpeg') return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    if (type === 'image/webp') return bytes.length >= 12 && ascii(bytes, 0, 'RIFF') && ascii(bytes, 8, 'WEBP');
+    if (['video/mp4', 'video/quicktime', 'audio/mp4', 'audio/x-m4a'].includes(type)) return bytes.length >= 12 && ascii(bytes, 4, 'ftyp');
+    if (['video/webm', 'audio/webm'].includes(type)) return bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
+    if (type === 'audio/mpeg') return bytes.length >= 3 && (ascii(bytes, 0, 'ID3') || bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0);
+    if (type === 'audio/wav') return bytes.length >= 12 && ascii(bytes, 0, 'RIFF') && ascii(bytes, 8, 'WAVE');
+    if (type === 'audio/ogg') return bytes.length >= 4 && ascii(bytes, 0, 'OggS');
+    if (type === 'audio/aac') return bytes.length >= 2 && bytes[0] === 0xff && (bytes[1] & 0xf6) === 0xf0;
+    return false;
+}
+const kindFor = (type: string) => type.startsWith('image/') ? 'image' : type.startsWith('video/') ? 'video' : type.startsWith('audio/') ? 'audio' : null;
 export function createEditorMediaStore(storage: CacheStorage = userDocStorage) {
     let owner: string | null = null, epoch = 0;
     let pending: Promise<unknown> = Promise.resolve();
@@ -55,25 +71,48 @@ export function createEditorMediaStore(storage: CacheStorage = userDocStorage) {
             }
         });
     }
-    async function copy(projectId: string, mediaId: string, uri: string, type: string, seconds?: number | null): Promise<DeviceFile | null> {
+    async function copy(projectId: string, mediaId: string, uri: string, type: string, seconds?: number | null, options: MediaCopyOptions = {}): Promise<DeviceFile | null> {
         const user = owner, token = epoch;
         return serial(async () => {
-            if (!user || token !== epoch || !/^l-/.test(mediaId) || !UUID.test(mediaId.slice(2))) return null;
-            let destination: File | undefined;
+            const current = () => token === epoch && (options.live?.() ?? true);
+            if (!user || !current() || !/^l-/.test(mediaId) || !UUID.test(mediaId.slice(2))) return null;
+            let destination: File | undefined, temporary: File | undefined, published = false;
             try {
                 const dir = folder(user, projectId); dir.create({ intermediates: true, idempotent: true });
                 type = canonicalType(type);
                 destination = new File(dir, `${mediaId}.${EXT[type] || 'bin'}`);
-                await new File(uri).copy(destination);
-                if (token !== epoch) { erase(destination); return null; }
+                temporary = new File(dir, `${mediaId}.${EXT[type] || 'bin'}.pending`); options.onProgress?.('copying');
+                await new File(uri).copy(temporary, { overwrite: true });
+                if (!current()) { erase(temporary); return null; }
+                if (options.expectedSha256 || options.expectedKind) {
+                    if (!/^[a-f0-9]{64}$/.test(options.expectedSha256 || '') || options.expectedKind !== kindFor(type)
+                        || temporary.size < 1 || temporary.size > (options.expectedKind === 'video' ? 100 : 20) * 1024 * 1024) throw new Error('invalid_verified_media');
+                    options.onProgress?.('verifying');
+                    const handle = temporary.open(); let header: Uint8Array;
+                    try { header = await handle.readBytes(16); } finally { handle.close(); }
+                    if (!matchesMediaSignature(type, header) || !current()) throw new Error('invalid_verified_media');
+                    const digest = await temporary.digest('SHA-256');
+                    if (!current() || digest !== options.expectedSha256) throw new Error('invalid_verified_media');
+                }
+                await temporary.move(destination, { overwrite: true }); published = true;
+                if (!current()) { erase(destination); return null; }
                 const item: DeviceFile = { file: destination.uri, type, size: destination.size, ...(typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0 ? { seconds, verified: true as const } : {}) };
                 const record = await read(user, projectId);
-                if (token !== epoch) { erase(destination); return null; }
+                if (!current()) { erase(destination); return null; }
                 record.items[mediaId] = item;
                 await storage.set(slot(PREFIX, user, projectId), JSON.stringify(record));
-                if (token !== epoch) { erase(destination); await storage.remove(slot(PREFIX, user, projectId)); return null; }
+                if (!current()) { erase(destination); await storage.remove(slot(PREFIX, user, projectId)); return null; }
                 return item;
-            } catch { if (destination) { try { erase(destination); } catch {} } return null; }
+            } catch { if (temporary) { try { erase(temporary); } catch {} } if (published && destination) { try { erase(destination); } catch {} } return null; }
+        });
+    }
+    async function remove(projectId: string, mediaId: string) {
+        const user = owner, token = epoch;
+        return serial(async () => {
+            if (!user || token !== epoch || !mediaId.startsWith('l-') || !UUID.test(mediaId.slice(2))) return;
+            const record = await read(user, projectId); if (token !== epoch) return;
+            const item = record.items[mediaId]; if (item) { try { erase(new File(item.file)); } catch { /* Metadata cleanup still proceeds. */ } }
+            delete record.items[mediaId]; await storage.set(slot(PREFIX, user, projectId), JSON.stringify(record));
         });
     }
     async function files(projectId: string): Promise<Record<string, DeviceFile>> {
@@ -123,7 +162,7 @@ export function createEditorMediaStore(storage: CacheStorage = userDocStorage) {
         } catch (error) { if (live() && (error as { status?: number }).status === 404) backupOff = true; return null; }
         finally { controllers.delete(controller); }
     }
-    return { setOwner, copy, files, hydrate, removeProjectMedia, backup };
+    return { setOwner, copy, remove, files, hydrate, removeProjectMedia, backup };
 }
 export const editorDeviceMedia = createEditorMediaStore();
 export const setEditorMediaOwner = (owner: string | null) => editorDeviceMedia.setOwner(owner);

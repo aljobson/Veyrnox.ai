@@ -71,11 +71,15 @@ import { JobThumb, useAssetLinks } from '../JobThumb';
 import { mediaFrames, overlaySpan } from '../../lib/editorOverlay';
 import { useFullEditorSession } from './useFullEditorSession';
 import { useEditorFonts } from './useEditorFonts';
+import { AssetPackLibrarySheet } from './assetPacks/AssetPackLibrarySheet';
+import { packFileMime, packMediaDetails, type AssetPack, type PackAsset, type PickedPackFile } from '../../lib/editorAssetPackCatalog';
+import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
 export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; startAdvanced?:
     boolean; startBestCut?: boolean }) {
     const mounted = useRef(true); const [libraryPending, setLibraryPending] = useState(false); const [viewport, setViewport] = useState(0);
     const [timelineTouch, setTimelineTouch] = useState(false); useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
     const [voiceoverAt, setVoiceoverAt] = useState<number | null>(null);
+    const [assetPackAt, setAssetPackAt] = useState<number | null>(null);
     const [voiceoverMessage, setVoiceoverMessage] = useState<string | null>(null); useAnnouncement(voiceoverMessage); const onVoiceoverAdded = () => {
         setVoiceoverMessage(t('editorVoiceover.added')); setVoiceoverAt(null); };
     const [exportVisible, setExportVisible] = useState(false);
@@ -96,7 +100,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
     const isReady = () => currentDocument()?.project_id === projectId && sync.draftDecided && !sync.sheet && !sync.replacing && sync.live(), ready = isReady();
     const liveProject = useRef(projectId), readiness = useRef(ready); liveProject.current = projectId; readiness.current = ready;
-    useEffect(() => { setGenerate(null); setStemChoice(null); return subscribeCacheUser(() => { setGenerate(null); setStemChoice(null); }); }, [projectId]);
+    useEffect(() => { setGenerate(null); setStemChoice(null); setAssetPackAt(null); return subscribeCacheUser(() => { setGenerate(null); setStemChoice(null); setAssetPackAt(null); }); }, [projectId]);
+    useEffect(() => { if (!ready && assetPackAt !== null) setAssetPackAt(null); }, [assetPackAt, ready]);
     const returns = useEditorGenerationReturns({ api, projectId, announce: tool !== 'generate', get ready() { return isReady(); }, currentDocument, get dirty() { return sync.dirty; }, get
         saving() { return sync.saving; }, get revision() { return sync.revision; }, beginImport, sessionLive: () => sync.live(), insert: insertMedia });
     function insertMedia(media: Media, at: number, select = false, onPlaced?: (trimmed: boolean) => void): InsertResult {
@@ -210,6 +215,31 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const chooseFiles = async () => { setProblem(null); try {
             const result = await DocumentPicker.getDocumentAsync({ type: ['video/*', 'audio/*', 'image/jpeg', 'image/png', 'image/webp'], copyToCacheDirectory: true });
             if (!result.canceled && result.assets[0]) await importPicked(result.assets[0]); } catch { setProblem(t('editor.couldnotopenFilesTryagain')); } };
+    const openAssetPacks = () => { setPlaying(false); setSheet(null); setAssetPackAt(clampFrame(frameStore.get())); };
+    const addPackAsset = async (pack: AssetPack, asset: PackAsset, picked: PickedPackFile,
+        progress: (stage: 'copying' | 'verifying' | 'placing') => void, operationLive: () => boolean) => {
+        const token = beginImport(); if (!token) return 'changed' as const;
+        const id = `l-${randomUUID()}`;
+        try {
+            const seconds = await preparePicked({ uri: picked.uri, mimeType: packFileMime(picked) }, id, asset.kind, { requireCopy: true, backup: false,
+                expectedSha256: asset.sha256, expectedKind: asset.kind, onProgress: progress, live: operationLive });
+            if (!token.valid() || !operationLive()) { await editorDeviceMedia.remove(projectId, id); session.setLocalMediaUris(current => {
+                    const next = { ...current }; delete next[id]; return next;
+                }); return 'changed' as const; }
+            if (seconds === null) { await editorDeviceMedia.remove(projectId, id); return isReady() ? 'invalidFile' as const : 'changed' as const; }
+            progress('placing'); const media: Media = { id, name: asset.name, kind: asset.kind, frames: Math.max(1, Math.floor(seconds * timeline.fps)),
+                hasAudio: asset.kind !== 'image', width: 0, height: 0, ...packMediaDetails(pack, asset) };
+            const result = insertMedia(media, assetPackAt ?? clampFrame(frameStore.get()), true);
+            if (result !== 'placed') {
+                await editorDeviceMedia.remove(projectId, id); session.setLocalMediaUris(current => { const next = { ...current }; delete next[id]; return next; });
+                if (!token.valid() || !operationLive() || result === 'dropped' || typeof result === 'object' && result.status === 'not-live') return 'changed' as const;
+                if (result === 'full') return 'projectFull' as const;
+                if (typeof result === 'object' && result.status === 'refused' && result.reason === 'tooLarge') return 'tooLarge' as const;
+                return 'cannotAdd' as const;
+            }
+            return 'placed' as const;
+        } finally { token.end(); }
+    };
     const openWorkflow = async (path: string) => { const saved = await save(); if (saved) router.push(path as never); };
     const openExport = async () => { const rawFonts = (timeline as unknown as { fonts?: unknown }).fonts, declaredFonts = validCustomFonts(timeline);
         if (rawFonts !== undefined && (!Array.isArray(rawFonts) || rawFonts.length !== declaredFonts.length)) { setProblem(t('editorEditGate.invalid')); return; }
@@ -223,6 +253,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'library-audio', icon: '♫', label: t('editor.libraryaudio'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
         { id: 'photos', icon: '▤', label: t('editor.photosvideos'), disabled: replacing, afterClose: true, onPress: () => void choosePhotos() },
         { id: 'files', icon: '▥', label: t('editor.files'), disabled: replacing, afterClose: true, onPress: () => void chooseFiles() },
+        { id: 'asset-packs', icon: '▦', label: t('editorPack.title'), disabled: replacing, onPress: openAssetPacks },
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false);
             setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []), ]; const aiRows: SheetRow[] = [
         ...(bestCut.available ? [{ id: 'best-cut', icon: '✦', label: t('bestCut.title'), disabled: !ready, onPress: () => { setSheet(null); bestCut.launch(); } }] : []),
@@ -242,7 +273,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
     const panelProps: ToolPanelProps = { lookActions, motionActions, maskActions, fontActions,
         audioActions, originalAudio, timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
-        setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
+        setLibraryKind, choosePhotos, chooseFiles, openAssetPacks, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };
     return <View style={styles.screen}>
@@ -396,6 +427,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         {stemChoice ? <EditorStemSheet api={api} {...stemChoice} ready={ready} beginImport={beginImport} onAdd={addMediaToTimeline} onClose={() => setStemChoice(null)} /> : null}
         {voiceoverAt !== null ? <VoiceoverSheet key={projectId} projectId={projectId} startFrame={voiceoverAt} fps={timeline.fps} ready={ready} beginImport={beginImport}
             preparePicked={preparePicked} insert={placeVoiceover} onAdded={onVoiceoverAdded} onClose={() => setVoiceoverAt(null)} /> : null}
+        <AssetPackLibrarySheet key={`asset-pack-${projectId}`} visible={assetPackAt !== null && ready} playhead={timecode(assetPackAt ?? 0, timeline.fps)} onClose={() => setAssetPackAt(null)} onAdd={addPackAsset} />
         <EditorSaveSheets sync={sync} /><EditorVersionsSheet sync={sync} api={api} projectId={projectId} />
         {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => setLibraryKind(null)} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
         {/* Required privacy acknowledgement: escape must not imply consent. */}

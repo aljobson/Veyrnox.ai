@@ -5058,6 +5058,18 @@
     "ratio": 1.67
   },
   {
+    "id": "editorPack.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Mediendateien für das Paket auswählen",
+    "ratio": 1.61
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
