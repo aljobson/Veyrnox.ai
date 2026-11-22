@@ -15,7 +15,8 @@ jest.mock('../src/lib/hardPaywall', () => ({ ...jest.requireActual('../src/lib/h
 const mockApi = { request: (path: string) => mockRequest(path) };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, signOut: jest.fn() }) }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
-jest.mock('../src/billing/useStorePurchase', () => ({ useStorePurchase: () => ({ busy: false, start: jest.fn(), operation: { outcome: null } }) }));
+jest.mock('../src/billing/useStorePurchase', () => ({ useStorePurchase: () => ({ busy: false, start: jest.fn(), operation: { outcome: null },
+    actions: { buy: true, restore: true, manage: true, retry: false, close: true } }) }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 jest.mock('react-native-purchases', () => ({ __esModule: true, default: {} }));
 jest.mock('expo-router', () => ({ usePathname: () => '/', useRouter: () => ({ push: jest.fn() }) }));

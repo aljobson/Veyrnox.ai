@@ -219,7 +219,7 @@ export default function Credits() {
                     </View>
                 )}
                 {!billing.generationActive && chosenPlan?.interval ? <Text accessibilityLanguage="en" variant="caption" tone="tertiary" style={styles.terms}>{renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)}</Text> : null}
-                {!billing.generationActive && !storeBusy ? <Button variant="primary" accessibilityRole="button" disabled={!billing.generationPurchaseReady || !chosenPlan || busyId !== null} onPress={() => void buyPlan()} label={t('credits.subscriptions.continue')} loading={busyId === chosenPlan?.id} /> : null}
+                {!billing.generationActive && !storeBusy ? <Button variant="primary" accessibilityRole="button" disabled={!purchase.actions.buy || !billing.generationPurchaseReady || !chosenPlan || busyId !== null} onPress={() => void buyPlan()} label={t('credits.subscriptions.continue')} loading={busyId === chosenPlan?.id} /> : null}
             </View>
 
             <View style={styles.section}>
@@ -229,7 +229,7 @@ export default function Credits() {
                     <PurchaseState kind="unavailable" text={t('credits.unavailable')} />
                 ) : <View style={styles.packList}>{packs.map(item => (
                     <PackCard key={item.id} pack={item} best={bestPackId(packs) === item.id} saving={packSavingPercent(item, packs)} costs={costs}
-                        busy={busyId === item.id} chosen={chosenId === item.id} disabled={!billing.canPurchase || busyId !== null} onPress={() => void buyPack(item.id)}>
+                        busy={busyId === item.id} chosen={chosenId === item.id} disabled={!purchase.actions.buy || !billing.canPurchase || busyId !== null} onPress={() => void buyPack(item.id)}>
                         {chosenId === item.id ? <VeyCardPeek /> : null}
                     </PackCard>
                 ))}</View>}
@@ -248,8 +248,8 @@ export default function Credits() {
             <PurchaseOutcomeState outcome={outcome} />
 
             {busyId === 'restore' ? <PurchaseState kind="restoring" text={t('projectDocument.restoring')} /> : null}
-            <Button variant="tertiary" accessibilityRole="button" disabled={busyId !== null || !billing.canRestore} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />
-            {billing.managementURL ? (
+            <Button variant="tertiary" accessibilityRole="button" disabled={!purchase.actions.restore || busyId !== null || !billing.canRestore} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />
+            {purchase.actions.manage && ([billing.generationSource, billing.publishSource].some(source => source === 'store' || source === 'both')) && billing.managementURL ? (
                 <Button variant="tertiary" accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} textStyle={styles.accentInk} label={t('credits.manage')} />
             ) : null}
             <View style={styles.legal}>

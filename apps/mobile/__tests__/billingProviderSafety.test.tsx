@@ -42,6 +42,32 @@ test.each([[{}, [], false], [{ other: {} }, [], true], [{}, ['subscription'], tr
     jest.mocked(Purchases.restorePurchases).mockResolvedValue(info(active, [...subscriptions]));
     await act(async () => { expect(await billing.restore()).toBe(expected); });
 });
+test('dashboard CustomerInfo is applied only to the currently bound account', async () => {
+    const dashboardInfo = { ...info({ generation: { expirationDate: '2026-12-01T00:00:00Z' } }, ['ai.veyrnox.generation.starter.monthly']), managementURL: 'https://apps.apple.com/account/subscriptions' };
+    await act(async () => { expect(billing.applyCustomerInfo(dashboardInfo)).toBe(true); });
+    expect(billing.generationActive).toBe(true);
+    expect(billing.generationSource).toBe('store');
+    expect(billing.generationPeriodEnd).toBe('2026-12-01T00:00:00Z');
+    expect(billing.activeProductIds).toEqual(['ai.veyrnox.generation.starter.monthly']);
+    expect(billing.managementURL).toBe(dashboardInfo.managementURL);
+    mockGeneration++;
+    await act(async () => { expect(billing.applyCustomerInfo(info({ publish: {} }, ['ai.veyrnox.publish.monthly']))).toBe(false); });
+    expect(billing.publishActive).toBe(false);
+});
+test('Publish access resolves independently when the Generation subscription read fails', async () => {
+    await act(async () => root.unmount());
+    mockApi.request.mockImplementation(async path => {
+        if (path.includes('/customer')) return { rc_customer_id: 'customer', sales_open: true };
+        if (path === '/api/v1/subscriptions') throw new Error('generation offline');
+        if (path === '/api/v1/social/plan') return { entitlement: { tier: 'publish', subscription: { source: 'stripe', current_period_end: '2026-12-02T00:00:00Z' } } };
+        return {};
+    });
+    root = createRoot(); await act(async () => root.render(<BillingProvider><Probe /></BillingProvider>));
+    expect(billing.publishAccessResolved).toBe(true);
+    expect(billing.publishActive).toBe(true);
+    expect(billing.publishSource).toBe('web');
+    expect(billing.publishPeriodEnd).toBe('2026-12-02T00:00:00Z');
+});
 test('restore errors propagate', async () => {
     jest.mocked(Purchases.restorePurchases).mockRejectedValue(new Error('store unavailable'));
     await expect(billing.restore()).rejects.toThrow('store unavailable');
