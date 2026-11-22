@@ -2,6 +2,7 @@ import { act } from 'react';
 import { PixelRatio } from 'react-native';
 import { createRoot } from 'test-renderer';
 import { editorPreviewAccessibilityLabel, PlaybackPreview } from '../src/components/editor/EditorPlayback';
+import { EditorStaticPreviewSurface } from '../src/components/editor/EditorStaticPreviewSurface';
 import { createFrameStore } from '../src/components/editor/editorFrameStore';
 import { editorPreviewPlan } from '../src/lib/editorPreviewPlan';
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
@@ -30,7 +31,8 @@ jest.mock('@shopify/react-native-skia', () => ({
     Image: (props: any) => require('react').createElement(require('react-native').View, { ...props, testID: 'mock-skia-image' }),
 }));
 jest.mock('../src/components/editor/EditorMediaPreview', () => ({
-    EditorMediaPreview: () => require('react').createElement(require('react-native').View, { testID: 'legacy-editor-preview' }),
+    EditorMediaPreview: () => require('react').createElement(require('react-native').View,
+        { testID: 'legacy-editor-preview', accessibilityLabel: 'Legacy preview' }),
 }));
 
 const deferred = <T,>() => {
@@ -47,7 +49,9 @@ const timeline = (): Timeline => {
 };
 
 beforeEach(() => {
-    jest.clearAllMocks(); mockSourceKey.mockReturnValue('source-key');
+    jest.clearAllMocks(); mockLoader.load.mockReset(); mockRender.mockReset();
+    mockBind.mockReset().mockImplementation((..._args: unknown[]) => ({ width: 320, height: 180, background: '#000000', layers: [] }));
+    mockSourceKey.mockReset().mockReturnValue('source-key');
     mockCapabilities.splice(0, mockCapabilities.length,
         'timeline-background', 'image-source', 'graphic-source', 'fit', 'crop', 'transform', 'visual-layering', 'blend', 'mask', 'clip-animation',
         'clip-background-solid', 'clip-background-blur', 'clip-background-image');
@@ -148,13 +152,15 @@ test.each([
 test('disposes a stale decoded generation without rendering or mounting it', async () => {
     const pending = deferred<any>(), next = deferred<any>(), staleDispose = jest.fn();
     mockLoader.load.mockReturnValueOnce(pending.promise).mockReturnValueOnce(next.promise);
-    const root = createRoot(), frameStore = createFrameStore(5);
+    const root = createRoot(), frameStore = createFrameStore(5), api = { request: jest.fn() }, uris = { image: 'file://image.png' };
+    const initial = timeline(), moved = { ...initial, video: [{ ...initial.video[0], transform: { x: .7, y: .5 } }] };
     try {
-        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={timeline()}
-            api={{ request: jest.fn() }} playing={false} localMediaUris={{ image: 'file://image.png' }} />));
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={initial}
+            api={api} playing={false} localMediaUris={uris} />));
         const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
         await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
-        await act(async () => frameStore.set(6));
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={moved}
+            api={api} playing={false} localMediaUris={uris} />));
         await act(async () => pending.resolve({ status: 'ready', sources: { images: { image: {} }, key: 'stale', dispose: staleDispose } }));
         expect(staleDispose).toHaveBeenCalledTimes(1);
         expect(mockRender).not.toHaveBeenCalled();
@@ -250,7 +256,7 @@ test('reuses decoded sources for a transform change and swaps output images afte
     expect(sourceDispose).toHaveBeenCalledTimes(1); expect(secondDispose).toHaveBeenCalledTimes(1);
 });
 
-test('keeps the previous snapshot during a source-key decode and disposes both caches exactly once', async () => {
+test('reveals the correct legacy preview during a cross-source decode and disposes both caches exactly once', async () => {
     mockSourceKey.mockImplementation((plan: any) => plan.visuals.map((layer: any) => layer.clip.mediaId).join(','));
     const pending = deferred<any>(), firstSourceDispose = jest.fn(), secondSourceDispose = jest.fn();
     const firstDispose = jest.fn(), secondDispose = jest.fn(), firstImage = { id: 'first', dispose: firstDispose }, secondImage = { id: 'second', dispose: secondDispose };
@@ -270,8 +276,11 @@ test('keeps the previous snapshot during a source-key decode and disposes both c
         await act(async () => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={replacement}
             api={api} playing={false} localMediaUris={{ next: 'file://next.png' }} />));
         expect(firstSourceDispose).toHaveBeenCalledTimes(1);
-        expect(firstDispose).not.toHaveBeenCalled();
-        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')[0].props.image).toBe(firstImage);
+        expect(firstDispose).toHaveBeenCalledTimes(1);
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')).toHaveLength(0);
+        expect(root.container.queryAll(node => node.props.testID === 'legacy-editor-preview')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.props.accessibilityRole === 'image')).toHaveLength(0);
+        expect(root.container.queryAll(node => node.props.importantForAccessibility === 'auto')).toHaveLength(1);
         expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(1);
         await act(async () => pending.resolve({ status: 'ready', sources: { images: { next: {} }, key: 'next', dispose: secondSourceDispose } }));
         expect(firstDispose).toHaveBeenCalledTimes(1);
@@ -279,6 +288,56 @@ test('keeps the previous snapshot during a source-key decode and disposes both c
         expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')[0].props.image).toBe(secondImage);
     } finally { await act(async () => root.unmount()); }
     expect(secondSourceDispose).toHaveBeenCalledTimes(1); expect(secondDispose).toHaveBeenCalledTimes(1);
+});
+
+test('preserves exactness across the intermediate commit of a same-source frame and transform update', async () => {
+    const sourceDispose = jest.fn(), firstDispose = jest.fn(), secondDispose = jest.fn(), displays: any[] = [];
+    mockLoader.load.mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDispose } });
+    mockRender.mockReturnValueOnce({ ok: true, width: 640, height: 360, image: { dispose: firstDispose } })
+        .mockReturnValueOnce({ ok: true, width: 640, height: 360, image: { dispose: secondDispose } });
+    const root = createRoot(), api = { request: jest.fn() }, uris = { image: 'file://image.png' }, initial = timeline();
+    const moved = { ...initial, video: [{ ...initial.video[0], transform: { x: .65, y: .5 } }] };
+    const render = (value: Timeline, frame: number) => root.render(<EditorStaticPreviewSurface enabled timeline={value} frame={frame}
+        api={api} localMediaUris={uris} onDisplayed={display => displays.push(display)} />);
+    try {
+        await act(async () => render(initial, 5));
+        const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        const committedAt = displays.length;
+        await act(async () => render(moved, 6));
+        expect(displays.slice(committedAt)).not.toContainEqual(null);
+        expect(displays.slice(committedAt).every(display => display?.exact === true)).toBe(true);
+        expect(mockLoader.load).toHaveBeenCalledTimes(1);
+        expect(mockRender).toHaveBeenCalledTimes(2);
+    } finally { await act(async () => root.unmount()); }
+    expect(sourceDispose).toHaveBeenCalledTimes(1); expect(firstDispose).toHaveBeenCalledTimes(1); expect(secondDispose).toHaveBeenCalledTimes(1);
+});
+
+test('reuses a frame-invariant still output but rerenders an animated visual on frame steps', async () => {
+    const sourceDispose = jest.fn(), disposed: jest.Mock[] = [];
+    mockLoader.load.mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDispose } });
+    mockRender.mockImplementation(() => {
+        const dispose = jest.fn(); disposed.push(dispose);
+        return { ok: true, width: 640, height: 360, image: { dispose } };
+    });
+    const root = createRoot(), frameStore = createFrameStore(5), api = { request: jest.fn() }, uris = { image: 'file://image.png' };
+    const still = timeline(), animated = { ...still, video: [{ ...still.video[0], animation: { in: 'fade', duration: 15 } }] };
+    try {
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={still}
+            api={api} playing={false} localMediaUris={uris} />));
+        const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        await act(async () => frameStore.set(6));
+        await act(async () => frameStore.set(7));
+        expect(mockLoader.load).toHaveBeenCalledTimes(1);
+        expect(mockRender).toHaveBeenCalledTimes(1);
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={animated}
+            api={api} playing={false} localMediaUris={uris} />));
+        await act(async () => frameStore.set(8));
+        expect(mockLoader.load).toHaveBeenCalledTimes(1);
+        expect(mockRender).toHaveBeenCalledTimes(3);
+    } finally { await act(async () => root.unmount()); }
+    expect(sourceDispose).toHaveBeenCalledTimes(1); disposed.forEach(dispose => expect(dispose).toHaveBeenCalledTimes(1));
 });
 
 test('renders at bounded device pixels while drawing the image at layout size', async () => {
