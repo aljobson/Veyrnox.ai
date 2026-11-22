@@ -191,7 +191,8 @@ try {
 
     // Use an existing committed model so the second connection can see it;
     // do not UPDATE it on this connection (that would mask the FOR SHARE test).
-    const committedModel = await one("SELECT id,credits_5s FROM public.model_catalog WHERE id='flux-2-pro'");
+    // Must still be served by fal: FLUX.2 Pro moved to Crun first in 0581.
+    const committedModel = await one("SELECT id,credits_5s FROM public.model_catalog WHERE id='sana-1.5-4.8b' AND provider='fal'");
     assert.ok(committedModel);
     await q('UPDATE public.fal_capacity_policy SET model_id=$1', [committedModel.id]);
     const result = await admit(committedModel.credits_5s, { modelId: committedModel.id, free: false });
