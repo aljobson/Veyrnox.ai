@@ -1,5 +1,5 @@
 import { rpc, envConfig } from '../../../../../../../packages/db/supabase-client.js';
-import { musicLibraryEnabled, musicRpcStatus, publicMusicError, validMusicAuthId } from '../../../../../../../lib/musicBackend.js';
+import { musicLibraryEnabled, musicRpcStatus, publicMusicError, readMusicJson, validMusicAuthId } from '../../../../../../../lib/musicBackend.js';
 import { parseMusicFeedback } from '../../../../../../../lib/musicFeedback.js';
 
 import { isUuid } from '../../../../../../../lib/validate.js';
@@ -11,9 +11,9 @@ export async function PUT(request, { params }) {
   if (!musicLibraryEnabled()) return reply({ error: 'music_library_unavailable' }, 404);
   const { id } = await params;
   if (!isUuid(id || '')) return reply({ error: 'song_id_invalid' }, 400);
-  let body;
-  try { body = await request.json(); } catch { return reply({ error: 'invalid_json' }, 400); }
-  const parsed = parseMusicFeedback(body);
+  const decoded = await readMusicJson(request);
+  if (!decoded.ok) return reply({ error: decoded.error }, 400);
+  const parsed = parseMusicFeedback(decoded.value);
   if (!parsed.ok) return reply({ error: parsed.error }, 400);
   const cfg = envConfig();
   if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
