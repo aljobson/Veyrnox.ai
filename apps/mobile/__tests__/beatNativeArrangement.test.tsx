@@ -15,9 +15,10 @@ jest.mock('../src/components/beats/BeatLabsBar', () => ({ BeatLabsBar: () => nul
 jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: () => null }));
 jest.mock('../src/lib/beatNative/useLocalBeatLifecycle', () => ({ useLocalBeatLifecycle: () => {} }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {}, generation: 0, beginSessionTask: () => ({}) }) }));
 const mockAnnounce = jest.fn();
 jest.mock('../src/lib/useAnnouncement', () => ({ ...jest.requireActual('../src/lib/useAnnouncement'), useAnnouncement: (value: string) => { if (value) mockAnnounce(value); } }));
-const mockAudio = { play: jest.fn(async () => {}), stop: jest.fn(), close: jest.fn(async () => {}), hitPad: jest.fn(), setTrackMix: jest.fn() };
+const mockAudio = { play: jest.fn(async () => 'started' as const), stop: jest.fn(), close: jest.fn(async () => {}), hitPad: jest.fn(), setTrackMix: jest.fn() };
 jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => mockAudio }));
 let mockId = '';
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ children }: any) => children, useLocalSearchParams: () => ({ id: mockId }) }));
