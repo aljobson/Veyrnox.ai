@@ -1,7 +1,8 @@
 import { t } from '../i18n';
 import { guardedRippleDelete, positionParts } from './arrange';
 import { deleteRegion, duplicateRegion, moveRegion, resizeRegion, splitRegion, trimRegionStart, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc, type Edit } from './doc';
-export type Apply = (operation: Edit, announce?: string) => boolean;
+export type ApplyOptions = { silentRefusal?: boolean };
+export type Apply = (operation: Edit, announce?: string, options?: ApplyOptions) => boolean;
 export const position = (tick: number) => t(tick % 960 ? 'beat.positionStep' : 'beat.position', positionParts(tick));
 export function regionName(doc: BeatDoc, region: BeatRegionDoc) {
     return region.clipId ? doc.clips?.[region.clipId]?.name ?? t('beat.kind.midi') : region.assetId ? doc.assets?.[region.assetId]?.name ?? t('beat.kind.audio') : region.pattern ?? '';

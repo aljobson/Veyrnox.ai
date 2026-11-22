@@ -4482,6 +4482,12 @@
     "ratio": 1.68
   },
   {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Einrasten",

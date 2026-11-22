@@ -43,6 +43,7 @@ import { BeatEditorTransport } from '../../../components/beats/BeatEditorTranspo
 import { BeatPatternControls } from '../../../components/beats/BeatPatternControls';
 import { beatEditorLayout } from '../../../lib/beatNative/editorLayout';
 import { measureAndRevealLane } from '../../../lib/beatNative/clipSearch';
+import type { ApplyOptions } from '../../../lib/beatNative/regionActions';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
@@ -132,7 +133,11 @@ export default function BeatEditor() {
     const startingRef = useRef(false);
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
-    const [said, setSaid] = useState<string | null>(null);
+    const saidSequence = useRef(0);
+    const [said, setSaidState] = useState<{ message: string; event: number } | null>(null);
+    const setSaid = useCallback((message: string | null) => {
+        setSaidState(message ? { message, event: ++saidSequence.current } : null);
+    }, []);
     const setOrdinaryRun = useCallback((value: boolean) => {
         ordinaryPlayingRef.current = value;
         setOrdinaryPlaying(value);
@@ -151,7 +156,7 @@ export default function BeatEditor() {
         setPatternControls(false);
         requestAnimationFrame(restorePatternControlsFocus);
     }, [restorePatternControlsFocus]);
-    useAnnouncement(notice ?? said, { everywhere: true });
+    useAnnouncement(notice ?? said?.message, { everywhere: true, eventKey: notice ? undefined : said?.event });
     useLocalBeatLifecycle();
     useEffect(() => () => {
         const session = audioSession.current; audioSession.current = null; audio.current = null;
@@ -187,17 +192,20 @@ export default function BeatEditor() {
         } catch { setNotice(t('beat.audioError')); return null; }
     }, []);
     // Third argument: N5's history key (a slider drag is one undo step) or N6's options; both forms are accepted.
-    const apply = useCallback((operation: Edit, announce?: string, third?: string | { recordingCommit?: boolean; key?: string }) => {
+    const apply = useCallback((operation: Edit, announce?: string, third?: string | (ApplyOptions & { recordingCommit?: boolean; key?: string })) => {
         const options = typeof third === 'string' ? { key: third } : third ?? {};
         const key = options.key;
+        const refuse = (message: string) => { if (!options.silentRefusal) setNotice(message); return false; };
         const current = docRef.current;
         if (!current) return false;
-        if ((recordingRef.current?.locked() || replacementUnderway(current.id)) && !options?.recordingCommit) { setNotice(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : 'beatTakes.locked')); return false; }
+        if ((recordingRef.current?.locked() || replacementUnderway(current.id)) && !options?.recordingCommit) {
+            return refuse(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : 'beatTakes.locked'));
+        }
         let result;
-        try { result = tryOp(current, operation); } catch { setNotice(t('beat.refused', { reason: '' })); return false; }
-        if (result.refused) { setNotice(t('beat.refused', { reason: result.refused })); return false; }
+        try { result = tryOp(current, operation); } catch { return refuse(t('beat.refused', { reason: '' })); }
+        if (result.refused) return refuse(t('beat.refused', { reason: result.refused }));
         if (result.doc !== current) {
-            if (!putBeat(result.doc)) { setNotice(t('beat.local.busy')); return false; }
+            if (!putBeat(result.doc)) return refuse(t('beat.local.busy'));
             docRef.current = getBeat(current.id)!;
             history.current = record(history.current ?? createHistory(current), docRef.current, { label: announce, key });
         }
@@ -375,7 +383,8 @@ export default function BeatEditor() {
                     <BeatSaveControls id={doc.id} apply={apply} />
                     <Button variant="secondary" icon="arrowUp" label={t('beatExport.title')} onPress={() => setExporting(true)} />
                     <BeatAiPanel doc={doc} apply={apply} />
-                    <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
+                    <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES}
+                        showSounds={doc.view !== 'song'} />
                 </View>
                 {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
                 {notice ? <MusicNotice message={notice} /> : null}
@@ -396,7 +405,7 @@ export default function BeatEditor() {
                             onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
                         {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
                             editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId} playing={playing} step={step} disabled={patternLocked}
-                            announce={setSaid} onHold={setHeld} onRevealLane={revealLane} /> : null}
+                            announce={setSaid} onHold={setHeld} onRevealLane={revealLane} layout={layout} /> : null}
                         {padSurfaceAvailable ? <>
                             <View style={s.padHeading}>
                                 <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>

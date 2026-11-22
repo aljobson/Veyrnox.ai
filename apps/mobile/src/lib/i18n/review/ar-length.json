@@ -2274,6 +2274,12 @@
     "ratio": 1.8
   },
   {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "محاذاة للشبكة",

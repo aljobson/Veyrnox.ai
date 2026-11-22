@@ -1,25 +1,40 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type ComponentRef } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, findNodeHandle, Pressable, ScrollView, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
 import { addRegion, barTicks, BeatRefusal, clampLocator, renameTrack, snapTick, songEnd, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc, type PatternSlot } from '../../lib/beatNative/doc';
 import { arrangementBars, guardedRippleInsert, laneAt, tickToX, xToTick, type DragValue } from '../../lib/beatNative/arrange';
-import { regionLabel, type Apply } from '../../lib/beatNative/regionActions';
+import { position, regionLabel, type Apply } from '../../lib/beatNative/regionActions';
 import { BeatRegionView } from './BeatRegionView';
 import { BeatRegionInspector } from './BeatRegionInspector';
 import { BeatRuler, BeatRulerControls, RULER_HEIGHT } from './BeatRuler';
 import { BeatClipSearch } from './BeatClipSearch';
 import { type ClipSearchResult } from '../../lib/beatNative/clipSearch';
+import { addAudioRegion as addAudioAssetRegion, soundAsset, type AudioAsset, type BeatSound } from '../../lib/beatNative/labs';
+import { assertBeatWritable } from '../../lib/beatNative/takeShared';
+import type { BeatEditorLayout } from '../../lib/beatNative/editorLayout';
+import { BeatSoundsSheet } from './BeatSoundsSheet';
+import { BeatSongLibrarySheet, type BeatSongPlacement } from './BeatSongLibrarySheet';
 
 type Props = {
     manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void;
     editTrackId: string | undefined; onEditTrackChange: (trackId: string) => void;
     playing: boolean; step: number | null; disabled: boolean; announce: (message: string) => void; onHold: (held: boolean) => void;
     onRevealLane: (lane: ComponentRef<typeof View> | null) => void;
+    layout: BeatEditorLayout;
 };
+type AudioPlacement = BeatSongPlacement;
 const MIN_LANE_HEIGHT = 96;
-export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, playing, step, disabled, announce, onHold, onRevealLane, manualRun }: Props) {
+export function restoreBeatLibraryTriggerFocus(
+    trigger: ComponentRef<typeof Pressable> | null,
+    resolve: (target: ComponentRef<typeof Pressable> | null) => number | null | undefined = findNodeHandle,
+    focus: (node: number) => void = node => AccessibilityInfo.setAccessibilityFocus(node),
+) {
+    const node = resolve(trigger);
+    if (node) focus(node);
+}
+export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, playing, step, disabled, announce, onHold, onRevealLane, manualRun, layout }: Props) {
     const s = useThemedStyles(sheets);
     const [zoom, setZoom] = useState(96);
     const [snap, setSnap] = useState('240');
@@ -29,7 +44,10 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [preview, setPreview] = useState<DragValue | null>(null);
     const [held, setHeld] = useState(false);
+    const [libraryOpen, setLibraryOpen] = useState(false);
+    const [soundsOpen, setSoundsOpen] = useState(false);
     const [heights, setHeights] = useState<Record<string, number>>({});
+    const libraryTrigger = useRef<ComponentRef<typeof Pressable>>(null);
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const lanes = useRef<Record<string, ComponentRef<typeof View> | null>>({});
     const pendingRevealTrackId = useRef<string | null>(null);
@@ -40,6 +58,32 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     const selectedTrack = doc.tracks.find(track => track.regions.some(region => region.id === selectedId));
     const selectedRegion = selectedTrack?.regions.find(region => region.id === selectedId);
     const editTrack = doc.tracks.find(track => track.id === editTrackId);
+    const placementContext = useRef<AudioPlacement>({ start: 0, trackId: null });
+    placementContext.current = {
+        start: snapTick(locator, Number(snap)),
+        trackId: editTrack?.kind === 'audio' ? editTrack.id : null,
+    };
+    const capturePlacement = useCallback((): AudioPlacement => ({ ...placementContext.current }), []);
+    const commitAudio = useCallback((asset: AudioAsset, intent: AudioPlacement, message?: string, silentRefusal = false): boolean => {
+        let affectedTrackId: string | null = null;
+        const committed = apply(current => {
+            assertBeatWritable(current);
+            const before = new Set(current.tracks.map(track => track.id));
+            const next = addAudioAssetRegion(current, asset, intent.trackId ?? undefined, intent.start);
+            affectedTrackId = intent.trackId ?? next.tracks.find(track => track.kind === 'audio' && !before.has(track.id))?.id ?? null;
+            return next;
+        }, message, silentRefusal ? { silentRefusal: true } : undefined);
+        if (!committed || !affectedTrackId) return false;
+        onEditTrackChange(affectedTrackId);
+        return true;
+    }, [apply, onEditTrackChange]);
+    const addStarterSound = useCallback((sound: BeatSound) => {
+        const intent = capturePlacement();
+        return commitAudio(soundAsset(sound, doc.tempo.bpm), intent, t('beatLabs.added'));
+    }, [capturePlacement, commitAudio, doc.tempo.bpm]);
+    const restoreLibraryFocus = useCallback(() => {
+        restoreBeatLibraryTriggerFocus(libraryTrigger.current);
+    }, []);
     const [trackName, setTrackName] = useState(editTrack?.name ?? '');
     const laneHeights = doc.tracks.map(track => heights[track.id] ?? MIN_LANE_HEIGHT);
     const head = tickToX(playing ? (step ?? 0) * 240 : locator, zoom);
@@ -129,6 +173,10 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 returnKeyType="done" onChangeText={setTrackName} onSubmitEditing={commitTrackName} />
             <Button size="md" variant="secondary" label={t('beat.track.rename')} disabled={disabled} onPress={commitTrackName} />
         </View>}
+        <View style={s.controls}>
+            <Button ref={libraryTrigger} variant="secondary" label={t('beat.library.open')} onPress={() => setLibraryOpen(true)} />
+            <Button variant="secondary" label={t('beatLabs.sounds')} onPress={() => setSoundsOpen(true)} />
+        </View>
         <BeatClipSearch doc={doc} choose={chooseSearchResult} />
         <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} disabled={disabled} />
         <View style={s.timeline}>
@@ -165,6 +213,11 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
             <Button size="md" variant="secondary" label={t('beat.ruler.right')} onPress={() => setPosition(locator + Number(snap))} />
         </View>
         {selectedRegion && selectedTrack && <BeatRegionInspector doc={doc} track={selectedTrack} region={selectedRegion} snap={Number(snap)} locator={locator} ripple={ripple} disabled={disabled} apply={apply} />}
+        {libraryOpen ? <BeatSongLibrarySheet layout={layout} disabled={disabled} placement={capturePlacement}
+            onCommit={(asset, intent) => commitAudio(asset, intent,
+                t('beat.library.added', { name: asset.name, position: position(intent.start) }), true)}
+            onClose={() => setLibraryOpen(false)} onDismiss={restoreLibraryFocus} /> : null}
+        {soundsOpen ? <BeatSoundsSheet bpm={doc.tempo.bpm} onAdd={addStarterSound} onClose={() => setSoundsOpen(false)} /> : null}
     </View>;
 }
 const sheets = themedStyles(p => ({
