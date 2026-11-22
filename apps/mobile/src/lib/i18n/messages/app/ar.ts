@@ -7436,6 +7436,8 @@ export default {
     "beat.track.max": "يمكن أن يحتوي الإيقاع على {max} مسارات كحد أقصى.",
     "beat.refused": "لم يُطبَّق التغيير: {reason}",
     "beat.audioError": "تعذّر بدء الصوت على هذا الجهاز. يمكنك متابعة التعديل.",
+    "beat.audioTooLarge": "يستخدم هذا الإيقاع ملفات صوتية أكثر مما يستطيع هذا الجهاز تشغيله. اكتم مناطق صوتية أو أزلها ثم حاول مجددًا.",
+    "beat.audioUnavailable": "{name} غير متاح، لذا ستبقى تلك المنطقة صامتة.",
     "musicTrackAdd.title": "إضافة جزء غنائي أو آلي",
     "musicTrackAdd.mode": "نوع الجزء",
     "musicTrackAdd.mode.vocals": "غناء",

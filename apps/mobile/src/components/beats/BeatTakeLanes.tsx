@@ -8,7 +8,7 @@ export function BeatTakeLanes({ doc, track, apply, locked }: { doc: BeatDoc; tra
     return <View>{track.takeGroups?.map((group, index) => <View key={group.id}>
         <Text accessibilityRole="header">{t('beatTakes.group', { n: index + 1 })}</Text>
         {group.lanes.map((id, lane) => {
-            const asset = doc.assets?.[id]; if (!asset) return null;
+            const asset = doc.assets?.[id]; if (asset?.source !== 'take') return null;
             const name = t('beatTakes.take', { n: lane + 1 });
             return <View key={id}>
                 <Text>{name}</Text>

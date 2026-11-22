@@ -20,7 +20,11 @@ export function fakeContext() {
     const node = () => ({ connect: jest.fn(), disconnect: jest.fn() });
     const sources: any[] = [];
     const context = { currentTime: 0, sampleRate: 1000, state: 'running', destination: {}, resume: async () => {}, close: async () => {},
-        createBuffer: (_channels: number, length: number) => { const samples = new Float32Array(length); return { getChannelData: () => samples }; },
+        createBuffer: (channels: number, length: number, sampleRate: number) => {
+            const samples = Array.from({ length: channels }, () => new Float32Array(length));
+            return { length, numberOfChannels: channels, sampleRate, getChannelData: (channel: number) => samples[channel] };
+        },
+        decodeAudioData: jest.fn(),
         createBufferSource: () => { const source = { ...node(), buffer: null, start: jest.fn(), stop: jest.fn(), onended: null }; sources.push(source); return source; },
         createGain: () => ({ ...node(), gain: param() }), createStereoPanner: () => ({ ...node(), pan: param() }),
     } as unknown as PlaybackContext;

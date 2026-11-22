@@ -7086,6 +7086,8 @@ export default {
     "beat.track.max": "Ein Beat kann höchstens {max} Spuren haben.",
     "beat.refused": "Die Änderung wurde nicht übernommen: {reason}",
     "beat.audioError": "Der Ton konnte auf diesem Gerät nicht gestartet werden. Du kannst weiter bearbeiten.",
+    "beat.audioTooLarge": "Dieser Beat enthält zu viel Audiomaterial für die Wiedergabe auf diesem Gerät. Schalte Audiobereiche stumm oder entferne sie und versuche es erneut.",
+    "beat.audioUnavailable": "{name} ist nicht verfügbar, daher bleibt dieser Bereich stumm.",
     "musicTrackAdd.title": "Gesangs- oder Instrumentalpart hinzufügen",
     "musicTrackAdd.mode": "Art des Parts",
     "musicTrackAdd.mode.vocals": "Gesang",

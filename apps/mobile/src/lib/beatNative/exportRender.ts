@@ -1,11 +1,16 @@
 import type { BeatDoc } from './doc';
-import { beatTakes, configureNativeTakeStorage, hydrateBeatTakes, loadBeatTake, type TakeRow } from './takeShared';
+import { beatTakes, configureNativeTakeStorage, hydrateBeatTakes, loadBeatTake, type TakeAsset, type TakeRow } from './takeShared';
 import { loadNativeOfflineContext, withWindowOfflineContext, type AdapterReport, type NativeOfflineCtor, type NativeOfflineContext } from './nativeContext';
 import { assembleExport, createWavWriter, encodeWav, exportFilename, MB, planExport, renderBeat, renderSong, usedAssets, type ExportOptions, type ExportPlan, type SongBuffers } from './exportShared';
 
 import { ExportFailure } from './exportFailure';
 export { ExportFailure } from './exportFailure';
 const reverseUsed = (doc: BeatDoc, id: string) => doc.tracks.some(t => t.regions.some(r => r.assetId === id && r.reverse));
+function nativeTake(doc: BeatDoc, id: string): TakeAsset {
+    const asset = doc.assets?.[id];
+    if (asset?.source !== 'take') throw new ExportFailure('beatExport.source');
+    return asset;
+}
 export function assertNativeSources(doc: BeatDoc) {
     if (usedAssets(doc).some(id => doc.assets?.[id]?.source !== 'take')) throw new ExportFailure('beatExport.source');
 }
@@ -15,7 +20,7 @@ export function nativeExportBytes(doc: BeatDoc, plan: Pick<ExportPlan, 'frames' 
     const loaded = new Set<string>();
     const lengths = new Map<string, number>();
     for (const id of usedAssets(doc)) {
-        const asset = doc.assets![id], row = cached.find(take => take.id === asset.ref);
+        const asset = nativeTake(doc, id), row = cached.find(take => take.id === asset.ref);
         const length = row?.samples?.length ?? row?.length ?? Math.ceil(asset.durationSec * 48000);
         if (!row?.samples && !loaded.has(asset.ref)) bytes += length * 4;
         loaded.add(asset.ref);
@@ -29,13 +34,13 @@ export function nativeExportBytes(doc: BeatDoc, plan: Pick<ExportPlan, 'frames' 
 const trackDoc = (doc: BeatDoc, id?: string): BeatDoc => id ? { ...doc, tracks: doc.tracks.filter(track => track.id === id) } : doc;
 async function checkExportTakes(doc: BeatDoc) {
     let missing = 0;
-    for (const id of usedAssets(doc)) if (!await loadBeatTake(doc.assets![id].ref).catch(() => null)) missing++;
+    for (const id of usedAssets(doc)) if (!await loadBeatTake(nativeTake(doc, id).ref).catch(() => null)) missing++;
     if (missing) throw new ExportFailure(missing === 1 ? 'beatExport.missingOne' : 'beatExport.missingMany', { count: missing });
 }
 export async function prepareExportBuffers(doc: BeatDoc, context: NativeOfflineContext): Promise<SongBuffers> {
     const buffers: SongBuffers = new Map();
     for (const id of usedAssets(doc)) {
-        const take = await loadBeatTake(doc.assets![id].ref).catch(() => null);
+        const take = await loadBeatTake(nativeTake(doc, id).ref).catch(() => null);
         if (!take) { buffers.set(id, { missing: true }); continue; }
         const buffer = context.createBuffer(1, take.samples.length, take.sampleRate);
         buffer.getChannelData(0).set(take.samples);

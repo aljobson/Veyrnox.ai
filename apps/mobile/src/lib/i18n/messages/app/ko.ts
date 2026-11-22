@@ -6996,6 +6996,8 @@ export default {
     "beat.track.max": "비트에는 트랙을 최대 {max}개까지 둘 수 있습니다.",
     "beat.refused": "변경이 적용되지 않았습니다: {reason}",
     "beat.audioError": "이 기기에서 소리를 시작하지 못했습니다. 계속 편집할 수 있습니다.",
+    "beat.audioTooLarge": "이 비트는 오디오가 너무 많아 이 기기에서 재생할 수 없습니다. 오디오 영역을 음소거하거나 삭제한 후 다시 시도하세요.",
+    "beat.audioUnavailable": "{name}을(를) 사용할 수 없어 해당 영역은 무음으로 재생됩니다.",
     "musicTrackAdd.title": "보컬 또는 악기 파트 추가",
     "musicTrackAdd.mode": "파트 유형",
     "musicTrackAdd.mode.vocals": "보컬",

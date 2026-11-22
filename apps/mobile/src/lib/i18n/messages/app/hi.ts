@@ -7085,6 +7085,8 @@ export default {
     "beat.track.max": "एक बीट में अधिकतम {max} ट्रैक हो सकते हैं।",
     "beat.refused": "बदलाव लागू नहीं हुआ: {reason}",
     "beat.audioError": "इस डिवाइस पर ध्वनि शुरू नहीं हो सकी। आप संपादन जारी रख सकते हैं।",
+    "beat.audioTooLarge": "इस बीट में इस डिवाइस पर चलाने के लिए बहुत ज़्यादा ऑडियो है। ऑडियो क्षेत्रों को म्यूट करें या हटाएँ और फिर कोशिश करें।",
+    "beat.audioUnavailable": "{name} उपलब्ध नहीं है, इसलिए वह क्षेत्र मौन रहेगा।",
     "musicTrackAdd.title": "वोकल या वाद्य भाग जोड़ें",
     "musicTrackAdd.mode": "भाग का प्रकार",
     "musicTrackAdd.mode.vocals": "वोकल",

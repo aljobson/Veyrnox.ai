@@ -6996,6 +6996,8 @@ export default {
     "beat.track.max": "一个节拍最多可有 {max} 条音轨。",
     "beat.refused": "更改未应用：{reason}",
     "beat.audioError": "此设备无法启动声音。你仍可以继续编辑。",
+    "beat.audioTooLarge": "此节拍使用的音频过多，无法在此设备上播放。请将音频区域静音或移除后重试。",
+    "beat.audioUnavailable": "{name} 不可用，因此该区域将保持静音。",
     "musicTrackAdd.title": "添加人声或器乐声部",
     "musicTrackAdd.mode": "声部类型",
     "musicTrackAdd.mode.vocals": "人声",

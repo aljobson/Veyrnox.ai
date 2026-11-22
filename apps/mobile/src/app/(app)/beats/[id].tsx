@@ -24,6 +24,8 @@ import { BeatInstrumentsSection, openPiano } from '../../../components/beats/Bea
 import { BeatArrangement } from '../../../components/beats/BeatArrangement';
 import { MixerStrip } from '../../../components/beats/MixerStrip';
 import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
+import { createNativeAssetPort } from '../../../lib/beatNative/nativeAssets';
+import { useAuth } from '../../../auth/AuthProvider';
 import {
     addKitTrack, audibleGain, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, removeTrack, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp, setView,
     type BeatDoc, type Edit, type PadId,
@@ -39,9 +41,13 @@ import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
+const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
 
 export default function BeatEditor() {
     const { id } = useLocalSearchParams<{ id: string }>();
+    const { api, generation, beginSessionTask } = useAuth();
+    const authRef = useRef({ api, generation, beginSessionTask });
+    authRef.current = { api, generation, beginSessionTask };
     useSyncExternalStore(subscribeBeats, listBeats, listBeats);
     const doc = getBeat(String(id));
     const s = useThemedStyles(sheets);
@@ -49,6 +55,7 @@ export default function BeatEditor() {
     if (doc && history.current?.present !== doc) history.current = createHistory(doc);
     const recordingRef = useRef<TakeRecording | null>(null);
     const audio = useRef<BeatAudio | null>(null);
+    const audioSession = useRef<{ generation: number; engine: BeatAudio; recording: TakeRecording | null } | null>(null);
     const manualRun = useRef(false);
     const docRef = useRef<BeatDoc | undefined>(doc);
     docRef.current = doc;
@@ -57,17 +64,36 @@ export default function BeatEditor() {
     const [mixer, setMixer] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [playing, setPlaying] = useState(false);
+    const [starting, setStarting] = useState(false);
+    const startingRef = useRef(false);
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [said, setSaid] = useState<string | null>(null);
     useAnnouncement(notice ?? said, { everywhere: true });
     useLocalBeatLifecycle();
-    useEffect(() => () => { void recordingRef.current?.finishAndDisarm().finally(() => { void audio.current?.close(); audio.current = null; }); }, []);
+    useEffect(() => () => {
+        const session = audioSession.current; audioSession.current = null; audio.current = null;
+        void (session?.recording ?? recordingRef.current)?.finishAndDisarm().catch(() => undefined).finally(() => { void session?.engine.close(); });
+    }, []);
+    useEffect(() => {
+        const stale = audioSession.current;
+        if (!stale || stale.generation === generation) return;
+        audioSession.current = null; if (audio.current === stale.engine) audio.current = null;
+        startingRef.current = false; setStarting(false); setPlaying(false); setStep(null);
+        stale.engine.stop();
+        void stale.recording?.finishAndDisarm().catch(() => undefined).finally(() => { void stale.engine.close(); });
+    }, [generation]);
 
     // The native module is touched only when the person first asks for sound.
     const engine = useCallback((): BeatAudio | null => {
         if (audio.current) return audio.current;
-        try { audio.current = createBeatAudio(); return audio.current; } catch { setNotice(t('beat.audioError')); return null; }
+        try {
+            const auth = authRef.current;
+            audio.current = createBeatAudio(undefined, createNativeAssetPort(auth.api, auth.beginSessionTask()),
+                name => setNotice(t('beat.audioUnavailable', { name })));
+            audioSession.current = { generation: auth.generation, engine: audio.current, recording: recordingRef.current };
+            return audio.current;
+        } catch { setNotice(t('beat.audioError')); return null; }
     }, []);
     // Third argument: N5's history key (a slider drag is one undo step) or N6's options; both forms are accepted.
     const apply = useCallback((operation: Edit, announce?: string, third?: string | { recordingCommit?: boolean; key?: string }) => {
@@ -112,10 +138,17 @@ export default function BeatEditor() {
     if (!doc && beatStore.hydrationState() !== 'ready') return <><Text accessibilityLiveRegion="polite">{t(beatStore.hydrationState() === 'error' ? 'beat.local.loadError' : 'beat.home.checking')}</Text><Button label={t('beat.retry')} onPress={() => void beatStore.hydrateBeats().catch(() => undefined)} /></>;
     if (!doc) return <EmptyState title={t('beat.missing')} body={t('beat.missingBody')} actionLabel={t('beat.back')} href="/beats" />;
     const play = async () => {
+        if (startingRef.current) return;
         const a = engine(); if (!a) return;
-        try { let failed = false; await a.play(() => docRef.current as BeatDoc, n => setStep(n), undefined, 0, { onError: () => { failed = true; setPlaying(false); setStep(null); setNotice(t('beat.audioError')); }, onEffectError: () => setNotice(t('beatMix.fx.unavailable')) }); if (!failed) { manualRun.current = false; setPlaying(true); setSaid(t('beat.playing')); } } catch { setNotice(t('beat.audioError')); }
+        startingRef.current = true; setStarting(true);
+        try {
+            let failed = false;
+            const outcome = await a.play(() => docRef.current as BeatDoc, n => setStep(n), undefined, 0, { onError: error => { failed = true; setPlaying(false); setStep(null); setNotice(playbackNotice(error)); }, onEffectError: () => setNotice(t('beatMix.fx.unavailable')) });
+            if (!failed && outcome === 'started') { manualRun.current = false; setPlaying(true); setSaid(t('beat.playing')); }
+        } catch (error) { setNotice(playbackNotice(error)); }
+        finally { startingRef.current = false; setStarting(false); }
     };
-    const stop = () => { audio.current?.stop(); setPlaying(false); setStep(null); setSaid(t('beat.stopped')); };
+    const stop = () => { startingRef.current = false; setStarting(false); audio.current?.stop(); setPlaying(false); setStep(null); setSaid(t('beat.stopped')); };
     const hit = (p: PadId) => { setPad(p); engine()?.hitPad(p, doc.tracks.find(track => !track.kind || track.kind === 'drums')?.kit ?? DRUM_KITS[0].id); };
     const mixOf = (trackId: string, next: BeatDoc) => {
         const track = next.tracks.find(x => x.id === trackId);
@@ -143,7 +176,7 @@ export default function BeatEditor() {
             <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing} />
             {notice ? <MusicNotice message={notice} /> : null}
             <View style={s.transport} accessibilityLabel={t('beat.transport')}>
-                <Button label={playing ? t('beat.stop') : t('beat.play')} disabled={locked} onPress={() => void (playing ? stop() : play())} containerStyle={s.play} />
+                <Button label={playing || starting ? t('beat.stop') : t('beat.play')} disabled={locked} onPress={() => void (playing || starting ? stop() : play())} containerStyle={s.play} />
                 <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
                     <View style={s.stepper}>
                         <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
