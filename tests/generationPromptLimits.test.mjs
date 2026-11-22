@@ -40,6 +40,7 @@ test('positive generation capabilities use 30,000 or an explicit verified provid
     ['crun:kling/v3', 2500],
     ['crun:kling/v3-std', 2500],
     ['crun:kling/v2-6', 2500],
+    ['crun:kling/o1-r2v-1080', 2500],
     ['crun:kling/o1-r2v', 2500], // Crun's documented limit for template swaps (ADR-0351 amendment 21).
     ['higgsfield:kling-video/v3.0/pro/image-to-video', 2500],
     ['higgsfield:kling-video/v2.6/pro/text-to-video', 2500],

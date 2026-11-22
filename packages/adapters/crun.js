@@ -64,13 +64,16 @@ const IMAGE_MODELS = {
 const WAN_ANIMATE_MODEL = 'wan/2-2-animate-replace';
 // Template swaps only (ADR-0351 amendment 21); the public Kling O1 offer stays on fal and never reaches this builder.
 const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
+// Our endpoint name -> the resolution sent to Crun's one model id (ADR-0351 amendment 22).
+const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'kling/o1-r2v-1080': '1080p' });
+const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_O1_SWAP_MODEL) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
 /** 'video' or 'image' for a Crun endpoint this adapter owns, else null. The sweep picks the file type from it. */
@@ -86,7 +89,7 @@ export function endpointKind(endpoint) {
  */
 export function buildRequest(target, inputs) {
     if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
-    if (target.model === KLING_O1_SWAP_MODEL) return buildKlingO1SwapRequest(inputs);
+    if (isKlingO1Swap(target.model)) return buildKlingO1SwapRequest(inputs, KLING_O1_SWAP_TIERS[target.model]);
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
     const kling = KLING_MODELS[target.model];
@@ -138,7 +141,7 @@ function klingO1SwapPrompt(prompt, imageCount) {
         .replaceAll('the element images', 'the reference images');
 }
 
-function buildKlingO1SwapRequest(inputs) {
+function buildKlingO1SwapRequest(inputs, resolution) {
     const allowed = new Set(['prompt', 'duration_seconds', 'video_url', 'elements']);
     for (const key of Object.keys(inputs)) {
         if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
@@ -158,7 +161,7 @@ function buildKlingO1SwapRequest(inputs) {
     if (prompt.length > KLING_PROMPT_MAX || /@(?:video|element|image)/i.test(prompt)) return { ok: false, error: 'inputs_invalid:prompt' };
     return { ok: true, body: { model: KLING_O1_SWAP_MODEL, input: {
         prompt, reference_videos: [inputs.video_url], reference_video_type: 'base_video', reference_images: images,
-        resolution: '720p', aspect_ratio: 'auto', audio: false,
+        resolution, aspect_ratio: 'auto', audio: false,
     } } };
 }
 
@@ -233,7 +236,7 @@ export async function submitTask(job, cfg) {
             });
         } catch (err) {
             // Nothing is known about whether the task was created: ambiguous (0329).
-            return { ok: false, outcome: 'unknown', error: target.model === KLING_O1_SWAP_MODEL ? 'transport' : `transport: ${err && err.message}` };
+            return { ok: false, outcome: 'unknown', error: isKlingO1Swap(target.model) ? 'transport' : `transport: ${err && err.message}` };
         }
         let data = null;
         try {
@@ -245,7 +248,7 @@ export async function submitTask(job, cfg) {
         const code = data && typeof data.code === 'number' ? data.code : res.status;
         if (!res.ok || code !== 200) {
             const upstream = data && (data.message || data.msg);
-            const error = target.model === KLING_O1_SWAP_MODEL
+            const error = isKlingO1Swap(target.model)
                 ? `crun ${res.status}/${Number.isInteger(code) ? code : 0}${klingO1RefusalReason(upstream) ? `: ${klingO1RefusalReason(upstream)}` : ''}`
                 : `crun ${res.status}/${code}: ${String(upstream || '').slice(0, 200)}`;
             const outcome = res.status === 408 || res.status >= 500 ? 'unknown' : 'rejected';
