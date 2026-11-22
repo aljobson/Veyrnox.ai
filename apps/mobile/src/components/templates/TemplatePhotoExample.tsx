@@ -6,7 +6,7 @@ import { TEMPLATE_PHOTO_COPY, TEMPLATE_PHOTO_LIMITS } from '../../../../../lib/t
 
 const PHOTOS = {
     face: { source: require('../../../assets/examples/photo-face.jpg'), aspectRatio: 1 },
-    fullBody: { source: require('../../../assets/examples/photo-full-body.jpg'), aspectRatio: 274 / 800 },
+    fullBody: { source: require('../../../assets/examples/photo-full-body.jpg'), aspectRatio: 440 / 1073 },
 } as const;
 
 export function TemplatePhotoExample({ kind = 'face', limits = 'upload' }: { kind?: keyof typeof TEMPLATE_PHOTO_COPY; limits?: keyof typeof TEMPLATE_PHOTO_LIMITS }) {

@@ -13,7 +13,7 @@ function Attempt({ attempt: a }) {
     if (poll) void swapActions.reconcile(a.templateId, a.key).catch(() => {});
   }, [poll, a.accountId, a.templateId, a.key]);
   const success = ['queued', 'running', 'succeeded'].includes(a.state);
-  return <div className="mt-4 space-y-4 rounded-2xl border border-vx-border p-4" data-swap-attempt={a.state}>
+  return <div className="mt-4 space-y-4 rounded-2xl border border-vx-border p-4" data-swap-attempt={a.state} data-swap-attempt-key={a.key}>
     <p role="status">{t(`presets.swap.${a.state}`, { credits: a.spent ?? a.body?.max_charge_credits })}</p>
     {/* Same reading as Create's canvas: the site-wide bar prints the percent, this prints its clock. */}
     {['queued', 'running'].includes(a.state) && a.job_id && <GeneratingProgress jobId={a.job_id} />}

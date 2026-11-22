@@ -1,6 +1,6 @@
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { discardCacheCopy } from '../../lib/cacheFiles';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,7 +12,7 @@ import { isOffline, subscribe } from '../../lib/networkState';
 import { swapErrorKey, unsettled, type SwapOffer } from '../../../../../app/veyrnox/_lib/templateSwapClient.mjs';
 import { SwapVisionHost } from './SwapVisionHost';
 import { TemplatePhotoExample } from './TemplatePhotoExample';
-export function SwapComposer({ offer, onSubmitted }: { offer: SwapOffer; onSubmitted?: () => void }) {
+export function SwapComposer({ offer, revealAttempt, onReveal }: { offer: SwapOffer; revealAttempt?: RefObject<string | null>; onReveal?: (node: View | null) => void }) {
     const { actions, attempts, accountId, beginSessionTask } = useSwapRuntime(offer.id), router = useRouter();
     const a = attempts.at(-1), offline = useSyncExternalStore(subscribe, isOffline), styles = useThemedStyles(sheets);
     const busy = !!a && ['processing', 'uploading', 'submitting'].includes(a.state);
@@ -38,6 +38,16 @@ export function SwapComposer({ offer, onSubmitted }: { offer: SwapOffer; onSubmi
     }
     const error = a && ['photo_error', 'upload_error'].includes(a.state) ? a.errorCode : undefined, uploadError = a?.state === 'upload_error';
     const errorKey = error === 'photo_too_large' ? 'mobileSwap.photoTooLarge' : error === 'invalid_image' ? 'mobileSwap.invalidImage' : swapErrorKey(error);
+    const feedback = useRef<View>(null), reveal = useRef(false);
+    useEffect(() => () => { reveal.current = false; if (revealAttempt) revealAttempt.current = null; }, [accountId, offer.id, revealAttempt]);
+    // Only this tap moves the screen: restored attempts and background updates never scroll.
+    useEffect(() => {
+        if (!reveal.current || !a) return;
+        if (['uploading', 'submitting', 'upload_error'].includes(a.state)) {
+            if (a.state === 'upload_error') reveal.current = false;
+            requestAnimationFrame(() => onReveal?.(feedback.current));
+        } else if (a.body) { reveal.current = false; if (revealAttempt) revealAttempt.current = a.key; }
+    }, [a, onReveal, revealAttempt]);
     useAnnouncement(pickerError ? t('mobileSwap.permission') : error ? t(errorKey) : busy ? t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending') : a?.state === 'ready' ? t('presets.swap.generate') : null);
     return <Card>
         <View style={styles.content}>
@@ -71,9 +81,11 @@ export function SwapComposer({ offer, onSubmitted }: { offer: SwapOffer; onSubmi
             {offline && <Text accessibilityLiveRegion="polite">{t('presets.swap.offline')}</Text>}
             {!accountId && <><Text accessibilityLiveRegion="polite">{t('presets.swap.session')}</Text><Button label={t('presets.swap.signin')} onPress={() => router.push('/sign-in')} /></>}
             <Text tone="warning">{t('presets.swap.price', { credits: offer.credits })}</Text>
-            <Button label={t('presets.swap.generate')} disabled={!accountId || !offer.name || !ready || busy || offline} onPress={() => { if (!isOffline()) void Promise.resolve(actions.submit(offer.id, offer)).finally(() => requestAnimationFrame(() => onSubmitted?.())); }} />
-            {busy && <Text accessibilityLiveRegion="polite">{t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</Text>}
-            {uploadError && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
+            <Button label={t('presets.swap.generate')} disabled={!accountId || !offer.name || !ready || busy || offline} onPress={() => { if (isOffline()) return; reveal.current = true; void Promise.resolve(actions.submit(offer.id, offer)).catch(() => { reveal.current = false; }); }} />
+            <View ref={feedback} collapsable={false} style={styles.content}>
+                {busy && <Text accessibilityLiveRegion="polite">{t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</Text>}
+                {uploadError && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
+            </View>
         </View>
     </Card>;
 }

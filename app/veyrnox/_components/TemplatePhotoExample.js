@@ -4,7 +4,7 @@ import { TEMPLATE_PHOTO_COPY, TEMPLATE_PHOTO_LIMITS } from '../../../lib/templat
 
 const PHOTOS = {
   face: { src: '/examples/photo-face.jpg', width: 480, height: 480 },
-  fullBody: { src: '/examples/photo-full-body.jpg', width: 274, height: 800 },
+  fullBody: { src: '/examples/photo-full-body.jpg', width: 440, height: 1073 },
 };
 
 function SceneDiagram() {

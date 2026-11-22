@@ -203,7 +203,9 @@ export default function Explore() {
 
     function openPreset(p: Preset) {
         // Image and audio templates have no template page; like Create > Templates they open Create with their prompt.
-        router.push(isDirectTemplate(p.id) ? promptHref(p.modelId, p.prompt) : templatePageHref(p));
+        if (!isDirectTemplate(p.id)) { router.push(templatePageHref(p)); return; }
+        const href = promptHref(p.modelId, p.prompt);
+        router.push(p.modality === 'image-to-image' ? { ...href, params: { ...href.params, photoGuide: 'scene' } } : href);
     }
 
     const search = query.trim();

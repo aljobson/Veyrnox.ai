@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { tOr } from '../../../lib/i18n/translate.mjs';
@@ -22,8 +23,15 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
   const resultAspect = (job?.aspect_ratio || aspect || '16:9').replace(':', '/');
   const error = g.error;
   useVeyErrorMood(error?.code);
+  // Only the customer's tap moves the page, once, to the job card or the error.
+  const reveal = useRef(false), feedback = useRef(null), jobId = job?.id, errorCode = error?.code;
+  useEffect(() => {
+    if (!reveal.current || (!jobId && !errorCode)) return;
+    reveal.current = false;
+    feedback.current?.firstElementChild?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  }, [jobId, errorCode]);
   return (
-    <div data-testid="template-generate">
+    <div ref={feedback} data-testid="template-generate">
       {job && (
         <div className={`relative mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel ${g.generating ? 'vx-shimmer' : ''}`} style={{ aspectRatio: resultAspect, maxHeight: 520 }} role="status">
           {job.asset_url ? <JobAssetPreview job={job} /> : (
@@ -51,7 +59,7 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
       )}
       <button
         type="button"
-        onClick={g.generate}
+        onClick={(...args) => { reveal.current = true; return g.generate(...args); }}
         disabled={!g.canGenerate}
         aria-busy={g.sending || undefined}
         className="vx-press mt-6 inline-flex w-full items-center justify-between gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50 sm:w-auto"

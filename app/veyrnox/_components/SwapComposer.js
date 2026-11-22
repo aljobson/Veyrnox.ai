@@ -25,10 +25,14 @@ export function SwapComposer({ offer }) {
   const canReplace = !busy && !attempts.some(item => unsettled(item));
   const feedback = useRef(null), sending = ['uploading', 'submitting'].includes(a?.state), uploadError = a?.state === 'upload_error';
   // Only this tap moves the page: restored attempts and background updates never scroll.
-  async function generate() {
-    try { await swapActions.submit(offer.id, offer); }
-    finally { requestAnimationFrame(() => (feedback.current || [...document.querySelectorAll('[data-swap-attempt]')].at(-1))?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })); }
-  }
+  const reveal = useRef(false);
+  useEffect(() => () => { reveal.current = false; }, [accountId, offer.id]);
+  useEffect(() => {
+    if (!reveal.current || !a) return;
+    const show = node => node?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    if (sending || uploadError) { show(feedback.current); if (uploadError) reveal.current = false; return; }
+    if (a.body) { show(document.querySelector(`[data-swap-attempt-key="${CSS.escape(a.key)}"]`)); reveal.current = false; }
+  }, [a, sending, uploadError]);
   return <section aria-label={t('presets.swap.title')} className="mt-8 space-y-4 rounded-2xl border border-vx-border bg-vx-panel p-6 text-vx-fg" data-swap-composer>
     <h2 className="text-xl font-bold">{t('presets.swap.title')}</h2>
     <p>{people === 2 ? t('presets.swap.roles', { first: offer.roles[0], second: offer.roles[1] }) : t('presets.swap.role', { role: offer.role })}</p>
@@ -69,7 +73,8 @@ export function SwapComposer({ offer }) {
     <button className={`${swapControl} min-h-13 border-vx-accent bg-vx-accent text-vx-accent-ink`} disabled={!accountId || !offer.name || !ready || busy || !online}
       onClick={() => {
         if (sending) return;
-        void generate();
+        reveal.current = true;
+        void Promise.resolve(swapActions.submit(offer.id, offer)).catch(() => { reveal.current = false; });
       }}>{t('presets.swap.generate')}</button>
     {sending && <p ref={feedback} role="status" data-swap-feedback>{t('presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</p>}
     {uploadError && <p ref={feedback} role="alert" className="text-sm text-vx-danger" data-swap-feedback>{t(swapErrorKey(a.errorCode))}</p>}
