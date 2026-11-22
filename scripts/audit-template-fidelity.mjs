@@ -16,8 +16,6 @@ import { ratioOf, nearestOption } from '../lib/aspectShapes.mjs';
 import { NEGATIVE_PROMPT_MAX } from '../lib/generationPromptLimits.js';
 import { SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
 import { longPromptTarget } from '../lib/templateLongPromptTarget.js';
-import { SEEDANCE_LONG_MODEL_ID } from '../lib/seedanceLongTemplates.js';
-import { ORIGINAL_SEEDANCE_ORIGIN } from '../app/veyrnox/_lib/originalSeedanceTemplates.js';
 
 export const hash = text => createHash('sha256').update(text).digest('hex');
 export function auditTemplate(p) {
@@ -38,10 +36,7 @@ export function auditTemplate(p) {
   if (!slots.length && /<[^>]+>/.test(sourcePrompt)) reasons.push('unmapped-placeholder');
   const defaultTarget = slots.length && !binding.error ? PEOPLE_BINDING_MODEL : legacyModelId;
   // Over Kling 3.0's prompt cap, a one-photo recipe moves to the long-prompt offer when its exact text fits there (ADR-0309 am. 3).
-  // Veyrnox's own Seedance templates were written and paid-tested for this offer, so they stay on it at any length.
-  const target = p.sourcePromptOrigin === ORIGINAL_SEEDANCE_ORIGIN && defaultTarget === PEOPLE_BINDING_MODEL && slots.length === 1
-    ? SEEDANCE_LONG_MODEL_ID
-    : longPromptTarget(defaultTarget, (binding.text || sourcePrompt).length, slots.length);
+  const target = longPromptTarget(defaultTarget, (binding.text || sourcePrompt).length, slots.length);
   let cap = fallbackCapabilitiesFor(target);
   if (!cap || p.sourcePromptStatus === 'exact-truncated') reasons.push('unsupported-source-or-model');
   const wanted = p.aspect || p.clip?.aspectRatio || SHOWCASE_CLIPS[p.clipKey]?.aspectRatio || p.previewAspect;
@@ -80,7 +75,7 @@ export function packContracts(contracts) {
   return { contractVersion: 1, prompts, templates };
 }
 export function audit() {
-  const contracts = Object.fromEntries(PRESETS.filter(p => p.sourcePromptOrigin === 'community-source-exact' || p.sourcePromptOrigin === ORIGINAL_SEEDANCE_ORIGIN).map(p => [p.id, auditTemplate(p)]));
+  const contracts = Object.fromEntries(PRESETS.filter(p => p.sourcePromptOrigin === 'community-source-exact').map(p => [p.id, auditTemplate(p)]));
   const totals = { 'like-for-like-safe': 0, bound: 0, 'blocked-needs-video': 0, unsupported: 0 };
   for (const c of Object.values(contracts)) totals[c.class]++;
   const unsupportedReasons = {};
