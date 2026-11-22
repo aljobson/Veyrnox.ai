@@ -13,7 +13,7 @@ Production enables `beatEditor`, `beatAi`, `labs` and generic Music `collaborati
 | Web surface | Native state | Gap and reason | Disposition |
 | --- | --- | --- | --- |
 | Entry, create, local save and reopen | Present | Registry entry, Beats home/create, local persistence and account isolation landed. | Native; retain contract tests. |
-| Pattern transport | Partial | Native now has a persistent adaptive phone transport, but still lacks web A-D pattern selection, copy/clear, swing, metronome and 16/32-step controls. | Build the remaining pattern controls in the pinned shell. |
+| Pattern transport | Present | Native now has pinned A-D selection, adaptive pattern controls, undoable copy/clear with overwrite safeguards, 0-60% swing, live metronome audio and 16/32-step length. Pattern selection matches web history semantics and hidden steps 17-32 remain intact at 16. | Retain behavior, audio-timing, accessibility and locale contract tests. |
 | Pads and step sequencer | Partial | Native pads audition/select but do not record live hits; steps toggle at the default velocity with no 60/100/127 editor. | Build native pad recording and velocity editing. |
 | Arrangement and region editing | Mostly present | Move, copy, trim, resize, split, duplicate, delete, ruler, cycle, snap and zoom exist. Web ripple delete, insert gap, clip search and track rename do not. | Build native precision operations and search. |
 | In-editor Music library | Missing | A song can seed a beat and starter Sounds can be inserted, but the editor has no private-song browser or clip picker. | Build a native library sheet using existing signed-asset contracts. |
@@ -29,7 +29,7 @@ Production enables `beatEditor`, `beatAi`, `labs` and generic Music `collaborati
 | Cloud save, versions and conflict recovery | Implemented but gated | Source exists, while production `beatCloud` is off pending backend/privacy activation. | Preserve off-state; do not activate from the client. |
 | v5 document markers | Intentionally dark | `beatV5Writes` is false; both platforms remain v4-write/v5-read. Ripple/search are live v4 work and are not blocked on v5. | No user-facing v5 work until rollout. |
 | Collaboration | No Beat-specific web baseline | Production's generic Music collaboration does not provide simultaneous Beat editing. | Track broader Music workspaces separately. |
-| Native phone UX | Partial | The transport is now pinned outside the scrolling workspace; regular widths split workspace and inspector panes; large text uses a bounded horizontal toolbar; and pad, step, mute, solo and count-in states have non-colour cues. The app remains portrait-only, the piano surface needs its own adaptive pass, and simulator/device qualification is outstanding. | Unlock orientation as a separate app-wide change, polish the piano editor, then run the accessibility/device gate. |
+| Native phone UX | Partial | The transport is pinned outside the scrolling workspace; A-D remains directly reachable; compact phones keep all five icon actions in a fixed 44pt-target row while large-text layouts use a labelled horizontal toolbar; regular widths split workspace and inspector panes; and pattern, pad, step, mute, solo, metronome and count-in states have non-colour cues. The app remains portrait-only, the piano surface needs its own adaptive pass, and simulator/device qualification is outstanding. | Unlock orientation as a separate app-wide change, polish the piano editor, then run the accessibility/device gate. |
 
 ## Why the gap exists
 
@@ -39,11 +39,11 @@ The web editor arrived as a sequence of browser-native phases: arrangement, audi
 
 Web baseline: #2264, #2279, #2283, #2290, #2322, #2342, #2349, #2363, #2371, #2392 and #2484; dark v5 rollout #2469 and #2512.
 
-Native baseline: #2428/#2524 (engine), #2467 (N1), #2526 (N2), #2540 (arrangement), #2534 (piano), #2548 (mixer), #2547 (recording), #2569 (export), #2561 (AI), #2563 (templates/Sounds/coach), #2597 (Music entry) and #2626 (sound/song/target playback).
+Native baseline: #2428/#2524 (engine), #2467 (N1), #2526 (N2), #2540 (arrangement), #2534 (piano), #2548 (mixer), #2547 (recording), #2569 (export), #2561 (AI), #2563 (templates/Sounds/coach), #2597 (Music entry), #2626 (sound/song/target playback) and #2629 (adaptive workspace shell).
 
 ## Completion order
 
-1. Close pattern/pad/velocity, ripple/search/library and MIDI-recording gaps.
+1. Close pad recording/velocity, ripple/search/library and MIDI-recording gaps.
 2. Render every supported audio source in mixdown/export, then add bounded stem extraction.
 3. Complete the piano/adaptive-orientation pass without coupling it to editor behavior work.
 4. Qualify recording, playback, export, accessibility and recovery on the consolidated iPhone simulator/native build.

@@ -2046,6 +2046,18 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "تشغيل",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.pad.kick",
     "english": "Kick",
     "translation": "الطبل الكبير",

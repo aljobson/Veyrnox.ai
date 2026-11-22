@@ -5868,6 +5868,18 @@
     "ratio": 2.08
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "Activé",
+    "ratio": 3
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
     "id": "beat.stop",
     "english": "Stop",
     "translation": "Arrêter",

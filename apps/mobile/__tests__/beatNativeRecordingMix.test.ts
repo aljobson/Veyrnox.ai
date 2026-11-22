@@ -58,9 +58,12 @@ test('recording playback schedules automation for each song window', async () =>
 });
 
 test('a mixer failure during recording never ends the take', async () => {
-    const b = build(), doc = make();
+    const b = build(), doc = { ...make(), metronome: true };
+    const click = jest.spyOn(b.engine, 'click');
     b.start.mockImplementation(() => { throw new Error('graph failed'); });
     await b.audio.playRange!(range(() => doc));
+    expect(click).toHaveBeenCalledWith(0.1, true, expect.anything());
+    expect(b.pad).toHaveBeenCalled();
     jest.spyOn(b.engine, 'now').mockReturnValue(1);
     expect(() => jest.advanceTimersByTime(60)).not.toThrow();
     expect(b.audio.isPlaying()).toBe(true);

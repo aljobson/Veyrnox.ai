@@ -4,8 +4,13 @@ import { songWindowToContext, tickSeconds, type SongWindow } from './takeShared'
 export type PlayRange = { getDoc(): BeatDoc; startTick: number; endTick: number; cycle: { start: number; end: number } | null; countInBars: 0 | 1; onWindow(w: SongWindow): void };
 export function createRecordingTransport(engine: BeatEngine, output: (id: string, doc: BeatDoc, at: number) => unknown,
     takes: (doc: BeatDoc, window: SongWindow, bounds: { startSec: number; endSec: number }) => void,
-    setTimer: (fn: () => void, ms: number) => unknown, clearTimer: (id: unknown) => void) {
+    setTimer: (fn: () => void, ms: number) => unknown, clearTimer: (id: unknown) => void,
+    clickOutput: (doc: BeatDoc, at: number) => unknown = () => engine.context.destination) {
     let timer: unknown = null, generation = 0, running = false;
+    // Recording must survive an unavailable mix node. Production supplies its own master fallback; this is the final guard.
+    const safeClickOutput = (doc: BeatDoc, at: number) => {
+        try { return clickOutput(doc, at); } catch { return engine.context.destination; }
+    };
     return {
         async play(options: PlayRange) {
             this.stop(); const token = generation; await engine.resume();
@@ -16,7 +21,10 @@ export function createRecordingTransport(engine: BeatEngine, output: (id: string
             const origin = contextStart + options.countInBars * tickSeconds(3840, bpm);
             const startSec = tickSeconds(options.startTick, bpm), endSec = tickSeconds(options.endTick, bpm);
             const cycle = options.cycle && { start: tickSeconds(options.cycle.start, bpm), end: tickSeconds(options.cycle.end, bpm) };
-            if (options.countInBars) for (let i = 0; i < 4; i++) engine.click(contextStart + i * 60 / bpm, i === 0, engine.context.destination);
+            if (options.countInBars) for (let i = 0; i < 4; i++) {
+                const at = contextStart + i * 60 / bpm;
+                engine.click(at, i === 0, safeClickOutput(doc, at));
+            }
             let cursor = 0, step = options.startTick / 240, next = origin;
             const tick = () => {
                 if (!running || generation !== token) return;
@@ -32,6 +40,9 @@ export function createRecordingTransport(engine: BeatEngine, output: (id: string
                     if (options.cycle && step >= options.cycle.end / 240) step = options.cycle.start / 240;
                     if (!options.cycle && step >= options.endTick / 240) break;
                     const at = eventTime(next, step, bpm, latest.swing);
+                    if (latest.metronome && step % 4 === 0 && next >= engine.now()) {
+                        engine.click(next, step % 16 === 0, safeClickOutput(latest, next));
+                    }
                     if (at >= engine.now()) for (const event of eventsAtStep(latest, step)) {
                         const track = latest.tracks.find(t => t.id === event.trackId)!;
                         engine.playPad(event.pad, event.velocity, at, output(track.id, latest, at), track.kit);

@@ -3852,6 +3852,18 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "Вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "Выкл.",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.playing",
     "english": "Playing",
     "translation": "Воспроизводится",

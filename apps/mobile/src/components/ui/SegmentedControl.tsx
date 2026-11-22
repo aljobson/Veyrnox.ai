@@ -7,19 +7,20 @@ import type { MenuIcon } from '../../lib/menuIcons';
 import { Icon } from './Icon';
 import { Text } from './Text';
 import { themedStyles, useThemedStyles } from './AppearanceContext';
-export function SegmentedControl<T extends string>({ options, value, onChange, ...props }: ViewProps & { options: readonly { value: T; label: string; accessibilityLabel?: string; icon?: MenuIcon }[]; value: T; onChange: (next: T) => void }) {
+export function SegmentedControl<T extends string>({ options, value, onChange, disabled = false, ...props }: ViewProps & { options: readonly { value: T; label: string; accessibilityLabel?: string; icon?: MenuIcon }[]; value: T; disabled?: boolean; onChange: (next: T) => void }) {
     const s = useThemedStyles(sheets);
     const translated = getLocale() !== 'en';
     return (
         <ControlLabelContext value>
-            <View {...props} style={[s.row, props.style]} accessibilityRole="tablist">
+            <View {...props} style={[s.row, disabled && s.disabled, props.style]} accessibilityRole="tablist" accessibilityState={{ ...props.accessibilityState, disabled }}>
                 {options.map((option) => (
                     <Pressable
                         key={option.value}
                         accessibilityRole="tab"
                         accessibilityLabel={rawText(option.accessibilityLabel ?? option.label)}
-                        accessibilityState={{ selected: value === option.value }}
-                        onPress={() => onChange(option.value)}
+                        accessibilityState={{ selected: value === option.value, disabled }}
+                        disabled={disabled}
+                        onPress={() => { if (!disabled) onChange(option.value); }}
                         style={[s.item, value === option.value && s.selected]}
                     >
                         {value === option.value ? <View pointerEvents="none" style={s.outline} /> : null}
@@ -45,4 +46,5 @@ const sheets = themedStyles((p) => ({
     labelMeasure: { opacity: 0, fontWeight: '700' },
     labelText: { position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center' },
     selected: { backgroundColor: p.bgElevated2 },
+    disabled: { opacity: 0.45 },
 }));
