@@ -5,7 +5,7 @@ import {
 import {
     STATIC_PREVIEW_BLENDS, STATIC_PREVIEW_LIMITS,
     type StaticPreviewBackground, type StaticPreviewBlend, type StaticPreviewLayer, type StaticPreviewMask,
-    type StaticPreviewPlan, type StaticPreviewResult, type StaticPreviewUnsupportedFeature,
+    type StaticPreviewImageResult, type StaticPreviewPlan, type StaticPreviewResult, type StaticPreviewUnsupportedFeature,
 } from './types';
 
 type Disposable = { dispose(): void };
@@ -172,19 +172,41 @@ function drawLayer(skia: typeof Skia, output: SkCanvas, plan: StaticPreviewPlan,
     });
 }
 
-/** Render the supported static subset to tightly packed, unpremultiplied RGBA8. */
-export function renderStaticPreviewRgba(skia: typeof Skia, plan: StaticPreviewPlan): StaticPreviewResult {
+/**
+ * Render the supported static subset without a CPU readback. Plan images stay caller-owned. On
+ * success the returned snapshot transfers to the caller, who must call `image.dispose()` once.
+ */
+export function renderStaticPreviewImage(skia: typeof Skia, plan: StaticPreviewPlan): StaticPreviewImageResult {
     const invalid = issues(plan); if (invalid.length) return { ok: false, code: 'invalid-plan', issues: invalid };
     const blocked = unsupported(plan); if (blocked.length) return { ok: false, code: 'unsupported', features: blocked };
+    let output: SkImage | undefined;
+    try {
+        return withScope(scope => {
+            const surface = scope.own(skia.Surface.Make(plan.width, plan.height) ?? (() => { throw Error('editor-static-surface'); })());
+            const canvas = surface.getCanvas(); canvas.clear(skia.Color(plan.background));
+            const ordered = plan.layers.map((layer, index) => ({ layer, index })).sort((a, b) => a.layer.trackOrder - b.layer.trackOrder
+                || a.layer.clipOrder - b.layer.clipOrder || a.index - b.index);
+            for (const { layer } of ordered) drawLayer(skia, canvas, plan, layer);
+            surface.flush(); output = surface.makeImageSnapshot();
+            return { ok: true, width: plan.width, height: plan.height, image: output };
+        });
+    } catch (error) {
+        // A snapshot created before output-surface cleanup failed never transfers to the caller.
+        try { output?.dispose(); } catch { /* Preserve the primary render/cleanup failure. */ }
+        throw error;
+    }
+}
+
+/** Render to tightly packed, unpremultiplied RGBA8 and dispose the intermediate output image. */
+export function renderStaticPreviewRgba(skia: typeof Skia, plan: StaticPreviewPlan): StaticPreviewResult {
+    const rendered = renderStaticPreviewImage(skia, plan);
+    if (!rendered.ok) return rendered;
     return withScope(scope => {
-        const surface = scope.own(skia.Surface.Make(plan.width, plan.height) ?? (() => { throw Error('editor-static-surface'); })());
-        const canvas = surface.getCanvas(); canvas.clear(skia.Color(plan.background));
-        const ordered = plan.layers.map((layer, index) => ({ layer, index })).sort((a, b) => a.layer.trackOrder - b.layer.trackOrder
-            || a.layer.clipOrder - b.layer.clipOrder || a.index - b.index);
-        for (const { layer } of ordered) drawLayer(skia, canvas, plan, layer);
-        surface.flush(); const image = scope.own(surface.makeImageSnapshot());
-        const pixels = image.readPixels(0, 0, { width: plan.width, height: plan.height, colorType: ColorType.RGBA_8888, alphaType: AlphaType.Unpremul });
-        if (!pixels || pixels.length !== plan.width * plan.height * 4) throw Error('editor-static-readback');
-        return { ok: true, width: plan.width, height: plan.height, rgba: new Uint8Array(pixels) };
+        const image = scope.own(rendered.image);
+        const pixels = image.readPixels(0, 0, {
+            width: rendered.width, height: rendered.height, colorType: ColorType.RGBA_8888, alphaType: AlphaType.Unpremul,
+        });
+        if (!pixels || pixels.length !== rendered.width * rendered.height * 4) throw Error('editor-static-readback');
+        return { ok: true, width: rendered.width, height: rendered.height, rgba: new Uint8Array(pixels) };
     });
 }

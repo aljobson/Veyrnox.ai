@@ -457,3 +457,41 @@ The configured two-round inspection budget is exhausted, so these corrections ar
 4. The legacy caption fallback selected raw array order instead of canonical compositor order. Accepted; the UI now chooses the uppermost active visual and text from the one canonical plan.
 
 The configured two-round inspection budget is exhausted. The final corrections therefore are not labelled independently approved. A separate adversarial host review then found frame-wide retention of layer and mask surfaces, missing canonical numeric bounds and blur framing that omitted the web compositor's three-sigma overscan. Accepted corrections now dispose nested native resources immediately and exception-safely, reject invalid crop/transform/mask geometry before allocation, preserve caller-owned images and match the web blur geometry. Host proof on the final corrected snapshot: five focused suites / 160 tests passed; the English registry and complete app-i18n checks passed; TypeScript reported only the reused checkout's known missing optional packages and their cascading errors, with no S11 changed-file error; and `git diff --check` passed. This S11a slice establishes one canonical preview plan and a bounded static image compositor, but the static Skia surface is not yet mounted in the editor; the visible legacy renderer remains explicitly labelled approximate whenever its capability profile cannot reproduce the active frame.
+
+## Wave 3A Editor S11b paused static preview inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `bfdf2332-6970-4c10-a60c-e16356f2812b`
+- Base: `f06d7d5517bf2e609bab06d1ebf8a4850d8e62a8`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `c401c1f7b8b99d35fc9e03c9b952f605234b3db6ae2f5d7931cf5899a59c917a`
+- Inspected diff SHA-256: `2e77a799a7d2808c8f1e5984e08adc7555ac344e2ce61d2e6c94a60c17662046`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave3a-s11-static-ui-r1/claudex-ogvj__pd/result.json`
+
+### Findings and host dispositions
+
+1. `S11-UI-1` high: the surface imported the Skia capability constant from the preview-plan module instead of the lazily loaded renderer, causing a type error and a broader runtime fallback capability set. Accepted; capability planning now uses the actual lazy renderer export, with a regression that distinguishes the sets.
+2. `S11-UI-2` medium: the surface re-resolved and decoded identical images on every paused frame or transform change and briefly returned to the legacy renderer. Accepted; caller-owned decoded sources are cached by source identity and reused for re-composition while the prior committed image remains visible until replacement.
+3. `S11-UI-3` medium: compositor dimensions used layout points rather than bounded device pixels. Accepted; render geometry now multiplies by `PixelRatio`, caps against the compositor limits and still draws at layout size.
+4. `S11-UI-4` low: the static accessibility proxy could suppress spoken caption context when static text support is later enabled. Accepted; the proxy label is derived from active media names and canonical text presentation.
+
+Post-fix host proof before round 2: six focused editor suites / 136 tests passed, including 17 dedicated static-preview tests; `git diff --check` passed. A full TypeScript scan reported only the checkout's known missing optional dependencies and cascading errors, with no S11 source error.
+
+## Wave 3A Editor S11b paused static preview inspection round 2
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `b6af4364-ca46-480c-aba6-ce15826c2723`
+- Base: `3a2d75b7e46150944f14796da35d981b1afffee5`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `3a1a69b18ef7539d9ccb30c98745a51da818a3ff40b646a5a933befd6ba43df5`
+- Inspected diff SHA-256: `81cfc32a15e9d13e8b0470a05f6ca826343d326fa2560c5e0535f88631ea4931`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave3a-s11-static-ui-r2/claudex-41b1pobb/result.json`
+
+### Findings and host dispositions
+
+1. `S11-BADGE-FLICKER` medium: a same-source replacement temporarily reported the retained exact snapshot as approximate, flashing and re-announcing the live-region badge. Accepted; retained same-source output preserves its committed exactness until success or failure is known, with intermediate-commit regressions for frame and transform changes.
+2. `S11-STALE-FOREIGN-SNAPSHOT` medium: a previous snapshot could remain visible across a source-key change, hiding the correct legacy clip and creating a visual/VoiceOver mismatch. Accepted; static output is retained only for the same decoded source identity, while cross-source generations immediately restore the legacy preview and accessibility tree.
+3. `S11-PER-FRAME-SYNC-RENDER` low: unanimated stills were recomposited for frame-only steps. Accepted; a conservative render projection reuses output only when the visual plan has no transitions, clip animation or transform/parameter/mask keyframes; frame-dependent plans continue to render.
+4. `S11-METADATA-DECODE-GATE` low: timeline dimensions alone could not prevent an understated large encoded image from allocating before the post-decode check. Accepted; local files now use a bounded stat/header read and signed remote assets require an exact bounded `206 Content-Range` probe. A 16 MiB encoded cap, independently parsed PNG/GIF/JPEG/WebP dimensions, the aggregate pixel budget and the post-decode check all fail closed before a handle is exposed.
+
+The configured two-round inspection budget is exhausted, so the final accepted corrections are not labelled independently approved. Final host proof on the corrected snapshot: nine focused suites / 195 tests passed; the source-loader suite passed 13/13; file-scoped strict TypeScript passed for the final loader; and `git diff --check` passed. The final full TypeScript rerun remained queued behind the shared heavy-build slot and was cancelled without interrupting the active build; the earlier full scan reported only known missing optional packages. Targeted ESLint was unavailable because this reused dependency tree has no local ESLint binary, so clean PR CI remains authoritative. HEIC/AVIF, JPEG headers whose SOF lies beyond the 64 KiB probe, and signed sources without byte-range support fail closed to the legacy preview. Signed remote objects are assumed immutable between the bounded probe and Skia's subsequent fetch. Integrated simulator visual, gesture and VoiceOver qualification remains a later Wave 3 gate.
