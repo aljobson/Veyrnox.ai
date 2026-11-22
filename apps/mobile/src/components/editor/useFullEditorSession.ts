@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 
 import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
+import { editorMedia } from '../../lib/editorMedia';
 import { probeDuration } from '../../lib/editorMediaDuration';
 import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
 import { getDocument, type DocumentHead } from '../../lib/editorProjects';
@@ -119,6 +120,9 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     }, []);
 
     const baseline = useCallback((head: DocumentHead) => {
+        // A baseline replaces the whole project document (initial load, recovery, conflict,
+        // restore or “use saved”). Fence native work before adopting the replacement.
+        void editorMedia.bumpProjectGeneration(projectId).catch(() => undefined);
         editRevisionRef.current++;
         documentRef.current = head.document; revisionRef.current = head.revision; dirtyRef.current = false;
         pastRef.current = []; futureRef.current = [];
@@ -192,6 +196,10 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     });
     syncRef.current = sync;
     const { save, leaveEditor, beginImport, replacing, saveStatus, dirty, revision, saving } = sync;
+
+    useEffect(() => {
+        return () => { void editorMedia.bumpProjectGeneration(projectId).catch(() => undefined); };
+    }, [projectId]);
 
     useEffect(() => {
         mounted.current = true;

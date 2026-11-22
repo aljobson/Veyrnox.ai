@@ -6,6 +6,7 @@ import { putFromDisk, type PutFile } from './uploads';
 import { canonicalType } from './editorServerExportUploads';
 import { UUID } from './editorServerExportStore';
 import type { ProjectDocument } from './editorBridge';
+import { editorMedia } from './editorMedia';
 import type { Media, Timeline } from './nativeEditorModel';
 
 export type DeviceFile = { file: string; type: string; size: number; seconds?: number; verified?: true };
@@ -165,6 +166,31 @@ export function createEditorMediaStore(storage: CacheStorage = userDocStorage) {
     return { setOwner, copy, remove, files, hydrate, removeProjectMedia, backup };
 }
 export const editorDeviceMedia = createEditorMediaStore();
-export const setEditorMediaOwner = (owner: string | null) => editorDeviceMedia.setOwner(owner);
-export const removeProjectMedia = (projectId: string) => editorDeviceMedia.removeProjectMedia(projectId);
+let nativeLifecycle: Promise<void> = Promise.resolve();
+const queueNativeLifecycle = (work: () => Promise<void>) => {
+    const result = nativeLifecycle.then(work, work);
+    nativeLifecycle = result.catch(() => undefined);
+    return result;
+};
+
+export async function setEditorMediaOwner(owner: string | null) {
+    // The durable store and native cache share the same account source. The native client is
+    // idempotent, so AuthProvider plus the cache subscription cannot adopt one owner twice.
+    await Promise.all([
+        editorDeviceMedia.setOwner(owner),
+        queueNativeLifecycle(async () => {
+            await editorMedia.setOwner(owner);
+        }),
+    ]);
+}
+
+export async function removeProjectMedia(projectId: string) {
+    // cancelProject increments the JS generation synchronously before its native await, so no
+    // late result can become visible while the durable project directory is being removed.
+    const nativeRemoval = editorMedia.cancelProject(projectId);
+    await Promise.all([
+        editorDeviceMedia.removeProjectMedia(projectId),
+        nativeRemoval,
+    ]);
+}
 subscribeCacheUser(() => { void setEditorMediaOwner(getCacheUser() ?? null).catch(() => undefined); });

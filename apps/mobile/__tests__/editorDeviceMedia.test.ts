@@ -1,7 +1,14 @@
 import type { CacheStorage } from '../src/lib/cache';
 import type { ApiClient } from '../src/lib/api';
 import { ApiError } from '../src/lib/api';
-import { createEditorMediaStore, matchesMediaSignature } from '../src/lib/editorDeviceMedia';
+import {
+    createEditorMediaStore,
+    editorDeviceMedia,
+    matchesMediaSignature,
+    removeProjectMedia,
+    setEditorMediaOwner,
+} from '../src/lib/editorDeviceMedia';
+import { editorMedia } from '../src/lib/editorMedia';
 import { fetchProject } from '../src/lib/projects';
 import { getDocument } from '../src/lib/editorProjects';
 import { emptyTimeline } from '../src/lib/nativeEditorModel';
@@ -63,6 +70,21 @@ function setup() {
 const doc = (include: boolean) => ({ project_id: C, schema_version: 3 as const, timeline: { ...emptyTimeline(), media: include ? { [`l-${D}`]: { id: `l-${D}`, kind: 'video' } } : {} } });
 beforeEach(() => { mockNodes.clear(); mockDeleted.length = 0; mockCopy.mockReset().mockResolvedValue(undefined); mockDigest.mockReset(); mockRead.mockReset();
     mockHeader = new Uint8Array(16); mockNodes.set('file://picked', { dir: false, size: 500 }); });
+afterEach(() => { jest.restoreAllMocks(); });
+
+test('owner adoption and project deletion fan out to durable and native media lifecycles', async () => {
+    const durableOwner = jest.spyOn(editorDeviceMedia, 'setOwner').mockResolvedValue(undefined);
+    const nativeOwner = jest.spyOn(editorMedia, 'setOwner').mockResolvedValue(undefined);
+    await setEditorMediaOwner(A);
+    expect(durableOwner).toHaveBeenCalledWith(A);
+    expect(nativeOwner).toHaveBeenCalledWith(A);
+
+    const durableRemoval = jest.spyOn(editorDeviceMedia, 'removeProjectMedia').mockResolvedValue(undefined);
+    const nativeRemoval = jest.spyOn(editorMedia, 'cancelProject').mockResolvedValue(undefined);
+    await removeProjectMedia(C);
+    expect(nativeRemoval).toHaveBeenCalledWith(C);
+    expect(durableRemoval).toHaveBeenCalledWith(C);
+});
 test('verified media signatures cover every pack media family and reject MIME forgery', () => {
     const bytes = (text: string) => Uint8Array.from([...text].map(value => value.charCodeAt(0)));
     expect(matchesMediaSignature('image/png', Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe(true);
