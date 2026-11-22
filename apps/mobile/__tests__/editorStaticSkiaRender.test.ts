@@ -32,11 +32,12 @@ const solid = (color: string, width = 8, height = 8) => image(width, height, (ca
 });
 
 const transform = { x: .5, y: .5, scale: 1, rotation: 0, opacity: 1, flipX: false, flipY: false } as const;
+const filter = { brightness: 1, contrast: 1, saturate: 1, hue: 0, blur: 0 } as const;
 function layer(id: string, source: SkImage, patch: Partial<StaticPreviewLayer> = {}): StaticPreviewLayer {
     return {
         id, trackOrder: 0, clipOrder: 0, image: source,
         crop: { x: 0, y: 0, width: 1, height: 1 }, fit: 'contain', transform,
-        blend: 'source-over', background: { type: 'none' }, ...patch,
+        filter, blend: 'source-over', background: { type: 'none' }, ...patch,
     };
 }
 const plan = (layers: StaticPreviewLayer[], patch: Partial<StaticPreviewPlan> = {}): StaticPreviewPlan => ({
@@ -123,6 +124,67 @@ test('evaluated transform, opacity and stable track order affect the destination
         })]));
         close(pixel(moved, 1, 1), [0, 0, 255, 255]); expect(pixel(moved, 7, 7)).toEqual([0, 255, 0, 255]);
     } finally { red.dispose(); blue.dispose(); }
+});
+
+test('basic colour filters follow the canonical CSS brightness, contrast, saturation and hue order', () => {
+    const source = solid('#406080');
+    try {
+        const result = renderStaticPreviewRgba(Skia, plan([layer('filtered', source, {
+            filter: { brightness: 1.2, contrast: .8, saturate: .6, hue: 30, blur: 0 },
+        })]));
+        // Filter Effects matrix fixture for #406080 in the declared canonical order.
+        close(pixel(result, 4, 4), [110, 112, 139, 255], 3);
+    } finally { source.dispose(); }
+});
+
+test('basic blur uses raw output pixels and transparent decal edges', () => {
+    const source = image(64, 64, (canvas, paint) => {
+        canvas.clear(Skia.Color('#00000000'));
+        paint.setColor(Skia.Color('#ffffff')); canvas.drawRect({ x: 30, y: 30, width: 4, height: 4 }, paint);
+    });
+    try {
+        const result = renderStaticPreviewRgba(Skia, plan([layer('blurred', source, {
+            filter: { ...filter, blur: 3 },
+        })], { width: 64, height: 64, background: '#000000' }));
+        if (!result.ok) throw Error(result.code);
+        const center = pixel(result, 32, 32)[0], spread = pixel(result, 26, 32)[0];
+        expect(center).toBeGreaterThan(spread);
+        expect(spread).toBeGreaterThan(0);
+        const redEnergy = result.rgba.reduce((total, channel, index) => index % 4 === 0 ? total + channel : total, 0);
+        // CanvasKit's raw sigma-3 reference spreads this centered impulse to 436 red units.
+        // A mistaken 720p height scale leaves almost all 4,080 source units concentrated.
+        expect(redEnergy).toBeGreaterThan(400);
+        expect(redEnergy).toBeLessThan(500);
+        expect(pixel(result, 0, 0)).toEqual([0, 0, 0, 255]);
+    } finally { source.dispose(); }
+});
+
+test('a basic blur expands the already masked foreground while leaving the clip background unfiltered', () => {
+    const source = solid('#ffffff', 64, 64), mask = {
+        shape: 'circle' as const, x: .5, y: .5, width: .25, height: .25, rotation: 0, feather: 0, inverted: false,
+    };
+    try {
+        const sharp = renderStaticPreviewRgba(Skia, plan([layer('sharp', source, { mask })], {
+            width: 64, height: 64, background: '#000000',
+        }));
+        const blurred = renderStaticPreviewRgba(Skia, plan([layer('blurred', source, {
+            mask, filter: { ...filter, blur: 4 }, background: { type: 'solid', color: '#0000ff' },
+        })], { width: 64, height: 64, background: '#000000' }));
+        expect(pixel(sharp, 44, 32)).toEqual([0, 0, 0, 255]);
+        expect(pixel(blurred, 44, 32)[0]).toBeGreaterThan(0);
+        expect(pixel(blurred, 0, 0)).toEqual([0, 0, 255, 255]);
+    } finally { source.dispose(); }
+});
+
+test('basic filters do not change a clip background', () => {
+    const source = solid('#ff0000', 8, 2);
+    try {
+        const result = renderStaticPreviewRgba(Skia, plan([layer('foreground', source, {
+            filter: { ...filter, brightness: 0 }, background: { type: 'solid', color: '#0000ff' },
+        })]));
+        expect(pixel(result, 4, 4)).toEqual([0, 0, 0, 255]);
+        expect(pixel(result, 0, 0)).toEqual([0, 0, 255, 255]);
+    } finally { source.dispose(); }
 });
 
 test.each(['circle', 'rounded', 'horizontal', 'vertical'] as const)('%s masks render and dispose their Skia path', shape => {
@@ -217,6 +279,20 @@ test('canonical planning reports unsupported features instead of silently droppi
     } finally { source.dispose(); }
 });
 
+test('canonical evaluated basic filters bind as an exact Skia capability', () => {
+    const source = solid('#ffffff'), value = emptyTimeline();
+    value.media.image = { id: 'image', kind: 'image', frames: 90, width: 640, height: 360, hasAudio: false };
+    value.video = [{ id: 'v1', mediaId: 'image', start: 0, in: 0, len: 90, trackId: 'video-0', volume: 1, transition: 0,
+        filter: { brightness: 1.2, contrast: .8, saturate: .6, hue: 30, blur: 4 } }];
+    try {
+        const canonical = editorPreviewPlan(value, 10, SKIA_STATIC_PREVIEW_CAPABILITIES);
+        expect(canonical.capabilities.unsupported).not.toContainEqual(expect.objectContaining({ capability: 'basic-filter' }));
+        const bound = bindStaticPreviewPlan(canonical, 640, 360, { image: source });
+        expect(bound.layers[0].filter).toEqual({ brightness: 1.2, contrast: .8, saturate: .6, hue: 30, blur: 4 });
+        expect(renderStaticPreviewRgba(Skia, bound).ok).toBe(true);
+    } finally { source.dispose(); }
+});
+
 test('a non-full canonical reveal is refused before rendering', () => {
     const source = solid('#ffffff');
     try {
@@ -254,6 +330,11 @@ test('canonical transform, crop and mask bounds refuse native allocation', () =>
         ['transform scale high', { transform: { ...transform, scale: 8.001 } }, 'invalid-transform'],
         ['transform rotation', { transform: { ...transform, rotation: 360.001 } }, 'invalid-transform'],
         ['transform opacity', { transform: { ...transform, opacity: 1.001 } }, 'invalid-transform'],
+        ['filter brightness', { filter: { ...filter, brightness: 3.001 } }, 'invalid-filter'],
+        ['filter contrast', { filter: { ...filter, contrast: -.001 } }, 'invalid-filter'],
+        ['filter saturate', { filter: { ...filter, saturate: 3.001 } }, 'invalid-filter'],
+        ['filter hue', { filter: { ...filter, hue: 180.001 } }, 'invalid-filter'],
+        ['filter blur', { filter: { ...filter, blur: 30.001 } }, 'invalid-filter'],
         ['crop width', { crop: { x: 0, y: 0, width: .049, height: 1 } }, 'invalid-crop'],
         ['crop height', { crop: { x: 0, y: 0, width: 1, height: .049 } }, 'invalid-crop'],
         ['crop boundary', { crop: { x: .1, y: 0, width: .91, height: 1 } }, 'invalid-crop'],
@@ -287,6 +368,47 @@ test('layer and mask surfaces dispose before the next layer and caller images st
         expect(result.ok).toBe(true);
         expect(tracked.state()).toMatchObject({ live: 0, peak: 4 });
         expect(tracked.state().disposed).toBeGreaterThan(24);
+        expect(disposeSource).not.toHaveBeenCalled();
+    } finally { disposeSource.mockRestore(); source.dispose(); }
+});
+
+test('basic filter resources dispose once per layer while neutral filters allocate none', () => {
+    const source = solid('#406080', 32, 32), disposeSource = jest.spyOn(source, 'dispose');
+    const makeMatrix = Skia.ColorFilter.MakeMatrix.bind(Skia.ColorFilter);
+    const makeCompose = Skia.ColorFilter.MakeCompose.bind(Skia.ColorFilter);
+    const makeColourImage = Skia.ImageFilter.MakeColorFilter.bind(Skia.ImageFilter);
+    const makeBlur = Skia.ImageFilter.MakeBlur.bind(Skia.ImageFilter);
+    let created = 0, disposed = 0, live = 0;
+    const tracked = <T extends { dispose(): void }>(value: T): T => {
+        created++; live++;
+        const close = value.dispose.bind(value); let closed = false;
+        value.dispose = () => {
+            expect(closed).toBe(false); closed = true; disposed++; live--; close();
+        };
+        return value;
+    };
+    const custom = {
+        ...Skia,
+        ColorFilter: {
+            ...Skia.ColorFilter,
+            MakeMatrix: (matrix: any) => tracked(makeMatrix(matrix)),
+            MakeCompose: (outer: any, inner: any) => tracked(makeCompose(outer, inner)),
+        },
+        ImageFilter: {
+            ...Skia.ImageFilter,
+            MakeColorFilter: (colour: any, input: any) => tracked(makeColourImage(colour, input)),
+            MakeBlur: (sigmaX: number, sigmaY: number, mode: any, input: any) => tracked(makeBlur(sigmaX, sigmaY, mode, input)),
+        },
+    };
+    try {
+        expect(renderStaticPreviewRgba(custom, plan([layer('filtered', source, {
+            filter: { brightness: 1.2, contrast: .8, saturate: .6, hue: 30, blur: 4 },
+        })], { width: 32, height: 32 })).ok).toBe(true);
+        expect(created).toBeGreaterThanOrEqual(9);
+        expect(disposed).toBe(created); expect(live).toBe(0);
+        const afterFiltered = created;
+        expect(renderStaticPreviewRgba(custom, plan([layer('neutral', source)], { width: 32, height: 32 })).ok).toBe(true);
+        expect(created).toBe(afterFiltered);
         expect(disposeSource).not.toHaveBeenCalled();
     } finally { disposeSource.mockRestore(); source.dispose(); }
 });

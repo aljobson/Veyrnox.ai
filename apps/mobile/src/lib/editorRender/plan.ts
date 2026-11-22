@@ -5,7 +5,7 @@ import type { StaticPreviewBackground, StaticPreviewLayer, StaticPreviewPlan, St
 /** Capabilities implemented by this bounded static Skia slice. */
 export const SKIA_STATIC_PREVIEW_CAPABILITIES = Object.freeze([
     'timeline-background', 'image-source', 'graphic-source', 'fit', 'crop', 'transform', 'visual-layering', 'blend', 'mask', 'clip-animation',
-    'clip-background-solid', 'clip-background-blur', 'clip-background-image',
+    'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter',
 ] as const satisfies readonly EditorPreviewCapability[]);
 
 const supported = new Set<EditorPreviewCapability>(SKIA_STATIC_PREVIEW_CAPABILITIES);
@@ -19,7 +19,6 @@ function unsupportedFeature(capability: EditorPreviewCapability): StaticPreviewU
         case 'unknown-media-source': return 'missing-source-image';
         case 'transition': return 'transition';
         case 'animation-reveal': return 'animation-reveal';
-        case 'basic-filter': return 'filter';
         case 'smart-picture': return 'smart-picture';
         case 'advanced-colour': return 'colour';
         case 'effect': return 'effect';
@@ -77,6 +76,7 @@ export function bindStaticPreviewPlan(preview: EditorPreviewPlan, width: number,
             crop: visual.crop,
             fit: visual.fit,
             transform: visual.transform,
+            filter: visual.filter,
             blend: visual.blend as StaticPreviewLayer['blend'],
             ...(mask ? { mask } : {}),
             background: backdrop.value,

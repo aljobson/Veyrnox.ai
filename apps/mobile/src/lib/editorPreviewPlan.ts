@@ -46,7 +46,7 @@ export type EditorPreviewCapabilityUse = {
 /** Capabilities the first static Skia compositor can consume without approximating web output. */
 export const STATIC_EDITOR_PREVIEW_CAPABILITIES = Object.freeze([
     'timeline-background', 'image-source', 'graphic-source', 'fit', 'crop', 'transform', 'visual-layering', 'blend', 'mask', 'clip-animation',
-    'clip-background-solid', 'clip-background-blur', 'clip-background-image',
+    'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter',
 ] as const satisfies readonly EditorPreviewCapability[]);
 
 /** What the current Expo image/video fallback actually draws before the Skia surface is mounted. */

@@ -46,6 +46,14 @@ export interface StaticPreviewMask {
     readonly inverted: boolean;
 }
 
+export interface StaticPreviewFilter {
+    readonly brightness: number;
+    readonly contrast: number;
+    readonly saturate: number;
+    readonly hue: number;
+    readonly blur: number;
+}
+
 export type StaticPreviewBackground =
     | { readonly type: 'none' }
     | { readonly type: 'solid'; readonly color: string }
@@ -63,6 +71,7 @@ export interface StaticPreviewLayer {
     readonly crop: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
     readonly fit: 'contain' | 'cover';
     readonly transform: StaticPreviewTransform;
+    readonly filter: StaticPreviewFilter;
     readonly blend: StaticPreviewBlend;
     readonly mask?: StaticPreviewMask;
     readonly background: StaticPreviewBackground;

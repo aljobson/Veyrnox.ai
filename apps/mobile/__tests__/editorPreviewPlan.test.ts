@@ -1,4 +1,5 @@
-import { evaluatedParameters, evaluatedReveal, evaluatedTransform } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { evaluatedParameters, evaluatedReveal, evaluatedTransform, FILTER_DEFAULTS, parameterKeyframe } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { colourDefaults } from '../../../app/veyrnox/_lib/editorColour.mjs';
 import { evaluatedMask } from '../../../app/veyrnox/_lib/editorMask.mjs';
 import { emptySequence } from '../../../app/veyrnox/_lib/editorSequence.mjs';
 import { sequenceLayers } from '../../../app/veyrnox/_lib/editorSequenceRender.mjs';
@@ -91,19 +92,44 @@ test('reports exact static frames and never hides unsupported active features', 
     } as unknown as Timeline;
     expect(editorPreviewPlan(simple, 0).capabilities).toMatchObject({ exact: true, unsupported: [] });
 
-    const unsupported = {
+    const supportedFilter = {
         ...simple,
-        video: [{ ...simple.video[0], filter: { brightness: 1.2, contrast: 1, saturate: 1, hue: 0, blur: 0 }, effect: { type: 'grain', intensity: .5 },
+        video: [{ ...simple.video[0], filter: { brightness: 1.2, contrast: 1, saturate: 1, hue: 0, blur: 0 },
             background: { type: 'blur', color: '#000000', blur: 18, mediaId: '' } }],
+    } as unknown as Timeline;
+    const supportedReport = editorPreviewPlan(supportedFilter, 0).capabilities;
+    expect(supportedReport).toMatchObject({ exact: true, unsupported: [] });
+    expect(supportedReport.requirements).toContainEqual(expect.objectContaining({ capability: 'basic-filter', supported: true, itemId: 'v1' }));
+
+    const unsupported = {
+        ...supportedFilter,
+        video: [{ ...supportedFilter.video[0], colourAdjustment: { ...colourDefaults(), exposure: .4 }, effect: { type: 'grain', intensity: .5 } }],
         text: [{ id: 't1', text: 'Title', start: 0, len: 30, trackId: 'text-0', x: .5, y: .5, size: 8 }],
     } as unknown as Timeline;
     const report = editorPreviewPlan(unsupported, 0).capabilities;
     expect(report.exact).toBe(false);
+    expect(report.unsupported).not.toContainEqual(expect.objectContaining({ capability: 'basic-filter' }));
     expect(report.unsupported).toEqual(expect.arrayContaining([
-        expect.objectContaining({ capability: 'basic-filter', itemId: 'v1' }),
+        expect.objectContaining({ capability: 'advanced-colour', itemId: 'v1' }),
         expect.objectContaining({ capability: 'effect', itemId: 'v1', detail: 'grain' }),
         expect.objectContaining({ capability: 'text-layer', itemId: 't1' }),
     ]));
+});
+
+test('evaluates parameter-keyframed basic filters into an exact supported static plan', () => {
+    const base = emptySequence();
+    const source = { ...clip('v1', 'image', 'video-0', 0, 30), filter: { ...FILTER_DEFAULTS, brightness: .5, hue: -60 } };
+    const first = parameterKeyframe(source, 0), last = {
+        ...parameterKeyframe(source, 20), frame: 20, brightness: 2.5, contrast: 1.5, saturate: .4, hue: 60, blur: 10,
+    };
+    const animated = { ...source, parameterKeyframes: [first, last] };
+    const timeline = { ...base, media: { image: image('image') }, video: [animated] } as unknown as Timeline;
+    const plan = editorPreviewPlan(timeline, 10);
+
+    expect(plan.visuals[0].filter).toEqual(evaluatedParameters(animated, 10).filter);
+    expect(plan.visuals[0].filter).toMatchObject({ brightness: 1.5, contrast: 1.25, saturate: .7, hue: 0, blur: 5 });
+    expect(plan.capabilities).toMatchObject({ exact: true, unsupported: [] });
+    expect(plan.capabilities.requirements).toContainEqual(expect.objectContaining({ capability: 'basic-filter', supported: true, itemId: 'v1' }));
 });
 
 test('reports audible hidden media because visibility does not remove it from the web mix', () => {

@@ -13,7 +13,7 @@ const mockRender = jest.fn((..._args: unknown[]): unknown => undefined);
 const mockSourceKey = jest.fn((..._args: unknown[]) => 'source-key');
 const mockCapabilities = [
     'timeline-background', 'image-source', 'graphic-source', 'fit', 'crop', 'transform', 'visual-layering', 'blend', 'mask', 'clip-animation',
-    'clip-background-solid', 'clip-background-blur', 'clip-background-image',
+    'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter',
 ];
 jest.mock('../src/lib/editorStaticPreviewSources', () => ({
     createEditorStaticPreviewSourceLoader: () => mockLoader,
@@ -54,7 +54,7 @@ beforeEach(() => {
     mockSourceKey.mockReset().mockReturnValue('source-key');
     mockCapabilities.splice(0, mockCapabilities.length,
         'timeline-background', 'image-source', 'graphic-source', 'fit', 'crop', 'transform', 'visual-layering', 'blend', 'mask', 'clip-animation',
-        'clip-background-solid', 'clip-background-blur', 'clip-background-image');
+        'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter');
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 });
 
@@ -111,6 +111,69 @@ test('keeps the static picture approximate when its external audio mix is not re
         expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(1);
     } finally { await act(async () => root.unmount()); }
     expect(sourceDispose).toHaveBeenCalledTimes(1); expect(outputDispose).toHaveBeenCalledTimes(1);
+});
+
+test('commits a filtered paused image as exact and safely hands it back across play and pause', async () => {
+    const sourceDisposals = [jest.fn(), jest.fn()], outputDisposals = [jest.fn(), jest.fn()];
+    mockLoader.load
+        .mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDisposals[0] } })
+        .mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDisposals[1] } });
+    mockRender
+        .mockReturnValueOnce({ ok: true, width: 640, height: 360, image: { dispose: outputDisposals[0] } })
+        .mockReturnValueOnce({ ok: true, width: 640, height: 360, image: { dispose: outputDisposals[1] } });
+    const root = createRoot(), value = timeline(), frameStore = createFrameStore(5), api = { request: jest.fn() };
+    value.video[0].filter = { brightness: 1.2, contrast: .8, saturate: 1.4, hue: 20, blur: 2 };
+    const render = (playing: boolean) => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={value}
+        api={api} playing={playing} localMediaUris={{ image: 'file://image.png' }} />);
+    try {
+        await act(async () => render(false));
+        let surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        expect((mockBind.mock.calls[0]?.[0] as any).visuals[0].filter).toEqual(value.video[0].filter);
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(0);
+        await act(async () => render(true));
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')).toHaveLength(0);
+        expect(root.container.queryAll(node => node.props.testID === 'legacy-editor-preview')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(1);
+        await act(async () => render(false));
+        surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(0);
+    } finally { await act(async () => root.unmount()); }
+    sourceDisposals.forEach(dispose => expect(dispose).toHaveBeenCalledTimes(1));
+    outputDisposals.forEach(dispose => expect(dispose).toHaveBeenCalledTimes(1));
+});
+
+test('parameter-keyframed filters reuse decoded sources, rerender, and never report an approximate intermediate frame', async () => {
+    const sourceDispose = jest.fn(), firstDispose = jest.fn(), secondDispose = jest.fn();
+    mockLoader.load.mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDispose } });
+    mockRender
+        .mockReturnValueOnce({ ok: true, width: 640, height: 360, image: { dispose: firstDispose } })
+        .mockReturnValueOnce({ ok: true, width: 640, height: 360, image: { dispose: secondDispose } });
+    const root = createRoot(), value = timeline(), frameStore = createFrameStore(0);
+    value.video[0].parameterKeyframes = [
+        { frame: 0, easing: 'linear', brightness: 1, contrast: 1, saturate: 1, hue: 0, blur: 0, exposure: 0, temperature: 0, tint: 0 },
+        { frame: 89, easing: 'linear', brightness: 2, contrast: 1, saturate: 1, hue: 0, blur: 0, exposure: 0, temperature: 0, tint: 0 },
+    ];
+    try {
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={frameStore} timeline={value}
+            api={{ request: jest.fn() }} playing={false} localMediaUris={{ image: 'file://image.png' }} />));
+        const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(0);
+        await act(async () => frameStore.set(89));
+        expect(mockLoader.load).toHaveBeenCalledTimes(1);
+        expect(mockRender).toHaveBeenCalledTimes(2);
+        expect((mockBind.mock.calls[0]?.[0] as any).visuals[0].filter.brightness).toBe(1);
+        expect((mockBind.mock.calls[1]?.[0] as any).visuals[0].filter.brightness).toBe(2);
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(0);
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')).toHaveLength(1);
+    } finally { await act(async () => root.unmount()); }
+    expect(sourceDispose).toHaveBeenCalledTimes(1);
+    expect(firstDispose).toHaveBeenCalledTimes(1);
+    expect(secondDispose).toHaveBeenCalledTimes(1);
 });
 
 test('unsupported and opt-out paths never load or hide the legacy preview', async () => {
@@ -228,6 +291,23 @@ test('uses the lazy renderer capability table instead of the generic static defa
         await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
         expect(mockLoader.load).not.toHaveBeenCalled();
         expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')).toHaveLength(0);
+    } finally { await act(async () => root.unmount()); }
+});
+
+test('a renderer without basic-filter capability leaves a filtered frame on legacy without loading sources', async () => {
+    mockCapabilities.splice(mockCapabilities.indexOf('basic-filter'), 1);
+    const root = createRoot(), value = timeline();
+    value.video[0].filter = { brightness: 1.25, contrast: 1, saturate: 1, hue: 0, blur: 0 };
+    try {
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={createFrameStore(5)} timeline={value}
+            api={{ request: jest.fn() }} playing={false} localMediaUris={{ image: 'file://image.png' }} />));
+        const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        expect(mockLoader.load).not.toHaveBeenCalled();
+        expect(mockRender).not.toHaveBeenCalled();
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')).toHaveLength(0);
+        expect(root.container.queryAll(node => node.props.testID === 'legacy-editor-preview')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(1);
     } finally { await act(async () => root.unmount()); }
 });
 
