@@ -25,6 +25,7 @@ export type SceneAnalysisInput = {
     uri: string;
     clip: SceneClipRange;
     samplingMode?: 'all';
+    nominalFrameRate?: number;
     signal?: AbortSignal;
     onProgress?(progress: EditorMediaProgress): void;
 };
@@ -58,6 +59,7 @@ type FrameManifest = {
     transform: number[];
     resizeMode: 'fill';
     samplingMode?: 'all';
+    maximumFrameRate?: 60;
     frames: ManifestFrame[];
 };
 type WebDetector = (samples: readonly { time: number; signature: SceneSignature }[]) => { cuts: SceneCut[]; frames: number };
@@ -85,7 +87,13 @@ const stopped = (signal?: AbortSignal) => signal?.aborted === true;
 function validInput(input: SceneAnalysisInput) {
     const { clip } = input;
     return validIdentifier(input.project) && validateOwnedFileUri(input.uri) && safeNonNegativeInteger(clip.start) && safeNonNegativeInteger(clip.in)
-        && safePositiveInteger(clip.len) && clip.len >= 3 && clip.len <= MAX_FRAMES;
+        && safePositiveInteger(clip.len) && clip.len >= 3 && clip.len <= MAX_FRAMES
+        && (input.nominalFrameRate === undefined || finite(input.nominalFrameRate) && input.nominalFrameRate > 0 && input.nominalFrameRate <= 240);
+}
+
+export function exactSceneFrameBudget(clipFrames: number, nominalFrameRate?: number) {
+    const duration = clipFrames / FPS, sourceRate = nominalFrameRate && nominalFrameRate > 0 ? nominalFrameRate : 60;
+    return Math.min(1_800, Math.ceil(duration * Math.min(60, sourceRate)) + 2);
 }
 
 function childUri(manifestUri: string, name: string): string | null {
@@ -99,13 +107,14 @@ function childUri(manifestUri: string, name: string): string | null {
 function parseManifest(raw: string, artifact: FrameArtifact, request: SampleFramesRequest): FrameManifest | null {
     let value: unknown;
     try { value = JSON.parse(raw); } catch { return null; }
-    const keys = request.samplingMode === 'all' ? [...MANIFEST_KEYS, 'samplingMode'] : MANIFEST_KEYS;
+    const keys = request.samplingMode === 'all' ? [...MANIFEST_KEYS, 'samplingMode', 'maximumFrameRate'] : MANIFEST_KEYS;
     if (!object(value) || !exact(value, keys) || value.version !== 1 || value.format !== 'rgba8' || value.width !== WIDTH || value.height !== HEIGHT
         || value.rowStride !== STRIDE || value.colorSpace !== 'srgb' || value.resizeMode !== 'fill' || !safePositiveInteger(value.orientedWidth)
         || !safePositiveInteger(value.orientedHeight) || !Array.isArray(value.transform) || value.transform.length !== 6 || !value.transform.every(finite)
         || !Array.isArray(value.frames) || value.frames.length !== artifact.count || value.frames.length < 1 || value.frames.length > request.maxFrames
         || artifact.timestampsUs.length !== value.frames.length || !sameNumbers(value.transform as number[], artifact.preferredTransform)
-        || (request.samplingMode === 'all' ? value.samplingMode !== 'all' : value.samplingMode !== undefined)) return null;
+        || (request.samplingMode === 'all' ? value.samplingMode !== 'all' || value.maximumFrameRate !== request.maximumFrameRate
+            : value.samplingMode !== undefined || value.maximumFrameRate !== undefined)) return null;
     const fromUs = Math.round(request.fromSeconds * 1_000_000), toUs = Math.round(request.toSeconds * 1_000_000);
     let previous = -1;
     const frames: ManifestFrame[] = [];
@@ -119,7 +128,7 @@ function parseManifest(raw: string, artifact: FrameArtifact, request: SampleFram
     }
     return { version: 1, format: 'rgba8', width: WIDTH, height: HEIGHT, rowStride: STRIDE, colorSpace: 'srgb', orientedWidth: value.orientedWidth,
         orientedHeight: value.orientedHeight, transform: value.transform as number[], resizeMode: 'fill',
-        ...(request.samplingMode === 'all' ? { samplingMode: 'all' as const } : {}), frames };
+        ...(request.samplingMode === 'all' ? { samplingMode: 'all' as const, maximumFrameRate: 60 as const } : {}), frames };
 }
 
 function validArtifact(value: FrameArtifact, request: SampleFramesRequest) {
@@ -127,7 +136,8 @@ function validArtifact(value: FrameArtifact, request: SampleFramesRequest) {
         && value.width === WIDTH && value.height === HEIGHT && value.stride === STRIDE && value.pixelFormat === 'rgba8' && value.colorSpace === 'srgb'
         && value.resizeMode === 'fill' && safePositiveInteger(value.count) && value.count <= request.maxFrames && Array.isArray(value.timestampsUs)
         && value.timestampsUs.length === value.count && Array.isArray(value.preferredTransform) && value.preferredTransform.length === 6
-        && value.preferredTransform.every(finite) && (value.samplingMode ?? 'uniform') === (request.samplingMode ?? 'uniform');
+        && value.preferredTransform.every(finite) && (value.samplingMode ?? 'uniform') === (request.samplingMode ?? 'uniform')
+        && (request.samplingMode === 'all' ? value.maximumFrameRate === request.maximumFrameRate : value.maximumFrameRate === undefined);
 }
 
 export function sceneRowsForClip(clip: SceneClipRange, cuts: readonly SceneCut[]): SceneRow[] {
@@ -148,8 +158,8 @@ export async function analyzeClipScenes(input: SceneAnalysisInput, dependencies:
     const media = dependencies.media ?? editorMedia;
     const files = dependencies.files ?? defaultFiles;
     const request: SampleFramesRequest = { uri: input.uri, fromSeconds: input.clip.in / FPS, toSeconds: (input.clip.in + input.clip.len) / FPS,
-        maxFrames: input.samplingMode === 'all' ? Math.min(1_800, input.clip.len * 2) : input.clip.len, resizeMode: 'fill',
-        ...(input.samplingMode === 'all' ? { samplingMode: 'all' as const } : {}) };
+        maxFrames: input.samplingMode === 'all' ? exactSceneFrameBudget(input.clip.len, input.nominalFrameRate) : input.clip.len, resizeMode: 'fill',
+        ...(input.samplingMode === 'all' ? { samplingMode: 'all' as const, maximumFrameRate: 60 as const } : {}) };
     let artifact: FrameArtifact | undefined;
     try {
         let sampled: EditorMediaResult<FrameArtifact>;

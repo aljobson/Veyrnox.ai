@@ -385,3 +385,22 @@ Post-fix proof before round 2: 10 focused suites / 156 tests passed, mobile Type
 Claude found no material defect and confirmed the transform, motion-path, picture-key, mask, Smart Picture, bounds, export-cleanup, RTL and decoded-fit contracts against the corresponding web implementation. The low advisory, `S7-SWITCH-DUP-LABEL`, identified duplicate VoiceOver stops for the visible Invert mask and Remove background by colour labels beside identically labelled switches. Accepted after the approved snapshot: the visible labels are now accessibility-decorative while each switch remains the single labelled control, with a regression assertion.
 
 Final host proof: 10 focused suites / 156 tests passed; the two directly affected suites passed 28/28; mobile TypeScript passed; changed-file ESLint has zero warnings; app-i18n, web-locale sync and English-registry checks passed; and `git diff --check` passed. Device gesture, VoiceOver order, Dynamic Type and rotated portrait metadata remain part of the later integrated simulator qualification.
+
+## Wave 3A Editor S10b Clip Finder inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `07604ce5-be7f-45ed-8262-700555cf7325`
+- Base: `f8838ac0de378c8e00bb73d7cbacf24cef9609a6`
+- Plan SHA-256: `8d51a9d53bccfcfb9df569d001fcd764fbb139287ceaa812559f52b6a21b65ad`
+- Inspected snapshot SHA-256: `df8f5bbbdc935656acae7a36460d3a11505a73ba3d91f2824b3b9e071a71faf4`
+- Inspected diff SHA-256: `c10bef7c6d02f8f7e5d4a165fe1ffabaffd7aa9ca6b2ae4755b1ef15a25138a1`
+- Runner result: `/private/tmp/claudex-mobile-parity-wave3a-s10b-inspect-r1/claudex-z2l0jyov/result.json`
+
+### Findings and host dispositions
+
+1. `S10-1` high: exact frame sampling could retain the frame already showing before a non-zero requested start, which the strict manifest then rejected. Accepted; native sampling now drops materially early and end-boundary frames and clamps only sub-microsecond timebase rounding.
+2. `S10-2` medium: a fixed two-times editor-frame budget had no boundary headroom and failed high-frame-rate sources. Accepted; inspected nominal frame rate now flows through the analysis contract, ordinary sources get two-frame headroom within the 1,800-frame cap, and an additive, strictly echoed 60 fps ceiling deterministically thins higher-rate/VFR bursts.
+3. `S10-3` medium: multichannel web-average PCM requested more than stereo without an explicit channel layout. Accepted; the decoder now supplies and validates a discrete AV channel layout before constructing the reader output, preserving the arithmetic mean across all source channels.
+4. `S10-4` low: known over-720p sources were prepared before failing with generic format copy. Accepted; stored and inspected dimensions now use the native 1280-by-720 geometry boundary and present a specific localized blocker in all ten non-English app catalogs.
+
+Post-fix host proof before round 2: 15 focused suites / 5,588 tests passed; Swift parsing, the English registry, complete app-locale checks and `git diff --check` passed. Mobile TypeScript reports no errors in changed files; its remaining failures are the known missing optional modules in the reused dependency tree. The full local suite executed 17,618 passing assertions; its dependency-resolution failures are recorded for clean PR CI. Real AVFoundation 25/29.97 fps and 5.1 fixtures were unavailable locally, so the native boundaries are additionally covered by Swift parse, strict source-contract regressions and deterministic 25/29.97/60/120 budget tests; clean native CI remains required.

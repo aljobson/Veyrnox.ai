@@ -9,7 +9,7 @@ import type { Clip, Media, Timeline } from '../../../lib/nativeEditorModel';
 
 export type ClipFinderStatus = 'idle' | 'preparing' | 'reading-picture' | 'reading-sound' | 'ranking' | 'done' | 'error';
 export type ClipFinderAvailability = 'checking' | 'available' | 'unsupported';
-export type ClipFinderError = EditorMediaErrorCode | 'source' | 'stale';
+export type ClipFinderError = EditorMediaErrorCode | 'source' | 'stale' | 'resolution';
 
 type State = {
     status: ClipFinderStatus;
@@ -34,10 +34,12 @@ const empty = (): State => ({ status: 'idle', progress: 0, rows: [] });
 const stageOrder: Record<ClipFinderStatus, number> = {
     idle: 0, preparing: 1, 'reading-picture': 2, 'reading-sound': 3, ranking: 4, done: 5, error: 5,
 };
+const exceeds720p = (width: number, height: number) => Math.max(width, height) > 1280 || Math.min(width, height) > 720;
 
 /** Clip Finder reads the selected source only. A locked source track therefore does not block analysis. */
-export function clipFinderBlocker(media: Media | undefined, clip: Clip | undefined): 'select' | 'transform' | 'short' | 'long' | null {
+export function clipFinderBlocker(media: Media | undefined, clip: Clip | undefined): 'select' | 'transform' | 'short' | 'long' | 'resolution' | null {
     if (!media || media.kind !== 'video' || !clip) return 'select';
+    if (media.width && media.height && exceeds720p(media.width, media.height)) return 'resolution';
     if (clip.reverse || clip.speedCurve || clip.freezeFrame !== undefined || (clip.rate ?? 1) !== 1) return 'transform';
     if (!Number.isSafeInteger(clip.len) || clip.len < 3) return 'short';
     if (clip.len > 900) return 'long';
@@ -99,14 +101,16 @@ export function useEditorClipFinder({ api, projectId, timeline, media, clip, loc
                 setState(inspected.code === 'cancelled' ? empty() : { status: 'error', progress: 0, rows: [], error: inspected.code });
                 return;
             }
-            if (!inspected.value.hasVideo || !inspected.value.width || !inspected.value.height
-                || inspected.value.width * inspected.value.height > 1280 * 720) {
+            if (inspected.value.width && inspected.value.height && exceeds720p(inspected.value.width, inspected.value.height)) {
+                setState({ status: 'error', progress: 0, rows: [], error: 'resolution' }); return;
+            }
+            if (!inspected.value.hasVideo || !inspected.value.width || !inspected.value.height) {
                 setState({ status: 'error', progress: 0, rows: [], error: 'invalid-input' }); return;
             }
             const hasAudio = inspected.value.hasAudio;
             setState({ status: 'reading-picture', progress: 0.05, rows: [], hadAudio: hasAudio });
             const result = await analyzeClipForFinder({ project: projectId, uri: source.uri, timeline,
-                clip: { start: clip.start, in: clip.in ?? 0, len: clip.len }, hasAudio, signal: active.signal,
+                clip: { start: clip.start, in: clip.in ?? 0, len: clip.len }, hasAudio, nominalFrameRate: inspected.value.nominalFrameRate, signal: active.signal,
                 onProgress: progress => { if (current()) setState(value => progressState(value, progress, hasAudio)); } });
             if (!current()) return;
             if (!result.ok) {

@@ -8472,6 +8472,7 @@ export default {
   "editorClips.blocker.transform": "O Localizador de clipes precisa de um clipe sem mudanças de velocidade, reversão ou quadro congelado.",
   "editorClips.blocker.short": "Escolha um clipe com pelo menos 0,1 segundo.",
   "editorClips.blocker.long": "Escolha um clipe de até 30 segundos.",
+  "editorClips.blocker.resolution": "O Clip Finder suporta vídeos até 720p.",
   "editorClips.sourceError": "Não foi possível preparar este vídeo para análise no dispositivo.",
   "editorClips.invalidError": "Este formato de vídeo não pode ser analisado neste iPhone.",
   "editorClips.spaceError": "Libere espaço neste iPhone e tente novamente.",

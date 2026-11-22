@@ -18,14 +18,14 @@ export type EditorMediaInfo = { durationUs: number; hasVideo: boolean; hasAudio:
 export type EditorMediaArtifactKind = 'frames' | 'pcm' | 'mp4' | 'report';
 export type EditorMediaArtifact = { artifactId: string; uri: string; kind: EditorMediaArtifactKind; size: number };
 export type FrameArtifact = EditorMediaArtifact & { kind: 'frames'; width: 128; height: 72; stride: 512; pixelFormat: 'rgba8'; colorSpace: 'srgb'; count: number;
-    timestampsUs: number[]; preferredTransform: number[]; resizeMode: 'contain' | 'fill'; samplingMode?: 'uniform' | 'all' };
+    timestampsUs: number[]; preferredTransform: number[]; resizeMode: 'contain' | 'fill'; samplingMode?: 'uniform' | 'all'; maximumFrameRate?: 60 };
 export type PcmTimingSegment = { offsetFrames: number; timestampUs: number; frames: number };
 export type PcmArtifact = EditorMediaArtifact & { kind: 'pcm'; sampleRate: 48000; channels: 1 | 2; frames: number; encoding: 'f32le-interleaved';
     mixMode?: 'web-average'; segments?: PcmTimingSegment[] };
 export type Mp4Artifact = EditorMediaArtifact & { kind: 'mp4'; width: number; height: number; fps: number; frames: number; durationUs: number;
     videoCodec: 'avc1'; audioCodec?: 'mp4a'; audioSampleRate?: 48000; audioChannels?: 2 };
 export type SampleFramesRequest = { uri: string; fromSeconds: number; toSeconds: number; maxFrames: number; resizeMode?: 'contain' | 'fill';
-    samplingMode?: 'all' };
+    samplingMode?: 'all'; maximumFrameRate?: 60 };
 export type DecodePcmRequest = { uri: string; fromSeconds: number; toSeconds: number; sampleRate: 48000; channels: 1 | 2; mixMode?: 'web-average' };
 export type BeginEncodeRequest = { width: number; height: number; fps: number; videoBitRate: number; audioBitRate?: number; audioArtifactId?: string };
 export type FrameDescriptor = { version: 1; uri: string; index: number; timestampUs: number; byteLength: number; width: number; height: number; stride: number;
@@ -56,11 +56,11 @@ export function validateOwnedFileUri(value: unknown): value is string {
         return !decodeURIComponent(url.pathname).split('/').some(part => part === '.' || part === '..' || part.includes('\\')); } catch { return false; }
 }
 export function validateSampleFramesRequest(value: unknown): value is SampleFramesRequest {
-    return object(value) && exact(value, ['uri', 'fromSeconds', 'toSeconds', 'maxFrames', 'resizeMode', 'samplingMode']) && validateOwnedFileUri(value.uri) && finite(value.fromSeconds)
+    return object(value) && exact(value, ['uri', 'fromSeconds', 'toSeconds', 'maxFrames', 'resizeMode', 'samplingMode', 'maximumFrameRate']) && validateOwnedFileUri(value.uri) && finite(value.fromSeconds)
         && finite(value.toSeconds) && value.fromSeconds >= 0 && value.toSeconds > value.fromSeconds && value.toSeconds - value.fromSeconds <= EDITOR_MEDIA_LIMITS.durationSeconds
         && positiveInteger(value.maxFrames) && value.maxFrames <= (value.samplingMode === 'all' ? 1800 : 900)
         && (value.resizeMode === undefined || value.resizeMode === 'contain' || value.resizeMode === 'fill')
-        && (value.samplingMode === undefined || value.samplingMode === 'all');
+        && (value.samplingMode === undefined ? value.maximumFrameRate === undefined : value.samplingMode === 'all' && value.maximumFrameRate === 60);
 }
 export function validateDecodePcmRequest(value: unknown): value is DecodePcmRequest {
     return object(value) && exact(value, ['uri', 'fromSeconds', 'toSeconds', 'sampleRate', 'channels', 'mixMode']) && validateOwnedFileUri(value.uri) && finite(value.fromSeconds)
@@ -126,7 +126,7 @@ export function parseMediaInfo(value: unknown): EditorMediaInfo | null {
             videoStartUs: value.videoStartUs as number, videoDurationUs: value.videoDurationUs as number } : {}),
         ...(value.hasAudio ? { audioCodec: value.audioCodec as string, audioStartUs: value.audioStartUs as number, audioDurationUs: value.audioDurationUs as number } : {}) };
 }
-export function parseFrameArtifact(value: unknown, request: Pick<SampleFramesRequest, 'maxFrames' | 'resizeMode' | 'samplingMode'> = { maxFrames: 900 }): FrameArtifact | null {
+export function parseFrameArtifact(value: unknown, request: Pick<SampleFramesRequest, 'maxFrames' | 'resizeMode' | 'samplingMode' | 'maximumFrameRate'> = { maxFrames: 900 }): FrameArtifact | null {
     const base = parseArtifactBase(value, 'frames', EDITOR_MEDIA_LIMITS.frameArtifactBytes); if (!base || !object(value)) return null;
     const resizeMode = value.resizeMode === undefined ? 'contain' : value.resizeMode;
     const samplingMode = value.samplingMode === undefined ? 'uniform' : value.samplingMode;
@@ -135,10 +135,11 @@ export function parseFrameArtifact(value: unknown, request: Pick<SampleFramesReq
         || value.count > request.maxFrames || !Array.isArray(value.timestampsUs) || value.timestampsUs.length !== value.count || !value.timestampsUs.every((time, index) => integer(time) && time >= 0
             && (!index || time > (value.timestampsUs as number[])[index - 1])) || !Array.isArray(value.preferredTransform) || value.preferredTransform.length !== 6
         || !value.preferredTransform.every(finite) || !['contain', 'fill'].includes(String(resizeMode)) || resizeMode !== expectedResizeMode
-        || !['uniform', 'all'].includes(String(samplingMode)) || samplingMode !== expectedSamplingMode) return null;
+        || !['uniform', 'all'].includes(String(samplingMode)) || samplingMode !== expectedSamplingMode
+        || (expectedSamplingMode === 'all' ? request.maximumFrameRate !== 60 || value.maximumFrameRate !== 60 : value.maximumFrameRate !== undefined)) return null;
     return { ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: value.count,
         timestampsUs: value.timestampsUs as number[], preferredTransform: value.preferredTransform as number[], resizeMode: resizeMode as 'contain' | 'fill',
-        samplingMode: samplingMode as 'uniform' | 'all' };
+        samplingMode: samplingMode as 'uniform' | 'all', ...(expectedSamplingMode === 'all' ? { maximumFrameRate: 60 as const } : {}) };
 }
 export function parsePcmArtifact(value: unknown, expectedMixMode?: DecodePcmRequest['mixMode']): PcmArtifact | null {
     const base = parseArtifactBase(value, 'pcm', EDITOR_MEDIA_LIMITS.pcmArtifactBytes); if (!base || !object(value) || value.sampleRate !== 48000

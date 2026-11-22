@@ -8360,6 +8360,7 @@ export default {
   "editorClips.blocker.transform": "Der Clip-Finder benötigt einen Clip ohne Tempoänderung, Rückwärtslauf oder Standbild.",
   "editorClips.blocker.short": "Wähle einen Clip, der mindestens 0,1 Sekunden lang ist.",
   "editorClips.blocker.long": "Wähle einen Clip, der höchstens 30 Sekunden lang ist.",
+  "editorClips.blocker.resolution": "Clip Finder verarbeitet Videos bis 720p.",
   "editorClips.sourceError": "Dieses Video konnte nicht für die Analyse auf dem Gerät vorbereitet werden.",
   "editorClips.invalidError": "Dieses Videoformat kann auf diesem iPhone nicht analysiert werden.",
   "editorClips.spaceError": "Gib Speicherplatz auf diesem iPhone frei und versuche es erneut.",

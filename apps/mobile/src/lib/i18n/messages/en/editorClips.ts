@@ -42,6 +42,7 @@ export default {
     'editorClips.blocker.transform': 'Clip Finder needs a clip without speed, reverse or freeze-frame changes.',
     'editorClips.blocker.short': 'Choose a clip that is at least 0.1 seconds long.',
     'editorClips.blocker.long': 'Choose a clip that is 30 seconds or shorter.',
+    'editorClips.blocker.resolution': 'Clip Finder handles videos up to 720p.',
     'editorClips.sourceError': 'This video could not be prepared for on-device analysis.',
     'editorClips.invalidError': 'This video format cannot be analysed on this iPhone.',
     'editorClips.spaceError': 'Free some storage on this iPhone, then try again.',

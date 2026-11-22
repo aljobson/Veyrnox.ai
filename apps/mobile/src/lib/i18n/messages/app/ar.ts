@@ -8810,6 +8810,7 @@ export default {
   "editorClips.blocker.transform": "يحتاج مكتشف المقاطع إلى مقطع بلا تغييرات في السرعة أو العكس أو تجميد الإطار.",
   "editorClips.blocker.short": "اختر مقطعاً مدته 0.1 ثانية على الأقل.",
   "editorClips.blocker.long": "اختر مقطعاً مدته 30 ثانية أو أقل.",
+  "editorClips.blocker.resolution": "يتعامل Clip Finder مع مقاطع الفيديو بدقة تصل إلى 720p.",
   "editorClips.sourceError": "تعذّر تجهيز هذا الفيديو للتحليل على الجهاز.",
   "editorClips.invalidError": "لا يمكن تحليل تنسيق هذا الفيديو على هذا الـ iPhone.",
   "editorClips.spaceError": "حرر بعض المساحة على هذا الـ iPhone، ثم حاول مجدداً.",

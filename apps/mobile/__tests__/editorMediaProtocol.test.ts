@@ -12,7 +12,10 @@ test('analysis requests are finite, exact and bounded to thirty seconds', () => 
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900 })).toBe(true);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900, resizeMode: 'contain' })).toBe(true);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900, resizeMode: 'fill' })).toBe(true);
-    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all' })).toBe(true);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all', maximumFrameRate: 60 })).toBe(true);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all' })).toBe(false);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all', maximumFrameRate: 59 })).toBe(false);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900, maximumFrameRate: 60 })).toBe(false);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 1801, samplingMode: 'all' })).toBe(false);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 901 })).toBe(false);
     for (const resizeMode of ['cover', 'stretch', '', null, 1])
@@ -65,9 +68,11 @@ test('native results are strictly bounded and native prose never escapes', () =>
     expect(parseFrameArtifact(frames, { maxFrames: 2, resizeMode: 'fill' })).toBeNull();
     expect(parseFrameArtifact({ ...frames, resizeMode: 'contain' }, { maxFrames: 2, resizeMode: 'fill' })).toBeNull();
     expect(parseFrameArtifact({ ...frames, resizeMode: 'cover' })).toBeNull();
-    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill', samplingMode: 'all' }, { maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all' }))
-        .toMatchObject({ samplingMode: 'all' });
-    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill' }, { maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all' })).toBeNull();
+    const exactFrames = { ...frames, resizeMode: 'fill', samplingMode: 'all', maximumFrameRate: 60 };
+    const exactRequest = { maxFrames: 1800, resizeMode: 'fill' as const, samplingMode: 'all' as const, maximumFrameRate: 60 as const };
+    expect(parseFrameArtifact(exactFrames, exactRequest)).toMatchObject({ samplingMode: 'all', maximumFrameRate: 60 });
+    expect(parseFrameArtifact({ ...exactFrames, maximumFrameRate: undefined }, exactRequest)).toBeNull();
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill' }, exactRequest)).toBeNull();
     expect(parseFrameArtifact({ ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
         timestampsUs: [0, 0], preferredTransform: [1, 0, 0, 1, 0, 0] })).toBeNull();
     expect(parsePcmArtifact({ ...base, size: 11_520_000, kind: 'pcm', sampleRate: 48000, channels: 2, frames: 1_440_000, encoding: 'f32le-interleaved' })?.channels).toBe(2);

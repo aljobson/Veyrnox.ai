@@ -8245,6 +8245,7 @@ export default {
   "editorClips.blocker.transform": "片段查找器需要未应用变速、倒放或定格的片段。",
   "editorClips.blocker.short": "请选择至少 0.1 秒的片段。",
   "editorClips.blocker.long": "请选择不超过 30 秒的片段。",
+  "editorClips.blocker.resolution": "Clip Finder 支持最高 720p 的视频。",
   "editorClips.sourceError": "无法为设备端分析准备此视频。",
   "editorClips.invalidError": "此 iPhone 无法分析这种视频格式。",
   "editorClips.spaceError": "请释放此 iPhone 上的部分存储空间，然后重试。",

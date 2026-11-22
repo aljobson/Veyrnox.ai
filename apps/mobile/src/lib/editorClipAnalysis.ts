@@ -72,6 +72,7 @@ export type ClipFinderAnalysisInput = {
     timeline: Timeline;
     clip: Pick<Clip, 'start' | 'in' | 'len'>;
     hasAudio: boolean;
+    nominalFrameRate?: number;
     signal?: AbortSignal;
     onProgress?(progress: ClipFinderProgress): void;
 };
@@ -155,7 +156,9 @@ function validInput(input: ClipFinderAnalysisInput) {
     const start = input.clip.start, from = input.clip.in ?? 0, len = input.clip.len;
     return validIdentifier(input.project) && validateOwnedFileUri(input.uri) && typeof input.hasAudio === 'boolean'
         && nonNegativeInteger(start) && nonNegativeInteger(from) && positiveInteger(len) && len >= 3 && len <= MAX_CLIP_FRAMES
-        && !!input.timeline && typeof input.timeline === 'object' && Array.isArray(input.timeline.text);
+        && !!input.timeline && typeof input.timeline === 'object' && Array.isArray(input.timeline.text)
+        && (input.nominalFrameRate === undefined || typeof input.nominalFrameRate === 'number' && Number.isFinite(input.nominalFrameRate)
+            && input.nominalFrameRate > 0 && input.nominalFrameRate <= 240);
 }
 
 function validPcmArtifact(value: ClipFinderPcmArtifact) {
@@ -257,7 +260,7 @@ export async function analyzeClipForFinder(input: ClipFinderAnalysisInput,
     try {
         let scenes: EditorMediaResult<SceneAnalysis>;
         try {
-            scenes = await sceneAnalyzer({ project: input.project, uri: input.uri, clip: normalizedClip, samplingMode: 'all', signal: input.signal,
+            scenes = await sceneAnalyzer({ project: input.project, uri: input.uri, clip: normalizedClip, samplingMode: 'all', nominalFrameRate: input.nominalFrameRate, signal: input.signal,
                 onProgress: progress => emit(input, 'scenes', progress.value) });
         } catch { return stopped(input.signal) ? cancelled : failed; }
         if (!scenes.ok) return scenes;

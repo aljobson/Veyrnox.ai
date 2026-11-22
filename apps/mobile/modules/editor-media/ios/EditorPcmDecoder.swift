@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 import Foundation
 
 enum EditorPcmDecoder {
@@ -37,12 +38,19 @@ enum EditorPcmDecoder {
     let reader: AVAssetReader
     do { reader = try AVAssetReader(asset: asset) }
     catch { throw EditorMediaFailure.result(.corruptMedia) }
-    let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
+    var outputSettings: [String: Any] = [
       AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: request.sampleRate,
       AVNumberOfChannelsKey: decodedChannels, AVLinearPCMBitDepthKey: 32,
       AVLinearPCMIsFloatKey: true, AVLinearPCMIsBigEndianKey: false,
       AVLinearPCMIsNonInterleaved: false
-    ])
+    ]
+    if webAverage && decodedChannels > 2 {
+      guard let channelLayout = discreteChannelLayoutData(decodedChannels) else {
+        throw EditorMediaFailure.result(.unsupportedCodec, "unsupported-channel-layout")
+      }
+      outputSettings[AVChannelLayoutKey] = channelLayout
+    }
+    let output = AVAssetReaderTrackOutput(track: track, outputSettings: outputSettings)
     output.alwaysCopiesSampleData = false
     guard reader.canAdd(output) else { throw EditorMediaFailure.result(.unsupportedCodec) }
     reader.add(output)
@@ -146,6 +154,17 @@ enum EditorPcmDecoder {
          basic.mChannelsPerFrame > 0 { return Int(basic.mChannelsPerFrame) }
     }
     return nil
+  }
+
+  // AVAssetReader requires an explicit layout for linear PCM with more than two channels. A discrete layout preserves
+  // source channel order so web-average can apply the same arithmetic mean across every decoded channel as the web.
+  private static func discreteChannelLayoutData(_ channels: Int) -> Data? {
+    guard (3...32).contains(channels) else { return nil }
+    let tag = kAudioChannelLayoutTag_DiscreteInOrder | UInt32(channels)
+    guard let layout = AVAudioChannelLayout(layoutTag: tag), Int(layout.channelCount) == channels else { return nil }
+    let headerBytes = MemoryLayout<AudioChannelLayout>.size - MemoryLayout<AudioChannelDescription>.size
+    guard headerBytes > 0, layout.layout.pointee.mNumberChannelDescriptions == 0 else { return nil }
+    return Data(bytes: layout.layout, count: headerBytes)
   }
 
   private static func averageChannels(_ data: Data, frames: Int, channels: Int) -> Data {

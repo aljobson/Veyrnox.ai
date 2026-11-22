@@ -7,7 +7,8 @@ jest.mock('../src/components/editor/tools/useEditorSceneAnalysis', () => ({
 var mockClipState: any;
 var mockAppendFoundClips = jest.fn();
 jest.mock('../src/components/editor/tools/useEditorClipFinder', () => ({
-    clipFinderBlocker: () => null,
+    clipFinderBlocker: (media: { width?: number; height?: number } | undefined) => media?.width && media.height
+        && (Math.max(media.width, media.height) > 1280 || Math.min(media.width, media.height) > 720) ? 'resolution' : null,
     useEditorClipFinder: ({ runKey }: { runKey: string }) => ({ ...mockClipState,
         resultKey: mockClipState?.resultKey === 'current' ? runKey : mockClipState?.resultKey }),
 }));
@@ -181,8 +182,8 @@ test('applies all selected scene cuts as one edit and one Undo restores the clip
     expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-v'))).toHaveLength(1);
 });
 
-const clipFinderDocument = (locked = false) => ({ ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000',
-    media: { media1: { id: 'media1', kind: 'video', name: 'Interview', frames: 900, hasAudio: true, width: 1280, height: 720 } },
+const clipFinderDocument = (locked = false, width = 1280, height = 720) => ({ ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000',
+    media: { media1: { id: 'media1', kind: 'video', name: 'Interview', frames: 900, hasAudio: true, width, height } },
     video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 300, trackId: 'video-0' }], audio: [], text: [], tracks: [
         { id: 'video-0', kind: 'video', name: 'Video 1', locked, muted: false, hidden: false },
         { id: 'video-1', kind: 'video', name: 'Video 2', locked: false, muted: false, hidden: false },
@@ -192,8 +193,8 @@ const foundRows = [
     { id: 'pick-1', rank: 1, start: 2, end: 4, startFrame: 60, endFrame: 120, seconds: 2, reasons: ['speech-rich'], ticked: true },
     { id: 'pick-2', rank: 2, start: 5, end: 8, startFrame: 150, endFrame: 240, seconds: 3, reasons: ['good-length'], ticked: true },
 ];
-async function openClipFinder(locked = false) {
-    serverDocument = clipFinderDocument(locked);
+async function openClipFinder(locked = false, width = 1280, height = 720) {
+    serverDocument = clipFinderDocument(locked, width, height);
     await render();
     await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
     await press('Clip Finder');
@@ -204,6 +205,13 @@ test('Clip Finder analyses a selected clip even when its source track is locked'
     expect(labelled('Find clips')[0].props.accessibilityState.disabled).toBe(false);
     await press('Find clips');
     expect(mockClipState.find).toHaveBeenCalledTimes(1);
+});
+
+test('Clip Finder explains and blocks the 720p resolution boundary before analysis', async () => {
+    await openClipFinder(false, 1920, 480);
+    expect(visible('Clip Finder handles videos up to 720p.')).toBe(true);
+    expect(labelled('Find clips')[0].props.accessibilityState.disabled).toBe(true);
+    expect(mockClipState.find).not.toHaveBeenCalled();
 });
 
 test('Clip Finder preview seeks to its start and stops playback at the bounded end', async () => {

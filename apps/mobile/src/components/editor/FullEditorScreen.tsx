@@ -162,8 +162,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const clipBlocker = clipBlockerCode === 'select' ? t('editorClips.blocker.select')
         : clipBlockerCode === 'transform' ? t('editorClips.blocker.transform')
         : clipBlockerCode === 'short' ? t('editorClips.blocker.short')
-        : clipBlockerCode === 'long' ? t('editorClips.blocker.long') : null;
+        : clipBlockerCode === 'long' ? t('editorClips.blocker.long')
+        : clipBlockerCode === 'resolution' ? t('editorClips.blocker.resolution') : null;
     const clipError = clips.error === 'source' ? t('editorClips.sourceError')
+        : clips.error === 'resolution' ? t('editorClips.blocker.resolution')
         : clips.error === 'invalid-input' || clips.error === 'unsupported-codec' || clips.error === 'corrupt-media' ? t('editorClips.invalidError')
         : clips.error === 'disk-full' ? t('editorClips.spaceError') : clips.error ? t('editorClips.error') : null;
     useEffect(() => {
@@ -205,7 +207,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         const current = currentDocument();
         const before = timelineOf(current?.timeline), liveSelected = selection?.track === 'video' ? clipAt(before, selection) : undefined;
         const liveClip = liveSelected && 'mediaId' in liveSelected ? liveSelected as Clip : undefined;
-        const liveMedia = liveClip ? before.media[liveClip.mediaId] : undefined;
+        const liveMedia = liveClip?.mediaId ? before.media[liveClip.mediaId] : undefined;
         const liveSceneKey = `${projectId}:${getCacheUser() ?? ''}:${getEditRevision()}:${selection?.track ?? ''}:${selection?.id ?? ''}:${liveClip?.start ?? ''}:${liveClip?.in ?? ''}:${liveClip?.len ?? ''}`;
         const liveRunKey = `${liveSceneKey}:${liveMedia?.hasAudio ? 'audio' : 'silent'}`;
         if (!current || !liveClip || !liveMedia || clips.resultKey !== clipRunKey || liveRunKey !== clipRunKey) {

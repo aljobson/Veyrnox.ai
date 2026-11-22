@@ -26,7 +26,7 @@ function timeline(): Timeline {
 }
 
 function input(overrides: Partial<ClipFinderAnalysisInput> = {}): ClipFinderAnalysisInput {
-    return { project: 'project-1', uri: URI, timeline: timeline(), clip, hasAudio: true, ...overrides };
+    return { project: 'project-1', uri: URI, timeline: timeline(), clip, hasAudio: true, nominalFrameRate: 29.97, ...overrides };
 }
 
 function pcmBytes(samples: ArrayLike<number>) {
@@ -101,7 +101,7 @@ test('runs scenes then timestamped web-average PCM, uses hard cuts only, and mat
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(run.order).toEqual(['scenes', 'audio', 'release']);
-    expect(run.analyzeScenes).toHaveBeenCalledWith(expect.objectContaining({ samplingMode: 'all' }));
+    expect(run.analyzeScenes).toHaveBeenCalledWith(expect.objectContaining({ samplingMode: 'all', nominalFrameRate: 29.97 }));
     expect(run.decodePcm).toHaveBeenCalledWith('project-1', {
         uri: URI, fromSeconds: 2, toSeconds: 17, sampleRate: 48_000, channels: 1, mixMode: 'web-average',
     }, expect.any(Function), undefined);
@@ -226,6 +226,8 @@ test.each([
     { project: 'project-1', uri: URI, clip: { ...clip, in: 1.5 }, hasAudio: true },
     { project: 'project-1', uri: URI, clip: { ...clip, len: 2 }, hasAudio: true },
     { project: 'project-1', uri: URI, clip: { ...clip, len: 901 }, hasAudio: true },
+    { project: 'project-1', uri: URI, clip, hasAudio: true, nominalFrameRate: 0 },
+    { project: 'project-1', uri: URI, clip, hasAudio: true, nominalFrameRate: 240.01 },
 ] as const)('rejects invalid input before native work', async override => {
     const run = harness([.1]);
     await expect(analyzeClipForFinder(input(override as any), run.dependencies)).resolves.toEqual({ ok: false, code: 'invalid-input' });

@@ -1,5 +1,7 @@
 import { createEditorMediaClient } from '../src/lib/editorMedia';
 import type { NativeEditorMediaModule, NativeProgressEvent } from '../src/lib/editorMedia/native';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 function fakeNative(overrides: Partial<NativeEditorMediaModule> = {}) {
     let progress: ((event: NativeProgressEvent) => void) | undefined;
@@ -63,17 +65,25 @@ test('frame resize mode is forwarded, echoed and fails closed against an old nat
 });
 
 test('all-frame sampling raises the bound to 1800 and requires the native echo', async () => {
-    const exact = { ...sample, maxFrames: 1800, resizeMode: 'fill' as const, samplingMode: 'all' as const };
+    const exact = { ...sample, maxFrames: 1800, resizeMode: 'fill' as const, samplingMode: 'all' as const, maximumFrameRate: 60 as const };
     const good = fakeNative({ sampleFrames: jest.fn(async () => ({ ok: true, artifactId: 'frames-all', uri: 'file:///cache/frames-all.bin', kind: 'frames', size: 2048,
         width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2, timestampsUs: [0, 16667],
-        preferredTransform: [1, 0, 0, 1, 0, 0], resizeMode: 'fill', samplingMode: 'all' })) });
+        preferredTransform: [1, 0, 0, 1, 0, 0], resizeMode: 'fill', samplingMode: 'all', maximumFrameRate: 60 })) });
     const client = createEditorMediaClient(good.native); await client.setOwner('account-1');
-    expect(await client.sampleFrames('project-1', exact)).toMatchObject({ ok: true, value: { samplingMode: 'all', count: 2 } });
+    expect(await client.sampleFrames('project-1', exact)).toMatchObject({ ok: true, value: { samplingMode: 'all', maximumFrameRate: 60, count: 2 } });
     expect(good.native.sampleFrames).toHaveBeenCalledWith(expect.any(String), 'project-1', expect.any(String), expect.any(String), exact); client.close();
 
     const legacyNative = fakeNative(), legacy = createEditorMediaClient(legacyNative.native); await legacy.setOwner('account-1');
     expect(await legacy.sampleFrames('project-1', exact)).toEqual({ ok: false, code: 'write-failed' });
     expect(legacyNative.native.release).toHaveBeenCalledWith('account-1', 'project-1', 'frames-1'); legacy.close();
+});
+
+test('native exact sampling drops pre-trim frames and deterministically caps high-rate sources', () => {
+    const source = readFileSync(resolve(__dirname, '../modules/editor-media/ios/EditorFrameSampler.swift'), 'utf8');
+    expect(source).toContain('if seconds + 0.000_001 < request.fromSeconds || seconds >= request.toSeconds { continue }');
+    expect(source).toContain('if seconds + 0.000_001 < nextMaximumFrameTime { continue }');
+    expect(source).toContain('nextMaximumFrameTime = sampledSeconds + 1 / Double(maximumFrameRate)');
+    expect(source).toContain('let sampledSeconds = request.samplingMode == "all" ? max(request.fromSeconds, seconds) : seconds');
 });
 
 test('web-average PCM requires mono, exact timing segments and releases malformed native artifacts', async () => {
@@ -93,6 +103,15 @@ test('web-average PCM requires mono, exact timing segments and releases malforme
     const oldNative = fakeNative(), old = createEditorMediaClient(oldNative.native); await old.setOwner('account-1');
     expect(await old.decodePcm('project-1', request)).toEqual({ ok: false, code: 'write-failed' });
     expect(oldNative.native.release).toHaveBeenCalledWith('account-1', 'project-1', 'pcm-1'); old.close();
+});
+
+test('native web-average preserves multichannel order with an explicit discrete PCM layout', () => {
+    const source = readFileSync(resolve(__dirname, '../modules/editor-media/ios/EditorPcmDecoder.swift'), 'utf8');
+    expect(source).toContain('if webAverage && decodedChannels > 2');
+    expect(source).toContain('kAudioChannelLayoutTag_DiscreteInOrder | UInt32(channels)');
+    expect(source).toContain('outputSettings[AVChannelLayoutKey] = channelLayout');
+    expect(source).toContain('Int(layout.channelCount) == channels');
+    expect(source).toContain('sum += Double(source[frame * channels + channel])');
 });
 
 test('aborting a one-shot operation cancels its hidden native token', async () => {

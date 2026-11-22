@@ -39,6 +39,7 @@ struct SampleFramesRequest: Record {
   @Field var maxFrames: Int = 900
   @Field var resizeMode: String = "contain"
   @Field var samplingMode: String = "uniform"
+  @Field var maximumFrameRate: Int? = nil
 }
 
 struct DecodePcmRequest: Record {

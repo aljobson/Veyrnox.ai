@@ -28,7 +28,7 @@ function Harness({ runKey = 'run-1' }: { runKey?: string }) {
     return null;
 }
 const capability = (available = true) => ({ available, operations: { inspect: available, sampleFrames: available, decodePcm: available } });
-const inspected = (hasAudio = true) => ({ ok: true as const, value: { hasVideo: true, hasAudio, width: 1280, height: 720 } });
+const inspected = (hasAudio = true) => ({ ok: true as const, value: { hasVideo: true, hasAudio, width: 1280, height: 720, nominalFrameRate: 29.97 } });
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done; }); return { promise, resolve }; };
 
 beforeEach(() => {
@@ -48,6 +48,10 @@ test('blockers preserve the web limits and never reject a readable clip because 
     expect(clipFinderBlocker(media, { ...clip, rate: 2 })).toBe('transform');
     expect(clipFinderBlocker(media, { ...clip, len: 2 })).toBe('short');
     expect(clipFinderBlocker(media, { ...clip, len: 901 })).toBe('long');
+    expect(clipFinderBlocker({ ...media, width: 1920, height: 1080 }, clip)).toBe('resolution');
+    expect(clipFinderBlocker({ ...media, width: 1920, height: 480 }, clip)).toBe('resolution');
+    expect(clipFinderBlocker({ ...media, width: 720, height: 1280 }, clip)).toBeNull();
+    expect(clipFinderBlocker({ ...media, width: 1920 }, clip)).toBeNull();
     expect(clipFinderBlocker(media, clip)).toBeNull();
 });
 
@@ -70,7 +74,7 @@ test('materializes and inspects once, reports monotonic stages, and fences the f
     expect(mockInspect).toHaveBeenCalledTimes(1);
     expect(mockInspect).toHaveBeenCalledWith(projectId, sourceUri, expect.any(AbortSignal));
     const input = mockAnalyze.mock.calls[0][0];
-    expect(input).toMatchObject({ project: projectId, uri: sourceUri, timeline, clip: { start: 30, in: 15, len: 300 }, hasAudio: true });
+    expect(input).toMatchObject({ project: projectId, uri: sourceUri, timeline, clip: { start: 30, in: 15, len: 300 }, hasAudio: true, nominalFrameRate: 29.97 });
 
     await act(async () => input.onProgress({ phase: 'scenes', value: 0.4 }));
     expect(latest.status).toBe('reading-picture'); expect(latest.progress).toBeCloseTo(0.23);
@@ -125,10 +129,10 @@ test('cancel and run-key changes abort in-flight work and ignore late native res
     expect(latest).toMatchObject({ status: 'idle', rows: [] }); expect(latest.resultKey).toBeUndefined();
 });
 
-test('rejects oversized or non-video inspection before analysis', async () => {
-    mockInspect.mockResolvedValue({ ok: true, value: { hasVideo: true, hasAudio: true, width: 1920, height: 1080 } });
+test('reports the specific resolution boundary after inspecting media without stored dimensions', async () => {
+    mockInspect.mockResolvedValue({ ok: true, value: { hasVideo: true, hasAudio: true, width: 1920, height: 480 } });
     await act(async () => root.render(<Harness />));
     await act(async () => { await latest.find(); });
-    expect(latest).toMatchObject({ status: 'error', error: 'invalid-input', rows: [] });
+    expect(latest).toMatchObject({ status: 'error', error: 'resolution', rows: [] });
     expect(mockAnalyze).not.toHaveBeenCalled();
 });
