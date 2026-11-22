@@ -391,6 +391,7 @@ const es = {
     'templateClip.videoName': '@video1: clip de la plantilla',
     'templateClip.photoName': '@image1: tu foto',
     'templateClip.invalid': 'Usa @video1 y @image1 una sola vez, con un máximo de 2000 caracteres.',
+    'presets.swap.people_unsupported': 'Esta plantilla necesita dos personas y no está disponible en este momento. No se te ha cobrado.',
     'presets.swap.upload_failed': 'No se pudieron subir las fotos procesadas. Comprueba tu conexión y reintenta.',
     'presets.swap.rejected': 'El servicio rechazó esta ejecución. Revisa tu foto y reintenta.',
     'presets.swap.insufficient_balance': 'Tu saldo es insuficiente. Añade créditos o inténtalo más tarde.',

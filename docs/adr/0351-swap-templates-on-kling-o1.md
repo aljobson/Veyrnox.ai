@@ -630,3 +630,37 @@ The importer copied each one-photo clip's role from its source prompt, which des
 The phone flag `TEMPLATE_SWAP_RUNTIME` turns on. Its old comment described a WebView package that was removed. The composer's cut-out now runs on the native `veyrnox-vision` module, whose models are added and hash-checked at prebuild, so an installed phone build needs a new native build to include this change.
 
 **Limits.** Runs were direct provider calls with one photo per clip; four clips also passed with a second photo. A signed-in web and phone job must still be run after deployment.
+
+## Amendment 21 (2026-11-22): template swaps on Crun through a private catalog row
+
+**Problem.** fal refused swaps on 2026-11-22 with HTTP 403 `User is locked. Reason: Exhausted balance`. `kling-o1-reference` has no route rows.
+
+**Decision.** Migration 0579 adds one server-only catalog row, `kling-o1-swap-crun` (`crun:kling/o1-r2v`, 47 credits per 5 s, recorded cost $0.4854), with one active Crun route. The public offer stays on fal, unchanged, for every request without `template_swap`.
+
+- **Client contract.** `/api/catalog?template_swap=<id>` keeps returning `kling-o1-reference`, and web and phone keep sending it, so installed apps need no update. The private id is removed from the public catalog, refused if named on `POST /api/v1/generations`, and mapped back to the public id in job, history, provenance, appeals, account export and Vey account reads (`lib/privateModelIds.js`).
+- **Admission.** For a validated `template_swap` only, the server resolves the public offer to the private row while that row is active. Debit, job row and dispatch use it. An absent or inactive row means the fal path exactly as before. An active row that does not match the offer, or a failed read, refuses before debit.
+- **Request.** One Crun task with `reference_videos`, `reference_video_type: 'base_video'`, ordered `reference_images`, `resolution: '720p'`, `aspect_ratio: 'auto'` and `audio: false`. `@Video1` and `@Element1` become plain wording, and a prompt over 2,500 characters is refused before debit.
+- **Two people.** Crun has no element grouping and this is unproven, so a two-person swap answers `template_swap_people_unsupported` before debit while the Crun row is active. No id in the live registry is two-person today, and the `templateSwapPeople` key is off.
+- **Errors.** For this model the adapter returns only `crun <status>/<code>` and a fixed reason word. Crun's own message, which could echo a signed URL, reaches neither logs nor responses.
+- **Replay.** A stored job replays on the model and endpoint it was admitted on, across activation and rollback, and never creates a task on the other supplier.
+
+**Owner exception, 2026-11-22.** The route goes active with no prior direct supplier probe. The owner decided that the first proof is a live website test as a customer, and the route's parity record states this. Whether Crun bills input seconds in addition is not established; read the first job's charge. If it bills input and output at the same rate, a 5 s job costs about $0.97, above the 47-credit floor of $0.8441, and the route should be rolled back.
+
+**Order.** Merge the code first, so production can serve both endpoints. Apply 0579 only after the owner approves the `apply-migrations` run.
+
+**Rollback (forward migration, not shipped as a file so it cannot run by accident).** New swaps return to the fal offer. The rows stay, so jobs already at Crun still poll, complete or refund, and their replays still return them.
+
+```sql
+-- NNNN_kling_o1_swap_crun_off.sql: take the next free number when it is needed.
+DO $$
+DECLARE affected BIGINT;
+BEGIN
+    UPDATE public.model_catalog
+       SET active = false, updated_at = now()
+     WHERE id = 'kling-o1-swap-crun' AND provider = 'crun';
+    GET DIAGNOSTICS affected = ROW_COUNT;
+    IF affected <> 1 THEN
+        RAISE EXCEPTION 'Expected one private Kling O1 swap row, updated %', affected;
+    END IF;
+END $$;
+```

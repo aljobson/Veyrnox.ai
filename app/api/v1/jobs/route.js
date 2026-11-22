@@ -21,6 +21,7 @@ import { lookupJobByKey } from '../../../../lib/jobLookup.js';
 import { jobReadLimitResponse } from '../../../../lib/jobReadLimit.js';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { jobCursorTimestamp } from '../../../../lib/jobListCursor.js';
+import { clientModelId } from '../../../../lib/privateModelIds.js';
 
 import { isUuidLoose } from '../../../../lib/validate.js';
 const PUBLIC_ERROR_RE = /^[a-z0-9_]{1,64}$/;
@@ -109,7 +110,7 @@ export async function GET(req) {
         // FAILED is not REFUNDED; the Library shows the difference.
         refunded: j.state === 'REFUNDED',
         credits: j.credits,
-        model_id: j.model_id,
+        model_id: clientModelId(j.model_id),
         error_code: publicErrorCode(j.error_code),
         created_at: j.created_at,
         label: j.label || undefined,

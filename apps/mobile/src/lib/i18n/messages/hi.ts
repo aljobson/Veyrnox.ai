@@ -391,6 +391,7 @@ const hi = {
     'templateClip.videoName': '@video1: टेम्पलेट क्लिप',
     'templateClip.photoName': '@image1: आपकी फ़ोटो',
     'templateClip.invalid': '@video1 और @image1 का ठीक एक-एक बार उपयोग करें, अधिकतम 2000 अक्षरों में।',
+    'presets.swap.people_unsupported': 'इस टेम्पलेट के लिए दो लोगों की ज़रूरत है और यह अभी उपलब्ध नहीं है। आपसे कोई शुल्क नहीं लिया गया।',
     'presets.swap.upload_failed': 'प्रोसेस की गई फ़ोटो अपलोड नहीं हो सकीं। कनेक्शन जाँचकर फिर कोशिश करें।',
     'presets.swap.rejected': 'सेवा ने इस रन को अस्वीकार कर दिया। फ़ोटो जाँचकर फिर कोशिश करें।',
     'presets.swap.insufficient_balance': 'आपका बैलेंस कम है। क्रेडिट जोड़ें या बाद में कोशिश करें।',

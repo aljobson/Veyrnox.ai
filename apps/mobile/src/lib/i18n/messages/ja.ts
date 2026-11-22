@@ -391,6 +391,7 @@ const ja = {
     'templateClip.videoName': '@video1: テンプレートのクリップ',
     'templateClip.photoName': '@image1: あなたの写真',
     'templateClip.invalid': '@video1 と @image1 をそれぞれ1回だけ使い、2000文字以内で入力してください。',
+    'presets.swap.people_unsupported': 'このテンプレートには2人が必要で、現在はご利用いただけません。料金は発生していません。',
     'presets.swap.upload_failed': '処理済みの写真をアップロードできませんでした。接続を確認して再試行してください。',
     'presets.swap.rejected': 'サービスがこの実行を拒否しました。写真を確認して再試行してください。',
     'presets.swap.insufficient_balance': '残高が不足しています。クレジットを追加するか後でお試しください。',

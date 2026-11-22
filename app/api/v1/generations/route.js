@@ -1,6 +1,7 @@
 import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
 import { seedanceLongModelOpen } from '../../../../lib/seedanceLongTemplates.js';
-import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
+import { loadTemplateSwapClip, loadTemplateSwapDispatch } from '../../../../lib/templateSwapClipGate.js';
+import { isPrivateModelId } from '../../../../lib/privateModelIds.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
 import { templateSwapImageCounts } from '../../../../lib/templateSwapFullBody.mjs';
@@ -100,6 +101,8 @@ export async function POST(req) {
     const maxCharge = maxChargeEnabled(process.env) ? requestedMaxCharge : undefined;
     let inputs = body && body.inputs;
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
+    // A private row is reached only through swap admission below, never by naming it.
+    if (isPrivateModelId(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
     }
@@ -267,6 +270,10 @@ export async function POST(req) {
     if (rawKeys.length || rawAssets.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
     }
+    // The client still names the public offer; the server picks the row that is charged and dispatched (ADR-0351 amendment 21).
+    const swapDispatch = templateSwap ? await loadTemplateSwapDispatch(templateSwap.modelRow, cfg) : null;
+    if (swapDispatch && !swapDispatch.ok) return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
+    if (swapDispatch && isPrivateModelId(swapDispatch.row.id) && swapPeople === 2) return NextResponse.json({ error: 'template_swap_people_unsupported' }, { status: 400 });
     for (const slot of ['image','endImage','video','audio']) delete inputs[mediaInputKey(slot)];
 
     // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
@@ -274,7 +281,7 @@ export async function POST(req) {
     const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
-        const rows = templateSwap ? [templateSwap.modelRow] : templateClip ? [templateClip.modelRow] : swap ? [swap.modelRow] : await select(
+        const rows = templateSwap ? [swapDispatch.row] : templateClip ? [templateClip.modelRow] : swap ? [swap.modelRow] : await select(
             'model_catalog',
             { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
@@ -473,7 +480,7 @@ export async function POST(req) {
     // after a lost acknowledgement ledger_debit finds the existing job by key.
     if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
         const allowance = await takeFreeJobDetailed({
-            cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,
+            cfg, authId, userId, key: idempotencyKey, modelId: templateSwap ? modelRow.id : modelId, inputs: jobInputs,
             limit: effectiveLimit, windowSeconds: RATE_WINDOW_SECONDS,
         });
         allowanceKind = allowance.kind;
@@ -501,7 +508,7 @@ export async function POST(req) {
             p_idempotency_key: idempotencyKey,
             p_credits: credits,
             p_reason: 'debit:generation',
-            p_model_id: modelId,
+            p_model_id: templateSwap ? modelRow.id : modelId,
             p_inputs: jobInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.

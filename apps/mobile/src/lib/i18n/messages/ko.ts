@@ -391,6 +391,7 @@ const ko = {
     'templateClip.videoName': '@video1: 템플릿 클립',
     'templateClip.photoName': '@image1: 내 사진',
     'templateClip.invalid': '@video1과 @image1을 각각 한 번씩 사용하고 2000자 이내로 입력하세요.',
+    'presets.swap.people_unsupported': '이 템플릿은 두 사람이 필요하며 지금은 사용할 수 없습니다. 요금은 청구되지 않았습니다.',
     'presets.swap.upload_failed': '처리된 사진을 업로드하지 못했습니다. 연결을 확인하고 다시 시도하세요.',
     'presets.swap.rejected': '서비스가 이번 실행을 거부했습니다. 사진을 확인하고 다시 시도하세요.',
     'presets.swap.insufficient_balance': '잔액이 부족합니다. 크레딧을 추가하거나 나중에 시도하세요.',

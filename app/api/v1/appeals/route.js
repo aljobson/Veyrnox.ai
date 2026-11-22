@@ -15,6 +15,7 @@
 import { NextResponse } from 'next/server';
 import { rpc, envConfig } from '../../../../packages/db/supabase-client.js';
 import { accountReadLimit } from '../../../../lib/accountReadLimit.js';
+import { withClientModelIds } from '../../../../lib/privateModelIds.js';
 
 import { isUuidLoose } from '../../../../lib/validate.js';
 const MAX_BODY_BYTES = 8 * 1024;
@@ -36,7 +37,7 @@ export async function GET(req) {
     try {
         const result = await rpc('list_my_sanctions', { p_auth_id: g.authId }, g.cfg);
         if (!result || result.ok !== true) return json({ error: 'appeals_unavailable' }, 502);
-        return json({ sanctions: Array.isArray(result.sanctions) ? result.sanctions : [], hold_until: result.hold_until || null, frozen: result.frozen === true });
+        return json({ sanctions: Array.isArray(result.sanctions) ? withClientModelIds(result.sanctions) : [], hold_until: result.hold_until || null, frozen: result.frozen === true });
     } catch (err) {
         console.error('[appeals] list failed:', err && err.message);
         return json({ error: 'appeals_unavailable' }, 502);

@@ -391,6 +391,7 @@ const ar = {
     'templateClip.videoName': '@video1: مقطع القالب',
     'templateClip.photoName': '@image1: صورتك',
     'templateClip.invalid': 'استخدم @video1 و@image1 مرة واحدة لكل منهما، وبحد أقصى 2000 حرف.',
+    'presets.swap.people_unsupported': 'يحتاج هذا القالب إلى شخصين وهو غير متاح حاليًا. لم يتم خصم أي رصيد منك.',
     'presets.swap.upload_failed': 'تعذّر رفع الصور المُعالجة. تحقق من اتصالك وحاول مجددًا.',
     'presets.swap.rejected': 'رفضت الخدمة هذا التشغيل. راجع صورتك وحاول مجددًا.',
     'presets.swap.insufficient_balance': 'رصيدك غير كافٍ. أضف رصيدًا أو حاول لاحقًا.',

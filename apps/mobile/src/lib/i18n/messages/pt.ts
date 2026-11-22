@@ -391,6 +391,7 @@ const pt = {
     'templateClip.videoName': '@video1: clipe do modelo',
     'templateClip.photoName': '@image1: sua foto',
     'templateClip.invalid': 'Use @video1 e @image1 exatamente uma vez, com no máximo 2000 caracteres.',
+    'presets.swap.people_unsupported': 'Este modelo precisa de duas pessoas e não está disponível no momento. Você não foi cobrado.',
     'presets.swap.upload_failed': 'Não foi possível enviar as fotos processadas. Confira a conexão e tente novamente.',
     'presets.swap.rejected': 'O serviço recusou esta execução. Confira sua foto e tente novamente.',
     'presets.swap.insufficient_balance': 'Seu saldo é insuficiente. Adicione créditos ou tente mais tarde.',

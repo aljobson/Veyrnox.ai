@@ -391,6 +391,7 @@ const de = {
     'templateClip.videoName': '@video1: Vorlagenclip',
     'templateClip.photoName': '@image1: dein Foto',
     'templateClip.invalid': 'Verwende @video1 und @image1 jeweils genau einmal und höchstens 2000 Zeichen.',
+    'presets.swap.people_unsupported': 'Diese Vorlage braucht zwei Personen und ist gerade nicht verfügbar. Dir wurde nichts berechnet.',
     'presets.swap.upload_failed': 'Die bearbeiteten Fotos konnten nicht hochgeladen werden. Prüfe die Verbindung und versuche es erneut.',
     'presets.swap.rejected': 'Der Dienst hat diesen Lauf abgelehnt. Prüfe dein Foto und versuche es erneut.',
     'presets.swap.insufficient_balance': 'Dein Guthaben ist zu niedrig. Lade Credits auf oder versuche es später.',
