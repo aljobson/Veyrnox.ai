@@ -483,28 +483,35 @@ test('replacement and store-busy transitions silently refuse a deferred library 
 test('recording lock and vanished document silently refuse a captured library commit', async () => {
     let recordingLocked = false;
     const original = recordingHook.useTakeRecording;
+    let sourceController: ReturnType<typeof recordingHook.useTakeRecording>['controller'] | null = null;
+    let wrappedController: ReturnType<typeof recordingHook.useTakeRecording>['controller'] | null = null;
     const hook = jest.spyOn(recordingHook, 'useTakeRecording').mockImplementation((...args) => {
         const result = original(...args);
-        const controller = new Proxy(result.controller, { get(target, key, receiver) {
-            if (key === 'locked') return () => recordingLocked;
-            const value = Reflect.get(target, key, receiver);
-            return typeof value === 'function' ? value.bind(target) : value;
-        } });
-        return { ...result, controller };
+        if (sourceController !== result.controller) {
+            sourceController = result.controller;
+            wrappedController = new Proxy(result.controller, { get(target, key, receiver) {
+                if (key === 'locked') return () => recordingLocked;
+                const value = Reflect.get(target, key, receiver);
+                return typeof value === 'function' ? value.bind(target) : value;
+            } });
+        }
+        return { ...result, controller: wrappedController! };
     });
-    await open(mixed); await press(t('beat.library.open'));
-    const commit = mockLibrarySheetProps.onCommit, intent = mockLibrarySheetProps.placement();
-    const asset = soundAsset(BEAT_SOUNDS[0], current().tempo.bpm), before = JSON.stringify(current());
-    recordingLocked = true; mockAnnounce.mockClear();
-    let committed = true;
-    await act(async () => { committed = commit(asset, intent); });
-    expect(committed).toBe(false); expect(JSON.stringify(current())).toBe(before); expect(mockAnnounce).not.toHaveBeenCalled();
-    recordingLocked = false; hook.mockRestore();
+    try {
+        await open(mixed); await press(t('beat.library.open'));
+        const commit = mockLibrarySheetProps.onCommit, intent = mockLibrarySheetProps.placement();
+        const asset = soundAsset(BEAT_SOUNDS[0], current().tempo.bpm), before = JSON.stringify(current());
+        recordingLocked = true; mockAnnounce.mockClear();
+        let committed = true;
+        await act(async () => { committed = commit(asset, intent); });
+        expect(committed).toBe(false); expect(JSON.stringify(current())).toBe(before); expect(mockAnnounce).not.toHaveBeenCalled();
+        recordingLocked = false;
 
-    await act(async () => dropBeat(mockId));
-    mockAnnounce.mockClear();
-    await act(async () => { committed = commit(asset, intent); });
-    expect(committed).toBe(false); expect(getBeat(mockId)).toBeUndefined(); expect(mockAnnounce).not.toHaveBeenCalled();
+        await act(async () => dropBeat(mockId));
+        mockAnnounce.mockClear();
+        await act(async () => { committed = commit(asset, intent); });
+        expect(committed).toBe(false); expect(getBeat(mockId)).toBeUndefined(); expect(mockAnnounce).not.toHaveBeenCalled();
+    } finally { hook.mockRestore(); }
 });
 test('Song starter Sounds use the snapped locator/audio lane at Add after editor placement drift and undo exactly once', async () => {
     const before = await open(mixed);

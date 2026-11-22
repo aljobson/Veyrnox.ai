@@ -612,7 +612,7 @@ export default function BeatEditor() {
                         {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
                             editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId}
                             locator={arrangementLocator} onLocatorChange={setArrangementLocator} snap={arrangementSnap} onSnapChange={changeArrangementSnap}
-                            playing={playing} step={step} disabled={patternLocked}
+                            playing={playing} step={step} disabled={patternLocked} navigationDisabled={locked || historyBusy}
                             announce={setSaid} onHold={setHeld} onRevealLane={revealLane} layout={layout} /> : null}
                         {midiVisible && midiTrack ? <BeatMidiRecordPanel track={midiTrack}
                             phase={midiPhase} noteCount={midiView.noteCount} countIn={midiCountIn} quantise={midiQuantise}

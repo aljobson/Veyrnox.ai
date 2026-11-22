@@ -21,7 +21,8 @@ type Props = {
     manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void;
     editTrackId: string | undefined; onEditTrackChange: (trackId: string) => void;
     locator: number; onLocatorChange: (tick: number) => void; snap: number; onSnapChange: (snap: number) => void;
-    playing: boolean; step: number | null; disabled: boolean; announce: (message: string) => void; onHold: (held: boolean) => void;
+    playing: boolean; step: number | null; disabled: boolean; navigationDisabled: boolean;
+    announce: (message: string) => void; onHold: (held: boolean) => void;
     onRevealLane: (lane: ComponentRef<typeof View> | null) => void;
     layout: BeatEditorLayout;
 };
@@ -35,7 +36,7 @@ export function restoreBeatLibraryTriggerFocus(
     const node = resolve(trigger);
     if (node) focus(node);
 }
-export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, locator, onLocatorChange, snap, onSnapChange, playing, step, disabled, announce, onHold, onRevealLane, manualRun, layout }: Props) {
+export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, locator, onLocatorChange, snap, onSnapChange, playing, step, disabled, navigationDisabled, announce, onHold, onRevealLane, manualRun, layout }: Props) {
     const s = useThemedStyles(sheets);
     const [zoom, setZoom] = useState(96);
     const [copy, setCopy] = useState(false);
@@ -86,8 +87,8 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     const [trackName, setTrackName] = useState(editTrack?.name ?? '');
     const laneHeights = doc.tracks.map(track => heights[track.id] ?? MIN_LANE_HEIGHT);
     const head = tickToX(playing ? (step ?? 0) * 240 : locator, zoom);
-    const searchContext = useRef({ doc, disabled, zoom, end, onEditTrackChange, selectCurrentPattern, announce });
-    searchContext.current = { doc, disabled, zoom, end, onEditTrackChange, selectCurrentPattern, announce };
+    const searchContext = useRef({ doc, disabled, navigationDisabled, zoom, end, onEditTrackChange, selectCurrentPattern, announce });
+    searchContext.current = { doc, disabled, navigationDisabled, zoom, end, onEditTrackChange, selectCurrentPattern, announce };
     useEffect(() => { if (!selectedRegion) setSelectedId(null); }, [selectedRegion]);
     useEffect(() => { setTrackName(editTrack?.name ?? ''); }, [editTrack?.id, editTrack?.name]);
     useEffect(() => {
@@ -110,21 +111,21 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
         onRevealLane(null);
     }, [onRevealLane]);
     const choose = (region: BeatRegionDoc, track: BeatTrackDoc) => {
-        if (disabled) return;
+        if (navigationDisabled) return;
         setSelectedId(region.id); onEditTrackChange(track.id);
-        if (region.pattern && region.pattern !== doc.currentPattern) selectCurrentPattern(region.pattern);
+        if (!disabled && region.pattern && region.pattern !== doc.currentPattern) selectCurrentPattern(region.pattern);
         announce(regionLabel(doc, track, region));
     };
-    const setPosition = (value: number) => { if (!disabled) onLocatorChange(clampLocator(value, end)); };
+    const setPosition = (value: number) => { if (!navigationDisabled) onLocatorChange(clampLocator(value, end)); };
     const chooseSearchResult = useCallback((result: ClipSearchResult) => {
         const current = searchContext.current;
-        if (current.disabled) return;
+        if (current.navigationDisabled) return;
         const track = current.doc.tracks.find(item => item.id === result.trackId);
         const region = track?.regions.find(item => item.id === result.regionId);
         if (!track || !region) return;
         setSelectedId(region.id);
         current.onEditTrackChange(track.id);
-        if (region.pattern && region.pattern !== current.doc.currentPattern) {
+        if (!current.disabled && region.pattern && region.pattern !== current.doc.currentPattern) {
             current.selectCurrentPattern(region.pattern);
         }
         current.announce(regionLabel(current.doc, track, region));
@@ -177,14 +178,14 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
             <Button ref={libraryTrigger} variant="secondary" label={t('beat.library.open')} disabled={disabled} onPress={() => setLibraryOpen(true)} />
             <Button variant="secondary" label={t('beatLabs.sounds')} disabled={disabled} onPress={() => setSoundsOpen(true)} />
         </View>
-        <BeatClipSearch doc={doc} choose={chooseSearchResult} disabled={disabled} />
+        <BeatClipSearch doc={doc} choose={chooseSearchResult} disabled={navigationDisabled} />
         <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} disabled={disabled} />
         <View style={s.timeline}>
             <View style={s.headers}>
                 <View style={{ height: RULER_HEIGHT }} />
                 {doc.tracks.map((track, index) => <Pressable key={track.id} accessibilityRole="button" accessibilityLabel={track.name}
-                    accessibilityState={{ selected: editTrack?.id === track.id, disabled }} disabled={disabled}
-                    onPress={() => { if (!disabled) onEditTrackChange(track.id); }}
+                    accessibilityState={{ selected: editTrack?.id === track.id, disabled: navigationDisabled }} disabled={navigationDisabled}
+                    onPress={() => { if (!navigationDisabled) onEditTrackChange(track.id); }}
                     onLayout={event => { const height = Math.max(MIN_LANE_HEIGHT, event.nativeEvent.layout.height); setHeights(values => values[track.id] === height ? values : { ...values, [track.id]: height }); }}
                     style={[s.header, { minHeight: laneHeights[index] }, editTrack?.id === track.id && s.selected]}><Text variant="caption">{track.name}</Text></Pressable>)}
             </View>
@@ -210,8 +211,8 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
             </ScrollView>
         </View>
         <View style={s.controls}>
-            <Button size="md" variant="secondary" label={t('beat.ruler.left')} disabled={disabled} onPress={() => setPosition(locator - snap)} />
-            <Button size="md" variant="secondary" label={t('beat.ruler.right')} disabled={disabled} onPress={() => setPosition(locator + snap)} />
+            <Button size="md" variant="secondary" label={t('beat.ruler.left')} disabled={navigationDisabled} onPress={() => setPosition(locator - snap)} />
+            <Button size="md" variant="secondary" label={t('beat.ruler.right')} disabled={navigationDisabled} onPress={() => setPosition(locator + snap)} />
         </View>
         {selectedRegion && selectedTrack && <BeatRegionInspector doc={doc} track={selectedTrack} region={selectedRegion} snap={snap} locator={locator} ripple={ripple} disabled={disabled} apply={apply} />}
         {libraryOpen ? <BeatSongLibrarySheet layout={layout} disabled={disabled} placement={capturePlacement}
