@@ -32,7 +32,7 @@ describe('isAppLinkRoute: only what the link mapper produces', () => {
     });
     test.each([
         '/', '', '//evil.test/library', '/\\evil.test', 'https://veyrnox.ai/app/library', 'ai.veyrnox.app://library', 'javascript:alert(1)', 'library',
-        '/library/../account', '/create/..', '/create/.', '/account/security', '/delete-account', '/dev-s1-editor', '/cinema/probe?code=a&token=b',
+        '/library/../account', '/create/..', '/create/.', '/account/security', '/delete-account', '/dev-s1-editor', '/dev-s9-editor-media', '/cinema/probe?code=a&token=b',
         '/team-invite', '/team-invite?token=', '/team-invite?token=a b', `/team-invite?token=${TOKEN}&next=//evil.test`, '/oauth-consent?authorization_id=x',
         '/library#//evil.test', '/library?x=y', '/create/video?prompt=<script>', `/job/${ID}/extra`, '/cinema?section=other', ' /library',
     ])('refuses %p', (route) => {

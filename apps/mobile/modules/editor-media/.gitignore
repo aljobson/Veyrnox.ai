@@ -1,0 +1,5 @@
+.build/
+DerivedData/
+*.partial
+*.spool
+probe-report.json

@@ -1,3 +1,4 @@
+import { documentIdentity } from './editorBridge';
 import { updateSequenceClip, setSequenceTransition } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
 import { colourDefaults, colourProblem } from '../../../../app/veyrnox/_lib/editorColour.mjs';
 import { FILTER_DEFAULTS, evaluatedParameters, parameterKeyframe } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
@@ -31,6 +32,9 @@ function result(run: () => Timeline | { error: unknown }): LookResult {
 export function clipPatch(tl: Timeline, id: string, patch: Partial<Clip>, offset = 0, remove: readonly (keyof Clip)[] = []): LookResult {
     const bad = refusal(tl, id); if (bad) return { refused: bad };
     const clip = selected(tl, id)!;
+    const evaluated = evaluatedParameters(clip, offset);
+    if (clip.parameterKeyframes?.length && !remove.length && Object.entries(patch).every(([key, value]) => documentIdentity(value) === documentIdentity(
+        key === 'filter' ? evaluated.filter : key === 'colourAdjustment' ? evaluated.colour : (clip as Record<string, unknown>)[key]))) return { timeline: tl };
     if (clip.parameterKeyframes?.length && (patch.filter || patch.colourAdjustment) && offset >= 0 && offset < clip.len) {
         const key = parameterKeyframe({ ...clip, ...patch, parameterKeyframes: [] }, offset);
         patch = { ...patch, parameterKeyframes: [...clip.parameterKeyframes.filter(k => k.frame !== offset), key].sort((a, b) => a.frame - b.frame) };
@@ -64,6 +68,8 @@ export function curveResetChannel(tl: Timeline, id: string, channel: string, off
 }
 export const colourReset = (tl: Timeline, id: string, offset = 0): LookResult =>
     clipPatch(tl, id, { colourAdjustment: colourDefaults() }, offset, ['colourAdjustment']);
+export const lookBaseReset = (tl: Timeline, id: string, field: 'colourAdjustment' | 'filter'): LookResult =>
+    clipPatch(tl, id, {}, 0, [field]);
 export function filterSet(tl: Timeline, id: string, key: FilterKey, value: number, offset = 0): LookResult {
     const bad = refusal(tl, id); if (bad) return { refused: bad };
     return clipPatch(tl, id, { filter: { ...lookValues(selected(tl, id)!, offset).filter, [key]: round(value) } }, offset);

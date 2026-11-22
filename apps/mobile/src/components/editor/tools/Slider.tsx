@@ -45,7 +45,7 @@ export function Slider(props: SliderProps) {
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.value}>{format(live)}</Text>
         <View {...responder.panHandlers} onLayout={event => { width.current = event.nativeEvent.layout.width; }}
-            accessibilityRole="adjustable" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }}
+            accessible accessibilityRole="adjustable" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }}
             accessibilityValue={{ min, max, now: live, text: rawText(format(live)) }}
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={event => {

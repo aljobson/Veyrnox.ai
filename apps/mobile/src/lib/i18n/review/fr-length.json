@@ -7026,6 +7026,282 @@
     "ratio": 1.75
   },
   {
+    "id": "editorMotion.picture",
+    "english": "Picture keys",
+    "translation": "Images clés de l’image",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Panoramique à droite",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorMotion.add",
+    "english": "Add keyframe at playhead",
+    "translation": "Ajouter une image clé à la tête de lecture",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Déplacer à la tête de lecture",
+    "ratio": 1.81
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Interpolation",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Accélération",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorMotion.ease-in-out",
+    "english": "Ease in and out",
+    "translation": "Accélération et décélération",
+    "ratio": 1.87
+  },
+  {
+    "id": "editorMotion.inverted",
+    "english": "Invert mask",
+    "translation": "Inverser le masque",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorMotion.feather",
+    "english": "Mask feather",
+    "translation": "Contour progressif du masque",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorMotion.width",
+    "english": "Mask width",
+    "translation": "Largeur du masque",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorMotion.addMask",
+    "english": "Add mask keyframe at playhead",
+    "translation": "Ajouter une image clé du masque à la tête de lecture",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorMotion.deleteMask",
+    "english": "Delete mask key {n}",
+    "translation": "Supprimer l’image clé du masque {n}",
+    "ratio": 1.84
+  },
+  {
+    "id": "editorMotion.resetMask",
+    "english": "Reset mask",
+    "translation": "Réinitialiser le masque",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorMotion.keyColor",
+    "english": "Background key colour",
+    "translation": "Couleur de découpe de l’arrière-plan",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorMotion.keyTolerance",
+    "english": "Key colour tolerance",
+    "translation": "Tolérance de la couleur de découpe",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorMotion.keyFeather",
+    "english": "Key edge feather",
+    "translation": "Adoucissement du bord de découpe",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.resetSmart",
+    "english": "Reset Smart picture",
+    "translation": "Réinitialiser l’image intelligente",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorMotion.left",
+    "english": "Move left",
+    "translation": "Déplacer à gauche",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorMotion.right",
+    "english": "Move right",
+    "translation": "Déplacer à droite",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorMotion.up",
+    "english": "Move up",
+    "translation": "Déplacer vers le haut",
+    "ratio": 3
+  },
+  {
+    "id": "editorMotion.down",
+    "english": "Move down",
+    "translation": "Déplacer vers le bas",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorFont.title",
+    "english": "Custom fonts",
+    "translation": "Polices personnalisées",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Gérer les polices personnalisées",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorFont.removeConfirmTitle",
+    "english": "Remove custom font?",
+    "translation": "Supprimer la police personnalisée ?",
+    "ratio": 1.84
+  },
+  {
+    "id": "editorFont.removeConfirm",
+    "english": "Remove font",
+    "translation": "Supprimer la police",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorFont.importTitle",
+    "english": "Add a custom font",
+    "translation": "Ajouter une police personnalisée",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorFont.name",
+    "english": "Font name",
+    "translation": "Nom de la police",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorFont.usage",
+    "english": "Usage permission",
+    "translation": "Autorisation d’utilisation",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorFont.choose",
+    "english": "Choose font file",
+    "translation": "Choisir le fichier de police",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorFont.checking",
+    "english": "Checking font…",
+    "translation": "Vérification de la police…",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Ajouter une police personnalisée",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorPack.title",
+    "english": "Asset Packs",
+    "translation": "Packs de ressources",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorPack.open",
+    "english": "Open Asset-Pack JSON",
+    "translation": "Ouvrir le JSON d’un pack de ressources",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorPack.emptyTitle",
+    "english": "No asset packs yet",
+    "translation": "Aucun pack de ressources pour le moment",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorPack.search",
+    "english": "Search this asset pack",
+    "translation": "Rechercher dans ce pack de ressources",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorPack.rights",
+    "english": "Usage rights",
+    "translation": "Droits d’utilisation",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPack.progress.creating",
+    "english": "Hashing local files… {done} of {total}",
+    "translation": "Calcul des empreintes des fichiers locaux… {done} sur {total}",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Choisir les fichiers multimédias du pack",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Réinitialisez d’abord la vitesse, la lecture inversée et l’arrêt sur image de ce clip.",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorScenes.hard",
+    "english": "Hard cuts",
+    "translation": "Coupes franches",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorScenes.applied",
+    "english": "Split at {value1} scene changes. You can undo this in one step.",
+    "translation": "Le clip a été scindé selon {value1} changements de scène. Vous pouvez annuler le tout en une seule étape.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorClips.title",
+    "english": "Clip Finder",
+    "translation": "Détecteur de clips",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorClips.find",
+    "english": "Find clips",
+    "translation": "Trouver des clips",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorClips.again",
+    "english": "Find again",
+    "translation": "Relancer la recherche",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "Meilleur choix",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorClips.blocker.resolution",
+    "english": "Clip Finder handles videos up to 720p.",
+    "translation": "Le Détecteur de clips prend en charge les vidéos jusqu’à 720p.",
+    "ratio": 1.63
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

@@ -349,5 +349,13 @@
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
   "videoShape.portrait": "Same word in French for vertical orientation; machine translation, native review pending.",
-  "tabs.studio": "Studio is the established French product label for this creative workspace."
+  "tabs.studio": "Studio is the established French product label for this creative workspace.",
+  "editorMotion.rotation": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.x": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.y": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.arc": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.point": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorPack.category.Photos": "Photos is the standard French category label and is spelled identically to English.",
+  "editorPack.category.Avatars": "Avatars is the standard French category label and is spelled identically to English."
 }

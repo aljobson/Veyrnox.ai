@@ -1,3 +1,5 @@
+import type { MotionActions } from './useMotionActions';
+import type { MaskActions } from './useMaskActions';
 import type { LookActions } from './useLookActions';
 import type { AudioSettingsActions } from './useAudioSettingsActions';
 import type { OriginalAudioActions } from './useOriginalAudio';
@@ -9,8 +11,10 @@ import type { Canvas, Clip, EditorTrack, Media, Selection, TextClip, Timeline, T
 import type { ProjectDocument } from '../../../lib/editorBridge';
 import type { SlotKind } from '../../../lib/sources';
 import type { Kind } from '../../../lib/media';
+import type { EditorFontActions } from '../useEditorFonts';
 
 export type ToolPanelProps = {
+    motionActions?: MotionActions; maskActions?: MaskActions; fontActions?: EditorFontActions;
     lookActions?: LookActions;
     audioActions?: AudioSettingsActions; originalAudio?: OriginalAudioActions;
     textActions?: TextActions; captionActions?: CaptionActions;
@@ -19,7 +23,7 @@ export type ToolPanelProps = {
     patchSelected(patch: Partial<Clip & TextClip>): void; applyTimeline(timeline: Timeline): boolean;
     availableMedia: Media[]; addMediaToTimeline(media: Media): unknown;
     libraryPending: boolean; replacing: boolean; setLibraryKind(kind: SlotKind): void;
-    choosePhotos(): Promise<void>; chooseFiles(): Promise<void>;
+    choosePhotos(): Promise<void>; chooseFiles(): Promise<void>; openAssetPacks?(): void;
     selectClip(selection: Selection): void; openVoiceover(): void; openGenerate(kind: Kind): void;
     addTimelineTrack(kind: TrackKind): unknown; addText(): void; addCaption(): void; updateSelectedText(text: string): void;
     setFrame(frame: number): void; setPlaying(playing: boolean): void; addTimelineMarker(): unknown;

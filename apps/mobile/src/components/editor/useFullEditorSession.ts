@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../auth/AuthProvider';
 
 import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
+import { editorMedia } from '../../lib/editorMedia';
 import { probeDuration } from '../../lib/editorMediaDuration';
 import { documentIdentity, type ProjectDocument } from '../../lib/editorBridge';
 import { getDocument, type DocumentHead } from '../../lib/editorProjects';
@@ -22,7 +23,7 @@ import { framesIn, timelineOf, type Clipboard, type Media, type Selection, type 
 import { fetchProject } from '../../lib/projects';
 import type { SlotKind } from '../../lib/sources';
 
-type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'effects' | 'transitions' | 'filters' | 'animation' | 'markers' | 'brand' | 'adjust';
+type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'effects' | 'transitions' | 'filters' | 'animation' | 'motion' | 'mask' | 'markers' | 'brand' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
 const EDITOR_LOAD_TIMEOUT_MS = 15000;
 
@@ -119,6 +120,9 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     }, []);
 
     const baseline = useCallback((head: DocumentHead) => {
+        // A baseline replaces the whole project document (initial load, recovery, conflict,
+        // restore or “use saved”). Fence native work before adopting the replacement.
+        void editorMedia.bumpProjectGeneration(projectId).catch(() => undefined);
         editRevisionRef.current++;
         documentRef.current = head.document; revisionRef.current = head.revision; dirtyRef.current = false;
         pastRef.current = []; futureRef.current = [];
@@ -194,6 +198,10 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
     const { save, leaveEditor, beginImport, replacing, saveStatus, dirty, revision, saving } = sync;
 
     useEffect(() => {
+        return () => { void editorMedia.bumpProjectGeneration(projectId).catch(() => undefined); };
+    }, [projectId]);
+
+    useEffect(() => {
         mounted.current = true;
         let cancelled = false;
         // Only the document gates the editor. The project name/workspace and the media list are best effort, so a slow or failing one cannot hide the timeline.
@@ -243,17 +251,25 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         setHistory({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
     }, [commitDocument]);
 
-    const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string, requireCopy = false) => {
+    const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string,
+        policy: boolean | { requireCopy?: boolean; backup?: boolean; expectedSha256?: string; expectedKind?: 'image' | 'video' | 'audio';
+            onProgress?(stage: 'copying' | 'verifying'): void; live?(): boolean } = {}) => {
+        const options = typeof policy === 'boolean' ? { requireCopy: policy } : policy;
         const token = sync.beginImport(); if (!token) return null;
         const task = beginSessionTask();
         try {
             const seconds = typeof asset.duration === 'number' && Number.isFinite(asset.duration) && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? null : await probeDuration(asset.uri);
             if (!token.valid()) return null;
-            const file = await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
-            if (!token.valid()) return null;
-            if (requireCopy && !file) return null;
+            const verified = options.expectedSha256 || options.expectedKind || options.onProgress || options.live;
+            const file = verified ? await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds,
+                { expectedSha256: options.expectedSha256, expectedKind: options.expectedKind, onProgress: options.onProgress, live: options.live })
+                : await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
+            if (!token.valid()) { if (file) await editorDeviceMedia.remove(projectId, mediaId); return null; }
+            if (options.requireCopy && !file) return null;
             setLocalMediaUris(current => ({ ...current, [mediaId]: file?.file || asset.uri }));
-            if (file) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => { if (source && sync.live() && task.current()) applyBackup(mediaId, source); });
+            if (file && options.backup !== false) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => {
+                if (source && sync.live() && task.current()) applyBackup(mediaId, source);
+            });
             return seconds ?? (kind === 'image' ? 3 : 10);
         } finally { token.end(); }
     };

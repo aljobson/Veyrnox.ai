@@ -26,12 +26,15 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
 test.each(complete)('%s owns all Studio directory copy without English fallback', (_locale, own) => {
     for (const key of studioKeys) expect(Object.hasOwn(own, key)).toBe(true);
 });
+test.each(complete)('%s names Clip Finder locally in its 720p blocker', (_locale, own) => {
+    expect(own['editorClips.blocker.resolution']).toContain(own['editorClips.title']);
+});
 test('Studio summary only promises workspaces available in every build', () => {
     expect(en['studio.summary']).not.toMatch(/\bfilm\b/i);
 });
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(108);
+    expect(unused).toHaveLength(115);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
