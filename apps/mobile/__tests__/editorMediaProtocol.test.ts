@@ -1,0 +1,69 @@
+import { EDITOR_MEDIA_LIMITS, frameTimestampUs, parseError, parseFrameArtifact, parseMediaInfo, parseMp4Artifact, parsePcmArtifact, validateBeginEncodeRequest,
+    validateDecodePcmRequest, validateFrameBatch, validateOwnedFileUri, validateSampleFramesRequest, type EncodeSession } from '../src/lib/editorMedia/protocol';
+
+test('owned file URLs fail closed before native canonical-root validation', () => {
+    expect(validateOwnedFileUri('file:///data/veyrnox-editor-media/a/p/input.mp4')).toBe(true);
+    for (const uri of ['https://example.test/x', 'file://host/x', 'file:///x?token=1', 'file:///x#fragment', 'file:///a/../secret', 'file:///a/%2e%2e/secret',
+        'file:///a/%2Fsecret', 'file:///a\\secret', 'file:///a\0secret']) expect(validateOwnedFileUri(uri)).toBe(false);
+});
+
+test('analysis requests are finite, exact and bounded to thirty seconds', () => {
+    const uri = 'file:///data/veyrnox-editor-media/a/p/input.mp4';
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900 })).toBe(true);
+    expect(validateDecodePcmRequest({ uri, fromSeconds: 1, toSeconds: 31, sampleRate: 48000, channels: 2 })).toBe(true);
+    for (const value of [NaN, Infinity, -1]) expect(validateSampleFramesRequest({ uri, fromSeconds: value, toSeconds: 2, maxFrames: 1 })).toBe(false);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30.01, maxFrames: 1 })).toBe(false);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 1, maxFrames: 901 })).toBe(false);
+    expect(validateDecodePcmRequest({ uri, fromSeconds: 0, toSeconds: 1, sampleRate: 44100, channels: 2 })).toBe(false);
+    expect(validateDecodePcmRequest({ uri, fromSeconds: 0, toSeconds: 1, sampleRate: 48000, channels: 3 })).toBe(false);
+});
+
+test('encode schema fixes pixel layout, exact timestamp rounding and batch bounds', () => {
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000 })).toBe(true);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, audioBitRate: 192_000,
+        audioArtifactId: 'vx-pcm-audio-1' })).toBe(true);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, audioArtifactId: '../pcm' })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, audioBitRate: 192_000 })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 8_000_000, audioBitRate: 192_000 })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1281, height: 720, fps: 30, videoBitRate: 6_000_000 })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 721, fps: 30, videoBitRate: 6_000_000 })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 99_999 })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, audioBitRate: 63_999,
+        audioArtifactId: 'vx-pcm-audio-1' })).toBe(false);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 29.97, videoBitRate: 6_000_000 })).toBe(false);
+    expect([0, 1, 2, 3].map(index => frameTimestampUs(index, 30))).toEqual([0, 33333, 66667, 100000]);
+    const session: EncodeSession = { sessionId: 's1', token: 't1', project: 'p1', generation: 1, width: 1280, height: 720, fps: 30, nextIndex: 0 };
+    const frame = (index: number) => ({ version: 1 as const, uri: `file:///cache/frame-${index}.rgba`, index, timestampUs: frameTimestampUs(index, 30), byteLength: 1280 * 720 * 4,
+        width: 1280, height: 720, stride: 5120, pixelFormat: 'rgba8' as const, colorSpace: 'srgb' as const });
+    expect(validateFrameBatch([frame(0), frame(1)], session)).toBe(true);
+    expect(validateFrameBatch(Array.from({ length: 9 }, (_, index) => frame(index)), session)).toBe(false);
+    expect(validateFrameBatch([{ ...frame(0), stride: 1280 }], session)).toBe(false);
+    expect(validateFrameBatch([{ ...frame(0), timestampUs: 33333 }], session)).toBe(false);
+    expect(validateFrameBatch([{ ...frame(0), version: 2 }], session)).toBe(false);
+    expect(8 * frame(0).byteLength).toBeLessThanOrEqual(EDITOR_MEDIA_LIMITS.batchBytes);
+});
+
+test('native results are strictly bounded and native prose never escapes', () => {
+    expect(parseError({ ok: false, code: 'invalid-input', reason: 'source-too-large', message: 'private AVFoundation detail' }))
+        .toEqual({ ok: false, code: 'invalid-input', reason: 'source-too-large' });
+    expect(parseError({ ok: false, code: 'unknown', reason: 'x' })).toBeNull();
+    const base = { ok: true, artifactId: 'artifact-1', uri: 'file:///cache/a', size: 1024 };
+    expect(parseFrameArtifact({ ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
+        timestampsUs: [0, 33333], preferredTransform: [1, 0, 0, 1, 0, 0] })?.count).toBe(2);
+    expect(parseFrameArtifact({ ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
+        timestampsUs: [0, 0], preferredTransform: [1, 0, 0, 1, 0, 0] })).toBeNull();
+    expect(parsePcmArtifact({ ...base, size: 11_520_000, kind: 'pcm', sampleRate: 48000, channels: 2, frames: 1_440_000, encoding: 'f32le-interleaved' })?.channels).toBe(2);
+    expect(parsePcmArtifact({ ...base, kind: 'pcm', sampleRate: 48000, channels: 2, frames: 100, encoding: 'f32le-interleaved' })).toBeNull();
+    expect(parsePcmArtifact({ ...base, kind: 'pcm', sampleRate: 44100, channels: 2, frames: 1, encoding: 'f32le-interleaved' })).toBeNull();
+    expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000, videoCodec: 'avc1',
+        audioCodec: 'mp4a', audioSampleRate: 48000, audioChannels: 2 })?.frames).toBe(900);
+    expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 29_999_999, videoCodec: 'avc1' })).toBeNull();
+    expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000, videoCodec: 'avc1',
+        audioCodec: 'mp4a' })).toBeNull();
+    expect(parseMp4Artifact({ ...base, kind: 'mp4', size: EDITOR_MEDIA_LIMITS.mp4ArtifactBytes + 1, width: 1, height: 1, fps: 30, frames: 1,
+        durationUs: 1, videoCodec: 'avc1' })).toBeNull();
+    expect(parseMediaInfo({ ok: true, duration: 2, hasVideo: true, hasAudio: false, width: 640, height: 480,
+        transform: [1, 0, 0, 1, 0, 0], nominalFrameRate: 0, videoCodec: 'avc1', videoStartUs: 0, videoDurationUs: 2_000_000 }))
+        .toEqual({ durationUs: 2_000_000, hasVideo: true, hasAudio: false, width: 640, height: 480,
+            preferredTransform: [1, 0, 0, 1, 0, 0], videoCodec: 'avc1', videoStartUs: 0, videoDurationUs: 2_000_000 });
+});
