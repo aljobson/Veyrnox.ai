@@ -63,7 +63,7 @@ test('mobile template: flag-off render tree matches the frozen checkout', () => 
   const trees = versions(file).map(source => {
     let state = 0;
     const Component = load(file, source, {
-      react: { useEffect() {}, useState(initial) { const values = [preset, false, false, 0, preset.prompt, promptHelpers.templateClipPhotoPrompt(promptHelpers.TEMPLATE_CLIP_PROMPT, false), null, 0, null, [model], {}]; const i = state++; return [i < values.length ? values[i] : typeof initial === 'function' ? initial() : initial, () => {}]; } },
+      react: { useEffect() {}, useRef: current => ({ current }), useState(initial) { const values = [preset, false, false, 0, preset.prompt, promptHelpers.templateClipPhotoPrompt(promptHelpers.TEMPLATE_CLIP_PROMPT, false), null, 0, null, [model], {}]; const i = state++; return [i < values.length ? values[i] : typeof initial === 'function' ? initial() : initial, () => {}]; } },
       'react-native': { ScrollView: 'scroll', View: 'view' }, 'expo-router': { Stack: { Screen: 'screen' }, useLocalSearchParams: () => ({ id: preset.id }), useRouter: () => ({}) },
       '../../../lib/i18n': { t }, '../../../lib/i18n/translate': { rawText: value => value },
       '../../../components/ui': { Button: 'button', Card: 'card', Chip: 'chip', Text: 'text', TextField: 'field', themedStyles: () => ({}), useThemedStyles: () => ({}) },

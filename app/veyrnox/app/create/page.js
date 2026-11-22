@@ -54,6 +54,7 @@ import { buildCharacterPrompt, sanitizeOddlingPicks } from '../../_lib/character
 import { DrawOnImage } from '../../_components/DrawOnImage';
 import { TemplatePhotoSlots } from '../../_components/TemplatePhotoSlots';
 import { SourcePickers } from '../../_components/SourcePickers';
+import { TemplatePhotoExample } from '../../_components/TemplatePhotoExample';
 import { attachCapacity, attachPool, planAttachments } from '../../../../lib/createAttach.mjs';
 import { prepareUploads, needsConversion } from '../../_lib/uploadConvert.mjs';
 import { LibraryPicker } from '../../_components/LibraryPicker';
@@ -1030,6 +1031,7 @@ function CreateStudio() {
           {templatesOpen && <TemplatePicker models={models} goal={goal} selectedKind={model?.kind} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
           {['swap-recast', 'swap-quick'].includes(modelId) && <p role="note" data-testid="swap-consent-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.swapConsentNotice')}</p>}
           {modelId === SEEDANCE_REFERENCE_MODEL_ID && <p role="note" data-testid="reference-likeness-notice" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
+          {(activeTemplate || keptTemplate)?.kind === 'image' && templateImageRequired && !boundCount && <div className="mt-3"><TemplatePhotoExample kind="scene" /></div>}
           <div className="scroll-mt-24" data-assistant-target={Object.keys(media).length ? 'create.upload' : undefined}>
             {photosUnavailable ? null : boundCount ? <TemplatePhotoSlots key={`${sourceTemplateId}|${modelId}|${accountEpoch}`} count={boundCount} hints={templatePhotoHints(fidelity)} files={sourceList(sources.image).map(source => source.file || (source.assetId || source.sourceKey ? { name: source.label } : null))} locked={sending || attachConverting} onBusy={(index, busy) => setTemplateSlotsBusy(previous => ({ ...previous, [index]: busy }))} onChange={(index, file) => {
               setSources(previous => ({ image: Array.from({ length: boundCount }, (_, i) => {

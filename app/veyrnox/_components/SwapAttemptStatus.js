@@ -13,10 +13,11 @@ function Attempt({ attempt: a }) {
     if (poll) void swapActions.reconcile(a.templateId, a.key).catch(() => {});
   }, [poll, a.accountId, a.templateId, a.key]);
   const success = ['queued', 'running', 'succeeded'].includes(a.state);
-  return <div className="mt-4 space-y-4 rounded-2xl border border-vx-border p-4" data-swap-attempt={a.state}>
+  return <div className="mt-4 space-y-4 rounded-2xl border border-vx-border p-4" data-swap-attempt={a.state} data-swap-attempt-key={a.key}>
     <p role="status">{t(`presets.swap.${a.state}`, { credits: a.spent ?? a.body?.max_charge_credits })}</p>
     {/* Same reading as Create's canvas: the site-wide bar prints the percent, this prints its clock. */}
     {['queued', 'running'].includes(a.state) && a.job_id && <GeneratingProgress jobId={a.job_id} />}
+    {a.state === 'refunded' && <p className="text-vx-danger">{t('presets.swap.refundedReason')}</p>}
     {a.state === 'not_charged' && <p className="text-vx-danger">{t(swapErrorKey(a.errorCode))}</p>}
     {Number.isFinite(a.balance) && <p className="text-vx-money">{t('presets.swap.balance', { credits: a.balance })}</p>}
     {a.state === 'unresolved' && <div className="flex flex-wrap gap-4">
@@ -30,5 +31,5 @@ function Attempt({ attempt: a }) {
 // Deliberately outside the availability branch: a gate refusal cannot hide money history.
 export function SwapAttemptStatus({ templateId }) {
   const { attempts } = useSwapDraft(templateId);
-  return <>{attempts.filter(a => a.body).map(a => <Attempt key={`${a.accountId}:${a.key}`} attempt={a} />)}</>;
+  return <>{attempts.filter(a => a.body).reverse().map(a => <Attempt key={`${a.accountId}:${a.key}`} attempt={a} />)}</>;
 }

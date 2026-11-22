@@ -7,6 +7,7 @@ import type { CatalogModel } from '../lib/media';
 import { slotsFor, type GenerationReference } from '../lib/sources';
 import { t } from '../lib/i18n';
 import { ds } from '../theme';
+import { TemplatePhotoExample } from './templates/TemplatePhotoExample';
 
 export function TemplatePhotoSlots({ count, hints = [], model, api, references, onReferences, onBusy }: {
     count: number; hints?: readonly string[]; model: CatalogModel; api: ApiClient; references: readonly GenerationReference[];
@@ -23,6 +24,7 @@ export function TemplatePhotoSlots({ count, hints = [], model, api, references, 
     }
     return <View style={{ gap: ds.space.md }}>
         <Text>{t('presets.fidelity.orderedPhotos', { count })}</Text>
+        <TemplatePhotoExample kind="fullBody" />
         {Array.from({ length: count }, (_, index) => <View key={index} style={{ gap: ds.space.sm }}>
             {hints[index] ? <Text>{hints[index]}</Text> : null}
             <SourcePicker
