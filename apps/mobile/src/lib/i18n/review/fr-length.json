@@ -5916,6 +5916,42 @@
     "ratio": 1.64
   },
   {
+    "id": "beat.midiRecord.record",
+    "english": "Record MIDI",
+    "translation": "Enregistrer en MIDI",
+    "ratio": 1.73
+  },
+  {
+    "id": "beat.midiRecord.status.recording",
+    "english": "Recording MIDI",
+    "translation": "Enregistrement MIDI en cours",
+    "ratio": 2
+  },
+  {
+    "id": "beat.midiRecord.status.finishing",
+    "english": "Saving MIDI recording…",
+    "translation": "Enregistrement MIDI en cours de sauvegarde…",
+    "ratio": 1.95
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Réessayer la sauvegarde",
+    "ratio": 2.3
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveNew",
+    "english": "Save as new beat",
+    "translation": "Sauvegarder comme nouveau beat",
+    "ratio": 1.88
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveAsNew",
+    "english": "Save as new beat",
+    "translation": "Sauvegarder comme nouveau beat",
+    "ratio": 1.88
+  },
+  {
     "id": "beat.pad.kick",
     "english": "Kick",
     "translation": "Grosse caisse",

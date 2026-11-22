@@ -104,3 +104,18 @@ test.each(ACTIVE_LOCALES.filter(c => c !== 'en'))('%s guide buttons match the re
     ]) expect(c[`helpGuides.content.${guide}.body`]).toContain(c[button]);
     for (const [key, body] of Object.entries(c)) if (key.startsWith('helpGuides.content.') && key.endsWith('.body')) expect(body).not.toMatch(/Use this template|Generate|From library|Sign in/);
 });
+
+test.each(ACTIVE_LOCALES)('%s MIDI capture accessibility copy resolves labels and progress without raw keys', locale => {
+    chooseLocale(locale);
+    const keyLabel = tAccessibility('beat.midiRecord.key.label', { note: 'C4', velocity: 96, state: t('beat.midiRecord.key.capturing') });
+    const countIn = tAccessibility('beat.midiRecord.countInProgress', { current: 2, total: 4 });
+    const noteCount = tAccessibility('beat.midiRecord.noteCount', { count: 3 });
+    for (const value of [keyLabel, countIn, noteCount, tAccessibility('beat.midiRecord.key.hint')]) {
+        expect(value).not.toMatch(/beat\.midiRecord|\{(?:note|velocity|state|current|total|count)\}|[\u2068\u2069]/);
+    }
+    expect(keyLabel).toContain('C4');
+    expect(keyLabel).toContain('96');
+    expect(countIn).toContain('2');
+    expect(countIn).toContain('4');
+    expect(noteCount).toContain('3');
+});

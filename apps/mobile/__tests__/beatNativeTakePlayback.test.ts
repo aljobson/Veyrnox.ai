@@ -109,8 +109,19 @@ test('a decoded region over the cache budget stays silent instead of stopping a 
         getChannelData: jest.fn(() => new Float32Array(0)) };
     const player = createTakePlayback(context, undefined, undefined,
         { load: jest.fn(async () => oversized) } as unknown as NativeAssetPort, report);
-    await expect(player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 1 }, { startSec: 0, endSec: 2 }, { recording: true }))
+    await expect(player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 1 }, { startSec: 0, endSec: 2 }, { recording: true, assetMode: 'all-supported' }))
         .resolves.toBeUndefined();
     expect(sources).toEqual([]); expect(report).toHaveBeenCalledTimes(1);
     expect((report.mock.calls[0][1] as Error).message).toBe('audio_playback_too_large');
+});
+test('recording asset modes preserve take-only microphone backing and enable supported MIDI-capture backing', async () => {
+    const { context, sources } = fakeContext(), doc = remote(song()), load = jest.fn(async () => stereo());
+    const player = createTakePlayback(context, undefined, undefined, { load } as NativeAssetPort);
+    const window = { fromSec: 0, toSec: 0.15, contextTime: 1 }, bounds = { startSec: 0, endSec: 2 };
+    await player.preload(doc, { recording: true, assetMode: 'takes-only' });
+    await player.window(doc, window, bounds, { recording: true, assetMode: 'takes-only' });
+    expect(load).not.toHaveBeenCalled(); expect(sources).toHaveLength(0);
+    await player.preload(doc, { recording: true, assetMode: 'all-supported' });
+    await player.window(doc, window, bounds, { recording: true, assetMode: 'all-supported' });
+    expect(load).toHaveBeenCalledTimes(1); expect(sources).toHaveLength(1);
 });

@@ -7,9 +7,9 @@ import { searchClips, type ClipSearchResult } from '../../lib/beatNative/clipSea
 import { type BeatDoc } from '../../lib/beatNative/doc';
 import { position } from '../../lib/beatNative/regionActions';
 
-type Props = { doc: BeatDoc; choose: (result: ClipSearchResult) => void };
+type Props = { doc: BeatDoc; choose: (result: ClipSearchResult) => void; disabled?: boolean };
 
-export function BeatClipSearch({ doc, choose }: Props) {
+export function BeatClipSearch({ doc, choose, disabled = false }: Props) {
     const s = useThemedStyles(sheets);
     const [query, setQuery] = useState('');
     const searching = !!query.trim();
@@ -18,7 +18,7 @@ export function BeatClipSearch({ doc, choose }: Props) {
     const clear = () => setQuery('');
     return <View style={s.group} testID="beat-clip-search">
         <TextField label={t('beat.search.label')} accessibilityLabel={t('beat.search.label')}
-            value={query} onChangeText={setQuery} autoCorrect={false} returnKeyType="search"
+            value={query} onChangeText={setQuery} editable={!disabled} autoCorrect={false} returnKeyType="search"
             clearButtonMode="while-editing" onKeyPress={event => {
                 if (event.nativeEvent.key !== 'Escape') return;
                 event.preventDefault?.(); clear();
@@ -26,7 +26,7 @@ export function BeatClipSearch({ doc, choose }: Props) {
         <Text testID="beat-search-status" variant="footnote" tone="secondary" accessibilityLiveRegion="polite">
             {searching ? t('beat.search.count', { count: results.length, shown: visible.length }) : t('beat.search.help')}
         </Text>
-        {searching ? <Button size="md" variant="secondary" label={t('beat.search.clear')} onPress={clear} /> : null}
+        {searching ? <Button size="md" variant="secondary" label={t('beat.search.clear')} disabled={disabled} onPress={clear} /> : null}
         {searching && !results.length ? <Text variant="footnote" tone="secondary">{t('beat.search.empty', { query })}</Text> : null}
         {searching && !!results.length ? <Text variant="bodyStrong" accessibilityRole="header">{t('beat.search.results')}</Text> : null}
         <View style={s.results}>
@@ -38,7 +38,7 @@ export function BeatClipSearch({ doc, choose }: Props) {
                     ? t('beat.search.trackResult', { track: track.name, position: position(region.start) })
                     : t('beat.search.result', { name: result.label, track: track.name, position: position(region.start) });
                 return <Button key={`${result.trackId}:${result.regionId}`} testID={`beat-search-result-${result.regionId}`}
-                    size="md" variant="secondary" label={label} onPress={() => choose(result)}
+                    size="md" variant="secondary" label={label} disabled={disabled} onPress={() => choose(result)}
                     containerStyle={s.result} style={s.resultButton} textStyle={s.resultText} />;
             })}
         </View>

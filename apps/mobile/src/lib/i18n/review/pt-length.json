@@ -3780,6 +3780,18 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Tentar salvar novamente",
+    "ratio": 2.3
+  },
+  {
+    "id": "beat.midiRecord.recovery.retryQuantise",
+    "english": "Retry with quantise",
+    "translation": "Tentar novamente com quantização",
+    "ratio": 1.68
+  },
+  {
     "id": "beat.pad.openhat",
     "english": "Open hat",
     "translation": "Chimbal aberto",

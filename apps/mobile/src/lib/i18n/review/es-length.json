@@ -3750,6 +3750,18 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.midiRecord.key.audition",
+    "english": "preview",
+    "translation": "vista previa",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Reintentar guardado",
+    "ratio": 1.9
+  },
+  {
     "id": "beat.pad.openhat",
     "english": "Open hat",
     "translation": "Hi-hat abierto",

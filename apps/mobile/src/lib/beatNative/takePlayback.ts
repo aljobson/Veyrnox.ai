@@ -2,6 +2,7 @@ import type { BeatAsset, BeatDoc } from './doc';
 import type { EngineContext, ParamLike } from './shared';
 import { audioPieces, loadBeatTake, type AudioTake, type SongWindow } from './takeShared';
 import type { NativeAssetPort } from './nativeAssets';
+import type { RangeAssetMode } from './transport';
 
 const MAX_CACHE_BYTES = 300_000_000;
 export type PlaybackBuffer = {
@@ -140,13 +141,13 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
         loading.set(key, work); return work;
     }
     return {
-        async preload(doc: BeatDoc, options: { recording?: boolean } = {}) {
+        async preload(doc: BeatDoc, options: { recording?: boolean; assetMode?: RangeAssetMode } = {}) {
             const all = new Map<string, { asset: BeatAsset; reverse: boolean; audible: boolean }>();
             const solo = doc.tracks.some(track => track.solo);
             for (const track of doc.tracks) for (const region of track.regions) {
                 if (track.kind !== 'audio' || !region.assetId) continue;
                 const asset = doc.assets?.[region.assetId];
-                if (!asset || asset.source === 'stem' || (options.recording && asset.source !== 'take')) continue;
+                if (!asset || asset.source === 'stem' || (options.recording && options.assetMode !== 'all-supported' && asset.source !== 'take')) continue;
                 const selected = keyOf(asset, doc.tempo.bpm, !!region.reverse);
                 all.set(selected, { asset, reverse: !!region.reverse, audible: !track.mute && (!solo || track.solo) });
             }
@@ -176,10 +177,11 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
             // Sequential decode prevents several large regions from peaking in memory together.
             for (const item of wanted.values()) await buffer(item.asset, doc.tempo.bpm, item.reverse, !!options.recording);
         },
-        async window(doc: BeatDoc, w: SongWindow, bounds: { startSec: number; endSec: number }, options: { recording?: boolean } = {}) {
+        async window(doc: BeatDoc, w: SongWindow, bounds: { startSec: number; endSec: number }, options: { recording?: boolean; assetMode?: RangeAssetMode } = {}) {
             const token = generation;
             await Promise.all(audioPieces(doc, w.fromSec, w.toSec, bounds).map(async piece => {
                 const asset = doc.assets?.[piece.assetId]; if (!asset || asset.source === 'stem') return;
+                if (options.recording && options.assetMode !== 'all-supported' && asset.source !== 'take') return;
                 const decoded = await buffer(asset, doc.tempo.bpm, piece.reverse, !!options.recording);
                 if (!decoded || token !== generation) return;
                 const at = w.contextTime + piece.songTimeSec - w.fromSec;
