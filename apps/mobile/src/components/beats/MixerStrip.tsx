@@ -30,9 +30,17 @@ export function MixerStrip({ track, index, canRemove, onGain, onPan, onMute, onS
             {panLocked ? <Text variant="footnote" tone="secondary">{panLocked}</Text> : null}
             <View style={s.buttons}>
                 <Button size="md" variant={track.mute ? 'primary' : 'secondary'} label={t('beat.mute.short')} accessibilityLabel={t('beat.mute', { track: name })}
-                    accessibilityState={{ selected: track.mute }} onPress={() => onMute(!track.mute)} containerStyle={s.flex} />
+                    accessibilityState={{ selected: track.mute }} onPress={() => onMute(!track.mute)} containerStyle={s.flex} style={track.mute ? s.selected : undefined}>
+                    <Text testID={track.mute ? `mute-selected-${track.id}` : undefined} variant="bodyStrong" tone={track.mute ? 'onAccent' : 'primary'}>
+                        {track.mute ? '✓ ' : ''}{t('beat.mute.short')}
+                    </Text>
+                </Button>
                 <Button size="md" variant={track.solo ? 'primary' : 'secondary'} label={t('beat.solo.short')} accessibilityLabel={t('beat.solo', { track: name })}
-                    accessibilityState={{ selected: track.solo }} onPress={() => onSolo(!track.solo)} containerStyle={s.flex} />
+                    accessibilityState={{ selected: track.solo }} onPress={() => onSolo(!track.solo)} containerStyle={s.flex} style={track.solo ? s.selected : undefined}>
+                    <Text testID={track.solo ? `solo-selected-${track.id}` : undefined} variant="bodyStrong" tone={track.solo ? 'onAccent' : 'primary'}>
+                        {track.solo ? '✓ ' : ''}{t('beat.solo.short')}
+                    </Text>
+                </Button>
                 {canRemove ? <Button size="md" variant="tertiary" label={t('beat.track.remove', { track: name })} onPress={onRemove} containerStyle={s.flex} /> : null}
             </View>
         </View>
@@ -42,4 +50,5 @@ const sheets = themedStyles(p => ({
     strip: { gap: ds.space.md, padding: ds.space.lg, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle },
     buttons: { flexDirection: 'row', gap: ds.space.sm },
     flex: { flex: 1 },
+    selected: { borderWidth: 2, borderColor: p.textPrimary },
 }));

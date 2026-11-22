@@ -26,7 +26,12 @@ export function BeatRecordPanel({ doc, controller, view, playing }: { doc: BeatD
         {view.armedId ? <>
             <Text>{t('beatTakes.headphones')}</Text>
             <Text>{latency ? t('beatTakes.latency', { ms: Math.round(latency.ms) }) : t('beatTakes.notCalibrated')}</Text>
-            <Button label={t('beatTakes.countIn')} accessibilityState={{ checked: countIn }} disabled={locked || calibrate} onPress={() => setCountIn(v => !v)} />
+            <Button variant="secondary" label={t('beatTakes.countIn')} accessibilityRole="switch" accessibilityState={{ checked: countIn }}
+                disabled={locked || calibrate} onPress={() => setCountIn(v => !v)}>
+                <Text testID={countIn ? 'beat-count-in-selected' : undefined} variant="bodyStrong">
+                    {countIn ? '✓ ' : ''}{t('beatTakes.countIn')}
+                </Text>
+            </Button>
             <Button label={t('beatTakes.calibrate')} disabled={locked || playing || calibrate} onPress={() => setCalibrate(true)} />
             <Button label={t(locked ? 'beatTakes.stop' : 'beatTakes.record')} disabled={readOnly || calibrate || view.status === 'finishing' || view.status === 'opening'} onPress={() => void (locked ? controller.finish() : controller.record(countIn))} />
         </> : null}
