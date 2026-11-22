@@ -49,7 +49,7 @@ const post = (inputs, extra = {}) => generations.POST(new Request('https://veyrn
     body: JSON.stringify({ model_id: model.id, idempotency_key: 'crun-template-test', source_key: SOURCE, consent: true, preset: withNegative.id, inputs: { prompt: withNegative.prompt, duration_seconds: 10, ...inputs }, ...extra }),
 }));
 const debit = net => net.calls.find(c => c.url.includes('/rpc/ledger_debit'))?.body;
-const crun = net => net.calls.filter(c => c.url.startsWith('https://api.crun.ai'));
+const crun = net => net.calls.filter(c => new URL(c.url).hostname === 'api.crun.ai');
 
 for (const [name, inputs] of [['sends none', {}], ['still sends the template\'s own', { negative_prompt: withNegative?.negativePrompt }]]) {
     test(`a template whose client ${name} runs on Crun, charged in full, with no negative prompt stored or sent`, async () => {
