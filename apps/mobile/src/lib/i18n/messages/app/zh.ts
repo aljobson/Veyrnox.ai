@@ -7817,7 +7817,7 @@ export default {
   "beatExport.shared": "WAV 已传递到分享面板。",
   "beatExport.render": "渲染并分享",
   "beatExport.retryShare": "重试渲染并分享",
-  "beatExport.source": "此歌曲使用了 Music 曲目或音效库声音；目前请在网页版导出",
+  "beatExport.source": "此歌曲使用了 Music 曲目或分轨；目前请在网页版导出",
   "beatExport.missingOne": "缺少 1 个声音。请在导出前恢复。",
   "beatExport.missingMany": "缺少 {count} 个声音。请在导出前恢复。",
   "beatExport.phone": "此歌曲太长，无法在此手机上导出。请导出循环范围或使用电脑。",

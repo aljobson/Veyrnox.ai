@@ -7817,7 +7817,7 @@ export default {
   "beatExport.shared": "WAVを共有シートに渡しました。",
   "beatExport.render": "レンダリングして共有",
   "beatExport.retryShare": "レンダリングと共有を再試行",
-  "beatExport.source": "この曲にはMusicのトラックまたはライブラリの音が使われています。現時点ではウェブで書き出してください",
+  "beatExport.source": "この曲にはMusicのトラックまたはステムが使われています。現時点ではウェブで書き出してください",
   "beatExport.missingOne": "1個の音が見つかりません。書き出す前に復元してください。",
   "beatExport.missingMany": "{count}個の音が見つかりません。書き出す前に復元してください。",
   "beatExport.phone": "この曲は長すぎてこのスマートフォンでは書き出せません。サイクル範囲を書き出すかパソコンを使用してください。",

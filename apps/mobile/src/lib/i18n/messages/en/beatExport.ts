@@ -27,7 +27,7 @@ export default {
     'beatExport.shared': 'WAV handed to the share sheet.',
     'beatExport.render': 'Render and share',
     'beatExport.retryShare': 'Retry render and share',
-    'beatExport.source': 'This song uses a Music track or library sound; export it on the web for now',
+    'beatExport.source': 'This song uses a Music track or stem; export it on the web for now',
     'beatExport.missingOne': '1 sound is missing. Restore it before exporting.',
     'beatExport.missingMany': '{count} sounds are missing. Restore them before exporting.',
     'beatExport.phone': 'This song is too long to export on this phone. Export a cycle range, or use a computer.',
