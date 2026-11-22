@@ -25,6 +25,7 @@ const allowed: Record<string, { call: string; reason: string }[]> = {
     'components/templates/SwapAttemptStatus.tsx': [{ call: 'openURL(`mailto:${SUPPORT_EMAIL}`)', reason: 'Contact support in the mail app about an unresolved swap run; the scheme is fixed.' }],
     'components/legal/LegalDocumentView.tsx': [{ call: 'openURL(target.href)', reason: 'legalLink classifies only mailto addresses as mail; other addresses are inert.' }],
     'components/paywall/PaywallSheet.tsx': [{ call: 'openBrowserAsync(billing.managementURLasstring)', reason: 'Apple/Google subscription management belongs to the store.' }],
+    'components/editor/assetPacks/AssetPackLibrarySheet.tsx': [{ call: 'openURL(selected.attribution.url)', reason: 'A validated local asset manifest may carry an optional HTTPS source or licence URL which the user explicitly chooses to inspect.' }],
 };
 function calls(source: string) {
     const file = ts.createSourceFile('screen.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
