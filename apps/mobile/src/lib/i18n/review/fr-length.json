@@ -5898,6 +5898,24 @@
     "ratio": 1.78
   },
   {
+    "id": "beat.padRecord.disable",
+    "english": "Turn off pad recording",
+    "translation": "Désactiver l’enregistrement des pads",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "L’enregistrement des pads est désactivé",
+    "ratio": 1.95
+  },
+  {
+    "id": "beat.padRecord.drumOnly",
+    "english": "Select a drum track to use pads and steps.",
+    "translation": "Sélectionnez une piste de batterie pour utiliser les pads et les pas.",
+    "ratio": 1.64
+  },
+  {
     "id": "beat.pad.kick",
     "english": "Kick",
     "translation": "Grosse caisse",
