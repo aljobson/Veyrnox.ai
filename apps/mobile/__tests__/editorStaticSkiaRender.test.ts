@@ -1,5 +1,5 @@
-import type { SkImage } from '@shopify/react-native-skia';
-import { bindStaticPreviewPlan, renderStaticPreviewRgba, SKIA_STATIC_PREVIEW_CAPABILITIES, type StaticPreviewLayer, type StaticPreviewPlan } from '../src/lib/editorRender';
+import { AlphaType, ColorType, type SkImage } from '@shopify/react-native-skia';
+import { bindStaticPreviewPlan, renderStaticPreviewImage, renderStaticPreviewRgba, SKIA_STATIC_PREVIEW_CAPABILITIES, type StaticPreviewLayer, type StaticPreviewPlan } from '../src/lib/editorRender';
 import { editorPreviewPlan } from '../src/lib/editorPreviewPlan';
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 
@@ -289,6 +289,62 @@ test('layer and mask surfaces dispose before the next layer and caller images st
         expect(tracked.state().disposed).toBeGreaterThan(24);
         expect(disposeSource).not.toHaveBeenCalled();
     } finally { disposeSource.mockRestore(); source.dispose(); }
+});
+
+test('image rendering transfers only the final snapshot to the caller', () => {
+    const source = solid('#ffffff', 32, 32), disposeSource = jest.spyOn(source, 'dispose'), tracked = trackedSurfaceSkia();
+    try {
+        const rendered = renderStaticPreviewImage(tracked.custom, plan([layer('source', source)], { width: 32, height: 32 }));
+        expect(rendered.ok).toBe(true);
+        if (!rendered.ok) throw Error(rendered.code);
+        expect(tracked.state()).toMatchObject({ live: 1 });
+        expect(disposeSource).not.toHaveBeenCalled();
+        const disposeOutput = jest.spyOn(rendered.image, 'dispose');
+        rendered.image.dispose();
+        expect(disposeOutput).toHaveBeenCalledTimes(1);
+        expect(tracked.state().live).toBe(0);
+    } finally { disposeSource.mockRestore(); source.dispose(); }
+});
+
+test('RGBA rendering reads the caller-owned image path without changing pixels', () => {
+    const source = image(8, 8, (canvas, paint) => {
+        paint.setColor(Skia.Color('#ff0000')); canvas.drawRect({ x: 0, y: 0, width: 4, height: 8 }, paint);
+        paint.setColor(Skia.Color('#0000ff')); canvas.drawRect({ x: 4, y: 0, width: 4, height: 8 }, paint);
+    });
+    try {
+        const value = plan([layer('source', source)]), rendered = renderStaticPreviewImage(Skia, value);
+        if (!rendered.ok) throw Error(rendered.code);
+        let direct: Uint8Array;
+        try {
+            const pixels = rendered.image.readPixels(0, 0, {
+                width: rendered.width, height: rendered.height, colorType: ColorType.RGBA_8888, alphaType: AlphaType.Unpremul,
+            });
+            if (!pixels) throw Error('direct-readback');
+            direct = new Uint8Array(pixels);
+        } finally { rendered.image.dispose(); }
+        const rgba = renderStaticPreviewRgba(Skia, value);
+        if (!rgba.ok) throw Error(rgba.code);
+        expect(Buffer.from(rgba.rgba).equals(Buffer.from(direct))).toBe(true);
+    } finally { source.dispose(); }
+});
+
+test('image rendering validates invalid and unsupported plans before allocating', () => {
+    const source = solid('#ffffff'), make = jest.fn(), noAllocation = { ...Skia, Surface: { ...Skia.Surface, Make: make } };
+    try {
+        expect(renderStaticPreviewImage(noAllocation, plan([], { width: 0 }))).toEqual({
+            ok: false, code: 'invalid-plan', issues: ['invalid-output-size'],
+        });
+        expect(renderStaticPreviewImage(noAllocation, plan([layer('blocked', source, { unsupported: ['effect'] })]))).toEqual({
+            ok: false, code: 'unsupported', features: ['effect'],
+        });
+        expect(make).not.toHaveBeenCalled();
+    } finally { source.dispose(); }
+});
+
+test('an output-surface cleanup failure disposes the snapshot that never transferred', () => {
+    const tracked = trackedSurfaceSkia(true);
+    expect(() => renderStaticPreviewImage(tracked.custom, plan([]))).toThrow('dispose-probe');
+    expect(tracked.state().live).toBe(0);
 });
 
 test('a throwing nested disposer does not prevent remaining native resources from closing', () => {
