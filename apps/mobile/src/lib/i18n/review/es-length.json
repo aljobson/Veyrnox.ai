@@ -4896,6 +4896,30 @@
     "ratio": 1.61
   },
   {
+    "id": "editorPersonMask.title",
+    "english": "Person mask",
+    "translation": "Máscara de persona",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Conservar",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorPersonMask.bodySkin",
+    "english": "Body skin",
+    "translation": "Piel del cuerpo",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPersonMask.faceSkin",
+    "english": "Face skin",
+    "translation": "Piel de la cara",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

@@ -20,7 +20,7 @@ export function PackCard({ pack, best, saving, costs, busy, chosen, disabled, re
     const save = saving != null && saving >= 1 ? t('creditsPage.save', { pct: saving }) : null;
     const isSelected = !!(chosen || selected);
     return <Card onPress={readOnly ? undefined : () => { if (!disabled) onPress?.(); }} disabled={disabled} accessibilityRole={readOnly ? undefined : selectionMode}
-        selected={isSelected} accessibilityState={{ disabled: !!disabled, busy: !!busy, ...(selectionMode === 'radio' ? { selected: isSelected } : {}) }}
+        selected={isSelected} accessibilityState={{ disabled: !!disabled, busy: !!busy, ...(selectionMode === 'radio' ? { checked: isSelected } : {}) }}
         accessibilityLabel={rawText([credits, pack.priceString, best && t('creditsPage.best'), save].filter(Boolean).join(', '))} style={[s.card, compact && s.compact, isSelected && s.selected, isSelected && s.peek]}>
         {children}
         <View style={s.row}><Text variant="caption" tone="tertiary">{t('creditsPage.pack')}</Text><View style={s.badges}>

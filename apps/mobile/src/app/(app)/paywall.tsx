@@ -1,6 +1,6 @@
 import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import RevenueCatUI from 'react-native-purchases-ui';
@@ -28,6 +28,7 @@ export default function Paywall() {
     const router = useRouter();
     const themed = useThemedStyles(sheets);
     const insets = useSafeAreaInsets();
+    const { fontScale } = useWindowDimensions();
     const billing = useBilling();
     const { startExternal, actions } = useStorePurchase();
     const offeringId = parsePaywallOffering(useLocalSearchParams<{ offering?: string }>().offering);
@@ -174,10 +175,10 @@ export default function Paywall() {
     // The custom Credits screen filters retired packages even when the dashboard offering is stale.
     if (hasRetiredGenerationPackages(offering.availablePackages)) return <Redirect href="/credits" />;
     return (
-        <View style={[styles.screen, themed.page]}>
+        <View style={[styles.screen, themed.page, { paddingLeft: insets.left, paddingRight: insets.right, paddingBottom: insets.bottom }]}>
             <Stack.Screen options={{ title: t('billing.paywall.title'), headerShown: false, presentation: 'modal' }} />
             <View style={[themed.header, { paddingTop: insets.top + ds.space.sm }]}>
-                <VeyCharacter width={84} mood={vey.mood} interactive onReact={() => react({ type: 'poke' })} />
+                <VeyCharacter width={fontScale >= 1.3 ? 56 : 84} mood={vey.mood} interactive onReact={() => react({ type: 'poke' })} />
                 <View style={themed.bubble}>
                     <Text variant="body" tone="primary" accessibilityLiveRegion="polite">{t(vey.line)}</Text>
                 </View>
@@ -217,12 +218,15 @@ function ActiveSubscription({ offering, source, periodEnd, managementURL, canMan
     canManage: boolean; onManageWeb(): void; onClose(): void;
 }) {
     const themed = useThemedStyles(sheets);
+    const insets = useSafeAreaInsets();
     const storeActive = source === 'store' || source === 'both';
     const webActive = source === 'web' || source === 'both';
     const period = periodEnd ? t('creditsPage.periodEnd', {
         date: new Date(periodEnd).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
     }) : null;
-    return <View style={[styles.center, themed.page]}>
+    return <ScrollView style={[styles.screen, themed.page]} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.center, {
+        paddingLeft: insets.left + ds.space.xxl, paddingRight: insets.right + ds.space.xxl, paddingBottom: insets.bottom + ds.space.xxl,
+    }]}>
         <Stack.Screen options={{ title: t('billing.paywall.title'), presentation: 'modal' }} />
         <View style={themed.activeCard} accessibilityRole="summary">
             <Text variant="title2" tone="primary" accessibilityRole="header">{t(offering === 'generation' ? 'credits.subscriptions.active' : 'publishHome.fullPublishing')}</Text>
@@ -234,14 +238,17 @@ function ActiveSubscription({ offering, source, periodEnd, managementURL, canMan
                 <Button variant="secondary" label={t('common.close')} onPress={onClose} />
             </View>
         </View>
-    </View>;
+    </ScrollView>;
 }
 
 // A dead end is never acceptable: the person can always retry the store load or leave.
 function Unavailable({ kind, text, onRetry, onClose }: { kind: 'loading' | 'unavailable'; text: string; onRetry?: () => void; onClose(): void }) {
     const themed = useThemedStyles(sheets);
+    const insets = useSafeAreaInsets();
     return (
-        <View style={[styles.center, themed.page]}>
+        <ScrollView style={[styles.screen, themed.page]} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.center, {
+            paddingLeft: insets.left + ds.space.xxl, paddingRight: insets.right + ds.space.xxl, paddingBottom: insets.bottom + ds.space.xxl,
+        }]}>
             <Stack.Screen options={{ title: t('billing.paywall.title'), presentation: 'modal' }} />
             <PurchaseState kind={kind} text={text}>
                 <View style={styles.actions}>
@@ -249,7 +256,7 @@ function Unavailable({ kind, text, onRetry, onClose }: { kind: 'loading' | 'unav
                     <Button variant="secondary" label={t('common.close')} onPress={onClose} />
                 </View>
             </PurchaseState>
-        </View>
+        </ScrollView>
     );
 }
 
@@ -257,11 +264,11 @@ const styles = StyleSheet.create({
     screen: { flex: 1 },
     close: { alignSelf: 'flex-start', alignItems: 'center' },
     actions: { gap: ds.space.md, alignSelf: 'stretch' },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: ds.space.xxl },
+    center: { flexGrow: 1, width: '100%', maxWidth: 760, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', padding: ds.space.xxl },
 });
 const sheets = themedStyles(p => ({
     page: { backgroundColor: p.bg },
-    header: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md, paddingHorizontal: ds.space.gutter, paddingBottom: ds.space.sm },
+    header: { width: '100%', maxWidth: 900, alignSelf: 'center', flexDirection: 'row', alignItems: 'flex-start', gap: ds.space.md, paddingHorizontal: ds.space.gutter, paddingBottom: ds.space.sm },
     bubble: { flex: 1, padding: ds.space.md, borderRadius: ds.radius.xl, borderBottomLeftRadius: ds.space.xs, backgroundColor: p.bgElevated1 },
     activeCard: { alignSelf: 'stretch', gap: ds.space.lg, padding: ds.space.xl, borderRadius: ds.radius.xl, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
 }));

@@ -8,6 +8,7 @@ import { renderStarterSound } from '../app/veyrnox/_lib/music/beat/beatSoundRend
 import { createWebSoundRenderer } from '../app/veyrnox/_lib/music/beat/beatSoundWeb.mjs';
 import { soundDuration } from '../app/veyrnox/_lib/music/beat/beatSounds.mjs';
 import { seededRandom } from '../app/veyrnox/_lib/music/beat/beatSeed.mjs';
+import { audioDoc } from './musicBeatAudioFixtures.mjs';
 class Param {
   value = 1; calls = [];
   setValueAtTime(value, time) { this.calls.push(['set', value, time]); }
@@ -177,4 +178,20 @@ test('song mixdown uses stereo, exact cycle frames, global swing, explicit track
   const before = Context.instances.length;
   await assert.rejects(() => renderSong(doc, { range: 'cycle' }), { name: 'RangeError' });
   assert.equal(Context.instances.length, before);
+});
+
+test('song mixdown accepts an explicit native asset assertion without weakening local or web defaults', async (t) => {
+  const previous = globalThis.window; globalThis.window = { OfflineAudioContext: Context };
+  t.after(() => { globalThis.window = previous; });
+  const asset = { source: 'song', name: 'Song', durationSec: 2, bpm: null, sourceChannels: 2, encodedBytes: 100,
+    ref: { songId: 'e40439d1-646a-4c11-9c12-69fa3a851234', versionId: 'e40439d1-646a-4c11-9c12-69fa3a851235', jobId: 'e40439d1-646a-4c11-9c12-69fa3a851236' } };
+  const remote = audioDoc(asset), assetId = remote.tracks[1].regions[0].assetId;
+  let assertions = 0;
+  await renderSong(remote, { buffers: new Map([[assetId, { buffer: {} }]]), assertAssets: () => { assertions++; } });
+  assert.equal(assertions, 1);
+  const before = Context.instances.length;
+  await assert.rejects(() => renderSong(remote, { buffers: new Map(), assertAssets: () => { throw new Error('native held'); } }), /native held/);
+  assert.equal(Context.instances.length, before, 'authority is checked before allocating an output context');
+  const local = createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
+  await renderSong(local, { buffers: new Map(), assertAssets: () => assert.fail('local documents need no release authority') });
 });

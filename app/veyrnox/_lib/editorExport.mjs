@@ -80,7 +80,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
     if (blocked) throw new Error(blocked);
 
     const inputs = new Map();
-    const readers = [], images = new Map(), retired = new Set();
+    const readers = [], relatedReaders = new Map(), images = new Map(), retired = new Set();
     let output, video, audio;
     try {
         for (const id of new Set([...tl.video, ...tl.audio].flatMap(c => [c.mediaId,...backgroundMediaIds(c)]))) {
@@ -101,6 +101,11 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
             // A clip keeps playing under the next clip's dissolve, so its reader runs that much further (never past the file).
             const sink=new CanvasSink(track,{poolSize:2,alpha:true}),range=sourceRange(clip,tl.schemaVersion===3?sequenceTransitionAfter(tl,clip):effectiveTransition(tl,k+1));
             readers.push(clip.reverse || clip.freezeFrame!==undefined ? new SeekReader(sink) : new Reader(sink, Math.max(0,range.from)/FPS, Math.min(range.to+1,tl.media[clip.mediaId].frames)/FPS));
+        }
+        for (const { clip } of layout) if (clip.semanticMask?.dynamic) {
+            const id=clip.semanticMask.mediaId,track=await inputs.get(id)?.getPrimaryVideoTrack();
+            if(!track||!await track.canDecode())throw new Error('This browser cannot decode a semantic mask video.');
+            relatedReaders.set(`${id}:${clip.id}`,new SeekReader(new CanvasSink(track,{poolSize:2,alpha:true})));
         }
 
         onProgress({ stage: 'audio', done: 0, total });
@@ -124,7 +129,9 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         for (let i = 0; i < outputFrames; i++) {
             if (signal.aborted) throw abortError();
             const layers = frameLayers(tl, Math.min(total - 1, i / frameRate * FPS));
-            paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time, backgroundId) => backgroundId ? images.get(backgroundId) : readers[k].at(time)), fitMode);
+            paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time, relatedMediaId) => relatedMediaId
+                ? images.get(relatedMediaId) ?? relatedReaders.get(`${relatedMediaId}:${tl.video[k].id}`)?.at(time)
+                : readers[k].at(time)), fitMode);
             for (const [k, entry] of layout.entries()) {
                 const until = entry.start + entry.clip.len + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, entry.clip) : effectiveTransition(tl, k + 1));
                 if (!retired.has(k) && (i + 1) / frameRate * FPS >= until) { await readers[k].close(); retired.add(k); }
@@ -145,6 +152,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
         video?.dispose?.();
         audio?.dispose?.();
         await Promise.allSettled(readers.filter((_, k) => !retired.has(k)).map(reader => reader.close()));
+        await Promise.allSettled([...relatedReaders.values()].map(reader => reader.close()));
         for (const input of inputs.values()) input.dispose();
         for (const bitmap of images.values()) bitmap.close?.();
     }

@@ -5,6 +5,7 @@ import { useFirstRunPending } from '../lib/firstRunPending';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { usePathname } from 'expo-router';
 import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { claimCheckin, checkinErrorKey, type CheckinStatus } from '../lib/checkin';
@@ -15,6 +16,7 @@ import { touchTarget } from '../lib/a11y';
 import { plural, t } from '../lib/i18n';
 import { checkinRouteEligible, holdCheckinDialog } from '../lib/checkinVisibility';
 import { colors } from '../theme';
+import { modalSafePadding } from '../lib/modalLayout';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const dismissed = new Map<string, string>();
@@ -28,6 +30,7 @@ export function CheckInModal() {
 }
 
 function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
+    const insets = useSafeAreaInsets();
     const reader = useMemo(() => checkinStatusReader(api, owner), [api, owner]);
     const [status, setStatus] = useState<CheckinStatus | null>(null);
     // `due`: today's invitation is owed. It appears only on the screens made for it (Explore, Credits), so a file
@@ -93,7 +96,7 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
     if (!isCheckinStatus(status)) return null;
     const day = status.claimed_today ? Math.min(status.streak, 6) : status.next_day;
     return <Modal visible={open} transparent animationType="fade" onRequestClose={close} accessibilityViewIsModal>
-        <View style={styles.backdrop} onAccessibilityEscape={close}><ScrollView style={styles.scroll} contentContainerStyle={styles.card}>
+        <View style={[styles.backdrop, modalSafePadding(insets, 24)]} onAccessibilityEscape={close}><ScrollView style={styles.scroll} contentContainerStyle={styles.card}>
             <Text accessibilityRole="header" style={styles.title}>{t('checkin.title')}</Text>
             <Text style={styles.body}>{t('checkin.copy')}</Text>
             <View style={styles.grid}>
@@ -115,8 +118,8 @@ function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
     </Modal>;
 }
 const styles = StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 24 },
-    scroll: { flexGrow: 0 },
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
+    scroll: { width: '100%', maxWidth: 720, flexGrow: 0 },
     card: { backgroundColor: colors.surface, borderRadius: 16, padding: 20, gap: 14, borderWidth: 1, borderColor: colors.border },
     title: { color: colors.text, fontSize: 20, fontWeight: '700' },
     body: { color: colors.body, fontSize: 14 },

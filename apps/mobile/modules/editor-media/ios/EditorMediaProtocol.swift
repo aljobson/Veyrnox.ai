@@ -58,6 +58,30 @@ struct BeginEncodeRequest: Record {
   @Field var videoBitRate: Int = 6_000_000
   @Field var audioBitRate: Int? = nil
   @Field var audioArtifactId: String? = nil
+  @Field var alpha: Bool? = nil
+}
+
+struct MotionProcessRequest: Record {
+  @Field var uri: String = ""
+  @Field var fromSeconds: Double = 0
+  @Field var durationSeconds: Double? = nil
+  @Field var tool: String = ""
+  @Field var frameRate: Int = 30
+  @Field var height: Int = 720
+  @Field var alpha: Bool? = nil
+  @Field var smoothing: Int = 10
+  @Field var strength: Double = 1
+  @Field var aspect: Double? = nil
+  @Field var regionX: Double? = nil
+  @Field var regionY: Double? = nil
+  @Field var regionWidth: Double? = nil
+  @Field var regionHeight: Double? = nil
+  @Field var fromX: Double? = nil
+  @Field var fromY: Double? = nil
+  @Field var fromZoom: Double? = nil
+  @Field var toX: Double? = nil
+  @Field var toY: Double? = nil
+  @Field var toZoom: Double? = nil
 }
 
 struct FrameRecord: Record {

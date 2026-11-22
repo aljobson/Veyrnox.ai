@@ -12,6 +12,7 @@ function fakeNative(overrides: Partial<NativeEditorMediaModule> = {}) {
             stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2, timestampsUs: [0, 33333], preferredTransform: [1, 0, 0, 1, 0, 0] })),
         decodePcm: jest.fn(async () => ({ ok: true, artifactId: 'pcm-1', uri: 'file:///cache/pcm-1.bin', kind: 'pcm', size: 384000, sampleRate: 48000, channels: 2,
             frames: 48000, encoding: 'f32le-interleaved' })),
+        mixAudio: jest.fn(async () => ({})),
         beginEncode: jest.fn(async () => ({ ok: true, sessionId: 'session-1' })), appendFrameBatch: jest.fn(async () => ({ ok: true })),
         finishEncode: jest.fn(async () => ({ ok: true, artifactId: 'mp4-1', uri: 'file:///cache/mp4-1.mp4', kind: 'mp4', size: 4096, width: 1280, height: 720,
             fps: 30, frames: 1, durationUs: 33333, videoCodec: 'avc1' })),

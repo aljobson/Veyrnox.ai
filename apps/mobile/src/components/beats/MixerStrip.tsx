@@ -12,7 +12,7 @@ export interface MixerStripProps {
     onGain: (value: number) => void; onPan: (value: number) => void;
     onMute: (value: boolean) => void; onSolo: (value: boolean) => void; onKit: (kit: string) => void; onRemove: () => void;
 }
-// Pan runs -1..1 in the document and 0..1 on the slider (centre at 50). The Distortion effect's Drive control is not offered (N0 gap G2).
+// Pan runs -1..1 in the document and 0..1 on the slider (centre at 50). Distortion Drive lives in BeatEffectRack.
 const toSlider = (pan: number) => (pan + 1) / 2;
 const fromSlider = (value: number) => Math.round((value * 2 - 1) * 100) / 100;
 

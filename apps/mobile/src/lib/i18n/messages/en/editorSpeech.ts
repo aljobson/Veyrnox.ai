@@ -35,5 +35,21 @@ export default {
     "editorSpeech.noChanges": "No safe cuts were found. Your clip is unchanged.",
     "editorSpeech.limits": "Keep at least one section, at most 10 sections and no more than 60 seconds in the timeline.",
     "editorSpeech.checkStatus": "Check status",
-    "editorSpeech.applied": "Speech cuts applied. Undo restores the previous timeline."
+    "editorSpeech.applied": "Speech cuts applied. Undo restores the previous timeline.",
+    "editorSpeech.autoTitle": "Automatic captions",
+    "editorSpeech.autoHelp": "Runs privately on this iPhone. Pick a selected clip with sound; no upload or credits are used.",
+    "editorSpeech.autoSourceLanguage": "Spoken language",
+    "editorSpeech.autoTargetLanguage": "Translate to",
+    "editorSpeech.autoStart": "Create captions on device",
+    "editorSpeech.autoTranslate": "Create translated captions",
+    "editorSpeech.autoPermissionRequest": "Checking Speech Recognition permission…",
+    "editorSpeech.autoTranslating": "Translating on this iPhone…",
+    "editorSpeech.autoApplying": "Adding editable captions…",
+    "editorSpeech.autoSource": "Select a downloaded clip with sound first.",
+    "editorSpeech.autoEdit": "Automatic captions currently need a forward clip at normal speed. Reset reverse, freeze and speed changes first.",
+    "editorSpeech.autoPermission": "Allow Speech Recognition in Settings to create captions on this iPhone.",
+    "editorSpeech.autoUnavailable": "On-device captions are not available on this device or for this language.",
+    "editorSpeech.autoStale": "The selected clip changed. Start captions again.",
+    "editorSpeech.autoFull": "The caption track is full. Remove some text or captions and try again.",
+    "editorSpeech.autoFailed": "Captions could not be created. Try again with another downloaded clip."
 } as const;

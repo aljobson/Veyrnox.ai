@@ -5,6 +5,7 @@ import { randomUUID } from 'expo-crypto';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { SmartCutPreview } from '../../components/smart-cut/SmartCutPreview';
 import { SmartCutAnalysisCard } from '../../components/smart-cut/SmartCutAnalysisCard';
@@ -61,6 +62,7 @@ const seconds = (value: number) => (Math.round(value * 10) / 10).toFixed(1);
 
 export default function SmartCutRoute() {
     const styles = useThemedStyles(sheets);
+    const insets = useSafeAreaInsets();
     const { api, beginSessionTask } = useAuth();
     const links = useAssetLinks(api);
     const router = useRouter();
@@ -326,8 +328,13 @@ export default function SmartCutRoute() {
 
     const quoteOpen = stage === 'quote' && credits !== null;
 
+    const safeContent = [styles.content, {
+        width: '100%' as const, maxWidth: 960, alignSelf: 'center' as const,
+        paddingLeft: insets.left + ds.space.lg, paddingRight: insets.right + ds.space.lg,
+        paddingBottom: insets.bottom + LIST_END_PADDING,
+    }];
     const quoteView = quoteOpen ? (
-            <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+            <ScrollView style={styles.screen} contentContainerStyle={safeContent}>
                 <Text variant="display" accessibilityRole="header">{t('edit.reviewTitle')}</Text>
                 <Card style={styles.stack}>
                     {clips.map((clip, index) => <Text key={`${clip.jobId}-${index}`} tone="secondary">{t('edit.stos', { value1: index + 1, value2: clip.label, value3: seconds(clip.start), value4: seconds(clip.end) })}</Text>)}
@@ -345,7 +352,7 @@ export default function SmartCutRoute() {
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Stack.Screen options={{ title: t(quoteOpen ? 'edit.reviewTitle' : 'app.smartCut.name') }} />
             <View style={quoteOpen ? styles.hidden : styles.routeBody} accessibilityElementsHidden={quoteOpen} importantForAccessibility={quoteOpen ? 'no-hide-descendants' : 'auto'}>
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <ScrollView contentContainerStyle={safeContent} keyboardShouldPersistTaps="handled">
                 <View style={styles.hero}>
                     <Text variant="caption" tone="accent">{t('app.smartCut.name')}</Text>
                     <Text variant="display" accessibilityRole="header">{t('app.smartCut.entry.title')}</Text>

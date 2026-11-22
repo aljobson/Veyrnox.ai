@@ -9,9 +9,9 @@ const screen = require('fs').readFileSync(`${__dirname}/../src/components/editor
 void [Text, View];
 jest.setTimeout(30000);
 
-const styleOf = async (inline: boolean) => {
+const styleOf = async (inline: boolean, wide = false) => {
     const root = createRoot();
-    await act(async () => { root.render(<EditorToolSheet inline={inline}><Text>panel</Text></EditorToolSheet>); });
+    await act(async () => { root.render(<EditorToolSheet inline={inline} wide={wide}><Text>panel</Text></EditorToolSheet>); });
     const node = root.container.queryAll(n => n.props.testID === 'editor-tool-sheet')[0];
     return StyleSheet.flatten(node?.props.style) as Record<string, unknown>;
 };
@@ -30,6 +30,21 @@ describe('full editor keeps the timeline visible above the tool panel', () => {
     it('the full editor mounts the sheet inline, after the timeline section', () => {
         expect(screen).toMatch(/<EditorToolSheet inline=\{advanced\}/);
         expect(screen.indexOf('styles.timelineSection')).toBeLessThan(screen.indexOf('<EditorToolSheet'));
+    });
+    it('phone landscape turns the inspector into a bounded third pane', async () => {
+        const style = await styleOf(true, true);
+        expect(style.minHeight).toBe(0);
+        expect(style.minWidth).toBe(220);
+        expect(style.maxWidth).toBe('42%');
+        expect(screen).toContain('styles.editorWorkspaceWide');
+        expect(screen).toContain('wide={advanced && budget.wideShort}');
+    });
+    it('the inline inspector participates in keyboard avoidance for text and caption fields', async () => {
+        const root = createRoot();
+        await act(async () => { root.render(<EditorToolSheet inline wide><Text>panel</Text></EditorToolSheet>); });
+        const node = root.container.queryAll(n => n.props.testID === 'editor-tool-sheet')[0];
+        expect(node.props.keyboardVerticalOffset).toBeGreaterThan(0);
+        expect(node.props.behavior).toBeTruthy();
     });
     it('the inline sheet honours a minimum panel height and the timeline is a bounded scroll region', async () => {
         const root = createRoot();

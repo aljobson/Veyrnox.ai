@@ -1,0 +1,5 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["VeyrnoxBeatKeyboardModule"] },
+  "android": { "modules": ["ai.veyrnox.beatkeyboard.VeyrnoxBeatKeyboardModule"] }
+}

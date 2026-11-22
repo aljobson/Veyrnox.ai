@@ -2,6 +2,7 @@ import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Purchases from 'react-native-purchases';
 import { ActivityIndicator, Modal, Platform, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { useBilling } from '../billing/BillingProvider';
 import { useStorePurchase } from '../billing/useStorePurchase';
@@ -15,6 +16,7 @@ import { Button, Text, themedStyles, useThemedStyles } from './ui';
 import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
 import { PlanCatalogNotice } from './credits/PlanCatalogNotice';
 import { VeyCharacter } from './VeyCharacter';
+import { modalSafePadding } from '../lib/modalLayout';
 
 const ENABLED = hardPaywallEnabled();
 // RevenueCat INTRO_ELIGIBILITY_STATUS_ELIGIBLE; the enum is not imported so a mocked SDK cannot break the screen.
@@ -39,6 +41,7 @@ export function HardPaywallGate({ children }: { children: ReactNode }) {
 
 function LockedScreen({ checking, onClose }: { checking: boolean; onClose: () => void }) {
     const s = useThemedStyles(styles);
+    const insets = useSafeAreaInsets();
     const { api, signOut } = useAuth();
     const router = useRouter();
     const billing = useBilling();
@@ -80,7 +83,9 @@ function LockedScreen({ checking, onClose }: { checking: boolean; onClose: () =>
         if (canBuy && pkg) purchase.start({ kind: 'plan', pkg });
     }
     const inTrial = trialDays > 0;
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} testID="hard-paywall">
+    const safe = modalSafePadding(insets, 24);
+    return <ScrollView style={s.screen} contentContainerStyle={[s.content, safe, { paddingTop: Math.max(64, insets.top + 24) }]}
+        testID="hard-paywall" accessibilityViewIsModal onAccessibilityEscape={onClose}>
         <Button variant="tertiary" label={t('credits.paywall.later')} onPress={onClose} />
         <View style={s.vey}><VeyCharacter width={120} interactive mood="wave" /></View>
         {inTrial ? <>
@@ -131,7 +136,7 @@ function LockedScreen({ checking, onClose }: { checking: boolean; onClose: () =>
 }
 const styles = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: 24, paddingTop: 64, gap: 12 },
+    content: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 24, paddingTop: 64, gap: 12 },
     vey: { alignItems: 'center' }, row: { flexDirection: 'row', gap: 8, alignItems: 'center' },
     links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
 }));

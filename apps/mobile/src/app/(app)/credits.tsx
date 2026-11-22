@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
@@ -39,6 +40,7 @@ const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Credits() {
     const styles = useThemedStyles(sheets);
+    const insets = useSafeAreaInsets();
     const { api } = useAuth();
     const billing = useBilling();
     useFocusEffect(useCallback(() => { void billing.refreshSales(); }, [billing.refreshSales]));
@@ -179,7 +181,9 @@ export default function Credits() {
     }
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.screen} contentInsetAdjustmentBehavior="automatic" scrollIndicatorInsets={{ bottom: ds.space.lg }} contentContainerStyle={[styles.content, {
+            paddingLeft: insets.left + ds.space.lg, paddingRight: insets.right + ds.space.lg, paddingBottom: insets.bottom + ds.space.huge,
+        }]}>
             <Stack.Screen options={{ title: t(billing.canPurchase ? 'pricing.packs.buy' : 'menu.credits') }} />
             <Text variant="title1" tone="primary" style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
             <Text variant="callout" tone="secondary" style={styles.lead}>{t('credits.lead')}</Text>
@@ -267,7 +271,7 @@ const sheets = themedStyles((p) => ({
     accentInk: { color: p.accent },
 
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: ds.space.lg, paddingBottom: ds.space.huge, gap: ds.space.lg },
+    content: { width: '100%', maxWidth: 960, alignSelf: 'center', padding: ds.space.lg, paddingBottom: ds.space.huge, gap: ds.space.lg },
     title: { color: p.textPrimary, },
     lead: { color: p.textSecondary, },
     notice: { color: p.textSecondary, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.md },

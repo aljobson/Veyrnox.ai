@@ -23,41 +23,43 @@ export function PlanCards({ plans, packs, credits, cadence, onCadence, chosenId,
                 <Text>{t(value === 'month' ? 'creditsPage.monthly' : 'creditsPage.yearly')}</Text>
             </Pressable>)}
         </View> : null}
-        {plans.filter(p => p.interval === active).map(plan => {
-            const count = credits.get(generationCatalogId(plan.productId) ?? '');
-            const saving = subscriptionSavingPercent(plan, count, packs), yearly = yearlySaving(plan, plans);
-            const recommended = isRecommendedPlan(plan), selected = !readOnly && chosenId === plan.id;
-            const allowance = count ? t('credits.plan.allowance', { count: count.toLocaleString(formatLocale()) }) : t('credits.plan.creationCredits');
-            const price = t(plan.interval === 'year' ? 'creditsPage.perYear' : 'creditsPage.perMonth', { price: plan.priceString });
-            const monthly = plan.interval === 'year' && plan.pricePerMonthString ? t('creditsPage.yearlyMonthly', { amount: plan.pricePerMonthString }) : null;
-            const packSaving = saving != null && saving >= 1 ? t('creditsPage.vsPack', { pct: saving }) : null;
-            const annualSaving = yearly != null && yearly >= 1 ? t('creditsPage.yearlySave', { pct: yearly }) : null;
-            const expiry = t(plan.interval === 'year' ? 'creditsPage.yearlyExpiry' : 'creditsPage.monthlyExpiry');
-            return <Card key={plan.id} style={[s.card, selected && s.selected]} accessibilityRole={readOnly ? undefined : 'radio'} selected={selected}
-                accessibilityLabel={rawText([planName(plan.generationPlan ?? ''), recommended && t('creditsPage.recommended'), allowance, price, monthly, packSaving, annualSaving, expiry].filter(Boolean).join(', '))}
-                disabled={disabled} accessibilityState={{ disabled, ...(!readOnly ? { selected: chosenId === plan.id } : {}) }} onPress={readOnly ? undefined : () => { if (!disabled) onChoose?.(plan.id); }}>
-                <View style={s.header}>
-                    <Text variant="title3" style={s.name}>{planName(plan.generationPlan ?? '')}</Text>
-                    <View style={s.badges}>
-                        {recommended ? <Chip icon="sparkle" label={t('creditsPage.recommended')} /> : null}
-                        {selected ? <View testID="plan-selected-indicator" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={s.selectedMark}>
-                            <Icon name="check" size={16} tint={s.selectedInk.color} />
-                        </View> : null}
+        <View accessibilityRole={readOnly ? undefined : 'radiogroup'} accessibilityLabel={t('credits.subscriptions.title')} style={s.planList}>
+            {plans.filter(p => p.interval === active).map(plan => {
+                const count = credits.get(generationCatalogId(plan.productId) ?? '');
+                const saving = subscriptionSavingPercent(plan, count, packs), yearly = yearlySaving(plan, plans);
+                const recommended = isRecommendedPlan(plan), selected = !readOnly && chosenId === plan.id;
+                const allowance = count ? t('credits.plan.allowance', { count: count.toLocaleString(formatLocale()) }) : t('credits.plan.creationCredits');
+                const price = t(plan.interval === 'year' ? 'creditsPage.perYear' : 'creditsPage.perMonth', { price: plan.priceString });
+                const monthly = plan.interval === 'year' && plan.pricePerMonthString ? t('creditsPage.yearlyMonthly', { amount: plan.pricePerMonthString }) : null;
+                const packSaving = saving != null && saving >= 1 ? t('creditsPage.vsPack', { pct: saving }) : null;
+                const annualSaving = yearly != null && yearly >= 1 ? t('creditsPage.yearlySave', { pct: yearly }) : null;
+                const expiry = t(plan.interval === 'year' ? 'creditsPage.yearlyExpiry' : 'creditsPage.monthlyExpiry');
+                return <Card key={plan.id} style={[s.card, selected && s.selected]} accessibilityRole={readOnly ? undefined : 'radio'} selected={selected}
+                    accessibilityLabel={rawText([planName(plan.generationPlan ?? ''), recommended && t('creditsPage.recommended'), allowance, price, monthly, packSaving, annualSaving, expiry].filter(Boolean).join(', '))}
+                    disabled={disabled} accessibilityState={{ disabled, ...(!readOnly ? { checked: chosenId === plan.id } : {}) }} onPress={readOnly ? undefined : () => { if (!disabled) onChoose?.(plan.id); }}>
+                    <View style={s.header}>
+                        <Text variant="title3" style={s.name}>{planName(plan.generationPlan ?? '')}</Text>
+                        <View style={s.badges}>
+                            {recommended ? <Chip icon="sparkle" label={t('creditsPage.recommended')} /> : null}
+                            {selected ? <View testID="plan-selected-indicator" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={s.selectedMark}>
+                                <Icon name="check" size={16} tint={s.selectedInk.color} />
+                            </View> : null}
+                        </View>
                     </View>
-                </View>
-                <View style={s.valueBand}><Icon name="sparkleFill" tint={s.value.color} /><Text variant="title2" tone="primary" style={s.value}>{allowance}</Text></View>
-                <View style={s.priceRow}><Text variant="title3" tone="primary">{price}</Text>
-                    {packSaving ? <Text variant="micro" tone="secondary">{packSaving}</Text> : null}
-                </View>
-                {monthly ? <Text variant="footnote" tone="secondary">{monthly}</Text> : null}
-                {annualSaving ? <Text variant="footnote" tone="secondary">{annualSaving}</Text> : null}
-                <Text variant="footnote" tone="tertiary">{expiry}</Text>
-            </Card>;
-        })}
+                    <View style={s.valueBand}><Icon name="sparkleFill" tint={s.value.color} /><Text variant="title2" tone="primary" style={s.value}>{allowance}</Text></View>
+                    <View style={s.priceRow}><Text variant="title3" tone="primary">{price}</Text>
+                        {packSaving ? <Text variant="micro" tone="secondary">{packSaving}</Text> : null}
+                    </View>
+                    {monthly ? <Text variant="footnote" tone="secondary">{monthly}</Text> : null}
+                    {annualSaving ? <Text variant="footnote" tone="secondary">{annualSaving}</Text> : null}
+                    <Text variant="footnote" tone="tertiary">{expiry}</Text>
+                </Card>;
+            })}
+        </View>
     </View>;
 }
 const sheets = themedStyles(p => ({
-    cadence: { flexDirection: 'row' }, cadenceItem: { flex: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center' }, list: { gap: ds.space.md },
+    cadence: { flexDirection: 'row' }, cadenceItem: { flex: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center' }, list: { gap: ds.space.md }, planList: { gap: ds.space.md },
     card: { gap: ds.space.md }, selected: { borderWidth: 2, borderColor: p.accent, backgroundColor: p.bgElevated2 },
     header: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm }, name: { flex: 1 },
     badges: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: ds.space.xs, flexWrap: 'wrap' },

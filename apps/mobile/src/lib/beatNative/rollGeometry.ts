@@ -14,6 +14,17 @@ export function noteRect(note: MidiNote, scale: number, high: number) {
     const width = Math.max(4, note[1] * scale);
     return { x: tickToX(note[0], scale), y: pitchToY(note[2], high), width, height: ROW, touchWidth: Math.max(44, width) };
 }
+export type MarqueeRect = { x: number; y: number; width: number; height: number };
+export function normaliseMarquee(startX: number, startY: number, endX: number, endY: number): MarqueeRect {
+    return { x: Math.min(startX, endX), y: Math.min(startY, endY), width: Math.abs(endX - startX), height: Math.abs(endY - startY) };
+}
+export function notesInMarquee(notes: MidiNote[], marquee: MarqueeRect, scale: number, high: number): string[] {
+    const right = marquee.x + marquee.width, bottom = marquee.y + marquee.height;
+    return notes.filter(note => {
+        const rect = noteRect(note, scale, high);
+        return rect.x <= right && rect.x + rect.width >= marquee.x && rect.y <= bottom && rect.y + rect.height >= marquee.y;
+    }).map(note => `${note[0]}:${note[2]}`);
+}
 export function hitNote(notes: MidiNote[], x: number, y: number, scale: number, high: number): MidiNote | undefined {
     return [...notes].reverse().find(n => { const r = noteRect(n, scale, high); const slop = (r.touchWidth - r.width) / 2; return x >= r.x - slop && x <= r.x + r.width + slop && y >= r.y && y < r.y + ROW; });
 }

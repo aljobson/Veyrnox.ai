@@ -426,7 +426,7 @@ describe('beat editor', () => {
         await press(t('beat.track.remove', { track: t('beat.track', { n: 2 }) }));
         expect(getBeat(doc.id)!.tracks).toHaveLength(1);
     });
-    test('the Distortion Drive control is not offered', async () => {
+    test('effect controls stay in the mixer sheet rather than the main strip', async () => {
         await open();
         expect(root.container.queryAll(n => /drive|distortion/i.test(String(n.props.accessibilityLabel ?? '')))).toHaveLength(0);
     });

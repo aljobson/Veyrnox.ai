@@ -2,7 +2,7 @@ import { loadNativeOfflineContext, OfflineUnavailable, withWindowOfflineContext 
 import type { NativeOfflineCtor, AdapterReport } from '../src/lib/beatNative/nativeContext';
 import { deferred, tick } from './beatNativeFixtures';
 import { offlineFixture } from './beatNativeExportFixtures';
-jest.mock('react-native-audio-api', () => ({ OfflineAudioContext: undefined }));
+jest.mock('react-native-audio-api', () => ({ OfflineAudioContext: undefined }), { virtual: true });
 const report = (): AdapterReport => ({ gaps: [], latencyHint: 'offline' });
 test('lazy loader reports a missing constructor honestly', () => { expect(loadNativeOfflineContext()).toBeNull(); });
 test('offline provider spans awaits, wraps native nodes, and restores exact window properties', async () => {
@@ -16,7 +16,7 @@ test('offline provider spans awaits, wraps native nodes, and restores exact wind
         expect(await ctx.startRendering()).toMatchObject({ numberOfChannels: 2, length: 32 });
     }, scope);
     expect(scope.window).toEqual({ OfflineAudioContext: original });
-    expect(r.gaps).toEqual(expect.arrayContaining(['dynamicsCompressor', 'connectReturnsVoid']));
+    expect(r.gaps).toEqual(['connectReturnsVoid']);
 });
 test('mutex prevents overlapping globals, including when the first job rejects', async () => {
     const { Context } = offlineFixture(), gate = deferred(), order: string[] = [], scope = {};

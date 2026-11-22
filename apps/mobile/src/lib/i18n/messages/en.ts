@@ -93,13 +93,16 @@ import area_editorExportRefusal from './en/editorExportRefusal';
 import area_editorFont from './en/editorFont';
 import area_editorLook from './en/editorLook';
 import area_editorMotion from './en/editorMotion';
+import area_editorNativeMotion from './en/editorNativeMotion';
 import area_editorPack from './en/editorPack';
+import area_editorPersonMask from './en/editorPersonMask';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
 import area_editorScenes from './en/editorScenes';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
+import area_editorLocalExport from './en/editorLocalExport';
 import area_editorSpike from './en/editorSpike';
 import area_editorText from './en/editorText';
 import area_editorTools from './en/editorTools';
@@ -349,13 +352,16 @@ const catalog = {
     ...area_editorFont,
     ...area_editorLook,
     ...area_editorMotion,
+    ...area_editorNativeMotion,
     ...area_editorPack,
+    ...area_editorPersonMask,
     ...area_editorProjects,
     ...area_editorSave,
     ...area_editorScenes,
     ...area_editorServerExport,
     ...area_editorSimple,
     ...area_editorSpeech,
+    ...area_editorLocalExport,
     ...area_editorSpike,
     ...area_editorText,
     ...area_editorTools,

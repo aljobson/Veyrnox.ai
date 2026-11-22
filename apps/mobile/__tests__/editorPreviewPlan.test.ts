@@ -5,6 +5,7 @@ import { emptySequence } from '../../../app/veyrnox/_lib/editorSequence.mjs';
 import { sequenceLayers } from '../../../app/veyrnox/_lib/editorSequenceRender.mjs';
 import { captionPresentation } from '../../../app/veyrnox/_lib/editorWords.mjs';
 import { editorPreviewPlan } from '../src/lib/editorPreviewPlan';
+import { editorSemanticMaskIdentity } from '../src/lib/editorSemanticMaskIdentity';
 import type { Timeline } from '../src/lib/nativeEditorModel';
 import { webSequenceV3 } from './fixtures/webSequenceV3';
 
@@ -186,4 +187,20 @@ test('reports active audio clips whose media is missing', () => {
     expect(editorPreviewPlan(timeline, 9).capabilities.unsupported).toEqual([]);
     expect(editorPreviewPlan(timeline, 10).capabilities.unsupported).toContainEqual(expect.objectContaining({ capability: 'missing-media', scope: 'audio', itemId: 'a1' }));
     expect(editorPreviewPlan(timeline, 20).capabilities.unsupported).toEqual([]);
+});
+
+test('rejects a synced static semantic mask captured from a different source frame', () => {
+    const base = emptySequence();
+    const masked = { ...clip('v1', 'image', 'video-0'), in: 12,
+        semanticMask: { version: 1, mediaId: 'mask', category: 'person', sourceFrame: 0 } };
+    const timeline = { ...base, media: { image: image('image'), mask: image('mask') }, video: [masked] } as unknown as Timeline;
+    expect(editorPreviewPlan(timeline, 0, ['timeline-background', 'image-source', 'fit', 'transform', 'semantic-mask'])
+        .capabilities.unsupported).toContainEqual(expect.objectContaining({
+        capability: 'semantic-mask', itemId: 'v1', detail: 'source-mapping-changed',
+    }));
+});
+
+test('dynamic semantic-mask identity includes the source media id', () => {
+    const source = clip('v1', 'first', 'video-0');
+    expect(editorSemanticMaskIdentity(source as any)).not.toBe(editorSemanticMaskIdentity({ ...source, mediaId: 'second' } as any));
 });

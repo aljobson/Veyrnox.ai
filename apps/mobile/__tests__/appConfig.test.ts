@@ -1,5 +1,7 @@
 import appJson from '../app.json';
 
+const MICROPHONE_USAGE = 'Veyrnox uses the microphone only when you choose to record a voiceover, a beat take, or audio for editable captions.';
+
 // Store-review facts that live in app.json (ADR-0127). A change here should be deliberate.
 const expo = appJson.expo;
 const manifest = expo.ios.privacyManifests;
@@ -40,20 +42,20 @@ describe('iOS privacy manifest', () => {
 describe('permissions', () => {
     const plugin = (name: string) => (expo.plugins as unknown[]).find((p) => p === name || (Array.isArray(p) && p[0] === name));
 
-    test('Publish camera and photo wording is explicit; microphone is for voiceovers; Face ID remains off', () => {
-        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', { cameraPermission: 'Veyrnox.ai uses the camera when you take a photo to post with Publish.', photosPermission: 'Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.', microphonePermission: 'Veyrnox.ai uses the microphone only while you record a voiceover in the editor.' }]);
+    test('Publish camera and photo wording is explicit; microphone names every recording purpose; Face ID remains off', () => {
+        expect(plugin('expo-image-picker')).toEqual(['expo-image-picker', { cameraPermission: 'Veyrnox.ai uses the camera when you take a photo to post with Publish.', photosPermission: 'Veyrnox.ai reads the photo or video you choose, to use as a starting point for a creation or to post with Publish.', microphonePermission: MICROPHONE_USAGE }]);
         expect(plugin('expo-secure-store')).toEqual(['expo-secure-store', { faceIDPermission: false }]);
     });
 
     test('voiceover microphone is iOS only without background audio', () => {
-        expect(plugin('expo-audio')).toEqual(['expo-audio', { microphonePermission: 'Veyrnox.ai uses the microphone only while you record a voiceover in the editor.', recordAudioAndroid: false, enableBackgroundRecording: false, enableBackgroundPlayback: false }]);
+        expect(plugin('expo-audio')).toEqual(['expo-audio', { microphonePermission: MICROPHONE_USAGE, recordAudioAndroid: false, enableBackgroundRecording: false, enableBackgroundPlayback: false }]);
         expect(expo.android.blockedPermissions).toEqual(['android.permission.RECORD_AUDIO']);
     });
 
-    test('the native beat audio plugin (slice N0) allows iOS background audio, names both microphone uses, and never asks for Android recording', () => {
+    test('the native beat audio plugin allows iOS background audio, preserves every microphone purpose, and never asks for Android recording', () => {
         const entry = plugin('react-native-audio-api') as [string, Record<string, unknown>];
         expect(entry[1].iosBackgroundMode).toBe(true);
-        expect(entry[1].iosMicrophonePermission).toBe('Veyrnox.ai uses the microphone only while you record: a voiceover in the editor or a take in the beat maker.');
+        expect(entry[1].iosMicrophonePermission).toBe(MICROPHONE_USAGE);
         expect(entry[1].androidPermissions).not.toContain('android.permission.RECORD_AUDIO');
         // It writes the same iOS key as expo-image-picker and expo-audio, so it must come last to be the one that sticks.
         expect((expo.plugins as unknown[]).at(-1)).toBe(entry);

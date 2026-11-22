@@ -10,7 +10,7 @@ export type EditorMediaErrorCode = (typeof EDITOR_MEDIA_ERROR_CODES)[number];
 export type EditorMediaProgressStage = 'preparing' | 'decoding' | 'encoding' | 'finishing';
 export type EditorMediaError = { ok: false; code: EditorMediaErrorCode; reason?: string };
 export type EditorMediaResult<T> = { ok: true; value: T } | EditorMediaError;
-export type EditorMediaOperations = Readonly<Record<'inspect' | 'sampleFrames' | 'decodePcm' | 'beginEncode' | 'appendFrameBatch' | 'finishEncode' | 'cancel' | 'cancelProject' | 'release', boolean>>;
+export type EditorMediaOperations = Readonly<Record<'inspect' | 'sampleFrames' | 'decodePcm' | 'mixAudio' | 'beginEncode' | 'appendFrameBatch' | 'finishEncode' | 'cancel' | 'cancelProject' | 'release', boolean>>;
 export type EditorMediaCapability = { available: boolean; platform: 'ios' | 'android'; protocolVersion: 1; reason?: 'unsupported-platform' | 'module-missing'; operations: EditorMediaOperations };
 export type EditorMediaProgress = { stage: EditorMediaProgressStage; value: number };
 export type EditorMediaInfo = { durationUs: number; hasVideo: boolean; hasAudio: boolean; width?: number; height?: number; preferredTransform?: number[]; nominalFrameRate?: number;
@@ -23,15 +23,25 @@ export type PcmTimingSegment = { offsetFrames: number; timestampUs: number; fram
 export type PcmArtifact = EditorMediaArtifact & { kind: 'pcm'; sampleRate: 48000; channels: 1 | 2; frames: number; encoding: 'f32le-interleaved';
     mixMode?: 'web-average'; segments?: PcmTimingSegment[] };
 export type Mp4Artifact = EditorMediaArtifact & { kind: 'mp4'; width: number; height: number; fps: number; frames: number; durationUs: number;
-    videoCodec: 'avc1'; audioCodec?: 'mp4a'; audioSampleRate?: 48000; audioChannels?: 2 };
+    videoCodec: 'avc1' | 'hvc1-alpha'; audioCodec?: 'mp4a'; audioSampleRate?: 48000; audioChannels?: 2 };
 export type SampleFramesRequest = { uri: string; fromSeconds: number; toSeconds: number; maxFrames: number; resizeMode?: 'contain' | 'fill';
     samplingMode?: 'all'; maximumFrameRate?: 60 };
 export type DecodePcmRequest = { uri: string; fromSeconds: number; toSeconds: number; sampleRate: 48000; channels: 1 | 2; mixMode?: 'web-average' };
-export type BeginEncodeRequest = { width: number; height: number; fps: number; videoBitRate: number; audioBitRate?: number; audioArtifactId?: string };
+export type LegacyAudioMixClip = { mediaId: string; timelineStartSeconds: number; sourceStartSeconds: number; durationSeconds: number;
+    volume: number; fadeInSeconds: number; fadeOutSeconds: number };
+export type AdvancedAudioMixClip = { mediaId: string; start: number; in: number; len: number; transitionOut: number;
+    volume: number; fadeIn: number; fadeOut: number; rate: number; reverse: boolean; preservePitch: boolean;
+    speedCurve?: readonly { frame: number; rate: number }[];
+    audioProcessing: { pitch: number; voice: 'none' | 'deep' | 'bright' | 'radio' | 'robot'; noiseReduction: number; noiseStart: number; noiseLength: number; gateDb: number };
+    audioEffects: { width: number; tremoloRate: number; tremoloDepth: number; echoDelay: number; echoDecay: number; echoRepeats: number; echoMix: number };
+    pan: number; eq: { low: number; mid: number; high: number } };
+export type AudioMixClip = LegacyAudioMixClip | AdvancedAudioMixClip;
+export type AudioMixRequest = { clips: readonly AudioMixClip[]; sources: Readonly<Record<string, string>>; frames: number; fps: number };
+export type BeginEncodeRequest = { width: number; height: number; fps: number; videoBitRate: number; audioBitRate?: number; audioArtifactId?: string; alpha?: boolean };
 export type FrameDescriptor = { version: 1; uri: string; index: number; timestampUs: number; byteLength: number; width: number; height: number; stride: number;
     pixelFormat: 'rgba8'; colorSpace: 'srgb' };
 export type EncodeSession = { sessionId: string; token: string; project: string; generation: number; width: number; height: number; fps: number; nextIndex: number;
-    audioArtifactId?: string };
+    audioArtifactId?: string; alpha?: boolean };
 export type EditorMediaProbeReport = {
     version: 1; run: 'first-process' | 'warm'; ingress: 'skia-rgba8-file-batches'; firstProcessMethod: string; frameCount: 900; width: 1280; height: 720; fps: 30;
     timingsMs: { renderReadback: number; fileWrite: number; nativeAppendEncode: number; finalize: number; total: number };
@@ -46,7 +56,7 @@ const positiveInteger = (value: unknown): value is number => integer(value) && v
 const identifier = (value: unknown) => typeof value === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(value);
 const exact = (value: Record<string, unknown>, allowed: readonly string[]) => Object.keys(value).every(key => allowed.includes(key));
 const codeSet = new Set<string>(EDITOR_MEDIA_ERROR_CODES), stages = new Set<string>(['preparing', 'decoding', 'encoding', 'finishing']);
-const operationNames = ['inspect', 'sampleFrames', 'decodePcm', 'beginEncode', 'appendFrameBatch', 'finishEncode', 'cancel', 'cancelProject', 'release'] as const;
+const operationNames = ['inspect', 'sampleFrames', 'decodePcm', 'mixAudio', 'beginEncode', 'appendFrameBatch', 'finishEncode', 'cancel', 'cancelProject', 'release'] as const;
 const unavailableOperations = Object.freeze(Object.fromEntries(operationNames.map(name => [name, false])) as EditorMediaOperations);
 export function validIdentifier(value: unknown): value is string { return identifier(value); }
 export function validateOwnedFileUri(value: unknown): value is string {
@@ -68,12 +78,51 @@ export function validateDecodePcmRequest(value: unknown): value is DecodePcmRequ
         && value.sampleRate === 48000 && [1, 2].includes(value.channels as number)
         && (value.mixMode === undefined || value.mixMode === 'web-average' && value.channels === 1);
 }
+export function validateAudioMixRequest(value: unknown): value is AudioMixRequest {
+    if (!object(value) || !exact(value, ['clips', 'sources', 'frames', 'fps']) || !Array.isArray(value.clips) || value.clips.length > 80
+        || !object(value.sources) || Object.keys(value.sources).length > 40 || !positiveInteger(value.frames) || value.frames > 1800
+        || !positiveInteger(value.fps) || value.fps > 60 || value.frames > value.fps * EDITOR_MEDIA_LIMITS.durationSeconds) return false;
+    if (Object.entries(value.sources).some(([mediaId, uri]) => !identifier(mediaId) || !validateOwnedFileUri(uri))) return false;
+    const base = (clip: Record<string, unknown>) => identifier(clip.mediaId) && Object.hasOwn(value.sources as object, clip.mediaId as PropertyKey);
+    const legacy = (clip: Record<string, unknown>) => exact(clip, ['mediaId', 'timelineStartSeconds', 'sourceStartSeconds', 'durationSeconds', 'volume', 'fadeInSeconds', 'fadeOutSeconds'])
+        && base(clip) && finite(clip.timelineStartSeconds) && clip.timelineStartSeconds >= 0 && finite(clip.sourceStartSeconds) && clip.sourceStartSeconds >= 0
+        && finite(clip.durationSeconds) && clip.durationSeconds > 0 && clip.durationSeconds <= EDITOR_MEDIA_LIMITS.durationSeconds
+        && finite(clip.volume) && clip.volume >= 0 && clip.volume <= 4 && finite(clip.fadeInSeconds) && clip.fadeInSeconds >= 0
+        && finite(clip.fadeOutSeconds) && clip.fadeOutSeconds >= 0;
+    const bounded = (candidate: unknown, minimum: number, maximum: number) => finite(candidate) && candidate >= minimum && candidate <= maximum;
+    const advanced = (clip: Record<string, unknown>) => {
+        const eq = clip.eq;
+        if (!exact(clip, ['mediaId', 'start', 'in', 'len', 'transitionOut', 'volume', 'fadeIn', 'fadeOut', 'rate', 'reverse', 'preservePitch',
+            'speedCurve', 'audioProcessing', 'audioEffects', 'pan', 'eq']) || !base(clip)
+            || !integer(clip.start) || clip.start < 0 || !integer(clip.in) || clip.in < 0 || !positiveInteger(clip.len) || clip.len > 1800
+            || !integer(clip.transitionOut) || clip.transitionOut < 0 || clip.transitionOut > 60 || clip.len + clip.transitionOut > 1800
+            || !bounded(clip.volume, 0, 4) || !integer(clip.fadeIn) || clip.fadeIn < 0 || !integer(clip.fadeOut) || clip.fadeOut < 0
+            || !bounded(clip.rate, .1, 8) || typeof clip.reverse !== 'boolean' || typeof clip.preservePitch !== 'boolean'
+            || !bounded(clip.pan, -1, 1) || !object(eq) || !exact(eq, ['low', 'mid', 'high'])
+            || !['low', 'mid', 'high'].every(key => bounded(eq[key], -24, 24))) return false;
+        if (clip.speedCurve !== undefined && (!Array.isArray(clip.speedCurve) || clip.speedCurve.length > 12 || clip.speedCurve.length === 1
+            || clip.speedCurve.some((point, index, list) => !object(point) || !exact(point, ['frame', 'rate']) || !integer(point.frame)
+                || point.frame < -18000 || point.frame > 18000 || !bounded(point.rate, .1, 8) || index > 0 && point.frame <= Number((list[index - 1] as Record<string, unknown>).frame)))) return false;
+        const processing = clip.audioProcessing;
+        if (!object(processing) || !exact(processing, ['pitch', 'voice', 'noiseReduction', 'noiseStart', 'noiseLength', 'gateDb'])
+            || !bounded(processing.pitch, -12, 12) || !['none', 'deep', 'bright', 'radio', 'robot'].includes(String(processing.voice))
+            || !bounded(processing.noiseReduction, 0, 1) || !bounded(processing.noiseStart, 0, 333_333)
+            || !bounded(processing.noiseLength, .05, 2) || !bounded(processing.gateDb, -96, -6)) return false;
+        const effects = clip.audioEffects;
+        return object(effects) && exact(effects, ['width', 'tremoloRate', 'tremoloDepth', 'echoDelay', 'echoDecay', 'echoRepeats', 'echoMix'])
+            && bounded(effects.width, 0, 2) && bounded(effects.tremoloRate, .1, 20) && bounded(effects.tremoloDepth, 0, 1)
+            && bounded(effects.echoDelay, .01, 1) && bounded(effects.echoDecay, .05, .9) && integer(effects.echoRepeats)
+            && bounded(effects.echoRepeats, 1, 8) && Number(effects.echoDelay) * Number(effects.echoRepeats) <= 4 && bounded(effects.echoMix, 0, 1);
+    };
+    return value.clips.every(clip => object(clip) && (legacy(clip) || advanced(clip)));
+}
 export function validateBeginEncodeRequest(value: unknown): value is BeginEncodeRequest {
-    if (!object(value) || !exact(value, ['width', 'height', 'fps', 'videoBitRate', 'audioBitRate', 'audioArtifactId']) || !positiveInteger(value.width) || !positiveInteger(value.height)
+    if (!object(value) || !exact(value, ['width', 'height', 'fps', 'videoBitRate', 'audioBitRate', 'audioArtifactId', 'alpha']) || !positiveInteger(value.width) || !positiveInteger(value.height)
         || value.width > 1280 || value.height > 1280 || value.width * value.height > 1280 * 720 || !positiveInteger(value.fps) || value.fps > 60
         || !positiveInteger(value.videoBitRate) || value.videoBitRate < 100_000 || value.videoBitRate > 50_000_000
         || value.audioBitRate !== undefined && (!positiveInteger(value.audioBitRate) || value.audioBitRate < 64_000 || value.audioBitRate > 512_000)
-        || value.audioArtifactId !== undefined && !identifier(value.audioArtifactId) || value.audioBitRate !== undefined && value.audioArtifactId === undefined) return false;
+        || value.audioArtifactId !== undefined && !identifier(value.audioArtifactId) || value.audioBitRate !== undefined && value.audioArtifactId === undefined
+        || value.alpha !== undefined && typeof value.alpha !== 'boolean') return false;
     const projectedMaximum = (value.videoBitRate + (value.audioArtifactId === undefined ? 0 : value.audioBitRate ?? 192_000))
         * EDITOR_MEDIA_LIMITS.durationSeconds / 8 + 1_048_576;
     return projectedMaximum <= EDITOR_MEDIA_LIMITS.mp4ArtifactBytes;
@@ -167,11 +216,12 @@ export function parseMp4Artifact(value: unknown): Mp4Artifact | null {
     const base = parseArtifactBase(value, 'mp4', EDITOR_MEDIA_LIMITS.mp4ArtifactBytes); if (!base || !object(value) || !positiveInteger(value.width) || !positiveInteger(value.height)
         || value.width > 1280 || value.height > 1280 || value.width * value.height > 1280 * 720 || !positiveInteger(value.fps) || value.fps > 60
         || !positiveInteger(value.frames) || value.frames > value.fps * 30 || !positiveInteger(value.durationUs) || value.durationUs > 30_000_000
-        || value.durationUs !== frameTimestampUs(value.frames, value.fps) || value.videoCodec !== 'avc1'
+        || value.durationUs !== frameTimestampUs(value.frames, value.fps) || !['avc1', 'hvc1-alpha'].includes(String(value.videoCodec))
         || value.audioCodec !== undefined && value.audioCodec !== 'mp4a' || value.audioSampleRate !== undefined && value.audioSampleRate !== 48000
         || value.audioChannels !== undefined && value.audioChannels !== 2
         || value.audioCodec === undefined !== (value.audioSampleRate === undefined && value.audioChannels === undefined)) return null;
-    return { ...base, kind: 'mp4', width: value.width, height: value.height, fps: value.fps, frames: value.frames, durationUs: value.durationUs, videoCodec: 'avc1',
+    return { ...base, kind: 'mp4', width: value.width, height: value.height, fps: value.fps, frames: value.frames, durationUs: value.durationUs,
+        videoCodec: value.videoCodec as 'avc1' | 'hvc1-alpha',
         ...(value.audioCodec === 'mp4a' ? { audioCodec: 'mp4a' as const, audioSampleRate: 48000 as const, audioChannels: 2 as const } : {}) };
 }
 export function parseProgress(value: unknown): EditorMediaProgress | null {

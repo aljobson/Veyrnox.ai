@@ -1,13 +1,15 @@
 import * as shared from '../src/lib/beatNative/exportShared';
 import * as takes from '../src/lib/beatNative/takeShared';
-import { nativeExportBytes, prepareExportBuffers, renderNativeExport } from '../src/lib/beatNative/exportRender';
-import { addAudioRegion, type BeatDoc } from '../src/lib/beatNative/doc';
+import { nativeExportBytes, nativeStemLoadBytes, prepareExportBuffers, renderNativeExport } from '../src/lib/beatNative/exportRender';
+import { addAudioRegion, type BeatDoc, type BeatRemoteAsset } from '../src/lib/beatNative/doc';
 import { BEAT_SOUNDS, soundAsset, soundDuration } from '../src/lib/beatNative/labs';
 import { createTakeFiles } from '../src/lib/beatNative/takeFiles';
 import { wrapNativeContext, type NativeOfflineContext } from '../src/lib/beatNative/nativeContext';
 import { fixedDoc } from './beatNativeFixtures';
 import { takeIO, takeRow } from './beatNativeTakeFixtures';
 import { offlineFixture, exportOptions } from './beatNativeExportFixtures';
+import type { NativeExportAssetSession } from '../src/lib/beatNative/nativeExportAssets';
+import { NATIVE_INFLATE_PEAK_BYTES, STEM_ZIP_LIMIT } from '../src/lib/beatNative/stemArchive';
 // Native export owns prepared buffers and must never load browser state/signing modules.
 jest.mock('../../../app/veyrnox/_lib/music/beat/beatAssets.js', () => { throw new Error('browser assets imported'); });
 jest.mock('../../../app/veyrnox/_lib/music/beat/beatSongAsset.js', () => { throw new Error('browser song assets imported'); });
@@ -35,7 +37,7 @@ test.each([16, 24] as const)('runs the actual shared song renderer and creates s
     expect(String.fromCharCode(...new Uint8Array(result[0].bytes, 0, 4))).toBe('RIFF');
     expect(view.getUint16(22, true)).toBe(2); expect(view.getUint32(24, true)).toBe(48000); expect(view.getUint16(34, true)).toBe(bitDepth);
     expect(result[0].bytes.byteLength).toBe(44 + frames * 2 * bitDepth / 8);
-    expect(result[0].report.gaps).toContain('dynamicsCompressor');
+    expect(result[0].report.gaps).not.toContain('dynamicsCompressor');
 });
 test('native take buffers include a reversed copy; song export never imports browser assets', async () => {
     const { doc, row } = await takeDoc(true), { Context } = offlineFixture();
@@ -132,12 +134,30 @@ test.each([
     await expect(renderNativeExport(doc, exportOptions, consume, { Context })).rejects.toThrow('This sound changed size since it was added');
     expect(render).not.toHaveBeenCalled(); expect(consume).not.toHaveBeenCalled();
 });
-test.each(['song', 'stem', 'target'])('refuses %s before load, native construction or shared rendering', async source => {
+test('refuses a missing audio source before load, native construction or shared rendering', async () => {
     const { doc } = await takeDoc(), id = shared.usedAssets(doc)[0];
-    (doc.assets![id] as unknown as { source: string }).source = source;
+    delete doc.assets![id];
     const load = jest.spyOn(takes, 'loadBeatTake'), reached = jest.spyOn(shared, 'renderSong'), { Context, contexts } = offlineFixture();
     await expect(renderNativeExport(doc, exportOptions, async () => {}, { Context })).rejects.toMatchObject({ key: 'beatExport.source' });
     expect(load).not.toHaveBeenCalled(); expect(reached).not.toHaveBeenCalled(); expect(contexts).toHaveLength(0);
+});
+test.each(['song', 'stem', 'target'] as const)('renders a signed %s asset through the native session and asserts authority in shared chunks', async source => {
+    const asset: BeatRemoteAsset = source === 'song'
+        ? { source, name: 'Music track', bpm: null, durationSec: 2, sourceChannels: 2, encodedBytes: 100,
+            ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', jobId: '33333333-3333-4333-8333-333333333333' } }
+        : source === 'stem'
+            ? { source, name: 'Stem', bpm: null, durationSec: 2, sourceChannels: 2, encodedBytes: 100,
+                ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', requestId: '33333333-3333-4333-8333-333333333333', part: 'vocals' } }
+        : { source, name: 'Target', bpm: null, durationSec: 2, sourceChannels: 2, encodedBytes: 100,
+            ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', requestId: '33333333-3333-4333-8333-333333333333', kind: 'target', instrument: 'vocals' } };
+    const doc = addAudioRegion(fixedDoc(), asset, null, 0), fixture = offlineFixture();
+    const prepare = jest.fn(async (_asset, _bpm, target: NativeOfflineContext) => target.createBuffer(2, 96_000, 48_000));
+    const assertAssets = jest.fn(), releaseBatch = jest.fn(async () => {});
+    const assets = { prepare, assertAssets, releaseBatch, preflight: jest.fn(), confirm: jest.fn(), close: jest.fn() } as NativeExportAssetSession;
+    const consume = jest.fn();
+    await renderNativeExport(doc, exportOptions, consume, { Context: fixture.Context, assets });
+    expect(prepare).toHaveBeenCalledTimes(1); expect(assertAssets).toHaveBeenCalled(); expect(releaseBatch).toHaveBeenCalledTimes(1);
+    expect(consume).toHaveBeenCalledTimes(1);
 });
 test('invalid Starter Sound metadata refuses the whole export before native construction', async () => {
     const first = soundDoc(), later = addAudioRegion(first.doc, soundAsset(BEAT_SOUNDS[1], first.doc.tempo.bpm), null, 0);
@@ -181,6 +201,78 @@ test.each([['', false], [' plus reverse', true]] as const)('native memory prefli
         + plan.frames * 2 * 4 + 44 + plan.frames * 2 * plan.bitDepth / 8;
     expect(nativeExportBytes(doc, plan, [])).toBe(expected);
 });
+test.each([['', false], [' plus reverse', true]] as const)('native memory preflight counts remote decode reserve once%s', (_label, reverse) => {
+    const asset: BeatRemoteAsset = { source: 'song', name: 'Music track', bpm: null, durationSec: 2, sourceChannels: 2, encodedBytes: 100,
+        ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', jobId: '33333333-3333-4333-8333-333333333333' } };
+    const doc = addAudioRegion(fixedDoc(), asset, null, 0);
+    doc.tracks.at(-1)!.regions[0].reverse = reverse;
+    const plan = shared.planExport(doc, { ...exportOptions, phone: true });
+    const prepared = shared.pcmBytes(asset) * (reverse ? 2 : 1);
+    const expected = prepared + shared.decodeReserve(asset)
+        + plan.frames * 2 * 4 + 44 + plan.frames * 2 * plan.bitDepth / 8;
+    expect(nativeExportBytes(doc, plan, [])).toBe(expected);
+});
+test('stem admission includes both retained entries plus the larger inflate or decoded-copy peak', () => {
+    const requestId = '33333333-3333-4333-8333-333333333333', encodedBytes = STEM_ZIP_LIMIT / 2;
+    const stem = (part: 'vocals' | 'instrumental'): BeatRemoteAsset => ({ source: 'stem', name: part, bpm: null,
+        durationSec: 2, sourceChannels: 2, encodedBytes,
+        ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', requestId, part } });
+    let doc = addAudioRegion(fixedDoc(), stem('vocals'), null, 0);
+    doc = addAudioRegion(doc, stem('instrumental'), null, 0);
+    const plan = shared.planExport(doc, { ...exportOptions, phone: true });
+    const entries = STEM_ZIP_LIMIT, decodedCopyAndPcm = shared.decodeReserve(stem('vocals'));
+    const prepared = shared.pcmBytes(stem('vocals')) + shared.pcmBytes(stem('instrumental'));
+    const output = plan.frames * 2 * 4 + 44 + plan.frames * 2 * plan.bitDepth / 8;
+    expect(STEM_ZIP_LIMIT).toBe(120 * shared.MB);
+    expect(nativeStemLoadBytes(entries, stem('vocals'))).toBe(entries + Math.max(NATIVE_INFLATE_PEAK_BYTES, decodedCopyAndPcm));
+    expect(nativeExportBytes(doc, plan, [])).toBe(prepared + entries + Math.max(NATIVE_INFLATE_PEAK_BYTES, decodedCopyAndPcm) + output);
+    const single = addAudioRegion(fixedDoc(), stem('vocals'), null, 0), singlePlan = shared.planExport(single, { ...exportOptions, phone: true });
+    const singleOutput = singlePlan.frames * 2 * 4 + 44 + singlePlan.frames * 2 * singlePlan.bitDepth / 8;
+    expect(nativeExportBytes(single, singlePlan, [])).toBe(shared.pcmBytes(stem('vocals'))
+        + STEM_ZIP_LIMIT + Math.max(NATIVE_INFLATE_PEAK_BYTES, decodedCopyAndPcm) + singleOutput);
+});
+test('two stem requests count two retained archives and gate exactly at 300 decimal MB', async () => {
+    const stem = (requestId: string, part: 'vocals' | 'instrumental'): BeatRemoteAsset => ({ source: 'stem', name: `${requestId}-${part}`, bpm: null,
+        durationSec: 2, sourceChannels: 2, encodedBytes: 1,
+        ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', requestId, part } });
+    const first = stem('33333333-3333-4333-8333-333333333333', 'vocals');
+    const second = stem('44444444-4444-4444-8444-444444444444', 'instrumental');
+    let doc = addAudioRegion(fixedDoc(), first, null, 0);
+    doc = addAudioRegion(doc, second, null, 0);
+    const plan = shared.planExport(doc, { ...exportOptions, phone: true });
+    const prepared = shared.pcmBytes(first) + shared.pcmBytes(second);
+    const output = plan.frames * 2 * 4 + 44 + plan.frames * 2 * plan.bitDepth / 8;
+    const transient = Math.max(NATIVE_INFLATE_PEAK_BYTES, shared.decodeReserve(first), shared.decodeReserve(second));
+    const base = nativeExportBytes(doc, plan, []);
+    expect(base).toBe(prepared + 2 * STEM_ZIP_LIMIT + transient + output);
+    const room = 300 * shared.MB - base, fixture = offlineFixture();
+    expect(room).toBeGreaterThanOrEqual(0);
+    const assets = { prepare: jest.fn(async (_asset, _bpm, target: NativeOfflineContext) => target.createBuffer(2, 96_000, 48_000)),
+        assertAssets: jest.fn(), releaseBatch: jest.fn(async () => {}), preflight: jest.fn(), confirm: jest.fn(), close: jest.fn() } as NativeExportAssetSession;
+    await expect(renderNativeExport(doc, exportOptions, async () => {}, { Context: fixture.Context, assets, retainedBytes: () => room })).resolves.toBeUndefined();
+    const over = offlineFixture();
+    await expect(renderNativeExport(doc, exportOptions, async () => {}, { Context: over.Context, assets, retainedBytes: () => room + 1 }))
+        .rejects.toMatchObject({ key: 'beatExport.phone' });
+    expect(over.contexts).toHaveLength(0);
+});
+test('stem admission accepts exactly 300 decimal MB and refuses one byte over before native allocation', async () => {
+    const requestId = '33333333-3333-4333-8333-333333333333', encodedBytes = STEM_ZIP_LIMIT / 2;
+    const stem = (part: 'vocals' | 'instrumental'): BeatRemoteAsset => ({ source: 'stem', name: part, bpm: null,
+        durationSec: 2, sourceChannels: 2, encodedBytes,
+        ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', requestId, part } });
+    let doc = addAudioRegion(fixedDoc(), stem('vocals'), null, 0);
+    doc = addAudioRegion(doc, stem('instrumental'), null, 0);
+    const plan = shared.planExport(doc, { ...exportOptions, phone: true }), base = nativeExportBytes(doc, plan, []);
+    const room = 300 * shared.MB - base, fixture = offlineFixture();
+    expect(room).toBeGreaterThanOrEqual(0);
+    const assets = { prepare: jest.fn(async (_asset, _bpm, target: NativeOfflineContext) => target.createBuffer(2, 96_000, 48_000)),
+        assertAssets: jest.fn(), releaseBatch: jest.fn(async () => {}), preflight: jest.fn(), confirm: jest.fn(), close: jest.fn() } as NativeExportAssetSession;
+    await expect(renderNativeExport(doc, exportOptions, async () => {}, { Context: fixture.Context, assets, retainedBytes: () => room })).resolves.toBeUndefined();
+    const over = offlineFixture();
+    await expect(renderNativeExport(doc, exportOptions, async () => {}, { Context: over.Context, assets, retainedBytes: () => room + 1 }))
+        .rejects.toMatchObject({ key: 'beatExport.phone' });
+    expect(over.contexts).toHaveLength(0);
+});
 test('retained take cache can make a Sound export fail native memory before any context', async () => {
     const { doc } = soundDoc(), plan = shared.planExport(doc, { ...exportOptions, phone: true });
     const base = nativeExportBytes(doc, plan, []), needed = Math.ceil((300 * shared.MB - base + 1) / 4);
@@ -201,7 +293,7 @@ test('stems finish sharing before the next render; pattern uses the shared mono 
     expect(starts.mock.calls.at(-1)![0]).toBe(1); expect(new DataView(consume.mock.calls[0][0].bytes).getUint16(22, true)).toBe(1);
 });
 
-test('N7-R7: non-take song assets do not block pattern loops but remain refused for song export', async () => {
+test('N7-R7: remote assets do not block pattern loops and song export requires its native asset session', async () => {
     const doc = addAudioRegion(fixedDoc(), { source: 'song', name: 'Music track', bpm: null, durationSec: 10, sourceChannels: 2, encodedBytes: 1000,
         ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', jobId: '33333333-3333-4333-8333-333333333333' } }, null, 0);
     const { Context } = offlineFixture(), consume = jest.fn(async () => {}), render = jest.spyOn(shared, 'renderBeat');

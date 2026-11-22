@@ -2,21 +2,26 @@ import type { BeatDoc } from './doc';
 import { beatTakes, configureNativeTakeStorage, hydrateBeatTakes, loadBeatTake, type TakeRow } from './takeShared';
 import { loadNativeOfflineContext, withWindowOfflineContext, type AdapterReport, type NativeOfflineCtor, type NativeOfflineContext } from './nativeContext';
 import { AUDIO_RATE, assembleExport, checkDecoded, createWavWriter, encodeWav, exportFilename, exportSeed, MB, planExport, renderBeat,
-    renderSong, renderStarterSound, seededRandom, soundDuration, usedAssets, validAsset,
+    decodeReserve, pcmBytes, renderSong, renderStarterSound, seededRandom, soundDuration, usedAssets, validAsset,
     type ExportOptions, type ExportPlan, type OfflineContextFactory, type PCMBuffer, type SongBuffers } from './exportShared';
+import type { NativeExportAssetSession, NativeExportSelection } from './nativeExportAssets';
+import { NATIVE_INFLATE_PEAK_BYTES, STEM_ZIP_LIMIT } from './stemArchive';
 
 import { ExportFailure } from './exportFailure';
 export { ExportFailure } from './exportFailure';
 const reverseUsed = (doc: BeatDoc, id: string) => doc.tracks.some(t => t.regions.some(r => r.assetId === id && r.reverse));
 function nativeAsset(doc: BeatDoc, id: string) {
     const asset = doc.assets?.[id];
-    if (asset?.source !== 'take' && asset?.source !== 'sound') throw new ExportFailure('beatExport.source');
-    if (asset.source === 'sound' && !validAsset(asset, doc.tempo.bpm)) throw new ExportFailure('beatExport.renderError');
+    if (!asset) throw new ExportFailure('beatExport.source');
+    if (!validAsset(asset, doc.tempo.bpm)) throw new ExportFailure('beatExport.renderError');
     return asset;
 }
 export function assertNativeSources(doc: BeatDoc) {
     for (const id of usedAssets(doc)) nativeAsset(doc, id);
 }
+/** Peak while a retained two-entry archive is either inflating one entry or decoding its selected copy. */
+export const nativeStemLoadBytes = (retainedEntries: number, asset: Parameters<typeof decodeReserve>[0]) =>
+    retainedEntries + Math.max(NATIVE_INFLATE_PEAK_BYTES, decodeReserve(asset));
 /** Include the entire shared JS sample cache, even audio removed from this document. No loads or native allocations here. */
 export function nativeExportBytes(doc: BeatDoc, plan: Pick<ExportPlan, 'frames' | 'bitDepth'>, cached: TakeRow[] = beatTakes(), stemTrackIds?: string[]): number {
     let bytes = cached.reduce((sum, row) => sum + (row.samples?.length ?? 0) * 4, 0);
@@ -32,8 +37,9 @@ export function nativeExportBytes(doc: BeatDoc, plan: Pick<ExportPlan, 'frames' 
             loaded.add(asset.ref);
             preparedBytes.set(id, length * 4);
         } else {
-            const pcm = Math.round(soundDuration(asset.ref, doc.tempo.bpm) * AUDIO_RATE) * 2 * 4;
-            preparedBytes.set(id, pcm); soundBytes.set(id, pcm);
+            const pcm = asset.source === 'sound' ? Math.round(soundDuration(asset.ref, doc.tempo.bpm) * AUDIO_RATE) * 2 * 4 : pcmBytes(asset);
+            preparedBytes.set(id, pcm);
+            if (asset.source === 'sound') soundBytes.set(id, pcm);
         }
     }
     const sets = stemTrackIds ? stemTrackIds.map(id => trackDoc(doc, id)) : [doc];
@@ -41,7 +47,18 @@ export function nativeExportBytes(doc: BeatDoc, plan: Pick<ExportPlan, 'frames' 
         const ids = usedAssets(part);
         const prepared = ids.reduce((sum, id) => sum + preparedBytes.get(id)! * (reverseUsed(part, id) ? 2 : 1), 0);
         const activeSound = Math.max(0, ...ids.map(id => soundBytes.get(id) ?? 0));
-        return prepared + activeSound * 2 + (activeSound ? AUDIO_RATE * 4 : 0);
+        const stemRequests = new Set(ids.flatMap(id => {
+            const asset = nativeAsset(part, id);
+            return asset.source === 'stem' && typeof asset.ref === 'object' ? [asset.ref.requestId] : [];
+        }));
+        const activeRemote = stemRequests.size * STEM_ZIP_LIMIT + Math.max(0, ...ids.map(id => {
+            const asset = nativeAsset(part, id);
+            if (asset.source === 'stem' && typeof asset.ref === 'object') {
+                return Math.max(NATIVE_INFLATE_PEAK_BYTES, decodeReserve(asset));
+            }
+            return asset.source === 'song' || asset.source === 'target' ? decodeReserve(asset) : 0;
+        }));
+        return prepared + Math.max(activeRemote, activeSound * 2 + (activeSound ? AUDIO_RATE * 4 : 0));
     }));
     return bytes + nativePeak + plan.frames * 2 * 4 + 44 + plan.frames * 2 * plan.bitDepth / 8;
 }
@@ -54,7 +71,7 @@ async function checkExportSources(doc: BeatDoc) {
     }
     if (missing) throw new ExportFailure(missing === 1 ? 'beatExport.missingOne' : 'beatExport.missingMany', { count: missing });
 }
-type PrepareDeps = { make?: OfflineContextFactory; check?(): void };
+type PrepareDeps = { make?: OfflineContextFactory; check?(): void; assets?: NativeExportAssetSession };
 const copyBuffer = (context: NativeOfflineContext, source: PCMBuffer) => {
     const copy = context.createBuffer(source.numberOfChannels, source.length, source.sampleRate);
     for (let channel = 0; channel < source.numberOfChannels; channel++) copy.getChannelData(channel).set(source.getChannelData(channel));
@@ -79,12 +96,17 @@ export async function prepareExportBuffers(doc: BeatDoc, context: NativeOfflineC
                 if (!take) { buffers.set(id, { missing: true }); continue; }
                 buffer = context.createBuffer(1, take.samples.length, take.sampleRate);
                 buffer.getChannelData(0).set(take.samples);
-            } else {
+            } else if (asset.source === 'sound') {
                 if (!deps.make) throw new Error('offline_unavailable');
                 deps.check?.();
                 const rendered = await renderStarterSound(asset.ref, doc.tempo.bpm, deps.make, seededRandom(exportSeed(doc)));
                 deps.check?.(); checkDecoded(rendered, asset);
                 buffer = copyBuffer(context, rendered);
+            } else {
+                if (!deps.assets) throw new ExportFailure('beatExport.source');
+                deps.check?.();
+                buffer = await deps.assets.prepare(asset, doc.tempo.bpm, context);
+                deps.check?.(); checkDecoded(buffer, asset);
             }
             const reverse = reverseUsed(doc, id) ? reverseBuffer(context, buffer) : undefined;
             buffers.set(id, { buffer, reverse, missing: false });
@@ -96,8 +118,8 @@ export async function prepareExportBuffers(doc: BeatDoc, context: NativeOfflineC
         buffers.clear(); throw error;
     }
 }
-export type RenderedExport = { bytes: ArrayBuffer; filename: string; report: AdapterReport };
-export type RenderDeps = { Context?: NativeOfflineCtor | null; progress?(seconds: number, total: number): void; current?(): boolean; retainedBytes?(): number };
+export type RenderedExport = { bytes: ArrayBuffer; filename: string; report: AdapterReport; selection: NativeExportSelection };
+export type RenderDeps = { Context?: NativeOfflineCtor | null; progress?(seconds: number, total: number): void; current?(): boolean; retainedBytes?(): number; assets?: NativeExportAssetSession };
 /** Render/consume one stem at a time. No native buffer or output is retained in UI state. */
 export async function renderNativeExport(doc: BeatDoc, options: ExportOptions, consume: (result: RenderedExport) => Promise<void>, deps: RenderDeps = {}) {
     const report: AdapterReport = { gaps: [], latencyHint: 'offline' };
@@ -109,7 +131,7 @@ export async function renderNativeExport(doc: BeatDoc, options: ExportOptions, c
             deps.progress?.(0, options.loops * doc.steps * 60 / doc.tempo.bpm / 4);
             const rendered = await renderBeat(doc, options.loops, options.editTrackId); check();
             deps.progress?.(rendered.samples.length / rendered.sampleRate, rendered.samples.length / rendered.sampleRate);
-            await consume({ bytes: encodeWav(rendered.samples, rendered.sampleRate), filename: exportFilename(doc.title), report });
+            await consume({ bytes: encodeWav(rendered.samples, rendered.sampleRate), filename: exportFilename(doc.title), report, selection: { pattern: true } });
             return;
         }
         assertNativeSources(doc);
@@ -123,14 +145,16 @@ export async function renderNativeExport(doc: BeatDoc, options: ExportOptions, c
         await checkExportSources(doc); check();
         for (const track of tracks) {
             check(); deps.progress?.(0, plan.frames / plan.sampleRate);
-            const buffers = await prepareExportBuffers(trackDoc(doc, track.id), make(1, 1, plan.sampleRate), { make, check });
+            const selection: NativeExportSelection = { range: options.range, soloTrackId: track.id };
+            const buffers = await prepareExportBuffers(trackDoc(doc, track.id), make(1, 1, plan.sampleRate), { make, check, assets: deps.assets });
             let bytes: ArrayBuffer;
             try {
                 check();
-                bytes = await assembleExport(plan, chunk => renderSong(doc, { buffers, range: options.range, soloTrackId: track.id, ...chunk }), createWavWriter(plan));
-            } finally { buffers.clear(); }
+                bytes = await assembleExport(plan, chunk => renderSong(doc, { buffers, range: options.range, soloTrackId: track.id,
+                    assertAssets: deps.assets ? () => deps.assets!.assertAssets(selection) : undefined, ...chunk }), createWavWriter(plan));
+            } finally { buffers.clear(); await deps.assets?.releaseBatch(); }
             check(); deps.progress?.(plan.frames / plan.sampleRate, plan.frames / plan.sampleRate);
-            await consume({ bytes, filename: track.filename, report });
+            await consume({ bytes, filename: track.filename, report, selection });
         }
     });
 }

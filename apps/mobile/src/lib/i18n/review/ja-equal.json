@@ -135,5 +135,6 @@
   "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
-  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose."
 }

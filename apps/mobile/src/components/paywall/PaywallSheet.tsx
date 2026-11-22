@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
@@ -20,12 +21,14 @@ import { PlanCards, initialCadence, type Cadence } from '../credits/PlanCards';
 import { PurchaseState } from '../credits/PurchaseState';
 import { PurchaseOutcomeState } from '../credits/PurchaseOutcomeState';
 import { usePaywallFeedback } from './PaywallFeedback';
+import { modalSafePadding } from '../../lib/modalLayout';
 
 export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     reason: PaywallReason; onClose: () => void; onOptions: () => void; onLegal: (index: number) => void;
 }) {
     const s = useThemedStyles(sheets);
-    const { height } = useWindowDimensions();
+    const { height, fontScale } = useWindowDimensions();
+    const insets = useSafeAreaInsets();
     const { api } = useAuth();
     const billing = useBilling();
     const { refreshSales } = billing;
@@ -106,12 +109,13 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
         void billing.refreshSales();
     }
     const close = () => { if (actions.close) onClose(); };
+    const short = height < 500;
     return <Modal transparent visible animationType={feedback.still ? 'none' : 'fade'} onRequestClose={close}>
-        <View style={s.backdrop} onAccessibilityEscape={close}>
-            <View style={s.card} accessibilityViewIsModal>
+        <View style={[s.backdrop, modalSafePadding(insets)]} onAccessibilityEscape={close}>
+            <View style={[s.card, { maxHeight: Math.max(240, height - insets.top - insets.bottom - 32) }]} accessibilityViewIsModal>
                 <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
                     <View style={s.vey} pointerEvents={nativeBusy ? 'none' : 'auto'} accessibilityElementsHidden={nativeBusy} importantForAccessibility={nativeBusy ? 'no-hide-descendants' : 'auto'}>
-                        <VeyCharacter width={120} interactive={!nativeBusy} mood={feedback.mood} />
+                        <VeyCharacter width={short || fontScale >= 1.3 ? 72 : 120} interactive={!nativeBusy} mood={feedback.mood} />
                     </View>
                     <Text variant="title1" accessibilityRole="header">{copy.title}</Text>
                     {!(showingPlans && reason === 'depleted') ? <Text tone="secondary">{copy.body}</Text> : null}
@@ -132,14 +136,14 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
                                 onCadence={next => choose(() => { setCadence(next); setChosenPlanId(null); })}
                                 onChoose={id => choose(() => setChosenPlanId(id))} />
                             {chosenPlan?.interval ? <Text variant="caption" tone="tertiary" accessibilityLanguage="en">{renewalTerms(chosenPlan.interval, chosenPlan.priceString, Platform.OS === 'ios' ? 'ios' : 'android')}</Text> : null}
-                        </> : <>
+                        </> : <View accessibilityRole="radiogroup" accessibilityLabel={copy.title} style={s.packGroup}>
                             {packs.map(pack => <PackCard key={pack.id} compact selectionMode="radio" selected={pack.id === chosenPack?.id}
                                 pack={pack} best={pack.id === bestPackId(packs)} saving={packSavingPercent(pack, packs)} costs={costs}
                                 disabled={busy} onPress={() => choose(() => setChosenId(pack.id))}>
                                 {pack.id === chosenPack?.id ? <VeyCardPeek /> : null}
                             </PackCard>)}
                             <Text variant="caption" tone="tertiary">{t('credits.paywall.packsNeverExpire')}</Text>
-                        </>}
+                        </View>}
                     </> : subscriberOnly ? null : <PurchaseState kind={billing.status === 'loading' ? 'loading' : 'unavailable'} text={billing.status === 'loading' ? t('common.loading') : unavailableCopy}>
                         {canRetryStore ? <Button variant="secondary" label={t('credits.hardPaywall.retry')} disabled={busy} onPress={retryStore} /> : null}
                     </PurchaseState>}
@@ -170,11 +174,12 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     </Modal>;
 }
 const sheets = themedStyles(p => ({
-    backdrop: { flex: 1, justifyContent: 'center', padding: 16, backgroundColor: p.scrim },
-    card: { maxHeight: '95%', flexShrink: 1, borderRadius: 20, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1, overflow: 'hidden' },
+    backdrop: { flex: 1, justifyContent: 'center', backgroundColor: p.scrim },
+    card: { width: '100%', maxWidth: 720, alignSelf: 'center', maxHeight: '95%', flexShrink: 1, borderRadius: 20, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1, overflow: 'hidden' },
     scroll: { flexShrink: 1 }, content: { padding: 16, gap: 12 }, vey: { alignItems: 'center' },
     footer: { padding: 12, gap: 4, borderTopWidth: 1, borderColor: p.borderSubtle },
     toggle: { flexDirection: 'row', gap: 8 }, tab: { flex: 1 },
+    packGroup: { gap: ds.space.md },
     actions: { gap: 4 },
     subscriber: { gap: ds.space.xs, padding: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated2 },
     legal: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },

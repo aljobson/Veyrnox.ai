@@ -170,7 +170,8 @@ test('tapping the active cadence preserves selection, renewal terms and Continue
     await click(root.container.queryAll(n => n.props.accessibilityRole === 'tab' && textOf(n) === 'Monthly')[0]);
     expect(text()).toBe(before);
     expect(controls(t('credits.subscriptions.continue'))[0].props.accessibilityState.disabled).toBe(false);
-    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')[0].props.accessibilityState.selected).toBe(true);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radiogroup')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')[0].props.accessibilityState.checked).toBe(true);
     await press(t('credits.subscriptions.continue')); expect(mockBilling.purchase).toHaveBeenCalledWith(monthly);
     expect(announce).toHaveBeenCalledWith(t('credits.subscriptions.started'));
 });

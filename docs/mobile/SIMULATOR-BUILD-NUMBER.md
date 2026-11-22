@@ -38,6 +38,23 @@ the variable can be stale after a new TestFlight build.
 A simulator build costs one EAS iOS build (about 8 minutes of build time). The script never runs a
 production build or a submission.
 
+## Direct local build from the retained native project
+
+The consolidated native checkout intentionally uses its existing generated `ios/` folder and direct
+`pod install`, so a changed `app.json` or Expo config plugin does not rewrite that folder. Before a
+local Xcode/simulator/device build, run this from `apps/mobile`:
+
+```bash
+npm run ios:sync-generated-config
+npm run ios:check-generated-config
+pod install --project-directory=ios
+```
+
+The sync command refuses a missing, redirected or non-Veyrnox plist. It only updates the existing
+generated `ios/Veyrnoxai/Info.plist`, atomically, with the app's declared phone orientation and the Speech and
+microphone privacy descriptions used by the source config plugin. Fresh EAS/prebuild builds continue
+to derive the same settings from `app.json` and the plugin; they do not need this local sync step.
+
 ## Check what is installed
 
 `npm run sim:verify [udid]` does this for you (default: the booted simulator). By hand:

@@ -1,6 +1,7 @@
 import { Switch, View } from 'react-native';
 import { Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { BeatKeyboard, type BeatKeyboardProps } from './BeatKeyboard';
+import { BeatExternalMidiCapture } from './BeatExternalMidiCapture';
 import type { BeatEditorLayout } from '../../lib/beatNative/editorLayout';
 import { t } from '../../lib/i18n';
 import { ds } from '../../theme';
@@ -69,6 +70,7 @@ export function BeatMidiRecordPanel({
             <Text variant="bodyStrong">{t('beat.midiRecord.locked')}</Text>
             <Text variant="footnote" tone="secondary">{lockReason}</Text>
         </View> : null}
+        <BeatExternalMidiCapture {...keyboard} disabled={keyboardDisabled} />
         <BeatKeyboard {...keyboard} captureActive={capturing} disabled={keyboardDisabled} />
     </Card>;
 }
