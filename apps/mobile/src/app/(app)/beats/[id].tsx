@@ -12,8 +12,8 @@ import type { RecordingEdit } from '../../../lib/beatNative/takeShared';
 import type { TakeRecording } from '../../../lib/beatNative/takeRecording';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ScrollView, View } from 'react-native';
-import { Button, SegmentedControl, Text, themedStyles, useThemedStyles } from '../../../components/ui';
+import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { PadGrid } from '../../../components/beats/PadGrid';
@@ -33,12 +33,14 @@ import {
 import { beatStore, getBeat, listBeats, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
 import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
-import { ds } from '../../../theme';
+import { ds, TEXT_SCALE } from '../../../theme';
 
 import { createHistory, record, replacePresent, travel, canUndo, canRedo, type History } from '../../../lib/beatNative/history';
 import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
 import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
+import { BeatEditorTransport } from '../../../components/beats/BeatEditorTransport';
+import { beatEditorLayout } from '../../../lib/beatNative/editorLayout';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
@@ -51,6 +53,9 @@ export default function BeatEditor() {
     useSyncExternalStore(subscribeBeats, listBeats, listBeats);
     const doc = getBeat(String(id));
     const s = useThemedStyles(sheets);
+    const { width, fontScale } = useWindowDimensions();
+    const { settings } = useAppearance();
+    const layout = beatEditorLayout(width, fontScale, TEXT_SCALE[settings.textSize]);
     const history = useRef<History | null>(null);
     if (doc && history.current?.present !== doc) history.current = createHistory(doc);
     const recordingRef = useRef<TakeRecording | null>(null);
@@ -161,71 +166,88 @@ export default function BeatEditor() {
     const nameOf = (i: number) => t('beat.track', { n: i + 1 });
     const bpm = doc.tempo.bpm;
     const bump = (by: number) => apply(d => setTempo(d, clampBpm(bpm + by)));
+    const historyBusy = beatStore.saveState(doc.id) === 'busy';
+    const undoable = !locked && !!history.current && canUndo(history.current) && !historyBusy;
+    const redoable = !locked && !!history.current && canRedo(history.current) && !historyBusy;
     return (
-        <ScrollView scrollEnabled={!held} style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+        <View testID="beat-editor-shell" style={s.screen}>
             <Stack.Screen options={{ title: doc.title }} />
-            <BeatSaveControls id={doc.id} apply={apply} />
-            <Button label={t('beatExport.title')} onPress={() => setExporting(true)} />
+            <ScrollView testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
+                contentContainerStyle={[s.content, layout === 'regular' && s.contentRegular]} keyboardShouldPersistTaps="handled">
+                <View style={s.actions}>
+                    <BeatSaveControls id={doc.id} apply={apply} />
+                    <Button variant="secondary" icon="arrowUp" label={t('beatExport.title')} onPress={() => setExporting(true)} />
+                    <BeatAiPanel doc={doc} apply={apply} />
+                    <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
+                </View>
+                {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
+                {notice ? <MusicNotice message={notice} /> : null}
+                <View testID={`beat-editor-layout-${layout}`} style={[s.editor, layout === 'regular' && s.editorRegular]}>
+                    <View testID="beat-editor-main" style={s.main}>
+                        <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing} />
+                        <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
+                            <View style={s.stepper}>
+                                <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
+                                <Button size="md" variant="secondary" label="−" accessibilityLabel={t('beat.tempoDown')} onPress={() => bump(-1)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
+                                <Button size="md" variant="secondary" label="+" accessibilityLabel={t('beat.tempoUp')} onPress={() => bump(1)} disabled={bpm >= MAX_BPM} containerStyle={s.flex} />
+                                <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={bpm >= MAX_BPM} containerStyle={s.flex} />
+                            </View>
+                            <Text variant="title3" accessibilityLiveRegion="polite">{t('beat.tempoValue', { bpm })}</Text>
+                        </View>
+                        <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')}
+                            options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
+                            onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
+                        {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : <>
+                            <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
+                            <PadGrid selected={pad} onHit={hit} />
+                            <Text variant="bodyStrong" accessibilityRole="header">{t('beat.steps', { pad: t(`beat.pad.${pad}`) })}</Text>
+                            <StepGrid doc={doc} pad={pad} current={playing ? step : null} onToggle={n => apply(d => toggleStep(d, pad, n))} />
+                        </>}
+                        <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
+                    </View>
+                    <View testID="beat-editor-inspector" style={[s.inspector, layout === 'regular' && s.inspectorRegular]}>
+                        <Text variant="bodyStrong" accessibilityRole="header">{t('beat.mixer')}</Text>
+                        {doc.tracks.map((track, i) => (
+                            <View key={track.id}><MixerStrip track={track} index={i} canRemove={doc.tracks.length > 1}
+                                gainLocked={automationControl(track, 'gain', (doc as MixDoc).view).disabled ? t('beatMix.locked.gain') : undefined}
+                                panLocked={automationControl(track, 'pan', (doc as MixDoc).view).disabled ? t('beatMix.locked.pan') : undefined}
+                                onGain={v => mix(track.id, d => setTrackGain(d, track.id, Math.round(v * 100) / 100), undefined, `${track.id}:gain`)}
+                                onPan={v => mix(track.id, d => setTrackPan(d, track.id, v), undefined, `${track.id}:pan`)}
+                                onMute={v => mix(track.id, d => setTrackMute(d, track.id, v), t(v ? 'beat.muted' : 'beat.unmuted', { track: nameOf(i) }))}
+                                onSolo={v => mix(track.id, d => setTrackSolo(d, track.id, v), t(v ? 'beat.soloOn' : 'beat.soloOff', { track: nameOf(i) }))}
+                                onKit={kit => apply(d => setTrackKit(d, track.id, kit))}
+                                onRemove={() => apply(d => removeTrack(d, track.id))} />
+                                <BeatTakeLanes doc={doc} track={track} apply={apply} locked={locked} />
+                            </View>
+                        ))}
+                        <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
+                            onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
+                        <Button variant="secondary" label={t('beatTakes.addTrack')} disabled={locked || doc.tracks.length >= MAX_TRACKS} onPress={() => apply(d => addAudioTrack(d))} />
+                        {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
+                    </View>
+                </View>
+            </ScrollView>
+            <BeatEditorTransport playing={playing} starting={starting} locked={locked} canUndo={undoable} canRedo={redoable}
+                onUndo={() => navigateHistory('undo')} onRedo={() => navigateHistory('redo')}
+                onPlay={() => void (playing || starting ? stop() : play())} onMixer={() => setMixer(true)} />
             {exporting && <BeatExportSheet doc={doc} replacing={replacing} recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status)}
                 prepare={() => releaseExportPlayback(audio, recordingRef, stop)} onClose={() => setExporting(false)} />}
-            <BeatAiPanel doc={doc} apply={apply} />
-            <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES} />
-            <Button label={t('beat.undo')} disabled={locked || !history.current || !canUndo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('undo')} />
-            <Button label={t('beat.redo')} disabled={locked || !history.current || !canRedo(history.current) || beatStore.saveState(doc.id) === 'busy'} onPress={() => navigateHistory('redo')} />
-            {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
-            <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing} />
-            {notice ? <MusicNotice message={notice} /> : null}
-            <View style={s.transport} accessibilityLabel={t('beat.transport')}>
-                <Button label={playing || starting ? t('beat.stop') : t('beat.play')} disabled={locked} onPress={() => void (playing || starting ? stop() : play())} containerStyle={s.play} />
-                <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
-                    <View style={s.stepper}>
-                        <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
-                        <Button size="md" variant="secondary" label="−" accessibilityLabel={t('beat.tempoDown')} onPress={() => bump(-1)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
-                        <Button size="md" variant="secondary" label="+" accessibilityLabel={t('beat.tempoUp')} onPress={() => bump(1)} disabled={bpm >= MAX_BPM} containerStyle={s.flex} />
-                        <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={bpm >= MAX_BPM} containerStyle={s.flex} />
-                    </View>
-                    <Text variant="title3" accessibilityLiveRegion="polite">{t('beat.tempoValue', { bpm })}</Text>
-                </View>
-            </View>
-            <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')}
-                options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
-                onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
-            {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : <>
-            <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
-            <PadGrid selected={pad} onHit={hit} />
-            <Text variant="bodyStrong" accessibilityRole="header">{t('beat.steps', { pad: t(`beat.pad.${pad}`) })}</Text>
-            <StepGrid doc={doc} pad={pad} current={playing ? step : null} onToggle={n => apply(d => toggleStep(d, pad, n))} />
-            </>}
-            <Text variant="bodyStrong" accessibilityRole="header">{t('beat.mixer')}</Text>
-            <Button label={t('beatMix.title')} onPress={() => setMixer(true)} />
             {mixer && <BeatMixerSheet doc={doc} audio={audio.current} apply={apply} playing={playing} step={step} notice={notice} onClose={() => setMixer(false)} />}
-            {doc.tracks.map((track, i) => (
-                <View key={track.id}><MixerStrip track={track} index={i} canRemove={doc.tracks.length > 1}
-                    gainLocked={automationControl(track, 'gain', (doc as MixDoc).view).disabled ? t('beatMix.locked.gain') : undefined}
-                    panLocked={automationControl(track, 'pan', (doc as MixDoc).view).disabled ? t('beatMix.locked.pan') : undefined}
-                    onGain={v => mix(track.id, d => setTrackGain(d, track.id, Math.round(v * 100) / 100), undefined, `${track.id}:gain`)}
-                    onPan={v => mix(track.id, d => setTrackPan(d, track.id, v), undefined, `${track.id}:pan`)}
-                    onMute={v => mix(track.id, d => setTrackMute(d, track.id, v), t(v ? 'beat.muted' : 'beat.unmuted', { track: nameOf(i) }))}
-                    onSolo={v => mix(track.id, d => setTrackSolo(d, track.id, v), t(v ? 'beat.soloOn' : 'beat.soloOff', { track: nameOf(i) }))}
-                    onKit={kit => apply(d => setTrackKit(d, track.id, kit))}
-                    onRemove={() => apply(d => removeTrack(d, track.id))} />
-                    <BeatTakeLanes doc={doc} track={track} apply={apply} locked={locked} />
-                </View>
-            ))}
-            <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
-            <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
-                onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
-            <Button variant="secondary" label={t('beatTakes.addTrack')} disabled={locked || doc.tracks.length >= MAX_TRACKS} onPress={() => apply(d => addAudioTrack(d))} />
-            {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
-        </ScrollView>
+        </View>
     );
 }
 const sheets = themedStyles(p => ({
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: ds.space.gutter, gap: ds.space.lg, paddingBottom: ds.space.hero },
-    transport: { gap: ds.space.md },
-    play: { alignSelf: 'stretch' },
-    tempo: { gap: ds.space.sm, alignItems: 'center' },
-    stepper: { flexDirection: 'row', gap: ds.space.sm },
+    workspaceScroll: { flex: 1 },
+    content: { padding: ds.space.gutter, gap: ds.space.lg, paddingBottom: ds.space.xxl },
+    contentRegular: { width: '100%', maxWidth: 1180, alignSelf: 'center', paddingHorizontal: ds.space.xxxl },
+    actions: { gap: ds.space.md },
+    editor: { gap: ds.space.xl },
+    editorRegular: { flexDirection: 'row', alignItems: 'flex-start' },
+    main: { flex: 1.65, minWidth: 0, gap: ds.space.lg },
+    inspector: { flex: 1, minWidth: 0, gap: ds.space.lg },
+    inspectorRegular: { paddingLeft: ds.space.xl, borderLeftWidth: 1, borderLeftColor: p.borderSubtle },
+    tempo: { gap: ds.space.sm, alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle },
+    stepper: { width: '100%', flexDirection: 'row', gap: ds.space.sm },
     flex: { flex: 1 },
 }));

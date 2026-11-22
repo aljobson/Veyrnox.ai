@@ -566,3 +566,37 @@ The configured two-round inspection budget is exhausted, so the final aspect/cac
 5. `F5` low: the cache-budget failure reused misleading song-editing copy. Accepted; `beat.audioTooLarge` explains the beat-level condition and recovery in all complete mobile locale catalogs.
 
 The configured two-round inspection budget is exhausted, so the final per-asset failure corrections and their additional cache-overflow recording regression are not labelled independently approved. A separate read-only host audit found no blocker against the five findings. Final focused proof on the corrected snapshot: eleven mobile suites / 249 tests passed, including sound/song/target scheduling, held and retryable failures, recording continuity, cancellation, account fencing, arrangement/mixer screen contracts and complete locale coverage. The additional recording cache-overflow regression passed in the final suite rerun. Clean PR CI passed mobile TypeScript before exposing two older screen mocks that still used the pre-outcome audio/auth contract; both exact failures and the expanded gate pass after correction. Native audio fidelity, memory pressure and interruption behaviour still require the integrated iPhone qualification gate.
+
+## Wave 3B Beats adaptive workspace shell inspection round 1
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `c48e1081-21a1-4886-8e55-45842f11cf5c`
+- Base: `adb360475b5003c4e82e8e2e499b9d8736a721b4`
+- Plan SHA-256: `e356b6205e8913b1824b015ed930264a8641c86160ecd66860095ebb28db744f`
+- Inspected snapshot SHA-256: `94e3a9228bab5a615ff5399af3d551f5411b74c34bdb37cdcf49ae0d50d53b3d`
+- Inspected diff SHA-256: `2214e1f3d5352979498b9f33a758d178dfc059d0db97760c9e8260bb3ef303f8`
+- Runner result: `/private/tmp/claudex-beats-workspace-shell-r1/claudex-k6ma0xs8/result.json`
+
+### Findings and host dispositions
+
+1. `F1-android-safe-area` medium: React Native's deprecated iOS-only SafeAreaView left the pinned Android controls exposed to edge-to-edge navigation. Accepted; the bar now uses `react-native-safe-area-context` with the bottom edge and a rendered non-zero-inset test.
+2. `F2-accessible-transport-collapse` medium: two `flex: 1` groups could collapse inside an auto-height accessibility column. Accepted; accessible groups no longer flex-grow and the rendered AX layout is tested.
+3. `F3-threshold-inconsistency` low: the large-text cutoff differed between compact and regular widths. Accepted; effective scale above 1.35 selects the accessibility-safe layout before width branching, with phone/iPad boundary tests.
+4. `F4-acceptance-coverage-gaps` low: count-in, channel mute/solo, rendered layout and action-prominence coverage were incomplete. Accepted; the focused tests now cover those contracts.
+
+## Wave 3B Beats adaptive workspace shell inspection round 2
+
+- Result: `REVISE`
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `2afc1faf-817b-4975-a168-b3cfb8cfd872`
+- Base: `adb360475b5003c4e82e8e2e499b9d8736a721b4`
+- Plan SHA-256: `e356b6205e8913b1824b015ed930264a8641c86160ecd66860095ebb28db744f`
+- Inspected snapshot SHA-256: `5b81edcdce0f93b7ef99da9de075dd23f37c18b186ec7ba2ed79a89c747dcdbf`
+- Inspected diff SHA-256: `3b05ae18eedf7d9c125049af6063c2634e84c1542a951ca3d08434b6484e44d7`
+- Runner result: `/private/tmp/claudex-beats-workspace-shell-r2/claudex-zzxc11qp/result.json`
+
+### Findings and host dispositions
+
+1. `BWS-1` medium: two stacked labelled toolbar rows could consume too much height on a short AX5 phone. Accepted after the inspected snapshot; accessibility mode now keeps all four actions in one horizontally scrollable toolbar row and removes the redundant status caption, with a rendered 390×667/fontScale 3.12 regression.
+2. `BWS-2` low: the primary-action test checked a configuration constant instead of rendered controls. Accepted after the inspected snapshot; the test now compares the rendered Pressable backgrounds and proves only Play/Stop uses the prominent style.
+
+The configured two-round inspection budget is exhausted, so the final horizontal AX toolbar and rendered-prominence corrections are not labelled independently approved. Final host proof on the corrected snapshot: seven focused suites / 134 tests passed and `git diff --check` passed. Full mobile TypeScript and changed-file ESLint are unavailable in this checkout because its lockfile differs from the consolidated native environment while `node_modules` points there; the resulting diagnostics are unrelated missing packages (`expo-audio`, RevenueCat UI, fonts, PostHog and clipboard), with no changed-file diagnostic. Clean PR CI is authoritative for those gates. The SwiftUI-only gstack device bridge is incompatible with this React Native app and was not injected; integrated iOS proof must use the existing consolidated simulator/agent-device path.

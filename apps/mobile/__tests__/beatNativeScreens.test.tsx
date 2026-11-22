@@ -20,6 +20,7 @@ import { deferred, memoryFiles, project, version, USER, OTHER } from './beatNati
 import { versionReason, versionTime } from '../src/lib/beatNative/versions';
 import type { ApiClient } from '../src/lib/api';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
+import { BeatRecordPanel } from '../src/components/beats/BeatRecordPanel';
 beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner(USER));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => undefined, remove: async () => undefined, list: async () => [] }) }));
@@ -51,6 +52,7 @@ const press = async (label: string) => {
     await act(async () => { (n.props.onClick ?? n.props.onPress)({ nativeEvent: {} }); });
 };
 const text = (value: string) => root.container.queryAll(n => n.children.includes(value));
+const testId = (value: string) => root.container.queryAll(n => n.props.testID === value);
 beforeEach(() => { configureBeatTakeStorage(createTakeFiles(takeIO())); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); resetBeats(); jest.clearAllMocks(); jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() })); mockGeneration = 0; mockGetAccessToken.mockImplementation(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`); mockApi.request.mockResolvedValue({ projects: [] }); });
 afterEach(async () => { await act(async () => root.unmount()); });
 
@@ -92,17 +94,22 @@ describe('beat editor', () => {
     test('step toggle edits the shared document and passes validation', async () => {
         const doc = await open();
         const label = t('beat.step.off', { n: 2, total: 16, pad: t('beat.pad.kick') });
+        expect(testId('step-selected-1')).toHaveLength(0);
         await press(label);
         const next = getBeat(doc.id)!;
         expect(hasHit(next, 'kick', 1)).toBe(true);
         expect(validateBeat(next).ok).toBe(true);
         expect(byLabel(t('beat.step.on', { n: 2, total: 16, pad: t('beat.pad.kick') }))).toBeDefined();
+        expect(testId('step-selected-1')).toHaveLength(1);
     });
     test('pad hit selects the pad, plays it, and the step grid follows', async () => {
         await open();
+        expect(testId('pad-selected-kick')).toHaveLength(1);
         await press(t('beat.pad.hit', { pad: t('beat.pad.snare') }));
         expect(mockAudio.hitPad).toHaveBeenCalledWith('snare', '808');
         expect(byLabel(t('beat.step.on', { n: 5, total: 16, pad: t('beat.pad.snare') }))).toBeDefined();
+        expect(testId('pad-selected-kick')).toHaveLength(0);
+        expect(testId('pad-selected-snare')).toHaveLength(1);
     });
     test('export mount releases playback before the sheet may render, and Play recreates the engine', async () => {
         await open(); await press(t('beat.play')); await press(t('beatExport.title'));
@@ -126,6 +133,18 @@ describe('beat editor', () => {
         expect(mockAudio.play).toHaveBeenCalledTimes(1);
         await press(t('beat.stop'));
         expect(mockAudio.stop).toHaveBeenCalled();
+    });
+    test('the persistent transport is a sibling of the scrolling workspace', async () => {
+        await open();
+        const shell = testId('beat-editor-shell')[0];
+        const workspace = testId('beat-editor-workspace')[0];
+        const transport = testId('beat-editor-transport')[0];
+        expect(shell).toBeDefined(); expect(workspace.parent).toBe(shell); expect(transport.parent).toBe(shell);
+        expect(workspace.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(0);
+        for (const label of [t('beat.play'), t('beat.undo'), t('beat.redo'), t('beatMix.title')]) {
+            expect(transport.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
+        }
+        expect(transport.props.accessibilityRole).toBe('toolbar');
     });
     test('an account generation change stops and closes the old audio engine', async () => {
         const original = recordingHook.useTakeRecording; let controller!: ReturnType<typeof original>['controller'];
@@ -164,9 +183,11 @@ describe('beat editor', () => {
         await press(t('beat.play'));
         await press(t('beat.mute', { track }));
         expect(getBeat(doc.id)!.tracks[0].mute).toBe(true);
+        expect(testId(`mute-selected-${doc.tracks[0].id}`)).toHaveLength(1);
         expect(mockAudio.setTrackMix).toHaveBeenCalledWith(doc.tracks[0].id, { gain: 0, pan: 0 });
         await press(t('beat.solo', { track }));
         expect(getBeat(doc.id)!.tracks[0].solo).toBe(true);
+        expect(testId(`solo-selected-${doc.tracks[0].id}`)).toHaveLength(1);
         await press(t('beat.kit.lofi'));
         expect(getBeat(doc.id)!.tracks[0].kit).toBe('lofi');
     });
@@ -185,6 +206,18 @@ describe('beat editor', () => {
         await open();
         const unnamed = root.container.queryAll(n => ['button', 'tab'].includes(n.props.accessibilityRole) && !n.props.accessibilityLabel && !n.children.some(c => typeof c === 'string'));
         expect(unnamed.length).toBe(0);
+    });
+    test('count-in is a checked switch with a visible non-colour state', async () => {
+        const doc = addAudioTrack(newBeat('Record'));
+        const controller = { capture: () => null, locked: () => false } as never;
+        const view = { status: 'armed', seconds: 0, pass: 1, error: '', armedId: doc.tracks[1].id, denied: false, recovery: [], recoveryFailed: false } as never;
+        await act(async () => root.render(<BeatRecordPanel doc={doc} controller={controller} view={view} playing={false} />));
+        const control = byLabel(t('beatTakes.countIn'));
+        expect(control.props.accessibilityRole).toBe('switch');
+        expect(control.props.accessibilityState.checked).toBe(false);
+        await press(t('beatTakes.countIn'));
+        expect(byLabel(t('beatTakes.countIn')).props.accessibilityState.checked).toBe(true);
+        expect(testId('beat-count-in-selected')).toHaveLength(1);
     });
 });
 

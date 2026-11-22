@@ -25,7 +25,9 @@ export function PadGrid({ selected, onHit }: PadGridProps) {
                             <Pressable key={pad.id} accessibilityRole="button" accessibilityLabel={t('beat.pad.hit', { pad: name })}
                                 accessibilityState={{ selected: on }} onPressIn={() => { down.current = true; onHit(pad.id); }}
                                 onPress={() => { if (!down.current) onHit(pad.id); down.current = false; }} style={[s.pad, on && s.padOn]}>
-                                <Text variant="footnote" tone={on ? 'onAccent' : 'primary'} numberOfLines={1}>{name}</Text>
+                                {on ? <Text testID={`pad-selected-${pad.id}`} accessible={false} accessibilityElementsHidden
+                                    variant="caption" tone="onAccent" style={s.mark}>✓</Text> : null}
+                                <Text variant="footnote" tone={on ? 'onAccent' : 'primary'} numberOfLines={2} style={s.label}>{name}</Text>
                             </Pressable>
                         );
                     })}
@@ -38,5 +40,7 @@ const sheets = themedStyles(p => ({
     grid: { gap: ds.space.sm },
     row: { flexDirection: 'row', gap: ds.space.sm },
     pad: { flex: 1, minHeight: 72, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle, alignItems: 'center', justifyContent: 'center', paddingHorizontal: ds.space.xs },
-    padOn: { backgroundColor: p.accent, borderColor: p.accent },
+    padOn: { backgroundColor: p.accent, borderColor: p.textPrimary, borderWidth: 3 },
+    mark: { position: 'absolute', top: ds.space.xs, right: ds.space.sm },
+    label: { textAlign: 'center' },
 }));

@@ -13,7 +13,7 @@ export function StepGrid({ doc, pad, current, onToggle }: StepGridProps) {
     const total = doc.steps;
     const rows = Array.from({ length: Math.ceil(total / PER_ROW) }, (_, r) => Array.from({ length: PER_ROW }, (_, c) => r * PER_ROW + c).filter(n => n < total));
     return (
-        <View style={s.grid}>
+        <View style={s.grid} accessibilityLabel={t('beat.steps', { pad: name })}>
             {rows.map((row, r) => (
                 <View key={r} style={s.row}>
                     {row.map(step => {
@@ -24,6 +24,8 @@ export function StepGrid({ doc, pad, current, onToggle }: StepGridProps) {
                             <Pressable key={step} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: on }}
                                 accessibilityHint={now ? t('beat.step.now') : undefined} onPress={() => onToggle(step)}
                                 style={[s.cell, on && s.cellOn, now && s.cellNow]}>
+                                {on ? <Text testID={`step-selected-${step}`} accessible={false} accessibilityElementsHidden
+                                    variant="caption" tone="onAccent" style={s.mark}>✓</Text> : null}
                                 <Text variant="caption" tone={on ? 'onAccent' : 'secondary'}>{step + 1}</Text>
                             </Pressable>
                         );
@@ -37,6 +39,7 @@ const sheets = themedStyles(p => ({
     grid: { gap: ds.space.sm },
     row: { flexDirection: 'row', gap: ds.space.sm },
     cell: { flex: 1, minHeight: 48, borderRadius: ds.radius.sm, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle, alignItems: 'center', justifyContent: 'center' },
-    cellOn: { backgroundColor: p.accent, borderColor: p.accent },
-    cellNow: { borderColor: p.textPrimary, borderWidth: 2 },
+    cellOn: { backgroundColor: p.accent, borderColor: p.textPrimary, borderWidth: 3 },
+    cellNow: { borderColor: p.textPrimary, borderWidth: 3 },
+    mark: { position: 'absolute', top: ds.space.xs, right: ds.space.sm },
 }));

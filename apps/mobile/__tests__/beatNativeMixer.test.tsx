@@ -61,6 +61,16 @@ test('opens the full sheet, adds effects through the store/history, and undo res
     expect(recorded).toHaveBeenCalledTimes(1); expect(recorded.mock.results[0].value.past).toHaveLength(1);
     await press(t('beatMix.close')); await press(t('beat.undo')); expect(track().fx).toBeUndefined();
 });
+test('channel mute and solo use visible selected cues as well as accessibility state', async () => {
+    await open(); await press(t('beatMix.title'));
+    await press(t('beat.mute', { track: track().name }));
+    await press(t('beat.solo', { track: track().name }));
+    expect(track().mute).toBe(true); expect(track().solo).toBe(true);
+    expect(root.container.queryAll(n => n.props.testID === `channel-mute-selected-${track().id}`)).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === `channel-solo-selected-${track().id}`)).toHaveLength(1);
+    expect(button(t('beat.mute', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
+    expect(button(t('beat.solo', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
+});
 test('G2 offers no Drive control; G1 notices appear for compressor and limiter', async () => {
     await open(); await press(t('beatMix.title'));
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.distortion') }));
