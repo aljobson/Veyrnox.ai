@@ -2562,6 +2562,36 @@
     "ratio": 2
   },
   {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "इस्तेमाल में है",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "फिर से जोड़ना ज़रूरी है",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorFont.usedCount.one",
+    "english": "Used by 1 text layer",
+    "translation": "1 टेक्स्ट लेयर में इस्तेमाल किया गया",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorFont.use",
+    "english": "Use {name}",
+    "translation": "{name} इस्तेमाल करें",
+    "ratio": 2
+  },
+  {
+    "id": "editorFont.checking",
+    "english": "Checking font…",
+    "translation": "फ़ॉन्ट की जाँच हो रही है…",
+    "ratio": 1.79
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

@@ -21,8 +21,8 @@ export function PlaybackTimeline({ frameStore, ...props }: Playback & Omit<Compo
     const frame = useEditorFrame(frameStore);
     return <EditorTimeline {...props} frame={frame} />;
 }
-export function PlaybackPreview({ frameStore, timeline, api, playing, localMediaUris, motionHandle }: Playback & {
-    motionHandle?: MotionHandleProps; timeline: Timeline; api: Pick<ApiClient, 'request'>; playing: boolean; localMediaUris: Record<string, string>;
+export function PlaybackPreview({ frameStore, timeline, api, playing, localMediaUris, motionHandle, fontReady }: Playback & {
+    motionHandle?: MotionHandleProps; timeline: Timeline; api: Pick<ApiClient, 'request'>; playing: boolean; localMediaUris: Record<string, string>; fontReady?(family: string): boolean;
 }) {
     const frame = useEditorFrame(frameStore);
     const active = activeEditorMedia(timeline, frame);
@@ -32,7 +32,7 @@ export function PlaybackPreview({ frameStore, timeline, api, playing, localMedia
         {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}
         <View style={styles.safeFrame} />
         {!active && !caption ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}
-        {caption ? <EditorTextOverlay item={caption} frame={frame} /> : null}
+        {caption ? <EditorTextOverlay item={caption} frame={frame} fontReady={fontReady} /> : null}
         {motionHandle ? <EditorMotionHandle timeline={timeline} {...motionHandle} /> : null}
     </>;
 }

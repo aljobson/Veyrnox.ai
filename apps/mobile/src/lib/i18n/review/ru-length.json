@@ -4704,6 +4704,60 @@
     "ratio": 1.73
   },
   {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Управлять собственными шрифтами",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "Используется",
+    "ratio": 2
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "Нужно подключить заново",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorFont.use",
+    "english": "Use {name}",
+    "translation": "Использовать {name}",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorFont.relink",
+    "english": "Relink {name}",
+    "translation": "Подключить {name} заново",
+    "ratio": 1.85
+  },
+  {
+    "id": "editorFont.name",
+    "english": "Font name",
+    "translation": "Название шрифта",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorFont.credit",
+    "english": "Creator or credit",
+    "translation": "Автор или указание авторства",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorFont.usage",
+    "english": "Usage permission",
+    "translation": "Разрешение на использование",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Добавить собственный шрифт",
+    "ratio": 1.73
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

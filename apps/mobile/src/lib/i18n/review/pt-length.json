@@ -4650,6 +4650,42 @@
     "ratio": 1.78
   },
   {
+    "id": "editorFont.title",
+    "english": "Custom fonts",
+    "translation": "Fontes personalizadas",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Gerenciar fontes personalizadas",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "Precisa ser revinculada",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorFont.emptyTitle",
+    "english": "No custom fonts yet",
+    "translation": "Nenhuma fonte personalizada ainda",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorFont.importTitle",
+    "english": "Add a custom font",
+    "translation": "Adicionar uma fonte personalizada",
+    "ratio": 1.94
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Adicionar fonte personalizada",
+    "ratio": 1.93
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

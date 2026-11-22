@@ -1,6 +1,7 @@
 import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { removeProjectMedia } from '../../../lib/editorDeviceMedia';
+import { removeProjectFonts } from '../../../lib/editorFontFiles';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -145,7 +146,7 @@ function Detail({ id }: { id: string }) {
                         await deleteProject(api, current.id, current.version);
                         if (!owned(task)) return;
                         doc.discard();
-                        void removeProjectMedia(current.id).catch(() => undefined);
+                        void Promise.all([removeProjectMedia(current.id), removeProjectFonts(current.id)]).catch(() => undefined);
                         router.back();
                     } catch (err) {
                         if (!owned(task)) return;

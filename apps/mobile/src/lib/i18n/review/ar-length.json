@@ -2514,6 +2514,12 @@
     "ratio": 1.63
   },
   {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "قيد الاستخدام",
+    "ratio": 2.17
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",
