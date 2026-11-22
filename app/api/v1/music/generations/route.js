@@ -1,6 +1,7 @@
 import { retryAfterSeconds } from '../../../../../lib/rateLimitHeaders.js';
 import { rpc, select, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { publishFalDispatchWakeup } from '../../../../../lib/falDispatchWakeup.js';
+import { publishCrunDispatchWakeup } from '../../../../../lib/crunDispatchWakeup.js';
 import {
     MUSIC_BEAT_MODEL_ID, musicBeatAiEnabled, musicGenerationEnabled, musicRpcStatus, parseMusicGeneration, publicMusicError,
     readMusicJson, validMusicAuthId,
@@ -60,15 +61,22 @@ export async function POST(request) {
         return reply({ error: 'pair_acceptance_unknown' }, 503);
     }
     if (!result?.ok) {
-        const status = musicRpcStatus(result?.code);
+        const unavailable = result?.code === 'MUSIC_UNAVAILABLE';
+        const status = unavailable ? 503 : musicRpcStatus(result?.code);
         const headers = status === 429 || status === 503
             ? { 'Retry-After': String(retryAfterSeconds(result?.retry_after_seconds, { max: 600, fallback: 60 })) }
             : {};
-        return reply({ error: publicMusicError(result?.code) }, status, headers);
+        return reply({ error: unavailable ? 'music_unavailable' : publicMusicError(result?.code) }, status, headers);
     }
 
-    for (const jobId of result.job_ids || []) {
-        try { publishFalDispatchWakeup(jobId); }
+    const publishWakeup = result.provider_contract === 'crun-suno-v1'
+        ? publishCrunDispatchWakeup : publishFalDispatchWakeup;
+    // Preserve the existing fal replay wake-up: its fenced claim is a safe way
+    // to recover a lost queue publish. Crun replays with a known contract need
+    // no wake-up because its minute backstop owns recovery.
+    const jobsToWake = result.idempotent && result.provider_contract === 'crun-suno-v1' ? [] : result.job_ids || [];
+    for (const jobId of jobsToWake) {
+        try { publishWakeup(jobId); }
         catch { console.error('[music/generations] dispatch wakeup unavailable:', jobId); }
     }
     return reply({
