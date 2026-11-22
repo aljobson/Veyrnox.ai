@@ -146,7 +146,7 @@
     // checkin: ADR-0257 daily check-in, live since 2026-10-24 (was CHECKIN_ENABLED). push: ADR-0113 mobile push, on 2026-11-16 at the
     // owner's word. seedanceLongTemplates: ADR-0309 amendment 4, long photo templates on kie Seedance 2, on 2026-11-20 at the owner's word
     // (migration 0573 applied). Rollback: set a key to false (or remove it) and deploy; credits already granted stay.
-    "APP_RUNTIME_FLAGS": "{\"checkin\":true,\"push\":true,\"templateSwap\":true,\"seedanceLongTemplates\":true}",
+    "APP_RUNTIME_FLAGS": "{\"checkin\":true,\"push\":true,\"templateSwap\":true,\"seedanceLongTemplates\":true,\"templateSwapCrun1080\":true}",
     // docs/editor/CAPTIONS.md: the Clip Editor's captions step. On 2026-10-08 at the owner's request: 0225 is applied on production, both
     // paths passed on staging. The edit sheet still hides it behind localStorage.veyrnox_editor_captions. Rollback: set "false" and deploy.
     "CLIP_EDIT_CAPTIONS_ENABLED": "true",
