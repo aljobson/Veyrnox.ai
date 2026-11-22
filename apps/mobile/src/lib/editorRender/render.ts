@@ -48,17 +48,25 @@ function withScope<T>(work: (scope: Scope) => T): T {
 const between = (value: number, minimum: number, maximum: number) => finite(value) && value >= minimum && value <= maximum;
 
 function filterGeometry(plan: StaticPreviewPlan, filter: StaticPreviewFilter) {
-    const sigma = filter.blur * plan.height / plan.referenceHeight, outset = Math.ceil(sigma * 3);
+    const scale = Math.min(plan.width / plan.referenceWidth, plan.height / plan.referenceHeight);
+    const sigma = filter.blur * scale, outset = Math.ceil(sigma * 3);
     return { sigma, outset, width: plan.width + outset * 2, height: plan.height + outset * 2 };
 }
 
 function issues(plan: StaticPreviewPlan): string[] {
     const found: string[] = [];
-    if (!Number.isSafeInteger(plan.width) || plan.width < 1 || plan.width > STATIC_PREVIEW_LIMITS.maxWidth
-        || !Number.isSafeInteger(plan.height) || plan.height < 1 || plan.height > STATIC_PREVIEW_LIMITS.maxHeight
-        || plan.width * plan.height > STATIC_PREVIEW_LIMITS.maxPixels) found.push('invalid-output-size');
-    const validReference = Number.isSafeInteger(plan.referenceHeight) && plan.referenceHeight >= 2 && plan.referenceHeight <= 3840;
-    if (!validReference) found.push('invalid-reference-height');
+    const validOutput = Number.isSafeInteger(plan.width) && plan.width >= 1 && plan.width <= STATIC_PREVIEW_LIMITS.maxWidth
+        && Number.isSafeInteger(plan.height) && plan.height >= 1 && plan.height <= STATIC_PREVIEW_LIMITS.maxHeight
+        && plan.width * plan.height <= STATIC_PREVIEW_LIMITS.maxPixels;
+    if (!validOutput) found.push('invalid-output-size');
+    const validReferenceWidth = Number.isSafeInteger(plan.referenceWidth) && plan.referenceWidth >= 2 && plan.referenceWidth <= 3840;
+    const validReferenceHeight = Number.isSafeInteger(plan.referenceHeight) && plan.referenceHeight >= 2 && plan.referenceHeight <= 3840;
+    const validReference = validReferenceWidth && validReferenceHeight;
+    if (!validReferenceWidth) found.push('invalid-reference-width');
+    if (!validReferenceHeight) found.push('invalid-reference-height');
+    const validReferenceAspect = validReference && validOutput && Math.abs(plan.width / plan.referenceWidth - plan.height / plan.referenceHeight)
+        <= 1 / plan.referenceWidth + 1 / plan.referenceHeight;
+    if (validReference && validOutput && !validReferenceAspect) found.push('invalid-reference-aspect');
     if (!COLOR.test(plan.background)) found.push('invalid-timeline-background');
     if (!Array.isArray(plan.layers) || plan.layers.length > STATIC_PREVIEW_LIMITS.maxLayers) found.push('invalid-layer-count');
     for (const layer of plan.layers) {
@@ -74,7 +82,7 @@ function issues(plan: StaticPreviewPlan): string[] {
         if (!filter || !between(filter.brightness, 0, 3) || !between(filter.contrast, 0, 3)
             || !between(filter.saturate, 0, 3) || !between(filter.hue, -180, 180)
             || !between(filter.blur, 0, 30)) found.push('invalid-filter');
-        else if (validReference) {
+        else if (validReferenceAspect) {
             const geometry = filterGeometry(plan, filter);
             if (!finite(geometry.sigma) || geometry.outset > STATIC_PREVIEW_LIMITS.maxFilterOutset
                 || geometry.width * geometry.height > STATIC_PREVIEW_LIMITS.maxLayerPixels) found.push('invalid-filter-surface');

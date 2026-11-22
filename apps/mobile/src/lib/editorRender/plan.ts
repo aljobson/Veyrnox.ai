@@ -84,7 +84,8 @@ export function bindStaticPreviewPlan(preview: EditorPreviewPlan, width: number,
         };
     });
     return {
-        width, height, referenceHeight: preview.referenceSize.height, background: preview.background, layers,
+        width, height, referenceWidth: preview.referenceSize.width, referenceHeight: preview.referenceSize.height,
+        background: preview.background, layers,
         ...(globalUnsupported.length ? { unsupported: [...new Set(globalUnsupported)] } : {}),
     };
 }

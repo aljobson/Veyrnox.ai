@@ -42,7 +42,12 @@ function layer(id: string, source: SkImage, patch: Partial<StaticPreviewLayer> =
 }
 const plan = (layers: StaticPreviewLayer[], patch: Partial<StaticPreviewPlan> = {}): StaticPreviewPlan => {
     const width = patch.width ?? 8, height = patch.height ?? 8;
-    return { width, height, referenceHeight: patch.referenceHeight ?? height, background: '#00ff00', layers, ...patch };
+    return {
+        width, height,
+        referenceWidth: patch.referenceWidth ?? (width >= 2 ? width : 8),
+        referenceHeight: patch.referenceHeight ?? (height >= 2 ? height : 8),
+        background: '#00ff00', layers, ...patch,
+    };
 };
 function pixel(result: ReturnType<typeof renderStaticPreviewRgba>, x: number, y: number) {
     if (!result.ok) throw Error(result.code);
@@ -186,7 +191,7 @@ test('basic blur keeps the same fractional footprint at two output sizes', () =>
         try {
             return renderStaticPreviewRgba(custom, plan([layer(`scaled-${size}`, source, {
                 filter: { ...filter, blur: 30 },
-            })], { width: size, height: size, referenceHeight: 720, background: '#000000' }));
+            })], { width: size, height: size, referenceWidth: 720, referenceHeight: 720, background: '#000000' }));
         } finally { source.dispose(); }
     };
     const small = render(72), large = render(144);
@@ -208,11 +213,32 @@ test('the 1280x720 canonical reference uses sigma 30 and a three-sigma extended 
     try {
         const result = renderStaticPreviewImage(custom, plan([layer('reference', source, {
             fit: 'cover', filter: { ...filter, blur: 30 },
-        })], { width: 1280, height: 720, referenceHeight: 720, background: '#000000' }));
+        })], { width: 1280, height: 720, referenceWidth: 1280, referenceHeight: 720, background: '#000000' }));
         expect(result.ok).toBe(true);
         if (result.ok) result.image.dispose();
         expect(sigmas).toEqual([30, 30]);
         expect(surfaces).toContainEqual([1460, 900]);
+    } finally { source.dispose(); }
+});
+
+test.each([
+    ['portrait', 360, 640, 405, 720, 9, 8],
+    ['square', 640, 640, 720, 720, 9, 8],
+    ['ultrawide', 1280, 240, 3840, 720, 30, 10],
+] as const)('%s output uses one aspect-preserving canonical filter scale', (_name, width, height, referenceWidth, referenceHeight, blur, expectedSigma) => {
+    const source = solid('#ffffff', 16, 16), makeBlur = Skia.ImageFilter.MakeBlur.bind(Skia.ImageFilter), sigmas: number[] = [];
+    const custom = { ...Skia, ImageFilter: { ...Skia.ImageFilter,
+        MakeBlur: (sigmaX: number, sigmaY: number, mode: any, input: any) => {
+            sigmas.push(sigmaX, sigmaY); return makeBlur(sigmaX, sigmaY, mode, input);
+        },
+    } };
+    try {
+        const result = renderStaticPreviewImage(custom, plan([layer(`aspect-${_name}`, source, {
+            fit: 'cover', filter: { ...filter, blur },
+        })], { width, height, referenceWidth, referenceHeight, background: '#000000' }));
+        expect(result.ok).toBe(true);
+        if (result.ok) result.image.dispose();
+        expect(sigmas).toEqual([expectedSigma, expectedSigma]);
     } finally { source.dispose(); }
 });
 
@@ -224,7 +250,7 @@ test.each([
     try {
         const result = renderStaticPreviewRgba(Skia, plan([layer('edge', source, {
             ...patch, filter: { ...filter, blur: 4 },
-        })], { width: 64, height: 64, referenceHeight: 64, background: '#000000' }));
+        })], { width: 64, height: 64, referenceWidth: 64, referenceHeight: 64, background: '#000000' }));
         expect(pixel(result, 0, 32)[0]).toBeGreaterThan(240);
         expect(pixel(result, 63, 32)[0]).toBeGreaterThan(240);
     } finally { source.dispose(); }
@@ -236,11 +262,11 @@ test('mask overscan preserves off-frame masked pixels before basic blur', () => 
         const edge = renderStaticPreviewRgba(Skia, plan([layer('masked-edge', source, {
             fit: 'cover', filter: { ...filter, blur: 4 },
             mask: { shape: 'circle', x: .25, y: .5, width: .25, height: .5, rotation: 0, feather: 0, inverted: false },
-        })], { width: 64, height: 64, referenceHeight: 64, background: '#000000' }));
+        })], { width: 64, height: 64, referenceWidth: 64, referenceHeight: 64, background: '#000000' }));
         const centered = renderStaticPreviewRgba(Skia, plan([layer('masked-center', source, {
             fit: 'cover', filter: { ...filter, blur: 4 },
             mask: { shape: 'circle', x: .5, y: .5, width: .25, height: .5, rotation: 0, feather: 0, inverted: false },
-        })], { width: 64, height: 64, referenceHeight: 64, background: '#000000' }));
+        })], { width: 64, height: 64, referenceWidth: 64, referenceHeight: 64, background: '#000000' }));
         close(pixel(edge, 0, 32), pixel(centered, 32, 32), 2);
         expect(pixel(edge, 24, 32)).toEqual([0, 0, 0, 255]);
     } finally { source.dispose(); }
@@ -361,7 +387,7 @@ test('canonical planning reports unsupported features instead of silently droppi
             text: [{ id: 't1', text: 'Title', start: 0, len: 90, trackId: 'text-0', x: .5, y: .5, size: 6 }],
         };
         const canonical = editorPreviewPlan(timeline, 10, SKIA_STATIC_PREVIEW_CAPABILITIES);
-        const built = bindStaticPreviewPlan(canonical, 8, 8, { image: source });
+        const built = bindStaticPreviewPlan(canonical, 16, 9, { image: source });
         expect(renderStaticPreviewRgba(Skia, built)).toEqual({ ok: false, code: 'unsupported', features: ['effect', 'missing-source-image', 'text', 'video'] });
     } finally { source.dispose(); }
 });
@@ -375,6 +401,7 @@ test('canonical evaluated basic filters bind as an exact Skia capability', () =>
         const canonical = editorPreviewPlan(value, 10, SKIA_STATIC_PREVIEW_CAPABILITIES);
         expect(canonical.capabilities.unsupported).not.toContainEqual(expect.objectContaining({ capability: 'basic-filter' }));
         const bound = bindStaticPreviewPlan(canonical, 640, 360, { image: source });
+        expect(bound.referenceWidth).toBe(1280);
         expect(bound.referenceHeight).toBe(720);
         expect(bound.layers[0].filter).toEqual({ brightness: 1.2, contrast: .8, saturate: .6, hue: 30, blur: 4 });
         expect(renderStaticPreviewRgba(Skia, bound).ok).toBe(true);
@@ -390,7 +417,7 @@ test('a non-full canonical reveal is refused before rendering', () => {
                 animation: { in: 'wipe-left', out: 'none', duration: 30 } }],
         };
         const canonical = editorPreviewPlan(timeline, 5, SKIA_STATIC_PREVIEW_CAPABILITIES);
-        const bound = bindStaticPreviewPlan(canonical, 8, 8, { image: source });
+        const bound = bindStaticPreviewPlan(canonical, 16, 9, { image: source });
         expect(bound.layers[0].unsupported).toContain('animation-reveal');
         expect(renderStaticPreviewRgba(Skia, bound)).toEqual({ ok: false, code: 'unsupported', features: ['animation-reveal'] });
     } finally { source.dispose(); }
@@ -402,7 +429,7 @@ test('canonical orphan requirements remain explicit when there is no drawable la
         video: [{ id: 'orphan', mediaId: 'missing', start: 0, in: 0, len: 90, trackId: 'video-0', volume: 1, transition: 0 }],
     };
     const canonical = editorPreviewPlan(timeline, 5, SKIA_STATIC_PREVIEW_CAPABILITIES);
-    const bound = bindStaticPreviewPlan(canonical, 8, 8, {});
+    const bound = bindStaticPreviewPlan(canonical, 16, 9, {});
     expect(bound.layers).toEqual([]);
     expect(renderStaticPreviewRgba(Skia, bound)).toEqual({ ok: false, code: 'unsupported', features: ['missing-source-image'] });
 });
@@ -449,15 +476,32 @@ test('canonical transform, crop and mask bounds refuse native allocation', () =>
 test('invalid reference and extended filter geometry fail before native allocation', () => {
     const source = solid('#ffffff'), make = jest.fn(), noAllocation = { ...Skia, Surface: { ...Skia.Surface, Make: make } };
     try {
+        expect(renderStaticPreviewRgba(noAllocation, plan([layer('reference-width', source)], { referenceWidth: 0 }))).toEqual({
+            ok: false, code: 'invalid-plan', issues: ['invalid-reference-width'],
+        });
         expect(renderStaticPreviewRgba(noAllocation, plan([layer('reference', source)], { referenceHeight: 0 }))).toEqual({
             ok: false, code: 'invalid-plan', issues: ['invalid-reference-height'],
         });
+        expect(renderStaticPreviewRgba(noAllocation, plan([layer('aspect', source)], {
+            width: 100, height: 100, referenceWidth: 1280, referenceHeight: 720,
+        }))).toEqual({ ok: false, code: 'invalid-plan', issues: ['invalid-reference-aspect'] });
         expect(renderStaticPreviewRgba(noAllocation, plan([layer('oversized', source, {
             filter: { ...filter, blur: 30 },
-        })], { width: 1280, height: 720, referenceHeight: 2 }))).toEqual({
+        })], { width: 1280, height: 640, referenceWidth: 4, referenceHeight: 2 }))).toEqual({
             ok: false, code: 'invalid-plan', issues: ['invalid-filter-surface'],
         });
         expect(make).not.toHaveBeenCalled();
+    } finally { source.dispose(); }
+});
+
+test('one-pixel integer rounding in a matching reference aspect is accepted', () => {
+    const source = solid('#ffffff');
+    try {
+        const result = renderStaticPreviewImage(Skia, plan([layer('rounded-aspect', source)], {
+            width: 100, height: 56, referenceWidth: 1280, referenceHeight: 720,
+        }));
+        expect(result.ok).toBe(true);
+        if (result.ok) result.image.dispose();
     } finally { source.dispose(); }
 });
 

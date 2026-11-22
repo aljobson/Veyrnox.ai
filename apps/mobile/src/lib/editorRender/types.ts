@@ -83,7 +83,8 @@ export interface StaticPreviewLayer {
 export interface StaticPreviewPlan {
     readonly width: number;
     readonly height: number;
-    /** Canonical web compositor height used to scale CSS-pixel filters into this output. */
+    /** Canonical web compositor geometry used to scale CSS-pixel filters into this output. */
+    readonly referenceWidth: number;
     readonly referenceHeight: number;
     readonly background: string;
     readonly layers: readonly StaticPreviewLayer[];

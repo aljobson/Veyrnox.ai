@@ -1,5 +1,5 @@
 import { act } from 'react';
-import { PixelRatio } from 'react-native';
+import { PixelRatio, StyleSheet } from 'react-native';
 import { createRoot } from 'test-renderer';
 import { editorPreviewAccessibilityLabel, PlaybackPreview } from '../src/components/editor/EditorPlayback';
 import { EditorStaticPreviewSurface } from '../src/components/editor/EditorStaticPreviewSurface';
@@ -420,10 +420,10 @@ test('reuses a frame-invariant still output but rerenders an animated visual on 
     expect(sourceDispose).toHaveBeenCalledTimes(1); disposed.forEach(dispose => expect(dispose).toHaveBeenCalledTimes(1));
 });
 
-test('renders at bounded device pixels while drawing the image at layout size', async () => {
+test('renders at bounded device pixels while containing the canonical frame inside the layout', async () => {
     const ratio = jest.spyOn(PixelRatio, 'get').mockReturnValue(3), sourceDispose = jest.fn(), outputDispose = jest.fn();
     mockLoader.load.mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDispose } });
-    mockRender.mockReturnValueOnce({ ok: true, width: 1108, height: 831, image: { dispose: outputDispose } });
+    mockRender.mockReturnValueOnce({ ok: true, width: 1280, height: 720, image: { dispose: outputDispose } });
     const root = createRoot();
     try {
         await act(async () => root.render(<PlaybackPreview staticPreview frameStore={createFrameStore(5)} timeline={timeline()}
@@ -432,11 +432,64 @@ test('renders at bounded device pixels while drawing the image at layout size', 
         await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 800, height: 600 } } }));
         const renderCall = mockBind.mock.calls[0] as unknown as [unknown, number, number];
         const renderWidth = renderCall[1], renderHeight = renderCall[2];
-        expect(renderWidth).toBeLessThanOrEqual(1280); expect(renderHeight).toBeLessThanOrEqual(1280);
-        expect(renderWidth * renderHeight).toBeLessThanOrEqual(1280 * 720);
-        expect(renderWidth / renderHeight).toBeCloseTo(4 / 3, 2);
-        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')[0].props).toMatchObject({ width: 800, height: 600 });
+        expect([renderWidth, renderHeight]).toEqual([1280, 720]);
+        expect(renderWidth / renderHeight).toBeCloseTo(16 / 9, 5);
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')[0].props)
+            .toMatchObject({ x: 0, y: 75, width: 800, height: 450, fit: 'fill' });
+        expect(root.container.queryAll(node => node.props.testID === 'editor-static-preview-backdrop')).toHaveLength(1);
     } finally { await act(async () => root.unmount()); ratio.mockRestore(); }
+});
+
+test('preserves an ultrawide canonical frame inside a 16:9 layout and covers the hidden legacy bars', async () => {
+    const ratio = jest.spyOn(PixelRatio, 'get').mockReturnValue(3), sourceDispose = jest.fn(), outputDispose = jest.fn();
+    mockLoader.load.mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDispose } });
+    mockRender.mockReturnValueOnce({ ok: true, width: 960, height: 240, image: { dispose: outputDispose } });
+    const root = createRoot(), value = timeline();
+    value.aspect = 'source'; value.media.image.width = 2560; value.media.image.height = 640;
+    try {
+        await act(async () => root.render(<PlaybackPreview staticPreview frameStore={createFrameStore(5)} timeline={value}
+            api={{ request: jest.fn() }} playing={false} localMediaUris={{ image: 'file://image.png' }} />));
+        const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        const renderCall = mockBind.mock.calls[0] as unknown as [unknown, number, number];
+        expect(renderCall.slice(1, 3)).toEqual([960, 240]);
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')[0].props)
+            .toMatchObject({ x: 0, y: 50, width: 320, height: 80, fit: 'fill' });
+        const backdrop = root.container.queryAll(node => node.props.testID === 'editor-static-preview-backdrop')[0];
+        expect(StyleSheet.flatten(backdrop.props.style)).toMatchObject({
+            position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#000000',
+        });
+        expect(root.container.queryAll(node => node.props.testID === 'legacy-editor-preview')).toHaveLength(1);
+        expect(root.container.queryAll(node => node.props.importantForAccessibility === 'no-hide-descendants')).toHaveLength(2);
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(0);
+    } finally { await act(async () => root.unmount()); ratio.mockRestore(); }
+    expect(sourceDispose).toHaveBeenCalledTimes(1); expect(outputDispose).toHaveBeenCalledTimes(1);
+});
+
+test('a reference-size-only change rerenders from cached sources without an approximate flash', async () => {
+    const ratio = jest.spyOn(PixelRatio, 'get').mockReturnValue(3), sourceDispose = jest.fn();
+    const firstDispose = jest.fn(), secondDispose = jest.fn();
+    mockLoader.load.mockResolvedValueOnce({ status: 'ready', sources: { images: { image: {} }, key: 'source-key', dispose: sourceDispose } });
+    mockRender
+        .mockReturnValueOnce({ ok: true, width: 960, height: 540, image: { dispose: firstDispose } })
+        .mockReturnValueOnce({ ok: true, width: 540, height: 540, image: { dispose: secondDispose } });
+    const root = createRoot(), initial = timeline(), square = { ...initial, aspect: '1:1' as const };
+    const render = (value: Timeline) => root.render(<PlaybackPreview staticPreview frameStore={createFrameStore(5)} timeline={value}
+        api={{ request: jest.fn() }} playing={false} localMediaUris={{ image: 'file://image.png' }} />);
+    try {
+        await act(async () => render(initial));
+        const surface = root.container.queryAll(node => node.props.testID === 'editor-static-preview-surface')[0];
+        await act(async () => surface.props.onLayout({ nativeEvent: { layout: { width: 320, height: 180 } } }));
+        await act(async () => render(square));
+        expect(mockLoader.load).toHaveBeenCalledTimes(1);
+        expect(mockRender).toHaveBeenCalledTimes(2);
+        expect((mockBind.mock.calls[0] as unknown as [unknown, number, number]).slice(1, 3)).toEqual([960, 540]);
+        expect((mockBind.mock.calls[1] as unknown as [unknown, number, number]).slice(1, 3)).toEqual([540, 540]);
+        expect(root.container.queryAll(node => node.props.testID === 'mock-skia-image')[0].props)
+            .toMatchObject({ x: 70, y: 0, width: 180, height: 180, fit: 'fill' });
+        expect(root.container.queryAll(node => node.children.includes('Approximate preview'))).toHaveLength(0);
+    } finally { await act(async () => root.unmount()); ratio.mockRestore(); }
+    expect(sourceDispose).toHaveBeenCalledTimes(1); expect(firstDispose).toHaveBeenCalledTimes(1); expect(secondDispose).toHaveBeenCalledTimes(1);
 });
 
 test('static preview accessibility labels retain active caption text', () => {
