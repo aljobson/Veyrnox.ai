@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useI18n } from '../../../components/I18nProvider';
+import { useI18n } from '../../../../components/I18nProvider';
 import { estimatePercent, expectedDurationMs } from '../../_lib/generationProgress';
 
 // A running music candidate: a real bar with a percentage and the patience
