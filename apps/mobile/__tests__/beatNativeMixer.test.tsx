@@ -178,6 +178,14 @@ test('mixer sliders read their own value and unit to the screen reader', async (
     await act(async () => root.render(<MixSlider label="Pan" value={0} min={-1} max={1} onChange={() => undefined} />));
     expect(slider('Pan').props.accessibilityValue.text).toBe(t('beatMix.unit.percent', { value: 0 }));
 });
+test('an opt-in real-unit accessibility step does not change existing mixer defaults', async () => {
+    const precise = jest.fn();
+    await act(async () => root.render(<MixSlider label="Swing" value={0.3} min={0} max={0.6} step={0.01} accessibilityStep={0.01} onChange={precise} />));
+    await adjust('Swing', 'increment'); expect(precise).toHaveBeenLastCalledWith(0.31);
+    const legacy = jest.fn();
+    await act(async () => root.render(<MixSlider label="Pan default" value={0} min={-1} max={1} step={0.01} onChange={legacy} />));
+    await adjust('Pan default', 'increment'); expect(legacy).toHaveBeenLastCalledWith(0.2);
+});
 test('a touch on overlapping point targets selects the nearest dot', async () => {
     let doc = addAutomationPoint(newBeat('Near'), 't1', 'gain', 0, 0.5);
     doc = addAutomationPoint(doc, 't1', 'gain', 240, 0.5);

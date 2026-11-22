@@ -35,6 +35,13 @@ export function createMixRun(engine: BeatEngine, onEffectError: (message: string
             current.lastOnset = Math.max(current.lastOnset, at);
             return destination;
         },
+        /** The web metronome enters before the master section. Keep that run alive through the queued click. */
+        clickDestination(doc: BeatDoc, at: number): unknown {
+            this.sync(doc);
+            if (!current) throw new Error('Missing mix run');
+            current.lastOnset = Math.max(current.lastOnset, at);
+            return current.run.master?.input ?? current.run.bus;
+        },
         schedule(doc: BeatDoc, fromSec: number, toSec: number, contextTime: number) {
             for (const t of doc.tracks) current?.run.channels?.get(t.id)?.schedule({ fromSec, toSec, contextTime });
         },

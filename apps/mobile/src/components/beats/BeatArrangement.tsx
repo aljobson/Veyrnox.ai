@@ -3,16 +3,16 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Button, SegmentedControl, Text, themedStyles, useThemedStyles } from '../ui';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
-import { addRegion, clampLocator, selectPattern, snapTick, songEnd, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc } from '../../lib/beatNative/doc';
+import { addRegion, clampLocator, snapTick, songEnd, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc, type PatternSlot } from '../../lib/beatNative/doc';
 import { arrangementBars, laneAt, tickToX, xToTick, type DragValue } from '../../lib/beatNative/arrange';
 import { regionLabel, type Apply } from '../../lib/beatNative/regionActions';
 import { BeatRegionView } from './BeatRegionView';
 import { BeatRegionInspector } from './BeatRegionInspector';
 import { BeatRuler, BeatRulerControls, RULER_HEIGHT } from './BeatRuler';
 
-type Props = { manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; playing: boolean; step: number | null; announce: (message: string) => void; onHold: (held: boolean) => void };
+type Props = { manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void; playing: boolean; step: number | null; announce: (message: string) => void; onHold: (held: boolean) => void };
 const MIN_LANE_HEIGHT = 96;
-export function BeatArrangement({ doc, apply, playing, step, announce, onHold, manualRun }: Props) {
+export function BeatArrangement({ doc, apply, selectCurrentPattern, playing, step, announce, onHold, manualRun }: Props) {
     const s = useThemedStyles(sheets);
     const [zoom, setZoom] = useState(96);
     const [snap, setSnap] = useState('240');
@@ -43,7 +43,7 @@ export function BeatArrangement({ doc, apply, playing, step, announce, onHold, m
     }, [head, playing, held, manualRun]);
     const choose = (region: BeatRegionDoc, track: BeatTrackDoc) => {
         setSelectedId(region.id); setTrackId(track.id);
-        if (region.pattern && region.pattern !== doc.currentPattern) apply(d => selectPattern(d, region.pattern!));
+        if (region.pattern && region.pattern !== doc.currentPattern) selectCurrentPattern(region.pattern);
         announce(regionLabel(doc, track, region));
     };
     const setPosition = (value: number) => setLocator(clampLocator(value, end));

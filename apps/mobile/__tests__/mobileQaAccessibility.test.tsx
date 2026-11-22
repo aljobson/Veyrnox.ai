@@ -47,6 +47,17 @@ test('selected segments have an inset outline and bold label', async () => {
     expect(chosen.queryAll(n => n.children.includes('Second') && style(n).fontWeight === '700').length).toBeGreaterThan(0);
 });
 
+test('disabled segments expose their state and suppress selection', async () => {
+    const change = jest.fn();
+    await act(async () => root.render(<SegmentedControl disabled options={[{ value: 'a', label: 'First' }, { value: 'b', label: 'Second' }]} value="a" onChange={change} />));
+    const tab = root.container.queryAll(n => n.props.accessibilityRole === 'tab' && n.props.accessibilityLabel === 'Second')[0];
+    expect(tab.props.accessibilityState).toMatchObject({ selected: false, disabled: true });
+    await act(async () => (tab.props.onClick ?? tab.props.onPress)({ nativeEvent: {} }));
+    expect(change).not.toHaveBeenCalled();
+    const list = root.container.queryAll(n => n.props.accessibilityRole === 'tablist')[0];
+    expect(style(list).opacity).toBeLessThan(1);
+});
+
 test('a focused TextField has the current error in its accessible name, preserving caller labels', async () => {
     await act(async () => root.render(<TextField label="Email" accessibilityLabel="Contact email" error="Enter a valid email" />));
     expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Contact email, Enter a valid email').length).toBeGreaterThan(0);

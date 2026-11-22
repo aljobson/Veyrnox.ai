@@ -86,6 +86,10 @@ export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTim
     const rangeOutput = (id: string, doc: BeatDoc, at: number) => {
         try { return mixRun.destination(id, doc, at); } catch { return plainOutput(id, doc); }
     };
+    // A click follows the document master graph, but a broken effect must never end an active take.
+    const rangeClickOutput = (doc: BeatDoc, at: number) => {
+        try { return mixRun.clickDestination(doc, at); } catch { return bus(); }
+    };
     const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc, untilTime) => {
         if (range.isPlaying()) return rangeOutput(id, doc, untilTime);
         return mixRun.run() ? mixRun.destination(id, doc, untilTime) : plainOutput(id, doc);
@@ -94,7 +98,7 @@ export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTim
         try { mixRun.sync(doc); mixRun.schedule(doc, w.fromSec, w.toSec, w.contextTime); } catch { /* rangeOutput falls back. */ }
         const token = playGeneration;
         void takes.window(doc, w, bounds, { recording: true }).catch(error => { if (token === playGeneration) fail(error); });
-    }, setTimer, clearTimer);
+    }, setTimer, clearTimer, rangeClickOutput);
     let playGeneration = 0;
     const kitOf = new Map<string, string>();
 
@@ -148,6 +152,9 @@ export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTim
                 const seconds = stepSeconds(doc.tempo.bpm);
                 const fromSec = step * seconds;
                 mixRun.schedule(doc, fromSec, fromSec + seconds, nextTime);
+                if (doc.metronome && step % 4 === 0 && nextTime >= engine.now()) {
+                    engine.click(nextTime, step % 16 === 0, mixRun.clickDestination(doc, nextTime));
+                }
                 for (const event of eventsAtStep(doc, step)) {
                     const at = eventTime(nextTime, step, doc.tempo.bpm, doc.swing);
                     engine.playPad(event.pad, event.velocity, at, mixRun.destination(event.trackId, doc, at), doc.tracks.find(t => t.id === event.trackId)?.kit ?? DRUM_KITS[0].id);

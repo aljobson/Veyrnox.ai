@@ -31,7 +31,11 @@ export type BeatVoice = { endTime: number; ended: Promise<void>; release(at: num
 
 /** Engine-owned run; callers only retain its identity. A doc run (N5 mix graph) also exposes its strips. */
 export type Run = object;
-export type MixRunHandle = Run & { channels: Map<string, { schedule(window: { fromSec: number; toSec: number; contextTime: number }): void }> };
+export type MixRunHandle = Run & {
+    bus: unknown;
+    master?: { input: unknown } | null;
+    channels: Map<string, { schedule(window: { fromSec: number; toSec: number; contextTime: number }): void }>;
+};
 
 export type BeatEngine = {
     context: EngineContext;

@@ -98,7 +98,9 @@ test('A5 region pattern undoes; shared web history preserves the active pattern 
     expect(same(current())).toEqual(same(selectPattern(setRegionPattern(before, 'r1', 'B'), 'B')));
     await press(t('beat.undo')); expect(same(current())).toEqual(same({ ...before, currentPattern: 'B' }));
     await act(async () => putBeat(setRegionPattern(current(), 'r1', 'C'))); await choose();
-    expect(current().currentPattern).toBe('C'); await press(t('beat.undo')); expect(current().currentPattern).toBe('C');
+    expect(current().currentPattern).toBe('C');
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+    await press(t('beat.undo')); expect(current().currentPattern).toBe('C');
 });
 test('A5 refusals surface the existing notice; vanished selection clears after replacement and undo', async () => {
     await open(d => resizeRegion(d, 'r1', 240)); await choose();
