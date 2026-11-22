@@ -540,6 +540,11 @@ export async function POST(req) {
     if (spendLimit) return NextResponse.json(providerSpendBody(spendLimit), {
         status: spendLimit.status, headers: { 'retry-after': String(spendLimit.retryAfter) },
     });
+    // Two identical swaps can straddle activation or rollback and pick different private models: answer with the stored job.
+    if (templateSwap && debit?.ok === false && debit.code === 'IDEMPOTENCY_CONFLICT') {
+        const replay = await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() });
+        if (replay) return NextResponse.json(replay.body, { status: replay.status });
+    }
     if (!debit || debit.ok === false) {
         const status = debit?.code === 'IDEMPOTENCY_CONFLICT' || debit?.code === 'VIDEO_AGENT_IN_PROGRESS' ? 409
             : debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402

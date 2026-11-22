@@ -364,3 +364,21 @@ test('migration 0579 records the owner exception, keeps the price and leaves the
   assert.match(adr, /SET active = false, updated_at = now\(\)\n\s+WHERE id = 'kling-o1-swap-crun' AND provider = 'crun';/);
   assert.ok(pin.length === 64);
 });
+
+test('the chat close answer never exposes the private swap model', async () => {
+  const { closeAnswer } = await import('../lib/chatSendClose.js');
+  const response = closeAnswer({ ok: true, closed: false, job_id: '11111111-1111-4111-8111-111111111111', state: 'SUBMITTED', model_id: 'kling-o1-swap-crun' });
+  const body = await response.json();
+  assert.equal(body.closed, false);
+  if (body.model_id !== undefined) assert.equal(body.model_id, 'kling-o1-reference');
+  assert.equal(JSON.stringify(body).includes('kling-o1-swap-crun'), false);
+});
+
+test('a swap admission conflict re-reads the stored job before answering', async () => {
+  const { readFileSync } = await import('node:fs');
+  const route = readFileSync(new URL('../app/api/v1/generations/route.js', import.meta.url), 'utf8');
+  const conflict = route.indexOf("templateSwap && debit?.ok === false && debit.code === 'IDEMPOTENCY_CONFLICT'");
+  assert.ok(conflict > 0);
+  assert.ok(route.indexOf('replayTemplateSwapClip(authId, body, cfg', conflict) > conflict);
+  assert.ok(conflict < route.indexOf("const debitCode = debit && debit.code"));
+});
