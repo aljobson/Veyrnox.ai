@@ -58,7 +58,7 @@ test('actual lane keyboard handlers move relative to an off-snap start, extend, 
   press('Escape');
   assert.equal([...elements(lane())].some(e => e.props.className?.includes('border-2')), false);
 });
-test('record input uses the actual BeatMeter: reduced-motion bar hidden and value only exposed while focused', t => {
+test('record input uses the actual BeatMeter: reduced-motion bar hidden and the required meter value always exposed', t => {
   let animate, preference;
   const motion = { matches: true, addEventListener(type, fn) { preference = fn; }, removeEventListener() {} };
   for (const name of ['matchMedia', 'requestAnimationFrame', 'cancelAnimationFrame']) {
@@ -81,11 +81,10 @@ test('record input uses the actual BeatMeter: reduced-motion bar hidden and valu
   const meter = [...elements(panel)].find(e => e.type === Meter); assert.ok(meter);
   const render = () => meterState.render(Meter, meter.props);
   render(); animate(40); let tree = render();
-  assert.equal(tree.props['aria-valuenow'], undefined);
+  assert.equal(tree.props['aria-valuenow'], -6);
   assert.equal([...elements(tree)].some(e => e.props.className?.includes('h-2')), false);
-  tree.props.onFocus(); tree = render(); assert.equal(tree.props['aria-valuenow'], -6);
   animate(80); assert.equal(reads, 1); animate(300); assert.equal(reads, 2);
-  tree.props.onBlur(); assert.equal(render().props['aria-valuenow'], undefined);
+  assert.equal(render().props['aria-valuenow'], -6);
   motion.matches = false; preference(); assert.ok([...elements(render())].some(e => e.props.className?.includes('h-2')));
   meterState.cleanup(); assert.equal(disconnected, true);
 });
