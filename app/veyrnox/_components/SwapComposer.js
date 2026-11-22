@@ -25,13 +25,18 @@ export function SwapComposer({ offer }) {
   const canReplace = !busy && !attempts.some(item => unsettled(item));
   const feedback = useRef(null), sending = ['uploading', 'submitting'].includes(a?.state), uploadError = a?.state === 'upload_error';
   // Only this tap moves the page: restored attempts and background updates never scroll.
-  const reveal = useRef(false);
-  useEffect(() => () => { reveal.current = false; }, [accountId, offer.id]);
+  // A retry gets a new key inside submit, so a settled attempt's key marks what to wait past. One scroll per tap.
+  const tap = useRef(null);
+  useEffect(() => () => { tap.current = null; }, [accountId, offer.id]);
   useEffect(() => {
-    if (!reveal.current || !a) return;
-    const show = node => node?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
-    if (sending || uploadError) { show(feedback.current); if (uploadError) reveal.current = false; return; }
-    if (a.body) { show(document.querySelector(`[data-swap-attempt-key="${CSS.escape(a.key)}"]`)); reveal.current = false; }
+    const pending = tap.current;
+    if (!pending || !a) return;
+    if (!pending.key) { if (a.key === pending.previous) return; pending.key = a.key; }
+    if (a.key !== pending.key) { tap.current = null; return; }
+    const target = sending || uploadError ? feedback.current : a.body ? document.querySelector(`[data-swap-attempt-key="${CSS.escape(a.key)}"]`) : null;
+    if (!target) return;
+    tap.current = null;
+    target.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
   }, [a, sending, uploadError]);
   return <section aria-label={t('presets.swap.title')} className="mt-8 space-y-4 rounded-2xl border border-vx-border bg-vx-panel p-6 text-vx-fg" data-swap-composer>
     <h2 className="text-xl font-bold">{t('presets.swap.title')}</h2>
@@ -73,8 +78,8 @@ export function SwapComposer({ offer }) {
     <button className={`${swapControl} min-h-13 border-vx-accent bg-vx-accent text-vx-accent-ink`} disabled={!accountId || !offer.name || !ready || busy || !online}
       onClick={() => {
         if (sending) return;
-        reveal.current = true;
-        void Promise.resolve(swapActions.submit(offer.id, offer)).catch(() => { reveal.current = false; });
+        tap.current = a?.body ? { key: null, previous: a.key } : { key: a?.key ?? null, previous: null };
+        void Promise.resolve(swapActions.submit(offer.id, offer)).catch(() => { tap.current = null; });
       }}>{t('presets.swap.generate')}</button>
     {sending && <p ref={feedback} role="status" data-swap-feedback>{t('presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</p>}
     {uploadError && <p ref={feedback} role="alert" className="text-sm text-vx-danger" data-swap-feedback>{t(swapErrorKey(a.errorCode))}</p>}

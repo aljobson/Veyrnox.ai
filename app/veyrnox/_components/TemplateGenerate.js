@@ -24,16 +24,18 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
   const error = g.error;
   useVeyErrorMood(error?.code);
   // Only the customer's tap moves the page, once, to the job card or the error.
-  const reveal = useRef(false), feedback = useRef(null), jobId = job?.id, errorCode = error?.code;
+  const tap = useRef(null), jobCard = useRef(null), errorCard = useRef(null), jobId = job?.job_id, errorCode = error?.code;
   useEffect(() => {
-    if (!reveal.current || (!jobId && !errorCode)) return;
-    reveal.current = false;
-    feedback.current?.firstElementChild?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    if (!tap.current) return;
+    const target = jobId && jobId !== tap.current.previousJob ? jobCard.current : errorCode ? errorCard.current : null;
+    if (!target) return;
+    tap.current = null;
+    target.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
   }, [jobId, errorCode]);
   return (
-    <div ref={feedback} data-testid="template-generate">
+    <div data-testid="template-generate">
       {job && (
-        <div className={`relative mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel ${g.generating ? 'vx-shimmer' : ''}`} style={{ aspectRatio: resultAspect, maxHeight: 520 }} role="status">
+        <div ref={jobCard} className={`relative mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel ${g.generating ? 'vx-shimmer' : ''}`} style={{ aspectRatio: resultAspect, maxHeight: 520 }} role="status">
           {job.asset_url ? <JobAssetPreview job={job} /> : (
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
               <div>
@@ -48,7 +50,7 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
         </div>
       )}
       {error && (
-        <div role="alert" className="mt-4 flex items-start gap-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
+        <div ref={errorCard} role="alert" className="mt-4 flex items-start gap-2 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger">
           <span aria-hidden="true">✕</span>
           <span>
             {tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || tOr(t, 'app.create.error.unknown', ERROR_COPY.unknown))}
@@ -59,7 +61,7 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
       )}
       <button
         type="button"
-        onClick={(...args) => { reveal.current = true; return g.generate(...args); }}
+        onClick={(...args) => { tap.current = { previousJob: jobId }; return g.generate(...args); }}
         disabled={!g.canGenerate}
         aria-busy={g.sending || undefined}
         className="vx-press mt-6 inline-flex w-full items-center justify-between gap-4 rounded-full bg-vx-accent px-6 py-3.5 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50 sm:w-auto"

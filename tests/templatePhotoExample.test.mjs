@@ -17,7 +17,8 @@ test('the swap status follows Generate, so progress is on screen after the tap',
   const status = read('app/veyrnox/_components/SwapAttemptStatus.js');
   assert.doesNotMatch(status, /scrollIntoView/, 'a restored or background attempt must never move the page');
   const composer = read('app/veyrnox/_components/SwapComposer.js');
-  assert.match(composer, /reveal\.current = true[\s\S]*swapActions\.submit/);
+  assert.match(composer, /tap\.current = a\?\.body[\s\S]*swapActions\.submit/);
+  assert.match(read('app/veyrnox/_components/TemplateGenerate.js'), /jobId = job\?\.job_id/);
   assert.match(composer, /scrollIntoView/);
   assert.ok(composer.indexOf('data-swap-feedback') > composer.indexOf("t('presets.swap.generate')"));
   assert.match(status, /presets\.swap\.refundedReason/);

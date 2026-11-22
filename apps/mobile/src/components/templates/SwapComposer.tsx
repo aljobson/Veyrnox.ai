@@ -38,15 +38,18 @@ export function SwapComposer({ offer, revealAttempt, onReveal }: { offer: SwapOf
     }
     const error = a && ['photo_error', 'upload_error'].includes(a.state) ? a.errorCode : undefined, uploadError = a?.state === 'upload_error';
     const errorKey = error === 'photo_too_large' ? 'mobileSwap.photoTooLarge' : error === 'invalid_image' ? 'mobileSwap.invalidImage' : swapErrorKey(error);
-    const feedback = useRef<View>(null), reveal = useRef(false);
-    useEffect(() => () => { reveal.current = false; if (revealAttempt) revealAttempt.current = null; }, [accountId, offer.id, revealAttempt]);
+    const feedback = useRef<View>(null), tap = useRef<{ key: string | null; previous: string | null } | null>(null);
+    useEffect(() => () => { tap.current = null; if (revealAttempt) revealAttempt.current = null; }, [accountId, offer.id, revealAttempt]);
     // Only this tap moves the screen: restored attempts and background updates never scroll.
     useEffect(() => {
-        if (!reveal.current || !a) return;
+        const pending = tap.current;
+        if (!pending || !a) return;
+        if (!pending.key) { if (a.key === pending.previous) return; pending.key = a.key; }
+        if (a.key !== pending.key) { tap.current = null; return; }
         if (['uploading', 'submitting', 'upload_error'].includes(a.state)) {
-            if (a.state === 'upload_error') reveal.current = false;
+            tap.current = null;
             requestAnimationFrame(() => onReveal?.(feedback.current));
-        } else if (a.body) { reveal.current = false; if (revealAttempt) revealAttempt.current = a.key; }
+        } else if (a.body) { tap.current = null; if (revealAttempt) revealAttempt.current = a.key; }
     }, [a, onReveal, revealAttempt]);
     useAnnouncement(pickerError ? t('mobileSwap.permission') : error ? t(errorKey) : busy ? t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending') : a?.state === 'ready' ? t('presets.swap.generate') : null);
     return <Card>
@@ -81,7 +84,7 @@ export function SwapComposer({ offer, revealAttempt, onReveal }: { offer: SwapOf
             {offline && <Text accessibilityLiveRegion="polite">{t('presets.swap.offline')}</Text>}
             {!accountId && <><Text accessibilityLiveRegion="polite">{t('presets.swap.session')}</Text><Button label={t('presets.swap.signin')} onPress={() => router.push('/sign-in')} /></>}
             <Text tone="warning">{t('presets.swap.price', { credits: offer.credits })}</Text>
-            <Button label={t('presets.swap.generate')} disabled={!accountId || !offer.name || !ready || busy || offline} onPress={() => { if (isOffline()) return; reveal.current = true; void Promise.resolve(actions.submit(offer.id, offer)).catch(() => { reveal.current = false; }); }} />
+            <Button label={t('presets.swap.generate')} disabled={!accountId || !offer.name || !ready || busy || offline} onPress={() => { if (isOffline()) return; tap.current = a?.body ? { key: null, previous: a.key } : { key: a?.key ?? null, previous: null }; void Promise.resolve(actions.submit(offer.id, offer)).catch(() => { tap.current = null; }); }} />
             <View ref={feedback} collapsable={false} style={styles.content}>
                 {busy && <Text accessibilityLiveRegion="polite">{t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</Text>}
                 {uploadError && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
