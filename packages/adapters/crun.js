@@ -215,7 +215,8 @@ function refuseOtherKeys(inputs, allowed) {
     const extra = Object.keys(inputs).find(key => !allowed.has(key));
     if (extra) return { ok: false, error: `inputs_key_not_allowed:${extra.slice(0, 32)}` };
     // Both offers are one priced unit: the page's default 5 is accepted and any other length is refused, as for the fal rows.
-    return inputs.duration_seconds === undefined || inputs.duration_seconds === 5 ? null : { ok: false, error: 'duration_not_supported' };
+    // A null length means "not set": the route prices it as the default unit, and no length is sent to Crun.
+    return inputs.duration_seconds === undefined || inputs.duration_seconds === null || inputs.duration_seconds === 5 ? null : { ok: false, error: 'duration_not_supported' };
 }
 
 function buildFluxRequest(inputs) {

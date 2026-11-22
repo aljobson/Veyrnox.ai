@@ -88,6 +88,14 @@ test('an Avatar refusal keeps no Crun text and refunds; a Flux capacity refusal 
   }
 });
 
+test('a null length means not set: both offers proceed and send no length', () => {
+  for (const [target, inputs] of [[flux, { prompt: 'a bike' }], [avatar, { image_url: image, audio_url: audio }]]) {
+    assert.deepEqual(buildRequest(target, { ...inputs, duration_seconds: null }), buildRequest(target, inputs));
+    assert.equal(buildRequest(target, { ...inputs, duration_seconds: null }).ok, true);
+    assert.deepEqual(buildRequest(target, { ...inputs, duration_seconds: 0 }), { ok: false, error: 'duration_not_supported' });
+  }
+});
+
 test('costs sit inside the floor, Avatar at its longest allowed audio', () => {
   assert.equal((5 / 206).toFixed(4), '0.0243');
   assert.equal(((6.5 * 10) / 206).toFixed(4), '0.3155');
