@@ -12,7 +12,7 @@ import BeatEditor from '../src/app/(app)/beats/[id]';
 import { ApiError } from '../src/lib/api';
 import { t } from '../src/lib/i18n';
 import { beatStore, createBeatStore, newBeat, resetBeats, getBeat, putBeat } from '../src/lib/beatNative/store';
-import { audibleGain, addKitTrack, createBeat, eventsAtStep, hasHit, loopSteps, validateBeat, DRUM_PADS, MAX_BPM, setView } from '../src/lib/beatNative/doc';
+import { audibleGain, addKitTrack, createBeat, eventsAtStep, hasHit, loopSteps, patternHasHits, selectPattern, validateBeat, DRUM_PADS, MAX_BPM, setView } from '../src/lib/beatNative/doc';
 import { BeatVersionsSheet } from '../src/components/beats/BeatVersionsSheet';
 import { BeatCloudConflictModal } from '../src/components/beats/BeatCloudConflictModal';
 import { BeatCloudSync, type SyncView } from '../src/lib/beatNative/cloudSync';
@@ -176,6 +176,71 @@ describe('beat editor', () => {
         await press(t('beat.tempoDown'));
         expect(getBeat(doc.id)!.tempo.bpm).toBe(96);
         expect(MAX_BPM).toBe(240);
+    });
+    test('pinned A-D navigation persists without adding an undo entry and the grid follows the selected pattern', async () => {
+        const doc = await open();
+        const undo = byLabel(t('beat.undo'));
+        expect(undo.props.accessibilityState?.disabled ?? undo.props.disabled).toBe(true);
+        await press(t('beat.pattern.named', { pattern: 'B' }));
+        expect(getBeat(doc.id)!.currentPattern).toBe('B');
+        expect(byLabel(t('beat.undo')).props.accessibilityState?.disabled ?? byLabel(t('beat.undo')).props.disabled).toBe(true);
+        expect(byLabel(t('beat.step.off', { n: 1, total: 16, pad: t('beat.pad.kick') }))).toBeDefined();
+        expect(testId('beat-editor-pattern-selector')).toHaveLength(1);
+        expect(testId('beat-editor-workspace')[0].queryAll(n => n.props.testID === 'beat-editor-pattern-selector')).toHaveLength(0);
+    });
+    test('pattern controls persist swing, metronome and 16/32 length while preserving hidden hits', async () => {
+        const doc = await open();
+        await press(t('beat.pattern.controlsNamed', { pattern: 'A' }));
+        const swing = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === t('beat.pattern.swing'))[0];
+        expect(swing.props.accessibilityValue.text).toBe('0%');
+        await act(async () => swing.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+        expect(getBeat(doc.id)!.swing).toBe(0.01);
+        await press(t('beat.pattern.metronome'));
+        expect(getBeat(doc.id)!.metronome).toBe(true);
+        expect(testId('beat-pattern-metronome-on')).toHaveLength(1);
+        await press(t('beat.pattern.length32'));
+        expect(getBeat(doc.id)!.steps).toBe(32);
+        await press(t('beat.step.off', { n: 21, total: 32, pad: t('beat.pad.kick') }));
+        expect(hasHit(getBeat(doc.id)!, 'kick', 20)).toBe(true);
+        await press(t('beat.pattern.length16'));
+        expect(getBeat(doc.id)!.steps).toBe(16);
+        expect(byLabel(t('beat.step.on', { n: 21, total: 32, pad: t('beat.pad.kick') }))).toBeUndefined();
+        expect(hasHit(getBeat(doc.id)!, 'kick', 20)).toBe(true);
+        await press(t('beat.pattern.length32'));
+        expect(byLabel(t('beat.step.on', { n: 21, total: 32, pad: t('beat.pad.kick') }))).toBeDefined();
+    });
+    test('copy and clear use overwrite/destructive confirmation and remain one-step undoable edits', async () => {
+        const doc = await open();
+        const alert = jest.spyOn(RN.Alert, 'alert').mockImplementation(() => undefined);
+        try {
+            await press(t('beat.pattern.controlsNamed', { pattern: 'A' }));
+            await press(t('beat.pattern.copy', { from: 'A', to: 'B' }));
+            expect(patternHasHits(getBeat(doc.id)!, 'B')).toBe(true);
+            expect(alert).not.toHaveBeenCalled();
+            await press(t('beat.undo'));
+            expect(patternHasHits(getBeat(doc.id)!, 'B')).toBe(false);
+            await press(t('beat.redo'));
+            expect(patternHasHits(getBeat(doc.id)!, 'B')).toBe(true);
+            await press(t('beat.pattern.copy', { from: 'A', to: 'B' }));
+            expect(alert).toHaveBeenLastCalledWith(t('beat.pattern.replaceTitle', { to: 'B' }), t('beat.pattern.replaceBody', { to: 'B' }), expect.any(Array));
+            const replace = alert.mock.calls.at(-1)![2]!.find(option => option.style === 'destructive')!;
+            await act(async () => replace.onPress?.());
+            alert.mockClear();
+            await press(t('beat.pattern.clear', { pattern: 'A' }));
+            expect(alert).toHaveBeenLastCalledWith(t('beat.pattern.clearTitle', { pattern: 'A' }), t('beat.pattern.clearBody'), expect.any(Array));
+            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(true);
+            const clear = alert.mock.calls.at(-1)![2]!.find(option => option.style === 'destructive')!;
+            await act(async () => { putBeat(selectPattern(getBeat(doc.id)!, 'B')); });
+            await act(async () => clear.onPress?.());
+            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(true);
+            await press(t('beat.pattern.named', { pattern: 'A' }));
+            await press(t('beat.pattern.clear', { pattern: 'A' }));
+            const clearCurrent = alert.mock.calls.at(-1)![2]!.find(option => option.style === 'destructive')!;
+            await act(async () => clearCurrent.onPress?.());
+            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(false);
+            await press(t('beat.undo'));
+            expect(patternHasHits(getBeat(doc.id)!, 'A')).toBe(true);
+        } finally { alert.mockRestore(); }
     });
     test('mixer: mute folds into the audio mix, solo and kit change the document', async () => {
         const doc = await open();
@@ -428,10 +493,14 @@ test('replacement lease release alone unlocks editor controls and uses cloud-spe
     await act(async () => { release = await beforeReplace(doc.id); });
     const disabled = (label: string) => { const b = byLabel(label); return b?.props.accessibilityState?.disabled ?? b?.props.disabled; };
     expect(disabled(t('beat.play'))).toBe(true); expect(disabled(t('beat.undo'))).toBe(true);
+    expect(disabled(t('beat.pattern.named', { pattern: 'A' }))).toBe(true);
+    expect(disabled(t('beat.pattern.controlsNamed', { pattern: 'A' }))).toBe(true);
     expect(text(t('beatTakes.replacing')).length).toBeGreaterThan(0);
     await press(t('beat.tempoUp')); expect(text(t('beatTakes.locked'))).toHaveLength(0);
     await act(async () => release());
     expect(disabled(t('beat.play'))).toBe(false); expect(disabled(t('beat.undo'))).toBe(false);
+    expect(disabled(t('beat.pattern.named', { pattern: 'A' }))).toBe(false);
+    expect(disabled(t('beat.pattern.controlsNamed', { pattern: 'A' }))).toBe(false);
     expect(disabled(t('beatTakes.addTrack'))).toBe(false);
 });
 

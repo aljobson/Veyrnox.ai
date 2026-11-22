@@ -2,8 +2,8 @@ import { rawText } from '../../lib/i18n/translate';
 import { ControlLabelContext } from './ControlLabelContext';
 import { getLocale } from '../../lib/i18n';
 import { DisabledTextContext } from './DisabledTextContext';
-import type { ReactNode } from 'react';
-import { useEffect, useMemo, useRef } from 'react';
+import type { ComponentRef, ReactNode } from 'react';
+import { forwardRef, useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, type PressableProps, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { ds } from '../../theme';
@@ -25,7 +25,7 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
     style?: StyleProp<ViewStyle>;
     textStyle?: StyleProp<TextStyle>;
 };
-export function Button({ label, variant = 'primary', size = 'lg', tone = 'primary', icon, loading, disabled, style, textStyle, onPress, children, iconOnly, containerStyle, ...props }: ButtonProps) {
+export const Button = forwardRef<ComponentRef<typeof Pressable>, ButtonProps>(function Button({ label, variant = 'primary', size = 'lg', tone = 'primary', icon, loading, disabled, style, textStyle, onPress, children, iconOnly, containerStyle, ...props }, ref) {
     const s = useThemedStyles(sheets);
     const translated = getLocale() !== 'en';
     const reduced = useReducedMotion();
@@ -46,6 +46,7 @@ export function Button({ label, variant = 'primary', size = 'lg', tone = 'primar
     return (
         <Animated.View style={[s.hit, containerStyle, animatedStyle]}>
             <Pressable
+                ref={ref}
                 {...props}
                 accessibilityRole={props.accessibilityRole ?? 'button'}
                 accessibilityLabel={rawText(props.accessibilityLabel ?? label)}
@@ -78,7 +79,7 @@ export function Button({ label, variant = 'primary', size = 'lg', tone = 'primar
             </Pressable>
         </Animated.View>
     );
-}
+});
 const sheets = themedStyles((p) => ({
     hit: { minHeight: 44, justifyContent: 'center' },
     base: { minWidth: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: ds.space.sm, borderRadius: ds.radius.md, paddingHorizontal: ds.space.lg },

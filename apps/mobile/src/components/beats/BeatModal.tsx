@@ -2,10 +2,10 @@ import { useRef, type ReactNode, type ComponentRef } from 'react';
 import { AccessibilityInfo, findNodeHandle, Modal, ScrollView, View } from 'react-native';
 import { Text, themedStyles, useThemedStyles } from '../ui';
 import { ds } from '../../theme';
-export function BeatModal({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
+export function BeatModal({ title, testID, onClose, onDismiss, children }: { title: string; testID?: string; onClose(): void; onDismiss?(): void; children: ReactNode }) {
     const heading = useRef<ComponentRef<typeof View>>(null);
     const s = useThemedStyles(sheets);
-    return <Modal visible animationType="none" onRequestClose={onClose} onShow={() => {
+    return <Modal testID={testID} visible animationType="none" onRequestClose={onClose} onDismiss={onDismiss} onShow={() => {
         const node = findNodeHandle(heading.current); if (node) AccessibilityInfo.setAccessibilityFocus(node);
     }}>
         <ScrollView style={s.screen} contentContainerStyle={s.content} accessibilityViewIsModal>

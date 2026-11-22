@@ -42,7 +42,7 @@ export function BeatRegionInspector({ doc, track, region, snap, locator, apply }
     return <View style={s.group} testID="region-inspector">
         <Text variant="bodyStrong" accessibilityRole="header">{t('beat.region.inspector')}</Text>
         {region.pattern && <SegmentedControl accessibilityLabel={t('beat.region.pattern')} value={region.pattern}
-            options={['A', 'B', 'C', 'D'].map(value => ({ value, label: value, accessibilityLabel: t('beat.region.patternNamed', { pattern: value }) }))}
+            options={(['A', 'B', 'C', 'D'] as const).map(value => ({ value, label: value, accessibilityLabel: t('beat.region.patternNamed', { pattern: value }) }))}
             onChange={pattern => apply(d => selectPattern(setRegionPattern(d, region.id, pattern), pattern), t('beat.region.changed'))} />}
         <View style={s.row}>{regionActions(doc, track, region, snap, locator).map(action => <Button key={action.name} size="md"
             variant={action.name === 'delete' ? 'destructive' : 'secondary'} label={action.label} onPress={() => apply(action.operation, action.label)} />)}</View>

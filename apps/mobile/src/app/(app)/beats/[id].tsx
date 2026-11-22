@@ -11,8 +11,8 @@ import { replacementUnderway, subscribeReplacements } from '../../../lib/beatNat
 import type { RecordingEdit } from '../../../lib/beatNative/takeShared';
 import type { TakeRecording } from '../../../lib/beatNative/takeRecording';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ScrollView, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ComponentRef } from 'react';
+import { AccessibilityInfo, Alert, findNodeHandle, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
@@ -27,8 +27,8 @@ import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
 import { createNativeAssetPort } from '../../../lib/beatNative/nativeAssets';
 import { useAuth } from '../../../auth/AuthProvider';
 import {
-    addKitTrack, audibleGain, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, removeTrack, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp, setView,
-    type BeatDoc, type Edit, type PadId,
+    addKitTrack, audibleGain, clearPattern, copyPattern, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, patternHasHits, removeTrack, selectPattern, setMetronome, setSteps, setSwing, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp, setView,
+    type BeatDoc, type Edit, type PadId, type PatternSlot,
 } from '../../../lib/beatNative/doc';
 import { beatStore, getBeat, listBeats, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
 import { t } from '../../../lib/i18n';
@@ -40,6 +40,7 @@ import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifec
 import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 import { BeatEditorTransport } from '../../../components/beats/BeatEditorTransport';
+import { BeatPatternControls } from '../../../components/beats/BeatPatternControls';
 import { beatEditorLayout } from '../../../lib/beatNative/editorLayout';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
@@ -67,6 +68,9 @@ export default function BeatEditor() {
     const [held, setHeld] = useState(false);
     const [pad, setPad] = useState<PadId>('kick');
     const [mixer, setMixer] = useState(false);
+    const [patternControls, setPatternControls] = useState(false);
+    const patternControlsTrigger = useRef<ComponentRef<typeof Pressable>>(null);
+    const patternControlsFocusPending = useRef(false);
     const [exporting, setExporting] = useState(false);
     const [playing, setPlaying] = useState(false);
     const [starting, setStarting] = useState(false);
@@ -74,6 +78,20 @@ export default function BeatEditor() {
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [said, setSaid] = useState<string | null>(null);
+    const restorePatternControlsFocus = useCallback(() => {
+        if (!patternControlsFocusPending.current) return;
+        patternControlsFocusPending.current = false;
+        const node = findNodeHandle(patternControlsTrigger.current);
+        if (node) AccessibilityInfo.setAccessibilityFocus(node);
+    }, []);
+    const openPatternControls = useCallback(() => {
+        patternControlsFocusPending.current = true;
+        setPatternControls(true);
+    }, []);
+    const closePatternControls = useCallback(() => {
+        setPatternControls(false);
+        requestAnimationFrame(restorePatternControlsFocus);
+    }, [restorePatternControlsFocus]);
     useAnnouncement(notice ?? said, { everywhere: true });
     useLocalBeatLifecycle();
     useEffect(() => () => {
@@ -140,6 +158,24 @@ export default function BeatEditor() {
         docRef.current = getBeat(next.present.id)!;
         history.current = replacePresent(next, docRef.current);
     };
+    const selectCurrentPattern = (slot: PatternSlot, announcement?: string) => {
+        const current = docRef.current;
+        if (!current) return false;
+        if (recordingRef.current?.locked() || replacementUnderway(current.id) || beatStore.saveState(current.id) === 'busy') {
+            setNotice(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : recordingRef.current?.locked() ? 'beatTakes.locked' : 'beat.local.busy'));
+            return false;
+        }
+        let result;
+        try { result = tryOp(current, d => selectPattern(d, slot)); }
+        catch { setNotice(t('beat.refused', { reason: '' })); return false; }
+        if (result.refused) { setNotice(t('beat.refused', { reason: result.refused })); return false; }
+        if (result.doc !== current) {
+            if (!putBeat(result.doc)) { setNotice(t('beat.local.busy')); return false; }
+            docRef.current = getBeat(current.id)!;
+            history.current = replacePresent(history.current ?? createHistory(current), docRef.current);
+        }
+        setNotice(null); setSaid(announcement ?? null); return true;
+    };
     if (!doc && beatStore.hydrationState() !== 'ready') return <><Text accessibilityLiveRegion="polite">{t(beatStore.hydrationState() === 'error' ? 'beat.local.loadError' : 'beat.home.checking')}</Text><Button label={t('beat.retry')} onPress={() => void beatStore.hydrateBeats().catch(() => undefined)} /></>;
     if (!doc) return <EmptyState title={t('beat.missing')} body={t('beat.missingBody')} actionLabel={t('beat.back')} href="/beats" />;
     const play = async () => {
@@ -167,8 +203,33 @@ export default function BeatEditor() {
     const bpm = doc.tempo.bpm;
     const bump = (by: number) => apply(d => setTempo(d, clampBpm(bpm + by)));
     const historyBusy = beatStore.saveState(doc.id) === 'busy';
+    const patternLocked = locked || historyBusy;
     const undoable = !locked && !!history.current && canUndo(history.current) && !historyBusy;
     const redoable = !locked && !!history.current && canRedo(history.current) && !historyBusy;
+    const copyCurrentPattern = (target: PatternSlot) => {
+        const current = docRef.current;
+        if (!current || patternLocked) return;
+        const source = current.currentPattern;
+        const commit = () => apply(d => copyPattern(d, source, target), t('beat.pattern.copied', { from: source, to: target }));
+        if (!patternHasHits(current, target)) { commit(); return; }
+        Alert.alert(t('beat.pattern.replaceTitle', { to: target }), t('beat.pattern.replaceBody', { to: target }), [
+            { text: t('beat.pattern.cancel'), style: 'cancel' },
+            { text: t('beat.pattern.replaceAction'), style: 'destructive', onPress: commit },
+        ]);
+    };
+    const clearCurrentPattern = () => {
+        const current = docRef.current;
+        if (!current || patternLocked || !patternHasHits(current, current.currentPattern)) return;
+        const slot = current.currentPattern;
+        Alert.alert(t('beat.pattern.clearTitle', { pattern: slot }), t('beat.pattern.clearBody'), [
+            { text: t('beat.pattern.cancel'), style: 'cancel' },
+            { text: t('beat.pattern.clearAction'), style: 'destructive', onPress: () => {
+                const latest = docRef.current;
+                if (!latest || latest.currentPattern !== slot) return;
+                apply(d => d.currentPattern === slot ? clearPattern(d) : d, t('beat.pattern.cleared', { pattern: slot }));
+            } },
+        ]);
+    };
     return (
         <View testID="beat-editor-shell" style={s.screen}>
             <Stack.Screen options={{ title: doc.title }} />
@@ -197,7 +258,7 @@ export default function BeatEditor() {
                         <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')}
                             options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
                             onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
-                        {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : <>
+                        {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : <>
                             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
                             <PadGrid selected={pad} onHit={hit} />
                             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.steps', { pad: t(`beat.pad.${pad}`) })}</Text>
@@ -227,12 +288,25 @@ export default function BeatEditor() {
                     </View>
                 </View>
             </ScrollView>
-            <BeatEditorTransport playing={playing} starting={starting} locked={locked} canUndo={undoable} canRedo={redoable}
+            <BeatEditorTransport playing={playing} starting={starting} locked={locked}
+                pattern={doc.currentPattern} patternDisabled={patternLocked} canUndo={undoable} canRedo={redoable}
+                patternControlsRef={patternControlsTrigger}
+                onPattern={slot => { selectCurrentPattern(slot, t('beat.pattern.selected', { pattern: slot })); }}
+                onPatternControls={openPatternControls}
                 onUndo={() => navigateHistory('undo')} onRedo={() => navigateHistory('redo')}
                 onPlay={() => void (playing || starting ? stop() : play())} onMixer={() => setMixer(true)} />
             {exporting && <BeatExportSheet doc={doc} replacing={replacing} recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status)}
                 prepare={() => releaseExportPlayback(audio, recordingRef, stop)} onClose={() => setExporting(false)} />}
             {mixer && <BeatMixerSheet doc={doc} audio={audio.current} apply={apply} playing={playing} step={step} notice={notice} onClose={() => setMixer(false)} />}
+            {patternControls && <BeatPatternControls pattern={doc.currentPattern}
+                uses={doc.tracks.flatMap(track => track.regions).filter(region => region.pattern === doc.currentPattern).length}
+                swing={doc.swing} metronome={doc.metronome} steps={doc.steps} disabled={patternLocked}
+                clearDisabled={!patternHasHits(doc, doc.currentPattern)}
+                onSwing={value => apply(d => setSwing(d, value), undefined, 'swing')}
+                onMetronome={value => apply(d => setMetronome(d, value))}
+                onSteps={value => apply(d => setSteps(d, value))}
+                onCopy={copyCurrentPattern} onClear={clearCurrentPattern} onClose={closePatternControls}
+                onDismiss={restorePatternControlsFocus} />}
         </View>
     );
 }

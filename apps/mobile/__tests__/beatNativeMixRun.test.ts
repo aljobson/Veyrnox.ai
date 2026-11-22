@@ -9,7 +9,7 @@ import { mockAudioContextClass, createMockContext } from './helpers/mockNativeAu
 
 type Param = { value: number; setValueAtTime: jest.Mock; linearRampToValueAtTime: jest.Mock; setTargetAtTime: jest.Mock };
 type Node = { gain: Param; pan: Param; connect: jest.Mock; disconnect: jest.Mock };
-type DetailedRun = Omit<Run, 'channels'> & { bus: Node; channels: Map<string, { input: Node; fader: Node; panner: Node; sends: Record<string, Node>; chain: { input: Node & { threshold: Param; ratio: Param } }[]; schedule: jest.Mock }> };
+type DetailedRun = Omit<Run, 'channels'> & { bus: Node; master?: { input: Node } | null; channels: Map<string, { input: Node; fader: Node; panner: Node; sends: Record<string, Node>; chain: { input: Node & { threshold: Param; ratio: Param } }[]; schedule: jest.Mock }> };
 const make = () => createBeat({ id: '00000000-0000-4000-8000-000000000052' });
 function withAudio(doc: BeatDoc, start = 0): BeatDoc {
     const added = addAudioTrack(doc), track = added.tracks.at(-1)!;
@@ -88,6 +88,37 @@ test('sends/master update live within topology, and meter taps follow the curren
     expect(b.mix.sync(doc).restarted).toBe(false);
     expect(b.run().channels.get('t1')!.sends.delay.gain.setTargetAtTime).toHaveBeenCalledWith(0.7, 0, 0.01);
     b.mix.stop(); await b.engine.close();
+});
+
+test('metronome output follows the document master and keeps a retired run alive through the queued click', async () => {
+    const b = build(); let doc = setMaster(make(), { gain: 0.8 });
+    b.mix.sync(doc); const old = b.run();
+    expect(b.mix.clickDestination(doc, 0.15)).toBe((old as unknown as { master: { input: unknown } }).master.input);
+    doc = addEffect(doc, 't1', 'eq');
+    b.context.currentTime = 0.05; b.mix.sync(doc);
+    expect(b.run()).not.toBe(old); expect(b.stop).not.toHaveBeenCalled();
+    b.context.currentTime = 0.179; b.mix.sync(doc); expect(b.stop).not.toHaveBeenCalled();
+    b.context.currentTime = 0.181; b.mix.sync(doc); expect(b.stop).toHaveBeenCalledWith(old);
+    b.mix.stop(); await b.engine.close();
+});
+
+test('live metronome uses straight quarter-step times, accents every sixteen, and stops scheduling when toggled off or stopped', async () => {
+    const b = build(); let fire = () => {};
+    let doc = { ...make(), view: 'pattern' as const, tempo: { bpm: 240 }, swing: 0.6, metronome: true };
+    const click = jest.spyOn(b.engine, 'click');
+    const audio = createBeatAudioFromEngine({ engine: b.engine, setTimer: fn => { fire = fn; return 1; }, clearTimer: jest.fn() });
+    await audio.play(() => doc);
+    expect(click.mock.calls.map(call => call.slice(0, 2))).toEqual([[0.1, true]]);
+    b.context.currentTime = 0.3; fire();
+    expect(click.mock.calls.map(call => call.slice(0, 2))).toEqual([[0.1, true], [0.35, false]]);
+    doc = { ...doc, metronome: false }; b.context.currentTime = 0.55; fire();
+    expect(click).toHaveBeenCalledTimes(2);
+    doc = { ...doc, metronome: true }; b.context.currentTime = 0.8; fire();
+    b.context.currentTime = 1.05; fire();
+    expect(click.mock.calls.map(call => call.slice(0, 2))).toEqual([[0.1, true], [0.35, false], [0.85, false], [1.1, true]]);
+    expect(new Set(click.mock.calls.map(call => call[2]))).toEqual(new Set([b.run().master?.input ?? b.run().bus]));
+    audio.stop(); const count = click.mock.calls.length; b.context.currentTime = 2; fire(); expect(click).toHaveBeenCalledTimes(count);
+    await audio.close();
 });
 
 // Each case changes topology just before an already queued hit. Odd steps include swing.
