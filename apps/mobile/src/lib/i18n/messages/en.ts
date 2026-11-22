@@ -95,6 +95,7 @@ import area_editorMotion from './en/editorMotion';
 import area_editorPack from './en/editorPack';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
+import area_editorScenes from './en/editorScenes';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
@@ -349,6 +350,7 @@ const catalog = {
     ...area_editorPack,
     ...area_editorProjects,
     ...area_editorSave,
+    ...area_editorScenes,
     ...area_editorServerExport,
     ...area_editorSimple,
     ...area_editorSpeech,

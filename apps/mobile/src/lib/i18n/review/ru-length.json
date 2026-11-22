@@ -4782,6 +4782,12 @@
     "ratio": 1.67
   },
   {
+    "id": "editorScenes.apply",
+    "english": "Split at {value1} cuts",
+    "translation": "Разделить по точкам склейки: {value1}",
+    "ratio": 1.68
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

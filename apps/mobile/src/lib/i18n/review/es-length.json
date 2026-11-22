@@ -4788,6 +4788,24 @@
     "ratio": 1.67
   },
   {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Restablece primero la velocidad, la reproducción inversa y el fotograma congelado de este clip.",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorScenes.hard",
+    "english": "Hard cuts",
+    "translation": "Cortes directos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorScenes.possible",
+    "english": "Possible dissolves",
+    "translation": "Posibles fundidos encadenados",
+    "ratio": 1.61
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

@@ -7254,6 +7254,24 @@
     "ratio": 1.74
   },
   {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Réinitialisez d’abord la vitesse, la lecture inversée et l’arrêt sur image de ce clip.",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorScenes.hard",
+    "english": "Hard cuts",
+    "translation": "Coupes franches",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorScenes.applied",
+    "english": "Split at {value1} scene changes. You can undo this in one step.",
+    "translation": "Le clip a été scindé selon {value1} changements de scène. Vous pouvez annuler le tout en une seule étape.",
+    "ratio": 1.67
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

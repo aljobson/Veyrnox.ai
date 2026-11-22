@@ -10,6 +10,11 @@ test('owned file URLs fail closed before native canonical-root validation', () =
 test('analysis requests are finite, exact and bounded to thirty seconds', () => {
     const uri = 'file:///data/veyrnox-editor-media/a/p/input.mp4';
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900 })).toBe(true);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900, resizeMode: 'contain' })).toBe(true);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900, resizeMode: 'fill' })).toBe(true);
+    for (const resizeMode of ['cover', 'stretch', '', null, 1])
+        expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 1, maxFrames: 1, resizeMode })).toBe(false);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 1, maxFrames: 1, extra: true })).toBe(false);
     expect(validateDecodePcmRequest({ uri, fromSeconds: 1, toSeconds: 31, sampleRate: 48000, channels: 2 })).toBe(true);
     for (const value of [NaN, Infinity, -1]) expect(validateSampleFramesRequest({ uri, fromSeconds: value, toSeconds: 2, maxFrames: 1 })).toBe(false);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30.01, maxFrames: 1 })).toBe(false);
@@ -48,8 +53,13 @@ test('native results are strictly bounded and native prose never escapes', () =>
         .toEqual({ ok: false, code: 'invalid-input', reason: 'source-too-large' });
     expect(parseError({ ok: false, code: 'unknown', reason: 'x' })).toBeNull();
     const base = { ok: true, artifactId: 'artifact-1', uri: 'file:///cache/a', size: 1024 };
-    expect(parseFrameArtifact({ ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
-        timestampsUs: [0, 33333], preferredTransform: [1, 0, 0, 1, 0, 0] })?.count).toBe(2);
+    const frames = { ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
+        timestampsUs: [0, 33333], preferredTransform: [1, 0, 0, 1, 0, 0] };
+    expect(parseFrameArtifact(frames)).toMatchObject({ count: 2, resizeMode: 'contain' });
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill' }, 'fill')).toMatchObject({ resizeMode: 'fill' });
+    expect(parseFrameArtifact(frames, 'fill')).toBeNull();
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'contain' }, 'fill')).toBeNull();
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'cover' })).toBeNull();
     expect(parseFrameArtifact({ ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
         timestampsUs: [0, 0], preferredTransform: [1, 0, 0, 1, 0, 0] })).toBeNull();
     expect(parsePcmArtifact({ ...base, size: 11_520_000, kind: 'pcm', sampleRate: 48000, channels: 2, frames: 1_440_000, encoding: 'f32le-interleaved' })?.channels).toBe(2);

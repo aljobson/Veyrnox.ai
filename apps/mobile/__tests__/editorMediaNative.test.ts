@@ -49,6 +49,29 @@ test('valid native artifacts pass while malformed or oversized results fail clos
     expect(await strict.sampleFrames('project-1', sample)).toEqual({ ok: false, code: 'write-failed' }); strict.close();
 });
 
+test('frame resize mode is forwarded, echoed and fails closed against an old native binary', async () => {
+    const good = fakeNative({ sampleFrames: jest.fn(async (_account, _project, _owner, _token, rawRequest) => { const request = rawRequest as { resizeMode?: string }; return ({ ok: true, artifactId: 'frames-fill',
+        uri: 'file:///cache/frames-fill.bin', kind: 'frames', size: 2048, width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 1,
+        timestampsUs: [0], preferredTransform: [1, 0, 0, 1, 0, 0], resizeMode: request.resizeMode }); }) });
+    const client = createEditorMediaClient(good.native); await client.setOwner('account-1');
+    expect(await client.sampleFrames('project-1', { ...sample, resizeMode: 'fill' })).toMatchObject({ ok: true, value: { resizeMode: 'fill' } });
+    expect(good.native.sampleFrames).toHaveBeenCalledWith(expect.any(String), 'project-1', expect.any(String), expect.any(String), { ...sample, resizeMode: 'fill' }); client.close();
+
+    const legacy = fakeNative(), strict = createEditorMediaClient(legacy.native); await strict.setOwner('account-1');
+    expect(await strict.sampleFrames('project-1', { ...sample, resizeMode: 'fill' })).toEqual({ ok: false, code: 'write-failed' });
+    expect(legacy.native.release).toHaveBeenCalledWith('account-1', 'project-1', 'frames-1'); strict.close();
+});
+
+test('aborting a one-shot operation cancels its hidden native token', async () => {
+    let resolve: ((value: Record<string, unknown>) => void) | undefined;
+    const pending = fakeNative({ sampleFrames: jest.fn(() => new Promise<Record<string, unknown>>(value => { resolve = value; })) });
+    const client = createEditorMediaClient(pending.native); await client.setOwner('account-1');
+    const controller = new AbortController(); const result = client.sampleFrames('project-1', sample, undefined, controller.signal); controller.abort();
+    resolve?.({ ok: false, code: 'cancelled' });
+    await expect(result).resolves.toEqual({ ok: false, code: 'cancelled' });
+    expect(pending.native.cancel).toHaveBeenCalledWith('account-1', 'project-1', expect.any(String), expect.any(String)); client.close();
+});
+
 test('inspect validates native metadata and capabilities preserve operation flags', async () => {
     const { native } = fakeNative({
         capabilities: jest.fn(async () => ({ ok: true, available: true, platform: 'ios', protocolVersion: 1, operations: { inspect: true, sampleFrames: true } })),

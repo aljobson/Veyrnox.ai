@@ -150,6 +150,21 @@ export function splitClip(timeline: Timeline, selection: Selection, frame: numbe
     return { ...timeline, seq, [selection.track]: timeline[selection.track].flatMap(candidate => candidate.id === item.id ? pair : [candidate]) } as Timeline;
 }
 
+/** Build every requested split against one immutable candidate so the caller can commit and undo the batch once. */
+export function splitClipAtFrames(timeline: Timeline, selection: Selection, frames: readonly number[]): Timeline | null {
+    const item = clipAt(timeline, selection);
+    if (!item || timeline.tracks.some(track => track.id === item.trackId && track.locked)) return null;
+    const cuts = [...new Set(frames)].sort((a, b) => b - a);
+    if (!cuts.length || cuts.some(frame => !Number.isInteger(frame) || frame <= item.start || frame >= item.start + item.len)) return null;
+    let candidate = timeline;
+    for (const frame of cuts) {
+        const next = splitClip(candidate, selection, frame);
+        if (!next) return null;
+        candidate = next;
+    }
+    return candidate;
+}
+
 export function removeSelections(timeline: Timeline, selections: readonly Selection[], ripple: 'none' | 'lane' | 'all'): Timeline {
     let next = timeline;
     for (const selection of selections) {

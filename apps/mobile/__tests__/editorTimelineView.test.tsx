@@ -13,9 +13,9 @@ const onSeek = jest.fn(), onSelect = jest.fn(), onApply = jest.fn(), onViewport 
 const selected = { track: 'video' as const, id: 'v1' };
 const event = (pageX = 0, pageY = 0, locationX = 0, locationY = 10) => ({ nativeEvent: { pageX, pageY, locationX, locationY } });
 const node = (id: string) => root.container.queryAll(n => n.props.testID === id)[0];
-async function render(selections = [selected], snap = false, ripple?: 'none' | 'lane' | 'all') {
+async function render(selections = [selected], snap = false, ripple?: 'none' | 'lane' | 'all', analysisMarks?: readonly { frame: number; kind: 'hard' | 'possible'; selected: boolean }[]) {
     await act(async () => root.render(<EditorTimeline timeline={timeline} selections={selections} ppf={2} total={300} frame={0} playing={false} snap={snap} ripple={ripple} onSeek={onSeek}
-        onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
+        analysisMarks={analysisMarks} onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
 }
 async function call(id: string, prop: string, value = event()) { await act(async () => node(id).props[prop](value)); }
 beforeEach(() => {
@@ -30,6 +30,15 @@ test('positions clips and playhead in a single scroller and scrubs on grant and 
     await call('timeline-ruler', 'onResponderGrant', event(100, 0, 120)); await call('timeline-ruler', 'onResponderMove', event(140));
     expect(onSeek.mock.calls).toEqual([[60], [80]]); expect(node('timeline-ruler').props.onResponderTerminationRequest()).toBe(false);
     await call('timeline-ruler', 'onResponderRelease'); expect(onApply).not.toHaveBeenCalled();
+});
+test('scene suggestions render as transient non-document marks with an accessible ruler summary', async () => {
+    await render([], false, undefined, [{ frame: 75, kind: 'hard', selected: true }, { frame: 90, kind: 'possible', selected: false }]);
+    expect(StyleSheet.flatten(node('analysis-mark-75').props.style)).toMatchObject({ left: 150, width: 3 });
+    expect(StyleSheet.flatten(node('analysis-mark-90').props.style)).toMatchObject({ left: 180, width: 7, opacity: 0.45 });
+    expect(node('analysis-mark-75').props.accessibilityLabel).toBe('Hard cut suggestion at 00:00:02:15');
+    expect(node('analysis-mark-90').props.accessibilityLabel).toBe('Possible dissolve suggestion at 00:00:03:00');
+    expect(node('timeline-ruler').props.accessibilityHint).toContain('Hard cut suggestion');
+    expect(timeline.markers).toEqual([]);
 });
 test('taps select while movement before hold yields to scrolling', async () => {
     await render([]); await call('clip-v1', 'onResponderGrant'); await call('clip-v1', 'onResponderRelease'); expect(onSelect).toHaveBeenCalledWith(selected);

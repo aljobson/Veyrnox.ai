@@ -37,6 +37,7 @@ struct SampleFramesRequest: Record {
   @Field var fromSeconds: Double = 0
   @Field var toSeconds: Double = 0
   @Field var maxFrames: Int = 900
+  @Field var resizeMode: String = "contain"
 }
 
 struct DecodePcmRequest: Record {

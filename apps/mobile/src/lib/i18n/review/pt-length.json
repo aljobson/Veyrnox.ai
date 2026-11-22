@@ -4722,6 +4722,18 @@
     "ratio": 1.83
   },
   {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Primeiro, redefina a velocidade e desative a reprodução reversa e o congelamento deste clipe.",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorScenes.possible",
+    "english": "Possible dissolves",
+    "translation": "Possíveis transições por dissolução",
+    "ratio": 1.94
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
