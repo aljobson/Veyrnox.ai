@@ -388,8 +388,7 @@ export default function CreateWithModel() {
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}
-                {photoGuide === 'scene' && !boundCount && !photosUnavailable && kindOf(model.modality) === 'image' && <TemplatePhotoExample kind="scene" />}
-                {slots.length && !photosUnavailable ? (
+                {photoGuide === 'scene' && !boundCount && !photosUnavailable && kindOf(model.modality) === 'image' && <TemplatePhotoExample kind="scene" />}{slots.length && !photosUnavailable ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.references')}</SectionLabel>
