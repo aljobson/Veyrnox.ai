@@ -2416,6 +2416,7 @@ export default {
   "editor.playheadtimecode": "Zeitcode des Abspielkopfs",
   "editor.plugins": "Plugins",
   "editor.preview": "Vorschau",
+  "editor.previewApproximate": "Ungefähre Vorschau",
   "editor.pREVIEW": "VORSCHAU",
   "editor.preview2": "{value1} vorhören",
   "editor.previewEmpty": "Füge Medien oder Text hinzu, um deine Bearbeitung zu starten",

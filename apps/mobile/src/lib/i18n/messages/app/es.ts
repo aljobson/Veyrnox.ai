@@ -2461,6 +2461,7 @@ export default {
   "editor.playheadtimecode": "Código de tiempo del cabezal",
   "editor.plugins": "Complementos",
   "editor.preview": "Vista previa",
+  "editor.previewApproximate": "Vista previa aproximada",
   "editor.preview2": "Vista previa de {value1}",
   "editor.previewEmpty": "Añade contenido o texto para empezar tu edición",
   "editor.previewunavailable": "Vista previa no disponible",

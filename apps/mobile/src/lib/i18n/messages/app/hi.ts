@@ -2415,6 +2415,7 @@ export default {
   "editor.playheadtimecode": "प्लेहेड टाइमकोड",
   "editor.plugins": "प्लगइन",
   "editor.preview": "प्रीव्यू",
+  "editor.previewApproximate": "अनुमानित पूर्वावलोकन",
   "editor.pREVIEW": "प्रीव्यू",
   "editor.preview2": "{value1} का पूर्वावलोकन",
   "editor.previewEmpty": "एडिट शुरू करने के लिए मीडिया या टेक्स्ट जोड़ें",

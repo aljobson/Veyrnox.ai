@@ -2372,6 +2372,7 @@ export default {
   "editor.playheadtimecode": "재생 헤드 타임코드",
   "editor.plugins": "플러그인",
   "editor.preview": "미리 보기",
+  "editor.previewApproximate": "대략적인 미리 보기",
   "editor.preview2": "{value1} 미리 듣기",
   "editor.previewEmpty": "미디어나 텍스트를 추가하여 편집 시작",
   "editor.previewunavailable": "미리보기 불가",

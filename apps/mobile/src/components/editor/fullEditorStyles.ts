@@ -18,6 +18,8 @@ export const styles = StyleSheet.create({
     previewFrame: { height: 122, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: '#050506' },
     canvas: { height: '100%', maxWidth: '100%', minWidth: 100, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#242428', backgroundColor: '#08080a' },
     safeFrame: { position: 'absolute', inset: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.16)' },
+    previewApproximateBadge: { position: 'absolute', top: 8, start: 8, maxWidth: '90%', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999,
+        backgroundColor: 'rgba(0,0,0,0.78)' },
     previewMark: { color: '#3ee6c4', fontFamily: fonts.displayHeavy, fontSize: 52, opacity: 0.18 }, previewLabel: { color: '#b9b9c0', fontSize: 12, fontWeight: '600' },
     previewCaption: { position: 'absolute', bottom: 17, maxWidth: '84%', color: '#fff', fontSize: 18, fontWeight: '800', textAlign: 'center', textShadowColor: '#000', textShadowRadius: 5 },
     transport: { minHeight: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingTop: 7 },

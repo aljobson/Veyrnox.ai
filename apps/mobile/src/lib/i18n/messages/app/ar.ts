@@ -2587,6 +2587,7 @@ export default {
   "editor.playheadtimecode": "الرمز الزمني لمؤشر التشغيل",
   "editor.plugins": "الإضافات",
   "editor.preview": "معاينة",
+  "editor.previewApproximate": "معاينة تقريبية",
   "editor.preview2": "معاينة {value1}",
   "editor.previewEmpty": "أضف وسائط أو نصًا لبدء تعديلك",
   "editor.previewunavailable": "المعاينة غير متاحة",

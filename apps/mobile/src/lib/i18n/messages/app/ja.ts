@@ -2371,6 +2371,7 @@ export default {
   "editor.playheadtimecode": "再生ヘッドのタイムコード",
   "editor.plugins": "プラグイン",
   "editor.preview": "プレビュー",
+  "editor.previewApproximate": "おおよそのプレビュー",
   "editor.pREVIEW": "プレビュー",
   "editor.preview2": "{value1} をプレビュー",
   "editor.previewEmpty": "メディアやテキストを追加して編集を開始",
