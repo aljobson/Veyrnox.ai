@@ -7817,7 +7817,7 @@ export default {
   "beatExport.shared": "WAV를 공유 시트에 전달했습니다.",
   "beatExport.render": "렌더링 및 공유",
   "beatExport.retryShare": "렌더링 및 공유 다시 시도",
-  "beatExport.source": "이 곡에는 Music 트랙 또는 라이브러리 사운드가 사용됩니다. 현재는 웹에서 내보내세요",
+  "beatExport.source": "이 곡에는 Music 트랙 또는 스템이 사용됩니다. 현재는 웹에서 내보내세요",
   "beatExport.missingOne": "사운드 1개가 없습니다. 내보내기 전에 복원하세요.",
   "beatExport.missingMany": "사운드 {count}개가 없습니다. 내보내기 전에 복원하세요.",
   "beatExport.phone": "이 곡은 너무 길어 이 휴대폰에서 내보낼 수 없습니다. 사이클 범위를 내보내거나 컴퓨터를 사용하세요.",

@@ -7918,7 +7918,7 @@ export default {
   "beatExport.shared": "WAV an das Teilen-Menü übergeben.",
   "beatExport.render": "Rendern und teilen",
   "beatExport.retryShare": "Rendern und Teilen erneut versuchen",
-  "beatExport.source": "Dieser Song verwendet einen Music-Titel oder Bibliothekssound; exportiere ihn vorerst im Web",
+  "beatExport.source": "Dieser Song verwendet einen Music-Titel oder eine Einzelspur; exportiere ihn vorerst im Web",
   "beatExport.missingOne": "1 Sound fehlt. Stelle ihn vor dem Export wieder her.",
   "beatExport.missingMany": "{count} Sounds fehlen. Stelle sie vor dem Export wieder her.",
   "beatExport.phone": "Dieser Song ist für den Export auf diesem Handy zu lang. Zyklusbereich exportieren oder Computer verwenden.",

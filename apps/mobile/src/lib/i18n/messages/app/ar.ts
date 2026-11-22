@@ -8312,7 +8312,7 @@ export default {
   "beatExport.shared": "تم تسليم WAV إلى نافذة المشاركة.",
   "beatExport.render": "تصيير ومشاركة",
   "beatExport.retryShare": "إعادة محاولة التصيير والمشاركة",
-  "beatExport.source": "تستخدم هذه الأغنية مقطعًا من Music أو صوتًا من المكتبة؛ صدّرها عبر الويب حاليًا",
+  "beatExport.source": "تستخدم هذه الأغنية مقطعًا من Music أو مسارًا مفصولًا؛ صدّرها عبر الويب حاليًا",
   "beatExport.missingOne": "صوت واحد مفقود. استعده قبل التصدير.",
   "beatExport.missingMany": "هناك {count} أصوات مفقودة. استعدها قبل التصدير.",
   "beatExport.phone": "الأغنية طويلة جدًا للتصدير على هذا الهاتف. صدّر نطاق دورة أو استخدم حاسوبًا.",
