@@ -5070,6 +5070,30 @@
     "ratio": 1.61
   },
   {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Setze zuerst Geschwindigkeit, Rückwärtswiedergabe und Standbild für diesen Clip zurück.",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorScenes.long",
+    "english": "Scene detection handles clips up to 30 seconds.",
+    "translation": "Die Szenenerkennung unterstützt Clips mit einer Länge von bis zu 30 Sekunden.",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorScenes.error",
+    "english": "Scene detection could not finish. Try again.",
+    "translation": "Die Szenenerkennung konnte nicht abgeschlossen werden. Versuche es erneut.",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorScenes.applied",
+    "english": "Split at {value1} scene changes. You can undo this in one step.",
+    "translation": "Der Clip wurde bei {value1} Szenenwechseln geteilt. Du kannst dies in einem Schritt rückgängig machen.",
+    "ratio": 1.62
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

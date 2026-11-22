@@ -2598,6 +2598,18 @@
     "ratio": 1.69
   },
   {
+    "id": "editorScenes.checking",
+    "english": "Checking on-device analysis…",
+    "translation": "डिवाइस पर विश्लेषण की सुविधा जाँची जा रही है…",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorScenes.preview",
+    "english": "Preview {value1}",
+    "translation": "{value1} का प्रीव्यू देखें",
+    "ratio": 1.63
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

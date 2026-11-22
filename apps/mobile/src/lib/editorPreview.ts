@@ -35,18 +35,18 @@ export function activeEditorMedia(timeline: Timeline, frame: number): ActiveEdit
     return null;
 }
 
-export async function resolveEditorMediaSource(api: Pick<ApiClient, 'request'>, media: Media): Promise<EditorMediaSource | null> {
+export async function resolveEditorMediaSource(api: Pick<ApiClient, 'request'>, media: Media, signal?: AbortSignal): Promise<EditorMediaSource | null> {
     const kind = media.kind === 'video' || media.kind === 'image' ? media.kind : null;
     if (!kind) return null;
 
     let body: { url?: unknown; content_type?: unknown; mime_type?: unknown };
     if (media.assetSource) {
         const { projectId, assetId } = media.assetSource;
-        body = await api.request(`/api/v1/projects/${encodeURIComponent(projectId)}/assets/${encodeURIComponent(assetId)}/download`);
+        body = await api.request(`/api/v1/projects/${encodeURIComponent(projectId)}/assets/${encodeURIComponent(assetId)}/download`, { signal });
     } else {
         const match = LIBRARY_ID.exec(media.id);
         if (!match) return null;
-        body = await api.request(`/api/v1/jobs/${encodeURIComponent(match[1])}/asset`);
+        body = await api.request(`/api/v1/jobs/${encodeURIComponent(match[1])}/asset`, { signal });
     }
 
     const uri = safeHttpsUrl(body.url);

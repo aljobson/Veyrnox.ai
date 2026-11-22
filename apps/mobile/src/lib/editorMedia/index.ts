@@ -62,12 +62,17 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
             catch { /* teardown */ } removeEntry(item); }
         if (native) await native.setProjectGeneration(account, project, generation);
     };
-    const once = async <T>(project: string, listener: ProgressListener | undefined, invoke: (entry: Entry) => Promise<unknown>, parse: (value: unknown) => T | null): Promise<EditorMediaResult<T>> => {
+    const once = async <T>(project: string, listener: ProgressListener | undefined, invoke: (entry: Entry) => Promise<unknown>, parse: (value: unknown) => T | null,
+        signal?: AbortSignal): Promise<EditorMediaResult<T>> => {
+        if (signal?.aborted) return { ok: false, code: 'cancelled' };
         if (!native) return missing; const entry = begin(project, listener); if (!entry) return invalid;
-        try { const raw = await invoke(entry); if (!live(entry)) { await releaseLateArtifact(entry, raw); return { ok: false, code: 'cancelled' }; } const error = parseError(raw); if (error) return error;
-            const value = parse(raw); return value ? { ok: true, value } : { ok: false, code: 'write-failed' };
+        const abort = () => { try { native.cancel(entry.account, project, owner, entry.token); } catch { /* teardown */ } removeEntry(entry); };
+        signal?.addEventListener('abort', abort, { once: true });
+        try { if (signal?.aborted) { abort(); return { ok: false, code: 'cancelled' }; }
+            const raw = await invoke(entry); if (!live(entry)) { await releaseLateArtifact(entry, raw); return { ok: false, code: 'cancelled' }; } const error = parseError(raw); if (error) return error;
+            const value = parse(raw); if (!value) { await releaseLateArtifact(entry, raw); return { ok: false, code: 'write-failed' }; } return { ok: true, value };
         } catch (error) { return live(entry) ? safeError(error) : { ok: false, code: 'cancelled' }; }
-        finally { removeEntry(entry); }
+        finally { signal?.removeEventListener('abort', abort); removeEntry(entry); }
     };
     return {
         async capabilities(): Promise<EditorMediaCapability> {
@@ -93,16 +98,17 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
             if (!account || !validIdentifier(project)) throw Error('invalid-input');
             const generation = (projects.get(project) ?? 0) + 1; await setGeneration(project, generation); return generation;
         },
-        inspect(project: string, uri: string, listener?: ProgressListener): Promise<EditorMediaResult<EditorMediaInfo>> {
+        inspect(project: string, uri: string, listener?: ProgressListener, signal?: AbortSignal): Promise<EditorMediaResult<EditorMediaInfo>> {
             return validIdentifier(project) && validateOwnedFileUri(uri)
-                ? once(project, listener, entry => native!.inspect(entry.account, project, owner, entry.token, uri), parseMediaInfo) : Promise.resolve(invalid);
+                ? once(project, listener, entry => native!.inspect(entry.account, project, owner, entry.token, uri), parseMediaInfo, signal) : Promise.resolve(invalid);
         },
-        sampleFrames(project: string, request: SampleFramesRequest, listener?: ProgressListener): Promise<EditorMediaResult<FrameArtifact>> {
-            return validateSampleFramesRequest(request) ? once(project, listener, entry => native!.sampleFrames(entry.account, project, owner, entry.token, request), parseFrameArtifact)
+        sampleFrames(project: string, request: SampleFramesRequest, listener?: ProgressListener, signal?: AbortSignal): Promise<EditorMediaResult<FrameArtifact>> {
+            return validateSampleFramesRequest(request) ? once(project, listener, entry => native!.sampleFrames(entry.account, project, owner, entry.token, request),
+                value => parseFrameArtifact(value, request.resizeMode), signal)
                 : Promise.resolve(invalid);
         },
-        decodePcm(project: string, request: DecodePcmRequest, listener?: ProgressListener): Promise<EditorMediaResult<PcmArtifact>> {
-            return validateDecodePcmRequest(request) ? once(project, listener, entry => native!.decodePcm(entry.account, project, owner, entry.token, request), parsePcmArtifact)
+        decodePcm(project: string, request: DecodePcmRequest, listener?: ProgressListener, signal?: AbortSignal): Promise<EditorMediaResult<PcmArtifact>> {
+            return validateDecodePcmRequest(request) ? once(project, listener, entry => native!.decodePcm(entry.account, project, owner, entry.token, request), parsePcmArtifact, signal)
                 : Promise.resolve(invalid);
         },
         async beginEncode(project: string, request: BeginEncodeRequest, listener?: ProgressListener): Promise<EditorMediaResult<EncodeSession>> {

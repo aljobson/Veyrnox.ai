@@ -12,6 +12,7 @@ import { CaptionsPanel, TranscriptPanel } from './tools/CaptionsPanels';
 import { EffectsPanel, TransitionsPanel, FiltersPanel } from './tools/LookPanels';
 import { AnimationPanel } from './tools/AnimationPanel';
 import { MarkersPanel } from './tools/MarkersPanel'; import { AdjustPanel } from './tools/AdjustPanel';
+import { ScenesPanel } from './tools/ScenesPanel'; import { sceneAnalysisBlocker, useEditorSceneAnalysis } from './tools/useEditorSceneAnalysis';
 import { useBestCutEditor } from './useBestCutEditor';
 import { EditorSpeechCutSheet } from './EditorSpeechCutSheet';
 import { useSpeechCutAvailability } from './useSpeechCutAvailability';
@@ -62,7 +63,7 @@ import { touchTarget } from '../../lib/a11y';
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
 import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, moveClip, pasteClipboard, pruneEmptiedExtraTracks,
-    removeSelections, splitClip, timelineOf, updateClip, validCustomFonts, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from
+    removeSelections, splitClip, splitClipAtFrames, timelineOf, updateClip, validCustomFonts, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from
     '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
 import { HeaderAction } from '../HeaderAction';
@@ -93,6 +94,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const bestCut = useBestCutEditor(session, projectId, startBestCut); const thumbLinks = useAssetLinks(api);
     const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
     const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
+    const [sceneAnnouncement, setSceneAnnouncement] = useState<string | null>(null); useAnnouncement(sceneAnnouncement);
     const [placement, setPlacement] = useState(0);
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
     const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() }); const guard = useEditorLeaveGuard(leaveEditor, router.back);
@@ -134,16 +136,39 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const audioActions = useAudioSettingsActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem, frameStore });
     const originalAudio = useOriginalAudio({ timeline, localMediaUris, setLocalMediaUris: session.setLocalMediaUris, playing, setProblem: message => { if (sync.live()) setProblem(message); },
         insertMedia: returns.place, frameStore, currentTimeline: () => timelineOf(currentDocument()?.timeline), onPlacement: message => { setProblem(message); setPlacement(value => value + 1); } });
+    const selected = clipAt(timeline, selection);
+    const selectedMedia = selected && 'mediaId' in selected && selected.mediaId ? timeline.media[selected.mediaId] : undefined;
+    const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
+    const sceneClip = selection?.track === 'video' && selected && 'mediaId' in selected ? selected as Clip : undefined;
+    const sceneRunKey = `${projectId}:${getCacheUser() ?? ''}:${getEditRevision()}:${selection?.track ?? ''}:${selection?.id ?? ''}:${sceneClip?.start ?? ''}:${sceneClip?.in ?? ''}:${sceneClip?.len ?? ''}`;
+    const scenes = useEditorSceneAnalysis({ api, projectId, media: selectedMedia, clip: sceneClip, localUri: selectedMedia ? localMediaUris[selectedMedia.id] : undefined,
+        runKey: sceneRunKey });
+    const sceneRows = scenes.resultKey === sceneRunKey ? scenes.rows : [];
+    const sceneBlockerCode = sceneAnalysisBlocker(selectedMedia, sceneClip, !!selectedTrack?.locked);
+    const sceneBlockerKeys = { select: 'editorScenes.select', transform: 'editorScenes.transform', short: 'editorScenes.short', long: 'editorScenes.long', locked: 'editorScenes.locked' } as const;
+    const sceneBlocker = sceneBlockerCode ? t(sceneBlockerKeys[sceneBlockerCode]) : null;
+    const sceneError = scenes.error === 'source' ? t('editorScenes.sourceError') : scenes.error === 'invalid-input' || scenes.error === 'unsupported-codec' || scenes.error === 'corrupt-media'
+        ? t('editorScenes.invalidError') : scenes.error === 'disk-full' ? t('editorScenes.spaceError') : scenes.error ? t('editorScenes.error') : null;
+    const sceneMarks = sceneRows.map(row => ({ frame: row.frame, kind: row.kind, selected: row.ticked }));
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
-    const total = framesIn(timeline); const selected = clipAt(timeline, selection);
-    const selectedMedia = selected && 'mediaId' in selected && selected.mediaId ? timeline.media[selected.mediaId] : undefined;
+    const total = framesIn(timeline);
     const clipCount = timeline.video.length + timeline.audio.length + timeline.text.length; const selectedGroup = selected?.groupId;
-    const selectedTrack = selection ? timeline.tracks.find((track) => track.id === selected?.trackId) : undefined;
     const availableMedia = [...Object.values(timeline.media), ...projectAssets.filter((asset) => !Object.values(timeline.media).some((item) => item.assetSource?.assetId ===
         asset.assetSource?.assetId))];
     const commitTimeline = (next: Timeline) => markDocument({ ...(currentDocument() ?? document), schema_version: 3, timeline: next });
     const applyTimeline = (next: Timeline) => commitTimeline(next).status === 'accepted';
+    const applySceneCuts = () => {
+        const frames = sceneRows.filter(row => row.ticked).map(row => row.frame), current = currentDocument();
+        if (!current || !sceneClip || !selection || scenes.resultKey !== sceneRunKey) { setSceneAnnouncement(t('editorScenes.stale')); scenes.clear(); return; }
+        const next = splitClipAtFrames(timelineOf(current.timeline), { track: 'video', id: sceneClip.id }, frames);
+        if (!next) { setProblem(t('editorScenes.locked')); return; }
+        const result = markDocument({ ...current, schema_version: 3, timeline: next });
+        if (result.status !== 'accepted') return;
+        const selectedScene = { track: 'video' as const, id: sceneClip.id };
+        setSelection(selectedScene); setSelections([selectedScene]); setPlaying(false); setFrame(frames[0] ?? sceneClip.start);
+        setSceneAnnouncement(t('editorScenes.applied', { value1: frames.length })); scenes.clear();
+    };
     const trackActions = useEditorTrackActions(timeline, () => timelineOf(currentDocument()?.timeline ?? document.timeline), applyTimeline);
     const placeVoiceover: VoiceoverProps['insert'] = media => {
         const result = insertMediaAt(timelineOf(currentDocument()?.timeline), media, voiceoverAt ?? 0);
@@ -265,6 +290,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'make-audio', icon: '♫', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
         { id: 'captions', icon: 'CC', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') }, ]; const moreRows: SheetRow[] = [
         { id: 'text', icon: 'T', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
+        { id: 'scenes', icon: '⌇', label: t('editor.scenes'), hint: t('editorScenes.private'), onPress: () => showPanel('scenes') },
         { id: 'export', icon: '⇩', label: t('editor.export'), hint: t(exportGate.hintKey), onPress: () => void openExport() },
         { id: 'versions', icon: '↺', label: t('editorSave.versions'), hint: t('editorSimple.versionsHint'), onPress: sync.openVersions },
         { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
@@ -370,11 +396,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 showsVerticalScrollIndicator>
                 <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active:
                     boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore}
-                    playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false);
+                    playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={sceneMarks} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false);
                     setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
             </ScrollView> : <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null}
                 onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total}
-                frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => {
+                frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={sceneMarks} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => {
                 setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />}
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} minHeight={budget.panelMin} rail={advanced ? <ToolRail tool={tool} setTool={setTool} /> : undefined}>
@@ -387,6 +413,9 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             {tool === 'text' ? <TextPanel {...panelProps} /> : null}
             {tool === 'captions' ? <CaptionsPanel {...panelProps} /> : null}
             {tool === 'transcript' ? <TranscriptPanel {...panelProps} /> : null}
+            {tool === 'scenes' ? <ScenesPanel availability={scenes.availability} blocker={sceneBlocker} status={scenes.status} progress={scenes.progress} rows={sceneRows} error={sceneError}
+                onDetect={() => { setPlaying(false); setSceneAnnouncement(null); void scenes.detect(); }} onCancel={scenes.cancel} onToggle={scenes.toggle}
+                onPreview={frame => { setPlaying(false); setFrame(frame); }} onApply={applySceneCuts} /> : null}
             {tool === 'effects' ? <EffectsPanel {...panelProps} /> : null}
             {tool === 'transitions' ? <TransitionsPanel {...panelProps} /> : null}
             {tool === 'filters' ? <FiltersPanel {...panelProps} /> : null}

@@ -29,6 +29,9 @@ enum EditorFrameSampler {
           (1...900).contains(request.maxFrames) else {
       throw EditorMediaFailure.result(.invalidInput, "invalid-sample-range")
     }
+    guard request.resizeMode == "contain" || request.resizeMode == "fill" else {
+      throw EditorMediaFailure.result(.invalidInput, "invalid-resize-mode")
+    }
     let input = try paths.inputURL(request.uri, identity: identity)
     let (asset, _) = try readableAsset(input)
     guard let track = asset.tracks(withMediaType: .video).first else {
@@ -66,7 +69,8 @@ enum EditorFrameSampler {
       guard seconds.isFinite else { continue }
       if seconds + 0.000_001 < nextTarget { continue }
       guard let buffer = CMSampleBufferGetImageBuffer(sample) else { continue }
-      let data = try rgba(buffer, orientation: orientation, width: 128, height: 72)
+      let data = try rgba(buffer, orientation: orientation, width: 128, height: 72,
+        resizeMode: request.resizeMode)
       let timestamp = Int64((seconds * 1_000_000).rounded())
       guard previousTimestamp.map({ timestamp > $0 }) ?? true else {
         reader.cancelReading(); throw EditorMediaFailure.result(.corruptMedia, "duplicate-timestamp")
@@ -85,7 +89,8 @@ enum EditorFrameSampler {
     }
     let manifest: [String: Any] = ["version": 1, "format": "rgba8", "width": 128, "height": 72,
       "rowStride": 512, "colorSpace": "srgb", "orientedWidth": Int(oriented.width.rounded()),
-      "orientedHeight": Int(oriented.height.rounded()), "transform": transformArray(track.preferredTransform), "frames": records]
+      "orientedHeight": Int(oriented.height.rounded()), "transform": transformArray(track.preferredTransform),
+      "resizeMode": request.resizeMode, "frames": records]
     let manifestURL = folder.appendingPathComponent("frames.json")
     do { let encoded = try JSONSerialization.data(withJSONObject: manifest); try encoded.write(to: manifestURL, options: .atomic); bytes += encoded.count }
     catch { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed) }
@@ -96,20 +101,28 @@ enum EditorFrameSampler {
     return ["ok": true, "artifactId": artifactId, "uri": manifestURL.absoluteString, "kind": "frames",
       "size": bytes, "count": records.count, "width": 128, "height": 72, "stride": 512,
       "pixelFormat": "rgba8", "colorSpace": "srgb", "timestampsUs": records.compactMap { $0["timestampUs"] },
-      "preferredTransform": transformArray(track.preferredTransform)]
+      "preferredTransform": transformArray(track.preferredTransform), "resizeMode": request.resizeMode]
   }
 
   private static func rgba(_ buffer: CVPixelBuffer, orientation: CGImagePropertyOrientation,
-                           width: Int, height: Int) throws -> Data {
+                           width: Int, height: Int, resizeMode: String) throws -> Data {
     var image = CIImage(cvPixelBuffer: buffer).oriented(orientation)
     let source = image.extent.standardized
     guard source.width > 0, source.height > 0 else { throw EditorMediaFailure.result(.corruptMedia) }
     image = image.transformed(by: CGAffineTransform(translationX: -source.minX, y: -source.minY))
-    let scale = min(CGFloat(width) / source.width, CGFloat(height) / source.height)
-    image = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
-    let scaled = image.extent
-    image = image.transformed(by: CGAffineTransform(translationX: (CGFloat(width) - scaled.width) / 2,
-      y: (CGFloat(height) - scaled.height) / 2)).composited(over: CIImage(color: .black))
+    switch resizeMode {
+    case "contain":
+      let scale = min(CGFloat(width) / source.width, CGFloat(height) / source.height)
+      image = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+      let scaled = image.extent
+      image = image.transformed(by: CGAffineTransform(translationX: (CGFloat(width) - scaled.width) / 2,
+        y: (CGFloat(height) - scaled.height) / 2)).composited(over: CIImage(color: .black))
+    case "fill":
+      image = image.transformed(by: CGAffineTransform(scaleX: CGFloat(width) / source.width,
+        y: CGFloat(height) / source.height))
+    default:
+      throw EditorMediaFailure.result(.invalidInput, "invalid-resize-mode")
+    }
     var data = Data(count: width * height * 4)
     let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
     data.withUnsafeMutableBytes { bytes in

@@ -1,4 +1,9 @@
 jest.mock('../src/lib/voiceoverRecorder', () => ({ VOICEOVER_AVAILABLE: false }));
+var mockSceneState: any;
+jest.mock('../src/components/editor/tools/useEditorSceneAnalysis', () => ({
+    sceneAnalysisBlocker: () => null,
+    useEditorSceneAnalysis: ({ runKey }: { runKey: string }) => ({ ...mockSceneState, resultKey: mockSceneState?.status === 'done' ? runKey : undefined }),
+}));
 import { act } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -43,6 +48,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockSceneState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, detect: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn() };
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
         if (init?.method === 'PUT') return { revision: JSON.parse(init.body as string).expected_revision + 1 };
         if (path.endsWith('/media-info')) return { seconds: 4 };
@@ -87,6 +93,7 @@ test('the simple view opens a sheet from each entry and All editing tools reveal
     for (const label of ['Library video', 'Library image', 'Library audio', 'Photos & videos', 'Files']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Close');
     await press('More');
+    expect(labelled('Scenes').length).toBeGreaterThan(0);
     expect(labelled('All editing tools').length).toBeGreaterThan(0);
     await press('All editing tools');
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail').length).toBeGreaterThan(0);
@@ -102,8 +109,8 @@ test('opens a native project workspace without loading a website', async () => {
     expect(visible('PREVIEW')).toBe(true);
     expect(visible('TIMELINE')).toBe(true);
     expect(root.container.queryAll((node) => node.type === 'WebView')).toHaveLength(0);
-    for (const label of ['Media', 'Audio', 'Generate', 'Text', 'Captions', 'Transcript', 'Effects', 'Transitions', 'Filters', 'Animation', 'Markers', 'Brand kit', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
-    for (const label of ['Templates', 'Elements', 'Scenes', 'Clips', 'Assistant', 'Plugins', 'Review']) expect(root.container.queryAll(node => node.props.accessibilityLabel === label)).toHaveLength(0);
+    for (const label of ['Media', 'Audio', 'Generate', 'Text', 'Captions', 'Transcript', 'Scenes', 'Effects', 'Transitions', 'Filters', 'Animation', 'Markers', 'Brand kit', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    for (const label of ['Templates', 'Elements', 'Clips', 'Assistant', 'Plugins', 'Review']) expect(root.container.queryAll(node => node.props.accessibilityLabel === label)).toHaveLength(0);
     expect(visible('Detected cuts')).toBe(false);
     for (const label of ['Undo', 'Redo', 'Select multiple', 'Duplicate', 'Split', 'Copy', 'Paste at playhead', 'Delete', 'Group', 'Ungroup', 'Add video track', 'Add audio track', 'Add text track', 'Add marker', 'Add text', 'Export', 'Credits']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
 });
@@ -132,6 +139,24 @@ test('splits a clip, copies it and pastes it at the playhead', async () => {
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(saved.video).toHaveLength(3);
     expect(saved.video.map((clip: any) => clip.len)).toEqual([1, 59, 1]);
+});
+
+test('applies all selected scene cuts as one edit and one Undo restores the clip', async () => {
+    serverDocument = { ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Scene one', frames: 60 } },
+        video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }], audio: [], text: [], tracks: [
+            { id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false },
+            { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false },
+            { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } };
+    mockSceneState = { ...mockSceneState, status: 'done', progress: 1, rows: [
+        { frame: 20, time: 2 / 3, kind: 'hard', ticked: true }, { frame: 40, time: 4 / 3, kind: 'hard', ticked: true }] };
+    await render();
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    await press('Scenes');
+    expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('analysis-mark-'))).toHaveLength(2);
+    await press('Split at 2 cuts');
+    expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-v'))).toHaveLength(3);
+    await press('Undo');
+    expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-v'))).toHaveLength(1);
 });
 
 const twoClips = () => ({ ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 2, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Scene one', frames: 60 } }, video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }, { id: 'v2', mediaId: 'media1', start: 60, in: 0, len: 30, trackId: 'video-0' }], audio: [], text: [], tracks: [{ id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false }, { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false }, { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } });
