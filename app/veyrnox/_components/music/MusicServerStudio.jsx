@@ -6,6 +6,7 @@ import { addToDraft, NEW_CHAT, readDraft } from '../../_lib/chatLocal';
 import { Modal } from '../Modal';
 import { useMusicServerState } from './useMusicServerState';
 import { MusicDurationField } from './MusicDurationField';
+import { MusicCandidateProgress } from './MusicCandidateProgress';
 import { useMusicDuration } from './useMusicDuration';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 import { MusicTempoKeyControls, tempoKeyInvalid, tempoKeyQuoteFields } from './MusicTempoKeyControls';
@@ -166,9 +167,8 @@ function ServerCandidate({ candidate, title }) {
         </span>
       </div>
       {state === 'running' || state === 'queued' ? (
-        <div className="mt-5" aria-label={`Version ${label} is ${LABELS[state].toLowerCase()}`} aria-busy="true">
-          <div className="vx-shimmer h-2 rounded-full bg-vx-base" />
-          <p className="mt-3 text-sm text-vx-fg-muted">This candidate completes independently from the other version.</p>
+        <div aria-label={`Version ${label} is ${LABELS[state].toLowerCase()}`} aria-busy="true">
+          <MusicCandidateProgress label={label} />
         </div>
       ) : null}
       {state === 'ready' && candidate.audio_url ? (
