@@ -11,6 +11,7 @@ import { useSwapRuntime } from '../../lib/templateSwap/runtime';
 import { isOffline, subscribe } from '../../lib/networkState';
 import { swapErrorKey, unsettled, type SwapOffer } from '../../../../../app/veyrnox/_lib/templateSwapClient.mjs';
 import { SwapVisionHost } from './SwapVisionHost';
+import { TemplatePhotoExample } from './TemplatePhotoExample';
 export function SwapComposer({ offer }: { offer: SwapOffer }) {
     const { actions, attempts, accountId, beginSessionTask } = useSwapRuntime(offer.id), router = useRouter();
     const a = attempts.at(-1), offline = useSyncExternalStore(subscribe, isOffline), styles = useThemedStyles(sheets);
@@ -55,6 +56,7 @@ export function SwapComposer({ offer }: { offer: SwapOffer }) {
                 return <View key={person} style={styles.content}>
                     <Text variant="bodyStrong">{label}</Text>
                     <Text>{t(people === 2 ? 'presets.swap.twoGuidance' : 'presets.swap.guidance')}</Text>
+                    <TemplatePhotoExample />
                     <Button variant="secondary" label={t(mine?.length ? 'presets.swap.replace' : 'presets.swap.choose')} disabled={!canReplace || (person === 1 && !a?.files)} onPress={() => void pick(person as 0 | 1)} />
                     {showError && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
                     {showError && a?.state === 'photo_error' && <Button variant="secondary" label={t('presets.swap.retry')} disabled={!canReplace} onPress={() => void pick(person as 0 | 1)} />}

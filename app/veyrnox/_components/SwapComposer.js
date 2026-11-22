@@ -6,6 +6,7 @@ import { swapActions } from '../_lib/templateSwapRuntime.js';
 import { swapErrorKey, unsettled, swapImageCounts, swapFullBody } from '../_lib/templateSwapClient.mjs';
 import { useOnlineStatus } from '../_lib/useOnlineStatus.js';
 import { swapControl } from './SwapAttemptStatus.js';
+import { TemplatePhotoExample } from './TemplatePhotoExample.js';
 export function SwapComposer({ offer }) {
   const { t } = useI18n();
   const { attempts, accountId } = useSwapDraft(offer.id);
@@ -35,6 +36,7 @@ export function SwapComposer({ offer }) {
       return <fieldset key={person} className="space-y-4 rounded-2xl border border-vx-border p-4">
         <legend className="px-2 font-bold">{label}</legend>
         <p id={`${field}-help${person}`} className="text-sm text-vx-fg-muted">{t(people === 2 ? 'presets.swap.twoGuidance' : fullBody ? 'presets.swap.fullBodyGuidance' : 'presets.swap.guidance')}</p>
+        <TemplatePhotoExample kind={fullBody ? 'fullBody' : 'face'} />
         <label className={`${swapControl} relative focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-vx-accent`}>
           {t(mine?.length ? 'presets.swap.replace' : 'presets.swap.choose')}
           <input type="file" accept="image/jpeg,image/png,image/webp" aria-label={label} aria-describedby={`${field}-help${person} ${field}-error${person}`} disabled={!accountId || !canReplace || locked}

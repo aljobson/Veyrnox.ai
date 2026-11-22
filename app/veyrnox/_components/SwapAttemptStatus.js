@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { useSwapDraft } from '../_lib/useSwapDraft.js';
 import { swapActions } from '../_lib/templateSwapRuntime.js';
@@ -13,10 +13,14 @@ function Attempt({ attempt: a }) {
     if (poll) void swapActions.reconcile(a.templateId, a.key).catch(() => {});
   }, [poll, a.accountId, a.templateId, a.key]);
   const success = ['queued', 'running', 'succeeded'].includes(a.state);
-  return <div className="mt-4 space-y-4 rounded-2xl border border-vx-border p-4" data-swap-attempt={a.state}>
+  const box = useRef(null);
+  // Generate sits low on the page: bring each new state into view instead of leaving it off screen.
+  useEffect(() => { box.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }); }, [a.state]);
+  return <div ref={box} className="mt-4 space-y-4 rounded-2xl border border-vx-border p-4" data-swap-attempt={a.state}>
     <p role="status">{t(`presets.swap.${a.state}`, { credits: a.spent ?? a.body?.max_charge_credits })}</p>
     {/* Same reading as Create's canvas: the site-wide bar prints the percent, this prints its clock. */}
     {['queued', 'running'].includes(a.state) && a.job_id && <GeneratingProgress jobId={a.job_id} />}
+    {a.state === 'refunded' && <p className="text-vx-danger">{t('presets.swap.refundedReason')}</p>}
     {a.state === 'not_charged' && <p className="text-vx-danger">{t(swapErrorKey(a.errorCode))}</p>}
     {Number.isFinite(a.balance) && <p className="text-vx-money">{t('presets.swap.balance', { credits: a.balance })}</p>}
     {a.state === 'unresolved' && <div className="flex flex-wrap gap-4">

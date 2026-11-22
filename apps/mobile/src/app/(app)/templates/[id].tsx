@@ -99,11 +99,12 @@ export default function TemplatePage() {
     }, []);
     return <ScrollView contentContainerStyle={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
-        {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
+        {TEMPLATE_SWAP_RUNTIME && !swapOffer && <SwapAttemptStatus templateId={id} />}
         {swapOffer ? <>
             {preset && <Text variant="title1" accessibilityRole="header">{preset.title}</Text>}
             <SwapTemplatePreview id={id} title={preset?.title} />
             <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} />
+            {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
         </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>
             <Text variant="title1" accessibilityRole="header">{preset.title}</Text>

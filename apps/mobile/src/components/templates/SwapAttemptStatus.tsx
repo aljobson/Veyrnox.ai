@@ -17,6 +17,7 @@ function Status({ attempt: a }: { attempt: Attempt }) {
     return <View style={{ gap: 12 }}>
         <Text accessibilityLiveRegion="polite">{t(`presets.swap.${a.state}`, { credits: a.spent ?? a.body?.max_charge_credits ?? 0 })}</Text>
         {['queued', 'running'].includes(a.state) && a.job_id ? <GenerationProgress key={a.job_id} jobId={a.job_id} modelId={a.body?.model_id} kind="video" compact /> : null}
+        {a.state === 'refunded' && <Text tone="danger">{t('presets.swap.refundedReason')}</Text>}
         {a.state === 'not_charged' && <Text tone="danger">{t(swapErrorKey(a.errorCode))}</Text>}
         {a.balance !== undefined && <Text tone="warning">{t('presets.swap.balance', { credits: a.balance })}</Text>}
         {['unknown', 'unresolved', 'refund_pending'].includes(a.state) && <>
