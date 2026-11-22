@@ -3738,6 +3738,18 @@
     "ratio": 2
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "Ativado",
+    "ratio": 3.5
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproduzir",

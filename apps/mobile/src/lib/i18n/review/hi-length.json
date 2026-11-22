@@ -2178,6 +2178,24 @@
     "ratio": 2.33
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "beat.pattern.clearBody",
+    "english": "You can use Undo to restore it.",
+    "translation": "इसे वापस लाने के लिए पहले जैसा करें का उपयोग करें।",
+    "ratio": 1.61
+  },
+  {
+    "id": "beat.pattern.clearAction",
+    "english": "Clear",
+    "translation": "साफ़ करें",
+    "ratio": 1.8
+  },
+  {
     "id": "musicTrackAdd.lyrics",
     "english": "Lyrics",
     "translation": "गीत के बोल",
