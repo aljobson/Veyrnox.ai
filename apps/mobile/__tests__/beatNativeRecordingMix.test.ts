@@ -25,7 +25,8 @@ function withSong(doc: BeatDoc): BeatDoc {
     return { ...added, assets: { ...added.assets, song: asset }, tracks: added.tracks.map(item => item.id === track.id ? { ...item,
         regions: [{ id: 'song-region', start: 0, length: 1920, assetId: 'song', phaseSec: 0, gainDb: 0, fadeIn: null, fadeOut: null, reverse: false }] } : item) };
 }
-const range = (doc: () => BeatDoc) => ({ getDoc: doc, startTick: 0, endTick: 3840, cycle: null, countInBars: 0 as const, onWindow: () => undefined });
+const range = (doc: () => BeatDoc) => ({ getDoc: doc, startTick: 0, endTick: 3840, cycle: null, countInBars: 0 as const,
+    assetMode: 'all-supported' as const, onWindow: () => undefined });
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });

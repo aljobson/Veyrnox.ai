@@ -39,7 +39,7 @@ export const { noteKey, quantisedSelection, clipLengthFromBars, MIDI_LIMITS } = 
     MIDI_LIMITS: { clips: number; clipNotes: number; notes: number; clipTicks: number };
 };
 export const { midiNoteOnsInWindow } = windowOps as {
-    midiNoteOnsInWindow(doc: BeatDoc, fromSec: number, toSec: number): { trackId: string; pitch: number; velocity: number; songTimeSec: number; durationSec: number }[];
+    midiNoteOnsInWindow(doc: BeatDoc, fromSec: number, toSec: number, options?: { tempo?: number; endSec?: number; includeMuted?: boolean }): { trackId: string; pitch: number; velocity: number; songTimeSec: number; durationSec: number }[];
 };
 const { resizeRegion } = beatOps as { resizeRegion(doc: BeatDoc, regionId: string, length: number): BeatDoc };
 export const { WAVETABLE_PRESETS } = tables as { WAVETABLE_PRESETS: Record<string, { label: string }> };

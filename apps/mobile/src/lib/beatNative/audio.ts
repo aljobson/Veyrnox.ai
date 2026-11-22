@@ -22,7 +22,9 @@ export type BeatPlayOutcome = 'started' | 'cancelled' | 'busy';
 export type ScheduledBeatStep = { step: number; time: number };
 export interface BeatAudio {
     recordingEngine?(): NativeBeatEngine;
-    playRange?(options: PlayRange): Promise<{ contextStart: number }>;
+    playRange?(options: PlayRange): Promise<{ contextStart: number; recordContextStart: number }>;
+    /** Current native audio-context time. Capture timestamps must be sampled synchronously before async resume work. */
+    now(): number;
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
     play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number, handlers?: PlayHandlers): Promise<BeatPlayOutcome>;
     readonly context: EngineContext;
@@ -101,10 +103,20 @@ export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTim
         if (range.isPlaying()) return rangeOutput(id, doc, untilTime);
         return mixRun.run() ? mixRun.destination(id, doc, untilTime) : plainOutput(id, doc);
     }, assets, (asset, error) => onAssetError?.(asset.name, error));
+    let rangeAssetMode: PlayRange['assetMode'] = 'takes-only';
     const range = createRecordingTransport(engine, rangeOutput, (doc, w, bounds) => {
         try { mixRun.sync(doc); mixRun.schedule(doc, w.fromSec, w.toSec, w.contextTime); } catch { /* rangeOutput falls back. */ }
+        for (const event of midiNoteOnsInWindow(doc, w.fromSec, w.toSec, { endSec: bounds.endSec })) {
+            const track = midiTracks(doc).find(item => item.id === event.trackId);
+            if (!track) continue;
+            const noteAt = w.contextTime + event.songTimeSec - w.fromSec;
+            mixRun.destination(track.id, doc, noteAt);
+            const run = mixRun.run();
+            if (!run) continue;
+            engine.playMidi(track, event.pitch, event.velocity, noteAt, run, audibleGain(doc, track)).release(noteAt + event.durationSec);
+        }
         const token = playGeneration;
-        void takes.window(doc, w, bounds, { recording: true }).catch(error => { if (token === playGeneration) fail(error); });
+        void takes.window(doc, w, bounds, { recording: true, assetMode: rangeAssetMode }).catch(error => { if (token === playGeneration) fail(error); });
     }, setTimer, clearTimer, rangeClickOutput);
     let playGeneration = 0;
     const kitOf = new Map<string, string>();
@@ -210,11 +222,15 @@ export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTim
 
     return {
         context: engine.context,
+        now: () => engine.now(),
         meterTap: trackId => playing || range.isPlaying() ? mixRun.meterTap(trackId) : null,
         recordingEngine: () => engine,
         async playRange(options) {
-            this.stop(); handlers = {}; const token = playGeneration; configureNativeTakeStorage();
-            await takes.preload(options.getDoc(), { recording: true });
+            this.stop(); handlers = { onError: options.onError }; const token = playGeneration; configureNativeTakeStorage();
+            rangeAssetMode = options.assetMode ?? 'takes-only';
+            const doc = options.getDoc();
+            if (!doc) throw new Error('beat_unavailable');
+            await takes.preload(doc, { recording: true, assetMode: rangeAssetMode });
             if (token !== playGeneration) throw new Error('transport_cancelled');
             return range.play(options);
         },

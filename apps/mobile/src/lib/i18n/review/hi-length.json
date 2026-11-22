@@ -2196,6 +2196,18 @@
     "ratio": 1.8
   },
   {
+    "id": "beat.midiRecord.recovery.saveNew",
+    "english": "Save as new beat",
+    "translation": "नए बीट के रूप में सेव करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveAsNew",
+    "english": "Save as new beat",
+    "translation": "नए बीट के रूप में सेव करें",
+    "ratio": 1.63
+  },
+  {
     "id": "musicTrackAdd.lyrics",
     "english": "Lyrics",
     "translation": "गीत के बोल",

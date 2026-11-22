@@ -1,5 +1,4 @@
 import { BeatExportSheet } from '../../../components/beats/BeatExportSheet';
-import { releaseExportPlayback } from '../../../lib/beatNative/exportPlayback';
 import { BeatLabsBar } from '../../../components/beats/BeatLabsBar';
 import { PHONE_CAPABILITIES } from '../../../lib/beatNative/controls';
 import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
@@ -7,12 +6,12 @@ import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
 import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
 import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
 import { addAudioTrack, beatReadOnly } from '../../../lib/beatNative/takeShared';
-import { replacementUnderway, subscribeReplacements } from '../../../lib/beatNative/recordingFinalizers';
+import { registerRecordingFinalizer, replacementUnderway, subscribeReplacements } from '../../../lib/beatNative/recordingFinalizers';
 import type { RecordingEdit } from '../../../lib/beatNative/takeShared';
 import type { TakeRecording } from '../../../lib/beatNative/takeRecording';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ComponentRef } from 'react';
-import { AccessibilityInfo, Alert, findNodeHandle, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentRef } from 'react';
+import { AccessibilityInfo, Alert, AppState, findNodeHandle, Keyboard, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
@@ -27,10 +26,10 @@ import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
 import { createNativeAssetPort } from '../../../lib/beatNative/nativeAssets';
 import { useAuth } from '../../../auth/AuthProvider';
 import {
-    addHitToPattern, addKitTrack, audibleGain, clearPattern, copyPattern, cycleVelocity, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, patternHasHits, recordTarget, removeTrack, selectPattern, setMetronome, setSteps, setSwing, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp, setView,
+    addHitToPattern, addKitTrack, audibleGain, clampLocator, clearPattern, copyPattern, cycleVelocity, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, patternHasHits, recordTarget, removeTrack, selectPattern, setMetronome, setSteps, setSwing, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, snapTick, songEnd, toggleStep, tryOp, setView,
     type BeatDoc, type Edit, type PadId, type PatternSlot,
 } from '../../../lib/beatNative/doc';
-import { beatStore, getBeat, listBeats, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
+import { beatStore, getBeat, listBeats, newId, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
 import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { ds, TEXT_SCALE } from '../../../theme';
@@ -40,13 +39,26 @@ import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifec
 import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 import { BeatEditorTransport } from '../../../components/beats/BeatEditorTransport';
+import { BeatMidiRecordPanel, type BeatMidiRecordPhase } from '../../../components/beats/BeatMidiRecordPanel';
+import { BeatMidiRecoveryCard, type BeatMidiRecoveryMode } from '../../../components/beats/BeatMidiRecoveryCard';
 import { BeatPatternControls } from '../../../components/beats/BeatPatternControls';
 import { beatEditorLayout } from '../../../lib/beatNative/editorLayout';
 import { measureAndRevealLane } from '../../../lib/beatNative/clipSearch';
 import type { ApplyOptions } from '../../../lib/beatNative/regionActions';
+import { createMidiRecording, type MidiRecordingController } from '../../../lib/beatNative/midiRecording';
+import type { MidiSoundTrack } from '../../../lib/beatNative/midi';
+import { getCacheUser } from '../../../lib/appCache';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
+const midiErrorNotice = (error: unknown) => {
+    const code = (error as { code?: string })?.code ?? (error as Error)?.message ?? '';
+    if (code === 'recording_conflict') return t('beat.midiRecord.recovery.conflict');
+    if (code === 'midi_track_required' || code === 'beat_unavailable' || code === 'recording_source_mismatch') return t('beat.midiRecord.targetRemoved');
+    if (code === 'account_changed' || code === 'pending_take_stale') return t('beat.midiRecord.recovery.revoked');
+    if (code === 'audio_unavailable') return t('beat.midiRecord.unavailable');
+    return t('beat.midiRecord.status.failed');
+};
 
 export default function BeatEditor() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -56,12 +68,13 @@ export default function BeatEditor() {
     useSyncExternalStore(subscribeBeats, listBeats, listBeats);
     const doc = getBeat(String(id));
     const s = useThemedStyles(sheets);
-    const { width, fontScale } = useWindowDimensions();
+    const { width, height, fontScale } = useWindowDimensions();
     const { settings } = useAppearance();
-    const layout = beatEditorLayout(width, fontScale, TEXT_SCALE[settings.textSize]);
+    const layout = beatEditorLayout(width, height, fontScale, TEXT_SCALE[settings.textSize]);
     const history = useRef<History | null>(null);
     if (doc && history.current?.present !== doc) history.current = createHistory(doc);
     const recordingRef = useRef<TakeRecording | null>(null);
+    const midiRecordingRef = useRef<MidiRecordingController | null>(null);
     const audio = useRef<BeatAudio | null>(null);
     const audioSession = useRef<{ generation: number; engine: BeatAudio; recording: TakeRecording | null } | null>(null);
     const manualRun = useRef(false);
@@ -81,6 +94,17 @@ export default function BeatEditor() {
     const hitAnnouncement = useRef(-Infinity);
     const [editTrackId, setEditTrackId] = useState<string | undefined>(() => doc?.tracks[0]?.id);
     const resolvedEditTrackId = doc?.tracks.some(track => track.id === editTrackId) ? editTrackId : doc?.tracks[0]?.id;
+    const [arrangementLocator, setArrangementLocator] = useState(0);
+    const [arrangementSnap, setArrangementSnap] = useState(240);
+    const arrangementEnd = doc ? songEnd(doc) : 0;
+    useEffect(() => { setArrangementLocator(0); setArrangementSnap(240); }, [doc?.id]);
+    useEffect(() => {
+        setArrangementLocator(value => clampLocator(snapTick(value, arrangementSnap), arrangementEnd));
+    }, [arrangementEnd, arrangementSnap]);
+    const changeArrangementSnap = useCallback((next: number) => {
+        setArrangementSnap(next);
+        setArrangementLocator(value => clampLocator(snapTick(value, next), arrangementEnd));
+    }, [arrangementEnd]);
     const attemptLaneReveal = useCallback(() => {
         const lane = pendingRevealLane.current;
         if (!lane) return;
@@ -133,6 +157,7 @@ export default function BeatEditor() {
     const startingRef = useRef(false);
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const [midiNotice, setMidiNotice] = useState<string | null>(null);
     const saidSequence = useRef(0);
     const [said, setSaidState] = useState<{ message: string; event: number } | null>(null);
     const setSaid = useCallback((message: string | null) => {
@@ -156,12 +181,9 @@ export default function BeatEditor() {
         setPatternControls(false);
         requestAnimationFrame(restorePatternControlsFocus);
     }, [restorePatternControlsFocus]);
-    useAnnouncement(notice ?? said?.message, { everywhere: true, eventKey: notice ? undefined : said?.event });
+    // MusicNotice owns visible errors; this channel owns editor milestones only.
+    useAnnouncement(said?.message, { everywhere: true, eventKey: said?.event });
     useLocalBeatLifecycle();
-    useEffect(() => () => {
-        const session = audioSession.current; audioSession.current = null; audio.current = null;
-        void (session?.recording ?? recordingRef.current)?.finishAndDisarm().catch(() => undefined).finally(() => { void session?.engine.close(); });
-    }, []);
     useEffect(() => {
         if (!doc) {
             setEditTrackId(undefined);
@@ -171,15 +193,6 @@ export default function BeatEditor() {
         if (beatReadOnly(doc)) setPadRecord(false);
         if (editTrackId !== resolvedEditTrackId) setEditTrackId(resolvedEditTrackId);
     }, [doc, editTrackId, resolvedEditTrackId]);
-    useEffect(() => {
-        const stale = audioSession.current;
-        if (!stale || stale.generation === generation) return;
-        audioSession.current = null; if (audio.current === stale.engine) audio.current = null;
-        startingRef.current = false; setStarting(false); setPlaying(false); setOrdinaryRun(false); setStep(null);
-        stale.engine.stop();
-        void stale.recording?.finishAndDisarm().catch(() => undefined).finally(() => { void stale.engine.close(); });
-    }, [generation, setOrdinaryRun]);
-
     // The native module is touched only when the person first asks for sound.
     const engine = useCallback((): BeatAudio | null => {
         if (audio.current) return audio.current;
@@ -192,15 +205,15 @@ export default function BeatEditor() {
         } catch { setNotice(t('beat.audioError')); return null; }
     }, []);
     // Third argument: N5's history key (a slider drag is one undo step) or N6's options; both forms are accepted.
-    const apply = useCallback((operation: Edit, announce?: string, third?: string | (ApplyOptions & { recordingCommit?: boolean; key?: string })) => {
+    const apply = useCallback((operation: Edit, announce?: string, third?: string | (ApplyOptions & { recordingCommit?: boolean; liveMix?: boolean; key?: string; silentAnnouncement?: boolean })) => {
         const options = typeof third === 'string' ? { key: third } : third ?? {};
         const key = options.key;
         const refuse = (message: string) => { if (!options.silentRefusal) setNotice(message); return false; };
         const current = docRef.current;
         if (!current) return false;
-        if ((recordingRef.current?.locked() || replacementUnderway(current.id)) && !options?.recordingCommit) {
-            return refuse(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : 'beatTakes.locked'));
-        }
+        if (replacementUnderway(current.id) && !options.recordingCommit) return refuse(t('beatTakes.replacing'));
+        if (recordingRef.current?.locked() && !options.recordingCommit && !options.liveMix) return refuse(t('beatTakes.locked'));
+        if (midiRecordingRef.current?.locked() && !options.recordingCommit && !options.liveMix) return refuse(t('beat.midiRecord.locked'));
         let result;
         try { result = tryOp(current, operation); } catch { return refuse(t('beat.refused', { reason: '' })); }
         if (result.refused) return refuse(t('beat.refused', { reason: result.refused }));
@@ -209,13 +222,127 @@ export default function BeatEditor() {
             docRef.current = getBeat(current.id)!;
             history.current = record(history.current ?? createHistory(current), docRef.current, { label: announce, key });
         }
-        setNotice(null); setSaid(announce ?? null); return true;
+        setNotice(null);
+        if (!options.silentAnnouncement) setSaid(announce ?? null);
+        return true;
     }, []);
 
     const currentDoc = useCallback(() => docRef.current!, []);
     const recordingEdit = useCallback<RecordingEdit>((edit, options) => apply(edit, options?.message ?? t('beatTakes.recordingSaved'), options), [apply]);
-    const takes = useTakeRecording(String(id), doc, { current: currentDoc, audio: engine, edit: recordingEdit, t });
+    const beatId = String(id);
+    const takes = useTakeRecording(beatId, doc, { current: currentDoc, audio: engine, edit: recordingEdit, t }, { lifecycle: 'editor' });
     recordingRef.current = takes.controller;
+    const midiController = useMemo(() => createMidiRecording({
+        beatId,
+        owner: getCacheUser,
+        generation: () => authRef.current.generation,
+        current: () => docRef.current,
+        getBeat: target => beatStore.getBeat(target),
+        audio: engine,
+        commit: (next, noteCount) => apply(() => next, t('beat.midiRecord.recorded', { count: noteCount }), { recordingCommit: true, silentAnnouncement: true }),
+        flush: target => beatStore.flushBeat(target),
+        readSaved: target => beatStore.readSavedDoc(target),
+        addBeatFromDocument: (next, owner) => beatStore.addBeatFromDocument(next, owner),
+        newBeatId: newId,
+        announce: () => setSaid(t('beat.midiRecord.status.failed')),
+    }), [apply, beatId, engine, setSaid]);
+    midiRecordingRef.current = midiController;
+    const midiView = useSyncExternalStore(midiController.subscribe, midiController.snapshot, midiController.snapshot);
+    const [midiCountIn, setMidiCountIn] = useState(true);
+    const [midiQuantise, setMidiQuantise] = useState(true);
+    const [midiVelocity, setMidiVelocity] = useState(100);
+    const midiTargetTrack = useRef<string | null>(null);
+    const editorFinalizing = useRef<Promise<void> | null>(null);
+    const stoppedAudioSessions = useRef(new WeakSet<object>());
+    const closingAudioSessions = useRef(new WeakMap<object, Promise<void>>());
+    const stopEditorAudio = useCallback((session: NonNullable<typeof audioSession.current>) => {
+        if (stoppedAudioSessions.current.has(session)) return;
+        stoppedAudioSessions.current.add(session);
+        session.engine.stop();
+    }, []);
+    const closeEditorAudio = useCallback(async (session = audioSession.current) => {
+        if (audioSession.current === session) audioSession.current = null;
+        if (session && audio.current === session.engine) audio.current = null;
+        if (!session) return;
+        let closing = closingAudioSessions.current.get(session);
+        if (!closing) {
+            stopEditorAudio(session);
+            closing = Promise.resolve(session.engine.close());
+            closingAudioSessions.current.set(session, closing);
+        }
+        await closing;
+    }, [stopEditorAudio]);
+    const settleEditorRecorders = useCallback((mode: 'finish' | 'revoke' | 'preserve' = 'finish', close = false,
+        capturedSession = audioSession.current) => {
+        const existing = editorFinalizing.current;
+        if (existing) {
+            const followups = mode === 'revoke' ? [midiController.revoke()]
+                : mode === 'preserve' ? [takes.controller.beforeReplace(), midiController.beforeReplace()]
+                    : [];
+            const joined = Promise.allSettled([existing, ...followups]).then(results => {
+                const failed = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+                if (failed) throw failed.reason;
+            });
+            const completed = close ? joined.finally(() => closeEditorAudio(capturedSession)) : joined;
+            const tracked = completed.finally(() => {
+                if (editorFinalizing.current === tracked) editorFinalizing.current = null;
+            });
+            editorFinalizing.current = tracked;
+            return tracked;
+        }
+        const session = capturedSession;
+        const task = (async () => {
+            const settled = await Promise.allSettled([
+                mode === 'preserve'
+                    ? (session?.recording ?? recordingRef.current)?.beforeReplace() ?? Promise.resolve()
+                    : (session?.recording ?? recordingRef.current)?.finishAndDisarm() ?? Promise.resolve(),
+                mode === 'revoke' ? midiController.revoke()
+                    : mode === 'preserve' ? midiController.beforeReplace() : midiController.finish(),
+            ]);
+            let flushError: unknown;
+            try { await beatStore.flushBeat(beatId); } catch (error) { flushError = error; }
+            if (close) await closeEditorAudio(session);
+            const failed = settled.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+            if (failed) throw failed.reason;
+            if (flushError) throw flushError;
+        })();
+        const tracked = task.finally(() => {
+            if (editorFinalizing.current === tracked) editorFinalizing.current = null;
+        });
+        editorFinalizing.current = tracked;
+        return tracked;
+    }, [beatId, closeEditorAudio, midiController, takes.controller]);
+    const present = !!doc;
+    useEffect(() => {
+        const unregister = registerRecordingFinalizer(beatId, () => settleEditorRecorders('preserve', true));
+        if (present) void midiController.refreshRecovery().catch(error => setNotice(midiErrorNotice(error)));
+        return unregister;
+    }, [beatId, midiController, present, settleEditorRecorders]);
+    useEffect(() => {
+        const sub = AppState.addEventListener('change', state => {
+            if (state === 'background') void settleEditorRecorders('finish').catch(error => setNotice((error as Error).message));
+        });
+        return () => {
+            sub.remove();
+            void settleEditorRecorders('finish', true).catch(() => undefined).finally(() => {
+                midiController.dispose();
+                void takes.controller.dispose().catch(() => undefined);
+            });
+        };
+    }, [midiController, settleEditorRecorders, takes.controller]);
+    const lastAuthGeneration = useRef(generation);
+    useEffect(() => {
+        if (lastAuthGeneration.current === generation) return;
+        lastAuthGeneration.current = generation;
+        startingRef.current = false; setStarting(false); setPlaying(false); setOrdinaryRun(false); setStep(null);
+        const stale = audioSession.current;
+        if (stale) {
+            audioSession.current = null;
+            if (audio.current === stale.engine) audio.current = null;
+            stopEditorAudio(stale);
+        }
+        void settleEditorRecorders('revoke', true, stale).catch(() => undefined);
+    }, [generation, setOrdinaryRun, settleEditorRecorders, stopEditorAudio]);
     const wasRecording = useRef(false);
     useEffect(() => {
         const active = ['recording', 'finishing'].includes(takes.view.status);
@@ -225,12 +352,32 @@ export default function BeatEditor() {
         }
         wasRecording.current = active;
     }, [takes.view.status, setOrdinaryRun]);
+    const previousMidiSignal = useRef({ status: midiView.status, error: midiView.error });
+    useEffect(() => {
+        const previous = previousMidiSignal.current;
+        previousMidiSignal.current = { status: midiView.status, error: midiView.error };
+        if (previous.status === midiView.status && previous.error === midiView.error) return;
+        if (midiView.status === 'countIn') setSaid(t('beat.midiRecord.status.countIn'));
+        else if (midiView.status === 'recording') setSaid(t('beat.midiRecord.status.recording'));
+        else if (midiView.status === 'recovery' || midiView.status === 'conflict' || midiView.status === 'error') {
+            setSaid(midiErrorNotice(midiView.error));
+        } else if (midiView.status === 'idle' && ['recording', 'finishing'].includes(previous.status) && midiView.noteCount) {
+            setSaid(t('beat.midiRecord.recorded', { count: midiView.noteCount }));
+        }
+        if (midiView.status === 'idle') { midiTargetTrack.current = null; setMidiNotice(null); }
+    }, [midiView.error, midiView.noteCount, midiView.status, setSaid]);
+    useEffect(() => {
+        const target = midiTargetTrack.current;
+        if (target && ['starting', 'countIn', 'recording'].includes(midiView.status) && !doc?.tracks.some(track => track.id === target)) {
+            void midiController.finish().catch(error => setMidiNotice(midiErrorNotice(error)));
+        }
+    }, [doc, midiController, midiView.status]);
     const replacing = useSyncExternalStore(subscribeReplacements, () => replacementUnderway(String(id)), () => false);
-    const locked = takes.controller.locked() || replacing;
+    const locked = takes.controller.locked() || midiController.locked() || replacing;
     useEffect(() => { if (!replacing) setNotice(message => message === t('beatTakes.replacing') ? null : message); }, [replacing]);
 
     const navigateHistory = (direction: 'undo' | 'redo') => {
-        if (!history.current || recordingRef.current?.locked() || replacementUnderway(String(id))) return;
+        if (!history.current || locked) return;
         const next = travel(history.current, direction);
         if (next === history.current) return;
         if (!putBeat(next.present)) { setNotice(t('beat.local.busy')); return; }
@@ -240,8 +387,8 @@ export default function BeatEditor() {
     const selectCurrentPattern = (slot: PatternSlot, announcement?: string) => {
         const current = docRef.current;
         if (!current) return false;
-        if (recordingRef.current?.locked() || replacementUnderway(current.id) || beatStore.saveState(current.id) === 'busy') {
-            setNotice(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : recordingRef.current?.locked() ? 'beatTakes.locked' : 'beat.local.busy'));
+        if (recordingRef.current?.locked() || midiRecordingRef.current?.locked() || replacementUnderway(current.id) || beatStore.saveState(current.id) === 'busy') {
+            setNotice(t(replacementUnderway(current.id) ? 'beatTakes.replacing' : midiRecordingRef.current?.locked() ? 'beat.midiRecord.locked' : recordingRef.current?.locked() ? 'beatTakes.locked' : 'beat.local.busy'));
             return false;
         }
         let result;
@@ -305,7 +452,7 @@ export default function BeatEditor() {
         if (track) audio.current?.setTrackMix(trackId, { gain: audibleGain(next, track), pan: track.pan });
     };
     const mix = (trackId: string, operation: Edit, announce?: string, key?: string) => {
-        apply(operation, announce, key);
+        apply(operation, announce, { ...(key ? { key } : {}), liveMix: true });
         const next = getBeat(doc.id); if (next) { mixOf(trackId, next); next.tracks.forEach(x => mixOf(x.id, next)); }
     };
     const nameOf = (i: number) => t('beat.track', { n: i + 1 });
@@ -321,6 +468,54 @@ export default function BeatEditor() {
     const patternPlayhead = playheadTarget?.pattern === doc.currentPattern ? playheadTarget.step : null;
     const undoable = !locked && !!history.current && canUndo(history.current) && !historyBusy;
     const redoable = !locked && !!history.current && canRedo(history.current) && !historyBusy;
+    const midiTrack = editTrack?.kind === 'midi' ? editTrack as unknown as MidiSoundTrack : null;
+    const midiPhase: BeatMidiRecordPhase = ['starting', 'countIn', 'recording', 'finishing'].includes(midiView.status)
+        ? midiView.status as BeatMidiRecordPhase : 'idle';
+    const midiVisible = doc.view === 'song' && !!midiTrack;
+    const midiTransportVisible = midiVisible || midiPhase !== 'idle';
+    const midiRecoverable = midiView.status === 'recovery' || midiView.status === 'conflict';
+    const midiRecoveryMode: BeatMidiRecoveryMode | null = !midiRecoverable ? null
+        : readOnly || replacing ? 'discardOnly'
+            : midiView.status === 'conflict' ? 'conflict'
+                : midiView.error ? 'retry' : 'restore';
+    const midiIdleDisabled = !midiTrack || !midiVisible || readOnly || replacing || historyBusy || midiController.locked()
+        || takes.controller.locked() || !!midiView.pending;
+    const midiLockReason = replacing ? t('beatTakes.replacing')
+        : readOnly ? t('beatTakes.readOnly')
+            : takes.controller.locked() ? t('beatTakes.locked')
+                : midiView.pending ? t('beat.midiRecord.recovery.pending')
+                    : historyBusy ? t('beat.local.busy') : undefined;
+    const runMidiRecovery = (action: () => Promise<unknown>, success?: string) => {
+        void action().then(() => {
+            setMidiNotice(null);
+            if (success) setSaid(success);
+        }).catch(error => setMidiNotice(midiErrorNotice(error)));
+    };
+    const toggleMidiRecording = () => {
+        if (midiPhase === 'starting' || midiPhase === 'countIn') {
+            runMidiRecovery(() => midiController.discard());
+            return;
+        }
+        if (midiPhase === 'recording' || midiPhase === 'finishing') {
+            runMidiRecovery(() => midiController.finish());
+            return;
+        }
+        if (midiIdleDisabled || !midiTrack) return;
+        Keyboard.dismiss();
+        stop();
+        setPadRecord(false);
+        const startTick = clampLocator(snapTick(arrangementLocator, arrangementSnap), arrangementEnd);
+        setArrangementLocator(startTick);
+        midiTargetTrack.current = midiTrack.id;
+        void takes.controller.finishAndDisarm().then(() => midiController.start({
+            trackId: midiTrack.id,
+            startTick,
+            snap: midiQuantise ? arrangementSnap : 0,
+            countInBars: midiCountIn ? 1 : 0,
+        })).catch(error => {
+            if (midiController.snapshot().status !== 'idle') setMidiNotice(midiErrorNotice(error));
+        });
+    };
     const copyCurrentPattern = (target: PatternSlot) => {
         const current = docRef.current;
         if (!current || patternLocked) return;
@@ -382,30 +577,55 @@ export default function BeatEditor() {
                 <View style={s.actions}>
                     <BeatSaveControls id={doc.id} apply={apply} />
                     <Button variant="secondary" icon="arrowUp" label={t('beatExport.title')} onPress={() => setExporting(true)} />
-                    <BeatAiPanel doc={doc} apply={apply} />
+                    <BeatAiPanel doc={doc} apply={apply} disabled={locked} />
                     <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES}
                         showSounds={doc.view !== 'song'} />
                 </View>
                 {replacing ? <Text accessibilityLiveRegion="polite">{t('beatTakes.replacing')}</Text> : null}
                 {notice ? <MusicNotice message={notice} /> : null}
+                {midiNotice ? <MusicNotice message={midiNotice} announce={false} /> : null}
+                {midiRecoveryMode ? <BeatMidiRecoveryCard mode={midiRecoveryMode}
+                    busy={midiView.status === 'finishing'}
+                    canRetryWithQuantise={!midiView.pending && midiView.status === 'recovery' && arrangementSnap > 0}
+                    canSaveAsNew={!readOnly && !replacing && midiView.error !== 'recording_source_mismatch'}
+                    onRestore={() => runMidiRecovery(() => midiController.retry())}
+                    onRetry={() => runMidiRecovery(() => midiController.retry())}
+                    onRetryWithQuantise={() => runMidiRecovery(() => midiController.retry(arrangementSnap))}
+                    onSaveAsNew={() => runMidiRecovery(() => midiController.saveAsNewBeat(), t('beat.midiRecord.newBeatSaved'))}
+                    onDiscard={() => runMidiRecovery(() => midiController.discard())} /> : null}
                 <View testID={`beat-editor-layout-${layout}`} style={[s.editor, layout === 'regular' && s.editorRegular]}>
                     <View testID="beat-editor-main" style={s.main}>
-                        <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing} />
+                        <BeatRecordPanel doc={doc} controller={takes.controller} view={takes.view} playing={playing}
+                            externalLocked={midiController.locked()} />
                         <View style={s.tempo} accessibilityLabel={t('beat.tempo')}>
                             <View style={s.stepper}>
-                                <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
-                                <Button size="md" variant="secondary" label="−" accessibilityLabel={t('beat.tempoDown')} onPress={() => bump(-1)} disabled={bpm <= MIN_BPM} containerStyle={s.flex} />
-                                <Button size="md" variant="secondary" label="+" accessibilityLabel={t('beat.tempoUp')} onPress={() => bump(1)} disabled={bpm >= MAX_BPM} containerStyle={s.flex} />
-                                <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={bpm >= MAX_BPM} containerStyle={s.flex} />
+                                <Button size="md" variant="secondary" label="−5" accessibilityLabel={t('beat.tempoDown5')} onPress={() => bump(-5)} disabled={patternLocked || bpm <= MIN_BPM} containerStyle={s.flex} />
+                                <Button size="md" variant="secondary" label="−" accessibilityLabel={t('beat.tempoDown')} onPress={() => bump(-1)} disabled={patternLocked || bpm <= MIN_BPM} containerStyle={s.flex} />
+                                <Button size="md" variant="secondary" label="+" accessibilityLabel={t('beat.tempoUp')} onPress={() => bump(1)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
+                                <Button size="md" variant="secondary" label="+5" accessibilityLabel={t('beat.tempoUp5')} onPress={() => bump(5)} disabled={patternLocked || bpm >= MAX_BPM} containerStyle={s.flex} />
                             </View>
                             <Text variant="title3" accessibilityLiveRegion="polite">{t('beat.tempoValue', { bpm })}</Text>
                         </View>
-                        <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')}
+                        <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')} disabled={patternLocked}
                             options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
                             onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
                         {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
-                            editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId} playing={playing} step={step} disabled={patternLocked}
+                            editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId}
+                            locator={arrangementLocator} onLocatorChange={setArrangementLocator} snap={arrangementSnap} onSnapChange={changeArrangementSnap}
+                            playing={playing} step={step} disabled={patternLocked} navigationDisabled={locked || historyBusy}
                             announce={setSaid} onHold={setHeld} onRevealLane={revealLane} layout={layout} /> : null}
+                        {midiVisible && midiTrack ? <BeatMidiRecordPanel track={midiTrack}
+                            phase={midiPhase} noteCount={midiView.noteCount} countIn={midiCountIn} quantise={midiQuantise}
+                            onCountInChange={setMidiCountIn} onQuantiseChange={setMidiQuantise} countInStep={midiView.countInBeat || undefined}
+                            velocity={midiVelocity} setVelocity={setMidiVelocity} audio={() => null}
+                            clock={() => engine()?.now?.() ?? 0} onError={() => setNotice(t('beat.audioError'))}
+                            onNoteOn={event => { midiController.noteOn(event.keyId, midiTrack, event.pitch, event.velocity, event.contextTime); }}
+                            onNoteOff={event => { midiController.noteOff(event.keyId, event.contextTime); }}
+                            accessibilityNoteDurationMs={Math.max(30, arrangementSnap) * 60_000 / (bpm * 960)}
+                            settingsDisabled={midiPhase !== 'idle' || midiIdleDisabled}
+                            keyboardDisabled={!!midiRecoveryMode || midiPhase === 'finishing' || readOnly || replacing || takes.controller.locked()}
+                            lockReason={midiPhase !== 'idle' ? t('beat.midiRecord.locked') : midiLockReason}
+                            layout={layout} /> : null}
                         {padSurfaceAvailable ? <>
                             <View style={s.padHeading}>
                                 <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
@@ -421,12 +641,13 @@ export default function BeatEditor() {
                                 onToggle={n => apply(d => toggleStep(d, pad, n))}
                                 onVelocity={(n, direction) => apply(d => cycleVelocity(d, pad, n, direction))} />
                         </> : <Text variant="footnote" tone="secondary">{t('beat.padRecord.drumOnly')}</Text>}
-                        <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
+                        <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} disabled={locked}
+                            onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
                     </View>
                     <View testID="beat-editor-inspector" style={[s.inspector, layout === 'regular' && s.inspectorRegular]}>
                         <Text variant="bodyStrong" accessibilityRole="header">{t('beat.mixer')}</Text>
                         {doc.tracks.map((track, i) => (
-                            <View key={track.id}><MixerStrip track={track} index={i} canRemove={doc.tracks.length > 1}
+                            <View key={track.id}><MixerStrip track={track} index={i} canRemove={doc.tracks.length > 1} structuralLocked={locked}
                                 gainLocked={automationControl(track, 'gain', (doc as MixDoc).view).disabled ? t('beatMix.locked.gain') : undefined}
                                 panLocked={automationControl(track, 'pan', (doc as MixDoc).view).disabled ? t('beatMix.locked.pan') : undefined}
                                 onGain={v => mix(track.id, d => setTrackGain(d, track.id, Math.round(v * 100) / 100), undefined, `${track.id}:gain`)}
@@ -438,7 +659,7 @@ export default function BeatEditor() {
                                 <BeatTakeLanes doc={doc} track={track} apply={apply} locked={locked} />
                             </View>
                         ))}
-                        <Button variant="secondary" label={t('beat.track.add')} disabled={doc.tracks.length >= MAX_TRACKS}
+                        <Button variant="secondary" label={t('beat.track.add')} disabled={patternLocked || doc.tracks.length >= MAX_TRACKS}
                             onPress={() => apply(d => addKitTrack(d, DRUM_KITS[0].id))} />
                         <Button variant="secondary" label={t('beatTakes.addTrack')} disabled={locked || doc.tracks.length >= MAX_TRACKS} onPress={() => apply(d => addAudioTrack(d))} />
                         {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
@@ -448,12 +669,17 @@ export default function BeatEditor() {
             <BeatEditorTransport playing={playing} starting={starting} locked={locked}
                 pattern={doc.currentPattern} patternDisabled={patternLocked} canUndo={undoable} canRedo={redoable}
                 patternControlsRef={patternControlsTrigger}
+                midiRecordPhase={midiTransportVisible ? midiPhase : undefined} midiRecordDisabled={midiIdleDisabled}
+                midiRecordHint={midiLockReason} onMidiRecord={toggleMidiRecording}
                 onPattern={slot => { selectCurrentPattern(slot, t('beat.pattern.selected', { pattern: slot })); }}
                 onPatternControls={openPatternControls}
                 onUndo={() => navigateHistory('undo')} onRedo={() => navigateHistory('redo')}
-                onPlay={() => void (playing || starting ? stop() : play())} onMixer={() => setMixer(true)} />
-            {exporting && <BeatExportSheet doc={doc} replacing={replacing} recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status)}
-                prepare={() => releaseExportPlayback(audio, recordingRef, stop)} onClose={() => setExporting(false)} />}
+                onPlay={() => void (playing || starting ? stop() : play())}
+                mixerDisabled={locked} onMixer={() => { if (!locked) setMixer(true); }} />
+            {exporting && <BeatExportSheet doc={doc} replacing={replacing}
+                recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status) || midiPhase !== 'idle'}
+                prepare={async () => { await settleEditorRecorders('preserve'); stop(); await closeEditorAudio(); }}
+                onClose={() => setExporting(false)} />}
             {mixer && <BeatMixerSheet doc={doc} audio={audio.current} apply={apply} playing={playing} step={step} notice={notice} onClose={() => setMixer(false)} />}
             {patternControls && <BeatPatternControls pattern={doc.currentPattern}
                 uses={doc.tracks.flatMap(track => track.regions).filter(region => region.pattern === doc.currentPattern).length}

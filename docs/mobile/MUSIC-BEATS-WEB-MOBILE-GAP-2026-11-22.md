@@ -19,7 +19,8 @@ Production enables `beatEditor`, `beatAi`, `labs` and generic Music `collaborati
 | In-editor Music library | Missing | A song can seed a beat and starter Sounds can be inserted, but the editor has no private-song browser or clip picker. | Build a native library sheet using existing signed-asset contracts. |
 | Sound/song/target playback | Present | Native now schedules built-in Sounds and signed song/target regions with bounded decoded caching, owner fencing, cancellation and per-asset failure isolation. | Retain contract tests; qualify fidelity and memory pressure on device. |
 | Stem playback | Missing by design | The signing endpoint returns a ZIP archive, not directly decodable audio. Treating it as audio would be unsafe and broken. | Keep silent until bounded ZIP extraction and part validation land. |
-| Piano roll and instruments | Manual editing present | Note, velocity, duration, quantize, keyboard and instrument browsing exist. Web live MIDI/on-screen recording, record quantization and one-bar count-in do not. | Build native MIDI/piano capture. |
+| Piano roll and instruments | On-screen capture delivered in source | Note, velocity, duration, quantize, keyboard and instrument browsing remain. This slice adds arrangement-level capture from the two-octave on-screen keyboard, a one-bar count-in, record quantization, atomic history and owner-fenced recovery. Integrated simulator/device proof is still outstanding. | Retain reducer, recovery, accessibility and locale contracts; complete integrated iPhone qualification. |
+| External hardware MIDI input | Missing capability | The on-screen capture slice does not add a native CoreMIDI/Android MIDI adapter or prove USB/Bluetooth controller input. | Design, permission-gate and verify external hardware MIDI separately; do not count on-screen capture as hardware parity. |
 | Mixer, effects, automation and meters | Mostly present | Native omits distortion Drive and uses a compressor stand-in; real-device fidelity is unproved. | Close controls, then qualify on device. |
 | Microphone recording and takes | Present in source | Count-in, takes, audition, keep/discard and recovery are implemented, but no current device proof covers interruption, permission and latency behaviour. | Integrated iPhone qualification required. |
 | Mixdown, export, share and Save to Music | Partial | Pattern export works; song export still rejects sound/song/stem/target assets, so generated or seeded audio is omitted. Save to Music is correctly gated while `beatLibrarySave` is off. | Port all supported asset rendering; retain product gate. |
@@ -33,7 +34,7 @@ Production enables `beatEditor`, `beatAi`, `labs` and generic Music `collaborati
 
 ## Why the gap exists
 
-The web editor arrived as a sequence of browser-native phases: arrangement, audio-library regions, MIDI, cloud, export, AI, mixer, recording and polish. Native work deliberately established the document model and audio engine first, then shipped the editor in N1-N9 slices. The remaining gap is therefore concentrated in browser-dependent asset handling, phone-specific interaction design, external-audio mixdown and device qualification—not in a separate mobile document format. Keeping the shared validators, signing paths and document schema prevents the two products drifting while native controls are completed.
+The web editor arrived as a sequence of browser-native phases: arrangement, audio-library regions, MIDI, cloud, export, AI, mixer, recording and polish. Native work deliberately established the document model and audio engine first, then shipped the editor in N1-N9 slices. The remaining gap is therefore concentrated in browser-dependent asset handling, phone-specific interaction design, external hardware MIDI, external-audio mixdown and device qualification—not in a separate mobile document format. Keeping the shared validators, signing paths and document schema prevents the two products drifting while native controls are completed.
 
 ## PR evidence
 
@@ -43,7 +44,7 @@ Native baseline: #2428/#2524 (engine), #2467 (N1), #2526 (N2), #2540 (arrangemen
 
 ## Completion order
 
-1. Close pad recording/velocity, ripple/search/library and MIDI-recording gaps.
+1. Close pad recording/velocity and ripple/search/library gaps; retain the new on-screen capture contracts through integrated qualification.
 2. Render every supported audio source in mixdown/export, then add bounded stem extraction.
 3. Complete the piano/adaptive-orientation pass without coupling it to editor behavior work.
 4. Qualify recording, playback, export, accessibility and recovery on the consolidated iPhone simulator/native build.

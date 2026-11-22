@@ -3984,6 +3984,18 @@
     "ratio": 2.29
   },
   {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Speichern erneut versuchen",
+    "ratio": 2.6
+  },
+  {
+    "id": "beat.midiRecord.recovery.retryQuantise",
+    "english": "Retry with quantise",
+    "translation": "Mit Quantisierung erneut versuchen",
+    "ratio": 1.79
+  },
+  {
     "id": "beat.pad.kick",
     "english": "Kick",
     "translation": "Bassdrum",
