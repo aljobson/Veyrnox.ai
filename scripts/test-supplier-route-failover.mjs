@@ -114,7 +114,7 @@ try {
     const crun = (await one(`SELECT id, priority, state FROM public.model_routes WHERE model_id = 'veo-3.1-lite-kie' AND supplier = 'crun'`));
     assert.deepEqual([crun.priority, crun.state, kie.priority, kie.state], [1, 'active', 2, 'active'], 'Crun first, kie second, both active');
     assert.equal((await one(`SELECT credits_5s FROM public.model_catalog WHERE id = 'veo-3.1-lite-kie'`)).credits_5s, 5);
-    const active = (await c.query(`SELECT endpoint FROM public.model_routes WHERE supplier = 'crun' AND state = 'active' ORDER BY endpoint`)).rows.map((r) => r.endpoint);
+    const active = (await c.query(`SELECT DISTINCT endpoint FROM public.model_routes WHERE supplier = 'crun' AND state = 'active' ORDER BY endpoint`)).rows.map((r) => r.endpoint);
     assert.deepEqual(active, ['crun:bytedance/seedance2-0-fast-t2v', 'crun:bytedance/seedream-4', 'crun:flux-2-pro', 'crun:google/nano-banana', 'crun:google/veo3-1-fast-t2v', 'crun:google/veo3-1-lite-t2v', 'crun:kling/avatar', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080', 'crun:kling/v2-6', 'crun:kling/v3', 'crun:kling/v3-std'], 'only the proven routes are active (Veo Lite 0379, Veo Fast 0386, Seedance Fast 0387, Nano Banana and Seedream 0389, Kling 2.6 Pro 0436, Kling 3.0 Standard 0558, Kling 3.0 Pro 0559, Kling O1 swap 720p 0579 and 1080p 0580, FLUX.2 Pro and Kling Avatar 0581, one paid run each)');
     // A job debited at the new 5 credits cannot hop onto kie ($0.15 is above 5 x 0.01796) without a waiver,
     // so a job Crun refuses outright refunds instead of selling below the floor.

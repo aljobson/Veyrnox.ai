@@ -310,3 +310,31 @@ Crun's refusal text is not kept for Avatar, because its request carries signed l
 
 The Worker with the two new capability records must be live before 0581 is applied. Not established: Crun fetching our
 signed R2 links, Flux shapes other than 1:1, and which model produced an output, which rests on Crun's model id.
+
+## Amendment 2026-11-22 (2): Kling 3.0 Pro moves to Crun; Seedance Reference is staged (0582)
+
+The owner asked for Kling and Seedance on Crun. Among active rows, only `kling-3.0-i2v` and `seedance-2.0-reference` were
+still fal-first.
+
+`kling-3.0-i2v` (32 credits, floor $0.5747) moves to the already proved `crun:kling/v3` at $0.4369 per 5 s. fal ($0.5600)
+stays active second. An image-source job does not hop, so a job Crun refuses is refunded.
+
+- Negative prompt: Crun has no field. Once the offer is on Crun the control disappears from web and mobile, and a customer's
+  value is refused before the debit (`inputs_key_not_allowed:negative_prompt`, `lib/crunInputRefusal.js`).
+- Templates (owner decision, 2026-11-22: "Yes, run without"): the 1,036 of 1,682 Kling 3.0 templates with their own negative
+  prompt run on Crun without it. An older client may still send it. The server accepts that only when the value equals the
+  named template's record and the prompt is that template's own, with or without the template page's photo line. The value
+  is then dropped, so the job row and the Crun request carry none, and the price is unchanged. A replay of the key returns
+  the first job with no second task. These jobs carry an image, so they do not hop and fal receives nothing. 1,166 of the
+  1,682 templates can run; the other 516 stay refused for their existing reasons (needs a video or swap source, a bound
+  template for another model, or a prompt over Kling's 2,500-character limit).
+- End frame: Crun documents a second `img_urls` item, but it is unproved and `crun:kling/v3` is shared with the kie offer.
+  The slot is not declared, so an end frame is refused before the debit (`source_slot_invalid`) until a paid proof.
+- The dark `templateFaceWording` submit wording now applies on this Crun route too.
+
+`seedance-2.0-reference` stays on fal. The adapter and capability for `crun:bytedance/seedance2-0-r2v` ship staged: `@ImageN`
+and `@VideoN` become `[ImageN]` and `[VideoN]`, sound is on, and a reference video is 720p only because 1080p with a 10 s
+source costs $3.50 against a $3.45 floor. No route names it and it is not on the route safety list, because the only paid
+proof had audio off and used a test pattern. Activation needs a paid audio-on run for image-only and image-plus-video.
+
+The Worker must be live before 0582 is applied.
