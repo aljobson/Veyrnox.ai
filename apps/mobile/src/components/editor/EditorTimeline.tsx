@@ -2,7 +2,7 @@ import { editorTrackLabel } from '../../lib/editorTrackLabel';
 import { rawText } from '../../lib/i18n/translate';
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
-import { t } from '../../lib/i18n';
+import { plural, t } from '../../lib/i18n';
 import { playSelection } from '../../lib/haptics';
 import { hiddenLabelIds, trimHandleWidth } from '../../lib/editorTimelineLayout';
 import { canTrim, formatTimecode, frameAtX, moveItems, movingSelections, snapTo, trimItem } from '../../lib/editorTimeline';
@@ -15,6 +15,7 @@ import { styles } from './fullEditorStyles';
 type Props = {
     timeline: Timeline; selections: readonly Selection[]; ppf: number; total: number; frame: number; playing: boolean; snap: boolean; ripple?: 'none' | 'lane' | 'all';
     analysisMarks?: readonly AnalysisMark[];
+    clipRanges?: readonly ClipRangeBand[];
     onGestureActive?(active: boolean): void;
     // A picture of the clip's source, shown at the start of the clip block. Absent: text only.
     clipThumb?(mediaId: string): ReactNode;
@@ -23,6 +24,7 @@ type Props = {
     onSeek(frame: number): void; onSelect(selection: Selection): void; onApply(timeline: Timeline): void; onViewport(width: number): void;
 };
 export type AnalysisMark = { frame: number; kind: 'hard' | 'possible'; selected: boolean };
+export type ClipRangeBand = { id: string; startFrame: number; endFrame: number; rank: number; selected: boolean };
 type Gesture = {
     selection: Selection; timeline: Timeline; selections: readonly Selection[]; edge?: 'in' | 'out';
     x: number; y: number; offset: number; row: number; active: boolean; abandoned: boolean; snapped: boolean;
@@ -31,7 +33,7 @@ type Gesture = {
 const ROW = 56;
 const position = (item: Clip | TextClip, ppf: number) => ({ position: 'absolute' as const, left: item.start * ppf, top: 6, width: Math.max(8, item.len * ppf - 2), height: 44 });
 
-export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, analysisMarks = [], onSeek, onSelect, onApply, onViewport, onGestureActive, onTrackPress,
+export function EditorTimeline({ timeline, selections, ppf, total, frame, playing, snap, ripple, analysisMarks = [], clipRanges = [], onSeek, onSelect, onApply, onViewport, onGestureActive, onTrackPress,
     clipThumb }: Props) {
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
     const gesture = useRef<Gesture | null>(null);
@@ -47,6 +49,12 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
     const width = Math.max(viewport, (total + 150) * ppf);
     const analysisHint = analysisMarks.length ? [t('editorScenes.timelineHint', { value1: analysisMarks.length }), ...analysisMarks.map(mark =>
         t(mark.kind === 'hard' ? 'editorScenes.hardMark' : 'editorScenes.possibleMark', { value1: formatTimecode(mark.frame, timeline.fps) }))].join(' ') : undefined;
+    const describeClipRange = (range: ClipRangeBand, start = range.startFrame, end = range.endFrame) => t('editorClips.timelineRange', {
+        rank: range.rank, start: formatTimecode(start, timeline.fps), end: formatTimecode(end, timeline.fps),
+        selected: range.selected ? t('editorClips.timelineSelected') : t('editorClips.timelineNotSelected'),
+    });
+    const clipRangeHint = clipRanges.length ? [plural('editorClips.timelineSummary', clipRanges.length), ...clipRanges.map(range => describeClipRange(range))].join(' ') : undefined;
+    const rulerHint = [analysisHint, clipRangeHint].filter(Boolean).join(' ') || undefined;
     useEffect(() => () => { if (gesture.current?.timer) clearTimeout(gesture.current.timer); sendActive(false); }, []);
     useEffect(() => {
         const x = frame * ppf;
@@ -122,7 +130,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
             onScroll={event => { scrollX.current = event.nativeEvent.contentOffset.x; }} scrollEventThrottle={16}>
             <View style={{ width, direction: 'ltr' }}>
                 <View testID="timeline-ruler" style={local.ruler} accessibilityRole="adjustable" accessibilityLabel={t('editor.playheadtimecode')}
-                    accessibilityHint={analysisHint}
+                    accessibilityHint={rulerHint}
                     accessibilityValue={{ text: formatTimecode(frame, timeline.fps) }} accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
                     onAccessibilityAction={event => seek(frame + (event.nativeEvent.actionName === 'increment' ? 1 : -1))}
                     onStartShouldSetResponder={() => true} onResponderGrant={event => {
@@ -145,6 +153,19 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                                 { value1: formatTimecode(mark.frame, timeline.fps) }))}
                             style={[local.analysisMark, mark.kind === 'possible' && local.analysisPossible, !mark.selected && local.analysisUnticked,
                                 { left: mark.frame * ppf }]} />)}
+                    </View>
+                    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                        {clipRanges.map(range => {
+                            const start = Math.max(0, range.startFrame), end = Math.max(start + 1, range.endFrame);
+                            return <View key={range.id} testID={`clip-range-${range.id}`} accessible accessibilityRole="text"
+                                accessibilityLabel={rawText(describeClipRange(range, start, end))}
+                                accessibilityState={{ selected: range.selected }} style={[local.clipRange, range.selected ? local.clipRangeSelected : local.clipRangeUnselected,
+                                    { left: start * ppf, width: Math.max(8, (end - start) * ppf) }]}>
+                                <View testID={`clip-range-${range.id}-start`} style={[local.clipRangeCap, local.clipRangeCapStart]} />
+                                <Text testID={`clip-range-${range.id}-rank`} numberOfLines={1} style={local.clipRangeRank}>{`${range.selected ? '✓ ' : ''}${range.rank}`}</Text>
+                                <View testID={`clip-range-${range.id}-end`} style={[local.clipRangeCap, local.clipRangeCapEnd]} />
+                            </View>;
+                        })}
                     </View>
                 </View>
                 {timeline.tracks.map((track, row) => {
@@ -201,6 +222,10 @@ const local = StyleSheet.create({
     analysisMark: { position: 'absolute', top: 8, width: 3, height: 22, borderRadius: 2, backgroundColor: colors.accent },
     analysisPossible: { width: 7, height: 7, top: 18, borderRadius: 4, borderWidth: 2, borderColor: colors.accent, backgroundColor: colors.background },
     analysisUnticked: { opacity: 0.45 },
+    clipRange: { position: 'absolute', top: 5, height: 22, minWidth: 8, borderColor: colors.accent, backgroundColor: colors.accentSoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    clipRangeSelected: { borderWidth: 2, borderStyle: 'solid' }, clipRangeUnselected: { borderWidth: 1, borderStyle: 'dashed' },
+    clipRangeCap: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: colors.accent },
+    clipRangeCapStart: { left: 0 }, clipRangeCapEnd: { right: 0 }, clipRangeRank: { color: colors.accent, fontSize: 11, fontWeight: '700', lineHeight: 14 },
     playhead: { position: 'absolute', top: 0, width: 2, backgroundColor: colors.accent }, ghost: { opacity: 0.6, borderColor: colors.accent, borderWidth: 2 },
     handle: { position: 'absolute', height: 44, top: 6, zIndex: 2, alignItems: 'center', justifyContent: 'center' }, handleLine: { width: 3, height: 24, borderRadius: 2, backgroundColor: colors.accent },
 });

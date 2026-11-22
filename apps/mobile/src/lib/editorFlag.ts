@@ -10,3 +10,5 @@ export const EDITOR_AI_EDIT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDIT
 export const EDITOR_SPEECH_CUT_ENABLED = editorEnabled(process.env.EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED);
 // Scenes is local-only and carries no credit or service dependency. It ships on unless explicitly disabled for rollback.
 export const EDITOR_SCENES_ENABLED = editorDefaultEnabled(process.env.EXPO_PUBLIC_EDITOR_SCENES_ENABLED);
+// Clip Finder is local-only and carries no credit or service dependency. It ships on unless explicitly disabled for rollback.
+export const EDITOR_CLIPS_ENABLED = editorDefaultEnabled(process.env.EXPO_PUBLIC_EDITOR_CLIPS_ENABLED);

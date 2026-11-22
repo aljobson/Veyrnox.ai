@@ -23,7 +23,7 @@ import { framesIn, timelineOf, type Clipboard, type Media, type Selection, type 
 import { fetchProject } from '../../lib/projects';
 import type { SlotKind } from '../../lib/sources';
 
-type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'scenes' | 'effects' | 'transitions' | 'filters' | 'animation' | 'motion' | 'mask' | 'markers' | 'brand' | 'adjust';
+type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'effects' | 'transitions' | 'filters' | 'animation' | 'motion' | 'mask' | 'markers' | 'brand' | 'adjust';
 type Ripple = 'none' | 'lane' | 'all';
 const EDITOR_LOAD_TIMEOUT_MS = 15000;
 

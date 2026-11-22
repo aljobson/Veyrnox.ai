@@ -24,6 +24,7 @@ export type SceneAnalysisInput = {
     project: string;
     uri: string;
     clip: SceneClipRange;
+    samplingMode?: 'all';
     signal?: AbortSignal;
     onProgress?(progress: EditorMediaProgress): void;
 };
@@ -56,6 +57,8 @@ type FrameManifest = {
     orientedHeight: number;
     transform: number[];
     resizeMode: 'fill';
+    samplingMode?: 'all';
+    maximumFrameRate?: 60;
     frames: ManifestFrame[];
 };
 type WebDetector = (samples: readonly { time: number; signature: SceneSignature }[]) => { cuts: SceneCut[]; frames: number };
@@ -86,6 +89,11 @@ function validInput(input: SceneAnalysisInput) {
         && safePositiveInteger(clip.len) && clip.len >= 3 && clip.len <= MAX_FRAMES;
 }
 
+export function exactSceneFrameBudget(clipFrames: number) {
+    // nominalFrameRate is an average for VFR media, so reserve against the enforced 60fps cap.
+    return Math.min(1_800, clipFrames * 2 + 2);
+}
+
 function childUri(manifestUri: string, name: string): string | null {
     if (!validateOwnedFileUri(manifestUri) || !manifestUri.endsWith(`/${MANIFEST_NAME}`) || !FRAME_NAME.test(name)) return null;
     const directory = manifestUri.slice(0, -MANIFEST_NAME.length);
@@ -97,11 +105,14 @@ function childUri(manifestUri: string, name: string): string | null {
 function parseManifest(raw: string, artifact: FrameArtifact, request: SampleFramesRequest): FrameManifest | null {
     let value: unknown;
     try { value = JSON.parse(raw); } catch { return null; }
-    if (!object(value) || !exact(value, MANIFEST_KEYS) || value.version !== 1 || value.format !== 'rgba8' || value.width !== WIDTH || value.height !== HEIGHT
+    const keys = request.samplingMode === 'all' ? [...MANIFEST_KEYS, 'samplingMode', 'maximumFrameRate'] : MANIFEST_KEYS;
+    if (!object(value) || !exact(value, keys) || value.version !== 1 || value.format !== 'rgba8' || value.width !== WIDTH || value.height !== HEIGHT
         || value.rowStride !== STRIDE || value.colorSpace !== 'srgb' || value.resizeMode !== 'fill' || !safePositiveInteger(value.orientedWidth)
         || !safePositiveInteger(value.orientedHeight) || !Array.isArray(value.transform) || value.transform.length !== 6 || !value.transform.every(finite)
         || !Array.isArray(value.frames) || value.frames.length !== artifact.count || value.frames.length < 1 || value.frames.length > request.maxFrames
-        || artifact.timestampsUs.length !== value.frames.length || !sameNumbers(value.transform as number[], artifact.preferredTransform)) return null;
+        || artifact.timestampsUs.length !== value.frames.length || !sameNumbers(value.transform as number[], artifact.preferredTransform)
+        || (request.samplingMode === 'all' ? value.samplingMode !== 'all' || value.maximumFrameRate !== request.maximumFrameRate
+            : value.samplingMode !== undefined || value.maximumFrameRate !== undefined)) return null;
     const fromUs = Math.round(request.fromSeconds * 1_000_000), toUs = Math.round(request.toSeconds * 1_000_000);
     let previous = -1;
     const frames: ManifestFrame[] = [];
@@ -114,7 +125,8 @@ function parseManifest(raw: string, artifact: FrameArtifact, request: SampleFram
         frames.push({ file: record.file, timestampUs: record.timestampUs });
     }
     return { version: 1, format: 'rgba8', width: WIDTH, height: HEIGHT, rowStride: STRIDE, colorSpace: 'srgb', orientedWidth: value.orientedWidth,
-        orientedHeight: value.orientedHeight, transform: value.transform as number[], resizeMode: 'fill', frames };
+        orientedHeight: value.orientedHeight, transform: value.transform as number[], resizeMode: 'fill',
+        ...(request.samplingMode === 'all' ? { samplingMode: 'all' as const, maximumFrameRate: 60 as const } : {}), frames };
 }
 
 function validArtifact(value: FrameArtifact, request: SampleFramesRequest) {
@@ -122,7 +134,8 @@ function validArtifact(value: FrameArtifact, request: SampleFramesRequest) {
         && value.width === WIDTH && value.height === HEIGHT && value.stride === STRIDE && value.pixelFormat === 'rgba8' && value.colorSpace === 'srgb'
         && value.resizeMode === 'fill' && safePositiveInteger(value.count) && value.count <= request.maxFrames && Array.isArray(value.timestampsUs)
         && value.timestampsUs.length === value.count && Array.isArray(value.preferredTransform) && value.preferredTransform.length === 6
-        && value.preferredTransform.every(finite);
+        && value.preferredTransform.every(finite) && (value.samplingMode ?? 'uniform') === (request.samplingMode ?? 'uniform')
+        && (request.samplingMode === 'all' ? value.maximumFrameRate === request.maximumFrameRate : value.maximumFrameRate === undefined);
 }
 
 export function sceneRowsForClip(clip: SceneClipRange, cuts: readonly SceneCut[]): SceneRow[] {
@@ -143,7 +156,8 @@ export async function analyzeClipScenes(input: SceneAnalysisInput, dependencies:
     const media = dependencies.media ?? editorMedia;
     const files = dependencies.files ?? defaultFiles;
     const request: SampleFramesRequest = { uri: input.uri, fromSeconds: input.clip.in / FPS, toSeconds: (input.clip.in + input.clip.len) / FPS,
-        maxFrames: input.clip.len, resizeMode: 'fill' };
+        maxFrames: input.samplingMode === 'all' ? exactSceneFrameBudget(input.clip.len) : input.clip.len, resizeMode: 'fill',
+        ...(input.samplingMode === 'all' ? { samplingMode: 'all' as const, maximumFrameRate: 60 as const } : {}) };
     let artifact: FrameArtifact | undefined;
     try {
         let sampled: EditorMediaResult<FrameArtifact>;

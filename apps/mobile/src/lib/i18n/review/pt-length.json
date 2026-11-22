@@ -4734,6 +4734,24 @@
     "ratio": 1.94
   },
   {
+    "id": "editorClips.title",
+    "english": "Clip Finder",
+    "translation": "Localizador de clipes",
+    "ratio": 1.91
+  },
+  {
+    "id": "editorClips.again",
+    "english": "Find again",
+    "translation": "Encontrar novamente",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "Melhor escolha",
+    "ratio": 1.75
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
