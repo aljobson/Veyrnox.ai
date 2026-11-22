@@ -269,10 +269,11 @@ export async function submitTask(job, cfg) {
     if (!req.ok) return { ok: false, outcome: 'rejected', error: req.error, clientError: req.error };
     if (!cfg?.apiKey) return { ok: false, outcome: 'rejected', error: 'provider_not_configured' };
     // The same submit-only template wording fal's Kling Pro request gets (ADR-0351); stored inputs never change.
+    let requestBody = req.body;
     if (cfg.faceIdentity === true && target.model === 'kling/v3') {
         const worded = templateFacePrompt(req.body.input.prompt);
         if (worded === null) console.warn('face_wording_omitted_length', job.job_id);
-        else req.body.input.prompt = worded;
+        else requestBody = { ...req.body, input: { ...req.body.input, prompt: worded } };
     }
 
     const controller = new AbortController();
@@ -285,7 +286,7 @@ export async function submitTask(job, cfg) {
                 redirect: 'manual',
                 signal: controller.signal,
                 headers: { 'X-API-KEY': cfg.apiKey, 'Content-Type': 'application/json' },
-                body: JSON.stringify(req.body),
+                body: JSON.stringify(requestBody),
             });
         } catch (err) {
             // Nothing is known about whether the task was created: ambiguous (0329).
