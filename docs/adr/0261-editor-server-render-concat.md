@@ -516,3 +516,7 @@ The owner approved opening phone and web export to all signed-in users. In `wran
 - Price is unchanged: the flat catalog rate (3 credits, migration 0530), one `ledger_debit`, refund on runner failure, cancel or timeout.
 - Rollback: set `serverRender` back to `"preview"` (allowlist only) or `"false"` (off) and deploy; existing jobs stay readable and cancellable.
 - Check after deploy: one real export from the phone and one from the web; confirm the file lands in Library, a failed export refunds, and `reconcile_balances()` returns zero rows.
+
+## Amendment (2026-11-22): the flat export price is 10 credits, not 3
+
+Migration 0547 (owner decision 2026-11-16) moved the flat price of a server export from 3 to 10 credits, together with the typed AI edit and Speech Cut. Amendment 2 above still says 3; read it as superseded for the price only. The catalog row `editor-server-render` (`editor_render_rates->>'flat_credits'`) is the source of truth, and the quote and consent flow are unchanged. Seen live on 2026-11-22: the quote showed 10 credits, the debit was 10, and the render finished with a progress bar and landed in Library.
