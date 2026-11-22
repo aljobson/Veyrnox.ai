@@ -22,12 +22,14 @@ function TimedClip({ clip, track, name, ppf, selected, disabled, onSelect, onTri
         onKeyDown: e => { if (['ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); onTrim(track.kind, clip.id, edge, e.key === 'ArrowLeft' ? -1 : 1); } },
     });
     const start = clip.start + (preview?.edge === 'in' ? preview.delta : 0), len = clip.len + (preview ? (preview.edge === 'in' ? -preview.delta : preview.delta) : 0);
+    // The accessible name starts with exactly the text the clip shows (name, then duration and speed), WCAG 2.5.3.
+    const shown = `${time(clip.len)}${clip.rate && clip.rate !== 1 ? ` · ${locale === 'en' ? clip.rate : new Intl.NumberFormat(localeTag(locale)).format(clip.rate)}×` : ''}`;
     return <div className={`absolute bottom-1 top-1 overflow-hidden rounded-md border ${selected ? 'border-vx-accent ring-2 ring-vx-accent' : 'border-vx-border'} ${track.kind === 'audio' ? 'bg-emerald-950' : track.kind === 'text' ? 'bg-violet-950' : 'bg-vx-panel'}`} style={{ insetInlineStart: Math.max(0, start) * ppf, width: Math.max(8, len * ppf - 2) }}>
         <button type="button" disabled={disabled || track.locked} draggable={!disabled && !track.locked} data-testid={`clip-${clip.id}`} aria-pressed={selected}
-            aria-label={t('app.editor.tracks.clip', { name, track: track.name, start: time(clip.start), duration: time(clip.len) })}
+            aria-label={t('app.editor.tracks.clip', { name: `${name} ${shown}`, track: track.name, start: time(clip.start), duration: time(clip.len) })}
             onDragEnd={()=>onDrag(null)} onDragStart={e => { if (!selected) onSelect({ track: track.kind, id: clip.id }); onDrag({ kind: track.kind, id: clip.id, offset: e.clientX - e.currentTarget.getBoundingClientRect().left }); e.dataTransfer.setData('text/plain', clip.id); }}
             onClick={e => { e.stopPropagation(); onSelect({ track: track.kind, id: clip.id }, e.shiftKey || e.metaKey || e.ctrlKey); }} className="h-full w-full truncate px-3 text-start text-xs font-bold">
-            {media && <div className="absolute inset-0"><MediaArtwork compact media={media} clip={clip} pixels={clip.len * ppf} blobs={blobs} loaded={loaded} sourceRevision={sourceRevision} /></div>}<span className="relative">{name}</span><span className="block text-[10px] font-normal opacity-70">{time(clip.len)}{clip.rate && clip.rate !== 1 ? ` · ${locale === 'en' ? clip.rate : new Intl.NumberFormat(localeTag(locale)).format(clip.rate)}×` : ''}</span>
+            {media && <div className="absolute inset-0"><MediaArtwork compact media={media} clip={clip} pixels={clip.len * ppf} blobs={blobs} loaded={loaded} sourceRevision={sourceRevision} /></div>}<span className="relative">{name}</span>{' '}<span className="block text-[10px] font-normal opacity-70">{shown}</span>
         </button>
         {selected && !track.locked && TRIM_EDGES.map(edge => <button key={edge} type="button" disabled={disabled} {...trim(edge)} aria-label={t(edge === 'in' ? 'app.editor.tracks.trimIn' : 'app.editor.tracks.trimOut', { name })} className={`absolute bottom-0 top-0 w-5 cursor-ew-resize touch-none bg-vx-accent/60 md:w-2 ${edge === 'in' ? 'start-0' : 'end-0'}`} />)}
     </div>;

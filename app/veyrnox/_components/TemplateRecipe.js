@@ -49,7 +49,7 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const sourcePromptTruncated = preset.sourcePromptStatus === 'exact-truncated';
   const sourcePromptDuplicate = typeof preset.sourcePromptDuplicateOf === 'string' && preset.sourcePromptDuplicateOf.length > 0;
   const promptLabel = hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPrompt") : t("public.TemplateRecipe.prompt");
-  if (resolvedSwap?.offer) return <><SwapAttemptStatus templateId={preset.id} /><UseTemplate preset={preset} templateSwap={resolvedSwap.offer} /></>;
+  if (resolvedSwap?.offer) return <><UseTemplate preset={preset} templateSwap={resolvedSwap.offer} /><SwapAttemptStatus templateId={preset.id} /></>;
   return (
     <>
       <SwapAttemptStatus templateId={preset.id} />

@@ -39,7 +39,7 @@ import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { AttachMore, UploadLimitNote } from '../../../components/create/AttachMore';
 import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
-import { SourcePicker } from '../../../components/SourcePicker';
+import { SourcePicker } from '../../../components/SourcePicker'; import { TemplatePhotoExample } from '../../../components/templates/TemplatePhotoExample';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
@@ -64,7 +64,7 @@ import { consumeCreativeSourceHandoff, readCreativeSourceHandoff } from '../../.
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId: linkedModelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>(); useSwapRedirect(tid); const modelId = /* a link carries the public id (nano-banana-a1); the catalog uses the internal one */ typeof linkedModelId === 'string' ? internalModelId(linkedModelId) : linkedModelId;
+    const { modelId: linkedModelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext, photoGuide } = useLocalSearchParams<{ photoGuide?: string; modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>(); useSwapRedirect(tid); const modelId = /* a link carries the public id (nano-banana-a1); the catalog uses the internal one */ typeof linkedModelId === 'string' ? internalModelId(linkedModelId) : linkedModelId;
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, modelId]);
     const templatePreset = templateOnOriginalModel({ tmodel }, modelId);
@@ -222,10 +222,10 @@ export default function CreateWithModel() {
         if (duration !== null) add('duration', String(duration));
         add('aspect', opts.aspect ?? undefined);
         add('recipe', recipe); add('followup', followup ?? handedSources?.followup); if (kind !== 'prompt-unavailable') add('kind', kind); add('sourceJob', sourceJob); add('startOddling', startOddling);
-        add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext);
+        add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext); add('photoGuide', photoGuide);
         add('tpl', tpl); add('tid', tid); add('tmodel', tmodel); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter); add('tnegative', opts.negative);
         return normalizeTemplateCarry(out, modelId);
-    }, [modelId, prompt, duration, opts.aspect, opts.negative, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
+    }, [modelId, prompt, duration, opts.aspect, opts.negative, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext, photoGuide]);
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
         if (!startId || !takesStartImage) return;
@@ -388,7 +388,7 @@ export default function CreateWithModel() {
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}
-                {slots.length && !photosUnavailable ? (
+                {photoGuide === 'scene' && !boundCount && !photosUnavailable && kindOf(model.modality) === 'image' && <TemplatePhotoExample kind="scene" />}{slots.length && !photosUnavailable ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.references')}</SectionLabel>

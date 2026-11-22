@@ -17,14 +17,24 @@ export type PadId = 'kick' | 'snare' | 'hat' | 'openhat' | 'clap' | 'tom' | 'rim
 export type Hit = [step: number, velocity: number];
 export type BeatRegionDoc = {
     id: string; start: number; length: number; offset?: number; pattern?: string; assetId?: string; clipId?: string;
+    phaseSec?: number; phaseTicks?: number; tailSec?: number;
     gainDb?: number; fadeIn?: { startSec: number; endSec: number } | null;
     fadeOut?: { startBeforeEndSec: number; endBeforeEndSec: number } | null; reverse?: boolean;
 };
+type BeatRemoteMetadata = {
+    ref: Record<string, string>; name: string; durationSec: number; bpm: number | null; sourceChannels: number; encodedBytes: number;
+};
+export type BeatRemoteAsset = ({ source: 'song' | 'target' } & BeatRemoteMetadata) | ({ source: 'stem' } & BeatRemoteMetadata);
+export type BeatSoundAsset = {
+    source: 'sound'; ref: string; name: string;
+    durationSec: number; bpm: number | null; sourceChannels: number; encodedBytes: number;
+};
+export type BeatAsset = TakeAsset | BeatRemoteAsset | BeatSoundAsset;
 export type BeatCycle = { on: boolean; start: number; end: number };
 export type BeatTrackDoc = { id: string; name: string; kind?: 'drums' | 'audio' | 'midi'; kit?: string; mute: boolean; solo: boolean; gain: number; pan: number; takeGroups?: TakeGroup[]; regions: BeatRegionDoc[] };
 export type BeatDoc = {
     kind: string; version: number; id: string; title: string; createdAt: number; updatedAt: number;
-    view: 'pattern' | 'song'; cycle: BeatCycle; assets?: Record<string, TakeAsset>; clips?: Record<string, { name: string }>;
+    view: 'pattern' | 'song'; cycle: BeatCycle; assets?: Record<string, BeatAsset>; clips?: Record<string, { name: string }>;
     tempo: { bpm: number }; swing: number; steps: number; currentPattern: string;
     patterns: Record<string, { rows: Partial<Record<PadId, Hit[]>> }>; tracks: BeatTrackDoc[];
 };

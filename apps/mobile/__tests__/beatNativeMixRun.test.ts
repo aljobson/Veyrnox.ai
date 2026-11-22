@@ -1,7 +1,8 @@
 import { createNativeBeatEngine, passThroughCompressor } from '../src/lib/beatNative/nativeContext';
 import { createMixRun } from '../src/lib/beatNative/mixRun';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
-import { createBeat, addKitTrack, setTrackGain, stepSeconds, eventTime, type BeatDoc } from '../src/lib/beatNative/doc';
+import { createBeat, addKitTrack, setTrackGain, stepSeconds, eventTime, type BeatAsset, type BeatDoc } from '../src/lib/beatNative/doc';
+import { addAudioTrack } from '../src/lib/beatNative/takeShared';
 import { addEffect, setEffectParam, addAutomationPoint, setSend, setMaster, type MixDoc } from '../src/lib/beatNative/mix';
 import type { Run } from '../src/lib/beatNative/shared';
 import { mockAudioContextClass, createMockContext } from './helpers/mockNativeAudio';
@@ -10,6 +11,13 @@ type Param = { value: number; setValueAtTime: jest.Mock; linearRampToValueAtTime
 type Node = { gain: Param; pan: Param; connect: jest.Mock; disconnect: jest.Mock };
 type DetailedRun = Omit<Run, 'channels'> & { bus: Node; channels: Map<string, { input: Node; fader: Node; panner: Node; sends: Record<string, Node>; chain: { input: Node & { threshold: Param; ratio: Param } }[]; schedule: jest.Mock }> };
 const make = () => createBeat({ id: '00000000-0000-4000-8000-000000000052' });
+function withAudio(doc: BeatDoc, start = 0): BeatDoc {
+    const added = addAudioTrack(doc), track = added.tracks.at(-1)!;
+    const asset: BeatAsset = { source: 'song', ref: { songId: '1', versionId: '2', jobId: '3' }, name: 'Song', durationSec: 1,
+        bpm: null, sourceChannels: 2, encodedBytes: 100 };
+    return { ...added, assets: { ...added.assets, a1: asset }, tracks: added.tracks.map(item => item.id === track.id ? { ...item,
+        regions: [{ id: 'r1', start, length: 960, assetId: 'a1', phaseSec: 0, gainDb: 0, fadeIn: null, fadeOut: null, reverse: false }] } : item) };
+}
 function build() {
     const { Ctor, state } = mockAudioContextClass();
     const { engine } = createNativeBeatEngine({ Context: Ctor });
@@ -135,6 +143,23 @@ test.each(['sync', 'destination', 'schedule', 'playPad'])('timer errors in %s st
     expect(() => fire()).not.toThrow(); expect(audio.isPlaying()).toBe(false);
     expect(onError).toHaveBeenCalledTimes(1); expect(onError).toHaveBeenCalledWith(error);
     expect(timer).toHaveBeenCalledTimes(scheduled); expect(b.stop).toHaveBeenCalledWith(old);
+    await audio.close();
+});
+test('a newly added unavailable audio region stays silent and leaves the live run playing', async () => {
+    const b = build(); let fire = () => {}, doc = withAudio(make(), 240);
+    let notified!: () => void; const notice = new Promise<void>(resolve => { notified = resolve; });
+    const error = new Error('asset unavailable'), onError = jest.fn(notified), timer = jest.fn(fn => { fire = fn; return 1; });
+    const decoded = (b.context as unknown as { createBuffer(channels: number, length: number, rate: number): unknown }).createBuffer(2, 48_000, 48_000);
+    const load = jest.fn().mockResolvedValueOnce(decoded).mockRejectedValueOnce(error);
+    const assetError = jest.fn(notified);
+    const audio = createBeatAudioFromEngine({ engine: b.engine, assets: { load }, onAssetError: assetError,
+        setTimer: timer, clearTimer: jest.fn() });
+    await audio.play(() => doc, undefined, undefined, 0, { onError });
+    doc = { ...doc, assets: { ...doc.assets, a1: { ...doc.assets!.a1, encodedBytes: 101 } } };
+    b.context.currentTime = 0.2; fire();
+    await notice;
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(audio.isPlaying()).toBe(true); expect(onError).not.toHaveBeenCalled(); expect(assetError).toHaveBeenCalledWith('Song', error);
     await audio.close();
 });
 test('an effect the native context cannot build is reported once per run, never hidden', async () => {

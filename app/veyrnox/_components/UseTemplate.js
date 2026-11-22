@@ -24,6 +24,7 @@ import { inlineBlockReason, clipInlineEligible, templateInputs } from '../_lib/t
 import { imageTemplateNeedsPhoto, imageTemplateModelAvailable, REFERENCE_IMAGE_MODEL } from '../_lib/imageTemplateModels.js';
 import { SwapComposer } from './SwapComposer.js';
 import { SwapAttemptStatus } from './SwapAttemptStatus.js';
+import { TemplatePhotoExample } from './TemplatePhotoExample.js';
 import { useResolvedSwap, TemplateSwapBoundary, TemplateSwapSummary } from './TemplateSwapBoundary.js';
 import { nearestOption } from '../../../lib/aspectShapes.mjs';
 
@@ -196,6 +197,7 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
           <legend className="px-1 text-sm font-bold">{optionalReference ? t('label.Optional reference') : t('presets.use.photoTitle')}</legend>
           <p className="mt-1 text-[13px] leading-5 text-vx-fg-muted">{t('presets.use.photoPrivacy')}</p>
           {templateClip && <p role="note" className="mt-2 text-xs text-vx-fg-muted">{t('app.create.referenceLikenessNotice')}</p>}
+          {preset.kind === 'image' && <div className="mt-3"><TemplatePhotoExample kind="scene" /></div>}
           <div className="mt-3 flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-vx-border bg-vx-base p-2.5">
             <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-vx-panel font-vx-mono text-sm text-vx-accent">{photoBusy ? '…' : photo ? '✓' : '+'}</span>
             <span role={photoBusy ? 'status' : undefined} className="min-w-0 flex-1 truncate text-xs text-vx-fg-muted">{photoBusy ? t('presets.use.photoPreparing') : photo?.name || t('presets.use.photoHint')}</span>

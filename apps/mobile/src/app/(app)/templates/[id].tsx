@@ -10,7 +10,7 @@ import { phonePhotoHints } from '../../../lib/templatePhotoHintText';
 import { templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -37,6 +37,9 @@ export default function TemplatePage() {
     const styles = useThemedStyles(sheets);
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
+    const scroll = useRef<ComponentRef<typeof ScrollView>>(null), scrollY = useRef(0), revealAttempt = useRef<string | null>(null), resultTarget = useRef<ComponentRef<typeof View>>(null), revealResult = useRef(false);
+    // Place the node below the header; measured against the live offset so old history never decides the target.
+    const revealNode = (node: ComponentRef<typeof View> | null) => node?.measureInWindow?.((_x: number, y: number) => scroll.current?.scrollTo({ y: Math.max(0, scrollY.current + y - 160), animated: true }));
     const [preset, setPreset] = useState<Preset | null>(null);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
@@ -97,13 +100,19 @@ export default function TemplatePage() {
         fetchCatalog().then(models => { if (live) setCatalog(models); }).catch(() => { if (live) setCatalog(undefined); });
         return () => { live = false; };
     }, []);
-    return <ScrollView contentContainerStyle={styles.screen}>
+    useEffect(() => {
+        if (!revealResult.current || (!generation.run && !generation.error)) return;
+        revealResult.current = false;
+        requestAnimationFrame(() => revealNode(resultTarget.current));
+    }, [generation.run, generation.error]);
+    return <ScrollView {...(swapOffer || boundCount ? { ref: scroll, scrollEventThrottle: 32, onScroll: (event: { nativeEvent: { contentOffset: { y: number } } }) => { scrollY.current = event.nativeEvent.contentOffset.y; } } : {})} contentContainerStyle={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
-        {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
+        {TEMPLATE_SWAP_RUNTIME && !swapOffer && <SwapAttemptStatus templateId={id} />}
         {swapOffer ? <>
             {preset && <Text variant="title1" accessibilityRole="header">{preset.title}</Text>}
             <SwapTemplatePreview id={id} title={preset?.title} />
-            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} />
+            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} revealAttempt={revealAttempt} onReveal={revealNode} />
+            {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} revealAttempt={revealAttempt} onReveal={revealNode} />}
         </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>
             <Text variant="title1" accessibilityRole="header">{preset.title}</Text>
@@ -139,11 +148,12 @@ export default function TemplatePage() {
                 {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={phonePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : !templateClip && slot && model ? <View style={{ gap: 12 }}>
                     <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />
                 </View> : null}
+                {boundCount ? <View ref={resultTarget} collapsable={false} /> : undefined}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
                 {generation.error ? <Text tone="danger" accessibilityLiveRegion="polite">{generation.error}</Text> : null}
                 {generation.run
                     ? <Button label={t('libraryCreate.newGeneration')} disabled={generation.busy} onPress={() => { generation.reset(); setAttached(null); setPickerEpoch(n => n + 1); }} />
-                    : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready || !photoReady} onPress={() => void generation.generate()} />}
+                    : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready || !photoReady} {...(boundCount ? { loading: generation.busy } : {})} onPress={() => { revealResult.current = !!boundCount; void generation.generate(); }} />}
                 {generation.missing > 0 && !generation.run ? <Text accessibilityLiveRegion="polite">{t('form.err.insufficient')}</Text> : null}
                 {!templateClip && <Button variant="secondary" label={t('libraryCreate.editBeforeGenerating')} disabled={generation.busy || tooLong || !prompt.trim() || !photoReady} onPress={() => {
                     const href = presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog);

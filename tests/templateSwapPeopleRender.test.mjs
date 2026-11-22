@@ -20,7 +20,7 @@ function load(file, mocks) {
 const { SwapComposer } = load('app/veyrnox/_components/SwapComposer.js', {
   '../../../components/I18nProvider.jsx': { useI18n: () => ({ t }) }, '../_lib/useSwapDraft.js': { useSwapDraft: () => ({ accountId: 'A', attempts }) },
   '../_lib/templateSwapRuntime.js': { swapActions: {} }, '../_lib/templateSwapClient.mjs': { swapErrorKey: () => 'presets.swap.no_face', unsettled: () => false, swapImageCounts, swapFullBody },
-  '../_lib/useOnlineStatus.js': { useOnlineStatus: () => true }, './SwapAttemptStatus.js': { swapControl: 'min-h-11' },
+  '../_lib/useOnlineStatus.js': { useOnlineStatus: () => true }, './SwapAttemptStatus.js': { swapControl: 'min-h-11' }, './TemplatePhotoExample.js': { TemplatePhotoExample: () => null },
 });
 const html = offer => renderToStaticMarkup(React.createElement(SwapComposer, { offer }));
 const count = (text, needle) => text.split(needle).length - 1;

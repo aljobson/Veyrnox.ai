@@ -31,10 +31,10 @@ const attempts={SwapAttemptStatus:()=>null,swapControl:'min-h-11'};
 const composer=load('app/veyrnox/_components/SwapComposer.js',{
   ...shared,'../_lib/useSwapDraft.js':{useSwapDraft:()=>({accountId:'A',attempts:[]})},
   '../_lib/templateSwapRuntime.js':{swapActions:{}},'../_lib/templateSwapClient.mjs':{swapErrorKey:()=>'',unsettled:()=>false,swapImageCounts,swapFullBody},
-  '../_lib/useOnlineStatus.js':{useOnlineStatus:()=>true},'./SwapAttemptStatus.js':attempts,
+  '../_lib/useOnlineStatus.js':{useOnlineStatus:()=>true},'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},
 });
 const recipe=load('app/veyrnox/_components/TemplateRecipe.js',{
-  ...shared,'./TemplateSwapBoundary.js':boundary,'./SwapAttemptStatus.js':attempts,
+  ...shared,'./TemplateSwapBoundary.js':boundary,'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},
   '../../../lib/i18n/presetSteps.mjs':{presetStep:()=>''},'next/link':{default:'a',__esModule:true},
   '../_lib/useSwapSceneAvailable':{useSwapSceneAvailable:()=>true},'../_lib/useTemplateClipAvailable':{useTemplateClipAvailable:()=>null},
   '../_lib/templateDraft':{TEMPLATE_PROMPT_MAX:2000},'../_lib/templateSourceBlock':{templateSourceUnsupported:()=>true},
@@ -66,7 +66,7 @@ test('complete public page replaces legacy notice, CTA, model and inputs only on
 test('Create preset and template query use shared availability and catalog-only presentation',()=>{
   for(const query of ['preset=test','template=test','template_id=test']){
     const entry=load('app/veyrnox/_components/SwapCreateEntry.js',{
-      'next/navigation':{useSearchParams:()=>new URLSearchParams(query)},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,'./SwapTemplatePreview.js':{SwapTemplatePreview:()=>null},
+      'next/navigation':{useSearchParams:()=>new URLSearchParams(query)},'./TemplateSwapBoundary.js':boundary,'./SwapComposer.js':composer,'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},'./SwapTemplatePreview.js':{SwapTemplatePreview:()=>null},
     });
     for(const enabled of [false,true]){
       available=enabled;

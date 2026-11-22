@@ -160,13 +160,11 @@ test('routing: only a one-photo recipe over the Kling cap and within 20,000 char
     assert.equal(longPromptTarget(PEOPLE_BINDING_MODEL, 5000, 2), PEOPLE_BINDING_MODEL);
     assert.equal(longPromptTarget('seedance-2.0-fast', 5000, 0), 'seedance-2.0-fast');
     const long = PRESETS.map(p => templateContract(p.id)).filter(c => c?.modelId === SEEDANCE_LONG_MODEL_ID);
-    assert.equal(long.length, 49 + 8 + 12); // plus the 20 Veyrnox originals, written for this offer at any length
-    assert.equal(long.filter(c => c.id.startsWith('original-')).length, 20);
+    assert.equal(long.length, 49);
     for (const c of long) {
         assert.equal(c.class, 'bound', c.id);
         assert.equal(c.slotCount, 1, c.id);
-        assert.ok(c.prompt.length <= SEEDANCE_LONG_PROMPT_MAX, c.id);
-        if (!c.id.startsWith('original-')) assert.ok(c.prompt.length > KLING_V3_PROMPT_MAX, c.id);
+        assert.ok(c.prompt.length > KLING_V3_PROMPT_MAX && c.prompt.length <= SEEDANCE_LONG_PROMPT_MAX, c.id);
         assert.deepEqual(c.allowedModels, [SEEDANCE_LONG_MODEL_ID]);
     }
     assert.equal(ghost.promptHash, '546275625b6658a08edf9e3698cf689f026a6e1025a3109917a0578fa30e1df9', 'the probed exact prompt');
@@ -178,12 +176,12 @@ test('routing: only a one-photo recipe over the Kling cap and within 20,000 char
     }
 });
 
-test('gallery: unchanged while off; 35 long-prompt templates join while on, all bound to the offer', () => {
+test('gallery: unchanged while off; 15 long-prompt templates join while on, all bound to the offer', () => {
     assert.equal(galleryVideoPresets({}).length, GALLERY_PRESETS.length);
     const on = galleryVideoPresets(ON);
-    assert.equal(on.length, GALLERY_PRESETS.length + 35);
+    assert.equal(on.length, GALLERY_PRESETS.length + 15);
     assert.ok(on.length <= VIDEO_TEMPLATE_CAP);
-    assert.equal(LONG_PROMPT_GALLERY_TEMPLATE_IDS.length, 15 + 8 + 12);
+    assert.equal(LONG_PROMPT_GALLERY_TEMPLATE_IDS.length, 15);
     for (const id of ['impact', 'cake-in-the-fridge', 'jellyfish-airlines']) assert.equal(LONG_PROMPT_GALLERY_TEMPLATE_IDS.includes(id), false);
     for (const id of LONG_PROMPT_GALLERY_TEMPLATE_IDS) {
         assert.equal(templateContract(id).modelId, SEEDANCE_LONG_MODEL_ID, id);
@@ -209,9 +207,9 @@ test('themes: every long-prompt gallery template has a theme; the new theme chip
     for (const id of LONG_PROMPT_GALLERY_TEMPLATE_IDS) assert.ok(VIDEO_THEME_IDS.includes(videoTemplateTheme(id)), `${id} has no theme`);
     const counts = {};
     for (const id of LONG_PROMPT_GALLERY_TEMPLATE_IDS) counts[videoTemplateTheme(id)] = (counts[videoTemplateTheme(id)] || 0) + 1;
-    assert.deepEqual(counts, { HORROR: 2, COMEDY: 2 + 1, FILM: 5 + 2, MAGIC: 3 + 5, ACTION: 2, DANCE: 1 + 8, ANIMATED: 4 });
+    assert.deepEqual(counts, { HORROR: 2, COMEDY: 2, FILM: 5, MAGIC: 3, ACTION: 2, DANCE: 1 });
     const offThemes = new Set(GALLERY_PRESETS.map(p => videoTemplateTheme(p.id)));
-    for (const theme of ['HORROR', 'MAGIC', 'ANIMATED']) assert.equal(offThemes.has(theme), false, `${theme} would show empty while off`);
+    for (const theme of ['HORROR', 'MAGIC']) assert.equal(offThemes.has(theme), false, `${theme} would show empty while off`);
 });
 
 test('production APP_RUNTIME_FLAGS turns the long templates on beside the existing keys, with no separate var (ADR-0309 amendment 4)', async () => {
@@ -220,6 +218,6 @@ test('production APP_RUNTIME_FLAGS turns the long templates on beside the existi
     const flags = JSON.parse(config.vars.APP_RUNTIME_FLAGS);
     assert.deepEqual(flags, { checkin: true, push: true, templateSwap: true, seedanceLongTemplates: true });
     assert.equal(seedanceLongModelOpen(SEEDANCE_LONG_MODEL_ID, { APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }), true);
-    assert.equal(galleryVideoPresets({ APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }).length, GALLERY_PRESETS.length + 35);
+    assert.equal(galleryVideoPresets({ APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }).length, GALLERY_PRESETS.length + 15);
     assert.equal(Object.keys(config.vars).some(k => /SEEDANCE_LONG/i.test(k)), false);
 });

@@ -28,11 +28,14 @@ let mockExportProps: { prepare(): Promise<void>; recording: boolean; replacing: 
 jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: (props: typeof mockExportProps) => { mockExportProps = props; return null; } }));
 const mockApi = { request: jest.fn() };
 const mockGetAccessToken = jest.fn(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`);
+const mockBeginSessionTask = () => ({ gen: mockGeneration, user: USER, current: () => true,
+    tokens: Object.assign(mockGetAccessToken, { generation: () => mockGeneration, expected: mockGeneration }) });
 let mockGeneration = 0;
 const mockPush = jest.fn();
 let mockParams: { id: string } = { id: 'x' };
-const mockAudio = { play: jest.fn(async () => undefined), stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined) };
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: mockGeneration }) }));
+const mockAudio = { play: jest.fn(async (): Promise<'started' | 'cancelled' | 'busy'> => 'started'), stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined) };
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken,
+    generation: mockGeneration, beginSessionTask: mockBeginSessionTask }) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
@@ -123,6 +126,29 @@ describe('beat editor', () => {
         expect(mockAudio.play).toHaveBeenCalledTimes(1);
         await press(t('beat.stop'));
         expect(mockAudio.stop).toHaveBeenCalled();
+    });
+    test('an account generation change stops and closes the old audio engine', async () => {
+        const original = recordingHook.useTakeRecording; let controller!: ReturnType<typeof original>['controller'];
+        const hook = jest.spyOn(recordingHook, 'useTakeRecording').mockImplementation((...args) => {
+            const result = original(...args); controller = result.controller; return result;
+        });
+        try {
+            await open(); await press(t('beat.play'));
+            const finish = jest.spyOn(controller, 'finishAndDisarm');
+            mockAudio.stop.mockClear(); mockAudio.close.mockClear(); mockGeneration += 1;
+            await act(async () => root.render(<BeatEditor />));
+            expect(finish).toHaveBeenCalledTimes(1); expect(mockAudio.stop).toHaveBeenCalledTimes(1); expect(mockAudio.close).toHaveBeenCalledTimes(1);
+            expect(byLabel(t('beat.play'))).toBeDefined();
+        } finally { hook.mockRestore(); }
+    });
+    test('Play shows a cancellable Stop state while audio preloads and cancellation is not an error', async () => {
+        const pending = deferred<'cancelled'>(); mockAudio.play.mockReturnValueOnce(pending.promise);
+        await open();
+        await act(async () => { (byLabel(t('beat.play')).props.onClick ?? byLabel(t('beat.play')).props.onPress)({ nativeEvent: {} }); await Promise.resolve(); });
+        expect(byLabel(t('beat.stop'))).toBeDefined();
+        await press(t('beat.stop')); pending.resolve('cancelled'); await act(async () => { await pending.promise; });
+        expect(mockAudio.stop).toHaveBeenCalled(); expect(byLabel(t('beat.play'))).toBeDefined();
+        expect(text(t('beat.audioError'))).toHaveLength(0);
     });
     test('tempo steps change the document and stay inside the limits', async () => {
         const doc = await open();

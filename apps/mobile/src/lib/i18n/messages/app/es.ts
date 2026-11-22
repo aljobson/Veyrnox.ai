@@ -7175,6 +7175,8 @@ export default {
     "beat.track.max": "Un beat puede tener como máximo {max} pistas.",
     "beat.refused": "No se aplicó el cambio: {reason}",
     "beat.audioError": "No se pudo iniciar el sonido en este dispositivo. Puedes seguir editando.",
+    "beat.audioTooLarge": "Este beat usa demasiado audio para reproducirse en este dispositivo. Silencia o elimina regiones de audio y vuelve a intentarlo.",
+    "beat.audioUnavailable": "{name} no está disponible, por lo que esa región está en silencio.",
     "musicTrackAdd.title": "Añadir una parte vocal o instrumental",
     "musicTrackAdd.mode": "Tipo de parte",
     "musicTrackAdd.mode.vocals": "Voces",

@@ -1,6 +1,6 @@
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { discardCacheCopy } from '../../lib/cacheFiles';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ComponentRef, type RefObject } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -11,7 +11,8 @@ import { useSwapRuntime } from '../../lib/templateSwap/runtime';
 import { isOffline, subscribe } from '../../lib/networkState';
 import { swapErrorKey, unsettled, type SwapOffer } from '../../../../../app/veyrnox/_lib/templateSwapClient.mjs';
 import { SwapVisionHost } from './SwapVisionHost';
-export function SwapComposer({ offer }: { offer: SwapOffer }) {
+import { TemplatePhotoExample } from './TemplatePhotoExample';
+export function SwapComposer({ offer, revealAttempt, onReveal }: { offer: SwapOffer; revealAttempt?: RefObject<string | null>; onReveal?: (node: ComponentRef<typeof View> | null) => void }) {
     const { actions, attempts, accountId, beginSessionTask } = useSwapRuntime(offer.id), router = useRouter();
     const a = attempts.at(-1), offline = useSyncExternalStore(subscribe, isOffline), styles = useThemedStyles(sheets);
     const busy = !!a && ['processing', 'uploading', 'submitting'].includes(a.state);
@@ -35,8 +36,21 @@ export function SwapComposer({ offer }: { offer: SwapOffer }) {
         } catch { setPickerError(true); }
         finally { setPicking(false); }
     }
-    const error = a && ['photo_error', 'upload_error'].includes(a.state) ? a.errorCode : undefined;
+    const error = a && ['photo_error', 'upload_error'].includes(a.state) ? a.errorCode : undefined, uploadError = a?.state === 'upload_error';
     const errorKey = error === 'photo_too_large' ? 'mobileSwap.photoTooLarge' : error === 'invalid_image' ? 'mobileSwap.invalidImage' : swapErrorKey(error);
+    const feedback = useRef<ComponentRef<typeof View>>(null), tap = useRef<{ key: string | null; previous: string | null } | null>(null);
+    useEffect(() => () => { tap.current = null; if (revealAttempt) revealAttempt.current = null; }, [accountId, offer.id, revealAttempt]);
+    // Only this tap moves the screen: restored attempts and background updates never scroll.
+    useEffect(() => {
+        const pending = tap.current;
+        if (!pending || !a) return;
+        if (!pending.key) { if (a.key === pending.previous) return; pending.key = a.key; }
+        if (a.key !== pending.key) { tap.current = null; return; }
+        if (['uploading', 'submitting', 'upload_error'].includes(a.state)) {
+            tap.current = null;
+            requestAnimationFrame(() => onReveal?.(feedback.current));
+        } else if (a.body) { tap.current = null; if (revealAttempt) revealAttempt.current = a.key; }
+    }, [a, onReveal, revealAttempt]);
     useAnnouncement(pickerError ? t('mobileSwap.permission') : error ? t(errorKey) : busy ? t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending') : a?.state === 'ready' ? t('presets.swap.generate') : null);
     return <Card>
         <View style={styles.content}>
@@ -51,10 +65,11 @@ export function SwapComposer({ offer }: { offer: SwapOffer }) {
             <Text>{t('presets.swap.privacy')}</Text>
             {Array.from({ length: people }, (_, person) => {
                 const mine = a?.urls?.slice(person * 2, person * 2 + 2), label = people === 2 && offer.roles ? t('presets.swap.personPhoto', { role: offer.roles[person] }) : t('presets.swap.photo');
-                const showError = error && (people === 1 || ((a as { photoPerson?: number } | undefined)?.photoPerson ?? 0) === person);
+                const showError = error && !uploadError && (people === 1 || ((a as { photoPerson?: number } | undefined)?.photoPerson ?? 0) === person);
                 return <View key={person} style={styles.content}>
                     <Text variant="bodyStrong">{label}</Text>
                     <Text>{t(people === 2 ? 'presets.swap.twoGuidance' : 'presets.swap.guidance')}</Text>
+                    <TemplatePhotoExample limits="swap" />
                     <Button variant="secondary" label={t(mine?.length ? 'presets.swap.replace' : 'presets.swap.choose')} disabled={!canReplace || (person === 1 && !a?.files)} onPress={() => void pick(person as 0 | 1)} />
                     {showError && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
                     {showError && a?.state === 'photo_error' && <Button variant="secondary" label={t('presets.swap.retry')} disabled={!canReplace} onPress={() => void pick(person as 0 | 1)} />}
@@ -65,12 +80,15 @@ export function SwapComposer({ offer }: { offer: SwapOffer }) {
                 </View>;
             })}
             {pickerError && <Text tone="danger" accessibilityLiveRegion="polite">{t('mobileSwap.permission')}</Text>}
-            {busy && <Text accessibilityLiveRegion="polite">{t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</Text>}
             {a && !a.body && <Button variant="secondary" label={t('presets.swap.cancel')} onPress={() => actions.cancel(a.key)} />}
             {offline && <Text accessibilityLiveRegion="polite">{t('presets.swap.offline')}</Text>}
             {!accountId && <><Text accessibilityLiveRegion="polite">{t('presets.swap.session')}</Text><Button label={t('presets.swap.signin')} onPress={() => router.push('/sign-in')} /></>}
             <Text tone="warning">{t('presets.swap.price', { credits: offer.credits })}</Text>
-            <Button label={t('presets.swap.generate')} disabled={!accountId || !offer.name || !ready || busy || offline} onPress={() => { if (!isOffline()) void actions.submit(offer.id, offer); }} />
+            <Button label={t('presets.swap.generate')} disabled={!accountId || !offer.name || !ready || busy || offline} onPress={() => { if (isOffline()) return; tap.current = a?.body ? { key: null, previous: a.key } : { key: a?.key ?? null, previous: null }; void Promise.resolve(actions.submit(offer.id, offer)).catch(() => { tap.current = null; }); }} />
+            <View ref={feedback} collapsable={false} style={styles.content}>
+                {busy && <Text accessibilityLiveRegion="polite">{t(a?.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</Text>}
+                {uploadError && <Text tone="danger" accessibilityLiveRegion="polite">{t(errorKey)}</Text>}
+            </View>
         </View>
     </Card>;
 }

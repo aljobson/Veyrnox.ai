@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { TEMPLATE_IMAGE_ACCEPT, templateImageFileError } from '../_lib/templateMediaHandoff';
 import { prepareUpload } from '../_lib/uploadConvert.mjs';
+import { TemplatePhotoExample } from './TemplatePhotoExample.js';
 
 // Fixed positions: removing Photo 2 never moves Photo 3 into its place.
 export function TemplatePhotoSlots({ count, hints = [], files, onChange, onBusy, locked = false }) {
@@ -43,6 +44,7 @@ export function TemplatePhotoSlots({ count, hints = [], files, onChange, onBusy,
   }
   return <fieldset className="mt-4 space-y-4 rounded-2xl border border-vx-border p-4">
     <legend className="px-2 font-bold">{t('presets.fidelity.orderedPhotos', { count })}</legend>
+    <TemplatePhotoExample kind="fullBody" />
     {Array.from({ length: count }, (_, index) => {
       const label = t('presets.fidelity.photoSlot', { number: index + 1 });
       const file = files[index];

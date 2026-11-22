@@ -1,4 +1,3 @@
-import { hasExactPromptOrigin } from '../../../lib/templatePromptOrigin.mjs';
 import { swapRequest } from './templateSwapClient.mjs';
 import { templateContract, fidelityTemplateId, templateBoundPrompt } from '../../../lib/templateClientContract.js';
 // Generate from the template page itself (ADR-0120 amendment 1). Pure pieces, so they are unit-tested without React.
@@ -49,9 +48,8 @@ function withPhotoLine(text, withPhoto) {
 /** The inputs object Create builds for this template: prompt, shape, length, the template's own negative prompt. */
 const auditedInputs = new WeakSet();
 export function templateInputs(preset, model, { prompt, aspect, durationSeconds, aspectOptions, withPhoto = false }) {
-  const exactOrigin = hasExactPromptOrigin(preset.sourcePromptOrigin);
-  const exact = exactOrigin && typeof preset.sourcePrompt === 'string' ? preset.sourcePrompt : preset.prompt;
-  const uneditedExact = exactOrigin && prompt === exact;
+  const exact = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string' ? preset.sourcePrompt : preset.prompt;
+  const uneditedExact = preset.sourcePromptOrigin === 'community-source-exact' && prompt === exact;
   const inputs = {
     // Like Create: the recipe's own words go unchanged, anything the person edited is trimmed.
     prompt: withPhotoLine(prompt === exact ? prompt : prompt.trim(), withPhoto && preset.kind !== 'image' && !uneditedExact),

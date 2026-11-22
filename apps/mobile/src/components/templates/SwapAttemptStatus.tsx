@@ -1,5 +1,5 @@
 import { useAnnouncement } from '../../lib/useAnnouncement';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ComponentRef, type RefObject } from 'react';
 import { Linking, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button, Text } from '../ui';
@@ -9,14 +9,22 @@ import { t } from '../../lib/i18n';
 import { useSwapRuntime } from '../../lib/templateSwap/runtime';
 import { unsettled, swapErrorKey, type Attempt } from '../../../../../app/veyrnox/_lib/templateSwapClient.mjs';
 import { isOffline, subscribe } from '../../lib/networkState';
-function Status({ attempt: a }: { attempt: Attempt }) {
+type Reveal = { revealAttempt?: RefObject<string | null>; onReveal?: (node: ComponentRef<typeof View> | null) => void };
+function Status({ attempt: a, revealAttempt, onReveal }: { attempt: Attempt } & Reveal) {
+    const box = useRef<ComponentRef<typeof View>>(null);
+    useEffect(() => {
+        if (!revealAttempt || revealAttempt.current !== a.key) return;
+        revealAttempt.current = null;
+        requestAnimationFrame(() => onReveal?.(box.current));
+    }, [revealAttempt, onReveal, a.key, a.state]);
     const { actions } = useSwapRuntime(a.templateId), router = useRouter(), offline = useSyncExternalStore(subscribe, isOffline);
     const poll = unsettled(a) && !['submitting', 'unresolved'].includes(a.state);
     useEffect(() => { if (poll && !offline) void actions.reconcile(a.templateId, a.key).catch(() => {}); }, [poll, offline, actions, a.templateId, a.key]);
     useAnnouncement(t(`presets.swap.${a.state}`, { credits: a.spent ?? a.body?.max_charge_credits ?? 0 }), { onMount: true });
-    return <View style={{ gap: 12 }}>
+    return <View ref={box} collapsable={false} style={{ gap: 12 }}>
         <Text accessibilityLiveRegion="polite">{t(`presets.swap.${a.state}`, { credits: a.spent ?? a.body?.max_charge_credits ?? 0 })}</Text>
         {['queued', 'running'].includes(a.state) && a.job_id ? <GenerationProgress key={a.job_id} jobId={a.job_id} modelId={a.body?.model_id} kind="video" compact /> : null}
+        {a.state === 'refunded' && <Text tone="danger">{t('presets.swap.refundedReason')}</Text>}
         {a.state === 'not_charged' && <Text tone="danger">{t(swapErrorKey(a.errorCode))}</Text>}
         {a.balance !== undefined && <Text tone="warning">{t('presets.swap.balance', { credits: a.balance })}</Text>}
         {['unknown', 'unresolved', 'refund_pending'].includes(a.state) && <>
@@ -28,7 +36,7 @@ function Status({ attempt: a }: { attempt: Attempt }) {
     </View>;
 }
 // Always mounted, independent of the current catalog answer and runtime packaging flag.
-export function SwapAttemptStatus({ templateId }: { templateId: string }) {
+export function SwapAttemptStatus({ templateId, revealAttempt, onReveal }: { templateId: string } & Reveal) {
     const { attempts } = useSwapRuntime(templateId);
-    return <>{attempts.filter(a => a.body).map(a => <Status key={`${a.accountId}:${a.key}`} attempt={a} />)}</>;
+    return <>{attempts.filter(a => a.body).reverse().map(a => <Status key={`${a.accountId}:${a.key}`} attempt={a} revealAttempt={revealAttempt} onReveal={onReveal} />)}</>;
 }

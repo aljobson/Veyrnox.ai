@@ -6996,6 +6996,8 @@ export default {
     "beat.track.max": "ビートのトラックは最大 {max} 本です。",
     "beat.refused": "変更は適用されませんでした: {reason}",
     "beat.audioError": "この端末では音を開始できませんでした。編集は続けられます。",
+    "beat.audioTooLarge": "このビートは音声データが多すぎるため、このデバイスでは再生できません。音声リージョンをミュートまたは削除して、もう一度お試しください。",
+    "beat.audioUnavailable": "{name} は利用できないため、このリージョンは無音になります。",
     "musicTrackAdd.title": "ボーカルまたは楽器パートを追加",
     "musicTrackAdd.mode": "パートの種類",
     "musicTrackAdd.mode.vocals": "ボーカル",
