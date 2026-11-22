@@ -104,11 +104,12 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
         },
         sampleFrames(project: string, request: SampleFramesRequest, listener?: ProgressListener, signal?: AbortSignal): Promise<EditorMediaResult<FrameArtifact>> {
             return validateSampleFramesRequest(request) ? once(project, listener, entry => native!.sampleFrames(entry.account, project, owner, entry.token, request),
-                value => parseFrameArtifact(value, request.resizeMode), signal)
+                value => parseFrameArtifact(value, request), signal)
                 : Promise.resolve(invalid);
         },
         decodePcm(project: string, request: DecodePcmRequest, listener?: ProgressListener, signal?: AbortSignal): Promise<EditorMediaResult<PcmArtifact>> {
-            return validateDecodePcmRequest(request) ? once(project, listener, entry => native!.decodePcm(entry.account, project, owner, entry.token, request), parsePcmArtifact, signal)
+            return validateDecodePcmRequest(request) ? once(project, listener, entry => native!.decodePcm(entry.account, project, owner, entry.token, request),
+                value => parsePcmArtifact(value, request.mixMode), signal)
                 : Promise.resolve(invalid);
         },
         async beginEncode(project: string, request: BeginEncodeRequest, listener?: ProgressListener): Promise<EditorMediaResult<EncodeSession>> {

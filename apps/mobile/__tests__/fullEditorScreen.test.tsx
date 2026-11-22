@@ -4,6 +4,21 @@ jest.mock('../src/components/editor/tools/useEditorSceneAnalysis', () => ({
     sceneAnalysisBlocker: () => null,
     useEditorSceneAnalysis: ({ runKey }: { runKey: string }) => ({ ...mockSceneState, resultKey: mockSceneState?.status === 'done' ? runKey : undefined }),
 }));
+var mockClipState: any;
+var mockAppendFoundClips = jest.fn();
+jest.mock('../src/components/editor/tools/useEditorClipFinder', () => ({
+    clipFinderBlocker: () => null,
+    useEditorClipFinder: ({ runKey }: { runKey: string }) => ({ ...mockClipState,
+        resultKey: mockClipState?.resultKey === 'current' ? runKey : mockClipState?.resultKey }),
+}));
+jest.mock('../src/lib/editorClipAnalysis', () => ({
+    appendSelectedClipFinderRows: (...args: unknown[]) => mockAppendFoundClips(...args),
+}));
+var mockFrameStore: any;
+jest.mock('../src/components/editor/editorFrameStore', () => {
+    const actual = jest.requireActual('../src/components/editor/editorFrameStore');
+    return { ...actual, createFrameStore: (...args: unknown[]) => (mockFrameStore = actual.createFrameStore(...args)) };
+});
 import { act } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
@@ -49,6 +64,9 @@ beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     mockSceneState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, detect: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn() };
+    mockClipState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, hadAudio: true, resultKey: undefined,
+        find: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn(() => { mockClipState.status = 'idle'; mockClipState.rows = []; mockClipState.resultKey = undefined; }) };
+    mockAppendFoundClips.mockReset();
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
         if (init?.method === 'PUT') return { revision: JSON.parse(init.body as string).expected_revision + 1 };
         if (path.endsWith('/media-info')) return { seconds: 4 };
@@ -94,6 +112,7 @@ test('the simple view opens a sheet from each entry and All editing tools reveal
     await press('Close');
     await press('More');
     expect(labelled('Scenes').length).toBeGreaterThan(0);
+    expect(labelled('Find clips').length).toBeGreaterThan(0);
     expect(labelled('All editing tools').length).toBeGreaterThan(0);
     await press('All editing tools');
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail').length).toBeGreaterThan(0);
@@ -109,7 +128,10 @@ test('opens a native project workspace without loading a website', async () => {
     expect(visible('PREVIEW')).toBe(true);
     expect(visible('TIMELINE')).toBe(true);
     expect(root.container.queryAll((node) => node.type === 'WebView')).toHaveLength(0);
-    for (const label of ['Media', 'Audio', 'Generate', 'Text', 'Captions', 'Transcript', 'Scenes', 'Effects', 'Transitions', 'Filters', 'Animation', 'Markers', 'Brand kit', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    for (const label of ['Media', 'Audio', 'Generate', 'Text', 'Captions', 'Transcript', 'Scenes', 'Clip Finder', 'Effects', 'Transitions', 'Filters', 'Animation', 'Markers', 'Brand kit', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    const railLabels = root.container.queryAll(node => node.props.accessibilityRole === 'button' && typeof node.props.accessibilityLabel === 'string')
+        .map(node => node.props.accessibilityLabel);
+    expect(railLabels.slice(railLabels.indexOf('Scenes'), railLabels.indexOf('Scenes') + 2)).toEqual(['Scenes', 'Clip Finder']);
     for (const label of ['Templates', 'Elements', 'Clips', 'Assistant', 'Plugins', 'Review']) expect(root.container.queryAll(node => node.props.accessibilityLabel === label)).toHaveLength(0);
     expect(visible('Detected cuts')).toBe(false);
     for (const label of ['Undo', 'Redo', 'Select multiple', 'Duplicate', 'Split', 'Copy', 'Paste at playhead', 'Delete', 'Group', 'Ungroup', 'Add video track', 'Add audio track', 'Add text track', 'Add marker', 'Add text', 'Export', 'Credits']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
@@ -157,6 +179,70 @@ test('applies all selected scene cuts as one edit and one Undo restores the clip
     expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-v'))).toHaveLength(3);
     await press('Undo');
     expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-v'))).toHaveLength(1);
+});
+
+const clipFinderDocument = (locked = false) => ({ ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000',
+    media: { media1: { id: 'media1', kind: 'video', name: 'Interview', frames: 900, hasAudio: true, width: 1280, height: 720 } },
+    video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 300, trackId: 'video-0' }], audio: [], text: [], tracks: [
+        { id: 'video-0', kind: 'video', name: 'Video 1', locked, muted: false, hidden: false },
+        { id: 'video-1', kind: 'video', name: 'Video 2', locked: false, muted: false, hidden: false },
+        { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false },
+        { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } });
+const foundRows = [
+    { id: 'pick-1', rank: 1, start: 2, end: 4, startFrame: 60, endFrame: 120, seconds: 2, reasons: ['speech-rich'], ticked: true },
+    { id: 'pick-2', rank: 2, start: 5, end: 8, startFrame: 150, endFrame: 240, seconds: 3, reasons: ['good-length'], ticked: true },
+];
+async function openClipFinder(locked = false) {
+    serverDocument = clipFinderDocument(locked);
+    await render();
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    await press('Clip Finder');
+}
+
+test('Clip Finder analyses a selected clip even when its source track is locked', async () => {
+    await openClipFinder(true);
+    expect(labelled('Find clips')[0].props.accessibilityState.disabled).toBe(false);
+    await press('Find clips');
+    expect(mockClipState.find).toHaveBeenCalledTimes(1);
+});
+
+test('Clip Finder preview seeks to its start and stops playback at the bounded end', async () => {
+    mockClipState = { ...mockClipState, status: 'done', progress: 1, rows: [foundRows[0]], resultKey: 'current' };
+    await openClipFinder();
+    await press('Preview suggestion 1');
+    expect(visible('00:00:02:00')).toBe(true);
+    expect(labelled('Pause')).toHaveLength(1);
+    await act(async () => mockFrameStore.set(foundRows[0].endFrame));
+    expect(labelled('Play')).toHaveLength(1);
+    expect(labelled('Preview suggestion 1')).toHaveLength(1);
+});
+
+test('Clip Finder appends selected suggestions in one edit, selects the first, clears bands, and one Undo restores the source', async () => {
+    mockClipState = { ...mockClipState, status: 'done', progress: 1, rows: foundRows, resultKey: 'current' };
+    mockAppendFoundClips.mockImplementation((before: any) => ({ ...before, seq: before.seq + 1, video: [...before.video,
+        { id: 'found-1', mediaId: 'media1', start: 300, in: 60, len: 60, trackId: 'video-1' },
+        { id: 'found-2', mediaId: 'media1', start: 360, in: 150, len: 90, trackId: 'video-1' }] }));
+    await openClipFinder();
+    expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-range-'))).not.toHaveLength(0);
+    await press('Add 2 clips to timeline');
+    expect(mockAppendFoundClips).toHaveBeenCalledTimes(1);
+    expect(root.container.queryAll(node => node.props.testID === 'clip-found-1' && node.props.accessibilityState?.selected)).toHaveLength(1);
+    expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-range-'))).toHaveLength(0);
+    expect(mockClipState.clear).toHaveBeenCalledTimes(1);
+    await press('Undo');
+    expect(root.container.queryAll(node => String(node.props.testID || '').startsWith('clip-v'))).toHaveLength(1);
+});
+
+test('Clip Finder rejects an old Apply handler when the live edit revision changes in the same batch', async () => {
+    mockClipState = { ...mockClipState, status: 'done', progress: 1, rows: [foundRows[0]], resultKey: 'current' };
+    await openClipFinder();
+    const marker = labelled('Add marker')[0], apply = labelled('Add 1 clip to timeline')[0];
+    await act(async () => {
+        marker.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 });
+        apply.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 });
+    });
+    expect(mockAppendFoundClips).not.toHaveBeenCalled();
+    expect(mockClipState.clear).toHaveBeenCalledTimes(1);
 });
 
 const twoClips = () => ({ ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 2, aspect: '16:9', background: '#000000', media: { media1: { id: 'media1', kind: 'video', name: 'Scene one', frames: 60 } }, video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 60, trackId: 'video-0' }, { id: 'v2', mediaId: 'media1', start: 60, in: 0, len: 30, trackId: 'video-0' }], audio: [], text: [], tracks: [{ id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false }, { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false }, { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } });

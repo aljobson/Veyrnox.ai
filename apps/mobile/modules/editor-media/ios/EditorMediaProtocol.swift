@@ -38,6 +38,7 @@ struct SampleFramesRequest: Record {
   @Field var toSeconds: Double = 0
   @Field var maxFrames: Int = 900
   @Field var resizeMode: String = "contain"
+  @Field var samplingMode: String = "uniform"
 }
 
 struct DecodePcmRequest: Record {
@@ -46,6 +47,7 @@ struct DecodePcmRequest: Record {
   @Field var toSeconds: Double = 0
   @Field var sampleRate: Int = 48_000
   @Field var channels: Int = 2
+  @Field var mixMode: String? = nil
 }
 
 struct BeginEncodeRequest: Record {

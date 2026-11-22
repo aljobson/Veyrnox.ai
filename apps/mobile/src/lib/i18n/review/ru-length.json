@@ -4788,6 +4788,30 @@
     "ratio": 1.68
   },
   {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "Лучший вариант",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorClips.reason.cutAligned",
+    "english": "Starts and ends on cuts",
+    "translation": "Начинается и заканчивается на склейках",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorClips.reason.goodLength",
+    "english": "Good short-clip length",
+    "translation": "Подходящая длина для короткого клипа",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorClips.applyNone",
+    "english": "Add clips to timeline",
+    "translation": "Добавить клипы на монтажную линейку",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

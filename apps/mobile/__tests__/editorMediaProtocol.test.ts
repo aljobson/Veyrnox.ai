@@ -12,13 +12,18 @@ test('analysis requests are finite, exact and bounded to thirty seconds', () => 
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900 })).toBe(true);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900, resizeMode: 'contain' })).toBe(true);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 900, resizeMode: 'fill' })).toBe(true);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all' })).toBe(true);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 1801, samplingMode: 'all' })).toBe(false);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30, maxFrames: 901 })).toBe(false);
     for (const resizeMode of ['cover', 'stretch', '', null, 1])
         expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 1, maxFrames: 1, resizeMode })).toBe(false);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 1, maxFrames: 1, extra: true })).toBe(false);
     expect(validateDecodePcmRequest({ uri, fromSeconds: 1, toSeconds: 31, sampleRate: 48000, channels: 2 })).toBe(true);
+    expect(validateDecodePcmRequest({ uri, fromSeconds: 1, toSeconds: 31, sampleRate: 48000, channels: 1, mixMode: 'web-average' })).toBe(true);
+    expect(validateDecodePcmRequest({ uri, fromSeconds: 1, toSeconds: 31, sampleRate: 48000, channels: 2, mixMode: 'web-average' })).toBe(false);
     for (const value of [NaN, Infinity, -1]) expect(validateSampleFramesRequest({ uri, fromSeconds: value, toSeconds: 2, maxFrames: 1 })).toBe(false);
     expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 30.01, maxFrames: 1 })).toBe(false);
-    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 1, maxFrames: 901 })).toBe(false);
+    expect(validateSampleFramesRequest({ uri, fromSeconds: 0, toSeconds: 1, maxFrames: 1, samplingMode: 'uniform' })).toBe(false);
     expect(validateDecodePcmRequest({ uri, fromSeconds: 0, toSeconds: 1, sampleRate: 44100, channels: 2 })).toBe(false);
     expect(validateDecodePcmRequest({ uri, fromSeconds: 0, toSeconds: 1, sampleRate: 48000, channels: 3 })).toBe(false);
 });
@@ -56,15 +61,26 @@ test('native results are strictly bounded and native prose never escapes', () =>
     const frames = { ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
         timestampsUs: [0, 33333], preferredTransform: [1, 0, 0, 1, 0, 0] };
     expect(parseFrameArtifact(frames)).toMatchObject({ count: 2, resizeMode: 'contain' });
-    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill' }, 'fill')).toMatchObject({ resizeMode: 'fill' });
-    expect(parseFrameArtifact(frames, 'fill')).toBeNull();
-    expect(parseFrameArtifact({ ...frames, resizeMode: 'contain' }, 'fill')).toBeNull();
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill' }, { maxFrames: 2, resizeMode: 'fill' })).toMatchObject({ resizeMode: 'fill', samplingMode: 'uniform' });
+    expect(parseFrameArtifact(frames, { maxFrames: 2, resizeMode: 'fill' })).toBeNull();
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'contain' }, { maxFrames: 2, resizeMode: 'fill' })).toBeNull();
     expect(parseFrameArtifact({ ...frames, resizeMode: 'cover' })).toBeNull();
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill', samplingMode: 'all' }, { maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all' }))
+        .toMatchObject({ samplingMode: 'all' });
+    expect(parseFrameArtifact({ ...frames, resizeMode: 'fill' }, { maxFrames: 1800, resizeMode: 'fill', samplingMode: 'all' })).toBeNull();
     expect(parseFrameArtifact({ ...base, kind: 'frames', width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2,
         timestampsUs: [0, 0], preferredTransform: [1, 0, 0, 1, 0, 0] })).toBeNull();
     expect(parsePcmArtifact({ ...base, size: 11_520_000, kind: 'pcm', sampleRate: 48000, channels: 2, frames: 1_440_000, encoding: 'f32le-interleaved' })?.channels).toBe(2);
     expect(parsePcmArtifact({ ...base, kind: 'pcm', sampleRate: 48000, channels: 2, frames: 100, encoding: 'f32le-interleaved' })).toBeNull();
     expect(parsePcmArtifact({ ...base, kind: 'pcm', sampleRate: 44100, channels: 2, frames: 1, encoding: 'f32le-interleaved' })).toBeNull();
+    const exactPcm = { ...base, size: 192_000, kind: 'pcm', sampleRate: 48000, channels: 1, frames: 48_000, encoding: 'f32le-interleaved',
+        mixMode: 'web-average', segments: [{ offsetFrames: 0, timestampUs: 1_000_000, frames: 24_000 }, { offsetFrames: 24_000, timestampUs: 1_500_000, frames: 24_000 }] };
+    expect(parsePcmArtifact(exactPcm, 'web-average')).toMatchObject({ mixMode: 'web-average', segments: exactPcm.segments });
+    expect(parsePcmArtifact(exactPcm)).toBeNull();
+    expect(parsePcmArtifact({ ...exactPcm, segments: [{ offsetFrames: 1, timestampUs: 1_000_000, frames: 48_000 }] }, 'web-average')).toBeNull();
+    expect(parsePcmArtifact({ ...exactPcm, segments: [{ offsetFrames: 0, timestampUs: 1_000_000, frames: 47_999 }] }, 'web-average')).toBeNull();
+    expect(parsePcmArtifact({ ...exactPcm, segments: [{ offsetFrames: 0, timestampUs: 1_000_000, frames: 24_000 },
+        { offsetFrames: 24_000, timestampUs: 1_000_000, frames: 24_000 }] }, 'web-average')).toBeNull();
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000, videoCodec: 'avc1',
         audioCodec: 'mp4a', audioSampleRate: 48000, audioChannels: 2 })?.frames).toBe(900);
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 29_999_999, videoCodec: 'avc1' })).toBeNull();

@@ -62,6 +62,39 @@ test('frame resize mode is forwarded, echoed and fails closed against an old nat
     expect(legacy.native.release).toHaveBeenCalledWith('account-1', 'project-1', 'frames-1'); strict.close();
 });
 
+test('all-frame sampling raises the bound to 1800 and requires the native echo', async () => {
+    const exact = { ...sample, maxFrames: 1800, resizeMode: 'fill' as const, samplingMode: 'all' as const };
+    const good = fakeNative({ sampleFrames: jest.fn(async () => ({ ok: true, artifactId: 'frames-all', uri: 'file:///cache/frames-all.bin', kind: 'frames', size: 2048,
+        width: 128, height: 72, stride: 512, pixelFormat: 'rgba8', colorSpace: 'srgb', count: 2, timestampsUs: [0, 16667],
+        preferredTransform: [1, 0, 0, 1, 0, 0], resizeMode: 'fill', samplingMode: 'all' })) });
+    const client = createEditorMediaClient(good.native); await client.setOwner('account-1');
+    expect(await client.sampleFrames('project-1', exact)).toMatchObject({ ok: true, value: { samplingMode: 'all', count: 2 } });
+    expect(good.native.sampleFrames).toHaveBeenCalledWith(expect.any(String), 'project-1', expect.any(String), expect.any(String), exact); client.close();
+
+    const legacyNative = fakeNative(), legacy = createEditorMediaClient(legacyNative.native); await legacy.setOwner('account-1');
+    expect(await legacy.sampleFrames('project-1', exact)).toEqual({ ok: false, code: 'write-failed' });
+    expect(legacyNative.native.release).toHaveBeenCalledWith('account-1', 'project-1', 'frames-1'); legacy.close();
+});
+
+test('web-average PCM requires mono, exact timing segments and releases malformed native artifacts', async () => {
+    const request = { uri: sample.uri, fromSeconds: 1, toSeconds: 2, sampleRate: 48000 as const, channels: 1 as const, mixMode: 'web-average' as const };
+    const artifact = { ok: true, artifactId: 'pcm-exact', uri: 'file:///cache/pcm-exact.bin', kind: 'pcm', size: 192000, sampleRate: 48000, channels: 1,
+        frames: 48000, encoding: 'f32le-interleaved', mixMode: 'web-average', segments: [{ offsetFrames: 0, timestampUs: 1_000_000, frames: 24000 },
+            { offsetFrames: 24000, timestampUs: 1_500_000, frames: 24000 }] };
+    const good = fakeNative({ decodePcm: jest.fn(async () => artifact) }), client = createEditorMediaClient(good.native); await client.setOwner('account-1');
+    expect(await client.decodePcm('project-1', request)).toMatchObject({ ok: true, value: { mixMode: 'web-average', segments: artifact.segments } });
+    expect(good.native.decodePcm).toHaveBeenCalledWith(expect.any(String), 'project-1', expect.any(String), expect.any(String), request); client.close();
+
+    const malformedNative = fakeNative({ decodePcm: jest.fn(async () => ({ ...artifact, segments: [{ offsetFrames: 1, timestampUs: 1_000_000, frames: 48000 }] })) });
+    const malformed = createEditorMediaClient(malformedNative.native); await malformed.setOwner('account-1');
+    expect(await malformed.decodePcm('project-1', request)).toEqual({ ok: false, code: 'write-failed' });
+    expect(malformedNative.native.release).toHaveBeenCalledWith('account-1', 'project-1', 'pcm-exact'); malformed.close();
+
+    const oldNative = fakeNative(), old = createEditorMediaClient(oldNative.native); await old.setOwner('account-1');
+    expect(await old.decodePcm('project-1', request)).toEqual({ ok: false, code: 'write-failed' });
+    expect(oldNative.native.release).toHaveBeenCalledWith('account-1', 'project-1', 'pcm-1'); old.close();
+});
+
 test('aborting a one-shot operation cancels its hidden native token', async () => {
     let resolve: ((value: Record<string, unknown>) => void) | undefined;
     const pending = fakeNative({ sampleFrames: jest.fn(() => new Promise<Record<string, unknown>>(value => { resolve = value; })) });

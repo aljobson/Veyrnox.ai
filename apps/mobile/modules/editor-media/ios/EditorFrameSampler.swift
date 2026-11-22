@@ -26,11 +26,14 @@ enum EditorFrameSampler {
                      progress: (Double) -> Void) throws -> [String: Any] {
     guard request.fromSeconds.isFinite, request.toSeconds.isFinite, request.fromSeconds >= 0,
           request.toSeconds > request.fromSeconds, request.toSeconds - request.fromSeconds <= 30,
-          (1...900).contains(request.maxFrames) else {
+          (1...(request.samplingMode == "all" ? 1800 : 900)).contains(request.maxFrames) else {
       throw EditorMediaFailure.result(.invalidInput, "invalid-sample-range")
     }
     guard request.resizeMode == "contain" || request.resizeMode == "fill" else {
       throw EditorMediaFailure.result(.invalidInput, "invalid-resize-mode")
+    }
+    guard request.samplingMode == "uniform" || request.samplingMode == "all" else {
+      throw EditorMediaFailure.result(.invalidInput, "invalid-sampling-mode")
     }
     let input = try paths.inputURL(request.uri, identity: identity)
     let (asset, _) = try readableAsset(input)
@@ -67,7 +70,11 @@ enum EditorFrameSampler {
       if cancelled() { reader.cancelReading(); try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.cancelled) }
       let seconds = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample))
       guard seconds.isFinite else { continue }
-      if seconds + 0.000_001 < nextTarget { continue }
+      if request.samplingMode == "uniform", seconds + 0.000_001 < nextTarget { continue }
+      if request.samplingMode == "all", records.count >= request.maxFrames {
+        reader.cancelReading(); try? FileManager.default.removeItem(at: folder)
+        throw EditorMediaFailure.result(.invalidInput, "frame-count-too-large")
+      }
       guard let buffer = CMSampleBufferGetImageBuffer(sample) else { continue }
       let data = try rgba(buffer, orientation: orientation, width: 128, height: 72,
         resizeMode: request.resizeMode)
@@ -81,16 +88,19 @@ enum EditorFrameSampler {
       bytes += data.count
       records.append(["file": name, "timestampUs": timestamp]); previousTimestamp = timestamp
       progress(min(1, max(0, (seconds - request.fromSeconds) / range)))
-      if records.count >= request.maxFrames { reachedLimit = true; reader.cancelReading(); break }
-      nextTarget = request.fromSeconds + range * Double(records.count) / Double(request.maxFrames)
+      if request.samplingMode == "uniform" {
+        if records.count >= request.maxFrames { reachedLimit = true; reader.cancelReading(); break }
+        nextTarget = request.fromSeconds + range * Double(records.count) / Double(request.maxFrames)
+      }
     }
     guard reachedLimit || reader.status == .completed, !records.isEmpty else {
       try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.corruptMedia)
     }
-    let manifest: [String: Any] = ["version": 1, "format": "rgba8", "width": 128, "height": 72,
+    var manifest: [String: Any] = ["version": 1, "format": "rgba8", "width": 128, "height": 72,
       "rowStride": 512, "colorSpace": "srgb", "orientedWidth": Int(oriented.width.rounded()),
       "orientedHeight": Int(oriented.height.rounded()), "transform": transformArray(track.preferredTransform),
       "resizeMode": request.resizeMode, "frames": records]
+    if request.samplingMode == "all" { manifest["samplingMode"] = "all" }
     let manifestURL = folder.appendingPathComponent("frames.json")
     do { let encoded = try JSONSerialization.data(withJSONObject: manifest); try encoded.write(to: manifestURL, options: .atomic); bytes += encoded.count }
     catch { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed) }
@@ -98,10 +108,12 @@ enum EditorFrameSampler {
       kind: "frames", projectGeneration: projectGeneration)
     published = true
     progress(1)
-    return ["ok": true, "artifactId": artifactId, "uri": manifestURL.absoluteString, "kind": "frames",
+    var result: [String: Any] = ["ok": true, "artifactId": artifactId, "uri": manifestURL.absoluteString, "kind": "frames",
       "size": bytes, "count": records.count, "width": 128, "height": 72, "stride": 512,
       "pixelFormat": "rgba8", "colorSpace": "srgb", "timestampsUs": records.compactMap { $0["timestampUs"] },
       "preferredTransform": transformArray(track.preferredTransform), "resizeMode": request.resizeMode]
+    if request.samplingMode == "all" { result["samplingMode"] = "all" }
+    return result
   }
 
   private static func rgba(_ buffer: CVPixelBuffer, orientation: CGImagePropertyOrientation,

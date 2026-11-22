@@ -52,6 +52,29 @@ test('uses the canonical detector on strict fill-mode RGBA artifacts and maps so
     expect(run.release).toHaveBeenCalledWith('project-1', 'artifact-1');
 });
 
+test('exact scene mode requests every source frame up to 60fps and requires artifact and manifest echoes', async () => {
+    const data = fixture();
+    const artifact = { ...data.artifact, samplingMode: 'all' as const };
+    const manifest = { ...data.manifest, samplingMode: 'all' as const };
+    const run = harness({ artifact, manifest });
+    const result = await analyzeClipScenes({ project: 'project-1', uri: sourceUri, clip, samplingMode: 'all' }, { media: run.media, files: run.files });
+    expect(result.ok).toBe(true);
+    expect(run.sampleFrames).toHaveBeenCalledWith('project-1', {
+        uri: sourceUri, fromSeconds: 2, toSeconds: 6, maxFrames: 240, resizeMode: 'fill', samplingMode: 'all',
+    }, undefined, undefined);
+    expect(run.release).toHaveBeenCalledWith('project-1', 'artifact-1');
+
+    const missingArtifactEcho = harness({ manifest });
+    await expect(analyzeClipScenes({ project: 'project-1', uri: sourceUri, clip, samplingMode: 'all' },
+        { media: missingArtifactEcho.media, files: missingArtifactEcho.files })).resolves.toEqual({ ok: false, code: 'corrupt-media' });
+    expect(missingArtifactEcho.release).toHaveBeenCalledTimes(1);
+
+    const missingManifestEcho = harness({ artifact });
+    await expect(analyzeClipScenes({ project: 'project-1', uri: sourceUri, clip, samplingMode: 'all' },
+        { media: missingManifestEcho.media, files: missingManifestEcho.files })).resolves.toEqual({ ok: false, code: 'corrupt-media' });
+    expect(missingManifestEcho.release).toHaveBeenCalledTimes(1);
+});
+
 test('timeline rows drop endpoints, deduplicate rounded frames, and leave gradual cuts unticked', () => {
     expect(sceneRowsForClip(clip, [
         { time: 2, score: 1, kind: 'hard' }, { time: 4, score: 1, kind: 'hard' }, { time: 4.01, score: .8, kind: 'gradual' },

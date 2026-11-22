@@ -2610,6 +2610,18 @@
     "ratio": 1.63
   },
   {
+    "id": "editorClips.ranking",
+    "english": "Ranking moments",
+    "translation": "पलों को क्रम दिया जा रहा है",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "सबसे अच्छा विकल्प",
+    "ratio": 2.13
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

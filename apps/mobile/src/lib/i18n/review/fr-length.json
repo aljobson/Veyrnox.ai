@@ -7272,6 +7272,30 @@
     "ratio": 1.67
   },
   {
+    "id": "editorClips.title",
+    "english": "Clip Finder",
+    "translation": "Détecteur de clips",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorClips.find",
+    "english": "Find clips",
+    "translation": "Trouver des clips",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorClips.again",
+    "english": "Find again",
+    "translation": "Relancer la recherche",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "Meilleur choix",
+    "ratio": 1.75
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

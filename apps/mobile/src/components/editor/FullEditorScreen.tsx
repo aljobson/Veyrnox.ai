@@ -13,6 +13,7 @@ import { EffectsPanel, TransitionsPanel, FiltersPanel } from './tools/LookPanels
 import { AnimationPanel } from './tools/AnimationPanel';
 import { MarkersPanel } from './tools/MarkersPanel'; import { AdjustPanel } from './tools/AdjustPanel';
 import { ScenesPanel } from './tools/ScenesPanel'; import { sceneAnalysisBlocker, useEditorSceneAnalysis } from './tools/useEditorSceneAnalysis';
+import { ClipFinderPanel } from './tools/ClipFinderPanel'; import { clipFinderBlocker, useEditorClipFinder } from './tools/useEditorClipFinder';
 import { useBestCutEditor } from './useBestCutEditor';
 import { EditorSpeechCutSheet } from './EditorSpeechCutSheet';
 import { useSpeechCutAvailability } from './useSpeechCutAvailability';
@@ -70,6 +71,7 @@ import { HeaderAction } from '../HeaderAction';
 import { LibraryChooser } from '../LibraryChooser';
 import { JobThumb, useAssetLinks } from '../JobThumb';
 import { mediaFrames, overlaySpan } from '../../lib/editorOverlay';
+import { appendSelectedClipFinderRows } from '../../lib/editorClipAnalysis';
 import { useFullEditorSession } from './useFullEditorSession';
 import { useEditorFonts } from './useEditorFonts';
 import { AssetPackLibrarySheet } from './assetPacks/AssetPackLibrarySheet';
@@ -95,6 +97,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
     const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
     const [sceneAnnouncement, setSceneAnnouncement] = useState<string | null>(null); useAnnouncement(sceneAnnouncement);
+    const [clipAnnouncement, setClipAnnouncement] = useState<string | null>(null); useAnnouncement(clipAnnouncement);
+    const [clipPreview, setClipPreview] = useState<{ id: string; endFrame: number } | null>(null);
     const [placement, setPlacement] = useState(0);
     const { speechQuote, setSpeechQuote, speechMode, setSpeechMode } = useSpeechCutAvailability(api, projectId);
     const editFreshness = (): Freshness => ({ projectId, accountId: getCacheUser() ?? '', editRevision: getEditRevision() }); const guard = useEditorLeaveGuard(leaveEditor, router.back);
@@ -150,6 +154,28 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const sceneError = scenes.error === 'source' ? t('editorScenes.sourceError') : scenes.error === 'invalid-input' || scenes.error === 'unsupported-codec' || scenes.error === 'corrupt-media'
         ? t('editorScenes.invalidError') : scenes.error === 'disk-full' ? t('editorScenes.spaceError') : scenes.error ? t('editorScenes.error') : null;
     const sceneMarks = sceneRows.map(row => ({ frame: row.frame, kind: row.kind, selected: row.ticked }));
+    const clipRunKey = `${sceneRunKey}:${selectedMedia?.hasAudio ? 'audio' : 'silent'}`;
+    const clips = useEditorClipFinder({ api, projectId, media: selectedMedia, clip: sceneClip, timeline,
+        localUri: selectedMedia ? localMediaUris[selectedMedia.id] : undefined, runKey: clipRunKey });
+    const clipRows = clips.resultKey === clipRunKey ? clips.rows : [];
+    const clipBlockerCode = clipFinderBlocker(selectedMedia, sceneClip);
+    const clipBlocker = clipBlockerCode === 'select' ? t('editorClips.blocker.select')
+        : clipBlockerCode === 'transform' ? t('editorClips.blocker.transform')
+        : clipBlockerCode === 'short' ? t('editorClips.blocker.short')
+        : clipBlockerCode === 'long' ? t('editorClips.blocker.long') : null;
+    const clipError = clips.error === 'source' ? t('editorClips.sourceError')
+        : clips.error === 'invalid-input' || clips.error === 'unsupported-codec' || clips.error === 'corrupt-media' ? t('editorClips.invalidError')
+        : clips.error === 'disk-full' ? t('editorClips.spaceError') : clips.error ? t('editorClips.error') : null;
+    useEffect(() => {
+        if (!clipPreview) return;
+        if (!playing) { setClipPreview(null); return; }
+        const stopAtEnd = () => {
+            if (frameStore.get() < clipPreview.endFrame) return;
+            setPlaying(false); setClipPreview(null);
+        };
+        stopAtEnd(); return frameStore.subscribe(stopAtEnd);
+    }, [clipPreview, frameStore, playing, setPlaying]);
+    useEffect(() => { setClipPreview(null); }, [clipRunKey, tool]);
     if (!document) return <EditorLoadState problem={problem} onRetry={session.retryLoad} onBack={() => router.back()} />;
     const canvas = canvasOf(document.canvas);
     const total = framesIn(timeline);
@@ -168,6 +194,32 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         const selectedScene = { track: 'video' as const, id: sceneClip.id };
         setSelection(selectedScene); setSelections([selectedScene]); setPlaying(false); setFrame(frames[0] ?? sceneClip.start);
         setSceneAnnouncement(t('editorScenes.applied', { value1: frames.length })); scenes.clear();
+    };
+    const previewClip = (id: string) => {
+        const row = clipRows.find(item => item.id === id);
+        if (!row) return;
+        if (clipPreview?.id === id && playing) { setPlaying(false); setClipPreview(null); return; }
+        setFrame(row.startFrame); setClipPreview({ id, endFrame: row.endFrame }); setPlaying(true);
+    };
+    const applyFoundClips = () => {
+        const current = currentDocument();
+        const before = timelineOf(current?.timeline), liveSelected = selection?.track === 'video' ? clipAt(before, selection) : undefined;
+        const liveClip = liveSelected && 'mediaId' in liveSelected ? liveSelected as Clip : undefined;
+        const liveMedia = liveClip ? before.media[liveClip.mediaId] : undefined;
+        const liveSceneKey = `${projectId}:${getCacheUser() ?? ''}:${getEditRevision()}:${selection?.track ?? ''}:${selection?.id ?? ''}:${liveClip?.start ?? ''}:${liveClip?.in ?? ''}:${liveClip?.len ?? ''}`;
+        const liveRunKey = `${liveSceneKey}:${liveMedia?.hasAudio ? 'audio' : 'silent'}`;
+        if (!current || !liveClip || !liveMedia || clips.resultKey !== clipRunKey || liveRunKey !== clipRunKey) {
+            setClipAnnouncement(t('editorClips.stale')); clips.clear(); setClipPreview(null); return;
+        }
+        const next = appendSelectedClipFinderRows(before, liveMedia.id, clipRows);
+        if ('error' in next) { setProblem(t('editorClips.cannotAdd')); return; }
+        const existing = new Set(before.video.map(item => item.id));
+        const added = next.video.filter(item => !existing.has(item.id));
+        const result = markDocument({ ...current, schema_version: 3, timeline: next });
+        if (result.status !== 'accepted') return;
+        const first = added[0];
+        if (first) { const nextSelection = { track: 'video' as const, id: first.id }; setSelection(nextSelection); setSelections([nextSelection]); setFrame(first.start); }
+        setPlaying(false); setClipPreview(null); setClipAnnouncement(plural('editorClips.applied', added.length)); clips.clear();
     };
     const trackActions = useEditorTrackActions(timeline, () => timelineOf(currentDocument()?.timeline ?? document.timeline), applyTimeline);
     const placeVoiceover: VoiceoverProps['insert'] = media => {
@@ -291,6 +343,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'captions', icon: 'CC', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') }, ]; const moreRows: SheetRow[] = [
         { id: 'text', icon: 'T', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'scenes', icon: '⌇', label: t('editor.scenes'), hint: t('editorScenes.private'), onPress: () => showPanel('scenes') },
+        { id: 'clips', icon: '▶', label: t('editorClips.find'), hint: t('editorClips.private'), onPress: () => showPanel('clips') },
         { id: 'export', icon: '⇩', label: t('editor.export'), hint: t(exportGate.hintKey), onPress: () => void openExport() },
         { id: 'versions', icon: '↺', label: t('editorSave.versions'), hint: t('editorSimple.versionsHint'), onPress: sync.openVersions },
         { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
@@ -396,11 +449,15 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 showsVerticalScrollIndicator>
                 <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null} onGestureActive={(active:
                     boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total} frameStore={frameStore}
-                    playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={sceneMarks} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false);
+                    playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={tool === 'scenes' ? sceneMarks : []}
+                    clipRanges={tool === 'clips' ? clipRows.map(row => ({ id: row.id, startFrame: row.startFrame, endFrame: row.endFrame, rank: row.rank, selected: row.ticked })) : []}
+                    onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => { setPlaying(false);
                     setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />
             </ScrollView> : <PlaybackTimeline clipThumb={mediaId => mediaId.startsWith('j-') ? <JobThumb links={thumbLinks} jobId={mediaId.slice(2)} size={36} /> : null}
                 onGestureActive={(active: boolean) => { setTimelineTouch(active); returns.gestureActive(active); }} timeline={timeline} selections={selections} ppf={zoom} total={total}
-                frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={sceneMarks} onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => {
+                frameStore={frameStore} playing={playing} snap={snap} ripple={advanced ? ripple : 'lane'} analysisMarks={tool === 'scenes' ? sceneMarks : []}
+                clipRanges={tool === 'clips' ? clipRows.map(row => ({ id: row.id, startFrame: row.startFrame, endFrame: row.endFrame, rank: row.rank, selected: row.ticked })) : []}
+                onTrackPress={trackActions.pressTrack} onViewport={setViewport} onSeek={value => {
                 setPlaying(false); setFrame(value); }} onSelect={selectClip} onApply={applyTimeline} />}
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} minHeight={budget.panelMin} rail={advanced ? <ToolRail tool={tool} setTool={setTool} /> : undefined}>
@@ -416,6 +473,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             {tool === 'scenes' ? <ScenesPanel availability={scenes.availability} blocker={sceneBlocker} status={scenes.status} progress={scenes.progress} rows={sceneRows} error={sceneError}
                 onDetect={() => { setPlaying(false); setSceneAnnouncement(null); void scenes.detect(); }} onCancel={scenes.cancel} onToggle={scenes.toggle}
                 onPreview={frame => { setPlaying(false); setFrame(frame); }} onApply={applySceneCuts} /> : null}
+            {tool === 'clips' ? <ClipFinderPanel availability={clips.availability} blocker={clipBlocker} status={clips.status} progress={clips.progress} fps={timeline.fps}
+                rows={clipRows} error={clipError} hadAudio={clips.hadAudio} previewingId={clipPreview?.id}
+                onFind={() => { setPlaying(false); setClipPreview(null); setClipAnnouncement(null); void clips.find(); }} onCancel={clips.cancel} onToggle={clips.toggle}
+                onPreview={previewClip} onApply={applyFoundClips} /> : null}
             {tool === 'effects' ? <EffectsPanel {...panelProps} /> : null}
             {tool === 'transitions' ? <TransitionsPanel {...panelProps} /> : null}
             {tool === 'filters' ? <FiltersPanel {...panelProps} /> : null}

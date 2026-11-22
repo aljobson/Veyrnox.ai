@@ -2,12 +2,16 @@ import AVFoundation
 import Foundation
 
 enum EditorPcmDecoder {
+  private static let maximumSegments = 4096
+
   static func decode(identity: EditorMediaIdentity, projectGeneration: Int, request: DecodePcmRequest,
                      paths: EditorMediaPaths, cancelled: () -> Bool,
                      progress: (Double) -> Void) throws -> [String: Any] {
+    let webAverage = request.mixMode == "web-average"
     guard request.fromSeconds.isFinite, request.toSeconds.isFinite, request.fromSeconds >= 0,
           request.toSeconds > request.fromSeconds, request.toSeconds - request.fromSeconds <= 30,
-          request.sampleRate == 48_000, request.channels == 1 || request.channels == 2 else {
+          request.sampleRate == 48_000, request.channels == 1 || request.channels == 2,
+          request.mixMode == nil || webAverage, !webAverage || request.channels == 1 else {
       throw EditorMediaFailure.result(.invalidInput, "invalid-pcm-request")
     }
     let input = try paths.inputURL(request.uri, identity: identity)
@@ -23,12 +27,19 @@ enum EditorPcmDecoder {
     guard let track = asset.tracks(withMediaType: .audio).first else {
       throw EditorMediaFailure.result(.unsupportedCodec, "audio-track-missing")
     }
+    let decodedChannels: Int
+    if webAverage {
+      guard let sourceChannels = sourceChannelCount(track), (1...32).contains(sourceChannels) else {
+        throw EditorMediaFailure.result(.unsupportedCodec, "unsupported-channel-layout")
+      }
+      decodedChannels = sourceChannels
+    } else { decodedChannels = request.channels }
     let reader: AVAssetReader
     do { reader = try AVAssetReader(asset: asset) }
     catch { throw EditorMediaFailure.result(.corruptMedia) }
     let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
       AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: request.sampleRate,
-      AVNumberOfChannelsKey: request.channels, AVLinearPCMBitDepthKey: 32,
+      AVNumberOfChannelsKey: decodedChannels, AVLinearPCMBitDepthKey: 32,
       AVLinearPCMIsFloatKey: true, AVLinearPCMIsBigEndianKey: false,
       AVLinearPCMIsNonInterleaved: false
     ])
@@ -47,7 +58,8 @@ enum EditorPcmDecoder {
     guard let handle = try? FileHandle(forWritingTo: rawURL) else {
       try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed)
     }
-    var bytes = 0, frames: Int64 = 0
+    var bytes = 0, frames: Int64 = 0, segments: [[String: Any]] = []
+    var previousTimestampUs: Int64?
     defer { try? handle.close() }
     guard reader.startReading() else { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.corruptMedia) }
     while let sample = output.copyNextSampleBuffer() {
@@ -55,8 +67,8 @@ enum EditorPcmDecoder {
       guard let description = CMSampleBufferGetFormatDescription(sample),
             let basic = CMAudioFormatDescriptionGetStreamBasicDescription(description)?.pointee,
             basic.mFormatID == kAudioFormatLinearPCM, basic.mSampleRate == 48_000,
-            basic.mChannelsPerFrame == UInt32(request.channels), basic.mBitsPerChannel == 32,
-            basic.mBytesPerFrame == UInt32(4 * request.channels),
+            basic.mChannelsPerFrame == UInt32(decodedChannels), basic.mBitsPerChannel == 32,
+            basic.mBytesPerFrame == UInt32(4 * decodedChannels),
             basic.mFormatFlags & kAudioFormatFlagIsFloat != 0,
             basic.mFormatFlags & kAudioFormatFlagIsNonInterleaved == 0,
             basic.mFormatFlags & kAudioFormatFlagIsBigEndian == 0,
@@ -64,7 +76,21 @@ enum EditorPcmDecoder {
         reader.cancelReading(); throw EditorMediaFailure.result(.unsupportedCodec, "unexpected-pcm-format")
       }
       let length = CMBlockBufferGetDataLength(block)
-      guard length > 0, bytes + length <= EditorMediaPaths.pcmLimit else {
+      guard length > 0 else {
+        reader.cancelReading(); throw EditorMediaFailure.result(.corruptMedia, "invalid-pcm-buffer")
+      }
+      let sampleFrames: Int, outputLength: Int
+      if webAverage {
+        sampleFrames = CMSampleBufferGetNumSamples(sample)
+        guard sampleFrames > 0, length == sampleFrames * MemoryLayout<Float>.size * decodedChannels else {
+          reader.cancelReading(); throw EditorMediaFailure.result(.corruptMedia, "invalid-pcm-buffer")
+        }
+        outputLength = sampleFrames * MemoryLayout<Float>.size
+      } else {
+        sampleFrames = length / (MemoryLayout<Float>.size * request.channels)
+        outputLength = length
+      }
+      guard bytes + outputLength <= EditorMediaPaths.pcmLimit else {
         reader.cancelReading(); try? FileManager.default.removeItem(at: folder)
         throw EditorMediaFailure.result(.invalidInput, "pcm-too-large")
       }
@@ -73,17 +99,33 @@ enum EditorPcmDecoder {
         CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: length, destination: raw.baseAddress!)
       }
       guard copied == noErr else { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.corruptMedia) }
-      do { try handle.write(contentsOf: data) }
+      let outputData = webAverage ? averageChannels(data, frames: sampleFrames, channels: decodedChannels) : data
+      let timestamp = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample))
+      if webAverage {
+        guard timestamp.isFinite, timestamp >= 0, timestamp <= 9_007_199_254.740_991 else {
+          reader.cancelReading(); throw EditorMediaFailure.result(.corruptMedia, "invalid-pcm-timestamp")
+        }
+        let timestampUs = Int64((timestamp * 1_000_000).rounded())
+        guard segments.count < maximumSegments else {
+          reader.cancelReading(); throw EditorMediaFailure.result(.invalidInput, "pcm-segments-too-many")
+        }
+        guard previousTimestampUs.map({ timestampUs > $0 }) ?? true else {
+          reader.cancelReading(); throw EditorMediaFailure.result(.corruptMedia, "invalid-pcm-timestamp")
+        }
+        segments.append(["offsetFrames": frames, "timestampUs": timestampUs, "frames": sampleFrames])
+        previousTimestampUs = timestampUs
+      }
+      do { try handle.write(contentsOf: outputData) }
       catch { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed) }
-      bytes += length; frames += Int64(length / (MemoryLayout<Float>.size * request.channels))
-      let at = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(sample))
-      if at.isFinite { progress(min(1, max(0, (at - request.fromSeconds) / span))) }
+      bytes += outputLength; frames += Int64(sampleFrames)
+      if timestamp.isFinite { progress(min(1, max(0, (timestamp - request.fromSeconds) / span))) }
     }
     guard reader.status == .completed, frames > 0 else {
       try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.corruptMedia)
     }
-    let manifest: [String: Any] = ["version": 1, "format": "f32le-interleaved", "sampleRate": request.sampleRate,
+    var manifest: [String: Any] = ["version": 1, "format": "f32le-interleaved", "sampleRate": request.sampleRate,
       "channels": request.channels, "frames": frames, "bytes": bytes]
+    if webAverage { manifest["mixMode"] = "web-average"; manifest["segments"] = segments }
     let manifestURL = folder.appendingPathComponent("pcm.json")
     do { let encoded = try JSONSerialization.data(withJSONObject: manifest); try encoded.write(to: manifestURL, options: .atomic) }
     catch { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed) }
@@ -91,7 +133,34 @@ enum EditorPcmDecoder {
       kind: "pcm", projectGeneration: projectGeneration)
     published = true
     progress(1)
-    return ["ok": true, "artifactId": artifactId, "uri": rawURL.absoluteString, "kind": "pcm", "size": bytes,
+    var result: [String: Any] = ["ok": true, "artifactId": artifactId, "uri": rawURL.absoluteString, "kind": "pcm", "size": bytes,
       "encoding": "f32le-interleaved", "sampleRate": request.sampleRate, "channels": request.channels, "frames": frames]
+    if webAverage { result["mixMode"] = "web-average"; result["segments"] = segments }
+    return result
+  }
+
+  private static func sourceChannelCount(_ track: AVAssetTrack) -> Int? {
+    for raw in track.formatDescriptions {
+      if let description = raw as? CMAudioFormatDescription,
+         let basic = CMAudioFormatDescriptionGetStreamBasicDescription(description)?.pointee,
+         basic.mChannelsPerFrame > 0 { return Int(basic.mChannelsPerFrame) }
+    }
+    return nil
+  }
+
+  private static func averageChannels(_ data: Data, frames: Int, channels: Int) -> Data {
+    var output = Data(count: frames * MemoryLayout<Float>.size)
+    data.withUnsafeBytes { input in
+      output.withUnsafeMutableBytes { destination in
+        let source = input.bindMemory(to: Float.self)
+        let mono = destination.bindMemory(to: Float.self)
+        for frame in 0..<frames {
+          var sum = 0.0
+          for channel in 0..<channels { sum += Double(source[frame * channels + channel]) }
+          mono[frame] = Float(sum / Double(channels))
+        }
+      }
+    }
+    return output
   }
 }
