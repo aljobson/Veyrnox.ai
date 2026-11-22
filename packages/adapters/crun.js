@@ -22,6 +22,7 @@
  */
 
 import { readBoundedBody } from '../../lib/boundedBody.js';
+import { CRUN_FLUX_2_PRO_ASPECTS, CRUN_FLUX_2_PRO_PROMPT_MAX, CRUN_KLING_AVATAR_PROMPT_MAX } from '../../lib/crunPrimaryCapabilities.js';
 
 export const CRUN_API_BASE = 'https://api.crun.ai';
 
@@ -60,20 +61,26 @@ const IMAGE_MODELS = {
     // Docs read 2026-10-26: resolution 1K | 2K | 4K, default 1K; the 3-credit price on Crun's page is the 1K row.
     'google/nano-banana-2-1': { kind: 'image', aspects: new Set(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']), fixed: { resolution: '1K' } },
     'bytedance/seedream-4': { kind: 'image', aspects: new Set(['1:1']), fixed: { resolution: '2K', num_outputs: 1 } },
+    // Built by buildFluxRequest: unlike the rows above it takes a seed and has a 4:3 default.
+    'flux-2-pro': { kind: 'image', aspects: new Set(CRUN_FLUX_2_PRO_ASPECTS), fixed: { resolution: '1K', output_format: 'png' } },
 };
+const FLUX_2_PRO_MODEL = 'flux-2-pro';
+const KLING_AVATAR_MODEL = 'kling/avatar';
 const WAN_ANIMATE_MODEL = 'wan/2-2-animate-replace';
 // Template swaps only (ADR-0351 amendment 21); the public Kling O1 offer stays on fal and never reaches this builder.
 const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
 // Our endpoint name -> the resolution sent to Crun's one model id (ADR-0351 amendment 22).
 const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'kling/o1-r2v-1080': '1080p' });
 const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
+// These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
+const redactsRefusal = model => isKlingO1Swap(model) || model === KLING_AVATAR_MODEL;
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
 /** 'video' or 'image' for a Crun endpoint this adapter owns, else null. The sweep picks the file type from it. */
@@ -90,6 +97,8 @@ export function endpointKind(endpoint) {
 export function buildRequest(target, inputs) {
     if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
     if (isKlingO1Swap(target.model)) return buildKlingO1SwapRequest(inputs, KLING_O1_SWAP_TIERS[target.model]);
+    if (target.model === FLUX_2_PRO_MODEL) return buildFluxRequest(inputs);
+    if (target.model === KLING_AVATAR_MODEL) return buildKlingAvatarRequest(inputs);
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
     const kling = KLING_MODELS[target.model];
@@ -202,6 +211,40 @@ function buildKlingRequest(target, spec, inputs) {
     return { ok: true, body: { model: spec.apiModel, input } };
 }
 
+function refuseOtherKeys(inputs, allowed) {
+    const extra = Object.keys(inputs).find(key => !allowed.has(key));
+    if (extra) return { ok: false, error: `inputs_key_not_allowed:${extra.slice(0, 32)}` };
+    // Both offers are one priced unit: the page's default 5 is accepted and any other length is refused, as for the fal rows.
+    return inputs.duration_seconds === undefined || inputs.duration_seconds === 5 ? null : { ok: false, error: 'duration_not_supported' };
+}
+
+function buildFluxRequest(inputs) {
+    const refused = refuseOtherKeys(inputs, new Set(['prompt', 'seed', 'aspect_ratio', 'duration_seconds']));
+    if (refused) return refused;
+    const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
+    if (!prompt || prompt.length > CRUN_FLUX_2_PRO_PROMPT_MAX) return { ok: false, error: 'inputs_invalid:prompt' };
+    const aspect = inputs.aspect_ratio === undefined ? '4:3' : inputs.aspect_ratio;
+    if (!IMAGE_MODELS[FLUX_2_PRO_MODEL].aspects.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+    const { seed } = inputs;
+    if (seed !== undefined && (!Number.isInteger(seed) || seed < 0 || seed > 2147483647)) return { ok: false, error: 'inputs_invalid:seed' };
+    return { ok: true, body: { model: FLUX_2_PRO_MODEL, input: {
+        prompt, aspect_ratio: aspect, ...IMAGE_MODELS[FLUX_2_PRO_MODEL].fixed, ...(seed === undefined ? {} : { seed }),
+    } } };
+}
+
+function buildKlingAvatarRequest(inputs) {
+    const refused = refuseOtherKeys(inputs, new Set(['prompt', 'image_url', 'audio_url', 'duration_seconds']));
+    if (refused) return refused;
+    if (!isHttpsUrl(inputs.image_url)) return { ok: false, error: 'inputs_invalid:image_url' };
+    if (!isHttpsUrl(inputs.audio_url)) return { ok: false, error: 'inputs_invalid:audio_url' };
+    if (inputs.prompt !== undefined && typeof inputs.prompt !== 'string') return { ok: false, error: 'inputs_invalid:prompt' };
+    const prompt = (inputs.prompt || '').trim();
+    if (prompt.length > CRUN_KLING_AVATAR_PROMPT_MAX) return { ok: false, error: 'inputs_invalid:prompt' };
+    return { ok: true, body: { model: KLING_AVATAR_MODEL, input: {
+        mode: 'std', image_url: inputs.image_url, audio_url: inputs.audio_url, ...(prompt ? { prompt } : {}),
+    } } };
+}
+
 function buildImageRequest(target, spec, inputs) {
     const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
     if (!prompt) return { ok: false, error: 'prompt_required' };
@@ -236,7 +279,7 @@ export async function submitTask(job, cfg) {
             });
         } catch (err) {
             // Nothing is known about whether the task was created: ambiguous (0329).
-            return { ok: false, outcome: 'unknown', error: isKlingO1Swap(target.model) ? 'transport' : `transport: ${err && err.message}` };
+            return { ok: false, outcome: 'unknown', error: redactsRefusal(target.model) ? 'transport' : `transport: ${err && err.message}` };
         }
         let data = null;
         try {
@@ -248,8 +291,8 @@ export async function submitTask(job, cfg) {
         const code = data && typeof data.code === 'number' ? data.code : res.status;
         if (!res.ok || code !== 200) {
             const upstream = data && (data.message || data.msg);
-            const error = isKlingO1Swap(target.model)
-                ? `crun ${res.status}/${Number.isInteger(code) ? code : 0}${klingO1RefusalReason(upstream) ? `: ${klingO1RefusalReason(upstream)}` : ''}`
+            const error = redactsRefusal(target.model)
+                ?`crun ${res.status}/${Number.isInteger(code) ? code : 0}${klingO1RefusalReason(upstream) ? `: ${klingO1RefusalReason(upstream)}` : ''}`
                 : `crun ${res.status}/${code}: ${String(upstream || '').slice(0, 200)}`;
             const outcome = res.status === 408 || res.status >= 500 ? 'unknown' : 'rejected';
             return { ok: false, outcome, error };

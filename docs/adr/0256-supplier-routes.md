@@ -277,3 +277,36 @@ provider to equal the callback's supplier, and read the task from the catalog en
 recorded provider is a route of its offer (any route state, so a route switched off after a hop still lets its in-flight
 jobs finish) and reads the task from that route's endpoint. A job whose provider is no route of its offer is still not
 ours to complete.
+
+## Amendment 2026-11-22: Crun first, fal second, for FLUX.2 Pro and Kling Avatar (0581)
+
+The owner decided Crun is primary and fal secondary, and fal is refusing jobs on an exhausted balance. Five offers were
+compared input by input with Crun's published contracts. Two move; prices do not change and fal stays active at priority 2.
+
+| Offer | Result | Crun cost (206 credits per $1) | Floor |
+|---|---|---|---|
+| `flux-2-pro` (2 credits) | Crun first | 5 credits, $0.0243 | $0.0359 |
+| `kling-avatar-v2` (32 credits) | Crun first | 65 credits at the 10 s audio cap, $0.3155 | $0.5747 |
+| `nano-banana-pro-edit` (9) | stays on fal | not moved | $0.1616 |
+| `seedance-2.0-reference` (85) | stays on fal | not moved | $1.5266 |
+| `kling-3.0-i2v` (32) | stays on fal | not moved | $0.5747 |
+
+Why three stay. Nano Banana Pro Edit accepts a seed, which Crun's model has no field for, and its default output is 2K
+while the paid proof ran at 1K. Seedance Reference is sold with sound on while the paid proof ran with sound off, Crun's
+prompt placeholders are `[Image1]` where ours are `@Image1`, and image-only requests and the 1080p and 4K tiers are
+unproved. Kling 3.0 Pro sells a negative prompt, which Crun's model has no field for, and an end frame the proof did not
+exercise.
+
+Narrower limits on the two that move, each refused before the debit: Flux prompts over 5,000 characters; Avatar prompts
+over 2,500 characters, WebP photos, photos over 10 MB, under 300 px or outside a 0.4 to 2.5 ratio, and audio under 2 s
+or over 5 MB.
+
+Avatar's proof charged 32.5 credits for 5.000 s of audio, although Crun's estimate said 65. Crun's public price is 6.5
+credits a second at 720p, so the route records the 10 s worst case of 65 credits. A 10 s run is not yet proved.
+
+fal is an automatic fallback for Flux only, and only on a Crun 401, 403 or 429. A job with uploaded media never hops, so
+an Avatar job Crun refuses is refunded. Crun's 402 (out of credits) is not in the hop list either and also refunds.
+Crun's refusal text is not kept for Avatar, because its request carries signed links to a person's photo and voice.
+
+The Worker with the two new capability records must be live before 0581 is applied. Not established: Crun fetching our
+signed R2 links, Flux shapes other than 1:1, and which model produced an output, which rests on Crun's model id.
