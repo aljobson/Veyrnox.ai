@@ -6,7 +6,7 @@ import { PHONE_TIP_TARGETS } from '../../../lib/beatNative/coachMarks';
 import { BeatRecordPanel } from '../../../components/beats/BeatRecordPanel';
 import { BeatTakeLanes } from '../../../components/beats/BeatTakeLanes';
 import { useTakeRecording } from '../../../lib/beatNative/useTakeRecording';
-import { addAudioTrack } from '../../../lib/beatNative/takeShared';
+import { addAudioTrack, beatReadOnly } from '../../../lib/beatNative/takeShared';
 import { replacementUnderway, subscribeReplacements } from '../../../lib/beatNative/recordingFinalizers';
 import type { RecordingEdit } from '../../../lib/beatNative/takeShared';
 import type { TakeRecording } from '../../../lib/beatNative/takeRecording';
@@ -27,7 +27,7 @@ import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
 import { createNativeAssetPort } from '../../../lib/beatNative/nativeAssets';
 import { useAuth } from '../../../auth/AuthProvider';
 import {
-    addKitTrack, audibleGain, clearPattern, copyPattern, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, patternHasHits, removeTrack, selectPattern, setMetronome, setSteps, setSwing, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp, setView,
+    addHitToPattern, addKitTrack, audibleGain, clearPattern, copyPattern, cycleVelocity, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, patternHasHits, recordTarget, removeTrack, selectPattern, setMetronome, setSteps, setSwing, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, toggleStep, tryOp, setView,
     type BeatDoc, type Edit, type PadId, type PatternSlot,
 } from '../../../lib/beatNative/doc';
 import { beatStore, getBeat, listBeats, putBeat, subscribeBeats } from '../../../lib/beatNative/store';
@@ -67,6 +67,13 @@ export default function BeatEditor() {
     docRef.current = doc;
     const [held, setHeld] = useState(false);
     const [pad, setPad] = useState<PadId>('kick');
+    const [padRecord, setPadRecord] = useState(false);
+    const [ordinaryPlaying, setOrdinaryPlaying] = useState(false);
+    const ordinaryPlayingRef = useRef(false);
+    const gapAnnouncement = useRef(-Infinity);
+    const hitAnnouncement = useRef(-Infinity);
+    const [editTrackId, setEditTrackId] = useState<string | undefined>(() => doc?.tracks[0]?.id);
+    const resolvedEditTrackId = doc?.tracks.some(track => track.id === editTrackId) ? editTrackId : doc?.tracks[0]?.id;
     const [mixer, setMixer] = useState(false);
     const [patternControls, setPatternControls] = useState(false);
     const patternControlsTrigger = useRef<ComponentRef<typeof Pressable>>(null);
@@ -78,6 +85,10 @@ export default function BeatEditor() {
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [said, setSaid] = useState<string | null>(null);
+    const setOrdinaryRun = useCallback((value: boolean) => {
+        ordinaryPlayingRef.current = value;
+        setOrdinaryPlaying(value);
+    }, []);
     const restorePatternControlsFocus = useCallback(() => {
         if (!patternControlsFocusPending.current) return;
         patternControlsFocusPending.current = false;
@@ -99,13 +110,22 @@ export default function BeatEditor() {
         void (session?.recording ?? recordingRef.current)?.finishAndDisarm().catch(() => undefined).finally(() => { void session?.engine.close(); });
     }, []);
     useEffect(() => {
+        if (!doc) {
+            setEditTrackId(undefined);
+            setPadRecord(false);
+            return;
+        }
+        if (beatReadOnly(doc)) setPadRecord(false);
+        if (editTrackId !== resolvedEditTrackId) setEditTrackId(resolvedEditTrackId);
+    }, [doc, editTrackId, resolvedEditTrackId]);
+    useEffect(() => {
         const stale = audioSession.current;
         if (!stale || stale.generation === generation) return;
         audioSession.current = null; if (audio.current === stale.engine) audio.current = null;
-        startingRef.current = false; setStarting(false); setPlaying(false); setStep(null);
+        startingRef.current = false; setStarting(false); setPlaying(false); setOrdinaryRun(false); setStep(null);
         stale.engine.stop();
         void stale.recording?.finishAndDisarm().catch(() => undefined).finally(() => { void stale.engine.close(); });
-    }, [generation]);
+    }, [generation, setOrdinaryRun]);
 
     // The native module is touched only when the person first asks for sound.
     const engine = useCallback((): BeatAudio | null => {
@@ -143,9 +163,12 @@ export default function BeatEditor() {
     const wasRecording = useRef(false);
     useEffect(() => {
         const active = ['recording', 'finishing'].includes(takes.view.status);
-        if (active || wasRecording.current) setPlaying(active);
+        if (active || wasRecording.current) {
+            setPlaying(active);
+            if (active) setOrdinaryRun(false);
+        }
         wasRecording.current = active;
-    }, [takes.view.status]);
+    }, [takes.view.status, setOrdinaryRun]);
     const replacing = useSyncExternalStore(subscribeReplacements, () => replacementUnderway(String(id)), () => false);
     const locked = takes.controller.locked() || replacing;
     useEffect(() => { if (!replacing) setNotice(message => message === t('beatTakes.replacing') ? null : message); }, [replacing]);
@@ -184,13 +207,43 @@ export default function BeatEditor() {
         startingRef.current = true; setStarting(true);
         try {
             let failed = false;
-            const outcome = await a.play(() => docRef.current as BeatDoc, n => setStep(n), undefined, 0, { onError: error => { failed = true; setPlaying(false); setStep(null); setNotice(playbackNotice(error)); }, onEffectError: () => setNotice(t('beatMix.fx.unavailable')) });
-            if (!failed && outcome === 'started') { manualRun.current = false; setPlaying(true); setSaid(t('beat.playing')); }
-        } catch (error) { setNotice(playbackNotice(error)); }
+            const outcome = await a.play(() => docRef.current as BeatDoc, n => setStep(n), undefined, 0, { onError: error => { failed = true; setPlaying(false); setOrdinaryRun(false); setStep(null); setNotice(playbackNotice(error)); }, onEffectError: () => setNotice(t('beatMix.fx.unavailable')) });
+            if (!failed && outcome === 'started') { manualRun.current = false; setPlaying(true); setOrdinaryRun(true); setSaid(t('beat.playing')); }
+            else setOrdinaryRun(false);
+        } catch (error) { setOrdinaryRun(false); setNotice(playbackNotice(error)); }
         finally { startingRef.current = false; setStarting(false); }
     };
-    const stop = () => { startingRef.current = false; setStarting(false); audio.current?.stop(); setPlaying(false); setStep(null); setSaid(t('beat.stopped')); };
-    const hit = (p: PadId) => { setPad(p); engine()?.hitPad(p, doc.tracks.find(track => !track.kind || track.kind === 'drums')?.kit ?? DRUM_KITS[0].id); };
+    const stop = () => { startingRef.current = false; setStarting(false); audio.current?.stop(); setPlaying(false); setOrdinaryRun(false); setStep(null); setSaid(t('beat.stopped')); };
+    const hit = (p: PadId) => {
+        setPad(p);
+        const current = docRef.current;
+        if (!current) return;
+        const selectedTrack = current.tracks.find(track => track.id === resolvedEditTrackId);
+        const auditionTrack = selectedTrack && (!selectedTrack.kind || selectedTrack.kind === 'drums')
+            ? selectedTrack : current.tracks.find(track => !track.kind || track.kind === 'drums');
+        const a = engine();
+        if (!a) return;
+        const tappedAt = a.hitPad(p, auditionTrack?.kit ?? DRUM_KITS[0].id);
+        if (beatReadOnly(current)) { setPadRecord(false); return; }
+        if (!padRecord || !ordinaryPlayingRef.current) return;
+        const nearest = a.nearestStepAt(tappedAt);
+        if (!nearest) return;
+        const target = recordTarget(current, nearest.step, resolvedEditTrackId);
+        if (!target) {
+            const now = Date.now();
+            if (now - gapAnnouncement.current >= 2000) {
+                gapAnnouncement.current = now;
+                setSaid(t('beat.padRecord.noTarget', { track: selectedTrack?.name ?? '' }));
+            }
+            return;
+        }
+        const next = addHitToPattern(current, target.pattern, p, target.step);
+        if (next === current) return;
+        const now = Date.now();
+        const announce = now - hitAnnouncement.current >= 2000
+            ? t('beat.padRecord.added', { pad: t(`beat.pad.${p}`), step: target.step + 1 }) : undefined;
+        if (apply(d => addHitToPattern(d, target.pattern, p, target.step), announce) && announce) hitAnnouncement.current = now;
+    };
     const mixOf = (trackId: string, next: BeatDoc) => {
         const track = next.tracks.find(x => x.id === trackId);
         if (track) audio.current?.setTrackMix(trackId, { gain: audibleGain(next, track), pan: track.pan });
@@ -203,7 +256,13 @@ export default function BeatEditor() {
     const bpm = doc.tempo.bpm;
     const bump = (by: number) => apply(d => setTempo(d, clampBpm(bpm + by)));
     const historyBusy = beatStore.saveState(doc.id) === 'busy';
-    const patternLocked = locked || historyBusy;
+    const readOnly = beatReadOnly(doc);
+    const patternLocked = locked || historyBusy || readOnly;
+    const editTrack = doc.tracks.find(track => track.id === resolvedEditTrackId);
+    const padSurfaceAvailable = doc.view === 'pattern' || (!!editTrack && (!editTrack.kind || editTrack.kind === 'drums'));
+    const padRecordingState = !padRecord || readOnly ? 'off' : ordinaryPlaying ? 'recording' : 'armed';
+    const playheadTarget = playing && step !== null ? recordTarget(doc, step, resolvedEditTrackId) : null;
+    const patternPlayhead = playheadTarget?.pattern === doc.currentPattern ? playheadTarget.step : null;
     const undoable = !locked && !!history.current && canUndo(history.current) && !historyBusy;
     const redoable = !locked && !!history.current && canRedo(history.current) && !historyBusy;
     const copyCurrentPattern = (target: PatternSlot) => {
@@ -258,12 +317,23 @@ export default function BeatEditor() {
                         <SegmentedControl value={doc.view} accessibilityLabel={t('beat.view.label')}
                             options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
                             onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
-                        {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : <>
-                            <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
-                            <PadGrid selected={pad} onHit={hit} />
+                        {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
+                            editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : null}
+                        {padSurfaceAvailable ? <>
+                            <View style={s.padHeading}>
+                                <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
+                                <Button size="md" variant="secondary"
+                                    label={t(padRecord ? 'beat.padRecord.disable' : 'beat.padRecord.enable')}
+                                    accessibilityState={{ selected: padRecord }} disabled={!padRecord && patternLocked}
+                                    onPress={() => setPadRecord(value => !value)} />
+                            </View>
+                            <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t(`beat.padRecord.status.${padRecordingState}`)}</Text>
+                            <PadGrid selected={pad} onHit={hit} layout={layout} recordingState={padRecordingState} disabled={patternLocked} />
                             <Text variant="bodyStrong" accessibilityRole="header">{t('beat.steps', { pad: t(`beat.pad.${pad}`) })}</Text>
-                            <StepGrid doc={doc} pad={pad} current={playing ? step : null} onToggle={n => apply(d => toggleStep(d, pad, n))} />
-                        </>}
+                            <StepGrid doc={doc} pad={pad} current={patternPlayhead} layout={layout} disabled={patternLocked}
+                                onToggle={n => apply(d => toggleStep(d, pad, n))}
+                                onVelocity={(n, direction) => apply(d => cycleVelocity(d, pad, n, direction))} />
+                        </> : <Text variant="footnote" tone="secondary">{t('beat.padRecord.drumOnly')}</Text>}
                         <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
                     </View>
                     <View testID="beat-editor-inspector" style={[s.inspector, layout === 'regular' && s.inspectorRegular]}>
@@ -323,5 +393,6 @@ const sheets = themedStyles(p => ({
     inspectorRegular: { paddingLeft: ds.space.xl, borderLeftWidth: 1, borderLeftColor: p.borderSubtle },
     tempo: { gap: ds.space.sm, alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.md, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.borderSubtle },
     stepper: { width: '100%', flexDirection: 'row', gap: ds.space.sm },
+    padHeading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: ds.space.sm },
     flex: { flex: 1 },
 }));

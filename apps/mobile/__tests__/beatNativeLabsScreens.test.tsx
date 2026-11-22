@@ -35,7 +35,7 @@ jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => 
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0 }) }));
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 jest.mock('../src/lib/beatNative/soundPreview', () => ({ createSoundPreview: (_port: unknown, onFinish: () => void) => { mockPreviewFinish = onFinish; return { toggle: mockToggle, stop: mockStop }; } }));
-jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => ({ close: async () => {}, play: async () => {}, stop: () => {} }) }));
+jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => ({ close: async () => {}, play: async () => {}, stop: () => {}, hitPad: () => 0, nearestStepAt: () => null }) }));
 jest.mock('../src/components/music/MusicPlayer', () => ({ MusicPlayer: () => null }));
 jest.mock('../src/components/music/MusicShares', () => ({ MusicShares: () => null }));
 jest.mock('../src/components/music/MusicPublication', () => ({ MusicPublication: () => null }));

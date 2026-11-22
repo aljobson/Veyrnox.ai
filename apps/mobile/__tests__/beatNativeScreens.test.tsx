@@ -34,7 +34,12 @@ const mockBeginSessionTask = () => ({ gen: mockGeneration, user: USER, current: 
 let mockGeneration = 0;
 const mockPush = jest.fn();
 let mockParams: { id: string } = { id: 'x' };
-const mockAudio = { play: jest.fn(async (): Promise<'started' | 'cancelled' | 'busy'> => 'started'), stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined) };
+const mockAudio = {
+    play: jest.fn(async (): Promise<'started' | 'cancelled' | 'busy'> => 'started'),
+    stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(() => 4.2),
+    nearestStepAt: jest.fn(() => ({ step: 3, time: 4.1 })),
+    setTrackMix: jest.fn(), close: jest.fn(async () => undefined),
+};
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken,
     generation: mockGeneration, beginSessionTask: mockBeginSessionTask }) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
@@ -110,6 +115,69 @@ describe('beat editor', () => {
         expect(byLabel(t('beat.step.on', { n: 5, total: 16, pad: t('beat.pad.snare') }))).toBeDefined();
         expect(testId('pad-selected-kick')).toHaveLength(0);
         expect(testId('pad-selected-snare')).toHaveLength(1);
+    });
+    test('pad recording off or armed while stopped auditions without writing', async () => {
+        const doc = await open();
+        const clap = t('beat.pad.hit', { pad: t('beat.pad.clap') });
+        await press(clap);
+        expect(mockAudio.hitPad).toHaveBeenLastCalledWith('clap', '808');
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+        expect(mockAudio.nearestStepAt).not.toHaveBeenCalled();
+
+        await press(t('beat.padRecord.enable'));
+        expect(text(t('beat.padRecord.status.armed')).length).toBeGreaterThan(0);
+        await press(clap);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+        expect(mockAudio.nearestStepAt).not.toHaveBeenCalled();
+    });
+    test('armed ordinary playback records one undoable nearest-step hit and Stop preserves arming', async () => {
+        const doc = await open();
+        const clap = t('beat.pad.hit', { pad: t('beat.pad.clap') });
+        await press(t('beat.padRecord.enable'));
+        await press(t('beat.play'));
+        expect(text(t('beat.padRecord.status.recording')).length).toBeGreaterThan(0);
+        await press(clap);
+        expect(mockAudio.nearestStepAt).toHaveBeenLastCalledWith(4.2);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([[3, 100]]);
+
+        // Recording the same pad into the same destination is an identity edit, not another history entry.
+        await press(clap);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([[3, 100]]);
+        await press(t('beat.undo'));
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+
+        await press(t('beat.stop'));
+        expect(text(t('beat.padRecord.status.armed')).length).toBeGreaterThan(0);
+        expect(byLabel(t('beat.padRecord.disable')).props.accessibilityState.selected).toBe(true);
+    });
+    test('Song pad recording uses the selected drum region pattern and offset', async () => {
+        const doc = structuredClone(addKitTrack(newBeat('Song record'), 'lofi'));
+        const selectedTrack = doc.tracks[1];
+        const region = selectedTrack.regions[0];
+        region.pattern = 'B'; region.offset = 480;
+        putBeat(doc); mockParams = { id: doc.id };
+        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 4, time: 4.1 });
+        await act(async () => root.render(<BeatEditor />));
+        await press(selectedTrack.name);
+        await press(t('beat.padRecord.enable'));
+        await press(t('beat.play'));
+        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
+        expect(getBeat(doc.id)!.patterns.B.rows.clap).toEqual([[6, 100]]);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+    });
+    test('Song pad recording refuses a gap without mutating the current pattern', async () => {
+        const doc = structuredClone(newBeat('Song gap'));
+        doc.tracks[0].regions[0].length = 960;
+        putBeat(doc); mockParams = { id: doc.id };
+        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 8, time: 4.1 });
+        await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.padRecord.enable'));
+        await press(t('beat.play'));
+        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+        expect(RN.AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
+            t('beat.padRecord.noTarget', { track: doc.tracks[0].name }),
+        );
     });
     test('export mount releases playback before the sheet may render, and Play recreates the engine', async () => {
         await open(); await press(t('beat.play')); await press(t('beatExport.title'));

@@ -3870,6 +3870,12 @@
     "ratio": 2.14
   },
   {
+    "id": "beat.padRecord.status.armed",
+    "english": "Armed — press Play to record pads",
+    "translation": "Готово — нажмите «Воспроизвести», чтобы записывать пэды",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.pad.snare",
     "english": "Snare",
     "translation": "Малый барабан",

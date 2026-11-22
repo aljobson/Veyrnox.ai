@@ -10,16 +10,19 @@ import { BeatRegionView } from './BeatRegionView';
 import { BeatRegionInspector } from './BeatRegionInspector';
 import { BeatRuler, BeatRulerControls, RULER_HEIGHT } from './BeatRuler';
 
-type Props = { manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void; playing: boolean; step: number | null; announce: (message: string) => void; onHold: (held: boolean) => void };
+type Props = {
+    manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void;
+    editTrackId: string | undefined; onEditTrackChange: (trackId: string) => void;
+    playing: boolean; step: number | null; announce: (message: string) => void; onHold: (held: boolean) => void;
+};
 const MIN_LANE_HEIGHT = 96;
-export function BeatArrangement({ doc, apply, selectCurrentPattern, playing, step, announce, onHold, manualRun }: Props) {
+export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, playing, step, announce, onHold, manualRun }: Props) {
     const s = useThemedStyles(sheets);
     const [zoom, setZoom] = useState(96);
     const [snap, setSnap] = useState('240');
     const [copy, setCopy] = useState(false);
     const [locator, setLocator] = useState(0);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [trackId, setTrackId] = useState(doc.tracks[0]?.id);
     const [preview, setPreview] = useState<DragValue | null>(null);
     const [held, setHeld] = useState(false);
     const [heights, setHeights] = useState<Record<string, number>>({});
@@ -29,7 +32,7 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, playing, ste
     const end = songEnd(doc), bars = arrangementBars(doc, locator), width = bars * zoom;
     const selectedTrack = doc.tracks.find(track => track.regions.some(region => region.id === selectedId));
     const selectedRegion = selectedTrack?.regions.find(region => region.id === selectedId);
-    const editTrack = doc.tracks.find(track => track.id === trackId) ?? doc.tracks[0];
+    const editTrack = doc.tracks.find(track => track.id === editTrackId);
     const laneHeights = doc.tracks.map(track => heights[track.id] ?? MIN_LANE_HEIGHT);
     const head = tickToX(playing ? (step ?? 0) * 240 : locator, zoom);
     useEffect(() => { if (!selectedRegion) setSelectedId(null); }, [selectedRegion]);
@@ -42,7 +45,7 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, playing, ste
         }
     }, [head, playing, held, manualRun]);
     const choose = (region: BeatRegionDoc, track: BeatTrackDoc) => {
-        setSelectedId(region.id); setTrackId(track.id);
+        setSelectedId(region.id); onEditTrackChange(track.id);
         if (region.pattern && region.pattern !== doc.currentPattern) selectCurrentPattern(region.pattern);
         announce(regionLabel(doc, track, region));
     };
@@ -58,14 +61,17 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, playing, ste
             <Button size="md" variant="secondary" label={t('beat.region.copy')} accessibilityState={{ selected: copy }} onPress={() => setCopy(value => !value)} />
         </View>
         <Button variant="secondary" label={t('beat.region.add')} disabled={!editTrack || (!!editTrack.kind && editTrack.kind !== 'drums')}
-            onPress={() => apply(d => addRegion(d, editTrack.id, snapTick(locator, Number(snap)), d.currentPattern), t('beat.region.changed'))} />
+            onPress={() => {
+                if (!editTrack) return;
+                apply(d => addRegion(d, editTrack.id, snapTick(locator, Number(snap)), d.currentPattern), t('beat.region.changed'));
+            }} />
         {editTrack?.kind && editTrack.kind !== 'drums' && <Text variant="footnote">{t('beat.region.drumOnly')}</Text>}
         <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} />
         <View style={s.timeline}>
             <View style={s.headers}>
                 <View style={{ height: RULER_HEIGHT }} />
                 {doc.tracks.map((track, index) => <Pressable key={track.id} accessibilityRole="button" accessibilityLabel={track.name}
-                    accessibilityState={{ selected: editTrack?.id === track.id }} onPress={() => setTrackId(track.id)}
+                    accessibilityState={{ selected: editTrack?.id === track.id }} onPress={() => onEditTrackChange(track.id)}
                     onLayout={event => { const height = Math.max(MIN_LANE_HEIGHT, event.nativeEvent.layout.height); setHeights(values => values[track.id] === height ? values : { ...values, [track.id]: height }); }}
                     style={[s.header, { minHeight: laneHeights[index] }, editTrack?.id === track.id && s.selected]}><Text variant="caption">{track.name}</Text></Pressable>)}
             </View>
