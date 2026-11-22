@@ -1,5 +1,7 @@
 'use client';
 import { SwapCreateEntry } from '../../_components/SwapCreateEntry.js';
+import { fetchSwapAvailability } from '../../_lib/templateSwapClient.mjs';
+import { swapTemplatePromptKept, swapTemplateHref } from '../../_lib/createSwapTemplate.js';
 import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../../_lib/imageTemplateModels.js';
 import { templatePhotoHints, templatePhotosUnavailable, templateContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId, templatePhotoError } from '../../../../lib/templateClientContract';
 import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource, sourcesForModel } from '../../../../lib/generationSourceSlots.mjs';
@@ -373,7 +375,8 @@ function CreateStudio() {
   const photosUnavailable = sourceContract?.class === 'bound' && modelId === sourceContract.modelId && (!catalogLive || templatePhotosUnavailable(sourceContract, model?.media));
   const imagePhotoRequired = imageTemplateNeedsPhoto(activeTemplate || keptTemplate);
   const imagePhotoUnavailable = imagePhotoRequired && (!catalogLive || !imageTemplateModelAvailable(activeTemplate || keptTemplate, model));
-  const templateBlocked = imagePhotoUnavailable || photosUnavailable || sourceReferenceBlocked || (!swapId && promptNeedsVideo);
+  const swapPromptKept = !swapId && swapTemplatePromptKept(activeTemplate || keptTemplate, prompt);
+  const templateBlocked = imagePhotoUnavailable || photosUnavailable || sourceReferenceBlocked || swapPromptKept || (!swapId && promptNeedsVideo);
   const sourceBlocked = !!activeTemplate && templateSourceUnsupported(activeTemplate) && prompt === activeTemplate.prompt;
 
   // The picked model stays listed even when the tier filter would hide it.
@@ -503,6 +506,8 @@ function CreateStudio() {
   // has a slot for them. The template is a reference only; nothing is charged.
   async function applyTemplate(card) {
     setTemplatesOpen(false);
+    // A live swap template runs on the swap screen, which sends the template's own clip.
+    if (await fetchSwapAvailability(card.id)) { router.push(swapTemplateHref(card.id)); return; }
     const preset = await fetchTemplate(card.id); // the picker lists cards; the prompt comes with the whole template
     if (!preset) return;
     attachSeq.current += 1; // a paperclip conversion still running must not undo this choice
@@ -1074,7 +1079,7 @@ function CreateStudio() {
             </div>
           )}
           {imagePhotoRequired && !imagePhotoUnavailable && templateImageCount !== 1 && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
-          {(sourceBlocked || templateBlocked) && <p role="note" data-source-unsupported className="mt-3 rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-body">{t(imagePhotoUnavailable ? 'presets.fidelity.blocked' : photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
+          {(sourceBlocked || templateBlocked) && <p role="note" data-source-unsupported className="mt-3 rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-body">{swapPromptKept ? <>{t('presets.swap.createBlocked')} <Link className="font-bold text-vx-accent underline" href={swapTemplateHref((activeTemplate || keptTemplate).id)}>{t('presets.swap.createBlockedOpen')}</Link></> : t(imagePhotoUnavailable ? 'presets.fidelity.blocked' : photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
           <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
             data-assistant-target="create.generate"
