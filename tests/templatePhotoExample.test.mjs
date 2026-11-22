@@ -22,6 +22,9 @@ test('the swap status follows Generate, so progress is on screen after the tap',
   assert.match(composer, /scrollIntoView/);
   assert.ok(composer.indexOf('data-swap-feedback') > composer.indexOf("t('presets.swap.generate')"));
   assert.match(status, /presets\.swap\.refundedReason/);
+  assert.match(status, /filter\(a => a\.body\)\.reverse\(\)/, 'the newest attempt sits directly under Generate');
+  assert.match(read('apps/mobile/src/components/templates/SwapAttemptStatus.tsx'), /filter\(a => a\.body\)\.reverse\(\)/);
+  assert.match(read('apps/mobile/src/app/(app)/create/[modelId].tsx'), /add\('photoGuide', photoGuide\)/);
   const phone = read('apps/mobile/src/app/(app)/templates/[id].tsx');
   assert.ok(phone.indexOf('<SwapComposer offer=') < phone.lastIndexOf('<SwapAttemptStatus templateId={id} revealAttempt'));
 });

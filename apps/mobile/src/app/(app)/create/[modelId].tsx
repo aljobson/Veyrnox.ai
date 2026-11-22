@@ -222,10 +222,10 @@ export default function CreateWithModel() {
         if (duration !== null) add('duration', String(duration));
         add('aspect', opts.aspect ?? undefined);
         add('recipe', recipe); add('followup', followup ?? handedSources?.followup); if (kind !== 'prompt-unavailable') add('kind', kind); add('sourceJob', sourceJob); add('startOddling', startOddling);
-        add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext);
+        add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext); add('photoGuide', photoGuide);
         add('tpl', tpl); add('tid', tid); add('tmodel', tmodel); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter); add('tnegative', opts.negative);
         return normalizeTemplateCarry(out, modelId);
-    }, [modelId, prompt, duration, opts.aspect, opts.negative, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
+    }, [modelId, prompt, duration, opts.aspect, opts.negative, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext, photoGuide]);
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
         if (!startId || !takesStartImage) return;
@@ -388,6 +388,7 @@ export default function CreateWithModel() {
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}
+                {photoGuide === 'scene' && !boundCount && !photosUnavailable && kindOf(model.modality) === 'image' && <TemplatePhotoExample kind="scene" />}
                 {slots.length && !photosUnavailable ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
@@ -395,7 +396,6 @@ export default function CreateWithModel() {
                             <SectionLabel style={styles.sectionMeta}>{t('create.workspace.referencesMeta')}</SectionLabel>
                         </View>
                         <UploadLimitNote model={model} />
-                        {photoGuide === 'scene' && !boundCount && kindOf(model.modality) === 'image' && <TemplatePhotoExample kind="scene" />}
                         <View pointerEvents={attaching ? 'none' : 'auto'} style={{ gap: ds.space.md }}>
                         {boundCount ? <TemplatePhotoSlots key={`${template?.id}:${modelId}`} count={boundCount} hints={phonePhotoHints(contract)} model={model} api={api} references={references} onReferences={setReferences} onBusy={busy => setSending(previous => ({ ...previous, image: busy }))} /> : slots.map((s) => (
                             <SourcePicker

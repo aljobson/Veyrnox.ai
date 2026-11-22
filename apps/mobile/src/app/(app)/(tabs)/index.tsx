@@ -205,7 +205,7 @@ export default function Explore() {
         // Image and audio templates have no template page; like Create > Templates they open Create with their prompt.
         if (!isDirectTemplate(p.id)) { router.push(templatePageHref(p)); return; }
         const href = promptHref(p.modelId, p.prompt);
-        router.push(p.modality === 'image-to-image' ? { ...href, params: { ...href.params, photoGuide: 'scene' } } : href);
+        router.push(p.modality.endsWith('-to-image') ? { ...href, params: { ...href.params, photoGuide: 'scene' } } : href);
     }
 
     const search = query.trim();

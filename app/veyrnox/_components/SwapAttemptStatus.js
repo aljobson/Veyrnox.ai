@@ -31,5 +31,5 @@ function Attempt({ attempt: a }) {
 // Deliberately outside the availability branch: a gate refusal cannot hide money history.
 export function SwapAttemptStatus({ templateId }) {
   const { attempts } = useSwapDraft(templateId);
-  return <>{attempts.filter(a => a.body).map(a => <Attempt key={`${a.accountId}:${a.key}`} attempt={a} />)}</>;
+  return <>{attempts.filter(a => a.body).reverse().map(a => <Attempt key={`${a.accountId}:${a.key}`} attempt={a} />)}</>;
 }

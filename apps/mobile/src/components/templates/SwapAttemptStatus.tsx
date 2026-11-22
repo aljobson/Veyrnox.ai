@@ -38,5 +38,5 @@ function Status({ attempt: a, revealAttempt, onReveal }: { attempt: Attempt } & 
 // Always mounted, independent of the current catalog answer and runtime packaging flag.
 export function SwapAttemptStatus({ templateId, revealAttempt, onReveal }: { templateId: string } & Reveal) {
     const { attempts } = useSwapRuntime(templateId);
-    return <>{attempts.filter(a => a.body).map(a => <Status key={`${a.accountId}:${a.key}`} attempt={a} revealAttempt={revealAttempt} onReveal={onReveal} />)}</>;
+    return <>{attempts.filter(a => a.body).reverse().map(a => <Status key={`${a.accountId}:${a.key}`} attempt={a} revealAttempt={revealAttempt} onReveal={onReveal} />)}</>;
 }

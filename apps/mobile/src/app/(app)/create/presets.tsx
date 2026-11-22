@@ -95,7 +95,7 @@ export default function Templates() {
     const imagesShown = useMemo(() => imageTemplatesIn(imagesListed, imageCategory, query), [imagesListed, imageCategory, query]);
     const audioCredits = useMemo(() => new Map((catalog ?? []).map(m => [m.id, priceLines(m)[0]?.credits])), [catalog]);
     const openAudio = (a: AudioTemplate) => router.push(promptHref(a.modelId, a.prompt));
-    const openImage = (i: ImageTemplate) => { const href = promptHref(i.modelId, i.prompt); router.push({ ...href, params: { ...href.params, ...(i.photoRequired ? { photoGuide: 'scene' } : {}) } }); };
+    const openImage = (i: ImageTemplate) => { const href = promptHref(i.modelId, i.prompt); router.push({ ...href, params: { ...href.params, photoGuide: 'scene' } }); };
     const retry = <View><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></View>;
     const empty = <Text tone="secondary">{t(query ? 'presets.nomatchingeffects' : 'presets.notemplatesavailablerightnow')}</Text>;
     const open = (p: Preset) => { setPlaying(null); router.push(templatePageHref(p)); };
