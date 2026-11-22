@@ -39,7 +39,7 @@ import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { AttachMore, UploadLimitNote } from '../../../components/create/AttachMore';
 import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
-import { SourcePicker } from '../../../components/SourcePicker';
+import { SourcePicker } from '../../../components/SourcePicker'; import { TemplatePhotoExample } from '../../../components/templates/TemplatePhotoExample';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
@@ -395,6 +395,7 @@ export default function CreateWithModel() {
                             <SectionLabel style={styles.sectionMeta}>{t('create.workspace.referencesMeta')}</SectionLabel>
                         </View>
                         <UploadLimitNote model={model} />
+                        {template && !boundCount && kindOf(model.modality) === 'image' && <TemplatePhotoExample kind="scene" />}
                         <View pointerEvents={attaching ? 'none' : 'auto'} style={{ gap: ds.space.md }}>
                         {boundCount ? <TemplatePhotoSlots key={`${template?.id}:${modelId}`} count={boundCount} hints={phonePhotoHints(contract)} model={model} api={api} references={references} onReferences={setReferences} onBusy={busy => setSending(previous => ({ ...previous, image: busy }))} /> : slots.map((s) => (
                             <SourcePicker

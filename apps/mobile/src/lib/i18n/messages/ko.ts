@@ -414,6 +414,8 @@ const ko = {
     'presets.photoExample.face': '한 사람, 가까이, 카메라 정면, 밝은 조명, 단색 배경.',
     'presets.photoExample.fullBody': '한 사람, 머리부터 발끝까지, 카메라 정면, 밝은 조명, 단색 배경.',
     'presets.photoExample.limits': 'JPG, PNG 또는 WebP. 최대 {size}MB. 각 변 {side}픽셀 이상.',
+    'presets.photoExample.scene': '선명하고 밝은 사진을 업로드하세요. 결과에 담고 싶은 것은 모두 프레임 안에 넣으세요.',
+    'presets.photoExample.swapLimits': 'JPG, PNG 또는 WebP. 최대 {size}MB. 각 변 {minSide}~{maxSide}픽셀, 최대 {megapixels}메가픽셀. 비율 2:5~5:2.',
     'presets.swap.refundedReason': '동영상을 만들지 못해 크레딧을 돌려드렸습니다. 잠시 후 다시 시도해 주세요.',
     'presets.swap.replace': '다른 사진 선택',
     'presets.swap.choose': '사진 선택',

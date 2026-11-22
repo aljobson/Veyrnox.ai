@@ -10,7 +10,7 @@ import { phonePhotoHints } from '../../../lib/templatePhotoHintText';
 import { templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -37,6 +37,7 @@ export default function TemplatePage() {
     const styles = useThemedStyles(sheets);
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
+    const scroll = useRef<ScrollView>(null);
     const [preset, setPreset] = useState<Preset | null>(null);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
@@ -97,13 +98,13 @@ export default function TemplatePage() {
         fetchCatalog().then(models => { if (live) setCatalog(models); }).catch(() => { if (live) setCatalog(undefined); });
         return () => { live = false; };
     }, []);
-    return <ScrollView contentContainerStyle={styles.screen}>
+    return <ScrollView {...(swapOffer ? { ref: scroll } : {})} contentContainerStyle={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
         {TEMPLATE_SWAP_RUNTIME && !swapOffer && <SwapAttemptStatus templateId={id} />}
         {swapOffer ? <>
             {preset && <Text variant="title1" accessibilityRole="header">{preset.title}</Text>}
             <SwapTemplatePreview id={id} title={preset?.title} />
-            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} />
+            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} onSubmitted={() => scroll.current?.scrollToEnd({ animated: true })} />
             {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
         </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>

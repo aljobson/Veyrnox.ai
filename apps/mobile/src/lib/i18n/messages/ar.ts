@@ -414,6 +414,8 @@ const ar = {
     'presets.photoExample.face': 'شخص واحد، لقطة قريبة، مواجهة للكاميرا، إضاءة جيدة، خلفية بسيطة.',
     'presets.photoExample.fullBody': 'شخص واحد، من الرأس إلى القدمين، مواجهة للكاميرا، إضاءة جيدة، خلفية بسيطة.',
     'presets.photoExample.limits': '‏JPG أو PNG أو WebP. بحد أقصى {size} ميجابايت. {side} بكسل على الأقل لكل جانب.',
+    'presets.photoExample.scene': 'ارفع صورة واضحة وجيدة الإضاءة. أبقِ كل ما تريده في النتيجة داخل الإطار.',
+    'presets.photoExample.swapLimits': '‏JPG أو PNG أو WebP. بحد أقصى {size} ميجابايت. من {minSide} إلى {maxSide} بكسل لكل جانب، وبحد أقصى {megapixels} ميجابكسل. النسبة بين 2:5 و5:2.',
     'presets.swap.refundedReason': 'تعذر إنشاء الفيديو، لذلك أعدنا رصيدك. حاول مرة أخرى بعد قليل.',
     'presets.swap.replace': 'اختيار صورة أخرى',
     'presets.swap.choose': 'اختيار صورة',

@@ -22,6 +22,8 @@ export default {
   "presets.photoExample.face": "One person, close up, facing the camera, good light, plain background.",
   "presets.photoExample.fullBody": "One person, head to feet, facing the camera, good light, plain background.",
   "presets.photoExample.limits": "JPG, PNG or WebP. Up to {size} MB. At least {side} pixels on each side.",
+  "presets.photoExample.scene": "Upload a clear, well-lit photo. Keep everything you want in the result inside the frame.",
+  "presets.photoExample.swapLimits": "JPG, PNG or WebP. Up to {size} MB. {minSide} to {maxSide} pixels per side, up to {megapixels} megapixels. Not narrower or wider than 2:5 or 5:2.",
   "presets.swap.refundedReason": "The video could not be made, so your credits were returned. Try again in a moment.",
   "presets.swap.replace": "Choose another photo",
   "presets.swap.choose": "Choose photo",

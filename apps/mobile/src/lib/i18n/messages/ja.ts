@@ -414,6 +414,8 @@ const ja = {
     'presets.photoExample.face': '1人、アップ、カメラ正面、明るい光、無地の背景。',
     'presets.photoExample.fullBody': '1人、頭から足まで、カメラ正面、明るい光、無地の背景。',
     'presets.photoExample.limits': 'JPG、PNG、WebP。最大{size} MB。各辺{side}ピクセル以上。',
+    'presets.photoExample.scene': '鮮明で明るい写真をアップロードしてください。結果に残したいものはすべてフレーム内に入れてください。',
+    'presets.photoExample.swapLimits': 'JPG、PNG、WebP。最大{size} MB。各辺{minSide}〜{maxSide}ピクセル、最大{megapixels}メガピクセル。縦横比は2:5〜5:2。',
     'presets.swap.refundedReason': '動画を作成できなかったため、クレジットを返却しました。少し待ってからもう一度お試しください。',
     'presets.swap.replace': '別の写真を選ぶ',
     'presets.swap.choose': '写真を選ぶ',

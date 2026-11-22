@@ -414,6 +414,8 @@ const de = {
     'presets.photoExample.face': 'Eine Person, nah, frontal zur Kamera, gutes Licht, schlichter Hintergrund.',
     'presets.photoExample.fullBody': 'Eine Person, von Kopf bis Fuß, frontal zur Kamera, gutes Licht, schlichter Hintergrund.',
     'presets.photoExample.limits': 'JPG, PNG oder WebP. Bis zu {size} MB. Mindestens {side} Pixel pro Seite.',
+    'presets.photoExample.scene': 'Lade ein klares, gut beleuchtetes Foto hoch. Alles, was im Ergebnis erscheinen soll, muss im Bild sein.',
+    'presets.photoExample.swapLimits': 'JPG, PNG oder WebP. Bis zu {size} MB. {minSide} bis {maxSide} Pixel pro Seite, bis zu {megapixels} Megapixel. Seitenverhältnis zwischen 2:5 und 5:2.',
     'presets.swap.refundedReason': 'Das Video konnte nicht erstellt werden, deine Credits wurden zurückgegeben. Versuche es gleich noch einmal.',
     'presets.swap.replace': 'Anderes Foto wählen',
     'presets.swap.choose': 'Foto wählen',

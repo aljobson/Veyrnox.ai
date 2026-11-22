@@ -4,21 +4,32 @@ import { existsSync, readFileSync } from 'node:fs';
 import { messagesFor } from '../lib/i18n/catalogs.mjs';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const KEYS = ['presets.photoExample.title', 'presets.photoExample.face', 'presets.photoExample.fullBody', 'presets.photoExample.limits', 'presets.swap.refundedReason'];
+const KEYS = ['presets.photoExample.title', 'presets.photoExample.face', 'presets.photoExample.fullBody', 'presets.photoExample.limits', 'presets.photoExample.swapLimits', 'presets.photoExample.scene', 'presets.swap.refundedReason'];
 
 test('every photo upload shows the required example on web and mobile', () => {
   for (const path of ['public/examples/photo-face.jpg', 'public/examples/photo-full-body.jpg', 'apps/mobile/assets/examples/photo-face.jpg', 'apps/mobile/assets/examples/photo-full-body.jpg']) assert.ok(existsSync(new URL(`../${path}`, import.meta.url)), path);
-  for (const path of ['app/veyrnox/_components/SwapComposer.js', 'app/veyrnox/_components/TemplatePhotoSlots.js', 'app/veyrnox/_components/UseTemplate.js', 'apps/mobile/src/components/templates/SwapComposer.tsx', 'apps/mobile/src/components/TemplatePhotoSlots.tsx']) assert.match(read(path), /<TemplatePhotoExample/, path);
+  for (const path of ['app/veyrnox/_components/SwapComposer.js', 'app/veyrnox/_components/TemplatePhotoSlots.js', 'app/veyrnox/_components/UseTemplate.js', 'apps/mobile/src/components/templates/SwapComposer.tsx', 'apps/mobile/src/components/TemplatePhotoSlots.tsx', 'apps/mobile/src/app/(app)/create/[modelId].tsx']) assert.match(read(path), /<TemplatePhotoExample/, path);
 });
 
 test('the swap status follows Generate, so progress is on screen after the tap', () => {
   const recipe = read('app/veyrnox/_components/TemplateRecipe.js');
   assert.ok(recipe.indexOf('<UseTemplate preset={preset} templateSwap={resolvedSwap.offer} /><SwapAttemptStatus') > 0);
   const status = read('app/veyrnox/_components/SwapAttemptStatus.js');
-  assert.match(status, /scrollIntoView/);
+  assert.doesNotMatch(status, /scrollIntoView/, 'a restored or background attempt must never move the page');
+  const composer = read('app/veyrnox/_components/SwapComposer.js');
+  assert.match(composer, /async function generate\(\)[\s\S]*scrollIntoView/);
+  assert.ok(composer.indexOf('data-swap-feedback') > composer.indexOf("t('presets.swap.generate')"));
   assert.match(status, /presets\.swap\.refundedReason/);
   const phone = read('apps/mobile/src/app/(app)/templates/[id].tsx');
   assert.ok(phone.indexOf('<SwapComposer offer=') < phone.lastIndexOf('<SwapAttemptStatus templateId={id} />'));
+});
+
+test('stated limits sit inside what each validator accepts', async () => {
+  const { TEMPLATE_PHOTO_LIMITS: limits } = await import('../lib/templatePhotoGuidance.mjs');
+  assert.deepEqual({ ...limits.upload.values }, { size: 20, side: 256 });
+  assert.deepEqual({ ...limits.swap.values }, { size: 20, minSide: 300, maxSide: '8,000', megapixels: 24 });
+  assert.match(read('lib/templateSwapCutout.mjs'), /Math\.min\(size\.width, size\.height\) < 300/);
+  assert.match(read('apps/mobile/src/lib/templateSwap/photoPlan.ts'), /width \* height > 24_000_000/);
 });
 
 test('example and failure copy exists in every site language', () => {

@@ -414,6 +414,8 @@ const hi = {
     'presets.photoExample.face': 'एक व्यक्ति, पास से, कैमरे की ओर चेहरा, अच्छी रोशनी, सादा बैकग्राउंड।',
     'presets.photoExample.fullBody': 'एक व्यक्ति, सिर से पैर तक, कैमरे की ओर चेहरा, अच्छी रोशनी, सादा बैकग्राउंड।',
     'presets.photoExample.limits': 'JPG, PNG या WebP. अधिकतम {size} MB. हर तरफ़ कम से कम {side} पिक्सेल.',
+    'presets.photoExample.scene': 'एक साफ़ और अच्छी रोशनी वाली फ़ोटो अपलोड करें। नतीजे में जो चाहिए, उसे फ़्रेम के अंदर रखें।',
+    'presets.photoExample.swapLimits': 'JPG, PNG या WebP. अधिकतम {size} MB. हर तरफ़ {minSide} से {maxSide} पिक्सेल, अधिकतम {megapixels} मेगापिक्सेल. अनुपात 2:5 से 5:2 के बीच.',
     'presets.swap.refundedReason': 'वीडियो नहीं बन सका, इसलिए आपके क्रेडिट वापस कर दिए गए। थोड़ी देर में फिर कोशिश करें।',
     'presets.swap.replace': 'दूसरी फ़ोटो चुनें',
     'presets.swap.choose': 'फ़ोटो चुनें',

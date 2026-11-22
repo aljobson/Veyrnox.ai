@@ -414,6 +414,8 @@ const ru = {
     'presets.photoExample.face': 'Один человек, крупным планом, лицом к камере, хороший свет, простой фон.',
     'presets.photoExample.fullBody': 'Один человек, с головы до ног, лицом к камере, хороший свет, простой фон.',
     'presets.photoExample.limits': 'JPG, PNG или WebP. До {size} МБ. Не менее {side} пикселей по каждой стороне.',
+    'presets.photoExample.scene': 'Загрузите чёткое, хорошо освещённое фото. Всё, что должно быть в результате, держите в кадре.',
+    'presets.photoExample.swapLimits': 'JPG, PNG или WebP. До {size} МБ. От {minSide} до {maxSide} пикселей по стороне, до {megapixels} мегапикселей. Пропорции от 2:5 до 5:2.',
     'presets.swap.refundedReason': 'Не удалось создать видео, поэтому кредиты возвращены. Повторите попытку чуть позже.',
     'presets.swap.replace': 'Выбрать другое фото',
     'presets.swap.choose': 'Выбрать фото',

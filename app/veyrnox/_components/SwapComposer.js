@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider.jsx';
 import { useSwapDraft } from '../_lib/useSwapDraft.js';
 import { swapActions } from '../_lib/templateSwapRuntime.js';
@@ -21,8 +21,14 @@ export function SwapComposer({ offer }) {
   const people = offer.people === 2 ? 2 : 1;
   const fullBody = swapFullBody(offer), captions = ['presets.swap.face', 'presets.swap.crop', 'presets.swap.fullBody'];
   const ready = swapImageCounts(offer).includes(a?.files?.length) && ['ready', 'not_charged', 'refunded', 'refund_pending', 'upload_error'].includes(a.state);
-  const error = ['photo_error', 'upload_error'].includes(a?.state) ? t(swapErrorKey(a.errorCode)) : '';
+  const error = a?.state === 'photo_error' ? t(swapErrorKey(a.errorCode)) : '';
   const canReplace = !busy && !attempts.some(item => unsettled(item));
+  const feedback = useRef(null), sending = ['uploading', 'submitting'].includes(a?.state), uploadError = a?.state === 'upload_error';
+  // Only this tap moves the page: restored attempts and background updates never scroll.
+  async function generate() {
+    try { await swapActions.submit(offer.id, offer); }
+    finally { requestAnimationFrame(() => (feedback.current || [...document.querySelectorAll('[data-swap-attempt]')].at(-1))?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })); }
+  }
   return <section aria-label={t('presets.swap.title')} className="mt-8 space-y-4 rounded-2xl border border-vx-border bg-vx-panel p-6 text-vx-fg" data-swap-composer>
     <h2 className="text-xl font-bold">{t('presets.swap.title')}</h2>
     <p>{people === 2 ? t('presets.swap.roles', { first: offer.roles[0], second: offer.roles[1] }) : t('presets.swap.role', { role: offer.role })}</p>
@@ -36,7 +42,7 @@ export function SwapComposer({ offer }) {
       return <fieldset key={person} className="space-y-4 rounded-2xl border border-vx-border p-4">
         <legend className="px-2 font-bold">{label}</legend>
         <p id={`${field}-help${person}`} className="text-sm text-vx-fg-muted">{t(people === 2 ? 'presets.swap.twoGuidance' : fullBody ? 'presets.swap.fullBodyGuidance' : 'presets.swap.guidance')}</p>
-        <TemplatePhotoExample kind={fullBody ? 'fullBody' : 'face'} />
+        <TemplatePhotoExample kind={fullBody ? 'fullBody' : 'face'} limits="swap" />
         <label className={`${swapControl} relative focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-vx-accent`}>
           {t(mine?.length ? 'presets.swap.replace' : 'presets.swap.choose')}
           <input type="file" accept="image/jpeg,image/png,image/webp" aria-label={label} aria-describedby={`${field}-help${person} ${field}-error${person}`} disabled={!accountId || !canReplace || locked}
@@ -50,7 +56,7 @@ export function SwapComposer({ offer }) {
           <figcaption className="mt-2 text-sm">{t(mine.length === 3 ? captions[i] : i ? 'presets.swap.crop' : 'presets.swap.frontal')}</figcaption>
         </figure>)}</div>}
         {person === people - 1 && <>
-          {busy && <p role="status">{t(a.state === 'processing' ? 'presets.swap.processing' : 'presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</p>}
+          {a?.state === 'processing' && <p role="status">{t('presets.swap.processing')}{slow ? ` ${t('presets.swap.slow')}` : ''}</p>}
           {a && !a.body && <button className={swapControl} onClick={() => swapActions.cancel(a.key)}>{t('presets.swap.cancel')}</button>}
           {a?.state === 'photo_error' && a.photo && <button className={swapControl} onClick={() => void swapActions.choose(offer.id, a.photo, a.photoPerson ?? 0, { fullBody })}>{t('presets.swap.retry')}</button>}
         </>}
@@ -61,6 +67,11 @@ export function SwapComposer({ offer }) {
     {!offer.name && <p role="status">{t('presets.swap.loading')}</p>}
     <p className="text-vx-money">{t('presets.swap.price', { credits: offer.credits })}</p>
     <button className={`${swapControl} min-h-13 border-vx-accent bg-vx-accent text-vx-accent-ink`} disabled={!accountId || !offer.name || !ready || busy || !online}
-      onClick={() => void swapActions.submit(offer.id, offer)}>{t('presets.swap.generate')}</button>
+      onClick={() => {
+        if (sending) return;
+        void generate();
+      }}>{t('presets.swap.generate')}</button>
+    {sending && <p ref={feedback} role="status" data-swap-feedback>{t('presets.swap.sending')}{slow ? ` ${t('presets.swap.slow')}` : ''}</p>}
+    {uploadError && <p ref={feedback} role="alert" className="text-sm text-vx-danger" data-swap-feedback>{t(swapErrorKey(a.errorCode))}</p>}
   </section>;
 }
