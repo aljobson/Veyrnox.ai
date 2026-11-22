@@ -5,6 +5,7 @@ import { useSwapDraft } from '../_lib/useSwapDraft.js';
 import { swapActions } from '../_lib/templateSwapRuntime.js';
 import { unsettled, swapErrorKey } from '../_lib/templateSwapClient.mjs';
 import { GeneratingProgress } from '../app/create/GeneratingProgress.js';
+import { SwapAttemptResult } from './SwapAttemptResult.js';
 export const swapControl = 'inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-vx-border px-4 py-2 text-vx-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vx-accent disabled:opacity-50';
 function Attempt({ attempt: a }) {
   const { t } = useI18n();
@@ -17,6 +18,7 @@ function Attempt({ attempt: a }) {
     <p role="status">{t(`presets.swap.${a.state}`, { credits: a.spent ?? a.body?.max_charge_credits })}</p>
     {/* Same reading as Create's canvas: the site-wide bar prints the percent, this prints its clock. */}
     {['queued', 'running'].includes(a.state) && a.job_id && <GeneratingProgress jobId={a.job_id} />}
+    {a.state === 'succeeded' && a.job_id && <SwapAttemptResult jobId={a.job_id} />}
     {a.state === 'refunded' && <p className="text-vx-danger">{t('presets.swap.refundedReason')}</p>}
     {a.state === 'not_charged' && <p className="text-vx-danger">{t(swapErrorKey(a.errorCode))}</p>}
     {Number.isFinite(a.balance) && <p className="text-vx-money">{t('presets.swap.balance', { credits: a.balance })}</p>}

@@ -14,6 +14,7 @@ const MAX = 50;
 
 /** Fired on this tab whenever the history changes (other tabs fire `storage`). */
 export const JOBS_CHANGED_EVENT = 'veyrnox:jobs-changed';
+export const GENERATION_SUCCEEDED_EVENT = 'veyrnox:generation-succeeded';
 function announceChange() {
   try { if (typeof window !== 'undefined') window.dispatchEvent(new Event(JOBS_CHANGED_EVENT)); } catch { /* no window */ }
 }
@@ -94,7 +95,10 @@ export function jobsToWatch(history, now = Date.now()) {
 // (lib/veyMood.js): happy on success, apologetic on failure, firm when the prompt was refused on safety grounds.
 function signalSettled(entry, state, errorCode) {
   if (!entry || entry.settled === state || Date.now() - (entry.submitted_at || 0) >= WATCH_MAX_AGE_MS) return;
-  if (state === 'succeeded') signalVeyMood('generation-succeeded');
+  if (state === 'succeeded') {
+    signalVeyMood('generation-succeeded');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(GENERATION_SUCCEEDED_EVENT, { detail: { job_id: entry.job_id, label: entry.name || entry.prompt || '' } }));
+  }
   else if (state === 'failed') signalVeyMood(veyErrorSituation(errorCode, { refunded: true }) || 'generation-failed');
 }
 
