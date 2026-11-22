@@ -13,7 +13,6 @@ import { SYNTX_SOURCE_PROMPT_RECORDS } from './syntxSourcePromptRecords.js';
 import { SEEDANCE_SOURCE_PROMPT_RECORDS } from './seedanceSourcePromptRecords.js';
 import { GENERATION_PROMPT_MAX } from '../../../lib/generationPromptLimits.js';
 import { publicTemplateId, recordLookup } from './templateIds.js';
-import { ORIGINAL_SEEDANCE_TEMPLATES } from './originalSeedanceTemplates.js';
 
 const EXACT_PROMPT_MAX = GENERATION_PROMPT_MAX;
 const EXACT_SOURCE_RECORDS = Object.freeze({
@@ -32,8 +31,6 @@ const EXACT_SOURCE_RECORDS = Object.freeze({
   ...SYNTX_REPLACEMENTS_RECORDS,
 });
 const exactSourceRecordFor = recordLookup(EXACT_SOURCE_RECORDS);
-// Written by Veyrnox, so never part of the captured community records above.
-const ORIGINAL_PROMPTS = new Map(ORIGINAL_SEEDANCE_TEMPLATES.map((template) => [template.id, template.prompt]));
 
 export const referenceCount = (prompt, kind) => {
   const indices = [];
@@ -55,18 +52,6 @@ const mentionsPreservedAudio = (prompt) => /\b(audio|music|soundtrack|speech|lip
 // audit record makes that distinction machine-readable for web, mobile and
 // external clients instead of silently presenting an adaptation as the source.
 export function sourcePromptAuditRecord(templateId) {
-  const original = ORIGINAL_PROMPTS.get(templateId);
-  if (original) {
-    return Object.freeze({
-      status: 'exact',
-      runnable: true,
-      issues: Object.freeze([]),
-      characterCount: original.length,
-      referenceImageCount: referenceCount(original, 'image'),
-      referenceVideoCount: referenceCount(original, 'video'),
-      duplicateOf: null,
-    });
-  }
   const source = exactSourceRecordFor(templateId);
   if (!source) {
     return Object.freeze({

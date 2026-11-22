@@ -86,11 +86,8 @@ test('all recorded exact community prompts fit the new contract without truncati
 test('product prompt-audit documents keep the recalculated exact-prompt counts', () => {
   const audit = readFileSync('docs/product/template-prompt-audit-2026-10-29.md', 'utf8').replace(/\s+/g, ' ');
   const recipes = readFileSync('docs/product/template-recipes.md', 'utf8').replace(/\s+/g, ' ');
-  // These documents count the community corpus; the eight Veyrnox originals are pinned in originalSeedanceTemplates.test.mjs.
-  const community = PRESETS.filter(p => p.promptOrigin !== 'veyrnox-original');
-  assert.equal(community.length, PRESETS.length - 8);
-  const compatible = community.filter(p => p.sourcePromptRunnable).length;
-  const incompatible = community.length - compatible;
+  const compatible = PRESETS.filter(p => p.sourcePromptRunnable).length;
+  const incompatible = PRESETS.length - compatible;
   assert.ok(audit.includes(`Audit-compatible: **${compatible}**; incompatible: **${incompatible}**.`));
   assert.ok(recipes.includes(`${compatible} public exact prompts are compatible and ${incompatible} incompatible`));
   assert.match(audit, /No copy-only blocking/);

@@ -301,10 +301,7 @@ export const TEMPLATE_CLIPS = Object.freeze([
   ["wassup-freestyle","viral-wassup-freestyle.mp4"], ["wear-the-moment","viral-wear-the-moment.mp4"], ["what-falls-next","creator-what-falls-next.mp4"],
   ["wheelie-rider","viral-wheelie-rider.mp4"], ["whiskey-gun-trick","viral-whiskey-gun-trick.mp4"], ["who-was-that-business","viral-who-was-that-business.mp4"],
   ["window-explode","creator-window-explode.mp4"], ["wish-a-merry-christmas","creator-wish-a-merry-christmas.mp4"], ["x-ray-matter","creator-x-ray-matter.mp4"],
-  ["you-good-max","viral-you-good-max.mp4"], ["young-samurai","creator-young-samurai.mp4"], ["original-aurora-glacier","original-aurora-glacier.mp4"],
-  ["original-blossom-whirlwind","original-blossom-whirlwind.mp4"], ["original-desert-mirage-walk","original-desert-mirage-walk.mp4"], ["original-ice-palace-entrance","original-ice-palace-entrance.mp4"],
-  ["original-lantern-river-night","original-lantern-river-night.mp4"], ["original-neon-rain-rooftop","original-neon-rain-rooftop.mp4"], ["original-thunder-cliff-stand","original-thunder-cliff-stand.mp4"],
-  ["original-zero-gravity-cafe","original-zero-gravity-cafe.mp4"],
+  ["you-good-max","viral-you-good-max.mp4"], ["young-samurai","creator-young-samurai.mp4"],
 ].map(([id, previewFile]) => Object.freeze({ id, previewFile })));
 
 export function publicTemplateClip(id, clips = TEMPLATE_CLIPS) {

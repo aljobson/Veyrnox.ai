@@ -18,10 +18,10 @@ import { templateContract } from '../lib/templateContract.js';
 const report = hiddenTemplateReport();
 test('hidden and Seedance-origin inventory counts come from the current modules', () => {
   assert.deepEqual(report.totals, {
-    addressable: 1926 + 8, listed: 61, hidden: 1865 + 8,
-    hiddenClasses: { 'blocked-needs-video': 367, unsupported: 110, 'like-for-like-safe': 215, bound: 131 + 8, none: 1042 },
-    hiddenRouteFits: { o1_clip: 473, none_unsupported: 89, seedance_long_photo: 48 + 8, text_only_other_model: 112, kling_i2v_photo: 101, none_no_contract: 1042 },
-    hiddenKinds: { video_swap: 300, none: 1392 + 8, motion: 67, swap: 106 },
+    addressable: 1926, listed: 61, hidden: 1865,
+    hiddenClasses: { 'blocked-needs-video': 367, unsupported: 110, 'like-for-like-safe': 215, bound: 131, none: 1042 },
+    hiddenRouteFits: { o1_clip: 473, none_unsupported: 89, seedance_long_photo: 48, text_only_other_model: 112, kling_i2v_photo: 101, none_no_contract: 1042 },
+    hiddenKinds: { video_swap: 300, none: 1392, motion: 67, swap: 106 },
     seedanceOrigins: { Syntx: 121, Higgsfield: 79 }, seedanceStates: { withdrawn_or_absent: 6, hidden: 194 },
     seedanceHiddenRouteFits: { none_unsupported: 32, seedance_long_photo: 23, o1_clip: 53, text_only_other_model: 84, kling_i2v_photo: 2 }, boundOverBudget: 53, seedanceLabels: 238,
   });

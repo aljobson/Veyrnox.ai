@@ -7,20 +7,17 @@ import { exactSourcePromptRecord } from '../app/veyrnox/_lib/sourcePromptRecords
 import { sourcePromptAuditRecord } from '../app/veyrnox/_lib/sourcePromptAudit.js';
 import { sourcePromptEndingReview } from './lib/source-prompt-endings.mjs';
 import { AUDIT_SHOWCASE_CLIPS } from '../app/veyrnox/_lib/showcase.js';
-import { ORIGINAL_SEEDANCE_ORIGIN } from '../lib/templatePromptOrigin.mjs';
 
-// These documents count the community corpus; Veyrnox-written templates only join the addressable total.
-const COMMUNITY_PRESETS = PRESETS.filter(t => t.promptOrigin !== ORIGINAL_SEEDANCE_ORIGIN);
 const fill = JSON.parse(readFileSync('docs/product/source-audit/higgsfield-category-fill-30-2026-11-05.json'));
 const expansion = JSON.parse(readFileSync('docs/product/source-audit/higgsfield-300-exact-2026-11-05.json'));
-const audits = COMMUNITY_PRESETS.map(t => sourcePromptAuditRecord(t.id));
+const audits = PRESETS.map(t => sourcePromptAuditRecord(t.id));
 const n = {
-  retained: SOURCE_TEMPLATES.length, public: COMMUNITY_PRESETS.length, all: ALL_TEMPLATES.length,
+  retained: SOURCE_TEMPLATES.length, public: PRESETS.length, all: ALL_TEMPLATES.length,
   captured: SOURCE_TEMPLATES.filter(t => exactSourcePromptRecord(t.id)).length,
-  hidden: SOURCE_TEMPLATES.length - COMMUNITY_PRESETS.length, wall: WALL_PRESETS.length,
+  hidden: SOURCE_TEMPLATES.length - PRESETS.length, wall: WALL_PRESETS.length,
   // Model-aware (sourcePromptRunnable), so a prompt over its model's cap counts as incompatible, as the public pages show.
-  compatible: COMMUNITY_PRESETS.filter(t => t.sourcePromptRunnable).length, incompatible: COMMUNITY_PRESETS.filter(t => !t.sourcePromptRunnable).length,
-  slots: COMMUNITY_PRESETS.filter(t => /@(?:image|video)\s*[_-]?\d+|<<<\s*(?:image|video)[_\s-]*\d+\s*>>>/i.test(t.prompt)).length,
+  compatible: PRESETS.filter(t => t.sourcePromptRunnable).length, incompatible: PRESETS.filter(t => !t.sourcePromptRunnable).length,
+  slots: PRESETS.filter(t => /@(?:image|video)\s*[_-]?\d+|<<<\s*(?:image|video)[_\s-]*\d+\s*>>>/i.test(t.prompt)).length,
   references: audits.filter(a => a.referenceImageCount || a.referenceVideoCount).length,
   images: audits.filter(a => a.referenceImageCount).length, multi: audits.filter(a => a.referenceImageCount > 1).length,
   many: audits.filter(a => a.referenceImageCount > 2).length, videos: audits.filter(a => a.referenceVideoCount).length,
@@ -29,7 +26,7 @@ const n = {
 };
 const syntx = JSON.parse(readFileSync('docs/product/source-audit/syntx-64-exact-2026-11-05.json'));
 const syntxBytes = syntx.records.reduce((sum, r) => sum + r.localPreviewBytes + r.localPosterBytes, 0);
-const longest = COMMUNITY_PRESETS.toSorted((a, b) => b.prompt.length - a.prompt.length)[0];
+const longest = PRESETS.toSorted((a, b) => b.prompt.length - a.prompt.length)[0];
 const comma = value => value.toLocaleString('en-US');
 const common = text => text.replace(/all \d+ retained placements/g, 'all ' + n.placements + ' retained placements')
   .replace(/All \d+ retained placements/g, 'All ' + n.placements + ' retained placements');
@@ -95,7 +92,7 @@ const section = begin + '\n## Amendment 1: at least ten exact templates per cont
   'Archery Face Swap was dropped because its source text ends mid-word; Anime Court Match was dropped because both replacement subjects were stripped from an incomplete fragment. Only identifiers, hashes and reasons are retained for these rejections; no prompt or media is shipped.\n' +
   'The source categories follow the manifest except Cartoon Hero Swap, corrected from ANIME to CARTOONS after inspection. The existing Kling I2V route, price and ten-second recipe duration apply; source input totals and numbered tokens select existing starting-image guidance without changing reference support.\n\n' +
   '| Content category | Public exact templates |\n| --- | ---: |\n' +
-  required.map(c => '| ' + c + ' | ' + COMMUNITY_PRESETS.filter((p) => c === 'ALL' || (c === 'NEW' ? p.isNew : p.category === c)).length + ' |').join('\n') +
+  required.map(c => '| ' + c + ' | ' + PRESETS.filter((p) => c === 'ALL' || (c === 'NEW' ? p.isNew : p.category === c)).length + ' |').join('\n') +
   '\n\nKIDS BIRTHDAY is explicitly excluded pending an owner decision: its twelve promptless rows remain retained and hidden, zero are public, and the category is absent from the gallery filter. It remains in CATEGORY_ORDER.\n' +
   'The [category-fill audit](source-audit/higgsfield-category-fill-30-2026-11-05.json) and fixed-list regression tests lock this state.\n' + end;
 update('docs/product/template-prompt-audit-2026-10-29.md', text => text.includes(begin)

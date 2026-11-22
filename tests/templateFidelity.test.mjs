@@ -10,7 +10,7 @@ const report = audit();
 const contracts = Object.values(report.contracts);
 test('fidelity classification totals and generated contract bytes are pinned', () => {
   // Baseline classifications plus the independently audited 46-video split (syntx100Templates.test.mjs).
-  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49 + 8,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49}); /* 49 one-photo recipes over the Kling cap bind to the long-prompt kie Seedance offer (ADR-0309 amendment 3) */
+  assert.deepEqual(report.totals, {"like-for-like-safe":232 - 12,"bound":70 + 3 + 30 + 59 - 49 + 49,"blocked-needs-video":355 + 37,"unsupported":92 + 6 + 61 - 49}); /* 49 one-photo recipes over the Kling cap bind to the long-prompt kie Seedance offer (ADR-0309 amendment 3) */
   const stored = JSON.parse(readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url)));
   const packed = packContracts(report.contracts);
   assert.equal(JSON.stringify(compressContractData(packed)) + '\n', readFileSync(new URL('../lib/templateFidelityContracts.json', import.meta.url), 'utf8'), 'regeneration must be byte-identical; inspect class changes before accepting drift');
