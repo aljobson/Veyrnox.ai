@@ -57,7 +57,8 @@ const visual = (id: string, mediaId: string, backgroundId?: string) => ({
     crop: { x: 0, y: 0, width: 1, height: 1 }, fit: 'contain', blend: 'source-over', transition: null,
 }) as unknown as EditorPreviewVisualPlan;
 const plan = (...visuals: EditorPreviewVisualPlan[]): EditorPreviewPlan => ({
-    frame: 0, background: '#000000', visuals, texts: [], capabilities: { exact: true, requirements: [], unsupported: [] },
+    frame: 0, background: '#000000', referenceSize: { width: 1280, height: 720 }, visuals, texts: [],
+    capabilities: { exact: true, requirements: [], unsupported: [] },
 });
 const timeline = (entries: Media[]): Timeline => ({ ...emptyTimeline(), media: Object.fromEntries(entries.map(entry => [entry.id, entry])) });
 const request = (preview: EditorPreviewPlan, tl: Timeline, localMediaUris: Record<string, string> = {}) => ({

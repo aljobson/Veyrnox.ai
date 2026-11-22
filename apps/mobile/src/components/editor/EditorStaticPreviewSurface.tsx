@@ -25,11 +25,22 @@ function nativeLibraries(): { skia: SkiaLibrary; renderer: EditorRenderLibrary }
     return loadedNative;
 }
 
-function boundedPixelSize(width: number, height: number, scale: number, limits: EditorRenderLibrary['STATIC_PREVIEW_LIMITS']) {
-    const wantedWidth = Math.max(1, Math.round(width * scale)), wantedHeight = Math.max(1, Math.round(height * scale));
-    const factor = Math.min(1, limits.maxWidth / wantedWidth, limits.maxHeight / wantedHeight,
-        Math.sqrt(limits.maxPixels / (wantedWidth * wantedHeight)));
-    return { width: Math.max(1, Math.floor(wantedWidth * factor)), height: Math.max(1, Math.floor(wantedHeight * factor)) };
+type Size = { readonly width: number; readonly height: number };
+
+function containedRect(width: number, height: number, reference: Size) {
+    if (!(width > 0 && height > 0 && reference.width > 0 && reference.height > 0)) return { x: 0, y: 0, width: 0, height: 0 };
+    const factor = Math.min(width / reference.width, height / reference.height);
+    const containedWidth = reference.width * factor, containedHeight = reference.height * factor;
+    return { x: (width - containedWidth) / 2, y: (height - containedHeight) / 2, width: containedWidth, height: containedHeight };
+}
+
+function boundedPixelSize(width: number, height: number, scale: number, reference: Size,
+    limits: EditorRenderLibrary['STATIC_PREVIEW_LIMITS']) {
+    if (!(width > 0 && height > 0 && reference.width > 0 && reference.height > 0)) return { width: 0, height: 0 };
+    const factor = Math.min(width * scale / reference.width, height * scale / reference.height,
+        limits.maxWidth / reference.width, limits.maxHeight / reference.height,
+        Math.sqrt(limits.maxPixels / (reference.width * reference.height)));
+    return { width: Math.max(1, Math.floor(reference.width * factor)), height: Math.max(1, Math.floor(reference.height * factor)) };
 }
 
 function frameInvariantRenderProjection(plan: EditorPreviewPlan): unknown {
@@ -38,6 +49,7 @@ function frameInvariantRenderProjection(plan: EditorPreviewPlan): unknown {
         || (!!clip.animation && Object.values(clip.animation).some(value => value !== undefined && value !== 'none')));
     if (frameDependent) return plan;
     return {
+        referenceSize: plan.referenceSize,
         background: plan.background,
         visuals: plan.visuals.map(visual => ({
             layerIndex: visual.layerIndex,
@@ -62,13 +74,16 @@ export function EditorStaticPreviewSurface({ enabled, timeline, frame, api, loca
     const generation = useRef(0);
     const sourceCache = useRef<EditorStaticPreviewSourceSet | null>(null);
     const outputs = useRef(new Set<SkiaModule.SkImage>());
-    const [rendered, setRendered] = useState<{ key: string; sourceKey: string; exact: boolean; image: SkiaModule.SkImage } | null>(null);
+    const [rendered, setRendered] = useState<{
+        key: string; sourceKey: string; exact: boolean; image: SkiaModule.SkImage;
+        referenceSize: Size;
+    } | null>(null);
     const plan = useMemo(() => enabled && native
         ? editorPreviewPlan(timeline, frame, native.renderer.SKIA_STATIC_PREVIEW_CAPABILITIES) : null,
         [enabled, native, timeline, frame]);
-    const pixelSize = useMemo(() => native && size.width > 0 && size.height > 0
-        ? boundedPixelSize(size.width, size.height, PixelRatio.get(), native.renderer.STATIC_PREVIEW_LIMITS)
-        : { width: 0, height: 0 }, [native, size.height, size.width]);
+    const pixelSize = useMemo(() => native && plan
+        ? boundedPixelSize(size.width, size.height, PixelRatio.get(), plan.referenceSize, native.renderer.STATIC_PREVIEW_LIMITS)
+        : { width: 0, height: 0 }, [native, plan?.referenceSize.height, plan?.referenceSize.width, size.height, size.width]);
     const visuallySupported = !!plan && plan.visuals.length > 0
         && plan.visuals.every(layer => layer.media?.kind === 'image')
         && plan.capabilities.unsupported.every(use => use.capability === 'audio-mix');
@@ -100,7 +115,10 @@ export function EditorStaticPreviewSurface({ enabled, timeline, frame, api, loca
             if (!output?.ok) { setRendered(null); return; }
             if (!current || ticket !== generation.current) { output.image.dispose(); return; }
             outputs.current.add(output.image);
-            setRendered({ key: requestKey, sourceKey, exact: plan.capabilities.exact, image: output.image });
+            setRendered({
+                key: requestKey, sourceKey, exact: plan.capabilities.exact, image: output.image,
+                referenceSize: plan.referenceSize,
+            });
         };
         const cached = sourceCache.current;
         if (cached?.key === sourceKey) render(cached);
@@ -135,10 +153,13 @@ export function EditorStaticPreviewSurface({ enabled, timeline, frame, api, loca
         const next = event.nativeEvent.layout;
         setSize(current => current.width === next.width && current.height === next.height ? current : { width: next.width, height: next.height });
     };
+    const display = containedRect(size.width, size.height, shown?.referenceSize ?? plan?.referenceSize ?? { width: 1, height: 1 });
     return <View testID="editor-static-preview-surface" pointerEvents="none" accessible={false} accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill} onLayout={onLayout}>
+        {shown ? <View testID="editor-static-preview-backdrop" pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { backgroundColor: '#000000' }]} /> : null}
         {shown && lib ? <lib.Canvas testID="editor-static-preview-canvas" pointerEvents="none" style={StyleSheet.absoluteFill}>
-            <lib.Image image={shown.image} x={0} y={0} width={size.width} height={size.height} fit="fill" />
+            <lib.Image image={shown.image} x={display.x} y={display.y} width={display.width} height={display.height} fit="fill" />
         </lib.Canvas> : null}
     </View>;
 }

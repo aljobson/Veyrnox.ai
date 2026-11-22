@@ -5,6 +5,8 @@ export const STATIC_PREVIEW_LIMITS = Object.freeze({
     maxHeight: 1280,
     maxPixels: 1280 * 720,
     maxLayers: 40,
+    maxFilterOutset: 180,
+    maxLayerPixels: 1_800_000,
 });
 
 export const STATIC_PREVIEW_BLENDS = [
@@ -46,6 +48,14 @@ export interface StaticPreviewMask {
     readonly inverted: boolean;
 }
 
+export interface StaticPreviewFilter {
+    readonly brightness: number;
+    readonly contrast: number;
+    readonly saturate: number;
+    readonly hue: number;
+    readonly blur: number;
+}
+
 export type StaticPreviewBackground =
     | { readonly type: 'none' }
     | { readonly type: 'solid'; readonly color: string }
@@ -63,6 +73,7 @@ export interface StaticPreviewLayer {
     readonly crop: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
     readonly fit: 'contain' | 'cover';
     readonly transform: StaticPreviewTransform;
+    readonly filter: StaticPreviewFilter;
     readonly blend: StaticPreviewBlend;
     readonly mask?: StaticPreviewMask;
     readonly background: StaticPreviewBackground;
@@ -72,6 +83,9 @@ export interface StaticPreviewLayer {
 export interface StaticPreviewPlan {
     readonly width: number;
     readonly height: number;
+    /** Canonical web compositor geometry used to scale CSS-pixel filters into this output. */
+    readonly referenceWidth: number;
+    readonly referenceHeight: number;
     readonly background: string;
     readonly layers: readonly StaticPreviewLayer[];
     readonly unsupported?: readonly StaticPreviewUnsupportedFeature[];

@@ -2,6 +2,7 @@ import { evaluatedParameters, evaluatedReveal, evaluatedTransform } from '../../
 import { audioClipInterval } from '../../../../app/veyrnox/_lib/editorAudioInterval.mjs';
 import { colourDefaults, neutralColour } from '../../../../app/veyrnox/_lib/editorColour.mjs';
 import { evaluatedMask } from '../../../../app/veyrnox/_lib/editorMask.mjs';
+import { timelineSize } from '../../../../app/veyrnox/_lib/editorRender.mjs';
 import { sequenceTransition, sequenceTransitionAfter } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
 import { sequenceLayers } from '../../../../app/veyrnox/_lib/editorSequenceRender.mjs';
 import { trackAudible } from '../../../../app/veyrnox/_lib/editorSelection.mjs';
@@ -46,7 +47,7 @@ export type EditorPreviewCapabilityUse = {
 /** Capabilities the first static Skia compositor can consume without approximating web output. */
 export const STATIC_EDITOR_PREVIEW_CAPABILITIES = Object.freeze([
     'timeline-background', 'image-source', 'graphic-source', 'fit', 'crop', 'transform', 'visual-layering', 'blend', 'mask', 'clip-animation',
-    'clip-background-solid', 'clip-background-blur', 'clip-background-image',
+    'clip-background-solid', 'clip-background-blur', 'clip-background-image', 'basic-filter',
 ] as const satisfies readonly EditorPreviewCapability[]);
 
 /** What the current Expo image/video fallback actually draws before the Skia surface is mounted. */
@@ -100,6 +101,8 @@ export type EditorPreviewTextPlan = {
 
 export type EditorPreviewPlan = {
     frame: number;
+    /** Canonical web compositor geometry at its 720p reference target. */
+    referenceSize: { readonly width: number; readonly height: number };
     background: string;
     visuals: EditorPreviewVisualPlan[];
     texts: EditorPreviewTextPlan[];
@@ -240,5 +243,12 @@ export function editorPreviewPlan(
     }
 
     const unsupported = requirements.filter(requirement => !requirement.supported);
-    return { frame, background: canonical.background, visuals, texts, capabilities: { exact: unsupported.length === 0, requirements, unsupported } };
+    return {
+        frame,
+        referenceSize: timelineSize(timeline, 720),
+        background: canonical.background,
+        visuals,
+        texts,
+        capabilities: { exact: unsupported.length === 0, requirements, unsupported },
+    };
 }
