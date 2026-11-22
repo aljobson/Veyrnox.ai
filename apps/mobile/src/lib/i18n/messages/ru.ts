@@ -391,6 +391,7 @@ const ru = {
     'templateClip.videoName': '@video1: клип шаблона',
     'templateClip.photoName': '@image1: ваше фото',
     'templateClip.invalid': 'Используйте @video1 и @image1 ровно по одному разу, не более 2000 символов.',
+    'presets.swap.people_unsupported': 'Для этого шаблона нужны два человека, и сейчас он недоступен. Средства не списаны.',
     'presets.swap.upload_failed': 'Не удалось загрузить обработанные фото. Проверьте соединение и повторите.',
     'presets.swap.rejected': 'Сервис отклонил запуск. Проверьте фото и повторите.',
     'presets.swap.insufficient_balance': 'Недостаточно средств. Добавьте кредиты или попробуйте позже.',

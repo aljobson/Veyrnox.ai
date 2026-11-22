@@ -388,6 +388,7 @@
   "templateClip.videoName",
   "templateClip.photoName",
   "templateClip.invalid",
+  "presets.swap.people_unsupported",
   "presets.swap.upload_failed",
   "presets.swap.rejected",
   "presets.swap.insufficient_balance",

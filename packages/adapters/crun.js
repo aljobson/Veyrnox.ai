@@ -62,13 +62,15 @@ const IMAGE_MODELS = {
     'bytedance/seedream-4': { kind: 'image', aspects: new Set(['1:1']), fixed: { resolution: '2K', num_outputs: 1 } },
 };
 const WAN_ANIMATE_MODEL = 'wan/2-2-animate-replace';
+// Template swaps only (ADR-0351 amendment 21); the public Kling O1 offer stays on fal and never reaches this builder.
+const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_O1_SWAP_MODEL) ? { model: m[1] } : null;
 }
 
 /** 'video' or 'image' for a Crun endpoint this adapter owns, else null. The sweep picks the file type from it. */
@@ -84,6 +86,7 @@ export function endpointKind(endpoint) {
  */
 export function buildRequest(target, inputs) {
     if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
+    if (target.model === KLING_O1_SWAP_MODEL) return buildKlingO1SwapRequest(inputs);
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
     const kling = KLING_MODELS[target.model];
@@ -120,6 +123,52 @@ function buildWanAnimateRequest(inputs) {
         input[field] = [...urls];
     }
     return { ok: true, body: { model: WAN_ANIMATE_MODEL, input: { ...input, resolution: '720P' } } };
+}
+
+const isHttpsUrl = (value) => {
+    try { return typeof value === 'string' && new URL(value).protocol === 'https:'; } catch { return false; }
+};
+
+// Crun has no element grouping, so the swap prompt's tags become plain references to the ordered images.
+function klingO1SwapPrompt(prompt, imageCount) {
+    const images = imageCount === 2 ? 'reference images 1 and 2' : `reference images 1 to ${imageCount}`;
+    return prompt.replaceAll('@Video1', 'the reference video')
+        .replaceAll("@Element1's", "that person's")
+        .replaceAll('@Element1', `the person shown in ${images}`)
+        .replaceAll('the element images', 'the reference images');
+}
+
+function buildKlingO1SwapRequest(inputs) {
+    const allowed = new Set(['prompt', 'duration_seconds', 'video_url', 'elements']);
+    for (const key of Object.keys(inputs)) {
+        if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
+    }
+    if (inputs.duration_seconds !== 5) return { ok: false, error: 'duration_not_supported' };
+    if (!isHttpsUrl(inputs.video_url)) return { ok: false, error: 'inputs_invalid:video_url' };
+    const elements = inputs.elements;
+    // One person only: two-person swaps are refused before debit until a live test proves them.
+    if (!Array.isArray(elements) || elements.length !== 1) return { ok: false, error: 'inputs_invalid:elements' };
+    const [{ frontal_image_url: frontal, reference_image_urls: references, ...extra } = {}] = elements;
+    if (Object.keys(extra).length || !Array.isArray(references) || references.length < 1 || references.length > 2) return { ok: false, error: 'inputs_invalid:elements' };
+    const images = [frontal, ...references];
+    if (!images.every(isHttpsUrl)) return { ok: false, error: 'inputs_invalid:elements' };
+    const source = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
+    if (!source) return { ok: false, error: 'prompt_required' };
+    const prompt = klingO1SwapPrompt(source, images.length);
+    if (prompt.length > KLING_PROMPT_MAX || /@(?:video|element|image)/i.test(prompt)) return { ok: false, error: 'inputs_invalid:prompt' };
+    return { ok: true, body: { model: KLING_O1_SWAP_MODEL, input: {
+        prompt, reference_videos: [inputs.video_url], reference_video_type: 'base_video', reference_images: images,
+        resolution: '720p', aspect_ratio: 'auto', audio: false,
+    } } };
+}
+
+// What may be said about a refusal of a request that carries signed media: a fixed word, never Crun's own text.
+function klingO1RefusalReason(message) {
+    const text = String(message || '');
+    if (/moderat|sensitive|policy|nsfw|prohibit/i.test(text)) return 'content_policy';
+    if (/insufficient|balance|quota/i.test(text)) return 'insufficient_balance';
+    if (/invalid|parameter|unsupported/i.test(text)) return 'invalid_input';
+    return '';
 }
 
 function buildKlingRequest(target, spec, inputs) {
@@ -184,7 +233,7 @@ export async function submitTask(job, cfg) {
             });
         } catch (err) {
             // Nothing is known about whether the task was created: ambiguous (0329).
-            return { ok: false, outcome: 'unknown', error: `transport: ${err && err.message}` };
+            return { ok: false, outcome: 'unknown', error: target.model === KLING_O1_SWAP_MODEL ? 'transport' : `transport: ${err && err.message}` };
         }
         let data = null;
         try {
@@ -195,7 +244,10 @@ export async function submitTask(job, cfg) {
         }
         const code = data && typeof data.code === 'number' ? data.code : res.status;
         if (!res.ok || code !== 200) {
-            const error = `crun ${res.status}/${code}: ${String((data && (data.message || data.msg)) || '').slice(0, 200)}`;
+            const upstream = data && (data.message || data.msg);
+            const error = target.model === KLING_O1_SWAP_MODEL
+                ? `crun ${res.status}/${Number.isInteger(code) ? code : 0}${klingO1RefusalReason(upstream) ? `: ${klingO1RefusalReason(upstream)}` : ''}`
+                : `crun ${res.status}/${code}: ${String(upstream || '').slice(0, 200)}`;
             const outcome = res.status === 408 || res.status >= 500 ? 'unknown' : 'rejected';
             return { ok: false, outcome, error };
         }

@@ -391,6 +391,7 @@ const zh = {
     'templateClip.videoName': '@video1：模板片段',
     'templateClip.photoName': '@image1：你的照片',
     'templateClip.invalid': '请各使用一次 @video1 和 @image1，且不超过2000个字符。',
+    'presets.swap.people_unsupported': '此模板需要两个人，目前暂不可用。未向你收费。',
     'presets.swap.upload_failed': '无法上传处理后的照片。请检查网络连接后重试。',
     'presets.swap.rejected': '服务拒绝了此次生成。请检查照片后重试。',
     'presets.swap.insufficient_balance': '余额不足。请添加积分或稍后重试。',

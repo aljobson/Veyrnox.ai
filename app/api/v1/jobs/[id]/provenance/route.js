@@ -24,6 +24,7 @@ import { rpc, select, envConfig } from '../../../../../../packages/db/supabase-c
 
 import { publicModelName } from '../../../../../../lib/publicCatalog.js';
 import { publicModelId } from '../../../../../../lib/publicModelIds.js';
+import { clientModelId } from '../../../../../../lib/privateModelIds.js';
 import { isUuidLoose } from '../../../../../../lib/validate.js';
 
 // A job only has meaningful provenance once its output is actually stored.
@@ -71,7 +72,7 @@ export async function GET(req, { params }) {
     // The catalog holds the display name and modality. A missing row is not
     // fatal — a model can be retired after the job that used it — so the
     // record degrades to the id rather than failing.
-    let model = { id: row.model_id, name: row.model_id, modality: null };
+    let model = { id: clientModelId(row.model_id), name: clientModelId(row.model_id), modality: null };
     try {
         const rows = await select(
             'model_catalog',
@@ -79,7 +80,7 @@ export async function GET(req, { params }) {
             cfg,
         );
         const found = Array.isArray(rows) && rows[0];
-        if (found) model = { id: found.id, name: found.name, modality: found.modality };
+        if (found) model = { id: clientModelId(found.id), name: found.name, modality: found.modality };
     } catch (err) {
         console.error('[jobs/provenance] catalog read failed:', err);
     }

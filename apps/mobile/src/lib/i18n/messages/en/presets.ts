@@ -1,4 +1,5 @@
 export default {
+  "presets.swap.people_unsupported": "This template needs two people and is not available right now. You were not charged.",
   "presets.swap.upload_failed": "The processed photos could not be uploaded. Check your connection and retry.",
   "presets.swap.rejected": "The service refused this run. Review your photo and try again.",
   "presets.swap.insufficient_balance": "Your balance is too low. Add credits or try later.",
