@@ -16,6 +16,9 @@ import { SourcePickers } from '../SourcePickers';
 import { LibraryPicker } from '../LibraryPicker';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 import { SpeechSongNudge } from '../SpeechSongNudge';
+import { MusicSunoControls } from '../music/MusicSunoControls';
+import { capSunoText, sunoLimit } from '../music/musicSunoForm';
+import { useState } from 'react';
 
 const control = 'relative inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-vx-border bg-vx-base px-3 text-xs font-semibold text-vx-fg-muted transition-colors hover:border-vx-accent hover:text-vx-fg focus-within:border-vx-accent focus-within:outline-solid focus-within:outline-2 focus-within:outline-vx-accent disabled:opacity-50';
 function credits(t, locale, number) { return t(pluralKey(t, locale, 'app.chat.settings.credits', number), { count: locale === 'en' ? String(number) : number.toLocaleString(localeTag(locale)) }); }
@@ -40,8 +43,65 @@ function OutputFact({ children, title }) {
   return <span title={title} className={`${control} cursor-default hover:border-vx-border hover:text-vx-fg-muted`}>{children}</span>;
 }
 
-export function MediaComposer({ kind, media, prompt, onPrompt }) {
+function ChatSunoComposer({ media, prompt, onPrompt }) {
   const { t, locale } = useI18n();
+  const { model, availableModels, offerId, selectOffer, customMode, setCustom, custom, controls, updateControl, updateDraft, quote, busy, error, action, canAct, promptMax, loading, reload } = media;
+  const [controlsOpen, setControlsOpen] = useState(false);
+  if (loading) return <div aria-busy="true" className="space-y-3 px-3 py-4"><div className="vx-shimmer h-11 rounded-xl bg-vx-base"/><p className="text-sm text-vx-fg-muted">{t('app.music.suno.loadingPolicy')}</p></div>;
+  if (error && !model) return <section role="alert" className="border-t border-vx-danger/30 bg-vx-danger/[0.06] px-3 py-3 text-sm text-vx-danger"><p>{tOr(t, `app.create.error.${media.errorCode}`, error)}</p><button type="button" onClick={reload} className="mt-3 min-h-11 rounded-full border border-vx-danger px-4 font-bold">{t('app.music.suno.retry')}</button></section>;
+  const titleMax = sunoLimit(model, 'title');
+  const lyricsMax = sunoLimit(model, 'lyrics');
+  const briefMax = customMode ? sunoLimit(model, 'styles') : promptMax;
+  const brief = customMode && custom.loaded ? custom.draft.styles : prompt;
+  const updateBrief = (value) => customMode ? updateDraft('styles', value) : onPrompt(value);
+  const disabled = Boolean(busy || media.generating);
+
+  return (
+    <fieldset disabled={disabled} className="min-w-0">
+      {customMode && custom.loaded ? <div className="space-y-3 border-b border-vx-border px-3 py-3">
+        <label className="block text-sm font-bold text-vx-fg-body">
+          <span className="flex items-center justify-between gap-3"><span>{t('app.music.suno.title')}</span><span aria-live="polite" className="font-vx-mono text-xs font-normal text-vx-fg-faint">{Array.from(custom.draft.title).length}/{titleMax}</span></span>
+          <input value={custom.draft.title} onChange={(event) => updateDraft('title', capSunoText(event.target.value, titleMax))} className="mt-2 min-h-11 w-full rounded-xl border border-vx-border bg-vx-base px-3 focus-visible:ring-2 focus-visible:ring-vx-accent" />
+        </label>
+        {!controls.instrumental ? <label className="block text-sm font-bold text-vx-fg-body">
+          <span className="flex items-center justify-between gap-3"><span>{t('app.music.suno.lyrics')}</span><span aria-live="polite" className="font-vx-mono text-xs font-normal text-vx-fg-faint">{Array.from(custom.draft.lyrics).length}/{lyricsMax}</span></span>
+          <textarea value={custom.draft.lyrics} onChange={(event) => updateDraft('lyrics', capSunoText(event.target.value, lyricsMax))} rows={4} className="mt-2 w-full resize-y rounded-xl border border-vx-border bg-vx-base px-3 py-2 font-vx-mono text-sm focus-visible:ring-2 focus-visible:ring-vx-accent" />
+        </label> : null}
+      </div> : null}
+
+      {customMode && controlsOpen ? <div className="border-b border-vx-border bg-vx-panel px-3 py-4"><MusicSunoControls model={model} draft={custom.draft} updateDraft={updateDraft} controls={controls} updateControl={updateControl} compact showTextFields={false} /></div> : null}
+
+      <div className="flex min-w-0 items-end gap-2 overflow-x-auto px-3 pt-3">
+        <SelectControl label={model?.name || t('app.music.suno.offer')} ariaLabel={t('app.music.suno.offer')} value={offerId} onChange={selectOffer} disabled={customMode || disabled}>
+          {availableModels.map((item) => <option key={item.id} value={item.id} disabled={item.available === false}>{item.name}</option>)}
+        </SelectControl>
+        <button type="button" role="switch" aria-checked={customMode} disabled={!availableModels.some((item) => item.generation_modes?.includes('custom') && item.available !== false)} onClick={() => setCustom(!customMode)} className={`${control} min-h-11 aria-checked:border-vx-accent aria-checked:text-vx-accent`}>{t('app.music.suno.custom')}</button>
+        <button type="button" role="switch" aria-checked={controls.instrumental} disabled={model?.instrumental_only} onClick={() => updateControl('instrumental', !controls.instrumental)} className={`${control} min-h-11 aria-checked:border-vx-accent aria-checked:text-vx-accent`}>{t('app.music.suno.instrumental')}</button>
+        {customMode ? <button type="button" aria-expanded={controlsOpen} onClick={() => setControlsOpen((value) => !value)} className={`${control} min-h-11 text-vx-fg`}>{t('app.music.suno.controls')} <Chevron /></button> : null}
+      </div>
+
+      {customMode && !custom.loaded ? <div aria-busy={!custom.loadFailed} className="border-t border-vx-border px-3 py-3 text-sm text-vx-fg-muted">{custom.loadFailed ? <><p role="alert">{custom.error}</p><button type="button" onClick={custom.retry} className="mt-3 min-h-11 rounded-full border border-vx-border px-4 font-bold text-vx-fg">{t('app.music.suno.retry')}</button></> : t('app.music.suno.loadingDraft')}</div> : null}
+      <div className="flex min-w-0 items-end gap-2 px-3 py-3">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">{t(customMode ? 'app.music.suno.style' : 'app.music.suno.brief')}</span>
+          <textarea disabled={customMode && !custom.loaded} value={brief} onChange={(event) => updateBrief(capSunoText(event.target.value, briefMax))} rows={2} placeholder={t(customMode ? 'app.music.suno.stylePlaceholder' : 'app.music.suno.briefPlaceholder')} className="min-h-12 w-full resize-none rounded-2xl border border-vx-border-boost bg-vx-base px-4 py-3 text-sm text-vx-fg placeholder:text-vx-fg-faint focus-visible:ring-2 focus-visible:ring-vx-accent disabled:opacity-50" />
+          <span aria-live="polite" className="mt-1 block text-end font-vx-mono text-xs text-vx-fg-faint">{Array.from(brief).length}/{briefMax}</span>
+        </label>
+        <DictateButton disabled={disabled} onText={(spoken) => updateBrief(capSunoText(appendSpoken(brief, spoken), briefMax))} />
+        <button data-testid="chat-music-send" type="button" onClick={action} disabled={!canAct || disabled} className="min-h-11 shrink-0 rounded-full bg-vx-accent px-4 text-sm font-semibold text-vx-accent-ink hover:bg-vx-accent-hover disabled:opacity-50">
+          {busy === 'quoting' ? t('app.music.suno.quoting') : busy === 'confirming' ? t('app.music.suno.sending') : quote ? t('app.chat.workspace.send', { price: credits(t, locale, quote.total_credits) }) : t('app.music.suno.reviewPrice')}
+        </button>
+      </div>
+      {custom.notice ? <p role="status" className="border-t border-vx-border px-3 py-2 text-xs text-vx-fg-muted">{t(`app.music.suno.${custom.notice}`)}</p> : null}
+      {error ? <p role="alert" className="border-t border-vx-danger/30 bg-vx-danger/[0.06] px-3 py-2 text-sm text-vx-danger">{tOr(t, `app.create.error.${media.errorCode}`, error)}</p> : null}
+    </fieldset>
+  );
+}
+
+export function MediaComposer({ kind, media, prompt, onPrompt }) {
+  const i18n = useI18n();
+  if (media.suno) return <ChatSunoComposer media={media} prompt={prompt} onPrompt={onPrompt} />;
+  const { t, locale } = i18n;
   const number = n => locale === 'en' ? String(n) : n.toLocaleString(localeTag(locale));
   const kindLabel = tOr(t, `app.editor.media.kind.${kind}`, kind);
   const {

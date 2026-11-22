@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 
 const TERMINAL_STATES = new Set(['succeeded', 'partial', 'failed', 'refunded']);
-const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used']);
+const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used', 'contract_stale']);
 
 export function musicServerError(error) {
   const code = error?.code || error?.message;
@@ -18,6 +18,7 @@ export function musicServerError(error) {
     insufficient_balance: 'You do not have enough spendable credits for both versions.',
     quote_expired: 'That quote expired. Review a new quote before creating.',
     quote_stale: 'The model price changed. Review the refreshed quote before creating.',
+    contract_stale: 'Music controls changed. The current contract was refreshed; review the form and request a new quote.',
     quote_already_used: 'That quote was already used. Review a new quote to create again.',
     pair_acceptance_unknown: 'We could not confirm the result. Retry safely with the same request key.',
     network_error: 'The network is unavailable. Your quote has not been confirmed.',
@@ -27,12 +28,13 @@ export function musicServerError(error) {
   return copy[code] || 'Music is temporarily unavailable. No new request was confirmed.';
 }
 
-export function useMusicServerState() {
+export function useMusicServerState({ active = true } = {}) {
   const [entitlements, setEntitlements] = useState(null);
   const [quote, setQuote] = useState(null);
   const [generations, setGenerations] = useState([]);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const confirmKey = useRef(null);
   const confirming = useRef(false);
   // A quote response that arrives after the input changed is discarded instead
@@ -43,9 +45,11 @@ export function useMusicServerState() {
   const loadEntitlements = useCallback(async () => {
     setBusy('loading');
     setError('');
+    setErrorCode('');
     try {
       setEntitlements(await gatewayFetch('/music/entitlements'));
     } catch (reason) {
+      setErrorCode(reason?.code || 'unknown');
       setError(musicServerError(reason));
     } finally {
       setBusy('');
@@ -53,9 +57,10 @@ export function useMusicServerState() {
   }, []);
 
   useEffect(() => {
+    if (!active) return undefined;
     const timer = window.setTimeout(loadEntitlements, 0);
     return () => window.clearTimeout(timer);
-  }, [loadEntitlements]);
+  }, [active, loadEntitlements]);
 
   const clearQuote = useCallback(() => {
     gate.invalidate();
@@ -64,6 +69,7 @@ export function useMusicServerState() {
   }, [gate]);
 
   const quoteRevisionNow = useCallback(() => gate.current(), [gate]);
+  const clearGenerations = useCallback(() => setGenerations([]), []);
 
   // `startedAt` is the revision captured before slow preparation (for example a
   // draft save); if anything invalidated the quote meanwhile, do not request one.
@@ -72,6 +78,7 @@ export function useMusicServerState() {
     const mine = gate.start();
     setBusy('quoting');
     setError('');
+    setErrorCode('');
     setQuote(null);
     confirmKey.current = null;
     try {
@@ -83,18 +90,23 @@ export function useMusicServerState() {
       setQuote(next);
       return next;
     } catch (reason) {
-      if (gate.isCurrent(mine)) setError(musicServerError(reason));
+      if (gate.isCurrent(mine)) {
+        if (reason?.code === 'contract_stale') await loadEntitlements();
+        setErrorCode(reason?.code || 'unknown');
+        setError(musicServerError(reason));
+      }
       return null;
     } finally {
       if (gate.isLatestStart(mine)) setBusy('');
     }
-  }, [gate]);
+  }, [gate, loadEntitlements]);
 
   const confirmQuote = useCallback(async (context = {}) => {
     if (!quote?.quote_id || confirming.current) return null;
     confirming.current = true;
     setBusy('confirming');
     setError('');
+    setErrorCode('');
     if (confirmKey.current?.quoteId !== quote.quote_id) {
       confirmKey.current = { quoteId: quote.quote_id, key: makeIdempotencyKey() };
     }
@@ -104,6 +116,7 @@ export function useMusicServerState() {
         body: JSON.stringify({
           quote_id: quote.quote_id,
           idempotency_key: confirmKey.current.key,
+          provider_contract: quote.provider_contract,
         }),
       });
       const accepted = {
@@ -124,14 +137,16 @@ export function useMusicServerState() {
       if (REQUOTE_ERRORS.has(reason?.code)) {
         setQuote(null);
         confirmKey.current = null;
+        if (reason?.code === 'quote_stale' || reason?.code === 'contract_stale') await loadEntitlements();
       }
+      setErrorCode(reason?.code || 'unknown');
       setError(musicServerError(reason));
       return null;
     } finally {
       confirming.current = false;
       setBusy('');
     }
-  }, [quote]);
+  }, [loadEntitlements, quote]);
 
   const activeGenerationKey = generations
     .filter((item) => item?.id && !TERMINAL_STATES.has(item.state))
@@ -180,7 +195,7 @@ export function useMusicServerState() {
   }, [activeGenerationKey]);
 
   return {
-    entitlements, quote, generations, busy, error, quoteRevisionNow,
-    clearQuote, reviewQuote, confirmQuote, reload: loadEntitlements,
+    entitlements, quote, generations, busy, error, errorCode, quoteRevisionNow,
+    clearQuote, clearGenerations, reviewQuote, confirmQuote, reload: loadEntitlements,
   };
 }

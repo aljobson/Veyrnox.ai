@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
 
 function friendlyError(reason) {
   if (reason?.code === 'revision_conflict') return 'Your song or Custom draft changed. Close and reopen Reuse before replacing any fields.';
   if (reason?.code === 'reuse_unavailable') return 'This version has no reusable lyrics or style direction.';
   if (reason?.code === 'model_unavailable') return 'The verified Custom draft target is currently unavailable.';
+  if (reason?.code === 'contract_stale') return 'Music controls changed. Reuse was refreshed; review the source and try again.';
   return 'The reusable material could not be loaded or applied. Your existing Custom draft is unchanged.';
 }
 
@@ -21,22 +22,28 @@ export function MusicReuseDialog({ song, onClose }) {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
 
+  const loadContext = useCallback(async (isActive = () => true) => {
+    const result = await gatewayFetch(`/music/songs/${song.id}/reuse?version_id=${encodeURIComponent(song.version_id)}`);
+    if (!isActive()) return null;
+    setContext(result);
+    setReuseLyrics(result.source?.has_lyrics === true);
+    setReuseStyles(result.source?.has_styles === true);
+    return result;
+  }, [song.id, song.version_id]);
+
   useEffect(() => {
     closeRef.current?.focus();
     let active = true;
-    gatewayFetch(`/music/songs/${song.id}/reuse?version_id=${encodeURIComponent(song.version_id)}`)
-      .then((result) => {
-        if (!active) return;
-        setContext(result);
-        setReuseLyrics(result.source?.has_lyrics === true);
-        setReuseStyles(result.source?.has_styles === true);
-      })
-      .catch((reason) => { if (active) setError(friendlyError(reason)); })
-      .finally(() => { if (active) setBusy(false); });
+    const timer = window.setTimeout(() => {
+      loadContext(() => active)
+        .then(() => { if (!active) return; })
+        .catch((reason) => { if (active) setError(friendlyError(reason)); })
+        .finally(() => { if (active) setBusy(false); });
+    }, 0);
     function key(event) { if (event.key === 'Escape') onClose(); }
     document.addEventListener('keydown', key);
-    return () => { active = false; document.removeEventListener('keydown', key); };
-  }, [onClose, song.id, song.version_id]);
+    return () => { active = false; window.clearTimeout(timer); document.removeEventListener('keydown', key); };
+  }, [loadContext, onClose]);
 
   async function applyReuse() {
     if (busy || saved || (!reuseLyrics && !reuseStyles) || !context) return;
@@ -47,6 +54,8 @@ export function MusicReuseDialog({ song, onClose }) {
         method: 'POST',
         body: JSON.stringify({
           version_id: song.version_id,
+          provider_contract: context.provider_contract,
+          draft_id: context.draft_id,
           draft_revision: context.draft_revision,
           reuse_lyrics: reuseLyrics,
           reuse_styles: reuseStyles,
@@ -54,7 +63,13 @@ export function MusicReuseDialog({ song, onClose }) {
         }),
       });
       setSaved(result.draft);
-    } catch (reason) { setError(friendlyError(reason)); }
+    } catch (reason) {
+      setError(friendlyError(reason));
+      if (reason?.code === 'contract_stale') {
+        keyRef.current = null;
+        try { await loadContext(); } catch {}
+      }
+    }
     finally { setBusy(false); }
   }
 
