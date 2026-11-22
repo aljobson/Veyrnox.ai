@@ -4170,6 +4170,12 @@
     "ratio": 1.8
   },
   {
+    "id": "beat.search.results",
+    "english": "Clip search results",
+    "translation": "Resultados de búsqueda de clips",
+    "ratio": 1.63
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Ajuste a rejilla",

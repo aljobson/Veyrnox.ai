@@ -1,5 +1,7 @@
 import { barTicks, snapTick, songEnd, type BeatDoc, type BeatRegionDoc } from './doc';
 export { guardedRippleDelete, guardedRippleInsert } from './ripple';
+export { laneRevealScrollY, measureAndRevealLane, searchClips } from './clipSearch';
+export type { BeatClipSearchResult, ClipSearchResult, LaneRevealGeometry, MeasureAndRevealLaneInput, WindowMeasurable } from './clipSearch';
 export type DragMode = 'move' | 'trim' | 'resize';
 export type DragValue = BeatRegionDoc & { trackId: string };
 export const tickToX = (tick: number, zoom: number) => tick / barTicks * zoom;

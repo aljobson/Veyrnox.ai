@@ -42,6 +42,7 @@ import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 import { BeatEditorTransport } from '../../../components/beats/BeatEditorTransport';
 import { BeatPatternControls } from '../../../components/beats/BeatPatternControls';
 import { beatEditorLayout } from '../../../lib/beatNative/editorLayout';
+import { measureAndRevealLane } from '../../../lib/beatNative/clipSearch';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
@@ -63,6 +64,11 @@ export default function BeatEditor() {
     const audio = useRef<BeatAudio | null>(null);
     const audioSession = useRef<{ generation: number; engine: BeatAudio; recording: TakeRecording | null } | null>(null);
     const manualRun = useRef(false);
+    const workspace = useRef<ComponentRef<typeof ScrollView>>(null);
+    const workspaceScrollY = useRef(0), workspaceContentHeight = useRef(0), workspaceViewportHeight = useRef(0);
+    const revealGeneration = useRef(0);
+    const pendingRevealLane = useRef<ComponentRef<typeof View> | null>(null);
+    const revealRetryFrame = useRef<number | null>(null);
     const docRef = useRef<BeatDoc | undefined>(doc);
     docRef.current = doc;
     const [held, setHeld] = useState(false);
@@ -74,6 +80,48 @@ export default function BeatEditor() {
     const hitAnnouncement = useRef(-Infinity);
     const [editTrackId, setEditTrackId] = useState<string | undefined>(() => doc?.tracks[0]?.id);
     const resolvedEditTrackId = doc?.tracks.some(track => track.id === editTrackId) ? editTrackId : doc?.tracks[0]?.id;
+    const attemptLaneReveal = useCallback(() => {
+        const lane = pendingRevealLane.current;
+        if (!lane) return;
+        const token = ++revealGeneration.current;
+        const viewport = workspace.current;
+        if (!viewport) return;
+        measureAndRevealLane({
+            lane, workspace: viewport,
+            currentScrollY: workspaceScrollY.current,
+            contentHeight: workspaceContentHeight.current,
+            viewportHeight: workspaceViewportHeight.current,
+            inset: ds.space.gutter,
+            isCurrent: () => token === revealGeneration.current,
+            onReveal: y => {
+                if (pendingRevealLane.current !== lane) return;
+                workspaceScrollY.current = y;
+                viewport.scrollTo({ y, animated: false });
+                pendingRevealLane.current = null;
+            },
+        });
+    }, []);
+    const scheduleLaneRevealRetry = useCallback(() => {
+        if (!pendingRevealLane.current || revealRetryFrame.current !== null) return;
+        revealRetryFrame.current = requestAnimationFrame(() => {
+            revealRetryFrame.current = null;
+            attemptLaneReveal();
+        });
+    }, [attemptLaneReveal]);
+    const cancelPendingLaneReveal = useCallback(() => {
+        revealGeneration.current++;
+        pendingRevealLane.current = null;
+        if (revealRetryFrame.current !== null) {
+            cancelAnimationFrame(revealRetryFrame.current);
+            revealRetryFrame.current = null;
+        }
+    }, []);
+    const revealLane = useCallback((lane: ComponentRef<typeof View> | null) => {
+        cancelPendingLaneReveal();
+        pendingRevealLane.current = lane;
+        if (lane) attemptLaneReveal();
+    }, [attemptLaneReveal, cancelPendingLaneReveal]);
+    useEffect(() => () => { cancelPendingLaneReveal(); }, [cancelPendingLaneReveal]);
     const [mixer, setMixer] = useState(false);
     const [patternControls, setPatternControls] = useState(false);
     const patternControlsTrigger = useRef<ComponentRef<typeof Pressable>>(null);
@@ -292,8 +340,37 @@ export default function BeatEditor() {
     return (
         <View testID="beat-editor-shell" style={s.screen}>
             <Stack.Screen options={{ title: doc.title }} />
-            <ScrollView testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
-                contentContainerStyle={[s.content, layout === 'regular' && s.contentRegular]} keyboardShouldPersistTaps="handled">
+            <ScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
+                contentContainerStyle={[s.content, layout === 'regular' && s.contentRegular]} keyboardShouldPersistTaps="handled"
+                scrollEventThrottle={16}
+                onLayout={event => {
+                    const height = event.nativeEvent.layout.height;
+                    if (workspaceViewportHeight.current !== height) {
+                        revealGeneration.current++;
+                        workspaceViewportHeight.current = height;
+                        scheduleLaneRevealRetry();
+                        return;
+                    }
+                    workspaceViewportHeight.current = height;
+                }}
+                onContentSizeChange={(_width, height) => {
+                    if (workspaceContentHeight.current !== height) {
+                        revealGeneration.current++;
+                        workspaceContentHeight.current = height;
+                        scheduleLaneRevealRetry();
+                        return;
+                    }
+                    workspaceContentHeight.current = height;
+                }}
+                onScrollBeginDrag={cancelPendingLaneReveal}
+                onMomentumScrollBegin={cancelPendingLaneReveal}
+                onScroll={event => {
+                    const y = event.nativeEvent.contentOffset.y;
+                    if (workspaceScrollY.current === y) return;
+                    workspaceScrollY.current = y;
+                    revealGeneration.current++;
+                    scheduleLaneRevealRetry();
+                }}>
                 <View style={s.actions}>
                     <BeatSaveControls id={doc.id} apply={apply} />
                     <Button variant="secondary" icon="arrowUp" label={t('beatExport.title')} onPress={() => setExporting(true)} />
@@ -318,7 +395,8 @@ export default function BeatEditor() {
                             options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
                             onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
                         {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
-                            editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId} playing={playing} step={step} disabled={patternLocked} announce={setSaid} onHold={setHeld} /> : null}
+                            editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId} playing={playing} step={step} disabled={patternLocked}
+                            announce={setSaid} onHold={setHeld} onRevealLane={revealLane} /> : null}
                         {padSurfaceAvailable ? <>
                             <View style={s.padHeading}>
                                 <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>
