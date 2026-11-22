@@ -7152,6 +7152,66 @@
     "ratio": 2.22
   },
   {
+    "id": "editorFont.title",
+    "english": "Custom fonts",
+    "translation": "Polices personnalisées",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Gérer les polices personnalisées",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorFont.removeConfirmTitle",
+    "english": "Remove custom font?",
+    "translation": "Supprimer la police personnalisée ?",
+    "ratio": 1.84
+  },
+  {
+    "id": "editorFont.removeConfirm",
+    "english": "Remove font",
+    "translation": "Supprimer la police",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorFont.importTitle",
+    "english": "Add a custom font",
+    "translation": "Ajouter une police personnalisée",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorFont.name",
+    "english": "Font name",
+    "translation": "Nom de la police",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorFont.usage",
+    "english": "Usage permission",
+    "translation": "Autorisation d’utilisation",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorFont.choose",
+    "english": "Choose font file",
+    "translation": "Choisir le fichier de police",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorFont.checking",
+    "english": "Checking font…",
+    "translation": "Vérification de la police…",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Ajouter une police personnalisée",
+    "ratio": 2.13
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

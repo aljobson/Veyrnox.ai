@@ -4674,6 +4674,66 @@
     "ratio": 1.71
   },
   {
+    "id": "editorFont.title",
+    "english": "Custom fonts",
+    "translation": "Fuentes personalizadas",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Gestionar fuentes personalizadas",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "Hay que volver a vincularla",
+    "ratio": 2.08
+  },
+  {
+    "id": "editorFont.relink",
+    "english": "Relink {name}",
+    "translation": "Volver a vincular {name}",
+    "ratio": 1.85
+  },
+  {
+    "id": "editorFont.removeConfirmTitle",
+    "english": "Remove custom font?",
+    "translation": "¿Quitar la fuente personalizada?",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorFont.emptyTitle",
+    "english": "No custom fonts yet",
+    "translation": "Aún no hay fuentes personalizadas",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorFont.importTitle",
+    "english": "Add a custom font",
+    "translation": "Añadir una fuente personalizada",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorFont.name",
+    "english": "Font name",
+    "translation": "Nombre de la fuente",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorFont.licence",
+    "english": "Licence URL",
+    "translation": "URL de la licencia",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Añadir fuente personalizada",
+    "ratio": 1.8
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

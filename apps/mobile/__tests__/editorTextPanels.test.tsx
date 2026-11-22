@@ -124,12 +124,11 @@ test.each([undefined, SERVER_PLAIN_TEXT_STYLE, TEXT_DEFAULTS])('warning uses sto
     await textPanel(style);
     expect(visible(exportRefusal('text.style'))).toBe(style === TEXT_DEFAULTS);
 });
-test('text controls have names, and custom font explains the fallback', async () => {
+test('text controls have names, and a disabled custom-font feature explains the fallback', async () => {
     await textPanel({ ...TEXT_DEFAULTS, font: `VXFont_${'a'.repeat(64)}` });
     for (const label of ['Font', 'Text colour hex colour', 'Outline colour hex colour', 'Outline width', 'Background colour hex colour',
         'Background opacity', 'Italic', 'Underline', 'Letter spacing', 'Line height', 'Shadow colour hex colour',
         'Shadow opacity', 'Shadow blur', 'Shadow X', 'Shadow Y']) expect(labelled(label).length).toBeGreaterThan(0);
-    expect(visible('Custom font')).toBe(true);
     expect(visible('This title uses a custom font from the website. The phone shows a standard font.')).toBe(true);
 });
 test('audio selection keeps animation untouched and has no Apply', async () => {
@@ -158,8 +157,9 @@ test('all text section headings are exposed as headers and custom font chip cann
     for (const label of ['Text', 'Text styles', 'Text style', 'Typography']) {
         expect(root.container.queryAll(n => n.props.accessibilityRole === 'header' && n.children.includes(label)).length).toBeGreaterThan(0);
     }
-    const chip = labelled('Custom font').find(n => n.props.accessibilityState?.selected);
-    expect(chip?.props.accessibilityState).toEqual({ selected: true, disabled: true }); expect(chip?.props.onClick).toBeUndefined();
+    const chip = root.container.queryAll(n => n.props.accessibilityState?.selected && n.props.accessibilityState?.disabled)[0];
+    expect(chip.props.accessibilityLabel).toContain('Test');
+    expect(chip.props.accessibilityState).toEqual({ selected: true, disabled: true }); expect(chip.props.onClick).toBeUndefined();
 });
 test('trimmed animation notice disappears when restart is selected, then Apply resets the phase', async () => {
     const tl = webSequenceV3(); tl.video[0].animation = { ...tl.video[0].animation, offset: 12, span: 120 };

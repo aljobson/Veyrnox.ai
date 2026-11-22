@@ -5022,6 +5022,42 @@
     "ratio": 2.3
   },
   {
+    "id": "editorFont.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "In Verwendung",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "Erneute Verknüpfung nötig",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorFont.relink",
+    "english": "Relink {name}",
+    "translation": "{name} neu verknüpfen",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorFont.unsupportedOnIphone",
+    "english": "Can’t load on this iPhone",
+    "translation": "Kann auf diesem iPhone nicht geladen werden",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Eigene Schrift hinzufügen",
+    "ratio": 1.67
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

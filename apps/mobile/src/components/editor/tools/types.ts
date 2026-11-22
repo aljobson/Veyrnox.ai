@@ -11,9 +11,10 @@ import type { Canvas, Clip, EditorTrack, Media, Selection, TextClip, Timeline, T
 import type { ProjectDocument } from '../../../lib/editorBridge';
 import type { SlotKind } from '../../../lib/sources';
 import type { Kind } from '../../../lib/media';
+import type { EditorFontActions } from '../useEditorFonts';
 
 export type ToolPanelProps = {
-    motionActions?: MotionActions; maskActions?: MaskActions;
+    motionActions?: MotionActions; maskActions?: MaskActions; fontActions?: EditorFontActions;
     lookActions?: LookActions;
     audioActions?: AudioSettingsActions; originalAudio?: OriginalAudioActions;
     textActions?: TextActions; captionActions?: CaptionActions;

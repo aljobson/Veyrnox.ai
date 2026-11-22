@@ -62,7 +62,7 @@ import { touchTarget } from '../../lib/a11y';
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
 import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasOf, clipAt, copySelections, duplicateSelections, framesIn, groupSelections, moveClip, pasteClipboard, pruneEmptiedExtraTracks,
-    removeSelections, splitClip, timelineOf, updateClip, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from
+    removeSelections, splitClip, timelineOf, updateClip, validCustomFonts, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from
     '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
 import { HeaderAction } from '../HeaderAction';
@@ -70,6 +70,7 @@ import { LibraryChooser } from '../LibraryChooser';
 import { JobThumb, useAssetLinks } from '../JobThumb';
 import { mediaFrames, overlaySpan } from '../../lib/editorOverlay';
 import { useFullEditorSession } from './useFullEditorSession';
+import { useEditorFonts } from './useEditorFonts';
 export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false, startBestCut = false }: { projectId: string; jobId?: string; cuts?: readonly Cut[] | null; startAdvanced?:
     boolean; startBestCut?: boolean }) {
     const mounted = useRef(true); const [libraryPending, setLibraryPending] = useState(false); const [viewport, setViewport] = useState(0);
@@ -115,6 +116,9 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const budget = editorLayoutBudget({ windowHeight, topInset: insets?.top ?? 0, bottomInset: insets?.bottom ?? 0, trackCount: document ? timelineOf(document.timeline).tracks.length : 1 });
     const previewHeight = advanced ? budget.previewHeight : Math.max(72, Math.min(178, Math.round(windowHeight * (panelOpen ? 0.1 : 0.14))));
     const timeline = timelineOf(document?.timeline);
+    const fontActions = useEditorFonts({ projectId, timeline, ready, beginImport, currentTimeline: () => timelineOf(currentDocument()?.timeline),
+        applyTimeline: next => { const current = currentDocument(); return !current || current.project_id !== projectId ? { status: 'not-live' as const }
+            : markDocument({ ...current, schema_version: 3, timeline: next }); } });
     const textActions = useTextActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
         frameStore, setSelection, setSelections, setTool });
     const captionActions = useCaptionActions({ timeline, selection, applyTimeline: next => applyTimeline(next), setProblem,
@@ -207,7 +211,10 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             const result = await DocumentPicker.getDocumentAsync({ type: ['video/*', 'audio/*', 'image/jpeg', 'image/png', 'image/webp'], copyToCacheDirectory: true });
             if (!result.canceled && result.assets[0]) await importPicked(result.assets[0]); } catch { setProblem(t('editor.couldnotopenFilesTryagain')); } };
     const openWorkflow = async (path: string) => { const saved = await save(); if (saved) router.push(path as never); };
-    const openExport = async () => { if (!exportGate.available) { if (await save()) setProblem(t(exportGate.messageKey)); return; } try { requireOnline(); } catch {
+    const openExport = async () => { const rawFonts = (timeline as unknown as { fonts?: unknown }).fonts, declaredFonts = validCustomFonts(timeline);
+        if (rawFonts !== undefined && (!Array.isArray(rawFonts) || rawFonts.length !== declaredFonts.length)) { setProblem(t('editorEditGate.invalid')); return; }
+        if (declaredFonts.length) { setProblem(t('editorFont.exportNote')); return; }
+        if (!exportGate.available) { if (await save()) setProblem(t(exportGate.messageKey)); return; } try { requireOnline(); } catch {
         setProblem(OFFLINE_PAID_MESSAGE); return; } if (exportUnavailable()) { setProblem(t('handoff.exportUnavailable')); return; } if (await savedDocument()) setExportVisible(true); };
     // Simple view: three entries open sheets that reuse the same handlers as the full tool set.
     const showPanel = (next: Tool) => { setTool(next); setPanelOpen(true); }; const addRows: SheetRow[] = [
@@ -233,7 +240,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
-    const panelProps: ToolPanelProps = { lookActions, motionActions, maskActions,
+    const panelProps: ToolPanelProps = { lookActions, motionActions, maskActions, fontActions,
         audioActions, originalAudio, timeline, selection, selected, textActions, captionActions, patchSelected, applyTimeline, availableMedia, addMediaToTimeline, libraryPending, replacing,
         setLibraryKind, choosePhotos, chooseFiles, selections, selectClip, openVoiceover, openGenerate, addTimelineTrack,
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
@@ -315,7 +322,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             </View>}
             <View style={[styles.previewFrame, advanced || panelOpen ? { height: previewHeight } : styles.simpleFill]}>
                 <View style={[styles.canvas, { aspectRatio: canvas.aspect_ratio === '9:16' ? 9 / 16 : canvas.aspect_ratio === '1:1' ? 1 : 16 / 9 }]}>
-                    <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris}
+                    <PlaybackPreview frameStore={frameStore} timeline={timeline} api={api} playing={playing} localMediaUris={localMediaUris} fontReady={fontActions.has}
                         motionHandle={(advanced || panelOpen) && tool === 'motion' ? { selection, actions: motionActions } : undefined} />
                 </View>
             </View>

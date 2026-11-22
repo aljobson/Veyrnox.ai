@@ -4,10 +4,10 @@ import { editorTextPreviewStyle } from '../../lib/editorTextPreview';
 import type { TextClip } from '../../lib/nativeEditorModel';
 import { styles } from './fullEditorStyles';
 const { position, bottom, maxWidth, ...captionStyle } = styles.previewCaption;
-export function CaptionWords({ item, frame }: { item: TextClip; frame: number }) {
+export function CaptionWords({ item, frame, fontReady }: { item: TextClip; frame: number; fontReady?(family: string): boolean }) {
     const presentation = captionPresentation(item, frame - item.start) as { text: string; ranges: { from: number; to: number }[] };
     if (!presentation.text) return null;
-    const textStyle = editorTextPreviewStyle(item.style, item.size, Platform.OS, { outline: true });
+    const textStyle = editorTextPreviewStyle(item.style, item.size, Platform.OS, { outline: true, customFontReady: !!item.style?.font && !!fontReady?.(item.style.font) });
     const alignItems = textStyle.textAlign === 'left' ? 'flex-start' : textStyle.textAlign === 'right' ? 'flex-end' : 'center';
     const spans = []; let cursor = 0;
     for (const range of presentation.ranges) {
