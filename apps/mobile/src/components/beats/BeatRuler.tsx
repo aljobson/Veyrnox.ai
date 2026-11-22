@@ -8,8 +8,8 @@ import { tickToX, xToTick } from '../../lib/beatNative/arrange';
 import { position, type Apply } from '../../lib/beatNative/regionActions';
 import { useRegionHold } from '../../lib/beatNative/useRegionHold';
 
-type Controls = { locator: number; end: number; setLocator: (tick: number) => void; cycle: BeatCycle; apply: Apply };
-export function BeatRulerControls({ locator, end, setLocator, cycle, apply }: Controls) {
+type Controls = { locator: number; end: number; setLocator: (tick: number) => void; cycle: BeatCycle; apply: Apply; disabled: boolean };
+export function BeatRulerControls({ locator, end, setLocator, cycle, apply, disabled }: Controls) {
     const s = useThemedStyles(sheets);
     const positions = [
         { label: t('beat.ruler.start'), tick: 0 }, { label: t('beat.ruler.previous'), tick: locator - barTicks },
@@ -19,10 +19,11 @@ export function BeatRulerControls({ locator, end, setLocator, cycle, apply }: Co
         <Text accessibilityLiveRegion="polite">{position(locator)}</Text>
         <View style={s.controls}>{positions.map(item => <Button key={item.label} size="md" variant="secondary" label={item.label} onPress={() => setLocator(clampLocator(item.tick, end))} />)}</View>
         <Button size="md" variant="secondary" label={t(cycle.on ? 'beat.cycle.on' : 'beat.cycle.off')} accessibilityState={{ selected: cycle.on }}
+            disabled={disabled}
             onPress={() => apply(d => setCycle(d, { ...d.cycle, on: !d.cycle.on }), t('beat.cycle.changed'))} />
         <View style={s.controls}>
-            <Button size="md" variant="secondary" label={t('beat.cycle.start')} onPress={() => apply(d => setCycle(d, { ...d.cycle, start: locator }), t('beat.cycle.changed'))} />
-            <Button size="md" variant="secondary" label={t('beat.cycle.end')} onPress={() => apply(d => setCycle(d, { ...d.cycle, end: locator }), t('beat.cycle.changed'))} />
+            <Button size="md" variant="secondary" label={t('beat.cycle.start')} disabled={disabled} onPress={() => apply(d => setCycle(d, { ...d.cycle, start: locator }), t('beat.cycle.changed'))} />
+            <Button size="md" variant="secondary" label={t('beat.cycle.end')} disabled={disabled} onPress={() => apply(d => setCycle(d, { ...d.cycle, end: locator }), t('beat.cycle.changed'))} />
         </View>
     </>;
 }
@@ -57,7 +58,7 @@ export function BeatRuler(props: Props) {
         </Pressable>
         <View pointerEvents="box-none" style={{ height: 88, left: tickToX(band.start, props.zoom), width: Math.max(44, tickToX(band.end - band.start, props.zoom)) }}>
             <View testID="cycle-band" pointerEvents="none" style={[s.band, { width: tickToX(band.end - band.start, props.zoom) }, band.on && s.on, preview && s.preview]} />
-            <CycleHandle edge="start" props={props} preview={setPreview} /><CycleHandle edge="end" props={props} preview={setPreview} />
+            {!props.disabled && <><CycleHandle edge="start" props={props} preview={setPreview} /><CycleHandle edge="end" props={props} preview={setPreview} /></>}
         </View>
     </View>;
 }

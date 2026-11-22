@@ -318,7 +318,7 @@ export default function BeatEditor() {
                             options={[{ value: 'pattern', label: t('beat.view.pattern') }, { value: 'song', label: t('beat.view.song') }]}
                             onChange={view => apply(d => setView(d, view), t('beat.view.changed'))} />
                         {doc.view === 'song' ? <BeatArrangement manualRun={manualRun} key={doc.id} doc={doc} apply={apply} selectCurrentPattern={slot => { selectCurrentPattern(slot); }}
-                            editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId} playing={playing} step={step} announce={setSaid} onHold={setHeld} /> : null}
+                            editTrackId={resolvedEditTrackId} onEditTrackChange={setEditTrackId} playing={playing} step={step} disabled={patternLocked} announce={setSaid} onHold={setHeld} /> : null}
                         {padSurfaceAvailable ? <>
                             <View style={s.padHeading}>
                                 <Text variant="bodyStrong" accessibilityRole="header">{t('beat.pads')}</Text>

@@ -2,9 +2,11 @@ import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
 import BeatEditor from '../src/app/(app)/beats/[id]';
-import { t } from '../src/lib/i18n';
+import { setLocaleFromDevice, t } from '../src/lib/i18n';
 import { beatStore, newBeat, resetBeats, getBeat, putBeat } from '../src/lib/beatNative/store';
-import { addAudioRegion, addKitTrack, addRegion, copyRegion, deleteRegion, duplicateRegion, moveRegion, resizeRegion, selectPattern, setCycle, setAudioRegion, setRegionPattern, setView, splitRegion, trimRegionStart, validateBeat, type BeatDoc, type Edit } from '../src/lib/beatNative/doc';
+import { addAudioRegion, addKitTrack, addRegion, copyRegion, deleteRegion, duplicateRegion, moveRegion, resizeRegion, selectPattern, setCycle, setAudioRegion, setRegionPattern, setView, splitRegion, trimRegionStart, tryOp, validateBeat, type BeatDoc, type Edit } from '../src/lib/beatNative/doc';
+import { guardedRippleDelete } from '../src/lib/beatNative/arrange';
+import { canUndo, createHistory, record } from '../src/lib/beatNative/history';
 import { position, regionLabel } from '../src/lib/beatNative/regionActions';
 beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
@@ -27,6 +29,7 @@ let root: Root;
 const current = () => getBeat(mockId)!;
 const node = (id: string) => root.container.queryAll(n => n.props.testID === id)[0];
 const control = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+const field = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label && typeof n.props.onChangeText === 'function')[0];
 const press = async (label: string) => {
     const button = control(label); if (!button) throw new Error(`Missing ${label}`);
     await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
@@ -44,8 +47,26 @@ async function drag(id: string, dx: number, dy = 0) {
     await act(async () => props.onTouchMove(touch(dx, dy)));
     await act(async () => props.onTouchEnd(touch(dx, dy)));
 }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); resetBeats(); root = createRoot(); });
-afterEach(async () => { await act(async () => root.unmount()); resetBeats(); jest.useRealTimers(); });
+function rippleDoc(doc: BeatDoc): BeatDoc {
+    const next = structuredClone(doc);
+    next.tracks[0].regions = [0, 3840, 7680].map((start, i) => ({ id: `r${i}`, start, length: 3840, offset: 0, pattern: 'A' }));
+    next.tracks.push({ ...structuredClone(next.tracks[0]), id: 't2', name: 'Second track', regions: [{ ...next.tracks[0].regions[0], id: 'other' }] });
+    expect(validateBeat(next).ok).toBe(true);
+    return next;
+}
+function overflowRippleDoc(doc: BeatDoc): BeatDoc {
+    const next = structuredClone(doc), lastStart = 511 * 3840;
+    next.tempo.bpm = 240;
+    next.tracks[0].regions = [
+        { id: 'r0', start: 0, length: 3840, offset: 0, pattern: 'A' },
+        { id: 'last', start: lastStart, length: 3840, offset: 0, pattern: 'A' },
+    ];
+    next.cycle = { on: false, start: 0, end: 3840 };
+    expect(validateBeat(next).ok).toBe(true);
+    return next;
+}
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); setLocaleFromDevice(['en']); resetBeats(); root = createRoot(); });
+afterEach(async () => { await act(async () => root.unmount()); setLocaleFromDevice(['en']); resetBeats(); jest.useRealTimers(); });
 
 test('A1 view switch is saved and one Undo restores pattern view', async () => {
     await open(d => setView(d, 'pattern'));
@@ -111,6 +132,114 @@ test('A5 refusals surface the existing notice; vanished selection clears after r
     await press(t('beat.region.add')); const added = current().tracks[0].regions[0]; await choose(added.id);
     await press(t('beat.undo')); expect(node('region-inspector')).toBeUndefined();
     await press(t('beat.redo')); expect(node('region-inspector')).toBeUndefined();
+});
+test('ripple defaults off; inspector delete leaves a gap, while enabled delete closes only its lane and undoes once', async () => {
+    const before = await open(rippleDoc);
+    expect(control(t('beat.ripple.label')).props.accessibilityState.selected).toBe(false);
+    expect(control(t('beat.ripple.label')).props.accessibilityLabel).toBe(t('beat.ripple.label'));
+    expect(root.container.queryAll(n => n.children.includes(t('beat.ripple.hint')))).toHaveLength(1);
+    await choose('r0'); await press(t('beat.region.delete'));
+    expect(current().tracks[0].regions.map(region => region.start)).toEqual([3840, 7680]);
+    expect(current().tracks[1]).toEqual(before.tracks[1]);
+    await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
+
+    await press(t('beat.ripple.label')); expect(control(t('beat.ripple.label')).props.accessibilityState.selected).toBe(true);
+    await choose('r0'); await press(t('beat.region.delete'));
+    expect(current().tracks[0].regions.map(region => region.start)).toEqual([0, 3840]);
+    expect(current().tracks[1]).toEqual(before.tracks[1]); expect(current().cycle).toEqual(before.cycle);
+    await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+});
+test('ripple delete uses the identical policy through the region accessibility action', async () => {
+    const before = await open(rippleDoc); await press(t('beat.ripple.label'));
+    const props = node('region-r0').props;
+    expect(props.accessibilityActions.some((action: { name: string }) => action.name === 'delete')).toBe(true);
+    await act(async () => props.onAccessibilityAction({ nativeEvent: { actionName: 'delete' } }));
+    expect(current().tracks[0].regions.map(region => region.start)).toEqual([0, 3840]);
+    expect(current().tracks[1]).toEqual(before.tracks[1]);
+    await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
+});
+test('insert gap targets the selected region lane at the snapped locator and is one undo entry', async () => {
+    const before = await open(rippleDoc);
+    expect(control(t('beat.ripple.insert')).props.accessibilityState.disabled).toBe(true);
+    await choose('r0'); await press(t('beat.ruler.next')); await press(t('beat.ripple.insert'));
+    expect(current().tracks[0].regions.map(region => region.start)).toEqual([0, 7680, 11520]);
+    expect(current().tracks[1]).toEqual(before.tracks[1]); expect(current().cycle).toEqual(before.cycle);
+    await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+});
+test.each([
+    ['inside', t('beat.ripple.refusal.inside'), async () => { await choose('r0'); await press(t('beat.ruler.right')); }],
+    ['nothing', t('beat.ripple.refusal.nothing'), async () => { await choose('r0'); await press(t('beat.ruler.end')); }],
+] as const)('insert gap %s refusal preserves bytes/history and never announces a raw guard code', async (_case, message, locate) => {
+    await open(rippleDoc); await locate();
+    const before = JSON.stringify(current()); mockAnnounce.mockClear();
+    await press(t('beat.ripple.insert'));
+    expect(JSON.stringify(current())).toBe(before);
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+    expect(mockAnnounce).toHaveBeenCalledWith(t('beat.refused', { reason: message }));
+    expect(mockAnnounce.mock.calls.flat().join(' ')).not.toMatch(/ripple_(inside_region|nothing_to_move)/);
+});
+test('post-guard 512-bar overflow stays unchanged and surfaces localized invalid ripple copy only', async () => {
+    await open(overflowRippleDoc); await choose('last');
+    await act(async () => node('ruler-position').props.onClick({ nativeEvent: { locationX: 511 * 96 } }));
+    const before = JSON.stringify(current()); mockAnnounce.mockClear();
+    await press(t('beat.ripple.insert'));
+    expect(JSON.stringify(current())).toBe(before);
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+    expect(mockAnnounce).toHaveBeenCalledWith(t('beat.refused', { reason: t('beat.ripple.refusal.invalid') }));
+    expect(mockAnnounce.mock.calls.flat().join(' ')).not.toMatch(/invalid_ripple|512 bars/);
+});
+test('take-group ripple refusal preserves document/history and surfaces only localized copy', async () => {
+    const { takeRippleFixture } = require('../../../tests/musicBeatRippleFixtures.mjs');
+    const doc = takeRippleFixture(), before = JSON.stringify(doc), history = createHistory(doc);
+    const result = tryOp(doc, d => guardedRippleDelete(d, 't2', 'before'));
+    expect(result.doc).toBe(doc); expect(JSON.stringify(result.doc)).toBe(before);
+    expect(result.refused).toBe(t('beat.ripple.refusal.takeGroup')); expect(result.refused).not.toContain('ripple_take_group');
+    expect(result.code).toBe('ripple_take_group');
+    const next = record(history, result.doc, { label: 'refused ripple' });
+    expect(next).toBe(history); expect(canUndo(next)).toBe(false);
+});
+test('track rename trims, refuses a blank draft without history, enforces 40 characters and undoes once', async () => {
+    const before = await open(rippleDoc), name = field(t('beat.track.name'));
+    expect(name.props.maxLength).toBe(40); expect(name.props.value).toBe(before.tracks[0].name);
+    await act(async () => name.props.onChangeText('  Main drums  ')); await press(t('beat.track.rename'));
+    expect(current().tracks[0].name).toBe('Main drums');
+    await press(t('beat.undo')); expect(same(current())).toEqual(same(before));
+    await act(async () => field(t('beat.track.name')).props.onChangeText('   ')); mockAnnounce.mockClear();
+    const bytes = JSON.stringify(current()); await press(t('beat.track.rename'));
+    expect(JSON.stringify(current())).toBe(bytes); expect(field(t('beat.track.name')).props.value).toBe('   ');
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+    expect(mockAnnounce).toHaveBeenCalledWith(t('beat.refused', { reason: t('beat.track.nameRequired') }));
+});
+test('blank rename uses non-English UI and announcement copy without English or raw refusal leakage', async () => {
+    setLocaleFromDevice(['es']); await open(rippleDoc);
+    await act(async () => field(t('beat.track.name')).props.onChangeText('   ')); mockAnnounce.mockClear();
+    const before = JSON.stringify(current()); await press(t('beat.track.rename'));
+    expect(JSON.stringify(current())).toBe(before);
+    const localized = t('beat.refused', { reason: t('beat.track.nameRequired') });
+    expect(mockAnnounce).toHaveBeenCalledWith(localized);
+    expect(localized).toContain('Ponle un nombre a la pista.');
+    expect(mockAnnounce.mock.calls.flat().join(' ')).not.toMatch(/Give the track a name|track_name_required/);
+});
+test('read-only arrangement keeps selection but disables every new mutation with non-colour state', async () => {
+    await open(d => ({ ...rippleDoc(d), version: 5 }));
+    expect(control(t('beat.ripple.label')).props.accessibilityState).toEqual(expect.objectContaining({ selected: false, disabled: true }));
+    expect(control(t('beat.ripple.insert')).props.accessibilityState.disabled).toBe(true);
+    expect(field(t('beat.track.name')).props.editable).toBe(false);
+    await choose('r0'); expect(node('region-inspector')).toBeDefined();
+    expect(node('region-r0').props.accessibilityActions).toEqual([{ name: 'activate', label: t('beat.region.select') }]);
+    expect(control(t('beat.region.delete')).props.accessibilityState.disabled).toBe(true);
+});
+test('read-only selection of a non-current Pattern B region is document-byte-identical and history-free', async () => {
+    await open(d => {
+        const next = rippleDoc(d); next.version = 5; next.tracks[0].regions[0].pattern = 'B';
+        expect(next.currentPattern).toBe('A'); expect(validateBeat(next).ok).toBe(true); return next;
+    });
+    const before = JSON.stringify(current()); await choose('r0');
+    expect(node('region-inspector')).toBeDefined(); expect(node('region-r0').props.accessibilityState.selected).toBe(true);
+    expect(JSON.stringify(current())).toBe(before); expect(current().currentPattern).toBe('A');
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
 });
 test('A6 ruler locator is view state; cycle toggle, endpoints and invalid cycle use apply', async () => {
     const before = await open();

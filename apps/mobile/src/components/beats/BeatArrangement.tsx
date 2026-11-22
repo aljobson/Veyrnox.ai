@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type RefObject, type ComponentRef } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { Button, SegmentedControl, Text, themedStyles, useThemedStyles } from '../ui';
+import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
-import { addRegion, clampLocator, snapTick, songEnd, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc, type PatternSlot } from '../../lib/beatNative/doc';
-import { arrangementBars, laneAt, tickToX, xToTick, type DragValue } from '../../lib/beatNative/arrange';
+import { addRegion, barTicks, BeatRefusal, clampLocator, renameTrack, snapTick, songEnd, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc, type PatternSlot } from '../../lib/beatNative/doc';
+import { arrangementBars, guardedRippleInsert, laneAt, tickToX, xToTick, type DragValue } from '../../lib/beatNative/arrange';
 import { regionLabel, type Apply } from '../../lib/beatNative/regionActions';
 import { BeatRegionView } from './BeatRegionView';
 import { BeatRegionInspector } from './BeatRegionInspector';
@@ -13,14 +13,15 @@ import { BeatRuler, BeatRulerControls, RULER_HEIGHT } from './BeatRuler';
 type Props = {
     manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void;
     editTrackId: string | undefined; onEditTrackChange: (trackId: string) => void;
-    playing: boolean; step: number | null; announce: (message: string) => void; onHold: (held: boolean) => void;
+    playing: boolean; step: number | null; disabled: boolean; announce: (message: string) => void; onHold: (held: boolean) => void;
 };
 const MIN_LANE_HEIGHT = 96;
-export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, playing, step, announce, onHold, manualRun }: Props) {
+export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, playing, step, disabled, announce, onHold, manualRun }: Props) {
     const s = useThemedStyles(sheets);
     const [zoom, setZoom] = useState(96);
     const [snap, setSnap] = useState('240');
     const [copy, setCopy] = useState(false);
+    const [ripple, setRipple] = useState(false);
     const [locator, setLocator] = useState(0);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [preview, setPreview] = useState<DragValue | null>(null);
@@ -33,9 +34,11 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     const selectedTrack = doc.tracks.find(track => track.regions.some(region => region.id === selectedId));
     const selectedRegion = selectedTrack?.regions.find(region => region.id === selectedId);
     const editTrack = doc.tracks.find(track => track.id === editTrackId);
+    const [trackName, setTrackName] = useState(editTrack?.name ?? '');
     const laneHeights = doc.tracks.map(track => heights[track.id] ?? MIN_LANE_HEIGHT);
     const head = tickToX(playing ? (step ?? 0) * 240 : locator, zoom);
     useEffect(() => { if (!selectedRegion) setSelectedId(null); }, [selectedRegion]);
+    useEffect(() => { setTrackName(editTrack?.name ?? ''); }, [editTrack?.id, editTrack?.name]);
     useEffect(() => { setLocator(value => clampLocator(value, end)); }, [end]);
     useEffect(() => {
         if (!playing || manualRun.current || held || viewport.current <= 0) return;
@@ -46,10 +49,17 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     }, [head, playing, held, manualRun]);
     const choose = (region: BeatRegionDoc, track: BeatTrackDoc) => {
         setSelectedId(region.id); onEditTrackChange(track.id);
-        if (region.pattern && region.pattern !== doc.currentPattern) selectCurrentPattern(region.pattern);
+        if (!disabled && region.pattern && region.pattern !== doc.currentPattern) selectCurrentPattern(region.pattern);
         announce(regionLabel(doc, track, region));
     };
     const setPosition = (value: number) => setLocator(clampLocator(value, end));
+    const commitTrackName = () => {
+        if (!editTrack || disabled) return;
+        apply(d => {
+            if (!trackName.trim()) throw new BeatRefusal(t('beat.track.nameRequired'), 'track_name_required');
+            return renameTrack(d, editTrack.id, trackName);
+        }, t('beat.track.renamed', { track: trackName.trim() }));
+    };
     return <View style={s.group} testID="beat-arrangement">
         <SegmentedControl accessibilityLabel={t('beat.snap.label')} value={snap} onChange={setSnap} options={[
             { value: '3840', label: t('beat.snap.bar') }, { value: '960', label: t('beat.snap.quarter') },
@@ -58,15 +68,31 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
         <View style={s.controls}>
             <Button size="md" variant="secondary" label={t('beat.zoom.out')} disabled={zoom === 32} onPress={() => setZoom(value => Math.max(32, value - 32))} />
             <Button size="md" variant="secondary" label={t('beat.zoom.in')} disabled={zoom === 256} onPress={() => setZoom(value => Math.min(256, value + 32))} />
-            <Button size="md" variant="secondary" label={t('beat.region.copy')} accessibilityState={{ selected: copy }} onPress={() => setCopy(value => !value)} />
+            <Button size="md" variant="secondary" label={t('beat.region.copy')} accessibilityState={{ selected: copy }} disabled={disabled} onPress={() => setCopy(value => !value)} />
+            <Button size="md" variant="secondary" label={t(ripple ? 'beat.ripple.on' : 'beat.ripple.off')}
+                accessibilityLabel={t('beat.ripple.label')} accessibilityState={{ selected: ripple }} disabled={disabled}
+                onPress={() => { setRipple(value => !value); announce(t('beat.ripple.changed', { state: t(ripple ? 'beat.ripple.off' : 'beat.ripple.on') })); }} />
         </View>
-        <Button variant="secondary" label={t('beat.region.add')} disabled={!editTrack || (!!editTrack.kind && editTrack.kind !== 'drums')}
+        <Text variant="footnote" tone="secondary">{t('beat.ripple.hint')}</Text>
+        <View style={s.controls}>
+            <Button variant="secondary" label={t('beat.region.add')} disabled={disabled || !editTrack || (!!editTrack.kind && editTrack.kind !== 'drums')}
             onPress={() => {
                 if (!editTrack) return;
                 apply(d => addRegion(d, editTrack.id, snapTick(locator, Number(snap)), d.currentPattern), t('beat.region.changed'));
             }} />
+            <Button variant="secondary" label={t('beat.ripple.insert')} disabled={disabled || !selectedTrack || !selectedRegion}
+                onPress={() => {
+                    if (!selectedTrack || !selectedRegion) return;
+                    apply(d => guardedRippleInsert(d, selectedTrack.id, snapTick(locator, Number(snap)), barTicks), t('beat.ripple.inserted'));
+                }} />
+        </View>
         {editTrack?.kind && editTrack.kind !== 'drums' && <Text variant="footnote">{t('beat.region.drumOnly')}</Text>}
-        <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} />
+        {editTrack && <View style={s.rename}>
+            <TextField label={t('beat.track.name')} value={trackName} maxLength={40} editable={!disabled}
+                returnKeyType="done" onChangeText={setTrackName} onSubmitEditing={commitTrackName} />
+            <Button size="md" variant="secondary" label={t('beat.track.rename')} disabled={disabled} onPress={commitTrackName} />
+        </View>}
+        <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} disabled={disabled} />
         <View style={s.timeline}>
             <View style={s.headers}>
                 <View style={{ height: RULER_HEIGHT }} />
@@ -81,12 +107,12 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 onScroll={event => { scroll.current = event.nativeEvent.contentOffset.x; }} scrollEventThrottle={16}>
                 <View style={{ width }}>
                     <BeatRuler bars={bars} zoom={zoom} snap={Number(snap)} locator={locator} end={end} setLocator={setPosition}
-                        cycle={doc.cycle} apply={apply} lock={lock} announce={announce} />
+                        cycle={doc.cycle} apply={apply} lock={lock} announce={announce} disabled={disabled} />
                     {doc.tracks.map((track, index) => <View key={track.id} testID={`track-lane-${track.id}`} style={[s.lane, { height: laneHeights[index] }]}>
                         <Pressable testID={`lane-${track.id}`} accessible={false} accessibilityRole="none" style={s.emptyLane}
                             onPress={event => setPosition(snapTick(xToTick(event.nativeEvent.locationX, zoom), Number(snap)))} />
                         {track.regions.map(region => <BeatRegionView key={region.id} doc={doc} track={track} region={region}
-                            zoom={zoom} snap={Number(snap)} locator={locator} selected={selectedId === region.id} copy={copy} apply={apply}
+                            zoom={zoom} snap={Number(snap)} locator={locator} selected={selectedId === region.id} copy={copy} ripple={ripple} disabled={disabled} apply={apply}
                             select={() => choose(region, track)} announce={announce} lock={lock} preview={setPreview}
                             trackAt={(dy, originY) => doc.tracks[laneAt(laneHeights.slice(0, index).reduce((a, b) => a + b, 0) + ds.space.xs + originY + dy, laneHeights)].id} />)}
                         {preview?.trackId === track.id && <View pointerEvents="none" testID="region-preview" style={[s.preview, { left: tickToX(preview.start, zoom), width: tickToX(preview.length, zoom) }]} />}
@@ -99,12 +125,13 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
             <Button size="md" variant="secondary" label={t('beat.ruler.left')} onPress={() => setPosition(locator - Number(snap))} />
             <Button size="md" variant="secondary" label={t('beat.ruler.right')} onPress={() => setPosition(locator + Number(snap))} />
         </View>
-        {selectedRegion && selectedTrack && <BeatRegionInspector doc={doc} track={selectedTrack} region={selectedRegion} snap={Number(snap)} locator={locator} apply={apply} />}
+        {selectedRegion && selectedTrack && <BeatRegionInspector doc={doc} track={selectedTrack} region={selectedRegion} snap={Number(snap)} locator={locator} ripple={ripple} disabled={disabled} apply={apply} />}
     </View>;
 }
 const sheets = themedStyles(p => ({
     group: { gap: ds.space.md },
     controls: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
+    rename: { gap: ds.space.sm },
     timeline: { flexDirection: 'row', direction: 'ltr' },
     headers: { width: 80 },
     header: { padding: ds.space.sm, justifyContent: 'center', borderWidth: 1, borderColor: p.borderSubtle },

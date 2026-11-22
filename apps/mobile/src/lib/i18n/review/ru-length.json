@@ -4278,6 +4278,18 @@
     "ratio": 2.08
   },
   {
+    "id": "beat.track.rename",
+    "english": "Rename track",
+    "translation": "Переименовать дорожку",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.track.renamed",
+    "english": "Track renamed",
+    "translation": "Дорожка переименована",
+    "ratio": 1.62
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Привязка",
