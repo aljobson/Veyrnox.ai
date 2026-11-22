@@ -11,6 +11,7 @@ const projectId = '11111111-1111-4111-8111-111111111111', uuid = '22222222-2222-
 let mockSession: ReturnType<typeof useFullEditorSession>, mockNoToken = false, mockInvalidToken = false;
 let mockSheetMounted = false, mockHead: any;
 const mockRequest = jest.fn(), mockCopy = jest.fn(), mockPicked = jest.fn(), mockBackup = jest.fn();
+const mockRemove = jest.fn(); let mockAssetPackProps: any;
 const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() }, mockApi = { request: mockRequest };
 const mockRecorder = { record: jest.fn(), stop: jest.fn(), prepareToRecordAsync: jest.fn(), uri: 'file://native.wav' };
 const mockPlayer = { pause: jest.fn(), play: jest.fn(), addListener: () => ({ remove() {} }), currentTime: 0, duration: 4 };
@@ -29,9 +30,11 @@ jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEdito
         const token = mockSession.beginImport(); return token && { ...token, valid: () => !mockInvalidToken && token.valid() };
     } };
 } }));
+jest.mock('../src/components/editor/assetPacks/AssetPackLibrarySheet', () => ({ AssetPackLibrarySheet: (props: any) => { mockAssetPackProps = props; return null; } }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {}, userDocStorage: { get: async () => null, set: async () => {}, remove: async () => {}, keys: async () => [] } }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: (...args: any[]) => mockCopy(...args), backup: (...args: any[]) => mockBackup(...args) } }));
+jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: (...args: any[]) => mockCopy(...args),
+    remove: (...args: any[]) => mockRemove(...args), backup: (...args: any[]) => mockBackup(...args) } }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: (...args: any[]) => mockProbe(...args) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => '22222222-2222-4222-8222-222222222222' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
@@ -49,7 +52,8 @@ async function take() { await press(t('editorVoiceover.open')); await press(t('e
 beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockNoToken = false; mockInvalidToken = false;
     mockHead = { revision: 4, document: { schema_version: 3, project_id: projectId, timeline: emptyTimeline() } };
-    mockSheetMounted = false; mockRead.mockReset().mockResolvedValue(Uint8Array.from([... 'RIFF1234WAVE'].map(c => c.charCodeAt(0))));
+    mockSheetMounted = false; mockAssetPackProps = null; mockRemove.mockReset().mockResolvedValue(undefined);
+    mockRead.mockReset().mockResolvedValue(Uint8Array.from([... 'RIFF1234WAVE'].map(c => c.charCodeAt(0))));
     mockProbe.mockReset().mockResolvedValue(4); mockCopy.mockReset().mockResolvedValue({ file: 'file://durable.wav', type: 'audio/wav', size: 128000, seconds: 4, verified: true }); mockBackup.mockReset().mockResolvedValue(null);
     mockPicked.mockReset().mockImplementation((...args: Parameters<typeof mockSession.preparePicked>) => mockSession.preparePicked(...args));
     mockRecorder.prepareToRecordAsync.mockResolvedValue(undefined); mockRecorder.stop.mockResolvedValue(undefined); mockMode.mockResolvedValue(undefined);
@@ -102,6 +106,39 @@ test('existing three-argument imports still fall back to guessed length when pro
     expect(seconds).toBe(10); expect(mockSession.localMediaUris[`l-${uuid}`]).toBe('file://picked.mp3');
     await act(async () => { seconds = await mockSession.preparePicked({ uri: 'file://temp.wav' }, 'l-another', 'audio', true); });
     expect(seconds).toBeNull(); expect(mockSession.localMediaUris['l-another']).toBeUndefined();
+});
+test('verified asset-pack policy requires a durable copy and never starts media backup', async () => {
+    await open(); mockBackup.mockClear(); const expectedSha256 = 'a'.repeat(64);
+    let seconds: number | null = null;
+    await act(async () => { seconds = await mockSession.preparePicked({ uri: 'file://pack.png', mimeType: 'image/png' }, `l-${uuid}`, 'image',
+        { requireCopy: true, backup: false, expectedKind: 'image', expectedSha256 }); });
+    expect(seconds).toBe(3); expect(mockCopy).toHaveBeenCalledWith(projectId, `l-${uuid}`, 'file://pack.png', 'image/png', null,
+        expect.objectContaining({ expectedKind: 'image', expectedSha256 }));
+    expect(mockBackup).not.toHaveBeenCalled();
+});
+test('asset-pack add is one final undoable editor placement with attribution and no backup or Beats handoff', async () => {
+    await open(); mockBackup.mockClear(); mockSession.setFrame(77);
+    const asset = { id: 'room', name: 'Room Tone', file: 'room.wav', kind: 'audio', category: 'Sound effects', tags: ['quiet'], sha256: 'a'.repeat(64),
+        attribution: { credit: 'Studio', usage: 'Original recording', url: '' } } as const;
+    const pack = { version: 1, id: 'pack-one', name: 'Sound Kit', capabilities: ['local-catalog'], assets: [asset] } as const;
+    let result: string | undefined;
+    await act(async () => { result = await mockAssetPackProps.onAdd(pack, asset, { uri: 'file://room.wav', name: 'room.wav', size: 128000, mimeType: 'audio/vnd.wave' },
+        jest.fn(), () => true); });
+    expect(result).toBe('placed'); expect(mockBackup).not.toHaveBeenCalled(); expect(mockRemove).not.toHaveBeenCalled();
+    expect(tl().audio).toEqual([expect.objectContaining({ start: 77, mediaId: `l-${uuid}` })]);
+    expect(tl().media[`l-${uuid}`]).toMatchObject({ sourceName: 'room.wav', folder: 'Asset packs/Sound Kit/Sound effects', attribution: asset.attribution });
+    expect(JSON.stringify(tl())).not.toContain('local-catalog');
+    await act(async () => mockSession.travel('undo')); expect(tl().audio).toHaveLength(0);
+    await act(async () => mockSession.travel('redo')); expect(tl().audio).toHaveLength(1);
+});
+test('asset-pack placement refusal discards its durable copy', async () => {
+    mockHead.document.timeline.tracks.filter((track: any) => track.kind === 'audio').forEach((track: any) => { track.locked = true; }); await open();
+    const asset = { id: 'room', name: 'Room Tone', file: 'room.wav', kind: 'audio', category: 'Sound effects', tags: [], sha256: 'a'.repeat(64),
+        attribution: { credit: 'Studio', usage: 'Original recording', url: '' } } as const;
+    const pack = { version: 1, id: 'pack-one', name: 'Sound Kit', capabilities: ['local-catalog'], assets: [asset] } as const;
+    let result: string | undefined; await act(async () => { result = await mockAssetPackProps.onAdd(pack, asset,
+        { uri: 'file://room.wav', name: 'room.wav', size: 128000, mimeType: 'audio/wav' }, jest.fn(), () => true); });
+    expect(result).toBe('cannotAdd'); expect(mockRemove).toHaveBeenCalledWith(projectId, `l-${uuid}`); expect(tl().audio).toHaveLength(0);
 });
 
 test.each(['full', 'tooLarge'] as const)('document gate refusal preserves selection, take and document without announcing success (%s)', async reason => {

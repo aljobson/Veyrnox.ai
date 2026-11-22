@@ -98,7 +98,8 @@ test('simultaneous same-project installs publish once and share one registered f
     mockFiles.set('file:///pick/owned.ttf', ttf);
     const picked = { uri: 'file:///pick/owned.ttf', name: 'owned.ttf', size: 12 };
     const results = await Promise.all([store.install(project, picked, { name: 'Owned', rights }), store.install(project, picked, { name: 'Owned', rights })]);
-    expect(results.every(result => 'font' in result)).toBe(true); expect(results.map(result => 'font' in result && result.created)).toEqual([true, false]);
+    expect(results.every(result => 'font' in result)).toBe(true);
+    expect(results.filter(result => 'font' in result && result.created)).toHaveLength(1);
     expect(load).toHaveBeenCalledTimes(1);
 });
 test('a stale sign-out purge cannot erase the newly authenticated owner directory', async () => {

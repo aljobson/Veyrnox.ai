@@ -243,17 +243,25 @@ export function useFullEditorSession({ projectId, jobId, cuts, onOwnerChange = (
         setHistory({ canUndo: pastRef.current.length > 0, canRedo: futureRef.current.length > 0 });
     }, [commitDocument]);
 
-    const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string, requireCopy = false) => {
+    const preparePicked = async (asset: { uri: string; mimeType?: string | null; duration?: number | null }, mediaId: string, kind: string,
+        policy: boolean | { requireCopy?: boolean; backup?: boolean; expectedSha256?: string; expectedKind?: 'image' | 'video' | 'audio';
+            onProgress?(stage: 'copying' | 'verifying'): void; live?(): boolean } = {}) => {
+        const options = typeof policy === 'boolean' ? { requireCopy: policy } : policy;
         const token = sync.beginImport(); if (!token) return null;
         const task = beginSessionTask();
         try {
             const seconds = typeof asset.duration === 'number' && Number.isFinite(asset.duration) && asset.duration > 0 ? asset.duration / 1000 : kind === 'image' ? null : await probeDuration(asset.uri);
             if (!token.valid()) return null;
-            const file = await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
-            if (!token.valid()) return null;
-            if (requireCopy && !file) return null;
+            const verified = options.expectedSha256 || options.expectedKind || options.onProgress || options.live;
+            const file = verified ? await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds,
+                { expectedSha256: options.expectedSha256, expectedKind: options.expectedKind, onProgress: options.onProgress, live: options.live })
+                : await editorDeviceMedia.copy(projectId, mediaId, asset.uri, asset.mimeType || '', seconds);
+            if (!token.valid()) { if (file) await editorDeviceMedia.remove(projectId, mediaId); return null; }
+            if (options.requireCopy && !file) return null;
             setLocalMediaUris(current => ({ ...current, [mediaId]: file?.file || asset.uri }));
-            if (file) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => { if (source && sync.live() && task.current()) applyBackup(mediaId, source); });
+            if (file && options.backup !== false) void editorDeviceMedia.backup(api, projectId, mediaId, file).then(source => {
+                if (source && sync.live() && task.current()) applyBackup(mediaId, source);
+            });
             return seconds ?? (kind === 'image' ? 3 : 10);
         } finally { token.end(); }
     };

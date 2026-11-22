@@ -4734,6 +4734,60 @@
     "ratio": 1.8
   },
   {
+    "id": "editorPack.title",
+    "english": "Asset Packs",
+    "translation": "Paquetes de recursos",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorPack.open",
+    "english": "Open Asset-Pack JSON",
+    "translation": "Abrir JSON de paquete de recursos",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorPack.emptyTitle",
+    "english": "No asset packs yet",
+    "translation": "Aún no hay paquetes de recursos",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorPack.noResults",
+    "english": "No matching items",
+    "translation": "No hay elementos coincidentes",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorPack.progress.placing",
+    "english": "Adding at the playhead…",
+    "translation": "Añadiendo en el cabezal de reproducción…",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorPack.progress.creating",
+    "english": "Hashing local files… {done} of {total}",
+    "translation": "Calculando el hash de los archivos locales… {done} de {total}",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorPack.packName",
+    "english": "Pack name",
+    "translation": "Nombre del paquete",
+    "ratio": 2
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Elegir archivos multimedia del paquete",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorPack.category.All",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

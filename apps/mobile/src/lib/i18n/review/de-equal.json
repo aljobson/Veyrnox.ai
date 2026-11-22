@@ -346,5 +346,6 @@
   "editorMotion.linear": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorMotion.x": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorMotion.y": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
-  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending."
+  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorPack.category.Video": "Video is the standard German category label and is spelled identically to English."
 }
