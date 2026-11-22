@@ -77,7 +77,15 @@ export interface StaticPreviewPlan {
     readonly unsupported?: readonly StaticPreviewUnsupportedFeature[];
 }
 
-export type StaticPreviewResult =
-    | { readonly ok: true; readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+export type StaticPreviewFailure =
     | { readonly ok: false; readonly code: 'invalid-plan'; readonly issues: readonly string[] }
     | { readonly ok: false; readonly code: 'unsupported'; readonly features: readonly StaticPreviewUnsupportedFeature[] };
+
+/** On success the caller owns `image` and must call `image.dispose()` exactly once. */
+export type StaticPreviewImageResult =
+    | { readonly ok: true; readonly width: number; readonly height: number; readonly image: SkImage }
+    | StaticPreviewFailure;
+
+export type StaticPreviewResult =
+    | { readonly ok: true; readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+    | StaticPreviewFailure;
