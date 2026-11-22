@@ -26,7 +26,7 @@ function timeline(): Timeline {
 }
 
 function input(overrides: Partial<ClipFinderAnalysisInput> = {}): ClipFinderAnalysisInput {
-    return { project: 'project-1', uri: URI, timeline: timeline(), clip, hasAudio: true, nominalFrameRate: 29.97, ...overrides };
+    return { project: 'project-1', uri: URI, timeline: timeline(), clip, hasAudio: true, ...overrides };
 }
 
 function pcmBytes(samples: ArrayLike<number>) {
@@ -101,7 +101,7 @@ test('runs scenes then timestamped web-average PCM, uses hard cuts only, and mat
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(run.order).toEqual(['scenes', 'audio', 'release']);
-    expect(run.analyzeScenes).toHaveBeenCalledWith(expect.objectContaining({ samplingMode: 'all', nominalFrameRate: 29.97 }));
+    expect(run.analyzeScenes).toHaveBeenCalledWith(expect.objectContaining({ samplingMode: 'all' }));
     expect(run.decodePcm).toHaveBeenCalledWith('project-1', {
         uri: URI, fromSeconds: 2, toSeconds: 17, sampleRate: 48_000, channels: 1, mixMode: 'web-average',
     }, expect.any(Function), undefined);
@@ -117,6 +117,24 @@ test('runs scenes then timestamped web-average PCM, uses hard cuts only, and mat
         .toEqual(canonical.map((pick: ClipFinderPick) => [pick.start + 2, pick.end + 2, pick.reasons]));
     result.value.picks.forEach((pick, index) => expect(pick.score).toBeCloseTo(canonical[index].score, 12));
     expect(run.release).toHaveBeenCalledWith('project-1', 'pcm-1');
+});
+
+test('keeps native decode and JS PCM reads in one continuous audio progress stage', async () => {
+    const run = harness([.1, .2, .3]);
+    run.decodePcm.mockImplementationOnce(async (_project, _request, onProgress) => {
+        onProgress?.({ stage: 'decoding', value: 0.4 });
+        onProgress?.({ stage: 'decoding', value: 1 });
+        return { ok: true, value: run.artifact };
+    });
+    const progress: { phase: string; value: number }[] = [];
+    const result = await analyzeClipForFinder(input({ onProgress: value => progress.push(value) }), run.dependencies);
+    expect(result.ok).toBe(true);
+    expect(progress.filter(value => value.phase === 'audio')).toEqual([
+        { phase: 'audio', value: 0.2 },
+        { phase: 'audio', value: 0.5 },
+        { phase: 'audio', value: 0.99 },
+        { phase: 'audio', value: 1 },
+    ]);
 });
 
 test('places discontinuous PCM segments by absolute source timestamp', async () => {
@@ -226,8 +244,6 @@ test.each([
     { project: 'project-1', uri: URI, clip: { ...clip, in: 1.5 }, hasAudio: true },
     { project: 'project-1', uri: URI, clip: { ...clip, len: 2 }, hasAudio: true },
     { project: 'project-1', uri: URI, clip: { ...clip, len: 901 }, hasAudio: true },
-    { project: 'project-1', uri: URI, clip, hasAudio: true, nominalFrameRate: 0 },
-    { project: 'project-1', uri: URI, clip, hasAudio: true, nominalFrameRate: 240.01 },
 ] as const)('rejects invalid input before native work', async override => {
     const run = harness([.1]);
     await expect(analyzeClipForFinder(input(override as any), run.dependencies)).resolves.toEqual({ ok: false, code: 'invalid-input' });

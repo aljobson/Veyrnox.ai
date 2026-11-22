@@ -214,6 +214,31 @@ test('Clip Finder explains and blocks the 720p resolution boundary before analys
     expect(mockClipState.find).not.toHaveBeenCalled();
 });
 
+test('an active scene analysis blocks Clip Finder without starting a second native generation', async () => {
+    mockSceneState = { ...mockSceneState, status: 'analyzing', progress: 0.4 };
+    serverDocument = clipFinderDocument();
+    await render();
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    await press('Scenes');
+    expect(labelled('Cancel')).toHaveLength(1);
+    await press('Clip Finder');
+    expect(visible('Scenes: Reading video… 40%')).toBe(true);
+    expect(labelled('Find clips')[0].props.accessibilityState.disabled).toBe(true);
+    await act(async () => labelled('Find clips')[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(mockClipState.find).not.toHaveBeenCalled();
+});
+
+test('an active Clip Finder analysis blocks Scenes without starting a second native generation', async () => {
+    mockClipState = { ...mockClipState, status: 'reading-sound', progress: 0.7 };
+    await openClipFinder();
+    expect(labelled('Cancel')).toHaveLength(1);
+    await press('Scenes');
+    expect(visible('Clip Finder: Reading sound')).toBe(true);
+    expect(labelled('Detect scenes')[0].props.accessibilityState.disabled).toBe(true);
+    await act(async () => labelled('Detect scenes')[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
+    expect(mockSceneState.detect).not.toHaveBeenCalled();
+});
+
 test('Clip Finder preview seeks to its start and stops playback at the bounded end', async () => {
     mockClipState = { ...mockClipState, status: 'done', progress: 1, rows: [foundRows[0]], resultKey: 'current' };
     await openClipFinder();

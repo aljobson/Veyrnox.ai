@@ -8245,7 +8245,7 @@ export default {
   "editorClips.blocker.transform": "클립 찾기에는 속도, 역재생 또는 프리즈 프레임 변경이 없는 클립이 필요합니다.",
   "editorClips.blocker.short": "0.1초 이상의 클립을 선택하세요.",
   "editorClips.blocker.long": "30초 이하의 클립을 선택하세요.",
-  "editorClips.blocker.resolution": "Clip Finder는 최대 720p 동영상을 지원합니다.",
+  "editorClips.blocker.resolution": "클립 찾기는 최대 720p 동영상을 지원합니다.",
   "editorClips.sourceError": "이 동영상을 기기 내 분석용으로 준비하지 못했습니다.",
   "editorClips.invalidError": "이 iPhone에서는 이 동영상 형식을 분석할 수 없습니다.",
   "editorClips.spaceError": "이 iPhone의 저장 공간을 확보한 후 다시 시도하세요.",

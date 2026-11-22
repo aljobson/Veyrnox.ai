@@ -110,7 +110,7 @@ export function useEditorClipFinder({ api, projectId, timeline, media, clip, loc
             const hasAudio = inspected.value.hasAudio;
             setState({ status: 'reading-picture', progress: 0.05, rows: [], hadAudio: hasAudio });
             const result = await analyzeClipForFinder({ project: projectId, uri: source.uri, timeline,
-                clip: { start: clip.start, in: clip.in ?? 0, len: clip.len }, hasAudio, nominalFrameRate: inspected.value.nominalFrameRate, signal: active.signal,
+                clip: { start: clip.start, in: clip.in ?? 0, len: clip.len }, hasAudio, signal: active.signal,
                 onProgress: progress => { if (current()) setState(value => progressState(value, progress, hasAudio)); } });
             if (!current()) return;
             if (!result.ok) {

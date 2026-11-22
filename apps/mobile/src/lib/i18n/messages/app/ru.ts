@@ -8584,7 +8584,7 @@ export default {
   "editorClips.blocker.transform": "Для поиска клипов нужен фрагмент без изменения скорости, реверса и стоп-кадра.",
   "editorClips.blocker.short": "Выберите клип длительностью не менее 0,1 секунды.",
   "editorClips.blocker.long": "Выберите клип длительностью не более 30 секунд.",
-  "editorClips.blocker.resolution": "Clip Finder поддерживает видео с разрешением до 720p.",
+  "editorClips.blocker.resolution": "Поиск клипов поддерживает видео с разрешением до 720p.",
   "editorClips.sourceError": "Не удалось подготовить видео для анализа на устройстве.",
   "editorClips.invalidError": "Видео этого формата нельзя проанализировать на данном iPhone.",
   "editorClips.spaceError": "Освободите место на этом iPhone и повторите попытку.",

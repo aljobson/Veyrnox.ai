@@ -8474,7 +8474,7 @@ export default {
   "editorClips.blocker.transform": "Le Détecteur de clips nécessite un clip sans changement de vitesse, lecture inversée ni image figée.",
   "editorClips.blocker.short": "Choisissez un clip d’au moins 0,1 seconde.",
   "editorClips.blocker.long": "Choisissez un clip de 30 secondes maximum.",
-  "editorClips.blocker.resolution": "Clip Finder prend en charge les vidéos jusqu’à 720p.",
+  "editorClips.blocker.resolution": "Le Détecteur de clips prend en charge les vidéos jusqu’à 720p.",
   "editorClips.sourceError": "Cette vidéo n’a pas pu être préparée pour l’analyse sur l’appareil.",
   "editorClips.invalidError": "Ce format vidéo ne peut pas être analysé sur cet iPhone.",
   "editorClips.spaceError": "Libérez de l’espace sur cet iPhone, puis réessayez.",

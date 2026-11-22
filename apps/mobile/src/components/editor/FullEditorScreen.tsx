@@ -150,7 +150,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const sceneRows = scenes.resultKey === sceneRunKey ? scenes.rows : [];
     const sceneBlockerCode = sceneAnalysisBlocker(selectedMedia, sceneClip, !!selectedTrack?.locked);
     const sceneBlockerKeys = { select: 'editorScenes.select', transform: 'editorScenes.transform', short: 'editorScenes.short', long: 'editorScenes.long', locked: 'editorScenes.locked' } as const;
-    const sceneBlocker = sceneBlockerCode ? t(sceneBlockerKeys[sceneBlockerCode]) : null;
+    const sceneBlockerBase = sceneBlockerCode ? t(sceneBlockerKeys[sceneBlockerCode]) : null;
     const sceneError = scenes.error === 'source' ? t('editorScenes.sourceError') : scenes.error === 'invalid-input' || scenes.error === 'unsupported-codec' || scenes.error === 'corrupt-media'
         ? t('editorScenes.invalidError') : scenes.error === 'disk-full' ? t('editorScenes.spaceError') : scenes.error ? t('editorScenes.error') : null;
     const sceneMarks = sceneRows.map(row => ({ frame: row.frame, kind: row.kind, selected: row.ticked }));
@@ -159,11 +159,20 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         localUri: selectedMedia ? localMediaUris[selectedMedia.id] : undefined, runKey: clipRunKey });
     const clipRows = clips.resultKey === clipRunKey ? clips.rows : [];
     const clipBlockerCode = clipFinderBlocker(selectedMedia, sceneClip);
-    const clipBlocker = clipBlockerCode === 'select' ? t('editorClips.blocker.select')
+    const clipBlockerBase = clipBlockerCode === 'select' ? t('editorClips.blocker.select')
         : clipBlockerCode === 'transform' ? t('editorClips.blocker.transform')
         : clipBlockerCode === 'short' ? t('editorClips.blocker.short')
         : clipBlockerCode === 'long' ? t('editorClips.blocker.long')
         : clipBlockerCode === 'resolution' ? t('editorClips.blocker.resolution') : null;
+    const sceneRunning = scenes.status === 'preparing' || scenes.status === 'analyzing';
+    const clipRunning = clips.status === 'preparing' || clips.status === 'reading-picture' || clips.status === 'reading-sound' || clips.status === 'ranking';
+    const sceneBusyText = scenes.status === 'preparing' ? t('editorScenes.preparing')
+        : t('editorScenes.analyzing', { value1: Math.round(scenes.progress * 100) });
+    const clipBusyText = clips.status === 'reading-picture' ? t('editorClips.readingPicture')
+        : clips.status === 'reading-sound' ? t('editorClips.readingSound')
+        : clips.status === 'ranking' ? t('editorClips.ranking') : t('editorClips.preparing');
+    const sceneBlocker = clipRunning ? `${t('editorClips.title')}: ${clipBusyText}` : sceneBlockerBase;
+    const clipBlocker = sceneRunning ? `${t('editorScenes.title')}: ${sceneBusyText}` : clipBlockerBase;
     const clipError = clips.error === 'source' ? t('editorClips.sourceError')
         : clips.error === 'resolution' ? t('editorClips.blocker.resolution')
         : clips.error === 'invalid-input' || clips.error === 'unsupported-codec' || clips.error === 'corrupt-media' ? t('editorClips.invalidError')
@@ -473,11 +482,11 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             {tool === 'captions' ? <CaptionsPanel {...panelProps} /> : null}
             {tool === 'transcript' ? <TranscriptPanel {...panelProps} /> : null}
             {tool === 'scenes' ? <ScenesPanel availability={scenes.availability} blocker={sceneBlocker} status={scenes.status} progress={scenes.progress} rows={sceneRows} error={sceneError}
-                onDetect={() => { setPlaying(false); setSceneAnnouncement(null); void scenes.detect(); }} onCancel={scenes.cancel} onToggle={scenes.toggle}
+                onDetect={() => { if (clipRunning) return; setPlaying(false); setSceneAnnouncement(null); void scenes.detect(); }} onCancel={scenes.cancel} onToggle={scenes.toggle}
                 onPreview={frame => { setPlaying(false); setFrame(frame); }} onApply={applySceneCuts} /> : null}
             {tool === 'clips' ? <ClipFinderPanel availability={clips.availability} blocker={clipBlocker} status={clips.status} progress={clips.progress} fps={timeline.fps}
                 rows={clipRows} error={clipError} hadAudio={clips.hadAudio} previewingId={clipPreview?.id}
-                onFind={() => { setPlaying(false); setClipPreview(null); setClipAnnouncement(null); void clips.find(); }} onCancel={clips.cancel} onToggle={clips.toggle}
+                onFind={() => { if (sceneRunning) return; setPlaying(false); setClipPreview(null); setClipAnnouncement(null); void clips.find(); }} onCancel={clips.cancel} onToggle={clips.toggle}
                 onPreview={previewClip} onApply={applyFoundClips} /> : null}
             {tool === 'effects' ? <EffectsPanel {...panelProps} /> : null}
             {tool === 'transitions' ? <TransitionsPanel {...panelProps} /> : null}

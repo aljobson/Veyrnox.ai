@@ -128,8 +128,28 @@ enum EditorPcmDecoder {
       bytes += outputLength; frames += Int64(sampleFrames)
       if timestamp.isFinite { progress(min(1, max(0, (timestamp - request.fromSeconds) / span))) }
     }
-    guard reader.status == .completed, frames > 0 else {
+    if cancelled() {
+      reader.cancelReading(); try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.cancelled)
+    }
+    guard reader.status == .completed else {
       try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.corruptMedia)
+    }
+    if frames == 0 {
+      // A valid video can have an audio track whose samples do not overlap the selected source range. The web accumulator
+      // treats that range as zero loudness, so exact mode materializes bounded mono silence instead of reporting corruption.
+      guard webAverage, request.fromSeconds <= 9_007_199_254.740_991 else {
+        try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.corruptMedia)
+      }
+      let silentFrames = Int64((span * Double(request.sampleRate)).rounded())
+      let outputLength = Int(silentFrames) * MemoryLayout<Float>.size
+      guard silentFrames > 0, outputLength > 0, outputLength <= EditorMediaPaths.pcmLimit else {
+        try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.corruptMedia)
+      }
+      do { try handle.write(contentsOf: Data(count: outputLength)) }
+      catch { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed) }
+      let timestampUs = Int64((request.fromSeconds * 1_000_000).rounded())
+      frames = silentFrames; bytes = outputLength
+      segments = [["offsetFrames": Int64(0), "timestampUs": timestampUs, "frames": silentFrames]]
     }
     var manifest: [String: Any] = ["version": 1, "format": "f32le-interleaved", "sampleRate": request.sampleRate,
       "channels": request.channels, "frames": frames, "bytes": bytes]

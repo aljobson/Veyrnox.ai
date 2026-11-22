@@ -25,7 +25,6 @@ export type SceneAnalysisInput = {
     uri: string;
     clip: SceneClipRange;
     samplingMode?: 'all';
-    nominalFrameRate?: number;
     signal?: AbortSignal;
     onProgress?(progress: EditorMediaProgress): void;
 };
@@ -87,13 +86,12 @@ const stopped = (signal?: AbortSignal) => signal?.aborted === true;
 function validInput(input: SceneAnalysisInput) {
     const { clip } = input;
     return validIdentifier(input.project) && validateOwnedFileUri(input.uri) && safeNonNegativeInteger(clip.start) && safeNonNegativeInteger(clip.in)
-        && safePositiveInteger(clip.len) && clip.len >= 3 && clip.len <= MAX_FRAMES
-        && (input.nominalFrameRate === undefined || finite(input.nominalFrameRate) && input.nominalFrameRate > 0 && input.nominalFrameRate <= 240);
+        && safePositiveInteger(clip.len) && clip.len >= 3 && clip.len <= MAX_FRAMES;
 }
 
-export function exactSceneFrameBudget(clipFrames: number, nominalFrameRate?: number) {
-    const duration = clipFrames / FPS, sourceRate = nominalFrameRate && nominalFrameRate > 0 ? nominalFrameRate : 60;
-    return Math.min(1_800, Math.ceil(duration * Math.min(60, sourceRate)) + 2);
+export function exactSceneFrameBudget(clipFrames: number) {
+    // nominalFrameRate is an average for VFR media, so reserve against the enforced 60fps cap.
+    return Math.min(1_800, clipFrames * 2 + 2);
 }
 
 function childUri(manifestUri: string, name: string): string | null {
@@ -158,7 +156,7 @@ export async function analyzeClipScenes(input: SceneAnalysisInput, dependencies:
     const media = dependencies.media ?? editorMedia;
     const files = dependencies.files ?? defaultFiles;
     const request: SampleFramesRequest = { uri: input.uri, fromSeconds: input.clip.in / FPS, toSeconds: (input.clip.in + input.clip.len) / FPS,
-        maxFrames: input.samplingMode === 'all' ? exactSceneFrameBudget(input.clip.len, input.nominalFrameRate) : input.clip.len, resizeMode: 'fill',
+        maxFrames: input.samplingMode === 'all' ? exactSceneFrameBudget(input.clip.len) : input.clip.len, resizeMode: 'fill',
         ...(input.samplingMode === 'all' ? { samplingMode: 'all' as const, maximumFrameRate: 60 as const } : {}) };
     let artifact: FrameArtifact | undefined;
     try {

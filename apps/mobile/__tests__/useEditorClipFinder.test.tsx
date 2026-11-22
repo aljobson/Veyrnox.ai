@@ -28,7 +28,7 @@ function Harness({ runKey = 'run-1' }: { runKey?: string }) {
     return null;
 }
 const capability = (available = true) => ({ available, operations: { inspect: available, sampleFrames: available, decodePcm: available } });
-const inspected = (hasAudio = true) => ({ ok: true as const, value: { hasVideo: true, hasAudio, width: 1280, height: 720, nominalFrameRate: 29.97 } });
+const inspected = (hasAudio = true) => ({ ok: true as const, value: { hasVideo: true, hasAudio, width: 1280, height: 720, nominalFrameRate: 25 } });
 const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = new Promise<T>(done => { resolve = done; }); return { promise, resolve }; };
 
 beforeEach(() => {
@@ -74,7 +74,8 @@ test('materializes and inspects once, reports monotonic stages, and fences the f
     expect(mockInspect).toHaveBeenCalledTimes(1);
     expect(mockInspect).toHaveBeenCalledWith(projectId, sourceUri, expect.any(AbortSignal));
     const input = mockAnalyze.mock.calls[0][0];
-    expect(input).toMatchObject({ project: projectId, uri: sourceUri, timeline, clip: { start: 30, in: 15, len: 300 }, hasAudio: true, nominalFrameRate: 29.97 });
+    expect(input).toMatchObject({ project: projectId, uri: sourceUri, timeline, clip: { start: 30, in: 15, len: 300 }, hasAudio: true });
+    expect(input).not.toHaveProperty('nominalFrameRate');
 
     await act(async () => input.onProgress({ phase: 'scenes', value: 0.4 }));
     expect(latest.status).toBe('reading-picture'); expect(latest.progress).toBeCloseTo(0.23);
@@ -82,8 +83,10 @@ test('materializes and inspects once, reports monotonic stages, and fences the f
     expect(latest.progress).toBeCloseTo(0.23);
     await act(async () => input.onProgress({ phase: 'audio', value: 0.3 }));
     expect(latest.status).toBe('reading-sound'); expect(latest.progress).toBeCloseTo(0.635);
+    await act(async () => input.onProgress({ phase: 'audio', value: 0.5 }));
+    expect(latest.status).toBe('reading-sound'); expect(latest.progress).toBeCloseTo(0.725);
     await act(async () => input.onProgress({ phase: 'scenes', value: 1 }));
-    expect(latest.status).toBe('reading-sound'); expect(latest.progress).toBeCloseTo(0.635);
+    expect(latest.status).toBe('reading-sound'); expect(latest.progress).toBeCloseTo(0.725);
     await act(async () => input.onProgress({ phase: 'audio', value: 1 }));
     expect(latest).toMatchObject({ status: 'ranking', progress: 0.95 });
 

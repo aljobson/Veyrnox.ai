@@ -114,6 +114,16 @@ test('native web-average preserves multichannel order with an explicit discrete 
     expect(source).toContain('sum += Double(source[frame * channels + channel])');
 });
 
+test('native web-average maps only a completed empty audio range to bounded zero loudness', () => {
+    const source = readFileSync(resolve(__dirname, '../modules/editor-media/ios/EditorPcmDecoder.swift'), 'utf8');
+    expect(source).toContain('guard reader.status == .completed else');
+    expect(source).toContain('if frames == 0');
+    expect(source).toContain('guard webAverage, request.fromSeconds <= 9_007_199_254.740_991 else');
+    expect(source).toContain('handle.write(contentsOf: Data(count: outputLength))');
+    expect(source).toContain('segments = [["offsetFrames": Int64(0), "timestampUs": timestampUs, "frames": silentFrames]]');
+    expect(source.indexOf('guard reader.status == .completed else')).toBeLessThan(source.indexOf('if frames == 0'));
+});
+
 test('aborting a one-shot operation cancels its hidden native token', async () => {
     let resolve: ((value: Record<string, unknown>) => void) | undefined;
     const pending = fakeNative({ sampleFrames: jest.fn(() => new Promise<Record<string, unknown>>(value => { resolve = value; })) });

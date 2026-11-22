@@ -57,10 +57,10 @@ test('exact scene mode requests every source frame up to 60fps and requires arti
     const artifact = { ...data.artifact, samplingMode: 'all' as const, maximumFrameRate: 60 as const };
     const manifest = { ...data.manifest, samplingMode: 'all' as const, maximumFrameRate: 60 as const };
     const run = harness({ artifact, manifest });
-    const result = await analyzeClipScenes({ project: 'project-1', uri: sourceUri, clip, samplingMode: 'all', nominalFrameRate: 29.97 }, { media: run.media, files: run.files });
+    const result = await analyzeClipScenes({ project: 'project-1', uri: sourceUri, clip, samplingMode: 'all' }, { media: run.media, files: run.files });
     expect(result.ok).toBe(true);
     expect(run.sampleFrames).toHaveBeenCalledWith('project-1', {
-        uri: sourceUri, fromSeconds: 2, toSeconds: 6, maxFrames: 122, resizeMode: 'fill', samplingMode: 'all', maximumFrameRate: 60,
+        uri: sourceUri, fromSeconds: 2, toSeconds: 6, maxFrames: 242, resizeMode: 'fill', samplingMode: 'all', maximumFrameRate: 60,
     }, undefined, undefined);
     expect(run.release).toHaveBeenCalledWith('project-1', 'artifact-1');
 
@@ -75,12 +75,9 @@ test('exact scene mode requests every source frame up to 60fps and requires arti
     expect(missingManifestEcho.release).toHaveBeenCalledTimes(1);
 });
 
-test('exact scene budgets add boundary headroom and cap high-rate analysis at 60fps', () => {
-    expect(exactSceneFrameBudget(120, 25)).toBe(102);
-    expect(exactSceneFrameBudget(120, 29.97)).toBe(122);
-    expect(exactSceneFrameBudget(120, 60)).toBe(242);
-    expect(exactSceneFrameBudget(120, 120)).toBe(242);
-    expect(exactSceneFrameBudget(900, 60)).toBe(1800);
+test('exact scene budgets reserve the enforced 60fps ceiling for high-rate VFR bursts', () => {
+    expect(exactSceneFrameBudget(120)).toBe(242);
+    expect(exactSceneFrameBudget(900)).toBe(1800);
 });
 
 test('timeline rows drop endpoints, deduplicate rounded frames, and leave gradual cuts unticked', () => {

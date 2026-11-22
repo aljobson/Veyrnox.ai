@@ -8245,7 +8245,7 @@ export default {
   "editorClips.blocker.transform": "クリップファインダーでは、速度変更、逆再生、フリーズフレームのないクリップが必要です。",
   "editorClips.blocker.short": "0.1秒以上のクリップを選択してください。",
   "editorClips.blocker.long": "30秒以下のクリップを選択してください。",
-  "editorClips.blocker.resolution": "Clip Finderで扱える動画は720pまでです。",
+  "editorClips.blocker.resolution": "クリップファインダーで扱える動画は720pまでです。",
   "editorClips.sourceError": "この動画をデバイス上の解析用に準備できませんでした。",
   "editorClips.invalidError": "このiPhoneでは、この動画形式を解析できません。",
   "editorClips.spaceError": "このiPhoneのストレージに空き容量を作ってから、もう一度お試しください。",

@@ -72,7 +72,6 @@ export type ClipFinderAnalysisInput = {
     timeline: Timeline;
     clip: Pick<Clip, 'start' | 'in' | 'len'>;
     hasAudio: boolean;
-    nominalFrameRate?: number;
     signal?: AbortSignal;
     onProgress?(progress: ClipFinderProgress): void;
 };
@@ -156,9 +155,7 @@ function validInput(input: ClipFinderAnalysisInput) {
     const start = input.clip.start, from = input.clip.in ?? 0, len = input.clip.len;
     return validIdentifier(input.project) && validateOwnedFileUri(input.uri) && typeof input.hasAudio === 'boolean'
         && nonNegativeInteger(start) && nonNegativeInteger(from) && positiveInteger(len) && len >= 3 && len <= MAX_CLIP_FRAMES
-        && !!input.timeline && typeof input.timeline === 'object' && Array.isArray(input.timeline.text)
-        && (input.nominalFrameRate === undefined || typeof input.nominalFrameRate === 'number' && Number.isFinite(input.nominalFrameRate)
-            && input.nominalFrameRate > 0 && input.nominalFrameRate <= 240);
+        && !!input.timeline && typeof input.timeline === 'object' && Array.isArray(input.timeline.text);
 }
 
 function validPcmArtifact(value: ClipFinderPcmArtifact) {
@@ -260,7 +257,7 @@ export async function analyzeClipForFinder(input: ClipFinderAnalysisInput,
     try {
         let scenes: EditorMediaResult<SceneAnalysis>;
         try {
-            scenes = await sceneAnalyzer({ project: input.project, uri: input.uri, clip: normalizedClip, samplingMode: 'all', nominalFrameRate: input.nominalFrameRate, signal: input.signal,
+            scenes = await sceneAnalyzer({ project: input.project, uri: input.uri, clip: normalizedClip, samplingMode: 'all', signal: input.signal,
                 onProgress: progress => emit(input, 'scenes', progress.value) });
         } catch { return stopped(input.signal) ? cancelled : failed; }
         if (!scenes.ok) return scenes;
@@ -270,13 +267,14 @@ export async function analyzeClipForFinder(input: ClipFinderAnalysisInput,
         if (input.hasAudio) {
             let decoded: EditorMediaResult<ClipFinderPcmArtifact>;
             const request: ClipFinderPcmRequest = { uri: input.uri, fromSeconds: from, toSeconds: to, sampleRate: SAMPLE_RATE, channels: 1, mixMode: 'web-average' };
-            try { decoded = await media.decodePcm(input.project, request, progress => emit(input, 'audio', progress.value), input.signal); }
+            try { decoded = await media.decodePcm(input.project, request, progress => emit(input, 'audio', progress.value * 0.5), input.signal); }
             catch { return stopped(input.signal) ? cancelled : failed; }
             if (!decoded.ok) return decoded;
             artifact = decoded.value;
             if (stopped(input.signal)) return cancelled;
-            try { energy = await energyFromPcm(artifact, from, to, files, input.signal, value => emit(input, 'audio', value)); }
+            try { energy = await energyFromPcm(artifact, from, to, files, input.signal, value => emit(input, 'audio', 0.5 + value * 0.49)); }
             catch (error) { return stopped(input.signal) || error === cancelled ? cancelled : corrupt; }
+            emit(input, 'audio', 1);
         }
         if (stopped(input.signal)) return cancelled;
         const cuts = scenes.value.cuts.filter(cut => cut.kind === 'hard').map(cut => cut.time - from).filter(time => time > 0 && time < duration);

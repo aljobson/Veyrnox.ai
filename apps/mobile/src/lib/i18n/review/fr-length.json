@@ -7296,6 +7296,12 @@
     "ratio": 1.75
   },
   {
+    "id": "editorClips.blocker.resolution",
+    "english": "Clip Finder handles videos up to 720p.",
+    "translation": "Le Détecteur de clips prend en charge les vidéos jusqu’à 720p.",
+    "ratio": 1.63
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

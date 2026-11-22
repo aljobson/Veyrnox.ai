@@ -8359,7 +8359,7 @@ export default {
   "editorClips.blocker.transform": "क्लिप फ़ाइंडर के लिए ऐसी क्लिप चाहिए जिसमें गति, रिवर्स या फ़्रीज़-फ़्रेम बदलाव न हों।",
   "editorClips.blocker.short": "कम से कम 0.1 सेकंड की क्लिप चुनें।",
   "editorClips.blocker.long": "30 सेकंड या उससे छोटी क्लिप चुनें।",
-  "editorClips.blocker.resolution": "Clip Finder 720p तक के वीडियो संभालता है।",
+  "editorClips.blocker.resolution": "क्लिप फ़ाइंडर 720p तक के वीडियो संभालता है।",
   "editorClips.sourceError": "इस वीडियो को डिवाइस पर विश्लेषण के लिए तैयार नहीं किया जा सका।",
   "editorClips.invalidError": "इस iPhone पर इस वीडियो फ़ॉर्मैट का विश्लेषण नहीं हो सकता।",
   "editorClips.spaceError": "इस iPhone पर थोड़ी स्टोरेज खाली करें, फिर दोबारा कोशिश करें।",
