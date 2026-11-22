@@ -2424,6 +2424,12 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "ग्रिड से मिलाएँ",

@@ -4176,6 +4176,18 @@
     "ratio": 1.63
   },
   {
+    "id": "beat.library.title",
+    "english": "Add from Music Library",
+    "translation": "Añadir desde la biblioteca de música",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Ajuste a rejilla",

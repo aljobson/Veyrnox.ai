@@ -4290,6 +4290,30 @@
     "ratio": 1.62
   },
   {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Музыкальная библиотека",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.library.searchEmpty",
+    "english": "No owned songs match “{query}”.",
+    "translation": "Среди своих песен нет совпадений с запросом «{query}».",
+    "ratio": 1.74
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.library.destination",
+    "english": "Add at {position}",
+    "translation": "Добавить в позицию {position}",
+    "ratio": 1.71
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Привязка",

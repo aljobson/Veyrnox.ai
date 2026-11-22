@@ -4170,6 +4170,18 @@
     "ratio": 1.61
   },
   {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Biblioteca de músicas",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Ajuste à grade",

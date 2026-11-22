@@ -6600,6 +6600,48 @@
     "ratio": 1.63
   },
   {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Bibliothèque musicale",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.library.title",
+    "english": "Add from Music Library",
+    "translation": "Ajouter depuis la bibliothèque musicale",
+    "ratio": 1.77
+  },
+  {
+    "id": "beat.library.close",
+    "english": "Close Music Library",
+    "translation": "Fermer la bibliothèque musicale",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.library.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.library.empty.title",
+    "english": "No owned songs yet",
+    "translation": "Aucun morceau à vous pour le moment",
+    "ratio": 1.94
+  },
+  {
+    "id": "beat.library.searchEmpty",
+    "english": "No owned songs match “{query}”.",
+    "translation": "Aucun de vos morceaux ne correspond à « {query} ».",
+    "ratio": 1.61
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
     "id": "beat.snap.bar",
     "english": "Bar",
     "translation": "Mesure",
