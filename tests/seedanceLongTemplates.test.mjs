@@ -216,7 +216,7 @@ test('production APP_RUNTIME_FLAGS turns the long templates on beside the existi
     const { parseJsonc } = await import('../scripts/check-migration-ledger.mjs');
     const config = parseJsonc(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
     const flags = JSON.parse(config.vars.APP_RUNTIME_FLAGS);
-    assert.deepEqual(flags, { checkin: true, push: true, templateSwap: true, seedanceLongTemplates: true });
+    assert.deepEqual(flags, { checkin: true, push: true, templateSwap: true, seedanceLongTemplates: true, templateSwapCrun1080: true });
     assert.equal(seedanceLongModelOpen(SEEDANCE_LONG_MODEL_ID, { APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }), true);
     assert.equal(galleryVideoPresets({ APP_RUNTIME_FLAGS: config.vars.APP_RUNTIME_FLAGS }).length, GALLERY_PRESETS.length + 15);
     assert.equal(Object.keys(config.vars).some(k => /SEEDANCE_LONG/i.test(k)), false);
