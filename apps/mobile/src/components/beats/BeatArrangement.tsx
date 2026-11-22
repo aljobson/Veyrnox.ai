@@ -9,14 +9,17 @@ import { regionLabel, type Apply } from '../../lib/beatNative/regionActions';
 import { BeatRegionView } from './BeatRegionView';
 import { BeatRegionInspector } from './BeatRegionInspector';
 import { BeatRuler, BeatRulerControls, RULER_HEIGHT } from './BeatRuler';
+import { BeatClipSearch } from './BeatClipSearch';
+import { type ClipSearchResult } from '../../lib/beatNative/clipSearch';
 
 type Props = {
     manualRun: RefObject<boolean>; doc: BeatDoc; apply: Apply; selectCurrentPattern: (slot: PatternSlot) => void;
     editTrackId: string | undefined; onEditTrackChange: (trackId: string) => void;
     playing: boolean; step: number | null; disabled: boolean; announce: (message: string) => void; onHold: (held: boolean) => void;
+    onRevealLane: (lane: ComponentRef<typeof View> | null) => void;
 };
 const MIN_LANE_HEIGHT = 96;
-export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, playing, step, disabled, announce, onHold, manualRun }: Props) {
+export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId, onEditTrackChange, playing, step, disabled, announce, onHold, onRevealLane, manualRun }: Props) {
     const s = useThemedStyles(sheets);
     const [zoom, setZoom] = useState(96);
     const [snap, setSnap] = useState('240');
@@ -28,6 +31,9 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     const [held, setHeld] = useState(false);
     const [heights, setHeights] = useState<Record<string, number>>({});
     const scroller = useRef<ComponentRef<typeof ScrollView>>(null);
+    const lanes = useRef<Record<string, ComponentRef<typeof View> | null>>({});
+    const pendingRevealTrackId = useRef<string | null>(null);
+    const [revealRequest, setRevealRequest] = useState(0);
     const viewport = useRef(0), scroll = useRef(0);
     const lock = useCallback((value: boolean) => { setHeld(value); onHold(value); }, [onHold]);
     const end = songEnd(doc), bars = arrangementBars(doc, locator), width = bars * zoom;
@@ -37,6 +43,8 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
     const [trackName, setTrackName] = useState(editTrack?.name ?? '');
     const laneHeights = doc.tracks.map(track => heights[track.id] ?? MIN_LANE_HEIGHT);
     const head = tickToX(playing ? (step ?? 0) * 240 : locator, zoom);
+    const searchContext = useRef({ doc, disabled, zoom, end, onEditTrackChange, selectCurrentPattern, announce });
+    searchContext.current = { doc, disabled, zoom, end, onEditTrackChange, selectCurrentPattern, announce };
     useEffect(() => { if (!selectedRegion) setSelectedId(null); }, [selectedRegion]);
     useEffect(() => { setTrackName(editTrack?.name ?? ''); }, [editTrack?.id, editTrack?.name]);
     useEffect(() => { setLocator(value => clampLocator(value, end)); }, [end]);
@@ -47,12 +55,41 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
             scroller.current?.scrollTo({ x, animated: false }); scroll.current = x;
         }
     }, [head, playing, held, manualRun]);
+    useEffect(() => {
+        const trackId = pendingRevealTrackId.current;
+        if (!trackId) return;
+        const lane = lanes.current[trackId];
+        if (!lane) return;
+        pendingRevealTrackId.current = null;
+        onRevealLane(lane);
+    }, [revealRequest, doc, onRevealLane]);
+    useEffect(() => () => {
+        pendingRevealTrackId.current = null;
+        onRevealLane(null);
+    }, [onRevealLane]);
     const choose = (region: BeatRegionDoc, track: BeatTrackDoc) => {
         setSelectedId(region.id); onEditTrackChange(track.id);
         if (!disabled && region.pattern && region.pattern !== doc.currentPattern) selectCurrentPattern(region.pattern);
         announce(regionLabel(doc, track, region));
     };
     const setPosition = (value: number) => setLocator(clampLocator(value, end));
+    const chooseSearchResult = useCallback((result: ClipSearchResult) => {
+        const current = searchContext.current;
+        const track = current.doc.tracks.find(item => item.id === result.trackId);
+        const region = track?.regions.find(item => item.id === result.regionId);
+        if (!track || !region) return;
+        setSelectedId(region.id);
+        current.onEditTrackChange(track.id);
+        if (!current.disabled && region.pattern && region.pattern !== current.doc.currentPattern) {
+            current.selectCurrentPattern(region.pattern);
+        }
+        current.announce(regionLabel(current.doc, track, region));
+        setLocator(clampLocator(region.start, current.end));
+        const x = Math.max(0, tickToX(region.start, current.zoom) - current.zoom);
+        scroller.current?.scrollTo({ x, animated: false }); scroll.current = x;
+        pendingRevealTrackId.current = track.id;
+        setRevealRequest(value => value + 1);
+    }, []);
     const commitTrackName = () => {
         if (!editTrack || disabled) return;
         apply(d => {
@@ -92,6 +129,7 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 returnKeyType="done" onChangeText={setTrackName} onSubmitEditing={commitTrackName} />
             <Button size="md" variant="secondary" label={t('beat.track.rename')} disabled={disabled} onPress={commitTrackName} />
         </View>}
+        <BeatClipSearch doc={doc} choose={chooseSearchResult} />
         <BeatRulerControls locator={locator} end={end} setLocator={setPosition} cycle={doc.cycle} apply={apply} disabled={disabled} />
         <View style={s.timeline}>
             <View style={s.headers}>
@@ -108,7 +146,8 @@ export function BeatArrangement({ doc, apply, selectCurrentPattern, editTrackId,
                 <View style={{ width }}>
                     <BeatRuler bars={bars} zoom={zoom} snap={Number(snap)} locator={locator} end={end} setLocator={setPosition}
                         cycle={doc.cycle} apply={apply} lock={lock} announce={announce} disabled={disabled} />
-                    {doc.tracks.map((track, index) => <View key={track.id} testID={`track-lane-${track.id}`} style={[s.lane, { height: laneHeights[index] }]}>
+                    {doc.tracks.map((track, index) => <View key={track.id} ref={value => { lanes.current[track.id] = value; }}
+                        testID={`track-lane-${track.id}`} style={[s.lane, { height: laneHeights[index] }]}>
                         <Pressable testID={`lane-${track.id}`} accessible={false} accessibilityRole="none" style={s.emptyLane}
                             onPress={event => setPosition(snapTick(xToTick(event.nativeEvent.locationX, zoom), Number(snap)))} />
                         {track.regions.map(region => <BeatRegionView key={region.id} doc={doc} track={track} region={region}

@@ -6582,6 +6582,24 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.search.label",
+    "english": "Search clips",
+    "translation": "Rechercher des clips",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.results",
+    "english": "Clip search results",
+    "translation": "Résultats de recherche de clips",
+    "ratio": 1.63
+  },
+  {
     "id": "beat.snap.bar",
     "english": "Bar",
     "translation": "Mesure",

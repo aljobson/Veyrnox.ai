@@ -4476,6 +4476,12 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.search.empty",
+    "english": "No clips match “{query}”.",
+    "translation": "Keine Clips stimmen mit „{query}“ überein.",
+    "ratio": 1.68
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Einrasten",

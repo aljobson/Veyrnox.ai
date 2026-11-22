@@ -8,6 +8,7 @@ import { addAudioRegion, addKitTrack, addRegion, copyRegion, deleteRegion, dupli
 import { guardedRippleDelete } from '../src/lib/beatNative/arrange';
 import { canUndo, createHistory, record } from '../src/lib/beatNative/history';
 import { position, regionLabel } from '../src/lib/beatNative/regionActions';
+import type { MeasureAndRevealLaneInput } from '../src/lib/beatNative/clipSearch';
 beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
@@ -18,6 +19,11 @@ jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: (
 jest.mock('../src/lib/beatNative/useLocalBeatLifecycle', () => ({ useLocalBeatLifecycle: () => {} }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {}, generation: 0, beginSessionTask: () => ({}) }) }));
+const mockMeasureAndRevealLane = jest.fn<void, [MeasureAndRevealLaneInput]>();
+jest.mock('../src/lib/beatNative/clipSearch', () => ({
+    ...jest.requireActual('../src/lib/beatNative/clipSearch'),
+    measureAndRevealLane: (input: MeasureAndRevealLaneInput) => mockMeasureAndRevealLane(input),
+}));
 const mockAnnounce = jest.fn();
 jest.mock('../src/lib/useAnnouncement', () => ({ ...jest.requireActual('../src/lib/useAnnouncement'), useAnnouncement: (value: string) => { if (value) mockAnnounce(value); } }));
 const mockAudio = { play: jest.fn(async () => 'started' as const), stop: jest.fn(), close: jest.fn(async () => {}), hitPad: jest.fn(() => 0), nearestStepAt: jest.fn(() => null), setTrackMix: jest.fn() };
@@ -32,6 +38,10 @@ const control = (label: string) => root.container.queryAll(n => n.props.accessib
 const field = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label && typeof n.props.onChangeText === 'function')[0];
 const press = async (label: string) => {
     const button = control(label); if (!button) throw new Error(`Missing ${label}`);
+    await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
+};
+const pressNode = async (id: string) => {
+    const button = node(id); if (!button) throw new Error(`Missing ${id}`);
     await act(async () => (button.props.onClick ?? button.props.onPress)({ nativeEvent: {} }));
 };
 const touch = (x = 0, y = 0) => ({ nativeEvent: { identifier: 1, pageX: x, pageY: y }, stopPropagation: jest.fn() });
@@ -65,7 +75,18 @@ function overflowRippleDoc(doc: BeatDoc): BeatDoc {
     expect(validateBeat(next).ok).toBe(true);
     return next;
 }
-beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); setLocaleFromDevice(['en']); resetBeats(); root = createRoot(); });
+function searchManyDoc(doc: BeatDoc): BeatDoc {
+    const next = structuredClone(doc);
+    next.tracks[0].name = 'Drums Search';
+    next.tracks[0].regions = Array.from({ length: 25 }, (_, index) => ({
+        id: `search${index}`, start: index * 3840, length: 3840, offset: 0,
+        pattern: index === 2 ? 'B' as const : 'A' as const,
+    }));
+    next.cycle = { on: false, start: 0, end: 4 * 3840 };
+    expect(validateBeat(next).ok).toBe(true);
+    return next;
+}
+beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); mockMeasureAndRevealLane.mockReset(); setLocaleFromDevice(['en']); resetBeats(); root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); setLocaleFromDevice(['en']); resetBeats(); jest.useRealTimers(); });
 
 test('A1 view switch is saved and one Undo restores pattern view', async () => {
@@ -240,6 +261,178 @@ test('read-only selection of a non-current Pattern B region is document-byte-ide
     expect(node('region-inspector')).toBeDefined(); expect(node('region-r0').props.accessibilityState.selected).toBe(true);
     expect(JSON.stringify(current())).toBe(before); expect(current().currentPattern).toBe('A');
     expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+});
+test('clip search exposes help, exact live count, 20-result cap, no-results recovery, Clear and Escape', async () => {
+    await open(searchManyDoc);
+    expect(node('beat-search-status').props.children).toBe(t('beat.search.help'));
+    expect(root.container.queryAll(n => String(n.props.testID ?? '').startsWith('beat-search-result-'))).toHaveLength(0);
+    await act(async () => field(t('beat.search.label')).props.onChangeText('DRUMS SEARCH'));
+    expect(node('beat-search-status').props.children).toBe(t('beat.search.count', { count: 25, shown: 20 }));
+    expect(root.container.queryAll(n => String(n.props.testID ?? '').startsWith('beat-search-result-'))).toHaveLength(20);
+    expect(root.container.queryAll(n => n.children.includes(t('beat.search.results')))).toHaveLength(1);
+
+    await act(async () => field(t('beat.search.label')).props.onChangeText('not in this song'));
+    expect(node('beat-search-status').props.children).toBe(t('beat.search.count', { count: 0, shown: 0 }));
+    expect(root.container.queryAll(n => n.children.includes(t('beat.search.empty', { query: 'not in this song' })))).toHaveLength(1);
+    await press(t('beat.search.clear')); expect(field(t('beat.search.label')).props.value).toBe('');
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums'));
+    const preventDefault = jest.fn();
+    await act(async () => field(t('beat.search.label')).props.onKeyPress({ nativeEvent: { key: 'Escape' }, preventDefault }));
+    expect(preventDefault).toHaveBeenCalled(); expect(field(t('beat.search.label')).props.value).toBe('');
+});
+test('clip search selection resolves track and Pattern B, moves locator and reveals horizontally', async () => {
+    const before = await open(searchManyDoc);
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    scrollTo.mockClear();
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    await pressNode('beat-search-result-search2');
+    expect(node('region-search2').props.accessibilityState.selected).toBe(true);
+    expect(current().currentPattern).toBe('B'); expect(current().tracks).toEqual(before.tracks);
+    expect(control('Drums Search').props.accessibilityState.selected).toBe(true);
+    expect(RN.StyleSheet.flatten(node('playhead').props.style).left).toBe(192);
+    expect(scrollTo).toHaveBeenCalledWith({ x: 96, animated: false });
+});
+test('read-only clip result selection stays byte/history identical while unavailable lane measurement safely preserves horizontal reveal', async () => {
+    await open(d => { const next = searchManyDoc(d); next.version = 5; return next; });
+    const before = JSON.stringify(current());
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    scrollTo.mockClear();
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    await pressNode('beat-search-result-search2');
+    expect(node('region-search2').props.accessibilityState.selected).toBe(true);
+    expect(JSON.stringify(current())).toBe(before); expect(current().currentPattern).toBe('A');
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+    expect(scrollTo).toHaveBeenCalledWith({ x: 96, animated: false });
+    expect(scrollTo.mock.calls.some(([value]) => value?.y !== undefined)).toBe(false);
+});
+test('a result removed by a document replacement disappears and cannot be selected as stale data', async () => {
+    await open(searchManyDoc);
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    expect(node('beat-search-result-search2')).toBeDefined();
+    await act(async () => putBeat(deleteRegion(current(), 'search2')));
+    expect(node('beat-search-result-search2')).toBeUndefined();
+    expect(current().currentPattern).toBe('A'); expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+});
+test('a captured result handler is harmless after its region is removed from the latest document', async () => {
+    await open(searchManyDoc);
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    const staleButton = node('beat-search-result-search2');
+    const stalePress = staleButton.props.onClick ?? staleButton.props.onPress;
+    await act(async () => putBeat(deleteRegion(current(), 'search2')));
+    const afterDelete = JSON.stringify(current());
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    scrollTo.mockClear();
+    await act(async () => stalePress({ nativeEvent: {} }));
+    expect(JSON.stringify(current())).toBe(afterDelete);
+    expect(current().currentPattern).toBe('A');
+    expect(node('region-inspector')).toBeUndefined();
+    expect(control(t('beat.undo')).props.accessibilityState.disabled).toBe(true);
+    expect(scrollTo).not.toHaveBeenCalled();
+});
+test('first search selection queues reveal after selection and retries fresh geometry after content reflow', async () => {
+    await open(searchManyDoc);
+    expect(node('region-inspector')).toBeUndefined();
+    const attempts: MeasureAndRevealLaneInput[] = [];
+    mockMeasureAndRevealLane.mockImplementation(input => {
+        attempts.push(input);
+        if (attempts.length === 2) input.onReveal(900);
+    });
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    scrollTo.mockClear();
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    await pressNode('beat-search-result-search2');
+    expect(node('region-inspector')).toBeDefined();
+    expect(attempts).toHaveLength(1);
+
+    await act(async () => node('beat-editor-workspace').props.onContentSizeChange(400, 2000));
+    expect(attempts[0].isCurrent()).toBe(false);
+    await act(async () => jest.runOnlyPendingTimers());
+    expect(attempts).toHaveLength(2);
+    expect(attempts[1].contentHeight).toBe(2000);
+    expect(scrollTo).toHaveBeenCalledWith({ y: 900, animated: false });
+});
+test('observed scroll invalidates an in-flight reveal while matching programmatic scroll does not retry', async () => {
+    await open(searchManyDoc);
+    const attempts: MeasureAndRevealLaneInput[] = [];
+    mockMeasureAndRevealLane.mockImplementation(input => {
+        attempts.push(input);
+        if (attempts.length === 2) input.onReveal(700);
+    });
+    const workspace = node('beat-editor-workspace');
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    scrollTo.mockClear();
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    await pressNode('beat-search-result-search2');
+    expect(attempts).toHaveLength(1);
+
+    await act(async () => workspace.props.onScroll({ nativeEvent: { contentOffset: { y: 320 } } }));
+    expect(attempts[0].isCurrent()).toBe(false);
+    await act(async () => jest.runOnlyPendingTimers());
+    expect(attempts).toHaveLength(2);
+    expect(attempts[1].currentScrollY).toBe(320);
+    expect(scrollTo).toHaveBeenCalledWith({ y: 700, animated: false });
+
+    await act(async () => workspace.props.onScroll({ nativeEvent: { contentOffset: { y: 700 } } }));
+    await act(async () => jest.runOnlyPendingTimers());
+    expect(attempts).toHaveLength(2);
+});
+test('a second same-lane search choice supersedes the first pending reveal', async () => {
+    await open(searchManyDoc);
+    const attempts: MeasureAndRevealLaneInput[] = [];
+    mockMeasureAndRevealLane.mockImplementation(input => { attempts.push(input); });
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    await pressNode('beat-search-result-search0');
+    await pressNode('beat-search-result-search1');
+    expect(attempts).toHaveLength(2);
+    expect(attempts[0].lane).toBe(attempts[1].lane);
+    expect(attempts[0].isCurrent()).toBe(false);
+    expect(attempts[1].isCurrent()).toBe(true);
+    scrollTo.mockClear();
+
+    if (attempts[0].isCurrent()) attempts[0].onReveal(500);
+    if (attempts[1].isCurrent()) attempts[1].onReveal(900);
+    expect(scrollTo.mock.calls.filter(([value]) => value?.y !== undefined)).toEqual([
+        [{ y: 900, animated: false }],
+    ]);
+});
+test.each(['onScrollBeginDrag', 'onMomentumScrollBegin'] as const)('%s cancels pending lane measurement and its queued retry', async eventName => {
+    await open(searchManyDoc);
+    const attempts: MeasureAndRevealLaneInput[] = [];
+    mockMeasureAndRevealLane.mockImplementation(input => { attempts.push(input); });
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    await pressNode('beat-search-result-search2');
+    expect(attempts).toHaveLength(1);
+    const workspace = node('beat-editor-workspace');
+    await act(async () => workspace.props.onContentSizeChange(400, 2000));
+    scrollTo.mockClear();
+
+    await act(async () => workspace.props[eventName]());
+    expect(attempts[0].isCurrent()).toBe(false);
+    attempts[0].onReveal(800);
+    await act(async () => jest.runOnlyPendingTimers());
+    expect(attempts).toHaveLength(1);
+    expect(scrollTo.mock.calls.some(([value]) => value?.y !== undefined)).toBe(false);
+});
+test('switching Song to Pattern cancels detached-lane measurement and queued retry', async () => {
+    await open(searchManyDoc);
+    const attempts: MeasureAndRevealLaneInput[] = [];
+    mockMeasureAndRevealLane.mockImplementation(input => { attempts.push(input); });
+    const scrollTo = (RN.ScrollView as unknown as { prototype: { scrollTo: jest.Mock } }).prototype.scrollTo;
+    await act(async () => field(t('beat.search.label')).props.onChangeText('drums search'));
+    await pressNode('beat-search-result-search2');
+    expect(attempts).toHaveLength(1);
+    await act(async () => node('beat-editor-workspace').props.onContentSizeChange(400, 2000));
+    scrollTo.mockClear();
+
+    await press(t('beat.view.pattern'));
+    expect(node('beat-arrangement')).toBeUndefined();
+    expect(attempts[0].isCurrent()).toBe(false);
+    attempts[0].onReveal(800);
+    await act(async () => jest.runOnlyPendingTimers());
+    expect(attempts).toHaveLength(1);
+    expect(scrollTo.mock.calls.some(([value]) => value?.y !== undefined)).toBe(false);
 });
 test('A6 ruler locator is view state; cycle toggle, endpoints and invalid cycle use apply', async () => {
     const before = await open();
