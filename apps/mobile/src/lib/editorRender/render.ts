@@ -47,11 +47,18 @@ function withScope<T>(work: (scope: Scope) => T): T {
 
 const between = (value: number, minimum: number, maximum: number) => finite(value) && value >= minimum && value <= maximum;
 
+function filterGeometry(plan: StaticPreviewPlan, filter: StaticPreviewFilter) {
+    const sigma = filter.blur * plan.height / plan.referenceHeight, outset = Math.ceil(sigma * 3);
+    return { sigma, outset, width: plan.width + outset * 2, height: plan.height + outset * 2 };
+}
+
 function issues(plan: StaticPreviewPlan): string[] {
     const found: string[] = [];
     if (!Number.isSafeInteger(plan.width) || plan.width < 1 || plan.width > STATIC_PREVIEW_LIMITS.maxWidth
         || !Number.isSafeInteger(plan.height) || plan.height < 1 || plan.height > STATIC_PREVIEW_LIMITS.maxHeight
         || plan.width * plan.height > STATIC_PREVIEW_LIMITS.maxPixels) found.push('invalid-output-size');
+    const validReference = Number.isSafeInteger(plan.referenceHeight) && plan.referenceHeight >= 2 && plan.referenceHeight <= 3840;
+    if (!validReference) found.push('invalid-reference-height');
     if (!COLOR.test(plan.background)) found.push('invalid-timeline-background');
     if (!Array.isArray(plan.layers) || plan.layers.length > STATIC_PREVIEW_LIMITS.maxLayers) found.push('invalid-layer-count');
     for (const layer of plan.layers) {
@@ -67,6 +74,11 @@ function issues(plan: StaticPreviewPlan): string[] {
         if (!filter || !between(filter.brightness, 0, 3) || !between(filter.contrast, 0, 3)
             || !between(filter.saturate, 0, 3) || !between(filter.hue, -180, 180)
             || !between(filter.blur, 0, 30)) found.push('invalid-filter');
+        else if (validReference) {
+            const geometry = filterGeometry(plan, filter);
+            if (!finite(geometry.sigma) || geometry.outset > STATIC_PREVIEW_LIMITS.maxFilterOutset
+                || geometry.width * geometry.height > STATIC_PREVIEW_LIMITS.maxLayerPixels) found.push('invalid-filter-surface');
+        }
         if (mask && (!between(mask.x, -1, 2) || !between(mask.y, -1, 2) || !between(mask.width, .05, 2) || !between(mask.height, .05, 2)
             || !between(mask.rotation, -360, 360) || !between(mask.feather, 0, .25) || typeof mask.inverted !== 'boolean'
             || !['circle', 'rounded', 'horizontal', 'vertical'].includes(mask.shape))) found.push('invalid-mask');
@@ -109,7 +121,7 @@ const hueMatrix = (degrees: number) => {
     );
 };
 
-function layerImageFilter(skia: typeof Skia, scope: Scope, filter: StaticPreviewFilter) {
+function layerImageFilter(skia: typeof Skia, scope: Scope, filter: StaticPreviewFilter, sigma: number) {
     let colour: ReturnType<typeof Skia.ColorFilter.MakeMatrix> | null = null;
     const append = (matrix: number[]) => {
         const next = scope.own(skia.ColorFilter.MakeMatrix(matrix));
@@ -120,7 +132,7 @@ function layerImageFilter(skia: typeof Skia, scope: Scope, filter: StaticPreview
     if (filter.saturate !== 1) append(saturationMatrix(filter.saturate));
     if (filter.hue !== 0) append(hueMatrix(filter.hue));
     let imageFilter = colour ? scope.own(skia.ImageFilter.MakeColorFilter(colour, null)) : null;
-    if (filter.blur > 0) imageFilter = scope.own(skia.ImageFilter.MakeBlur(filter.blur, filter.blur, TileMode.Decal, imageFilter));
+    if (sigma > 0) imageFilter = scope.own(skia.ImageFilter.MakeBlur(sigma, sigma, TileMode.Decal, imageFilter));
     return imageFilter;
 }
 
@@ -161,23 +173,28 @@ function maskPath(skia: typeof Skia, mask: StaticPreviewMask, size: { width: num
 }
 
 function applyMask(skia: typeof Skia, plan: StaticPreviewPlan, layer: StaticPreviewLayer,
-    size: { width: number; height: number }, layerCanvas: SkCanvas) {
+    size: { width: number; height: number }, layerCanvas: SkCanvas, outset: number) {
     const mask = layer.mask;
     if (!mask) return;
     withScope(maskScope => {
-        const surface = maskScope.own(skia.Surface.Make(plan.width, plan.height) ?? (() => { throw Error('editor-static-surface'); })());
+        const surface = maskScope.own(skia.Surface.Make(plan.width + outset * 2, plan.height + outset * 2)
+            ?? (() => { throw Error('editor-static-surface'); })());
         const canvas = surface.getCanvas(), paint = maskScope.own(skia.Paint());
         canvas.clear(skia.Color(mask.inverted ? '#ffffff' : '#00000000'));
         paint.setAntiAlias(true); paint.setColor(skia.Color('#ffffff'));
         if (mask.inverted) paint.setBlendMode(BlendMode.Clear);
         const sigma = mask.feather * Math.min(size.width, size.height);
         if (sigma > 0) paint.setMaskFilter(maskScope.own(skia.MaskFilter.MakeBlur(BlurStyle.Normal, sigma, true)));
-        withLayerTransform(canvas, plan, layer, size, () => {
-            canvas.translate(-size.width / 2 + mask.x * size.width, -size.height / 2 + mask.y * size.height);
-            canvas.rotate(mask.rotation, 0, 0);
-            const path = maskScope.own(maskPath(skia, mask, { width: size.width * mask.width, height: size.height * mask.height }));
-            canvas.drawPath(path, paint);
-        });
+        canvas.save();
+        try {
+            canvas.translate(outset, outset);
+            withLayerTransform(canvas, plan, layer, size, () => {
+                canvas.translate(-size.width / 2 + mask.x * size.width, -size.height / 2 + mask.y * size.height);
+                canvas.rotate(mask.rotation, 0, 0);
+                const path = maskScope.own(maskPath(skia, mask, { width: size.width * mask.width, height: size.height * mask.height }));
+                canvas.drawPath(path, paint);
+            });
+        } finally { canvas.restore(); }
         surface.flush();
         const image = maskScope.own(surface.makeImageSnapshot()), composite = maskScope.own(skia.Paint());
         composite.setBlendMode(BlendMode.DstIn); layerCanvas.drawImage(image, 0, 0, composite);
@@ -210,18 +227,23 @@ function drawLayer(skia: typeof Skia, output: SkCanvas, plan: StaticPreviewPlan,
         drawBackground(skia, scope, output, plan, layer, layer.background);
         const image = layer.image!;
         const src = sourceRect(image, layer.crop), size = fittedSize(plan.width, plan.height, src.width, src.height, layer.fit);
-        const surface = scope.own(skia.Surface.Make(plan.width, plan.height) ?? (() => { throw Error('editor-static-surface'); })());
+        const geometry = filterGeometry(plan, layer.filter);
+        const surface = scope.own(skia.Surface.Make(geometry.width, geometry.height) ?? (() => { throw Error('editor-static-surface'); })());
         const canvas = surface.getCanvas(), paint = scope.own(skia.Paint());
         canvas.clear(skia.Color('#00000000')); paint.setAntiAlias(true);
-        withLayerTransform(canvas, plan, layer, size, () => canvas.drawImageRectOptions(image, src,
-            { x: -size.width / 2, y: -size.height / 2, ...size }, FilterMode.Linear, MipmapMode.None, paint));
-        applyMask(skia, plan, layer, size, canvas);
+        canvas.save();
+        try {
+            canvas.translate(geometry.outset, geometry.outset);
+            withLayerTransform(canvas, plan, layer, size, () => canvas.drawImageRectOptions(image, src,
+                { x: -size.width / 2, y: -size.height / 2, ...size }, FilterMode.Linear, MipmapMode.None, paint));
+        } finally { canvas.restore(); }
+        applyMask(skia, plan, layer, size, canvas, geometry.outset);
         surface.flush();
-        const snapshot = scope.own(surface.makeImageSnapshot()), imageFilter = layerImageFilter(skia, scope, layer.filter);
+        const snapshot = scope.own(surface.makeImageSnapshot()), imageFilter = layerImageFilter(skia, scope, layer.filter, geometry.sigma);
         const composite = scope.own(skia.Paint());
         composite.setAlphaf(layer.transform.opacity); composite.setBlendMode(blendModes[layer.blend]);
         if (imageFilter) composite.setImageFilter(imageFilter);
-        output.drawImage(snapshot, 0, 0, composite);
+        output.drawImage(snapshot, -geometry.outset, -geometry.outset, composite);
     });
 }
 

@@ -40,9 +40,10 @@ function layer(id: string, source: SkImage, patch: Partial<StaticPreviewLayer> =
         filter, blend: 'source-over', background: { type: 'none' }, ...patch,
     };
 }
-const plan = (layers: StaticPreviewLayer[], patch: Partial<StaticPreviewPlan> = {}): StaticPreviewPlan => ({
-    width: 8, height: 8, background: '#00ff00', layers, ...patch,
-});
+const plan = (layers: StaticPreviewLayer[], patch: Partial<StaticPreviewPlan> = {}): StaticPreviewPlan => {
+    const width = patch.width ?? 8, height = patch.height ?? 8;
+    return { width, height, referenceHeight: patch.referenceHeight ?? height, background: '#00ff00', layers, ...patch };
+};
 function pixel(result: ReturnType<typeof renderStaticPreviewRgba>, x: number, y: number) {
     if (!result.ok) throw Error(result.code);
     return Array.from(result.rgba.slice((y * result.width + x) * 4, (y * result.width + x + 1) * 4));
@@ -137,6 +138,17 @@ test('basic colour filters follow the canonical CSS brightness, contrast, satura
     } finally { source.dispose(); }
 });
 
+test('basic colour filters clamp between CSS filter functions', () => {
+    const source = solid('#c80000');
+    try {
+        const result = renderStaticPreviewRgba(Skia, plan([layer('clamped', source, {
+            filter: { ...filter, brightness: 3, contrast: .5 },
+        })]));
+        // brightness(3) first clamps red to 255; contrast(.5) then pivots every channel at 0.5.
+        close(pixel(result, 4, 4), [191, 64, 64, 255], 2);
+    } finally { source.dispose(); }
+});
+
 test('basic blur uses raw output pixels and transparent decal edges', () => {
     const source = image(64, 64, (canvas, paint) => {
         canvas.clear(Skia.Color('#00000000'));
@@ -156,6 +168,81 @@ test('basic blur uses raw output pixels and transparent decal edges', () => {
         expect(redEnergy).toBeGreaterThan(400);
         expect(redEnergy).toBeLessThan(500);
         expect(pixel(result, 0, 0)).toEqual([0, 0, 0, 255]);
+    } finally { source.dispose(); }
+});
+
+test('basic blur keeps the same fractional footprint at two output sizes', () => {
+    const makeBlur = Skia.ImageFilter.MakeBlur.bind(Skia.ImageFilter), sigmas: number[] = [];
+    const custom = { ...Skia, ImageFilter: { ...Skia.ImageFilter,
+        MakeBlur: (sigmaX: number, sigmaY: number, mode: any, input: any) => {
+            expect(sigmaY).toBe(sigmaX); sigmas.push(sigmaX); return makeBlur(sigmaX, sigmaY, mode, input);
+        },
+    } };
+    const render = (size: number) => {
+        const source = image(size, size, (canvas, paint) => {
+            canvas.clear(Skia.Color('#00000000')); paint.setColor(Skia.Color('#ffffff'));
+            canvas.drawRect({ x: size * .45, y: size * .45, width: size * .1, height: size * .1 }, paint);
+        });
+        try {
+            return renderStaticPreviewRgba(custom, plan([layer(`scaled-${size}`, source, {
+                filter: { ...filter, blur: 30 },
+            })], { width: size, height: size, referenceHeight: 720, background: '#000000' }));
+        } finally { source.dispose(); }
+    };
+    const small = render(72), large = render(144);
+    expect(small.ok).toBe(true); expect(large.ok).toBe(true);
+    expect(sigmas).toEqual([3, 6]);
+    expect(sigmas[0] / 72).toBeCloseTo(sigmas[1] / 144, 10);
+});
+
+test('the 1280x720 canonical reference uses sigma 30 and a three-sigma extended layer surface', () => {
+    const source = solid('#ffffff', 16, 9), make = Skia.Surface.Make.bind(Skia.Surface);
+    const makeBlur = Skia.ImageFilter.MakeBlur.bind(Skia.ImageFilter), surfaces: [number, number][] = [], sigmas: number[] = [];
+    const custom = {
+        ...Skia,
+        Surface: { ...Skia.Surface, Make: (width: number, height: number) => { surfaces.push([width, height]); return make(width, height); } },
+        ImageFilter: { ...Skia.ImageFilter, MakeBlur: (sigmaX: number, sigmaY: number, mode: any, input: any) => {
+            sigmas.push(sigmaX, sigmaY); return makeBlur(sigmaX, sigmaY, mode, input);
+        } },
+    };
+    try {
+        const result = renderStaticPreviewImage(custom, plan([layer('reference', source, {
+            fit: 'cover', filter: { ...filter, blur: 30 },
+        })], { width: 1280, height: 720, referenceHeight: 720, background: '#000000' }));
+        expect(result.ok).toBe(true);
+        if (result.ok) result.image.dispose();
+        expect(sigmas).toEqual([30, 30]);
+        expect(surfaces).toContainEqual([1460, 900]);
+    } finally { source.dispose(); }
+});
+
+test.each([
+    ['cover', 128, 64, { fit: 'cover' as const }],
+    ['scale', 64, 64, { transform: { ...transform, scale: 2 } }],
+])('three-sigma overscan prevents a dark %s halo at the canonical frame edge', (_name, width, height, patch) => {
+    const source = solid('#ffffff', width, height);
+    try {
+        const result = renderStaticPreviewRgba(Skia, plan([layer('edge', source, {
+            ...patch, filter: { ...filter, blur: 4 },
+        })], { width: 64, height: 64, referenceHeight: 64, background: '#000000' }));
+        expect(pixel(result, 0, 32)[0]).toBeGreaterThan(240);
+        expect(pixel(result, 63, 32)[0]).toBeGreaterThan(240);
+    } finally { source.dispose(); }
+});
+
+test('mask overscan preserves off-frame masked pixels before basic blur', () => {
+    const source = solid('#ffffff', 128, 64);
+    try {
+        const edge = renderStaticPreviewRgba(Skia, plan([layer('masked-edge', source, {
+            fit: 'cover', filter: { ...filter, blur: 4 },
+            mask: { shape: 'circle', x: .25, y: .5, width: .25, height: .5, rotation: 0, feather: 0, inverted: false },
+        })], { width: 64, height: 64, referenceHeight: 64, background: '#000000' }));
+        const centered = renderStaticPreviewRgba(Skia, plan([layer('masked-center', source, {
+            fit: 'cover', filter: { ...filter, blur: 4 },
+            mask: { shape: 'circle', x: .5, y: .5, width: .25, height: .5, rotation: 0, feather: 0, inverted: false },
+        })], { width: 64, height: 64, referenceHeight: 64, background: '#000000' }));
+        close(pixel(edge, 0, 32), pixel(centered, 32, 32), 2);
+        expect(pixel(edge, 24, 32)).toEqual([0, 0, 0, 255]);
     } finally { source.dispose(); }
 });
 
@@ -288,6 +375,7 @@ test('canonical evaluated basic filters bind as an exact Skia capability', () =>
         const canonical = editorPreviewPlan(value, 10, SKIA_STATIC_PREVIEW_CAPABILITIES);
         expect(canonical.capabilities.unsupported).not.toContainEqual(expect.objectContaining({ capability: 'basic-filter' }));
         const bound = bindStaticPreviewPlan(canonical, 640, 360, { image: source });
+        expect(bound.referenceHeight).toBe(720);
         expect(bound.layers[0].filter).toEqual({ brightness: 1.2, contrast: .8, saturate: .6, hue: 30, blur: 4 });
         expect(renderStaticPreviewRgba(Skia, bound).ok).toBe(true);
     } finally { source.dispose(); }
@@ -358,11 +446,28 @@ test('canonical transform, crop and mask bounds refuse native allocation', () =>
     } finally { source.dispose(); }
 });
 
+test('invalid reference and extended filter geometry fail before native allocation', () => {
+    const source = solid('#ffffff'), make = jest.fn(), noAllocation = { ...Skia, Surface: { ...Skia.Surface, Make: make } };
+    try {
+        expect(renderStaticPreviewRgba(noAllocation, plan([layer('reference', source)], { referenceHeight: 0 }))).toEqual({
+            ok: false, code: 'invalid-plan', issues: ['invalid-reference-height'],
+        });
+        expect(renderStaticPreviewRgba(noAllocation, plan([layer('oversized', source, {
+            filter: { ...filter, blur: 30 },
+        })], { width: 1280, height: 720, referenceHeight: 2 }))).toEqual({
+            ok: false, code: 'invalid-plan', issues: ['invalid-filter-surface'],
+        });
+        expect(make).not.toHaveBeenCalled();
+    } finally { source.dispose(); }
+});
+
 test('layer and mask surfaces dispose before the next layer and caller images stay owned by the caller', () => {
     const source = solid('#ffffff', 32, 32), disposeSource = jest.spyOn(source, 'dispose'), tracked = trackedSurfaceSkia();
     const mask = { shape: 'circle' as const, x: .5, y: .5, width: .8, height: .8, rotation: 0, feather: .1, inverted: false };
     try {
-        const result = renderStaticPreviewRgba(tracked.custom, plan(Array.from({ length: 12 }, (_, index) => layer(`layer-${index}`, source, { mask })), {
+        const result = renderStaticPreviewRgba(tracked.custom, plan(Array.from({ length: 12 }, (_, index) => layer(`layer-${index}`, source, {
+            mask, filter: { ...filter, blur: 4 },
+        })), {
             width: 32, height: 32,
         }));
         expect(result.ok).toBe(true);

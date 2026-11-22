@@ -61,6 +61,23 @@ test('inherits half-open, hidden-track and track-order semantics from sequenceLa
     expect(editorPreviewPlan(timeline, 30).visuals).toEqual([]);
 });
 
+test.each([
+    ['16:9', 1920, 1080, { width: 1280, height: 720 }],
+    ['9:16', 1920, 1080, { width: 406, height: 720 }],
+    ['1:1', 1920, 1080, { width: 720, height: 720 }],
+    ['source', 10000, 1000, { width: 3840, height: 384 }],
+] as const)('carries the canonical %s reference geometry into the preview plan', (aspect, width, height, expected) => {
+    const base = emptySequence();
+    const timeline = {
+        ...base,
+        aspect,
+        media: { image: { ...image('image'), width, height } },
+        video: [clip('v1', 'image', 'video-0')],
+    } as unknown as Timeline;
+
+    expect(editorPreviewPlan(timeline, 0).referenceSize).toEqual(expected);
+});
+
 test('preserves the canonical outgoing/incoming transition pair and evaluated transition values', () => {
     const base = emptySequence();
     const timeline = {

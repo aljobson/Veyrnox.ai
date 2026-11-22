@@ -5,6 +5,8 @@ export const STATIC_PREVIEW_LIMITS = Object.freeze({
     maxHeight: 1280,
     maxPixels: 1280 * 720,
     maxLayers: 40,
+    maxFilterOutset: 180,
+    maxLayerPixels: 1_800_000,
 });
 
 export const STATIC_PREVIEW_BLENDS = [
@@ -81,6 +83,8 @@ export interface StaticPreviewLayer {
 export interface StaticPreviewPlan {
     readonly width: number;
     readonly height: number;
+    /** Canonical web compositor height used to scale CSS-pixel filters into this output. */
+    readonly referenceHeight: number;
     readonly background: string;
     readonly layers: readonly StaticPreviewLayer[];
     readonly unsupported?: readonly StaticPreviewUnsupportedFeature[];
