@@ -19,6 +19,7 @@ const model = `capped-${randomUUID().slice(0, 8)}`, endpoint = 'fal-ai/flux-2-pr
 const original = 'public.admit_fal_dispatch(uuid,text,text,jsonb,jsonb,text,boolean)';
 const capped = 'public.admit_fal_dispatch_capped(uuid,text,text,jsonb,jsonb,text,boolean,integer)';
 const migration = await readFile(new URL('../packages/db/schema/supabase/0440_fal_dispatch_max_charge.sql', import.meta.url), 'utf8');
+const committedFixtureId = `capped-committed-${randomUUID().slice(0, 8)}`;
 let user, checks = 0;
 const values = (max, { key = randomUUID(), free = true, modelId = model, inputs = { prompt: 'fixture' }, payload = inputs } = {}) =>
     [user, key, modelId, inputs, payload, endpoint, free, max];
@@ -191,12 +192,18 @@ try {
 
     // Use an existing committed model so the second connection can see it;
     // do not UPDATE it on this connection (that would mask the FOR SHARE test).
-    // Must still be served by fal: FLUX.2 Pro moved to Crun first in 0581.
-    const committedModel = await one("SELECT id,credits_5s FROM public.model_catalog WHERE id='sana-1.5-4.8b' AND provider='fal'");
+    // FLUX.2 Pro moved to Crun first in 0581, but this RPC still admits only the fal
+    // FLUX endpoint, so commit a fal-served copy on its own connection for this case.
+    const seeder = new pg.Client({ connectionString: url.toString() });
+    await seeder.connect();
+    const committedModel = (await seeder.query(`INSERT INTO public.model_catalog
+        SELECT (jsonb_populate_record(m, jsonb_build_object('id', $1::text, 'provider', 'fal', 'provider_endpoint', $2::text, 'provider_cost_per_unit', 0.03))).*
+        FROM public.model_catalog m WHERE m.id='flux-2-pro' RETURNING id,credits_5s`, [committedFixtureId, endpoint])).rows[0];
+    await seeder.end();
     assert.ok(committedModel);
     await q('UPDATE public.fal_capacity_policy SET model_id=$1', [committedModel.id]);
     const result = await admit(committedModel.credits_5s, { modelId: committedModel.id, free: false });
-    assert.equal(result.ok, true);
+    assert.equal(result.ok, true, JSON.stringify(result));
     assert.equal((await one('SELECT credits FROM public.jobs WHERE id=$1', [result.job_id])).credits, committedModel.credits_5s);
     const updater = new pg.Client({ connectionString: url.toString() });
     await updater.connect();
@@ -226,5 +233,6 @@ try {
     console.log(`${checks} capped SQL cases passed; all migration and fixture changes rolled back`);
 } finally {
     await q('ROLLBACK').catch(() => {});
+    await q('DELETE FROM public.model_catalog WHERE id=$1', [committedFixtureId]).catch(() => {});
     await client.end();
 }
