@@ -2461,6 +2461,7 @@ export default {
   "editor.playheadtimecode": "Code temporel de la tête de lecture",
   "editor.plugins": "Extensions",
   "editor.preview": "Aperçu",
+  "editor.previewApproximate": "Aperçu approximatif",
   "editor.preview2": "Aperçu de {value1}",
   "editor.previewEmpty": "Ajoutez des médias ou du texte pour commencer votre montage",
   "editor.previewunavailable": "Aperçu indisponible",

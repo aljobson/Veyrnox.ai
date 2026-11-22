@@ -424,3 +424,36 @@ Post-fix host proof before round 2: 15 focused suites / 5,588 tests passed; Swif
 5. `S10B-I18N-NAME` low: the 720p blocker left the tool name in English in all translated catalogs. Accepted; all ten non-English catalogs now use their localized Clip Finder term, with length-review metadata and a complete-locale regression updated.
 
 The configured two-round inspection budget is exhausted, so these corrections are not labelled independently approved. Final host proof on the corrected snapshot: 12 focused mobile suites / 428 tests passed; the canonical web Clip Finder and scene evaluator suites passed 21/21; Swift parsing, English registry generation, complete app-i18n validation and `git diff --check` passed. Mobile TypeScript reports only the known missing optional modules and their cascading implicit-any errors in the reused dependency tree, with no changed-file error. Real AVFoundation VFR, empty-audio-range and multichannel fixtures remain native-integration limitations; clean PR CI and later simulator qualification are required.
+
+## Wave 3A Editor S11a preview-plan inspection round 1
+
+- Result: `REVISE` (inspection runner invalidated the verdict after the working snapshot changed concurrently)
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `1b060455-bdf3-4480-9775-9eabf4de2af4`
+- Inspected snapshot SHA-256: `4dd4c09b1700e3b17d0820020126adc064c12bba6ec0b85927bd0361567ac93e`
+- Inspected diff SHA-256: `880ca6bff3a02b71dde385422cf9495f53bf8cd5a99c368304f5a71a48bc5cb8`
+- Runner result: `/var/folders/l3/4f36t9jn439c8fk_1zqgx8pc0000gn/T/claudex-e9r604mw/result.json`
+
+### Findings and host dispositions
+
+1. Active orphan visual media could reach the canonical selector and crash preview planning. Accepted; the adapter now excludes unresolved visuals from canonical selection and reports active or transition-tail orphans as unsupported capability use.
+2. The inspected files were changing concurrently, so the runner could not prove a stable review scope. Recorded; no approval is claimed from this round.
+3. The legacy UI used the static compositor capability profile and could falsely omit the approximation badge. Accepted; the legacy surface now has its own bounded capability profile.
+4. Active orphan audio media was not reported. Accepted; audible orphan audio is now an explicit unsupported capability.
+5. Preview planning was performed more than once for the same rendered frame. Accepted; `PlaybackPreview` now constructs one plan and derives its visible layer, caption and approximation state from it.
+
+## Wave 3A Editor S11a preview-plan inspection round 2
+
+- Result: `REVISE` (inspection runner again invalidated the verdict after the working snapshot changed concurrently)
+- Inspector: Claude Code 2.1.309, observed model `claude-opus-5-5`, fresh session `726d60d1-371a-4c57-87b9-022c40e6b700`
+- Inspected snapshot SHA-256: `d33965e80017f0cb8e8a3f4b851f8ab700472d3d3f0b1fa90db2e76c5139d340`
+- Inspected diff SHA-256: `dbf1361b6a31a51f3c7c2a0aa8350e59f165f52e4984e5c148189fdabf1e03f1`
+- Runner result: `/var/folders/l3/4f36t9jn439c8fk_1zqgx8pc0000gn/T/claudex-0hz7sg95/result.json`
+
+### Findings and host dispositions
+
+1. The review scope still changed during inspection. Recorded; this round is not labelled approved.
+2. The approximation badge still used a capability set broader than the mounted renderer. Accepted in the final correction; it now evaluates the current one-layer Expo fallback specifically.
+3. Outgoing transition layers did not always declare the transition capability. Accepted; transition capability use is derived for both canonical outgoing and incoming layers.
+4. The legacy caption fallback selected raw array order instead of canonical compositor order. Accepted; the UI now chooses the uppermost active visual and text from the one canonical plan.
+
+The configured two-round inspection budget is exhausted. The final corrections therefore are not labelled independently approved. A separate adversarial host review then found frame-wide retention of layer and mask surfaces, missing canonical numeric bounds and blur framing that omitted the web compositor's three-sigma overscan. Accepted corrections now dispose nested native resources immediately and exception-safely, reject invalid crop/transform/mask geometry before allocation, preserve caller-owned images and match the web blur geometry. Host proof on the final corrected snapshot: five focused suites / 160 tests passed; the English registry and complete app-i18n checks passed; TypeScript reported only the reused checkout's known missing optional packages and their cascading errors, with no S11 changed-file error; and `git diff --check` passed. This S11a slice establishes one canonical preview plan and a bounded static image compositor, but the static Skia surface is not yet mounted in the editor; the visible legacy renderer remains explicitly labelled approximate whenever its capability profile cannot reproduce the active frame.

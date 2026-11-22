@@ -29,6 +29,10 @@ test.each(complete)('%s owns all Studio directory copy without English fallback'
 test.each(complete)('%s names Clip Finder locally in its 720p blocker', (_locale, own) => {
     expect(own['editorClips.blocker.resolution']).toContain(own['editorClips.title']);
 });
+test.each(complete)('%s owns the approximate editor preview status', (_locale, own) => {
+    expect(own['editor.previewApproximate']).toBeDefined();
+    expect(own['editor.previewApproximate']).not.toBe(en['editor.previewApproximate']);
+});
 test('Studio summary only promises workspaces available in every build', () => {
     expect(en['studio.summary']).not.toMatch(/\bfilm\b/i);
 });

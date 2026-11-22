@@ -2459,6 +2459,7 @@ export default {
   "editor.playheadtimecode": "Código de tempo do cursor de reprodução",
   "editor.plugins": "Plugins",
   "editor.preview": "Prévia",
+  "editor.previewApproximate": "Prévia aproximada",
   "editor.preview2": "Prévia de {value1}",
   "editor.previewEmpty": "Adicione mídia ou texto para começar sua edição",
   "editor.previewunavailable": "Prévia indisponível",

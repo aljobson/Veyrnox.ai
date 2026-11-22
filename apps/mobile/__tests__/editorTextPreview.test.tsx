@@ -44,7 +44,7 @@ test.each(['Retro pop', 'Serif quote', 'Minimal subtitle', 'Neon heading'])('%s 
 test('underline and letter spacing are drawn', () => {
     expect(editorTextPreviewStyle({ underline: true, letterSpacing: 2 }, 5, 'ios')).toMatchObject({ textDecorationLine: 'underline', letterSpacing: 1 });
 });
-test('PlaybackPreview renders the active styled clip and preserves fallback choice', async () => {
+test('PlaybackPreview renders the active styled clip only inside its timeline range', async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     const root = createRoot(), tl = webSequenceV3(), preset = TITLE_STYLES.find(p => p.name === 'Serif quote')!;
     tl.text[0] = { ...tl.text[0], style: preset.style, size: preset.size };
@@ -55,7 +55,7 @@ test('PlaybackPreview renders the active styled clip and preserves fallback choi
         const caption = () => root.container.queryAll(n => textContent(n) === 'Hello world' && !!n.props.style,
             { matchDeepestOnly: true })[0];
         expect(StyleSheet.flatten(caption().props.style)).toMatchObject(editorTextPreviewStyle(preset.style, preset.size, Platform.OS));
-        await act(async () => store.set(1000)); expect(caption()).toBeDefined();
+        await act(async () => store.set(1000)); expect(caption()).toBeUndefined();
     } finally { await act(async () => root.unmount()); }
 });
 test('PlaybackPreview applies a verified custom family to the text overlay', async () => {

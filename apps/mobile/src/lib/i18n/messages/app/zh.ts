@@ -2371,6 +2371,7 @@ export default {
   "editor.playheadtimecode": "播放头时间码",
   "editor.plugins": "插件",
   "editor.preview": "预览",
+  "editor.previewApproximate": "近似预览",
   "editor.pREVIEW": "预览",
   "editor.preview2": "预览 {value1}",
   "editor.previewEmpty": "添加媒体或文字以开始编辑",

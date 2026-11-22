@@ -55,6 +55,7 @@ export default {
     'editor.text': 'Text',
     'editor.media': 'Media',
     'editor.preview': 'Preview',
+    'editor.previewApproximate': 'Approximate preview',
     'editor.timeline': 'Timeline',
     'editor.adjust': 'Adjust',
     'editor.tab.media': 'Media',

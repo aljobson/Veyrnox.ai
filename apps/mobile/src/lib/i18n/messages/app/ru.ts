@@ -2501,6 +2501,7 @@ export default {
   "editor.playheadtimecode": "Таймкод курсора",
   "editor.plugins": "Плагины",
   "editor.preview": "Предпросмотр",
+  "editor.previewApproximate": "Приблизительный предпросмотр",
   "editor.preview2": "Предпросмотр: {value1}",
   "editor.previewEmpty": "Добавьте медиа или текст, чтобы начать монтаж",
   "editor.previewunavailable": "Предпросмотр недоступен",

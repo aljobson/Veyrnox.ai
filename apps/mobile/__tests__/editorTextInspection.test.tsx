@@ -145,6 +145,6 @@ test.each(['style', 'typography', 'applyAnimation', 'resetAnimation'] as const)(
 
 test('playback retains the original unrelated media and empty-state lines', () => {
     const source = readFileSync(join(__dirname, '../src/components/editor/EditorPlayback.tsx'), 'utf8').split('\n');
-    expect(source).toContain('        {active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}');
-    expect(source).toContain("        {!active && !caption ? <><Text style={styles.previewMark}>{t('editor.v')}</Text><Text style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</Text></> : null}");
+    expect(source.map(line => line.trim())).toContain('{active ? <EditorMediaPreview api={api} clip={active.clip} media={active.media} frameStore={frameStore} fps={timeline.fps} playing={playing} localUri={localMediaUris[active.media.id]} /> : null}');
+    expect(source.map(line => line.trim())).toContain("{!active && !caption ? <><NativeText style={styles.previewMark}>{t('editor.v')}</NativeText><NativeText style={styles.previewLabel}>{timeline.video.length ? t('editor.movetheplayheadontoavisualclip') : t('editor.previewEmpty')}</NativeText></> : null}");
 });
