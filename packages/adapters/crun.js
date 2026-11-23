@@ -28,6 +28,7 @@ import { templateFacePrompt } from '../../lib/templateFaceWording.mjs';
 import { SEEDANCE_R2V_MODEL, buildSeedanceReferenceRequest } from '../../lib/crunSeedanceReference.js';
 import { QWEN_ENDPOINT, QWEN_SCRIPT_LIMIT, QWEN_INPUT_RULES } from '../../lib/qwenSpeechInputs.js';
 import { CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL, buildKlingO1ReferenceRequest } from '../../lib/crunKlingO1Reference.js';
+import { CRUN_IMAGE_TOOL_MODELS, buildCrunImageToolRequest } from '../../lib/crunImageTools.js';
 
 export const CRUN_API_BASE = 'https://api.crun.ai';
 
@@ -85,7 +86,7 @@ const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'klin
 const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
 // These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
 const isVeoI2v = model => /^google\/veo3-1-(?:lite-|fast-)?i2v$/.test(model);
-const redactsRefusal = model => isVeoI2v(model) || !!seedance25Task(model) || model === QWEN_ENDPOINT || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL;
+const redactsRefusal = model => isVeoI2v(model) || !!seedance25Task(model) || model === QWEN_ENDPOINT || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(model);
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
@@ -93,13 +94,13 @@ const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 export function parseEndpoint(endpoint) {
     if (typeof endpoint === 'string' && endpoint.startsWith('crun:') && seedance25Task(endpoint.slice(5))) return { model: endpoint.slice(5) };
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (m[1] === QWEN_ENDPOINT || MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || m[1] === SUNO_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (m[1] === QWEN_ENDPOINT || MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(m[1]) || m[1] === SUNO_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
 /** 'video', 'image', 'audio' (music) or 'speech' for a Crun endpoint this adapter owns, else null. */
 export function endpointKind(endpoint) {
     const target = parseEndpoint(endpoint);
-    return target ? (target.model === SUNO_MODEL ? 'audio' : target.model === QWEN_ENDPOINT ? 'speech' : IMAGE_MODELS[target.model] ? 'image' : 'video') : null;
+    return target ? (target.model === SUNO_MODEL ? 'audio' : target.model === QWEN_ENDPOINT ? 'speech' : IMAGE_MODELS[target.model] || CRUN_IMAGE_TOOL_MODELS.includes(target.model) ? 'image' : 'video') : null;
 }
 
 /**
@@ -117,6 +118,7 @@ export function buildRequest(target, inputs) {
     if (target.model === KLING_AVATAR_MODEL) return buildKlingAvatarRequest(inputs);
     if (target.model === SEEDANCE_R2V_MODEL) return buildSeedanceReferenceRequest(inputs);
     if (target.model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL) return buildKlingO1ReferenceRequest(inputs);
+    if (CRUN_IMAGE_TOOL_MODELS.includes(target.model)) return buildCrunImageToolRequest(target.model, inputs);
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
     const kling = KLING_MODELS[target.model];

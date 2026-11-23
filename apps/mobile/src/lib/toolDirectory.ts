@@ -18,8 +18,8 @@ export interface ToolTask {
 }
 
 export const TOOL_TASKS: readonly ToolTask[] = [
-    { key: 'upscale', label: t('toolDirectory.upscale'), blurb: t('toolDirectory.makeanimagelargerandsharper'), ids: ['topaz-upscale'] },
-    { key: 'background', label: t('toolDirectory.removebackground'), blurb: t('toolDirectory.cutthesubjectoutofaphoto'), ids: ['bria-bg-remove'] },
+    { key: 'upscale', label: t('toolDirectory.upscale'), blurb: t('toolDirectory.makeanimagelargerandsharper'), ids: ['topaz-upscale', 'upscale-2x-clean'] },
+    { key: 'background', label: t('toolDirectory.removebackground'), blurb: t('toolDirectory.cutthesubjectoutofaphoto'), ids: ['bria-bg-remove', 'background-remove-fast'] },
     { key: 'expand', label: t('toolDirectory.expand'), blurb: t('toolDirectory.extendanimagebeyonditsedges'), ids: ['bria-expand'] },
     { key: 'edit', label: t('toolDirectory.editwithaprompt'), blurb: t('toolDirectory.changeanimagebydescribingthechange'), ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
     { key: 'animate', label: t('toolDirectory.phototovideo'), blurb: t('toolDirectory.turnastillimageintoamoving'), ids: ['kling-3.0-i2v', 'kling-3.0-standard-i2v', 'kling-3.0-i2v-kie'] },
