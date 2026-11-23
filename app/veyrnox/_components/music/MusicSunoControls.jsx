@@ -38,7 +38,7 @@ function StylePicker({ label, value, onChange, max, counter, note }) {
       <div className="flex items-center justify-between gap-3 text-sm font-bold text-vx-fg-body">
         <span>{label}</span><Counter id={`${counter}-count`} value={value} max={max} />
       </div>
-      <textarea value={value} onChange={(event) => onChange(capSunoText(event.target.value, max))} rows={2}
+      <textarea value={value} onChange={(event) => onChange(capSunoText(event.target.value, max))} rows={2} aria-label={label}
         aria-describedby={`${counter}-count${note ? ` ${counter}-note` : ''}`}
         className="mt-2 w-full resize-y rounded-xl border border-vx-border-boost bg-vx-base px-4 py-3 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-vx-accent" />
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -59,14 +59,16 @@ function StylePicker({ label, value, onChange, max, counter, note }) {
 }
 
 function Slider({ id, label, value, onChange, bounds }) {
+  const { locale } = useI18n();
   const min = Number(bounds?.min);
   const max = Number(bounds?.max);
-  const display = Number(value).toFixed(2);
+  // Locale-aware decimal mark (German reads 0,50): the number is display text only, the wire value is unchanged.
+  const display = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value));
   return (
     <label className="block text-sm font-bold text-vx-fg-body">
       <span className="flex items-center justify-between gap-3"><span>{label}</span><output htmlFor={id} className="font-vx-mono text-xs text-vx-accent">{display}</output></span>
       <input id={id} type="range" min={min} max={max} step={(max - min) / 20} value={value} onChange={(event) => onChange(Number(event.target.value))}
-        aria-valuetext={`${label}: ${display}`} className="mt-3 min-h-11 w-full accent-vx-accent" />
+        aria-label={label} aria-valuetext={`${label}: ${display}`} className="mt-3 min-h-11 w-full accent-vx-accent" />
     </label>
   );
 }
@@ -94,7 +96,8 @@ export function MusicSunoControls({ model, draft, updateDraft, controls, updateC
         </label> : null}
       </> : null}
 
-      <StylePicker label={t('app.music.suno.style')} value={draft.styles} onChange={(value) => updateDraft('styles', value)} max={stylesMax} counter="suno-style" />
+      {/* In the chat composer the Style text lives in the composer's own box (same draft.styles): showing it twice confused editing. */}
+      {showTextFields ? <StylePicker label={t('app.music.suno.style')} value={draft.styles} onChange={(value) => updateDraft('styles', value)} max={stylesMax} counter="suno-style" /> : null}
       <StylePicker label={t('app.music.suno.exclude')} value={controls.excludeStyles} onChange={(value) => updateControl('excludeStyles', value)} max={excludeMax} counter="suno-exclude"
         note={t('app.music.suno.excludeNote', { count: excludeApplied })} />
 
@@ -119,7 +122,7 @@ export function MusicSunoControls({ model, draft, updateDraft, controls, updateC
 
       {model?.controls?.duration_seconds ? <label className="block text-sm font-bold text-vx-fg-body">
         <span className="flex items-center justify-between gap-3"><span>{t('app.music.suno.duration')}</span><output htmlFor="suno-duration" className="font-vx-mono text-xs text-vx-accent">{duration} {t('app.music.suno.seconds')}</output></span>
-        <input id="suno-duration" type="range" min={model.controls.duration_seconds.min} max={model.controls.duration_seconds.max} step="1" value={duration} onChange={(event) => updateControl('durationSeconds', Number(event.target.value))} aria-valuetext={`${duration} ${t('app.music.suno.seconds')}`} className="mt-3 min-h-11 w-full accent-vx-accent" />
+        <input id="suno-duration" aria-label={t('app.music.suno.duration')} type="range" min={model.controls.duration_seconds.min} max={model.controls.duration_seconds.max} step="1" value={duration} onChange={(event) => updateControl('durationSeconds', Number(event.target.value))} aria-valuetext={`${duration} ${t('app.music.suno.seconds')}`} className="mt-3 min-h-11 w-full accent-vx-accent" />
       </label> : null}
 
       <fieldset>

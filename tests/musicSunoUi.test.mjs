@@ -314,3 +314,13 @@ test('song actions consume reader capabilities and explain hidden format edits',
   assert.match(actions, /sunoFormatEditsUnavailable\(capabilities\)/);
   assert.match(actions, /app\.music\.suno\.editUnavailable/);
 });
+
+test('Suno controls name every field and slider, format decimals by locale, and show Style once in the chat composer', () => {
+  const source = readFileSync(new URL('../app/veyrnox/_components/music/MusicSunoControls.jsx', import.meta.url), 'utf8');
+  assert.match(source, /<textarea value=\{value\}[\s\S]{0,160}aria-label=\{label\}/, 'Style and Exclude textareas carry an accessible name');
+  assert.match(source, /<input id=\{id\} type="range"[\s\S]{0,260}aria-label=\{label\}/, 'Style weight and Weirdness sliders carry an accessible name');
+  assert.match(source, /<input id="suno-duration" aria-label=/, 'the Duration slider carries an accessible name');
+  assert.match(source, /Intl\.NumberFormat\(locale/, 'slider readouts use the locale decimal mark');
+  assert.doesNotMatch(source, /toFixed\(2\)/);
+  assert.match(source, /\{showTextFields \? <StylePicker label=\{t\('app\.music\.suno\.style'\)\}/, 'the composer shows its own Style box, so the picker hides there');
+});
