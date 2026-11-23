@@ -40,7 +40,7 @@ The web editor arrived as a sequence of browser-native phases: arrangement, audi
 
 Web baseline: #2264, #2279, #2283, #2290, #2322, #2342, #2349, #2363, #2371, #2392 and #2484; dark v5 rollout #2469 and #2512.
 
-Native baseline: #2428/#2524 (engine), #2467 (N1), #2526 (N2), #2540 (arrangement), #2534 (piano), #2548 (mixer), #2547 (recording), #2569 (export), #2561 (AI), #2563 (templates/Sounds/coach), #2597 (Music entry), #2626 (sound/song/target playback), #2629 (adaptive workspace shell), #2641 (arrangement MIDI recording), #2643 (Starter Sound export), #2646 (Wave 3 editor/Beats close), and the lane-F landscape integration PR recorded by this branch.
+Native baseline: #2428/#2524 (engine), #2467 (N1), #2526 (N2), #2540 (arrangement), #2534 (piano), #2548 (mixer), #2547 (recording), #2569 (export), #2561 (AI), #2563 (templates/Sounds/coach), #2597 (Music entry), #2626 (sound/song/target playback), #2629 (adaptive workspace shell), #2641 (arrangement MIDI recording), #2643 (Starter Sound export), #2646 (Wave 3 editor/Beats close), and #2647 (lane-F landscape integration).
 
 ## Completion order
 
