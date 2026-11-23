@@ -7,6 +7,8 @@ const BEFORE = 80;
 
 interface HintContract {
     class?: string;
+    photoHints?: readonly string[];
+    photoHintsPhone?: readonly string[];
     slotCount?: number;
     sourcePrompt: string;
     tokenMap?: readonly { slot: number; offset: number; token: string }[];
@@ -32,6 +34,8 @@ export function photoHintAround(source: string, offset: number, tokenLength: num
 export function phonePhotoHints(contract: HintContract | null | undefined): string[] {
     const slotCount = contract?.slotCount;
     const tokenMap = contract?.tokenMap;
+    // A template whose prompt is private carries its hints, cut out on the server (lib/templatePromptPrivacy.js).
+    if (contract?.class === 'bound' && Array.isArray(contract.photoHintsPhone)) return [...contract.photoHintsPhone];
     if (contract?.class !== 'bound' || typeof slotCount !== 'number' || slotCount <= 0 || !tokenMap) return [];
     return Array.from({ length: slotCount }, (_, index) => {
         const item = tokenMap.find(entry => entry.slot === index + 1);

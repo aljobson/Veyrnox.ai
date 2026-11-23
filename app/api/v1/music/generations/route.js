@@ -1,8 +1,10 @@
 import { retryAfterSeconds } from '../../../../../lib/rateLimitHeaders.js';
 import { rpc, select, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { publishFalDispatchWakeup } from '../../../../../lib/falDispatchWakeup.js';
+import { publishCrunDispatchWakeup } from '../../../../../lib/crunDispatchWakeup.js';
 import {
-    MUSIC_BEAT_MODEL_ID, musicBeatAiEnabled, musicGenerationEnabled, musicRpcStatus, parseMusicGeneration, publicMusicError,
+    MUSIC_BEAT_MODEL_ID, MUSIC_CRUN_CONTRACT, MUSIC_CRUN_JSON_MAX_BYTES,
+    musicBeatAiEnabled, musicGenerationEnabled, musicRpcStatus, parseMusicGeneration, publicMusicError,
     readMusicJson, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
@@ -16,28 +18,32 @@ export async function POST(request) {
     if (!validMusicAuthId(authId)) return reply({ error: 'not_authenticated' }, 401);
     if (!musicGenerationEnabled()) return reply({ error: 'music_unavailable' }, 404);
 
-    const decoded = await readMusicJson(request);
+    const decoded = await readMusicJson(request, MUSIC_CRUN_JSON_MAX_BYTES);
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
     const input = parseMusicGeneration(decoded.value);
     if (!input.ok) return reply({ error: input.error }, 400);
 
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
-    if (!musicBeatAiEnabled()) {
+    if (!musicBeatAiEnabled() || input.providerContract) {
         try {
             const users = await select('users', { columns: 'id', filter: `auth_id=eq.${encodeURIComponent(authId)}`, limit: 1 }, cfg);
             if (!Array.isArray(users)) throw new Error('invalid_guard_read');
             const userId = users[0]?.id;
             if (users.length && !validMusicAuthId(userId)) throw new Error('invalid_guard_user');
             const quotes = userId ? await select('music_generation_quotes', {
-                columns: 'model_id,consumed_at',
+                columns: input.providerContract ? 'model_id,consumed_at,provider_contract' : 'model_id,consumed_at',
                 filter: `id=eq.${encodeURIComponent(input.quoteId)}&user_id=eq.${encodeURIComponent(userId)}`,
                 limit: 1,
             }, cfg) : [];
             if (!Array.isArray(quotes)) throw new Error('invalid_guard_read');
             // This read can race the original transaction. Keep the receipt/key on
             // refusal; a consumed quote must reach the atomic replay path below.
-            if (quotes?.[0]?.model_id === MUSIC_BEAT_MODEL_ID && quotes[0].consumed_at === null) {
+            const quote = quotes?.[0];
+            if (input.providerContract && quote?.provider_contract !== input.providerContract) {
+                return reply({ error: 'quote_stale' }, 409);
+            }
+            if (!musicBeatAiEnabled() && quote?.model_id === MUSIC_BEAT_MODEL_ID && quote.consumed_at === null) {
                 return reply({ error: 'beat_ai_unavailable' }, 503, { 'Retry-After': '60' });
             }
         } catch {
@@ -60,15 +66,22 @@ export async function POST(request) {
         return reply({ error: 'pair_acceptance_unknown' }, 503);
     }
     if (!result?.ok) {
-        const status = musicRpcStatus(result?.code);
+        const unavailable = result?.code === 'MUSIC_UNAVAILABLE';
+        const status = unavailable ? 503 : musicRpcStatus(result?.code);
         const headers = status === 429 || status === 503
             ? { 'Retry-After': String(retryAfterSeconds(result?.retry_after_seconds, { max: 600, fallback: 60 })) }
             : {};
-        return reply({ error: publicMusicError(result?.code) }, status, headers);
+        return reply({ error: unavailable ? 'music_unavailable' : publicMusicError(result?.code) }, status, headers);
     }
 
-    for (const jobId of result.job_ids || []) {
-        try { publishFalDispatchWakeup(jobId); }
+    const publishWakeup = result.provider_contract === 'crun-suno-v1'
+        ? publishCrunDispatchWakeup : publishFalDispatchWakeup;
+    // Preserve the existing fal replay wake-up: its fenced claim is a safe way
+    // to recover a lost queue publish. Crun replays with a known contract need
+    // no wake-up because its minute backstop owns recovery.
+    const jobsToWake = result.idempotent && result.provider_contract === 'crun-suno-v1' ? [] : result.job_ids || [];
+    for (const jobId of jobsToWake) {
+        try { publishWakeup(jobId); }
         catch { console.error('[music/generations] dispatch wakeup unavailable:', jobId); }
     }
     return reply({

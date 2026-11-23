@@ -84,7 +84,8 @@ test('detail runnable verdict and /api/templates detail agree for every bound te
 const controls = { '../_components/UseTemplate': { UseTemplate: () => null }, './UseTemplate': { UseTemplate: () => null } };
 test('all non-bound non-blocked recipe/detail markup is byte-identical to base', async () => {
   const old = fixture('en', '/presets', { sourceOverrides: { [page]: base(page), [recipe]: base(recipe), [framing]: base(framing), 'app/veyrnox/_components/UseTemplate.js': base('app/veyrnox/_components/UseTemplate.js') } });
-  const now = fixture('en', '/presets');
+  // The prompt box is deliberately hidden by default; everything else on the page must stay byte-identical.
+  const now = fixture('en', '/presets', { moduleMocks: { '../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) } } });
   const checked = [];
   for (const preset of PRESETS.filter(p => !duplicateKeeperId(p.id) && !['bound', 'blocked-needs-video'].includes(templateContract(p.id)?.class))) {
     assert.equal(now.render(React.createElement(now.load(recipe).TemplateRecipe, { preset })), old.render(React.createElement(old.load(recipe).TemplateRecipe, { preset })), `${preset.id}: recipe`);

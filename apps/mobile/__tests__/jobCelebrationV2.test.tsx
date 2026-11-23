@@ -81,7 +81,7 @@ test('inaccessible output fires nothing and consumes no rating claim', async () 
 test('a historical first poll carries no unfinished evidence and never asks for a rating', async () => {
     mockWaited = false;
     await render();
-    expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', false);
+    expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', false, expect.objectContaining({ owner: null, epoch: expect.any(Number) }));
     await act(async () => jest.advanceTimersByTime(5000));
     expect(mockPush).not.toHaveBeenCalled();
 });
@@ -89,7 +89,7 @@ test('QA-006: a finished result opened from Create counts as the first win and a
     mockWaited = false;
     mockFromCreate = '1';
     await render();
-    expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', true);
+    expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', true, expect.objectContaining({ owner: null, epoch: expect.any(Number) }));
     await act(async () => jest.advanceTimersByTime(5000));
     expect(mockPush).not.toHaveBeenCalled();
     await leave();
@@ -113,7 +113,7 @@ test('rating is pushed only after the celebration promise resolves', async () =>
         }),
     });
     await render();
-    expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', true);
+    expect(mockCelebrate).toHaveBeenCalledWith('job-id', 'image/png', true, expect.objectContaining({ owner: null, epoch: expect.any(Number) }));
     await act(async () => jest.advanceTimersByTime(5000));
     expect(mockPush).not.toHaveBeenCalled();
     await act(async () => done());

@@ -17,14 +17,15 @@ export function waitForPoll(ms, signal) {
     signal.addEventListener('abort', abort, { once: true });
   });
 }
-export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), revokeURL = url => URL.revokeObjectURL(url), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {}, jobStarted = () => {} }) {
+export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), revokeURL = url => URL.revokeObjectURL(url), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {}, jobStarted = () => {}, jobSettled = () => {} }) {
   const active = new Map();
   const current = (template, key) => store.get(template).find(a => a.key === key);
   // An accepted job joins the same job history every other generation writes, so the
   // site's progress bar and background watcher see it. Only ever after acceptance.
-  function started(a, label) {
+  function started(a, label, idempotent, recovering = false) {
     if (!a?.job_id || !a.body) return;
-    try { jobStarted({ job_id: a.job_id, model_id: a.body.model_id, credits: a.spent ?? a.body.max_charge_credits, templateId: a.templateId, name: label }); } catch { /* display only */ }
+    const knownTime = Number.isFinite(a.submitted_at) && a.submitted_at > 0;
+    try { jobStarted({ job_id: a.job_id, model_id: a.body.model_id, credits: a.spent ?? a.body.max_charge_credits, templateId: a.templateId, name: label, ...(knownTime ? { submitted_at: a.submitted_at } : {}), idempotent, recovering: recovering && knownTime }); } catch { /* display only */ }
   }
   function start(a, kind) {
     const operation = `${a.accountId}:${a.key}:${kind}`;
@@ -90,7 +91,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
       }
       const body = swapRequest(offer, a.key, references);
       if (!op.valid()) return;
-      store.update(op.ticket, { body, references, state: 'submitting' });
+      store.update(op.ticket, { body, references, submitted_at: Date.now(), aspect: offer.aspect_ratio || offer.aspect, state: 'submitting' });
       // Use the existing submit transport's unknown-outcome classification.
       const batch = createBatch(1, () => a.key);
       const { error } = await sendInOrder(1, () => gateway('/generations', { method: 'POST', body: JSON.stringify(body), signal: op.signal }), batch);
@@ -99,7 +100,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
       if (!op.valid()) return;
       if (!accepted?.job_id) throw Error('invalid_response');
       store.update(op.ticket, reduceAttempt(current(templateId, a.key), { accepted }));
-      started(current(templateId, a.key), offer.name);
+      started(current(templateId, a.key), offer.name, accepted.idempotent);
       for (const old of store.get(templateId)) store.dropFiles(old.key);
       balanceChanged();
     } catch (error) {
@@ -113,6 +114,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
     const a = current(templateId, key);
     if (!a || !unsettled(a) || a.state === 'submitting') return;
     const op = start(a, 'poll'); if (!op) return;
+    if (a.job_id && !a.refusal && !(Number.isFinite(a.submitted_at) && a.submitted_at > 0)) started(a, undefined, true, true);
     if (a.state === 'unresolved') store.update(op.ticket, { state: a.refusal ? 'refund_pending' : 'unknown' });
     try {
       const limit = () => (live(current(templateId, key)) ? LIVE_POLL_LIMIT : POLL_LIMIT);
@@ -130,7 +132,7 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
               if (!op.valid()) return;
               if (accepted?.job_id) {
                 store.update(op.ticket, reduceAttempt(current(templateId, key), { accepted }));
-                started(current(templateId, key));
+                started(current(templateId, key), undefined, accepted.idempotent, true);
                 store.dropFiles(key);
                 balanceChanged();
               }
@@ -140,8 +142,11 @@ export function createSwapActions(store, { makeKey, processPhoto, upload, gatewa
             }
           }
           if (job) {
-            const next = reduceAttempt(current(templateId, key), { job });
+            const previous = current(templateId, key);
+            const next = reduceAttempt(previous, { job });
             store.update(op.ticket, next);
+            if (!previous.job_id && !previous.refusal) started(current(templateId, key), undefined, true, true);
+            if (['queued', 'running', 'succeeded', 'refunded'].includes(next.state)) jobSettled(next.job_id, next.state);
             if (!unsettled(next)) {
               try {
                 if (!op.valid()) return;

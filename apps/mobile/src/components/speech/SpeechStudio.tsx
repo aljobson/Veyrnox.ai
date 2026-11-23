@@ -13,12 +13,12 @@ import { useAnnouncement } from '../../lib/useAnnouncement';
 import { t } from '../../lib/i18n';
 import { Example } from '../ExampleCard';
 import { creativeFeature } from '../../lib/creativeFeatures';
-import { DEFAULT_TTS_SETTINGS, TTS_EXAMPLES, TTS_SCRIPT_LIMIT, auditionCost, toggleAuditionVoice, voiceAuditionScript, type SpeechSettings } from '../../lib/speech/shared';
+import { DEFAULT_TTS_SETTINGS, defaultSpeechSettings, speechContractFor, TTS_EXAMPLES, auditionCost, toggleAuditionVoice, voiceAuditionScript, type SpeechSettings } from '../../lib/speech/shared';
 import { buildSpeechRequest, insertCue, validateSpeech } from '../../lib/speech/studio';
 import { auditionQuote, buildAuditionRequest, validateAudition } from '../../lib/speech/audition';
 import { AuditionBoard } from './AuditionBoard';
 import { AuditionResults } from './AuditionResults';
-import { speechModel } from '../../lib/speech/model';
+import { speechModel, speechModels } from '../../lib/speech/model';
 import { SpeechLabel, speechLayout } from './SpeechFields';
 import { VoicePicker } from './VoicePicker';
 import { SpeechControls } from './SpeechControls';
@@ -38,21 +38,26 @@ export function SpeechStudio({ reopen }: { reopen?: string | string[] }) {
     const balance = useBalance();
     const [catalog, setCatalog] = useState<CatalogModel[] | null>(null);
     const [catalogError, setCatalogError] = useState<string | null>(null);
+    const [modelId, setModelId] = useState('minimax-speech-2.6-hd');
+    const contract = speechContractFor(modelId)!;
+    const isQwen = modelId === 'qwen3-tts';
+    const availableModels = speechModels(catalog ?? []);
     const [script, setScript] = useState('');
     const [settings, setSettings] = useState<SpeechSettings>({ ...DEFAULT_TTS_SETTINGS });
     const [voices, setVoices] = useState<string[]>([]);
     const { pending, sending, busy, result, visibleJobs, complete, error, setError, priceFor, resetAttempt, editAttempt, generate, settled } = useSpeechSubmission(api, () => {
-        setScript(''); setSettings({ ...DEFAULT_TTS_SETTINGS }); setVoices([]);
+        setScript(''); setSettings(defaultSpeechSettings(modelId)); setVoices([]);
     });
     const restored = useStudioReopen(reopen, request => {
         const saved = restoreSpeech(request);
-        if (!saved) return false;
+        if (!saved || !speechModel(catalog ?? [], request.modelId)) return false;
+        setModelId(request.modelId);
         setScript(saved.script); setSettings(saved.settings); setVoices([]); return true;
-    }, () => { resetAttempt(); setScript(''); setSettings({ ...DEFAULT_TTS_SETTINGS }); setVoices([]); }, jobId => pending.current.markDelivered(jobId));
+    }, () => { resetAttempt(); setScript(''); setSettings(defaultSpeechSettings(modelId)); setVoices([]); }, jobId => pending.current.markDelivered(jobId), catalog !== null);
     useAnnouncement(error ?? (busy ? t('speech.submitting') : result || complete ? t('speech.accepted') : null));
     useEffect(() => {
         let live = true;
-        void fetchCatalog().then(rows => { if (live) setCatalog(rows); }).catch(() => { if (live) setCatalogError(t('form.modelLoad')); });
+        void fetchCatalog().then(rows => { if (live) { setCatalog(rows); const first = speechModel(rows); if (first) { setModelId(first.id); setSettings(defaultSpeechSettings(first.id)); } } }).catch(() => { if (live) setCatalogError(t('form.modelLoad')); });
         return () => { live = false; };
     }, []);
     function editScript(next: string) {
@@ -75,10 +80,10 @@ export function SpeechStudio({ reopen }: { reopen?: string | string[] }) {
         editAttempt(script.trim() !== nextScript.trim() || (voices.length === 0 && settings.voice !== voice));
         setSettings({ ...settings, voice }); setScript(nextScript); restored.dismiss();
     }
-    const model = speechModel(catalog ?? []);
+    const model = speechModel(catalog ?? [], modelId);
     if (!model) return <ModelUnavailable title={t('speech.title')} recovery={{ label: t('speech.back'), onPress: () => router.canGoBack() ? router.back() : router.replace('/audio') }} fromTemplate={false} error={catalogError ?? (catalog ? t('form.modelGone') : null)} />;
-    const boardActive = voices.length > 0, count = boardActive ? voices.length : 1;
-    const validation = boardActive ? validateAudition(script, settings, voices) : validateSpeech(script, settings);
+    const boardActive = !isQwen && voices.length > 0, count = boardActive ? voices.length : 1;
+    const validation = boardActive ? validateAudition(script, settings, voices) : validateSpeech(script, settings, modelId);
     const unpriced = validation ? null : boardActive ? buildAuditionRequest(script, settings, voices, model) : buildSpeechRequest(script, settings, model);
     const unit = priceFor(unpriced, count) ?? estimateCredits(model, null);
     const request = unpriced ? { ...unpriced, confirmedCredits: unit } : null;
@@ -91,21 +96,25 @@ export function SpeechStudio({ reopen }: { reopen?: string | string[] }) {
         <Stack.Screen options={{ title: t('speech.title') }} />
         <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <SpeechLabel icon="microphone" label={t('speech.title')} />
-            <Text tone="secondary">{t('speech.intro')}</Text>
+            <Text tone="secondary">{t(isQwen ? 'speech.qwen.intro' : 'speech.intro')}</Text>
+            {availableModels.length > 1 && <View style={speechLayout.chips}>{availableModels.map(item => <Chip key={item.id} label={item.name} selected={modelId === item.id} disabled={busy || restored.loading} onPress={() => {
+                if (busy || restored.loading || modelId === item.id) return;
+                editAttempt(true); setModelId(item.id); setSettings(defaultSpeechSettings(item.id)); setVoices([]); restored.dismiss();
+            }} />)}</View>}
             {restored.unavailable && <Text accessibilityLiveRegion="polite">{t('dialogue.restoreUnavailable')}</Text>}
             {textToSpeechExample ? <Example feature={textToSpeechExample} /> : null}
             {result || complete ? <><Text accessibilityLiveRegion="polite">{t('speech.accepted')}</Text>{result ? <CreateResult api={api} batch={result} catalog={catalog ?? []} onTerminal={settled} /> : <AuditionResults api={api} jobs={jobs} modelId={model.id} catalog={catalog ?? []} onTerminal={settled} />}
                 <Button label={t('speech.adjust')} disabled={busy} onPress={resetAttempt} /></> : <>
-                <TextField label={t('speech.script')} value={script} onChangeText={editScript} maxLength={TTS_SCRIPT_LIMIT} multiline editable={!busy && !restored.loading} style={styles.script} />
-                <Text variant="caption">{t('speech.counter', { count: script.length, max: TTS_SCRIPT_LIMIT })}</Text>
-                {validation && script.length > 0 && <Text tone="danger" accessibilityLiveRegion="polite">{t(validation)}</Text>}
+                <TextField label={t('speech.script')} value={script} onChangeText={editScript} maxLength={contract.scriptLimit} multiline editable={!busy && !restored.loading} style={styles.script} />
+                <Text variant="caption">{t('speech.counter', { count: script.length, max: contract.scriptLimit })}</Text>
+                {validation && script.length > 0 && <Text tone="danger" accessibilityLiveRegion="polite">{t(validation, { limit: contract.scriptLimit })}</Text>}
                 <View pointerEvents={busy || restored.loading ? 'none' : 'auto'} accessibilityElementsHidden={busy} importantForAccessibility={busy ? 'no-hide-descendants' : 'auto'} style={speechLayout.section}>
                     <SpeechLabel icon="lightbulb" label={t('speech.examples')} />
                     <View style={speechLayout.chips}>{TTS_EXAMPLES.map((example, index) => <Chip key={example.title} label={t(`speech.example.${index}`)} onPress={() => editScript(example.text)} />)}</View>
-                    <InsertBar onInsert={cue => { const next = insertCue(script, cue); if (next.tooLong) setError(t('speech.tooLong')); else editScript(next.script); }} />
-                    <VoicePicker value={settings.voice} onChange={voice => editSettings({ ...settings, voice })} board={voices} onToggle={voice => editVoices(toggleAuditionVoice(voices, voice))} onTest={testVoice} />
-                    <AuditionBoard voices={voices} onRemove={voice => editVoices(toggleAuditionVoice(voices, voice))} onClear={() => editVoices([])} />
-                    <SpeechControls value={settings} onChange={editSettings} />
+                    {!isQwen && <InsertBar onInsert={cue => { const next = insertCue(script, cue, contract.scriptLimit); if (next.tooLong) setError(t('speech.tooLong')); else editScript(next.script); }} />}
+                    <VoicePicker key={modelId} modelId={modelId} value={settings.voice} onChange={voice => editSettings({ ...settings, voice })} board={voices} onToggle={voice => editVoices(toggleAuditionVoice(voices, voice))} onTest={testVoice} />
+                    {!isQwen && <AuditionBoard voices={voices} onRemove={voice => editVoices(toggleAuditionVoice(voices, voice))} onClear={() => editVoices([])} />}
+                    <SpeechControls modelId={modelId} value={settings} onChange={editSettings} />
                 </View>
                 {error && <Text tone="danger" accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</Text>}
                 <SpeechPricePanel price={boardActive ? price : quote.total} audition={boardActive ? { count, unit, remaining: showRemaining ? quote.total : null } : undefined} payable={quote.payable} balance={balance} disabled={!!validation || restored.loading} busy={busy} onGenerate={() => { restored.dismiss(); void generate(request, model, voices, quote, balance); }} onCredits={() => router.push('/credits')} />

@@ -444,9 +444,9 @@ const ja = {
     'presets.swap.refunded': 'クレジットが返却されました。',
     'presets.swap.not_charged': 'この試行では課金されませんでした。',
     'presets.swap.submitting': '動画を開始中…',
-    'presets.swap.queued': '動画を受け付けました。費用：{credits} クレジット。ライブラリで進行状況を確認してください。',
-    'presets.swap.running': '動画を生成中です。ライブラリで進行状況を確認してください。',
-    'presets.swap.succeeded': '動画が完成しました。ライブラリでご覧ください。',
+    'presets.swap.queued': '動画を受け付けました。費用：{credits} クレジット。完成するとこのページに表示されます。',
+    'presets.swap.running': '動画を生成中です。このページのままお待ちください。完成するとここに表示されます。',
+    'presets.swap.succeeded': '動画が完成しました。',
     'presets.swap.busy_background': '無地の背景で、あなた一人だけが写った写真を使ってください。',
     'presets.swap.ragged_matte': '切り抜きの輪郭が不鮮明です。無地の背景で、あなた一人だけが写った写真を使ってください。',
     'presets.swap.several_people': '複数の人物が検出されました。無地の背景で、あなた一人だけの写真を使ってください。',
@@ -456,6 +456,10 @@ const ja = {
     'presets.swap.unavailable': 'このテンプレートは利用できません。別のものを選ぶか、後でお試しください。',
     'presets.swap.cutout_failed': '端末での切り抜きが完了しませんでした。再試行するか無地の背景の写真を選んでください。元の写真はアップロードされません。',
     'presets.swap.price_changed': '価格が変わりました。現在の価格を確認してから再試行してください。',
+    'app.create.templatePrompt.edit': 'プロンプトを編集',
+    'app.create.templatePrompt.error': 'プロンプトを読み込めませんでした。サインインしてもう一度お試しください。',
+    'app.create.templatePrompt.help': 'このテンプレートのプロンプトをそのまま使用します。',
+    'app.create.templatePrompt.ready': 'テンプレートのプロンプトを準備しました',
 } as const;
 
 export default ja;

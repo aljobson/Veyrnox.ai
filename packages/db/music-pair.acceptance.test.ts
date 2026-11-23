@@ -32,6 +32,11 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
     await client.query(workspaceSql);
     await client.query(lineageSql);
     await client.query(lineageSql);
+    // 0458 recreates the legacy draft RPC bound to ON CONFLICT (user_id); 0591 owns the composite-key wrappers.
+    // Strip the file's own BEGIN/COMMIT: a COMMIT here would commit this test's open transaction and leak its jobs and
+    // dispatch rows into the shared DB (they then fill fal capacity for later scripts such as test-fal-dispatch-capped).
+    await client.query((await readFile(new URL('./schema/supabase/0591_crun_suno_music_foundation.sql', import.meta.url), 'utf8'))
+        .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, ''));
   });
 
   after(async () => {

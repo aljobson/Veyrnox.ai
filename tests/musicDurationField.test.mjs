@@ -19,6 +19,7 @@ function load(name, imports = {}, suffix = '') {
   return loaded.exports;
 }
 const priceImport = { '../../_lib/music/durationPrice.js': pricing };
+const sunoForm = load('musicSunoForm.js');
 const { MusicDurationField } = load('MusicDurationField.jsx', priceImport);
 function* elements(node) {
   if (Array.isArray(node)) { for (const child of node) yield* elements(child); }
@@ -113,6 +114,8 @@ function formHarness(mode) {
     '../../../../lib/licensedTrackTemplates.js': { resolveInitialDescription: () => 'Warm piano' },
     '../../../lib/authClient': { getStoredUserId: () => null },
     './musicLyricHandoff': { readMusicLyricHandoff: () => null },
+    './musicSunoForm': sunoForm,
+    '../../../../components/I18nProvider': { useI18n: () => ({ t: (key, vars) => vars?.count ?? key, locale: 'en' }) },
   }, '\nexport { CustomDraftFields };');
   return {
     server, custom, gate, requests, get clears() { return clears; },

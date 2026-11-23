@@ -143,7 +143,8 @@ test('Genjutsu recipe SSR shows only the exact source prompt and hands that same
   assert.ok(html.includes('EXACT COMMUNITY PROMPT'));
   assert.ok(!html.includes('GENERATION PROMPT'));
   assert.ok(!html.includes(template.prompt.slice(0, 80)) || sourcePrompt.includes(template.prompt.slice(0, 80)));
-  assert.ok(html.includes(sourcePrompt.slice(0, 80)));
+  assert.ok(!html.includes(sourcePrompt.slice(0, 80)), 'hidden until Edit');
+  assert.ok(html.includes('template-prompt-ready'));
   assert.doesNotMatch(html, /readonly=""/i);
 });
 
@@ -164,7 +165,8 @@ test('Syntx recipe SSR hands its exact prompt to Create even when references can
     } },
   } });
   const exactHtml = exactFixture.render(React.createElement(exactFixture.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset: exactPreset }));
-  assert.ok(exactHtml.includes(exactPrompt.slice(0, 80)));
+  assert.ok(!exactHtml.includes(exactPrompt.slice(0, 80)), 'hidden until Edit');
+  assert.ok(exactHtml.includes('template-prompt-ready'));
   assert.equal(exactTemplate.prompt, exactPrompt);
   assert.ok(!exactHtml.includes('GENERATION PROMPT'));
   assert.doesNotMatch(exactHtml, /readonly=""|data-source-prompt-runnable/i);
@@ -189,7 +191,7 @@ test('a runnable community prompt is the only prompt shown and handed off, with 
   assert.equal(handoff.generationBlocked, undefined);
 });
 
-test('an exact source prompt over the former limit is shown whole and stays copyable when its source contract is unsupported', () => {
+test('an exact source prompt over the former limit is hidden until Edit and still handed off whole when its source contract is unsupported', () => {
   const template = ALL_TEMPLATES.find((preset) => (SYNTX_SOURCE_PROMPT_RECORDS[preset.id]?.prompt?.length ?? 0) > 2000);
   const exactPrompt = SYNTX_SOURCE_PROMPT_RECORDS[template.id].prompt;
   const preset = { ...template, sourcePrompt: exactPrompt, sourcePromptOrigin: 'community-source-exact' };
@@ -201,7 +203,8 @@ test('an exact source prompt over the former limit is shown whole and stays copy
     } },
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
-  assert.ok(html.includes(exactPrompt.slice(-60).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;')) || html.includes(String(exactPrompt.length)));
+  assert.ok(!html.includes(exactPrompt.slice(-60).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#x27;')), 'hidden until Edit');
+  assert.ok(html.includes('template-prompt-ready'));
   assert.ok(!html.includes(`This prompt is ${exactPrompt.length} characters`));
   assert.doesNotMatch(html, /data-source-prompt-runnable="false"/);
   assert.doesNotMatch(html, /data-runnable-adaptation/);
@@ -295,7 +298,8 @@ test('English recipe and detail markup match the reviewed baseline', async () =>
   const hash = value => createHash('sha256').update(value).digest('hex');
   const old = process.env.LOCALES_ENABLED; process.env.LOCALES_ENABLED = 'true';
   try {
-    const f = fixture('en', '/presets/community-parking-lot-recast');
+    // The baseline is the revealed prompt box; the hidden state has its own assertions above.
+    const f = fixture('en', '/presets/community-parking-lot-recast', { moduleMocks: { '../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) } } });
     const preset = ALL_TEMPLATES.find(p => p.id === 'community-parking-lot-recast');
     assert.equal(hash(f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }))), baseline.recipe);
     assert.equal(hash(f.render(await f.load('app/veyrnox/presets/[id]/page.js').default({ params: Promise.resolve({ id: preset.id }) }))), baseline.detail);

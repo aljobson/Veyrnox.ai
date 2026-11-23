@@ -346,5 +346,11 @@
   "editorMotion.x": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorMotion.y": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
-  "editorPack.category.Video": "Video is the standard German category label and is spelled identically to English."
+  "editorPack.category.Video": "Video is the standard German category label and is spelled identically to English.",
+  "music.create.suno.variety.1": "Same spelling in German and English for this label: Normal.",
+  "music.create.suno.variety.3": "Same spelling in German and English for this label: Extra.",
+  "music.create.suno.style.indie": "Same spelling in German and English for this label: Indie.",
+  "music.create.suno.style.jazz": "Same spelling in German and English for this label: Jazz.",
+  "music.create.suno.style.pop": "Same spelling in German and English for this label: Pop.",
+  "music.create.suno.style.rock": "Same spelling in German and English for this label: Rock."
 }

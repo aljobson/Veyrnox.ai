@@ -5,14 +5,18 @@ const uuid=n=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const quote={ok:true,quote_id:uuid(1),total_credits:37,unit_credits:18,balance:100,balance_after:63,affordable:true};
 let held=false,signs=0;const calls=[];
 globalThis.beatAiRouteFixture={
-  rpc:async(name,args)=>{calls.push({name,args});if(name==='music_get_custom_draft')return {draft:{revision:1,styles:'Warm keys',lyrics:''}};return /context$/.test(name)?held?{ok:false,code:'HELD'}:{ok:true,r2_key:'source',mime_type:'audio/mpeg',song_id:uuid(2)}:quote;},
+  rpc:async(name,args)=>{calls.push({name,args});if(name==='music_get_custom_draft')return {ok:true,draft:{id:uuid(6),revision:1,styles:'Warm keys',lyrics:''}};return /context$/.test(name)?held?{ok:false,code:'HELD'}:{ok:true,r2_key:'source',mime_type:'audio/mpeg',song_id:uuid(2)}:quote;},
+  select:async(table)=>table==='model_catalog'?[{
+    id:'ace-step-1.5',name:'ACE-Step 1.5',modality:'audio',credits_5s:3,gated_flag:false,
+    provider:'fal',provider_endpoint:'fal-ai/ace-step-1.5',updated_at:'2026-11-22T12:00:00Z',
+  }]:[],
   envConfig:()=>({supabaseUrl:'https://fixture.invalid',serviceRoleKey:'fixture'}),
   r2Env:()=>({}),isConfigured:()=>true,
   presignGetUrl:async()=>{signs++;return {url:'https://fixture.invalid/audio',expires:300};},
   inspectStoredSource:async()=>({ok:true,seconds:10,url:'https://fixture.invalid/audio'}),
 };
 const hooks=registerHooks({load(url,context,next){
-  if(url.endsWith('/packages/db/supabase-client.js'))return {format:'module',shortCircuit:true,source:'export const { rpc, envConfig } = globalThis.beatAiRouteFixture;'};
+  if(url.endsWith('/packages/db/supabase-client.js'))return {format:'module',shortCircuit:true,source:'export const { rpc, select, envConfig } = globalThis.beatAiRouteFixture;'};
   if(url.endsWith('/packages/adapters/r2.js'))return {format:'module',shortCircuit:true,source:'export const { r2Env: envConfig, isConfigured, presignGetUrl } = globalThis.beatAiRouteFixture;'};
   if(url.endsWith('/lib/resolveSource.js'))return {format:'module',shortCircuit:true,source:'export const { inspectStoredSource } = globalThis.beatAiRouteFixture;'};
   return next(url,context);
@@ -45,7 +49,8 @@ test('valid custom mode follows the dedicated custom RPC and cannot select the l
   held = false; calls.length = 0;
   const body = { mode: 'custom', draft_revision: 1, instrumental: true, rights_confirmed: false, duration_seconds: 10 };
   const { POST } = routes[0];
-  const response = await POST(request(body)); assert.equal(response.status, 201);
+  const response = await POST(request(body));
+  assert.equal(response.status, 201, JSON.stringify(await response.clone().json()));
   assert.deepEqual(calls.map(c => c.name), ['music_get_custom_draft', 'music_create_custom_quote']);
   assert.equal(Object.hasOwn(calls[1].args, 'p_model_id'), false, 'custom RPC takes no model selection');
   calls.length = 0;

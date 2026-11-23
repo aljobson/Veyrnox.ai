@@ -66,6 +66,7 @@ test('only a deliberately selected preview plays, muted; selecting another pause
 });
 test('template page copies the edited prompt and uses it with the validated template id', async () => {
     await act(async () => root.render(<TemplatePage />));
+    await click(t("app.create.templatePrompt.edit"));
     expect(mockTextField.maxLength).toBeUndefined(); await act(async () => mockTextField.onChangeText('edited words'));
     await click(t('editor.copy')); expect(mockCopy).toHaveBeenCalledWith('edited words');
     expect(root.container.queryAll(n => n.children.includes(t('libraryCreate.copied')))).toHaveLength(1);
@@ -75,6 +76,7 @@ test('non-runnable exact text stays visible and copyable, with no second prompt 
     const adapted = { ...feed[0], prompt: 'Veyrnox adaptation', promptOrigin: 'veyrnox-adaptation' as const, sourcePrompt: 'Exact @image1 community text', sourcePromptOrigin: 'community-source-exact' as const, sourcePromptRunnable: false, sourcePromptIssues: ['reference-image-input-required'] };
     mockFetch.mockResolvedValue([adapted]);
     await act(async () => root.render(<TemplatePage />));
+    await click(t("app.create.templatePrompt.edit"));
     expect(mockTextField.accessibilityLabel).toBe(t('public.TemplateRecipe.exactCommunityPrompt'));
     expect(mockTextField.value).toBe('Exact @image1 community text');
     expect(root.container.queryAll(n => n.props.accessibilityLabel === t('public.TemplateRecipe.generationPrompt'))).toHaveLength(0);
@@ -99,6 +101,7 @@ test('picker defaults to the original model and snaps preview shape; changes upd
     expect(controls('9:16')).toHaveLength(0);
     expect(controls(t('create.lengthCost', { value1: 4, credits: '7' }))).toHaveLength(1);
     await click('4:3'); await click(t('create.lengthCost', { value1: 8, credits: '14' }));
+    await click(t("app.create.templatePrompt.edit"));
     await act(async () => mockTextField.onChangeText('My edit'));
     await click(t('libraryCreate.editBeforeGenerating'));
     expect(mockRouter.push.mock.calls.at(-1)[0].params).toMatchObject({ modelId: 'other', aspect: '4:3', duration: '8', prompt: 'My edit', tid: 'p-0', tpl: feed[0].title, tmodel: 'model' });
@@ -138,6 +141,7 @@ test.each(['text-to-image', 'text-to-audio'])('%s hides seconds and models witho
 });
 test.each(['', 'x'.repeat(30001)])('empty or over-limit prompt disables Use', async prompt => {
     await act(async () => root.render(<TemplatePage />));
+    await click(t("app.create.templatePrompt.edit"));
     await act(async () => mockTextField.onChangeText(prompt));
     expect(controls(t('libraryCreate.editBeforeGenerating'))[0].props.accessibilityState.disabled).toBe(true);
 });

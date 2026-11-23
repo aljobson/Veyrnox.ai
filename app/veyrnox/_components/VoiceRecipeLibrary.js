@@ -9,13 +9,15 @@ import {
   readSignatureVoiceRecipeIds,
   toggleSignatureVoiceRecipe,
 } from '../_lib/audioReferenceShelf';
-import { voiceRecipeSummary } from '../_lib/voicePalettes';
+import { useI18n } from '../../../components/I18nProvider';
+import { acceptedVoiceRecipe, voiceRecipeSummary } from '../_lib/voicePalettes';
 
 const currentAccount = () => getStoredUserId() || '';
 const serverAccount = () => '';
 const purposeLabel = (id) => AUDIO_REFERENCE_PURPOSES.find(([value]) => value === id)?.[1] || 'Audio reference';
 
-export function VoiceRecipeLibrary({ onApply, title = 'My Voice Recipes' }) {
+export function VoiceRecipeLibrary({ onApply, acceptedModels, title = 'My Voice Recipes' }) {
+  const { t } = useI18n();
   const accountId = useSyncExternalStore(onSessionChange, currentAccount, serverAccount);
   const [recipes, setRecipes] = useState([]);
   const [signatureIds, setSignatureIds] = useState([]);
@@ -36,6 +38,7 @@ export function VoiceRecipeLibrary({ onApply, title = 'My Voice Recipes' }) {
     {!accountId ? <p className="mt-3 text-xs text-vx-fg-muted">Sign in to see Voice Recipes saved for this account in this browser.</p>
       : recipes.length ? <ul className="mt-3 grid gap-2 sm:grid-cols-2" aria-label="My Voice Recipes">
         {[...recipes].sort((a, b) => Number(signatureIds.includes(b.id)) - Number(signatureIds.includes(a.id))).map((item) => {
+          const accepted = !!acceptedVoiceRecipe(item.voiceRecipe, acceptedModels);
           const signature = signatureIds.includes(item.id);
           const setFull = !signature && signatureIds.length >= MAX_SIGNATURE_VOICE_RECIPES;
           return <li key={item.id} className={`flex min-h-24 items-stretch overflow-hidden rounded-xl border bg-vx-base ${signature ? 'border-vx-accent/50' : 'border-vx-border'}`}>
@@ -46,7 +49,7 @@ export function VoiceRecipeLibrary({ onApply, title = 'My Voice Recipes' }) {
           </div>
           <div className="grid w-24 shrink-0 grid-rows-2 border-l border-vx-border">
             <button type="button" disabled={setFull} aria-pressed={signature} aria-label={`${signature ? 'Unpin' : 'Pin'} ${item.name} ${signature ? 'from' : 'to'} Signature Voice Set`} onClick={() => setSignatureIds(toggleSignatureVoiceRecipe(window.localStorage, accountId, item.id))} className="border-b border-vx-border px-2 text-[10px] font-extrabold text-vx-fg-muted hover:bg-vx-accent/[0.08] hover:text-vx-accent disabled:cursor-not-allowed disabled:opacity-35">{signature ? 'Unpin' : setFull ? 'Set full' : 'Pin signature'}</button>
-            <button type="button" onClick={() => onApply(item.voiceRecipe, item.name)} className="px-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/[0.08]">Apply</button>
+            <button type="button" disabled={!accepted} title={accepted ? undefined : t('app.audio.qwen.recipeUnavailable')} onClick={() => { if (accepted) onApply(item.voiceRecipe, item.name); }} className="px-2 text-xs font-extrabold text-vx-accent hover:bg-vx-accent/[0.08]">{accepted ? 'Apply' : t('app.audio.qwen.recipeUnavailable')}</button>
           </div>
         </li>})}
       </ul>

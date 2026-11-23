@@ -1,5 +1,6 @@
 import { sourceList, publicSlotMax, generationSourceState } from '../../../lib/generationSourceSlots.mjs';
 import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
+import { fitSourcesForUpload } from './sourceAspectFit.js';
 export const COMPOSER_KINDS = Object.freeze({
   CHAT: 'chat',
   IMAGE: 'image',
@@ -36,6 +37,7 @@ export function mediaPromptIsMissing(model, prompt) {
 export async function mediaGenerationSources(model, sources, uploadSource) {
   if (generationSourceState(model?.media, sources).needsReattach) throw Object.assign(new Error('source_reattach_required'), { code: 'source_reattach_required' });
   const references = [], source_keys = [], source_assets = [];
+  const fitted = await fitSourcesForUpload(model?.media, sources);
   for (const [slot, value] of Object.entries(sources || {})) {
     const spec = model?.media?.[slot];
     if (!spec) continue;
@@ -46,7 +48,7 @@ export async function mediaGenerationSources(model, sources, uploadSource) {
         references.push({ slot, origin: 'asset', asset_id: source.assetId });
         source_assets.push({ slot, asset_id: source.assetId });
       } else if (source.sourceKey || source.file) {
-        const key = source.sourceKey || await uploadSource(source.file);
+        const key = source.sourceKey || await uploadSource(fitted.get(source) ?? source.file);
         references.push({ slot, origin: 'upload', key }); source_keys.push({ slot, key });
       } else throw Object.assign(new Error('source_reattach_required'), { code: 'source_reattach_required' });
     }
