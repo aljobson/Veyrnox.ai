@@ -68,10 +68,18 @@ describe('mobile E2E route inventory', () => {
         const interactionRoutes = CRAWL_ROUTES.filter((route) => !(route in INTERACTION_CRAWL_ROUTE_EXCLUSIONS));
 
         expect(Object.keys(INTERACTION_CRAWL_ROUTE_EXCLUSIONS)).toEqual([
+            'beats/new',
+            'create',
+            'create/agent',
             'credits',
             'delete-account',
+            'dialogue',
+            'faceless-reel',
+            'music/create',
+            'music/render',
             'paywall',
             'pricing',
+            'speech',
             'topups',
         ]);
         for (const [route, reason] of Object.entries(INTERACTION_CRAWL_ROUTE_EXCLUSIONS)) {
@@ -128,6 +136,13 @@ test('the drawer E2E labels cannot drift from the production menu registry', () 
     const registryLabels = [...MENU_SECTIONS.flatMap((section) => section.items), ...MENU_FOOTER]
         .map((item) => catalog[item.label]);
     expect(NAVIGATION_MENU_LABELS).toEqual(registryLabels);
+});
+
+test('the native editor E2E uses the current Studio entry contract', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'tests', 'editor.e2e.ts'), 'utf8');
+    expect(source).toContain("getByRole('button', 'Studio', { selected: true })");
+    expect(source).toContain("getByRole('button', 'Professional')");
+    expect(source).not.toContain("getByRole('button', 'New edit')");
 });
 
 test('the bounded landscape/keyboard smoke uses supported deterministic device APIs', () => {

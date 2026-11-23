@@ -21,10 +21,18 @@ export const STATIC_ROUTE_CRAWL_EXCLUSIONS: Readonly<Record<string, string>> = {
  * charge money or destroy account data even when button copy changes.
  */
 export const INTERACTION_CRAWL_ROUTE_EXCLUSIONS: Readonly<Record<string, string>> = {
+    'beats/new': 'Opening this route creates a seed Beat project before any control is tapped.',
+    create: 'Generation controls can spend credits and require a purpose-built test.',
+    'create/agent': 'Agent generation controls can spend credits and require a purpose-built test.',
     credits: 'Credit purchase controls can initiate a transaction.',
     'delete-account': 'Account deletion must only be exercised by a purpose-built destructive test.',
+    dialogue: 'Dialogue generation controls can spend credits and require a purpose-built test.',
+    'faceless-reel': 'Reel generation controls can spend credits and require a purpose-built test.',
+    'music/create': 'Music generation controls can spend credits and require a purpose-built test.',
+    'music/render': 'Music rendering controls can spend credits and require a purpose-built test.',
     paywall: 'Subscription controls can initiate a transaction.',
     pricing: 'Plan selection controls can initiate a transaction.',
+    speech: 'Speech generation controls can spend credits and require a purpose-built test.',
     topups: 'Credit top-up controls can initiate a transaction.',
 };
 

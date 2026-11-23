@@ -7,7 +7,7 @@ test('the native Studio is available and can open an existing project', { tags: 
   await device.openLink('ai.veyrnox.app://editor');
 
   await expect(screen.getByRole('button', 'Studio', { selected: true })).toBeVisible({ timeout: 30_000 });
-  await expect(screen.getByRole('button', 'New edit')).toBeVisible();
+  await expect(screen.getByRole('button', 'Professional')).toBeVisible();
 
   const projects = screen.getByRole('button', { name: /^Open (?!menu$)/ });
   // The project list loads after the screen opens; wait for the first project before counting.

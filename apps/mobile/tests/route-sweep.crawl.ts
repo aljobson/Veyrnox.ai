@@ -3,8 +3,9 @@ import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { openSignedIn } from './helpers.js';
 
-// Route sweep: opens every static screen by deep link, takes a screenshot, and fails on a crash, an unmatched route
-// or a generic error screen. It never taps anything, so it cannot spend credits or change account state.
+// Route sweep: opens every static screen by deep link against the disposable mock account, takes a screenshot, and
+// fails on a crash, an unmatched route or a generic error screen. It never taps controls or initiates paid actions;
+// a route may still run its documented mock-only mount effects (for example, beats/new creates a seed project).
 const routes: string[] = JSON.parse(readFileSync(new URL('./crawl-routes.json', import.meta.url), 'utf8'));
 const CHUNK_SIZE = 12;
 const CHUNKS: string[][] = Array.from({ length: Math.ceil(routes.length / CHUNK_SIZE) }, (_, index) =>

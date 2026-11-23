@@ -5,10 +5,11 @@ import { t } from '../../lib/i18n';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView, type VideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
 import { editorClipGain, editorPlaybackRate, editorSourceTimeSeconds, resolveEditorMediaSource, type EditorMediaSource } from '../../lib/editorPreview';
 import type { Clip, Media } from '../../lib/nativeEditorModel';
+import { VeyLoader } from '../VeyLoader';
 
 interface Props {
     readonly api: Pick<ApiClient, 'request'>;
@@ -52,7 +53,7 @@ export function EditorMediaPreview({ api, clip, media, frameStore, fps, playing,
     }, [api, key, localKind, localUri, remoteMedia]);
 
     if (!source && !failed) {
-        return <View accessibilityLabel={t('editor.loadingmediapreview')} style={styles.center}><ActivityIndicator color="#3ee6c4" /></View>;
+        return <View style={styles.center}><VeyLoader label={t('editor.loadingmediapreview')} /></View>;
     }
     if (!source) {
         return <View accessibilityLabel={t('editor.mediapreviewunavailable')} style={styles.center}><Text style={styles.problem}>{t('editor.previewunavailable')}</Text><Text
