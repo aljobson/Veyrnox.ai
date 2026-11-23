@@ -341,4 +341,8 @@ Host dispositions:
 - S0-6 fixed: the entitlement GET handler is executed under mocks and its keys/defaults are compared with the shared server rollout constant.
 - The committed native-version guard passes: `Native mobile change is paired with expo.version 1.0.16 -> 1.0.17.`
 
-Implementation inspection round 2 remains pending.
+### Implementation inspection round 2 — infrastructure failure
+
+- Attempts: `/private/tmp/claudex-music-parity-implementation-round2/claudex-fx0blkk9/result.json` and `/private/tmp/claudex-music-parity-implementation-round2-retry/claudex-39myq4cv/result.json`.
+- Both fresh Claude sessions stopped before reading the diff with `Not logged in · Please run /login`, although `claude auth status` simultaneously reported `loggedIn: true`, `authMethod: claude.ai`, subscription `max`.
+- No second-round approval is claimed. The completed round-1 Claude inspection and all six host dispositions remain the independent inspection record.
