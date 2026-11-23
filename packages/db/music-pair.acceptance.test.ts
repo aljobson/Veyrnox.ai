@@ -32,8 +32,8 @@ describe('music pair foundation (0250)', { skip: !DATABASE_URL && 'DATABASE_URL 
     await client.query(workspaceSql);
     await client.query(lineageSql);
     await client.query(lineageSql);
-    // 0458 recreates the legacy draft RPC bound to ON CONFLICT (user_id); 0580 owns the composite-key wrappers.
-    await client.query(await readFile(new URL('./schema/supabase/0580_crun_suno_music_foundation.sql', import.meta.url), 'utf8'));
+    // 0458 recreates the legacy draft RPC bound to ON CONFLICT (user_id); 0584 owns the composite-key wrappers.
+    await client.query(await readFile(new URL('./schema/supabase/0584_crun_suno_music_foundation.sql', import.meta.url), 'utf8'));
   });
 
   after(async () => {

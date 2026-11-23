@@ -1,4 +1,4 @@
-/** Acceptance checks for migration 0581. Requires a disposable migrated local DB. */
+/** Acceptance checks for migration 0585. Requires a disposable migrated local DB. */
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -9,14 +9,14 @@ const local = (() => {
   try { return ['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname); } catch { return false; }
 })();
 
-describe('Crun Suno shared consumers (0581)', { skip: !local && 'disposable localhost database not set' }, () => {
+describe('Crun Suno shared consumers (0585)', { skip: !local && 'disposable localhost database not set' }, () => {
   let pool: any;
   let client: any;
   const one = async (sql: string, args: unknown[] = []) => (await client.query(sql, args)).rows[0];
   const payload = { model: 'suno/music-generate', input: { mode: 'simple', prompt: 'private fixture', instrumental: true, suno_model: 'v6' } };
   const user = async () => {
     const auth = randomUUID();
-    const id = (await one('SELECT public.signup_grant($1,$2) id', [auth, `${randomUUID()}@0581.accept.test`])).id;
+    const id = (await one('SELECT public.signup_grant($1,$2) id', [auth, `${randomUUID()}@0585.accept.test`])).id;
     return { auth, id: id as string };
   };
   const debit = async (userId: string) => {
@@ -33,7 +33,7 @@ describe('Crun Suno shared consumers (0581)', { skip: !local && 'disposable loca
     'SELECT count(*) n FROM public.ledger_entries WHERE job_id=$1 AND delta>0', [job])).n);
   let seq = 0;
   const isolated = async (fn: () => Promise<void>) => {
-    const name = `c0581_${seq += 1}`;
+    const name = `c0585_${seq += 1}`;
     await client.query(`SAVEPOINT ${name}`);
     try { await fn(); } finally {
       await client.query(`ROLLBACK TO SAVEPOINT ${name}`);
@@ -128,7 +128,7 @@ describe('Crun Suno shared consumers (0581)', { skip: !local && 'disposable loca
   }
 
   it('serializes cancel against recovery under the job-then-dispatch lock', async () => {
-    // Like 0580's concurrency cases, this uses dedicated connections because a
+    // Like 0584's concurrency cases, this uses dedicated connections because a
     // PostgreSQL transaction is bound to one serial session. The disposable DB
     // retains the random-id fixture; users are never deleted.
     const auth = randomUUID();

@@ -1,4 +1,4 @@
-/** Acceptance checks for migration 0580. Requires a disposable migrated local DB. */
+/** Acceptance checks for migration 0584. Requires a disposable migrated local DB. */
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -10,7 +10,7 @@ const local = (() => {
   try { return ['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname); } catch { return false; }
 })();
 
-describe('Crun Suno music foundation (0580)', { skip: !local && 'disposable localhost database not set' }, () => {
+describe('Crun Suno music foundation (0584)', { skip: !local && 'disposable localhost database not set' }, () => {
   let pool: any;
   let client: any;
   const one = async (sql: string, args: unknown[] = []) => (await client.query(sql, args)).rows[0];
@@ -86,8 +86,8 @@ describe('Crun Suno music foundation (0580)', { skip: !local && 'disposable loca
     assert.ok(rows.every((r: any) => Number(r.cost_per_unit) === 0.0536));
   });
 
-  it('re-running the whole 0580 file keeps routes the owner made active and verified', async () => {
-    const file = (await readFile(new URL('./schema/supabase/0580_crun_suno_music_foundation.sql', import.meta.url), 'utf8'))
+  it('re-running the whole 0584 file keeps routes the owner made active and verified', async () => {
+    const file = (await readFile(new URL('./schema/supabase/0584_crun_suno_music_foundation.sql', import.meta.url), 'utf8'))
       .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, '');
     assert.ok(!/^\s*(BEGIN|COMMIT);/m.test(file), 'transaction control left in the replayed file');
     await isolated(async () => {
@@ -443,13 +443,13 @@ describe('Crun Suno music foundation (0580)', { skip: !local && 'disposable loca
   });
 
   it('backfills only legacy fal song-create rows and leaves cover/extend and other rows NULL', async () => {
-    const file = await readFile(new URL('./schema/supabase/0580_crun_suno_music_foundation.sql', import.meta.url), 'utf8');
+    const file = await readFile(new URL('./schema/supabase/0584_crun_suno_music_foundation.sql', import.meta.url), 'utf8');
     const updates = [...file.matchAll(/^UPDATE public\.(?:music_prompt_specs SET|music_generation_quotes q SET|music_lyric_drafts SET) provider_contract='fal-ace-v1'[\s\S]*?;$/gm)].map((m) => m[0]);
     const checks = [...file.matchAll(/^DO \$\$ BEGIN[^$]*?backfill left target rows unclassified[\s\S]*?END \$\$;$/gm)].map((m) => m[0]);
     assert.equal(updates.length, 3, 'expected the three backfill UPDATE statements');
     assert.equal(checks.length, 2, 'expected the two backfill DO checks');
     await isolated(async () => {
-      // Recreate the pre-0580 shape: contract columns nullable, no binding triggers, no contract CHECK.
+      // Recreate the pre-0584 shape: contract columns nullable, no binding triggers, no contract CHECK.
       await client.query(`ALTER TABLE public.music_prompt_specs DISABLE TRIGGER music_bind_prompt_contract;
         ALTER TABLE public.music_generation_quotes DISABLE TRIGGER music_bind_quote_contract;
         ALTER TABLE public.music_prompt_specs DROP CONSTRAINT music_prompt_specs_provider_contract_check;

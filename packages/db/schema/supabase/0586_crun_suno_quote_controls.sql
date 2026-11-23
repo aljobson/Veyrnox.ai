@@ -102,7 +102,7 @@ REVOKE ALL ON FUNCTION public.music_create_custom_quote(TEXT,TEXT,UUID,INTEGER,B
 GRANT EXECUTE ON FUNCTION public.music_create_custom_quote(TEXT,TEXT,UUID,INTEGER,BOOLEAN,BOOLEAN,INTEGER,TEXT,TEXT,INTEGER,NUMERIC,INTEGER,TEXT)
  TO service_role;
 
--- 0580 predates weirdness and vocal gender in its simple/custom decision.
+-- 0584 predates weirdness and vocal gender in its simple/custom decision.
 -- Rewrite only the affected Crun outbox row from the frozen prompt spec; the
 -- trigger fires in the same debit transaction and never touches fal payloads.
 CREATE OR REPLACE FUNCTION private.music_crun_freeze_extra_controls()
