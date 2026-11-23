@@ -379,8 +379,10 @@ html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
 .vx-root .vx-celebrate-card p { min-width: 0; overflow-wrap: anywhere; }
 
 @media (max-width: 639px) {
-  /* Keep the transient notice compact beside the result, above its playback controls. */
-  .vx-root .vx-generation-notice { width: max-content; max-width: min(240px, calc(100% - 32px)); }
-  .vx-root .vx-celebrate-card { gap: 8px; padding: 8px 12px; }
-  .vx-root .vx-celebrate-card p { max-width: 20ch; }
+  /* One slim row under the header: about 8% of a phone-sized result, clear of its playback controls and Generate. */
+  .vx-root .vx-generation-notice { width: auto; max-width: none; inset-inline: 16px; }
+  .vx-root .vx-celebrate-card { flex-wrap: nowrap; justify-content: flex-start; gap: 8px; padding: 4px 12px; border-radius: 16px; }
+  .vx-root .vx-celebrate-card p { max-width: none; flex: 1 1 auto; font-size: 14px; line-height: 1.25; }
+  .vx-root .vx-celebrate-mark { font-size: 20px; }
+  .vx-root .vx-celebrate-link { flex: none; padding: 0 8px; white-space: nowrap; }
 }

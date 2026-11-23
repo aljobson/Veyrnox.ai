@@ -35,7 +35,7 @@ export function GenerationCelebration() {
     {shown && <div key={shown.job_id} className="vx-celebrate-card">
       <span aria-hidden="true" className="vx-celebrate-mark">✓</span>
       <p>{shown.count > 1 ? t('public.jobs.resultsReady', { count: shown.count }) : t('public.jobs.ready', { label: shown.label || t('public.jobs.default') })}
-        {shown.credits > 0 && <span className="ms-3 font-vx-mono text-vx-money">−{t('pricing.cards.credits', { credits: shown.credits })}</span>}</p>
+        {shown.credits > 0 && <span className="ms-3 whitespace-nowrap font-vx-mono text-vx-money">−{t('pricing.cards.credits', { credits: shown.credits })}</span>}</p>
       {shown.link && <Link href="/app/library" className="vx-celebrate-link">{t('public.vey.action.open_library')}</Link>}
     </div>}
   </div>;

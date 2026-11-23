@@ -362,8 +362,9 @@ test('celebration listener survives navigation and uses localized credits withou
     const css = readFileSync(new URL('../app/veyrnox/veyrnox.css', import.meta.url), 'utf8');
     assert.match(css, /\.vx-generation-notice \{[^}]*pointer-events: none;[^}]*position: fixed/);
     assert.match(css, /top: calc\(env\(safe-area-inset-top, 0px\) \+ 72px\)/);
-    assert.match(css, /@media \(max-width: 639px\)[\s\S]*\.vx-generation-notice \{ width: max-content; max-width: min\(240px, calc\(100% - 32px\)\)/);
-    assert.match(css, /\.vx-celebrate-card p \{ max-width: 20ch;/);
+    assert.match(css, /@media \(max-width: 639px\)[\s\S]*\.vx-generation-notice \{ width: auto; max-width: none; inset-inline: 16px;/);
+    assert.match(css, /\.vx-celebrate-card \{ flex-wrap: nowrap;[^}]*padding: 4px 12px;/);
+    assert.match(css, /\.vx-celebrate-link \{ flex: none; padding: 0 8px; white-space: nowrap;/);
     assert.match(css, /\.vx-celebrate-link \{[^}]*pointer-events: auto/);
     assert.doesNotMatch(css, /--vx-generation-notice-height|\.vx-generation-notice:has/);
     const source = readFileSync(new URL('../app/veyrnox/_components/GenerationCelebration.js', import.meta.url), 'utf8');
