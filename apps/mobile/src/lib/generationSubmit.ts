@@ -105,6 +105,7 @@ export function generationMessage(err: unknown): string {
         case 'template_blocked': return t('app.create.error.template_blocked');
         case 'template_mismatch': return t('app.create.error.template_mismatch');
         case 'template_references_invalid': return t('app.create.error.template_references_invalid');
+        case 'image_generation_unavailable':
         case 'price_changed':
         case 'admission_unknown':
         case 'admission_unavailable':

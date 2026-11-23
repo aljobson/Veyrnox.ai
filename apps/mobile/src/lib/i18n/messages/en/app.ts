@@ -1,4 +1,5 @@
 export default {
+    "app.create.error.image_generation_unavailable": "Image input is unavailable for this model right now. Nothing was charged. Retry later or use text only.",
     "app.seedance25.edit": "Restyle",
     "app.seedance25.extend": "Extend",
   "app.seedance25.cap": "Whole source: MP4, 4\u201310 seconds for Restyle, 4\u20136 seconds for Extend. Output: 720p with sound. Extend adds 5 seconds.",

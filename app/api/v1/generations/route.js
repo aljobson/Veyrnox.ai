@@ -1,3 +1,7 @@
+import { DEFAULT_MOTION_PROMPT } from '../../../../lib/additionalModelCapabilities.js';
+import { veoI2vFingerprint, replayVeoI2v } from '../../../../lib/veoI2vReplay.js';
+import { veoI2vAvailable } from '../../../../lib/veoI2vAdmission.js';
+import { veoI2vOffer, veoI2vEnabled } from '../../../../lib/veoI2v.js';
 import { seedance25Offer, seedance25RawRefusal, seedance25Open, seedance25Bill } from '../../../../lib/seedance25Billing.js';
 import { seedance25Fingerprint, replaySeedance25 } from '../../../../lib/seedance25Replay.js';
 import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
@@ -143,6 +147,7 @@ export async function POST(req) {
     if (seedance25Offer(modelId) && SEEDANCE25_TEMPLATE_KEYS.some(key => Object.hasOwn(body, key))) {
         return NextResponse.json({ error: 'inputs_key_not_allowed' }, { status: 400 });
     }
+    const veoI2vHash = await veoI2vFingerprint(modelId, body);
     const seedance25Hash = seedance25Offer(modelId) ? await seedance25Fingerprint(body) : null;
     if (['template_swap', 'template_clip', 'swap'].filter(key => Object.hasOwn(body, key)).length > 1) return NextResponse.json({ error: 'template_source_conflict' }, { status: 400 });
     // ADR-0351 amendment 23: a template run that names its prompt instead of carrying it gets the server's own text here, before every
@@ -252,6 +257,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
+    if (veoI2vHash) {
+        const replay = await replayVeoI2v(authId, modelId, idempotencyKey, veoI2vHash, cfg);
+        if (replay) return NextResponse.json(replay.body, { status: replay.status });
+    }
+
     if (seedance25Hash) {
         const replay = await replaySeedance25(authId, modelId, idempotencyKey, seedance25Hash, cfg);
         if (replay) return NextResponse.json(replay.body, { status: replay.status });
@@ -314,6 +324,10 @@ export async function POST(req) {
     const swapDispatch = templateSwap ? await loadTemplateSwapDispatch(templateSwap.modelRow, cfg) : null;
     if (swapDispatch && !swapDispatch.ok) return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
     if (swapDispatch && isPrivateModelId(swapDispatch.row.id) && swapPeople === 2) return NextResponse.json({ error: 'template_swap_people_unsupported' }, { status: 400 });
+    // Veo sources must be owned uploads/Library assets; never silently discard a supplied URL.
+    if (veoI2vOffer(modelId) && suppliedInputKeys.some(key => ['image_url', 'video_url'].includes(key))) {
+        return NextResponse.json({ error: 'source_slot_invalid' }, { status: 400 });
+    }
     for (const slot of ['image','endImage','video','audio']) delete inputs[mediaInputKey(slot)];
 
     // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
@@ -349,6 +363,15 @@ export async function POST(req) {
     const { own: ownRoute, routes: offerRoutes } = await resolveRouteSet(modelRow, cfg);
     // No capability record = no known contract for this endpoint: refuse rather
     // than forward inputs the provider may bill differently for.
+    const hasVeoSource = !!veoI2vOffer(modelId) && references.references.length > 0;
+    if (hasVeoSource && !veoI2vEnabled(modelId)) return NextResponse.json({ error: 'source_slot_invalid' }, { status: 400 });
+    if (hasVeoSource && !await veoI2vAvailable(modelRow, cfg, { routeSet: { own: ownRoute, routes: offerRoutes } })) {
+        return NextResponse.json({ error: 'image_generation_unavailable', retry_after_seconds: 60 }, { status: 503, headers: { 'retry-after': '60' } });
+    }
+    // Check before declaredInputs drops undeclared controls on these deliberately non-strict records.
+    if (hasVeoSource && inputs.resolution !== undefined && inputs.resolution !== '720p') {
+        return NextResponse.json({ error: 'resolution_not_supported' }, { status: 400 });
+    }
     const publicRecord = capabilityFor(modelRow.provider_endpoint);
     const record = templateSwap && publicRecord ? templateSwapCapability(publicRecord, templateSwap, swapPeople, swapImages) : publicRecord;
     if (!record || record.provider !== modelRow.provider) {
@@ -397,7 +420,8 @@ export async function POST(req) {
     // Strict records retain resolved source slots so provider preflight can
     // refuse extras. Legacy records keep the shared-control filtering path.
     // Photo-to-video records that require a prompt while the create page calls it optional: fill an empty one.
-    if (record.defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: record.defaultPrompt };
+    const defaultPrompt = hasVeoSource ? DEFAULT_MOTION_PROMPT : record.defaultPrompt;
+    if (defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: defaultPrompt };
     // A record that needs a frame shape (Crun Kling O1 reference) gets it from the uploaded video's own size, never from the client.
     const modelInputs = withDerivedAspect(record, record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) }), sources);
     // Refuse before the debit anything the provider request cannot express at
@@ -421,6 +445,7 @@ export async function POST(req) {
         ...Object.fromEntries(Object.entries(modelInputs).filter(([key]) => !Object.hasOwn(sources, key) && !(templateSwap && key === 'elements'))),
         references: resolved.references,
     } : modelInputs;
+    if (veoI2vHash) storedInputs = { ...storedInputs, veo_i2v: { request_hash: veoI2vHash } };
     if (swapVideo) storedInputs = { ...storedInputs, template_source: swapVideo.identity };
     // A Clip Editor job stores the resolved edit (owned R2 keys, real lengths)
     // and is priced on its output length, never on what the client sent.

@@ -472,6 +472,7 @@ const ja = {
     'app.create.templatePrompt.error': 'プロンプトを読み込めませんでした。サインインしてもう一度お試しください。',
     'app.create.templatePrompt.help': 'このテンプレートのプロンプトをそのまま使用します。',
     'app.create.templatePrompt.ready': 'テンプレートのプロンプトを準備しました',
+    'app.create.error.image_generation_unavailable': '現在、このモデルでは画像入力を利用できません。課金はされていません。後でもう一度試すか、テキストのみを使用してください。',
 } as const;
 
 export default ja;

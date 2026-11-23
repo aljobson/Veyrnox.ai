@@ -356,3 +356,27 @@ A job Crun refuses is refunded. Image jobs do not hop, so fal receives nothing. 
 not reachable: its only caller is the template-clip path, which is off and names the fal endpoint. Crun has no mapping
 to `reference_rejected_likeness`, so a refused real-person picture shows the generic failure with a refund. The Worker
 must be live before 0583 is applied.
+
+## Amendment 2026-11-23: Veo single start image, dark per variant
+
+Status: Implemented behind default-off runtime flags; no billed i2v proof or activation in this build.
+
+The Lite, Fast and 3.1 offers retain their existing Crun t2v route endpoints and prices. The adapter sends the corresponding i2v model with `img_urls: [signedUrl]` only for one owned image. Text request bodies remain byte-identical. Output stays eight seconds, 720p, 16:9 or 9:16. The existing client value `duration_seconds: 5` remains one billing unit and produces eight seconds, as before; four-second output, 1080p, auto aspect, second images and other media are not supported.
+
+`APP_RUNTIME_FLAGS` keys `veoI2vLite`, `veoI2vFast` and `veoI2v31` default off. A flag alone cannot admit an image: the gateway requires the offer's first active route to match its Crun catalog endpoint, the route's stored breaker to be clear, and `provider_spend_provider_policy` for Crun to have `admission_open = true`. Reads fail closed. The route's parity record must also contain the exact variant marker `[veo-i2v:<i2v-model-id>:signed-source:v1]`, appended only after that variant's billed proof using our signed source URL. Refusals precede debit and provider submission. A temporary refusal is `image_generation_unavailable`, HTTP 503, Retry-After 60; the customer is told nothing was charged and to retry or use text only. Flag off keeps `source_slot_invalid`.
+
+An image request records a fingerprint before source signing or input filtering. After the shared rate check, caller-scoped user/key lookup returns the matching job as an idempotent replay before flag, breaker or admission refusals. A model/fingerprint mismatch returns `idempotency_conflict`; lookup failure returns `admission_unknown` without claiming that nothing was charged. Text-only Veo retains its existing replay path. Veo i2v refusals retain redacted error text and also carry sanitized error codes, so moderation and input rejection reach the existing HTTP 422 handling.
+
+Capabilities remain non-strict: undeclared text controls such as seed are still filtered. The image slot uses this repository's `list: true, max: 1` contract, not the frozen plan's nonexistent `array` property. Raw client media URLs are refused; uploads and Library sources pass the existing ownership, signature, sniffing and source checks. Neither dispatch nor failover changes: an image never hops to another supplier. No margin waiver, price, route activation or database migration is included.
+
+Web and phone use the same catalog media slot. Bundled browser fallbacks hide the slot because they have no live route or proof evidence. Discovery overlays a 20-second eligibility snapshot after every cached price-catalog path, including stale fallback. The snapshot is keyed by flag state and stores only settled data. Each cache miss owns one batched read of all three offers’ routes (joined to their catalog identities) and one provider-policy read, bounded by a local 1.5-second deadline that resolves empty. Concurrent misses never await another request’s I/O, and a late result cannot replace a timeout’s empty snapshot. Failed reads hide the slot; expired successful snapshots are not served on failure. The catalog HTTP response uses a 20-second public Cache-Control while any variant flag is enabled. A previously loaded client can still show an old picker; generation admission always rechecks. Admission checks are a snapshot, not a lock across debit and submission; the existing create gate remains authoritative if state changes afterward.
+
+Route inventory (one stored row per offer; no new route rows):
+
+| Catalog offer | Stored endpoint | Model with one image | Runtime key |
+| --- | --- | --- | --- |
+| veo-3.1-lite-kie | crun:google/veo3-1-lite-t2v | google/veo3-1-lite-i2v | veoI2vLite |
+| veo-3.1-fast-kie | crun:google/veo3-1-fast-t2v | google/veo3-1-fast-i2v | veoI2vFast |
+| veo-3.1-kie | crun:google/veo3-1-t2v | google/veo3-1-i2v | veoI2v31 |
+
+Activation evidence and owner steps: [Veo i2v runbook](../runbooks/veo-i2v-activation.md). Verify with `npm test`, regenerate Vey knowledge with `npm run sync:vey-knowledge`, and check HTTP inventory with `node scripts/generate-route-inventory.mjs --check`.

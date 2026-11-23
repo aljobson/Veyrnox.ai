@@ -472,6 +472,7 @@ const hi = {
     'app.create.templatePrompt.error': 'प्रॉम्प्ट लोड नहीं हो सका। साइन इन करके फिर कोशिश करें।',
     'app.create.templatePrompt.help': 'इस टेम्पलेट का प्रॉम्प्ट जैसा लिखा है वैसा ही इस्तेमाल होगा।',
     'app.create.templatePrompt.ready': 'टेम्पलेट प्रॉम्प्ट तैयार है',
+    'app.create.error.image_generation_unavailable': 'इस मॉडल में अभी चित्र का उपयोग उपलब्ध नहीं है। कोई शुल्क नहीं लगा। बाद में फिर कोशिश करें या केवल टेक्स्ट का उपयोग करें।',
 } as const;
 
 export default hi;

@@ -101,7 +101,7 @@ test('CreateTask and TaskInfo classifiers never retain vendor text', () => {
 test('a request the model cannot take is refused before any spend', () => {
   const t = { model: 'google/veo3-1-lite-t2v' };
   assert.equal(buildRequest(t, { prompt: 'x', aspect_ratio: '1:1' }).error, 'aspect_ratio_unsupported');
-  assert.equal(buildRequest(t, { prompt: 'x', image_url: 'https://a/b.png' }).error, 'input_media_unsupported');
+  assert.equal(buildRequest(t, { prompt: 'x', reference_urls: ['https://a/b.png'] }).error, 'input_media_unsupported');
   assert.equal(buildRequest(t, { prompt: '  ' }).error, 'prompt_required');
 });
 

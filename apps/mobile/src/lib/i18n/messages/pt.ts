@@ -472,6 +472,7 @@ const pt = {
     'app.create.templatePrompt.error': 'Não foi possível carregar o prompt. Inicie sessão e tente novamente.',
     'app.create.templatePrompt.help': 'O prompt deste modelo será usado como está escrito.',
     'app.create.templatePrompt.ready': 'Prompt do modelo pronto',
+    'app.create.error.image_generation_unavailable': 'A entrada de imagens está indisponível para este modelo no momento. Nada foi cobrado. Tente mais tarde ou use apenas texto.',
 } as const;
 
 export default pt;

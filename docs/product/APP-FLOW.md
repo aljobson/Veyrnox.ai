@@ -317,3 +317,7 @@ in the Library. Any failure, timeout, cancel or ceiling hit refunds once.
 | CAPTCHA blocked by an extension | "security check couldn't load… or sign in with Google" | — |
 | CAPTCHA does not pass in this browser | "security check didn't pass in this browser… Continue with Google doesn't need the check", shown when it fails | — |
 | session expired mid-flow | 401 → modal → retry | none moved |
+
+### Veo start image availability
+
+Veo Lite, Fast and 3.1 can show one optional start-image picker when that individual offer has been enabled and is available. Use an uploaded image or an image from Library. Output is eight seconds at 720p, in landscape 16:9 or portrait 9:16, at the offer's existing price. The image option stays hidden until that offer's verification is complete. If image input becomes unavailable before submission, nothing is charged; retry later or use text only. Text-only creation keeps its existing controls. Two images, four-second output, 1080p and automatic aspect are not offered.

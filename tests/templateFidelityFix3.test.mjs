@@ -14,7 +14,7 @@ import { templateSourceUnsupported } from '../app/veyrnox/_lib/templateSourceBlo
 import { MODELS } from '../app/veyrnox/_lib/tokens.js';
 
 register('data:text/javascript,' + encodeURIComponent(`export async function resolve(s,c,next) { return next(s === 'next/server' ? 'next/server.js' : s,c); }`));
-Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test', PUBLIC_HOST: 'https://veyrnox.test', FAL_KEY: 'test-fal', KIE_API_KEY: 'test-kie' });
+Object.assign(process.env, { SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test', PUBLIC_HOST: 'https://veyrnox.test', FAL_KEY: 'test-fal', KIE_API_KEY: 'test-kie', CRUN_ENABLED: 'true', CRUN_API_KEY: 'test-crun', R2_ACCOUNT_ID: 'test', R2_ACCESS_KEY_ID: 'test', R2_SECRET_ACCESS_KEY: 'test', R2_BUCKET: 'test' });
 const { POST } = await import('../app/api/v1/generations/route.js');
 const contract = Object.keys(contractData(data).templates).map(templateContract).find(c => c.class === 'like-for-like-safe' && c.aspect && c.duration);
 const presetFor = c => ({ id: c.id, fidelity: c, prompt: c.sourcePrompt, sourcePrompt: c.sourcePrompt, sourcePromptOrigin: 'community-source-exact', negativePrompt: c.negativePrompt });
@@ -63,11 +63,11 @@ test('raw capability lengths are mapped objects; public fallback exposes numeric
   assert.deepEqual(fallbackCapabilitiesFor('kling-3.0-i2v').lengths, [5, 10]);
 });
 
-for (const [label, modelId] of [['optional-image', 'veo-3.1-fast-kie'], ['image-kind', 'nano-banana-kie'], ['audio-kind', 'mmaudio-v2']]) {
+for (const [label, modelId] of [['Veo text-only', 'veo-3.1-fast-kie'], ['image-kind', 'nano-banana-kie'], ['audio-kind', 'mmaudio-v2']]) {
   test(`${label} audited template goes through web builder and route without a photo`, async t => {
     const c = fixture(`fix3-${label}`, modelId);
     const cap = fallbackCapabilitiesFor(modelId);
-    if (label === 'optional-image') assert.equal(cap.media.image.required, false);
+    if (label === 'Veo text-only') assert.equal(cap.media.image, undefined, 'offline fallback has no route proof for image admission');
     assert.equal(c.requiredReferences.imageMin, 0);
     assert.equal(c.class, 'like-for-like-safe');
     if (cap.kind !== 'video') assert.equal(c.duration, null);
@@ -79,7 +79,7 @@ for (const [label, modelId] of [['optional-image', 'veo-3.1-fast-kie'], ['image-
     t.mock.method(globalThis, 'fetch', async (url) => {
       const name = new URL(url).pathname.split('/').pop(); calls.push(name);
       if (name === 'check_generation_rate_limit') return Response.json({ ok: true });
-      if (name === 'model_catalog') return Response.json([{ id: modelId, provider: modelId.endsWith('-kie') ? 'kie' : 'fal', provider_endpoint: FALLBACK_MODEL_ENDPOINTS[modelId], active: true, credits_5s: 10, modality: cap.kind === 'video' ? 'text-to-video' : cap.kind === 'image' ? 'text-to-image' : 'text-to-audio' }]);
+      if (name === 'model_catalog') return Response.json([{ id: modelId, provider: capabilityFor(FALLBACK_MODEL_ENDPOINTS[modelId]).provider, provider_endpoint: FALLBACK_MODEL_ENDPOINTS[modelId], active: true, credits_5s: 10, modality: cap.kind === 'video' ? 'text-to-video' : cap.kind === 'image' ? 'text-to-image' : 'text-to-audio' }]);
       if (name === 'users') return Response.json([{ id: 'fix3-user' }]);
       if (name === 'ledger_debit') return Response.json({ ok: true, job_id: 'original-job', idempotent: true, balance_after: 100 });
       assert.fail(`unexpected call ${url}`);

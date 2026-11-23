@@ -472,6 +472,7 @@ const fr = {
     'app.create.templatePrompt.error': 'Impossible de charger le prompt. Connectez-vous et réessayez.',
     'app.create.templatePrompt.help': 'Le prompt de ce modèle sera utilisé tel quel.',
     'app.create.templatePrompt.ready': 'Prompt du modèle prêt',
+    'app.create.error.image_generation_unavailable': 'Les images ne sont pas disponibles pour ce modèle pour le moment. Rien n’a été facturé. Réessayez plus tard ou utilisez uniquement du texte.',
 } as const;
 
 export default fr;
