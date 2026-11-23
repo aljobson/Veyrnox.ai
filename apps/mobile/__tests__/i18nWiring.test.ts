@@ -32,6 +32,7 @@ function readWebCatalog(code: string): Record<string, string> {
         // Smart Cut locale modules currently re-export the English-first catalog.
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', 'en', 'smart-cut.mjs')),
         ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'editor-sheet.mjs')),
+        ...readModule(join(repo, 'lib', 'i18n', 'messages', 'app', code, 'seedance25.mjs')),
     };
 }
 

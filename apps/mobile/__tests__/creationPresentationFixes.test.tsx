@@ -11,6 +11,7 @@ import { SectionLabel } from '../src/components/create/SectionLabel';
 import { DEFAULT_APPEARANCE, tokensForScheme, type ThemePreference } from '../src/theme';
 import { MENU_ICONS } from '../src/lib/menuIcons';
 import { t } from '../src/lib/i18n';
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
 
 declare const require: (id: string) => any;
 declare const __dirname: string;

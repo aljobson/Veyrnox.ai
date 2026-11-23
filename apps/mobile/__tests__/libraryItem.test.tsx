@@ -10,6 +10,7 @@ import { getAppearance, tokensForScheme } from '../src/theme';
 import { formatLocale, t } from '../src/lib/i18n';
 import type { Job } from '../src/lib/media';
 
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
 jest.mock('../src/components/library/LibraryMedia', () => ({ LibraryMedia: () => null }));
 void [RN.View, RN.Text, RN.StyleSheet, RN.Pressable];
 const NOW = Date.parse('2026-10-29T12:00:00Z');
