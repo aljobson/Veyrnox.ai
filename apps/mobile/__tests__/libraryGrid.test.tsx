@@ -18,7 +18,7 @@ jest.mock('expo-video', () => ({ useVideoPlayer: () => mockPlayer }));
 jest.mock('expo-image', () => ({ Image: (props: any) => require('react').createElement(require('react-native').View, { ...props, testID: 'media-image' }) }));
 jest.mock('../src/lib/videoPoster', () => ({ clearPosters: jest.fn(), posterFor: jest.fn().mockResolvedValue(null) }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: (cb: any) => { mockAccountChanged = cb; return () => {}; }, appCache: { read: async () => null, swr: async ({ fetcher, onData }: any) => { const page = await fetcher(); onData(page); return { meta: null }; } } }));
-jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), mediaApi: () => mockMedia, fetchCatalogCached: async (cb: any) => cb([{ id: 'm', name: 'Model', modality: mockModality }]) }));
+jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), mediaApi: () => mockMedia, fetchAllCatalog: async () => [], fetchCatalogCached: async (cb: any) => cb([{ id: 'm', name: 'Model', modality: mockModality }]) }));
 jest.mock('react-native/Libraries/Lists/FlatList', () => ({ __esModule: true, default: (props: any) => {
     mockList = props; const React = require('react'); const { View } = require('react-native');
     return React.createElement(View, null, props.ListHeaderComponent, ...props.data.map((item: Job) => React.createElement(View, { key: item.job_id }, props.renderItem({ item }))), props.ListFooterComponent);

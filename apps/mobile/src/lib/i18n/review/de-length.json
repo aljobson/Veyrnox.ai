@@ -5296,5 +5296,17 @@
     "english": "Retry",
     "translation": "Erneut versuchen",
     "ratio": 3.2
+  },
+  {
+    "id": "app.seedance25.extend",
+    "english": "Extend",
+    "translation": "Verlängern",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.seedance25.result",
+    "english": "Open Library result",
+    "translation": "Ergebnis in der Bibliothek öffnen",
+    "ratio": 1.74
   }
 ]

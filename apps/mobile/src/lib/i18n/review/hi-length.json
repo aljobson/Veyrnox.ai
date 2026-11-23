@@ -2802,6 +2802,12 @@
     "ratio": 1.71
   },
   {
+    "id": "app.seedance25.wait",
+    "english": "Please wait…",
+    "translation": "कृपया प्रतीक्षा करें…",
+    "ratio": 1.75
+  },
+  {
     "id": "app.create.templatePrompt.edit",
     "english": "Edit prompt",
     "translation": "प्रॉम्प्ट संपादित करें",
