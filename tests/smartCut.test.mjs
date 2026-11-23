@@ -254,7 +254,9 @@ test('the existing Clip Editor owns Smart Cut apply and the caption/export hando
   assert.match(editor, /commitSmartCutGroupedEditState\(state, nextItems, group\)/);
   assert.match(editor, /onBlur=\{onEditEnd\}/);
   assert.match(editor, /confirmCreate && \(cost == null \|\| blocked\)/);
-  assert.match(editor, /\{\(showCaptions \|\| smartCut\) && <div id=\{smartCut \? 'clip-text-controls' : undefined\}/);
+  assert.match(editor, /\{showCaptions && <div id=\{smartCut \? 'clip-text-controls' : undefined\}/);
+  assert.doesNotMatch(editor, /textUnavailable/);
+  assert.match(editor, /<SmartCutWorkbench showText=\{showCaptions\}/);
   assert.match(editor, /\{smartCut && <div id="smart-cut-panel"/);
   assert.doesNotMatch(planner, /ConfirmDialog/);
   assert.match(editor, /app\.editor\.sheet\.captions/);

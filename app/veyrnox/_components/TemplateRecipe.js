@@ -4,13 +4,17 @@ import { useI18n } from '../../../components/I18nProvider.jsx';
 import { presetStep } from '../../../lib/i18n/presetSteps.mjs';
 import { useResolvedSwap } from './TemplateSwapBoundary.js';
 import { SwapAttemptStatus } from './SwapAttemptStatus.js';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { isTemplatePromptPlaceholder } from '../../../lib/templatePromptPlaceholder.js';
+import { ownPromptOf } from '../_lib/privateTemplatePrompt.js';
 import Link from 'next/link';
 import { useSwapSceneAvailable } from '../_lib/useSwapSceneAvailable';
 import { UseTemplate } from './UseTemplate';
 import { useTemplateClipAvailable } from '../_lib/useTemplateClipAvailable';
 import { TEMPLATE_PROMPT_MAX } from '../_lib/templateDraft';
 import { templateSourceUnsupported } from '../_lib/templateSourceBlock';
+import { useTemplatePromptDisplay } from '../_lib/templatePromptDisplay';
+import { TemplatePromptReady } from './TemplatePromptReady';
 
 function CopyPrompt({ text, label }) {
   const { t } = useI18n();
@@ -31,9 +35,12 @@ function CopyPrompt({ text, label }) {
   );
 }
 
-export function TemplateRecipe({ preset, generatedPreview = false }) {
+export function TemplateRecipe({ preset: servedPreset, generatedPreview = false }) {
   const { t } = useI18n();
   const resolvedSwap = useResolvedSwap();
+  // A private template (ADR-0351 amendment 23) arrives with a placeholder; Edit prompt swaps in the whole template for the signed-in caller.
+  const [hydrated, setHydrated] = useState(null);
+  const preset = hydrated ?? servedPreset;
   const hasExactSourcePrompt = preset.sourcePromptOrigin === 'community-source-exact' && typeof preset.sourcePrompt === 'string';
   // One community prompt, shown and handed to Create unchanged unless edited.
   const [prompt, setPrompt] = useState(hasExactSourcePrompt ? preset.sourcePrompt : preset.prompt);
@@ -42,6 +49,11 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
   const tooLong = handoffPrompt.length > TEMPLATE_PROMPT_MAX;
   const templateClip = useTemplateClipAvailable(preset.id);
   const displayPrompt = templateClip ? (hasExactSourcePrompt ? preset.sourcePrompt : preset.prompt) : prompt;
+  const onHydrate = useCallback((full) => {
+    setHydrated(full);
+    setPrompt((current) => (isTemplatePromptPlaceholder(current) ? ownPromptOf(full) : current));
+  }, []);
+  const promptView = useTemplatePromptDisplay(preset, displayPrompt, null, { onHydrate });
   const sourceUnsupported = templateSourceUnsupported(preset) && !templateClip;
   const swapSceneAvailable = useSwapSceneAvailable(sourceUnsupported && !resolvedSwap?.loading ? preset.id : null);
   const sourcePromptUnavailable = preset.sourcePromptStatus === 'unavailable';
@@ -65,9 +77,9 @@ export function TemplateRecipe({ preset, generatedPreview = false }) {
         </div>
       )}
       <h2 className="mt-8 font-vx-mono text-[11px] tracking-[0.12em] text-vx-fg-muted">{promptLabel}</h2>
-      <textarea aria-label={promptLabel} value={displayPrompt} readOnly={templateClip ? true : undefined} onChange={(event) => setPrompt(event.target.value)} rows={hasExactSourcePrompt ? 12 : 8} dir={hasExactSourcePrompt ? "auto" : undefined}
+      {promptView.hidden ? <div className="mt-2 rounded-xl border border-vx-border bg-vx-panel"><TemplatePromptReady onEdit={promptView.reveal} status={promptView.status} /></div> : <><textarea autoFocus={promptView.revealed || undefined} aria-label={promptLabel} value={displayPrompt} readOnly={templateClip ? true : undefined} onChange={(event) => setPrompt(event.target.value)} rows={hasExactSourcePrompt ? 12 : 8} dir={hasExactSourcePrompt ? "auto" : undefined}
         className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[15px] leading-[1.55] text-vx-fg-body focus:outline-hidden focus:border-vx-accent" />
-      <CopyPrompt text={displayPrompt} label={hasExactSourcePrompt ? t("public.TemplateRecipe.copyExactCommunityPrompt") : t("public.TemplateRecipe.copyPrompt")} />
+      <CopyPrompt text={displayPrompt} label={hasExactSourcePrompt ? t("public.TemplateRecipe.copyExactCommunityPrompt") : t("public.TemplateRecipe.copyPrompt")} /></>}
       {tooLong && <p role="alert" className="mt-3 text-[13px] font-bold text-vx-danger">{t("public.TemplateRecipe.productPromptTooLong", { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</p>}
       <p className="mt-3 text-[13px] text-vx-fg-muted">{hasExactSourcePrompt ? t("public.TemplateRecipe.exactCommunityPromptHelp") : generatedPreview ? t("public.TemplateRecipe.thePreviewWasGeneratedUsingThis") : preset.inspired ? t("public.TemplateRecipe.adaptedForTheModelBelowTo") : t("public.TemplateRecipe.editItHereOrInThe")}</p>
       {templateClip && <p className="mt-3 text-[13px] text-vx-fg-muted">{t("public.TemplateRecipe.templateClipUsed")}</p>}

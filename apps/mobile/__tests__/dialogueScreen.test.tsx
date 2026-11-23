@@ -30,7 +30,10 @@ jest.mock('../src/lib/createResult', () => ({ useJobResult: () => mockResult, so
 jest.mock('../src/lib/submittedRequests', () => ({ submittedRequests: { list: () => mockSavedList() }, rememberSubmitted: (...args: unknown[]) => mockRemember(...args) }));
 jest.mock('../src/lib/speech/dialogueCastStore', () => ({ loadDialogueCast: () => mockLoadCast(), saveDialogueCast: (...args: unknown[]) => mockSaveCast(...args), forgetDialogueCastSpeakers: (...args: unknown[]) => mockForgetCast(...args) }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => {}, hasAgreed: async () => true } }));
-jest.mock('../src/lib/celebrate', () => ({ noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
+jest.mock('../src/lib/celebrate', () => ({
+    captureCelebrationAccount: () => jest.requireActual('../src/lib/celebrate').captureCelebrationAccount(),
+    isCelebrationAccountCurrent: (token: unknown) => jest.requireActual('../src/lib/celebrate').isCelebrationAccountCurrent(token),
+    noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
 jest.mock('../src/lib/milestoneHistory', () => ({ settleFirstMilestones: async () => {} }));
 jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: jest.fn() }));
 jest.mock('../src/lib/generationProgress', () => ({ noteJobStarted: jest.fn() }));

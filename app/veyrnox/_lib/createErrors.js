@@ -13,6 +13,11 @@ export const ERROR_COPY = {
 
   source_too_short: "That video is too short for this model. Use a clip that meets the minimum length shown by the video picker.",
   source_resolution_out_of_range: "That file’s dimensions are not supported by this model. Remove that file and choose one within the size limits shown by the source picker.",
+  source_aspect_out_of_range: 'That picture is too tall or too wide for this model. Crop it closer to square and try again. Nothing was charged.',
+  source_too_small: 'That file is too small for this model. Use a larger one. Nothing was charged.',
+  source_type_unsupported: 'This model cannot use that file type. Choose another file. Nothing was charged.',
+  source_frame_rate_unknown: 'We could not read that video’s frame rate. Export it again as a standard MP4. Nothing was charged.',
+  source_frame_rate_out_of_range: 'This model needs a video at 24 to 60 frames a second. Use another clip. Nothing was charged.',
   body_too_large: "This request is too large. Shorten the text or remove attachments, then try again. Nothing was charged.",
   references_ambiguous: "The attachment list conflicts. Clear it and add the files again. Nothing was charged.",
   references_invalid: "Some reference files could not be read. Remove them and attach them again. Nothing was charged.",

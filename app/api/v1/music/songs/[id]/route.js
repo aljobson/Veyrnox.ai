@@ -12,6 +12,7 @@ import {
     parseMusicRemixQuote, remixSourceKey,
 } from '../../../../../../lib/musicRemix.js';
 import { renderPcmWavCrop, renderPcmWavMix } from '../../../../../../lib/musicWavRender.js';
+import { musicVersionCapabilities } from '../../../../../../lib/musicCrunContract.js';
 import { isUuid } from '../../../../../../lib/validate.js';
 
 const MAX_REMIX_SOURCE_BYTES = 26_214_400;
@@ -52,11 +53,19 @@ export async function GET(request, { params }) {
         const lyrics = musicLyricsEnabled()
             ? await rpc('music_get_song_lyrics', { p_auth_id: authId, p_song_id: id }, cfg).catch(() => null) : null;
         const actions = Array.isArray(result.song?.actions) ? result.song.actions : [];
-        // Stems and Track add take an MP3 source only (Mureka), and the only Music
-        // version stored as MP3 is a Cover. Offering them on any other version led
-        // to a quote that always answered format_unavailable. The SQL gates stay the
-        // authority; this only stops showing an action that cannot succeed.
-        const mp3Source = result.song?.current_version?.operation === 'cover';
+        const version = result.song?.current_version || {};
+        // The current asset is authoritative. A provider or historical operation
+        // cannot predict the format of a copied or locally rendered version.
+        const hasAssetFacts = typeof version.mime_type === 'string'
+            && Number.isFinite(Number(version.size_bytes));
+        const legacyMp3Source = version.operation === 'cover';
+        const capabilities = hasAssetFacts ? musicVersionCapabilities({
+            mimeType: version.mime_type, sizeBytes: version.size_bytes,
+        }) : {
+            cover: true, remix: true, extend: true, replace_section: true, add_section: true,
+            stems: legacyMp3Source, target_stem: true, track_add: legacyMp3Source,
+            crop: true, render: true,
+        };
         const distributionActions = musicDistributionEnabled()
             ? [...actions, 'share_link', 'download_mp3'] : actions;
         return reply({
@@ -67,20 +76,21 @@ export async function GET(request, { params }) {
                 ...distributionActions,
                 ...(musicPublicationEnabled() ? ['publish'] : []),
                 ...(musicRankingEnabled() ? ['rank'] : []),
-                ...(musicCoverEnabled() ? ['cover'] : []),
-                ...(musicRemixEnabled() ? ['mashup', 'sample'] : []),
-                ...(musicExtendEnabled() ? ['extend'] : []),
-                ...(musicReplaceEnabled() ? ['replace_section'] : []),
-                ...(musicAddSectionEnabled() ? ['add_section'] : []),
+                ...(musicCoverEnabled() && capabilities.cover ? ['cover'] : []),
+                ...(musicRemixEnabled() && capabilities.remix ? ['mashup', 'sample'] : []),
+                ...(musicExtendEnabled() && capabilities.extend ? ['extend'] : []),
+                ...(musicReplaceEnabled() && capabilities.replace_section ? ['replace_section'] : []),
+                ...(musicAddSectionEnabled() && capabilities.add_section ? ['add_section'] : []),
                 ...(musicReuseEnabled() && result.song?.generation_id ? ['reuse'] : []),
-                ...(musicStemsEnabled() && mp3Source ? ['stems'] : []),
-                ...(musicTargetStemsEnabled() ? ['target_stem'] : []),
-                ...(musicTrackAddEnabled() && mp3Source ? ['add_track'] : []),
+                ...(musicStemsEnabled() && capabilities.stems ? ['stems'] : []),
+                ...(musicTargetStemsEnabled() && capabilities.target_stem ? ['target_stem'] : []),
+                ...(musicTrackAddEnabled() && capabilities.track_add ? ['add_track'] : []),
                 ...(musicStudioEnabled() || musicBeatEditorEnabled() ? ['open_studio'] : []),
                 ...(isUuid(result.song?.job_id || '') ? ['open_editor'] : []),
-                ...(musicEditingEnabled() ? ['crop', 'render'] : []),
-                ...(musicReverseEnabled() ? ['reverse', 'speed'] : []),
+                ...(musicEditingEnabled() && capabilities.crop ? ['crop', 'render'] : []),
+                ...(musicReverseEnabled() && capabilities.render ? ['reverse', 'speed'] : []),
             ])],
+            current_version: { ...version, capabilities },
         });
     } catch (error) {
         console.error('[music/songs/get] rpc failed:', error?.message);
@@ -149,7 +159,16 @@ export async function POST(request, { params }) {
                 p_second_song_id: input.kind === 'mashup' ? input.secondSongId : null,
                 p_second_version_id: input.kind === 'mashup' ? input.secondVersionId : null,
             }, cfg);
-            if (!context?.ok) return reply({ error: publicMusicError(context?.code) }, musicRpcStatus(context?.code));
+            if (!context?.ok) {
+                if (context?.code === 'FORMAT_UNAVAILABLE' || context?.code === 'EDIT_UNAVAILABLE_FOR_FORMAT') {
+                    return reply({ error: 'edit_unavailable_for_format' }, 409);
+                }
+                return reply({ error: publicMusicError(context?.code) }, musicRpcStatus(context?.code));
+            }
+            if ((context.sources || []).some((source) => source.mime_type !== 'audio/wav'
+                || Number(source.size_bytes) > MAX_REMIX_SOURCE_BYTES)) {
+                return reply({ error: 'edit_unavailable_for_format' }, 409);
+            }
             const seconds = await Promise.all((context.sources || []).map((source) => measureRemixSource(source, r2cfg)));
             if (!seconds.length || seconds.some((value) => !Number.isFinite(value))) {
                 return reply({ error: 'source_duration_unavailable' }, 400);

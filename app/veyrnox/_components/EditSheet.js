@@ -1,4 +1,5 @@
 'use client';
+import { pushJobHistory } from '../_lib/jobHistory';
 import { mixedShapes, shapeMismatch, shapeValue } from '../../../lib/videoShape.mjs';
 import { VideoShapeBadge } from './VideoShapeBadge';
 import { useI18n } from '../../../components/I18nProvider';
@@ -198,7 +199,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         method: 'POST',
         body: JSON.stringify({ model_id: 'clip-edit', idempotency_key: makeIdempotencyKey(), inputs }),
       });
-      onSubmitted({ job_id: r.job_id, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
+      pushJobHistory({ job_id: r.job_id, idempotent: r.idempotent, model_id: 'clip-edit', credits: cost });
+      onSubmitted({ job_id: r.job_id, idempotent: r.idempotent, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
     } catch (e) {
       setError(e instanceof GatewayError ? e.code : INTERNAL_ERROR);
       setBusy(false);
@@ -225,7 +227,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
-          {smartCut && <SmartCutWorkbench items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
+          {smartCut && <SmartCutWorkbench showText={showCaptions} items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
           {createPaused && <p role="status" className="mb-4 rounded-xl border border-vx-border bg-vx-base p-3 text-xs font-semibold leading-5 text-vx-fg-muted">{t('app.smartCut.create.paused')}</p>}
           {smartCut && (mixed || mixedAudio) && <p role="alert" className="mb-4 rounded-xl border border-vx-danger/50 bg-vx-danger/10 p-3 text-xs font-semibold leading-5 text-vx-danger">{t(mixed ? 'app.editor.sheet.error.mixed_aspect' : 'app.editor.sheet.error.mixed_audio')}</p>}
           {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy || mixed || mixedAudio || audioPending || createPaused} />}
@@ -268,7 +270,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
               {t("app.editor.sheet.slowHelp")}</p>
           )}
 
-          {(showCaptions || smartCut) && <div id={smartCut ? 'clip-text-controls' : undefined} className={`mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3${smartCut ? ' scroll-mt-4' : ''}`}>
+          {showCaptions && <div id={smartCut ? 'clip-text-controls' : undefined} className={`mt-3 rounded-xl border border-vx-border bg-vx-panel p-3 flex flex-wrap items-center gap-3${smartCut ? ' scroll-mt-4' : ''}`}>
             {showCaptions ? <>
               <label className="flex min-h-11 items-center gap-2 text-sm text-vx-fg">
                 <input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />
@@ -284,7 +286,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
                 <p className="text-xs text-vx-fg-muted basis-full">
                   {t("app.editor.sheet.captionHelp")}</p>
               )}
-            </> : smartCut ? <p className="text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.workbench.textUnavailable')}</p> : null}
+            </> : null}
           </div>}
 
           <div role="status" className="mt-3 text-sm min-h-[1.25rem]">

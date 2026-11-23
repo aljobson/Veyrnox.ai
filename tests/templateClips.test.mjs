@@ -45,7 +45,7 @@ test('server-only slot does not change public capabilities and no other record g
   assert.deepEqual(Object.entries(REGISTRY).filter(([, r]) => Object.values(r.media).some(s => s.serverOnly)).map(([ep]) => ep), ['market:bytedance/seedance-2', catalog[0].provider_endpoint, 'crun:bytedance/seedance2-0-r2v']);
   // Existing video-slot endpoints plus this single addition; other records cannot silently gain one.
   assert.deepEqual(Object.entries(REGISTRY).filter(([, r]) => r.media.video).map(([ep]) => ep).sort(), [
-    'bytedance/seedance-2.0/reference-to-video', 'crun:bytedance/seedance2-0-r2v', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080', 'crun:wan/2-2-animate-replace',
+    'bytedance/seedance-2.0/reference-to-video', 'crun:bytedance/seedance2-0-r2v', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080', 'crun:kling/o1-r2v-ref', 'crun:wan/2-2-animate-replace',
     'fal-ai/kling-video/o1/video-to-video/reference', 'fal-ai/latentsync',
     'fal-ai/minimax-h3-max-recast', 'fal-ai/mmaudio-v2', 'fal-ai/topaz/upscale/video', 'market:bytedance/seedance-2',
   ]);

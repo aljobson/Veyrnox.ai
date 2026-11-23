@@ -16,6 +16,7 @@ import { start as startClipEdit, parentRef as clipEditRef } from '../../lib/clip
 import { start as startMontage, parentRef as montageRef } from '../../lib/montage.js';
 import { montageDeps, runtimeConfig as montageConfig } from '../../lib/montageRuntime.js';
 import { BRIEF_RE } from '../../lib/montagePlan.js';
+import { submitCrunAtBoundary } from '../../lib/crunSubmitBoundary.js';
 
 const PROVIDERS = {
     fal: {
@@ -59,7 +60,13 @@ const PROVIDERS = {
             const target = crun.parseEndpoint(modelRow.provider_endpoint);
             return target ? crun.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
         },
-        submit: (job, _record, apiKey, _publicHost, _sources, options) => crun.submitTask(job, { apiKey, faceIdentity: options?.faceIdentity === true }),
+        submit: (job, _record, apiKey, _publicHost, _sources, options) => submitCrunAtBoundary(job, {
+            apiKey,
+            cfg: envConfig(),
+            reservationKey: `generic:${job.job_id}:${crypto.randomUUID()}`,
+            purpose: 'generic.create',
+            submit: (submitJob, submitOptions) => crun.submitTask(submitJob, { ...submitOptions, faceIdentity: options?.faceIdentity === true }),
+        }),
     },
     // Higgsfield (ADR-0256 phase 5): polling only (no callback registered), so a job is accepted only when R2 is
     // configured for the sweep to copy the seven-day output into. Off unless HIGGSFIELD_ENABLED is exactly "true"

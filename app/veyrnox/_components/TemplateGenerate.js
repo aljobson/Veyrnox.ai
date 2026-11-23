@@ -36,7 +36,7 @@ export function TemplateGenerate({ preset, model, prompt, aspect, aspectOptions,
     <div data-testid="template-generate">
       {job && (
         <div ref={jobCard} className={`relative mt-6 overflow-hidden rounded-2xl border border-vx-border bg-vx-panel ${g.generating ? 'vx-shimmer' : ''}`} style={{ aspectRatio: resultAspect, maxHeight: 520 }} role="status">
-          {job.asset_url ? <JobAssetPreview job={job} /> : (
+          {(job?.asset_url || job?.state === 'succeeded') ? <JobAssetPreview job={job} /> : (
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
               <div>
                 <div className={`font-vx-mono text-[11px] tracking-[0.14em] ${failed ? 'text-vx-danger' : 'text-vx-accent'}`}>

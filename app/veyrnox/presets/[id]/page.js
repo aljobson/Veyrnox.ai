@@ -21,6 +21,9 @@ import { ALL_TEMPLATES, templateById } from '../../_lib/templates';
 import { duplicateKeeperId } from '../../_lib/duplicateTemplateIds.js';
 import { IMAGE_TEMPLATES } from '../../_lib/imageTemplates.js';
 import { templateRecipe } from '../../_lib/templateRecipe.js';
+import { privateTemplateRecipe } from '../../_lib/privateTemplateRecipe.js';
+import { templatePromptsPrivate } from '../../../../lib/templatePromptPrivacy.js';
+import { isVideoTemplate } from '../../_lib/templatePromptVisibility.js';
 import { TemplateImage } from '../../_components/TemplateImage';
 import { templateRecreateEnabled } from '../../_lib/templateRecreate.js';
 import { OPEN_GRAPH_BASE } from '../../../seo';
@@ -64,10 +67,14 @@ export default async function TemplatePage({ params }) {
   if (template.id !== id) permanentRedirect(localizedHref(locale, `/presets/${encodeURIComponent(template.id)}`));
   const modelId = templateModelId(template);
   const modelName = MODELS.find(model => model.id === modelId)?.name || template.model;
-  const recipe = templateRecipe(template);
+  // ADR-0351 amendment 23: with the key on, a video template's page data (props handed to the client components) carries a
+  // placeholder instead of its prompt, and the contract's own texts the same way. Title, model, inputs and steps are unchanged.
+  const promptsPrivate = templatePromptsPrivate(process.env) && isVideoTemplate(template);
+  const recipe = promptsPrivate ? privateTemplateRecipe(template) : templateRecipe(template);
   const clip = SHOWCASE_CLIPS[template.clipKey];
   const sourceAspect = templateSourceAspect(template, clip?.aspectRatio ?? template.previewAspect);
-  const TemplateRecreate = templateRecreateEnabled()
+  // The staging-only Recreate card is built from the prompt text, so a private template does not offer it.
+  const TemplateRecreate = templateRecreateEnabled() && !promptsPrivate
     ? (await import('../../_components/TemplateRecreate')).TemplateRecreate
     : null;
   return (

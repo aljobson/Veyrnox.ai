@@ -217,5 +217,9 @@ export default {
     "app.smartCut.native.fillers.wordTimingRequired": "Filler-sound review needs word-level timing. Only long pauses can be removed for: {names}.",
     "app.explore.smartCutStart": "Turn finished clips into a reviewed first cut.",
     "app.library.openSmartCut": "Open Smart Cut",
-    "app.editor.sheet.style": "Style"
+    "app.editor.sheet.style": "Style",
+    "app.create.templatePrompt.ready": "Template prompt ready",
+    "app.create.templatePrompt.help": "This template’s prompt will be used as written.",
+    "app.create.templatePrompt.edit": "Edit prompt",
+    "app.create.templatePrompt.error": "Couldn’t load the prompt. Sign in and try again."
 } as const;

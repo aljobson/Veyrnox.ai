@@ -444,9 +444,9 @@ const hi = {
     'presets.swap.refunded': 'क्रेडिट वापस मिल गए।',
     'presets.swap.not_charged': 'इस कोशिश के लिए कोई शुल्क नहीं लिया गया।',
     'presets.swap.submitting': 'आपका वीडियो शुरू हो रहा है…',
-    'presets.swap.queued': 'वीडियो स्वीकार किया गया। लागत: {credits} क्रेडिट। प्रगति के लिए लाइब्रेरी खोलें।',
-    'presets.swap.running': 'आपका वीडियो बन रहा है। प्रगति के लिए लाइब्रेरी खोलें।',
-    'presets.swap.succeeded': 'आपका वीडियो तैयार है। देखने के लिए लाइब्रेरी खोलें।',
+    'presets.swap.queued': 'वीडियो स्वीकार किया गया। लागत: {credits} क्रेडिट। तैयार होते ही यह इसी पेज पर दिखेगा।',
+    'presets.swap.running': 'आपका वीडियो बन रहा है। इसी पेज पर रहें: तैयार होते ही यह यहाँ दिखेगा।',
+    'presets.swap.succeeded': 'आपका वीडियो तैयार है।',
     'presets.swap.busy_background': 'सादी पृष्ठभूमि वाली फ़ोटो लें जिसमें केवल आप हों।',
     'presets.swap.ragged_matte': 'कट-आउट के किनारे स्पष्ट नहीं हैं। सादी पृष्ठभूमि वाली फ़ोटो लें जिसमें केवल आप हों।',
     'presets.swap.several_people': 'कई लोग मिले। सादी पृष्ठभूमि वाली फ़ोटो लें जिसमें केवल आप हों।',
@@ -456,6 +456,10 @@ const hi = {
     'presets.swap.unavailable': 'यह टेम्पलेट उपलब्ध नहीं है। दूसरा चुनें या बाद में कोशिश करें।',
     'presets.swap.cutout_failed': 'डिवाइस पर कट-आउट पूरा नहीं हो सका। फिर कोशिश करें या सादी पृष्ठभूमि वाली फ़ोटो चुनें। मूल फ़ोटो कभी अपलोड नहीं होती।',
     'presets.swap.price_changed': 'कीमत बदल गई है। फिर कोशिश करने से पहले मौजूदा कीमत देखें।',
+    'app.create.templatePrompt.edit': 'प्रॉम्प्ट संपादित करें',
+    'app.create.templatePrompt.error': 'प्रॉम्प्ट लोड नहीं हो सका। साइन इन करके फिर कोशिश करें।',
+    'app.create.templatePrompt.help': 'इस टेम्पलेट का प्रॉम्प्ट जैसा लिखा है वैसा ही इस्तेमाल होगा।',
+    'app.create.templatePrompt.ready': 'टेम्पलेट प्रॉम्प्ट तैयार है',
 } as const;
 
 export default hi;

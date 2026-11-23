@@ -444,9 +444,9 @@ const fr = {
     'presets.swap.refunded': 'Crédits rendus.',
     'presets.swap.not_charged': 'Rien n’a été facturé pour cette tentative.',
     'presets.swap.submitting': 'Lancement de votre vidéo…',
-    'presets.swap.queued': 'Vidéo acceptée. Coût : {credits} crédits. Suivez-la dans la bibliothèque.',
-    'presets.swap.running': 'Votre vidéo est en cours. Suivez-la dans la bibliothèque.',
-    'presets.swap.succeeded': 'Votre vidéo est prête. Ouvrez la bibliothèque pour la voir.',
+    'presets.swap.queued': 'Vidéo acceptée. Coût : {credits} crédits. Elle apparaîtra sur cette page quand elle sera prête.',
+    'presets.swap.running': 'Votre vidéo est en cours. Restez sur cette page : elle apparaîtra ici quand elle sera prête.',
+    'presets.swap.succeeded': 'Votre vidéo est prête.',
     'presets.swap.busy_background': 'Utilisez une photo avec un fond uni et vous seul.',
     'presets.swap.ragged_matte': 'Les contours sont flous. Utilisez une photo avec un fond uni et vous seul.',
     'presets.swap.several_people': 'Plusieurs personnes ont été détectées. Utilisez une photo avec vous seul et un fond uni.',
@@ -456,6 +456,10 @@ const fr = {
     'presets.swap.unavailable': 'Ce modèle est indisponible. Choisissez-en un autre ou réessayez plus tard.',
     'presets.swap.cutout_failed': 'Le détourage local a échoué. Réessayez ou choisissez une photo avec un fond uni. L’original n’est jamais envoyé.',
     'presets.swap.price_changed': 'Le prix a changé. Vérifiez le prix actuel avant de réessayer.',
+    'app.create.templatePrompt.edit': 'Modifier le prompt',
+    'app.create.templatePrompt.error': 'Impossible de charger le prompt. Connectez-vous et réessayez.',
+    'app.create.templatePrompt.help': 'Le prompt de ce modèle sera utilisé tel quel.',
+    'app.create.templatePrompt.ready': 'Prompt du modèle prêt',
 } as const;
 
 export default fr;

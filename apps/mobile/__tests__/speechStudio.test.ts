@@ -1,5 +1,5 @@
 import { buildSpeechRequest, insertCue, stepSpeechValue, validateSpeech } from '../src/lib/speech/studio';
-import { DEFAULT_TTS_SETTINGS, TTS_INPUT_RULES, TTS_VOICES, TTS_LANGUAGES, TTS_EMOTIONS, TTS_INTERJECTIONS, TTS_PAUSES, pauseCue, ttsGenerationInputs } from '../src/lib/speech/shared';
+import { DEFAULT_TTS_SETTINGS, TTS_INPUT_RULES, TTS_VOICES, TTS_LANGUAGES, TTS_EMOTIONS, TTS_INTERJECTIONS, TTS_PAUSES, pauseCue, ttsGenerationInputs, defaultSpeechSettings } from '../src/lib/speech/shared';
 import { speechModel, SPEECH_MODEL_ID } from '../src/lib/speech/model';
 import type { CatalogModel } from '../src/lib/media';
 // @ts-ignore server JS contract, independent of the mobile seam
@@ -62,4 +62,22 @@ test('catalog studio selection excludes missing, gated, unsupported and invalid 
 test('the input counter and validation count whitespace toward the native 500-character cap', () => {
     expect(validateSpeech(' ' + 'x'.repeat(499), DEFAULT_TTS_SETTINGS)).toBeNull();
     expect(validateSpeech(' ' + 'x'.repeat(500), DEFAULT_TTS_SETTINGS)).toBe('speech.tooLong');
+});
+
+const qwen: CatalogModel = { ...model, id: 'qwen3-tts', name: 'Qwen3 TTS', credits: 2 };
+test('Qwen requests use the selected model, two catalog credits and only voice/language', () => {
+    const settings = { ...defaultSpeechSettings(qwen.id), voice: 'Serena', language: 'French' };
+    expect(buildSpeechRequest('  Bonjour  ', settings, qwen)).toEqual({ modelId: qwen.id, prompt: 'Bonjour', durationSeconds: null,
+        confirmedCredits: 2, analyticsKind: 'audio', extraInputs: { tts_voice: 'Serena', tts_language: 'French' } });
+});
+test('validation uses each model’s voice, language and script bounds', () => {
+    const settings = defaultSpeechSettings(qwen.id);
+    expect(validateSpeech('x'.repeat(600), settings, qwen.id)).toBeNull();
+    expect(validateSpeech('x'.repeat(601), settings, qwen.id)).toBe('speech.qwen.tooLong');
+    expect(validateSpeech(' ', settings, qwen.id)).toBe('speech.required');
+    expect(validateSpeech('Hello', DEFAULT_TTS_SETTINGS, qwen.id)).toBe('speech.invalidSettings');
+    expect(validateSpeech('Hello', settings, model.id)).toBe('speech.invalidSettings');
+    expect(validateSpeech('Hello', { ...settings, language: 'Russian' }, qwen.id)).toBe('speech.invalidSettings');
+    expect(validateSpeech('Hello', { ...DEFAULT_TTS_SETTINGS, language: 'Russian' }, model.id)).toBeNull();
+    expect(() => buildSpeechRequest('Hello', DEFAULT_TTS_SETTINGS, qwen)).toThrow();
 });
