@@ -163,7 +163,8 @@ test('Qwen contract is identical on web and server, public, and separate from Mi
     assert.deepEqual(caps.inputs.tts_voice.values, QWEN_VOICES.map(v => v.id));
     assert.deepEqual(caps.inputs.tts_language.values, QWEN_LANGUAGES);
     assert.deepEqual(caps.speech.voices, QWEN_VOICES);
-    assert.equal(endpointKind(qwenEndpoint), 'audio');
+    // 'speech', not 'audio': the video/image sweep settles speech, while 'audio' routes (Suno music) are excluded from it.
+    assert.equal(endpointKind(qwenEndpoint), 'speech');
     assert.deepEqual(ttsGenerationInputs(defaultSpeechSettings('qwen3-tts'), 'qwen3-tts'), { tts_voice: 'Cherry', tts_language: 'auto' });
 });
 
