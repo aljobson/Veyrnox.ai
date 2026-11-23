@@ -60,6 +60,8 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
     && all(v.custom_drafts, ['available', 'autosave', 'generation_supported'], bool)
     && all(v.custom_drafts, ['lyrics_max', 'styles_max', 'title_max'], isFiniteNumber)
     && (v.custom_drafts.provider_contract === undefined || isContract(v.custom_drafts.provider_contract))
+    && isRecord(v.features)
+    && all(v.features, ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue'], bool)
     && isRecord(v.policy) && str(v.policy.version) && bool(v.policy.pre_debit);
 
 export const isMusicQuote = (v: unknown): v is MusicQuote => isRecord(v)

@@ -16,9 +16,32 @@ export interface DirectionDependencies {
     direction(rtl: boolean): void;
     reload(): Promise<void>;
 }
+function directionFallbackFile(): import('expo-file-system').File {
+    const { File, Paths } = require('expo-file-system') as typeof import('expo-file-system');
+    return new File(Paths.document, `${DIRECTION_SLOT}.json`);
+}
+function readDirectionFallback(): { present: boolean; raw: string | null } {
+    try {
+        const file = directionFallbackFile();
+        return file.exists ? { present: true, raw: file.textSync() || null } : { present: false, raw: null };
+    } catch { return { present: false, raw: null }; }
+}
+function writeDirectionFallback(raw: string | null): boolean {
+    try { directionFallbackFile().writeSync(raw ?? ''); return true; }
+    catch { return false; }
+}
+async function readDirection(): Promise<string | null> {
+    const fallback = readDirectionFallback();
+    if (fallback.present) return fallback.raw;
+    try { return secureStore().getItem(DIRECTION_SLOT); }
+    catch { return null; }
+}
+async function writeDirection(value: string | null): Promise<void> {
+    if (!writeDirectionFallback(value)) throw Error('direction_store_failed');
+}
 const defaults: DirectionDependencies = {
-    read: () => secureStore().getItemAsync(DIRECTION_SLOT),
-    write: value => value === null ? secureStore().deleteItemAsync(DIRECTION_SLOT) : secureStore().setItemAsync(DIRECTION_SLOT, value),
+    read: readDirection,
+    write: writeDirection,
     nativeRtl: () => I18nManager.isRTL,
     direction: rtl => { I18nManager.allowRTL(rtl); I18nManager.forceRTL(rtl); },
     reload: () => reloadAppAsync('Veyrnox language direction repaired'),

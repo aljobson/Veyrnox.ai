@@ -1,4 +1,4 @@
-const { withDangerousMod, withAppBuildGradle, withInfoPlist } = require('expo/config-plugins');
+const { withDangerousMod, withAppBuildGradle, withInfoPlist, withPodfile } = require('expo/config-plugins');
 const { readFile, mkdir, writeFile } = require('node:fs/promises');
 const { Buffer } = require('node:buffer');
 const { createHash } = require('node:crypto');
@@ -7,6 +7,31 @@ const { pathToFileURL } = require('node:url');
 
 const SPEECH_USAGE = 'Veyrnox creates editable captions from audio on this device.';
 const MICROPHONE_USAGE = 'Veyrnox uses the microphone only when you choose to record a voiceover, a beat take, or audio for editable captions.';
+const MEDIAPIPE_LINK_MARKER = '# Veyrnox: retain MediaPipe graph symbols for each Apple platform.';
+
+function addMediaPipeGraphLinking(contents) {
+    if (contents.includes(MEDIAPIPE_LINK_MARKER)) return contents;
+    const postInstall = contents.indexOf('  post_install do |installer|');
+    const blockEnd = postInstall < 0 ? -1 : contents.indexOf('\n  end', postInstall);
+    if (blockEnd < 0) throw Error('veyrnox-mediapipe-post-install-missing');
+    const snippet = `
+
+    ${MEDIAPIPE_LINK_MARKER}
+    installer.aggregate_targets.map(&:user_project).compact.uniq.each do |user_project|
+      user_project.native_targets.select { |target| target.name == 'Veyrnoxai' }.each do |target|
+        target.build_configurations.each do |build_configuration|
+          build_configuration.build_settings['OTHER_LDFLAGS[sdk=iphonesimulator*]'] = [
+            '$(inherited)', '-force_load', '"$(PODS_ROOT)/MediaPipeTasksCommon/frameworks/graph_libraries/libMediaPipeTasksCommon_simulator_graph.a"'
+          ]
+          build_configuration.build_settings['OTHER_LDFLAGS[sdk=iphoneos*]'] = [
+            '$(inherited)', '-force_load', '"$(PODS_ROOT)/MediaPipeTasksCommon/frameworks/graph_libraries/libMediaPipeTasksCommon_device_graph.a"'
+          ]
+        end
+      end
+      user_project.save
+    end`;
+    return `${contents.slice(0, blockEnd)}${snippet}${contents.slice(blockEnd)}`;
+}
 
 const matchesInventory = (bytes, asset) => bytes.length === asset.bytes && createHash('sha256').update(bytes).digest('hex') === asset.sha256;
 
@@ -57,6 +82,10 @@ module.exports = function withVeyrnoxVision(config) {
     for (const platform of ['ios', 'android']) {
         config = withDangerousMod(config, [platform, async mod => { await copyModels(mod.modRequest.projectRoot, platform); return mod; }]);
     }
+    config = withPodfile(config, mod => {
+        mod.modResults.contents = addMediaPipeGraphLinking(mod.modResults.contents);
+        return mod;
+    });
     // The app's final asset packaging must preserve mmap-compatible models as well as the library's AAR.
     return withAppBuildGradle(config, mod => {
         const setting = "android { androidResources { noCompress += ['tflite', 'task'] } }";
@@ -67,3 +96,5 @@ module.exports = function withVeyrnoxVision(config) {
 module.exports.copyModels = copyModels;
 module.exports.SPEECH_USAGE = SPEECH_USAGE;
 module.exports.MICROPHONE_USAGE = MICROPHONE_USAGE;
+module.exports.addMediaPipeGraphLinking = addMediaPipeGraphLinking;
+module.exports.MEDIAPIPE_LINK_MARKER = MEDIAPIPE_LINK_MARKER;
