@@ -74,6 +74,7 @@
     "test": "jest",
     "test:e2e": "e2e run",
     "test:e2e:crawl": "e2e run --config e2e.crawl.config.ts",
+    "test:e2e:hard-paywall": "e2e run --config e2e.hard-paywall.config.ts",
     "typecheck": "tsc --noEmit",
     "update:preview": "eas update --channel preview",
     "update:production": "eas update --channel production",

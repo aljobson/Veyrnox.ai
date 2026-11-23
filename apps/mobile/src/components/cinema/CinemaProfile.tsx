@@ -1,7 +1,6 @@
-import { Text as StatusText } from '../ui/Text';
 import * as Crypto from 'expo-crypto';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { AnalyticsEntry } from './AnalyticsEntry';
 import { CreatorUploadShell } from './CreatorUploadShell';
@@ -13,6 +12,8 @@ import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { KeyboardScreen } from '../KeyboardScreen';
 import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
+import { VeyLoader } from '../VeyLoader';
+import { Text } from '../ui/Text';
 
 // The Cinema profile tab: make a profile (username, display name, bio), see it, and apply to become a creator. Both
 // parts are off in production, so each shows a closed message. There is no upload or creator workspace in the app yet.
@@ -25,9 +26,9 @@ export function CinemaProfile() {
     }, [api]);
     useEffect(() => { void load(); }, [load]);
 
-    if (!profile) return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
-    if (profile.kind === 'closed') return <View style={styles.center}><Text style={styles.muted}>{t('cinemaCreator.closed.profile')}</Text></View>;
-    if (profile.kind === 'error') return <Pressable accessibilityRole="button" style={styles.center} onPress={load}><Text style={styles.error}>{t(profile.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>;
+    if (!profile) return <View style={styles.center}><VeyLoader label={t('common.loading')} showLabel /></View>;
+    if (profile.kind === 'closed') return <View style={styles.center}><Text variant="inherit" style={styles.muted}>{t('cinemaCreator.closed.profile')}</Text></View>;
+    if (profile.kind === 'error') return <Pressable accessibilityRole="button" style={styles.center} onPress={load}><Text variant="inherit" style={styles.error}>{t(profile.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>;
     return (
         <KeyboardScreen style={styles.flex}>
             <KeyboardFormScrollView contentContainerStyle={styles.content}>
@@ -41,10 +42,10 @@ export function CinemaProfile() {
 function ProfileCard({ profile }: { profile: Profile }) {
     return (
         <View style={styles.card}>
-            <Text style={styles.heading} accessibilityRole="header">{profile.displayName}</Text>
-            <Text style={styles.handle}>@{profile.username}</Text>
-            {profile.bio ? <Text style={styles.body}>{profile.bio}</Text> : null}
-            <Text style={styles.muted}>{t(profile.role === 'creator' ? 'cinemaCreator.roleCreator' : 'cinemaCreator.roleViewer')}</Text>
+            <Text variant="inherit" style={styles.heading} accessibilityRole="header">{profile.displayName}</Text>
+            <Text variant="inherit" style={styles.handle}>@{profile.username}</Text>
+            {profile.bio ? <Text variant="inherit" style={styles.body}>{profile.bio}</Text> : null}
+            <Text variant="inherit" style={styles.muted}>{t(profile.role === 'creator' ? 'cinemaCreator.roleCreator' : 'cinemaCreator.roleViewer')}</Text>
         </View>
     );
 }
@@ -74,18 +75,18 @@ function NewProfile({ onDone }: { onDone: () => void }) {
     }
     return (
         <View style={styles.form}>
-            <Text style={styles.heading} accessibilityRole="header">{t('cinemaCreator.newProfile')}</Text>
-            <Text style={styles.muted}>{t('cinemaCreator.newProfileIntro')}</Text>
-            <Text style={styles.label}>{t('cinemaCreator.username')}</Text>
+            <Text variant="inherit" style={styles.heading} accessibilityRole="header">{t('cinemaCreator.newProfile')}</Text>
+            <Text variant="inherit" style={styles.muted}>{t('cinemaCreator.newProfileIntro')}</Text>
+            <Text variant="inherit" style={styles.label}>{t('cinemaCreator.username')}</Text>
             <TextInput accessibilityLabel={t('cinemaCreator.username')} style={styles.input} value={username} onChangeText={(v) => setUsername(v.toLowerCase())} autoCapitalize="none" autoCorrect={false} maxLength={30} />
-            <Text style={styles.hint}>{t('cinemaCreator.usernameHint')}</Text>
-            <Text style={styles.label}>{t('cinemaCreator.displayName')}</Text>
+            <Text variant="inherit" style={styles.hint}>{t('cinemaCreator.usernameHint')}</Text>
+            <Text variant="inherit" style={styles.label}>{t('cinemaCreator.displayName')}</Text>
             <TextInput accessibilityLabel={t('cinemaCreator.displayName')} style={styles.input} value={name} onChangeText={setName} maxLength={NAME_MAX} />
-            <Text style={styles.label}>{t('cinemaCreator.bio')}</Text>
+            <Text variant="inherit" style={styles.label}>{t('cinemaCreator.bio')}</Text>
             <TextInput accessibilityLabel={t('cinemaCreator.bio')} style={[styles.input, styles.multi]} value={bio} onChangeText={setBio} maxLength={BIO_MAX} multiline />
-            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
-            <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy || !valid }} disabled={busy || !valid} style={[styles.button, (busy || !valid) && styles.off]} onPress={save}>
-                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('cinemaCreator.createProfile')}</Text>}
+            {note ? <Text variant="inherit" style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            <Pressable accessibilityRole="button" accessibilityLabel={t('cinemaCreator.createProfile')} accessibilityState={{ busy, disabled: busy || !valid }} disabled={busy || !valid} style={[styles.button, (busy || !valid) && styles.off]} onPress={save}>
+                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text variant="inherit" style={styles.buttonText}>{t('cinemaCreator.createProfile')}</Text>}
             </Pressable>
         </View>
     );
@@ -116,26 +117,26 @@ function Apply() {
         }
     }
     if (!app || app.kind === 'closed') return null;
-    if (app.kind === 'error') return <Pressable accessibilityRole="button" style={styles.retry} onPress={load}><Text style={styles.error}>{t(app.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>;
+    if (app.kind === 'error') return <Pressable accessibilityRole="button" style={styles.retry} onPress={load}><Text variant="inherit" style={styles.error}>{t(app.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>;
     if (app.value) {
         return (
             <View style={styles.card}>
-                <Text style={styles.heading} accessibilityRole="header">{t('cinemaCreator.applyTitle')}</Text>
-                <Text style={styles.body} accessibilityRole="text">{t(`cinemaCreator.status.${app.value.status}`)}</Text>
-                <Text style={styles.muted}>{app.value.statement}</Text>
+                <Text variant="inherit" style={styles.heading} accessibilityRole="header">{t('cinemaCreator.applyTitle')}</Text>
+                <Text variant="inherit" style={styles.body} accessibilityRole="text">{t(`cinemaCreator.status.${app.value.status}`)}</Text>
+                <Text variant="inherit" style={styles.muted}>{app.value.statement}</Text>
             </View>
         );
     }
     const left = STATEMENT_MAX - [...statement].length;
     return (
         <View style={styles.form}>
-            <Text style={styles.heading} accessibilityRole="header">{t('cinemaCreator.applyTitle')}</Text>
-            <Text style={styles.muted}>{t('cinemaCreator.applyIntro')}</Text>
+            <Text variant="inherit" style={styles.heading} accessibilityRole="header">{t('cinemaCreator.applyTitle')}</Text>
+            <Text variant="inherit" style={styles.muted}>{t('cinemaCreator.applyIntro')}</Text>
             <TextInput accessibilityLabel={t('cinemaCreator.statement')} style={[styles.input, styles.multi]} value={statement} onChangeText={setStatement} maxLength={STATEMENT_MAX} multiline />
-            <Text style={styles.hint}>{t('cinemaCreator.statementHint', { min: STATEMENT_MIN, left })}</Text>
-            {note ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{note}</StatusText> : null}
-            <Pressable accessibilityRole="button" accessibilityState={{ busy, disabled: busy || !statementOk(statement) }} disabled={busy || !statementOk(statement)} style={[styles.button, (busy || !statementOk(statement)) && styles.off]} onPress={submit}>
-                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('cinemaCreator.apply')}</Text>}
+            <Text variant="inherit" style={styles.hint}>{t('cinemaCreator.statementHint', { min: STATEMENT_MIN, left })}</Text>
+            {note ? <Text variant="inherit" style={styles.error} accessibilityRole="alert">{note}</Text> : null}
+            <Pressable accessibilityRole="button" accessibilityLabel={t('cinemaCreator.apply')} accessibilityState={{ busy, disabled: busy || !statementOk(statement) }} disabled={busy || !statementOk(statement)} style={[styles.button, (busy || !statementOk(statement)) && styles.off]} onPress={submit}>
+                {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text variant="inherit" style={styles.buttonText}>{t('cinemaCreator.apply')}</Text>}
             </Pressable>
         </View>
     );

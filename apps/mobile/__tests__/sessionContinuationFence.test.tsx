@@ -63,7 +63,6 @@ afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMo
 import { DevicesCard } from '../src/components/account/DevicesCard';
 import DeleteAccount from '../src/app/(app)/delete-account';
 import Account from '../src/app/(app)/account';
-import { EditorSpikeHarness } from '../src/components/dev/EditorSpikeHarness';
 import { confirmDeletion, prepareDeletion } from '../src/lib/accountDeletion';
 import { revokeSessions } from '../src/lib/auth/accountCalls';
 import { ApiError } from '../src/lib/api';
@@ -74,7 +73,6 @@ const mockPush = { unregister: jest.fn(async () => {}), setEnabled: jest.fn(), s
 jest.mock('../src/push/pushContext', () => ({ usePush: () => mockPush }));
 const mockRouter = { replace: jest.fn(), push: jest.fn() };
 jest.mock('expo-router', () => ({ useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]), Stack: { Screen: () => null }, Link: ({ children }: any) => children, useRouter: () => mockRouter }));
-jest.mock('react-native-webview', () => ({ WebView: 'WebView' }));
 
 beforeEach(() => {
     jest.mocked(prepareDeletion).mockResolvedValue({ kind: 'ready', token: 'delete-token', forfeit: { credits: 0, freeCredits: 0 } });
@@ -121,10 +119,4 @@ test('Account sign-out whose push unregister finishes after B leaves B signed in
     const gate = deferred(); mockPush.unregister.mockReturnValueOnce(gate.promise);
     await mount(<Account />); await adopt(); await confirmButton(t('public.account.signOut')); await adopt('B'); await act(async () => gate.resolve());
     expect(revokeSession).not.toHaveBeenCalled(); expect(clearRefreshToken).not.toHaveBeenCalled(); expect(await auth.getAccessToken()).toBe(jwt('B'));
-});
-test('EditorSpikeHarness stale forced token is not handed to the page', async () => {
-    await mount(); await adopt(); const gate = deferred<Session>(); jest.mocked(refreshSession).mockReturnValueOnce(gate.promise);
-    await act(async () => root.render(<AuthProvider><Probe /><EditorSpikeHarness /></AuthProvider>));
-    await adopt('B'); await act(async () => gate.resolve(session('A', 1)));
-    expect(root.container.queryAll(n => typeof n.props.injectedJavaScriptBeforeContentLoaded === 'string' && n.props.injectedJavaScriptBeforeContentLoaded.includes(jwt('A', 1)))).toHaveLength(0);
 });

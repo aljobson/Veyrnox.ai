@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, type ColorValue } from 'react-native';
+import { StyleSheet, useWindowDimensions, View, type ColorValue } from 'react-native';
 import { useMenuOpen } from '../../../lib/menuOpen';
 import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
@@ -10,6 +10,7 @@ import { type MenuIcon } from '../../../lib/menuIcons';
 import { paletteForScheme } from '../../../theme';
 import { Text, Icon, useAppearance } from '../../../components/ui';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { tabHeaderShowsWordmark } from '../../../lib/headerLayout';
 
 // The tab bar has a fixed height, so its labels stop growing at the same limit as the header; everything else follows the system text size.
 function tabLabel(key: string) {
@@ -35,6 +36,7 @@ export default function TabsLayout() {
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
     const insets = useSafeAreaInsets();
+    const { width, fontScale } = useWindowDimensions();
     // While the side menu is open the screens behind it are hidden from screen readers (QA-A1).
     const menuOpen = useMenuOpen();
     return (
@@ -47,7 +49,7 @@ export default function TabsLayout() {
                     // The action group is much wider than the menu button. Leading alignment keeps the complete
                     // VEYRNOX.ai wordmark clear of credits, theme and account on compact phones.
                     headerTitleAlign: 'left',
-                    headerTitle: () => <Logo size={20} palette={palette} />,
+                    headerTitle: () => <Logo size={20} wordmark={tabHeaderShowsWordmark(width, fontScale)} palette={palette} />,
                     headerLeft: () => <MenuButton palette={palette} />,
                     headerRight: () => <HeaderRight palette={palette} />,
                     sceneStyle: { backgroundColor: palette.background, paddingLeft: insets.left, paddingRight: insets.right },

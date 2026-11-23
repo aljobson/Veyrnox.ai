@@ -4,6 +4,8 @@ import { createRoot, type Root } from 'test-renderer';
 import { EditorTimeline, type ClipRangeBand } from '../src/components/editor/EditorTimeline';
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import { playSelection } from '../src/lib/haptics';
+import { HEADER_MAX_FONT_SCALE } from '../src/lib/a11y';
+import { EDITOR_DECORATIVE_RULER_FONT_SIZE, EDITOR_MEANINGFUL_LABEL_MIN_SIZE } from '../src/components/editor/fullEditorStyles';
 void [ScrollView, StyleSheet, Text, View];
 jest.mock('../src/lib/haptics', () => ({ playSelection: jest.fn() }));
 jest.mock('../src/components/ui/Icon', () => ({ Icon: () => null }));
@@ -25,6 +27,25 @@ beforeEach(() => {
     timeline.tracks.push({ ...timeline.tracks[0], id: 'video-2', name: 'Video 2' });
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
+test('meaningful editor labels keep a 12pt floor while decorative ruler marks expose time through the adjustable ruler', async () => {
+    expect(EDITOR_DECORATIVE_RULER_FONT_SIZE).toBeLessThan(EDITOR_MEANINGFUL_LABEL_MIN_SIZE);
+    await render([]);
+    const mark = node('timeline-ruler-label-0');
+    expect(mark.props.accessibilityElementsHidden).toBe(true);
+    expect(mark.props.importantForAccessibility).toBe('no');
+    expect(node('timeline-ruler').props).toMatchObject({ accessibilityRole: 'adjustable', accessibilityValue: { text: '00:00:00:00' } });
+});
+test('compact track headers keep long AX-scaled state text on one bounded line', async () => {
+    timeline.tracks[0] = { ...timeline.tracks[0], name: 'A deliberately long video track name', locked: true, muted: true, hidden: true };
+    await render([]);
+    const state = node('track-state-video-0');
+    expect(state.props.children).toBe('LOCK · MUTE · HIDE');
+    expect(state.props.numberOfLines).toBe(1);
+    expect(state.props.maxFontSizeMultiplier).toBe(HEADER_MAX_FONT_SCALE);
+    expect(StyleSheet.flatten(state.props.style)).toMatchObject({ minWidth: 0, flexShrink: 1, fontSize: 12 });
+    const label = node('track-header-video-0').queryAll(n => n.children.includes('A deliberately long video track name'))[0];
+    expect(label.props).toMatchObject({ numberOfLines: 1, maxFontSizeMultiplier: HEADER_MAX_FONT_SCALE });
+});
 test('positions clips and playhead in a single scroller and scrubs on grant and move', async () => {
     await render(); expect(StyleSheet.flatten(node('clip-v1').props.style)).toMatchObject({ left: 120, width: 178, height: 44 });
     expect(StyleSheet.flatten(node('timeline-playhead').props.style)).toMatchObject({ left: 0, width: 2, height: 256 });

@@ -1,9 +1,9 @@
 import { rawText } from '../lib/i18n/translate';
-import { Icon } from '../components/ui';
+import { Icon, Text } from '../components/ui';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { touchTarget } from '../lib/a11y';
@@ -11,6 +11,7 @@ import { fetchTitlesPage, posterUrl, type CinemaTitle } from '../lib/cinema';
 import { t } from '../lib/i18n';
 import { fetchPresets, presetPrice, type Preset } from '../lib/presets';
 import { colors } from '../theme';
+import { VeyLoader } from '../components/VeyLoader';
 
 type Tab = 'templates' | 'cinema';
 
@@ -48,7 +49,7 @@ export default function Preview() {
                 <Pressable accessibilityRole="button" accessibilityLabel={t('preview.back')} style={[styles.back, touchTarget]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>
                     <Icon name="arrowLeft" size={24} tint={styles.backText.color} />
                 </Pressable>
-                <Text style={styles.barTitle} accessibilityRole="header">{t('preview.title')}</Text>
+                <Text variant="inherit" style={styles.barTitle} accessibilityRole="header">{t('preview.title')}</Text>
                 <View style={styles.back} />
             </View>
             <View style={styles.tabs}>
@@ -60,34 +61,34 @@ export default function Preview() {
                         style={[styles.tab, tab === k && styles.tabOn, touchTarget]}
                         onPress={() => setTab(k)}
                     >
-                        <Text style={[styles.tabText, tab === k && styles.tabTextOn]}>{t(k === 'templates' ? 'preview.tab.templates' : 'preview.tab.cinema')}</Text>
+                        <Text variant="inherit" style={[styles.tabText, tab === k && styles.tabTextOn]}>{t(k === 'templates' ? 'preview.tab.templates' : 'preview.tab.cinema')}</Text>
                     </Pressable>
                 ))}
             </View>
             <ScrollView contentContainerStyle={styles.body}>
-                <Text style={styles.heading} accessibilityRole="header">{t(tab === 'templates' ? 'preview.templates.heading' : 'preview.cinema.heading')}</Text>
-                {loading && !failed ? <ActivityIndicator color={colors.accent} /> : null}
-                {failed && loading ? <Text style={styles.note}>{t('preview.error')}</Text> : null}
+                <Text variant="inherit" style={styles.heading} accessibilityRole="header">{t(tab === 'templates' ? 'preview.templates.heading' : 'preview.cinema.heading')}</Text>
+                {loading && !failed ? <VeyLoader label={t('common.loading')} showLabel /> : null}
+                {failed && loading ? <Text variant="inherit" style={styles.note}>{t('preview.error')}</Text> : null}
                 {tab === 'templates'
                     ? (presets ?? []).slice(0, 30).map((p) => (
                           <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={rawText(`${p.title}, ${presetPrice(p)}`)} accessibilityHint={t('preview.signInHint')} style={styles.card} onPress={signIn}>
                               {p.posterUrl ? <Image source={{ uri: p.posterUrl }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors /> : <View style={styles.poster} />}
-                              <Text style={styles.cardTitle} numberOfLines={2}>{p.title}</Text>
-                              <Text style={styles.cardMeta}>{presetPrice(p)}</Text>
+                              <Text variant="inherit" style={styles.cardTitle} numberOfLines={2}>{p.title}</Text>
+                              <Text variant="inherit" style={styles.cardMeta}>{presetPrice(p)}</Text>
                           </Pressable>
                       ))
                     : (titles ?? []).map((c) => (
                           <Pressable key={c.id} accessibilityRole="button" accessibilityLabel={rawText(c.title)} accessibilityHint={t('preview.signInHint')} style={styles.card} onPress={signIn}>
                               <Image source={{ uri: posterUrl(c.id) }} style={styles.poster} contentFit="cover" accessibilityIgnoresInvertColors />
-                              <Text style={styles.cardTitle} numberOfLines={2}>{c.title}</Text>
-                              {c.creator ? <Text style={styles.cardMeta}>{c.creator}</Text> : null}
+                              <Text variant="inherit" style={styles.cardTitle} numberOfLines={2}>{c.title}</Text>
+                              {c.creator ? <Text variant="inherit" style={styles.cardMeta}>{c.creator}</Text> : null}
                           </Pressable>
                       ))}
             </ScrollView>
             <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
-                <Text style={styles.note}>{t('preview.footer')}</Text>
+                <Text variant="inherit" style={styles.note}>{t('preview.footer')}</Text>
                 <Pressable accessibilityRole="button" style={[styles.primary, touchTarget]} onPress={signIn}>
-                    <Text style={styles.primaryText}>{t('preview.signIn')}</Text>
+                    <Text variant="inherit" style={styles.primaryText}>{t('preview.signIn')}</Text>
                 </Pressable>
             </View>
         </View>

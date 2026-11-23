@@ -105,7 +105,7 @@ Delivery status (2026-11-23): the colourful goal/destination/role journey, paywa
 
 ### Wave 4: compatibility and production qualification
 
-- Close remaining template source-media gaps without weakening rights, size or duration checks. Any cross-product hiding change must update and test both web and mobile.
+- Close remaining template source-media gaps without weakening rights, size or duration checks. The current MP4/MOV/WebM disposition and the proof required to enable each mobile lane are frozen in [the template source compatibility contract](TEMPLATE-SOURCE-COMPATIBILITY-2026-11-23.md). Any cross-product hiding change must update and test both web and mobile.
 - Remove the dead legacy editor web-view branch. Keep only unavoidable Turnstile and provider/system flows documented by the native-only guard.
 - Run real-device/simulator walkthroughs for Beats, Smart Cut, Cinema, Music, Studio/editor, Publish, report sharing, authentication and purchases. Enable production flags only after their device, money, privacy and recovery gates pass.
 - Fix the highest-leverage UI issues found by the iOS rubric: editor labels below 12 pt, hardcoded colors, unlabeled loading states, raw React Native text on high-traffic screens, unvirtualized growing lists, and compact-header crowding.

@@ -6,6 +6,7 @@ const baseEnv = {
   EXPO_PUBLIC_DEV_API_BASE: 'http://localhost:8799',
   EXPO_PUBLIC_EDITOR_ENABLED: 'true',
   EXPO_PUBLIC_FULL_EDITOR_ENABLED: 'true',
+  EXPO_PUBLIC_HARD_PAYWALL_ENABLED: 'false',
 };
 
 const mock = spawn(process.execPath, ['dev/mock-server.mjs'], {

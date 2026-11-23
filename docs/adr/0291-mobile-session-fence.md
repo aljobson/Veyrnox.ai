@@ -108,7 +108,7 @@ Supabase Auth account call through `authedCall`, all session writes in
 AuthProvider, cache owner bind/wipe, and the specified screen continuations:
 DevicesCard, account deletion and sign-out, MFA gate/card and privacy export
 verification, OAuth consent, Vibe reset, billing, language, push, passkey adding,
-and EditorSpikeHarness. It includes the account effects, billing tags and
+and the retired hosted-editor harness. It includes the account effects, billing tags and
 consent ownership above. It does not claim to fence every write in the app.
 `cinemaProgress.ts` retains its existing independent identity/epoch fence.
 

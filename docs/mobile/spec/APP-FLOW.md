@@ -34,7 +34,6 @@ Route files are under `apps/mobile/src/app/`. `(app)` and `(tabs)` are groups, n
 | `/help`, `/appeals`, `/report`, `/referrals`, `/blocked`, `/delete-account` | Help, safety and account actions | signed in |
 | `/models`, `/pricing`, `/search`, `/about`, `/oauth-consent` | Catalogue, search, product info, assistant consent | signed in |
 | `/review` | Publish post approve/reject entry | No account required; signed link token is the credential (`src/lib/shareLinks.ts`) |
-| `/dev-s1-editor` | S1 WebView test harness | Signed in; development-only harness checks |
 
 OAuth hand-back is on the **site**, not an Expo screen: `/auth/mobile` and `/social/connect/mobile/:network` return to the constant app schemes (TRD section 2.9).
 

@@ -679,7 +679,7 @@ test('a selected audio clip has a Volume button in the simple view that opens it
 });
 
 describe('opening a project that does not load', () => {
-    const spinners = () => root.container.queryAll((node) => String(node.type).includes('ActivityIndicator'));
+    const loaders = () => root.container.queryAll((node) => node.props.accessibilityRole === 'progressbar');
     const documentCalls = () => mockRequest.mock.calls.filter(([path]) => String(path).endsWith('/document') && !path.includes('?')).length;
     const defaultImpl = (path: string) => (path.endsWith('/document') ? { revision: 4, document: serverDocument } : path.endsWith('/media-info') ? { seconds: 4 } : { project: { id: projectId, workspace_id: 'workspace', name: 'Native cut' } });
 
@@ -687,12 +687,12 @@ describe('opening a project that does not load', () => {
         let hang = true;
         mockRequest.mockImplementation(async (path: string) => (hang && path.endsWith('/document') ? new Promise(() => {}) : defaultImpl(path)));
         await renderSimple();
-        expect(spinners()).toHaveLength(1);
+        expect(loaders()).toHaveLength(1);
         expect(visible('Check your connection and try again.')).toBe(false);
         await act(async () => { jest.advanceTimersByTime(14000); });
-        expect(spinners()).toHaveLength(1);
+        expect(loaders()).toHaveLength(1);
         await act(async () => { jest.advanceTimersByTime(1500); });
-        expect(spinners()).toHaveLength(0);
+        expect(loaders()).toHaveLength(0);
         expect(visible('Check your connection and try again.')).toBe(true);
         expect(labelled('Retry now')).toHaveLength(1);
         expect(labelled('Back')).toHaveLength(1);
@@ -707,7 +707,7 @@ describe('opening a project that does not load', () => {
     test('a rejected load shows the error without a spinner, and Back leaves', async () => {
         mockRequest.mockImplementation(async (path: string) => { if (path.endsWith('/document')) throw new Error('offline'); return defaultImpl(path); });
         await renderSimple();
-        expect(spinners()).toHaveLength(0);
+        expect(loaders()).toHaveLength(0);
         expect(visible('Check your connection and try again.')).toBe(true);
         await press('Back');
         expect(mockRouter.back).toHaveBeenCalledTimes(1);

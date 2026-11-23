@@ -112,7 +112,7 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     const short = height < 500;
     return <Modal transparent visible animationType={feedback.still ? 'none' : 'fade'} onRequestClose={close}>
         <View style={[s.backdrop, modalSafePadding(insets)]} onAccessibilityEscape={close}>
-            <View style={[s.card, { maxHeight: Math.max(240, height - insets.top - insets.bottom - 32) }]} accessibilityViewIsModal>
+            <View testID="purchase-paywall" style={[s.card, { maxHeight: Math.max(240, height - insets.top - insets.bottom - 32) }]} accessibilityViewIsModal>
                 <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
                     <View style={s.vey} pointerEvents={nativeBusy ? 'none' : 'auto'} accessibilityElementsHidden={nativeBusy} importantForAccessibility={nativeBusy ? 'no-hide-descendants' : 'auto'}>
                         <VeyCharacter width={short || fontScale >= 1.3 ? 72 : 120} interactive={!nativeBusy} mood={feedback.mood} />

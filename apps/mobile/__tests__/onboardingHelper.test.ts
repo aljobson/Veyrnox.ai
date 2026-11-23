@@ -1,15 +1,22 @@
-import { openSignedIn } from '../tests/helpers';
+import { openFirstRun, openSignedIn } from '../tests/helpers';
 import type { App, Screen } from 'e2e';
+import type { Device } from '@e2e-dev/mobile';
 
-type Stage = 'home' | 'language' | 'sign-in' | 'consent' | 'welcome' | 'start' | 'loading';
-let stage: Stage, checked: boolean;
+type Stage = 'home' | 'language' | 'sign-in' | 'consent' | 'welcome' | 'start' | 'first-run' | 'loading';
+let stage: Stage, checked: boolean, freshJourney: boolean;
 const taps: string[] = [];
-const app = { open: jest.fn(async () => {}) } as unknown as App;
+const resetCalls: string[] = [];
+const app = {
+    open: jest.fn(async () => { resetCalls.push('open'); }),
+    clearState: jest.fn(async () => { resetCalls.push('clearState'); freshJourney = true; stage = 'language'; }),
+} as unknown as App;
+const device = { clearKeychain: jest.fn(async () => { resetCalls.push('clearKeychain'); }) } as unknown as Device;
 const screen = { getByRole: (role: string, name: string, options?: { selected?: boolean }) => ({
     isVisible: async () => name === 'Explore' ? stage === 'home' && options?.selected === true
         : name === 'English' ? stage === 'language'
         : role === 'checkbox' ? stage === 'sign-in'
         : name === 'Decline' ? stage === 'consent'
+        : role === 'radiogroup' && name === 'What do you want to make first?' ? stage === 'first-run'
         : name === 'Skip' ? stage === 'welcome'
         : name === 'Skip for now' ? stage === 'start' : false,
     isChecked: async () => checked,
@@ -18,12 +25,15 @@ const screen = { getByRole: (role: string, name: string, options?: { selected?: 
         if (role === 'checkbox') checked = true;
         else if (name === 'Continue') stage = 'sign-in';
         else if (name === 'Preview with demo data') { stage = 'home'; setTimeout(() => { stage = 'consent'; }, 750); }
-        else if (name === 'Decline') stage = 'welcome';
+        else if (name === 'Decline') stage = freshJourney ? 'first-run' : 'welcome';
         else if (name === 'Skip') stage = 'start';
         else if (name === 'Skip for now') stage = 'home';
     },
 }) } as unknown as Screen;
-beforeEach(() => { jest.useFakeTimers(); stage = 'language'; checked = false; taps.length = 0; });
+beforeEach(() => {
+    jest.useFakeTimers(); stage = 'language'; checked = false; freshJourney = false; taps.length = 0; resetCalls.length = 0;
+    jest.mocked(app.open).mockClear(); jest.mocked(app.clearState).mockClear(); jest.mocked(device.clearKeychain).mockClear();
+});
 afterEach(() => jest.useRealTimers());
 test('handles every first-run screen and waits through momentary Explore', async () => {
     let done = false;
@@ -40,6 +50,18 @@ test('already signed in still requires two seconds of stable selected Explore', 
     await jest.advanceTimersByTimeAsync(1999); expect(done).toBe(false);
     await jest.advanceTimersByTimeAsync(1); await pending;
     expect(done).toBe(true); expect(taps).toEqual([]);
+});
+test('fresh first-run helper clears keychain then local state, opens the app, and stops at the goal question', async () => {
+    let done = false;
+    const pending = openFirstRun(app, device, screen).then(() => { done = true; });
+    await jest.advanceTimersByTimeAsync(3000); await pending;
+    expect(done).toBe(true);
+    expect(device.clearKeychain).toHaveBeenCalledTimes(1);
+    expect(app.clearState).toHaveBeenCalledTimes(1);
+    expect(app.open).toHaveBeenCalledTimes(1);
+    expect(resetCalls.slice(0, 3)).toEqual(['clearKeychain', 'clearState', 'open']);
+    expect(taps).toEqual(['English', 'Continue', 'I am 18 or older and agree to the Terms and Privacy Policy.', 'Preview with demo data', 'Decline']);
+    expect(stage).toBe('first-run');
 });
 test('missing onboarding and home screens fail within the overall timeout', async () => {
     stage = 'loading';

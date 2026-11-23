@@ -11,7 +11,7 @@ import { templatePhotosUnavailable, templateContract } from '../../../lib/templa
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Card, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -31,6 +31,7 @@ import { useTemplateClipAvailable, templateClipModel } from '../../../lib/templa
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
+import { VeyLoader } from '../../../components/VeyLoader';
 
 // The longest prompt the generations route accepts.
 const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
@@ -115,7 +116,7 @@ export default function TemplatePage() {
             <SwapTemplatePreview id={id} title={preset?.title} />
             <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} revealAttempt={revealAttempt} onReveal={revealNode} />
             {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} revealAttempt={revealAttempt} onReveal={revealNode} />}
-        </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
+        </> : loading ? <VeyLoader label={t('common.loading')} showLabel /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>
             <Text variant="title1" accessibilityRole="header">{preset.title}</Text>
             <Text>{t('libraryCreate.runsOn', { model: model?.name ?? preset.modelName })}</Text>
