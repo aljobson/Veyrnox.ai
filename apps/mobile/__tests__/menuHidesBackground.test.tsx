@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import TabsLayout from '../src/app/(app)/(tabs)/_layout';
 import { setMenuOpen } from '../src/lib/menuOpen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 void View;
 jest.mock('expo-router', () => {
@@ -18,9 +19,10 @@ let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); setMenuOpen(false); });
 afterEach(async () => { await act(async () => root.unmount()); setMenuOpen(false); });
 const wrapper = () => root.container.queryAll(n => 'accessibilityElementsHidden' in n.props)[0];
+const safeMetrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, right: 0, bottom: 0, left: 0 } };
 
 test('QA-A1: the tab screens are hidden from screen readers only while the side menu is open', async () => {
-    await act(async () => root.render(<TabsLayout />));
+    await act(async () => root.render(<SafeAreaProvider initialMetrics={safeMetrics}><TabsLayout /></SafeAreaProvider>));
     expect(wrapper().props.accessibilityElementsHidden).toBe(false);
     expect(wrapper().props.importantForAccessibility).toBe('auto');
     await act(async () => setMenuOpen(true));

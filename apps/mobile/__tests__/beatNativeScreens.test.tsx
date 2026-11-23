@@ -287,7 +287,11 @@ describe('beat editor', () => {
         const shell = testId('beat-editor-shell')[0];
         const workspace = testId('beat-editor-workspace')[0];
         const transport = testId('beat-editor-transport')[0];
-        expect(shell).toBeDefined(); expect(workspace.parent).toBe(shell); expect(transport.parent).toBe(shell);
+        // KeyboardScreen owns keyboard-safe reachability between the editor shell and its scroll view. Both the
+        // workspace and fixed transport still belong to the safe-area shell, and the transport never scrolls away.
+        expect(shell).toBeDefined();
+        expect(shell.queryAll(n => n.props.testID === 'beat-editor-workspace')).toHaveLength(1);
+        expect(shell.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(1);
         expect(workspace.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(0);
         for (const label of [t('beat.play'), t('beat.undo'), t('beat.redo'), t('beatMix.title')]) {
             expect(transport.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
