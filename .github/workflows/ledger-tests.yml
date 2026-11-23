@@ -220,7 +220,7 @@ jobs:
           # AI edit and speech analysis (0450-0452) need a fully replayed database of their own.
           DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" EDITOR_AI_EDIT_TEST_DATABASE_URL="${DATABASE_URL%/*}/editor_speech_check" npx tsx --test --test-concurrency=1 packages/db/editorAiEdit.acceptance.test.ts packages/db/speechAnalysis.acceptance.test.ts
-          # Crun Suno music (0587-0589) needs a fully replayed database of its own: its concurrency cases commit rows,
+          # Crun Suno music (0591-0593) needs a fully replayed database of its own: its concurrency cases commit rows,
           # which must not reach rebuild_check (they would fill the fal capacity the dispatch script below measures).
           DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" node scripts/replay-migrations.mjs
           DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" CRUN_SUNO_MUSIC_TEST_DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" npx tsx --test --test-concurrency=1 packages/db/crun-suno-music.acceptance.test.ts packages/db/crun-suno-consumers.acceptance.test.ts packages/db/crun-suno-quote-controls.acceptance.test.ts

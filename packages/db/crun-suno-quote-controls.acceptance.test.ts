@@ -1,4 +1,4 @@
-/** Acceptance checks for migration 0589. Requires a disposable migrated local DB. */
+/** Acceptance checks for migration 0593. Requires a disposable migrated local DB. */
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -9,13 +9,13 @@ const local = (() => {
   try { return ['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname); } catch { return false; }
 })();
 
-describe('Crun Suno quote controls (0589)', { skip: !local && 'disposable localhost database not set' }, () => {
+describe('Crun Suno quote controls (0593)', { skip: !local && 'disposable localhost database not set' }, () => {
   let pool: any;
   let client: any;
   const one = async (sql: string, args: unknown[] = []) => (await client.query(sql, args)).rows[0];
   let seq = 0;
   const isolated = async (fn: () => Promise<void>) => {
-    const name = `c0589_${seq += 1}`;
+    const name = `c0593_${seq += 1}`;
     await client.query(`SAVEPOINT ${name}`);
     try { await fn(); } finally {
       await client.query(`ROLLBACK TO SAVEPOINT ${name}`);
@@ -24,12 +24,12 @@ describe('Crun Suno quote controls (0589)', { skip: !local && 'disposable localh
   };
   const paidUser = async () => {
     const auth = randomUUID();
-    const user = (await one('SELECT public.signup_grant($1,$2) id', [auth, `${auth}@0589.accept.test`])).id;
+    const user = (await one('SELECT public.signup_grant($1,$2) id', [auth, `${auth}@0593.accept.test`])).id;
     const inserted = await client.query(`INSERT INTO public.credit_subscriptions
       (user_id,plan_id,idempotency_key,price_usd_cents,credits,consent_version,status,current_period_end)
       SELECT $1,id,$2,price_usd_cents,credits,'acceptance-v1','active',now()+interval '1 day'
       FROM public.credit_subscription_plans WHERE active ORDER BY id LIMIT 1`,
-    [user, `0589.${randomUUID()}`]);
+    [user, `0593.${randomUUID()}`]);
     assert.equal(inserted.rowCount, 1, 'a migrated paid plan must exist');
     return { auth, user: user as string };
   };

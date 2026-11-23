@@ -142,7 +142,7 @@ test('entitlements fail closed for the shared account, endpoint and selected Sun
 });
 
 test('song projection keeps an asset-less row and makes every capability null-safe', async () => {
-  const sql = await readFile(new URL('../packages/db/schema/supabase/0589_crun_suno_quote_controls.sql', import.meta.url), 'utf8');
+  const sql = await readFile(new URL('../packages/db/schema/supabase/0593_crun_suno_quote_controls.sql', import.meta.url), 'utf8');
   const song = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.music_get_song'),
     sql.indexOf('CREATE OR REPLACE FUNCTION public.music_get_remix_source_context'));
   assert.match(song, /LEFT JOIN public\.assets ca ON ca\.id=cv\.audio_asset_id/);
