@@ -33,6 +33,17 @@ test('every input Crun could not take is refused before the debit', () => {
   assert.equal(buildCrunImageToolRequest('image-pro', { image_url: URL1 }).error, 'provider_unsupported');
 });
 
+test('duration_seconds of 5, null or none is ignored (the gateway always lets it through), any other length is refused', () => {
+  for (const model of ['image-background-remove', 'image-upscale']) {
+    for (const duration_seconds of [5, null, undefined]) {
+      const r = buildCrunImageToolRequest(model, { image_url: URL1, duration_seconds });
+      assert.equal(r.ok, true);
+      assert.equal(JSON.stringify(r.body).includes('duration'), false, 'no length is sent to Crun');
+    }
+    assert.equal(buildCrunImageToolRequest(model, { image_url: URL1, duration_seconds: 10 }).error, 'duration_not_supported');
+  }
+});
+
 test('the adapter owns both endpoints, reads them as images and builds through the same function', () => {
   for (const model of ['image-background-remove', 'image-upscale']) {
     assert.deepEqual(parseEndpoint(`crun:${model}`), { model });
