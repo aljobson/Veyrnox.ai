@@ -18,7 +18,9 @@ export function useChatMusicGeneration({ active, prompt }) {
   const [offerId, setOfferId] = useState('ace-step');
   const [customMode, setCustomMode] = useState(false);
   const [controls, setControls] = useState(SUNO_CONTROL_DEFAULTS);
-  const model = sunoModels.find((item) => item.id === (customMode ? customModel?.id : offerId)) || sunoModels[0] || null;
+  const model = customMode
+    ? customModel || null
+    : sunoModels.find((item) => item.id === offerId) || sunoModels[0] || null;
   const effectiveControls = sunoControlsForModel(model, controls);
   const custom = useMusicCustomDraft({
     active: active && sunoModels.length > 0 && customMode,
@@ -61,13 +63,24 @@ export function useChatMusicGeneration({ active, prompt }) {
 
   async function action() {
     if (!model || busy) return false;
-    if (quote) return Boolean(await confirmQuote({ title: customMode ? custom.draft.title.trim() : '' }));
+    if (quote) return Boolean(await confirmQuote({
+      title: customMode ? custom.draft.title.trim() : '',
+      onContractStale: customMode ? custom.refresh : undefined,
+    }));
     if (customMode) {
       if (!String(custom.draft.styles || '').trim() || !sunoCustomReady({ model, draft: custom.draft, controls })) return false;
+      if (custom.draft.provider_contract !== model.provider_contract) {
+        await custom.refresh();
+        return false;
+      }
       const startedAt = quoteRevisionNow();
       const saved = custom.dirty || !custom.draft.id ? await custom.saveNow() : custom.draft;
       if (!saved) return false;
-      return Boolean(await reviewQuote(sunoCustomQuoteRequest({ model, draft: saved, controls: effectiveControls }), startedAt));
+      return Boolean(await reviewQuote(
+        sunoCustomQuoteRequest({ model, draft: saved, controls: effectiveControls }),
+        startedAt,
+        custom.refresh,
+      ));
     }
     const brief = String(prompt || '').trim();
     if (!brief || Array.from(brief).length > sunoLimit(model, 'prompt')) return false;
@@ -76,16 +89,25 @@ export function useChatMusicGeneration({ active, prompt }) {
 
   const generations = server.generations;
   const generating = generations.some((item) => !['succeeded', 'partial', 'failed', 'refunded'].includes(item.state));
-  const canAct = Boolean(model && entitlements?.available && !busy && (quote?.affordable !== false)
+  const concurrencyLimit = Number(entitlements?.concurrency_limit) || 4;
+  const activeGenerationCount = generations.filter((item) => !['succeeded', 'partial', 'failed', 'refunded'].includes(item.state)).length;
+  const hasSharedSlot = activeGenerationCount < concurrencyLimit;
+  let blockReason = '';
+  if (customMode && (!customModel || customModel.available === false)) blockReason = 'plan_required';
+  else if (!hasSharedSlot) blockReason = 'concurrency_limit';
+  else if (customMode && !String(custom.draft.styles || '').trim()) blockReason = 'style_required';
+  else if (customMode && !effectiveControls.instrumental && !String(custom.draft.lyrics || '').trim()) blockReason = 'lyrics_required';
+  else if (customMode && !effectiveControls.instrumental && !effectiveControls.rightsConfirmed) blockReason = 'rights_required';
+  const canAct = Boolean(model && entitlements?.available && !busy && hasSharedSlot && (quote?.affordable !== false)
     && (customMode ? String(custom.draft.styles || '').trim() && sunoCustomReady({ model, draft: custom.draft, controls }) : String(prompt || '').trim()));
 
   return {
     suno: active && sunoModels.length > 0,
     model, availableModels: sunoModels, offerId, selectOffer,
     customMode, setCustom, custom, controls: effectiveControls, updateControl, updateDraft,
-    quote, busy, error: server.error, errorCode: server.errorCode, action, canAct,
+    quote, busy, error: server.error, errorCode: server.errorCode, action, canAct, blockReason,
     sending: Boolean(busy), jobKind: 'audio',
-    generations, generating,
+    generations, generating, activeGenerationCount, concurrencyLimit, hasSharedSlot,
     clearJobs: server.clearGenerations,
     balance: entitlements?.balance ?? null,
     cost: quote?.total_credits ?? model?.total_credits ?? null,

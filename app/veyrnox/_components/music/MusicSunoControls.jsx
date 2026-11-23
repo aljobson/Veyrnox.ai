@@ -1,16 +1,38 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '../../../../components/I18nProvider';
 import { appendSunoStyle, capSunoText, sunoDuration, sunoLimit } from './musicSunoForm';
 
 const STYLE_KEYS = ['cinematic', 'electronic', 'indie', 'jazz', 'pop', 'rock'];
 
 function Counter({ id, value, max }) {
-  return <span id={id} aria-live="polite" aria-atomic="true" className="font-vx-mono text-xs font-normal text-vx-fg-faint">{Array.from(value).length}/{max}</span>;
+  const count = Array.from(value).length;
+  const [announcement, setAnnouncement] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAnnouncement(count >= Math.ceil(max * 0.9) ? `${count}/${max}` : ''), 400);
+    return () => window.clearTimeout(timer);
+  }, [count, max]);
+  return <><span id={id} className="font-vx-mono text-xs font-normal text-vx-fg-faint">{count}/{max}</span><span aria-live="polite" aria-atomic="true" className="sr-only">{announcement}</span></>;
 }
 
 function StylePicker({ label, value, onChange, max, counter, note }) {
   const { t } = useI18n();
+  const details = useRef(null);
+  const [open, setOpen] = useState(false);
+  const close = (restoreFocus = false) => {
+    if (details.current) details.current.open = false;
+    setOpen(false);
+    if (restoreFocus) details.current?.querySelector('summary')?.focus();
+  };
+  useEffect(() => {
+    if (!open) return undefined;
+    const pointer = (event) => { if (!details.current?.contains(event.target)) close(); };
+    const key = (event) => { if (event.key === 'Escape') { event.preventDefault(); close(true); } };
+    document.addEventListener('pointerdown', pointer);
+    document.addEventListener('keydown', key);
+    return () => { document.removeEventListener('pointerdown', pointer); document.removeEventListener('keydown', key); };
+  }, [open]);
   return (
     <div>
       <div className="flex items-center justify-between gap-3 text-sm font-bold text-vx-fg-body">
@@ -20,12 +42,12 @@ function StylePicker({ label, value, onChange, max, counter, note }) {
         aria-describedby={`${counter}-count${note ? ` ${counter}-note` : ''}`}
         className="mt-2 w-full resize-y rounded-xl border border-vx-border-boost bg-vx-base px-4 py-3 text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-vx-accent" />
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <details className="relative">
+        <details ref={details} onToggle={(event) => setOpen(event.currentTarget.open)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) close(); }} className="relative">
           <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-full border border-vx-border px-4 text-xs font-bold hover:border-vx-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vx-accent">{t('app.music.suno.selectStyles')}</summary>
           <div className="absolute start-0 z-20 mt-2 flex w-64 flex-wrap gap-2 rounded-2xl border border-vx-border bg-vx-panel p-3">
             {STYLE_KEYS.map((key) => {
               const style = t(`app.music.suno.style.${key}`);
-              return <button key={key} type="button" onClick={() => onChange(appendSunoStyle(value, style, max))} className="min-h-11 rounded-full border border-vx-border px-3 text-xs font-bold hover:border-vx-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vx-accent">{style}</button>;
+              return <button key={key} type="button" onClick={() => { onChange(appendSunoStyle(value, style, max)); close(true); }} className="min-h-11 rounded-full border border-vx-border px-3 text-xs font-bold hover:border-vx-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vx-accent">{style}</button>;
             })}
           </div>
         </details>
@@ -49,7 +71,7 @@ function Slider({ id, label, value, onChange, bounds }) {
   );
 }
 
-export function MusicSunoControls({ model, draft, updateDraft, controls, updateControl, compact = false, showTextFields = true }) {
+export function MusicSunoControls({ model, draft, updateDraft, controls, updateControl, compact = false, showTextFields = true, showRights = true }) {
   const { t } = useI18n();
   const titleMax = sunoLimit(model, 'title');
   const lyricsMax = sunoLimit(model, 'lyrics');
@@ -110,7 +132,7 @@ export function MusicSunoControls({ model, draft, updateDraft, controls, updateC
         </div>
       </fieldset>
 
-      {!controls.instrumental ? <label className="flex min-h-11 items-start gap-3 text-sm text-vx-fg-body">
+      {showRights && !controls.instrumental ? <label className="flex min-h-11 items-start gap-3 text-sm text-vx-fg-body">
         <input type="checkbox" checked={controls.rightsConfirmed} onChange={(event) => updateControl('rightsConfirmed', event.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-vx-accent" />
         <span>{t('app.music.suno.rights')}</span>
       </label> : null}

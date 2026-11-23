@@ -299,7 +299,9 @@ test('replay crosses activation and rollback without a second task on the other 
 test('rollback leaves a submitted Crun job pollable: it completes or refunds through its retained route', async t => {
   const rows = { model_routes: [{ model_id: PRIVATE, endpoint: ENDPOINT }], jobs: [{ id: JOB, user_id: AUTH, credits: 47, state: 'SUBMITTED', provider_job_id: 'crun-task-1', created_at: new Date().toISOString(), model_id: PRIVATE }] };
   t.mock.method(globalThis, 'fetch', async target => Response.json(rows[new URL(String(target)).pathname.split('/').at(-1)] || []));
-  const args = { cfg: { supabaseUrl: 'https://db.test', serviceRoleKey: 'k' }, r2cfg: { accountId: 'a', accessKeyId: 'b', secretAccessKey: 'c', bucket: 'd' }, apiKey: 'k' };
+  const args = { cfg: { supabaseUrl: 'https://db.test', serviceRoleKey: 'k' }, r2cfg: { accountId: 'a', accessKeyId: 'b', secretAccessKey: 'c', bucket: 'd' }, apiKey: 'k',
+    // The shared TaskInfo pacer needs its reservation RPC; this test is about the retained route, not pacing.
+    pace: async () => true };
   const settled = [];
   const complete = async call => { settled.push(call); return { status: 200, body: {} }; };
   assert.equal((await sweepCrun({ ...args, complete, read: async () => ({ ok: true, state: 'success', outputUrl: 'https://static.test/out.mp4' }) })).applied, 1);

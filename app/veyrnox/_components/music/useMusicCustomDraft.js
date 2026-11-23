@@ -73,9 +73,39 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
       setLoaded(true);
       setLoadFailed(true);
       setStatus('error');
-      setError('The private draft could not be loaded. Retry before editing.');
+      setError('draft_load_failed');
     }
   }, [defaultModelId, providerContract]);
+
+  const refresh = useCallback(async () => {
+    const local = draftRef.current;
+    setError('');
+    try {
+      const result = await gatewayFetch('/music/drafts/custom');
+      const server = result.draft
+        ? { ...result.draft, provider_contract: result.draft.provider_contract || result.provider_contract }
+        : blankDraft(defaultModelId, result.provider_contract || providerContract);
+      const preserved = preserveSunoDraftText(server, local);
+      baseDraft.current = server;
+      draftRef.current = preserved;
+      editSerial.current += 1;
+      setDraft(preserved);
+      setLoaded(true);
+      setLoadFailed(false);
+      setConflict(null);
+      setDirty(true);
+      setNeedsReview(true);
+      setNotice('contract_refreshed');
+      setStatus('unsaved');
+      await onContractStale?.();
+      return preserved;
+    } catch {
+      setError('contract_refresh_failed');
+      setStatus('error');
+      setDirty(true);
+      return null;
+    }
+  }, [defaultModelId, onContractStale, providerContract]);
 
   useEffect(() => {
     if (!active || loaded) return undefined;
@@ -116,31 +146,9 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
       }
       return savedDraft;
     } catch (reason) {
-      if (reason?.code === 'contract_stale') {
-        const local = serial === editSerial.current ? payload : draftRef.current;
-        setNotice('contract_refreshed');
-        try {
-          const result = await gatewayFetch('/music/drafts/custom');
-          const server = result.draft
-            ? { ...result.draft, provider_contract: result.draft.provider_contract || result.provider_contract }
-            : blankDraft(defaultModelId, result.provider_contract || providerContract);
-          const preserved = preserveSunoDraftText(server, local);
-          baseDraft.current = server;
-          draftRef.current = preserved;
-          editSerial.current += 1;
-          setDraft(preserved);
-          setLoaded(true);
-          setLoadFailed(false);
-          setConflict(null);
-          setDirty(true);
-          setNeedsReview(true);
-          setStatus('unsaved');
-          await onContractStale?.();
-        } catch {
-          setError('Music controls changed, but the refreshed draft could not be loaded. Your text remains on this page.');
-          setStatus('error');
-          setDirty(true);
-        }
+      if (String(reason?.code || '').toLowerCase() === 'contract_stale') {
+        draftRef.current = serial === editSerial.current ? payload : draftRef.current;
+        await refresh();
       } else if (reason?.code === 'revision_conflict' && reason?.body?.draft) {
         const server = reason.body.draft;
         const local = serial === editSerial.current ? payload : draftRef.current;
@@ -167,7 +175,7 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
     } finally {
       saving.current = false;
     }
-  }, [defaultModelId, onContractStale, providerContract]);
+  }, [refresh]);
 
   useEffect(() => {
     if (!loaded || !dirty || needsReview || conflict || saving.current) return undefined;
@@ -250,6 +258,6 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
 
   return {
     draft, loaded, loadFailed, dirty, status, error, conflict, notice, needsReview,
-    update, saveNow, loadNewer, keepMine, retry,
+    update, saveNow, refresh, loadNewer, keepMine, retry,
   };
 }

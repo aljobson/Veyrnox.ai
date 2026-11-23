@@ -115,6 +115,7 @@ function formHarness(mode) {
     '../../../lib/authClient': { getStoredUserId: () => null },
     './musicLyricHandoff': { readMusicLyricHandoff: () => null },
     './musicSunoForm': sunoForm,
+    '../../../../components/I18nProvider': { useI18n: () => ({ t: (key, vars) => vars?.count ?? key, locale: 'en' }) },
   }, '\nexport { CustomDraftFields };');
   return {
     server, custom, gate, requests, get clears() { return clears; },
