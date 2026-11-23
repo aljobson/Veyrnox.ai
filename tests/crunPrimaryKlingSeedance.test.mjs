@@ -75,9 +75,9 @@ test('Crun Kling gets the same submit-only face wording as fal', async () => {
 });
 
 test('Seedance translates tags, keeps sound on and sends the references', () => {
-  assert.deepEqual(buildRequest(seedance, { prompt: '@Image1 meets @image2', image_url: [image, image], aspect_ratio: '9:16', duration_seconds: 10, resolution: '1080p' }), {
+  assert.deepEqual(buildRequest(seedance, { prompt: '@Image1 meets @image2', image_url: [image, image], aspect_ratio: '9:16', duration_seconds: 5, resolution: '720p' }), {
     ok: true,
-    body: { model: 'bytedance/seedance2-0-r2v', input: { prompt: '[Image1] meets [Image2]', reference_images: [image, image], resolution: '1080p', aspect_ratio: '9:16', duration: 10, audio: true } },
+    body: { model: 'bytedance/seedance2-0-r2v', input: { prompt: '[Image1] meets [Image2]', reference_images: [image, image], resolution: '720p', aspect_ratio: '9:16', duration: 5, audio: true } },
   });
   const withVideo = buildRequest(seedance, { prompt: '@Image1 moves like @Video1', image_url: image, video_url: video });
   assert.deepEqual(withVideo.body.input.reference_videos, [video]);
@@ -93,19 +93,13 @@ test('Seedance refuses a shape it cannot express or price', () => {
   assert.deepEqual(buildRequest(seedance, { prompt: 'a' }), { ok: false, error: 'inputs_invalid:image_url' });
   assert.deepEqual(buildRequest(seedance, { prompt: 'a', image_url: Array(10).fill(image) }), { ok: false, error: 'source_count_exceeded' });
   assert.deepEqual(buildRequest(seedance, { prompt: 'a', image_url: image, duration_seconds: 7 }), { ok: false, error: 'duration_not_supported' });
-  assert.deepEqual(buildRequest(seedance, { prompt: 'a', image_url: image, video_url: video, resolution: '1080p' }), { ok: false, error: 'resolution_not_supported' });
+  assert.deepEqual(buildRequest(seedance, { prompt: 'a', image_url: image, duration_seconds: 10 }), { ok: false, error: 'duration_not_supported' });
+  for (const resolution of ['1080p', '4k']) {
+    assert.deepEqual(buildRequest(seedance, { prompt: 'a', image_url: image, resolution }), { ok: false, error: 'resolution_not_supported' });
+  }
 });
 
-test('Seedance prices at Crun public rates fit the floor for every shape it accepts', () => {
-  const usd = credits => credits / 206;
-  assert.ok(usd(32 * 5) <= 85 * CAP, '720p image only');
-  assert.ok(usd(19 * (5 + 10)) <= 85 * CAP, '720p, 10 s reference, 5 s output');
-  assert.ok(usd(78 * 5) <= Math.ceil(85 * 2.25) * CAP, '1080p image only');
-  assert.ok(usd(159 * 5) <= Math.ceil(85 * 5.15) * CAP, '4k image only');
-  assert.ok(usd(48 * (5 + 10)) > Math.ceil(85 * 2.25) * CAP, '1080p with a 10 s reference is over the floor, so it is refused');
-});
-
-test('0582 moves only Kling 3.0 Pro through the guarded reorder and leaves Seedance unrouted', () => {
+test('0582 moves only Kling 3.0 Pro through the guarded reorder', () => {
   assert.match(sql, /'kling-3\.0-i2v', 'crun', 'crun:kling\/v3', 0\.4369/);
   assert.doesNotMatch(sql, /UPDATE\s+public\.model_catalog/i);
   assert.doesNotMatch(sql, /seedance2-0-r2v|'seedance-2\.0-reference'/);
@@ -114,6 +108,4 @@ test('0582 moves only Kling 3.0 Pro through the guarded reorder and leaves Seeda
   assert.ok(sql.indexOf("state = 'active'") < sql.indexOf('model_route_reorder('));
   assert.ok(0.4369 <= 32 * CAP);
   assert.ok(0.56 <= 32 * CAP, 'fal, second, needs no margin waiver');
-  const failover = readFileSync('scripts/test-supplier-route-failover.mjs', 'utf8');
-  assert.doesNotMatch(failover, /seedance2-0-r2v/, 'the unproved Seedance route is not on the safety list');
 });

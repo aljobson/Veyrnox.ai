@@ -338,3 +338,21 @@ source costs $3.50 against a $3.45 floor. No route names it and it is not on the
 proof had audio off and used a test pattern. Activation needs a paid audio-on run for image-only and image-plus-video.
 
 The Worker must be live before 0582 is applied.
+
+## Amendment 2026-11-22 (3): Seedance 2.0 Reference moves to Crun for the proved shape (0583)
+
+The owner ran the paid proofs: `bytedance/seedance2-0-r2v`, 720p, 5 s, sound on, a test pattern. Image only (task
+`c6be2f4e-aaa4-47e5-994a-209cdb6961b4`) charged 157.93 credits, $0.7667. Image plus a 5 s reference video (task
+`193ea5bf-d737-4af4-8fa3-8fe1de3c538c`) charged 191.46 credits, $0.9294. Both returned 720x1280 with an audio track. The
+route records 193 credits, $0.9369, the cost with the longest reference video allowed (5.05 s). The floor is $1.5266, and
+the price stays 85 credits. fal ($1.5120) is recorded as the active second route; this offer had no route row before 0583.
+
+Only the proved length and tier are sold on Crun. 10 s, 1080p and 4K disappear from the catalog and are refused before
+the debit, even though Crun's public rates would fit the floor, because no paid run proves them. Several reference
+pictures and other aspect ratios stay available: Crun's public price does not vary with them, but the proofs do not
+cover them and the parity record says so.
+
+A job Crun refuses is refunded. Image jobs do not hop, so fal receives nothing. The reference-video shape is proved but
+not reachable: its only caller is the template-clip path, which is off and names the fal endpoint. Crun has no mapping
+to `reference_rejected_likeness`, so a refused real-person picture shows the generic failure with a refund. The Worker
+must be live before 0583 is applied.
