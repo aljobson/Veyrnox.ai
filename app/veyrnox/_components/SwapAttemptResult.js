@@ -33,7 +33,7 @@ export function SwapAttemptResult({ jobId, aspect, templateId }) {
     }).catch(error => { if (!controller.signal.aborted) setFailed(error.code === 'asset_unavailable' ? 'asset' : 'result'); });
     return () => controller.abort();
   }, [jobId, attempt]);
-  if (failed) return <div><p role="status" className="mb-4">{t(failed === 'asset' ? 'public.jobs.assetUnavailable' : 'public.jobs.resultUnconfirmed')}</p><button type="button" className={controlClass} onClick={retry}>{t('presets.swap.check')}</button></div>;
+  if (failed) return <div><p role="status" className="mb-4">{t(failed === 'asset' ? 'public.jobs.assetUnavailable' : 'public.jobs.resultUnconfirmed')}</p><div className="flex flex-wrap gap-4"><button type="button" className={controlClass} onClick={retry}>{t('presets.swap.check')}</button><a href="/app/library" className={controlClass}>{t('presets.swap.library')}</a></div></div>;
   if (!job || job.job_id !== jobId) return <div aria-hidden="true" className="vx-shimmer mx-auto rounded-xl bg-vx-panel" style={{ aspectRatio: ratio, width: `min(100%, ${70 * ratio}vh)` }} />;
   return <div className="relative mx-auto overflow-hidden rounded-xl bg-vx-panel" style={{ aspectRatio: ratio, width: `min(100%, ${70 * ratio}vh)` }} data-swap-result><JobAssetPreview job={job} onLoadedMetadata={event => { const video = event.currentTarget; if (video.videoWidth && video.videoHeight) { metadataReady.current = true; setRatio(video.videoWidth / video.videoHeight); } }} /></div>;
 }

@@ -28,7 +28,7 @@ function Attempt({ attempt: a }) {
       <button className={swapControl} onClick={() => void swapActions.reconcile(a.templateId, a.key).catch(() => {})}>{t('presets.swap.check')}</button>
       <a className={swapControl} href="mailto:support@veyrnox.com">{t('presets.swap.support')}</a>
     </div>}
-    {success && <a href="/app/library" className={swapControl}>{t('presets.swap.library')}</a>}
+    {success && a.state !== 'succeeded' && <a href="/app/library" className={swapControl}>{t('presets.swap.library')}</a>}
     {!unsettled(a) && <button className={swapControl} onClick={() => swapActions.cancel(a.key)}>{t('presets.swap.dismiss')}</button>}
   </div>;
 }
