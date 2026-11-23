@@ -444,9 +444,9 @@ const ar = {
     'presets.swap.refunded': 'تمت إعادة الرصيد.',
     'presets.swap.not_charged': 'لم يُخصم شيء لهذه المحاولة.',
     'presets.swap.submitting': 'جارٍ بدء الفيديو…',
-    'presets.swap.queued': 'تم قبول الفيديو. التكلفة: {credits} رصيد. افتح المكتبة لمتابعته.',
-    'presets.swap.running': 'جارٍ إنشاء الفيديو. افتح المكتبة لمتابعته.',
-    'presets.swap.succeeded': 'الفيديو جاهز. افتح المكتبة لمشاهدته.',
+    'presets.swap.queued': 'تم قبول الفيديو. التكلفة: {credits} رصيد. سيظهر في هذه الصفحة عند اكتماله.',
+    'presets.swap.running': 'جارٍ إنشاء الفيديو. ابقَ في هذه الصفحة: سيظهر هنا عند اكتماله.',
+    'presets.swap.succeeded': 'الفيديو جاهز.',
     'presets.swap.busy_background': 'استخدم صورة بخلفية بسيطة ولا يظهر فيها سواك.',
     'presets.swap.ragged_matte': 'حواف القص غير واضحة. استخدم صورة بخلفية بسيطة ولا يظهر فيها سواك.',
     'presets.swap.several_people': 'تم اكتشاف عدة أشخاص. استخدم صورة لك وحدك بخلفية بسيطة.',
@@ -456,6 +456,10 @@ const ar = {
     'presets.swap.unavailable': 'هذا القالب غير متاح. اختر غيره أو حاول لاحقًا.',
     'presets.swap.cutout_failed': 'تعذّر إتمام إزالة الخلفية محليًا. أعد المحاولة أو اختر صورة بخلفية بسيطة. لا تُرفع الصورة الأصلية أبدًا.',
     'presets.swap.price_changed': 'تغير السعر. راجع السعر الحالي قبل إعادة المحاولة.',
+    'app.create.templatePrompt.edit': 'تعديل الموجّه',
+    'app.create.templatePrompt.error': 'تعذّر تحميل الموجّه. سجّل الدخول وحاول مرة أخرى.',
+    'app.create.templatePrompt.help': 'سيُستخدم موجّه هذا القالب كما هو مكتوب.',
+    'app.create.templatePrompt.ready': 'موجّه القالب جاهز',
 } as const;
 
 export default ar;

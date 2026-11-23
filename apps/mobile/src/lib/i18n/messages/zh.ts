@@ -444,9 +444,9 @@ const zh = {
     'presets.swap.refunded': '积分已退回。',
     'presets.swap.not_charged': '此次尝试未收费。',
     'presets.swap.submitting': '正在开始生成视频…',
-    'presets.swap.queued': '视频已受理。费用：{credits} 积分。请在作品库中查看进度。',
-    'presets.swap.running': '视频正在生成。请在作品库中查看进度。',
-    'presets.swap.succeeded': '视频已就绪。请在作品库中查看。',
+    'presets.swap.queued': '视频已受理。费用：{credits} 积分。完成后会显示在此页面。',
+    'presets.swap.running': '视频正在生成。请留在此页面：完成后会在这里显示。',
+    'presets.swap.succeeded': '视频已就绪。',
     'presets.swap.busy_background': '请使用背景简单且只有你一人的照片。',
     'presets.swap.ragged_matte': '抠图边缘不清晰。请使用背景简单且只有你一人的照片。',
     'presets.swap.several_people': '检测到多人。请使用只有你一人且背景简单的照片。',
@@ -456,6 +456,10 @@ const zh = {
     'presets.swap.unavailable': '此模板不可用。请选择其他模板或稍后重试。',
     'presets.swap.cutout_failed': '本地抠图未能完成。请重试或选择背景简单的照片。原始照片绝不会被上传。',
     'presets.swap.price_changed': '价格已改变。请查看当前价格后重试。',
+    'app.create.templatePrompt.edit': '编辑提示词',
+    'app.create.templatePrompt.error': '无法加载提示词。请登录后重试。',
+    'app.create.templatePrompt.help': '将按原文使用此模板的提示词。',
+    'app.create.templatePrompt.ready': '模板提示词已就绪',
 } as const;
 
 export default zh;

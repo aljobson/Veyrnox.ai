@@ -8,7 +8,7 @@ export type GenerationAttempt = Readonly<{
 // Explicit server rejections of this request. Authentication/authorization failures and
 // unknown codes cannot establish what happened to an earlier ambiguous submission.
 export const DEFINITIVE_REJECTIONS = new Set([
-    'quote_expired', 'quote_stale', 'quote_already_used', 'insufficient_balance', 'prompt_not_allowed',
+    'quote_expired', 'quote_stale', 'contract_stale', 'quote_already_used', 'insufficient_balance', 'prompt_not_allowed',
     'invalid_request', 'invalid_inputs', 'quote_id_invalid', 'idempotency_key_invalid',
     'idempotency_conflict', 'revision_conflict', 'invalid_json', 'body_too_large', 'not_found', 'no_balance_row',
 ]);
@@ -36,7 +36,7 @@ export function createGenerationAttempts(api: ApiClient, mintKey = randomUUID) {
             if (pending.phase === 'UNSUBMITTED' && Date.parse(quote.expires_at) <= Date.now()) return Promise.reject(new ApiError(409, 'quote_expired'));
             const attempt = pending, ticket = epoch;
             pending = Object.freeze({ ...attempt, phase: 'AMBIGUOUS' }); emit();
-            flight = startGeneration(api, quote.quote_id, attempt.key).then(result => {
+            flight = startGeneration(api, quote.quote_id, attempt.key, quote.provider_contract).then(result => {
                 if (ticket !== epoch) throw new ApiError(401, 'account_changed');
                 pending = null; emit(); return result;
             }).catch(error => {

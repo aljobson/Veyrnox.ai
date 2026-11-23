@@ -444,9 +444,9 @@ const pt = {
     'presets.swap.refunded': 'Créditos devolvidos.',
     'presets.swap.not_charged': 'Nada foi cobrado por esta tentativa.',
     'presets.swap.submitting': 'Iniciando seu vídeo…',
-    'presets.swap.queued': 'Vídeo aceito. Custo: {credits} créditos. Acompanhe na biblioteca.',
-    'presets.swap.running': 'Seu vídeo está em andamento. Acompanhe na biblioteca.',
-    'presets.swap.succeeded': 'Seu vídeo está pronto. Abra a biblioteca para vê-lo.',
+    'presets.swap.queued': 'Vídeo aceito. Custo: {credits} créditos. Ele aparecerá nesta página quando estiver pronto.',
+    'presets.swap.running': 'Seu vídeo está em andamento. Fique nesta página: ele aparecerá aqui quando estiver pronto.',
+    'presets.swap.succeeded': 'Seu vídeo está pronto.',
     'presets.swap.busy_background': 'Use uma foto com fundo liso e apenas você.',
     'presets.swap.ragged_matte': 'As bordas do recorte não estão claras. Use uma foto com fundo liso e apenas você.',
     'presets.swap.several_people': 'Várias pessoas foram detectadas. Use uma foto só sua com fundo liso.',
@@ -456,6 +456,10 @@ const pt = {
     'presets.swap.unavailable': 'Este modelo está indisponível. Escolha outro ou tente mais tarde.',
     'presets.swap.cutout_failed': 'O recorte local não terminou. Tente novamente ou escolha uma foto com fundo liso. O original nunca é enviado.',
     'presets.swap.price_changed': 'O preço mudou. Confira o preço atual antes de tentar novamente.',
+    'app.create.templatePrompt.edit': 'Editar prompt',
+    'app.create.templatePrompt.error': 'Não foi possível carregar o prompt. Inicie sessão e tente novamente.',
+    'app.create.templatePrompt.help': 'O prompt deste modelo será usado como está escrito.',
+    'app.create.templatePrompt.ready': 'Prompt do modelo pronto',
 } as const;
 
 export default pt;

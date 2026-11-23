@@ -12,6 +12,7 @@ import {
   templateRecreateHref,
 } from '../_lib/templateRecreate';
 import { useCatalog } from '../_lib/useCatalog';
+import { TemplatePromptReady } from './TemplatePromptReady';
 
 export function TemplateRecreate({ preset }) {
   const { t } = useI18n();
@@ -19,6 +20,8 @@ export function TemplateRecreate({ preset }) {
   const { models, loading } = useCatalog();
   const [prompt, setPrompt] = useState(() => recreatePromptForTemplate(preset));
   const [status, setStatus] = useState('');
+  const [revealed, setRevealed] = useState(false);
+  const promptHidden = !revealed && prompt === recreatePromptForTemplate(preset);
   const [opening, setOpening] = useState(false);
   const model = models.find((entry) => entry.id === TEMPLATE_RECREATE_MODEL_ID) || null;
   const available = templateRecreateAvailable(model);
@@ -60,16 +63,17 @@ export function TemplateRecreate({ preset }) {
       </ol>
 
       <label htmlFor={`recreate-prompt-${preset.id}`} className="mt-5 block font-vx-mono text-[10px] font-bold tracking-[0.12em] text-vx-fg-muted">{t('presets.recreate.prompt')}</label>
-      <textarea
+      {promptHidden ? <div className="mt-2 rounded-xl border border-vx-border bg-vx-panel"><TemplatePromptReady onEdit={() => setRevealed(true)} /></div> : <textarea
+        autoFocus={revealed}
         id={`recreate-prompt-${preset.id}`}
         value={prompt}
         onChange={(event) => { setPrompt(event.target.value); setStatus(''); }}
         maxLength={TEMPLATE_RECREATE_PROMPT_MAX}
         rows={9}
         className="mt-2 w-full rounded-xl border border-vx-border bg-vx-panel px-4 py-3 text-[14px] leading-[1.55] text-vx-fg-body focus:border-vx-accent focus:outline-hidden"
-      />
+      />}
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button type="button" onClick={copyPrompt} className="vx-press rounded-full border border-vx-border px-4 py-2 text-sm font-bold hover:border-vx-fg-muted">{t('common.copy')}</button>
+        {!promptHidden && <button type="button" onClick={copyPrompt} className="vx-press rounded-full border border-vx-border px-4 py-2 text-sm font-bold hover:border-vx-fg-muted">{t('common.copy')}</button>}
         <button type="button" onClick={openStudio} disabled={!available || loading || !prompt.trim() || opening} className="vx-press rounded-full bg-vx-accent px-5 py-2.5 text-sm font-extrabold text-vx-accent-ink disabled:cursor-not-allowed disabled:opacity-50">
           {t('presets.recreate.open')}
         </button>

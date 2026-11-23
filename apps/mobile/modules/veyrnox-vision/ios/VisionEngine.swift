@@ -107,9 +107,9 @@ final class VisionEngine {
 
   private func quantize(_ mask: Mask, width: Int, height: Int) throws -> [UInt8] {
     guard (8...512).contains(mask.width), (8...512).contains(mask.height) else { throw VisionFailure.unavailable }
-    let values = mask.float32Data
-    guard values.count == mask.width * mask.height else { throw VisionFailure.unavailable }
-    for i in 0..<(mask.width * mask.height) {
+    let pixelCount = mask.width * mask.height
+    let values = UnsafeBufferPointer(start: mask.float32Data, count: pixelCount)
+    for i in 0..<pixelCount {
       guard values[i].isFinite && values[i] >= 0 && values[i] <= 1 else { throw VisionFailure.unavailable }
     }
     return (0..<(width * height)).map { i in

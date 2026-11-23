@@ -30,6 +30,9 @@ const versions = file => [readFileSync(file, 'utf8')];
 const webMocks = {
   './TemplateSwapBoundary.js': { useResolvedSwap: () => ({ offer: null, loading: false }) },
   './SwapAttemptStatus.js': { SwapAttemptStatus: () => null },
+  // The frozen markup is the revealed prompt; the hidden state has its own tests.
+  '../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) },
+  './TemplatePromptReady': { TemplatePromptReady: 'template-prompt-ready' },
   react: React, 'next/link': { __esModule: true, default: 'a' }, 'next/navigation': { useRouter: () => ({}) },
   '../../../components/I18nProvider.jsx': { useI18n: () => ({ t }) },
   '../../../lib/i18n/rich': { rich: value => value },
@@ -70,6 +73,8 @@ test('mobile template: flag-off render tree matches the frozen checkout', () => 
       '../../../lib/i18n': { t }, '../../../lib/i18n/translate': { rawText: value => value },
       '../../../components/ui': { Button: 'button', Card: 'card', Chip: 'chip', Text: 'text', TextField: 'field', themedStyles: () => ({}), useThemedStyles: () => ({}) },
       '../../../lib/templateClips': { useTemplateClipAvailable: () => null },
+      // The frozen tree is the revealed prompt; the hidden state has its own tests.
+      '../../../lib/templatePromptVisibility': { isVideoPreset: () => false, isOwnTemplatePrompt: () => false },
       '../../../lib/templateSwap/availability': { useSwapAvailability: () => null },
       '../../../lib/templateFidelity': { templateContract: () => undefined, templatePhotosUnavailable: () => false, templatePhotoHints: () => [] },
       '../../../lib/templateChoices': { templateModelEligible: () => true, templateOptions: () => ({ aspects: [], durations: [5], duration: 5 }) },

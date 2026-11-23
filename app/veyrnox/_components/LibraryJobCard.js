@@ -54,7 +54,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
   const editHref = libraryEditorHref(row, model?.name);
   const shelfPurpose = row.model_id === 'elevenlabs-dialogue'
     ? 'lip-sync-dialogue'
-    : row.model_id === 'minimax-speech-2.6-hd'
+    : ['minimax-speech-2.6-hd', 'qwen3-tts'].includes(row.model_id)
       ? 'narration-presenter'
       : 'timing-rhythm';
   // The whole card: hover or focus anywhere on it plays its clip (LibraryClip).

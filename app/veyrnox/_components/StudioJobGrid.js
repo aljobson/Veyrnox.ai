@@ -16,7 +16,7 @@ export function StudioJobGrid({ jobs, aspect }) {
             className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${pending ? 'vx-shimmer' : ''}`}
             style={{ aspectRatio: aspect.replace(':', '/') }}
           >
-            {job.asset_url ? (
+            {(job.asset_url || job.state === 'succeeded') ? (
               <JobAssetPreview job={job} />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-center px-4">

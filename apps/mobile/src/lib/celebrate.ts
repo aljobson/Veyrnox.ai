@@ -69,10 +69,22 @@ function checkOwner() {
     seen = null;
     completed.clear();
     pending.clear();
+    firstPending = false;
+    videoPending = false;
+    active = null;
     epoch++;
 }
 subscribeCacheUser(checkOwner);
 prune();
+export type CelebrationAccount = { owner: string | null; epoch: number };
+export function captureCelebrationAccount(): CelebrationAccount {
+    checkOwner();
+    return { owner, epoch };
+}
+export function isCelebrationAccountCurrent(token: CelebrationAccount): boolean {
+    checkOwner();
+    return token.owner === owner && token.epoch === epoch;
+}
 export function noteLocalSubmission(jobId: string): void {
     if (!jobId) return;
     checkOwner();
@@ -106,7 +118,8 @@ export function newlyFinished(previous: ReadonlyMap<string, boolean> | null, job
 }
 export type CelebrationResult = { big: boolean; done: Promise<void> };
 const quiet: CelebrationResult = { big: false, done: Promise.resolve() };
-export function celebrateOutput(jobId: string, mime: string, sawUnfinished: boolean): CelebrationResult {
+export function celebrateOutput(jobId: string, mime: string, sawUnfinished: boolean, token = captureCelebrationAccount()): CelebrationResult {
+    if (!isCelebrationAccountCurrent(token)) return quiet;
     const previous = completed.get(jobId);
     if (previous) return previous;
     prune();
@@ -133,6 +146,7 @@ export function celebrateOutput(jobId: string, mime: string, sawUnfinished: bool
         const accepted = emitCelebration({
             kind,
             onShown: () => {
+                if (!isCelebrationAccountCurrent(token)) return;
                 shown = true;
                 firstShown = true;
                 write(FIRST_SLOT, '1');
@@ -144,6 +158,7 @@ export function celebrateOutput(jobId: string, mime: string, sawUnfinished: bool
                 persist();
             },
             onDone: () => {
+                if (!isCelebrationAccountCurrent(token)) { resolve(); return; }
                 firstPending = false;
                 if (video) videoPending = false;
                 if (!shown) completed.delete(jobId);
@@ -159,19 +174,37 @@ export function celebrateOutput(jobId: string, mime: string, sawUnfinished: bool
         firstPending = false;
         if (video) videoPending = false;
         resolve();
-        // No visible host: leave milestone flags and submission evidence untouched for the next visit.
+        // No host can display this result. Keep milestone flags available for a
+        // later job, but acknowledge this completion once with the existing haptic.
+        completed.set(jobId, quiet);
+        submissions = submissions.filter(entry => entry.jobId !== jobId);
+        persist();
+        void playSuccess();
         return quiet;
     }
+    let shown = false;
+    const accepted = emitCelebration({ kind: 'success',
+        onShown: () => {
+            if (!isCelebrationAccountCurrent(token)) return;
+            shown = true;
+            submissions = submissions.filter(entry => entry.jobId !== jobId);
+            persist();
+        },
+        onDone: () => { if (!shown && isCelebrationAccountCurrent(token)) completed.delete(jobId); },
+    });
     completed.set(jobId, quiet);
-    submissions = submissions.filter((entry) => entry.jobId !== jobId);
-    persist();
-    void playSuccess();
+    if (!accepted) {
+        submissions = submissions.filter(entry => entry.jobId !== jobId);
+        persist();
+        void playSuccess();
+    }
     return quiet;
 }
 
 // Existing callers can still request the small success haptic synchronously. Home passes a verified output loader;
 // the big celebration never starts until that succeeds. An aborted or inaccessible output consumes nothing.
 export function celebrateFinished(jobs: readonly Job[], loadOutput?: (id: string) => Promise<{ mime_type: string }>, signal?: AbortSignal): number {
+    const generation = captureCelebrationAccount();
     prune();
     const finished = new Set(newlyFinished(seen, jobs).map((job) => job.job_id));
     const done = jobs.filter(
@@ -187,20 +220,17 @@ export function celebrateFinished(jobs: readonly Job[], loadOutput?: (id: string
         }
         return done.length;
     }
-    const generation = epoch;
     for (const job of done) {
         if (pending.has(job.job_id)) continue;
         pending.add(job.job_id);
         void loadOutput(job.job_id)
-            .then(async (output) => {
-                if (signal?.aborted || generation !== epoch) return;
-                // Keep bursts separate if several jobs finish together.
-                if (active) await active.done;
-                if (!signal?.aborted && generation === epoch) celebrateOutput(job.job_id, output.mime_type, finished.has(job.job_id));
+            .then((output) => {
+                if (signal?.aborted || !isCelebrationAccountCurrent(generation)) return;
+                celebrateOutput(job.job_id, output.mime_type, finished.has(job.job_id), generation);
             })
             .catch(() => {})
             .finally(() => {
-                pending.delete(job.job_id);
+                if (isCelebrationAccountCurrent(generation)) pending.delete(job.job_id);
             });
     }
     return done.length;

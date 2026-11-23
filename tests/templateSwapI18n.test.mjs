@@ -5,7 +5,7 @@ import { publicMessagesFor } from '../lib/i18n/publicMessages.mjs';
 import { appMessagesFor } from '../lib/i18n/appMessages.mjs';
 import { translator } from '../lib/i18n/translate.mjs';
 import { checkCatalog } from '../lib/i18n/check.mjs';
-const keys = Object.keys(CATALOGS.en).filter(k => k.startsWith('presets.swap.'));
+const keys = Object.keys(CATALOGS.en).filter(k => k.startsWith('presets.swap.') || k === 'public.jobs.resultUnconfirmed');
 test('all swap strings resolve through public and nested Create translate paths in all eleven locales', async () => {
   assert.ok(keys.length > 40);
   for (const locale of Object.keys(CATALOGS)) {

@@ -35,6 +35,8 @@ function component(path, name, stateValues) {
     '../../_lib/createErrors': { ERROR_COPY: {} }, '../SourcePickers': { SourcePickers: () => null }, '../SpeechSongNudge': { SpeechSongNudge: () => null }, '../PromptTools': { DictateButton: () => null, EnhanceButton: () => null, appendSpoken: (a, b) => a + b }, '../Icon': { Icon: () => null },
     '../LibraryPicker': { LibraryPicker: ({ kind, mimeTypes }) => createElement('span', { 'data-library-kind': kind, 'data-library-mimes': mimeTypes.join(',') }) }, 'next/navigation': { useRouter: () => ({ push() {} }) },
     '../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: translator('en'), href: (p) => p }) },
+    '../music/MusicSunoControls': { MusicSunoControls: () => null },
+    '../music/musicSunoForm': { capSunoText: (value, max) => String(value ?? '').slice(0, max), sunoLimit: () => 500 },
     '../_lib/landingDraft': { writeStudioDraft() {} }, '../_lib/tokens': tokens, '../_lib/starterModels': starters,
   };
   new Function('require', 'module', 'exports', code)((id) => imports[id] || englishAppImports[id] || require(id), output, output.exports);

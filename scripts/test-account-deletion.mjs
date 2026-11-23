@@ -251,6 +251,20 @@ try {
     const stale = [...known].filter((t) => !live.has(t));
     assert.deepEqual(stale, [], `classified tables that no longer reference users: ${stale.join(', ')}`);
 
+    // Provider state is not a direct users FK, so the drift query above cannot
+    // discover it. Classify it explicitly: dispatch payload is erased through
+    // its jobs->users owner; reservation/breaker rows contain no user content.
+    const CRUN_PROVIDER_STATE = new Map([
+        ['crun_dispatch', 'erased_via_job_owner'],
+        ['crun_create_reservations', 'retained_content_free'],
+        ['crun_taskinfo_reservations', 'retained_content_free'],
+        ['crun_suno_model_breakers', 'retained_content_free'],
+    ]);
+    const classifiedCrun = await q(`SELECT c.relname AS tbl FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='public' AND c.relname = ANY($1::text[])`, [[...CRUN_PROVIDER_STATE.keys()]]);
+    assert.deepEqual(new Set(classifiedCrun.map((r) => r.tbl)), new Set(CRUN_PROVIDER_STATE.keys()),
+        'all Crun provider-state tables are explicitly classified');
+
     console.log('account deletion: ok');
 } finally {
     await c.query('ROLLBACK');

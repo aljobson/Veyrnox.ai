@@ -9,7 +9,7 @@ export function nodes(tree) {
 }
 // Hook harness following editorServerRenderComponents: real component bodies/effects,
 // deterministic mocked transport/timers. No DOM, browser or provider claims.
-export function hookHarness() {
+export function hookHarness({ browser } = {}) {
     let cursor = 0, stateIndex = 0, changed = false;
     const slots = [], effects = [], states = [], timers = new Map();
     let timerId = 0;
@@ -35,6 +35,7 @@ export function hookHarness() {
                 prev?.cleanup?.(); slots[index] = { deps }; effects.push(() => { slots[index].cleanup = fn(); });
             }
         },
+        useLayoutEffect(fn, deps) { hooks.useEffect(fn, deps); },
     };
     return {
         states, timers,
@@ -43,7 +44,7 @@ export function hookHarness() {
             const code = ts.transpileModule(readEditorSource(file) + (expose.length ? `\nexport { ${expose.join(', ')} };` : ''), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
             const imports = { react: hooks, ...mocks };
             new Function('require', 'exports', 'window', 'setInterval', 'clearInterval', code)(id => id === 'react/jsx-runtime' ? require(id) : imports[id] || {}, exports,
-                { addEventListener() {}, removeEventListener() {}, dispatchEvent() {} }, fn => { timers.set(++timerId, fn); return timerId; }, id => timers.delete(id));
+                browser || { addEventListener() {}, removeEventListener() {}, dispatchEvent() {} }, fn => { timers.set(++timerId, fn); return timerId; }, id => timers.delete(id));
             return exports;
         },
         render(Component, props) {

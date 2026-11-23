@@ -444,9 +444,9 @@ const ru = {
     'presets.swap.refunded': 'Кредиты возвращены.',
     'presets.swap.not_charged': 'За эту попытку ничего не списано.',
     'presets.swap.submitting': 'Запуск видео…',
-    'presets.swap.queued': 'Видео принято. Стоимость: {credits} кредитов. Следите за ним в библиотеке.',
-    'presets.swap.running': 'Видео создаётся. Следите за ним в библиотеке.',
-    'presets.swap.succeeded': 'Видео готово. Откройте библиотеку для просмотра.',
+    'presets.swap.queued': 'Видео принято. Стоимость: {credits} кредитов. Оно появится на этой странице, когда будет готово.',
+    'presets.swap.running': 'Видео создаётся. Оставайтесь на этой странице: оно появится здесь, когда будет готово.',
+    'presets.swap.succeeded': 'Видео готово.',
     'presets.swap.busy_background': 'Используйте фото с простым фоном, где только вы.',
     'presets.swap.ragged_matte': 'Края вырезки нечёткие. Используйте фото с простым фоном, где только вы.',
     'presets.swap.several_people': 'Обнаружено несколько людей. Используйте фото только с вами и простым фоном.',
@@ -456,6 +456,10 @@ const ru = {
     'presets.swap.unavailable': 'Шаблон недоступен. Выберите другой или попробуйте позже.',
     'presets.swap.cutout_failed': 'Локальная вырезка не завершилась. Повторите или выберите фото с простым фоном. Оригинал никогда не загружается.',
     'presets.swap.price_changed': 'Цена изменилась. Проверьте текущую цену перед повтором.',
+    'app.create.templatePrompt.edit': 'Изменить промпт',
+    'app.create.templatePrompt.error': 'Не удалось загрузить промпт. Войдите в аккаунт и повторите попытку.',
+    'app.create.templatePrompt.help': 'Промпт этого шаблона будет использован без изменений.',
+    'app.create.templatePrompt.ready': 'Промпт шаблона готов',
 } as const;
 
 export default ru;

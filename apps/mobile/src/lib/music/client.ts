@@ -13,10 +13,10 @@ import type { MusicActionQuote, StemStart, StemRequest, StemArchive, CropInput, 
 import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropResult } from './validateActions';
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
-import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle } from './validate';
+import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext } from './validate';
 import type {
     MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
-    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery,
+    MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput,
 } from './types';
 
 // Typed client over /api/v1/music/*. Request and response shapes come from the route handlers
@@ -89,12 +89,25 @@ export async function createQuote(api: ApiClient, input: MusicSimpleQuoteInput |
     if (!isMusicQuote(v)) throw bad();
     return v;
 }
+export const isContractStale = (error: unknown): error is ApiError => error instanceof ApiError
+    && error.status === 409 && ['contract_stale', 'draft_stale'].includes(error.code);
+// A contract or draft flip invalidates policy and/or draft identity. The caller rebuilds the
+// payload from one fresh entitlement/draft read; the network request is retried once only.
+export async function createQuoteWithContractRefresh(api: ApiClient, input: MusicSimpleQuoteInput | MusicCustomQuoteInput,
+    refresh: () => Promise<MusicSimpleQuoteInput | MusicCustomQuoteInput>): Promise<MusicQuote> {
+    try { return await createQuote(api, input); }
+    catch (error) {
+        if (!isContractStale(error)) throw error;
+        return createQuote(api, await refresh());
+    }
+}
 
 // Step 2 of create: spends the quote. Reuse the SAME idempotency key (8-120 chars of A-Za-z0-9._-)
 // on every retry; a replay answers 200 with idempotent:true and charges nothing more. A 503
 // `pair_acceptance_unknown` means "replay the same key", never "make a new one".
-export async function startGeneration(api: ApiClient, quoteId: string, idempotencyKey: string): Promise<MusicGeneration> {
-    const v = await api.request<unknown>(`${BASE}/generations`, post({ quote_id: quoteId, idempotency_key: idempotencyKey }));
+export async function startGeneration(api: ApiClient, quoteId: string, idempotencyKey: string, providerContract?: MusicProviderContract): Promise<MusicGeneration> {
+    const v = await api.request<unknown>(`${BASE}/generations`, post({ quote_id: quoteId, idempotency_key: idempotencyKey,
+        ...(providerContract ? { provider_contract: providerContract } : {}) }));
     if (!isMusicGeneration(v)) throw bad();
     return v;
 }
@@ -102,19 +115,36 @@ export async function startGeneration(api: ApiClient, quoteId: string, idempoten
 export async function getCustomDraft(api: ApiClient): Promise<MusicDraft> {
     const v = await api.request<unknown>(`${BASE}/drafts/custom`);
     if (!isRecord(v) || !isMusicDraft(v.draft)) throw bad();
-    return v.draft;
+    if (v.provider_contract !== undefined && v.provider_contract !== 'fal-ace-v1' && v.provider_contract !== 'crun-suno-v1') throw bad();
+    const draft = v.provider_contract && !v.draft.provider_contract ? { ...v.draft, provider_contract: v.provider_contract } : v.draft;
+    if (!isMusicDraft(draft)) throw bad();
+    return draft;
 }
 export async function saveCustomDraft(api: ApiClient, input: MusicDraftInput): Promise<MusicDraft> {
-    const { revision, model_id, lyrics, styles, title } = input;
+    const { revision, model_id, lyrics, styles, title, provider_contract, draft_id } = input;
     const v = await api.request<unknown>(`${BASE}/drafts/custom`, {
-        ...post({ revision, model_id, lyrics, styles, title }), method: 'PUT',
+        ...post({ ...(provider_contract ? { provider_contract, draft_id: draft_id ?? null } : {}), revision, model_id, lyrics, styles, title }), method: 'PUT',
     });
     if (!isRecord(v) || !isMusicDraft(v.draft)) throw bad();
-    return v.draft;
+    const draft = provider_contract && !v.draft.provider_contract ? { ...v.draft, provider_contract } : v.draft;
+    if (!isMusicDraft(draft)) throw bad();
+    return draft;
 }
 export function conflictDraft(err: unknown): MusicDraft | null {
     return err instanceof ApiError && err.status === 409 && err.code === 'revision_conflict'
         && isMusicDraft(err.body.draft) ? err.body.draft : null;
+}
+export async function getReuseDraftContext(api: ApiClient, songId: string, versionId: string): Promise<MusicReuseContext> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/reuse?version_id=${encodeURIComponent(versionId)}`);
+    if (!isMusicReuseContext(v)) throw bad();
+    return v;
+}
+export async function applyReuseToDraft(api: ApiClient, songId: string, input: MusicReuseInput): Promise<{ draft: MusicDraft; idempotent: boolean }> {
+    const v = await api.request<unknown>(`${BASE}/songs/${encodeURIComponent(songId)}/reuse`, post(input));
+    if (!isRecord(v) || !isMusicDraft(v.draft) || typeof v.idempotent !== 'boolean') throw bad();
+    const draft = !v.draft.provider_contract ? { ...v.draft, provider_contract: input.provider_contract } : v.draft;
+    if (!isMusicDraft(draft)) throw bad();
+    return { draft, idempotent: v.idempotent };
 }
 export async function getGeneration(api: ApiClient, id: string): Promise<MusicGenerationView> {
     const v = await api.request<unknown>(`${BASE}/generations/${encodeURIComponent(id)}`);

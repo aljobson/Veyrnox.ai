@@ -17,7 +17,7 @@ jest.mock('../src/components/FacelessSoundCard', () => ({ FacelessSoundCard: () 
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: (props: any) => jest.requireActual('react').createElement('mock-vey', props) }));
 jest.mock('../src/lib/output', () => ({ saveOutput: jest.fn(), shareOutput: jest.fn() }));
 jest.mock('../src/lib/media', () => ({ mediaApi: jest.fn(), waitForJob: jest.fn() }));
-jest.mock('../src/lib/celebrate', () => ({ celebrateOutput: jest.fn(), afterCelebration: jest.fn() }));
+jest.mock('../src/lib/celebrate', () => ({ ...jest.requireActual('../src/lib/celebrate'), celebrateOutput: jest.fn(), afterCelebration: jest.fn() }));
 jest.mock('../src/lib/storeReview', () => ({ loadReviewAsk: async () => null }));
 void [RN.ActivityIndicator, RN.View, RN.Text, RN.StyleSheet, RN.ScrollView, RN.Pressable];
 let root: Root, update: (state: JobState) => void, finish: (state: JobState) => void;

@@ -444,9 +444,9 @@ const ko = {
     'presets.swap.refunded': '크레딧이 반환되었습니다.',
     'presets.swap.not_charged': '이번 시도에는 청구되지 않았습니다.',
     'presets.swap.submitting': '영상 시작 중…',
-    'presets.swap.queued': '영상이 접수되었습니다. 비용: {credits} 크레딧. 라이브러리에서 확인하세요.',
-    'presets.swap.running': '영상을 생성 중입니다. 라이브러리에서 확인하세요.',
-    'presets.swap.succeeded': '영상이 준비되었습니다. 라이브러리에서 보세요.',
+    'presets.swap.queued': '영상이 접수되었습니다. 비용: {credits} 크레딧. 완성되면 이 페이지에 표시됩니다.',
+    'presets.swap.running': '영상을 생성 중입니다. 이 페이지에 머물러 주세요. 완성되면 여기에 표시됩니다.',
+    'presets.swap.succeeded': '영상이 준비되었습니다.',
     'presets.swap.busy_background': '배경이 단순하고 본인만 있는 사진을 사용하세요.',
     'presets.swap.ragged_matte': '누끼 가장자리가 불분명합니다. 배경이 단순하고 본인만 있는 사진을 사용하세요.',
     'presets.swap.several_people': '여러 사람이 감지되었습니다. 배경이 단순하고 본인만 있는 사진을 사용하세요.',
@@ -456,6 +456,10 @@ const ko = {
     'presets.swap.unavailable': '이 템플릿을 사용할 수 없습니다. 다른 템플릿을 선택하거나 나중에 시도하세요.',
     'presets.swap.cutout_failed': '기기에서 누끼 처리를 완료하지 못했습니다. 다시 시도하거나 배경이 단순한 사진을 선택하세요. 원본은 업로드되지 않습니다.',
     'presets.swap.price_changed': '가격이 변경되었습니다. 현재 가격을 확인한 후 다시 시도하세요。',
+    'app.create.templatePrompt.edit': '프롬프트 편집',
+    'app.create.templatePrompt.error': '프롬프트를 불러오지 못했습니다. 로그인한 후 다시 시도하세요.',
+    'app.create.templatePrompt.help': '이 템플릿의 프롬프트를 작성된 그대로 사용합니다.',
+    'app.create.templatePrompt.ready': '템플릿 프롬프트 준비 완료',
 } as const;
 
 export default ko;
