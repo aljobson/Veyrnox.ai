@@ -16,7 +16,7 @@ function load(file, mocks) {
   const mod={exports:{}};
   const output=ts.transpileModule(readFileSync(new URL('../'+file,import.meta.url),'utf8'), {fileName:file,compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   new Function('require','module','exports',output)(id=>{
-    if(id==='react') return React;if(id==='react/jsx-runtime') return jsx;
+    if(id==='react') return mocks.react || React;if(id==='react/jsx-runtime') return jsx;
     if(Object.hasOwn(mocks,id)) return mocks[id];
     throw Error(`missing mock ${id} in ${file}`);
   },mod,mod.exports);return mod.exports;
@@ -36,12 +36,14 @@ const composer=load('app/veyrnox/_components/SwapComposer.js',{
 const recipe=load('app/veyrnox/_components/TemplateRecipe.js',{
   ...shared,'./TemplateSwapBoundary.js':boundary,'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},
   '../../../lib/i18n/presetSteps.mjs':{presetStep:()=>''},'next/link':{default:'a',__esModule:true},
-  '../_lib/useSwapSceneAvailable':{useSwapSceneAvailable:()=>true},'../_lib/useTemplateClipAvailable':{useTemplateClipAvailable:()=>null},
+  '../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) }, './TemplatePromptReady': { TemplatePromptReady: () => null }, '../_lib/useSwapSceneAvailable':{useSwapSceneAvailable:()=>true},'../_lib/useTemplateClipAvailable':{useTemplateClipAvailable:()=>null},
   '../_lib/templateDraft':{TEMPLATE_PROMPT_MAX:2000},'../_lib/templateSourceBlock':{templateSourceUnsupported:()=>true},
+  '../../../lib/templatePromptPlaceholder.js':{isTemplatePromptPlaceholder:()=>false},'../_lib/privateTemplatePrompt.js':{ownPromptOf:()=>''},
   './UseTemplate':{UseTemplate:({templateSwap})=>templateSwap?React.createElement(composer.SwapComposer,{offer:templateSwap}):React.createElement('span',null,'Legacy composer')},
 });
 const noop=()=>null;
 const page=load('app/veyrnox/presets/[id]/page.js',{
+  '../../_lib/privateTemplateRecipe.js':{privateTemplateRecipe:x=>x},'../../../../lib/templatePromptPrivacy.js':{templatePromptsPrivate:()=>false},'../../_lib/templatePromptVisibility.js':{isVideoTemplate:()=>true},
   '../../_components/TemplateSwapBoundary.js':boundary,'../../../../lib/i18n/translate.mjs':{tOr:(t,k,f)=>t.messages[k]?t(k):f},
   '../../../../lib/publicModelIds.js':{publicModelId:x=>x},
   '../../../../lib/templateFraming.js':{templateSourceAspect:()=>null},'../../../../lib/i18n/server':{getT:async()=>({locale:'en',t})},
@@ -85,6 +87,8 @@ test('rendered reconciliation survives a gate 404 and is invisible to another ac
     '../_lib/templateSwapRuntime.js':{swapActions:{}},
     '../_lib/templateSwapClient.mjs':await import('../app/veyrnox/_lib/templateSwapClient.mjs'),
     '../app/create/GeneratingProgress.js':{GeneratingProgress:()=>null},
+    './SwapAttemptResult.js':{SwapAttemptResult:()=>null},
+    '../_lib/resultPresence.js':{useResultPresence(){}},
   });
   const saved=attempts.SwapAttemptStatus;attempts.SwapAttemptStatus=realStatus.SwapAttemptStatus;
   try{
@@ -97,4 +101,106 @@ test('rendered reconciliation survives a gate 404 and is invisible to another ac
     store.session('B');const html=renderToStaticMarkup(await page.default({params:Promise.resolve({id:'test'})}));
     assert.ok(!html.includes('data-swap-attempt'));assert.ok(!html.includes('Credits returned.'));
   }finally{attempts.SwapAttemptStatus=saved;}
+});
+
+import { readSwapResult, resultAspect } from '../app/veyrnox/_lib/swapResult.mjs';
+import { hookHarness, nodes } from './helpers/editorRoundHarness.mjs';
+test('swap result reads the asset endpoint after status and retains URLs only in its result', async () => {
+  const calls=[];
+  const result=await readSwapResult('job',async path=>{calls.push(path);return path.endsWith('/asset') ? {url:'https://signed.invalid',mime_type:'video/mp4'}:{state:'succeeded'};});
+  assert.deepEqual(calls,['/jobs/job','/jobs/job/asset']);
+  assert.deepEqual(result,{job_id:'job',asset_url:'https://signed.invalid',mime_type:'video/mp4'});
+  assert.equal(resultAspect('16:9'),16/9); assert.equal(resultAspect(null),9/16);
+});
+test('template lookup rejection keeps the default aspect until video metadata arrives', async () => {
+  const h = hookHarness();
+  const { SwapAttemptResult } = h.load('app/veyrnox/_components/SwapAttemptResult.js', {
+    ...shared, '../_lib/gateway.js': {},
+    '../_lib/useTemplates.js': { fetchTemplate: async () => { throw Error('offline'); } },
+    '../_lib/swapResult.mjs': { resultAspect, readSwapResult: async () => ({ job_id: 'j', asset_url: 'https://fresh.invalid', mime_type: 'video/mp4' }) },
+    '../_lib/resultPresence.js': { useResultPresence() {} },
+    './JobAssetPreview.js': { JobAssetPreview: 'player' },
+  });
+  const render = () => h.render(SwapAttemptResult, { jobId: 'j', templateId: 'template' });
+  try {
+    render(); await new Promise(resolve => setImmediate(resolve));
+    const tree = render();
+    assert.equal(tree.props.style.aspectRatio, 9 / 16);
+    assert.equal(nodes(tree).filter(node => node.type === 'button').length, 0);
+    nodes(tree).find(node => node.type === 'player').props.onLoadedMetadata({ currentTarget: { videoWidth: 1920, videoHeight: 1080 } });
+    assert.equal(render().props.style.aspectRatio, 16 / 9);
+  } finally { h.dispose(); }
+});
+test('asset read failure does not change a successful job or money state', async () => {
+  const calls=[];
+  await assert.rejects(readSwapResult('job',async(path,init)=>{calls.push([path,init]);if(path.endsWith('/asset'))throw Error('offline');return {state:'succeeded'};}),error => error.code === 'asset_unavailable' && error.cause.message === 'offline');
+  assert.ok(calls.every(([,init])=>!init.method));
+  const source=readFileSync(new URL('../app/veyrnox/_components/SwapAttemptResult.js',import.meta.url),'utf8');
+  assert.match(source,/assetUnavailable/);assert.match(source,/onClick=\{retry\}/);
+  assert.doesNotMatch(source,/markJobSettled|localStorage|pushJobHistory/);
+});
+
+test('an unconfirmed status is neutral, never reads an asset, and can be retried', async () => {
+  for (const status of ['queued', 'running', 'failed', 'cancelled', null, 'unreachable']) {
+    const h = hookHarness(), calls = [];
+    let recovered = false;
+    const gatewayFetch = async (path, init) => {
+      calls.push([path, init]);
+      if (path.endsWith('/asset')) return { url: 'https://fresh.invalid', mime_type: 'video/mp4' };
+      if (recovered) return { state: 'succeeded' };
+      if (status === 'unreachable') throw Error('offline');
+      return { state: status };
+    };
+    const { SwapAttemptResult } = h.load('app/veyrnox/_components/SwapAttemptResult.js', {
+      ...shared, '../_lib/gateway.js': { gatewayFetch }, '../_lib/useTemplates.js': {},
+      '../_lib/swapResult.mjs': { readSwapResult, resultAspect },
+      '../_lib/resultPresence.js': { useResultPresence() {} },
+      './JobAssetPreview.js': { JobAssetPreview: 'player' },
+    });
+    const render = () => h.render(SwapAttemptResult, { jobId: 'j' });
+    try {
+      render(); await new Promise(resolve => setImmediate(resolve));
+      const tree = render();
+      const message = nodes(tree).find(node => node.props?.role === 'status').props.children;
+      assert.match(message, /could not confirm this result/);
+      assert.doesNotMatch(message, /ready|file could not be loaded|job failed/i);
+      assert.deepEqual(calls.map(([path]) => path), ['/jobs/j']);
+      recovered = true;
+      nodes(tree).find(node => node.type === 'button').props.onClick();
+      render(); await new Promise(resolve => setImmediate(resolve));
+      assert.ok(nodes(render()).some(node => node.type === 'player'));
+      assert.deepEqual(calls.map(([path]) => path), ['/jobs/j', '/jobs/j', '/jobs/j/asset']);
+      assert.ok(calls.every(([, init]) => !init.method), 'retry only reads; it never changes money state');
+    } finally { h.dispose(); }
+  }
+});
+
+test('swap renders the inline player at landscape aspect and offers retry when a read fails', () => {
+  for (const failed of [null,'asset','result']) {
+    let state=0;
+    const component=load('app/veyrnox/_components/SwapAttemptResult.js',{
+      ...shared,
+      react:{...React,useEffect(){},useRef:()=>({current:false}),useCallback:fn=>fn,useState:initial=>[[{job_id:'j',asset_url:'https://fresh.invalid',mime_type:'video/mp4'},16/9,failed,0][state++],()=>{}]},
+      '../_lib/gateway.js':{},'../_lib/useTemplates.js':{},
+      '../_lib/swapResult.mjs':{readSwapResult,resultAspect},'../_lib/resultPresence.js':{useResultPresence(){}},
+      './JobAssetPreview.js':{JobAssetPreview:({job})=>React.createElement('video',{src:job.asset_url,controls:true})},
+    });
+    const html=renderToStaticMarkup(React.createElement(component.SwapAttemptResult,{jobId:'j',aspect:'16:9'}));
+    if(failed){assert.match(html,/button/);assert.match(html,failed === 'asset' ? /file could not be loaded/ : /could not confirm this result/);assert.doesNotMatch(html,/job failed/i);if(failed === 'result') assert.doesNotMatch(html,/ready/i);}
+    else {assert.match(html,/<video/);assert.match(html,/https:\/\/fresh.invalid/);assert.match(html,/aspect-ratio:1.777/);}
+    if (failed) {
+      state = 0;
+      const status = load('app/veyrnox/_components/SwapAttemptStatus.js', {
+        ...shared, '../_lib/useSwapDraft.js': { useSwapDraft: () => ({ attempts: [{ accountId: 'A', key: 'k', body: {}, state: 'succeeded', job_id: 'j' }] }) },
+        '../_lib/templateSwapRuntime.js': { swapActions: {} },
+        '../_lib/templateSwapClient.mjs': { unsettled: () => false },
+        '../app/create/GeneratingProgress.js': {}, './SwapAttemptResult.js': component,
+        '../_lib/resultPresence.js': { useResultPresence() {} },
+      });
+      const full = renderToStaticMarkup(React.createElement(status.SwapAttemptStatus));
+      assert.equal((full.match(/href="\/app\/library"/g) || []).length, 1);
+      assert.match(full, /Check again/);
+      if (failed === 'result') assert.doesNotMatch(full, /ready/i);
+    }
+  }
 });

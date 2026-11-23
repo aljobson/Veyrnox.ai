@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { TemplateKindSwitch } from '../_components/TemplateKindSwitch';
 import { getT } from '../../../lib/i18n/server';
 import { FILM_STUDIO_ENABLED } from '../_lib/filmStudioSwitch';
-import { templateCards, templateCategories } from '../../../lib/clientTemplates.js';
+import { publicTemplateCards, templateCategories } from '../../../lib/clientTemplates.js';
 
 // Public preset gallery. No card, no cost until you generate.
 export default async function Gallery({ searchParams }) {
@@ -26,7 +26,7 @@ export default async function Gallery({ searchParams }) {
         <p className="mt-6 mb-10 text-lg sm:text-xl text-vx-fg-body max-w-[46ch] leading-[1.5] text-pretty">
           {t(FILM_STUDIO_ENABLED ? 'presets.lead' : 'presets.leadNoFilm')}
         </p>
-        <PresetGallery kind={galleryKind} initial={{ templates: templateCards(), categories: templateCategories() }} />
+        <PresetGallery kind={galleryKind} initial={{ templates: publicTemplateCards(), categories: templateCategories() }} />
       </Main>
       <FooterForest locale={locale} t={t} flush />
     </div>

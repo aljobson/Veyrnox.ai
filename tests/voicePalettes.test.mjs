@@ -99,7 +99,7 @@ test('a sample line also sets the speech language so the job matches the script'
 
 test('Text to Speech saves and consumes the exact submitted Voice Recipe', () => {
   const page = readFileSync(new URL('../app/veyrnox/app/text-to-speech/TextToSpeechStudioClient.js', import.meta.url), 'utf8');
-  assert.match(page, /voice_recipe: \{ \.\.\.settings, voice: voiceId \}/);
+  assert.match(page, /voice_recipe: \{ \.\.\.settings, modelId, voice: voiceId \}/);
   assert.match(page, /voiceRecipe=\{item\.voice_recipe\}/);
   assert.match(page, /voiceRecipe=\{job\.voice_recipe\}/);
   assert.match(page, /consumeVoiceRecipeHandoff\(window\.sessionStorage/);
@@ -119,4 +119,22 @@ test('voice template samples cover ten supported languages and every category wi
       assert.ok(text.length > 10 && text.length <= TTS_SCRIPT_LIMIT, `${language}/${category}`);
     }
   }
+});
+
+test('Qwen recipes preserve model identity, omit MiniMax delivery and cannot apply in Performance Studio', async () => {
+  const { acceptedVoiceRecipe, recipeModelId } = await import('../app/veyrnox/_lib/voicePalettes.js');
+  const { saveAudioReference, readAudioVoiceRecipes } = await import('../app/veyrnox/_lib/audioReferenceShelf.js');
+  const local = storage();
+  const qwen = { modelId: 'qwen3-tts', voice: 'Cherry', language: 'auto' };
+  saveAudioReference(local, 'account-a', { jobId: '11111111-1111-4111-8111-111111111111', name: 'Qwen voice', purpose: 'narration-presenter', voiceRecipe: { ...qwen, speed: 2, emotion: 'happy' } });
+  const [saved] = readAudioVoiceRecipes(local, 'account-a');
+  assert.deepEqual(saved.voiceRecipe, qwen);
+  assert.equal(acceptedVoiceRecipe(saved.voiceRecipe, ['minimax-speech-2.6-hd']), null);
+  assert.deepEqual(acceptedVoiceRecipe(saved.voiceRecipe, ['minimax-speech-2.6-hd', 'qwen3-tts']), qwen);
+  assert.equal(voiceRecipesMatch(qwen, DEFAULT_TTS_SETTINGS), false);
+  assert.equal(voiceRecipesMatch(qwen, { ...qwen, modelId: 'minimax-speech-2.6-hd' }), false);
+  assert.equal(recipeModelId(DEFAULT_TTS_SETTINGS), 'minimax-speech-2.6-hd');
+  const session = storage();
+  assert.equal(stageVoiceRecipeHandoff(session, 'account-a', 'Qwen voice', qwen), true);
+  assert.deepEqual(consumeVoiceRecipeHandoff(session, 'account-a').settings, qwen);
 });

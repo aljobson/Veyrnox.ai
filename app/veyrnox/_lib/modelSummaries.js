@@ -1,6 +1,7 @@
 import { MODELS } from './tokens.js';
 
 const SUMMARY = {
+  'qwen3-tts': 'A script, read aloud in the voice you pick.',
   'wan-2.5-kie': 'Balanced text-to-video for flexible cinematic shots.',
   'kling-2.6-pro-kie': 'Polished motion and controlled cinematic scenes.',
   'kling-3.0-i2v': 'Animate a source image with strong motion control.',

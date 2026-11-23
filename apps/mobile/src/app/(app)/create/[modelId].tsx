@@ -2,8 +2,7 @@ import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/cre
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
-import { fetchFreeAllowance } from '../../../lib/freeAllowance';
-import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
+import { fetchFreeAllowance } from '../../../lib/freeAllowance'; import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
 import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
 import { rememberFilmJob } from '../../../lib/filmGenerationReturns';
 import { rememberSubmitted } from '../../../lib/submittedRequests';
@@ -46,7 +45,7 @@ import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore'
 import { SAVED_DRAFT_VERSION, modelChoices, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect, readDestinationAspect } from '../../../lib/creatorTaste';
-import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
+import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady'; import { fetchPrivatePrompt, placeholderTemplateId } from '../../../lib/privateTemplate'; import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -78,7 +77,7 @@ export default function CreateWithModel() {
     const [model, setModel] = useState<CatalogModel | null>(null); const frame = useFrameChoice(model?.id);
     const [swapScene, setSwapScene] = useState<SwapScene | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
-    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
+    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : ''); const [revealedPrompt, setRevealedPrompt] = useState<string | null>(null); const [revealing, setRevealing] = useState<'idle' | 'loading' | 'error'>('idle');
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
@@ -306,7 +305,8 @@ export default function CreateWithModel() {
     const requestPrompt = !cameraOn && !characterOn ? templateBoundPrompt(contract, text, modelId, references.length) : text;
     let request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: requestPrompt, templateId: prompt === contract?.sourcePrompt && !cameraOn && !characterOn && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, requestPrompt, modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), duration_seconds: !swapScene && isVideo ? duration : null }) : undefined, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
     if (request.templateId && typeof request.extraInputs?.negative_prompt === 'string') request = { ...request, extraInputs: { ...request.extraInputs, negative_prompt: request.extraInputs.negative_prompt.trimEnd() } };
-    const signature = generationSignature(request, n);
+    const templatePromptHidden = !!template && isVideo && !swapScene && typeof presetPrompt === 'string' && prompt === presetPrompt && revealedPrompt !== presetPrompt; const signature = generationSignature(request, n);
+    const revealTemplatePrompt = async () => { const id = placeholderTemplateId(prompt); if (id) { setRevealing('loading'); const full = await fetchPrivatePrompt(api, id); if (!full) { setRevealing('error'); return; } setRecoveredPrompt(full.own); setPrompt(full.own); } setRevealing('idle'); setRevealedPrompt(prompt); }; // private template: Edit prompt reads the words (ADR-0351 am. 23)
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
     const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
@@ -421,9 +421,9 @@ export default function CreateWithModel() {
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('create.workspace.prompt')}</SectionLabel>
-                            <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>
+                            {templatePromptHidden ? null : <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>}
                         </View>
-                        <TextField
+                        {templatePromptHidden ? <TemplatePromptReady status={revealing} onEdit={revealTemplatePrompt} /> : <TextField {...(revealedPrompt !== null && revealedPrompt === presetPrompt ? { autoFocus: true } : {})}
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                             value={prompt}
                             onChangeText={setPrompt}
@@ -431,13 +431,13 @@ export default function CreateWithModel() {
                             placeholderTextColor={styles.mutedInk.color}
                             accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('mobile.prompt'))}
                             multiline
-                        />
+                        />}
                         {promptTooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t(text_.key === 'topic' ? 'public.TemplateRecipe.topicTooLong' : text_.max < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong', { count: text.length, max: text_.max })}</Text> : null}
-                        <View style={styles.skillsRow}>
+                        {templatePromptHidden ? null : <View style={styles.skillsRow}>
                             <Text variant="caption" tone="tertiary" style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
                             <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push(skillPromptHref('prompt-writer', prompt, model.id))} label={t('create.workspace.promptWriter')} />
                             <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push(skillPromptHref('fix-my-prompt', prompt, model.id))} label={t('create.workspace.fixPrompt')} />
-                        </View>
+                        </View>}
                     </View>
                 ) : null}
                 {restored ? (

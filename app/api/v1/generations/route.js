@@ -8,6 +8,7 @@ import { templateSwapImageCounts } from '../../../../lib/templateSwapFullBody.mj
 import { templateSwapPrompt, templateSwapPeoplePrompt } from '../../../../lib/templateSwapClipPrompt.mjs';
 import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
 import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
+import { resolveTemplatePrompt } from '../../../../lib/templatePromptResolve.js';
 import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
 import { replaySwapScene } from '../../../../lib/swapSceneReplay.js';
 import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
@@ -28,6 +29,7 @@ import { resolveRouteSet } from '../../../../lib/supplierRoutesDispatch.js';
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
+import { withDerivedAspect } from '../../../../lib/crunKlingO1Reference.js';
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJobDetailed } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
 import { crunInputRefusal } from '../../../../lib/crunInputRefusal.js';
@@ -117,6 +119,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
     if (['template_swap', 'template_clip', 'swap'].filter(key => Object.hasOwn(body, key)).length > 1) return NextResponse.json({ error: 'template_source_conflict' }, { status: 400 });
+    // ADR-0351 amendment 23: a template run that names its prompt instead of carrying it gets the server's own text here, before every
+    // check below, so limits, refusals, the fingerprint and the stored inputs treat it exactly like a client-sent prompt.
+    const templatePrompt = resolveTemplatePrompt(body, modelId);
+    if (templatePrompt.error) return NextResponse.json({ error: templatePrompt.error }, { status: 400 });
+    if (templatePrompt.body !== body) { body = templatePrompt.body; inputs = body.inputs; }
     const hasTemplateSwap = Object.hasOwn(body, 'template_swap');
     const suppliedInputKeys = Object.keys(inputs);
     // A server-held template clip has its own gate (checkTemplateClipRequest); the template_id contract does not apply to it.
@@ -358,7 +365,8 @@ export async function POST(req) {
     // refuse extras. Legacy records keep the shared-control filtering path.
     // Photo-to-video records that require a prompt while the create page calls it optional: fill an empty one.
     if (record.defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: record.defaultPrompt };
-    const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) });
+    // A record that needs a frame shape (Crun Kling O1 reference) gets it from the uploaded video's own size, never from the client.
+    const modelInputs = withDerivedAspect(record, record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) }), sources);
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);

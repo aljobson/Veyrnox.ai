@@ -1,11 +1,14 @@
 import type { SubmitRequest } from '../generationSubmit';
-import { SPEECH_MODEL_ID } from './model';
+import { isSpeechModelId } from './model';
+import { defaultSpeechSettings, speechContractFor } from './shared';
 import { validateSpeech, type SpeechSettings } from './studio';
 
-export function restoreSpeech(request: SubmitRequest): { script: string; settings: SpeechSettings } | null {
-    if (request?.modelId !== SPEECH_MODEL_ID || typeof request.prompt !== 'string' || !request.extraInputs) return null;
+export function restoreSpeech(request: SubmitRequest): { modelId?: string; script: string; settings: SpeechSettings } | null {
+    if (!isSpeechModelId(request?.modelId) || typeof request.prompt !== 'string' || !request.extraInputs) return null;
     const inputs = request.extraInputs;
-    const settings = { voice: inputs.tts_voice, language: inputs.tts_language, emotion: inputs.tts_emotion,
-        speed: inputs.tts_speed, volume: inputs.tts_volume, pitch: inputs.tts_pitch } as SpeechSettings;
-    return validateSpeech(request.prompt, settings) ? null : { script: request.prompt, settings };
+    if (request.modelId === 'qwen3-tts' && Object.keys(inputs).some(key => !Object.hasOwn(speechContractFor(request.modelId)!.rules, key))) return null;
+    const defaults = request.modelId === 'qwen3-tts' ? defaultSpeechSettings(request.modelId) : {} as Partial<SpeechSettings>;
+    const settings = { ...defaults, voice: inputs.tts_voice, language: inputs.tts_language, emotion: inputs.tts_emotion ?? defaults.emotion,
+        speed: inputs.tts_speed ?? defaults.speed, volume: inputs.tts_volume ?? defaults.volume, pitch: inputs.tts_pitch ?? defaults.pitch } as SpeechSettings;
+    return validateSpeech(request.prompt, settings, request.modelId) ? null : { ...(request.modelId === 'qwen3-tts' ? { modelId: request.modelId } : {}), script: request.prompt, settings };
 }

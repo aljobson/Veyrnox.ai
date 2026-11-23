@@ -1,6 +1,8 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gatewayFetch, notifyBalanceChanged } from './gateway';
+import { getSession, onSessionChange } from '../../lib/authClient';
+import { useResultPresence } from './resultPresence';
 import { markJobSettled } from './jobHistory';
 
 // Consecutive failed poll ticks before we stop and tell the user (~1 minute
@@ -19,16 +21,72 @@ const isPending = (state) => state === 'queued' || state === 'running';
 export function useStudioJobs({ onUnreachable }) {
   const [jobs, setJobs] = useState([]);
   const unreachable = useRef(onUnreachable);
+  const assetReads = useRef(new Map());
+  const stopAssetReads = useCallback(() => {
+    for (const read of assetReads.current.values()) { read.controller.abort(); clearTimeout(read.timer); }
+    assetReads.current.clear();
+  }, []);
+  useEffect(() => stopAssetReads, [stopAssetReads]);
   useEffect(() => { unreachable.current = onUnreachable; }, [onUnreachable]);
+
+  useResultPresence(jobs.map(j => j.job_id));
+  useEffect(() => {
+    let owner = getSession()?.user?.id;
+    return onSessionChange(session => {
+      if (owner !== session?.user?.id) { owner = session?.user?.id; stopAssetReads(); setJobs([]); }
+    });
+  }, [stopAssetReads]);
+  const retryAsset = useCallback(id => {
+    const read = assetReads.current.get(id);
+    read?.controller.abort(); clearTimeout(read?.timer);
+    assetReads.current.delete(id);
+    setJobs(prev => prev.map(j => j.job_id === id ? { ...j, asset_error: false } : j));
+  }, []);
+  useEffect(() => {
+    const reads = assetReads.current;
+    const active = new Set(jobs.map(j => j.job_id));
+    for (const [id, read] of reads) if (!active.has(id)) {
+      read.controller.abort(); clearTimeout(read.timer); reads.delete(id);
+    }
+    // Each id owns its request and retry timer. Another job finishing must not
+    // restart this read, nor consume one of its three actual failure attempts.
+    for (const job of jobs) {
+      const id = job.job_id;
+      if (job.state !== 'succeeded' || job.asset_url || job.asset_error || reads.has(id)) continue;
+      const read = { controller: new AbortController(), failures: 0, status: 'loading', timer: null };
+      reads.set(id, read);
+      const live = () => reads.get(id) === read && !read.controller.signal.aborted;
+      const patch = fields => { if (live()) setJobs(prev => prev.map(j => j.job_id === id ? { ...j, ...fields } : j)); };
+      async function fetchAsset() {
+        if (!live()) return;
+        patch({ asset_loading: true });
+        try {
+          const asset = await gatewayFetch(`/jobs/${id}/asset`, { signal: read.controller.signal });
+          if (!live()) return;
+          if (!asset?.url) throw Error('asset_unavailable');
+          read.status = 'ready';
+          patch({ asset_url: asset.url, mime_type: asset.mime_type, asset_loading: false });
+        } catch (error) {
+          if (!live()) return;
+          if (error?.name !== 'AbortError') read.failures++;
+          if (read.failures >= 3) {
+            read.status = 'error';
+            patch({ asset_loading: false, asset_error: true });
+          } else read.timer = setTimeout(fetchAsset, 1000 * Math.max(1, read.failures));
+        }
+      }
+      void fetchAsset();
+    }
+  }, [jobs]);
 
   const generating = jobs.some((j) => isPending(j.state));
   const pendingKey = jobs.filter((j) => isPending(j.state)).map((j) => j.job_id).join(',');
 
   // A new click's first accepted job replaces the last click's (settled) jobs;
   // the rest of its batch is appended. Until then the old result stays shown.
-  const startJobs = useCallback((job) => setJobs([job]), []);
+  const startJobs = useCallback((job) => { stopAssetReads(); setJobs([job]); }, [stopAssetReads]);
   const addJob = useCallback((job) => setJobs((prev) => [...prev, job]), []);
-  const clearJobs = useCallback(() => setJobs([]), []);
+  const clearJobs = useCallback(() => { stopAssetReads(); setJobs([]); }, [stopAssetReads]);
 
   useEffect(() => {
     if (!pendingKey) return undefined;
@@ -40,14 +98,12 @@ export function useStudioJobs({ onUnreachable }) {
 
     async function pollOne(id) {
       const next = await gatewayFetch(`/jobs/${id}`);
+      if (stopped || !['queued', 'running', 'succeeded', 'failed'].includes(next.state)) return;
       patch(id, next);
+      void markJobSettled(id, next.state, next.error_code, next.credits, next.refunded);
       if (next.state !== 'succeeded' && next.state !== 'failed') return;
-      markJobSettled(id, next.state, next.error_code);
       notifyBalanceChanged();
-      if (next.state === 'succeeded') {
-        const asset = await gatewayFetch(`/jobs/${id}/asset`);
-        patch(id, { asset_url: asset.url, mime_type: asset.mime_type });
-      }
+
     }
 
     const timer = setInterval(async () => {
@@ -76,5 +132,6 @@ export function useStudioJobs({ onUnreachable }) {
     return () => { stopped = true; clearInterval(timer); };
   }, [pendingKey]);
 
-  return { jobs, generating, startJobs, addJob, clearJobs };
+  const results = useMemo(() => jobs.map(j => ({ ...j, retryAsset: () => retryAsset(j.job_id) })), [jobs, retryAsset]);
+  return { jobs: results, generating, startJobs, addJob, clearJobs };
 }

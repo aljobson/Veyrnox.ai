@@ -81,6 +81,9 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     useSyncExternalStore: () => false,
   };
   const stubs = {
+    '../../_lib/useSourceFit': { useSourceFit: () => ({ blocked: false, trimmed: false, min: '', max: '' }) },
+    '../../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) },
+    '../../_lib/templatePromptVisibility': { jobHistoryLabels: (_template, prompt) => ({ prompt: prompt.slice(0, 60), name: prompt.slice(0, 40) }) },
     react,
     '../../../../lib/i18n/locales.mjs': { localeTag: () => 'en-GB' },
     '../../../../components/I18nProvider': { useI18n: () => ({ t: (key, values) => values ? `${key}:${JSON.stringify(values)}` : key, locale: 'en' }) },

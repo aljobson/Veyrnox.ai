@@ -276,5 +276,11 @@
   "musicRender.fade": "Established audio term shared with English; machine translation, native review pending.",
   "editorMotion.linear": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
-  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose."
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose.",
+  "music.create.suno.variety.1": "Same spelling in Portuguese and English for this label: Normal.",
+  "music.create.suno.variety.3": "Same spelling in Portuguese and English for this label: Extra.",
+  "music.create.suno.style.indie": "Same spelling in Portuguese and English for this label: Indie.",
+  "music.create.suno.style.jazz": "Same spelling in Portuguese and English for this label: Jazz.",
+  "music.create.suno.style.pop": "Same spelling in Portuguese and English for this label: Pop.",
+  "music.create.suno.style.rock": "Same spelling in Portuguese and English for this label: Rock."
 }

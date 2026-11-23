@@ -17,9 +17,9 @@ const require = createRequire(import.meta.url);
 function load(path, mocks) {
     const source = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
     const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-    const module = { exports: {} };
-    new Function('require', 'module', 'exports', code)(id => mocks[id] ?? require(id), module, module.exports);
-    return module.exports;
+    const loaded = { exports: {} };
+    new Function('require', 'module', 'exports', code)(id => mocks[id] ?? require(id), loaded, loaded.exports);
+    return loaded.exports;
 }
 function hooks(context = () => null) {
     const values = [], deps = [], cleanups = [];
@@ -148,6 +148,7 @@ test('applying a plan can change the shape anchor; planning blocks but Undo rest
     });
     const { EditSheet } = load('app/veyrnox/_components/EditSheet.js', {
         ...common, react: sheet.react, '../../../lib/videoShape.mjs': shapes,
+        '../_lib/jobHistory': { pushJobHistory() {} },
         '../../../lib/i18n/translate.mjs': { pluralKey: (_t, _locale, key) => key },
         'next/link': 'a', './VideoShapeBadge': { VideoShapeBadge: 'badge' }, './Modal': { Modal: 'modal' },
         './AssetLoadStatus': {}, './ConfirmDialog': { ConfirmDialog: 'confirm' }, './SmartCutPlanner': { SmartCutPlanner },
@@ -260,6 +261,7 @@ test('no paid Smart Cut step is open while the clips\' sound is still being read
         const { SmartCutPlanner } = load('app/veyrnox/_components/SmartCutPlanner.js', { ...common, react: planner.react, '../_lib/smartCutAnalysis': {}, '../_lib/smartCutFillers': {} });
         const { EditSheet } = load('app/veyrnox/_components/EditSheet.js', {
             ...common, react: sheet.react, '../../../lib/videoShape.mjs': shapes,
+            '../_lib/jobHistory': { pushJobHistory() {} },
             '../../../lib/i18n/translate.mjs': { pluralKey: (_t, _locale, key) => key },
             'next/link': 'a', './VideoShapeBadge': { VideoShapeBadge: 'badge' }, './Modal': { Modal: 'modal' },
             './AssetLoadStatus': {}, './ConfirmDialog': { ConfirmDialog: 'confirm' }, './SmartCutPlanner': { SmartCutPlanner },

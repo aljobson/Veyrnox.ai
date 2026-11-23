@@ -3798,6 +3798,30 @@
     "ratio": 2.67
   },
   {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Männlich",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.weirdness",
+    "english": "Weirdness",
+    "translation": "Ungewöhnlichkeit",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Maximal",
+    "ratio": 2.33
+  },
+  {
     "id": "musicActions.action.network",
     "english": "Could not connect. Check your connection and try again.",
     "translation": "Die Verbindung konnte nicht hergestellt werden. Prüfe deine Verbindung und versuche es erneut.",
@@ -5296,5 +5320,11 @@
     "english": "Retry",
     "translation": "Erneut versuchen",
     "ratio": 3.2
+  },
+  {
+    "id": "app.create.templatePrompt.error",
+    "english": "Couldn’t load the prompt. Sign in and try again.",
+    "translation": "Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.",
+    "ratio": 1.6
   }
 ]
