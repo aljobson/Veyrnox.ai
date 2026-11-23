@@ -36,8 +36,8 @@ export function createPreviewer(blobs,proxies=new Map()) {
             const task = painting.then(async () => {
             if (disposed || ticket !== latest) return false;
             const layers = frameLayers(tl, frame);
-            const pics = await resolvePictures(layers, async (k, time, backgroundId) => {
-                const id = backgroundId || tl.video[k].mediaId;
+            const pics = await resolvePictures(layers, async (k, time, relatedMediaId) => {
+                const id = relatedMediaId || tl.video[k].mediaId;
                 if (tl.media[id].kind === 'graphic') { if (!images.has(id)) images.set(id, Promise.resolve(graphicCanvas(tl.media[id].graphic))); return await images.get(id); }
                 if (!blobs.has(id)) return null;
                 if (tl.media[id].kind === 'image') {
@@ -51,7 +51,14 @@ export function createPreviewer(blobs,proxies=new Map()) {
             paintFrame(canvas.getContext('2d'), canvas.width, canvas.height, layers, pics);
             const active = layers.visuals || [layers.base, layers.over].filter(Boolean);
             status={sources:active.map((v,i)=>{const id=tl.video[v.k].mediaId,pic=layers.visuals?pics.visuals[i]:(i===0?pics.base:pics.over);return {id,proxy:proxies.has(id),width:pic?.width||0,height:pic?.height||0};})};
-            const used = new Set(active.map(v => `${tl.video[v.k].mediaId}:${tl.video[v.k].id}`)), usedMedia = new Set(active.flatMap(v => [tl.video[v.k].mediaId,...(v.clip?.background?.type==='image'?[v.clip.background.mediaId]:[])]));
+            const used = new Set(active.flatMap(v => [
+                `${tl.video[v.k].mediaId}:${tl.video[v.k].id}`,
+                ...(v.clip?.semanticMask?.dynamic?[`${v.clip.semanticMask.mediaId}:${tl.video[v.k].id}`]:[]),
+            ])), usedMedia = new Set(active.flatMap(v => [
+                tl.video[v.k].mediaId,
+                ...(v.clip?.background?.type==='image'?[v.clip.background.mediaId]:[]),
+                ...(v.clip?.semanticMask?.mediaId?[v.clip.semanticMask.mediaId]:[]),
+            ]));
             for (const [key, entry] of sinks) if (!used.has(key)) { entry.input?.dispose(); sinks.delete(key); }
             for (const [id, picture] of images) if (!usedMedia.has(id)) { picture.then(b => b.close?.(), () => {}); images.delete(id); }
             return true;

@@ -8,6 +8,7 @@ export interface NativeEditorMediaModule {
     inspect(account: string, project: string, owner: string, token: string, uri: string): Promise<Record<string, unknown>>;
     sampleFrames(account: string, project: string, owner: string, token: string, request: unknown): Promise<Record<string, unknown>>;
     decodePcm(account: string, project: string, owner: string, token: string, request: unknown): Promise<Record<string, unknown>>;
+    mixAudio(account: string, project: string, owner: string, token: string, mixJSON: string, sources: Readonly<Record<string, string>>, frames: number, fps: number): Promise<Record<string, unknown>>;
     beginEncode(account: string, project: string, owner: string, token: string, request: unknown): Promise<Record<string, unknown>>;
     appendFrameBatch(account: string, project: string, owner: string, token: string, sessionId: string, frames: readonly FrameDescriptor[]): Promise<Record<string, unknown>>;
     finishEncode(account: string, project: string, owner: string, token: string, sessionId: string, audioArtifactId: string | null): Promise<Record<string, unknown>>;

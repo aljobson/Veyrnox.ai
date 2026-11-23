@@ -6,6 +6,7 @@ import { addToDraft, NEW_CHAT, readDraft } from '../../_lib/chatLocal';
 import { Modal } from '../Modal';
 import { useMusicServerState } from './useMusicServerState';
 import { MusicDurationField } from './MusicDurationField';
+import { MusicCandidateProgress } from './MusicCandidateProgress';
 import { useMusicDuration } from './useMusicDuration';
 import { MusicServerCandidate } from './MusicServerCandidate';
 import { MusicTempoKeyControls, tempoKeyInvalid, tempoKeyQuoteFields } from './MusicTempoKeyControls';

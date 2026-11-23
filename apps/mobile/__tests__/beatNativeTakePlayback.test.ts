@@ -4,6 +4,7 @@ import { fixedDoc, deferred } from './beatNativeFixtures';
 import { fakeContext, takeRow } from './beatNativeTakeFixtures';
 import type { BeatAsset, BeatDoc } from '../src/lib/beatNative/doc';
 import type { NativeAssetPort } from '../src/lib/beatNative/nativeAssets';
+import { createNativeHeldAssets } from '../src/lib/beatNative/nativeHeldAssets';
 function recorded() { const doc = addAudioTrack({ ...fixedDoc(), tempo: { bpm: 120 } }), row = { ...takeRow(), samples: new Float32Array(10000), length: 10000 }; return { row, doc: commitRecording(doc, { trackId: doc.tracks.at(-1)!.id, start: 3840, length: 15360, takes: [{ asset: takeAsset(row) }] }) }; }
 function remote(asset: BeatAsset, reverse = false): BeatDoc {
     const doc = addAudioTrack({ ...fixedDoc(), tempo: { bpm: 120 } }), track = doc.tracks.at(-1)!;
@@ -55,22 +56,23 @@ test('reverse copies every channel without mutating the decoded buffer and is ca
     expect([...sources[0].buffer.getChannelData(1)]).toEqual([8, 7, 6, 5]);
 });
 test('a remote load that resolves after stop cannot populate or schedule the next run', async () => {
-    const { context, sources } = fakeContext(), first = deferred<ReturnType<typeof stereo>>(), load = jest.fn(() => first.promise);
-    const player = createTakePlayback(context, undefined, undefined, { load } as unknown as NativeAssetPort), doc = remote(song());
+    const { context, sources } = fakeContext(), first = deferred<ReturnType<typeof stereo>>(), load = jest.fn(() => first.promise), releaseArchives = jest.fn();
+    const player = createTakePlayback(context, undefined, undefined, { load, releaseArchives } as unknown as NativeAssetPort), doc = remote(song());
     const stale = player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 1 }, { startSec: 0, endSec: 2 });
-    player.stop(); first.resolve(stereo()); await stale;
+    player.stop(); expect(releaseArchives).toHaveBeenCalledTimes(1); first.resolve(stereo()); await stale;
     load.mockResolvedValue(stereo());
     await player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 2 }, { startSec: 0, endSec: 2 });
     expect(load).toHaveBeenCalledTimes(2); expect(sources).toHaveLength(1);
 });
-test('web stem regions remain silent without blocking the rest of native playback', async () => {
+test('stem regions load through the native asset port and schedule like other remote audio', async () => {
     const { context, sources } = fakeContext();
     const stem: BeatAsset = { source: 'stem', ref: { songId: '1', versionId: '2', requestId: '3', part: 'vocals' },
         name: 'Vocals', durationSec: 2, bpm: null, sourceChannels: 2, encodedBytes: 100 };
-    const load = jest.fn(), player = createTakePlayback(context, undefined, undefined, { load } as NativeAssetPort), doc = remote(stem);
+    const load = jest.fn(async () => stereo()), player = createTakePlayback(context, undefined, undefined, { load } as NativeAssetPort), doc = remote(stem);
     await expect(player.preload(doc)).resolves.toBeUndefined();
     await expect(player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 1 }, { startSec: 0, endSec: 2 })).resolves.toBeUndefined();
-    expect(load).not.toHaveBeenCalled(); expect(sources).toEqual([]);
+    expect(load).toHaveBeenCalledWith(stem, 120, context, expect.any(AbortSignal));
+    expect(sources).toHaveLength(1); expect(sources[0].buffer).toBe(await load.mock.results[0].value);
 });
 test('a decoded set over the run budget fails before network loading instead of thrashing', async () => {
     const { context } = fakeContext(), load = jest.fn(), first = song(), second = { ...song('target'), name: 'Second' };
@@ -83,18 +85,37 @@ test('a decoded set over the run budget fails before network loading instead of 
     await expect(player.preload(doc)).rejects.toThrow('audio_playback_too_large');
     expect(load).not.toHaveBeenCalled();
 });
-test('a held region stays silent without blocking available audio or re-signing on replay', async () => {
+test('two distinct stem requests count two retained archives before playback loading', async () => {
+    const makeStem = (requestId: string, part: 'vocals' | 'instrumental'): BeatAsset => ({ source: 'stem',
+        ref: { songId: '1', versionId: '2', requestId, part }, name: part, durationSec: 40, bpm: null, sourceChannels: 2, encodedBytes: 1 });
+    const first = makeStem('3', 'vocals'), second = makeStem('4', 'instrumental');
+    const doc = remote(first), track = doc.tracks.at(-1)!;
+    doc.assets!.a2 = second;
+    track.regions.push({ id: 'r2', start: 1920, length: 1920, assetId: 'a2', phaseSec: 0, gainDb: 0, fadeIn: null, fadeOut: null, reverse: false });
+    const load = jest.fn(), player = createTakePlayback(fakeContext().context, undefined, undefined, { load } as NativeAssetPort);
+    await expect(player.preload(doc)).rejects.toThrow('audio_playback_too_large');
+    expect(load).not.toHaveBeenCalled();
+});
+test('shared held state silences playback until the export retry clears it, then playback can recover', async () => {
     const { context, sources } = fakeContext(), good = song(), held = { ...song('target'), name: 'Held' };
     const doc = remote(good), track = doc.tracks.at(-1)!; doc.assets!.a2 = held;
     track.regions.push({ id: 'r2', start: 0, length: 1920, assetId: 'a2', phaseSec: 0, gainDb: 0, fadeIn: null, fadeOut: null, reverse: false });
-    const error = Object.assign(new Error('held'), { status: 404, code: 'held' }), report = jest.fn();
-    const load = jest.fn(async (asset: BeatAsset) => { if (asset.name === 'Held') throw error; return stereo(); });
-    const player = createTakePlayback(context, undefined, undefined, { load } as NativeAssetPort, report);
+    const error = Object.assign(new Error('held'), { status: 404, code: 'held' }), report = jest.fn(), heldAssets = createNativeHeldAssets();
+    let refused = true;
+    const load = jest.fn(async (asset: BeatAsset) => {
+        if (asset.name === 'Held' && refused) { heldAssets.markHeld(asset); throw error; }
+        return stereo();
+    });
+    const player = createTakePlayback(context, undefined, undefined, { load, heldAssets } as NativeAssetPort, report);
     await player.preload(doc);
     await player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 1 }, { startSec: 0, endSec: 2 });
     expect(sources).toHaveLength(1); expect(report).toHaveBeenCalledTimes(1); expect(report).toHaveBeenCalledWith(held, error);
     player.stop(); await player.preload(doc);
     expect(load.mock.calls.filter(([asset]) => asset.name === 'Held')).toHaveLength(1); expect(report).toHaveBeenCalledTimes(2);
+    refused = false; heldAssets.retry(); player.stop(); await player.preload(doc);
+    expect(load.mock.calls.filter(([asset]) => asset.name === 'Held')).toHaveLength(2);
+    await player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 2 }, { startSec: 0, endSec: 2 });
+    expect(sources).toHaveLength(3);
 });
 test('retryable offline regions are retried on the next run, and muted regions preload when they fit', async () => {
     const { context } = fakeContext(), doc = remote(song()); doc.tracks.at(-1)!.mute = true;
@@ -109,8 +130,19 @@ test('a decoded region over the cache budget stays silent instead of stopping a 
         getChannelData: jest.fn(() => new Float32Array(0)) };
     const player = createTakePlayback(context, undefined, undefined,
         { load: jest.fn(async () => oversized) } as unknown as NativeAssetPort, report);
-    await expect(player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 1 }, { startSec: 0, endSec: 2 }, { recording: true }))
+    await expect(player.window(doc, { fromSec: 0, toSec: 0.15, contextTime: 1 }, { startSec: 0, endSec: 2 }, { recording: true, assetMode: 'all-supported' }))
         .resolves.toBeUndefined();
     expect(sources).toEqual([]); expect(report).toHaveBeenCalledTimes(1);
     expect((report.mock.calls[0][1] as Error).message).toBe('audio_playback_too_large');
+});
+test('recording asset modes preserve take-only microphone backing and enable supported MIDI-capture backing', async () => {
+    const { context, sources } = fakeContext(), doc = remote(song()), load = jest.fn(async () => stereo());
+    const player = createTakePlayback(context, undefined, undefined, { load } as NativeAssetPort);
+    const window = { fromSec: 0, toSec: 0.15, contextTime: 1 }, bounds = { startSec: 0, endSec: 2 };
+    await player.preload(doc, { recording: true, assetMode: 'takes-only' });
+    await player.window(doc, window, bounds, { recording: true, assetMode: 'takes-only' });
+    expect(load).not.toHaveBeenCalled(); expect(sources).toHaveLength(0);
+    await player.preload(doc, { recording: true, assetMode: 'all-supported' });
+    await player.window(doc, window, bounds, { recording: true, assetMode: 'all-supported' });
+    expect(load).toHaveBeenCalledTimes(1); expect(sources).toHaveLength(1);
 });

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "limits": {
+    "maximumFrames": 1800,
+    "batchSize": 8,
+    "maximumOpticalHeight": 480,
+    "maximumLostFrames": 8
+  },
+  "regionTrack": {
+    "frame": { "width": 96, "height": 64, "seed": 1337 },
+    "region": { "x": 0.3, "y": 0.3, "width": 0.2, "height": 0.2 },
+    "translation": { "x": 6, "y": 2 },
+    "expectedRegion": { "x": 0.3625, "y": 0.33125, "width": 0.2, "height": 0.2 },
+    "expectedCentre": { "x": 0.4625, "y": 0.43125 }
+  },
+  "lostSubject": {
+    "verifiedCentre": { "x": 0.4625, "y": 0.43125 },
+    "heldCentres": 8
+  },
+  "smoothing": {
+    "radius": 1,
+    "rawX": [0.2, 0.2, 0.8, 0.8, 0.8],
+    "rawY": [0.5, 0.5, 0.5, 0.5, 0.5],
+    "expected60X": [0.2, 0.225, 0.25, 0.275, 0.3],
+    "expected24X": [0.2, 0.2625, 0.325, 0.3875, 0.45]
+  }
+}

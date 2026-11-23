@@ -170,3 +170,14 @@ test('Discard rechecks a recovery row that became referenced after the panel ref
     await h.store.flushBeat(h.id); expect((await loadBeatTake(row.id))?.state).toBe('committed');
     await h.controller.dispose();
 });
+
+test('replacement settles every registered recorder in order, retains peers on unregister, and blocks on any rejection', async () => {
+    const id = 'multi-finalizer', order: string[] = [];
+    const first = registerRecordingFinalizer(id, async () => { order.push('first'); throw new Error('midi_failed'); });
+    const removed = registerRecordingFinalizer(id, async () => { order.push('removed'); });
+    const last = registerRecordingFinalizer(id, async () => { order.push('last'); });
+    removed();
+    await expect(beforeReplace(id)).rejects.toThrow('midi_failed');
+    expect(order).toEqual(['first', 'last']); expect(replacementUnderway(id)).toBe(false);
+    first(); last();
+});

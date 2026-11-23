@@ -9,7 +9,7 @@ test.each(Object.entries(APP_CATALOGS))('%s supplies all Beat AI strings and pla
         expect((translated.match(/\{\w+\}/g) ?? []).sort()).toEqual((value.match(/\{\w+\}/g) ?? []).sort());
     }
 });
-test('unknown web copy becomes a phone generic message; stems cannot build a quote', () => {
+test('unknown web copy becomes a phone generic message; stems use the normal source requirement', () => {
     expect(phoneTranslator('app.music.beat.ai.a999')).not.toContain('app.music');
-    expect(() => buildDraft(doc(), 'stems', '', '', '', true, null, null)).toThrow('split_stems_web_only');
+    expect(() => buildDraft(doc(), 'stems', '', '', '', true, null, null)).toThrow('source_required');
 });

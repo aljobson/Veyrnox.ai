@@ -5898,6 +5898,60 @@
     "ratio": 1.78
   },
   {
+    "id": "beat.padRecord.disable",
+    "english": "Turn off pad recording",
+    "translation": "Désactiver l’enregistrement des pads",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "L’enregistrement des pads est désactivé",
+    "ratio": 1.95
+  },
+  {
+    "id": "beat.padRecord.drumOnly",
+    "english": "Select a drum track to use pads and steps.",
+    "translation": "Sélectionnez une piste de batterie pour utiliser les pads et les pas.",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.midiRecord.record",
+    "english": "Record MIDI",
+    "translation": "Enregistrer en MIDI",
+    "ratio": 1.73
+  },
+  {
+    "id": "beat.midiRecord.status.recording",
+    "english": "Recording MIDI",
+    "translation": "Enregistrement MIDI en cours",
+    "ratio": 2
+  },
+  {
+    "id": "beat.midiRecord.status.finishing",
+    "english": "Saving MIDI recording…",
+    "translation": "Enregistrement MIDI en cours de sauvegarde…",
+    "ratio": 1.95
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Réessayer la sauvegarde",
+    "ratio": 2.3
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveNew",
+    "english": "Save as new beat",
+    "translation": "Sauvegarder comme nouveau beat",
+    "ratio": 1.88
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveAsNew",
+    "english": "Save as new beat",
+    "translation": "Sauvegarder comme nouveau beat",
+    "ratio": 1.88
+  },
+  {
     "id": "beat.pad.kick",
     "english": "Kick",
     "translation": "Grosse caisse",
@@ -6544,6 +6598,84 @@
     "english": "Select a drum track to add a region",
     "translation": "Sélectionnez une piste de batterie pour ajouter une région",
     "ratio": 1.66
+  },
+  {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Décalage désactivé",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Décalage activé",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Insérer un espace d’une mesure",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.label",
+    "english": "Search clips",
+    "translation": "Rechercher des clips",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.results",
+    "english": "Clip search results",
+    "translation": "Résultats de recherche de clips",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Bibliothèque musicale",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.library.title",
+    "english": "Add from Music Library",
+    "translation": "Ajouter depuis la bibliothèque musicale",
+    "ratio": 1.77
+  },
+  {
+    "id": "beat.library.close",
+    "english": "Close Music Library",
+    "translation": "Fermer la bibliothèque musicale",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.library.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.library.empty.title",
+    "english": "No owned songs yet",
+    "translation": "Aucun morceau à vous pour le moment",
+    "ratio": 1.94
+  },
+  {
+    "id": "beat.library.searchEmpty",
+    "english": "No owned songs match “{query}”.",
+    "translation": "Aucun de vos morceaux ne correspond à « {query} ».",
+    "ratio": 1.61
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
   },
   {
     "id": "beat.snap.bar",
@@ -7312,6 +7444,48 @@
     "english": "Clip Finder handles videos up to 720p.",
     "translation": "Le Détecteur de clips prend en charge les vidéos jusqu’à 720p.",
     "ratio": 1.63
+  },
+  {
+    "id": "editorLocalExport.cloud",
+    "english": "Use cloud export instead",
+    "translation": "Utiliser plutôt l’exportation dans le cloud",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorNativeMotion.flicker",
+    "english": "Reduce flicker",
+    "translation": "Réduire le scintillement",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorPersonMask.title",
+    "english": "Person mask",
+    "translation": "Masque de personne",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Conserver",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorPersonMask.hair",
+    "english": "Hair",
+    "translation": "Cheveux",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorPersonMask.remove",
+    "english": "Remove person mask",
+    "translation": "Supprimer le masque de personne",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorSpeech.autoEdit",
+    "english": "Automatic captions currently need a forward clip at normal speed. Reset reverse, freeze and speed changes first.",
+    "translation": "Les sous-titres automatiques nécessitent pour l’instant un clip lu dans le bon sens à vitesse normale. Réinitialisez d’abord la lecture inversée, les images figées et les changements de vitesse.",
+    "ratio": 1.73
   },
   {
     "id": "label.Terms",

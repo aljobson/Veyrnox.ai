@@ -44,6 +44,7 @@ export type BeatDoc = {
 export type PadInfo = { id: PadId; label: string };
 export type KitInfo = { id: string; label: string; hint: string };
 export type StepEvent = { trackId: string; pad: PadId; velocity: number };
+export type RecordTarget = { pattern: PatternSlot; step: number };
 export type Edit = (doc: BeatDoc) => BeatDoc;
 
 const d = document as unknown as {
@@ -53,9 +54,13 @@ const d = document as unknown as {
     songEnd(doc: BeatDoc): number;
 };
 const o = ops as unknown as {
+    BeatRefusal: new (message: string, code?: string) => Error & { code?: string };
     toggleStep: (doc: BeatDoc, pad: PadId, step: number) => BeatDoc;
+    cycleVelocity: (doc: BeatDoc, pad: PadId, step: number, direction?: number) => BeatDoc;
+    addHitToPattern: (doc: BeatDoc, pattern: PatternSlot, pad: PadId, step: number) => BeatDoc;
     setTempo: (doc: BeatDoc, bpm: number) => BeatDoc;
     rename: (doc: BeatDoc, title: string) => BeatDoc;
+    renameTrack: (doc: BeatDoc, id: string, name: string) => BeatDoc;
     addTrack: (doc: BeatDoc, kit: string) => BeatDoc;
     removeTrack: (doc: BeatDoc, id: string) => BeatDoc;
     addRegion: (doc: BeatDoc, trackId: string, start: number, pattern: PatternSlot) => BeatDoc;
@@ -65,7 +70,7 @@ const o = ops as unknown as {
     setTrackSolo: (doc: BeatDoc, id: string, value: boolean) => BeatDoc;
     setTrackGain: (doc: BeatDoc, id: string, value: number) => BeatDoc;
     setTrackPan: (doc: BeatDoc, id: string, value: number) => BeatDoc;
-    tryOp: (doc: BeatDoc, operation: Edit) => { doc: BeatDoc; refused?: string };
+    tryOp: (doc: BeatDoc, operation: Edit) => { doc: BeatDoc; refused?: string; code?: string };
     moveRegion: (doc: BeatDoc, id: string, start: number, trackId: string) => BeatDoc;
     copyRegion: (doc: BeatDoc, id: string, start: number, trackId: string) => BeatDoc;
     trimRegionStart: (doc: BeatDoc, id: string, start: number) => BeatDoc;
@@ -85,14 +90,17 @@ const o = ops as unknown as {
     addAudioRegion: (doc: BeatDoc, asset: Record<string, unknown>, trackId: string | null, start: number) => BeatDoc;
     nextId: (doc: BeatDoc, prefix: string) => string;
 };
-const e = events as unknown as { eventsAtStep: (doc: BeatDoc, step: number) => StepEvent[] };
+const e = events as unknown as {
+    eventsAtStep: (doc: BeatDoc, step: number) => StepEvent[];
+    recordTarget: (doc: BeatDoc, globalStep: number, editTrackId?: string) => RecordTarget | null;
+};
 const t = time as unknown as { barTicks: number; snapTick: (tick: number, snap?: number) => number; clampLocator: (tick: number, end: number) => number; eventTime: (straight: number, step: number, bpm: number, swing: number) => number; stepSeconds: (bpm: number) => number };
 const i = instruments as unknown as { DRUM_PADS: PadInfo[]; PRESETS: { drums: KitInfo[] } };
 
 export const { BEAT_LIMITS, createBeat, validateBeat, songEnd } = d;
-export const { toggleStep, setTempo, rename, removeTrack, setTrackKit, setTrackMute, setTrackSolo, setTrackGain, setTrackPan, tryOp } = o;
+export const { BeatRefusal, toggleStep, cycleVelocity, addHitToPattern, setTempo, rename, renameTrack, removeTrack, setTrackKit, setTrackMute, setTrackSolo, setTrackGain, setTrackPan, tryOp } = o;
 export const { addRegion, moveRegion, copyRegion, resizeRegion, trimRegionStart, splitRegion, duplicateRegion, deleteRegion, setRegionPattern, selectPattern, setSwing, setSteps, copyPattern, clearPattern, setMetronome, setCycle, setView, setAudioRegion, addAudioRegion } = o;
-export const { eventsAtStep } = e;
+export const { eventsAtStep, recordTarget } = e;
 export const { eventTime, stepSeconds, snapTick, clampLocator, barTicks } = t;
 export const DRUM_PADS: readonly PadInfo[] = i.DRUM_PADS;
 export const DRUM_KITS: readonly KitInfo[] = i.PRESETS.drums;

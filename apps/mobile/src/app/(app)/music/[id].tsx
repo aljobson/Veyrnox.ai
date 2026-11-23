@@ -3,7 +3,7 @@ import { MusicSongActions } from '../../../components/music/MusicSongActions';
 import { subscribeSongChanges } from '../../../lib/music/songChanges';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
@@ -18,6 +18,7 @@ import { songPlayback } from '../../../lib/music/player';
 import type { MusicSongDetail } from '../../../lib/music/types';
 import { t, rawText } from '../../../lib/i18n';
 import { ds } from '../../../theme';
+import { SafeContentScrollView } from '../../../components/SafeContentScrollView';
 
 export default function SongDetail() {
     const { id, revision } = useLocalSearchParams<{ id: string; revision?: string }>();
@@ -66,7 +67,7 @@ export default function SongDetail() {
         if (!song || trashed) return null;
         try { return songPlayback(song); } catch { return null; }
     }, [song, trashed]);
-    return <ScrollView style={s.screen} contentContainerStyle={s.content}>
+    return <SafeContentScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: song?.title ?? t('music.title') }} />
         {!result ? <VeyLoader label={t('music.loading')} showLabel /> : null}
         {result?.state === 'off' ? <EmptyState title={t('music.off')} body={t('music.offBody')} actionLabel={t('music.back')} href="/music" /> : null}
@@ -93,6 +94,6 @@ export default function SongDetail() {
                     { text: rawText(t('music.cancel')), style: 'cancel' }, { text: rawText(t('music.trash')), style: 'destructive', onPress: () => void mutate('trash') },
                 ])} /> : null}
         </> : null}
-    </ScrollView>;
+    </SafeContentScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.lg }, group: { gap: ds.space.sm } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.lg }, group: { gap: ds.space.sm } }));

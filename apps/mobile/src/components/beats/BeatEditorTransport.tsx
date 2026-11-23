@@ -6,10 +6,11 @@ import { t } from '../../lib/i18n';
 import { beatEditorLayout } from '../../lib/beatNative/editorLayout';
 import { ds, TEXT_SCALE } from '../../theme';
 import type { PatternSlot } from '../../lib/beatNative/doc';
+import type { BeatMidiRecordPhase } from './BeatMidiRecordPanel';
 
 const PATTERNS: readonly PatternSlot[] = ['A', 'B', 'C', 'D'];
 
-export function BeatEditorTransport({ playing, starting, locked, pattern, patternDisabled, canUndo, canRedo, patternControlsRef, onPattern, onPatternControls, onUndo, onRedo, onPlay, onMixer }: {
+export function BeatEditorTransport({ playing, starting, locked, pattern, patternDisabled, canUndo, canRedo, patternControlsRef, midiRecordControlRef, midiRecordPhase, midiRecordDisabled = false, midiRecordHint, mixerDisabled = false, onPattern, onPatternControls, onUndo, onRedo, onPlay, onMixer, onMidiRecord }: {
     playing: boolean;
     starting: boolean;
     locked: boolean;
@@ -18,17 +19,23 @@ export function BeatEditorTransport({ playing, starting, locked, pattern, patter
     canUndo: boolean;
     canRedo: boolean;
     patternControlsRef?: Ref<ComponentRef<typeof Pressable>>;
+    midiRecordControlRef?: Ref<ComponentRef<typeof Pressable>>;
+    midiRecordPhase?: BeatMidiRecordPhase;
+    midiRecordDisabled?: boolean;
+    midiRecordHint?: string;
+    mixerDisabled?: boolean;
     onPattern(pattern: PatternSlot): void;
     onPatternControls(): void;
     onUndo(): void;
     onRedo(): void;
     onPlay(): void;
     onMixer(): void;
+    onMidiRecord?(): void;
 }) {
     const s = useThemedStyles(sheets);
-    const { width, fontScale } = useWindowDimensions();
+    const { width, height, fontScale } = useWindowDimensions();
     const { settings } = useAppearance();
-    const layout = beatEditorLayout(width, fontScale, TEXT_SCALE[settings.textSize]);
+    const layout = beatEditorLayout(width, height, fontScale, TEXT_SCALE[settings.textSize]);
     const active = playing || starting;
     const scrollActions = layout === 'accessible';
     const compactIcons = layout === 'compact';
@@ -44,9 +51,17 @@ export function BeatEditorTransport({ playing, starting, locked, pattern, patter
     </View>;
     const playback = <View style={[s.group, scrollActions && s.groupAccessible]} testID="beat-editor-playback-controls">
         <Button testID="beat-editor-play" size="md" variant="primary" icon={active ? 'pauseCircle' : 'play'} iconOnly={compactIcons} label={t(active ? 'beat.stop' : 'beat.play')} disabled={locked} onPress={onPlay} containerStyle={[s.play, scrollActions && s.playAccessible]} />
-        <Button testID="beat-editor-mixer" size="md" variant="secondary" icon="sliders" iconOnly={compactIcons} label={t('beatMix.title')} onPress={onMixer} containerStyle={[s.control, scrollActions && s.controlAccessible]} />
+        <Button testID="beat-editor-mixer" size="md" variant="secondary" icon="sliders" iconOnly={compactIcons} label={t('beatMix.title')} disabled={mixerDisabled} onPress={onMixer} containerStyle={[s.control, scrollActions && s.controlAccessible]} />
     </View>;
-    return <SafeAreaView edges={['bottom']} testID="beat-editor-transport" accessible={false} accessibilityRole="toolbar" accessibilityLabel={t('beat.transport')} style={s.safeArea}>
+    const midiLabel = midiRecordPhase === 'countIn'
+        ? t('beat.midiRecord.cancelCountIn')
+        : midiRecordPhase === 'starting'
+            ? t('beat.midiRecord.cancelStarting')
+            : midiRecordPhase === 'recording' || midiRecordPhase === 'finishing'
+                ? t('beat.midiRecord.stop')
+                : t('beat.midiRecord.record');
+    const midiActive = midiRecordPhase !== undefined && midiRecordPhase !== 'idle';
+    return <SafeAreaView edges={['left', 'right', 'bottom']} testID="beat-editor-transport" accessible={false} accessibilityRole="toolbar" accessibilityLabel={t('beat.transport')} style={s.safeArea}>
         <View style={[s.bar, layout === 'regular' && s.regular, layout === 'accessible' && s.accessible]}>
             <View testID="beat-editor-pattern-selector" style={s.patternRow}>
                 <SegmentedControl value={pattern} disabled={patternDisabled} accessibilityLabel={t('beat.patterns')}
@@ -62,6 +77,14 @@ export function BeatEditorTransport({ playing, starting, locked, pattern, patter
             </ScrollView> : <View testID={`beat-editor-transport-controls-${layout}`} style={s.controls}>
                 {patternAction}{history}{playback}
             </View>}
+            {midiRecordPhase !== undefined ? <View testID="beat-midi-record-row" style={s.recordRow}>
+                <Button ref={midiRecordControlRef} testID="beat-midi-record-control" size="md"
+                    variant={midiActive ? 'destructive' : 'primary'} label={midiLabel}
+                    accessibilityHint={midiRecordHint}
+                    accessibilityState={{ busy: midiRecordPhase === 'starting' || midiRecordPhase === 'finishing' }}
+                    disabled={!onMidiRecord || (!midiActive && midiRecordDisabled)}
+                    onPress={onMidiRecord} containerStyle={s.recordControl} />
+            </View> : null}
         </View>
     </SafeAreaView>;
 }
@@ -85,4 +108,6 @@ const sheets = themedStyles(p => ({
     patternActionAccessible: { flex: 0, minWidth: 190 },
     play: { flex: 1.2 },
     playAccessible: { flex: 0, minWidth: 170 },
+    recordRow: { width: '100%', maxWidth: 820, alignSelf: 'center' },
+    recordControl: { width: '100%', minHeight: 44 },
 }));

@@ -14,6 +14,7 @@
         "EXPO_PUBLIC_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_FULL_EDITOR_ENABLED": "true",
         "EXPO_PUBLIC_EDITOR_ORGANIZATION_ENABLED": "true",
+        "RCT_NEW_ARCH_ENABLED": "1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
@@ -32,7 +33,8 @@
         "EXPO_PUBLIC_CINEMA_DEVICE_UPLOAD_ENABLED": "true",
         "EXPO_PUBLIC_PASSKEYS_IOS_ENABLED": "true",
         "EXPO_PUBLIC_CREATOR_PROFILE_ENABLED": "true",
-        "EXPO_PUBLIC_YOUR_WINS_ENABLED": "false"
+        "EXPO_PUBLIC_YOUR_WINS_ENABLED": "false",
+        "RCT_NEW_ARCH_ENABLED": "1"
       }
     },
     "production": {
@@ -54,7 +56,8 @@
         "EXPO_PUBLIC_YOUR_WINS_ENABLED": "true",
         "EXPO_PUBLIC_EDITOR_AI_EDIT_ENABLED": "true",
         "EXPO_PUBLIC_EDITOR_SPEECH_CUT_ENABLED": "true",
-        "EXPO_PUBLIC_BEST_CUT_ENABLED": "true"
+        "EXPO_PUBLIC_BEST_CUT_ENABLED": "true",
+        "RCT_NEW_ARCH_ENABLED": "1"
       }
     },
     "production-simulator": {

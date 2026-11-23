@@ -22,6 +22,9 @@
  */
 
 import { readBoundedBody } from '../../lib/boundedBody.js';
+import { CRUN_FLUX_2_PRO_ASPECTS, CRUN_FLUX_2_PRO_PROMPT_MAX, CRUN_KLING_AVATAR_PROMPT_MAX } from '../../lib/crunPrimaryCapabilities.js';
+import { templateFacePrompt } from '../../lib/templateFaceWording.mjs';
+import { SEEDANCE_R2V_MODEL, buildSeedanceReferenceRequest } from '../../lib/crunSeedanceReference.js';
 
 export const CRUN_API_BASE = 'https://api.crun.ai';
 
@@ -63,17 +66,26 @@ const IMAGE_MODELS = {
     // Docs read 2026-10-26: resolution 1K | 2K | 4K, default 1K; the 3-credit price on Crun's page is the 1K row.
     'google/nano-banana-2-1': { kind: 'image', aspects: new Set(['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9']), fixed: { resolution: '1K' } },
     'bytedance/seedream-4': { kind: 'image', aspects: new Set(['1:1']), fixed: { resolution: '2K', num_outputs: 1 } },
+    // Built by buildFluxRequest: unlike the rows above it takes a seed and has a 4:3 default.
+    'flux-2-pro': { kind: 'image', aspects: new Set(CRUN_FLUX_2_PRO_ASPECTS), fixed: { resolution: '1K', output_format: 'png' } },
 };
+const FLUX_2_PRO_MODEL = 'flux-2-pro';
+const KLING_AVATAR_MODEL = 'kling/avatar';
 const WAN_ANIMATE_MODEL = 'wan/2-2-animate-replace';
 // Template swaps only (ADR-0351 amendment 21); the public Kling O1 offer stays on fal and never reaches this builder.
 const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
+// Our endpoint name -> the resolution sent to Crun's one model id (ADR-0351 amendment 22).
+const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'kling/o1-r2v-1080': '1080p' });
+const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
+// These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
+const redactsRefusal = model => isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL;
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_O1_SWAP_MODEL || m[1] === SUNO_MODEL) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === SUNO_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
 /** 'video', 'image' or 'audio' for a Crun endpoint this adapter owns, else null. */
@@ -90,7 +102,10 @@ export function endpointKind(endpoint) {
 export function buildRequest(target, inputs) {
     if (target.model === SUNO_MODEL) return buildSunoRequest(inputs);
     if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
-    if (target.model === KLING_O1_SWAP_MODEL) return buildKlingO1SwapRequest(inputs);
+    if (isKlingO1Swap(target.model)) return buildKlingO1SwapRequest(inputs, KLING_O1_SWAP_TIERS[target.model]);
+    if (target.model === FLUX_2_PRO_MODEL) return buildFluxRequest(inputs);
+    if (target.model === KLING_AVATAR_MODEL) return buildKlingAvatarRequest(inputs);
+    if (target.model === SEEDANCE_R2V_MODEL) return buildSeedanceReferenceRequest(inputs);
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
     const kling = KLING_MODELS[target.model];
@@ -194,6 +209,14 @@ export function classifyTaskInfoResponse(httpStatus, body, kind = 'video') {
         : { ...base, ...interpreted };
 }
 
+function klingO1RefusalReason(message) {
+    const text = String(message || '');
+    if (/moderat|sensitive|policy|nsfw|prohibit/i.test(text)) return 'content_policy';
+    if (/insufficient|balance|quota/i.test(text)) return 'insufficient_balance';
+    if (/invalid|parameter|unsupported/i.test(text)) return 'invalid_input';
+    return '';
+}
+
 /** Public/log-safe projection of a Crun failure. Never copies message/msg. */
 export function sanitizeCrunFailure(value) {
     const errorCode = /^[a-z0-9_]{1,64}$/.test(String(value?.errorCode || '')) ? value.errorCode : 'provider_error';
@@ -231,7 +254,7 @@ function klingO1SwapPrompt(prompt, imageCount) {
         .replaceAll('the element images', 'the reference images');
 }
 
-function buildKlingO1SwapRequest(inputs) {
+function buildKlingO1SwapRequest(inputs, resolution) {
     const allowed = new Set(['prompt', 'duration_seconds', 'video_url', 'elements']);
     for (const key of Object.keys(inputs)) {
         if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
@@ -251,7 +274,7 @@ function buildKlingO1SwapRequest(inputs) {
     if (prompt.length > KLING_PROMPT_MAX || /@(?:video|element|image)/i.test(prompt)) return { ok: false, error: 'inputs_invalid:prompt' };
     return { ok: true, body: { model: KLING_O1_SWAP_MODEL, input: {
         prompt, reference_videos: [inputs.video_url], reference_video_type: 'base_video', reference_images: images,
-        resolution: '720p', aspect_ratio: 'auto', audio: false,
+        resolution, aspect_ratio: 'auto', audio: false,
     } } };
 }
 
@@ -283,6 +306,41 @@ function buildKlingRequest(target, spec, inputs) {
     return { ok: true, body: { model: spec.apiModel, input } };
 }
 
+function refuseOtherKeys(inputs, allowed) {
+    const extra = Object.keys(inputs).find(key => !allowed.has(key));
+    if (extra) return { ok: false, error: `inputs_key_not_allowed:${extra.slice(0, 32)}` };
+    // Both offers are one priced unit: the page's default 5 is accepted and any other length is refused, as for the fal rows.
+    // A null length means "not set": the route prices it as the default unit, and no length is sent to Crun.
+    return inputs.duration_seconds === undefined || inputs.duration_seconds === null || inputs.duration_seconds === 5 ? null : { ok: false, error: 'duration_not_supported' };
+}
+
+function buildFluxRequest(inputs) {
+    const refused = refuseOtherKeys(inputs, new Set(['prompt', 'seed', 'aspect_ratio', 'duration_seconds']));
+    if (refused) return refused;
+    const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
+    if (!prompt || prompt.length > CRUN_FLUX_2_PRO_PROMPT_MAX) return { ok: false, error: 'inputs_invalid:prompt' };
+    const aspect = inputs.aspect_ratio === undefined ? '4:3' : inputs.aspect_ratio;
+    if (!IMAGE_MODELS[FLUX_2_PRO_MODEL].aspects.has(aspect)) return { ok: false, error: 'inputs_invalid:aspect_ratio' };
+    const { seed } = inputs;
+    if (seed !== undefined && (!Number.isInteger(seed) || seed < 0 || seed > 2147483647)) return { ok: false, error: 'inputs_invalid:seed' };
+    return { ok: true, body: { model: FLUX_2_PRO_MODEL, input: {
+        prompt, aspect_ratio: aspect, ...IMAGE_MODELS[FLUX_2_PRO_MODEL].fixed, ...(seed === undefined ? {} : { seed }),
+    } } };
+}
+
+function buildKlingAvatarRequest(inputs) {
+    const refused = refuseOtherKeys(inputs, new Set(['prompt', 'image_url', 'audio_url', 'duration_seconds']));
+    if (refused) return refused;
+    if (!isHttpsUrl(inputs.image_url)) return { ok: false, error: 'inputs_invalid:image_url' };
+    if (!isHttpsUrl(inputs.audio_url)) return { ok: false, error: 'inputs_invalid:audio_url' };
+    if (inputs.prompt !== undefined && typeof inputs.prompt !== 'string') return { ok: false, error: 'inputs_invalid:prompt' };
+    const prompt = (inputs.prompt || '').trim();
+    if (prompt.length > CRUN_KLING_AVATAR_PROMPT_MAX) return { ok: false, error: 'inputs_invalid:prompt' };
+    return { ok: true, body: { model: KLING_AVATAR_MODEL, input: {
+        mode: 'std', image_url: inputs.image_url, audio_url: inputs.audio_url, ...(prompt ? { prompt } : {}),
+    } } };
+}
+
 function buildImageRequest(target, spec, inputs) {
     const prompt = typeof inputs.prompt === 'string' ? inputs.prompt.trim() : '';
     if (!prompt) return { ok: false, error: 'prompt_required' };
@@ -302,6 +360,13 @@ export async function submitTask(job, cfg) {
     const req = buildRequest(target, job.inputs || {});
     if (!req.ok) return { ok: false, outcome: 'rejected', error: req.error, clientError: req.error };
     if (!cfg?.apiKey) return { ok: false, outcome: 'rejected', error: 'provider_not_configured' };
+    // The same submit-only template wording fal's Kling Pro request gets (ADR-0351); stored inputs never change.
+    let requestBody = req.body;
+    if (cfg.faceIdentity === true && target.model === 'kling/v3') {
+        const worded = templateFacePrompt(req.body.input.prompt);
+        if (worded === null) console.warn('face_wording_omitted_length', job.job_id);
+        else requestBody = { ...req.body, input: { ...req.body.input, prompt: worded } };
+    }
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 15000);
@@ -313,10 +378,12 @@ export async function submitTask(job, cfg) {
                 redirect: 'manual',
                 signal: controller.signal,
                 headers: { 'X-API-KEY': cfg.apiKey, 'Content-Type': 'application/json' },
-                body: JSON.stringify(req.body),
+                body: JSON.stringify(requestBody),
             });
         } catch (err) {
             // Nothing is known about whether the task was created: ambiguous (0329).
+            // Models whose refusal text may carry signed media keep the legacy `transport` string and shape.
+            if (redactsRefusal(target.model)) return { ok: false, outcome: 'unknown', error: 'transport' };
             return { ok: false, outcome: 'unknown', error: 'provider_unreachable', errorCode: err?.name === 'AbortError' ? 'provider_timeout' : 'provider_unreachable' };
         }
         let data = null;
@@ -332,8 +399,20 @@ export async function submitTask(job, cfg) {
         // Generic image/video/swap callers only understand rejected vs unknown.
         // Music's durable outbox consumes the typed scope/class directly and may
         // turn account, route, or rate refusals into READY/DEFERRED itself.
+        // Models whose refusal text may carry signed media keep the reviewed reason slug in the legacy
+        // `crun <http>/<code>: <reason>` shape (callers and failover match on it); never vendor text.
+        let error = safe.errorCode;
+        if (redactsRefusal(target.model)) {
+            const reason = klingO1RefusalReason(data && (data.message || data.msg));
+            error = `crun ${res.status}/${Number.isInteger(classified.bodyCode) ? classified.bodyCode : 0}${reason ? `: ${reason}` : ''}`;
+        }
+        // These models keep exactly their legacy result shape for ordinary refusals; only the supplier-level
+        // classes (account, route, deferred) carry a typed scope so the shared Crun boundary can act on them.
+        if (redactsRefusal(target.model) && !['account', 'route', 'deferred'].includes(classified.class)) {
+            return { ok: false, outcome: classified.class === 'unknown' ? 'unknown' : 'rejected', error };
+        }
         return { ok: false, outcome: classified.class === 'unknown' ? 'unknown' : 'rejected',
-            error: safe.errorCode, ...safe, scope: classified.class };
+            ...safe, error, scope: classified.class };
     } finally {
         clearTimeout(timer);
     }

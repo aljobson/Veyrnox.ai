@@ -53,7 +53,7 @@ function EpisodePlayer({ slug, id }: { slug: string; id: string }) {
     const retry = () => { currentAttempt.current += 1; setStatus(null); setAttempt(currentAttempt.current); };
     return (
         <View style={[styles.screen, { paddingTop: insets.top }]}>
-            <View style={styles.bar}>
+            <View style={[styles.bar, { paddingLeft: insets.left + 8, paddingRight: insets.right + 8 }]}>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('cinemaEmbed.close')} style={[touchTarget, styles.close]} onPress={close}>
                     <Icon name="arrowLeft" size={24} tint={colors.text} />
                 </Pressable>
@@ -62,7 +62,7 @@ function EpisodePlayer({ slug, id }: { slug: string; id: string }) {
             {context ? <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
                 <YouTubeEmbed key={attempt} ref={player} videoId={context.episode.videoId} durationSeconds={context.episode.durationSeconds}
                     title={context.episode.title} onReady={() => handleReady(attempt)} onError={cause => handleError(attempt, cause)} onBlocked={() => handleBlocked(attempt)} />
-                <View style={styles.content}>
+                <View style={[styles.content, { paddingLeft: insets.left + 16, paddingRight: insets.right + 16 }]}>
                     {statusText ? <Text accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined}>{statusText}</Text> : null}
                     {status?.kind === 'error' ? <Button label={t('cinemaEmbed.retry')} onPress={retry} /> : null}
                     <Text accessibilityRole="header">{context.series.title} · {t('cinema.title.position', { season: context.series.season, episode: context.episode.position })}</Text>
@@ -72,7 +72,7 @@ function EpisodePlayer({ slug, id }: { slug: string; id: string }) {
                         onPress={() => router.replace({ pathname: '/editorial/[id]', params: { id: context.next!.id, series: slug } })} /> : null}
                     {authStatus === 'signedIn' ? <Button label={t('cinemaSeries.allEpisodes')} variant="secondary" onPress={allEpisodes} /> : null}
                 </View>
-            </ScrollView> : <Text style={styles.content}>{t('cinemaSeries.unavailable')}</Text>}
+            </ScrollView> : <Text style={[styles.content, { paddingLeft: insets.left + 16, paddingRight: insets.right + 16 }]}>{t('cinemaSeries.unavailable')}</Text>}
         </View>
     );
 }

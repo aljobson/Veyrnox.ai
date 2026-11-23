@@ -38,15 +38,15 @@ Read from source (`app/veyrnox/_lib/music/beat/*`, `_components/music/beat/*`, `
 | **IndexedDB** (takes, 1 GB guard) | `beatStore.js`, `beatTakeStore.js`, `instrumentTakeDb.js` | Works, but see recommendation item 2 |
 | `localStorage` (latency calibration, 90-day expiry) | `beatLatency.mjs` | Fine |
 | Permissions Policy `microphone=(self)` on `/app/music/beats/:path*` | `next.config.mjs` (ADR-0349) | Applies only when the page is loaded from the real origin as a full navigation |
-| Same-origin API with the user's session | `useBeatCloudSync.js`, `beatAi*` | The existing S1 hosted-editor handoff (`webEditorSession.ts`: access token injected by script before load, refresh token stays native) covers it. Reusable as is |
+| Same-origin API with the user's session | `useBeatCloudSync.js`, `beatAi*` | Not part of this isolated diagnostic. Production Beats uses native API calls; no session token enters this WebView. |
 | `document.hidden` / `visibilitychange` / `pagehide` | scheduler, cloud sync | Behaviour on app background is the open question; see recommendation item 1 |
 
-**Cost of loading standalone.** The real engine (`createBeatEngine` plus voices, mix graph, effects, wavetable, natural voices, the real capture worklet as text) bundles with esbuild to **34 KB minified in one HTML page** with no network request. The full editor is a Next route (`/app/music/beats/[id]`, client-only via `next/dynamic`, `ssr: false`) behind `MUSIC_RUNTIME_FLAGS.beatEditor`, so loading it means a signed-in session, the Cloudflare Worker, and the app's CSP. The harness uses the stripped engine entry; the full hosted page can be tried by pointing the existing S1 harness at `/app/music/beats/new` (one constant, `EDITOR_PATH` in `src/lib/editorSpike.ts`).
+**Cost of loading standalone.** The real engine (`createBeatEngine` plus voices, mix graph, effects, wavetable, natural voices, the real capture worklet as text) bundles with esbuild to **34 KB minified in one HTML page** with no network request. The harness uses only this stripped engine entry. It never loads a hosted editor page or receives a session token.
 
 ## What the app already has
 
 - `react-native-webview` **14.0.1** is installed and in `Podfile.lock`: no new native module is needed to try this.
-- Existing web view bridges: `TurnstileView`, `YouTubeEmbed`, `OddlingFigure/Portrait`, `LiveCameraView` (`mediaCapturePermissionGrantType="grant"`), `VisionBridge`, `Wig3dBridge`, `WobnimoView`, and the S1 hosted editor. The hosted editor is the only one that carries a session: `webEditorSession.ts` writes a seed (access token only, `refresh_token: null`) into `localStorage` through `injectedJavaScriptBeforeContentLoaded`, refuses to run off the app origin, and the harness limits navigation to that origin. That pattern authenticates the beat page too.
+- The exact remaining `react-native-webview` imports are `TurnstileView`, `YouTubeEmbed` and this build-gated diagnostic harness. `__tests__/noWebBreakout.test.ts` pins that allowlist. None receives an app session token.
 - Gaps for audio in a web view: `UIBackgroundModes: audio` absent; `expo-audio` `enableBackgroundPlayback` false; mic permission text names voiceover only; Android `recordAudioAndroid` false.
 
 ## The harness (dev-only, in this PR)
@@ -122,13 +122,11 @@ Use one iPhone (any recent model) and one mid-range Android (for example a 2021 
 
 **F. Memory and kills**
 13. Run steps 3 and 7 three times in a row without restarting the app. Note any `terminated` log line (iOS content process killed) or Android "render process gone". [ ]
-14. Optional: open the full hosted editor by changing `EDITOR_PATH` in `src/lib/editorSpike.ts` to `/app/music/beats/new` and running the S1 harness: add three tracks and record a take for 30 s; note load time, any freeze, and whether the take is still there after force-quitting and reopening. [ ]
 
 **Pass reading:** B4 and B6 under 100 ms on both phones, C7 clean on both, D9 and D10 "kept playing". Any miss on B or C ends the web view path for pads. Any "no" on D confirms recommendation item 1; D is expected to be "no" on iOS.
 
 ## Unverified
 
 - Every WebKit and phone behaviour above. Items 1 and 2 of the recommendation are source and configuration reading, not tests.
-- Whether the hosted `/app/music/beats/[id]` page loads and plays inside the web view with the injected session (code path reused from S1, not run here for beats).
 - Whether iOS clears IndexedDB for an app web view under storage pressure or after a 7-day idle window; stated as a risk, not confirmed.
 - Android WebView behaviour for any of the above.

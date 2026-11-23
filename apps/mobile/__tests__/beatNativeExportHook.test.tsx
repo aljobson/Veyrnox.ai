@@ -6,7 +6,7 @@ import * as RN from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { BeatExportSheet } from '../src/components/beats/BeatExportSheet';
 import { beforeReplace } from '../src/lib/beatNative/recordingFinalizers';
-import { resizeRegion } from '../src/lib/beatNative/doc';
+import { addAudioRegion, resizeRegion, type BeatRemoteAsset } from '../src/lib/beatNative/doc';
 import { createRoot, type Root } from 'test-renderer';
 import { useBeatExport } from '../src/lib/beatNative/useBeatExport';
 import { ApiError } from '../src/lib/api';
@@ -15,6 +15,7 @@ import { exportOptions, offlineFixture } from './beatNativeExportFixtures';
 import { t } from '../src/lib/i18n';
 import { beatStore } from '../src/lib/beatNative/store';
 import * as native from '../src/lib/beatNative/nativeContext';
+import { createNativeHeldAssets } from '../src/lib/beatNative/nativeHeldAssets';
 const mockRequest = jest.fn(), mockRender = jest.fn(), mockShare = jest.fn(), mockSweep = jest.fn();
 let mockGeneration = 0, mockOwner = USER;
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: mockGeneration, beginSessionTask: () => {
@@ -30,24 +31,46 @@ void [RN.View, RN.Text, RN.Pressable, RN.Modal, RN.TextInput];
 let root: Root, view: ReturnType<typeof useBeatExport>, recording = false;
 let doc = fixedDoc();
 const prepare = jest.fn(async () => {});
-function Harness() { view = useBeatExport(doc, prepare, recording); return null; }
+let heldAssets = createNativeHeldAssets();
+function Harness() { view = useBeatExport(doc, prepare, recording, false, heldAssets); return null; }
 const reservation = { song_id: PROJECT, version_id: VERSION, committed: false, upload_url: 'https://bucket.r2.cloudflarestorage.com/file', headers: { 'content-type': 'audio/wav' } };
 let upload: ReturnType<typeof uploadFixture>, oldXHR: typeof XMLHttpRequest;
 beforeEach(() => {
-    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockGeneration = 0; mockOwner = USER; recording = false; doc = fixedDoc();
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); mockGeneration = 0; mockOwner = USER; recording = false; doc = fixedDoc(); heldAssets = createNativeHeldAssets();
     jest.clearAllMocks(); prepare.mockResolvedValue(); mockRequest.mockRejectedValue(new ApiError(400, 'invalid_inputs'));
     jest.spyOn(native, 'loadNativeOfflineContext').mockReturnValue(offlineFixture().Context);
-    mockRender.mockImplementation(async (_doc, _options, consume, deps) => { deps.progress(0, 10); await consume({ bytes: new ArrayBuffer(48), filename: 'Mix.wav', report: { gaps: ['dynamicsCompressor'] } }); });
+    mockRender.mockImplementation(async (_doc, _options, consume, deps) => { deps.progress(0, 10); await consume({ bytes: new ArrayBuffer(48), filename: 'Mix.wav', report: { gaps: ['connectReturnsVoid'] }, selection: { range: 'song' } }); });
     mockShare.mockResolvedValue(undefined); oldXHR = global.XMLHttpRequest; upload = uploadFixture(); global.XMLHttpRequest = upload.makeRequest as unknown as typeof XMLHttpRequest;
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMocks(); global.XMLHttpRequest = oldXHR; });
 const mount = async () => { await act(async () => root.render(<Harness />)); };
-test('release precedes render, share done reports compressor once, and capture failure never renders', async () => {
+test('release precedes render, a parity export has no compressor warning, and capture failure never renders', async () => {
     await mount(); expect(view.state).toBe('ready'); expect(view.probe).toBe('on');
     await act(async () => { await view.run(exportOptions); });
-    expect(prepare.mock.invocationCallOrder[0]).toBeLessThan(mockRender.mock.invocationCallOrder[0]); expect(view.state).toBe('shared'); expect(view.compressor).toBe(true);
+    expect(prepare.mock.invocationCallOrder[0]).toBeLessThan(mockRender.mock.invocationCallOrder[0]); expect(view.state).toBe('shared');
     mockRender.mockClear(); prepare.mockRejectedValueOnce(new Error('capture'));
     await act(async () => { await view.run(exportOptions); }); expect(view.state).toBe('error'); expect(mockRender).not.toHaveBeenCalled();
+});
+test.each(['share', 'save'] as const)('remote %s preflights after playback release and confirms immediately before delivery', async action => {
+    const remote: BeatRemoteAsset = { source: 'song', name: 'Music track', bpm: null, durationSec: 2, sourceChannels: 2, encodedBytes: 100,
+        ref: { songId: '11111111-1111-4111-8111-111111111111', versionId: '22222222-2222-4222-8222-222222222222', jobId: '33333333-3333-4333-8333-333333333333' } };
+    doc = addAudioRegion(fixedDoc(), remote, null, 0); await mount(); mockRequest.mockClear();
+    mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
+        if (path.includes('/jobs/')) return { url: 'https://private.test/signed' };
+        if (JSON.parse(String(init?.body)).action === 'reserve') return { ...reservation, committed: true };
+        throw new Error('unexpected request');
+    });
+    await act(async () => { await view.run(exportOptions, action === 'save' ? { title: 'Remote mix', rights: false } : undefined); });
+    const paths = mockRequest.mock.calls.map(call => call[0]);
+    expect(paths.filter(path => path.includes('/jobs/'))).toHaveLength(2);
+    expect(prepare.mock.invocationCallOrder[0]).toBeLessThan(mockRequest.mock.invocationCallOrder[0]);
+    if (action === 'share') {
+        expect(mockRequest.mock.invocationCallOrder[1]).toBeLessThan(mockShare.mock.invocationCallOrder[0]);
+        expect(view.state).toBe('shared');
+    } else {
+        expect(paths).toEqual([expect.stringContaining('/jobs/'), expect.stringContaining('/jobs/'), '/api/v1/music/mixdowns']);
+        expect(view.state).toBe('saved');
+    }
 });
 test('recording blocks render/save; save renders a 16-bit stereo mix even when stems/24-bit selected', async () => {
     recording = true; await mount(); await act(async () => { await view.run(exportOptions); }); expect(prepare).not.toHaveBeenCalled();
@@ -79,7 +102,7 @@ test('N7-R1: generation change during the last share releases busy and Close wor
     const gate = deferred(), close = jest.fn();
     jest.mocked(Sharing.shareAsync).mockReturnValueOnce(gate.promise);
     mockShare.mockImplementationOnce(() => Sharing.shareAsync('file:///cache/Mix.wav'));
-    const sheet = () => <BeatExportSheet doc={doc} recording={false} prepare={prepare} onClose={close} />;
+    const sheet = () => <BeatExportSheet doc={doc} recording={false} prepare={prepare} heldAssets={heldAssets} onClose={close} />;
     const button = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
     await act(async () => root.render(sheet()));
     await act(async () => { const b = button(t('beatExport.render')); (b.props.onClick ?? b.props.onPress)(); await tick(); });
@@ -194,7 +217,7 @@ test('a lost commit response retries with the same rendered bytes and key', asyn
     expect(view.state).toBe('error'); expect(view.failedAction).toBe('save');
     mockRequest.mockResolvedValueOnce({ ...reservation, committed: true });
     await act(async () => { await view.run(exportOptions, { title: 'Mix', rights: false }); });
-    expect(view.state).toBe('saved'); expect(view.compressor).toBe(true); expect(mockRender).toHaveBeenCalledTimes(1);
+    expect(view.state).toBe('saved'); expect(mockRender).toHaveBeenCalledTimes(1);
     const keys = posts('reserve').map(c => JSON.parse(c[1].body).idempotency_key);
     expect(keys).toHaveLength(2); expect(keys[0]).toBe(keys[1]);
 });

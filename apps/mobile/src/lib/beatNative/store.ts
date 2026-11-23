@@ -4,6 +4,7 @@ import { getCacheUser, subscribeCacheUser } from '../appCache';
 import { migratedBeatFiles } from './legacyMigration';
 import { validCloudLink, type BeatRecord, type CloudLink } from './rules';
 import { createPersistedListeners } from './persistedListeners';
+import { assertBeatWritable } from './takeShared';
 
 export const newId = (): string => 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => Math.floor(Math.random() * 16).toString(16));
 export type SaveState = 'saved' | 'saving' | 'error' | 'busy';
@@ -119,6 +120,16 @@ export function createBeatStore(source: BeatFiles | AccountBeatFiles = migratedB
             const doc = createBeat({ id: newId(), title });
             records = new Map([[doc.id, { id: doc.id, ...(owner ? { owner } : {}), doc, revision: 1, updatedAt: doc.updatedAt }], ...records]);
             schedule(doc.id); return doc;
+        },
+        /** Insert a complete validated shared document without bypassing account or write-version fences. */
+        addBeatFromDocument(doc: BeatDoc, expectedOwner?: string): boolean {
+            if ((accounts && expectedOwner !== undefined && expectedOwner !== owner) || (accounts && !owner)
+                || records.has(doc.id) || barriers.has(doc.id) || deleted.has(doc.id) || !validateBeat(doc).ok) return false;
+            try { assertBeatWritable(doc); } catch { return false; }
+            const saved = structuredClone(doc);
+            records = new Map([[saved.id, { id: saved.id, ...(owner ? { owner } : {}), doc: saved, revision: 1, updatedAt: saved.updatedAt }], ...records]);
+            schedule(saved.id);
+            return true;
         },
         putBeat(doc: BeatDoc): boolean {
             const previous = records.get(doc.id);

@@ -1,0 +1,7 @@
+{
+  "cases": [
+    { "name": "in-range signal is unchanged", "channels": [[0.5, -1, 0.25], [0.125, -0.5, 0]], "expected": [[0.5, -1, 0.25], [0.125, -0.5, 0]] },
+    { "name": "one shared peak preserves stereo balance", "channels": [[2, -1], [0.5, -4]], "expected": [[0.5, -0.25], [0.125, -1]] },
+    { "name": "over-range relative level is retained", "channels": [[1.5, 0.75], [-0.375, 0]], "expected": [[1, 0.5], [-0.25, 0]] }
+  ]
+}

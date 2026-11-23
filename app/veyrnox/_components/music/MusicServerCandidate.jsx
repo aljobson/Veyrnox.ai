@@ -1,6 +1,7 @@
 'use client';
 
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
+import { MusicCandidateProgress } from './MusicCandidateProgress';
 import { useI18n } from '../../../../components/I18nProvider';
 import { tOr } from '../../../../lib/i18n/translate.mjs';
 
@@ -15,7 +16,7 @@ export function MusicServerCandidate({ candidate, title }) {
         <div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{t('app.music.suno.version', { label })}</p><h3 className="mt-1 font-vx text-xl font-black">{title || t('app.music.suno.privateDraft', { label })}</h3></div>
         <span className={`rounded-full border px-3 py-1 text-xs font-bold ${state === 'ready' ? 'border-vx-accent/50 text-vx-accent' : state === 'refunded' || state === 'failed' ? 'border-vx-danger/50 text-vx-danger' : 'border-vx-border text-vx-fg-muted'}`}>{stateLabel}</span>
       </div>
-      {state === 'running' || state === 'queued' ? <div className="mt-5" aria-label={t('app.music.suno.versionStatus', { label, status: stateLabel.toLocaleLowerCase() })} aria-busy="true"><div className="vx-shimmer h-2 rounded-full bg-vx-base"/><p className="mt-3 text-sm text-vx-fg-muted">{t('app.music.suno.candidateIndependent')}</p></div> : null}
+      {state === 'running' || state === 'queued' ? <div aria-label={t('app.music.suno.versionStatus', { label, status: stateLabel.toLocaleLowerCase() })} aria-busy="true"><MusicCandidateProgress label={label} /></div> : null}
       {state === 'ready' && candidate.audio_url ? <MusicPrivateAudio className="mt-5 w-full" controls preload="none" src={candidate.audio_url} aria-label={t('app.music.suno.playVersion', { label })} /> : null}
       {state === 'refunded' ? <p className="mt-4 text-sm text-vx-fg-body">{t('app.music.suno.candidateRefunded')}</p> : null}
       {state === 'failed' ? <p className="mt-4 text-sm text-vx-fg-body">{t('app.music.suno.candidateFailed')}</p> : null}

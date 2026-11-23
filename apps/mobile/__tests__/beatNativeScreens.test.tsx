@@ -16,14 +16,32 @@ import { audibleGain, addKitTrack, createBeat, eventsAtStep, hasHit, loopSteps, 
 import { BeatVersionsSheet } from '../src/components/beats/BeatVersionsSheet';
 import { BeatCloudConflictModal } from '../src/components/beats/BeatCloudConflictModal';
 import { BeatCloudSync, type SyncView } from '../src/lib/beatNative/cloudSync';
-import { deferred, memoryFiles, project, version, USER, OTHER } from './beatNativeFixtures';
+import { deferred, memoryFiles, project, tick, version, USER, OTHER } from './beatNativeFixtures';
 import { versionReason, versionTime } from '../src/lib/beatNative/versions';
 import type { ApiClient } from '../src/lib/api';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
 import { BeatRecordPanel } from '../src/components/beats/BeatRecordPanel';
-beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner(USER));
+import { addInstrumentTrack, asMidiDoc } from '../src/lib/beatNative/midi';
+import { bindCacheUser } from '../src/lib/appCache';
+jest.mock('expo-crypto', () => ({
+    CryptoDigestAlgorithm: { SHA256: 'SHA-256' },
+    digestStringAsync: async (_algorithm: string, value: string) => require('node:crypto').createHash('sha256').update(value).digest('hex'),
+}));
+beforeAll(async () => {
+    await bindCacheUser(USER);
+    require('../src/lib/beatNative/store').beatStore.setOwner(USER);
+});
 
-jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => undefined, remove: async () => undefined, list: async () => [] }) }));
+jest.mock('../src/lib/beatNative/persist', () => {
+    const actual = jest.requireActual('../src/lib/beatNative/persist');
+    const data = new Map<string, string>();
+    return { ...actual, documentFiles: () => ({
+        read: async (name: string) => data.get(name) ?? null,
+        write: async (name: string, value: string) => { data.set(name, value); },
+        remove: async (name: string) => { data.delete(name); },
+        list: async () => [...data.keys()],
+    }) };
+});
 
 let mockExportProps: { prepare(): Promise<void>; recording: boolean; replacing: boolean } | undefined;
 jest.mock('../src/components/beats/BeatExportSheet', () => ({ BeatExportSheet: (props: typeof mockExportProps) => { mockExportProps = props; return null; } }));
@@ -34,13 +52,21 @@ const mockBeginSessionTask = () => ({ gen: mockGeneration, user: USER, current: 
 let mockGeneration = 0;
 const mockPush = jest.fn();
 let mockParams: { id: string } = { id: 'x' };
-const mockAudio = { play: jest.fn(async (): Promise<'started' | 'cancelled' | 'busy'> => 'started'), stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined) };
+const mockAudio = {
+    play: jest.fn(async (): Promise<'started' | 'cancelled' | 'busy'> => 'started'),
+    stop: jest.fn(), isPlaying: jest.fn(), hitPad: jest.fn(() => 4.2),
+    nearestStepAt: jest.fn(() => ({ step: 3, time: 4.1 })),
+    setTrackMix: jest.fn(), close: jest.fn(async () => undefined),
+    now: jest.fn(() => 1), releaseKeys: jest.fn(), noteOn: jest.fn(async () => undefined), noteOff: jest.fn(),
+    playRange: jest.fn(async () => ({ contextStart: 1, recordContextStart: 1 })),
+};
+const mockCreateBeatAudio = jest.fn(() => mockAudio);
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken,
     generation: mockGeneration, beginSessionTask: mockBeginSessionTask }) }));
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
     useLocalSearchParams: () => mockParams, useFocusEffect: (cb: () => void) => require('react').useEffect(cb, [cb]) }));
-jest.mock('../src/lib/beatNative/audio', () => ({ ...jest.requireActual('../src/lib/beatNative/audio'), createBeatAudio: () => mockAudio }));
+jest.mock('../src/lib/beatNative/audio', () => ({ ...jest.requireActual('../src/lib/beatNative/audio'), createBeatAudio: () => mockCreateBeatAudio() }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
 void [RN.View, RN.ScrollView, RN.Pressable, RN.Text, RN.Modal];
 
@@ -53,7 +79,7 @@ const press = async (label: string) => {
 };
 const text = (value: string) => root.container.queryAll(n => n.children.includes(value));
 const testId = (value: string) => root.container.queryAll(n => n.props.testID === value);
-beforeEach(() => { configureBeatTakeStorage(createTakeFiles(takeIO())); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); resetBeats(); jest.clearAllMocks(); jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() })); mockGeneration = 0; mockGetAccessToken.mockImplementation(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`); mockApi.request.mockResolvedValue({ projects: [] }); });
+beforeEach(() => { configureBeatTakeStorage(createTakeFiles(takeIO())); (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); resetBeats(); jest.clearAllMocks(); mockCreateBeatAudio.mockImplementation(() => mockAudio); mockAudio.now.mockReturnValue(1); mockAudio.playRange.mockResolvedValue({ contextStart: 1, recordContextStart: 1 }); jest.spyOn(RN.AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() })); mockGeneration = 0; mockGetAccessToken.mockImplementation(async () => `h.${btoa(JSON.stringify({ sub: USER }))}.s`); mockApi.request.mockResolvedValue({ projects: [] }); });
 afterEach(async () => { await act(async () => root.unmount()); });
 
 describe('beats home', () => {
@@ -111,6 +137,69 @@ describe('beat editor', () => {
         expect(testId('pad-selected-kick')).toHaveLength(0);
         expect(testId('pad-selected-snare')).toHaveLength(1);
     });
+    test('pad recording off or armed while stopped auditions without writing', async () => {
+        const doc = await open();
+        const clap = t('beat.pad.hit', { pad: t('beat.pad.clap') });
+        await press(clap);
+        expect(mockAudio.hitPad).toHaveBeenLastCalledWith('clap', '808');
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+        expect(mockAudio.nearestStepAt).not.toHaveBeenCalled();
+
+        await press(t('beat.padRecord.enable'));
+        expect(text(t('beat.padRecord.status.armed')).length).toBeGreaterThan(0);
+        await press(clap);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+        expect(mockAudio.nearestStepAt).not.toHaveBeenCalled();
+    });
+    test('armed ordinary playback records one undoable nearest-step hit and Stop preserves arming', async () => {
+        const doc = await open();
+        const clap = t('beat.pad.hit', { pad: t('beat.pad.clap') });
+        await press(t('beat.padRecord.enable'));
+        await press(t('beat.play'));
+        expect(text(t('beat.padRecord.status.recording')).length).toBeGreaterThan(0);
+        await press(clap);
+        expect(mockAudio.nearestStepAt).toHaveBeenLastCalledWith(4.2);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([[3, 100]]);
+
+        // Recording the same pad into the same destination is an identity edit, not another history entry.
+        await press(clap);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([[3, 100]]);
+        await press(t('beat.undo'));
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+
+        await press(t('beat.stop'));
+        expect(text(t('beat.padRecord.status.armed')).length).toBeGreaterThan(0);
+        expect(byLabel(t('beat.padRecord.disable')).props.accessibilityState.selected).toBe(true);
+    });
+    test('Song pad recording uses the selected drum region pattern and offset', async () => {
+        const doc = structuredClone(addKitTrack(newBeat('Song record'), 'lofi'));
+        const selectedTrack = doc.tracks[1];
+        const region = selectedTrack.regions[0];
+        region.pattern = 'B'; region.offset = 480;
+        putBeat(doc); mockParams = { id: doc.id };
+        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 4, time: 4.1 });
+        await act(async () => root.render(<BeatEditor />));
+        await press(selectedTrack.name);
+        await press(t('beat.padRecord.enable'));
+        await press(t('beat.play'));
+        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
+        expect(getBeat(doc.id)!.patterns.B.rows.clap).toEqual([[6, 100]]);
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+    });
+    test('Song pad recording refuses a gap without mutating the current pattern', async () => {
+        const doc = structuredClone(newBeat('Song gap'));
+        doc.tracks[0].regions[0].length = 960;
+        putBeat(doc); mockParams = { id: doc.id };
+        mockAudio.nearestStepAt.mockReturnValueOnce({ step: 8, time: 4.1 });
+        await act(async () => root.render(<BeatEditor />));
+        await press(t('beat.padRecord.enable'));
+        await press(t('beat.play'));
+        await press(t('beat.pad.hit', { pad: t('beat.pad.clap') }));
+        expect(getBeat(doc.id)!.patterns.A.rows.clap).toEqual([]);
+        expect(RN.AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith(
+            t('beat.padRecord.noTarget', { track: doc.tracks[0].name }),
+        );
+    });
     test('export mount releases playback before the sheet may render, and Play recreates the engine', async () => {
         await open(); await press(t('beat.play')); await press(t('beatExport.title'));
         expect(mockExportProps?.recording).toBe(false);
@@ -134,12 +223,75 @@ describe('beat editor', () => {
         await press(t('beat.stop'));
         expect(mockAudio.stop).toHaveBeenCalled();
     });
+    test('Song MIDI track exposes the arrangement recorder and its fixed control starts and stops an empty take', async () => {
+        const doc = addInstrumentTrack(newBeat('MIDI editor'), { engine: 'voice', id: 'piano', preset: 'grand' });
+        const track = doc.tracks.find(item => item.kind === 'midi')!;
+        putBeat(doc); mockParams = { id: doc.id };
+        await act(async () => root.render(<BeatEditor />));
+        await press(track.name);
+        expect(testId('beat-midi-record-panel')).toHaveLength(1);
+        expect(testId('beat-midi-record-row')).toHaveLength(1);
+        await press(t('beat.midiRecord.record'));
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+        expect(mockAudio.playRange).toHaveBeenCalledWith(expect.objectContaining({
+            startTick: 0, countInBars: 1, assetMode: 'all-supported',
+        }));
+        expect(byLabel(t('beat.midiRecord.stop'))).toBeDefined();
+        await press(t('beat.midiRecord.stop'));
+        expect(byLabel(t('beat.midiRecord.record'))).toBeDefined();
+    });
+    test('Song MIDI records a keyboard chord from a nonzero locator as one exact undoable history entry', async () => {
+        const doc = addInstrumentTrack(newBeat('MIDI history'), { engine: 'voice', id: 'piano', preset: 'grand' });
+        const track = doc.tracks.find(item => item.kind === 'midi')!;
+        putBeat(doc); mockParams = { id: doc.id };
+        await act(async () => root.render(<BeatEditor />));
+        await press(track.name);
+        for (let move = 0; move < 4; move++) await press(t('beat.ruler.right'));
+        await press(t('beat.midiRecord.record'));
+        await act(async () => { await tick(); });
+        expect(mockAudio.playRange).toHaveBeenLastCalledWith(expect.objectContaining({ startTick: 960, countInBars: 1 }));
+
+        const tickSeconds = 60 / (doc.tempo.bpm * 960);
+        mockAudio.now.mockReturnValue(1 + 240 * tickSeconds);
+        const c4 = testId('beat-key-60').find(node => typeof node.props.onAccessibilityTap === 'function');
+        const e4 = testId('beat-key-64').find(node => typeof node.props.onAccessibilityTap === 'function');
+        expect(c4).toBeDefined(); expect(e4).toBeDefined();
+        await act(async () => {
+            c4!.props.onAccessibilityTap();
+            e4!.props.onAccessibilityTap();
+        });
+        expect(mockAudio.noteOn).toHaveBeenCalledWith('touch:60', expect.anything(), 60, 100);
+        expect(text(t('beat.midiRecord.recorded', { count: 2 })).length).toBeGreaterThan(0);
+        mockAudio.now.mockReturnValue(1 + 360 * tickSeconds);
+        await act(async () => { testId('beat-key-60')[0].props.onBlur(); });
+        mockAudio.now.mockReturnValue(1 + 480 * tickSeconds);
+        await act(async () => { testId('beat-key-64')[0].props.onBlur(); });
+        await press(t('beat.midiRecord.stop'));
+        await act(async () => { await tick(); });
+
+        const notes = () => Object.values(asMidiDoc(getBeat(doc.id)!).clips).flatMap(clip => clip.notes);
+        expect(text(t('beat.midiRecord.status.failed'))).toHaveLength(0);
+        expect(byLabel(t('beat.midiRecord.record'))).toBeDefined();
+        expect(notes()).toEqual([[1200, 120, 60, 100], [1200, 240, 64, 100]]);
+        const recordedMessage = t('beat.midiRecord.recorded', { count: 2 });
+        expect(jest.mocked(RN.AccessibilityInfo.announceForAccessibility).mock.calls.filter(([message]) => message === recordedMessage)).toHaveLength(1);
+        expect(byLabel(t('beat.undo')).props.accessibilityState?.disabled ?? byLabel(t('beat.undo')).props.disabled).toBe(false);
+        await press(t('beat.undo'));
+        expect(notes()).toEqual([]);
+        expect(byLabel(t('beat.undo')).props.accessibilityState?.disabled ?? byLabel(t('beat.undo')).props.disabled).toBe(true);
+        await press(t('beat.redo'));
+        expect(notes()).toEqual([[1200, 120, 60, 100], [1200, 240, 64, 100]]);
+    });
     test('the persistent transport is a sibling of the scrolling workspace', async () => {
         await open();
         const shell = testId('beat-editor-shell')[0];
         const workspace = testId('beat-editor-workspace')[0];
         const transport = testId('beat-editor-transport')[0];
-        expect(shell).toBeDefined(); expect(workspace.parent).toBe(shell); expect(transport.parent).toBe(shell);
+        // KeyboardScreen owns keyboard-safe reachability between the editor shell and its scroll view. Both the
+        // workspace and fixed transport still belong to the safe-area shell, and the transport never scrolls away.
+        expect(shell).toBeDefined();
+        expect(shell.queryAll(n => n.props.testID === 'beat-editor-workspace')).toHaveLength(1);
+        expect(shell.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(1);
         expect(workspace.queryAll(n => n.props.testID === 'beat-editor-transport')).toHaveLength(0);
         for (const label of [t('beat.play'), t('beat.undo'), t('beat.redo'), t('beatMix.title')]) {
             expect(transport.queryAll(n => n.props.accessibilityLabel === label && typeof (n.props.onClick ?? n.props.onPress) === 'function')).toHaveLength(1);
@@ -159,6 +311,21 @@ describe('beat editor', () => {
             expect(finish).toHaveBeenCalledTimes(1); expect(mockAudio.stop).toHaveBeenCalledTimes(1); expect(mockAudio.close).toHaveBeenCalledTimes(1);
             expect(byLabel(t('beat.play'))).toBeDefined();
         } finally { hook.mockRestore(); }
+    });
+    test('a deferred old-owner close cannot close or replace the new-owner engine', async () => {
+        const closeGate = deferred<void>();
+        const oldEngine = { ...mockAudio, stop: jest.fn(), close: jest.fn(() => closeGate.promise.then(() => undefined)), play: jest.fn(async (): Promise<'started'> => 'started') };
+        const newEngine = { ...mockAudio, stop: jest.fn(), close: jest.fn(async () => undefined), play: jest.fn(async (): Promise<'started'> => 'started') };
+        mockCreateBeatAudio.mockReset().mockReturnValueOnce(oldEngine).mockReturnValueOnce(newEngine);
+        await open(); await press(t('beat.play'));
+        expect(oldEngine.play).toHaveBeenCalledTimes(1);
+        mockGeneration += 1;
+        await act(async () => root.render(<BeatEditor />));
+        expect(oldEngine.stop).toHaveBeenCalledTimes(1); expect(oldEngine.close).toHaveBeenCalledTimes(1);
+        await press(t('beat.play'));
+        expect(newEngine.play).toHaveBeenCalledTimes(1); expect(newEngine.close).not.toHaveBeenCalled();
+        closeGate.resolve(); await act(async () => { await closeGate.promise; await tick(); });
+        expect(oldEngine.close).toHaveBeenCalledTimes(1); expect(newEngine.close).not.toHaveBeenCalled();
     });
     test('Play shows a cancellable Stop state while audio preloads and cancellation is not an error', async () => {
         const pending = deferred<'cancelled'>(); mockAudio.play.mockReturnValueOnce(pending.promise);
@@ -263,7 +430,7 @@ describe('beat editor', () => {
         await press(t('beat.track.remove', { track: t('beat.track', { n: 2 }) }));
         expect(getBeat(doc.id)!.tracks).toHaveLength(1);
     });
-    test('the Distortion Drive control is not offered', async () => {
+    test('effect controls stay in the mixer sheet rather than the main strip', async () => {
         await open();
         expect(root.container.queryAll(n => /drive|distortion/i.test(String(n.props.accessibilityLabel ?? '')))).toHaveLength(0);
     });

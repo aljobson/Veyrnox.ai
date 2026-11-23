@@ -1,0 +1,11 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'ai.veyrnox.beatkeyboard'
+version = '1.0.0'
+
+android {
+  namespace 'ai.veyrnox.beatkeyboard'
+}

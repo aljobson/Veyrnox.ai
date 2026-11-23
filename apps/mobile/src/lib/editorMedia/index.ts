@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { optionalEditorMediaModule, type NativeEditorMediaModule, type NativeProgressEvent } from './native';
-import { EDITOR_MEDIA_ERROR_CODES, parseCapability, parseError, parseFrameArtifact, parseMediaInfo, parseMp4Artifact, parsePcmArtifact, parseProgress, validateBeginEncodeRequest,
-    validateDecodePcmRequest, validateFrameBatch, validateOwnedFileUri, validateSampleFramesRequest, validIdentifier, type BeginEncodeRequest, type DecodePcmRequest,
+import { EDITOR_MEDIA_ERROR_CODES, parseCapability, parseError, parseFrameArtifact, parseMediaInfo, parseMp4Artifact, parsePcmArtifact, parseProgress, validateAudioMixRequest, validateBeginEncodeRequest,
+    validateDecodePcmRequest, validateFrameBatch, validateOwnedFileUri, validateSampleFramesRequest, validIdentifier, type AudioMixRequest, type BeginEncodeRequest, type DecodePcmRequest,
     type EditorMediaCapability, type EditorMediaError, type EditorMediaInfo, type EditorMediaProgress, type EditorMediaResult, type EncodeSession, type FrameArtifact,
     type FrameDescriptor, type Mp4Artifact, type PcmArtifact, type SampleFramesRequest } from './protocol';
 export * from './protocol';
@@ -23,7 +23,7 @@ const safeError = (value: unknown): EditorMediaError => {
     }
     return { ok: false, code: 'write-failed' };
 };
-const nativeMethods = ['capabilities', 'setOwner', 'setProjectGeneration', 'inspect', 'sampleFrames', 'decodePcm', 'beginEncode', 'appendFrameBatch', 'finishEncode', 'cancel',
+const nativeMethods = ['capabilities', 'setOwner', 'setProjectGeneration', 'inspect', 'sampleFrames', 'decodePcm', 'mixAudio', 'beginEncode', 'appendFrameBatch', 'finishEncode', 'cancel',
     'cancelProject', 'release', 'addListener'] as const;
 const compatibleNative = (value: NativeEditorMediaModule | null) => value && nativeMethods.every(method => typeof value[method] === 'function') ? value : null;
 
@@ -98,6 +98,9 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
             if (!account || !validIdentifier(project)) throw Error('invalid-input');
             const generation = (projects.get(project) ?? 0) + 1; await setGeneration(project, generation); return generation;
         },
+        projectGeneration(project: string) {
+            return account && validIdentifier(project) ? projects.get(project) ?? 0 : null;
+        },
         inspect(project: string, uri: string, listener?: ProgressListener, signal?: AbortSignal): Promise<EditorMediaResult<EditorMediaInfo>> {
             return validIdentifier(project) && validateOwnedFileUri(uri)
                 ? once(project, listener, entry => native!.inspect(entry.account, project, owner, entry.token, uri), parseMediaInfo, signal) : Promise.resolve(invalid);
@@ -112,6 +115,11 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
                 value => parsePcmArtifact(value, request.mixMode), signal)
                 : Promise.resolve(invalid);
         },
+        mixAudio(project: string, request: AudioMixRequest, listener?: ProgressListener, signal?: AbortSignal): Promise<EditorMediaResult<PcmArtifact>> {
+            return validateAudioMixRequest(request) ? once(project, listener, entry => native!.mixAudio(entry.account, project, owner, entry.token,
+                JSON.stringify(request.clips), request.sources, request.frames, request.fps), value => parsePcmArtifact(value), signal)
+                : Promise.resolve(invalid);
+        },
         async beginEncode(project: string, request: BeginEncodeRequest, listener?: ProgressListener): Promise<EditorMediaResult<EncodeSession>> {
             if (!native) return missing; if (!validateBeginEncodeRequest(request)) return invalid; const entry = begin(project, listener); if (!entry) return invalid;
             entry.audioArtifactId = request.audioArtifactId;
@@ -120,7 +128,8 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
                 if (!raw || raw.ok !== true || typeof raw.sessionId !== 'string' || !validIdentifier(raw.sessionId)) { removeEntry(entry); return { ok: false, code: 'write-failed' }; }
                 armIdleTimer(entry);
                 return { ok: true, value: { sessionId: raw.sessionId, token: entry.token, project, generation: entry.generation, width: request.width,
-                    height: request.height, fps: request.fps, nextIndex: 0, ...(request.audioArtifactId ? { audioArtifactId: request.audioArtifactId } : {}) } };
+                    height: request.height, fps: request.fps, nextIndex: 0, ...(request.audioArtifactId ? { audioArtifactId: request.audioArtifactId } : {}),
+                    ...(request.alpha ? { alpha: true } : {}) } };
             } catch (error) { const wasLive = live(entry); removeEntry(entry); return wasLive ? safeError(error) : { ok: false, code: 'cancelled' }; }
         },
         async appendFrameBatch(session: EncodeSession, frames: FrameDescriptor[]): Promise<EditorMediaResult<EncodeSession>> {
@@ -141,7 +150,8 @@ export function createEditorMediaClient(provided: NativeEditorMediaModule | null
             try { const raw = await native.finishEncode(item.account, session.project, owner, session.token, session.sessionId, null);
                 if (!live(item)) { await releaseLateArtifact(item, raw); return { ok: false, code: 'cancelled' }; } const error = parseError(raw); if (error) return error;
                 const value = parseMp4Artifact(raw), expectedAudio = session.audioArtifactId !== undefined;
-                return value && expectedAudio === (value.audioCodec === 'mp4a') ? { ok: true, value } : { ok: false, code: 'write-failed' };
+                return value && expectedAudio === (value.audioCodec === 'mp4a')
+                    && value.videoCodec === (session.alpha ? 'hvc1-alpha' : 'avc1') ? { ok: true, value } : { ok: false, code: 'write-failed' };
             } catch (error) { return live(item) ? safeError(error) : { ok: false, code: 'cancelled' }; }
             finally { removeEntry(item); }
         },

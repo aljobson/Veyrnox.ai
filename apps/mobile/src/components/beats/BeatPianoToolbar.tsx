@@ -26,9 +26,17 @@ export function BeatPianoToolbar(p: { doc: BeatDoc; region: MidiRegion; clip: Mi
             <Button label={t('beatPiano.unique')} disabled={p.busy} onPress={() => p.apply(d => makeUnique(d, p.region.id), t('beatPiano.unique'))} />
         </View>
         <Text>{t('beatPiano.snap')}</Text>
-        <View style={s.row}>{SNAP_OPTIONS.map(snap => <Button key={snap} label={snap ? t('beatPiano.snapValue', { n: 3840 / snap }) : t('beatPiano.off')} variant={p.snap === snap ? 'primary' : 'secondary'} onPress={() => p.setSnap(snap)} />)}</View>
+        <View style={s.row} accessibilityRole="radiogroup" accessibilityLabel={t('beatPiano.snap')}>{SNAP_OPTIONS.map(snap => {
+            const checked = p.snap === snap;
+            return <Button key={snap} label={snap ? t('beatPiano.snapValue', { n: 3840 / snap }) : t('beatPiano.off')} variant="secondary" icon={checked ? 'check' : undefined} style={checked ? s.choiceSelected : undefined} accessibilityRole="radio" accessibilityState={{ checked }} onPress={() => p.setSnap(snap)} />;
+        })}</View>
         <View style={s.row}>
-            {[1, 0.5].map(strength => <Button key={strength} label={t('beatPiano.strength', { n: strength * 100 })} variant={p.strength === strength ? 'primary' : 'secondary'} onPress={() => p.setStrength(strength)} />)}
+            <View style={s.row} accessibilityRole="radiogroup" accessibilityLabel={t('beatPiano.quantise')}>
+                {[1, 0.5].map(strength => {
+                    const checked = p.strength === strength;
+                    return <Button key={strength} label={t('beatPiano.strength', { n: strength * 100 })} variant="secondary" icon={checked ? 'check' : undefined} style={checked ? s.choiceSelected : undefined} accessibilityRole="radio" accessibilityState={{ checked }} onPress={() => p.setStrength(strength)} />;
+                })}
+            </View>
             <Button label={t('beatPiano.quantise')} disabled={!p.snap || p.busy} onPress={p.quantise} />
         </View>
         <Text>{t('beatPiano.bars')}</Text>

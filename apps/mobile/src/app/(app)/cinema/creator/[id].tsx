@@ -1,7 +1,7 @@
 import { rawText } from '../../../../lib/i18n/translate';
 import { useCallback, useRef, useState } from 'react';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../../auth/AuthProvider';
 import { Action, CreatorClosed, RulesLinks, ui, useCreatorOwner, useCreatorScope } from '../../../../components/cinema/creator/RulesLinks';
 import { UploadPanel } from '../../../../components/cinema/creator/UploadPanel';
@@ -12,6 +12,7 @@ import { childType, fetchCreatorPoster, listContent, parentTypeOf, ROOT_TYPES, s
 import { isUuid } from '../../../../lib/cinemaSocial';
 import { CINEMA_DEVICE_UPLOAD_ENABLED } from '../../../../lib/cinemaUpload';
 import { t } from '../../../../lib/i18n';
+import { SafeKeyboardFormScrollView } from '../../../../components/SafeContentScrollView';
 
 const typeLabel = (type: string) => t(type === 'SERIES' ? 'cinema.type.SERIES' : type === 'SEASON' ? 'cinema.type.SEASON' : 'cinema.type.EPISODE');
 
@@ -72,7 +73,7 @@ function Detail({ id, parent }: { id: string; parent?: string }) {
     // The native image module is only needed when a validated poster is present.
     const Image: typeof import('expo-image').Image | null = poster ? require('expo-image').Image : null;
     const reasonLength = [...reason.trim()].length;
-    return <ScrollView contentContainerStyle={ui.page}>
+    return <SafeKeyboardFormScrollView contentContainerStyle={ui.page} gutter={20}>
         {note ? <><Text style={ui.text}>{t(note)}</Text><Action label={t('cinemaUpload.retry')} onPress={() => void load()} /></> : null}
         {!title && !note && <Text style={ui.text}>{t('cinemaUpload.loading')}</Text>}
         {title && <>
@@ -106,5 +107,5 @@ function Detail({ id, parent }: { id: string; parent?: string }) {
             {withdrawNote ? <Text style={ui.text}>{t(withdrawNote)}</Text> : null}
         </>}
         <RulesLinks />
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }

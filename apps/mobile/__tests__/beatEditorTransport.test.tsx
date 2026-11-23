@@ -74,11 +74,36 @@ test.each([360, 390, 719])('compact width %ipt keeps every labelled 44pt action 
     }
 });
 
-test('regular width uses the row layout and applies the bottom safe-area edge', async () => {
+test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
     mockDimensions = { ...mockDimensions, width: 1024 };
     await render();
     expect(root.container.queryAll(n => n.props.testID === 'beat-editor-transport-controls-regular')).toHaveLength(1);
     const transport = root.container.queryAll(n => n.props.testID === 'beat-editor-transport')[0];
-    expect(transport.props.edges).toEqual(['bottom']);
+    expect(transport.props.edges).toEqual(['left', 'right', 'bottom']);
     expect(RN.StyleSheet.flatten(transport.props.style).paddingBottom).toBe(34);
+});
+
+test('phone landscape stays compact and MIDI stop is a stable labelled control outside the scroller', async () => {
+    mockDimensions = { ...mockDimensions, width: 844, height: 390, fontScale: 3.12 };
+    const onMidiRecord = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} midiRecordPhase="recording" onMidiRecord={onMidiRecord} />));
+    const scroller = root.container.queryAll(n => n.props.testID === 'beat-editor-transport-controls-accessible')[0];
+    expect(scroller.queryAll(n => n.props.testID === 'beat-midi-record-control')).toHaveLength(0);
+    const control = root.container.queryAll(n => n.props.testID === 'beat-midi-record-control' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(control.props.accessibilityLabel).toBeTruthy();
+    expect(control.props.accessibilityState).toMatchObject({ disabled: false, busy: false });
+    expect(RN.StyleSheet.flatten(control.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    await act(async () => root.render(<BeatEditorTransport {...props} midiRecordPhase="finishing" midiRecordDisabled onMidiRecord={onMidiRecord} />));
+    const finishing = root.container.queryAll(n => n.props.testID === 'beat-midi-record-control' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(finishing.props.accessibilityState).toMatchObject({ disabled: false, busy: true });
+});
+
+test('recovery lock disables a new MIDI take and the non-live mixer entry semantically', async () => {
+    const onMidiRecord = jest.fn(), onMixer = jest.fn();
+    await act(async () => root.render(<BeatEditorTransport {...props} midiRecordPhase="idle" midiRecordDisabled
+        mixerDisabled onMidiRecord={onMidiRecord} onMixer={onMixer} />));
+    const record = root.container.queryAll(n => n.props.testID === 'beat-midi-record-control' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    const mixer = root.container.queryAll(n => n.props.testID === 'beat-editor-mixer' && typeof (n.props.onClick ?? n.props.onPress) === 'function')[0];
+    expect(record.props.accessibilityState.disabled).toBe(true);
+    expect(mixer.props.accessibilityState.disabled).toBe(true);
 });

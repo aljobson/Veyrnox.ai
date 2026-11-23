@@ -18,7 +18,12 @@ export default function PasskeyAuth() {
     const insets = useSafeAreaInsets();
     if (status === 'signedIn') return <SignedInRedirect />;
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={[styles.body, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
+        <ScrollView style={styles.screen} contentContainerStyle={[styles.body, {
+            paddingTop: insets.top + 24,
+            paddingRight: insets.right + 24,
+            paddingBottom: insets.bottom + 24,
+            paddingLeft: insets.left + 24,
+        }]}>
             <Pressable accessibilityRole="button" accessibilityLabel={t('public.vey.back')} style={touchTarget} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>
                 <Text style={styles.back}>{t('public.vey.back')}</Text>
             </Pressable>
@@ -96,7 +101,7 @@ function PasskeyAttempt() {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    body: { padding: 24, gap: 12 },
+    body: { gap: 12 },
     heading: { color: colors.text, fontFamily: fonts.display, fontSize: 28 },
     back: { color: colors.accent },
     message: { color: colors.muted },

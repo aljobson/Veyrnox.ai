@@ -1,4 +1,4 @@
-import { View, type ViewStyle } from 'react-native';
+import { View, type GestureResponderEvent, type ViewStyle } from 'react-native';
 import { Text, themedStyles, useThemedStyles } from '../ui';
 import { ds, featureHue } from '../../theme';
 import { t } from '../../lib/i18n';
@@ -9,7 +9,7 @@ import { position, regionActions, regionLabel, regionName, type Apply } from '..
 
 type Props = {
     doc: BeatDoc; track: BeatTrackDoc; region: BeatRegionDoc; zoom: number; snap: number; locator: number;
-    selected: boolean; copy: boolean; apply: Apply; select: () => void; announce: (message: string) => void;
+    selected: boolean; copy: boolean; ripple: boolean; disabled: boolean; apply: Apply; select: () => void; announce: (message: string) => void;
     lock: (held: boolean) => void; preview: (value: DragValue | null) => void; trackAt: (dy: number, originY: number) => string;
 };
 function useDrag(props: Props, mode: DragMode) {
@@ -36,17 +36,19 @@ export function BeatRegionView(props: Props) {
     const { doc, region, track, zoom, selected, apply } = props;
     const s = useThemedStyles(sheets);
     const handlers = useDrag(props, 'move');
-    const actions = regionActions(doc, track, region, props.snap, props.locator);
+    const actions = regionActions(doc, track, region, props.snap, props.locator, props.ripple);
     const width = tickToX(region.length, zoom);
-    const showHandles = selected && width >= 88;
+    const showHandles = selected && !props.disabled && width >= 88;
     return <View pointerEvents="box-none" testID={`region-frame-${region.id}`} style={[s.region, { left: tickToX(region.start, zoom), width: Math.max(44, width + (showHandles ? 22 : 0)) }]}>
-        <View {...handlers} testID={`region-${region.id}`} pointerEvents="box-only" accessible accessibilityRole="button"
+        <View {...(props.disabled ? { onTouchStart: (event: GestureResponderEvent) => event.stopPropagation(),
+            onTouchEnd: (event: GestureResponderEvent) => { event.stopPropagation(); props.select(); } } : handlers)}
+            testID={`region-${region.id}`} pointerEvents="box-only" accessible accessibilityRole="button"
             accessibilityLabel={regionLabel(doc, track, region)} accessibilityState={{ selected }}
-            accessibilityActions={[{ name: 'activate', label: t('beat.region.select') }, ...actions.map(({ name, label }) => ({ name, label }))]}
+            accessibilityActions={[{ name: 'activate', label: t('beat.region.select') }, ...(props.disabled ? [] : actions.map(({ name, label }) => ({ name, label })))]}
             onAccessibilityAction={event => {
                 if (event.nativeEvent.actionName === 'activate') { props.select(); return; }
                 const action = actions.find(item => item.name === event.nativeEvent.actionName);
-                if (action) apply(action.operation, action.label);
+                if (action && !props.disabled) apply(action.operation, action.label);
             }}
             hitSlop={{ left: 0, right: Math.max(0, 44 - width), top: 0, bottom: 0 }}
             style={[s.block, { width }, region.clipId ? s.midi : region.assetId ? s.audio : s.drums, selected && s.selected]}>

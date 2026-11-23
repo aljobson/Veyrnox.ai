@@ -3738,6 +3738,30 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "La grabación de pads está desactivada",
+    "ratio": 1.85
+  },
+  {
+    "id": "beat.padRecord.noTarget",
+    "english": "No drum region on {track} at the playhead.",
+    "translation": "No hay una región de batería en {track} en el cabezal de reproducción.",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.midiRecord.key.audition",
+    "english": "preview",
+    "translation": "vista previa",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Reintentar guardado",
+    "ratio": 1.9
+  },
+  {
     "id": "beat.pad.openhat",
     "english": "Open hat",
     "translation": "Hi-hat abierto",
@@ -4120,6 +4144,60 @@
     "english": "Song",
     "translation": "Canción",
     "ratio": 1.75
+  },
+  {
+    "id": "beat.ripple.label",
+    "english": "Ripple editing",
+    "translation": "Edición con desplazamiento",
+    "ratio": 1.86
+  },
+  {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Desplazamiento desactivado",
+    "ratio": 2.6
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Desplazamiento activado",
+    "ratio": 2.56
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Insertar un hueco de un compás",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ripple.changed",
+    "english": "Ripple editing changed",
+    "translation": "Edición con desplazamiento modificada",
+    "ratio": 1.68
+  },
+  {
+    "id": "beat.track.name",
+    "english": "Track name",
+    "translation": "Nombre de la pista",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.search.results",
+    "english": "Clip search results",
+    "translation": "Resultados de búsqueda de clips",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.library.title",
+    "english": "Add from Music Library",
+    "translation": "Añadir desde la biblioteca de música",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
   },
   {
     "id": "beat.snap.label",
@@ -4816,6 +4894,30 @@
     "english": "Possible dissolves",
     "translation": "Posibles fundidos encadenados",
     "ratio": 1.61
+  },
+  {
+    "id": "editorPersonMask.title",
+    "english": "Person mask",
+    "translation": "Máscara de persona",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Conservar",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorPersonMask.bodySkin",
+    "english": "Body skin",
+    "translation": "Piel del cuerpo",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPersonMask.faceSkin",
+    "english": "Face skin",
+    "translation": "Piel de la cara",
+    "ratio": 1.67
   },
   {
     "id": "oauth.signIn",

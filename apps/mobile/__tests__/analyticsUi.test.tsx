@@ -25,7 +25,7 @@ jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => ({ status
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => 10 }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(async () => null), setItemAsync: jest.fn(async () => {}), deleteItemAsync: jest.fn(async () => {}) }));
 const mockFactory = jest.fn(() => ({ ready: async () => {}, getDistinctId: () => 'anonymous', capture: jest.fn(), identify: jest.fn(), reset: jest.fn(), optOut: async () => {}, flush: async () => {} }));
-jest.mock('posthog-react-native', () => ({ PostHog: (...args: unknown[]) => mockFactory(...args as []) }));
+jest.mock('posthog-react-native', () => ({ PostHog: (...args: unknown[]) => mockFactory(...args as []) }), { virtual: true });
 void [RN.Modal, RN.ScrollView, RN.Text, RN.View, RN.Pressable, RN.Image];
 let root: Root;
 beforeEach(async () => {

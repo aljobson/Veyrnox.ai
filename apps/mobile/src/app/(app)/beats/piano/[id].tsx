@@ -1,13 +1,13 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, ScrollView } from 'react-native';
+import { AppState, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../../../components/EmptyState';
 import { MusicNotice } from '../../../../components/music/MusicNotice';
-import { useThemedStyles } from '../../../../components/ui';
+import { useAppearance, useThemedStyles } from '../../../../components/ui';
 import { BeatPianoToolbar } from '../../../../components/beats/BeatPianoToolbar';
-import { BeatPianoRoll } from '../../../../components/beats/BeatPianoRoll';
+import { BeatPianoTimeline } from '../../../../components/beats/BeatPianoTimeline';
 import { BeatNoteActions, type NoteActions } from '../../../../components/beats/BeatNoteActions';
-import { BeatVelocityLane } from '../../../../components/beats/BeatVelocityLane';
 import { BeatKeyboard } from '../../../../components/beats/BeatKeyboard';
 import { pianoStyles } from '../../../../components/beats/pianoStyles';
 import { createBeatAudio, type BeatAudio } from '../../../../lib/beatNative/audio';
@@ -18,6 +18,10 @@ import { useLocalBeatLifecycle } from '../../../../lib/beatNative/useLocalBeatLi
 import { getBeat } from '../../../../lib/beatNative/store';
 import { t } from '../../../../lib/i18n';
 import { useAnnouncement } from '../../../../lib/useAnnouncement';
+import { beatPianoLayout } from '../../../../lib/beatNative/pianoLayout';
+import { TEXT_SCALE } from '../../../../theme';
+import { KeyboardScreen } from '../../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../../components/KeyboardFormScrollView';
 
 export default function BeatPianoScreen() {
     const params = useLocalSearchParams<{ id: string; region: string }>(), id = String(params.id);
@@ -26,6 +30,8 @@ export default function BeatPianoScreen() {
     const [playing, setPlaying] = useState(false), [snap, setSnap] = useState(240), [strength, setStrength] = useState(1);
     const [scale, setScale] = useState(0.1), [velocity, setVelocity] = useState(100), [selection, setSelection] = useState<string[]>([]);
     const s = useThemedStyles(pianoStyles);
+    const { width, height, fontScale } = useWindowDimensions(), { settings } = useAppearance();
+    const layout = beatPianoLayout(width, height, fontScale, TEXT_SCALE[settings.textSize]);
     useAnnouncement(edit.notice ?? edit.said, { everywhere: true });
     useLocalBeatLifecycle();
     useEffect(() => {
@@ -65,18 +71,25 @@ export default function BeatPianoScreen() {
         try { await a.play(() => getBeat(id) ?? doc); if (alive.current && audio.current === a) setPlaying(a.isPlaying()); }
         catch { if (alive.current) edit.setNotice(t('beat.audioError')); }
     };
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-        <Stack.Screen options={{ title: t('beatPiano.title') }} />
-        {edit.notice && <MusicNotice message={edit.notice} />}
-        <BeatPianoToolbar {...edit} doc={doc} clip={clip} region={region} playing={playing} togglePlay={() => void play()} snap={snap} setSnap={setSnap} strength={strength} setStrength={setStrength} scale={scale} setScale={setScale} quantise={() => {
+    const toolbar = <BeatPianoToolbar {...edit} doc={doc} clip={clip} region={region} playing={playing} togglePlay={() => void play()} snap={snap} setSnap={setSnap} strength={strength} setStrength={setStrength} scale={scale} setScale={setScale} quantise={() => {
             const next = quantisedSelection(clip, selected, snap, strength);
             if (apply(d => quantiseNotes(d, region.clipId, selected, snap, strength), t('beatPiano.quantise'))) setSelection(next);
-        }} />
-        <BeatPianoRoll key={region.clipId} clip={clip} selected={selected} toggle={toggle} snap={snap} scale={scale} setScale={setScale} actions={actions} disabled={edit.busy}
+        }} />;
+    const timeline = <BeatPianoTimeline key={region.clipId} clip={clip} selected={selected} toggle={toggle} select={setSelection} snap={snap} scale={scale} setScale={setScale} actions={actions} disabled={edit.busy} rollHeight={layout.rollHeight}
             add={(tick, pitch) => apply(d => addNote(d, region.clipId, [tick, Math.min(snap || 30, clip.lengthTicks - tick), pitch, velocity]), t('beatPiano.added'))}
-            removeAt={key => apply(d => deleteNotes(d, region.clipId, [key]), t('beatPiano.delete'))} />
-        {!!selected.length && <BeatNoteActions actions={actions} unit={snap || 30} disabled={edit.busy} />}
-        <BeatVelocityLane clip={clip} selected={selected} toggle={toggle} scale={scale} velocity={actions.velocity} disabled={edit.busy} />
-        <BeatKeyboard track={{ ...track, gain: audibleGain(doc, track) }} velocity={velocity} setVelocity={setVelocity} audio={engine} onError={() => edit.setNotice(t('beat.audioError'))} />
-    </ScrollView>;
+            removeAt={key => apply(d => deleteNotes(d, region.clipId, [key]), t('beatPiano.delete'))} />;
+    const noteActions = !!selected.length && <BeatNoteActions actions={actions} unit={snap || 30} disabled={edit.busy} />;
+    const keyboard = <BeatKeyboard compact={layout.compactKeyboard} track={{ ...track, gain: audibleGain(doc, track) }} velocity={velocity} setVelocity={setVelocity} audio={engine} onError={() => edit.setNotice(t('beat.audioError'))} />;
+    return <SafeAreaView style={s.screen} edges={layout.dockKeyboard ? ['left', 'right'] : ['left', 'right', 'bottom']}>
+        <Stack.Screen options={{ title: t('beatPiano.title') }} />
+        <KeyboardScreen><KeyboardFormScrollView style={s.workspace} contentContainerStyle={[s.content, layout.mode === 'regular' && s.contentWide]} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+            {edit.notice && <MusicNotice message={edit.notice} announce={false} />}
+            {layout.mode === 'regular' ? <>
+                <View style={s.main}>{timeline}{noteActions}</View>
+                <View style={s.sidebar}>{toolbar}</View>
+            </> : <>{toolbar}{timeline}{noteActions}</>}
+            {!layout.dockKeyboard && keyboard}
+        </KeyboardFormScrollView></KeyboardScreen>
+        {layout.dockKeyboard && <SafeAreaView edges={['bottom']} style={s.keyboardDock}>{keyboard}</SafeAreaView>}
+    </SafeAreaView>;
 }

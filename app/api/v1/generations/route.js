@@ -30,6 +30,7 @@ import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJobDetailed } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
+import { crunInputRefusal } from '../../../../lib/crunInputRefusal.js';
 import { readGenerationSources, resolveGenerationSources, sourceErrorStatus } from '../../../../lib/generationSources.js';
 import { mediaInputKey } from '../../../../lib/generationSourceSlots.mjs';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -326,6 +327,8 @@ export async function POST(req) {
             return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
         }
     }
+    const crunRefusal = crunInputRefusal(modelRow, inputs, body);
+    if (crunRefusal) return NextResponse.json({ error: crunRefusal }, { status: 400 });
     const providerKey = provider.key();
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     // Active capabilities precede source signing/inspection. Both frames pass caller

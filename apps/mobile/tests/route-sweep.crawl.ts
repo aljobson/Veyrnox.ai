@@ -1,10 +1,15 @@
+import { readFileSync } from 'node:fs';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { openSignedIn } from './helpers.js';
 
-// Route sweep: opens every static screen by deep link, takes a screenshot, and fails on a crash, an unmatched route
-// or a generic error screen. It never taps anything, so it cannot spend credits or change account state.
-const CHUNKS: string[][] = [["about", "account", "analytics-consent", "appeals", "appearance", "blocked", "brand-kit", "chat", "chat/folders", "chat/library", "chat/move", "chat/new"], ["chat/personas", "chat/skills", "cinema", "cinema/analytics", "cinema/comments", "cinema/creator", "cinema/creator/draft", "cinema/probe", "cinema/report-comment", "create", "create/agent", "create/presets"], ["create/tools", "credits", "delete-account", "developers", "edit", "editor", "editor/new", "email", "face-filters", "faceless-reel", "features", "film"], ["film/cloud", "film/workspace", "guides", "help", "history", "language", "library", "library/files", "mcp", "models", "oauth-consent", "oddlings"], ["oddlings/build", "oddlings/saved", "passkey", "paywall", "preview", "pricing", "privacy-choices", "privacy-export", "projects", "publish", "publish/accounts", "publish/activity"], ["publish/ads", "publish/ads-edit", "publish/analytics", "publish/approval-new", "publish/approvals", "publish/autolist-edit", "publish/autolists", "publish/best-time", "publish/brands", "publish/calendar", "publish/commerce", "publish/commerce-edit"], ["publish/compose", "publish/connect", "publish/contact-edit", "publish/contact-import", "publish/contacts", "publish/developer", "publish/drafts", "publish/inbox", "publish/inbox-analytics", "publish/inbox-thread", "publish/posts", "publish/queue-edit"], ["publish/queues", "publish/report-edit", "publish/reports", "publish/smartlink", "publish/team", "publish/workflows", "rate", "referrals", "report", "review", "search", "security"], ["start", "team-invite", "topups", "vibe", "wins"]];
+// Route sweep: opens every static screen by deep link against the disposable mock account, takes a screenshot, and
+// fails on a crash, an unmatched route or a generic error screen. It never taps controls or initiates paid actions;
+// a route may still run its documented mock-only mount effects (for example, beats/new creates a seed project).
+const routes: string[] = JSON.parse(readFileSync(new URL('./crawl-routes.json', import.meta.url), 'utf8'));
+const CHUNK_SIZE = 12;
+const CHUNKS: string[][] = Array.from({ length: Math.ceil(routes.length / CHUNK_SIZE) }, (_, index) =>
+  routes.slice(index * CHUNK_SIZE, (index + 1) * CHUNK_SIZE));
 
 const BAD = ['Unmatched Route', 'Something went wrong', 'Uncaught Error', 'This screen doesn\u2019t exist', "This screen doesn't exist"];
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ApiError } from '../../src/lib/api';
-import { createMetadataPort, loadResults, type AudioFiles } from '../../src/lib/beatAi/results';
+import { createMetadataPort, loadResults, type AssetItem, type AudioFiles } from '../../src/lib/beatAi/results';
 import { probeAudioHeader, mp3Seconds } from '../../src/lib/beatAi/shared';
 import { asset, doc, row, id } from './fixtures';
 function wav(channels = 2) {
@@ -57,4 +57,26 @@ test.each([{ candidates: undefined }, { candidates: [] }])('terminal success wit
     const load = jest.fn();
     expect(await loadResults(row(), { state: 'succeeded', candidates }, doc(), { load })).toEqual({ results: [], messages: ['beatAi.library'] });
     expect(load).not.toHaveBeenCalled();
+});
+test('split-stem results place vocal and instrumental archive parts without candidate rows', async () => {
+    const source = asset;
+    const record = { ...row(), op: 'stems' as const, prompt: '', requestId: id(8),
+        source: { songId: source.ref.songId, versionId: source.ref.versionId, assetId: 'source', asset: source } };
+    const load = jest.fn(async (item: AssetItem) => ({ ...item, durationSec: 4, sourceChannels: 2, encodedBytes: 1000 }));
+    const result = await loadResults(record, { state: 'succeeded' }, doc(), { load });
+    expect(result.messages).toEqual([]); expect(result.results.map(row => row.name)).toEqual(['Vocals', 'Instrumental']);
+    expect(load.mock.calls.map(([item]) => item)).toEqual([
+        { source: 'stem', ref: { songId: source.ref.songId, versionId: source.ref.versionId, requestId: id(8), part: 'vocals' }, name: 'Vocals', bpm: null },
+        { source: 'stem', ref: { songId: source.ref.songId, versionId: source.ref.versionId, requestId: id(8), part: 'instrumental' }, name: 'Instrumental', bpm: null },
+    ]);
+});
+test('metadata routing gives signed stem archives to the native stem port without probing ZIP bytes as audio', async () => {
+    const bytes = wav(), x = setup(bytes), source = { source: 'stem' as const,
+        ref: { songId: id(5), versionId: id(6), requestId: id(8), part: 'vocals' }, name: 'Vocals', bpm: null };
+    const result = { ...source, durationSec: 1, sourceChannels: 2, encodedBytes: bytes.length };
+    const stems = { load: jest.fn(async () => result) };
+    const port = createMetadataPort({ sign: jest.fn(async () => ({ url: 'https://example.test/stems.zip', size_bytes: 456 })) }, x.files, () => x.decoder, stems);
+    await expect(port.load(source)).resolves.toEqual(result);
+    expect(stems.load).toHaveBeenCalledWith({ url: 'https://example.test/stems.zip', size_bytes: 456 }, source, undefined);
+    expect(x.files.prefix).not.toHaveBeenCalled(); expect(x.file.download).not.toHaveBeenCalled();
 });

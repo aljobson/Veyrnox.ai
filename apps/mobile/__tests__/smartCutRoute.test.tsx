@@ -1,4 +1,6 @@
 import { act } from 'react';
+import { StyleSheet } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { createRoot, type Root, type TestInstance } from 'test-renderer';
 import SmartCutRoute from '../src/app/(app)/smart-cut';
 import { rawText, t } from '../src/lib/i18n';
@@ -87,6 +89,17 @@ test('speech readiness is all-or-nothing, filler changes stale the plan, and edi
     await press(buttons(t('app.smartCut.action.apply'))[0]);
     await press(buttons(t('edit.openLocal'))[0]);
     expect(mockPush).toHaveBeenCalledWith({ pathname: '/editor/new', params: { cuts: expect.any(String) } });
+});
+
+test('Smart Cut keeps its editing surface inside landscape physical edges', async () => {
+    await act(async () => {
+        root.render(<SafeAreaInsetsContext.Provider value={{ top: 0, right: 59, bottom: 21, left: 59 }}><SmartCutRoute /></SafeAreaInsetsContext.Provider>);
+        await Promise.resolve(); await Promise.resolve();
+    });
+    expect(root.container.queryAll(node => {
+        const style = StyleSheet.flatten(node.props.contentContainerStyle);
+        return style?.paddingLeft === 75 && style?.paddingRight === 75 && style?.paddingBottom >= 21;
+    }).length).toBeGreaterThan(0);
 });
 
 test('an account change clears selected clips before the new account can confirm analysis', async () => {

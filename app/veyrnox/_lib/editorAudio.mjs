@@ -6,6 +6,7 @@ import { audioRange, audioWorkingBytes } from './editorSpeed.mjs';
 import { trackAudible } from './editorSelection.mjs';
 import { sequenceTransitionAfter } from './editorSequence.mjs';
 import { FPS, videoLayout, effectiveTransition } from './editorTimeline.mjs';
+import { peakNormalizeChannels } from './editorAudioOutput.mjs';
 import { AudioBufferSink } from 'mediabunny';
 export const SAMPLE_RATE = 48000;
 const abortError = () => Object.assign(new Error('Playback cancelled.'), { name: 'AbortError' });
@@ -105,10 +106,6 @@ export async function mixAudio(tl, inputs, length, signal, { startFrame = 0, end
     }
     // Overlapping tracks and EQ can exceed full scale. A shared peak normalizer preserves their balance without hard clipping.
     // For bounded recognition windows the peak belongs to that selected range, not unseen audio.
-    if (tl.schemaVersion === 3) {
-        let peak = 1;
-        for (let ch = 0; ch < mix.numberOfChannels; ch++) for (const sample of mix.getChannelData(ch)) peak = Math.max(peak, Math.abs(sample));
-        if (peak > 1) for (let ch = 0; ch < mix.numberOfChannels; ch++) { const samples = mix.getChannelData(ch); for (let n = 0; n < samples.length; n++) samples[n] /= peak; }
-    }
+    if (tl.schemaVersion === 3) peakNormalizeChannels(Array.from({length:mix.numberOfChannels},(_,channel)=>mix.getChannelData(channel)));
     return mix;
 }

@@ -32,6 +32,19 @@ test('MIDI schedules at song offsets with release, on a cancellable transport ru
     expect(f.voices[0].release).toHaveBeenCalledWith(at + 1920 * 60 / (92 * 960));
     expect(f.engine.playPad).toHaveBeenCalled(); f.audio.stop();
 });
+test('MIDI recording range exposes both clocks and schedules existing accompaniment through its mix run', async () => {
+    const f = setup(piano, 0);
+    const result = await f.audio.playRange!({ getDoc: f.read, startTick: 0, endTick: 3840, cycle: null,
+        countInBars: 1, assetMode: 'all-supported', onWindow: () => {} });
+    expect(f.audio.now!()).toBe(0);
+    expect(result.contextStart).toBeCloseTo(0.1);
+    expect(result.recordContextStart).toBeGreaterThan(result.contextStart);
+    f.advance(result.recordContextStart);
+    const run = f.engine.startRun.mock.results[0].value;
+    expect(f.engine.playMidi).toHaveBeenCalledWith(expect.objectContaining({ id: f.track.id }), 60, 100, result.recordContextStart, run, 1);
+    expect(f.voices[0].release).toHaveBeenCalledWith(result.recordContextStart + 1920 * 60 / (92 * 960));
+    f.audio.stop(); expect(f.engine.stopRun).toHaveBeenCalledWith(run);
+});
 test.each(['mute', 'solo', 'gain', 'pan'])('%s updates an already sounding voice even with no new onset', async change => {
     const f = setup(); await f.audio.play(f.read); const run = f.engine.startRun.mock.results[0].value;
     f.engine.setTrackMix.mockClear(); const count = f.engine.playMidi.mock.calls.length;

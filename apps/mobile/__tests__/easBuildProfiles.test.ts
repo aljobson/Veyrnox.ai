@@ -31,6 +31,18 @@ describe('EAS build profiles always bundle the JavaScript', () => {
         expect(profile.env?.SENTRY_ALLOW_FAILURE).toBeUndefined();
     });
 
+    // Expo SDK 58 is New-Architecture-only and no longer accepts `newArchEnabled` in app config.
+    // RNAudioWorklets 0.1.0 still checks the CocoaPods environment explicitly, so every EAS
+    // profile must bridge that SDK/package mismatch until the podspec follows RN's new default.
+    test.each(profiles)('%s explicitly enables New Architecture for native audio worklets', (_name, profile) => {
+        expect(profile.env?.RCT_NEW_ARCH_ENABLED).toBe('1');
+    });
+
+    test('SDK 58 app config does not carry the removed newArchEnabled property', () => {
+        const { expo } = require('../app.json');
+        expect(expo.newArchEnabled).toBeUndefined();
+    });
+
     // It reuses the last store build's number, so an upload would replace that build's source maps.
     test('production-simulator is production built for the simulator, without taking a build number or uploading', () => {
         expect(eas.build['production-simulator']).toEqual({ extends: 'production', autoIncrement: false, ios: { simulator: true }, env: { SENTRY_DISABLE_AUTO_UPLOAD: 'true' } });

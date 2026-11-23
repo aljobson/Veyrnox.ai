@@ -30,7 +30,7 @@ final class EditorMediaWorker {
   private var cleaned = false
 
   func capabilities(_ promise: Promise) {
-    let names = ["inspect", "sampleFrames", "decodePcm", "beginEncode", "appendFrameBatch",
+    let names = ["inspect", "sampleFrames", "decodePcm", "mixAudio", "beginEncode", "appendFrameBatch",
       "finishEncode", "cancel", "cancelProject", "release"]
     let operations = names.reduce(into: [String: Bool]()) { $0[$1] = true }
     promise.resolve(["ok": true, "available": true, "platform": "ios", "protocolVersion": 1,
@@ -57,6 +57,7 @@ final class EditorMediaWorker {
     account = next; adoptedClientOwner = clientOwner; adoptedClientEpoch = clientEpoch
     ownerSet = true; generations.removeAll()
     gate.unlock()
+    EditorMotionWorker.shared.cancelAll()
     executor.async {
       if let captured { self.abort(captured) }
       if self.ownerMatches(next, epoch: epoch) { self.paths.purgeForeignAccounts(next) }
@@ -81,6 +82,7 @@ final class EditorMediaWorker {
     let captured = reserved.flatMap { $0.key.account == account && $0.key.project == project ? $0 : nil }
     if let captured { rememberCancelled(captured.key) }
     gate.unlock()
+    EditorMotionWorker.shared.cancelProject(account, project)
     executor.async {
       if let captured { self.abort(captured) }
       if self.projectMatches(account, project, generation: generation, epoch: epoch) {
@@ -114,6 +116,18 @@ final class EditorMediaWorker {
       emit("decoding", 0.05)
       return try EditorPcmDecoder.decode(identity: identity, projectGeneration: generation,
         request: request, paths: self.paths, cancelled: cancelled) { emit("decoding", 0.05 + 0.90 * $0) }
+    }
+  }
+
+  func mixAudio(_ account: String, _ project: String, _ owner: String, _ token: String,
+                mixJSON: String, sources: [String: String], frames: Int, fps: Int,
+                promise: Promise, progress: @escaping Progress) {
+    submit(account, project, owner, token, promise: promise, progress: progress) { identity, generation, cancelled, emit in
+      emit("decoding", 0.05)
+      return try EditorAdvancedAudioMix.mix(identity, projectGeneration: generation, mixJSON,
+        sources, frames, fps, paths: self.paths, cancelled: cancelled) {
+          emit("decoding", 0.05 + 0.90 * $0)
+        }
     }
   }
 
@@ -238,6 +252,7 @@ final class EditorMediaWorker {
     let captured = reserved.flatMap { $0.key.account == account && $0.key.project == project ? $0 : nil }
     if let captured { rememberCancelled(captured.key) }
     gate.unlock()
+    EditorMotionWorker.shared.cancelProject(account, project)
     executor.async {
       if let captured { self.abort(captured) }
       if self.projectMatches(account, project, generation: nextGeneration, epoch: epoch) {
@@ -258,6 +273,18 @@ final class EditorMediaWorker {
         promise.reject(code, code)
       } catch { promise.reject(EditorMediaCode.writeFailed.rawValue, EditorMediaCode.writeFailed.rawValue) }
     }
+  }
+
+  func currentProjectGeneration(_ identity: EditorMediaIdentity) -> Int? {
+    gate.lock(); defer { gate.unlock() }
+    guard ownerSet, account == identity.account else { return nil }
+    return generations[generationKey(identity.account, identity.project)] ?? 0
+  }
+
+  func projectIsCurrent(_ identity: EditorMediaIdentity, generation: Int) -> Bool {
+    gate.lock(); defer { gate.unlock() }
+    return ownerSet && account == identity.account
+      && (generations[generationKey(identity.account, identity.project)] ?? 0) == generation
   }
 
   private func submit(_ account: String, _ project: String, _ owner: String, _ token: String,

@@ -1,5 +1,5 @@
 import { EDITOR_MEDIA_LIMITS, frameTimestampUs, parseError, parseFrameArtifact, parseMediaInfo, parseMp4Artifact, parsePcmArtifact, validateBeginEncodeRequest,
-    validateDecodePcmRequest, validateFrameBatch, validateOwnedFileUri, validateSampleFramesRequest, type EncodeSession } from '../src/lib/editorMedia/protocol';
+    validateAudioMixRequest, validateDecodePcmRequest, validateFrameBatch, validateOwnedFileUri, validateSampleFramesRequest, type EncodeSession } from '../src/lib/editorMedia/protocol';
 
 test('owned file URLs fail closed before native canonical-root validation', () => {
     expect(validateOwnedFileUri('file:///data/veyrnox-editor-media/a/p/input.mp4')).toBe(true);
@@ -31,8 +31,26 @@ test('analysis requests are finite, exact and bounded to thirty seconds', () => 
     expect(validateDecodePcmRequest({ uri, fromSeconds: 0, toSeconds: 1, sampleRate: 48000, channels: 3 })).toBe(false);
 });
 
+test('audio mix admits the strict canonical advanced contract and retains the legacy caption crop', () => {
+    const sources = { source: 'file:///data/veyrnox-editor-media/a/p/input.mp4' };
+    const legacy = { mediaId: 'source', timelineStartSeconds: 0, sourceStartSeconds: 1, durationSeconds: 2,
+        volume: 1, fadeInSeconds: 0, fadeOutSeconds: 0 };
+    const advanced = { mediaId: 'source', start: 0, in: 30, len: 60, transitionOut: 0, volume: 1, fadeIn: 0, fadeOut: 0,
+        rate: 1, reverse: false, preservePitch: true, speedCurve: [{ frame: 0, rate: 1 }, { frame: 60, rate: 2 }],
+        audioProcessing: { pitch: 0, voice: 'none', noiseReduction: 0, noiseStart: 0, noiseLength: .3, gateDb: -96 },
+        audioEffects: { width: 1, tremoloRate: 4, tremoloDepth: 0, echoDelay: .2, echoDecay: .45, echoRepeats: 3, echoMix: 0 },
+        pan: 0, eq: { low: 0, mid: 0, high: 0 } };
+    expect(validateAudioMixRequest({ clips: [legacy], sources, frames: 90, fps: 30 })).toBe(true);
+    expect(validateAudioMixRequest({ clips: [advanced], sources, frames: 90, fps: 30 })).toBe(true);
+    expect(validateAudioMixRequest({ clips: [{ ...advanced, audioEffects: { ...advanced.audioEffects, echoRepeats: 2.5 } }], sources, frames: 90, fps: 30 })).toBe(false);
+    expect(validateAudioMixRequest({ clips: [{ ...advanced, speedCurve: [{ frame: 1, rate: 1 }, { frame: 0, rate: 1 }] }], sources, frames: 90, fps: 30 })).toBe(false);
+    expect(validateAudioMixRequest({ clips: [{ ...advanced, surprise: true }], sources, frames: 90, fps: 30 })).toBe(false);
+});
+
 test('encode schema fixes pixel layout, exact timestamp rounding and batch bounds', () => {
     expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000 })).toBe(true);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, alpha: true })).toBe(true);
+    expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, alpha: 'yes' })).toBe(false);
     expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, audioBitRate: 192_000,
         audioArtifactId: 'vx-pcm-audio-1' })).toBe(true);
     expect(validateBeginEncodeRequest({ width: 1280, height: 720, fps: 30, videoBitRate: 6_000_000, audioArtifactId: '../pcm' })).toBe(false);
@@ -88,6 +106,8 @@ test('native results are strictly bounded and native prose never escapes', () =>
         { offsetFrames: 24_000, timestampUs: 1_000_000, frames: 24_000 }] }, 'web-average')).toBeNull();
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000, videoCodec: 'avc1',
         audioCodec: 'mp4a', audioSampleRate: 48000, audioChannels: 2 })?.frames).toBe(900);
+    expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000,
+        videoCodec: 'hvc1-alpha' })?.videoCodec).toBe('hvc1-alpha');
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 29_999_999, videoCodec: 'avc1' })).toBeNull();
     expect(parseMp4Artifact({ ...base, kind: 'mp4', width: 1280, height: 720, fps: 30, frames: 900, durationUs: 30_000_000, videoCodec: 'avc1',
         audioCodec: 'mp4a' })).toBeNull();

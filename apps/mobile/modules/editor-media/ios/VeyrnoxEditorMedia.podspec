@@ -11,7 +11,8 @@ Pod::Spec.new do |s|
   s.swift_version = '5.9'
   s.static_framework = true
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'AVFoundation', 'Accelerate', 'CoreImage', 'CoreMedia', 'CoreVideo'
+  s.frameworks = 'AVFoundation', 'Accelerate', 'CoreImage', 'CoreMedia', 'CoreVideo', 'Speech'
+  s.weak_frameworks = 'Translation'
   s.source_files = '**/*.swift'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
 end

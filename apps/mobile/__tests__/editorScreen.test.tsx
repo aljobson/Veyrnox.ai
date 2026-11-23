@@ -12,7 +12,7 @@ const copyId = '22222222-2222-2222-2222-222222222222';
 const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() };
 const mockRequest = jest.fn();
 const mockApi = { request: mockRequest };
-const mockFullEditor = jest.fn((_props: unknown) => null), mockWebView = jest.fn(() => null);
+const mockFullEditor = jest.fn((_props: unknown) => null);
 let mockParams: Record<string, string> = { projectId: id };
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams, useRouter: () => mockRouter }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
@@ -20,7 +20,6 @@ jest.mock('../src/lib/editorFlag', () => ({ __esModule: true, EDITOR_ENABLED: tr
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'u', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/components/LibraryChooser', () => ({ LibraryChooser: () => null }));
 jest.mock('../src/components/editor/FullEditorScreen', () => ({ FullEditorScreen: (props: unknown) => mockFullEditor(props) }));
-jest.mock('react-native-webview', () => ({ WebView: () => mockWebView() }));
 let root: Root;
 const visible = (text: string) => root.container.queryAll(node => node.children.includes(text)).length > 0;
 async function press(label: string) {
@@ -43,7 +42,7 @@ afterEach(async () => { await act(async () => root.unmount()); jest.restoreAllMo
 test('flag off has no WebView or API requests for either route', async () => {
     Object.assign(flag, { EDITOR_ENABLED: false }); await act(async () => root.render(<Editor />));
     expect(visible('The editor is not available yet')).toBe(true);
-    expect(mockFullEditor).not.toHaveBeenCalled(); expect(mockWebView).not.toHaveBeenCalled(); expect(mockRequest).not.toHaveBeenCalled();
+    expect(mockFullEditor).not.toHaveBeenCalled(); expect(mockRequest).not.toHaveBeenCalled();
     await act(async () => root.render(<NewEditor />)); expect(visible('The editor is not available yet')).toBe(true); expect(mockRequest).not.toHaveBeenCalled();
 });
 test.each([false, true])('enabled editor is native regardless of full-editor flag %s and forwards all route params', async full => {
@@ -52,13 +51,11 @@ test.each([false, true])('enabled editor is native regardless of full-editor fla
     mockParams = { projectId: id, jobId: copyId, bestCut: '1', cuts: encodeCuts(cuts) };
     await act(async () => root.render(<Editor />));
     expect(mockFullEditor).toHaveBeenCalledWith({ projectId: id, jobId: copyId, cuts, startBestCut: true });
-    expect(mockWebView).not.toHaveBeenCalled();
 });
 test('absent or invalid optional params preserve native editor defaults', async () => {
     mockParams = { projectId: id, bestCut: '0', cuts: 'invalid' };
     await act(async () => root.render(<Editor />));
     expect(mockFullEditor).toHaveBeenCalledWith({ projectId: id, jobId: undefined, cuts: null, startBestCut: false });
-    expect(mockWebView).not.toHaveBeenCalled();
 });
 test('new empty project creates in default workspace with a stable key and routes to the editor', async () => {
     await act(async () => root.render(<NewEditor />)); await press('Empty project');

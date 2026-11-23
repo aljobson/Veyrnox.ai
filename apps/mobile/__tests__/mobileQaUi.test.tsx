@@ -48,6 +48,14 @@ test('iOS status announcements deduplicate rerenders but announce a later repeat
     for (const value of ['Saving', 'Saving', 'Saved', 'Saved', 'Saving']) await act(async () => root.render(<Status value={value} />));
     expect(announce.mock.calls.map(c => c[0])).toEqual(['Saved', 'Saving']);
 });
+test('event identity announces repeated identical successful actions once per event', async () => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    function Status({ event }: { event: number | null }) {
+        useAnnouncement(event === null ? null : 'Song added', { everywhere: true, eventKey: event ?? undefined }); return null;
+    }
+    for (const event of [null, 1, 1, 2]) await act(async () => root.render(<Status event={event} />));
+    expect(announce.mock.calls.map(c => c[0])).toEqual(['Song added', 'Song added']);
+});
 test('disabled primary rich labels use tertiary ink on the surface without opacity', async () => {
     const settings = { ...DEFAULT_APPEARANCE, theme: 'light' as const };
     const p = tokensForScheme('light', settings);

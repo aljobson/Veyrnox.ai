@@ -1,7 +1,7 @@
 import { rawText } from '../../lib/i18n/translate';
 import { useState } from 'react';
 import { I18nManager, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { touchTarget } from '../../lib/a11y';
+import { HEADER_MAX_FONT_SCALE, touchTarget } from '../../lib/a11y';
 import { formatTimecode, parseTimecode } from '../../lib/editorTimeline';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
@@ -33,9 +33,9 @@ export function EditorTransport({ frame, total, fps, playing, onSeek, onPlaying 
             {button(t('editorCore.goToEnd'), total <= 0 || frame >= total - 1, () => seek(total - 1), 1, true)}
         </View>
         <View style={local.time}>
-            {entry === null ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.enterTimecode')} onPress={() => { setEntry(formatTimecode(frame, fps)); setInvalid(false); }} style={touchTarget}><Text style={styles.timecode}>{formatTimecode(frame, fps)}</Text></Pressable>
+            {entry === null ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.enterTimecode')} onPress={() => { setEntry(formatTimecode(frame, fps)); setInvalid(false); }} style={touchTarget}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.timecode}>{formatTimecode(frame, fps)}</Text></Pressable>
                 : <TextInput autoFocus accessibilityLabel={t('editorCore.enterTimecode')} value={entry} keyboardType="numbers-and-punctuation" returnKeyType="done" submitBehavior="submit" onChangeText={setEntry} onSubmitEditing={submit} onBlur={() => { setEntry(null); setInvalid(false); }} style={styles.input} />}
-            <Text style={styles.totalTime}>{t('editorCore.totalTime', { value1: formatTimecode(total, fps) })}</Text>
+            <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.totalTime}>{t('editorCore.totalTime', { value1: formatTimecode(total, fps) })}</Text>
         </View>
         {invalid ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.problem}>{t('editorCore.timecodeInvalid')}</StatusText> : null}
     </View>;

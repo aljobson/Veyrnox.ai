@@ -664,3 +664,13 @@ BEGIN
     END IF;
 END $$;
 ```
+
+## Amendment 22 (2026-11-22): 1080p swaps on Crun behind their own key, dark
+
+**Why.** The 720p Crun run of a full-length photo smeared the face in fast motion. One paid 1080p run (Crun task `5c03181d`, three images) held the face close to the earlier fal result. Crun's TaskInfo recorded 135 credits for it, against 90 for each 720p run: $0.6553 per 5 s at 206 credits per $1, inside the $0.8441 floor for 47 credits.
+
+**Decision.** Migration 0580 adds a second server-only row, `kling-o1-swap-crun-1080` (`crun:kling/o1-r2v-1080`, our endpoint name for Crun's `kling/o1-r2v` with `resolution: 1080p`), at the same 47 credits. It is dispatched only while `templateSwapCrun1080` in `APP_RUNTIME_FLAGS` is exactly `true`. With the key off, the catalog read, row, request and job are the 720p ones. With it on, an absent or inactive 1080p row keeps 720p, a mismatched row refuses before any debit, and turning the 720p row off also stops 1080p. A job keeps the row it was admitted on, so replay does not read the key.
+
+**Evidence.** Two direct paid runs at 1080p, one of each photo set: `5c03181d` (three images, full-length photo) and `eae8a8e9` (two images, head-and-shoulders photo). Crun recorded 135 credits for each.
+
+**Not proven.** No 1080p swap has run through the website. The second run took about 36 minutes against about 6 at 720p, and one run does not show whether that is typical, so the key stays off until the owner accepts that wait. `templateSwapFullBody` stays a separate decision.

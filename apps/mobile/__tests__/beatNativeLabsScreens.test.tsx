@@ -22,6 +22,7 @@ import { beatStore, resetBeats } from '../src/lib/beatNative/store';
 import { createTemplateBeat } from '../src/lib/beatNative/templates';
 import { fixedDoc, USER, PROJECT, deferred } from './beatNativeFixtures';
 import type { MusicSongDetail } from '../src/lib/music/types';
+import type { BeatDoc, Edit } from '../src/lib/beatNative/doc';
 beforeAll(() => require('../src/lib/beatNative/store').beatStore.setOwner('test-owner'));
 const mockPush = jest.fn(), mockReplace = jest.fn(), mockStop = jest.fn(), mockToggle = jest.fn(async () => 'pad');
 const mockApi = { request: jest.fn(async () => ({ projects: [] })) };
@@ -35,7 +36,7 @@ jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => 
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0 }) }));
 jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../src/lib/beatNative/persist'), documentFiles: () => ({ read: async () => null, write: async () => {}, remove: async () => {}, list: async () => [] }) }));
 jest.mock('../src/lib/beatNative/soundPreview', () => ({ createSoundPreview: (_port: unknown, onFinish: () => void) => { mockPreviewFinish = onFinish; return { toggle: mockToggle, stop: mockStop }; } }));
-jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => ({ close: async () => {}, play: async () => {}, stop: () => {} }) }));
+jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => ({ close: async () => {}, play: async () => {}, stop: () => {}, hitPad: () => 0, nearestStepAt: () => null }) }));
 jest.mock('../src/components/music/MusicPlayer', () => ({ MusicPlayer: () => null }));
 jest.mock('../src/components/music/MusicShares', () => ({ MusicShares: () => null }));
 jest.mock('../src/components/music/MusicPublication', () => ({ MusicPublication: () => null }));
@@ -77,6 +78,21 @@ test('sounds list, filters, empty suggestions, audition, refusal and successful 
     await press(t('beatLabs.auditionNamed', { name: t('beatLabs.sound.pad') })); expect(mockToggle).toHaveBeenCalledWith(expect.objectContaining({ id: 'pad' }), 92);
     await press(t('beatLabs.addNamed', { name: t('beatLabs.sound.pad') })); expect(text(t('beatLabs.addFailed')).length).toBeGreaterThan(0); expect(close).not.toHaveBeenCalled();
     add.mockReturnValue(true); await press(t('beatLabs.addNamed', { name: t('beatLabs.sound.pad') })); expect(close).toHaveBeenCalled(); expect(mockStop).toHaveBeenCalled();
+});
+test('Pattern Labs Sounds stays visible and inserts at tick zero in a new audio lane while Song can hide it', async () => {
+    let doc: BeatDoc = { ...fixedDoc(), view: 'pattern' };
+    const apply = (operation: Edit) => { doc = operation(doc); return true; };
+    const props = { doc, apply, targets: PHONE_TIP_TARGETS, capabilities: PHONE_CAPABILITIES };
+    await act(async () => root.render(<BeatLabsBar {...props} />));
+    await press(t('beatLabs.sounds'));
+    await press(t('beatLabs.addNamed', { name: t('beatLabs.sound.pad') }));
+    const audio = doc.tracks.find(track => track.kind === 'audio');
+    expect(audio?.regions).toHaveLength(1);
+    expect(audio?.regions[0].start).toBe(0);
+
+    await act(async () => root.render(<BeatLabsBar {...props} doc={{ ...doc, view: 'song' }} showSounds={false} />));
+    expect(byLabel(t('beatLabs.sounds'))).toBeUndefined();
+    expect(byLabel(t('beatLabs.controls'))).toBeDefined();
 });
 test('all contexts and rows are listed; unavailable capabilities have no touch instructions', async () => {
     const replay = jest.fn(), close = jest.fn();

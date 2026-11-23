@@ -2,6 +2,10 @@ import type { BeatAsset, BeatDoc } from './doc';
 import type { EngineContext, ParamLike } from './shared';
 import { audioPieces, loadBeatTake, type AudioTake, type SongWindow } from './takeShared';
 import type { NativeAssetPort } from './nativeAssets';
+import { nativeHeldError } from './nativeHeldAssets';
+import { decodeReserve } from './exportShared';
+import { NATIVE_INFLATE_PEAK_BYTES, STEM_ZIP_LIMIT } from './stemArchive';
+import type { RangeAssetMode } from './transport';
 
 const MAX_CACHE_BYTES = 300_000_000;
 export type PlaybackBuffer = {
@@ -43,7 +47,7 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
             || (error as { name?: string })?.name === 'AbortError';
     }
     function permanent(error: unknown) {
-        return errorCode(error) === 'held' || [404, 410].includes(Number(errorStatus(error)));
+        return errorCode(error) !== 'held' && [404, 410].includes(Number(errorStatus(error)));
     }
     function report(key: string, asset: BeatAsset, error: unknown) {
         if (announced.has(key)) return;
@@ -94,7 +98,6 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
             result.getChannelData(0).set(row.samples);
             return result;
         }
-        if (asset.source === 'stem') throw new Error('stem_playback_unavailable');
         if (!assets) throw new Error('audio_asset_loader_unavailable');
         return assets.load(asset, bpm, context, signal);
     }
@@ -102,6 +105,7 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
         const key = keyOf(asset, bpm, reverse);
         const plainKey = keyOf(asset, bpm, false);
         pinned.add(plainKey); pinned.add(key);
+        if (assets?.heldAssets?.isHeld(asset)) { report(plainKey, asset, nativeHeldError()); return null; }
         const failed = failures.get(plainKey);
         if (failed) { report(plainKey, asset, failed.error); return null; }
         const ready = cached(key);
@@ -119,6 +123,7 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
                         if (!recording || (error as Error)?.message !== 'audio_playback_too_large') throw error;
                         failures.set(plainKey, { permanent: false, error }); report(plainKey, asset, error); return null;
                     }
+                    if (errorCode(error) === 'held') { report(plainKey, asset, error); return null; }
                     failures.set(plainKey, { permanent: permanent(error), error }); report(plainKey, asset, error); return null;
                 }
                 if (!plain || token !== generation || signal.aborted) return null;
@@ -140,13 +145,13 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
         loading.set(key, work); return work;
     }
     return {
-        async preload(doc: BeatDoc, options: { recording?: boolean } = {}) {
+        async preload(doc: BeatDoc, options: { recording?: boolean; assetMode?: RangeAssetMode } = {}) {
             const all = new Map<string, { asset: BeatAsset; reverse: boolean; audible: boolean }>();
             const solo = doc.tracks.some(track => track.solo);
             for (const track of doc.tracks) for (const region of track.regions) {
                 if (track.kind !== 'audio' || !region.assetId) continue;
                 const asset = doc.assets?.[region.assetId];
-                if (!asset || asset.source === 'stem' || (options.recording && asset.source !== 'take')) continue;
+                if (!asset || (options.recording && options.assetMode !== 'all-supported' && asset.source !== 'take')) continue;
                 const selected = keyOf(asset, doc.tempo.bpm, !!region.reverse);
                 all.set(selected, { asset, reverse: !!region.reverse, audible: !track.mute && (!solo || track.solo) });
             }
@@ -157,7 +162,15 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
                     keys.add(plain); keys.add(selected); estimates.set(plain, pcm); estimates.set(selected, pcm);
                     wanted.set(selected, item);
                 }
-                return { wanted, keys, estimated: [...estimates.values()].reduce((total, value) => total + value, 0) };
+                const stemRequests = new Set([...wanted.values()].flatMap(({ asset }) =>
+                    asset.source === 'stem' && typeof asset.ref === 'object' ? [asset.ref.requestId] : []));
+                const transient = stemRequests.size * STEM_ZIP_LIMIT + Math.max(0, ...[...wanted.values()].map(({ asset }) => {
+                    if (asset.source === 'stem' && typeof asset.ref === 'object') {
+                        return Math.max(NATIVE_INFLATE_PEAK_BYTES, decodeReserve(asset));
+                    }
+                    return ['song', 'target'].includes(asset.source) ? decodeReserve(asset) : 0;
+                }));
+                return { wanted, keys, estimated: [...estimates.values()].reduce((total, value) => total + value, 0) + transient };
             };
             let plan = prepare(all);
             if (plan.estimated > MAX_CACHE_BYTES) plan = prepare(new Map([...all].filter(([, item]) => item.audible)));
@@ -176,10 +189,11 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
             // Sequential decode prevents several large regions from peaking in memory together.
             for (const item of wanted.values()) await buffer(item.asset, doc.tempo.bpm, item.reverse, !!options.recording);
         },
-        async window(doc: BeatDoc, w: SongWindow, bounds: { startSec: number; endSec: number }, options: { recording?: boolean } = {}) {
+        async window(doc: BeatDoc, w: SongWindow, bounds: { startSec: number; endSec: number }, options: { recording?: boolean; assetMode?: RangeAssetMode } = {}) {
             const token = generation;
             await Promise.all(audioPieces(doc, w.fromSec, w.toSec, bounds).map(async piece => {
-                const asset = doc.assets?.[piece.assetId]; if (!asset || asset.source === 'stem') return;
+                const asset = doc.assets?.[piece.assetId]; if (!asset) return;
+                if (options.recording && options.assetMode !== 'all-supported' && asset.source !== 'take') return;
                 const decoded = await buffer(asset, doc.tempo.bpm, piece.reverse, !!options.recording);
                 if (!decoded || token !== generation) return;
                 const at = w.contextTime + piece.songTimeSec - w.fromSec;
@@ -207,6 +221,7 @@ export function createTakePlayback(context: PlaybackContext, load: (id: string) 
             announced.clear();
             for (const [key, failure] of failures) if (!failure.permanent) failures.delete(key);
             controller.abort(); controller = new AbortController(); loading.clear();
+            assets?.releaseArchives?.();
             for (const { source, gain, pan } of active) { source.onended = null; try { source.stop(); } catch { /* Already ended. */ } source.disconnect(); gain.disconnect(); pan.disconnect(); }
             active.clear();
         },

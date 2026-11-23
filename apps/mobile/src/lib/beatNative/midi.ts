@@ -39,13 +39,21 @@ export const { noteKey, quantisedSelection, clipLengthFromBars, MIDI_LIMITS } = 
     MIDI_LIMITS: { clips: number; clipNotes: number; notes: number; clipTicks: number };
 };
 export const { midiNoteOnsInWindow } = windowOps as {
-    midiNoteOnsInWindow(doc: BeatDoc, fromSec: number, toSec: number): { trackId: string; pitch: number; velocity: number; songTimeSec: number; durationSec: number }[];
+    midiNoteOnsInWindow(doc: BeatDoc, fromSec: number, toSec: number, options?: { tempo?: number; endSec?: number; includeMuted?: boolean }): { trackId: string; pitch: number; velocity: number; songTimeSec: number; durationSec: number }[];
 };
 const { resizeRegion } = beatOps as { resizeRegion(doc: BeatDoc, regionId: string, length: number): BeatDoc };
 export const { WAVETABLE_PRESETS } = tables as { WAVETABLE_PRESETS: Record<string, { label: string }> };
 export { PRESETS, noteLabel, isBlackKey };
 export const midiTracks = (doc: BeatDoc): MidiTrackDoc[] => doc.tracks.filter(t => t.kind === 'midi') as MidiTrackDoc[];
 export const midiRegions = (doc: BeatDoc) => midiTracks(doc).flatMap(track => track.regions.map(region => ({ track, region, clip: asMidiDoc(doc).clips?.[region.clipId] })));
+export const midiTrackSections = (doc: BeatDoc) => midiTracks(doc).map(track => {
+    const clips = new Map<string, { region: MidiRegion; clip: MidiClip }>();
+    for (const region of track.regions) {
+        const clip = asMidiDoc(doc).clips?.[region.clipId];
+        if (clip && !clips.has(region.clipId)) clips.set(region.clipId, { region, clip });
+    }
+    return { track, clips: [...clips.values()] };
+});
 export const regionUses = (doc: BeatDoc, clipId: string): number => midiRegions(doc).filter(x => x.region.clipId === clipId).length;
 export function addInstrumentTrack(doc: BeatDoc, instrument: Instrument): BeatDoc {
     const length = Math.max(doc.steps * 240, songEnd(doc));

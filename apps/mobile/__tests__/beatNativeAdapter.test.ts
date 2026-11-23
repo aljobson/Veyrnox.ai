@@ -1,22 +1,26 @@
-import { chainable, createNativeBeatEngine, passThroughCompressor, withWindowAudioContext, wrapNativeContext, type NativeContextCtor } from '../src/lib/beatNative/nativeContext';
+import { chainable, createNativeBeatEngine, nativeDynamicsCompressor, withWindowAudioContext, wrapNativeContext, type NativeContextCtor } from '../src/lib/beatNative/nativeContext';
 import { N0_TRACKS, createSession, hermesHeapBytes, n0Enabled } from '../src/lib/beatNative/session';
 import { createMockContext, mockAudioContextClass } from './helpers/mockNativeAudio';
+import { resetAudioWorklets, workletNodes } from './helpers/mockAudioWorklets';
 
 // Node kinds react-native-audio-api 1.0.1 implements (web-audio-api-coverage.mdx). DynamicsCompressor is absent on purpose.
 const SUPPORTED = new Set(['gain', 'oscillator', 'biquad', 'bufferSource', 'buffer', 'delay', 'stereoPanner', 'convolver', 'periodicWave', 'waveShaper']);
 
 describe('wrapNativeContext', () => {
-    test('a missing compressor becomes a pass-through gain that accepts the engine\'s parameter writes, and the gap is reported', () => {
-        const { context, created } = createMockContext();
+    beforeEach(resetAudioWorklets);
+    test('a missing built-in compressor becomes a real worklet processor with Web Audio parameters', () => {
+        const { context } = createMockContext();
         const report = { gaps: [] as string[], latencyHint: 'interactive' };
-        const wrapped = wrapNativeContext(context as never, report as never) as unknown as Record<string, () => Record<string, { value: number }>>;
-        const limiter = wrapped.createDynamicsCompressor();
+        const wrapped = wrapNativeContext(context as never, report as never) as unknown as Record<string, (settings?: object) => Record<string, { value: number }>>;
+        const limiter = wrapped.createDynamicsCompressor({ threshold: -1, knee: 0, ratio: 20, attack: 0.003, release: 0.25 });
         for (const [k, v] of Object.entries({ threshold: -1, knee: 0, ratio: 20, attack: 0.003, release: 0.25 })) limiter[k].value = v;
         expect(limiter.ratio.value).toBe(20);
-        expect(created).toEqual(['gain']);
-        expect(report.gaps).toEqual(['dynamicsCompressor']);
+        expect(workletNodes).toHaveLength(1);
+        expect(workletNodes[0].kind).toBe('workletProcessor');
+        expect(report.gaps).toEqual([]);
         wrapped.createDynamicsCompressor();
-        expect(report.gaps).toEqual(['dynamicsCompressor']);
+        expect(workletNodes).toHaveLength(2);
+        expect(report.gaps).toEqual([]);
     });
 
     test('connect returns its destination even though the library\'s returns nothing, so the engine\'s chains work', () => {
@@ -45,9 +49,11 @@ describe('wrapNativeContext', () => {
         expect(wrapped.destination).toBe(context.destination);
     });
 
-    test('passThroughCompressor is a real node so connect chains keep working', () => {
+    test('nativeDynamicsCompressor is a real node so connect chains keep working', () => {
         const { context } = createMockContext();
-        const node = passThroughCompressor(context as never) as { connect: (d: unknown) => unknown; reduction: number };
+        const node = nativeDynamicsCompressor(context as never, {}, (_context, settings) => ({
+            settings, connect: jest.fn(), disconnect: jest.fn(),
+        })) as { connect: (d: unknown) => unknown; reduction: number };
         const next = { kind: 'next' };
         expect(node.connect(next)).toBe(next);
         expect(node.reduction).toBe(0);
@@ -92,8 +98,7 @@ describe('the shared web engine on a library-shaped context', () => {
         expect(state.options).toEqual([{ latencyHint: 'interactive' }]);
         expect(native.engine.context.sampleRate).toBe(48000);
         expect(restored).toBe(true);
-        // The master output builds its compressor through the wrapper, so the gap is already known.
-        expect(native.report.gaps.sort()).toEqual(['connectReturnsVoid', 'dynamicsCompressor']);
+        expect(native.report.gaps).toEqual(['connectReturnsVoid']);
     });
 
     test('all eight N0 tracks and a pad build only node kinds the library implements', async () => {
@@ -156,10 +161,11 @@ describe('known gaps pinned (docs/mobile/spikes/N0-NATIVE-ENGINE.md)', () => {
         expect(() => effect.update({ drive: 30 })).toThrow('curve already set');
     });
 
-    test('the compressor effect and the master limiter build on the pass-through (G1), so they do not throw', () => {
+    test('G1: the compressor effect builds an envelope worklet with its initial settings', () => {
         const { context } = createMockContext();
         const wrapped = wrapNativeContext(context as never, { gaps: [], latencyHint: 'interactive' });
         expect(() => effects.buildEffect(wrapped, { type: 'compressor', params: { threshold: -18, ratio: 4 } })).not.toThrow();
+        expect(workletNodes.at(-1)?.kind).toBe('workletProcessor');
     });
 });
 

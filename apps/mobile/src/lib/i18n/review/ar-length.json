@@ -2058,6 +2058,18 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.midiRecord.status.countIn",
+    "english": "Count-in",
+    "translation": "العد التمهيدي",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "إعادة محاولة الحفظ",
+    "ratio": 1.8
+  },
+  {
     "id": "beat.pad.kick",
     "english": "Kick",
     "translation": "الطبل الكبير",
@@ -2272,6 +2284,12 @@
     "english": "Move later",
     "translation": "تحريك إلى وقت لاحق",
     "ratio": 1.8
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
   },
   {
     "id": "beat.snap.label",
@@ -2536,6 +2554,12 @@
     "english": "Avatars",
     "translation": "الصور الرمزية",
     "ratio": 1.86
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "الإبقاء على",
+    "ratio": 2.75
   },
   {
     "id": "oauth.signIn",

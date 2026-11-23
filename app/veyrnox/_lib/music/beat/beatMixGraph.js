@@ -20,8 +20,9 @@ export function buildMaster(context, doc, { destination = context.destination, o
     input = context.createGain(); gain = context.createGain(); nodes.push(input, gain);
     input.connect(gain); gain.gain.value = setting.gain; output = gain;
     if (setting.limiter) {
-      const limiter = context.createDynamicsCompressor(); nodes.push(limiter);
-      Object.entries({ threshold: -1, knee: 0, ratio: 20, attack: 0.003, release: 0.25 }).forEach(([k, v]) => { limiter[k].value = v; });
+      const options = { threshold: -1, knee: 0, ratio: 20, attack: 0.003, release: 0.25 };
+      const limiter = context.createDynamicsCompressor(options); nodes.push(limiter);
+      Object.entries(options).forEach(([k, v]) => { limiter[k].value = v; });
       gain.connect(limiter); output = limiter;
     }
     output.connect(destination);

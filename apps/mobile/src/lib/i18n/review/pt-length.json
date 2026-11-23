@@ -3774,6 +3774,24 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "A gravação dos pads está desativada",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Tentar salvar novamente",
+    "ratio": 2.3
+  },
+  {
+    "id": "beat.midiRecord.recovery.retryQuantise",
+    "english": "Retry with quantise",
+    "translation": "Tentar novamente com quantização",
+    "ratio": 1.68
+  },
+  {
     "id": "beat.pad.openhat",
     "english": "Open hat",
     "translation": "Chimbal aberto",
@@ -4138,6 +4156,42 @@
     "english": "Move later",
     "translation": "Mover para depois",
     "ratio": 1.7
+  },
+  {
+    "id": "beat.ripple.label",
+    "english": "Ripple editing",
+    "translation": "Edição com deslocamento",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Deslocamento desativado",
+    "ratio": 2.3
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Deslocamento ativado",
+    "ratio": 2.22
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Inserir espaço de um compasso",
+    "ratio": 1.61
+  },
+  {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Biblioteca de músicas",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Tentar novamente",
+    "ratio": 3.2
   },
   {
     "id": "beat.snap.label",

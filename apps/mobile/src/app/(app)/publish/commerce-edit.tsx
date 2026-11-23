@@ -4,7 +4,9 @@ import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { touchTarget } from '../../../lib/a11y';
 import { ApiError } from '../../../lib/api';
@@ -100,9 +102,9 @@ export default function CommerceEdit() {
     );
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: id ? t(writable ? 'commerce.edit' : 'commerce.view') : t('commerce.new') }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <Text style={styles.note}>{t('commerce.note')}</Text>
                 {!canEdit ? <Text style={styles.muted}>{t('commerce.readOnly')}</Text> : null}
                 {input(t('commerce.name'), form.title, (v) => set('title', v), { maxLength: 160 })}
@@ -123,8 +125,8 @@ export default function CommerceEdit() {
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('commerce.save')}</Text>}
                     </Pressable>
                 ) : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

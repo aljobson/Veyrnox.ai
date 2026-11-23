@@ -2196,6 +2196,18 @@
     "ratio": 1.8
   },
   {
+    "id": "beat.midiRecord.recovery.saveNew",
+    "english": "Save as new beat",
+    "translation": "नए बीट के रूप में सेव करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveAsNew",
+    "english": "Save as new beat",
+    "translation": "नए बीट के रूप में सेव करें",
+    "ratio": 1.63
+  },
+  {
     "id": "musicTrackAdd.lyrics",
     "english": "Lyrics",
     "translation": "गीत के बोल",
@@ -2424,6 +2436,12 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "ग्रिड से मिलाएँ",
@@ -2638,6 +2656,36 @@
     "english": "Top pick",
     "translation": "सबसे अच्छा विकल्प",
     "ratio": 2.13
+  },
+  {
+    "id": "editorLocalExport.cloud",
+    "english": "Use cloud export instead",
+    "translation": "इसके बजाय क्लाउड एक्सपोर्ट इस्तेमाल करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorNativeMotion.analysing",
+    "english": "Analysing",
+    "translation": "विश्लेषण हो रहा है",
+    "ratio": 2
+  },
+  {
+    "id": "editorNativeMotion.processing",
+    "english": "Processing",
+    "translation": "प्रोसेस हो रहा है",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorNativeMotion.encoding",
+    "english": "Encoding",
+    "translation": "एन्कोड हो रहा है",
+    "ratio": 2
+  },
+  {
+    "id": "editorSpeech.autoApplying",
+    "english": "Adding editable captions…",
+    "translation": "बदले जा सकने वाले कैप्शन जोड़े जा रहे हैं…",
+    "ratio": 1.68
   },
   {
     "id": "oauth.signIn",

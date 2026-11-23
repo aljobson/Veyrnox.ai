@@ -3870,6 +3870,24 @@
     "ratio": 2.14
   },
   {
+    "id": "beat.padRecord.status.armed",
+    "english": "Armed — press Play to record pads",
+    "translation": "Готово — нажмите «Воспроизвести», чтобы записывать пэды",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.midiRecord.key.audition",
+    "english": "preview",
+    "translation": "прослушивание",
+    "ratio": 1.86
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Повторить сохранение",
+    "ratio": 2
+  },
+  {
     "id": "beat.pad.snare",
     "english": "Snare",
     "translation": "Малый барабан",
@@ -4270,6 +4288,42 @@
     "english": "Copy on drop",
     "translation": "Копировать при отпускании",
     "ratio": 2.08
+  },
+  {
+    "id": "beat.track.rename",
+    "english": "Rename track",
+    "translation": "Переименовать дорожку",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.track.renamed",
+    "english": "Track renamed",
+    "translation": "Дорожка переименована",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Музыкальная библиотека",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.library.searchEmpty",
+    "english": "No owned songs match “{query}”.",
+    "translation": "Среди своих песен нет совпадений с запросом «{query}».",
+    "ratio": 1.74
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.library.destination",
+    "english": "Add at {position}",
+    "translation": "Добавить в позицию {position}",
+    "ratio": 1.71
   },
   {
     "id": "beat.snap.label",
@@ -4822,6 +4876,12 @@
     "english": "Add clips to timeline",
     "translation": "Добавить клипы на монтажную линейку",
     "ratio": 1.67
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Оставить",
+    "ratio": 2
   },
   {
     "id": "chrome.privacyPolicy",

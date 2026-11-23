@@ -60,12 +60,12 @@ const PROVIDERS = {
             const target = crun.parseEndpoint(modelRow.provider_endpoint);
             return target ? crun.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
         },
-        submit: (job, _record, apiKey) => submitCrunAtBoundary(job, {
+        submit: (job, _record, apiKey, _publicHost, _sources, options) => submitCrunAtBoundary(job, {
             apiKey,
             cfg: envConfig(),
             reservationKey: `generic:${job.job_id}:${crypto.randomUUID()}`,
             purpose: 'generic.create',
-            submit: crun.submitTask,
+            submit: (submitJob, submitOptions) => crun.submitTask(submitJob, { ...submitOptions, faceIdentity: options?.faceIdentity === true }),
         }),
     },
     // Higgsfield (ADR-0256 phase 5): polling only (no callback registered), so a job is accepted only when R2 is
