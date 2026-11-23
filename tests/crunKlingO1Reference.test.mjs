@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   CRUN_KLING_O1_REFERENCE_CAPABILITY, CRUN_KLING_O1_REFERENCE_DEFAULT_PROMPT, buildKlingO1ReferenceRequest,
-  nearestKlingAspect, withDerivedAspect,
+  nearestKlingAspect, referencesAsWords, withDerivedAspect,
 } from '../lib/crunKlingO1Reference.js';
 import { capabilityFor, declaredInputs, checkInputs } from '../lib/modelCapabilities.js';
 import { buildRequest, parseEndpoint } from '../packages/adapters/crun.js';
@@ -41,7 +41,7 @@ test('each input Crun could not take is refused, none is changed', () => {
   const bad = (patch) => buildKlingO1ReferenceRequest({ ...base, ...patch }).error;
   assert.equal(bad({ duration_seconds: 7 }), 'duration_not_supported');
   assert.equal(bad({ aspect_ratio: 'auto' }), 'inputs_invalid:aspect_ratio');
-  assert.equal(bad({ aspect_ratio: undefined }), 'inputs_invalid:aspect_ratio');
+  assert.equal(bad({ aspect_ratio: undefined }), 'source_size_unknown', 'no derived shape means the video size could not be read');
   assert.equal(bad({ aspect_ratio: '4:3' }), 'inputs_invalid:aspect_ratio');
   assert.equal(bad({ video_url: 'http://insecure.test/v.mp4' }), 'inputs_invalid:video_url');
   assert.equal(bad({ video_url: undefined }), 'inputs_invalid:video_url');
@@ -115,4 +115,26 @@ test('the header states what was not established and what differs from fal', () 
   assert.match(sql, /a 4:3 source is made 16:9 here/);
   assert.match(sql, /never hops/);
   assert.match(sql, /Deploy the Worker that has crun:kling\/o1-r2v-ref BEFORE applying/);
+});
+
+test('our @Video1 and @Image tags become words, and a tag the request cannot honour is refused before the debit', () => {
+  assert.equal(referencesAsWords('Use @Image1 for the person and @Image2 for the setting, copy @Video1.'),
+    'Use the first reference picture for the person and the second reference picture for the setting, copy the reference video.');
+  assert.equal(referencesAsWords('Use @Image3 here'), null, 'this offer takes two pictures at most');
+  assert.equal(referencesAsWords('Keep @Element1 steady'), null, 'a leftover @ tag is refused, not sent');
+  assert.equal(referencesAsWords('no tags at all'), 'no tags at all');
+  const r = buildKlingO1ReferenceRequest({ ...base, prompt: 'Use @Image1 for the person.' });
+  assert.equal(r.body.input.prompt, 'Use the first reference picture for the person.');
+  assert.equal(buildKlingO1ReferenceRequest({ ...base, prompt: 'Use @Image3.' }).error, 'inputs_invalid:prompt');
+  assert.equal(buildKlingO1ReferenceRequest({ ...base, prompt: 'Use @Image2.' }).ok, true, 'a recipe naming a second picture still goes through');
+});
+
+test('the template Recreate recipe (2,000 characters at most) still fits Crun\'s 2,500 after its tags are written out', async () => {
+  const { recreatePromptForTemplate, TEMPLATE_RECREATE_PROMPT_MAX } = await import('../app/veyrnox/_lib/templateRecreate.js');
+  const prompt = recreatePromptForTemplate({ prompt: 'a dancer in a warehouse '.repeat(200) });
+  assert.ok(prompt.length <= TEMPLATE_RECREATE_PROMPT_MAX);
+  const r = buildKlingO1ReferenceRequest({ ...base, prompt });
+  assert.equal(r.ok, true, r.error);
+  assert.ok(r.body.input.prompt.length <= 2500);
+  assert.doesNotMatch(r.body.input.prompt, /@/);
 });
