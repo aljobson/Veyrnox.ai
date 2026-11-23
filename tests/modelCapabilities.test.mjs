@@ -17,6 +17,7 @@ import * as openrouter from '../packages/adapters/openrouter.js';
 // kie twins staged inactive by migration 0105 (a row with no record can never
 // be listed or bought, so the record ships before the row is switched on).
 const CATALOG = [
+    'crun:qwen3-tts/speech-synthesis',
     // Swap offers ship inactive (ADR-0329).
     'fal-ai/minimax-h3-max-recast', 'crun:wan/2-2-animate-replace',
     'bytedance/seedance-2.0/reference-to-video', 'market:bytedance/seedance-2',
@@ -25,7 +26,8 @@ const CATALOG = [
     'market:kling-3.0/video-std', 'market:bytedance/seedance-2-mini',
     'market:wan/2-6-flash-image-to-video', 'market:seedream/5-flash-text-to-image',
     'fal-ai/sana/v1.5/4.8b',
-    'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
+    'fal-ai/ace-step', 'fal-ai/ace-step-1.5', 'crun:suno/music-generate',
+    'fal-ai/elevenlabs/sound-effects/v2', 'fal-ai/inworld-tts',
     'fal-ai/flux-2-pro', 'fal-ai/bytedance/seedream/v4/text-to-image', 'fal-ai/nano-banana',
     'fal-ai/kling-video/v2.6/pro/text-to-video', 'fal-ai/minimax/hailuo-02/standard/text-to-video',
     'fal-ai/wan-25-preview/text-to-video', 'fal-ai/veo3.1/fast', 'fal-ai/veo3.1',
@@ -50,7 +52,7 @@ const CATALOG = [
     // Crun text-to-image, added with the image adapter (ADR-0256).
     'crun:google/nano-banana', 'crun:bytedance/seedream-4',
     // Crun Kling, staged standby (2026-11-03).
-    'crun:kling/v3', 'crun:kling/v3-std', 'crun:kling/v2-6', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080',
+    'crun:kling/v3', 'crun:kling/v3-std', 'crun:kling/v2-6', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080', 'crun:kling/o1-r2v-ref',
     // Crun first for FLUX.2 Pro and Kling Avatar (0581).
     'crun:flux-2-pro', 'crun:kling/avatar',
     // Staged on no route until a paid audio-on proof (ADR-0256 amendment 2026-11-22).

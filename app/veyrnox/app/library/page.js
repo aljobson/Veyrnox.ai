@@ -258,7 +258,7 @@ export default function Library() {
   const editCredits = models.find((m) => m.id === 'clip-edit')?.credits ?? null;
 
   function onEditSubmitted(job) {
-    const entry = { job_id: job.job_id, model_id: 'clip-edit', credits: job.credits, name: job.name, submitted_at: Date.now() };
+    const entry = { job_id: job.job_id, idempotent: job.idempotent, model_id: 'clip-edit', credits: job.credits, name: job.name, submitted_at: Date.now() };
     pushJobHistory(entry);
     setRows((prev) => [hydrateFromHistory(entry), ...prev]);
     if (job.balance_after != null) setBalance(job.balance_after);

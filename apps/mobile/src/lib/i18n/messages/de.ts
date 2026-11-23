@@ -444,9 +444,9 @@ const de = {
     'presets.swap.refunded': 'Credits zurückgegeben.',
     'presets.swap.not_charged': 'Für diesen Versuch wurde nichts berechnet.',
     'presets.swap.submitting': 'Dein Video wird gestartet…',
-    'presets.swap.queued': 'Video angenommen. Kosten: {credits} Credits. Verfolge es in der Bibliothek.',
-    'presets.swap.running': 'Dein Video wird erstellt. Verfolge es in der Bibliothek.',
-    'presets.swap.succeeded': 'Dein Video ist fertig. Öffne die Bibliothek zum Ansehen.',
+    'presets.swap.queued': 'Video angenommen. Kosten: {credits} Credits. Es erscheint auf dieser Seite, sobald es fertig ist.',
+    'presets.swap.running': 'Dein Video wird erstellt. Bleib auf dieser Seite: Es erscheint hier, sobald es fertig ist.',
+    'presets.swap.succeeded': 'Dein Video ist fertig.',
     'presets.swap.busy_background': 'Verwende ein Foto mit schlichtem Hintergrund und nur dir.',
     'presets.swap.ragged_matte': 'Die Freistellung ist unsauber. Verwende ein Foto mit schlichtem Hintergrund und nur dir.',
     'presets.swap.several_people': 'Mehrere Personen erkannt. Verwende ein Foto mit nur dir und schlichtem Hintergrund.',
@@ -456,6 +456,10 @@ const de = {
     'presets.swap.unavailable': 'Diese Vorlage ist nicht verfügbar. Wähle eine andere oder versuche es später.',
     'presets.swap.cutout_failed': 'Die lokale Freistellung konnte nicht beendet werden. Versuche es erneut oder wähle ein Foto mit schlichtem Hintergrund. Das Original wird nie hochgeladen.',
     'presets.swap.price_changed': 'Der Preis hat sich geändert. Prüfe den aktuellen Preis vor dem nächsten Versuch.',
+    'app.create.templatePrompt.edit': 'Prompt bearbeiten',
+    'app.create.templatePrompt.error': 'Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.',
+    'app.create.templatePrompt.help': 'Der Prompt dieser Vorlage wird unverändert verwendet.',
+    'app.create.templatePrompt.ready': 'Vorlagen-Prompt bereit',
 } as const;
 
 export default de;

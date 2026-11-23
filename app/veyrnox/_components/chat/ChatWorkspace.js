@@ -12,6 +12,8 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { takeTemplateChatDraft } from '../../_lib/chatTemplateDraft';
+import { withTemplateText } from '../../_lib/privateTemplatePrompt';
+import { TemplatePromptReady } from '../TemplatePromptReady';
 import { longTextState } from '../../_lib/chatLongText';
 import { CHAT_USER_TEXT_MAX } from '../../../../lib/chatLimits.js';
 import { admitLibraryImage, attachmentLabel } from '../../_lib/chatImages';
@@ -35,6 +37,7 @@ import { ComposerControls, ComposerTypeTabs } from './ComposerControls';
 import { MediaComposer } from './MediaComposer';
 import { MediaCanvas } from './MediaCanvas';
 import { useChatMediaGeneration } from './useChatMediaGeneration';
+import { useChatMusicGeneration } from './useChatMusicGeneration';
 import { ThreadList } from './ThreadList';
 import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
@@ -124,7 +127,14 @@ export function ChatWorkspace() {
   const { models: studioModels, live: studioCatalogLive, loading: studioLoading } = useCatalog();
   const [composerKind, setComposerKind] = useState(COMPOSER_KINDS.CHAT);
   const [mediaPrompt, setMediaPrompt] = useState('');
-  const mediaGeneration = useChatMediaGeneration({ kind: composerKind, models: studioModels, catalogLive: studioCatalogLive });
+  const genericMediaGeneration = useChatMediaGeneration({ kind: composerKind, models: studioModels, catalogLive: studioCatalogLive });
+  const musicGeneration = useChatMusicGeneration({ active: composerKind === COMPOSER_KINDS.AUDIO, prompt: mediaPrompt });
+  // Do not expose the generic Audio submit path until Music policy has resolved.
+  // After a failed first read, retain the existing generic Audio path.
+  const mediaGeneration = composerKind === COMPOSER_KINDS.AUDIO
+    && (!musicGeneration.resolved || musicGeneration.suno)
+    ? { ...musicGeneration, suno: true }
+    : genericMediaGeneration;
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [error, setError] = useState(() => waiting(NEW_CHAT)); // a page that has just loaded shows a chat that has not started, and what waits for it
   const [closed, setClosed] = useState(false);
@@ -203,13 +213,22 @@ export function ChatWorkspace() {
   // The unsent text follows the chat it was typed in, for the user who typed it; sending or clearing it forgets it.
   useEffect(() => { saveDraft(active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
   const templateDraftHandoff = useRef(false);
+  // A video template's own words stay off screen until Edit; any change makes them the customer's text.
+  const [hiddenTemplateText, setHiddenTemplateText] = useState(null);
+  const templateTextHidden = hiddenTemplateText !== null && text === hiddenTemplateText;
   useEffect(() => {
     // Keep the handoff queued while authentication is required; signing in may reload this page.
     if (templateDraftHandoff.current || active || !ready || signedOut) return;
     templateDraftHandoff.current = true;
     let draft = null;
     try { draft = takeTemplateChatDraft(window.sessionStorage); } catch { /* Browser storage can be unavailable. */ }
-    if (draft) setText(draft.prompt);
+    if (!draft) return;
+    // A private template's prompt arrives as a placeholder (ADR-0351 amendment 23); the chat needs the words, so read them for this signed-in caller.
+    withTemplateText(draft.prompt).then((words) => {
+      if (typeof words !== 'string' || words.length > MAX_TEXT) return;
+      setText(words);
+      setHiddenTemplateText(draft.hidePrompt ? words : null);
+    });
   }, [active, ready, signedOut]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
@@ -543,7 +562,7 @@ export function ChatWorkspace() {
           <p className="min-w-0 flex-1 truncate text-sm" aria-live="polite">
             <span className="font-semibold">{composerKind === COMPOSER_KINDS.CHAT ? model.name : mediaGeneration.model?.name || t('app.chat.workspace.noModel', { kind: tOr(t, `app.editor.media.kind.${composerKind}`, composerKind) })}</span>{' '}
             <span className="font-vx-mono text-xs text-vx-money vx-num">
-              {composerKind === COMPOSER_KINDS.CHAT ? t('app.chat.workspace.perReply', { price: credits(t, locale, model.credits_per_reply) }) : mediaGeneration.model ? t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits) }) : ''}
+              {composerKind === COMPOSER_KINDS.CHAT ? t('app.chat.workspace.perReply', { price: credits(t, locale, model.credits_per_reply) }) : mediaGeneration.model ? mediaGeneration.suno ? t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits_per_candidate) }) : t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits) }) : ''}
             </span>
           </p>
           
@@ -654,9 +673,9 @@ export function ChatWorkspace() {
               )}
               <div className="px-3 pt-3">
                 <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
-                <textarea id="chat-msg" rows={3} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
+                {templateTextHidden ? <TemplatePromptReady onEdit={() => { setHiddenTemplateText(null); requestAnimationFrame(() => document.getElementById('chat-msg')?.focus()); }} /> : <textarea id="chat-msg" rows={3} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!oddlingSendPending && !longText.tooLong) send(); } }}
-                  className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+                  className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />}
                 {longText.showCounter && <p aria-live="polite" className={`px-1 pb-1 text-end text-xs ${longText.tooLong ? 'font-bold text-vx-danger' : 'text-vx-fg-muted'}`}>
                   <span className="font-vx-mono vx-num">{longText.count}/{longText.limit}</span>
                   {longText.extra > 0 && <>{' · '}{t('app.chat.workspace.longMessage', { price: credits(t, locale, longText.extra) })}</>}
@@ -667,8 +686,8 @@ export function ChatWorkspace() {
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
                 <ComposerControls compact models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
                   onLibrary={() => { libraryStamp.current = att.stamp(); setPickingLibrary(true); }} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
-                <DictateButton disabled={busy} onText={(spoken) => setText((current) => appendSpoken(current, spoken).slice(0, MAX_TEXT))} />
-                <EnhanceButton disabled={busy} text={text} />
+                {!templateTextHidden && <DictateButton disabled={busy} onText={(spoken) => setText((current) => appendSpoken(current, spoken).slice(0, MAX_TEXT))} />}
+                {!templateTextHidden && <EnhanceButton disabled={busy} text={text} />}
                 {busy
                   ? <button type="button" onClick={stop} disabled={stopping || checking} className="shrink-0 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
                   : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending || longText.tooLong} className="shrink-0 rounded-full bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}

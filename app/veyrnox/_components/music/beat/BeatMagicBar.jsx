@@ -5,6 +5,7 @@ import { useI18n } from '../../../../../components/I18nProvider';
 
 import { useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../../_lib/gateway';
+import { useMusicCelebrations } from '../../../_lib/useMusicCelebrations';
 import { MusicPrivateAudio } from '../../../_lib/useMusicAudioSrc';
 import { EXAMPLE_PROMPT_KEYS, MAGIC_LAYER_LIMIT, MAGIC_PROMPT_MAX, barChoices, magicQuoteBody, startExampleRotation } from '../../../_lib/music/beat/magicBar.mjs';
 import { action, button, input } from './beatStyles';
@@ -33,6 +34,7 @@ export default function BeatMagicBar({ doc, loops, announce, hidePrompt = false 
   const [length, setLength] = useState(bars.includes(8) ? 8 : bars[0]);
   const [quote, setQuote] = useState(null);
   const [generation, setGeneration] = useState(null);
+  const registerCelebration = useMusicCelebrations(generation ? [generation] : []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const attempt = useRef(null);
@@ -44,7 +46,7 @@ export default function BeatMagicBar({ doc, loops, announce, hidePrompt = false 
   async function refresh(id) {
     const next = await gatewayFetch(`/music/generations/${id}`);
     setGeneration(next);
-    if (TERMINAL.has(next.state)) announce(next.state === 'succeeded' || next.state === 'partial' ? t('app.music.beat.status.s31') : t('app.music.beat.status.s32'));
+    if (next.state === 'failed' || next.state === 'refunded') announce(t('app.music.beat.status.s32'));
     return next;
   }
 
@@ -54,7 +56,7 @@ export default function BeatMagicBar({ doc, loops, announce, hidePrompt = false 
     const timer = window.setInterval(() => {
       gatewayFetch(`/music/generations/${pollingId}`).then((next) => {
         setGeneration(next);
-        if (TERMINAL.has(next.state)) announce(next.state === 'succeeded' || next.state === 'partial' ? t('app.music.beat.status.s31') : t('app.music.beat.status.s32'));
+        if (next.state === 'failed' || next.state === 'refunded') announce(t('app.music.beat.status.s32'));
       }).catch(() => {});
     }, 1500);
     return () => window.clearInterval(timer);
@@ -83,6 +85,7 @@ export default function BeatMagicBar({ doc, loops, announce, hidePrompt = false 
       const generation = capabilityGeneration();
       const beforeSend = () => { assertBeatGeneration(generation); assertBeatWritable(doc); };
       const accepted = await gatewayFetch('/music/generations', { beforeSend, method: 'POST', body: JSON.stringify({ quote_id: quote.quote_id, idempotency_key: key }) });
+      registerCelebration(accepted, quote.total_credits);
       attempt.current = null;
       setGeneration({ id: accepted.generation_id, state: accepted.state, candidates: accepted.candidates });
       announce(t('app.music.beat.status.s33', { p0: quote.total_credits }));
@@ -114,7 +117,7 @@ export default function BeatMagicBar({ doc, loops, announce, hidePrompt = false 
           <p className="text-sm text-vx-fg-muted">{t('app.music.beat.ui.balance')}{quote.balance} → {quote.balance_after}{t('app.music.beat.ui.a.failed.loop.is.refunded')}</p>
           <div className="mt-3 flex flex-wrap gap-2"><button type="button" className={action} title={readOnly ? t(BEAT_READ_ONLY_MESSAGE) : undefined} disabled={readOnly || busy || !quote.affordable} onClick={confirm}>{busy ? t('app.music.beat.ui.confirming.once') : t('app.music.beat.status.s35', { p0: quote.total_credits })}</button><button type="button" className={button} onClick={reset}>{t('app.music.beat.ui.change')}</button></div>
         </div>) : null}
-      {generation ? (<div aria-live="polite" className="space-y-3">
+      {generation ? (<div aria-live={terminal ? 'off' : 'polite'} className="space-y-3">
           <p className="font-bold">{terminal ? t('app.music.beat.ui.loops.finished') : t('app.music.beat.ui.making.two.loops')}</p>
           <ul className="grid gap-3 md:grid-cols-2">{candidates.map((candidate) => (
             <li key={candidate.job_id || candidate.ordinal} className="rounded-xl border border-vx-border bg-vx-base p-3">

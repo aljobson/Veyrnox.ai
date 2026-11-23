@@ -7,7 +7,17 @@ let rows = [], fail = false, calls = [], selects = [], rpcResult;
 globalThis.beatGuardFixture = {
   envConfig: () => ({ supabaseUrl: 'https://fixture.invalid', serviceRoleKey: 'fixture' }),
   rpc: async (name, args) => { calls.push({ name, args }); return rpcResult ?? { ok: true, quote_id: uuid(2), request_id: uuid(3), job_ids: [], state: 'queued' }; },
-  select: async (table, args) => { selects.push({ table, args }); if (fail === true || fail === table) throw new Error('vendor secret'); return table === 'users' ? [{ id: uuid(4) }] : rows; },
+  select: async (table, args) => {
+    selects.push({ table, args });
+    if (fail === true || fail === table) throw new Error('vendor secret');
+    if (table === 'users') return [{ id: uuid(4) }];
+    if (table === 'model_catalog') return [{
+      id: 'ace-step-1.5', name: 'ACE-Step 1.5', modality: 'audio', credits_5s: 3,
+      gated_flag: false, provider: 'fal', provider_endpoint: 'fal-ai/ace-step-1.5',
+      updated_at: '2026-11-22T12:00:00Z',
+    }];
+    return rows;
+  },
 };
 const hooks = registerHooks({ load(url, context, next) {
   if (url.endsWith('/packages/db/supabase-client.js')) return { format: 'module', shortCircuit: true, source: 'export const { rpc, select, envConfig } = globalThis.beatGuardFixture;' };

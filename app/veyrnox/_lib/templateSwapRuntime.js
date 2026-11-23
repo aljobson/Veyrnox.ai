@@ -5,10 +5,11 @@ import { uploadSourceFile } from './uploadSourceFile.js';
 import { processSwapPhoto } from './templateSwapPhoto.mjs';
 import { createSwapStore } from './templateSwapStore.mjs';
 import { createSwapActions } from './templateSwapActions.mjs';
-import { pushJobHistory } from './jobHistory.js';
+import { pushJobHistory, markJobSettled } from './jobHistory.js';
 export const swapStore = createSwapStore();
 export const swapActions = createSwapActions(swapStore, { makeKey: makeIdempotencyKey, processPhoto: processSwapPhoto, upload: uploadSourceFile, gateway: gatewayFetch, balanceChanged: notifyBalanceChanged,
-  jobStarted: ({ job_id, model_id, credits, name }) => pushJobHistory({ job_id, model_id, credits, ...(name ? { name } : {}) }),
+  jobStarted: entry => pushJobHistory(entry),
+  jobSettled: (id, state) => { void markJobSettled(id, state); },
   refreshOffer: id => window.dispatchEvent(new CustomEvent('veyrnox:template-swap-refresh', { detail: { id } })) });
 let connected = false;
 export function connectSwapSession() {

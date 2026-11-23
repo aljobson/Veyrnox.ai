@@ -19,8 +19,9 @@ function fixture({ upload, submit, sourceModel = model, allowance = false, panel
         throw new Error(`Unexpected request ${path}`);
     };
     const gateway = { gatewayFetch, makeIdempotencyKey: () => `key-${++keys}`, notifyBalanceChanged() {} };
-    const history = { pushJobHistory() {}, markJobSettled() {} };
-    const jobs = h.load('app/veyrnox/_lib/useStudioJobs.js', { './gateway': gateway, './jobHistory': history });
+    const recorded = [];
+    const history = { pushJobHistory(entry) { recorded.push(entry); }, markJobSettled() {} };
+    const jobs = h.load('app/veyrnox/_lib/useStudioJobs.js', { './gateway': gateway, './jobHistory': history, './resultPresence': { useResultPresence() {} }, '../../lib/authClient': { getSession: () => session, onSessionChange: () => () => {} } });
     const catalog = { live: true, models: [sourceModel] };
     const { GenerationPanel } = h.load(file, {
         ...englishAppImports, '../Icon': { Icon: 'span' }, '../Button': { Button: 'button' },
@@ -47,7 +48,7 @@ function fixture({ upload, submit, sourceModel = model, allowance = false, panel
     const confirm = () => nodes(tree).find(node => node.type === 'button' && typeof node.props.children === 'string' && /12/.test(node.props.children));
     const primary = () => nodes(tree).find(node => node.type === 'fieldset').props.children.flat(Infinity).find(node => node?.type === 'button');
     const usePrompt = () => { const button = nodes(tree).find(node => node.type === 'button' && node.props.children === 'Use this prompt'); assert.ok(button, 'new prompt requires an explicit use action'); button.props.onClick(); render(); };
-    return { h, calls, props, catalog, render, confirm, primary, usePrompt, get keys() { return keys; } };
+    return { h, calls, recorded, props, catalog, render, confirm, primary, usePrompt, get keys() { return keys; } };
 }
 test('generation panels are absent initially and retain the same child after first use', () => {
     const h = hookHarness();
@@ -81,7 +82,7 @@ test('switching during upload preserves the request key and completes the same u
 });
 test('uncertain submission survives switching; a new prompt cannot replace its identity', async () => {
     let attempt = 0;
-    const f = fixture({ submit: async () => { if (++attempt === 1) throw new Error('response lost'); return { job_id: 'job-1' }; } });
+    const f = fixture({ submit: async () => { if (++attempt === 1) throw new Error('response lost'); return { job_id: 'job-1', idempotent: true };  } });
     f.render(); await flush(); f.render(); f.usePrompt(); await f.confirm().props.onClick();
     assert.equal(f.calls.find(call => call.path === '/generations').body.idempotency_key, 'key-1');
     assert.equal(f.render(false).shell.props.hidden, true); f.props.intentRequest = { id: 'r2', intent: 'generate_video', prompt: 'A different film' };
@@ -90,6 +91,7 @@ test('uncertain submission survives switching; a new prompt cannot replace its i
     await f.confirm().props.onClick(); f.render();
     const posts = f.calls.filter(call => call.path === '/generations');
     assert.equal(posts.length, 2); assert.equal(posts[1].body.idempotency_key, 'key-1'); assert.deepEqual(posts[0].body, posts[1].body); assert.equal(f.keys, 1);
+    assert.equal(f.recorded[0].idempotent, true); assert.equal(f.recorded[0].recovering, true);
     f.h.dispose();
 });
 test('running jobs continue their real polling hook while their generation tool is hidden', async () => {

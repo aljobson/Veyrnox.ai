@@ -54,8 +54,8 @@ test('the menu shows over-limit actions as disabled with a reason, and the song 
   assert.match(crop, /source_too_large'\?'This recording is too large to crop here/);
   assert.match(render, /source_too_large: 'This recording is too large to edit here/);
   const renderRoute = await source('app/api/v1/music/songs/[id]/render/route.js');
-  assert.match(renderRoute, /if \(context\.mime_type !== 'audio\/wav'\) return reply\(\{ error: 'render_format_unsupported' \}, 400\);/);
-  assert.match(renderRoute, /if \(Number\(context\.size_bytes\) > 26_214_400\) return reply\(\{ error: 'source_too_large' \}, 400\);/, 'an over-25 MiB WAV is a size error');
+  assert.match(renderRoute, /context\.mime_type !== 'audio\/wav' \|\| Number\(context\.size_bytes\) > 26_214_400/);
+  assert.match(renderRoute, /error: 'edit_unavailable_for_format' \}, 409/);
   for (const route of ['crop', 'render']) {
     const code = await source(`app/api/v1/music/songs/[id]/${route}/route.js`);
     assert.match(code, /error ?=== ?'upload_too_large' ?\? ?'source_too_large' ?: ?'source_duration_unavailable'/, route);

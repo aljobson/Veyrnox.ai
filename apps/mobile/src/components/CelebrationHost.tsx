@@ -37,6 +37,16 @@ const PIECES = Array.from({ length: CONFETTI_COUNT }, (_, i) => {
         round: seeded(i, 9) < 0.3,
     };
 });
+// One visible moment can acknowledge several jobs while keeping every job's callbacks.
+function joinMoment(target: CelebrationEvent, next: CelebrationEvent, shown: boolean) {
+    const done = target.onDone;
+    target.onDone = () => { done(); next.onDone(); };
+    if (shown) next.onShown();
+    else {
+        const acknowledge = target.onShown;
+        target.onShown = () => { acknowledge(); next.onShown(); };
+    }
+}
 export function CelebrationHost() {
     const [event, setEvent] = useState<CelebrationEvent | null>(null);
     const [clapping, setClapping] = useState(false);
@@ -62,7 +72,15 @@ export function CelebrationHost() {
     }, []);
     useEffect(() => {
         const off = onCelebrate((next) => {
-            if (active.current) queue.current.push(next);
+            const current = active.current;
+            if (current && next.kind === 'success') {
+                joinMoment(current, next, acknowledged.current === current);
+            } else if (current?.kind === 'success' && acknowledged.current !== current) {
+                // A milestone arriving in the same batch replaces the routine notice.
+                joinMoment(next, current, false);
+                active.current = next;
+                setEvent(next);
+            } else if (current) queue.current.push(next);
             else {
                 active.current = next;
                 setEvent(next);
@@ -93,19 +111,25 @@ export function CelebrationHost() {
         if (!event || active.current !== event || acknowledged.current === event) return;
         acknowledged.current = event;
         event.onShown();
-        AccessibilityInfo.announceForAccessibility(t(event.kind === 'winsMilestone' ? `wins.${event.milestone}` : `appearance.${event.kind}`));
+        AccessibilityInfo.announceForAccessibility(t(event.kind === 'success' ? 'library.status.ready' : event.kind === 'winsMilestone' ? `wins.${event.milestone}` : `appearance.${event.kind}`));
         void playSuccess();
     }, [event]);
     useEffect(() => {
         if (!event || event.kind === 'winsMilestone') return;
-        const clap = setTimeout(() => setClapping(true), CLAP_MS);
-        const finish = setTimeout(dismiss, CELEBRATION_MS);
+        const clap = event.kind === 'success' ? undefined : setTimeout(() => setClapping(true), CLAP_MS);
+        const finish = setTimeout(dismiss, event.kind === 'success' ? 2800 : CELEBRATION_MS);
         return () => {
             clearTimeout(clap);
             clearTimeout(finish);
         };
     }, [event, dismiss]);
+    useEffect(() => { if (event?.kind === 'success') acknowledge(); }, [event, acknowledge]);
     if (!event) return null;
+    if (event.kind === 'success') return (
+        <View pointerEvents="none" style={styles.success}>
+            <Text variant="title3">{t('library.status.ready')}</Text>
+        </View>
+    );
     if (event.kind === 'winsMilestone') return (
         <Modal transparent visible animationType="none" onRequestClose={dismiss} onShow={acknowledge}>
             <View style={styles.overlay} accessibilityViewIsModal onAccessibilityEscape={dismiss}>
@@ -200,6 +224,7 @@ export const Confetti = memo(function Confetti() {
 });
 const confetti = StyleSheet.create({ piece: { position: 'absolute' } });
 const sheets = themedStyles((p) => ({
+    success: { position: 'absolute', top: ds.space.xxl, alignSelf: 'center', padding: ds.space.lg, borderRadius: ds.radius.lg, backgroundColor: p.bgElevated1, borderWidth: 1, borderColor: p.accent, zIndex: 100 },
     overlay: { flex: 1, backgroundColor: p.scrim, alignItems: 'center', justifyContent: 'center' },
     message: { alignItems: 'center', gap: ds.space.lg, padding: ds.space.xxl, borderRadius: ds.radius.xl, backgroundColor: p.bgElevated1, margin: ds.space.gutter },
     winsButton: { minHeight: 44, minWidth: 160, justifyContent: 'center', alignItems: 'center', padding: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderSubtle },

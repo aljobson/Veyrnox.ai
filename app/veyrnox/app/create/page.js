@@ -84,6 +84,13 @@ import useCreateDraftRecovery from '../../_lib/useCreateDraftRecovery';
 import { getJourney, trackJourneyJob } from '../../_lib/veyJourneyStore';
 import { outputDurationLabel, mediaGenerationSources } from '../../_lib/chatMedia';
 import { uploadSourceFile } from '../../_lib/uploadSourceFile';
+import { useSourceFit } from '../../_lib/useSourceFit';
+import { useTemplatePromptDisplay } from '../../_lib/templatePromptDisplay';
+import { ownPromptOf } from '../../_lib/privateTemplatePrompt';
+import { isTemplatePromptPlaceholder } from '../../../../lib/templatePromptPlaceholder.js';
+import { jobHistoryLabels } from '../../_lib/templatePromptVisibility';
+import { SourceFitNotice } from '../../_components/SourceFitNotice';
+import { TemplatePromptReady } from '../../_components/TemplatePromptReady';
 import { generationSlotKind, generationMimeTypes } from '../../../../lib/generationSourceSlots.mjs';
 import { GENERATION_PROMPT_MAX } from '../../../../lib/generationPromptLimits.js';
 import { SwapSceneEntry } from '../../_components/SwapSceneEntry';
@@ -408,6 +415,13 @@ function CreateStudio() {
     image: { ...model.media.image, maxFiles: Math.min(model.media.image.maxFiles ?? 1, photoContract.slotCount || 1) },
     ...Object.fromEntries(Object.entries(model.media).filter(([slot]) => slot !== 'image' && sourceList(sources[slot]).length)),
   } : imagePhotoRequired && model?.media?.image ? { ...model.media, image: { ...model.media.image, required: true, maxFiles: 1 } } : model?.media || {};
+  const sourceFit = useSourceFit(media, sources);
+  // A private template (ADR-0351 amendment 23) has a placeholder where its prompt was; Edit prompt reads the whole template for the signed-in caller.
+  const hydrateTemplate = useCallback((full) => {
+    setTemplateData(full);
+    setPrompt((current) => (isTemplatePromptPlaceholder(current) ? ownPromptOf(full) : current));
+  }, []);
+  const promptDisplay = useTemplatePromptDisplay(activeTemplate || keptTemplate, prompt, undefined, { onHydrate: hydrateTemplate });
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource: missingSlot, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
@@ -759,11 +773,10 @@ function CreateStudio() {
         (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId, ...submittedPresentation });
         if (i === 0) trackJourneyJob(submitted.job_id, model.kind, submittedTask);
         pushJobHistory({
-          job_id: submitted.job_id,
+          idempotent: submitted.idempotent, recovering: run.unknown.has(i), job_id: submitted.job_id,
           model_id: modelId,
           credits: jobCredits,
-          prompt: prompt.slice(0, 60),
-          name: prompt.slice(0, 40),
+          ...jobHistoryLabels(activeTemplate || keptTemplate, prompt),
         });
         if (submitted.balance_after != null) setBalance(submitted.balance_after);
         return submitted;
@@ -886,7 +899,7 @@ function CreateStudio() {
               className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
               style={{ aspectRatio: resultAspect.replace(':', '/') }}
             >
-              {job?.asset_url ? (
+              {(job?.asset_url || job?.state === 'succeeded') ? (
                 <JobAssetPreview job={job} />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -939,7 +952,7 @@ function CreateStudio() {
           {continuationError && <p role="alert" className="mt-3 text-xs text-vx-danger">{continuationError}</p>}
 
           <div className="mt-3 rounded-2xl border border-vx-field bg-vx-panel focus-within:border-vx-accent">
-          <textarea
+          {promptDisplay.hidden ? <TemplatePromptReady assistantTarget="create.prompt" ready={hydrated} onEdit={promptDisplay.reveal} status={promptDisplay.status} /> : <textarea
             data-assistant-target="create.prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -950,7 +963,7 @@ function CreateStudio() {
             rows={4}
             className="scroll-mt-24 block w-full bg-transparent p-3.5 text-sm text-vx-fg placeholder:text-vx-fg-faint resize-none outline-hidden"
             placeholder={helperCopy(t, locale, promptPlaceholder(model))}
-          />
+          />}
           <SpeechSongNudge model={model} prompt={prompt} className="px-3.5 pb-2" />
           {(
             <div className="flex flex-wrap items-center gap-2 rounded-b-2xl border-t border-vx-border/60 bg-vx-base/40 px-2 py-2">
@@ -976,8 +989,8 @@ function CreateStudio() {
               {model?.kind === 'video' && <ResolutionVariantChoice model={model} models={models} seconds={Number(duration.replace('s', ''))} onChoose={chooseModel} ariaLabel={t('app.create.resolutionHeading')} />}
               <FrameChoice modelId={model?.id} value={frame} onChange={setFrame} />
               {takesImageCount(model) && <ChipSelect assistantTarget="create.count" aria-label={t("app.create.imagesHeading")} options={IMAGE_COUNTS} value={count} onChange={setCount} formatValue={(n) => `×${n}`} formatOption={(n) => String(n)} />}
-              <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />
-              <EnhanceButton disabled={!hydrated} text={prompt} />
+              {!promptDisplay.hidden && <DictateButton disabled={!hydrated} onText={(spoken) => setPrompt((current) => appendSpoken(current, spoken))} />}
+              {!promptDisplay.hidden && <EnhanceButton disabled={!hydrated} text={prompt} />}
               <button type="button" data-testid="create-open-templates" disabled={attachConverting || sourcesConverting} onClick={() => setTemplatesOpen(true)}
                 className="vx-press ms-auto min-h-10 shrink-0 rounded-full border border-vx-accent/50 px-3.5 py-1.5 font-vx-mono pointer-coarse:min-h-11 text-[11px] font-bold text-vx-accent hover:bg-vx-accent/10 disabled:opacity-50">
                 {t('app.create.templates.open')}</button>
@@ -1010,6 +1023,7 @@ function CreateStudio() {
             onChooseSource={() => setAddFilesOpen(true)}
             settings={{
               prompt,
+              ...(promptDisplay.unedited ? { promptHidden: true } : {}),
               model: model?.name,
               aspect: aspectOptions.length ? aspect : null,
               duration: templateDuration,
@@ -1031,6 +1045,7 @@ function CreateStudio() {
 
           {animationPortrait && <div role="status" className="mt-4 rounded-xl border border-vx-accent/30 bg-vx-panel p-4 text-sm text-vx-fg-body">{portraitStatus}{animationMismatch && <p className="mt-2 text-vx-danger">{t("app.create.animationModel")}</p>}</div>}
           {attachNotice && <p role="status" className="mt-2 text-xs text-vx-fg-muted">{attachNotice}</p>}
+          <SourceFitNotice fit={sourceFit} />
           {switchOffer && <button type="button" onClick={switchForFiles} className="mt-2 rounded-full border border-vx-border px-3 py-1.5 text-xs text-vx-fg hover:border-vx-accent">{t('app.create.attach.switchTo', { name: switchOffer.model.name })}</button>}
           {addFilesOpen && !photosUnavailable && <AddFilesDialog capacity={attachCapacity(model)} onAdd={attachFiles} onClose={() => setAddFilesOpen(false)} />}
           {templatesOpen && <TemplatePicker models={models} goal={goal} selectedKind={model?.kind} onPick={applyTemplate} onClose={() => setTemplatesOpen(false)} />}
@@ -1086,7 +1101,7 @@ function CreateStudio() {
             aria-describedby={hintText ? 'vx-generate-why' : undefined}
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || templateBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || templateBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || sourceFit.blocked || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
             aria-label={sending ? undefined : hasJobs && !activeBatch ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>

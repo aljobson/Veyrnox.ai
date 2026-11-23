@@ -452,5 +452,9 @@
   "presets.swap.photo_too_small",
   "presets.swap.unavailable",
   "presets.swap.cutout_failed",
-  "presets.swap.price_changed"
+  "presets.swap.price_changed",
+  "app.create.templatePrompt.edit",
+  "app.create.templatePrompt.error",
+  "app.create.templatePrompt.help",
+  "app.create.templatePrompt.ready"
 ]
