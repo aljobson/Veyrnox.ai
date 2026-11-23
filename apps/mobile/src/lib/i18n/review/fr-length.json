@@ -7714,5 +7714,11 @@
     "english": "We could not confirm this run; checking.",
     "translation": "Nous n’avons pas pu confirmer cette génération ; vérification en cours.",
     "ratio": 1.77
+  },
+  {
+    "id": "app.create.templatePrompt.edit",
+    "english": "Edit prompt",
+    "translation": "Modifier le prompt",
+    "ratio": 1.64
   }
 ]

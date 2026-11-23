@@ -32,6 +32,8 @@ import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
 import { KeyboardScreen } from '../../../components/KeyboardScreen';
 import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { VeyLoader } from '../../../components/VeyLoader';
+import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady';
+import { isOwnTemplatePrompt, isVideoPreset } from '../../../lib/templatePromptVisibility';
 
 // The longest prompt the generations route accepts.
 const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
@@ -61,9 +63,11 @@ export default function TemplatePage() {
     const sourcePromptDuplicate = typeof preset?.sourcePromptDuplicateOf === 'string';
     const [catalog, setCatalog] = useState<CatalogModel[] | undefined>();
     const [choices, setChoices] = useState<TemplateChoices>({});
+    const [revealedId, setRevealedId] = useState<string | null>(null);
     const templateClip = useTemplateClipAvailable(id);
     const swapOffer = useSwapAvailability(id);
     const displayPrompt = templateClip && preset ? (hasExactSourcePrompt ? preset.sourcePrompt! : preset.prompt) : prompt;
+    const promptHidden = !!preset && revealedId !== preset.id && isVideoPreset(preset) && isOwnTemplatePrompt(preset, displayPrompt);
     const catalogModel = catalog?.find(model => model.id === (templateClip?.model ?? preset?.modelId));
     const original = templateClip && catalogModel ? templateClipModel(catalogModel, templateClip) : catalogModel;
     const models = preset && original && templateModelEligible(original, original)
@@ -126,9 +130,10 @@ export default function TemplatePage() {
             {sourcePromptUnavailable ? <Card><Text>{t('public.TemplateRecipe.sourcePromptUnavailable')}</Text></Card> : null}
             {sourcePromptNotRecorded ? <Card><Text>{t('public.TemplateRecipe.sourcePromptNotRecorded')}</Text></Card> : null}
             {templateClip && slot && model && available && inline ? <TemplateClipComposer poster={preset.posterUrl} prompt={clipPrompt} attached={photos.length > 0} onChange={setClipPrompt} picker={<SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />} /> : null}
-            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={displayPrompt} editable={templateClip ? false : undefined} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />
-            <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(displayPrompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
-            {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
+            {promptHidden ? <TemplatePromptReady onEdit={() => setRevealedId(preset.id)} /> : null}
+            {promptHidden ? null : <TextField {...(revealedId === preset.id ? { autoFocus: true } : {})} label={promptLabel} accessibilityLabel={promptLabel} value={displayPrompt} editable={templateClip ? false : undefined} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />}
+            {promptHidden ? null : <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(displayPrompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />}
+            {copied && !promptHidden ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             {tooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.productPromptTooLong', { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</Text> : null}
             {hasExactSourcePrompt ? <Text>{t('public.TemplateRecipe.exactCommunityPromptHelp')}</Text> : null}
             {templateClip ? <><Text>{t('public.TemplateRecipe.templateClipUsed')}</Text><Text>{t('app.create.referenceLikenessNotice')}</Text></> : null}

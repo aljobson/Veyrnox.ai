@@ -14,7 +14,7 @@ test('TemplateGenerate forwards idempotent and only its own uncertain submission
   const { ast, found } = select('app/veyrnox/_lib/useTemplateGenerate.js', n => ts.isPropertyAssignment(n) && n.name.getText() === 'onJob');
   const recorded = [], run = { unknown: new Set() };
   const callback = evaluate(found[0].initializer.getText(ast), {
-    run, model: { id: 'm' }, presentation: {}, prompt: 'p', startJobs() {}, setBalance() {}, pushJobHistory: entry => recorded.push(entry),
+    run, model: { id: 'm' }, presentation: {}, prompt: 'p', preset: null, jobHistoryLabels: () => ({}), startJobs() {}, setBalance() {}, pushJobHistory: entry => recorded.push(entry),
   });
   callback({ job_id: 'old', idempotent: true }, 5);
   run.unknown.add(0); callback({ job_id: 'own', idempotent: true }, 5);
