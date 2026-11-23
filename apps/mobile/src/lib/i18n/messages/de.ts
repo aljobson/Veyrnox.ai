@@ -294,7 +294,7 @@ const de = {
     'app.create.error.upload_unreadable': 'Die Datei konnte nicht gelesen werden. Es wurde nichts berechnet.',
     'app.create.error.source_too_large': 'Das Bild hat für dieses Modell zu viele Pixel. Verwenden Sie ein kleineres. Es wurde nichts berechnet.',
     'app.create.error.source_too_long': 'Die Aufnahme ist länger als für dieses Modell erlaubt (siehe Limit am Upload). Es wurde nichts berechnet.',
-    'app.create.error.source_length_unknown': 'Die Dateidauer konnte nicht gelesen werden. Versuchen Sie ein WAV oder ein MP3 ohne Coverbild. Es wurde nichts berechnet.',
+    'app.create.error.source_length_unknown': 'Die Dateidauer konnte nicht gelesen werden. Versuchen Sie ein MP4, das Ihr Smartphone oder ein Videoeditor gespeichert hat, oder ein WAV oder MP3 ohne Coverbild. Es wurde nichts berechnet.',
     'app.create.error.lipsync_video_length_unknown': 'Die visuelle Videodauer konnte für die Lippensynchronisation nicht geprüft werden. Exportieren Sie ein einfaches MP4 mit einer Videospur und versuchen Sie es erneut. Es wurde nichts berechnet.',
     'app.create.error.lipsync_audio_exceeds_video': 'Die Sprache ist länger als das Video. Verwenden Sie kürzere Sprache oder ein längeres Video, damit das Ende nicht abgeschnitten wird. Es wurde nichts berechnet.',
     'app.create.error.dialogue_invalid': 'Schreiben Sie eine Zeile pro Sprecher, etwa "Ana: Hallo!", mit bis zu vier Sprechern. Es wurde nichts berechnet.',

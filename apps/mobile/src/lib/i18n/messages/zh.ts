@@ -294,7 +294,7 @@ const zh = {
     'app.create.error.upload_unreadable': '无法读取该文件。 未扣费.',
     'app.create.error.source_too_large': '图片像素过多，不适用于此模型。请使用较小图片。 未扣费.',
     'app.create.error.source_too_long': '录制内容超过此模型允许的时长（请查看上传处的限制）。 未扣费.',
-    'app.create.error.source_length_unknown': '无法读取文件时长。请尝试WAV或无封面图的MP3。 未扣费.',
+    'app.create.error.source_length_unknown': '无法读取文件时长。请尝试手机或视频编辑器保存的MP4，或无封面图的WAV或MP3。 未扣费.',
     'app.create.error.lipsync_video_length_unknown': '无法验证用于唇形同步的视频画面时长。请导出仅含一条视频轨道的普通MP4并重试。 未扣费.',
     'app.create.error.lipsync_audio_exceeds_video': '语音比视频长。请使用更短的语音或更长的视频，以免结尾被截断。 未扣费.',
     'app.create.error.dialogue_invalid': '每位说话者写一行，例如"Ana: 你好！"，最多四位说话者。 未扣费.',
