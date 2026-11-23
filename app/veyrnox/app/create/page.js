@@ -12,6 +12,7 @@ import { rich } from '../../../../lib/i18n/rich';
 import { localeTag } from '../../../../lib/i18n/locales.mjs';
 import { useI18n } from '../../../../components/I18nProvider';
 import { signalVeyMood, veyErrorSituation } from '../../../../lib/veyMood.js';
+import VeyMoment from '../../_components/VeyMoment';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -1136,7 +1137,7 @@ function CreateStudio() {
           )}
           {error && (
             <div role="alert" className="mt-3 rounded-lg border border-vx-danger/40 bg-vx-danger/[0.07] px-4 py-3 text-sm text-vx-danger flex items-start gap-2">
-              <span aria-hidden="true">✕</span>
+              <VeyMoment situation={veyErrorSituation(error.code)} fallback={<span aria-hidden="true">✕</span>} />
               <span>
                 {error.code === 'source_reattach_required' ? t('app.create.reattach') : tOr(t, `app.create.error.${error.code}`, ERROR_COPY[error.code] || t('app.create.error.unknown'))}
                 {error.retryAfter && t('app.create.retryIn', { seconds: locale === 'en' ? error.retryAfter : Number(error.retryAfter).toLocaleString(localeTag(locale)) })}
