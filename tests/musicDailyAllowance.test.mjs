@@ -35,6 +35,7 @@ test('migration keeps both switches dark and serializes global then user reserva
   assert.ok(globalLock > 0 && userLock > globalLock);
   assert.match(sql, /state='SUPERSEDED',superseded_at=now\(\)/);
   assert.match(sql, /q\.charged_credits<>q\.total_credits-\(q\.daily_free_candidates\*q\.unit_credits\)/);
+  assert.match(sql, /BEFORE INSERT OR UPDATE OF unit_credits,total_credits,daily_free_candidates,charged_credits/);
   assert.match(sql, /private\.music_admit_daily_free_job/);
   assert.match(sql, /music_submit_pair_daily[\s\S]*pg_advisory_xact_lock/);
   assert.match(sql, /FOREIGN KEY\(user_id\) REFERENCES public\.users\(id\) ON DELETE SET NULL/);

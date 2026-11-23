@@ -11,12 +11,16 @@ ALTER TABLE public.music_generation_quotes
 CREATE OR REPLACE FUNCTION private.music_quote_charged_default()
 RETURNS TRIGGER LANGUAGE plpgsql SET search_path='' AS $$
 BEGIN
-  NEW.charged_credits:=coalesce(NEW.charged_credits,NEW.total_credits);
+  -- Older quote functions insert at one price and then update the unit/total
+  -- after duration pricing. Keep their paid wire valid while deriving the
+  -- discounted total from the same three immutable quote facts.
+  NEW.charged_credits:=NEW.total_credits-(NEW.daily_free_candidates*NEW.unit_credits);
   RETURN NEW;
 END $$;
 REVOKE ALL ON FUNCTION private.music_quote_charged_default() FROM PUBLIC,anon,authenticated,service_role;
 DROP TRIGGER IF EXISTS music_quote_charged_default ON public.music_generation_quotes;
-CREATE TRIGGER music_quote_charged_default BEFORE INSERT ON public.music_generation_quotes
+CREATE TRIGGER music_quote_charged_default BEFORE INSERT OR UPDATE OF unit_credits,total_credits,daily_free_candidates,charged_credits
+  ON public.music_generation_quotes
   FOR EACH ROW EXECUTE FUNCTION private.music_quote_charged_default();
 UPDATE public.music_generation_quotes SET charged_credits=total_credits WHERE charged_credits IS NULL;
 ALTER TABLE public.music_generation_quotes ALTER COLUMN charged_credits SET NOT NULL;
