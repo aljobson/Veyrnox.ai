@@ -142,9 +142,10 @@ export function GenerationPanel({ disabled, onIngest,voiceover=false,avatar=fals
                 attempt.body={model_id:model.id,idempotency_key:attempt.key,inputs:prepared.inputs,references:preparedSources.references.map(ref=>ref.origin==='asset'?ref:{slot:ref.slot,origin:'upload',key:keys[uploads.findIndex(u=>u.slot===ref.slot&&u.localId===ref.localId)].key}),...(active.length||keys.length?{consent:true}:{})};
             }
             if (getSession()?.user?.id !== owner) throw new Error(t("app.editor.generation.accountChanged"));
+            const recovering = attempt.sent === true; attempt.sent = true;
             const r = await gatewayFetch('/generations', { method: 'POST', body: JSON.stringify(pending.current.body) }); const credits = r.free_allowance ? 0 : quote;
             if (!alive.current || getSession()?.user?.id !== owner) return;
-            pushJobHistory({ job_id: r.job_id, model_id: model.id, credits, name: (prompt || model.name).slice(0, 40) }); pending.current = null;
+            pushJobHistory({ idempotent: r.idempotent, recovering, job_id: r.job_id, model_id: model.id, credits, name: (prompt || model.name).slice(0, 40) }); pending.current = null;
             if (alive.current) { startJobs({ job_id: r.job_id, state: 'queued', model_id: model.id, credits }); if (r.balance_after != null) { setBalance(r.balance_after); onBalance?.({ actor: owner, balance: r.balance_after }); } } notifyBalanceChanged();
         } catch (e) { if (alive.current&&getSession()?.user?.id===owner) setError(e.name==='AbortError'?t("app.editor.generation.uploadCancelled"):e.code === 'account_paused' ? t("app.editor.generation.paused") : e.status === 429 ? t("app.editor.generation.rateLimit") : t("app.editor.generation.unconfirmed")); }
         finally { sent.current = false;uploadController.current=null; if (alive.current) {setSending(false);setUploading(null);} }

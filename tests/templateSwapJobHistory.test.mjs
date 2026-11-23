@@ -21,7 +21,9 @@ function setup(gateway) {
 test('an accepted swap is added to the job history and the progress bar shows it', async () => {
   const s = setup(async path => (path === '/generations' ? { job_id: 'swap-job', balance_after: 53 } : { job: null }));
   await s.actions.choose('test', new Blob(['raw'])); await s.actions.submit('test', offer);
-  assert.deepEqual(s.started, [{ job_id: 'swap-job', model_id: 'kling-o1-reference', credits: 47, templateId: 'test', name: 'Kling O1' }]);
+  assert.equal(s.started.length, 1);
+  assert.deepEqual(s.started[0], { job_id: 'swap-job', model_id: 'kling-o1-reference', credits: 47, templateId: 'test', name: 'Kling O1', idempotent: undefined, recovering: false, submitted_at: s.store.get('test')[0].submitted_at });
+  assert.ok(Number.isFinite(s.started[0].submitted_at));
   const now = Date.now();
   const rows = barRows([{ ...s.started[0], submitted_at: now - 60_000 }], now);
   assert.equal(rows.length, 1);
@@ -54,7 +56,7 @@ test('a refused or unknown submit adds nothing to the job history', async () => 
 test('an uncertain submit that the replay confirms is added once, after acceptance', async () => {
   let posts = 0;
   const s = setup(async path => {
-    if (path === '/generations') { if (++posts === 1) throw { code: 'network_error' }; return { job_id: 'replayed-job' }; }
+    if (path === '/generations') { if (++posts === 1) throw { code: 'network_error' }; return { job_id: 'replayed-job', idempotent: true }; }
     if (path === '/balance') return { balance: 10 };
     return posts < 2 ? { job: null } : { job: { id: 'replayed-job', state: 'succeeded', refunded: false, refund_state: 'none' } };
   });
@@ -63,6 +65,7 @@ test('an uncertain submit that the replay confirms is added once, after acceptan
   await s.actions.reconcile('test', s.store.get('test')[0].key);
   assert.equal(s.started.length, 1);
   assert.equal(s.started[0].job_id, 'replayed-job');
+  assert.equal(s.started[0].idempotent, true); assert.equal(s.started[0].recovering, true);
   assert.equal(s.started[0].model_id, 'kling-o1-reference');
 });
 
@@ -73,7 +76,7 @@ test('the swap model has its own expected duration, longer than the video defaul
 
 test('the web runtime writes accepted swaps to the job history; both swap screens show progress', () => {
   const runtime = readFileSync(new URL('../app/veyrnox/_lib/templateSwapRuntime.js', import.meta.url), 'utf8');
-  assert.match(runtime, /jobStarted: \(\{ job_id, model_id, credits, name \}\) => pushJobHistory\(/);
+  assert.match(runtime, /jobStarted: entry => pushJobHistory\(entry\)/);
   const web = readFileSync(new URL('../app/veyrnox/_components/SwapAttemptStatus.js', import.meta.url), 'utf8');
   assert.match(web, /<GeneratingProgress jobId=\{a\.job_id\} \/>/);
   const phone = readFileSync(new URL('../apps/mobile/src/components/templates/SwapAttemptStatus.tsx', import.meta.url), 'utf8');
@@ -111,4 +114,25 @@ test('a job still running after the long window hands over to Check; an unknown 
   await u.actions.reconcile('test', u.store.get('test')[0].key);
   assert.equal(unknownReads, POLL_LIMIT);
   assert.equal(u.store.get('test')[0].state, 'unresolved');
+});
+
+test('lost response recovered by lookup registers the original submission and settles once', async () => {
+  const s=setup(async path=>{
+    if(path==='/generations')throw {code:'network_error'};
+    if(path==='/balance')return {balance:10};
+    return {job:{id:'recovered',state:'succeeded',refunded:false,refund_state:'none'}};
+  });
+  await s.actions.choose('test',new Blob(['raw']));await s.actions.submit('test',offer);
+  const attempt=s.store.get('test')[0], settled=[];
+  const actions=createSwapActions(s.store,{gateway:async path=>path==='/balance'?{balance:10}:{job:{id:'recovered',state:'succeeded',refunded:false,refund_state:'none'}},jobStarted:j=>s.started.push(j),jobSettled:(...args)=>settled.push(args),wait:async()=>{}});
+  await actions.reconcile('test',attempt.key);
+  assert.equal(s.started.length,1);assert.equal(s.started[0].submitted_at,attempt.submitted_at);
+  assert.deepEqual(settled,[['recovered','succeeded']]);
+  assert.ok(!JSON.stringify(s.store.get('test')).includes('asset_url'));
+});
+
+test('a first swap response forwards an old replay without claiming own recovery', async () => {
+  const s = setup(async () => ({ job_id: 'old-job', idempotent: true }));
+  await s.actions.choose('test', new Blob(['raw'])); await s.actions.submit('test', offer);
+  assert.equal(s.started[0].idempotent, true); assert.equal(s.started[0].recovering, false);
 });

@@ -968,7 +968,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     ]);
     startJobs({ job_id: submitted.job_id, state: 'queued', credits: lipModel.credits, model_id: lipModel.id });
     pushJobHistory({
-      job_id: submitted.job_id,
+      idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
       model_id: lipModel.id,
       credits: lipModel.credits,
       prompt: script.trim().slice(0, 60) || 'Performance Studio',
@@ -1021,7 +1021,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
             ]);
             captionPlan.current = null;
             startJobs({ job_id: submitted.job_id, state: 'queued', credits: submitted.credits, model_id: 'clip-edit' });
-            pushJobHistory({ job_id: submitted.job_id, model_id: 'clip-edit', credits: submitted.credits, prompt: 'Burned subtitles', name: `${workflow.label} · subtitles` });
+            pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: 'clip-edit', credits: submitted.credits, prompt: 'Burned subtitles', name: `${workflow.label} · subtitles` });
             if (submitted.balance_after != null) setBalance(submitted.balance_after);
             notifyBalanceChanged();
             setStage('captioning');
@@ -1105,7 +1105,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
               } : candidate),
             } : current);
             pushJobHistory({
-              job_id: submitted.job_id,
+              idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
               model_id: run.lipModel.id,
               credits: run.lipModel.credits,
               prompt: item.script.slice(0, 60),
@@ -1179,7 +1179,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
               items: current.items.map((candidate) => candidate.id === item.id ? { ...candidate, captionJobId: submitted.job_id } : candidate),
             } : current);
             pushJobHistory({
-              job_id: submitted.job_id,
+              idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
               model_id: 'clip-edit',
               credits: submitted.credits,
               prompt: `${item.targetLanguage} burned subtitles`,
@@ -1273,7 +1273,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         const queued = { job_id: submitted.job_id, state: 'queued', credits: run.ttsModel.credits, model_id: run.ttsModel.id };
         addJob(queued);
         setProjectJobs((current) => [...current, { ...queued, role: 'speech', locale: item.targetLanguage }]);
-        pushJobHistory({ job_id: submitted.job_id, model_id: run.ttsModel.id, credits: run.ttsModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} speech retry` });
+        pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: run.ttsModel.id, credits: run.ttsModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} speech retry` });
         setStage('batch-speech');
       } else if (retryQuote.stage === 'performance') {
         item.state = 'uploading';
@@ -1296,7 +1296,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         const queued = { job_id: submitted.job_id, state: 'queued', credits: run.lipModel.credits, model_id: run.lipModel.id };
         addJob(queued);
         setProjectJobs((current) => [...current, { ...queued, role: 'performance', locale: item.targetLanguage }]);
-        pushJobHistory({ job_id: submitted.job_id, model_id: run.lipModel.id, credits: run.lipModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} retry` });
+        pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: run.lipModel.id, credits: run.lipModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} retry` });
         setStage('batch-rendering');
       } else {
         item.state = 'captioning';
@@ -1309,7 +1309,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         const queued = { job_id: submitted.job_id, state: 'queued', credits: submitted.credits, model_id: 'clip-edit' };
         addJob(queued);
         setProjectJobs((current) => [...current, { ...queued, role: 'finishing', locale: item.targetLanguage }]);
-        pushJobHistory({ job_id: submitted.job_id, model_id: 'clip-edit', credits: submitted.credits, prompt: `${item.targetLanguage} burned subtitles retry`, name: `${run.projectName} · ${item.targetLanguage} subtitles retry` });
+        pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: 'clip-edit', credits: submitted.credits, prompt: `${item.targetLanguage} burned subtitles retry`, name: `${run.projectName} · ${item.targetLanguage} subtitles retry` });
         setStage('batch-captioning');
       }
       setDubbingBatchRun({ ...run, items: run.items.map((candidate) => ({ ...candidate })) });
@@ -1415,7 +1415,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
             } : candidate),
           } : current);
           pushJobHistory({
-            job_id: submitted.job_id,
+            idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
             model_id: ttsModel.id,
             credits: ttsModel.credits,
             prompt: item.script.slice(0, 60),
@@ -1484,7 +1484,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         chain.current = { visualKey, visualAssetId, submitting: false };
         startJobs({ job_id: submitted.job_id, state: 'queued', credits: ttsModel.credits, model_id: ttsModel.id });
         pushJobHistory({
-          job_id: submitted.job_id,
+          idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
           model_id: ttsModel.id,
           credits: ttsModel.credits,
           prompt: script.trim().slice(0, 60),
@@ -2050,7 +2050,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 {job && <Chip tone={job.state === 'failed' ? 'danger' : 'accent'}>{jobStateUi(job).label}</Chip>}
               </div>
               <div className="relative aspect-video bg-black">
-                {outputJob?.asset_url ? <JobAssetPreview job={outputJob} /> : visual ? (
+                {(outputJob?.asset_url || outputJob?.state === 'succeeded') ? <JobAssetPreview job={outputJob} /> : visual ? (
                   <>
                     <FilePreview source={visual} kind={workflow.sourceKind} />
                     {(sending || generating) && (

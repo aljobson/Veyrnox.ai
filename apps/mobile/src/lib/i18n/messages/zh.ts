@@ -446,7 +446,7 @@ const zh = {
     'presets.swap.submitting': '正在开始生成视频…',
     'presets.swap.queued': '视频已受理。费用：{credits} 积分。请在作品库中查看进度。',
     'presets.swap.running': '视频正在生成。请在作品库中查看进度。',
-    'presets.swap.succeeded': '视频已就绪。请在作品库中查看。',
+    'presets.swap.succeeded': '视频已就绪。',
     'presets.swap.busy_background': '请使用背景简单且只有你一人的照片。',
     'presets.swap.ragged_matte': '抠图边缘不清晰。请使用背景简单且只有你一人的照片。',
     'presets.swap.several_people': '检测到多人。请使用只有你一人且背景简单的照片。',

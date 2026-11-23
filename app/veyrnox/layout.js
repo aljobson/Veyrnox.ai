@@ -43,10 +43,10 @@ export default function VeyrnoxLayout({ children }) {
             <OddlingsPublicFlagProvider enabled={oddlingsPublicEnabled()}>
               <AccountBoundary>
                 <MusicQueueProvider enabled={musicRailsEnabled()}>
+                <GenerationCelebration />
                 {children}
                 <JobWatcher />
                 <GenerationStatusBar />
-                <GenerationCelebration />
                 <HideWhileHardPaywall><MascotAssistant /></HideWhileHardPaywall>
                 </MusicQueueProvider>
               </AccountBoundary>

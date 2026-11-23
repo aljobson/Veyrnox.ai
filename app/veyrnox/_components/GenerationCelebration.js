@@ -1,40 +1,42 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
+import { getSession, onSessionChange } from '../../lib/authClient';
 import { GENERATION_SUCCEEDED_EVENT } from '../_lib/jobHistory';
-import VeyCharacter from './VeyCharacter';
+import { createGenerationQueue } from '../_lib/generationQueue.mjs';
+import { resultIsPresent } from '../_lib/resultPresence';
 
-const SHOW_MS = 2800;
-const PIECES = Array.from({ length: 16 }, (_, index) => ({
-  x: `${Math.round(Math.cos((index / 16) * Math.PI * 2) * (90 + (index % 3) * 34))}px`,
-  y: `${Math.round(Math.sin((index / 16) * Math.PI * 2) * (54 + (index % 4) * 20))}px`,
-  delay: `${(index % 4) * 35}ms`,
-  tone: ['var(--vx-accent)', 'var(--vx-money)', 'var(--vx-fg)'][index % 3],
-}));
-
-// One moment for every finished generation. It never takes focus or catches a tap: the result stays usable under it.
 export function GenerationCelebration() {
+  const pathname = usePathname();
   const { t } = useI18n();
-  const reduced = useReducedMotion();
   const [shown, setShown] = useState(null);
+  const queueRef = useRef(null);
+  const previousPath = useRef(pathname);
   useEffect(() => {
-    let timer = null;
-    const onSuccess = event => {
-      clearTimeout(timer);
-      setShown({ id: event.detail?.job_id, label: event.detail?.label || t('public.jobs.default') });
-      timer = setTimeout(() => setShown(null), SHOW_MS);
-    };
-    window.addEventListener(GENERATION_SUCCEEDED_EVENT, onSuccess);
-    return () => { clearTimeout(timer); window.removeEventListener(GENERATION_SUCCEEDED_EVENT, onSuccess); };
-  }, [t]);
-  if (!shown) return null;
-  return <div key={shown.id} className="pointer-events-none fixed inset-x-4 top-20 z-[90] flex justify-center" data-generation-celebration>
-    <div className="vx-celebrate-card relative flex max-w-sm items-center gap-3 rounded-2xl border border-vx-accent bg-vx-panel px-4 py-3 text-vx-fg shadow-lg">
-      {!reduced && <span aria-hidden="true" className="absolute start-1/2 top-1/2">{PIECES.map((piece, index) =>
-        <i key={index} className="vx-celebrate-piece" style={{ '--vx-piece-x': piece.x, '--vx-piece-y': piece.y, animationDelay: piece.delay, background: piece.tone }} />)}</span>}
-      <span aria-hidden="true" className="w-12 shrink-0 [&>svg]:drop-shadow-none"><VeyCharacter pose="cheer" mood="happy" reducedMotion={reduced !== false} /></span>
-      <p role="status" className="line-clamp-2 min-w-0 font-bold">{t('public.jobs.ready', { label: shown.label })}</p>
-    </div>
+    const queue = createGenerationQueue({ show: setShown, isPresent: resultIsPresent });
+    queueRef.current = queue;
+    let owner = getSession()?.user?.id;
+    const success = event => queue.push(event.detail);
+    const off = onSessionChange(session => {
+      const next = session?.user?.id;
+      if (next !== owner) { owner = next; queue.clear(); }
+    });
+    window.addEventListener(GENERATION_SUCCEEDED_EVENT, success);
+    return () => { queue.clear(); off(); window.removeEventListener(GENERATION_SUCCEEDED_EVENT, success); };
+  }, []);
+  useEffect(() => {
+    if (previousPath.current !== pathname) queueRef.current?.dismiss();
+    previousPath.current = pathname;
+  }, [pathname]);
+  // Fixed and pointer-transparent: the notice never changes the page layout.
+  return <div className="vx-generation-notice" data-generation-celebration aria-live="polite" aria-atomic="true">
+    {shown && <div key={shown.job_id} className="vx-celebrate-card">
+      <span aria-hidden="true" className="vx-celebrate-mark">✓</span>
+      <p>{shown.count > 1 ? t('public.jobs.resultsReady', { count: shown.count }) : t('public.jobs.ready', { label: shown.label || t('public.jobs.default') })}
+        {shown.credits > 0 && <span className="ms-3 font-vx-mono text-vx-money">−{t('pricing.cards.credits', { credits: shown.credits })}</span>}</p>
+      {shown.link && <Link href="/app/library" className="vx-celebrate-link">{t('public.vey.action.open_library')}</Link>}
+    </div>}
   </div>;
 }

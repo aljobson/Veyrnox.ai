@@ -1,5 +1,6 @@
 'use client';
 
+import { useMusicCelebrations } from '../../_lib/useMusicCelebrations';
 import { createQuoteGate } from '../../../../lib/quoteRevisionGate.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
@@ -31,6 +32,7 @@ export function useMusicServerState() {
   const [entitlements, setEntitlements] = useState(null);
   const [quote, setQuote] = useState(null);
   const [generations, setGenerations] = useState([]);
+  const registerCelebration = useMusicCelebrations(generations);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const confirmKey = useRef(null);
@@ -106,6 +108,7 @@ export function useMusicServerState() {
           idempotency_key: confirmKey.current.key,
         }),
       });
+      registerCelebration(result, quote.total_credits);
       const accepted = {
         id: result.generation_id,
         state: result.state,
@@ -131,7 +134,7 @@ export function useMusicServerState() {
       confirming.current = false;
       setBusy('');
     }
-  }, [quote]);
+  }, [quote, registerCelebration]);
 
   const activeGenerationKey = generations
     .filter((item) => item?.id && !TERMINAL_STATES.has(item.state))

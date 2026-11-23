@@ -363,3 +363,24 @@ html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
   :root[data-theme='system'] .vx-theme-sun { display: none; }
   :root[data-theme='system'] .vx-theme-moon { display: inline-flex; }
 }
+
+/* Below the 64 px header, away from the bottom Generate controls; no layout reservation. */
+.vx-root .vx-generation-notice { pointer-events: none; position: fixed; z-index: 100; top: calc(env(safe-area-inset-top, 0px) + 72px); inset-inline-end: 16px; width: min(384px, calc(100% - 32px)); }
+.vx-root .vx-celebrate-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 12px 16px; margin: 0; border: 1px solid rgb(var(--vx-accent)); border-radius: 24px; color: rgb(var(--vx-fg)); background: rgb(var(--vx-panel)); animation: vxGenerationArrive 240ms ease-out; }
+.vx-root .vx-celebrate-mark { color: rgb(var(--vx-accent)); font-size: 24px; animation: vxGenerationCheer 800ms ease-out; }
+.vx-root .vx-celebrate-link { pointer-events: auto; display: inline-flex; min-height: 44px; align-items: center; padding: 0 16px; border-radius: 16px; color: rgb(var(--vx-accent)); text-decoration: underline; }
+.vx-root .vx-celebrate-link:focus-visible { outline: 2px solid rgb(var(--vx-accent)); outline-offset: 4px; }
+@keyframes vxGenerationArrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vxGenerationCheer { 0% { transform: scale(.8); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .vx-root .vx-celebrate-card, .vx-root .vx-celebrate-mark { animation: none; }
+}
+
+.vx-root .vx-celebrate-card p { min-width: 0; overflow-wrap: anywhere; }
+
+@media (max-width: 639px) {
+  /* Keep the transient notice compact beside the result, above its playback controls. */
+  .vx-root .vx-generation-notice { width: max-content; max-width: min(240px, calc(100% - 32px)); }
+  .vx-root .vx-celebrate-card { gap: 8px; padding: 8px 12px; }
+  .vx-root .vx-celebrate-card p { max-width: 20ch; }
+}
