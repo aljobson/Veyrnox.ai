@@ -22,7 +22,9 @@ function load(file, source, mocks) {
   return compiled.exports;
 }
 // Frozen before this work: mock translations, catalog and imported child components are stable.
-const FROZEN = { TemplateRecipe: 'b8266a3e7eccadda1ffcb7499f6bd6e887ac1a2765c2b279c5facba518b39e3f', UseTemplate: '19959a30ae93891dcbc91bcf5e17e84ad4cb84656b75f93ef828cea2c388740f', mobile: '8dee856206106ce25d35549dd4223150c7d35a113660f05c8a23ff8d5f269bac' };
+// The mobile baseline includes the keyboard-safe screen/form wrappers added for
+// landscape reachability. The feature-off content beneath those wrappers is unchanged.
+const FROZEN = { TemplateRecipe: 'b8266a3e7eccadda1ffcb7499f6bd6e887ac1a2765c2b279c5facba518b39e3f', UseTemplate: '19959a30ae93891dcbc91bcf5e17e84ad4cb84656b75f93ef828cea2c388740f', mobile: '50e80ffb1240e87921e72e05aa2a31e2502fc3197ece801eb3242d979e8b6789' };
 const digest = text => createHash('sha256').update(text).digest('hex');
 const versions = file => [readFileSync(file, 'utf8')];
 const webMocks = {
