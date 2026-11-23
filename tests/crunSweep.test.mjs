@@ -160,3 +160,15 @@ test('standby Qwen route discovers its jobs and completes audio as WAV without M
   assert.equal(calls[0].copyOptions.expectMp4, undefined);
   assert.equal(calls[0].outcome.outputUrl, 'https://static.mediaoss.bar/audio.wav');
 });
+
+test('a failed Qwen speech task refunds through completeJob and a pending one waits', async () => {
+  const seen = [];
+  const routes = [{ model_id: 'qwen3-tts', supplier: 'crun', state: 'standby', endpoint: 'crun:qwen3-tts/speech-synthesis' }];
+  await withRows([{ ...job('qf'), model_id: 'qwen3-tts' }, { ...job('qp'), model_id: 'qwen3-tts' }], async () => {
+    const out = await sweepCrun({ ...args,
+      read: async id => (id === 'task-qf' ? { ok: true, state: 'fail', errorCode: 'provider_failed' } : { ok: true, state: 'pending' }),
+      complete: async x => { seen.push([x.job.id, x.outcome.state, x.outcome.errorCode]); return { status: 200, body: { ok: true } }; } });
+    assert.deepEqual(out, { checked: 2, applied: 1, pending: 1, errors: 0 });
+  }, routes);
+  assert.deepEqual(seen, [['qf', 'fail', 'provider_failed']]);
+});
