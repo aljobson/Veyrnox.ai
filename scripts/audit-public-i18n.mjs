@@ -34,6 +34,7 @@ const exceptions = [
   { file: /^app\/veyrnox\/_components\/music\/(?!MusicPublicPrompt|MusicPublicProfile|MusicPublicTrack|MusicSharedSong)[^/]+\.jsx$/, pattern: /./, reason: 'disabled-by-default private Music preview copy remains English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^app\/veyrnox\/app\/music\//, pattern: /./, reason: 'disabled-by-default private Music preview routes remain English-only until rollout localization; public Music surfaces stay audited' },
   { file: /^lib\/musicInstruments\.js$/, pattern: /./, reason: 'instrument and sound-template names for the disabled-by-default private Music preview, which stays English-only until rollout localization' },
+  { file: /^app\/veyrnox\/_lib\/originalSeedanceTemplates\.js$/, pattern: /^Use @image1 as the (?:exact reference for the main person|character reference)\./, reason: 'canonical generation prompt sent to the provider byte-exact, not localized UI copy' },
   { file: /^app\/veyrnox\/_lib\/performanceStudio\.js$/, pattern: /./, reason: 'canonical workflow and provider contract catalog data; localized display labels are resolved by the consuming UI' },
   { file: /^(?:app\/layout\.js|app\/veyrnox\/_components\/ThemeToggle\.js|lib\/themePreference\.mjs)$/, pattern: /^(?:\(prefers-color-scheme: (?:light|dark)\)|= ; Path=\/; Max-Age= ; SameSite=Lax)$/, reason: 'CSS media query and cookie attributes for the theme preference, not copy' },
   ...helperExceptions,

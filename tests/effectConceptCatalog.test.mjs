@@ -13,7 +13,7 @@ test('the complete effect inventory is deduplicated into the public Veyrnox gall
   assert.equal(EFFECT_CONCEPTS.length, 1036);
   assert.equal(EFFECT_CONCEPT_TEMPLATES.length, 1036);
   const communityCount = SOURCE_TEMPLATES.filter(p => isPublishableSourcePromptTemplate(p.id) && !BROKEN_TEMPLATE_IDS.includes(publicTemplateId(p.id))).length;
-  assert.equal(ALL_TEMPLATES.length, EFFECT_CONCEPT_TEMPLATES.length + REFERENCE_TEMPLATES.length + communityCount);
+  assert.equal(ALL_TEMPLATES.length, EFFECT_CONCEPT_TEMPLATES.length + REFERENCE_TEMPLATES.length + communityCount + 8 + 12); // the 20 Veyrnox originals
   assert.equal(new Set(ALL_TEMPLATES.map((preset) => preset.id)).size, ALL_TEMPLATES.length);
   assert.equal(new Set(EFFECT_CONCEPTS.map((concept) => concept.name)).size, EFFECT_CONCEPTS.length);
 });
