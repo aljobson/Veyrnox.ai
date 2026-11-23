@@ -469,6 +469,7 @@ const ja = {
     'app.seedance25.result': 'ライブラリで結果を開く',
     'app.seedance25.error': 'この手順を完了できませんでした。元動画を確認して再試行してください。送信済みのリクエストは同じ識別子で再確認します。',
     'app.create.templatePrompt.edit': 'プロンプトを編集',
+    'app.create.templatePrompt.error': 'プロンプトを読み込めませんでした。サインインしてもう一度お試しください。',
     'app.create.templatePrompt.help': 'このテンプレートのプロンプトをそのまま使用します。',
     'app.create.templatePrompt.ready': 'テンプレートのプロンプトを準備しました',
 } as const;

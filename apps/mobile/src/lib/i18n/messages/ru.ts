@@ -469,6 +469,7 @@ const ru = {
     'app.seedance25.result': 'Открыть результат в библиотеке',
     'app.seedance25.error': 'Не удалось завершить этот шаг. Проверьте исходник и повторите попытку. Повторная попытка использует тот же запрос.',
     'app.create.templatePrompt.edit': 'Изменить промпт',
+    'app.create.templatePrompt.error': 'Не удалось загрузить промпт. Войдите в аккаунт и повторите попытку.',
     'app.create.templatePrompt.help': 'Промпт этого шаблона будет использован без изменений.',
     'app.create.templatePrompt.ready': 'Промпт шаблона готов',
 } as const;

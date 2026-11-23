@@ -469,6 +469,7 @@ const ar = {
     'app.seedance25.result': 'فتح النتيجة في المكتبة',
     'app.seedance25.error': 'تعذر إكمال هذه الخطوة. تحقق من المصدر وحاول مجددًا. تحتفظ إعادة المحاولة بنفس الطلب المُرسل.',
     'app.create.templatePrompt.edit': 'تعديل الموجّه',
+    'app.create.templatePrompt.error': 'تعذّر تحميل الموجّه. سجّل الدخول وحاول مرة أخرى.',
     'app.create.templatePrompt.help': 'سيُستخدم موجّه هذا القالب كما هو مكتوب.',
     'app.create.templatePrompt.ready': 'موجّه القالب جاهز',
 } as const;

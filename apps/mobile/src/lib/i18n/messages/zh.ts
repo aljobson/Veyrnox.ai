@@ -469,6 +469,7 @@ const zh = {
     'app.seedance25.result': '在资料库中打开结果',
     'app.seedance25.error': '无法完成此步骤。请检查源视频并重试。重试将保留同一个已提交的请求。',
     'app.create.templatePrompt.edit': '编辑提示词',
+    'app.create.templatePrompt.error': '无法加载提示词。请登录后重试。',
     'app.create.templatePrompt.help': '将按原文使用此模板的提示词。',
     'app.create.templatePrompt.ready': '模板提示词已就绪',
 } as const;

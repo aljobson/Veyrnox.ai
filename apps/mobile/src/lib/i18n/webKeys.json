@@ -466,6 +466,7 @@
   "app.seedance25.result",
   "app.seedance25.error",
   "app.create.templatePrompt.edit",
+  "app.create.templatePrompt.error",
   "app.create.templatePrompt.help",
   "app.create.templatePrompt.ready"
 ]

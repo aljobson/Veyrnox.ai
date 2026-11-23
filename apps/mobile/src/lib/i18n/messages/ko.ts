@@ -469,6 +469,7 @@ const ko = {
     'app.seedance25.result': '라이브러리에서 결과 열기',
     'app.seedance25.error': '이 단계를 완료하지 못했습니다. 원본을 확인하고 다시 시도하세요. 재시도 시 같은 요청을 유지합니다.',
     'app.create.templatePrompt.edit': '프롬프트 편집',
+    'app.create.templatePrompt.error': '프롬프트를 불러오지 못했습니다. 로그인한 후 다시 시도하세요.',
     'app.create.templatePrompt.help': '이 템플릿의 프롬프트를 작성된 그대로 사용합니다.',
     'app.create.templatePrompt.ready': '템플릿 프롬프트 준비 완료',
 } as const;

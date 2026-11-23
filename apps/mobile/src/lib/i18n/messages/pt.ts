@@ -469,6 +469,7 @@ const pt = {
     'app.seedance25.result': 'Abrir resultado na Biblioteca',
     'app.seedance25.error': 'Não foi possível concluir esta etapa. Verifique a fonte e tente novamente. A mesma solicitação é mantida ao tentar de novo.',
     'app.create.templatePrompt.edit': 'Editar prompt',
+    'app.create.templatePrompt.error': 'Não foi possível carregar o prompt. Inicie sessão e tente novamente.',
     'app.create.templatePrompt.help': 'O prompt deste modelo será usado como está escrito.',
     'app.create.templatePrompt.ready': 'Prompt do modelo pronto',
 } as const;

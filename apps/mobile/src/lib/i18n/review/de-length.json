@@ -5332,5 +5332,11 @@
     "english": "Open Library result",
     "translation": "Ergebnis in der Bibliothek öffnen",
     "ratio": 1.74
+  },
+  {
+    "id": "app.create.templatePrompt.error",
+    "english": "Couldn’t load the prompt. Sign in and try again.",
+    "translation": "Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.",
+    "ratio": 1.6
   }
 ]

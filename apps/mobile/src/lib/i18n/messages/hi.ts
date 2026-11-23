@@ -469,6 +469,7 @@ const hi = {
     'app.seedance25.result': 'लाइब्रेरी में परिणाम खोलें',
     'app.seedance25.error': 'यह चरण पूरा नहीं हो सका। स्रोत जाँचें और फिर प्रयास करें। दोबारा प्रयास में वही अनुरोध बना रहता है।',
     'app.create.templatePrompt.edit': 'प्रॉम्प्ट संपादित करें',
+    'app.create.templatePrompt.error': 'प्रॉम्प्ट लोड नहीं हो सका। साइन इन करके फिर कोशिश करें।',
     'app.create.templatePrompt.help': 'इस टेम्पलेट का प्रॉम्प्ट जैसा लिखा है वैसा ही इस्तेमाल होगा।',
     'app.create.templatePrompt.ready': 'टेम्पलेट प्रॉम्प्ट तैयार है',
 } as const;

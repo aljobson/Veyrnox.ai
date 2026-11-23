@@ -10,6 +10,7 @@ import { templateSwapImageCounts } from '../../../../lib/templateSwapFullBody.mj
 import { templateSwapPrompt, templateSwapPeoplePrompt } from '../../../../lib/templateSwapClipPrompt.mjs';
 import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
 import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
+import { resolveTemplatePrompt } from '../../../../lib/templatePromptResolve.js';
 import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
 import { replaySwapScene } from '../../../../lib/swapSceneReplay.js';
 import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
@@ -144,6 +145,11 @@ export async function POST(req) {
     }
     const seedance25Hash = seedance25Offer(modelId) ? await seedance25Fingerprint(body) : null;
     if (['template_swap', 'template_clip', 'swap'].filter(key => Object.hasOwn(body, key)).length > 1) return NextResponse.json({ error: 'template_source_conflict' }, { status: 400 });
+    // ADR-0351 amendment 23: a template run that names its prompt instead of carrying it gets the server's own text here, before every
+    // check below, so limits, refusals, the fingerprint and the stored inputs treat it exactly like a client-sent prompt.
+    const templatePrompt = resolveTemplatePrompt(body, modelId);
+    if (templatePrompt.error) return NextResponse.json({ error: templatePrompt.error }, { status: 400 });
+    if (templatePrompt.body !== body) { body = templatePrompt.body; inputs = body.inputs; }
     const hasTemplateSwap = Object.hasOwn(body, 'template_swap');
     const suppliedInputKeys = Object.keys(inputs);
     // A server-held template clip has its own gate (checkTemplateClipRequest); the template_id contract does not apply to it.

@@ -469,6 +469,7 @@ const de = {
     'app.seedance25.result': 'Ergebnis in der Bibliothek öffnen',
     'app.seedance25.error': 'Dieser Schritt konnte nicht abgeschlossen werden. Prüfe die Quelle und versuche es erneut. Die gleiche Anfrage bleibt beim Wiederholen erhalten.',
     'app.create.templatePrompt.edit': 'Prompt bearbeiten',
+    'app.create.templatePrompt.error': 'Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.',
     'app.create.templatePrompt.help': 'Der Prompt dieser Vorlage wird unverändert verwendet.',
     'app.create.templatePrompt.ready': 'Vorlagen-Prompt bereit',
 } as const;

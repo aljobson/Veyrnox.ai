@@ -469,6 +469,7 @@ const es = {
     'app.seedance25.result': 'Abrir resultado en Biblioteca',
     'app.seedance25.error': 'No se pudo completar este paso. Revisa la fuente e inténtalo de nuevo. Se conserva la misma solicitud al reintentar.',
     'app.create.templatePrompt.edit': 'Editar prompt',
+    'app.create.templatePrompt.error': 'No se pudo cargar el prompt. Inicia sesión e inténtalo de nuevo.',
     'app.create.templatePrompt.help': 'El prompt de esta plantilla se usará tal como está escrito.',
     'app.create.templatePrompt.ready': 'Prompt de la plantilla listo',
 } as const;
