@@ -93,10 +93,16 @@ test.each([
     ['cancelled', false], ['pending', false], ['error', true], ['sales_closed', true],
 ] as const)('%s purchase outcome has a persistent non-colour cue and correct urgency', async (kind, urgent) => {
     const outcome = kind === 'credited' ? { kind, balance: 100, credits: 100, price: '£1' } : { kind };
-    await act(async () => root.render(<PurchaseOutcomeState outcome={outcome as any} />));
-    const state = root.container.queryAll(n => n.props.testID === `purchase-outcome-${kind}`);
-    expect(state).toHaveLength(1);
-    expect(state[0].props.accessibilityRole === 'alert').toBe(urgent);
-    expect(RN.StyleSheet.flatten(state[0].props.style)).toMatchObject({ borderWidth: 1 });
-    expect(state[0].queryAll(n => n.props.importantForAccessibility === 'no')).toHaveLength(1);
+    const originalOS = RN.Platform.OS;
+    Object.defineProperty(RN.Platform, 'OS', { configurable: true, value: 'android' });
+    try {
+        await act(async () => root.render(<PurchaseOutcomeState outcome={outcome as any} />));
+        const state = root.container.queryAll(n => n.props.testID === `purchase-outcome-${kind}`);
+        expect(state).toHaveLength(1);
+        expect(state[0].props.role === 'alert').toBe(urgent);
+        expect(RN.StyleSheet.flatten(state[0].props.style)).toMatchObject({ borderWidth: 1 });
+        expect(state[0].queryAll(n => n.props.importantForAccessibility === 'no')).toHaveLength(1);
+    } finally {
+        Object.defineProperty(RN.Platform, 'OS', { configurable: true, value: originalOS });
+    }
 });

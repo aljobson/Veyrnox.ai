@@ -1,5 +1,5 @@
 import type { PurchaseOutcome } from '../../billing/storePurchaseStore';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { t } from '../../lib/i18n';
 import type { MenuIcon } from '../../lib/menuIcons';
 import { useAnnouncement } from '../../lib/useAnnouncement';
@@ -22,11 +22,13 @@ export function PurchaseOutcomeState({ outcome }: { outcome: PurchaseOutcome | n
     useAnnouncement(text, { onMount: true });
     if (!outcome || !text) return null;
     const presentation = outcomePresentation(outcome.kind);
+    const urgent = outcome.kind === 'error' || outcome.kind === 'sales_closed';
     const stateStyle = { success: s.success, warning: s.warning, notice: s.notice, danger: s.danger }[presentation.tone];
     const inkStyle = { success: s.successInk, warning: s.warningInk, notice: s.noticeInk, danger: s.dangerInk }[presentation.tone];
     return <View
         testID={`purchase-outcome-${outcome.kind}`}
         accessible
+        role={Platform.OS === 'android' && urgent ? 'alert' : undefined}
         accessibilityLabel={text}
         style={[s.card, stateStyle]}
     >
