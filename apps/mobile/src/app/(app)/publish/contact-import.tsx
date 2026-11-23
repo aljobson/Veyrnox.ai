@@ -2,7 +2,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import { Button, Chip, SegmentedControl, Text, TextField } from '../../../components/ui';
 import { themedStyles, useThemedStyles } from '../../../components/ui/AppearanceContext';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
@@ -16,6 +16,8 @@ import { STATUSES } from '../../../lib/publishContacts';
 import { importContacts, importErrorKey, manualContact, parseContactCsv, type ImportContact, type ManualFields } from '../../../lib/publishContactImport';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { publishScope, usePublishRole } from '../../../lib/usePublishRole';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 const empty = (): ManualFields => ({ externalId: '', name: '', tags: '', subscriptionStatus: 'unknown', notes: '' });
 export default function ContactImport() {
@@ -97,7 +99,7 @@ export default function ContactImport() {
     if (role === null) return <View style={s.screen} accessibilityState={{ busy: true }}><ActivityIndicator /></View>;
     if (!canImport) return <View style={s.screen}><Text>{t('publishOps.import.notAllowed')}</Text><Button label={t('common.back')} onPress={() => router.back()} /></View>;
     if (done !== null) return <View style={s.screen}><Text accessibilityLiveRegion="polite">{t('publishOps.import.done', { count: done })}</Text><Button label={t('common.back')} onPress={() => router.back()} /></View>;
-    return <ScrollView contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled" accessibilityState={{ busy }}>
+    return <KeyboardScreen><KeyboardFormScrollView contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled" accessibilityState={{ busy }}>
         <Stack.Screen options={{ title: t('publishOps.import.title') }} />
         <Text accessibilityRole="header">{t('publishOps.import.title')}</Text><Text tone="secondary">{t('publishOps.import.help')}</Text>
         <View pointerEvents={busy ? 'none' : 'auto'} accessibilityState={{ disabled: busy }} importantForAccessibility={busy ? 'no-hide-descendants' : 'auto'}>
@@ -118,6 +120,6 @@ export default function ContactImport() {
         </>}
         {error ? <Text tone="danger" accessibilityRole="alert">{error}</Text> : null}
         <Button label={t('publishOps.import.add')} loading={busy} disabled={busy || !accountId || (mode === 'csv' && !contacts.length)} onPress={confirm} />
-    </ScrollView>;
+    </KeyboardFormScrollView></KeyboardScreen>;
 }
 const sheets = themedStyles(p => ({ screen: { padding: 16, gap: 12, backgroundColor: p.bg, flexGrow: 1 }, chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));

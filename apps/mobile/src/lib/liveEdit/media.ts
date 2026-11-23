@@ -36,8 +36,9 @@ export async function preparePhoto(uri: string, ids: FrameId): Promise<LocalSour
     finally { context.release(); discardCacheCopy(small); }
 }
 // Short clips are local frame sources, not uploads or live-camera sessions.
-export async function extractFrame(uri: string, seconds: number, signal: AbortSignal): Promise<string> {
-    if (!/^(file|content):\/\//.test(uri) || !Number.isFinite(seconds) || seconds < 0 || seconds > MAX_CLIP_SECONDS || signal.aborted) throw Error('invalid-local-media');
+export async function extractFrame(uri: string, seconds: number, signal: AbortSignal, maximumSeconds = MAX_CLIP_SECONDS): Promise<string> {
+    if (!/^(file|content):\/\//.test(uri) || !Number.isFinite(seconds) || seconds < 0 || !Number.isFinite(maximumSeconds)
+        || maximumSeconds < MAX_CLIP_SECONDS || maximumSeconds > 30 || seconds > maximumSeconds || signal.aborted) throw Error('invalid-local-media');
     const player = createVideoPlayer({ uri });
     player.muted = true;
     try {

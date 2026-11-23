@@ -71,15 +71,39 @@ test('channel mute and solo use visible selected cues as well as accessibility s
     expect(button(t('beat.mute', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
     expect(button(t('beat.solo', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
 });
-test('G2 offers no Drive control; G1 notices appear for compressor and limiter', async () => {
+test('Drive and compressor DSP settings use native topology rebuilds without stand-in notices', async () => {
     await open(); await press(t('beatMix.title'));
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.distortion') }));
-    expect(text(t('beatMix.fx.distortion.web')).length).toBeGreaterThan(0);
-    expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && /drive/i.test(n.props.accessibilityLabel ?? ''))).toHaveLength(0);
+    const drive = t('beatMix.fx.param', { effect: t('beatMix.fx.name', { effect: t('beatMix.fx.distortion'), n: 1 }), param: t('beatMix.param.drive') });
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === drive)).toHaveLength(1);
+    await adjust(drive, 'increment'); expect(track().fx?.[0].params.drive).toBe(10);
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.compressor') }));
-    expect(text(t('beatMix.fx.compressor.standIn')).length).toBeGreaterThan(0);
-    expect(text(t('beatMix.limiter.standIn')).length).toBeGreaterThan(0);
+    expect(root.container.queryAll(n => n.props.testID === 'mix-slider-commit-on-end')).toHaveLength(2);
+    expect(text(t('beatMix.fx.compressor.standIn'))).toHaveLength(0);
+    expect(text(t('beatMix.limiter.standIn'))).toHaveLength(0);
     expect(current().master).toBeUndefined(); await press(t('beatMix.limiter')); expect(current().master?.limiter).toBe(false);
+});
+test('compressor topology settings preview during a drag and commit only once on release', async () => {
+    const commit = jest.fn();
+    await act(async () => root.render(<MixSlider label="Threshold" value={-24} min={-60} max={0} step={1} unit="db" commitOnEnd onChange={commit} />));
+    const control = root.container.queryAll(n => typeof n.props.onResponderGrant === 'function')[0];
+    expect(control).toBeDefined();
+    const gesture = (x: number, previous: number, time: number) => ({
+        nativeEvent: { locationX: x },
+        touchHistory: { numberActiveTouches: 1, indexOfSingleActiveTouch: 0, mostRecentTimeStamp: time, touchBank: [{
+            touchActive: true, currentPageX: x, currentPageY: 0, previousPageX: previous, previousPageY: 0,
+            currentTimeStamp: time, previousTimeStamp: time - 1,
+        }] },
+    });
+    await act(async () => {
+        control.props.onLayout({ nativeEvent: { layout: { width: 100 } } });
+        control.props.onResponderGrant(gesture(50, 50, 1));
+        control.props.onResponderMove(gesture(75, 50, 2));
+    });
+    expect(commit).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => n.props.testID === 'strength-slider-value')[0].children).toContain('-15');
+    await act(async () => control.props.onResponderRelease());
+    expect(commit).toHaveBeenCalledTimes(1); expect(commit).toHaveBeenCalledWith(-15);
 });
 test('both mixer entry points disable automated gain and pan with translated reasons', async () => {
     await open(d => addAutomationPoint(addAutomationPoint(d, 't1', 'gain', 0, 0.8), 't1', 'pan', 0, 0));

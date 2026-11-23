@@ -1,4 +1,4 @@
-import { createNativeBeatEngine, passThroughCompressor } from '../src/lib/beatNative/nativeContext';
+import { createNativeBeatEngine, nativeDynamicsCompressor } from '../src/lib/beatNative/nativeContext';
 import { createMixRun } from '../src/lib/beatNative/mixRun';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
 import { createBeat, addKitTrack, setTrackGain, stepSeconds, eventTime, type BeatAsset, type BeatDoc } from '../src/lib/beatNative/doc';
@@ -6,6 +6,7 @@ import { addAudioTrack } from '../src/lib/beatNative/takeShared';
 import { addEffect, setEffectParam, addAutomationPoint, setSend, setMaster, type MixDoc } from '../src/lib/beatNative/mix';
 import type { Run } from '../src/lib/beatNative/shared';
 import { mockAudioContextClass, createMockContext } from './helpers/mockNativeAudio';
+import { resetAudioWorklets } from './helpers/mockAudioWorklets';
 
 type Param = { value: number; setValueAtTime: jest.Mock; linearRampToValueAtTime: jest.Mock; setTargetAtTime: jest.Mock };
 type Node = { gain: Param; pan: Param; connect: jest.Mock; disconnect: jest.Mock };
@@ -25,7 +26,7 @@ function build() {
     const run = () => start.mock.results.at(-1)!.value as DetailedRun;
     return { engine, context: state.last!.context, start, stop, run, mix: createMixRun(engine) };
 }
-beforeEach(() => jest.useFakeTimers());
+beforeEach(() => { jest.useFakeTimers(); resetAudioWorklets(); });
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
 test('starts every track, returns strip input, updates gain live, and rebuilds topology/tempo/view', async () => {
@@ -64,16 +65,21 @@ test('song automation writes straight-time fader ramps; pattern view does not', 
     b.mix.schedule(pattern, 0, 0.1, 3); expect(next.setValueAtTime).not.toHaveBeenCalled();
     b.mix.stop(); await b.engine.close();
 });
-test('compressor live threshold/ratio updates use value-setting G1 parameters', async () => {
+test('compressor threshold/ratio edits rebuild a fresh envelope processor with the new settings', async () => {
     const b = build(); let doc = addEffect(make(), 't1', 'compressor');
-    b.mix.sync(doc); const compressor = b.run().channels.get('t1')!.chain[0].input;
+    b.mix.sync(doc); const old = b.run(), compressor = old.channels.get('t1')!.chain[0].input;
     doc = setEffectParam(setEffectParam(doc, 't1', 'f1', 'threshold', -12), 't1', 'f1', 'ratio', 8);
-    expect(() => b.mix.sync(doc)).not.toThrow(); expect(b.start).toHaveBeenCalledTimes(1);
-    expect(compressor.threshold.value).toBe(-12); expect(compressor.ratio.value).toBe(8);
+    expect(() => b.mix.sync(doc)).not.toThrow(); expect(b.start).toHaveBeenCalledTimes(2);
+    const replacement = b.run(); expect(replacement).not.toBe(old);
+    expect(compressor.threshold.value).not.toBe(-12);
+    expect(replacement.channels.get('t1')!.chain[0].input.threshold.value).toBe(-12);
+    expect(replacement.channels.get('t1')!.chain[0].input.ratio.value).toBe(8);
     b.mix.stop(); await b.engine.close();
 });
-test('all inert compressor automation methods set values and return their parameter', () => {
-    const node = passThroughCompressor(createMockContext().context) as { threshold: Record<string, any> };
+test('compressor compatibility parameters accept Web Audio writes and return their parameter', () => {
+    const node = nativeDynamicsCompressor(createMockContext().context, {}, (_context, settings) => ({
+        settings, connect: jest.fn(), disconnect: jest.fn(),
+    })) as { threshold: Record<string, any> };
     const param = node.threshold;
     for (const method of ['setValueAtTime', 'setTargetAtTime', 'linearRampToValueAtTime', 'exponentialRampToValueAtTime']) {
         expect(param[method](-18, 1, 0.01)).toBe(param); expect(param.value).toBe(-18);

@@ -80,10 +80,13 @@ export async function loadSongBuffers(doc, progress = () => {}, range = 'song', 
   }));
   return buffers;
 }
-export async function renderSong(doc, { buffers: prepared, progress, range = 'song', soloTrackId, startSec = 0, endSec, originSec } = {}) {
+export async function renderSong(doc, { buffers: prepared, progress, range = 'song', soloTrackId, startSec = 0, endSec, originSec, assertAssets } = {}) {
   if (usedAssets(doc).some(id => ['song', 'stem', 'target'].includes(doc.assets[id]?.source))) {
-    const { assetState } = await import('./beatAssets.js');
-    assertNoHeldAssets(doc, assetState);
+    if (assertAssets) assertAssets();
+    else {
+      const { assetState } = await import('./beatAssets.js');
+      assertNoHeldAssets(doc, assetState);
+    }
   }
   const size = exportSize(doc, AUDIO_RATE, range);
   endSec ??= size.frames / AUDIO_RATE;

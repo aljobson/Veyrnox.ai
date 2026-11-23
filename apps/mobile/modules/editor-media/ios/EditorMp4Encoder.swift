@@ -9,6 +9,7 @@ final class EditorMp4Encoder {
   private let audioArtifactId: String?, audioFolder: URL?
   private let adaptor: AVAssetWriterInputPixelBufferAdaptor
   private let width: Int, height: Int, fps: Int
+  private let preservesAlpha: Bool
   let projectGeneration: Int
   private let partial: URL, output: URL
   private(set) var lastActivity = Date(), framesWritten = 0, cancelled = false
@@ -31,8 +32,9 @@ final class EditorMp4Encoder {
           projectedMaximum <= EditorMediaPaths.mp4Limit else {
       throw EditorMediaFailure.result(.invalidInput, "invalid-encode-settings")
     }
+    let alpha = request.alpha == true
     self.identity = identity; self.paths = paths; self.projectGeneration = projectGeneration
-    width = request.width; height = request.height; fps = request.fps
+    width = request.width; height = request.height; fps = request.fps; preservesAlpha = alpha
     sessionId = "vx-session-\(UUID().uuidString.lowercased())"
     let configuredAudio = try request.audioArtifactId.map {
       try Self.configureAudio(identity: identity, projectGeneration: projectGeneration,
@@ -44,17 +46,17 @@ final class EditorMp4Encoder {
       projectGeneration: projectGeneration,
       excluding: Set(configuredAudio.map { [$0.folder.path] } ?? []))
     artifactId = artifact.0; folder = artifact.1
-    partial = folder.appendingPathComponent("render.mp4.partial")
-    output = folder.appendingPathComponent("render.mp4")
-    do { writer = try AVAssetWriter(outputURL: partial, fileType: .mp4) }
+    partial = folder.appendingPathComponent(alpha ? "render.mov.partial" : "render.mp4.partial")
+    output = folder.appendingPathComponent(alpha ? "render.mov" : "render.mp4")
+    do { writer = try AVAssetWriter(outputURL: partial, fileType: alpha ? .mov : .mp4) }
     catch { try? FileManager.default.removeItem(at: folder); throw EditorMediaFailure.result(.writeFailed) }
-    let compression: [String: Any] = [AVVideoAverageBitRateKey: request.videoBitRate,
-      AVVideoExpectedSourceFrameRateKey: request.fps, AVVideoMaxKeyFrameIntervalKey: request.fps * 2,
-      AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel]
+    var compression: [String: Any] = [AVVideoAverageBitRateKey: request.videoBitRate,
+      AVVideoExpectedSourceFrameRateKey: request.fps, AVVideoMaxKeyFrameIntervalKey: request.fps * 2]
+    if !alpha { compression[AVVideoProfileLevelKey] = AVVideoProfileLevelH264HighAutoLevel }
     let color: [String: Any] = [AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
       AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
       AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2]
-    video = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264,
+    video = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: alpha ? AVVideoCodecType.hevcWithAlpha : AVVideoCodecType.h264,
       AVVideoWidthKey: request.width, AVVideoHeightKey: request.height,
       AVVideoCompressionPropertiesKey: compression, AVVideoColorPropertiesKey: color])
     video.expectsMediaDataInRealTime = false
@@ -168,7 +170,7 @@ final class EditorMp4Encoder {
     let durationUs = Int64((Double(framesWritten) * 1_000_000 / Double(fps)).rounded())
     var result: [String: Any] = ["ok": true, "artifactId": artifactId, "uri": output.absoluteString,
       "kind": "mp4", "size": size, "frames": framesWritten, "width": width, "height": height,
-      "fps": fps, "durationUs": durationUs, "videoCodec": "avc1"]
+      "fps": fps, "durationUs": durationUs, "videoCodec": preservesAlpha ? "hvc1-alpha" : "avc1"]
     if self.audioArtifactId != nil {
       result["audioCodec"] = "mp4a"; result["audioSampleRate"] = 48_000; result["audioChannels"] = 2
     }

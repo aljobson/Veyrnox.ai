@@ -7,7 +7,7 @@ import { isBlackKey, noteLabel, type MidiSoundTrack } from '../../lib/beatNative
 import type { BeatAudio } from '../../lib/beatNative/audio';
 import { t } from '../../lib/i18n';
 
-export type BeatKeyboardNoteSource = 'touch' | 'accessibility';
+export type BeatKeyboardNoteSource = 'touch' | 'accessibility' | 'external';
 export type BeatKeyboardNoteEvent = {
     keyId: string;
     pitch: number;
@@ -30,6 +30,7 @@ export type BeatKeyboardProps = {
     accessibilityNoteDurationMs?: number;
     captureActive?: boolean;
     disabled?: boolean;
+    compact?: boolean;
 };
 
 type HeldNote = Omit<BeatKeyboardNoteEvent, 'contextTime'>;
@@ -121,7 +122,7 @@ export function BeatKeyboard(props: BeatKeyboardProps) {
                 const note = noteLabel(pitch);
                 const captureState = t(props.captureActive ? 'beat.midiRecord.key.capturing' : 'beat.midiRecord.key.audition');
                 return <Pressable key={pitch} testID={`beat-key-${pitch}`}
-                    style={[s.key, isBlackKey(pitch) && s.black, heldNow && s.keyHeld]}
+                    style={[s.key, props.compact && s.keyCompact, isBlackKey(pitch) && s.black, heldNow && s.keyHeld]}
                     accessibilityRole="button"
                     accessibilityLabel={props.captureActive
                         ? t('beat.midiRecord.key.label', { note, velocity, state: captureState })

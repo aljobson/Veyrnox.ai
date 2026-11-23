@@ -59,7 +59,7 @@ const PROVIDERS = {
             const target = crun.parseEndpoint(modelRow.provider_endpoint);
             return target ? crun.buildRequest(target, inputs) : { ok: false, error: 'provider_unsupported' };
         },
-        submit: (job, _record, apiKey) => crun.submitTask(job, { apiKey }),
+        submit: (job, _record, apiKey, _publicHost, _sources, options) => crun.submitTask(job, { apiKey, faceIdentity: options?.faceIdentity === true }),
     },
     // Higgsfield (ADR-0256 phase 5): polling only (no callback registered), so a job is accepted only when R2 is
     // configured for the sweep to copy the seven-day output into. Off unless HIGGSFIELD_ENABLED is exactly "true"

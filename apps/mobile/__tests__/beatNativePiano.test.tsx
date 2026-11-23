@@ -2,9 +2,9 @@ import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
 import BeatPianoScreen from '../src/app/(app)/beats/piano/[id]';
-import { BeatInstrumentsSection } from '../src/components/beats/BeatInstrumentsSection';
+import { BeatInstrumentsSection, restoreInstrumentLibraryTriggerFocus } from '../src/components/beats/BeatInstrumentsSection';
 import { useBeatEdit } from '../src/lib/beatNative/useBeatEdit';
-import { addInstrumentTrack, addNote, asMidiDoc, midiRegions, noteLabel } from '../src/lib/beatNative/midi';
+import { addInstrumentTrack, addNote, asMidiDoc, midiRegions, midiTracks, midiTrackSections, noteLabel } from '../src/lib/beatNative/midi';
 import { beatStore, getBeat, newBeat, putBeat, resetBeats } from '../src/lib/beatNative/store';
 import { t } from '../src/lib/i18n';
 import { Button } from '../src/components/ui';
@@ -128,6 +128,36 @@ test('keyboard octave and velocity controls stop at their limits', async () => {
     expect(root.container.queryAll(n => n.children.includes(t('beatPiano.keys.velocity', { n: 127 }))).length).toBeGreaterThan(0);
     await press(t('beatPiano.off'));
     expect(nodes(t('beatPiano.quantise')).some(n => n.props.accessibilityState?.disabled)).toBe(true);
+});
+
+test('snap and strength expose radio semantics without relying on colour', async () => {
+    await open();
+    const snap = nodes(t('beatPiano.snapValue', { n: 16 })).find(n => n.props.accessibilityRole === 'radio');
+    expect(snap?.props.accessibilityState?.checked).toBe(true);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radiogroup').length).toBeGreaterThanOrEqual(2);
+    expect(root.container.queryAll(n => n.props.testID === 'beat-piano-timeline-scroll')).toHaveLength(1);
+});
+
+test('instrument library stays open and shows feedback when adding is refused', async () => {
+    const doc = newBeat('Refused');
+    await act(async () => root.render(<BeatInstrumentsSection doc={doc} apply={() => false} audio={() => mockAudio} onOpen={() => {}} />));
+    await press(t('beatPiano.library.add')); await press(t('beatPiano.library.addNamed', { name: 'Grand piano' }));
+    expect(nodes(t('beatPiano.library.close')).length).toBeGreaterThan(0);
+    expect(root.container.queryAll(n => n.children.includes(t('beat.refused', { reason: '' }))).length).toBeGreaterThan(0);
+});
+
+test('instrument sections group one track and show each shared clip once', () => {
+    const doc = addInstrumentTrack(newBeat('Grouped'), { engine: 'voice', id: 'piano', preset: 'grand' });
+    const track = midiTracks(doc)[0], region = track.regions[0];
+    const repeated = { ...doc, tracks: [{ ...track, regions: [...track.regions, { ...region, id: 'second-region', start: region.start + region.length }] }] };
+    expect(midiTrackSections(repeated)).toHaveLength(1);
+    expect(midiTrackSections(repeated)[0].clips).toHaveLength(1);
+});
+
+test('instrument library dismissal restores accessibility focus to its trigger', () => {
+    const focus = jest.fn(), trigger = {} as never;
+    restoreInstrumentLibraryTriggerFocus(trigger, value => value === trigger ? 77 : null, focus);
+    expect(focus).toHaveBeenCalledWith(77);
 });
 
 

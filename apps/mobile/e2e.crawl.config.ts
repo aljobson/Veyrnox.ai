@@ -1,9 +1,11 @@
 import { mobile } from '@e2e-dev/mobile';
 import type { E2EConfig } from 'e2e';
 
+const e2eDevice = process.env.E2E_DEVICE ?? 'iPhone 17 Pro';
+
 const iphone = mobile({
   platform: 'ios',
-  device: 'iPhone 17 Pro',
+  device: e2eDevice,
 });
 
 export default {

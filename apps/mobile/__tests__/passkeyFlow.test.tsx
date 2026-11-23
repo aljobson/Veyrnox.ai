@@ -22,7 +22,7 @@ jest.mock('expo-router', () => ({
     Redirect: () => null,
     useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
 }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, right: 59, bottom: 21, left: 59 }) }));
 jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: jest.fn(), openBrowserAsync: jest.fn() }));
 jest.mock('expo-apple-authentication', () => ({ isAvailableAsync: jest.fn(async () => false) }));
 jest.mock('expo/fetch', () => ({ fetch: jest.fn() }));
@@ -158,6 +158,12 @@ test.each(['flag', 'android', 'unsupported'])('direct route with %s gate closed 
     expect(signIn).not.toHaveBeenCalled();
     expect(texts(t('passkey.err.off'))).toHaveLength(1);
     expect(control(t('public.vey.back'))).toBeDefined();
+});
+
+test('direct passkey route protects landscape side insets and the home indicator', async () => {
+    await render(<PasskeyAuth />);
+    const scroll = root.container.queryAll(node => node.type === 'RCTScrollView' || node.props.contentContainerStyle)[0];
+    expect(RN.StyleSheet.flatten(scroll.props.contentContainerStyle)).toMatchObject({ paddingLeft: 83, paddingRight: 83, paddingBottom: 45 });
 });
 
 test.each(['failed', 'cancelled', 'success', 'disabled'])('route consumes captcha after %s attempt', async outcome => {

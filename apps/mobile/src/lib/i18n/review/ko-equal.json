@@ -14,8 +14,6 @@
   "editor.fPS": "Placeholders and technical units/notation only; no translatable prose.",
   "editor.v": "Standard notation, unit, format example or style abbreviation.",
   "editor.v2": "Placeholders and technical units/notation only; no translatable prose.",
-  "editorSpike.mB": "Placeholders and technical units/notation only; no translatable prose.",
-  "editorSpike.webcodecsoffscreen": "Placeholders and technical units/notation only; no translatable prose.",
   "email.emailPlaceholder": "Standard notation, unit, format example or style abbreviation.",
   "explore.oddlings.title": "Brand or product name, retained as on the Korean website.",
   "libraryFiles.kB": "Placeholders and technical units/notation only; no translatable prose.",
@@ -139,5 +137,6 @@
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
-  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending."
+  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose."
 }

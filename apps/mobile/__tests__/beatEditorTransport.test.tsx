@@ -74,12 +74,12 @@ test.each([360, 390, 719])('compact width %ipt keeps every labelled 44pt action 
     }
 });
 
-test('regular width uses the row layout and applies the bottom safe-area edge', async () => {
+test('regular width uses the row layout and protects landscape sides plus the bottom safe-area edge', async () => {
     mockDimensions = { ...mockDimensions, width: 1024 };
     await render();
     expect(root.container.queryAll(n => n.props.testID === 'beat-editor-transport-controls-regular')).toHaveLength(1);
     const transport = root.container.queryAll(n => n.props.testID === 'beat-editor-transport')[0];
-    expect(transport.props.edges).toEqual(['bottom']);
+    expect(transport.props.edges).toEqual(['left', 'right', 'bottom']);
     expect(RN.StyleSheet.flatten(transport.props.style).paddingBottom).toBe(34);
 });
 

@@ -11,8 +11,6 @@
   "editor.fPS": "Standard frame-rate unit and numeric placeholder.",
   "editor.v": "Editor single-letter control label.",
   "editor.v2": "Placeholder-only version notation.",
-  "editorSpike.mB": "Technical byte unit with placeholders.",
-  "editorSpike.webcodecsoffscreen": "Diagnostic capability names and values.",
   "email.emailPlaceholder": "Literal example email address.",
   "explore.oddlings.title": "Original character product brand retained by the website.",
   "libraryFiles.kB": "Standard byte unit and numeric placeholder.",
@@ -128,5 +126,6 @@
   "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
-  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose."
 }

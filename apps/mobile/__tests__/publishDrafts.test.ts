@@ -1,5 +1,7 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
 import { batchGroups, draftsErrorKey, fetchDrafts, parseDrafts } from '../src/lib/publishDrafts';
+declare const require: (id: string) => any;
+declare const __dirname: string;
 
 const B1 = '44444444-4444-4444-8444-444444444444';
 const B2 = '55555555-5555-4555-8555-555555555555';
@@ -32,6 +34,13 @@ describe('batchGroups', () => {
         const g = batchGroups(drafts);
         expect(g.map((x) => [x.batchId, x.drafts.map((d) => d.id)])).toEqual([[B1, ['a', 'c']], [B2, ['b']], [null, ['e']]]);
     });
+});
+
+test('the high-traffic drafts screen keeps virtualized sections and shared semantic Text', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../src/app/(app)/publish/drafts.tsx'), 'utf8');
+    expect(source).toContain('SectionList');
+    expect(source).toContain("import { Button, Text, themedStyles, useThemedStyles } from '../../../components/ui'");
+    expect(source).not.toMatch(/import\s*\{[^}]*\bText\b[^}]*\}\s*from ['"]react-native['"]/s);
 });
 
 describe('fetchDrafts and errors', () => {

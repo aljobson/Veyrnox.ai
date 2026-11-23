@@ -386,12 +386,12 @@ test('keeps the Library item selected while a new project opens in the full nati
     expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-33333333-3333-3333-3333-333333333333', len: 120 })]);
 });
 
-test('B1: flag off Export saves and says export is on veyrnox.ai, not in the app (QA F09)', async () => {
-    await render(); await press('Add text'); const before = puts().length; await press('Export');
-    await act(async () => jest.advanceTimersByTimeAsync(900));
+test('B1: flag off Export opens the private on-device MP4 flow without a server render (QA F09)', async () => {
+    await render(); await press('Export');
     expect(mockRouter.push).not.toHaveBeenCalled();
-    expect(puts().length).toBeGreaterThan(before);
-    expect(visible("Export isn't in the app yet. Your edit is saved: open it in the editor on veyrnox.ai to export. Clips added from this phone's Photos or Files need adding there again.")).toBe(true);
+    expect(visible('Export on this iPhone')).toBe(true);
+    expect(visible('Makes a private MP4 on this iPhone for supported projects up to 30 seconds. No upload or credits.')).toBe(true);
+    expect(visible('Use cloud export instead')).toBe(true);
     expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
 });
 
@@ -679,7 +679,7 @@ test('a selected audio clip has a Volume button in the simple view that opens it
 });
 
 describe('opening a project that does not load', () => {
-    const spinners = () => root.container.queryAll((node) => String(node.type).includes('ActivityIndicator'));
+    const loaders = () => root.container.queryAll((node) => node.props.accessibilityRole === 'progressbar');
     const documentCalls = () => mockRequest.mock.calls.filter(([path]) => String(path).endsWith('/document') && !path.includes('?')).length;
     const defaultImpl = (path: string) => (path.endsWith('/document') ? { revision: 4, document: serverDocument } : path.endsWith('/media-info') ? { seconds: 4 } : { project: { id: projectId, workspace_id: 'workspace', name: 'Native cut' } });
 
@@ -687,12 +687,12 @@ describe('opening a project that does not load', () => {
         let hang = true;
         mockRequest.mockImplementation(async (path: string) => (hang && path.endsWith('/document') ? new Promise(() => {}) : defaultImpl(path)));
         await renderSimple();
-        expect(spinners()).toHaveLength(1);
+        expect(loaders()).toHaveLength(1);
         expect(visible('Check your connection and try again.')).toBe(false);
         await act(async () => { jest.advanceTimersByTime(14000); });
-        expect(spinners()).toHaveLength(1);
+        expect(loaders()).toHaveLength(1);
         await act(async () => { jest.advanceTimersByTime(1500); });
-        expect(spinners()).toHaveLength(0);
+        expect(loaders()).toHaveLength(0);
         expect(visible('Check your connection and try again.')).toBe(true);
         expect(labelled('Retry now')).toHaveLength(1);
         expect(labelled('Back')).toHaveLength(1);
@@ -707,7 +707,7 @@ describe('opening a project that does not load', () => {
     test('a rejected load shows the error without a spinner, and Back leaves', async () => {
         mockRequest.mockImplementation(async (path: string) => { if (path.endsWith('/document')) throw new Error('offline'); return defaultImpl(path); });
         await renderSimple();
-        expect(spinners()).toHaveLength(0);
+        expect(loaders()).toHaveLength(0);
         expect(visible('Check your connection and try again.')).toBe(true);
         await press('Back');
         expect(mockRouter.back).toHaveBeenCalledTimes(1);

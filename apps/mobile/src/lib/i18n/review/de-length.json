@@ -5118,6 +5118,30 @@
     "ratio": 1.62
   },
   {
+    "id": "editorLocalExport.finishing",
+    "english": "Finishing MP4…",
+    "translation": "MP4 wird fertiggestellt…",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorNativeMotion.analysing",
+    "english": "Analysing",
+    "translation": "Wird analysiert",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Behalten",
+    "ratio": 2
+  },
+  {
+    "id": "editorSpeech.autoApplying",
+    "english": "Adding editable captions…",
+    "translation": "Bearbeitbare Untertitel werden hinzugefügt…",
+    "ratio": 1.72
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

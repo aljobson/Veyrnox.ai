@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView } from 'react-native';
+import { Alert } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicNotice } from '../../../components/music/MusicNotice';
@@ -11,6 +11,7 @@ import { songPlayback } from '../../../lib/music/player';
 import { actionMessage } from '../../../lib/music/actionMessages';
 import { t, rawText } from '../../../lib/i18n';
 import { ds } from '../../../theme';
+import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
 export default function Crop() {
     const { id } = useLocalSearchParams<{ id: string }>(); const { api } = useAuth();
     const user = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
@@ -33,7 +34,7 @@ export default function Crop() {
             { text: rawText(t('musicActions.crop.save')), onPress: () => void flow.confirm() },
         ]);
     }
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('musicActions.crop.title') }} />
         <Text variant="title1" accessibilityRole="header">{t('musicActions.crop.title')}</Text>
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
@@ -56,6 +57,6 @@ export default function Crop() {
                     {['revision_conflict', 'source_changed'].includes(state.error ?? '') || (state.result && state.error)
                         ? <Button label={t('musicActions.action.reload')} disabled={state.busy} onPress={() => void flow.load()} /> : null}
                 </>}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.md } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md } }));

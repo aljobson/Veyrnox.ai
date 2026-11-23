@@ -1,0 +1,5 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["VeyrnoxBeatMidiModule"] },
+  "android": { "modules": ["ai.veyrnox.beatmidi.VeyrnoxBeatMidiModule"] }
+}

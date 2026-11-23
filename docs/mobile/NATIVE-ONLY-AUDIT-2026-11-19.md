@@ -7,12 +7,11 @@ by reading the code on `main` at `e6c4bcd2e`; nothing here has run on a device.
 Sizes: **S** under a day, **M** a few days, **L** a project of its own. "Rebuild" means a new store build is needed
 because a native module or native config changes (a JavaScript-only change ships over the air).
 
-## A. Web views (`react-native-webview`, 11 files)
+## A. Web views (historical inventory; current imports are pinned by `noWebBreakout.test.ts`)
 
 | # | File | What it is for | Native replacement exists? | What it would take | Unavoidable? | Stage |
 |---|---|---|---|---|---|---|
 | A1 | `app/(app)/editor/[projectId].tsx` (legacy `Editor` branch), `components/editor/EngineView.tsx`, `lib/editorStubEngine.ts`, `lib/editorSession.ts` | The first editor: a stub engine page inside a web view. | **Yes**: `components/editor/FullEditorScreen.tsx` (native timeline). Every EAS profile (`development`, `preview`, `production`) sets `EXPO_PUBLIC_FULL_EDITOR_ENABLED=true`, so the web view branch only runs where `EDITOR_ENABLED` is on and `FULL_EDITOR_ENABLED` is off (local jest/dev). | **S**: route to `FullEditorScreen` whenever the editor is enabled; delete the legacy branch, `EngineView`, the stub engine, the legacy session reducer and their tests. No native change, no rebuild. | No | **1** |
-| A2 | `components/dev/EditorSpikeHarness.tsx` (route `dev-s1-editor`) | Hidden S1 spike: probes web view vs native codecs. Redirects Home in release builds unless `EXPO_PUBLIC_DEV_S1_EDITOR_SPIKE=1`. | Superseded by the native editor. | **S** to delete (route, harness, `lib/editorSpike.ts`, strings in 11 locales, tests). Reachable in dev builds, so **left in stage 1**; owner call whether to delete. | No | 1b (owner word) |
 | A3 | `auth/TurnstileView.tsx` (used by `app/email.tsx`, `app/passkey.tsx`) | Cloudflare Turnstile CAPTCHA on sign-up and sign-in. | None: Turnstile has no native SDK. | — | **Yes** (bot check is a web challenge) | 4: keep |
 | A4 | `components/cinema/YouTubeEmbed.tsx` (used by `app/editorial/[id].tsx`) | Plays a YouTube video inside the app (Cinema editorial). | No native YouTube player exists; every RN library wraps the same IFrame in a web view. Opening the YouTube app is a link-out, which is worse. | Only by dropping YouTube playback. | **Yes** (YouTube policy requires its embedded player) | Owner call |
 | A5 | `components/WobnimoView.tsx` (used by `components/VeyCharacter.tsx`) | The Wobnimo mascot, drawn by a canvas engine in a locked-down web view. | No. `@shopify/react-native-skia` 2.14.0 is already installed. | **M**: port the drawing to Skia (no new native module, no rebuild); keep reduce-motion behaviour. | No | 2 |
@@ -51,4 +50,4 @@ URL of the YouTube embed document (A4). Credits are purchased only through the s
 | 2 | A5–A7 Wobnimo and Oddlings through Skia | M | None expected (Skia installed). |
 | 3 | A8–A10 Photo Studio (camera, vision, 3D wig) as its own project | L | Likely a camera frame and ML dependency: rebuild. |
 | 4 | Keep A3, B3–B6, B8–B10 as system flows (guard test documents each) | — | — |
-| Owner calls | A2 spike harness delete; A4 YouTube playback; B7 in-app browser vs store hand-off | S | None |
+| Owner calls | A4 YouTube playback; B7 in-app browser vs store hand-off | S | None |

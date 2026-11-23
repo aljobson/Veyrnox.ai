@@ -4878,6 +4878,12 @@
     "ratio": 1.67
   },
   {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Оставить",
+    "ratio": 2
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

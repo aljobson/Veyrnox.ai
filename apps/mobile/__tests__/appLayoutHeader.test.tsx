@@ -2,15 +2,18 @@ import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import AppLayout from '../src/app/(app)/_layout';
 import { paletteForScheme } from '../src/theme';
+import { View } from 'react-native';
 
 let mockScheme: 'light' | 'dark' = 'light';
 let mockOptions: any;
+let mockScreenLayout: any;
 jest.mock('../src/components/ui', () => ({ ...jest.requireActual('../src/components/ui'), Text: () => null, useAppearance: () => ({ settings: require('../src/theme').getAppearance(), scheme: mockScheme }) }));
 jest.mock('expo-router', () => {
-    const Stack: any = (props: any) => { mockOptions = props.screenOptions; return null; };
+    const Stack: any = (props: any) => { mockOptions = props.screenOptions; mockScreenLayout = props.screenLayout; return null; };
     Stack.Screen = () => null;
     return { Stack, Redirect: () => null };
 });
+jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: 'signedIn', generation: 0 }) }));
 jest.mock('../src/lib/useOfflineRecovery', () => ({ useOfflineRecovery: () => undefined }));
 jest.mock('../src/components/ErrorFallback', () => ({ SignedInErrorBoundary: () => null }));
@@ -47,4 +50,20 @@ test('a screen with nothing behind it gets the home back button', async () => {
     await act(async () => root.render(<AppLayout />));
     expect(mockOptions({ navigation: { canGoBack: () => false } }).headerLeft).toBeInstanceOf(Function);
     expect(mockOptions({ navigation: { canGoBack: () => true } }).headerLeft).toBeUndefined();
+});
+
+test.each(['publish/accounts', 'templates/[id]', 'oddlings/build', 'features/[slug]', 'job/[id]'])('%s receives the stack landscape safe area', async routeName => {
+    await act(async () => root.render(<AppLayout />));
+    await act(async () => root.render(mockScreenLayout({ route: { name: routeName }, children: <View testID="route-child" /> })));
+    const safe = root.container.queryAll(node => node.type === 'SafeAreaView')[0];
+    expect(safe).toBeDefined();
+    expect(safe.props.edges).toEqual(['left', 'right']);
+    expect(safe.queryAll(node => node.props.testID === 'route-child')).toHaveLength(1);
+});
+
+test.each(['(tabs)', 'first-run', 'paywall', 'beats/[id]', 'cinema/watch/[id]', 'editor/[projectId]', 'music/create'])('%s keeps its own horizontal safe area', async routeName => {
+    await act(async () => root.render(<AppLayout />));
+    await act(async () => root.render(mockScreenLayout({ route: { name: routeName }, children: <View testID="route-child" /> })));
+    expect(root.container.queryAll(node => node.type === 'SafeAreaView')).toHaveLength(0);
+    expect(root.container.queryAll(node => node.props.testID === 'route-child')).toHaveLength(1);
 });

@@ -14,6 +14,7 @@ jest.setTimeout(30000);
 const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn() };
 const mockRequest = jest.fn(), mockInject = jest.fn();
 let mockParams: Record<string, string>, mockStatus: string, mockProps: any, mockMounts: number, mockFocused: boolean, mockWidth: number;
+let mockInsets: { top: number; right: number; bottom: number; left: number };
 jest.mock('expo-router', () => ({
     useLocalSearchParams: () => mockParams, useRouter: () => mockRouter,
     useFocusEffect: (effect: () => void | (() => void)) => {
@@ -21,7 +22,7 @@ jest.mock('expo-router', () => ({
     },
 }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ status: mockStatus, api: { request: mockRequest } }) }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => mockInsets }));
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
 jest.mock('react-native', () => {
     const rn = jest.requireActual('react-native');
@@ -66,6 +67,7 @@ beforeEach(() => {
     jest.clearAllMocks(); jest.useFakeTimers();
     mockParams = { id: episode.id, series: series.slug }; mockStatus = 'signedIn'; mockFocused = true;
     mockProps = undefined; mockMounts = 0; mockWidth = 402; mockRouter.canGoBack.mockReturnValue(false);
+    mockInsets = { top: 0, right: 0, bottom: 0, left: 0 };
     jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, fn) => { appState = fn; return { remove: jest.fn() }; });
@@ -171,6 +173,20 @@ test.each([[320, 200], [402, 226]])('full bleed width %s uses minimum player hei
     mockWidth = width; await render();
     const container = root.container.queryAll(n => n.props.testID === 'youtube-player-container')[0];
     expect(StyleSheet.flatten(container.props.style)).toMatchObject({ width, height });
+});
+test('landscape keeps the player full bleed while interactive chrome avoids both physical sides', async () => {
+    mockWidth = 844; mockInsets = { top: 0, right: 59, bottom: 21, left: 59 }; await render();
+    const playerContainer = root.container.queryAll(n => n.props.testID === 'youtube-player-container')[0];
+    expect(StyleSheet.flatten(playerContainer.props.style).width).toBe(844);
+    const padded = root.container.queryAll(n => {
+        const style = StyleSheet.flatten(n.props.style);
+        return style?.paddingLeft === 75 && style?.paddingRight === 75;
+    });
+    expect(padded.length).toBeGreaterThanOrEqual(1);
+    expect(root.container.queryAll(n => {
+        const style = StyleSheet.flatten(n.props.style);
+        return style?.paddingLeft === 67 && style?.paddingRight === 67;
+    }).length).toBeGreaterThanOrEqual(1);
 });
 test.each(['ios', 'android'] as const)('late ready clears only current timeout on %s', async platform => {
     jest.replaceProperty(Platform, 'OS', platform); await render();

@@ -26,6 +26,7 @@ export const TEXT_DEFAULTS = Object.freeze({ color: '#ffffff', background: '#000
 export const BLENDS = Object.freeze(['source-over', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'difference']);
 export { ANIMATIONS } from './editorAnimation.mjs';
 export function visualProblem(c) {
+    if(c.semanticMask!==undefined && ((!exact(c.semanticMask,['version','mediaId','category','sourceFrame']) && !exact(c.semanticMask,['version','mediaId','category','sourceFrame','dynamic'])) || c.semanticMask.version!==1 || !/^[A-Za-z0-9_-]{1,64}$/.test(c.semanticMask.mediaId) || !['background','hair','bodySkin','faceSkin','clothes','others','person'].includes(c.semanticMask.category) || !int(c.semanticMask.sourceFrame,0,1e7) || (c.semanticMask.dynamic!==undefined && (!exact(c.semanticMask.dynamic,['fps','frames','identity']) || ![24,25,30,50,60].includes(c.semanticMask.dynamic.fps) || !int(c.semanticMask.dynamic.frames,1,1800) || !/^sm2-[0-9a-f]{8}$/.test(c.semanticMask.dynamic.identity)))))return helperEnglish('invalid_semantic_mask');
     const smart=smartPictureProblem(c.smartPicture);if(smart)return smart;
     const badParameters=parameterProblem(c.parameterKeyframes);if(badParameters)return badParameters;
     const badColour=colourProblem(c.colourAdjustment); if(badColour)return badColour;
@@ -43,7 +44,7 @@ export function visualProblem(c) {
     return null;
 }
 // Shared validator allowlists: interchange dispositions are independently checked against these.
-export const CLIP_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'audioEffects', 'smartPicture']);
+export const CLIP_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'mediaId', 'in', 'volume', 'transition', 'rate', 'fadeIn', 'fadeOut', 'pan', 'eq', 'transform', 'filter', 'crop', 'mask', 'maskSettings', 'maskKeyframes', 'colourAdjustment', 'blend', 'fit', 'effect', 'transitionType', 'speedCurve', 'reverse', 'freezeFrame', 'background', 'parameterKeyframes', 'preservePitch', 'audioProcessing', 'audioEffects', 'smartPicture', 'semanticMask']);
 export const TEXT_KEYS = Object.freeze([...['id', 'start', 'len', 'trackId', 'animation', 'keyframes', 'groupId'], 'text', 'x', 'y', 'size', 'style', 'caption', 'words', 'wordStyle', 'wordsEstimated']);
 export const MEDIA_KEYS = Object.freeze(['id','kind','frames','name','hasAudio','width','height','graphic','folder','attribution','sourceName','assetSource','originalAudio']);
 export const TRACK_KEYS = Object.freeze(['id','kind','name','locked','muted','hidden','solo']);
@@ -84,6 +85,7 @@ export function validateSequence(tl) {
                 if (c.style !== undefined && (!exact(c.style, [...Object.keys(TEXT_DEFAULTS),...Object.keys(TEXT_EXTRAS).filter(k=>c.style[k]!==undefined)]) || textExtrasProblem(c.style) || !colour(c.style.color) || !colour(c.style.background) || !colour(c.style.stroke) || !number(c.style.backgroundOpacity, 0, 1) || !number(c.style.strokeWidth, 0, 12) || !['normal', 'bold'].includes(c.style.weight)  || !['left', 'center', 'right'].includes(c.style.align))) return helperEnglish('invalid_text_style');
             } else {
                 const m = tl.media[c.mediaId], rate = c.rate ?? 1;
+                if(c.semanticMask && (!tl.media[c.semanticMask.mediaId] || tl.media[c.semanticMask.mediaId].kind!==(c.semanticMask.dynamic?'video':'image') || tl.media[c.semanticMask.mediaId].hasAudio))return helperEnglish('semantic_mask_asset_is_missing');
                 const badAudio=audioSettingsProblem(c,m)||audioEffectsProblem(c.audioEffects);if(badAudio)return badAudio;
                 if(c.audioEffects!==undefined && !m?.hasAudio)return helperEnglish('audio_effects_need_a_source_with_sound');
                 const badBackground=backgroundProblem(c.background,tl.media);if(badBackground)return badBackground;

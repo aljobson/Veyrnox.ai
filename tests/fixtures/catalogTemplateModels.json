@@ -33,8 +33,7 @@
       "id": "seedance-2.0-reference",
       "modality": "image-to-video",
       "durations": [
-        5,
-        10
+        5
       ],
       "media": {
         "image": {

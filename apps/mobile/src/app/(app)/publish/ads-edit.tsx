@@ -3,7 +3,9 @@ import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { UnlockCard } from '../../../components/UnlockCard';
 import { dateText, timeText, WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { touchTarget } from '../../../lib/a11y';
@@ -125,9 +127,9 @@ export default function AdsEdit() {
     );
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: id ? t('ads.edit') : t('ads.new') }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <Text style={styles.note}>{t('ads.draftNote')}</Text>
                 {!canEdit ? <Text style={styles.muted}>{t('ads.readOnly')}</Text> : null}
                 {input(t('ads.name'), form.name, (v) => set('name', v), { maxLength: 120 })}
@@ -175,8 +177,8 @@ export default function AdsEdit() {
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('ads.save')}</Text>}
                     </Pressable>
                 ) : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

@@ -3,12 +3,13 @@ import { audioClipInterval } from '../../../../app/veyrnox/_lib/editorAudioInter
 import { colourDefaults, neutralColour } from '../../../../app/veyrnox/_lib/editorColour.mjs';
 import { evaluatedMask } from '../../../../app/veyrnox/_lib/editorMask.mjs';
 import { timelineSize } from '../../../../app/veyrnox/_lib/editorRender.mjs';
-import { sequenceTransition, sequenceTransitionAfter } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
+import { sequenceTransition, sequenceTransitionAfter, sourceFrame } from '../../../../app/veyrnox/_lib/editorSequence.mjs';
 import { sequenceLayers } from '../../../../app/veyrnox/_lib/editorSequenceRender.mjs';
 import { trackAudible } from '../../../../app/veyrnox/_lib/editorSelection.mjs';
 import { smartPictureActive } from '../../../../app/veyrnox/_lib/editorSmartPicture.mjs';
 import { captionPresentation } from '../../../../app/veyrnox/_lib/editorWords.mjs';
-import type { Clip, Media, TextClip, Timeline } from './nativeEditorModel';
+import type { Clip, CustomFont, Media, TextClip, Timeline } from './nativeEditorModel';
+import { editorSemanticMaskIdentity, editorSemanticMaskMatches, editorStaticSemanticMaskMatches } from './editorSemanticMaskIdentity';
 
 type Transform = {
     x: number; y: number; scale: number; rotation: number; opacity: number; flipX: boolean; flipY: boolean;
@@ -16,7 +17,7 @@ type Transform = {
 type Reveal = { x: number; y: number; width: number; height: number };
 type Filter = { brightness: number; contrast: number; saturate: number; hue: number; blur: number };
 type Colour = ReturnType<typeof colourDefaults>;
-type Mask = { x: number; y: number; width: number; height: number; rotation: number; feather: number; inverted: boolean };
+type Mask = { x: number; y: number; width: number; height: number; rotation: number; feather: number; inverted: boolean; shape: string };
 type Wipe = { direction: string; progress: number };
 type Shape = { kind: string; progress: number };
 
@@ -33,7 +34,7 @@ export type EditorPreviewCapability =
     | 'fit' | 'crop' | 'transform' | 'visual-layering' | 'blend' | 'mask' | 'transition' | 'clip-animation' | 'animation-reveal'
     | 'clip-background-solid' | 'clip-background-blur' | 'clip-background-image'
     | 'basic-filter' | 'smart-picture' | 'advanced-colour' | 'effect'
-    | 'text-layer' | 'caption-words' | 'custom-font' | 'audio-mix';
+    | 'text-layer' | 'caption-words' | 'custom-font' | 'semantic-mask' | 'semantic-mask-dynamic' | 'audio-mix';
 
 export type EditorPreviewCapabilityUse = {
     capability: EditorPreviewCapability;
@@ -76,6 +77,9 @@ export type EditorPreviewVisualPlan = {
     layerIndex: number;
     clip: Clip;
     media: Media | null;
+    backgroundMedia: Media | null;
+    semanticMaskIdentity: string | null;
+    semanticMaskSourceFrame: number | null;
     sourceIndex: number;
     sourceTimeSeconds: number;
     offset: number;
@@ -97,6 +101,7 @@ export type EditorPreviewTextPlan = {
     transform: Transform;
     reveal: Reveal;
     presentation: { text: string; ranges: { from: number; to: number }[] };
+    customFont: CustomFont | null;
 };
 
 export type EditorPreviewPlan = {
@@ -104,6 +109,8 @@ export type EditorPreviewPlan = {
     /** Canonical web compositor geometry at its 720p reference target. */
     referenceSize: { readonly width: number; readonly height: number };
     background: string;
+    transparentBackground?: boolean;
+    fonts?: CustomFont[];
     visuals: EditorPreviewVisualPlan[];
     texts: EditorPreviewTextPlan[];
     capabilities: {
@@ -159,6 +166,7 @@ export function editorPreviewPlan(
     timeline: Timeline,
     frame: number,
     supportedCapabilities: readonly EditorPreviewCapability[] = STATIC_EDITOR_PREVIEW_CAPABILITIES,
+    options: { readonly transparentBackground?: boolean } = {},
 ): EditorPreviewPlan {
     // Native drafts may temporarily retain a clip after its media disappears. The canonical web
     // selector assumes a validated document and dereferences every visual's media before filtering
@@ -185,7 +193,7 @@ export function editorPreviewPlan(
         const transform = evaluatedTransform(clip, visual.offset) as Transform;
         const reveal = evaluatedReveal(clip, visual.offset) as Reveal;
         const parameters = evaluatedParameters(clip, visual.offset) as { filter: Filter; colour: Colour };
-        const mask = clip.mask && clip.mask !== 'none' ? evaluatedMask(clip, visual.offset) as Mask : null;
+        const mask = clip.mask && clip.mask !== 'none' ? { ...(evaluatedMask(clip, visual.offset) as Omit<Mask, 'shape'>), shape: clip.mask } : null;
         const transition = transitionFor(canonicalTimeline, canonical.visuals, layerIndex, frame);
         const owner = ['image', 'graphic'].includes(String(media?.kind)) ? `${media?.kind}-source` as 'image-source' | 'graphic-source'
             : media?.kind === 'video' ? 'video-source' : media ? 'unknown-media-source' : 'missing-media';
@@ -196,6 +204,12 @@ export function editorPreviewPlan(
         requirements.push(capabilityUse(supported, 'transform', 'visual', clip.id, clip.mediaId));
         if (clip.blend && clip.blend !== 'source-over') requirements.push(capabilityUse(supported, 'blend', 'visual', clip.id, clip.mediaId, clip.blend));
         if (mask) requirements.push(capabilityUse(supported, 'mask', 'visual', clip.id, clip.mediaId, clip.mask));
+        if (clip.semanticMask) {
+            const use = capabilityUse(supported, clip.semanticMask.dynamic ? 'semantic-mask-dynamic' : 'semantic-mask',
+                'visual', clip.id, clip.semanticMask.mediaId, clip.semanticMask.category);
+            const matches = clip.semanticMask.dynamic ? editorSemanticMaskMatches(clip) : editorStaticSemanticMaskMatches(clip);
+            requirements.push(matches ? use : { ...use, supported: false, detail: 'source-mapping-changed' });
+        }
         if (transition) requirements.push(capabilityUse(supported, 'transition', 'visual', clip.id, clip.mediaId, transition.type));
         if (activeAnimation(clip)) requirements.push(capabilityUse(supported, 'clip-animation', 'visual', clip.id, clip.mediaId));
         if (!fullReveal(reveal)) requirements.push(capabilityUse(supported, 'animation-reveal', 'visual', clip.id, clip.mediaId));
@@ -209,7 +223,10 @@ export function editorPreviewPlan(
             if (clip.background.type === 'image' && !timeline.media[clip.background.mediaId]) requirements.push(capabilityUse(supported, 'missing-media', 'visual', clip.id, clip.background.mediaId, 'clip-background'));
         }
         return {
-            layerIndex, clip, media, sourceIndex: sourceIndexes.get(clip.id) ?? visual.k, sourceTimeSeconds: visual.time, offset: visual.offset,
+            layerIndex, clip, media, backgroundMedia: clip.background?.type === 'image' ? timeline.media[clip.background.mediaId] ?? null : null,
+            semanticMaskIdentity: clip.semanticMask?.dynamic ? editorSemanticMaskIdentity(clip) : null,
+            semanticMaskSourceFrame: clip.semanticMask ? sourceFrame(clip, 0) : null,
+            sourceIndex: sourceIndexes.get(clip.id) ?? visual.k, sourceTimeSeconds: visual.time, offset: visual.offset,
             transform, reveal, filter: parameters.filter, colour: parameters.colour, mask,
             crop, fit: clip.fit || 'contain', blend: clip.blend || 'source-over', transition,
         };
@@ -225,7 +242,8 @@ export function editorPreviewPlan(
         if (item.words?.length && (item.wordStyle?.mode ?? 'highlight') !== 'none') requirements.push(capabilityUse(supported, 'caption-words', 'text', item.id, undefined, item.wordStyle?.mode ?? 'highlight'));
         if (timeline.fonts?.some(font => font.family === item.style?.font)) requirements.push(capabilityUse(supported, 'custom-font', 'text', item.id, undefined, item.style?.font));
         if (!fullReveal(reveal)) requirements.push(capabilityUse(supported, 'animation-reveal', 'text', item.id));
-        return { layerIndex, item, offset: item.offset, transform, reveal, presentation };
+        return { layerIndex, item, offset: item.offset, transform, reveal, presentation,
+            customFont: timeline.fonts?.find(font => font.family === item.style?.font) ?? null };
     });
 
     for (const clip of [...timeline.video, ...timeline.audio]) {
@@ -247,6 +265,8 @@ export function editorPreviewPlan(
         frame,
         referenceSize: timelineSize(timeline, 720),
         background: canonical.background,
+        ...(options.transparentBackground ? { transparentBackground: true } : {}),
+        ...(timeline.fonts?.length ? { fonts: timeline.fonts } : {}),
         visuals,
         texts,
         capabilities: { exact: unsupported.length === 0, requirements, unsupported },

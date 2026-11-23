@@ -1,6 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, I18nManager, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BrandGlow } from './BrandGlow';
 import { EASE_OUT } from '../lib/motionCurves';
 import { MIN_TARGET, touchTarget } from '../lib/a11y';
@@ -10,6 +9,7 @@ import { stepsLeftKey } from '../lib/firstRun';
 import { ds } from '../theme';
 import { Icon, Text, themedStyles, useThemedStyles } from './ui';
 import { useReducedMotion } from './ui/useReducedMotion';
+import { useOptionalSafeAreaInsets } from '../lib/safeArea';
 
 interface Props {
     // 1-based position in the whole first-run journey, and how many steps it has: one bar across welcome and questions.
@@ -26,7 +26,7 @@ interface Props {
 // The frame every first-run screen shares: a progress bar that fills as you go, Back and Skip in the corners, a soft accent
 // glow behind the content and the primary action pinned to the bottom. Reduce Motion fills the bar without easing.
 export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, backLabel, footer, children }: Props) {
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const s = useThemedStyles(sheets);
     const reduced = useReducedMotion();
     const fill = useRef(new Animated.Value(step / total)).current;
@@ -36,8 +36,9 @@ export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, backLa
     const leftKey = stepsLeftKey(step, total);
     const label = rawText(leftKey ? t(leftKey) : t('welcome.step', { n: step, total }));
     return (
-        <View style={[s.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <View style={[s.screen, { paddingTop: insets.top, paddingRight: insets.right, paddingBottom: insets.bottom, paddingLeft: insets.left }]}>
             <View style={s.glowWrap} pointerEvents="none"><BrandGlow shown reduced={reduced} /></View>
+            <View style={s.frame}>
             <View style={s.top}>
                 <View style={s.slot}>
                     {onBack ? (
@@ -53,25 +54,27 @@ export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, backLa
                 <View style={s.slot}>
                     {onSkip ? (
                         <Pressable accessibilityRole="button" accessibilityLabel={rawText(skipLabel ?? t('welcome.skip'))} hitSlop={8} onPress={onSkip} style={[touchTarget, s.skip]}>
-                            <Text variant="bodyStrong" tone="secondary" numberOfLines={1}>{skipLabel ?? t('welcome.skip')}</Text>
+                            <Text variant="bodyStrong" tone="secondary" numberOfLines={2}>{skipLabel ?? t('welcome.skip')}</Text>
                         </Pressable>
                     ) : null}
                 </View>
             </View>
-            {leftKey ? <Text variant="caption" tone="secondary" style={s.left} numberOfLines={1}>{t(leftKey)}</Text> : null}
+            {leftKey ? <Text variant="caption" tone="secondary" style={s.left} numberOfLines={2}>{t(leftKey)}</Text> : null}
             <View style={s.body}>{children}</View>
             <View style={s.footer}>{footer}</View>
+            </View>
         </View>
     );
 }
 
 const sheets = themedStyles((p) => ({
     screen: { flex: 1, backgroundColor: p.bg },
+    frame: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' },
     glowWrap: { position: 'absolute', top: -120, left: 0, right: 0, alignItems: 'center' },
-    top: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md, paddingHorizontal: ds.space.gutter, paddingTop: ds.space.md },
-    slot: { minWidth: MIN_TARGET, minHeight: MIN_TARGET, maxWidth: '34%', flexShrink: 0, justifyContent: 'center' },
+    top: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm, paddingHorizontal: ds.space.gutter, paddingTop: ds.space.md },
+    slot: { minWidth: MIN_TARGET, minHeight: MIN_TARGET, maxWidth: '42%', flexShrink: 1, justifyContent: 'center' },
     back: { width: MIN_TARGET, height: MIN_TARGET, borderRadius: MIN_TARGET / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: p.surface },
-    skip: { alignItems: 'flex-end' },
+    skip: { alignItems: 'flex-end', justifyContent: 'center' },
     track: { flex: 1, height: 6, borderRadius: 3, backgroundColor: p.borderSubtle, overflow: 'hidden' },
     // Full width, shrunk by scaleX from the start edge (set at render, for RTL), so only the transform animates.
     bar: { height: 6, borderRadius: 3, backgroundColor: p.accent },

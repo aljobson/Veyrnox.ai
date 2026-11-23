@@ -2,7 +2,7 @@ import UIKit
 import ImageIO
 import MediaPipeTasksVision
 
-private enum VisionFailure: Error { case unavailable }
+enum VisionFailure: Error { case unavailable }
 final class VisionEngine {
   private var face: FaceLandmarker?
   private var segmenter: ImageSegmenter?
@@ -38,7 +38,7 @@ final class VisionEngine {
   }
 
   func detect(op: String, jpeg: String, width: Int, height: Int) throws -> [String: Any] {
-    guard ["detect", "swapDetect"].contains(op), (8...384).contains(width),
+    guard ["detect", "swapDetect", "semanticMask"].contains(op), (8...384).contains(width),
       (8...384).contains(height), jpeg.utf8.count <= 900_000,
       jpeg.hasPrefix("data:image/jpeg;base64,"),
       let data = Data(base64Encoded: String(jpeg.dropFirst(23))),
@@ -52,21 +52,34 @@ final class VisionEngine {
       cg.width == width, cg.height == height,
       let face = face, let segmenter = segmenter else { throw VisionFailure.unavailable }
     let input = try MPImage(uiImage: image)
-    let faces = try face.detect(image: input).faceLandmarks
-    let count = min(2, faces.count)
+    let faces = op == "semanticMask" ? nil : try face.detect(image: input).faceLandmarks
+    let count = min(2, faces?.count ?? 0)
     var result: [String: Any] = ["count": count, "landmarks": [Float](), "width": width, "height": height]
-    if count != 1 {
+    if op != "semanticMask" && count != 1 {
       if op == "detect" { result["hair"] = NSNull() }
       return result
     }
-    let landmarks = faces[0].flatMap { [$0.x, $0.y, $0.z] }
-    guard landmarks.count == 1434, landmarks.allSatisfy({ $0.isFinite && abs($0) <= 2 })
-    else { throw VisionFailure.unavailable }
-    result["landmarks"] = landmarks
+    if op != "semanticMask" {
+      guard let faceLandmarks = faces?.first else { throw VisionFailure.unavailable }
+      let landmarks = faceLandmarks.flatMap { [$0.x, $0.y, $0.z] }
+      guard landmarks.count == 1434, landmarks.allSatisfy({ $0.isFinite && abs($0) <= 2 })
+      else { throw VisionFailure.unavailable }
+      result["landmarks"] = landmarks
+    }
     // IMAGE results own copied masks; the per-call autoreleasepool releases all images and masks.
     let segmentation = try segmenter.segment(image: input)
     guard let masks = segmentation.confidenceMasks, masks.count == 6 else { throw VisionFailure.unavailable }
-    if op == "detect" {
+    if op == "semanticMask" {
+      result["width"] = width; result["height"] = height
+      var pngs: [String: String] = [:]
+      for (index, key) in ["background", "hair", "bodySkin", "faceSkin", "clothes", "others"].enumerated() {
+        let plane = try quantize(masks[index], width: width, height: height)
+        result[key] = Data(plane).base64EncodedString(); pngs[key] = try maskPng(plane, width: width, height: height)
+      }
+      let person = try combine(masks: Array(masks[1...5]), width: width, height: height)
+      result["person"] = Data(person).base64EncodedString(); pngs["person"] = try maskPng(person, width: width, height: height)
+      result["maskPngs"] = pngs
+    } else if op == "detect" {
       let mask = masks[1]
       result["width"] = mask.width
       result["height"] = mask.height
@@ -79,10 +92,24 @@ final class VisionEngine {
     return result
   }
 
+  func semanticPlane(image: CGImage, category: String, width: Int, height: Int) throws -> [UInt8] {
+    guard (8...384).contains(width), (8...384).contains(height),
+          ["background", "hair", "bodySkin", "faceSkin", "clothes", "others", "person"].contains(category),
+          let segmenter else { throw VisionFailure.unavailable }
+    let input = try MPImage(uiImage: UIImage(cgImage: image))
+    let segmentation = try segmenter.segment(image: input)
+    guard let masks = segmentation.confidenceMasks, masks.count == 6 else { throw VisionFailure.unavailable }
+    if category == "person" { return try combine(masks: Array(masks[1...5]), width: width, height: height) }
+    let indexes = ["background": 0, "hair": 1, "bodySkin": 2, "faceSkin": 3, "clothes": 4, "others": 5]
+    guard let index = indexes[category] else { throw VisionFailure.unavailable }
+    return try quantize(masks[index], width: width, height: height)
+  }
+
   private func quantize(_ mask: Mask, width: Int, height: Int) throws -> [UInt8] {
     guard (8...512).contains(mask.width), (8...512).contains(mask.height) else { throw VisionFailure.unavailable }
-    let values = mask.float32Data
-    for i in 0..<(mask.width * mask.height) {
+    let pixelCount = mask.width * mask.height
+    let values = UnsafeBufferPointer(start: mask.float32Data, count: pixelCount)
+    for i in 0..<pixelCount {
       guard values[i].isFinite && values[i] >= 0 && values[i] <= 1 else { throw VisionFailure.unavailable }
     }
     return (0..<(width * height)).map { i in
@@ -90,5 +117,25 @@ final class VisionEngine {
       let y = min(mask.height - 1, Int((Double(i / width) + 0.5) * Double(mask.height) / Double(height)))
       return UInt8(floor(Double(values[y * mask.width + x]) * 255 + 0.5))
     }
+  }
+
+  private func combine(masks: [Mask], width: Int, height: Int) throws -> [UInt8] {
+    let values = try masks.map { try quantize($0, width: width, height: height) }
+    return (0..<(width * height)).map { index in
+      let probability = min(1, values.reduce(0.0) { $0 + Double($1[index]) / 255.0 })
+      return UInt8(floor(probability * 255.0 + 0.5))
+    }
+  }
+
+  private func maskPng(_ mask: [UInt8], width: Int, height: Int) throws -> String {
+    var rgba = [UInt8](repeating: 255, count: width * height * 4)
+    for index in mask.indices { rgba[index * 4 + 3] = mask[index] }
+    guard let provider = CGDataProvider(data: Data(rgba) as CFData),
+          let image = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,
+            bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.last.rawValue), provider: provider,
+            decode: nil, shouldInterpolate: false, intent: .defaultIntent),
+          let png = UIImage(cgImage: image).pngData(), png.count <= 1_048_576 else { throw VisionFailure.unavailable }
+    return png.base64EncodedString()
   }
 }

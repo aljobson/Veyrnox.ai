@@ -61,7 +61,7 @@ export function BeatEditorTransport({ playing, starting, locked, pattern, patter
                 ? t('beat.midiRecord.stop')
                 : t('beat.midiRecord.record');
     const midiActive = midiRecordPhase !== undefined && midiRecordPhase !== 'idle';
-    return <SafeAreaView edges={['bottom']} testID="beat-editor-transport" accessible={false} accessibilityRole="toolbar" accessibilityLabel={t('beat.transport')} style={s.safeArea}>
+    return <SafeAreaView edges={['left', 'right', 'bottom']} testID="beat-editor-transport" accessible={false} accessibilityRole="toolbar" accessibilityLabel={t('beat.transport')} style={s.safeArea}>
         <View style={[s.bar, layout === 'regular' && s.regular, layout === 'accessible' && s.accessible]}>
             <View testID="beat-editor-pattern-selector" style={s.patternRow}>
                 <SegmentedControl value={pattern} disabled={patternDisabled} accessibilityLabel={t('beat.patterns')}

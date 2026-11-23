@@ -16,7 +16,6 @@ export function BeatMasterStrip({ doc, audio, apply }: { doc: MixDoc; audio: Bea
         <MixSlider label={t('beatMix.master.gain')} value={master.gain} onChange={gain => change({ gain }, 'gain')} />
         <Button label={t('beatMix.limiter')} variant={master.limiter ? 'primary' : 'secondary'} accessibilityState={{ selected: master.limiter }}
             onPress={() => change({ limiter: !master.limiter }, 'limiter')} />
-        <Text variant="footnote">{t('beatMix.limiter.standIn')}</Text>
         <Text>{t('beatMix.master.room')}</Text>
         <SegmentedControl accessibilityLabel={t('beatMix.master.room')} value={String(master.reverb.size)} onChange={v => change({ reverb: { size: Number(v) } }, 'reverb.size')}
             options={REVERB_SIZES.map(size => ({ value: String(size), label: t('beatMix.unit.seconds', { value: size }) }))} />

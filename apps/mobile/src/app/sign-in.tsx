@@ -51,7 +51,12 @@ export default function SignIn() {
         <View style={[styles.frame, { paddingTop: insets.top }]}>
             <ScrollView
                 style={styles.scroll}
-                contentContainerStyle={[styles.screen, { paddingTop: ds.space.xxl, paddingBottom: insets.bottom + ds.space.xxl }]}
+                contentContainerStyle={[styles.screen, {
+                    paddingTop: ds.space.xxl,
+                    paddingRight: insets.right + ds.space.gutter,
+                    paddingBottom: insets.bottom + ds.space.xxl,
+                    paddingLeft: insets.left + ds.space.gutter,
+                }]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
@@ -115,7 +120,7 @@ export default function SignIn() {
 const sheets = themedStyles((p) => ({
     frame: { flex: 1, backgroundColor: p.bg },
     scroll: { flex: 1 },
-    screen: { flexGrow: 1, paddingHorizontal: ds.space.gutter, gap: ds.space.md },
+    screen: { flexGrow: 1, gap: ds.space.md },
     hero: { gap: ds.space.lg, marginBottom: ds.space.lg },
     promises: { gap: ds.space.sm },
     promise: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },

@@ -2,15 +2,20 @@ import { Text as StatusText } from '../components/ui/Text';
 import { ReviewMedia } from '../components/ReviewMedia';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Action, Card, Status, styles as shared } from '../components/account/shared';
 import { getLocale, t } from '../lib/i18n';
 import { COMMENT_MAX, decideReview, fetchReview, reviewErrorKey, reviewOpen, validToken, type Review } from '../lib/shareLinks';
 import { colors, fonts, LIST_END_PADDING } from '../theme';
+import { KeyboardScreen } from '../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../components/KeyboardFormScrollView';
+import { screenSafePadding } from '../components/SafeContentScrollView';
+import { useOptionalSafeAreaInsets } from '../lib/safeArea';
 
 // A post review request sent to someone who may not have an account: the link's token is the credential, as on the web,
 // so this screen sits outside the signed-in area. It shows the post and takes one decision, approve or reject.
 export default function ReviewLink() {
+    const insets = useOptionalSafeAreaInsets();
     const { token: raw } = useLocalSearchParams<{ token?: string }>();
     const token = typeof raw === 'string' ? raw : '';
     const [review, setReview] = useState<Review | null>(null);
@@ -45,7 +50,7 @@ export default function ReviewLink() {
 
     const when = review?.scheduledAt && !Number.isNaN(Date.parse(review.scheduledAt)) ? new Date(review.scheduledAt).toLocaleString(getLocale()) : null;
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={[styles.content, screenSafePadding(insets, 16, true), { paddingTop: Math.max(56, insets.top + 16), paddingBottom: 16 + LIST_END_PADDING + insets.bottom }]} keyboardShouldPersistTaps="handled">
             <Text style={shared.label}>{t('review.vEYRNOXPUBLISH')}</Text>
             <Text style={styles.title} accessibilityRole="header">{t('share.review.title')}</Text>
             {!validToken(token) ? <StatusText variant="inherit" style={shared.help} accessibilityRole="alert">{t('share.review.err.gone')}</StatusText> : null}
@@ -79,7 +84,7 @@ export default function ReviewLink() {
                     <Status text={error} error />
                 </Card>
             ) : null}
-        </ScrollView>
+        </KeyboardFormScrollView></KeyboardScreen>
     );
 }
 

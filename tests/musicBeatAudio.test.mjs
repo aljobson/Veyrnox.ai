@@ -4,6 +4,11 @@ import { createBeatEngine } from '../app/veyrnox/_lib/music/beat/beatEngine.js';
 import { renderBeat, renderSong } from '../app/veyrnox/_lib/music/beat/beatMixdown.js';
 import { createBeat } from '../app/veyrnox/_lib/music/beat/beatDocument.mjs';
 import { stepTime, loopSeconds } from '../app/veyrnox/_lib/music/beat/beatTime.mjs';
+import { renderStarterSound } from '../app/veyrnox/_lib/music/beat/beatSoundRenderer.mjs';
+import { createWebSoundRenderer } from '../app/veyrnox/_lib/music/beat/beatSoundWeb.mjs';
+import { soundDuration } from '../app/veyrnox/_lib/music/beat/beatSounds.mjs';
+import { seededRandom } from '../app/veyrnox/_lib/music/beat/beatSeed.mjs';
+import { audioDoc } from './musicBeatAudioFixtures.mjs';
 class Param {
   value = 1; calls = [];
   setValueAtTime(value, time) { this.calls.push(['set', value, time]); }
@@ -35,6 +40,66 @@ class Context {
   close() { this.closed = true; return Promise.resolve(); }
   startRendering() { return Promise.resolve({ getChannelData: () => new Float32Array(this.options.length), sampleRate: this.sampleRate }); }
 }
+
+const soundTrace = (context) => ({
+  options: context.options,
+  noise: Array.from(context.buffers[0].getChannelData(0).subarray(0, 8)),
+  nodes: context.nodes.map(node => ({
+    type: node.type,
+    gain: { value: node.gain.value, calls: node.gain.calls },
+    frequency: { value: node.frequency.value, calls: node.frequency.calls },
+    started: node.started,
+    stopped: node.stopped,
+    outputs: node.outputs.map(output => output.type),
+  })),
+});
+class SoundContext extends Context {
+  buffers = [];
+  createBuffer(channels, length, sampleRate = this.sampleRate) {
+    const data = Array.from({ length: channels }, () => new Float32Array(length));
+    const buffer = { numberOfChannels: channels, length, sampleRate, getChannelData: channel => data[channel] };
+    this.buffers.push(buffer); return buffer;
+  }
+  startRendering() { return Promise.resolve(this.createBuffer(this.options.channels, this.options.length, this.sampleRate)); }
+}
+
+test('shared Starter Sound renderer preserves the web tonal graph, exact 48 kHz factory contract and seeded noise', async () => {
+  const bpm = 120, seed = 9182, neutral = [];
+  await renderStarterSound('sub-one', bpm, (channels, frames, rate) => {
+    const context = new SoundContext(channels, frames, rate); neutral.push(context); return context;
+  }, seededRandom(seed));
+  assert.deepEqual(neutral[0].options, { channels: 2, length: Math.round(soundDuration('sub-one', bpm) * 48000), rate: 48000 });
+  assert.equal(neutral[0].nodes[0].type, 'gain'); assert.equal(neutral[0].nodes[0].gain.value, 0.65);
+
+  const web = [], webFactoryCalls = [];
+  const renderSound = createWebSoundRenderer((...args) => {
+    webFactoryCalls.push(args);
+    const [channels, frames] = args;
+    const context = new SoundContext(channels, frames, 48000); web.push(context); return context;
+  });
+  await renderSound('sub-one', bpm, seededRandom(seed));
+  assert.deepEqual(webFactoryCalls, [[2, Math.round(soundDuration('sub-one', bpm) * 48000)]]);
+  assert.deepEqual(soundTrace(web[0]), soundTrace(neutral[0]));
+  const other = [];
+  await renderStarterSound('sub-one', bpm, (channels, frames, rate) => {
+    const context = new SoundContext(channels, frames, rate); other.push(context); return context;
+  }, seededRandom(seed + 1));
+  assert.notDeepEqual(Array.from(web[0].buffers[0].getChannelData(0).subarray(0, 8)),
+    Array.from(other[0].buffers[0].getChannelData(0).subarray(0, 8)));
+});
+
+test('shared Starter Sound renderer preserves the production FX sweep and refuses unknown sounds before allocation', async () => {
+  const bpm = 96, contexts = [], factory = (channels, frames, rate) => {
+    const context = new SoundContext(channels, frames, rate); contexts.push(context); return context;
+  };
+  await renderStarterSound('sweep', bpm, factory, seededRandom(7));
+  const context = contexts[0], sweep = context.nodes.find(node => node.frequency.calls.some(call => call[1] === 150));
+  assert.ok(sweep); assert.equal(sweep.type, 'lowpass');
+  assert.deepEqual(sweep.frequency.calls, [['set', 150, 0], ['exponential', 8000, soundDuration('sweep', bpm)]]);
+  const before = contexts.length;
+  await assert.rejects(() => renderStarterSound('missing', bpm, factory), /Starter sound is unavailable/);
+  assert.equal(contexts.length, before);
+});
 test('Stop fades and disconnects the old queue; fresh runs and auditions have independent destinations', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const previous = globalThis.window; globalThis.window = { AudioContext: Context };
@@ -113,4 +178,20 @@ test('song mixdown uses stereo, exact cycle frames, global swing, explicit track
   const before = Context.instances.length;
   await assert.rejects(() => renderSong(doc, { range: 'cycle' }), { name: 'RangeError' });
   assert.equal(Context.instances.length, before);
+});
+
+test('song mixdown accepts an explicit native asset assertion without weakening local or web defaults', async (t) => {
+  const previous = globalThis.window; globalThis.window = { OfflineAudioContext: Context };
+  t.after(() => { globalThis.window = previous; });
+  const asset = { source: 'song', name: 'Song', durationSec: 2, bpm: null, sourceChannels: 2, encodedBytes: 100,
+    ref: { songId: 'e40439d1-646a-4c11-9c12-69fa3a851234', versionId: 'e40439d1-646a-4c11-9c12-69fa3a851235', jobId: 'e40439d1-646a-4c11-9c12-69fa3a851236' } };
+  const remote = audioDoc(asset), assetId = remote.tracks[1].regions[0].assetId;
+  let assertions = 0;
+  await renderSong(remote, { buffers: new Map([[assetId, { buffer: {} }]]), assertAssets: () => { assertions++; } });
+  assert.equal(assertions, 1);
+  const before = Context.instances.length;
+  await assert.rejects(() => renderSong(remote, { buffers: new Map(), assertAssets: () => { throw new Error('native held'); } }), /native held/);
+  assert.equal(Context.instances.length, before, 'authority is checked before allocating an output context');
+  const local = createBeat({ id: 'e40439d1-646a-4c11-9c12-69fa3a851234', now: 0 });
+  await renderSong(local, { buffers: new Map(), assertAssets: () => assert.fail('local documents need no release authority') });
 });

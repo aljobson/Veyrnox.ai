@@ -14,8 +14,6 @@
   "creditHistory.delta": "Placeholder-only signed credit amount; no prose.",
   "editor.v": "Video track identifier; standard editor notation.",
   "editor.v2": "Placeholder-only name and version notation.",
-  "editorSpike.mB": "Diagnostic byte-size display with international units.",
-  "editorSpike.webcodecsoffscreen": "Diagnostic API identifiers, not natural-language prose.",
   "email.emailPlaceholder": "Literal example email address; not prose.",
   "explore.oddlings.title": "Product name retained by the Japanese website.",
   "libraryFiles.kB": "File size in international kilobyte notation.",
@@ -135,5 +133,6 @@
   "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
-  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose."
 }

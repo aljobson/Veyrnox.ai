@@ -19,7 +19,7 @@ jest.mock('../src/auth/AuthProvider', () => ({
     }),
 }));
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }) }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, right: 59, bottom: 21, left: 59 }) }));
 jest.mock('../src/components/Logo', () => ({ Logo: () => null }));
 jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));
 jest.mock('../src/auth/TurnstileView', () => ({
@@ -100,6 +100,11 @@ test.each([true, false])('email provider keeps busy gating without a consent gat
     expect(native ? mockApple : mockOAuth).toHaveBeenCalledTimes(1);
     if (!native) expect(mockOAuth).toHaveBeenCalledWith('apple');
     await act(async () => finish());
+});
+test('email form protects landscape side insets and the home indicator', async () => {
+    await act(async () => root.render(<EmailAuth />));
+    const scroll = root.container.queryAll(n => n.type === 'RCTScrollView' || n.props.keyboardDismissMode === 'interactive')[0];
+    expect(RN.StyleSheet.flatten(scroll.props.contentContainerStyle)).toMatchObject({ paddingLeft: 79, paddingRight: 79, paddingBottom: 45 });
 });
 test('email submit requires captcha and prevents duplicate requests without consent', async () => {
     const { t } = require('../src/lib/i18n');

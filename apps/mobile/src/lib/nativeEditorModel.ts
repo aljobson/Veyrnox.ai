@@ -13,6 +13,7 @@ export type Selection = { track: TrackKind; id: string };
 export type Canvas = { aspect_ratio: '16:9' | '9:16' | '1:1'; frame_rate: 24 | 25 | 30 | 60 };
 export type Media = {
     id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number;
+    graphic?: { shape: string; color: string };
     sourceName?: string; folder?: string; attribution?: { credit: string; usage: string; url: string };
     originalAudio?: { version: 1; presetId: string };
     assetSource?: { projectId: string; assetId: string };
@@ -31,6 +32,8 @@ export type ColourAdjustment = {
     curves: Record<string, { x: number; y: number }[]>;
 };
 export type Clip = TimedFields & {
+    semanticMask?: { version: 1; mediaId: string; category: 'background' | 'hair' | 'bodySkin' | 'faceSkin' | 'clothes' | 'others' | 'person'; sourceFrame: number;
+        dynamic?: { fps: 24 | 25 | 30 | 50 | 60; frames: number; identity: string } };
     mask?: string;
     maskSettings?: { x: number; y: number; width: number; height: number; rotation: number; feather: number; inverted: boolean };
     smartPicture?: { denoise: number; keyEnabled: boolean; keyColor: string; keyTolerance: number; keyFeather: number; despill: number;
@@ -126,6 +129,22 @@ export const selectionItems = (timeline: Timeline, selections: readonly Selectio
 
 export function updateClip(timeline: Timeline, selection: Selection, patch: Partial<Clip & TextClip>): Timeline {
     return { ...timeline, [selection.track]: timeline[selection.track].map((item) => item.id === selection.id ? { ...item, ...patch, id: item.id } : item) } as Timeline;
+}
+
+const semanticMaskIdentity = (clip: Clip) => JSON.stringify([clip.mediaId ?? null, clip.in ?? 0, clip.len, clip.rate ?? 1,
+    clip.reverse === true, clip.freezeFrame ?? null, clip.speedCurve ?? null]);
+
+/** Person masks are inferred for one exact source-time mapping. */
+export function invalidateChangedSemanticMasks(previous: Timeline, next: Timeline): Timeline {
+    const before = new Map(previous.video.map(clip => [clip.id, clip]));
+    let changed = false;
+    const video = next.video.map(clip => {
+        if (!clip.semanticMask) return clip;
+        const old = before.get(clip.id);
+        if (old && !old.semanticMask || old?.semanticMask && semanticMaskIdentity(old) === semanticMaskIdentity(clip)) return clip;
+        const { semanticMask: _semanticMask, ...withoutMask } = clip; changed = true; return withoutMask;
+    });
+    return changed ? { ...next, video } : next;
 }
 
 // Shared slicing math, used by both explicit splits and insertion into an occupied lane.

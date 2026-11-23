@@ -44,6 +44,25 @@ function clipReveal(g,reveal,x,y,width,height) {
     if(!revealActive(reveal))return;
     g.beginPath();g.rect(x+width*reveal.x,y+height*reveal.y,width*reveal.width,height*reveal.height);g.clip();
 }
+
+/** Static PNG masks encode confidence in alpha; H.264 masks encode it as grayscale luminance. */
+export function semanticMaskConfidence(red,green,blue,alpha) {
+    return alpha < 255 ? alpha : Math.max(0,Math.min(255,Math.round(red*.2126+green*.7152+blue*.0722)));
+}
+
+/** Apply the canonical semantic mask to the already-processed visual without changing its geometry. */
+export function semanticMaskedPicture(picture,pictureCrop,mask,maskCrop,width,height) {
+    const w=Math.max(1,Math.round(width)),h=Math.max(1,Math.round(height));
+    const out=new OffscreenCanvas(w,h),context=out.getContext('2d');
+    context.drawImage(picture,picture.width*pictureCrop.x,picture.height*pictureCrop.y,picture.width*pictureCrop.width,picture.height*pictureCrop.height,0,0,w,h);
+    const matte=new OffscreenCanvas(w,h),matteContext=matte.getContext('2d',{willReadFrequently:true});
+    matteContext.drawImage(mask,mask.width*maskCrop.x,mask.height*maskCrop.y,mask.width*maskCrop.width,mask.height*maskCrop.height,0,0,w,h);
+    const pixels=matteContext.getImageData(0,0,w,h);
+    for(let index=0;index<pixels.data.length;index+=4){const confidence=semanticMaskConfidence(pixels.data[index],pixels.data[index+1],pixels.data[index+2],pixels.data[index+3]);pixels.data[index]=255;pixels.data[index+1]=255;pixels.data[index+2]=255;pixels.data[index+3]=confidence;}
+    matteContext.putImageData(pixels,0,0);
+    context.globalCompositeOperation='destination-in';context.drawImage(matte,0,0);context.globalCompositeOperation='source-over';
+    return out;
+}
 /** Include styled line boxes, stroke and shadow so a wipe clips the entire title together. */
 function titleRevealBounds(g,lines,px,lineHeight,y0,style,H,W) {
     const padding=Math.max(style.backgroundOpacity?8:0,style.strokeWidth/2+(style.shadowOpacity?style.shadowBlur*H/720*3:0));
@@ -90,14 +109,12 @@ export function paintSequence(g, W, H, layers, pictures) {
         const processedCrop=processed===pic?crop:{x:0,y:0,width:1,height:1};
         const adjustedColour=!neutralColour(parameters.colour) ? colourPicture(processed,processedCrop,parameters.colour,w,h):processed;
         const colourCrop=adjustedColour===pic?crop:{x:0,y:0,width:1,height:1};
-        if (c.mask && c.mask !== 'none') {
-            const base = effect && effect.type !== 'none' && effect.intensity > 0 ? effectPicture(adjustedColour, colourCrop, effect, v.offset) : adjustedColour;
-            const bounds = base === pic ? crop : { x: 0, y: 0, width: 1, height: 1 };
-            g.drawImage(maskedPicture(base, bounds, c, v.offset, w, h), -w / 2, -h / 2, w, h);
-        } else if (effect && effect.type !== 'none' && effect.intensity > 0) {
-            const adjusted = effectPicture(adjustedColour, colourCrop, effect, v.offset);
-            g.drawImage(adjusted, -w / 2, -h / 2, w, h);
-        } else g.drawImage(adjustedColour, adjustedColour.width * colourCrop.x, adjustedColour.height * colourCrop.y, adjustedColour.width * colourCrop.width, adjustedColour.height * colourCrop.height, -w / 2, -h / 2, w, h);
+        let rendered=effect && effect.type !== 'none' && effect.intensity > 0 ? effectPicture(adjustedColour,colourCrop,effect,v.offset) : adjustedColour;
+        let renderedCrop=rendered===adjustedColour?colourCrop:{x:0,y:0,width:1,height:1};
+        if(c.mask&&c.mask!=='none'){rendered=maskedPicture(rendered,renderedCrop,c,v.offset,w,h);renderedCrop={x:0,y:0,width:1,height:1};}
+        const semanticMask=pictures.masks?.[i];
+        if(semanticMask){rendered=semanticMaskedPicture(rendered,renderedCrop,semanticMask,crop,w,h);renderedCrop={x:0,y:0,width:1,height:1};}
+        g.drawImage(rendered,rendered.width*renderedCrop.x,rendered.height*renderedCrop.y,rendered.width*renderedCrop.width,rendered.height*renderedCrop.height,-w/2,-h/2,w,h);
         g.restore();
         if(v.flash){g.save();g.globalCompositeOperation='screen';g.globalAlpha=v.flash*.75;g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.restore();}
         if(v.leak){paintLightLeak(g,W,H,v.leak);}

@@ -6,6 +6,15 @@ import { EditorVersionsSheet } from '../src/components/editor/EditorVersionsShee
 import { ApiError } from '../src/lib/api';
 import { readDraft, writeDraft, removeDraft, type EditorDraft } from '../src/lib/editorDrafts';
 import { t } from '../src/lib/i18n';
+jest.mock('react-native', () => {
+    const React = require('react');
+    const actual = jest.requireActual('react-native');
+    const FlatList = (props: any) => React.createElement('FlatList', props,
+        ...(props.data.length ? props.data.map((item: any, index: number) => React.createElement(React.Fragment, { key: props.keyExtractor(item, index) }, props.renderItem({ item, index }))) : [props.ListEmptyComponent]),
+        props.ListFooterComponent,
+    );
+    return Object.defineProperty(Object.create(actual), 'FlatList', { value: FlatList });
+});
 const id = '11111111-1111-1111-1111-111111111111';
 const doc = { schema_version: 1 as const, project_id: id, brief: 'head' };
 let mockGen = 0, mockKey = 0, mockOwner = 'A';
@@ -68,6 +77,24 @@ test('lists current and restored-from, loads older, previews clip count and conf
     await act(async () => jest.mocked(Alert.alert).mock.calls.at(-1)![2]![1].onPress!());
     expect(JSON.parse(puts()[0][1].body)).toEqual({ expected_revision: 4, restore_revision: 2 });
     expect(puts()[0][1].headers['Idempotency-Key']).toBeTruthy(); expect(session.document?.brief).toBe('restored'); expect(session.revision).toBe(5);
+});
+test('a large saved-version history stays ordered with stable keys and appends older pages once', async () => {
+    const first = Array.from({ length: 40 }, (_, index) => ({ revision: 80 - index, created_at: `2026-10-${String((index % 28) + 1).padStart(2, '0')}T00:00:00Z` }));
+    const older = Array.from({ length: 35 }, (_, index) => ({ revision: 40 - index, created_at: `2026-09-${String((index % 28) + 1).padStart(2, '0')}T00:00:00Z` }));
+    const base = mockRequest.getMockImplementation()!;
+    mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
+        if (path.endsWith('/history')) return { versions: first, next_before: 41 };
+        if (path.includes('/history?')) return { versions: older, next_before: null };
+        return base(path, init);
+    });
+    await open();
+    const list = () => root.container.queryAll(node => node.type === 'FlatList')[0];
+    expect(list().props.data.map((version: { revision: number }) => version.revision)).toEqual(first.map(version => version.revision));
+    expect(new Set(list().props.data.map((version: { revision: number }) => list().props.keyExtractor(version))).size).toBe(40);
+    await press('Load older');
+    expect(list().props.data.map((version: { revision: number }) => version.revision)).toEqual([...first, ...older].map(version => version.revision));
+    expect(new Set(list().props.data.map((version: { revision: number }) => list().props.keyExtractor(version))).size).toBe(75);
+    expect(mockRequest.mock.calls.filter(([path]) => String(path).includes('/history')).length).toBe(2);
 });
 test('tapping a version shows its preview and Restore above the list, not below 19 rows', async () => {
     await open(); await press('Load older'); await row('Version 2');

@@ -12,6 +12,7 @@ import type { TakeRecording } from '../../../lib/beatNative/takeRecording';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentRef } from 'react';
 import { AccessibilityInfo, Alert, AppState, findNodeHandle, Keyboard, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, SegmentedControl, Text, themedStyles, useAppearance, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
 import { MusicNotice } from '../../../components/music/MusicNotice';
@@ -24,6 +25,7 @@ import { BeatArrangement } from '../../../components/beats/BeatArrangement';
 import { MixerStrip } from '../../../components/beats/MixerStrip';
 import { createBeatAudio, type BeatAudio } from '../../../lib/beatNative/audio';
 import { createNativeAssetPort } from '../../../lib/beatNative/nativeAssets';
+import { createNativeHeldAssets } from '../../../lib/beatNative/nativeHeldAssets';
 import { useAuth } from '../../../auth/AuthProvider';
 import {
     addHitToPattern, addKitTrack, audibleGain, clampLocator, clearPattern, copyPattern, cycleVelocity, DRUM_KITS, MAX_BPM, MAX_TRACKS, MIN_BPM, patternHasHits, recordTarget, removeTrack, selectPattern, setMetronome, setSteps, setSwing, setTempo, setTrackGain, setTrackKit, setTrackMute, setTrackPan, setTrackSolo, snapTick, songEnd, toggleStep, tryOp, setView,
@@ -48,6 +50,8 @@ import type { ApplyOptions } from '../../../lib/beatNative/regionActions';
 import { createMidiRecording, type MidiRecordingController } from '../../../lib/beatNative/midiRecording';
 import type { MidiSoundTrack } from '../../../lib/beatNative/midi';
 import { getCacheUser } from '../../../lib/appCache';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
@@ -65,6 +69,9 @@ export default function BeatEditor() {
     const { api, generation, beginSessionTask } = useAuth();
     const authRef = useRef({ api, generation, beginSessionTask });
     authRef.current = { api, generation, beginSessionTask };
+    const heldAssets = useMemo(() => createNativeHeldAssets(), [generation]);
+    const heldAssetsRef = useRef(heldAssets);
+    heldAssetsRef.current = heldAssets;
     useSyncExternalStore(subscribeBeats, listBeats, listBeats);
     const doc = getBeat(String(id));
     const s = useThemedStyles(sheets);
@@ -198,7 +205,7 @@ export default function BeatEditor() {
         if (audio.current) return audio.current;
         try {
             const auth = authRef.current;
-            audio.current = createBeatAudio(undefined, createNativeAssetPort(auth.api, auth.beginSessionTask()),
+            audio.current = createBeatAudio(undefined, createNativeAssetPort(auth.api, auth.beginSessionTask(), { heldAssets: heldAssetsRef.current }),
                 name => setNotice(t('beat.audioUnavailable', { name })));
             audioSession.current = { generation: auth.generation, engine: audio.current, recording: recordingRef.current };
             return audio.current;
@@ -541,9 +548,9 @@ export default function BeatEditor() {
         ]);
     };
     return (
-        <View testID="beat-editor-shell" style={s.screen}>
+        <SafeAreaView edges={['left', 'right']} testID="beat-editor-shell" style={s.screen}>
             <Stack.Screen options={{ title: doc.title }} />
-            <ScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
+            <KeyboardScreen><KeyboardFormScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
                 contentContainerStyle={[s.content, layout === 'regular' && s.contentRegular]} keyboardShouldPersistTaps="handled"
                 scrollEventThrottle={16}
                 onLayout={event => {
@@ -641,7 +648,7 @@ export default function BeatEditor() {
                                 onToggle={n => apply(d => toggleStep(d, pad, n))}
                                 onVelocity={(n, direction) => apply(d => cycleVelocity(d, pad, n, direction))} />
                         </> : <Text variant="footnote" tone="secondary">{t('beat.padRecord.drumOnly')}</Text>}
-                        <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} disabled={locked}
+                        <BeatInstrumentsSection doc={doc} apply={apply} audio={engine} disabled={locked} notice={notice}
                             onOpen={regionId => { stop(); openPiano(doc.id, regionId); }} />
                     </View>
                     <View testID="beat-editor-inspector" style={[s.inspector, layout === 'regular' && s.inspectorRegular]}>
@@ -665,7 +672,7 @@ export default function BeatEditor() {
                         {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
                     </View>
                 </View>
-            </ScrollView>
+            </KeyboardFormScrollView></KeyboardScreen>
             <BeatEditorTransport playing={playing} starting={starting} locked={locked}
                 pattern={doc.currentPattern} patternDisabled={patternLocked} canUndo={undoable} canRedo={redoable}
                 patternControlsRef={patternControlsTrigger}
@@ -679,6 +686,7 @@ export default function BeatEditor() {
             {exporting && <BeatExportSheet doc={doc} replacing={replacing}
                 recording={['opening', 'armed', 'recording', 'finishing'].includes(takes.view.status) || midiPhase !== 'idle'}
                 prepare={async () => { await settleEditorRecorders('preserve'); stop(); await closeEditorAudio(); }}
+                heldAssets={heldAssets}
                 onClose={() => setExporting(false)} />}
             {mixer && <BeatMixerSheet doc={doc} audio={audio.current} apply={apply} playing={playing} step={step} notice={notice} onClose={() => setMixer(false)} />}
             {patternControls && <BeatPatternControls pattern={doc.currentPattern}
@@ -690,7 +698,7 @@ export default function BeatEditor() {
                 onSteps={value => apply(d => setSteps(d, value))}
                 onCopy={copyCurrentPattern} onClear={clearCurrentPattern} onClose={closePatternControls}
                 onDismiss={restorePatternControlsFocus} />}
-        </View>
+        </SafeAreaView>
     );
 }
 const sheets = themedStyles(p => ({

@@ -1,8 +1,8 @@
 import { isHeldError, assetSigningPath } from './beatAssetAvailability.mjs';
 import { localTake, loadLocalTake, subscribeLocalTakes } from '../localTakes.js';
-import { makeNoise, playEvent } from '../instrumentEngine.js';
-import { soundById, soundDuration } from './beatSounds.mjs';
+import { soundDuration } from './beatSounds.mjs';
 import { AUDIO_RATE, MB, admitDecode, checkDecoded, validAsset } from './beatAudioRules.mjs';
+import { createWebSoundRenderer } from './beatSoundWeb.mjs';
 import { offline, decodes, loadSong, cancelSongLoads } from './beatSongAsset.js';
 import { clearTransientFailures, permanentAssetFailure } from './beatAssetFailures.mjs';
 export const yieldAudio = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -83,22 +83,8 @@ export function cachedAsset(asset, bpm, reverse = false) {
   cache.delete(key); cache.set(key, entry);
   return reverse ? entry.reversed : entry.buffer;
 }
-export async function renderSound(ref, bpm, random) {
-  const sound = soundById(ref);
-  if (!sound) throw new Error('Starter sound is unavailable');
-  const context = offline(2, Math.round(soundDuration(ref, bpm) * AUDIO_RATE));
-  const out = context.createGain(); out.gain.value = 0.65;
-  if (sound.category === 'FX') {
-    const sweep = context.createBiquadFilter(); sweep.type = 'lowpass';
-    sweep.frequency.setValueAtTime(150, 0);
-    sweep.frequency.exponentialRampToValueAtTime(8000, soundDuration(ref, bpm));
-    out.connect(sweep).connect(context.destination);
-  } else out.connect(context.destination);
-  const noise = makeNoise(context, 1, random);
-  for (const [beat, length, value, vel] of sound.notes) playEvent(context, out, noise, sound.instrument, sound.preset,
-    { value, vel, dur: length * 60 / bpm }, beat * 60 / bpm);
-  return context.startRendering();
-}
+export { renderStarterSound } from './beatSoundRenderer.mjs';
+export const renderSound = createWebSoundRenderer(offline);
 async function takeBuffer(asset) {
   let take;
   try { take = await loadLocalTake(asset.ref); }

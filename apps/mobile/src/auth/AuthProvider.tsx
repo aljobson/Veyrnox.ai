@@ -8,6 +8,7 @@ import type { SessionTask } from './sessionTask';
 import { captureIssue } from '../lib/crash';
 import { SessionReadError } from '../lib/auth/sessionStore';
 import { setEditorMediaOwner } from '../lib/editorDeviceMedia';
+import { sweepStemArchiveRuns } from '../lib/beatNative/stemArchive';
 import { captureEvent, setAnalyticsUser } from '../lib/analytics';
 import { setFirstRunUser } from '../lib/firstRunPending';
 import { claimLegacyOddlings } from '../lib/oddlingsAccountStore';
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => { if (TEMPLATE_SWAP_RUNTIME) cleanOldSwapFiles(); }, []);
     const generationRef = useRef(0);
     const [generation, setGeneration] = useState(0);
+    useEffect(() => { sweepStemArchiveRuns(); }, [generation]);
     const sessionGeneration = useCallback(() => generationRef.current, []);
     const [status, setStatus] = useState<Status>('loading');
     const [appleNativeAvailable, setAppleNativeAvailable] = useState(false);

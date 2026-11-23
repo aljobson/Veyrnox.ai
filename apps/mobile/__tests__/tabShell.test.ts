@@ -13,6 +13,12 @@ const read = (f: string) => fs.readFileSync(f, 'utf8');
 const ORDER = ['index', 'create', 'editor', 'library', 'publish'];
 
 describe('tab shell', () => {
+    test('only the tab scenes receive landscape side insets', () => {
+        const layout = read(path.join(TABS, '_layout.tsx'));
+        expect(layout).toContain('useSafeAreaInsets()');
+        expect(layout).toContain('paddingLeft: insets.left, paddingRight: insets.right');
+    });
+
     test('the five tab screens live in the (tabs) group, and nowhere else', () => {
         for (const name of ORDER) {
             expect(fs.existsSync(path.join(TABS, `${name}.tsx`))).toBe(true);

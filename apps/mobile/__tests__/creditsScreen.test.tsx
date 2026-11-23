@@ -1,6 +1,7 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root, type TestInstance } from 'test-renderer';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Credits from '../src/app/(app)/credits';
 import { publishBalance } from '../src/lib/balanceEvents';
 import { ApiError } from '../src/lib/api';
@@ -34,12 +35,13 @@ jest.mock('../src/components/VeyCardPeek', () => ({ VeyCardPeek: () => null, pee
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [] }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 let root: Root, serial = 0;
+let mockInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const textOf = (node: TestInstance): string => node.props.accessibilityElementsHidden ? '' : node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
 const text = () => textOf(root.container);
 const controls = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.accessibilityRole === 'button');
 async function click(node: TestInstance) { await act(async () => node.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); }
 async function press(label: string) { const nodes = controls(label); expect(nodes).toHaveLength(1); await click(nodes[0]); }
-async function mount() { await act(async () => root.render(<Credits />)); }
+async function mount() { await act(async () => root.render(<SafeAreaInsetsContext.Provider value={mockInsets}><Credits /></SafeAreaInsetsContext.Provider>)); }
 async function cancel(label = t('creditsPage.cancel')) {
     await press(label);
     expect(controls(t('creditsPage.confirm'))[0].props.accessibilityState.disabled).toBe(true);
@@ -48,6 +50,7 @@ async function cancel(label = t('creditsPage.cancel')) {
 }
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); markOnline();
+    mockInsets = { top: 0, right: 0, bottom: 0, left: 0 };
     await wipeCache(); await bindCacheUser(`credits-${++serial}`); root = createRoot();
     mockRow = null; mockPlans = mockPlansOk; mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
     mockApi.getBalance.mockReset().mockImplementation(async () => mockBalance); mockApi.request.mockClear(); mockPost.mockReset();
@@ -60,6 +63,12 @@ afterEach(async () => { await act(async () => root.unmount()); await wipeCache()
 test('renders balance, free-credit expiry, store cards and no per-credit price', async () => {
     await mount(); expect(text()).toContain('1,234'); expect(text()).toContain('20 credits'); expect(text()).toContain('Nov 1, 2026');
     expect(text()).toContain('Best value'); expect(text()).toContain('£70.00'); expect(text()).not.toMatch(/per credit|\/ credit/i);
+});
+test('Credits keeps every purchase surface inside landscape physical edges', async () => {
+    mockInsets = { top: 0, right: 59, bottom: 21, left: 59 };
+    await mount();
+    const page = root.container.queryAll(node => node.props.contentInsetAdjustmentBehavior === 'automatic')[0];
+    expect(RN.StyleSheet.flatten(page.props.contentContainerStyle)).toMatchObject({ paddingLeft: 75, paddingRight: 75, paddingBottom: 61 });
 });
 test('switching cadence clears selection and renewal terms until the exact visible annual card is chosen', async () => {
     await mount();
@@ -170,7 +179,8 @@ test('tapping the active cadence preserves selection, renewal terms and Continue
     await click(root.container.queryAll(n => n.props.accessibilityRole === 'tab' && textOf(n) === 'Monthly')[0]);
     expect(text()).toBe(before);
     expect(controls(t('credits.subscriptions.continue'))[0].props.accessibilityState.disabled).toBe(false);
-    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')[0].props.accessibilityState.selected).toBe(true);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radiogroup')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')[0].props.accessibilityState.checked).toBe(true);
     await press(t('credits.subscriptions.continue')); expect(mockBilling.purchase).toHaveBeenCalledWith(monthly);
     expect(announce).toHaveBeenCalledWith(t('credits.subscriptions.started'));
 });

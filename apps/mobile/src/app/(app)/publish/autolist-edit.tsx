@@ -5,7 +5,9 @@ import { canPublish } from '../../../lib/publishDashboard';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { DEFAULT_TEMPLATE, INTERVALS, autolistErrorKey, fetchAutolists, saveAutolist, validateAutolist } from '../../../lib/publishAutolists';
@@ -106,9 +108,9 @@ export default function AutolistEdit() {
     if (!ready) return <View style={styles.screen}><ActivityIndicator color={colors.accent} /></View>;
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: id ? t('autolists.edit') : t('autolists.new') }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             {!canWrite ? <Text style={styles.muted}>{t('publishOps.readOnly')}</Text> : null}
 
                 <Text style={styles.label}>{t('autolists.name')}</Text>
@@ -148,8 +150,8 @@ export default function AutolistEdit() {
                 {canWrite ? <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={[styles.button, touchTarget, busy && styles.off]} onPress={save}>
                     {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('autolists.save')}</Text>}
                 </Pressable> : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

@@ -2,7 +2,7 @@ import { Text as StatusText } from '../../../components/ui/Text';
 import { displayLabel } from '../../../lib/displayLabels';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BuilderFields } from '../../../components/oddlings/BuilderFields';
 import { HandoffCard } from '../../../components/oddlings/HandoffCard';
 import { OddlingCatalog } from '../../../components/oddlings/OddlingCatalog';
@@ -21,6 +21,8 @@ import { getCacheUser, subscribeCacheUser } from '../../../lib/appCache';
 import { oddlingsStore } from '../../../lib/oddlingsAccountStore';
 import { createOddlingsProjects } from '../../../lib/oddlingsProjects';
 import { colors, LIST_END_PADDING } from '../../../theme';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 const START: Picks = { character_type: 'Human' };
 const DRAFT_DELAY_MS = 600;
@@ -148,9 +150,9 @@ export default function OddlingBuilder() {
     }
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('oddlings.build.title') }} />
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
                 <OddlingFigure picks={picks} focus={CATEGORY_FOCUS[categoryId] || 'body'} />
                 <StatusText variant="inherit" style={styles.count} accessibilityLiveRegion="polite">{plural('oddlings.build.chosen', chosen)}</StatusText>
                 <Text style={styles.note}>{t('oddlings.build.adults')}</Text>
@@ -182,9 +184,9 @@ export default function OddlingBuilder() {
                 <Pressable accessibilityRole="button" style={styles.promptToggle} onPress={() => router.push('/oddlings/saved')}>
                     <Text style={styles.link}>{t('oddlings.build.saved')}</Text>
                 </Pressable>
-            </ScrollView>
+            </KeyboardFormScrollView>
             {sheet && open ? <PickSheet title={sheet.title} choices={sheet.choices} value={open === 'motion' ? motionId : picks[open] || ''} onPick={(v) => (open === 'motion' ? setMotionId(v) : setPick(open, v))} onClose={() => setOpen(null)} /> : null}
-        </KeyboardAvoidingView>
+        </KeyboardScreen>
     );
 }
 

@@ -74,9 +74,9 @@ export function createMixdownSaver(api: ApiClient, makeRequest: UploadRequestFac
     const drop = () => { attempt = null; rendered = null; };
     const retainedBytes = () => rendered?.bytes.byteLength ?? 0;
     const releaseStale = (doc: BeatDoc, range?: ExportRange) => { if (rendered && (rendered.doc !== doc || (range !== undefined && rendered.range !== range))) rendered = null; };
-    async function save({ doc, range, title, rights, task, render, owner = () => undefined, progress = () => {} }: {
+    async function save({ doc, range, title, rights, task, render, beforeReserve, owner = () => undefined, progress = () => {} }: {
         doc: BeatDoc; range: ExportRange; title: string; rights: boolean; task: MixdownTask;
-        render(): Promise<ArrayBuffer>; owner?(): string | undefined; progress?(phase: SavePhase, percent?: number): void;
+        render(): Promise<ArrayBuffer>; beforeReserve?(): Promise<void>; owner?(): string | undefined; progress?(phase: SavePhase, percent?: number): void;
     }): Promise<SavedMixdown> {
         const guard = () => { checkMixdownTask(task); checkMixdownOwner(owner(), task.user); };
         try {
@@ -98,6 +98,7 @@ export function createMixdownSaver(api: ApiClient, makeRequest: UploadRequestFac
             attempt = mixdownSaveAttempt(attempt, `${range}:${title}:${rights}`, sha, randomUUID);
             const key = attempt.key;
             progress('reserve');
+            await beforeReserve?.(); guard();
             const reserved = await post<unknown>(api, task, { action: 'reserve', idempotency_key: key, title,
                 size_bytes: bytes.byteLength, sha256: sha, duration_seconds: (bytes.byteLength - 44) / (48000 * 4),
                 sources: songs, has_takes: hasTakes, rights_confirmed: hasTakes && rights });

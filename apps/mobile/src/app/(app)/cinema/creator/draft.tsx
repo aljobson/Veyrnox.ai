@@ -1,7 +1,7 @@
 import { rawText } from '../../../../lib/i18n/translate';
 import { useEffect, useRef, useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, Text, TextInput } from 'react-native';
+import { Text, TextInput } from 'react-native';
 import { useAuth } from '../../../../auth/AuthProvider';
 import { Action, Check, CreatorClosed, ui, useCreatorOwner, useCreatorScope } from '../../../../components/cinema/creator/RulesLinks';
 import { CATEGORIES, categoryKey } from '../../../../lib/cinemaBrowse';
@@ -10,6 +10,7 @@ import { childType, listContent, nextPosition, parentTypeOf, ROOT_TYPES, studioD
 import { isUuid } from '../../../../lib/cinemaSocial';
 import { CINEMA_DEVICE_UPLOAD_ENABLED } from '../../../../lib/cinemaUpload';
 import { t } from '../../../../lib/i18n';
+import { SafeKeyboardFormScrollView } from '../../../../components/SafeContentScrollView';
 
 const typeLabel = (type: string) => t(type === 'SERIES' ? 'cinema.type.SERIES' : type === 'SEASON' ? 'cinema.type.SEASON' : 'cinema.type.EPISODE');
 
@@ -55,7 +56,7 @@ function DraftEditor({ id, parent, parentType }: Params) {
     };
     if (['cinemaUpload.closed', 'cinemaUpload.role'].includes(note)) return <CreatorClosed message={note} />;
     const toggle = (field: 'categories' | 'ai_disclosures', value: string) => setForm(f => ({ ...f, [field]: f[field].includes(value) ? f[field].filter(x => x !== value) : [...f[field], value] }));
-    return <ScrollView contentContainerStyle={ui.page} keyboardShouldPersistTaps="handled">
+    return <SafeKeyboardFormScrollView contentContainerStyle={ui.page} gutter={20}>
         <Text style={ui.heading} accessibilityRole="header">{t(id ? 'cinemaUpload.edit' : 'cinemaUpload.new')}</Text>
         {loading ? <Text style={ui.text}>{t('cinemaUpload.loading')}</Text> : <>
             <Text style={ui.heading} accessibilityRole="header">{t('cinemaUpload.type')}</Text>
@@ -70,5 +71,5 @@ function DraftEditor({ id, parent, parentType }: Params) {
         </>}
         {note ? <Text style={ui.text}>{t(note)}</Text> : null}
         {(note === 'cinemaUpload.revision' || (id && !original && note)) && <Action label={t('cinemaUpload.reload')} disabled={busy} onPress={() => void load()} />}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }

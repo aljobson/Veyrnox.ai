@@ -12,12 +12,18 @@ import type { ProjectDocument } from '../../../lib/editorBridge';
 import type { SlotKind } from '../../../lib/sources';
 import type { Kind } from '../../../lib/media';
 import type { EditorFontActions } from '../useEditorFonts';
+import type { EditorSpeechCaptionActions } from './useEditorSpeechCaptions';
+import type { EditorMotionProcessingActions } from './useEditorMotionProcessing';
+import type { EditorPersonMaskActions } from './useEditorPersonMask';
 
 export type ToolPanelProps = {
     motionActions?: MotionActions; maskActions?: MaskActions; fontActions?: EditorFontActions;
     lookActions?: LookActions;
     audioActions?: AudioSettingsActions; originalAudio?: OriginalAudioActions;
     textActions?: TextActions; captionActions?: CaptionActions;
+    speechCaptionActions?: EditorSpeechCaptionActions;
+    motionProcessingActions?: EditorMotionProcessingActions;
+    personMaskActions?: EditorPersonMaskActions;
     timeline: Timeline; selection: Selection | null; selected: Clip | TextClip | undefined;
     selections: Selection[]; selectedMedia: Media | undefined; selectedTrack: EditorTrack | undefined;
     patchSelected(patch: Partial<Clip & TextClip>): void; applyTimeline(timeline: Timeline): boolean;

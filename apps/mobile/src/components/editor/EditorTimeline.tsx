@@ -8,6 +8,7 @@ import { hiddenLabelIds, trimHandleWidth } from '../../lib/editorTimelineLayout'
 import { canTrim, formatTimecode, frameAtX, moveItems, movingSelections, snapTo, trimItem } from '../../lib/editorTimeline';
 import { clipAt, type Clip, type Selection, type TextClip, type Timeline } from '../../lib/nativeEditorModel';
 import { colors } from '../../theme';
+import { HEADER_MAX_FONT_SCALE } from '../../lib/a11y';
 import { Icon } from '../ui/Icon';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { styles } from './fullEditorStyles';
@@ -122,7 +123,9 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
             <View style={local.ruler} />
             {timeline.tracks.map(track => <Pressable key={track.id} testID={`track-header-${track.id}`} style={local.header} disabled={!onTrackPress} onPress={() => onTrackPress?.(track.id)} accessibilityRole="button" accessibilityLabel={editorTrackLabel(track)} accessibilityHint={onTrackPress ? t('editor.trackhint') : undefined}>
                 <Icon name={track.kind === 'video' ? 'video' : track.kind === 'audio' ? 'audio' : 'textSize'} size={16} />
-                <View style={local.headerCopy}><Text style={styles.trackLabel} numberOfLines={1}>{editorTrackLabel(track)}</Text><Text style={styles.trackState}>{track.locked ? t('editor.lOCK') : ''}{track.muted ? t('editor.mUTE') : ''}{track.hidden ? t('editor.hIDE') : ''}</Text></View>
+                <View style={local.headerCopy}><Text style={styles.trackLabel} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{editorTrackLabel(track)}</Text><Text testID={`track-state-${track.id}`} style={styles.trackState} numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE}>{[
+                    track.locked ? t('editor.lOCK') : '', track.muted ? t('editor.mUTE') : '', track.hidden ? t('editor.hIDE') : '',
+                ].map(value => value.trim()).filter(Boolean).join(' · ')}</Text></View>
             </Pressable>)}
         </View>
         <ScrollView ref={scroller} horizontal scrollEnabled={scrollEnabled} style={local.scroller} contentContainerStyle={{ width, direction: 'ltr' }}
@@ -141,7 +144,7 @@ export function EditorTimeline({ timeline, selections, ppf, total, frame, playin
                     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
                         {Array.from({ length: ticks + 1 }, (_, index) => {
                             const seconds = index * tickSeconds;
-                            return <View key={index} style={[local.tick, { left: seconds * timeline.fps * ppf }]}>{seconds % 5 === 0 ? <Text style={styles.rulerText}>{t('editorCore.rulerSeconds', { value1: seconds })}</Text> : null}</View>;
+                            return <View key={index} style={[local.tick, { left: seconds * timeline.fps * ppf }]}>{seconds % 5 === 0 ? <Text testID={`timeline-ruler-label-${seconds}`} style={styles.rulerText} accessible={false} accessibilityElementsHidden importantForAccessibility="no">{t('editorCore.rulerSeconds', { value1: seconds })}</Text> : null}</View>;
                         })}
                     </View>
                     {timeline.markers.map(marker => <View key={marker.id} accessibilityRole="button" accessibilityLabel={rawText(t('editor.goto', { value1: marker.label }))}
@@ -225,7 +228,7 @@ const local = StyleSheet.create({
     clipRange: { position: 'absolute', top: 5, height: 22, minWidth: 8, borderColor: colors.accent, backgroundColor: colors.accentSoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
     clipRangeSelected: { borderWidth: 2, borderStyle: 'solid' }, clipRangeUnselected: { borderWidth: 1, borderStyle: 'dashed' },
     clipRangeCap: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: colors.accent },
-    clipRangeCapStart: { left: 0 }, clipRangeCapEnd: { right: 0 }, clipRangeRank: { color: colors.accent, fontSize: 11, fontWeight: '700', lineHeight: 14 },
+    clipRangeCapStart: { left: 0 }, clipRangeCapEnd: { right: 0 }, clipRangeRank: { color: colors.accent, fontSize: 12, fontWeight: '700', lineHeight: 14 },
     playhead: { position: 'absolute', top: 0, width: 2, backgroundColor: colors.accent }, ghost: { opacity: 0.6, borderColor: colors.accent, borderWidth: 2 },
     handle: { position: 'absolute', height: 44, top: 6, zIndex: 2, alignItems: 'center', justifyContent: 'center' }, handleLine: { width: 3, height: 24, borderRadius: 2, backgroundColor: colors.accent },
 });

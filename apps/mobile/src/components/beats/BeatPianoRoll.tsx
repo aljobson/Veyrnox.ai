@@ -1,60 +1,55 @@
-import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
-import { PanResponder, Pressable, ScrollView, View, type GestureResponderEvent } from 'react-native';
-import { Button, Text, useThemedStyles } from '../ui';
+import { useMemo, useRef, useState } from 'react';
+import { PanResponder, Pressable, View } from 'react-native';
+import { useThemedStyles } from '../ui';
 import { pianoStyles } from './pianoStyles';
 import { BeatRollNote } from './BeatRollNote';
 import type { NoteActions } from './BeatNoteActions';
-import { KEYS_WIDTH, ROW, pinchScale, pitchRange, xToTick, yToPitch, notePosition } from '../../lib/beatNative/rollGeometry';
-import { noteKey, noteLabel, type MidiClip } from '../../lib/beatNative/midi';
-import { t } from '../../lib/i18n';
-const distance = (e: GestureResponderEvent) => { const [a, b] = e.nativeEvent.touches; return a && b ? Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY) : 0; };
-export function BeatPianoRoll(p: { clip: MidiClip; selected: string[]; toggle(key: string): void; add(tick: number, pitch: number): void; removeAt(key: string): void; snap: number; scale: number; setScale(n: number): void; actions: NoteActions; disabled: boolean }) {
-    const s = useThemedStyles(pianoStyles), vertical = useRef<ComponentRef<typeof ScrollView>>(null);
-    const [active, setActive] = useState(false), [cursor, setCursor] = useState({ tick: 0, pitch: 60 });
-    const latest = useRef(p); latest.current = p;
-    const pinch = useRef<{ distance: number; scale: number } | null>(null);
-    const { high, low } = pitchRange(p.clip);
-    const tick = Math.min(cursor.tick, p.clip.lengthTicks - 30), pitch = Math.max(low, Math.min(high, cursor.pitch));
-    useEffect(() => { setCursor(c => ({ tick: Math.min(c.tick, p.clip.lengthTicks - 30), pitch: Math.max(low, Math.min(high, c.pitch)) })); }, [p.clip.lengthTicks, low, high]);
-    const initialY = useRef(Math.max(0, (high - (p.clip.notes.length ? p.clip.notes.reduce((n, note) => n + note[2], 0) / p.clip.notes.length : 60)) * ROW - 150));
+import { normaliseMarquee, notesInMarquee, ROW, type MarqueeRect, xToTick, yToPitch } from '../../lib/beatNative/rollGeometry';
+import { createHoldDrag } from '../../lib/beatNative/holdDrag';
+import { noteKey, type MidiClip } from '../../lib/beatNative/midi';
+
+export type BeatPianoRollProps = {
+    clip: MidiClip; selected: string[]; toggle(key: string): void; select(keys: string[]): void;
+    add(tick: number, pitch: number): void; removeAt(key: string): void; snap: number; scale: number;
+    actions: NoteActions; disabled: boolean; high: number; low: number; width: number; height: number;
+    active(value: boolean): void;
+};
+
+export function BeatPianoRoll(p: BeatPianoRollProps) {
+    const s = useThemedStyles(pianoStyles), latest = useRef(p); latest.current = p;
+    const drag = useRef(createHoldDrag<'marquee'>()).current, origin = useRef({ x: 0, y: 0 });
+    const [marquee, setMarquee] = useState<MarqueeRect | null>(null);
     const responder = useMemo(() => PanResponder.create({
-        onStartShouldSetPanResponderCapture: e => e.nativeEvent.touches.length === 2,
-        onMoveShouldSetPanResponderCapture: e => e.nativeEvent.touches.length === 2,
-        onPanResponderGrant: e => { pinch.current = { distance: distance(e), scale: latest.current.scale }; setActive(true); },
-        onPanResponderMove: e => { if (pinch.current && e.nativeEvent.touches.length === 2) latest.current.setScale(pinchScale(pinch.current.scale, pinch.current.distance, distance(e))); },
-        onPanResponderRelease: () => { pinch.current = null; setActive(false); },
-        onPanResponderTerminate: () => { pinch.current = null; setActive(false); },
+        onMoveShouldSetPanResponder: (_, gesture) => drag.canCapture(gesture.dx, gesture.dy, gesture.numberActiveTouches, latest.current.disabled),
+        onPanResponderGrant: () => {
+            if (latest.current.disabled || !drag.capture()) return;
+            latest.current.active(true);
+            setMarquee(normaliseMarquee(origin.current.x, origin.current.y, origin.current.x, origin.current.y));
+        },
+        onPanResponderMove: (_, gesture) => setMarquee(normaliseMarquee(origin.current.x, origin.current.y, origin.current.x + gesture.dx, origin.current.y + gesture.dy)),
+        onPanResponderRelease: (_, gesture) => {
+            const kind = drag.finish(); latest.current.active(false);
+            if (kind) latest.current.select(notesInMarquee(latest.current.clip.notes, normaliseMarquee(origin.current.x, origin.current.y, origin.current.x + gesture.dx, origin.current.y + gesture.dy), latest.current.scale, latest.current.high));
+            setMarquee(null);
+        },
+        onPanResponderTerminate: () => { drag.cancel(); latest.current.active(false); setMarquee(null); },
         onPanResponderTerminationRequest: () => false,
-    }), []);
-    const width = Math.max(300, p.clip.lengthTicks * p.scale + 44), height = (high - low + 1) * ROW;
+    }), [drag]);
     const lineUnit = p.snap || 240;
-    const advance = (ticks: number, notes: number) => setCursor({ tick: Math.max(0, Math.min(p.clip.lengthTicks - 30, tick + ticks)), pitch: Math.max(low, Math.min(high, pitch + notes)) });
-    return <View style={s.section}>
-        <Text accessibilityRole="header">{t('beatPiano.title')}</Text>
-        <Text>{t('beatPiano.hint')}</Text>
-        <View {...responder.panHandlers}>
-            <ScrollView ref={vertical} style={{ height: 308 }} nestedScrollEnabled scrollEnabled={!active} onLayout={() => vertical.current?.scrollTo({ y: initialY.current, animated: false })}>
-                <View style={{ flexDirection: 'row' }}>
-                    <View style={{ width: KEYS_WIDTH }}>{Array.from({ length: high - low + 1 }, (_, i) => high - i).map(n => <View key={n} style={[s.gridRow, { height: ROW, justifyContent: 'center' }, n % 12 === 0 && s.cRow]}><Text variant={n % 12 === 0 ? 'bodyStrong' : 'caption'}>{noteLabel(n)}</Text></View>)}</View>
-                    <ScrollView horizontal nestedScrollEnabled scrollEnabled={!active}>
-                        <View style={{ width, height }}>
-                            <Pressable accessible={false} accessibilityRole="none" disabled={p.disabled} style={{ width, height, position: 'absolute' }} onPress={e => p.add(xToTick(e.nativeEvent.locationX, p.scale, p.snap, p.clip.lengthTicks), yToPitch(e.nativeEvent.locationY, high, low))}>
-                                {Array.from({ length: high - low + 1 }, (_, i) => <View pointerEvents="none" key={i} style={[s.gridRow, { height: ROW }, (high - i) % 12 === 0 && s.cRow]} />)}
-                                {Array.from({ length: Math.ceil(p.clip.lengthTicks / lineUnit) }, (_, i) => i * lineUnit).map(n => <View pointerEvents="none" key={n} style={[s.gridLine, { left: n * p.scale, opacity: n % 960 ? 0.4 : 1 }, n % 3840 === 0 && s.barLine]} />)}
-                            </Pressable>
-                            {p.clip.notes.map(note => <BeatRollNote key={noteKey(note)} {...p} note={note} high={high} active={setActive} />)}
-                        </View>
-                    </ScrollView>
-                </View>
-            </ScrollView>
-        </View>
-        <Text accessibilityLiveRegion="polite">{t('beatPiano.cursor', { ...notePosition(tick), note: noteLabel(pitch) })}</Text>
-        <View style={s.row}>
-            <Button label={t('beatPiano.cursorLeft')} onPress={() => advance(-(p.snap || 30), 0)} />
-            <Button label={t('beatPiano.cursorRight')} onPress={() => advance(p.snap || 30, 0)} />
-            <Button label={t('beatPiano.cursorDown')} onPress={() => advance(0, -1)} />
-            <Button label={t('beatPiano.cursorUp')} onPress={() => advance(0, 1)} />
-            <Button label={t('beatPiano.toggle')} disabled={p.disabled} onPress={() => { const key = `${tick}:${pitch}`; if (p.clip.notes.some(n => noteKey(n) === key)) p.removeAt(key); else p.add(tick, pitch); }} />
-        </View>
+    return <View testID="beat-piano-roll" style={[s.rollCanvas, { width: p.width, height: p.height }]} {...responder.panHandlers}
+        onTouchEnd={() => { drag.releaseTouch(); if (!drag.isCaptured()) p.active(false); }}
+        onTouchCancel={() => { drag.cancel(); p.active(false); setMarquee(null); }}>
+        <Pressable accessible={false} accessibilityRole="none" disabled={p.disabled} style={s.rollBackground}
+            onPressIn={event => { origin.current = { x: event.nativeEvent.locationX, y: event.nativeEvent.locationY }; drag.begin('marquee'); }}
+            onLongPress={() => { if (!p.disabled) drag.arm(); }}
+            onPress={event => {
+                if (!drag.suppressesTap()) p.add(xToTick(event.nativeEvent.locationX, p.scale, p.snap, p.clip.lengthTicks), yToPitch(event.nativeEvent.locationY, p.high, p.low));
+                drag.cancel();
+            }}>
+            {Array.from({ length: p.high - p.low + 1 }, (_, i) => <View pointerEvents="none" key={i} style={[s.gridRow, { height: ROW }, (p.high - i) % 12 === 0 && s.cRow]} />)}
+            {Array.from({ length: Math.ceil(p.clip.lengthTicks / lineUnit) }, (_, i) => i * lineUnit).map(n => <View pointerEvents="none" key={n} style={[s.gridLine, { left: n * p.scale, opacity: n % 960 ? 0.4 : 1 }, n % 3840 === 0 && s.barLine]} />)}
+        </Pressable>
+        {p.clip.notes.map(note => <BeatRollNote key={noteKey(note)} {...p} note={note} active={p.active} />)}
+        {marquee && <View pointerEvents="none" testID="beat-piano-marquee" style={[s.marquee, { left: marquee.x, top: marquee.y, width: marquee.width, height: marquee.height }]} />}
     </View>;
 }

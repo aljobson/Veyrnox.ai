@@ -23,7 +23,7 @@ test('kie contract is one photo, one private clip, integer durations, fixed audi
   assert.equal(publicCapabilities(record).media.image.maxFiles, 1);
   assert.deepEqual(Object.keys(publicCapabilities(record).media), ['image']);
   // Strict measured-media validation remains opt-in to these documented supplier contracts.
-  assert.deepEqual(Object.entries(REGISTRY).filter(([, r]) => Object.values(r.media).some(s => s.minAspect || s.minPixels || s.maxBytesExclusive || s.minFrameRate)).map(([ep]) => ep), [kieCatalog.provider_endpoint, 'market:wan/2-6-flash-image-to-video', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080', 'crun:kling/avatar']);
+  assert.deepEqual(Object.entries(REGISTRY).filter(([, r]) => Object.values(r.media).some(s => s.minAspect || s.minPixels || s.maxBytesExclusive || s.minFrameRate)).map(([ep]) => ep), [kieCatalog.provider_endpoint, 'market:wan/2-6-flash-image-to-video', 'crun:kling/o1-r2v', 'crun:kling/o1-r2v-1080', 'crun:kling/avatar', 'crun:bytedance/seedance2-0-r2v']);
   assert.equal(checkSource(record, { video_url: video, image_url: image }).ok, true);
 });
 

@@ -2,12 +2,14 @@ import { mkdirSync, appendFileSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
+import { INTERACTION_CRAWL_ROUTE_EXCLUSIONS } from '../e2e.contracts.js';
 import { openSignedIn } from './helpers.js';
 
 // Interaction crawl: for every static screen, read the accessibility tree, tap each control once (up to MAX_PER_ROUTE),
 // and record whether the app stayed healthy. Runs against the dev mock server only. It skips controls that destroy
 // data, spend money, sign the account out, or open the system photo/camera pickers.
-const ROUTES: string[] = JSON.parse(readFileSync(new URL('./crawl-routes.json', import.meta.url), 'utf8'));
+const INVENTORY: string[] = JSON.parse(readFileSync(new URL('./crawl-routes.json', import.meta.url), 'utf8'));
+const ROUTES = INVENTORY.filter((route) => !(route in INTERACTION_CRAWL_ROUTE_EXCLUSIONS));
 const MAX_PER_ROUTE = 14;
 const ONLY = process.env.CRAWL_ONLY ? new RegExp(process.env.CRAWL_ONLY) : null;
 
@@ -43,6 +45,11 @@ for (const route of ROUTES) {
       await new Promise(resolve => setTimeout(resolve, 1_500));
     };
     await open();
+    const hardPaywall = screen.getByTestId('hard-paywall');
+    const purchasePaywall = screen.getByTestId('purchase-paywall');
+    if (await hardPaywall.isVisible() || await purchasePaywall.isVisible()) {
+      throw new Error(`Interaction crawl refused /${route}: a purchase paywall overlay is visible`);
+    }
     const failures: string[] = [];
     const initial = controlsFrom(await screen.tree());
     log({ route, event: 'controls', count: initial.length, names: initial.map(c => `${c.role}:${c.name}`) });
@@ -59,6 +66,11 @@ for (const route of ROUTES) {
         await target.tap({ timeout: 4_000 });
         await new Promise(resolve => setTimeout(resolve, 1_000));
         const tree = await screen.tree();
+        if (await hardPaywall.isVisible() || await purchasePaywall.isVisible()) {
+          note = 'purchase paywall opened; no further controls will be tapped';
+          failures.push(`${route} > ${control.name}: ${note}`);
+          break;
+        }
         if (!tree.includes('application')) { note = 'app tree empty after tap'; failures.push(`${route} > ${control.name}: ${note}`); }
         for (const text of BAD) if (tree.includes(text)) { note = `shows "${text}"`; failures.push(`${route} > ${control.name}: ${note}`); }
         await app.screenshot(`crawl-${route.replace(/\//g, '_')}-${tapped}-${control.name.slice(0, 24).replace(/\W+/g, '_')}`);

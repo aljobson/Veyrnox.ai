@@ -7,7 +7,10 @@ export function backgroundProblem(value, media) {
     if (value.type === 'image' ? !['image','graphic'].includes(media?.[value.mediaId]?.kind) : value.mediaId !== '') return helperEnglish('choose_a_project_image_for_the_background');
     return null;
 }
-export const backgroundMediaIds = clip => clip.background?.type === 'image' ? [clip.background.mediaId] : [];
+export const backgroundMediaIds = clip => [
+    ...(clip.background?.type === 'image' ? [clip.background.mediaId] : []),
+    ...(clip.semanticMask?.mediaId ? [clip.semanticMask.mediaId] : []),
+];
 function clipWipe(g,x,y,w,h,wipe) {
     const progress=typeof wipe==='number'?wipe:wipe.progress,direction=typeof wipe==='number'?'left':wipe.direction;
     const bounds=direction==='right'?[x+w*(1-progress),y,w*progress,h]:direction==='up'?[x,y+h*(1-progress),w,h*progress]:direction==='down'?[x,y,w,h*progress]:[x,y,w*progress,h];

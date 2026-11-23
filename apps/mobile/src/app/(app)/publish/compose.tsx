@@ -17,7 +17,9 @@ import { PublishMediaSelection } from '../../../components/PublishMediaSelection
 import { PlanLocked } from '../../../components/publish/PlanLocked';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { fetchCatalog, mediaApi, type CatalogModel } from '../../../lib/media';
 import { fetchAccounts, publishErrorMessage, type PublishAccount } from '../../../lib/publish';
 import { MAX_TEXT, mediaBlocker, networkLabel, captionWarning, cleanNetworkText, composeErrorMessage, createBody, createPost, mediaTypeOf, validateDraft, type Draft, type When, type YoutubeVisibility } from '../../../lib/publishCompose';
@@ -212,9 +214,9 @@ export default function Compose() {
     if (role === null || !gates || !picks || !accounts) return <View style={styles.screen}><Stack.Screen options={{ title: t('publish.newpost') }} /><ActivityIndicator color={colors.accent} /></View>;
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.screen}>
             <Stack.Screen options={{ title: t('publish.newpost') }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 {scopeNote ? <StatusText variant="inherit" style={styles.muted} accessibilityLiveRegion="polite">{t('publishDepth.presets.scopeCleared')}</StatusText> : null}
                 <Text style={styles.heading} accessibilityRole="header">{t('publish.1Creation')}</Text>
                 {picks.length === 0 ? <><Text style={styles.muted}>{t('publish.nofinishedimagesorvideosyetMake')}</Text><Button variant="secondary" label={t('empty.library.action')} onPress={() => router.push('/create')} /></> : null}
@@ -279,8 +281,8 @@ export default function Compose() {
                         </Pressable>
                     </>
                 ) : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 
