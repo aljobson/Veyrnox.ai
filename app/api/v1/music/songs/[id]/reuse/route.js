@@ -1,6 +1,7 @@
 import { rpc, envConfig } from '../../../../../../../packages/db/supabase-client.js';
+import { readFreshMusicCatalog } from '../../../../../../../lib/publicCatalog.js';
 import {
-    musicReuseEnabled, musicRpcStatus, parseMusicReuseDraft,
+    MUSIC_CRUN_CONTRACT, musicReuseEnabled, musicRpcStatus, parseMusicReuseDraft,
     publicMusicError, readMusicJson, validMusicAuthId,
 } from '../../../../../../../lib/musicBackend.js';
 
@@ -17,6 +18,11 @@ function context(request, id) {
     return { authId, cfg };
 }
 
+async function activeContract(cfg) {
+    const catalog = await readFreshMusicCatalog({ cfg });
+    return catalog.find((model) => model.id === 'ace-step-1.5')?.provider_contract ?? null;
+}
+
 export async function GET(request, { params }) {
     const { id } = await params;
     const current = context(request, id);
@@ -24,11 +30,17 @@ export async function GET(request, { params }) {
     const versionId = new URL(request.url).searchParams.get('version_id');
     if (!isUuid(versionId || '')) return reply({ error: 'version_id_invalid' }, 400);
     try {
+        const providerContract = await activeContract(current.cfg);
+        if (!providerContract) return reply({ error: 'music_unavailable' }, 503);
         const result = await rpc('music_get_reuse_draft_context', {
             p_auth_id: current.authId, p_song_id: id, p_version_id: versionId,
+            p_provider_contract: providerContract,
         }, current.cfg);
         if (!result?.ok) return reply({ error: publicMusicError(result?.code) }, musicRpcStatus(result?.code));
-        return reply({ source: result.source, draft_revision: result.draft_revision });
+        return reply({
+            source: result.source, draft_id: result.draft_id,
+            draft_revision: result.draft_revision, provider_contract: result.provider_contract,
+        });
     } catch (error) {
         console.error('[music/reuse] read failed:', error?.message);
         return reply({ error: 'temporarily_unavailable' }, 502);
@@ -41,11 +53,19 @@ export async function POST(request, { params }) {
     if (current.response) return current.response;
     const decoded = await readMusicJson(request);
     if (!decoded.ok) return reply({ error: decoded.error }, decoded.error === 'body_too_large' ? 413 : 400);
-    const input = parseMusicReuseDraft(decoded.value);
-    if (!input.ok) return reply({ error: input.error }, 400);
     try {
+        const providerContract = await activeContract(current.cfg);
+        if (!providerContract) return reply({ error: 'music_unavailable' }, 503);
+        if (providerContract === MUSIC_CRUN_CONTRACT && decoded.value?.provider_contract === undefined) {
+            return reply({ error: 'contract_stale' }, 409);
+        }
+        const input = parseMusicReuseDraft(decoded.value);
+        if (!input.ok) return reply({ error: input.error }, 400);
         const result = await rpc('music_apply_reuse_to_draft', {
             p_auth_id: current.authId, p_song_id: id, p_version_id: input.versionId,
+            ...(input.providerContract ? {
+                p_provider_contract: input.providerContract, p_draft_id: input.draftId,
+            } : {}),
             p_expected_revision: input.draftRevision, p_reuse_lyrics: input.reuseLyrics,
             p_reuse_styles: input.reuseStyles, p_idempotency_key: input.idempotencyKey,
         }, current.cfg);

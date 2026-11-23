@@ -5730,6 +5730,18 @@
     "ratio": 1.89
   },
   {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Masculin",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "Désactivée",
+    "ratio": 3.33
+  },
+  {
     "id": "musicActions.action.model",
     "english": "The stem provider is unavailable right now.",
     "translation": "Le fournisseur de séparation des pistes est indisponible pour le moment.",

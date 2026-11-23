@@ -31,6 +31,9 @@ const SOURCE_HOSTS = {
     // the sweep copies at once. Exact hosts only. Nothing fetches from them unless CRUN_ENABLED is "true" and a
     // Crun route is active.
     crun: { hosts: ['tempfile.mediaoss.bar', 'static.mediaoss.bar'], suffixes: [] },
+    // Suno audio is a separate, deliberately empty allowlist. A paid staging
+    // probe must verify the exact MP3 host before anything is added here.
+    crunAudio: { hosts: [], suffixes: [] },
 };
 // Providers whose output download carries our API key. The key may only go to
 // a host in that provider's list above, which for these is its own API host.
@@ -87,17 +90,20 @@ const isZip = (b) => b.length >= 30 && b[0] === 0x50 && b[1] === 0x4b && b[2] ==
  * ZIP would otherwise be stored as application/octet-stream, and the Music stem
  * readers, which ask for application/zip, would never find it (0480).
  *
+ * `expectAudio`: the magic-byte result must be an audio MIME.
+ *
  * `flacToWav`: a FLAC output is stored as the PCM WAV it decodes to (lossless, same
  * format), so Music editing and local renders can read it. Anything else is stored
  * as it is, and a FLAC that fails to decode is stored as FLAC.
  */
-export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization, expectMp4 = false, expectZip = false, flacToWav: convertFlac = false } = {}) {
+export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, maxBytes = COPY_MAX_BYTES, provider = 'fal', authorization, expectMp4 = false, expectZip = false, expectAudio = false, flacToWav: convertFlac = false } = {}) {
     // Outbound fetch targets must be constants or provider CDNs (CLAUDE.md
     // OWASP #10). The URL comes from a provider payload, so pin the host.
     let parsed;
     try { parsed = new URL(sourceUrl); } catch { return { ok: false, error: 'source url invalid' }; }
     if (parsed.protocol !== 'https:' || !isAllowedSourceHost(parsed.hostname, provider)) {
-        console.error('R2 copy source host not allowed:', parsed.hostname);
+        if (provider === 'crunAudio') console.error('R2 copy audio source host not verified');
+        else console.error('R2 copy source host not allowed:', parsed.hostname);
         return { ok: false, error: 'source host not allowed' };
     }
     if (authorization && !AUTHENTICATED_SOURCES.has(provider)) return { ok: false, error: 'source auth not allowed' };
@@ -165,6 +171,7 @@ export async function copyUrlToR2(sourceUrl, r2Key, cfg, { timeoutMs = 30000, ma
                     console.error('R2 copy FLAC to WAV failed, storing FLAC:', err && err.message);
                 }
             }
+            if (expectAudio && !contentType.startsWith('audio/')) return { ok: false, error: 'source not audio' };
         }
         // Hash the provider's bytes before they are stored, so the digest
         // describes what the user receives (ADR-0025 option E). The delivery

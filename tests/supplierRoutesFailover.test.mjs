@@ -69,6 +69,16 @@ test('an ambiguous answer never hops and is not closed as failed', async () => {
   assert.deepEqual(w.calls, []);
 });
 
+test('a local boundary not_sent result neither fails over nor closes the debited attempt', async () => {
+  const w = world({ results: { kie: () => ({ ok: false, outcome: 'not_sent', errorCode: 'provider_rate_limited',
+    scope: 'deferred', retryable: true }) } });
+  const r = await w.run();
+  assert.equal(r.result.outcome, 'not_sent');
+  assert.deepEqual(w.submits, [['kie', 'kie:ep']]);
+  assert.deepEqual(w.calls, []);
+  assert.equal(classifySubmitFailure(r.result), 'stop');
+});
+
 test('a refused prompt does not hop, and the failed attempt is closed for the refund path', async () => {
   const w = world({ results: { kie: () => rejected('kie 422/422: prompt refused') } });
   const r = await w.run();
@@ -121,4 +131,14 @@ test('the route submits through submitWithFailover and records the supplier that
   assert.match(src, /provider: servedBy, providerJobId: submitResult\.providerJobId/);
   assert.match(src, /attemptNo: submitted\.attemptNo/);
   assert.doesNotMatch(src, /await provider\.submit\(/);
+  assert.match(src, /submitResult\.outcome === 'not_sent'/);
+  assert.match(src, /retryable: true/);
+});
+
+test('typed auth and rate refusals fail over only when the Crun adapter marked the result', () => {
+  for (const errorCode of ['provider_auth_failed', 'provider_rate_limited']) {
+    assert.equal(classifySubmitFailure({ ok: false, outcome: 'rejected', errorCode }), 'stop', `${errorCode} from another supplier keeps stopping`);
+    assert.equal(classifySubmitFailure({ ok: false, outcome: 'rejected', errorCode, scope: 'account' }), 'failover');
+  }
+  assert.equal(classifySubmitFailure({ ok: false, outcome: 'rejected', errorCode: 'provider_payment_required' }), 'failover');
 });

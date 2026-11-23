@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fromFallback } from '../app/veyrnox/_lib/useCatalog.js';
 import { sniffProviderOutputType } from '../lib/providerOutputType.js';
-const sql = readFileSync(new URL('../packages/db/schema/supabase/0590_crun_qwen3_tts_speech.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../packages/db/schema/supabase/0594_crun_qwen3_tts_speech.sql', import.meta.url), 'utf8');
 test('Qwen migration stages both catalog and sweep route idempotently and asserts their exact states', () => {
     assert.match(sql, /'text-to-speech', 2, 0\.0089, 'per_generation', NULL, false, false/);
     assert.match(sql, /ON CONFLICT \(id\) DO NOTHING/);
