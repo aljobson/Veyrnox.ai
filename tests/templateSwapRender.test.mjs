@@ -38,10 +38,12 @@ const recipe=load('app/veyrnox/_components/TemplateRecipe.js',{
   '../../../lib/i18n/presetSteps.mjs':{presetStep:()=>''},'next/link':{default:'a',__esModule:true},
   '../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) }, './TemplatePromptReady': { TemplatePromptReady: () => null }, '../_lib/useSwapSceneAvailable':{useSwapSceneAvailable:()=>true},'../_lib/useTemplateClipAvailable':{useTemplateClipAvailable:()=>null},
   '../_lib/templateDraft':{TEMPLATE_PROMPT_MAX:2000},'../_lib/templateSourceBlock':{templateSourceUnsupported:()=>true},
+  '../../../lib/templatePromptPlaceholder.js':{isTemplatePromptPlaceholder:()=>false},'../_lib/privateTemplatePrompt.js':{ownPromptOf:()=>''},
   './UseTemplate':{UseTemplate:({templateSwap})=>templateSwap?React.createElement(composer.SwapComposer,{offer:templateSwap}):React.createElement('span',null,'Legacy composer')},
 });
 const noop=()=>null;
 const page=load('app/veyrnox/presets/[id]/page.js',{
+  '../../_lib/privateTemplateRecipe.js':{privateTemplateRecipe:x=>x},'../../../../lib/templatePromptPrivacy.js':{templatePromptsPrivate:()=>false},'../../_lib/templatePromptVisibility.js':{isVideoTemplate:()=>true},
   '../../_components/TemplateSwapBoundary.js':boundary,'../../../../lib/i18n/translate.mjs':{tOr:(t,k,f)=>t.messages[k]?t(k):f},
   '../../../../lib/publicModelIds.js':{publicModelId:x=>x},
   '../../../../lib/templateFraming.js':{templateSourceAspect:()=>null},'../../../../lib/i18n/server':{getT:async()=>({locale:'en',t})},

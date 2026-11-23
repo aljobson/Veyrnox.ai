@@ -457,6 +457,7 @@ const ru = {
     'presets.swap.cutout_failed': 'Локальная вырезка не завершилась. Повторите или выберите фото с простым фоном. Оригинал никогда не загружается.',
     'presets.swap.price_changed': 'Цена изменилась. Проверьте текущую цену перед повтором.',
     'app.create.templatePrompt.edit': 'Изменить промпт',
+    'app.create.templatePrompt.error': 'Не удалось загрузить промпт. Войдите в аккаунт и повторите попытку.',
     'app.create.templatePrompt.help': 'Промпт этого шаблона будет использован без изменений.',
     'app.create.templatePrompt.ready': 'Промпт шаблона готов',
 } as const;

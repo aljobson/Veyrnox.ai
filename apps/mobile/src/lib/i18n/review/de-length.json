@@ -5320,5 +5320,11 @@
     "english": "Retry",
     "translation": "Erneut versuchen",
     "ratio": 3.2
+  },
+  {
+    "id": "app.create.templatePrompt.error",
+    "english": "Couldn’t load the prompt. Sign in and try again.",
+    "translation": "Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.",
+    "ratio": 1.6
   }
 ]

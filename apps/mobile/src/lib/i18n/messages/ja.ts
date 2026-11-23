@@ -457,6 +457,7 @@ const ja = {
     'presets.swap.cutout_failed': '端末での切り抜きが完了しませんでした。再試行するか無地の背景の写真を選んでください。元の写真はアップロードされません。',
     'presets.swap.price_changed': '価格が変わりました。現在の価格を確認してから再試行してください。',
     'app.create.templatePrompt.edit': 'プロンプトを編集',
+    'app.create.templatePrompt.error': 'プロンプトを読み込めませんでした。サインインしてもう一度お試しください。',
     'app.create.templatePrompt.help': 'このテンプレートのプロンプトをそのまま使用します。',
     'app.create.templatePrompt.ready': 'テンプレートのプロンプトを準備しました',
 } as const;

@@ -5,16 +5,19 @@
  * Unauthenticated by design and the same for everyone: static template data, nothing per-user, no price. Lives outside /api/v1 like
  * /api/presets and reads no identity header. The id must match a template id; anything else is 404 so the answer never depends on
  * what was asked. A template whose exact source prompt cannot run carries sourcePromptRunnable: false.
+ * With the APP_RUNTIME_FLAGS key templatePromptsPrivate on, a video template carries a placeholder in place of prompt, sourcePrompt and the
+ * contract's texts, plus promptPrivate: true (ADR-0351 amendment 23); the signed-in /api/v1/templates/:id/prompt answers the real detail.
  * Errors: 404 template_not_found.
  */
 import { NextResponse } from 'next/server';
 import { templateDetail } from '../../../../lib/clientTemplates.js';
+import { templatePromptsPrivate } from '../../../../lib/templatePromptPrivacy.js';
 
 const CACHE = 'public, max-age=60, s-maxage=300, stale-while-revalidate=300';
 
 export async function GET(_request, { params }) {
     const { id } = await params;
-    const template = templateDetail(id);
+    const template = templateDetail(id, { hidePrompt: templatePromptsPrivate(process.env) });
     if (!template) return NextResponse.json({ error: 'template_not_found' }, { status: 404, headers: { 'Cache-Control': 'public, max-age=60, s-maxage=60' } });
     return NextResponse.json({ template }, { headers: { 'Cache-Control': CACHE } });
 }
