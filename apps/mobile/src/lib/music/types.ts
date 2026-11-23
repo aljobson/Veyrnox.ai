@@ -73,6 +73,14 @@ export type MusicEntitlements = {
         readonly dailyChallenge: boolean;
         readonly persistentQueue: boolean;
     };
+    readonly daily_allowance?: {
+        readonly enabled: boolean;
+        readonly unavailable?: boolean;
+        readonly eligible?: boolean;
+        readonly candidates_remaining?: number;
+        readonly pairs_remaining?: number;
+        readonly reset_at?: string;
+    };
     readonly policy: { readonly version: string; readonly pre_debit: boolean };
 };
 
@@ -172,6 +180,7 @@ export type MusicSimpleQuoteInput = {
     readonly time_signature?: string | null;
     readonly vocal_gender?: MusicVocalGender;
     readonly weirdness?: number;
+    readonly daily_allowance_capable?: boolean;
 };
 export type MusicCustomQuoteInput = {
     readonly mode: 'custom';
@@ -187,6 +196,7 @@ export type MusicCustomQuoteInput = {
     readonly weirdness?: number;
     readonly variety?: number;
     readonly exclude_styles?: string;
+    readonly daily_allowance_capable?: boolean;
 };
 export type MusicDraft = {
     readonly id: string | null;
@@ -251,6 +261,9 @@ export type MusicQuote = {
     readonly output_count: number;
     readonly credits_per_candidate: number;
     readonly total_credits: number;
+    readonly list_credits?: number;
+    readonly daily_free_candidates?: number;
+    readonly daily_allowance_reset_at?: string;
     readonly balance: number;
     readonly balance_after: number;
     readonly affordable: boolean;

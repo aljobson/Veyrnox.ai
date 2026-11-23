@@ -29,14 +29,17 @@ const post = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Cont
 const DEFAULT_MUSIC_FEATURES: MusicEntitlements['features'] = Object.freeze({
     albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
 });
+const DISABLED_DAILY_ALLOWANCE = Object.freeze({ enabled: false });
 
 export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements> {
     const response = await api.request<unknown>(`${BASE}/entitlements`);
     // Mobile and web deploy independently. A server rollback that predates rollout capabilities must fail closed,
     // while a present but malformed capabilities object remains a bad response.
-    const value = isRecord(response) && response.features === undefined
-        ? { ...response, features: DEFAULT_MUSIC_FEATURES }
-        : response;
+    const value = isRecord(response) ? {
+        ...response,
+        ...(response.features === undefined ? { features: DEFAULT_MUSIC_FEATURES } : {}),
+        ...(response.daily_allowance === undefined ? { daily_allowance: DISABLED_DAILY_ALLOWANCE } : {}),
+    } : response;
     if (!isMusicEntitlements(value)) throw bad();
     return value;
 }

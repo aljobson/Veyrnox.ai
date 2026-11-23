@@ -11,10 +11,10 @@ import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedCo
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
-import { t } from '../../../lib/i18n';
+import { formatLocale, t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
-const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
+const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'daily_allowance_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
@@ -50,6 +50,17 @@ export default function MusicCreate() {
                     : e && e.models.length === 0 ? <MusicNotice message={t('music.create.unavailable')} />
                         : e ? <>
                         <Text variant="title1">{t('music.create.title')}</Text>
+                        {e.daily_allowance?.unavailable ? <MusicNotice message={t('music.create.dailyAllowanceUnavailable')} />
+                            : e.daily_allowance?.enabled ? <View style={s.content}>
+                                <Text>{e.daily_allowance.candidates_remaining === 0
+                                    ? t('music.create.dailyAllowanceExhausted')
+                                    : t(e.daily_allowance.candidates_remaining === 1
+                                        ? 'music.create.dailyAllowanceStatus.one' : 'music.create.dailyAllowanceStatus.other',
+                                    { count: e.daily_allowance.candidates_remaining ?? 0 })}</Text>
+                                {e.daily_allowance.reset_at ? <Text>{t('music.create.dailyAllowanceReset', {
+                                    time: new Date(e.daily_allowance.reset_at).toLocaleTimeString(formatLocale()),
+                                })}</Text> : null}
+                            </View> : null}
                         <SegmentedControl value={input.mode} options={(['simple', 'custom'] as const).map(value => ({ value, label: t(`music.create.${value}`) }))}
                             onChange={mode => edit({ mode })} />
                         {suno ? <Text variant="bodyStrong">{t('music.create.suno.offer')}</Text> : null}

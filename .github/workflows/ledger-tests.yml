@@ -223,7 +223,7 @@ jobs:
           # Crun Suno music (0591-0593) needs a fully replayed database of its own: its concurrency cases commit rows,
           # which must not reach rebuild_check (they would fill the fal capacity the dispatch script below measures).
           DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" node scripts/replay-migrations.mjs
-          DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" CRUN_SUNO_MUSIC_TEST_DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" npx tsx --test --test-concurrency=1 packages/db/crun-suno-music.acceptance.test.ts packages/db/crun-suno-consumers.acceptance.test.ts packages/db/crun-suno-quote-controls.acceptance.test.ts
+          DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" CRUN_SUNO_MUSIC_TEST_DATABASE_URL="${DATABASE_URL%/*}/crun_suno_check" npx tsx --test --test-concurrency=1 packages/db/crun-suno-music.acceptance.test.ts packages/db/crun-suno-consumers.acceptance.test.ts packages/db/crun-suno-quote-controls.acceptance.test.ts packages/db/music-daily-allowance.acceptance.test.ts
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/replay-migrations.mjs
           # Music pair depends on the current catalog route and subscription-credit columns,
           # so exercise it against the fully replayed schema rather than the legacy fixture below.

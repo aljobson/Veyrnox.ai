@@ -179,9 +179,16 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 if (disposed) return;
                 tracker.add(result, pending.input);
                 update({ entitlements: { ...state.entitlements!, balance: result.balance_after } });
+                void getEntitlements(api).then((fresh) => {
+                    if (!disposed) update({ entitlements: fresh });
+                }).catch(() => { /* keep the confirmed balance projection */ });
             } catch (error) {
                 if (!disposed) {
                     if (!gate.unchanged(revision)) attempts.invalidate();
+                    if (error instanceof ApiError && error.code === 'daily_allowance_stale') {
+                        attempts.invalidate();
+                        try { update({ entitlements: await getEntitlements(api) }); } catch { /* keep the last safe projection */ }
+                    }
                     fail(error);
                 }
             }
