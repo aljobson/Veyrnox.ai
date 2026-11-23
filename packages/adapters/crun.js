@@ -25,6 +25,7 @@ import { readBoundedBody } from '../../lib/boundedBody.js';
 import { CRUN_FLUX_2_PRO_ASPECTS, CRUN_FLUX_2_PRO_PROMPT_MAX, CRUN_KLING_AVATAR_PROMPT_MAX } from '../../lib/crunPrimaryCapabilities.js';
 import { templateFacePrompt } from '../../lib/templateFaceWording.mjs';
 import { SEEDANCE_R2V_MODEL, buildSeedanceReferenceRequest } from '../../lib/crunSeedanceReference.js';
+import { CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL, buildKlingO1ReferenceRequest } from '../../lib/crunKlingO1Reference.js';
 
 export const CRUN_API_BASE = 'https://api.crun.ai';
 
@@ -75,14 +76,14 @@ const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
 const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'kling/o1-r2v-1080': '1080p' });
 const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
 // These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
-const redactsRefusal = model => isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL;
+const redactsRefusal = model => isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL;
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
 /** 'video' or 'image' for a Crun endpoint this adapter owns, else null. The sweep picks the file type from it. */
@@ -102,6 +103,7 @@ export function buildRequest(target, inputs) {
     if (target.model === FLUX_2_PRO_MODEL) return buildFluxRequest(inputs);
     if (target.model === KLING_AVATAR_MODEL) return buildKlingAvatarRequest(inputs);
     if (target.model === SEEDANCE_R2V_MODEL) return buildSeedanceReferenceRequest(inputs);
+    if (target.model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL) return buildKlingO1ReferenceRequest(inputs);
     const image = IMAGE_MODELS[target.model];
     if (image) return buildImageRequest(target, image, inputs);
     const kling = KLING_MODELS[target.model];

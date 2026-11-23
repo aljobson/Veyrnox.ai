@@ -45,3 +45,14 @@ test('a video-blocked template is available only through the clip path and still
   assert.equal(templateSwapAvailable(blocked.id, { ...open, registry: [] }), null);
   assert.equal(checkTemplateRequest({ template_id: blocked.id, model_id: 'kling-3.0-i2v', inputs: { prompt: blocked.sourcePrompt } }).error, 'template_blocked');
 });
+
+// 0586: Crun becomes the first route of the public offer, and the catalog row then names Crun's endpoint. Swaps must stay available.
+test('availability holds when the public offer row is served by Crun first (0586), and a made-up endpoint still fails', () => {
+  const crunRow = { ...catalog[0], provider: 'crun', provider_endpoint: 'crun:kling/o1-r2v-ref' };
+  const result = templateSwapAvailable(id, { ...options, catalog: [crunRow] });
+  assert.ok(result, 'swap clips stay available on the Crun-first row');
+  assert.equal(result.template.credits, 47);
+  assert.equal(capabilityFor(crunRow.provider_endpoint).provider, 'crun');
+  assert.equal(templateSwapAvailable(id, { ...options, catalog: [{ ...crunRow, provider_endpoint: 'crun:kling/o1-r2v' }] }), null, 'the private swap endpoint is not the public row');
+  assert.equal(templateSwapAvailable(id, { ...options, catalog: [{ ...crunRow, provider: 'fal' }] }), null, 'record and row must agree on the supplier');
+});
