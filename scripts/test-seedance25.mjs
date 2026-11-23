@@ -9,6 +9,9 @@ const c = new pg.Client({ connectionString: url });
 await c.connect();
 try {
     await c.query('BEGIN');
+    // ledger-tests.yml disables this trigger on rebuild_check for the legacy accounting fixtures that run before this
+    // script. The checks below need the real guard, so switch it on inside this transaction (rolled back at the end).
+    await c.query('ALTER TABLE public.jobs ENABLE TRIGGER jobs_provider_spend_guard');
     // Replays cannot commit the test transaction or leave older function definitions installed.
     const migration = (await readFile(new URL('../packages/db/schema/supabase/0587_seedance25_edit_extend_standby.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, '');
