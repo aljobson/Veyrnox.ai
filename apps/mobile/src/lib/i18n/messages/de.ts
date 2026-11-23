@@ -457,6 +457,7 @@ const de = {
     'presets.swap.cutout_failed': 'Die lokale Freistellung konnte nicht beendet werden. Versuche es erneut oder wähle ein Foto mit schlichtem Hintergrund. Das Original wird nie hochgeladen.',
     'presets.swap.price_changed': 'Der Preis hat sich geändert. Prüfe den aktuellen Preis vor dem nächsten Versuch.',
     'app.create.templatePrompt.edit': 'Prompt bearbeiten',
+    'app.create.templatePrompt.error': 'Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.',
     'app.create.templatePrompt.help': 'Der Prompt dieser Vorlage wird unverändert verwendet.',
     'app.create.templatePrompt.ready': 'Vorlagen-Prompt bereit',
 } as const;

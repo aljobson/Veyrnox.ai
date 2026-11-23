@@ -86,6 +86,8 @@ import { outputDurationLabel, mediaGenerationSources } from '../../_lib/chatMedi
 import { uploadSourceFile } from '../../_lib/uploadSourceFile';
 import { useSourceFit } from '../../_lib/useSourceFit';
 import { useTemplatePromptDisplay } from '../../_lib/templatePromptDisplay';
+import { ownPromptOf } from '../../_lib/privateTemplatePrompt';
+import { isTemplatePromptPlaceholder } from '../../../../lib/templatePromptPlaceholder.js';
 import { jobHistoryLabels } from '../../_lib/templatePromptVisibility';
 import { SourceFitNotice } from '../../_components/SourceFitNotice';
 import { TemplatePromptReady } from '../../_components/TemplatePromptReady';
@@ -414,7 +416,12 @@ function CreateStudio() {
     ...Object.fromEntries(Object.entries(model.media).filter(([slot]) => slot !== 'image' && sourceList(sources[slot]).length)),
   } : imagePhotoRequired && model?.media?.image ? { ...model.media, image: { ...model.media.image, required: true, maxFiles: 1 } } : model?.media || {};
   const sourceFit = useSourceFit(media, sources);
-  const promptDisplay = useTemplatePromptDisplay(activeTemplate || keptTemplate, prompt);
+  // A private template (ADR-0351 amendment 23) has a placeholder where its prompt was; Edit prompt reads the whole template for the signed-in caller.
+  const hydrateTemplate = useCallback((full) => {
+    setTemplateData(full);
+    setPrompt((current) => (isTemplatePromptPlaceholder(current) ? ownPromptOf(full) : current));
+  }, []);
+  const promptDisplay = useTemplatePromptDisplay(activeTemplate || keptTemplate, prompt, undefined, { onHydrate: hydrateTemplate });
   const animationMismatch = !!animationPortrait && (model?.kind !== 'video' || !media.image?.required);
   const { missingSource: missingSlot, needsReattach, overLimit, hasSource: hasUpload } = generationSourceState(media, sources);
   // Only pictures this model actually takes count: a video-only attachment, or a picture kept from another model, never reaches the provider.
@@ -945,7 +952,7 @@ function CreateStudio() {
           {continuationError && <p role="alert" className="mt-3 text-xs text-vx-danger">{continuationError}</p>}
 
           <div className="mt-3 rounded-2xl border border-vx-field bg-vx-panel focus-within:border-vx-accent">
-          {promptDisplay.hidden ? <TemplatePromptReady assistantTarget="create.prompt" ready={hydrated} onEdit={promptDisplay.reveal} /> : <textarea
+          {promptDisplay.hidden ? <TemplatePromptReady assistantTarget="create.prompt" ready={hydrated} onEdit={promptDisplay.reveal} status={promptDisplay.status} /> : <textarea
             data-assistant-target="create.prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}

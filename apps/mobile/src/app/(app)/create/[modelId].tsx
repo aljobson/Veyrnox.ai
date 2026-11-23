@@ -46,7 +46,8 @@ import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore'
 import { SAVED_DRAFT_VERSION, modelChoices, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect, readDestinationAspect } from '../../../lib/creatorTaste';
-import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady'; import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
+import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady';
+import { fetchPrivatePrompt, placeholderTemplateId } from '../../../lib/privateTemplate'; import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -78,7 +79,7 @@ export default function CreateWithModel() {
     const [model, setModel] = useState<CatalogModel | null>(null); const frame = useFrameChoice(model?.id);
     const [swapScene, setSwapScene] = useState<SwapScene | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
-    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : ''); const [revealedPrompt, setRevealedPrompt] = useState<string | null>(null);
+    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : ''); const [revealedPrompt, setRevealedPrompt] = useState<string | null>(null); const [revealing, setRevealing] = useState<'idle' | 'loading' | 'error'>('idle');
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
@@ -307,6 +308,17 @@ export default function CreateWithModel() {
     let request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: requestPrompt, templateId: prompt === contract?.sourcePrompt && !cameraOn && !characterOn && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, requestPrompt, modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), duration_seconds: !swapScene && isVideo ? duration : null }) : undefined, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
     if (request.templateId && typeof request.extraInputs?.negative_prompt === 'string') request = { ...request, extraInputs: { ...request.extraInputs, negative_prompt: request.extraInputs.negative_prompt.trimEnd() } };
     const templatePromptHidden = !!template && isVideo && !swapScene && typeof presetPrompt === 'string' && prompt === presetPrompt && revealedPrompt !== presetPrompt; const signature = generationSignature(request, n);
+    // A private template (ADR-0351 amendment 23) holds a placeholder; Edit prompt reads the words for this signed-in person.
+    const revealTemplatePrompt = async () => {
+        const id = placeholderTemplateId(prompt);
+        if (id) {
+            setRevealing('loading');
+            const full = await fetchPrivatePrompt(api, id);
+            if (!full) { setRevealing('error'); return; }
+            setRecoveredPrompt(full.own); setPrompt(full.own); // the words keep their bytes, as an unedited recovered draft does
+        }
+        setRevealing('idle'); setRevealedPrompt(prompt);
+    };
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
     const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
@@ -421,9 +433,9 @@ export default function CreateWithModel() {
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('create.workspace.prompt')}</SectionLabel>
-                            <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>
+                            {templatePromptHidden ? null : <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>}
                         </View>
-                        {templatePromptHidden ? <TemplatePromptReady onEdit={() => setRevealedPrompt(prompt)} /> : <TextField {...(revealedPrompt !== null && revealedPrompt === presetPrompt ? { autoFocus: true } : {})}
+                        {templatePromptHidden ? <TemplatePromptReady status={revealing} onEdit={revealTemplatePrompt} /> : <TextField {...(revealedPrompt !== null && revealedPrompt === presetPrompt ? { autoFocus: true } : {})}
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                             value={prompt}
                             onChangeText={setPrompt}

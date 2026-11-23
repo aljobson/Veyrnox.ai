@@ -12,6 +12,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { takeTemplateChatDraft } from '../../_lib/chatTemplateDraft';
+import { withTemplateText } from '../../_lib/privateTemplatePrompt';
 import { TemplatePromptReady } from '../TemplatePromptReady';
 import { longTextState } from '../../_lib/chatLongText';
 import { CHAT_USER_TEXT_MAX } from '../../../../lib/chatLimits.js';
@@ -213,7 +214,13 @@ export function ChatWorkspace() {
     templateDraftHandoff.current = true;
     let draft = null;
     try { draft = takeTemplateChatDraft(window.sessionStorage); } catch { /* Browser storage can be unavailable. */ }
-    if (draft) { setText(draft.prompt); setHiddenTemplateText(draft.hidePrompt ? draft.prompt : null); }
+    if (!draft) return;
+    // A private template's prompt arrives as a placeholder (ADR-0351 amendment 23); the chat needs the words, so read them for this signed-in caller.
+    withTemplateText(draft.prompt).then((words) => {
+      if (typeof words !== 'string' || words.length > MAX_TEXT) return;
+      setText(words);
+      setHiddenTemplateText(draft.hidePrompt ? words : null);
+    });
   }, [active, ready, signedOut]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
