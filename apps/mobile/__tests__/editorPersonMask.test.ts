@@ -1,7 +1,7 @@
 import { editorPersonMasks, editorVideoPersonMask, EDITOR_PERSON_MASK_CATEGORIES, EDITOR_PERSON_MASK_GATE } from '../src/lib/editorPersonMask';
 
 const mockDelete = jest.fn();
-jest.mock('expo-file-system', () => ({ File: class { exists = true; constructor(public uri: string) {} delete() { mockDelete(this.uri); } } }));
+jest.mock('expo-file-system', () => ({ File: class { exists = true; constructor(public mockUri: string) {} delete() { mockDelete(this.mockUri); } } }));
 
 const jpeg = 'data:image/jpeg;base64,/9j/';
 const bytes = (length: number, value: number) => Buffer.alloc(length, value).toString('base64');

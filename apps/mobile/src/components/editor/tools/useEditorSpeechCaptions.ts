@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createEditorSpeechClient, insertAutomaticCaptions, type EditorSpeechCapability, type EditorSpeechResult,
     type EditorSpeechTranscript } from '../../../lib/editorSpeechNative';
 import type { Timeline } from '../../../lib/nativeEditorModel';
-import { editorMedia } from '../../../lib/editorMedia';
+import { editorMediaArtifacts } from '../../../lib/editorMedia/artifacts';
 
 export type EditorSpeechCaptionStatus = 'checking' | 'idle' | 'requesting-permission' | 'transcribing' | 'translating' | 'applying' | 'done' | 'error';
 export type EditorSpeechCaptionError = Extract<EditorSpeechResult<never>, { ok: false }>['code'] | 'source-unavailable' | 'unsupported-edit' | 'stale' | 'timeline-full';
@@ -62,8 +62,8 @@ export function useEditorSpeechCaptions({ account, projectId, source, sourceKey,
             if (token !== generation.current || abort.signal.aborted) return;
             if (permission !== 'authorized') { setError(permission === 'revoked' ? 'permission-revoked' : permission === 'restricted' ? 'permission-restricted' : 'permission-denied'); setStatus('error'); return; }
             setStatus('transcribing');
-            await editorMedia.setOwner(start.account);
-            const mixed = await editorMedia.mixAudio(start.projectId, editorSpeechMixRequest(start.source), undefined, abort.signal);
+            await editorMediaArtifacts.setOwner(start.account);
+            const mixed = await editorMediaArtifacts.mixAudio(start.projectId, editorSpeechMixRequest(start.source), undefined, abort.signal);
             if (token !== generation.current || abort.signal.aborted) return;
             if (!mixed.ok) { setError(mixed.code === 'cancelled' ? 'cancelled' : mixed.code === 'invalid-input' ? 'unsupported-edit' : 'recognition-failed');
                 setStatus(mixed.code === 'cancelled' ? 'idle' : 'error'); return; }
@@ -86,7 +86,7 @@ export function useEditorSpeechCaptions({ account, projectId, source, sourceKey,
         } catch {
             if (token === generation.current && !abort.signal.aborted) { setError('recognition-failed'); setStatus('error'); }
         } finally {
-            if (audioArtifactId) await editorMedia.release(start.projectId, audioArtifactId).catch(() => undefined);
+            if (audioArtifactId) await editorMediaArtifacts.release(start.projectId, audioArtifactId).catch(() => undefined);
             if (controller.current === abort) controller.current = null;
         }
     };

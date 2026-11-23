@@ -2,7 +2,6 @@ import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Purchases from 'react-native-purchases';
 import { ActivityIndicator, Modal, Platform, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { useBilling } from '../billing/BillingProvider';
 import { useStorePurchase } from '../billing/useStorePurchase';
@@ -17,6 +16,7 @@ import { PlanCards, initialCadence, type Cadence } from './credits/PlanCards';
 import { PlanCatalogNotice } from './credits/PlanCatalogNotice';
 import { VeyCharacter } from './VeyCharacter';
 import { modalSafePadding } from '../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../lib/safeArea';
 
 const ENABLED = hardPaywallEnabled();
 // RevenueCat INTRO_ELIGIBILITY_STATUS_ELIGIBLE; the enum is not imported so a mocked SDK cannot break the screen.
@@ -41,7 +41,7 @@ export function HardPaywallGate({ children }: { children: ReactNode }) {
 
 function LockedScreen({ checking, onClose }: { checking: boolean; onClose: () => void }) {
     const s = useThemedStyles(styles);
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const { api, signOut } = useAuth();
     const router = useRouter();
     const billing = useBilling();

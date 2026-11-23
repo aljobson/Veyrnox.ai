@@ -5,7 +5,6 @@ import { randomUUID } from 'expo-crypto';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Switch, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { SmartCutPreview } from '../../components/smart-cut/SmartCutPreview';
 import { SmartCutAnalysisCard } from '../../components/smart-cut/SmartCutAnalysisCard';
@@ -54,6 +53,7 @@ import {
 import { fillerRanges } from '../../lib/speechFillers';
 import type { SpeechAnalysis } from '../../lib/speechCut';
 import { ds, LIST_END_PADDING } from '../../theme';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 type Stage = 'plan' | 'edit' | 'quote';
 type CompareView = 'raw' | 'cut';
@@ -62,7 +62,7 @@ const seconds = (value: number) => (Math.round(value * 10) / 10).toFixed(1);
 
 export default function SmartCutRoute() {
     const styles = useThemedStyles(sheets);
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const { api, beginSessionTask } = useAuth();
     const links = useAssetLinks(api);
     const router = useRouter();

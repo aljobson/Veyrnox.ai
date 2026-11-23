@@ -5,7 +5,6 @@ import { useFirstRunPending } from '../lib/firstRunPending';
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { usePathname } from 'expo-router';
 import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { appStorage, getCacheUser, subscribeCacheUser } from '../lib/appCache';
 import { claimCheckin, checkinErrorKey, type CheckinStatus } from '../lib/checkin';
@@ -17,6 +16,7 @@ import { plural, t } from '../lib/i18n';
 import { checkinRouteEligible, holdCheckinDialog } from '../lib/checkinVisibility';
 import { colors } from '../theme';
 import { modalSafePadding } from '../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../lib/safeArea';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const dismissed = new Map<string, string>();
@@ -30,7 +30,7 @@ export function CheckInModal() {
 }
 
 function CheckInForUser({ owner, api }: { owner: string; api: ApiClient }) {
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const reader = useMemo(() => checkinStatusReader(api, owner), [api, owner]);
     const [status, setStatus] = useState<CheckinStatus | null>(null);
     // `due`: today's invitation is owed. It appears only on the screens made for it (Explore, Credits), so a file

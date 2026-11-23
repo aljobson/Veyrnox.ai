@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
@@ -22,13 +21,14 @@ import { PurchaseState } from '../credits/PurchaseState';
 import { PurchaseOutcomeState } from '../credits/PurchaseOutcomeState';
 import { usePaywallFeedback } from './PaywallFeedback';
 import { modalSafePadding } from '../../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     reason: PaywallReason; onClose: () => void; onOptions: () => void; onLegal: (index: number) => void;
 }) {
     const s = useThemedStyles(sheets);
     const { height, fontScale } = useWindowDimensions();
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const { api } = useAuth();
     const billing = useBilling();
     const { refreshSales } = billing;

@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 import { ds } from '../../../theme';
 import { plural, t } from '../../../lib/i18n';
+import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { Action, PanelHeading } from '../EditorControls';
 import { SegmentedChoice } from './SegmentedChoice';
 import type { EditorSpeechCaptionActions, EditorSpeechCaptionError } from './useEditorSpeechCaptions';
@@ -20,6 +21,9 @@ export function AutomaticCaptionsSection({ actions }: { actions: EditorSpeechCap
     const status = actions.status === 'checking' ? t('editorScenes.checking') : actions.status === 'requesting-permission' ? t('editorSpeech.autoPermissionRequest')
         : actions.status === 'transcribing' ? t('editorSpeech.transcribing') : actions.status === 'translating' ? t('editorSpeech.autoTranslating')
         : actions.status === 'applying' ? t('editorSpeech.autoApplying') : null;
+    const error = actions.error ? t(errorKey(actions.error)) : null;
+    const done = actions.status === 'done' && actions.added ? plural('editorCaptionTools.added', actions.added) : null;
+    useAnnouncement(error ?? done ?? status);
     const available = actions.boundedAudioReady && actions.capability.platform === 'ios' && actions.capability.automaticCaptions && actions.capability.onDeviceRecognition;
     return <View style={{ gap: ds.space.sm }}>
         <PanelHeading title={t('editorSpeech.autoTitle')} detail={t('editorSpeech.autoHelp')} />
@@ -29,9 +33,9 @@ export function AutomaticCaptionsSection({ actions }: { actions: EditorSpeechCap
         {actions.capability.translation ? <SegmentedChoice label={t('editorSpeech.autoTargetLanguage')} value={language(actions.targetLocale)}
             options={languages.filter(value => locale(value) !== actions.sourceLocale).map(value => ({ value, label: t(`bestCut.language.${value}`) }))}
             onChange={value => actions.setTargetLocale(locale(value as typeof languages[number]))} /> : null}
-        {status ? <Text accessibilityRole="progressbar" accessibilityLiveRegion="polite" style={styles.panelDetail}>{status}</Text> : null}
-        {actions.error ? <Text accessibilityRole="alert" style={styles.problem}>{t(errorKey(actions.error))}</Text> : null}
-        {actions.status === 'done' && actions.added ? <Text accessibilityLiveRegion="polite" style={styles.panelDetail}>{plural('editorCaptionTools.added', actions.added)}</Text> : null}
+        {status ? <Text accessibilityRole="progressbar" style={styles.panelDetail}>{status}</Text> : null}
+        {error ? <Text style={styles.problem}>{error}</Text> : null}
+        {done ? <Text style={styles.panelDetail}>{done}</Text> : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm }}>
             <Action label={t('editorSpeech.autoStart')} disabled={busy || !available} onPress={actions.generate} />
             <Action label={t('editorSpeech.autoTranslate')} disabled={busy || !available || !actions.capability.translation} onPress={actions.translate} />

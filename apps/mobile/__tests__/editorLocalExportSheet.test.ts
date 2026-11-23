@@ -1,5 +1,7 @@
 import { localExportDimensions, localExportInterruptedState } from '../src/components/editor/LocalExportSheet';
 
+jest.mock('../src/auth/sessionTask', () => ({ useSessionTask: () => () => ({ current: () => true }) }));
+
 test('uses bounded native export dimensions for every editor canvas', () => {
     expect(localExportDimensions({ aspect_ratio: '16:9', frame_rate: 30 })).toEqual({ width: 1280, height: 720 });
     expect(localExportDimensions({ aspect_ratio: '9:16', frame_rate: 30 })).toEqual({ width: 720, height: 1280 });

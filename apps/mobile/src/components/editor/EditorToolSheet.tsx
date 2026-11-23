@@ -8,6 +8,11 @@ const SHEET_SHARE = 0.46, SHEET_MIN = 250, SHEET_MAX = 420, TOP_ROOM = 96;
 const INLINE_MIN = 160;
 export const toolSheetHeight = (windowHeight: number) => Math.round(Math.max(SHEET_MIN, Math.min(SHEET_MAX, windowHeight * SHEET_SHARE)));
 
+/** Props consumed by the native KeyboardAvoidingView; exported because the Jest RN host mock strips them. */
+export function editorToolKeyboardAvoidance(platform: string = Platform.OS) {
+    return { behavior: platform === 'ios' ? 'padding' as const : 'height' as const, keyboardVerticalOffset: TOP_ROOM };
+}
+
 /** Height of the on-screen keyboard while it is up, so the sheet can ride above it. */
 function useKeyboardHeight(): number {
     const [keyboard, setKeyboard] = useState(0);
@@ -33,7 +38,7 @@ export function EditorToolSheet({ rail, children, inline, wide, minHeight }:
     const inset = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
     const keyboard = useKeyboardHeight();
     // Full editor: take the room left under the timeline, so the timeline stays visible and the panel scrolls below the tool strip.
-    if (inline) return <KeyboardAvoidingView testID="editor-tool-sheet" behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={TOP_ROOM}
+    if (inline) return <KeyboardAvoidingView testID="editor-tool-sheet" {...editorToolKeyboardAvoidance()}
         style={[local.inline, wide && local.inlineWide, !wide && minHeight ? { minHeight: Math.max(INLINE_MIN, minHeight) } : null]}>{rail}{children}</KeyboardAvoidingView>;
     const room = Math.max(SHEET_MIN, height - keyboard - TOP_ROOM);
     return <View testID="editor-tool-sheet" style={[local.sheet, { bottom: keyboard, height: Math.min(toolSheetHeight(height), room), paddingBottom: keyboard ? 0 : inset }]}>{rail}{children}</View>;

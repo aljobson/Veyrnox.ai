@@ -4,7 +4,7 @@ import { createNativeEditorMotionProcessor, runEditorMotionProcessing, type Edit
 import { clipAt, type Clip, type Selection, type Timeline } from '../../../lib/nativeEditorModel';
 import { sourceRange } from '../../../../../../app/veyrnox/_lib/editorSpeed.mjs';
 import { prepareCanonicalMotionInput } from '../../../lib/editorMotionPreRender';
-import { editorMedia } from '../../../lib/editorMedia';
+import { editorMediaArtifacts } from '../../../lib/editorMedia/artifacts';
 
 export function editorMotionSelectedRange(value: Pick<Clip, 'in' | 'len' | 'rate' | 'reverse' | 'speedCurve' | 'freezeFrame'>, fps: number) {
     const bounds = sourceRange(value);
@@ -62,7 +62,7 @@ export function useEditorMotionProcessing(options: Options) {
             if (token !== generation.current) return;
             setProgress(null);
         } catch { if (token === generation.current && !abort.signal.aborted) setError('write-failed'); }
-        finally { if (preRenderedArtifactId) await editorMedia.release(start.projectId, preRenderedArtifactId).catch(() => undefined);
+        finally { if (preRenderedArtifactId) await editorMediaArtifacts.release(start.projectId, preRenderedArtifactId).catch(() => undefined);
             if (controller.current === abort) controller.current = null; }
     };
     return { tools, checking, progress, error, done: completedMediaId !== null && completedMediaId === options.sourceMediaId,

@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { createRoot } from 'test-renderer';
-import { EditorToolSheet } from '../src/components/editor/EditorToolSheet';
+import { EditorToolSheet, editorToolKeyboardAvoidance } from '../src/components/editor/EditorToolSheet';
 
 declare const require: (id: string) => { readFileSync(path: string, utf8: string): string };
 declare const __dirname: string;
@@ -43,8 +43,11 @@ describe('full editor keeps the timeline visible above the tool panel', () => {
         const root = createRoot();
         await act(async () => { root.render(<EditorToolSheet inline wide><Text>panel</Text></EditorToolSheet>); });
         const node = root.container.queryAll(n => n.props.testID === 'editor-tool-sheet')[0];
-        expect(node.props.keyboardVerticalOffset).toBeGreaterThan(0);
-        expect(node.props.behavior).toBeTruthy();
+        // React Native's Jest host renders KeyboardAvoidingView as a View and intentionally strips its native-only props.
+        // Test the exact config passed by the production component while still proving that the inline host mounted.
+        expect(node).toBeTruthy();
+        expect(editorToolKeyboardAvoidance('ios')).toEqual({ behavior: 'padding', keyboardVerticalOffset: 96 });
+        expect(editorToolKeyboardAvoidance('android')).toEqual({ behavior: 'height', keyboardVerticalOffset: 96 });
     });
     it('the inline sheet honours a minimum panel height and the timeline is a bounded scroll region', async () => {
         const root = createRoot();

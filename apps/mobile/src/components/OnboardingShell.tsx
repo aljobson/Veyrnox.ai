@@ -1,6 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, I18nManager, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BrandGlow } from './BrandGlow';
 import { EASE_OUT } from '../lib/motionCurves';
 import { MIN_TARGET, touchTarget } from '../lib/a11y';
@@ -10,6 +9,7 @@ import { stepsLeftKey } from '../lib/firstRun';
 import { ds } from '../theme';
 import { Icon, Text, themedStyles, useThemedStyles } from './ui';
 import { useReducedMotion } from './ui/useReducedMotion';
+import { useOptionalSafeAreaInsets } from '../lib/safeArea';
 
 interface Props {
     // 1-based position in the whole first-run journey, and how many steps it has: one bar across welcome and questions.
@@ -26,7 +26,7 @@ interface Props {
 // The frame every first-run screen shares: a progress bar that fills as you go, Back and Skip in the corners, a soft accent
 // glow behind the content and the primary action pinned to the bottom. Reduce Motion fills the bar without easing.
 export function OnboardingShell({ step, total, onBack, onSkip, skipLabel, backLabel, footer, children }: Props) {
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const s = useThemedStyles(sheets);
     const reduced = useReducedMotion();
     const fill = useRef(new Animated.Value(step / total)).current;

@@ -27,8 +27,6 @@ export function PurchaseOutcomeState({ outcome }: { outcome: PurchaseOutcome | n
     return <View
         testID={`purchase-outcome-${outcome.kind}`}
         accessible
-        accessibilityRole={presentation.urgent ? 'alert' : undefined}
-        accessibilityLiveRegion="polite"
         accessibilityLabel={text}
         style={[s.card, stateStyle]}
     >
@@ -38,11 +36,11 @@ export function PurchaseOutcomeState({ outcome }: { outcome: PurchaseOutcome | n
 }
 
 type OutcomeTone = 'success' | 'warning' | 'notice' | 'danger';
-function outcomePresentation(kind: PurchaseOutcome['kind']): { tone: OutcomeTone; icon: MenuIcon; urgent?: boolean } {
+function outcomePresentation(kind: PurchaseOutcome['kind']): { tone: OutcomeTone; icon: MenuIcon } {
     if (kind === 'credited' || kind === 'subscribed' || kind === 'restored') return { tone: 'success', icon: 'check' };
     if (kind === 'pending') return { tone: 'warning', icon: 'hourglass' };
-    if (kind === 'error') return { tone: 'danger', icon: 'close', urgent: true };
-    if (kind === 'sales_closed') return { tone: 'notice', icon: 'broadcastOff', urgent: true };
+    if (kind === 'error') return { tone: 'danger', icon: 'close' };
+    if (kind === 'sales_closed') return { tone: 'notice', icon: 'broadcastOff' };
     return { tone: 'notice', icon: 'close' };
 }
 

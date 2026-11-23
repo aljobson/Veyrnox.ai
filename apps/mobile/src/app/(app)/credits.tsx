@@ -4,7 +4,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
@@ -35,12 +34,13 @@ import { bestPackId, packSavingPercent, typicalCosts } from '../../lib/creditOff
 import { fetchCatalog } from '../../lib/media';
 import { ApiError } from '../../lib/api';
 import { cancelSubscription, creditsRemoved, readSubscription, subscriptionErrorKey, visibleSubscription, type CancelMode, type CreditSubscription } from '../../lib/creditSubscription';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Credits() {
     const styles = useThemedStyles(sheets);
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const { api } = useAuth();
     const billing = useBilling();
     useFocusEffect(useCallback(() => { void billing.refreshSales(); }, [billing.refreshSales]));

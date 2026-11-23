@@ -4,17 +4,18 @@ import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { createNativeEditorLocalExportDependencies } from '../../lib/editorCompositorNative';
 import { exportEditorMp4, type EditorLocalExportProgress, type EditorLocalExportResult } from '../../lib/editorLocalExport';
-import { editorMedia } from '../../lib/editorMedia';
+import { editorMediaArtifacts } from '../../lib/editorMedia/artifacts';
 import { framesIn, type Canvas, type Timeline } from '../../lib/nativeEditorModel';
 import { formatNumber, t } from '../../lib/i18n';
 import { rawText } from '../../lib/i18n/translate';
 import { touchTarget } from '../../lib/a11y';
 import { colors } from '../../theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { withEditorExportSources, type EditorExportSourceFailureCode, type EditorExportSourceResult } from '../../lib/editorExportSources';
 import type { ApiClient } from '../../lib/api';
 import { useSessionTask } from '../../auth/sessionTask';
 import { editorFontStore } from '../../lib/editorFontFiles';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
+import { useAnnouncement } from '../../lib/useAnnouncement';
 
 type Props = { visible: boolean; api: Pick<ApiClient, 'request'>; account: string; projectId: string; revision: number; timeline: Timeline; canvas: Canvas;
     localMediaUris: Readonly<Record<string, string>>; onClose(): void; onCloud(): void };
@@ -25,7 +26,7 @@ export const localExportDimensions = (canvas: Canvas) => canvas.aspect_ratio ===
 export const localExportInterruptedState = (taskCurrent: boolean, aborted: boolean): { phase: Phase; error: ExportError | null } =>
     !taskCurrent ? { phase: 'error', error: 'stale' } : aborted ? { phase: 'idle', error: null } : { phase: 'error', error: 'write-failed' };
 export function LocalExportSheet({ visible, api, account, projectId, revision, timeline, canvas, localMediaUris, onClose, onCloud }: Props) {
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const beginSessionTask = useSessionTask();
     const [phase, setPhase] = useState<Phase>('idle'), [error, setError] = useState<ExportError | null>(null);
     const [progress, setProgress] = useState<EditorLocalExportProgress | null>(null);
@@ -33,18 +34,18 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const exportIdentity = `${projectId}:${revision}`;
     const controller = useRef<AbortController | null>(null), mounted = useRef(true), latestArtifact = useRef(artifact), lastIdentity = useRef(exportIdentity); latestArtifact.current = artifact;
     useEffect(() => { mounted.current = true; return () => { mounted.current = false; controller.current?.abort(); const value = latestArtifact.current;
-        latestArtifact.current = null; if (value) void editorMedia.release(projectId, value.artifactId); }; }, [projectId]);
+        latestArtifact.current = null; if (value) void editorMediaArtifacts.release(projectId, value.artifactId); }; }, [projectId]);
     useEffect(() => {
         if (lastIdentity.current === exportIdentity) return;
         lastIdentity.current = exportIdentity; controller.current?.abort(); controller.current = null;
-        const value = latestArtifact.current; latestArtifact.current = null; if (value) void editorMedia.release(projectId, value.artifactId);
+        const value = latestArtifact.current; latestArtifact.current = null; if (value) void editorMediaArtifacts.release(projectId, value.artifactId);
         setArtifact(null); setError(null); setProgress(null); setPhase('idle');
     }, [exportIdentity, projectId]);
     const close = () => { if (phase !== 'exporting') onClose(); };
     const start = async () => {
         if (controller.current) return;
         const frozen = JSON.parse(JSON.stringify(timeline)) as Timeline, abort = new AbortController(), task = beginSessionTask(); controller.current = abort;
-        if (artifact) await editorMedia.release(projectId, artifact.artifactId).catch(() => undefined);
+        if (artifact) await editorMediaArtifacts.release(projectId, artifact.artifactId).catch(() => undefined);
         setArtifact(null); setError(null); setProgress(null); setPhase('exporting');
         let prepared: EditorExportSourceResult<EditorLocalExportResult>;
         try { prepared = await withEditorExportSources({ api, task, account, projectId, timeline: frozen, localMediaUris, signal: abort.signal }, materialized =>
@@ -64,7 +65,7 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
             if (owns) controller.current = null;
             if (mounted.current && owns) { const next = localExportInterruptedState(task.current(), abort.signal.aborted);
                 setError(next.error); setPhase(next.phase); setProgress(null); }
-            if (prepared.ok && prepared.value.ok) await editorMedia.release(projectId, prepared.value.artifact.artifactId); return;
+            if (prepared.ok && prepared.value.ok) await editorMediaArtifacts.release(projectId, prepared.value.artifact.artifactId); return;
         }
         controller.current = null;
         if (!prepared.ok) {
@@ -83,17 +84,23 @@ export function LocalExportSheet({ visible, api, account, projectId, revision, t
     const share = async () => { if (!artifact) return; try { if (!await Sharing.isAvailableAsync()) { setError('share-unavailable'); return; }
         await Sharing.shareAsync(artifact.uri, { mimeType: 'video/mp4' }); } catch { setError('write-failed'); } };
     const value = Math.round((progress?.value ?? 0) * 100), messageKey = error ? `editorLocalExport.${error}` as Parameters<typeof t>[0] : null;
+    const announcedValue = Math.floor(value / 10) * 10, totalFrames = progress?.frames ?? framesIn(timeline);
+    const announcement = messageKey ? t(messageKey) : phase === 'done' && artifact ? t('editorLocalExport.done', { size: formatNumber(artifact.size / 1048576, 1) })
+        : phase === 'exporting' ? `${t(`editorLocalExport.${progress?.stage ?? 'preparing'}` as Parameters<typeof t>[0])}. ${t('editorLocalExport.progress', {
+            percent: announcedValue, frame: Math.round(totalFrames * announcedValue / 100), total: totalFrames,
+        })}` : null;
+    useAnnouncement(visible ? announcement : null);
     return <Modal visible={visible} transparent animationType="none" onRequestClose={close}><View style={styles.backdrop} onAccessibilityEscape={close}>
         <ScrollView style={styles.sheet} contentContainerStyle={[styles.content, { paddingBottom: Math.max(24, insets.bottom + 12), paddingLeft: Math.max(24, insets.left + 16),
             paddingRight: Math.max(24, insets.right + 16) }]}><Text accessibilityRole="header" style={styles.heading}>{t('editorLocalExport.title')}</Text>
         <Text style={styles.text}>{t('editorLocalExport.help')}</Text>
-        {phase === 'exporting' ? <><Text accessibilityLiveRegion="polite" style={styles.text}>{t(`editorLocalExport.${progress?.stage ?? 'preparing'}` as Parameters<typeof t>[0])}</Text>
+        {phase === 'exporting' ? <><Text style={styles.text}>{t(`editorLocalExport.${progress?.stage ?? 'preparing'}` as Parameters<typeof t>[0])}</Text>
             <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: value }} style={styles.track}><View style={[styles.fill, { width: `${value}%` }]} /></View>
             <Text style={styles.text}>{t('editorLocalExport.progress', { percent: value, frame: progress?.frame ?? 0, total: progress?.frames ?? framesIn(timeline) })}</Text>
             <Button label={t('editorScenes.cancel')} onPress={() => controller.current?.abort()} /></> : null}
-        {messageKey ? <Text accessibilityRole="alert" style={styles.error}>{t(messageKey)}</Text> : null}
+        {messageKey ? <Text style={styles.error}>{t(messageKey)}</Text> : null}
         {phase === 'idle' || phase === 'error' ? <Button label={t('editorLocalExport.start')} onPress={() => void start()} /> : null}
-        {phase === 'done' && artifact ? <><Text accessibilityLiveRegion="polite" style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1048576, 1) })}</Text>
+        {phase === 'done' && artifact ? <><Text style={styles.text}>{t('editorLocalExport.done', { size: formatNumber(artifact.size / 1048576, 1) })}</Text>
             <Button label={t('editorServerExport.save')} onPress={() => void save()} /><Button label={t('editorServerExport.share')} onPress={() => void share()} /></> : null}
         {phase !== 'exporting' ? <Button label={t('editorLocalExport.cloud')} onPress={onCloud} /> : null}<Button label={t('editorServerExport.close')} disabled={phase === 'exporting'} onPress={close} />
         </ScrollView></View></Modal>;

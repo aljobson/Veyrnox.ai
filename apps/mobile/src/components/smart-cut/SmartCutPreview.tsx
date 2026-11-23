@@ -1,17 +1,17 @@
 import { rawText } from '../../lib/i18n/translate';
 import { useEffect } from 'react';
 import { Modal, ScrollView, View, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
 import { modalSafePadding } from '../../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 export function SmartCutPreview({ url, label, start, end, onClose }: { readonly url: string; readonly label: string; readonly start: number; readonly end: number; readonly onClose: () => void }) {
     const styles = useThemedStyles(sheets);
     const { width, height } = useWindowDimensions();
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const availableWidth = Math.max(240, width - insets.left - insets.right - ds.space.lg * 2);
     const playerHeight = Math.max(140, Math.min(availableWidth * 9 / 16, height - insets.top - insets.bottom - 112));
     const player = useVideoPlayer(url, instance => {

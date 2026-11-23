@@ -1,7 +1,6 @@
 import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import RevenueCatUI from 'react-native-purchases-ui';
 import type { CustomerInfo, PurchasesError, PurchasesPackage, PurchasesStoreTransaction } from 'react-native-purchases';
@@ -18,6 +17,7 @@ import { formatLocale, t } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { creditsFor, hasRetiredGenerationPackages, isPaidSubscriptionProduct, WEB_PARITY_PACK_CREDITS } from '../../lib/billing';
 import { PurchaseState } from '../../components/credits/PurchaseState';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 const PURCHASE_CANCELLED_ERROR = '1';
 const PAYMENT_PENDING_ERROR = '20';
@@ -27,7 +27,7 @@ const PAYMENT_PENDING_ERROR = '20';
 export default function Paywall() {
     const router = useRouter();
     const themed = useThemedStyles(sheets);
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const { fontScale } = useWindowDimensions();
     const billing = useBilling();
     const { startExternal, actions } = useStorePurchase();
@@ -218,7 +218,7 @@ function ActiveSubscription({ offering, source, periodEnd, managementURL, canMan
     canManage: boolean; onManageWeb(): void; onClose(): void;
 }) {
     const themed = useThemedStyles(sheets);
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     const storeActive = source === 'store' || source === 'both';
     const webActive = source === 'web' || source === 'both';
     const period = periodEnd ? t('creditsPage.periodEnd', {
@@ -244,7 +244,7 @@ function ActiveSubscription({ offering, source, periodEnd, managementURL, canMan
 // A dead end is never acceptable: the person can always retry the store load or leave.
 function Unavailable({ kind, text, onRetry, onClose }: { kind: 'loading' | 'unavailable'; text: string; onRetry?: () => void; onClose(): void }) {
     const themed = useThemedStyles(sheets);
-    const insets = useSafeAreaInsets();
+    const insets = useOptionalSafeAreaInsets();
     return (
         <ScrollView style={[styles.screen, themed.page]} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.center, {
             paddingLeft: insets.left + ds.space.xxl, paddingRight: insets.right + ds.space.xxl, paddingBottom: insets.bottom + ds.space.xxl,
