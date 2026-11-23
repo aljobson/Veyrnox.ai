@@ -183,15 +183,26 @@ export const accentPairs = {
 function alpha(hex: string, opacity: number) {
     return `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${opacity})`;
 }
-export function tokensForScheme(value: Scheme, settings: AppearanceSettings = current) {
+export function tokensForScheme(value: Scheme, settings: AppearanceSettings = current, increasedContrast = false) {
     const [accent, onAccent, accentPressed] = accentPairs[settings.accent][value];
+    const contrast = increasedContrast
+        ? value === 'light'
+            ? { borderSubtle: '#8a8a94', borderStrong: '#4d4d55', textSecondary: '#34343b', textTertiary: '#45454d' }
+            : { borderSubtle: '#5d5d66', borderStrong: '#b8b8c0', textSecondary: '#d0d0d5', textTertiary: '#c0c0c8' }
+        : {};
+    const base = value === 'light' ? light : dark;
     return {
-        ...(value === 'light' ? light : dark),
+        ...base,
         ...(settings.theme === 'oled' && value === 'dark' ? { bg: '#000000', bgElevated1: '#0e0e10', bgElevated2: '#17171a', surface: '#1c1c1f', borderSubtle: '#222226' } : {}),
+        ...contrast,
         accent,
         onAccent,
         accentPressed,
         accentSubtle: alpha(accent, value === 'dark' ? 0.14 : 0.1),
+        successSubtle: alpha(base.success, value === 'dark' ? 0.16 : 0.1),
+        warningSubtle: alpha(base.warning, value === 'dark' ? 0.16 : 0.1),
+        noticeSubtle: alpha(base.notice, value === 'dark' ? 0.16 : 0.1),
+        dangerSubtle: alpha(base.danger, value === 'dark' ? 0.16 : 0.1),
         iris: accentPairs.iris[value][0],
         rose: accentPairs.rose[value][0],
     };

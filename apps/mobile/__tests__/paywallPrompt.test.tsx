@@ -68,9 +68,9 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); await wipeCache(); jest.clearAllTimers(); jest.useRealTimers(); jest.restoreAllMocks(); });
 test('depleted shows store prices, best radio, interactive Vey, selection and an in-place purchase', async () => {
     await mount(); expect(text()).toContain(t('credits.paywall.emptyTitle')); expect(mood('worried')).toBe(true); expect(button('Vey')).toBeDefined();
-    const radios = nodes('radio'); expect(radios).toHaveLength(3); expect(radios[2].props.accessibilityState.selected).toBe(true);
+    const radios = nodes('radio'); expect(radios).toHaveLength(3); expect(radios[2].props.accessibilityState.checked).toBe(true);
     expect(text()).toContain('£70.00'); await click(radios[0]); expect(playSelection).toHaveBeenCalledTimes(1);
-    expect(nodes('radio')[0].props.accessibilityState.selected).toBe(true); expect(mood('hop')).toBe(true);
+    expect(nodes('radio')[0].props.accessibilityState.checked).toBe(true); expect(mood('hop')).toBe(true);
     await click(buy()); expect(mockBilling.purchase).toHaveBeenCalledWith(packs[0]); expect(mockPush).not.toHaveBeenCalled();
     expect(text()).toContain(t('credits.cancelled')); expect(mood('worried')).toBe(true); expect(button(t('credits.paywall.later'))).toBeDefined();
 });
@@ -146,7 +146,7 @@ test('Publish-only access does not masquerade as an AI Generation subscription',
 });
 test('plans toggle uses Starter, renewal and expiry terms without a never-expire line', async () => {
     await mount(); await click(nodes('tab').find(n => n.props.accessibilityLabel === t('credits.paywall.planTab'))!);
-    expect(nodes('radio')).toHaveLength(1); expect(nodes('radio')[0].props.accessibilityState.selected).toBe(true);
+    expect(nodes('radio')).toHaveLength(1); expect(nodes('radio')[0].props.accessibilityState.checked).toBe(true);
     expect(text()).toContain(t('credits.paywall.emptyTitle'));
     expect(text()).not.toContain(t('credits.paywall.emptyBody'));
     expect(text()).toContain('Renews automatically'); expect(text()).toContain(t('creditsPage.monthlyExpiry'));

@@ -9,6 +9,8 @@ import { ExportFailure, renderNativeExport } from './exportRender';
 import { shareBeatExport, sweepBeatExports } from './exportFiles';
 import { checkMixdownOwner, checkMixdownTask, createMixdownSaver, mixdownCode, mixdownErrorKey, ownedByOther, preflightMixdownSave, probeMixdownSave, recordOwner, type MixdownProbe, type MixdownTask, type SavedMixdown } from './mixdownSave';
 import type { ExportOptions } from './exportShared';
+import { createNativeExportAssetSession, type NativeExportAssetSession } from './nativeExportAssets';
+import type { NativeHeldAssets } from './nativeHeldAssets';
 import { replacementUnderway } from './recordingFinalizers';
 import { beatStore } from './store';
 
@@ -22,13 +24,12 @@ export function exportError(error: unknown): string {
     return t(({ 'recovery-r51': 'beatExport.phone', 'too-much-audio': 'beatExport.audioLimit', 'song-too-large-browser': 'beatExport.audioLimit',
         'cycle-off': 'beatExport.cycleHint', 'export-limit': 'beatExport.durationLimit' } as Record<string, string>)[code ?? ''] ?? 'beatExport.renderError');
 }
-export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, recording: boolean, replacing = false) {
+export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, recording: boolean, replacing: boolean, heldAssets: NativeHeldAssets) {
     const { api, generation, beginSessionTask } = useAuth();
     const offline = useSyncExternalStore(subscribe, isOffline, isOffline);
     const [state, setState] = useState<ExportState>('opening');
     const [probe, setProbe] = useState<MixdownProbe>('opening');
     const [message, setMessage] = useState('');
-    const [compressor, setCompressor] = useState(false);
     const [saved, setSaved] = useState<SavedMixdown | null>(null);
     const [failedAction, setFailedAction] = useState<'share' | 'save' | null>(null);
     const [percent, setPercent] = useState(0);
@@ -42,7 +43,6 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
     const beatOwner = () => recordOwner(beatStore.getRecord(doc.id));
     const viewer = beginSessionTask().user;
     const foreign = !!viewer && ownedByOther(beatOwner(), viewer); // Signed out shows the sign-in message instead.
-    const savedGaps = useRef(false);
     useEffect(() => {
         alive.current = true;
         sweepBeatExports();
@@ -66,7 +66,7 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
         if (seenGeneration.current !== generation) {
             seenGeneration.current = generation;
             savedSelection.current = null;
-            setMessage(t('beatExport.signIn')); setSaved(null); setCompressor(false);
+            setMessage(t('beatExport.signIn')); setSaved(null);
             if (!running.current) setState(value => value === 'unavailable' ? value : 'error');
         }
         void retryProbe();
@@ -77,66 +77,66 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
     function resetSaved() {
         if (running.current) return;
         savedSelection.current = null;
-        setSaved(null); setMessage(''); setCompressor(false); setFailedAction(null);
+        setSaved(null); setMessage(''); setFailedAction(null);
         setState(value => value === 'opening' || value === 'unavailable' ? value : 'ready');
     }
     async function run(options: ExportOptions, save?: { title: string; rights: boolean }) {
         const selection = save ? JSON.stringify([options.range, save.title.normalize('NFKC').trim()]) : null;
         if (running.current || recording || replacing || state === 'opening' || state === 'unavailable' || (save && (offline || probe !== 'on' || savedSelection.current === selection))) return;
+        const action = save ? 'save' : 'share';
+        if (state === 'error' && failedAction === action) heldAssets.retry();
         running.current = true;
         const controller = new AbortController(); request.current = controller;
-        const session = save ? beginSessionTask() : null;
-        const current = () => alive.current && !controller.signal.aborted && (!session || session.current());
-        const task = session ? { ...session, signal: controller.signal, current } : null;
-        saver.releaseStale(doc);
-        setCompressor(false); setMessage(''); setPercent(0); setFailedAction(null); setState('rendering');
-        let gaps = false;
+        const session = beginSessionTask();
+        const current = () => alive.current && !controller.signal.aborted && session.current();
+        const task = { ...session, signal: controller.signal, current };
+        let assetSession: NativeExportAssetSession | null = null;
+        saver.releaseStale(doc, options.range);
+        setMessage(''); setPercent(0); setFailedAction(null); setState('rendering');
         const progress = (seconds: number, total: number) => {
             if (!current()) return;
             setState('rendering'); setPercent(total ? Math.round(seconds / total * 100) : 0);
             setMessage(t('beatExport.progress', { seconds: seconds.toFixed(1), total: total.toFixed(1) }));
         };
         const render = async (consume: Parameters<typeof renderNativeExport>[2], settings = options) => {
-            await renderNativeExport(doc, settings, async result => {
-                gaps ||= result.report.gaps.includes('dynamicsCompressor');
-                await consume(result);
-            }, { current, progress, retainedBytes: saver.retainedBytes });
+            await renderNativeExport(doc, settings, consume,
+                { current, progress, retainedBytes: saver.retainedBytes, assets: assetSession ?? undefined });
         };
         try {
-            if (task) checkMixdownTask(task);
-            if (task) checkMixdownOwner(beatOwner(), task.user);
+            if (save) checkMixdownTask(task);
+            if (save) checkMixdownOwner(beatOwner(), task.user);
             if (save) preflightMixdownSave(doc, options.range);
             if (replacementUnderway(doc.id)) throw new ExportFailure('beatTakes.replacing');
             await prepare();
             if (replacementUnderway(doc.id)) throw new ExportFailure('beatTakes.replacing');
             if (!current()) throw new ExportFailure('beatExport.signIn');
-            if (save && task) {
+            assetSession = createNativeExportAssetSession({ doc, api, task: session, signal: controller.signal, heldAssets });
+            await assetSession.preflight({ range: options.range, pattern: options.kind === 'pattern' });
+            if (save) {
                 const result = await saver.save({ doc, range: options.range, ...save, task, owner: beatOwner,
                     render: async () => {
                         let bytes: ArrayBuffer | undefined;
-                        savedGaps.current = false;
                         await render(async result => { bytes = result.bytes; }, { ...options, kind: 'song', output: 'mix', bitDepth: 16 });
                         if (!bytes) throw new ExportFailure('beatExport.empty');
-                        savedGaps.current = gaps;
                         return bytes;
                     },
+                    beforeReserve: () => assetSession!.confirm({ range: options.range }),
                     progress: (phase, value) => { if (current()) { setState('saving'); setPercent(value ?? 0); setMessage(t(savePhaseKeys[phase], { percent: value ?? 0 })); } },
                 });
                 checkMixdownTask(task);
-                gaps ||= savedGaps.current; savedGaps.current = false;
                 const title = save.title.normalize('NFKC').trim();
                 savedSelection.current = selection;
                 setSaved(result); setState('saved'); setMessage(t('beatExport.saved', { title }));
             } else {
                 await render(async result => {
                     if (!current()) return;
+                    await assetSession!.confirm(result.selection);
                     setState('sharing'); setMessage(t('beatExport.sharing'));
                     await shareBeatExport(result.bytes, result.filename, current);
                 });
                 if (!current()) throw new ExportFailure('beatExport.signIn');
                 setState('shared'); setMessage(t('beatExport.shared'));
             }
-            if (current()) setCompressor(gaps);
         } catch (error) {
             if (alive.current) {
                 if (save && mixdownCode(error) === 'beat_library_save_unavailable') setProbe('off');
@@ -145,7 +145,11 @@ export function useBeatExport(doc: BeatDoc, prepare: () => Promise<void>, record
                 setMessage(!current() ? t('beatExport.signIn') : error instanceof ExportFailure || error instanceof OfflineUnavailable || (error instanceof Error && error.message === 'recording_not_preserved') || (error as { displayCode?: string })?.displayCode
                     ? exportError(error) : save ? t(mixdownErrorKey(error)) : exportError(error));
             }
-        } finally { running.current = false; if (request.current === controller) request.current = null; }
+        } finally {
+            await assetSession?.close().catch(() => undefined);
+            running.current = false;
+            if (request.current === controller) request.current = null;
+        }
     }
-    return { state, probe, foreign, message, compressor, saved, failedAction, busy, percent, offline, retryProbe, resetSaved, run };
+    return { state, probe, foreign, message, saved, failedAction, busy, percent, offline, retryProbe, resetSaved, run };
 }

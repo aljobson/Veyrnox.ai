@@ -8,7 +8,6 @@ export const phoneTranslator = (key: string, params?: Record<string, string | nu
     return t(key.startsWith('app.music.beat.ai.a') && Object.hasOwn(messages, phone) ? phone : 'beatAi.error', params);
 };
 export function buildDraft(doc: AiDoc, op: Op, prompt: string, key: string, instrument: string, rights: boolean, selection: Selection | null, song: Song | null): { draft: Draft; body: object } {
-    if (op === 'stems') throw new Error('split_stems_web_only');
     const source = op === 'generate' ? null : selection;
     if (op !== 'generate' && (!source || source.asset.source !== 'song')) throw new Error('source_required');
     if (source) {

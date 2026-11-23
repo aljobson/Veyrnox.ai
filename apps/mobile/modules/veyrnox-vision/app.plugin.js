@@ -1,9 +1,12 @@
-const { withDangerousMod, withAppBuildGradle } = require('expo/config-plugins');
+const { withDangerousMod, withAppBuildGradle, withInfoPlist } = require('expo/config-plugins');
 const { readFile, mkdir, writeFile } = require('node:fs/promises');
 const { Buffer } = require('node:buffer');
 const { createHash } = require('node:crypto');
 const { resolve, join } = require('node:path');
 const { pathToFileURL } = require('node:url');
+
+const SPEECH_USAGE = 'Veyrnox creates editable captions from audio on this device.';
+const MICROPHONE_USAGE = 'Veyrnox uses the microphone only when you choose to record a voiceover, a beat take, or audio for editable captions.';
 
 const matchesInventory = (bytes, asset) => bytes.length === asset.bytes && createHash('sha256').update(bytes).digest('hex') === asset.sha256;
 
@@ -46,6 +49,11 @@ async function copyModels(projectRoot, platform) {
     for (const [name, bytes] of verified) await writeFile(join(target, name), bytes);
 }
 module.exports = function withVeyrnoxVision(config) {
+    config = withInfoPlist(config, mod => {
+        mod.modResults.NSSpeechRecognitionUsageDescription = SPEECH_USAGE;
+        mod.modResults.NSMicrophoneUsageDescription = MICROPHONE_USAGE;
+        return mod;
+    });
     for (const platform of ['ios', 'android']) {
         config = withDangerousMod(config, [platform, async mod => { await copyModels(mod.modRequest.projectRoot, platform); return mod; }]);
     }
@@ -57,3 +65,5 @@ module.exports = function withVeyrnoxVision(config) {
     });
 };
 module.exports.copyModels = copyModels;
+module.exports.SPEECH_USAGE = SPEECH_USAGE;
+module.exports.MICROPHONE_USAGE = MICROPHONE_USAGE;

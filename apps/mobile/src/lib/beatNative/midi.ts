@@ -46,6 +46,14 @@ export const { WAVETABLE_PRESETS } = tables as { WAVETABLE_PRESETS: Record<strin
 export { PRESETS, noteLabel, isBlackKey };
 export const midiTracks = (doc: BeatDoc): MidiTrackDoc[] => doc.tracks.filter(t => t.kind === 'midi') as MidiTrackDoc[];
 export const midiRegions = (doc: BeatDoc) => midiTracks(doc).flatMap(track => track.regions.map(region => ({ track, region, clip: asMidiDoc(doc).clips?.[region.clipId] })));
+export const midiTrackSections = (doc: BeatDoc) => midiTracks(doc).map(track => {
+    const clips = new Map<string, { region: MidiRegion; clip: MidiClip }>();
+    for (const region of track.regions) {
+        const clip = asMidiDoc(doc).clips?.[region.clipId];
+        if (clip && !clips.has(region.clipId)) clips.set(region.clipId, { region, clip });
+    }
+    return { track, clips: [...clips.values()] };
+});
 export const regionUses = (doc: BeatDoc, clipId: string): number => midiRegions(doc).filter(x => x.region.clipId === clipId).length;
 export function addInstrumentTrack(doc: BeatDoc, instrument: Instrument): BeatDoc {
     const length = Math.max(doc.steps * 240, songEnd(doc));

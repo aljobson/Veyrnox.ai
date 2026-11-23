@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateRawSync } from 'node:zlib';
-import { extractStem } from '../app/veyrnox/_lib/music/beat/beatZip.mjs';
+import { extractStem, extractStemFromReader, inspectStem, uint8ZipReader, ZIP_READ_CHUNK } from '../app/veyrnox/_lib/music/beat/beatZip.mjs';
 function crc(bytes) { let c=0xffffffff;for(const b of bytes){c^=b;for(let i=0;i<8;i++)c=(c>>>1)^(c&1?0xedb88320:0);}return ~c>>>0; }
 function zip({ method=0, names=['vocals.wav','instrumental.wav'], flags=0, size, count, offset, payload }={}) {
   const locals=[],centrals=[];let at=0;
@@ -40,4 +40,70 @@ test('CRC verifies a multi-chunk payload and yields between chunks; corrupted CR
   assert.ok(yields >= 3, 'each completed non-final chunk gives timers a turn');
   bytes[30 + Buffer.byteLength('vocals.wav') + 2 * 1024 * 1024] ^= 1;
   await assert.rejects(extractStem(bytes, 'vocals'), /unexpected layout/);
+});
+
+test('random-access inspection and extraction never request the whole archive or an oversized range', async () => {
+  const payload = Buffer.alloc(3 * 1024 * 1024 + 17, 7), bytes = zip({ payload });
+  const calls = [];
+  const reader = {
+    size: bytes.length,
+    async read(offset, length) { calls.push([offset, length]); return bytes.slice(offset, offset + length); },
+  };
+  const selected = await inspectStem(reader, 'vocals');
+  assert.equal(selected.size, payload.length);
+  assert.deepEqual(await extractStemFromReader(reader, 'vocals'), new Uint8Array(payload));
+  assert.ok(calls.every(([, length]) => length <= ZIP_READ_CHUNK));
+  assert.ok(calls.every(([, length]) => length < bytes.length));
+  assert.ok(calls.some(([, length]) => length === 46), 'central records are read incrementally');
+});
+
+test('the Uint8Array adapter copies bounded ranges and rejects invalid coordinates', async () => {
+  const bytes = zip(), reader = uint8ZipReader(bytes);
+  const copy = await reader.read(0, 4);
+  copy[0] = 0;
+  assert.equal(bytes[0], 0x50);
+  await assert.rejects(reader.read(-1, 1), /unexpected layout/);
+  await assert.rejects(reader.read(bytes.length, 1), /unexpected layout/);
+});
+
+test('short ranged reads and malformed local/central metadata fail permanently', async () => {
+  const bytes = zip(), short = uint8ZipReader(bytes);
+  await assert.rejects(inspectStem({ size: short.size, read: async (offset, length) => {
+    const value = await short.read(offset, length); return value.length ? value.subarray(0, value.length - 1) : value;
+  } }, 'vocals'), error => error.permanent === true);
+
+  const localName = zip(); localName[30] ^= 1;
+  await assert.rejects(extractStem(localName, 'vocals'), /unexpected layout/);
+  const localMethod = zip(); localMethod[8] = 8;
+  await assert.rejects(extractStem(localMethod, 'vocals'), /unexpected layout/);
+  const centralSignature = zip();
+  const end = centralSignature.length - 22, central = new DataView(centralSignature.buffer).getUint32(end + 16, true);
+  centralSignature[central] = 0;
+  await assert.rejects(extractStem(centralSignature, 'vocals'), /unexpected layout/);
+});
+
+test('streaming inflater receives bounded chunks, exactly one final input, and is output-bounded', async () => {
+  const payload = Buffer.alloc(3 * 1024 * 1024 + 17, 4), bytes = zip({ method: 8, payload });
+  const raw = deflateRawSync(payload), chunks = [];
+  const inflate = async (source, emit) => {
+    const input = [];
+    for (;;) {
+      const item = await source.next();
+      if (!item) break;
+      chunks.push(item); input.push(item.bytes);
+    }
+    emit(new Uint8Array(Buffer.from(raw).equals(Buffer.concat(input.map(item => Buffer.from(item)))) ? payload : new Uint8Array()));
+  };
+  assert.deepEqual(await extractStemFromReader(uint8ZipReader(bytes), 'vocals', inflate), new Uint8Array(payload));
+  assert.equal(chunks.filter(item => item.final).length, 1);
+  assert.ok(chunks.every(item => item.bytes.length <= ZIP_READ_CHUNK));
+
+  await assert.rejects(extractStemFromReader(uint8ZipReader(bytes), 'vocals', async (source, emit) => {
+    while (await source.next()) { /* drain */ }
+    emit(new Uint8Array(payload.length + 1));
+  }), /unexpected layout/);
+  await assert.rejects(extractStemFromReader(uint8ZipReader(bytes), 'vocals', async (source, emit) => {
+    while (await source.next()) { /* drain */ }
+    emit(new Uint8Array(payload.length - 1));
+  }), /unexpected layout/);
 });

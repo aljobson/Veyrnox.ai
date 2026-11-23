@@ -27,12 +27,15 @@ export type ExportOptions = { kind: 'song' | 'pattern'; loops: number; range: Ex
 export type PCMBuffer = { length: number; sampleRate: number; numberOfChannels: number; getChannelData(channel: number): Float32Array };
 export type SongBuffers = Map<string, { buffer?: PCMBuffer; reverse?: PCMBuffer; missing: boolean }>;
 export type Chunk = { startSec: number; endSec: number; originSec: number; contextFrames: number };
+export type AssertAssets = () => void;
+export type NativeSongRenderOptions = Partial<Chunk> & { buffers: SongBuffers; range: ExportRange; soloTrackId?: string; assertAssets?: AssertAssets };
+export type ExportAssetSelection = { range?: ExportRange; soloTrackId?: string; pattern?: boolean };
 export type ExportPlan = { frames: number; seconds: number; sampleRate: number; channels: number; bitDepth: 16 | 24; chunks: Chunk[]; tracks: { id: string; name: string; audible: boolean; filename: string }[]; filenames: string[] };
 export type WavWriter = { write(channels: Float32Array[], offset?: number): void; finish(): ArrayBuffer };
 export type SaveAttempt = { payload: string; sha256: string; key: string };
 export type OfflineContextFactory = (channels: number, frames: number, sampleRate: number) => unknown;
 export const { renderSong, renderBeat } = render as {
-    renderSong(doc: BeatDoc, options: Partial<Chunk> & { buffers: SongBuffers; range: ExportRange; soloTrackId?: string }): Promise<{ channels: Float32Array[]; sampleRate: number }>;
+    renderSong(doc: BeatDoc, options: NativeSongRenderOptions): Promise<{ channels: Float32Array[]; sampleRate: number }>;
     renderBeat(doc: BeatDoc, loops: number, editTrackId?: string): Promise<{ samples: Float32Array; sampleRate: number }>;
 };
 export const { planExport, assembleExport, exportFilename } = planner as {
@@ -41,9 +44,11 @@ export const { planExport, assembleExport, exportFilename } = planner as {
     exportFilename(title: string, suffix?: string): string;
 };
 export const { createWavWriter } = wav as { createWavWriter(options: { channels: number; frames: number; sampleRate: number; bitDepth: 16 | 24 }): WavWriter };
-export const { usedAssets, estimateExport, MB, AUDIO_RATE, validAsset, checkDecoded } = audio as {
+export const { usedAssets, estimateExport, pcmBytes, decodeReserve, MB, AUDIO_RATE, validAsset, checkDecoded } = audio as {
     usedAssets(doc: BeatDoc): string[];
     estimateExport(doc: BeatDoc, frames: number): number;
+    pcmBytes(asset: BeatAsset): number;
+    decodeReserve(asset: BeatAsset): number;
     MB: number;
     AUDIO_RATE: number;
     validAsset(asset: BeatAsset, bpm: number): boolean;

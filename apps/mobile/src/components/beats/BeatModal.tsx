@@ -1,5 +1,6 @@
 import { useRef, type ReactNode, type ComponentRef } from 'react';
 import { AccessibilityInfo, findNodeHandle, Modal, ScrollView, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, themedStyles, useThemedStyles } from '../ui';
 import { ds } from '../../theme';
 export function BeatModal({ title, testID, onClose, onDismiss, scrollable = true, children }: {
@@ -10,13 +11,15 @@ export function BeatModal({ title, testID, onClose, onDismiss, scrollable = true
     return <Modal testID={testID} visible animationType="none" onRequestClose={onClose} onDismiss={onDismiss} onShow={() => {
         const node = findNodeHandle(heading.current); if (node) AccessibilityInfo.setAccessibilityFocus(node);
     }}>
-        {scrollable ? <ScrollView style={s.screen} contentContainerStyle={s.content} accessibilityViewIsModal onAccessibilityEscape={onClose}>
+        <SafeAreaView edges={['top', 'right', 'bottom', 'left']} style={s.screen}>
+        {scrollable ? <ScrollView style={s.screen} contentContainerStyle={s.content} accessibilityViewIsModal onAccessibilityEscape={onClose} keyboardShouldPersistTaps="handled">
             <View ref={heading} accessible accessibilityRole="header" accessibilityLabel={title}><Text variant="title2">{title}</Text></View>
             {children}
         </ScrollView> : <View style={[s.screen, s.content, s.fixed]} accessibilityViewIsModal onAccessibilityEscape={onClose}>
             <View ref={heading} accessible accessibilityRole="header" accessibilityLabel={title}><Text variant="title2">{title}</Text></View>
             {children}
         </View>}
+        </SafeAreaView>
     </Modal>;
 }
 const sheets = themedStyles(p => ({

@@ -9,13 +9,15 @@ import { Action, LabeledInput, PanelHeading, EmptyPanel } from '../EditorControl
 
 import { TranscriptRow } from './EditorRows';
 import type { ToolPanelProps } from './types';
-export function CaptionsPanel({ timeline, selection, selected, captionActions, addCaption, updateSelectedText, selectClip, setFrame }: Pick<ToolPanelProps, 'timeline' | 'selection' |
+import { AutomaticCaptionsSection } from './AutomaticCaptionsSection';
+export function CaptionsPanel({ timeline, selection, selected, captionActions, speechCaptionActions, addCaption, updateSelectedText, selectClip, setFrame }: Pick<ToolPanelProps, 'timeline' | 'selection' |
     'selected' | 'addCaption' |
     'updateSelectedText' |
-    'selectClip' | 'setFrame' | 'captionActions'>) {
+    'selectClip' | 'setFrame' | 'captionActions' | 'speechCaptionActions'>) {
     return <>
         <PanelHeading title={t('editor.captions')} detail={timeline.text.length ? t('editor.textcues', { value1: timeline.text.length }) : t('editor.nocues')} />
         <Action label={t('editor.addcaptionatplayhead')} onPress={addCaption} />
+        {speechCaptionActions ? <AutomaticCaptionsSection actions={speechCaptionActions} /> : null}
         {captionActions ? <CaptionFileSection timeline={timeline} selected={selected && 'text' in selected ? selected : undefined} actions={captionActions} /> : null}
         {selection?.track === 'text' && selected && 'text' in selected ? <LabeledInput label={t('editor.words')} value={selected.text}
             onChangeText={selected.caption && captionActions ? captionActions.text : updateSelectedText} /> : null}

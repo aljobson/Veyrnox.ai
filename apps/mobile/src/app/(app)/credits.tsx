@@ -34,11 +34,13 @@ import { bestPackId, packSavingPercent, typicalCosts } from '../../lib/creditOff
 import { fetchCatalog } from '../../lib/media';
 import { ApiError } from '../../lib/api';
 import { cancelSubscription, creditsRemoved, readSubscription, subscriptionErrorKey, visibleSubscription, type CancelMode, type CreditSubscription } from '../../lib/creditSubscription';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Credits() {
     const styles = useThemedStyles(sheets);
+    const insets = useOptionalSafeAreaInsets();
     const { api } = useAuth();
     const billing = useBilling();
     useFocusEffect(useCallback(() => { void billing.refreshSales(); }, [billing.refreshSales]));
@@ -179,7 +181,9 @@ export default function Credits() {
     }
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.screen} contentInsetAdjustmentBehavior="automatic" scrollIndicatorInsets={{ bottom: ds.space.lg }} contentContainerStyle={[styles.content, {
+            paddingLeft: insets.left + ds.space.lg, paddingRight: insets.right + ds.space.lg, paddingBottom: insets.bottom + ds.space.huge,
+        }]}>
             <Stack.Screen options={{ title: t(billing.canPurchase ? 'pricing.packs.buy' : 'menu.credits') }} />
             <Text variant="title1" tone="primary" style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
             <Text variant="callout" tone="secondary" style={styles.lead}>{t('credits.lead')}</Text>
@@ -267,7 +271,7 @@ const sheets = themedStyles((p) => ({
     accentInk: { color: p.accent },
 
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: ds.space.lg, paddingBottom: ds.space.huge, gap: ds.space.lg },
+    content: { width: '100%', maxWidth: 960, alignSelf: 'center', padding: ds.space.lg, paddingBottom: ds.space.huge, gap: ds.space.lg },
     title: { color: p.textPrimary, },
     lead: { color: p.textSecondary, },
     notice: { color: p.textSecondary, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.md },

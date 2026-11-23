@@ -7446,6 +7446,48 @@
     "ratio": 1.63
   },
   {
+    "id": "editorLocalExport.cloud",
+    "english": "Use cloud export instead",
+    "translation": "Utiliser plutôt l’exportation dans le cloud",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorNativeMotion.flicker",
+    "english": "Reduce flicker",
+    "translation": "Réduire le scintillement",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorPersonMask.title",
+    "english": "Person mask",
+    "translation": "Masque de personne",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Conserver",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorPersonMask.hair",
+    "english": "Hair",
+    "translation": "Cheveux",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorPersonMask.remove",
+    "english": "Remove person mask",
+    "translation": "Supprimer le masque de personne",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorSpeech.autoEdit",
+    "english": "Automatic captions currently need a forward clip at normal speed. Reset reverse, freeze and speed changes first.",
+    "translation": "Les sous-titres automatiques nécessitent pour l’instant un clip lu dans le bon sens à vitesse normale. Réinitialisez d’abord la lecture inversée, les images figées et les changements de vitesse.",
+    "ratio": 1.73
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

@@ -40,6 +40,24 @@ test('reserve → filtered anonymous PUT → commit uses the same owner/task, ha
     for (const call of s.request.mock.calls) expect(call[2]).toEqual({ owner: USER, task: s.task });
     expect(progress.mock.calls).toEqual([['reserve'], ['upload', 0], ['upload', 100], ['commit']]);
 });
+test('fresh authority runs immediately before every reserve, including a cached-byte retry', async () => {
+    const s = setup(), beforeReserve = jest.fn()
+        .mockRejectedValueOnce(Object.assign(new Error('held'), { code: 'asset_held' }))
+        .mockResolvedValueOnce(undefined);
+    await expect(s.saver.save({ ...s.options, beforeReserve })).rejects.toMatchObject({ code: 'asset_held' });
+    expect(s.options.render).toHaveBeenCalledTimes(1); expect(s.hash).toHaveBeenCalledTimes(1); expect(s.request).not.toHaveBeenCalled();
+    await expect(s.saver.save({ ...s.options, beforeReserve })).resolves.toEqual(done);
+    expect(beforeReserve).toHaveBeenCalledTimes(2); expect(s.options.render).toHaveBeenCalledTimes(1); expect(s.hash).toHaveBeenCalledTimes(1);
+    expect(s.request).toHaveBeenCalledTimes(2);
+});
+test('retained retry bytes survive the same range but release before a different range render', async () => {
+    const s = setup();
+    s.request.mockReset().mockRejectedValue(new ApiError(503, 'service_unavailable'));
+    await expect(s.saver.save(s.options)).rejects.toBeInstanceOf(ApiError);
+    expect(s.saver.retainedBytes()).toBe(48);
+    s.saver.releaseStale(s.options.doc, 'song'); expect(s.saver.retainedBytes()).toBe(48);
+    s.saver.releaseStale(s.options.doc, 'cycle'); expect(s.saver.retainedBytes()).toBe(0);
+});
 test('committed reservation short-circuits and PUT 412 is a successful retry', async () => {
     const s = setup(); s.request.mockReset().mockResolvedValue(done);
     await s.saver.save(s.options); expect(s.upload.makeRequest).not.toHaveBeenCalled(); expect(s.request).toHaveBeenCalledTimes(1);
