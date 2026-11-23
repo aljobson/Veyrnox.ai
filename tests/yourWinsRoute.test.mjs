@@ -163,6 +163,7 @@ test('web check-in visibility notifies a waiting wins candidate on close without
             '../_lib/yourWins':{claimWinsCelebration:client.claimWinsCelebration,useCheckinDialogOpen:()=>client.checkinDialogOpen()},
             './Modal':{Modal:({children})=>createElement('dialog',null,children)},
             './VeyCharacter':{__esModule:true,default:()=>null},
+            './ConfettiBurst':{ConfettiBurst:()=>null},'../_lib/celebrationSound':{playCelebrationSound(){}},
         }).YourWinsCelebration;
         const render=()=>renderToStaticMarkup(createElement(Celebration,{owner:auth,data:fixture()}));
         let visible=false;const recheck=()=>{visible=render()!=='';};
