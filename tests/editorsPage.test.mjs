@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+
+test('the public editors page is routed, discoverable and indexed', () => {
+  const config = read('next.config.mjs');
+  const tokens = read('app/veyrnox/_lib/tokens.js');
+  const sitemap = read('app/sitemap.js');
+
+  assert.match(config, /source: '\/editors', destination: '\/veyrnox\/editors'/);
+  assert.match(tokens, /href: '\/editors',\s+label: 'Editors'/);
+  assert.match(tokens, /href: '\/editors',\s+label:\s+'Editors',\s+description:/);
+  assert.match(sitemap, /page\('\/editors'/);
+});
+
+test('the page documents real editor boundaries and launches the existing tools', () => {
+  const page = read('app/veyrnox/editors/page.js');
+
+  for (const heading of ['Video Editor', 'Audio Editor', 'Smart Cut']) assert.match(page, new RegExp(heading));
+  assert.match(page, /up to 10 clips and 60 seconds/);
+  assert.match(page, /deterministic local preview/);
+  assert.match(page, /does not claim to detect mistakes, repeated lines, picture quality, or the best performance/);
+  assert.match(page, /href: '\/app\/library#smart-cut'/);
+  assert.match(page, /href: '\/app\/music'/);
+  assert.match(page, /exact credit price/);
+  assert.match(page, /<FooterForest locale=\{locale\} t=\{t\} flush \/>/);
+});
