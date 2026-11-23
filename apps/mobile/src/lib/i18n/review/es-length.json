@@ -3594,6 +3594,12 @@
     "ratio": 3
   },
   {
+    "id": "music.create.dailyAllowanceReset",
+    "english": "Resets at {time}",
+    "translation": "Se restablece a las {time}",
+    "ratio": 1.63
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "Conservar la mía",

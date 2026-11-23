@@ -180,7 +180,13 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 tracker.add(result, pending.input);
                 update({ entitlements: { ...state.entitlements!, balance: result.balance_after } });
                 void getEntitlements(api).then((fresh) => {
-                    if (!disposed) update({ entitlements: fresh });
+                    // The accepted generation owns the post-debit balance. A
+                    // concurrent entitlement read may have started from an
+                    // older replica/snapshot. Reject only that exact old quote
+                    // balance; preserve any genuinely newer balance instead.
+                    const balance = fresh.balance === pending.quote.balance && result.balance_after !== pending.quote.balance
+                        ? result.balance_after : fresh.balance;
+                    if (!disposed) update({ entitlements: { ...fresh, balance } });
                 }).catch(() => { /* keep the confirmed balance projection */ });
             } catch (error) {
                 if (!disposed) {
