@@ -118,6 +118,8 @@ describe('mobile E2E configuration contracts', () => {
         expect(paywallConfig).toContain('http://localhost:8084');
         expect(paywallStack).toContain("EXPO_PUBLIC_HARD_PAYWALL_ENABLED: 'true'");
         expect(paywallStack).toContain("MOCK_PORT: '8804'");
+        const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as { scripts: Record<string, string> };
+        expect(pkg.scripts['test:e2e:hard-paywall']).toBe('e2e run --config e2e.hard-paywall.config.ts');
     });
 });
 
@@ -142,6 +144,9 @@ test('the bounded landscape/keyboard smoke uses supported deterministic device A
     expect(source).toContain("device.openLink('ai.veyrnox.app://editor')");
     expect(source).toContain("getByRole('button', 'Beats')");
     expect(source).toContain("getByRole('button', 'Professional')");
+    expect(source).toContain("device.openLink('ai.veyrnox.app://editor/new?blank=1')");
+    expect(source).toContain("getByTestId('editor-tool-rail')");
+    expect(source).toContain("getByTestId('timeline-ruler')");
     expect(source).toContain("device.openLink('ai.veyrnox.app://email')");
     expect(source).toContain("getByRole('button', 'English')");
     expect(source).toContain("getByRole('button', 'Continue', { exact: true }).tap()");

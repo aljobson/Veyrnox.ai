@@ -3,8 +3,8 @@ import type { Device } from '@e2e-dev/mobile';
 
 const FIRST_RUN_TITLE = 'What do you want to make first?';
 
-// Opens a clean first-run journey without using openSignedIn(), whose job is to skip onboarding. Clearing app state
-// preserves the simulator keychain but removes local onboarding answers; the mock server's demo sign-in remains the
+// Opens a clean first-run journey without using openSignedIn(), whose job is to skip onboarding. The simulator
+// keychain and local app state are both cleared before a fresh launch; the mock server's demo sign-in remains the
 // deterministic fallback when no session is available.
 export async function openFirstRun(app: App, device: Device, screen: Screen) {
   await device.clearKeychain();

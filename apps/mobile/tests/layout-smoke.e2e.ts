@@ -38,6 +38,10 @@ for (const orientation of LANDSCAPE_ORIENTATIONS) {
       await expect(screen.getByRole('heading', 'Studio')).toBeVisible({ timeout: 30_000 });
       await expect(screen.getByRole('button', 'Beats')).toBeVisible();
       await expect(screen.getByRole('button', 'Professional')).toBeVisible();
+
+      await device.openLink('ai.veyrnox.app://editor/new?blank=1');
+      await expect(screen.getByTestId('editor-tool-rail')).toBeVisible({ timeout: 30_000 });
+      await expect(screen.getByTestId('timeline-ruler')).toBeVisible({ timeout: 30_000 });
     } finally {
       await device.setOrientation('portrait');
     }
