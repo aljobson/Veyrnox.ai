@@ -456,6 +456,9 @@ const pt = {
     'presets.swap.unavailable': 'Este modelo está indisponível. Escolha outro ou tente mais tarde.',
     'presets.swap.cutout_failed': 'O recorte local não terminou. Tente novamente ou escolha uma foto com fundo liso. O original nunca é enviado.',
     'presets.swap.price_changed': 'O preço mudou. Confira o preço atual antes de tentar novamente.',
+    'app.create.templatePrompt.edit': 'Editar prompt',
+    'app.create.templatePrompt.help': 'O prompt deste modelo será usado como está escrito.',
+    'app.create.templatePrompt.ready': 'Prompt do modelo pronto',
 } as const;
 
 export default pt;

@@ -456,6 +456,9 @@ const de = {
     'presets.swap.unavailable': 'Diese Vorlage ist nicht verfügbar. Wähle eine andere oder versuche es später.',
     'presets.swap.cutout_failed': 'Die lokale Freistellung konnte nicht beendet werden. Versuche es erneut oder wähle ein Foto mit schlichtem Hintergrund. Das Original wird nie hochgeladen.',
     'presets.swap.price_changed': 'Der Preis hat sich geändert. Prüfe den aktuellen Preis vor dem nächsten Versuch.',
+    'app.create.templatePrompt.edit': 'Prompt bearbeiten',
+    'app.create.templatePrompt.help': 'Der Prompt dieser Vorlage wird unverändert verwendet.',
+    'app.create.templatePrompt.ready': 'Vorlagen-Prompt bereit',
 } as const;
 
 export default de;

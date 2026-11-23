@@ -456,6 +456,9 @@ const hi = {
     'presets.swap.unavailable': 'यह टेम्पलेट उपलब्ध नहीं है। दूसरा चुनें या बाद में कोशिश करें।',
     'presets.swap.cutout_failed': 'डिवाइस पर कट-आउट पूरा नहीं हो सका। फिर कोशिश करें या सादी पृष्ठभूमि वाली फ़ोटो चुनें। मूल फ़ोटो कभी अपलोड नहीं होती।',
     'presets.swap.price_changed': 'कीमत बदल गई है। फिर कोशिश करने से पहले मौजूदा कीमत देखें।',
+    'app.create.templatePrompt.edit': 'प्रॉम्प्ट संपादित करें',
+    'app.create.templatePrompt.help': 'इस टेम्पलेट का प्रॉम्प्ट जैसा लिखा है वैसा ही इस्तेमाल होगा।',
+    'app.create.templatePrompt.ready': 'टेम्पलेट प्रॉम्प्ट तैयार है',
 } as const;
 
 export default hi;

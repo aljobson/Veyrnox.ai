@@ -58,7 +58,7 @@ export function TemplateHandoffCard({ preset, canChooseSource = false, onChooseS
         <p className="mt-1 text-xs text-vx-fg-muted">{t('app.create.templateReferenceOnly')}</p>
         {needs && <p className="mt-2 text-sm text-vx-fg-body">{tOr(t, `presets.needs.${preset.needsKey || preset.id}`, needs)}</p>}
         {preset.sourceAspect && <p className="mt-2 text-sm font-bold text-vx-fg-body">{t('presets.detail.sourceAspect', { aspect: preset.sourceAspect })}</p>}
-        {settings && (
+        {settings && !settings.promptHidden && (
           <button
             type="button"
             data-testid="template-setting-prompt"

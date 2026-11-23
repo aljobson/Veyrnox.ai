@@ -184,7 +184,7 @@ for (const modelId of ['flux-2-pro-1k-kie', 'flux-2-pro']) test(`actual web conf
             if (requests.length === 2) throw { code: 'price_changed', expectedCredits: 9 };
             return { job_id: `job-${body.idempotency_key}`, balance_after: 99 };
         },
-        startJobs: result => accepted.push(result), addJob: result => accepted.push(result), trackJourneyJob: () => {}, pushJobHistory: () => {},
+        startJobs: result => accepted.push(result), addJob: result => accepted.push(result), trackJourneyJob: () => {}, pushJobHistory: () => {}, jobHistoryLabels: () => ({}), activeTemplate: null, keptTemplate: null, sourceFit: { blocked: false },
         setBalance: () => {}, notifyBalanceChanged: () => {}, errorFor: value => value, submitErrorCode: code => code,
         freeLeftFor: (map, id) => map?.[id] ?? 0, batchNote: () => '', setBatchView: () => {},
     };
@@ -255,7 +255,7 @@ async function retryHandlerHarness(count, replies) {
             if (reply?.code) throw reply;
             return reply ?? { job_id: `job-${body.idempotency_key}` };
         },
-        startJobs: job => jobs.push(job), addJob: job => jobs.push(job), trackJourneyJob: () => {}, pushJobHistory: () => {},
+        startJobs: job => jobs.push(job), addJob: job => jobs.push(job), trackJourneyJob: () => {}, pushJobHistory: () => {}, jobHistoryLabels: () => ({}), activeTemplate: null, keptTemplate: null, sourceFit: { blocked: false },
         setBalance: () => {}, notifyBalanceChanged: () => {}, errorFor: error => error,
         freeLeftFor: () => 0, setBatchView: value => { context.activeBatch = value; },
     };
