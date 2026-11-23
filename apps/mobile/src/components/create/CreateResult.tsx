@@ -1,6 +1,6 @@
 import { optionsFor } from '../../lib/createOptions';
 import { FinishedShapeWarning } from './SmartCutShapeHint';
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -13,7 +13,8 @@ import { InlineMedia } from '../InlineMedia';
 import { GeneratedChip } from '../library/GeneratedChip';
 import { useJobResult, soundPassFor } from '../../lib/createResult';
 import { stageCreativeSourceHandoff } from '../../lib/creativeSourceHandoff';
-import { celebrateOutput } from '../../lib/celebrate';
+import { captureCelebrationAccount, isCelebrationAccountCurrent, celebrateOutput } from '../../lib/celebrate';
+import { subscribeCacheUser } from '../../lib/appCache';
 import { settleFirstMilestones } from '../../lib/milestoneHistory';
 import { parseRatio } from '../../lib/templateHandoff';
 import type { ApiClient } from '../../lib/api';
@@ -27,13 +28,24 @@ export interface ResultBatch {
 
 export function CreateResult({ api, batch, catalog, onTerminal }: { api: ApiClient; batch: ResultBatch; catalog: CatalogModel[]; onTerminal: () => void }) {
     const styles = useThemedStyles(sheets);
-    const celebrated = useRef(false);
+    const [accountToken] = useState(captureCelebrationAccount);
+    const apiRef = useRef(api);
+    useLayoutEffect(() => { apiRef.current = api; }, [api]);
+    const lifetime = useRef<{ live: boolean; token: ReturnType<typeof captureCelebrationAccount>; jobs: Set<string> } | null>(null);
+    // Ready tiles report success in passive effects, so their lifetime must already be active.
+    useLayoutEffect(() => {
+        const run = { live: isCelebrationAccountCurrent(accountToken), token: accountToken, jobs: new Set<string>() };
+        lifetime.current = run;
+        const off = subscribeCacheUser(() => { if (!isCelebrationAccountCurrent(run.token)) run.live = false; });
+        return () => { run.live = false; off(); };
+    }, [accountToken]);
     const celebrate = (id: string, mime: string) => {
-        if (celebrated.current) return;
-        celebrated.current = true;
-        // The rating ask waits until the person has opened the result (the job screen asks); it no longer
-        // appears while the result is still arriving on Create (QA-006).
-        void settleFirstMilestones(api, catalog).then(() => celebrateOutput(id, mime, true));
+        const run = lifetime.current;
+        if (!run?.live || !isCelebrationAccountCurrent(run.token) || run.jobs.has(id)) return;
+        run.jobs.add(id);
+        void settleFirstMilestones(apiRef.current, catalog, run.token).then(() => {
+            if (run.live && isCelebrationAccountCurrent(run.token)) celebrateOutput(id, mime, true, run.token);
+        });
     };
     return <View style={batch.count > 1 ? styles.grid : styles.single}>{batch.ids.map(id => <ResultTile key={id} api={api} id={id} batch={batch} catalog={catalog} onTerminal={onTerminal} onSuccess={celebrate} />)}</View>;
 }

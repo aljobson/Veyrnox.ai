@@ -3,6 +3,7 @@ import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import { CelebrationHost, Confetti, CELEBRATION_MS, CLAP_MS, CONFETTI_COUNT, BURST_END } from '../src/components/CelebrationHost';
 import { emitCelebration } from '../src/lib/veyMotion';
+import { celebrateOutput, resetCelebrations, settleMilestones } from '../src/lib/celebrate';
 const mockSuccess = jest.fn();
 let mockReduced = true;
 let mockPath = '/';
@@ -10,7 +11,7 @@ jest.mock('../src/lib/haptics', () => ({ playSuccess: () => mockSuccess() }));
 jest.mock('../src/components/ui/useReducedMotion', () => ({ useReducedMotion: () => mockReduced }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'vey' }) }));
 jest.mock('expo-router', () => ({ usePathname: () => mockPath }));
-jest.mock('../src/lib/appCache', () => ({ subscribeCacheUser: () => () => {} }));
+jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'a', subscribeCacheUser: () => () => {} }));
 void [RN.View, RN.Text, RN.Pressable, RN.Modal];
 let root: Root;
 beforeEach(() => {
@@ -47,6 +48,95 @@ test('reduced motion renders no confetti, acknowledges display and resolves dism
         root.container.queryAll((n) => n.props.accessibilityLabel === 'Dismiss celebration')[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 });
     });
     expect(event.onDone).toHaveBeenCalledTimes(1);
+});
+test.each([true, false])('routine success is visible, non-blocking and acknowledged once (reduced motion: %s)', async (reduced) => {
+    mockReduced = reduced;
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility');
+    announce.mockClear();
+    const onShown = jest.fn(), onDone = jest.fn();
+    try {
+        await act(async () => root.render(<CelebrationHost />));
+        await act(async () => { emitCelebration({ kind: 'success', onShown, onDone }); });
+        expect(root.container.queryAll(n => n.children.includes('Ready')).length).toBeGreaterThan(0);
+        expect(root.container.queryAll(n => n.props.pointerEvents === 'none').length).toBeGreaterThan(0);
+        expect(root.container.queryAll(n => typeof n.props.onShow === 'function')).toHaveLength(0);
+        expect(root.container.queryAll(n => n.props.testID === 'confetti-piece')).toHaveLength(0);
+        expect(onShown).toHaveBeenCalledTimes(1);
+        expect(mockSuccess).toHaveBeenCalledTimes(1);
+        expect(announce).toHaveBeenCalledTimes(1);
+        expect(announce).toHaveBeenCalledWith('Ready');
+        await act(async () => root.render(<CelebrationHost />));
+        await act(async () => jest.advanceTimersByTime(2799));
+        expect(onDone).not.toHaveBeenCalled();
+        expect(mockSuccess).toHaveBeenCalledTimes(1);
+        await act(async () => jest.advanceTimersByTime(1));
+        expect(onDone).toHaveBeenCalledTimes(1);
+        expect(root.container.queryAll(n => n.children.includes('Ready'))).toHaveLength(0);
+    } finally { announce.mockRestore(); }
+});
+test('routine events arriving together share one moment while acknowledging every job', async () => {
+    const first = { kind: 'success' as const, onShown: jest.fn(), onDone: jest.fn() };
+    const second = { kind: 'success' as const, onShown: jest.fn(), onDone: jest.fn() };
+    await act(async () => root.render(<CelebrationHost />));
+    await act(async () => { emitCelebration(first); emitCelebration(second); });
+    expect(first.onShown).toHaveBeenCalledTimes(1);
+    expect(second.onShown).toHaveBeenCalledTimes(1);
+    await act(async () => jest.advanceTimersByTime(2800));
+    expect(first.onDone).toHaveBeenCalledTimes(1);
+    expect(second.onShown).toHaveBeenCalledTimes(1);
+    expect(second.onDone).toHaveBeenCalledTimes(1);
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    await act(async () => jest.advanceTimersByTime(2800));
+    expect(second.onDone).toHaveBeenCalledTimes(1);
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+});
+test('a routine job through celebrateOutput shows one moment and plays one haptic across repeated settlements', async () => {
+    resetCelebrations();
+    settleMilestones({ creation: true, video: true });
+    await act(async () => root.render(<CelebrationHost />));
+    await act(async () => {
+        celebrateOutput('routine-job', 'image/png', true);
+        celebrateOutput('routine-job', 'image/png', true);
+    });
+    expect(root.container.queryAll(n => n.children.includes('Ready')).length).toBeGreaterThan(0);
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    await act(async () => jest.advanceTimersByTime(2800));
+    await act(async () => { celebrateOutput('routine-job', 'image/png', true); });
+    expect(root.container.queryAll(n => n.children.includes('Ready'))).toHaveLength(0);
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+});
+test('four routine batch jobs show one moment and one haptic, then dedupe across consumers', async () => {
+    resetCelebrations(); settleMilestones({ creation: true, video: true });
+    const ids = ['batch-1', 'batch-2', 'batch-3', 'batch-4'];
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility'); announce.mockClear();
+    try {
+        await act(async () => root.render(<CelebrationHost />));
+        await act(async () => { ids.forEach(id => celebrateOutput(id, 'image/png', true)); });
+        expect(root.container.queryAll(n => n.children.includes('Ready'))).toHaveLength(1);
+        expect(mockSuccess).toHaveBeenCalledTimes(1);
+        expect(announce).toHaveBeenCalledTimes(1);
+        await act(async () => jest.advanceTimersByTime(2800));
+        await act(async () => { ids.forEach(id => celebrateOutput(id, 'image/png', true)); });
+        expect(root.container.queryAll(n => n.children.includes('Ready'))).toHaveLength(0);
+        expect(mockSuccess).toHaveBeenCalledTimes(1);
+    } finally { announce.mockRestore(); }
+});
+test.each([true, false])('a milestone takes precedence over the routine members of a four-job batch (first: %s)', async milestoneFirst => {
+    const milestone = { kind: 'firstVideo' as const, onShown: jest.fn(), onDone: jest.fn() };
+    const routine = Array.from({ length: 3 }, () => ({ kind: 'success' as const, onShown: jest.fn(), onDone: jest.fn() }));
+    await act(async () => root.render(<CelebrationHost />));
+    await act(async () => {
+        (milestoneFirst ? [milestone, ...routine] : [...routine, milestone]).forEach(emitCelebration);
+    });
+    expect(root.container.queryAll(n => n.children.includes('Ready'))).toHaveLength(0);
+    const modal = root.container.queryAll(n => typeof n.props.onShow === 'function');
+    expect(modal).toHaveLength(1);
+    await act(async () => modal[0].props.onShow());
+    for (const event of [milestone, ...routine]) expect(event.onShown).toHaveBeenCalledTimes(1);
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    await act(async () => jest.advanceTimersByTime(CELEBRATION_MS));
+    for (const event of [milestone, ...routine]) expect(event.onDone).toHaveBeenCalledTimes(1);
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
 });
 test('full motion renders the confetti burst, changes to clap and finishes at 5 seconds', async () => {
     mockReduced = false;

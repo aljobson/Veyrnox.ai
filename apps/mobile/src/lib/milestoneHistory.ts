@@ -1,4 +1,4 @@
-import { isLocalSubmission, milestonesOpen, settleMilestones } from './celebrate';
+import { type CelebrationAccount, captureCelebrationAccount, isCelebrationAccountCurrent, isLocalSubmission, milestonesOpen, settleMilestones } from './celebrate';
 import { getCacheUser } from './appCache';
 import { fetchAllCatalog, kindOf, mediaApi, type CatalogModel } from './media';
 import type { ApiClient } from './api';
@@ -8,7 +8,8 @@ let checkedFor: string | null | undefined;
 
 // Looks at the account's earlier finished creations and marks "first creation" / "first video" as used when they
 // exist. Never throws: when the list cannot be read, the local flags decide as before. One look per sign-in.
-export async function settleFirstMilestones(api: ApiClient, catalog?: readonly CatalogModel[]): Promise<void> {
+export async function settleFirstMilestones(api: ApiClient, catalog?: readonly CatalogModel[], token: CelebrationAccount = captureCelebrationAccount()): Promise<void> {
+    if (!isCelebrationAccountCurrent(token)) return;
     const owner = getCacheUser() ?? null;
     try {
         if (!milestonesOpen() || checkedFor === owner) return;
@@ -28,6 +29,7 @@ export async function settleFirstMilestones(api: ApiClient, catalog?: readonly C
             if (!body.next) break;
             cursor = body.next;
         }
+        if (!isCelebrationAccountCurrent(token) || (getCacheUser() ?? null) !== owner) return;
         checkedFor = owner;
         settleMilestones({ creation, video: clip });
     } catch {

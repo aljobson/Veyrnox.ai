@@ -170,6 +170,7 @@ test('quote hook refreshes stale identity and retries once with the active draft
     react: harness.hooks,
     '../../../../lib/quoteRevisionGate.js': { createQuoteGate },
     '../../_lib/gateway': { gatewayFetch, makeIdempotencyKey: () => 'key', notifyBalanceChanged() {} },
+    '../../_lib/useMusicCelebrations': { useMusicCelebrations: () => () => {} },
   });
   const render = () => harness.render(() => useMusicServerState({ active: false }));
   let state = render(), refreshed = 0;

@@ -119,7 +119,7 @@ export default function TextToSpeechStudio() {
         const credits = submitted.free_allowance === true ? 0 : model.credits;
         const queued = { job_id: submitted.job_id, state: 'queued', credits, model_id: model.id, voice_id: voices.length > 1 ? voiceId : undefined, voice_recipe: { ...settings, voice: voiceId } };
         (index === 0 ? startJobs : addJob)(queued);
-        pushJobHistory({ job_id: submitted.job_id, model_id: model.id, credits, prompt: cleanScript.slice(0, 60), name: voices.length > 1 ? `Audition · ${voice?.label || 'Stock voice'}` : 'Stock voice' });
+        pushJobHistory({ idempotent: submitted.idempotent, job_id: submitted.job_id, model_id: model.id, credits, prompt: cleanScript.slice(0, 60), name: voices.length > 1 ? `Audition · ${voice?.label || 'Stock voice'}` : 'Stock voice' });
         if (submitted.balance_after != null) setBalance(submitted.balance_after);
       });
       if (started > 0) notifyBalanceChanged();
@@ -192,14 +192,14 @@ export default function TextToSpeechStudio() {
                       return (
                         <article key={item.job_id} className="overflow-hidden rounded-xl border border-vx-border bg-vx-panel" aria-label={`${voice?.label || 'Stock voice'} audition`}>
                           <div className="flex items-center justify-between gap-3 border-b border-vx-border px-3 py-2.5"><p className="text-xs font-extrabold">{voice?.label || 'Stock voice'}</p><Chip tone={item.state === 'failed' ? 'danger' : 'accent'}>{jobStateUi(item).label}</Chip></div>
-                          <div className="p-3">{item.asset_url ? <JobAssetPreview job={item} /> : <p className="py-5 text-center text-xs text-vx-fg-muted">This provider audition is {jobStateUi(item).label.toLowerCase()}.</p>}</div>
+                          <div className="p-3">{(item?.asset_url || item?.state === 'succeeded') ? <JobAssetPreview job={item} /> : <p className="py-5 text-center text-xs text-vx-fg-muted">This provider audition is {jobStateUi(item).label.toLowerCase()}.</p>}</div>
                           {item.state === 'failed' && <p className="border-t border-vx-border px-3 py-2.5 text-xs text-vx-danger">{failedJobCopy(item)}</p>}
                           {item.state === 'succeeded' && item.asset_url && <div className="flex flex-wrap gap-2 border-t border-vx-border px-3 py-2.5"><DownloadAsset row={item} label="Download" className="inline-flex min-h-9 items-center rounded-full bg-vx-accent px-3 text-[11px] font-extrabold text-vx-accent-ink" errorClassName="basis-full text-xs text-vx-danger" /><SaveToAudioShelfButton jobId={item.job_id} name={`Audition · ${voice?.label || 'Stock voice'}`} purpose="character-performance" voiceRecipe={item.voice_recipe} offerSignature/><Link href={`/app/performance?audio=${encodeURIComponent(item.job_id)}`} className="inline-flex min-h-9 items-center text-[11px] font-bold text-vx-accent underline">Use for lip sync</Link></div>}
                         </article>
                       );
                     })}
                   </div>
-                ) : job?.asset_url ? <JobAssetPreview job={job} /> : <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-vx-border px-6 text-center text-sm text-vx-fg-muted">{boardActive ? 'Add two or three voices, then approve the clearly priced Audition Board.' : 'The finished audio will be playable here and stored in Library.'}</div>}
+                ) : (job?.asset_url || job?.state === 'succeeded') ? <JobAssetPreview job={job} /> : <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-vx-border px-6 text-center text-sm text-vx-fg-muted">{boardActive ? 'Add two or three voices, then approve the clearly priced Audition Board.' : 'The finished audio will be playable here and stored in Library.'}</div>}
               </div>
               {job?.state === 'failed' && <p className="border-t border-vx-border px-5 py-4 text-sm text-vx-danger">{failedJobCopy(job)}</p>}
               {job?.state === 'succeeded' && job?.asset_url && (

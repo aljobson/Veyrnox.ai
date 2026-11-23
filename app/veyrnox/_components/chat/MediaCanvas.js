@@ -57,7 +57,7 @@ export function MediaCanvas({ kind, media }) {
       {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect || '1:1'} /> : (
         <div className={`relative overflow-hidden rounded-2xl border border-vx-border bg-vx-panel ${generating ? 'vx-shimmer' : ''}`}
           style={kind === 'audio' ? { minHeight: '12rem' } : { aspectRatio: (aspect || '1:1').replace(':', '/') }}>
-          {job?.asset_url ? <JobAssetPreview job={job} /> : (
+          {(job?.asset_url || job?.state === 'succeeded') ? <JobAssetPreview job={job} /> : (
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
               <div>
                 <p className={`font-vx-mono text-[11px] uppercase tracking-[0.14em] ${job?.state === 'failed' ? 'text-vx-danger' : 'text-vx-accent'}`}>
