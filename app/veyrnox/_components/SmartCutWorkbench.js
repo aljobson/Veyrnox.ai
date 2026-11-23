@@ -18,7 +18,7 @@ const clipEnd = (item) => item?.out_s != null && Number.isFinite(Number(item.out
 const clipOutputDuration = (item, showSlow) => Math.max(0, clipEnd(item) - clipStart(item)) * (showSlow && Number(item?.slow) > 1 ? Number(item.slow) : 1);
 const time = (seconds) => `${Math.floor(Math.max(0, seconds) / 60)}:${String(Math.floor(Math.max(0, seconds) % 60)).padStart(2, '0')}`;
 
-export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, canRedo, onUndo, onRedo }) {
+export function SmartCutWorkbench({ showText = true, items, output, showSlow, disabled, canUndo, canRedo, onUndo, onRedo }) {
   const { t } = useI18n();
   const [activeSelection, setActiveSelection] = useState(() => ({ uid: items[0]?.uid || null, index: 0 }));
   const [activeTool, setActiveTool] = useState('smart-cut');
@@ -165,7 +165,7 @@ export function SmartCutWorkbench({ items, output, showSlow, disabled, canUndo, 
           </div>
 
           <nav className="mt-4 grid grid-cols-5 gap-1 rounded-xl border border-vx-border bg-vx-base p-1" aria-label={t('app.smartCut.workbench.tools')}>
-            {TOOLS.map(([tool, labelKey, targetId]) => <button key={tool} type="button" disabled={disabled} aria-current={activeTool === tool ? 'location' : undefined} data-active={activeTool === tool} onClick={() => openTool(tool, targetId)} className="min-h-12 rounded-lg px-1 text-[10px] font-extrabold text-vx-fg-muted hover:text-vx-fg data-[active=true]:bg-vx-accent data-[active=true]:text-vx-accent-ink disabled:opacity-40">{t(labelKey)}</button>)}
+            {TOOLS.filter(([tool]) => showText || tool !== 'text').map(([tool, labelKey, targetId]) => <button key={tool} type="button" disabled={disabled} aria-current={activeTool === tool ? 'location' : undefined} data-active={activeTool === tool} onClick={() => openTool(tool, targetId)} className="min-h-12 rounded-lg px-1 text-[10px] font-extrabold text-vx-fg-muted hover:text-vx-fg data-[active=true]:bg-vx-accent data-[active=true]:text-vx-accent-ink disabled:opacity-40">{t(labelKey)}</button>)}
           </nav>
           <p className="mt-3 rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5 text-vx-fg-muted">
             {t(`app.smartCut.workbench.help.${activeTool === 'smart-cut' ? 'smartCut' : activeTool}`)}
