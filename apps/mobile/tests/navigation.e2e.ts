@@ -1,12 +1,13 @@
 import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
+import { NAVIGATION_MENU_LABELS } from '../e2e.contracts.js';
 import { openSignedIn } from './helpers.js';
 
 test('the signed-in shell exposes every primary workspace', { tags: ['smoke', 'navigation'] }, async ({ app, device, screen }) => {
   await openSignedIn(app, screen);
   await expect(screen.getByRole('button', 'Explore', { selected: true })).toBeVisible();
 
-  for (const [tab, route] of [['Create', 'create'], ['Editor', 'editor'], ['Library', 'library'], ['Publish', 'publish']] as const) {
+  for (const [tab, route] of [['Create', 'create'], ['Studio', 'editor'], ['Library', 'library'], ['Publish', 'publish']] as const) {
     await device.openLink(`ai.veyrnox.app://${route}`);
     await expect(screen.getByRole('button', tab, { selected: true })).toBeVisible();
   }
@@ -16,7 +17,9 @@ test('the menu exposes tools, assets and Social Cinema', { tags: ['smoke', 'navi
   await openSignedIn(app, screen);
   await screen.getByRole('button', 'Open menu').tap();
 
-  for (const destination of ['LLM Chat', 'Studio skills', 'Video agent', 'Create', 'Creative tools', 'Tools', 'Face filters', 'Editor', 'Quick edit', 'Film Studio', 'Oddlings', 'MCP', 'Publish', 'Library', 'Projects', 'Brand kit']) {
+  // The drawer is the production navigation contract. Retired Face Filters and build-disabled Film Studio stay out;
+  // Studio and Smart Cut are the supported editing entries.
+  for (const destination of NAVIGATION_MENU_LABELS) {
     await expect(screen.getByRole('link', destination)).toBeAttached();
   }
 

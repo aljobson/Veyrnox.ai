@@ -1,9 +1,11 @@
 import { mobile } from '@e2e-dev/mobile';
 import type { E2EConfig } from 'e2e';
 
+const e2eDevice = process.env.E2E_DEVICE ?? 'iPhone 17 Pro';
+
 const iphone = mobile({
   platform: 'ios',
-  device: 'iPhone 17 Pro',
+  device: e2eDevice,
 });
 
 export default {
@@ -27,6 +29,7 @@ export default {
         command: {
           executable: 'node',
           args: ['dev/e2e-stack.mjs'],
+          inheritEnv: ['EXPO_PUBLIC_HARD_PAYWALL_ENABLED'],
           log: '.e2e/logs/stack.log',
           reuseExisting: true,
           startupTimeout: 120_000,
