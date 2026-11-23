@@ -569,6 +569,8 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
   const customReady = Boolean(customSelectedModel?.generation_modes?.includes('custom') && customSelectedModel?.available !== false);
   const prompt = activeSeed ? buildMusicSamplePrompt(activeSeed, description, activeMix) : description.trim();
   const sunoPrompt = capSunoText(prompt, sunoLimit(model, 'prompt'));
+  // The box shows what was typed, untrimmed: showing the trimmed prompt drops a trailing space on every keystroke.
+  const sunoField = capSunoText(description, sunoLimit(model, 'prompt'));
   const concurrencyLimit = Number(entitlements?.concurrency_limit) || 4;
   const activeGenerationCount = generations.filter((item) => !['succeeded', 'partial', 'failed', 'refunded'].includes(item.state)).length;
   const hasSharedSlot = activeGenerationCount < concurrencyLimit;
@@ -659,7 +661,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
           <div className="mt-6 space-y-5">
             {!sunoActive ? <MusicSourceUploadPanel enabled={sourcesEnabled} selectedId={sourceId} onSelectionChange={(next) => { setSourceId(next); clearQuote(); }} /> : null}
             {mode === 'simple' ? (
-              sunoActive ? <SunoSimpleFields entitlements={entitlements} model={model} modelId={modelId} setModelId={setModelId} description={sunoPrompt} setDescription={setSunoDescription} instrumental={instrumental} setInstrumental={setInstrumental} quote={quote} busy={busy} clearQuote={clearQuote} reviewQuote={reviewQuote} confirmQuote={confirmQuote} canQuote={canQuote} hasSharedSlot={hasSharedSlot} /> : <>
+              sunoActive ? <SunoSimpleFields entitlements={entitlements} model={model} modelId={modelId} setModelId={setModelId} description={sunoField} setDescription={setSunoDescription} instrumental={instrumental} setInstrumental={setInstrumental} quote={quote} busy={busy} clearQuote={clearQuote} reviewQuote={reviewQuote} confirmQuote={confirmQuote} canQuote={canQuote} hasSharedSlot={hasSharedSlot} /> : <>
             <MusicSampleSeedCard seed={activeSeed} mix={activeMix} onRemove={() => { setActiveSeed(null); setActiveMix(null); clearQuote(); }} />
             <LicensedTemplateCard template={activeTemplate} disabled={Boolean(busy)} onRemove={() => {
               // The description began as the template direction, so it goes with the template; any reviewed quote goes too.
