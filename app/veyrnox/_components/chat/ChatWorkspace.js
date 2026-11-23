@@ -36,6 +36,7 @@ import { ComposerControls, ComposerTypeTabs } from './ComposerControls';
 import { MediaComposer } from './MediaComposer';
 import { MediaCanvas } from './MediaCanvas';
 import { useChatMediaGeneration } from './useChatMediaGeneration';
+import { useChatMusicGeneration } from './useChatMusicGeneration';
 import { ThreadList } from './ThreadList';
 import { useChatSend } from './useChatSend';
 import { ALL_CHATS } from '../../_lib/chatFolders';
@@ -125,7 +126,14 @@ export function ChatWorkspace() {
   const { models: studioModels, live: studioCatalogLive, loading: studioLoading } = useCatalog();
   const [composerKind, setComposerKind] = useState(COMPOSER_KINDS.CHAT);
   const [mediaPrompt, setMediaPrompt] = useState('');
-  const mediaGeneration = useChatMediaGeneration({ kind: composerKind, models: studioModels, catalogLive: studioCatalogLive });
+  const genericMediaGeneration = useChatMediaGeneration({ kind: composerKind, models: studioModels, catalogLive: studioCatalogLive });
+  const musicGeneration = useChatMusicGeneration({ active: composerKind === COMPOSER_KINDS.AUDIO, prompt: mediaPrompt });
+  // Do not expose the generic Audio submit path until Music policy has resolved.
+  // After a failed first read, retain the existing generic Audio path.
+  const mediaGeneration = composerKind === COMPOSER_KINDS.AUDIO
+    && (!musicGeneration.resolved || musicGeneration.suno)
+    ? { ...musicGeneration, suno: true }
+    : genericMediaGeneration;
   const freeMap = useFreeAllowance(); // free replies left today per model; empty while the feature is off
   const [error, setError] = useState(() => waiting(NEW_CHAT)); // a page that has just loaded shows a chat that has not started, and what waits for it
   const [closed, setClosed] = useState(false);
@@ -547,7 +555,7 @@ export function ChatWorkspace() {
           <p className="min-w-0 flex-1 truncate text-sm" aria-live="polite">
             <span className="font-semibold">{composerKind === COMPOSER_KINDS.CHAT ? model.name : mediaGeneration.model?.name || t('app.chat.workspace.noModel', { kind: tOr(t, `app.editor.media.kind.${composerKind}`, composerKind) })}</span>{' '}
             <span className="font-vx-mono text-xs text-vx-money vx-num">
-              {composerKind === COMPOSER_KINDS.CHAT ? t('app.chat.workspace.perReply', { price: credits(t, locale, model.credits_per_reply) }) : mediaGeneration.model ? t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits) }) : ''}
+              {composerKind === COMPOSER_KINDS.CHAT ? t('app.chat.workspace.perReply', { price: credits(t, locale, model.credits_per_reply) }) : mediaGeneration.model ? mediaGeneration.suno ? t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits_per_candidate) }) : t('app.chat.workspace.base', { count: number(mediaGeneration.model.credits) }) : ''}
             </span>
           </p>
           

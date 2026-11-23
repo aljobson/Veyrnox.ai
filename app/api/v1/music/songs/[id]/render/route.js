@@ -33,9 +33,9 @@ export async function POST(request, { params }) {
             version_id: context.version_id, version_number: context.version_number,
             operation: input.operation, render_state: context.render_state, idempotent: true,
         });
-        if (context.mime_type !== 'audio/wav') return reply({ error: 'render_format_unsupported' }, 400);
-        // A WAV the render cannot hold is a size problem, not a format one: say so instead of asking for a WAV.
-        if (Number(context.size_bytes) > 26_214_400) return reply({ error: 'source_too_large' }, 400);
+        if (context.mime_type !== 'audio/wav' || Number(context.size_bytes) > 26_214_400) {
+            return reply({ error: 'edit_unavailable_for_format' }, 409);
+        }
         const inspected = await inspectStoredSource(context.r2_key, { contentType: context.mime_type, field: 'audio_url' }, r2cfg);
         if (!inspected.ok || !Number.isFinite(inspected.seconds)) return reply({ error: inspected.error === 'upload_too_large' ? 'source_too_large' : 'source_duration_unavailable' }, 400);
         if (input.operation === 'fade'

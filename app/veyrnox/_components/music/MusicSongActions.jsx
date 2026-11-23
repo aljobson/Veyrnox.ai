@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { musicActionLimitReason, musicActionOverLimit } from '../../_lib/music/actionLimits.js';
+import { useI18n } from '../../../../components/I18nProvider';
+import { sunoFormatEditsUnavailable } from './musicSunoForm';
 
 const jobIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
@@ -23,7 +25,9 @@ export function MusicSongActions({
   beatEditor = false,
   songId, jobId, title, actions = ['view_lineage', 'organize'], onViewLineage, onShare, onDownload, onPublish, onCover, onMashup, onSample, onExtend, onReplace, onAddSection, onReuse, onStems, onTargetStem, onAddTrack, onCrop, onRender, onReverse, onSpeed,
   externalTriggerRef, sourceDurationSeconds,
+  capabilities = null,
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -53,6 +57,10 @@ export function MusicSongActions({
   const canSpeed = canRender && enabled.has('speed') && typeof onSpeed === 'function';
   const canEditor = enabled.has('open_editor') && jobIdPattern.test(jobId || '');
   const canOrganize = enabled.has('organize');
+  // `playback` exists only on readers with authoritative asset facts. Requiring
+  // it avoids labelling legacy songs, and render/crop identify the local edit
+  // tools that are actually hidden for MP3 or oversized versions.
+  const hasFormatUnavailableEdits = sunoFormatEditsUnavailable(capabilities);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -243,6 +251,7 @@ export function MusicSongActions({
               Organize in Music Library
             </Link>
           ) : null}
+          {hasFormatUnavailableEdits ? <p role="note" className="border-t border-vx-border px-3 py-3 text-xs leading-5 text-vx-fg-muted">{t('app.music.suno.editUnavailable')}</p> : null}
         </div>
       ) : null}
     </div>

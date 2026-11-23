@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
+import { useI18n } from '../../../../components/I18nProvider';
+import { tOr } from '../../../../lib/i18n/translate.mjs';
 
 function friendlyError(reason) {
-  if (reason?.code === 'revision_conflict') return 'Your song or Custom draft changed. Close and reopen Reuse before replacing any fields.';
-  if (reason?.code === 'reuse_unavailable') return 'This version has no reusable lyrics or style direction.';
-  if (reason?.code === 'model_unavailable') return 'The verified Custom draft target is currently unavailable.';
-  return 'The reusable material could not be loaded or applied. Your existing Custom draft is unchanged.';
+  if (reason?.code === 'contract_stale') return 'reuse_contract_refreshed';
+  return ['revision_conflict', 'reuse_unavailable', 'model_unavailable'].includes(reason?.code) ? reason.code : 'reuse_failed';
 }
 
 export function MusicReuseDialog({ song, onClose }) {
+  const { t } = useI18n();
   const closeRef = useRef(null);
   const keyRef = useRef(null);
   const [context, setContext] = useState(null);
@@ -21,22 +22,28 @@ export function MusicReuseDialog({ song, onClose }) {
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
 
+  const loadContext = useCallback(async (isActive = () => true) => {
+    const result = await gatewayFetch(`/music/songs/${song.id}/reuse?version_id=${encodeURIComponent(song.version_id)}`);
+    if (!isActive()) return null;
+    setContext(result);
+    setReuseLyrics(result.source?.has_lyrics === true);
+    setReuseStyles(result.source?.has_styles === true);
+    return result;
+  }, [song.id, song.version_id]);
+
   useEffect(() => {
     closeRef.current?.focus();
     let active = true;
-    gatewayFetch(`/music/songs/${song.id}/reuse?version_id=${encodeURIComponent(song.version_id)}`)
-      .then((result) => {
-        if (!active) return;
-        setContext(result);
-        setReuseLyrics(result.source?.has_lyrics === true);
-        setReuseStyles(result.source?.has_styles === true);
-      })
-      .catch((reason) => { if (active) setError(friendlyError(reason)); })
-      .finally(() => { if (active) setBusy(false); });
+    const timer = window.setTimeout(() => {
+      loadContext(() => active)
+        .then(() => { if (!active) return; })
+        .catch((reason) => { if (active) setError(friendlyError(reason)); })
+        .finally(() => { if (active) setBusy(false); });
+    }, 0);
     function key(event) { if (event.key === 'Escape') onClose(); }
     document.addEventListener('keydown', key);
-    return () => { active = false; document.removeEventListener('keydown', key); };
-  }, [onClose, song.id, song.version_id]);
+    return () => { active = false; window.clearTimeout(timer); document.removeEventListener('keydown', key); };
+  }, [loadContext, onClose]);
 
   async function applyReuse() {
     if (busy || saved || (!reuseLyrics && !reuseStyles) || !context) return;
@@ -47,6 +54,8 @@ export function MusicReuseDialog({ song, onClose }) {
         method: 'POST',
         body: JSON.stringify({
           version_id: song.version_id,
+          provider_contract: context.provider_contract,
+          draft_id: context.draft_id,
           draft_revision: context.draft_revision,
           reuse_lyrics: reuseLyrics,
           reuse_styles: reuseStyles,
@@ -54,7 +63,13 @@ export function MusicReuseDialog({ song, onClose }) {
         }),
       });
       setSaved(result.draft);
-    } catch (reason) { setError(friendlyError(reason)); }
+    } catch (reason) {
+      setError(friendlyError(reason));
+      if (reason?.code === 'contract_stale') {
+        keyRef.current = null;
+        try { await loadContext(); } catch {}
+      }
+    }
     finally { setBusy(false); }
   }
 
@@ -76,7 +91,7 @@ export function MusicReuseDialog({ song, onClose }) {
           </div>
         ) : null}
         {saved ? <div className="mt-6 rounded-2xl border border-vx-accent/40 bg-vx-accent/10 p-4"><p className="font-bold text-vx-fg">Reusable material saved to Custom.</p><p className="mt-1 text-sm text-vx-fg-muted">Private draft revision {saved.revision} is ready for review. Nothing was generated or charged.</p><Link href="/app/music/create?mode=custom" className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-vx-accent px-5 font-bold text-vx-accent-ink">Open reused Custom draft</Link></div> : null}
-        {error ? <p role="alert" className="mt-4 rounded-xl border border-vx-danger/40 bg-vx-danger/10 p-3 text-sm text-vx-danger">{error}</p> : null}
+        {error ? <p role="alert" className="mt-4 rounded-xl border border-vx-danger/40 bg-vx-danger/10 p-3 text-sm text-vx-danger">{tOr(t, `app.music.suno.err.${error}`, t('app.music.suno.err.unknown'))}</p> : null}
       </section>
     </div>
   );
