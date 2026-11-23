@@ -1,12 +1,11 @@
 import { rawText } from '../../../lib/i18n/translate';
-import { Text as StatusText } from '../../../components/ui/Text';
 import { LoadError } from '../../../components/publish/LoadError';
-import { Button, Text as ThemedText, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Button, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { NetworkLogo } from '../../../components/publish/NetworkLogo';
 import { networkName } from '../../../lib/networkLogos';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, SectionList, StyleSheet, View } from 'react-native';
 import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t, plural } from '../../../lib/i18n';
 import { approveBatch, batchGroups, discardDrafts, draftActionErrorKey, draftsErrorKey, fetchDrafts, groupNetworks, type Draft } from '../../../lib/publishDrafts';
@@ -95,7 +94,7 @@ export default function Drafts() {
                 stickySectionHeadersEnabled={false}
                 ListHeaderComponent={<View style={styles.header}>
                     <Text style={styles.intro}>{t('drafts.intro')}</Text>
-                    {notice ? <StatusText variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</StatusText> : null}
+                    {notice ? <Text variant="inherit" style={styles.notice} accessibilityLiveRegion="polite">{notice}</Text> : null}
                     {groups.length === 0 ? <><Text style={styles.muted}>{t('drafts.none')}</Text><Button variant="secondary" label={t('publish.newpost')} onPress={() => router.push('/publish/compose')} /></> : null}
                 </View>}
                 renderSectionHeader={({ section: g }) => (
@@ -119,7 +118,7 @@ export default function Drafts() {
                     <View style={styles.card} accessible accessibilityLabel={rawText(`${d.text.slice(0, 80)}. ${d.networks.map(networkName).join(', ')}`)}>
                         <Text style={styles.text} numberOfLines={4}>{d.text || t('drafts.noText')}</Text>
                         {d.scheduledAt ? <Text style={styles.muted}>{t('drafts.plannedFor', { when: when(d.scheduledAt) ?? '' })}</Text> : null}
-                        {d.networks.map(network => <View key={network} style={networkStyles.row}><NetworkLogo network={network} /><ThemedText tone="secondary">{networkName(network)}</ThemedText></View>)}
+                        {d.networks.map(network => <View key={network} style={networkStyles.row}><NetworkLogo network={network} /><Text tone="secondary">{networkName(network)}</Text></View>)}
                         {d.mediaTypes.length ? <Text style={styles.muted}>{d.mediaTypes.join(', ')}</Text> : null}
                         {g.batchId ? (
                             <Pressable accessibilityRole="button" accessibilityLabel={t('drafts.discardOne')} disabled={busy} style={[styles.discardBtn, touchTarget, busy && styles.off]} onPress={() => discard(g.batchId as string, [d], d.id)}>

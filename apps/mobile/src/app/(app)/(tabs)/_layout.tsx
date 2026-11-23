@@ -36,7 +36,7 @@ export default function TabsLayout() {
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
     const insets = useSafeAreaInsets();
-    const { width } = useWindowDimensions();
+    const { width, fontScale } = useWindowDimensions();
     // While the side menu is open the screens behind it are hidden from screen readers (QA-A1).
     const menuOpen = useMenuOpen();
     return (
@@ -49,7 +49,7 @@ export default function TabsLayout() {
                     // The action group is much wider than the menu button. Leading alignment keeps the complete
                     // VEYRNOX.ai wordmark clear of credits, theme and account on compact phones.
                     headerTitleAlign: 'left',
-                    headerTitle: () => <Logo size={20} wordmark={tabHeaderShowsWordmark(width)} palette={palette} />,
+                    headerTitle: () => <Logo size={20} wordmark={tabHeaderShowsWordmark(width, fontScale)} palette={palette} />,
                     headerLeft: () => <MenuButton palette={palette} />,
                     headerRight: () => <HeaderRight palette={palette} />,
                     sceneStyle: { backgroundColor: palette.background, paddingLeft: insets.left, paddingRight: insets.right },

@@ -1,5 +1,12 @@
 import { StyleSheet } from 'react-native';
 import { colors, fonts } from '../../theme';
+export const EDITOR_MEANINGFUL_LABEL_MIN_SIZE = 12;
+export const EDITOR_DECORATIVE_RULER_FONT_SIZE = 10;
+export const EDITOR_MEANINGFUL_LABEL_STYLE_KEYS = [
+    'cutLabel', 'status', 'formatMeta', 'commandLabel', 'optionLabel', 'zoomValue', 'eyebrow', 'previewMeta',
+    'totalTime', 'timelineHelp', 'markerGlyph', 'trackLabel', 'trackState', 'clipTitle', 'clipMeta', 'trackEmpty',
+    'toolLabel', 'panelDetail', 'muted', 'transcriptTime', 'markerTime',
+] as const;
 export const styles = StyleSheet.create({
     loadingActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
     screen: { flex: 1, overflow: 'hidden', backgroundColor: colors.background },
@@ -33,10 +40,10 @@ export const styles = StyleSheet.create({
     timelineSectionWide: { flex: 1.1, minWidth: 160, maxHeight: undefined, minHeight: 0, borderEndWidth: StyleSheet.hairlineWidth },
     timelineHeading: { minHeight: 31, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12 }, timelineHelp: { flexShrink: 1, color: colors.muted, fontSize: 12, textAlign: 'right' },
     ruler: { minHeight: 44, flexDirection: 'row', alignItems: 'center', paddingStart: 72, paddingEnd: 10, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
-    rulerText: { color: colors.muted, fontSize: 12, fontVariant: ['tabular-nums'] }, rulerTicks: { flex: 1, height: 6, marginHorizontal: 7, borderStartWidth: 1, borderEndWidth: 1, borderColor: colors.borderStrong }, marker: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, markerGlyph: { color: colors.accent, fontSize: 12 },
+    rulerText: { color: colors.muted, fontSize: EDITOR_DECORATIVE_RULER_FONT_SIZE, fontVariant: ['tabular-nums'] }, rulerTicks: { flex: 1, height: 6, marginHorizontal: 7, borderStartWidth: 1, borderEndWidth: 1, borderColor: colors.borderStrong }, marker: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, markerGlyph: { color: colors.accent, fontSize: 12 },
     lanes: { position: 'relative' }, track: { minHeight: 38, flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
     trackName: { width: 70, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, borderEndWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.surface },
-    trackGlyph: { width: 13, color: colors.body, fontSize: 12, fontWeight: '800', textAlign: 'center' }, trackCopy: { flex: 1, minWidth: 0 }, trackLabel: { color: colors.muted, fontSize: 12, fontWeight: '900', letterSpacing: 0.7 }, trackState: { color: colors.accent, fontSize: 12, fontWeight: '800', marginTop: 1 },
+    trackGlyph: { width: 13, color: colors.body, fontSize: 12, fontWeight: '800', textAlign: 'center' }, trackCopy: { flex: 1, minWidth: 0 }, trackLabel: { color: colors.muted, fontSize: 12, fontWeight: '900', letterSpacing: 0.7 }, trackState: { minWidth: 0, flexShrink: 1, color: colors.accent, fontSize: 12, fontWeight: '800', marginTop: 1 },
     clips: { minWidth: 305, alignItems: 'center', gap: 4, paddingHorizontal: 5, paddingVertical: 4 }, clip: { width: 112, minHeight: 44, justifyContent: 'center', paddingHorizontal: 8, borderRadius: 6, borderWidth: 1 },
     videoClip: { borderColor: '#287f86', backgroundColor: 'rgba(36, 142, 151, 0.24)' }, audioClip: { borderColor: '#9563c9', backgroundColor: 'rgba(149, 99, 201, 0.22)' }, textClip: { borderColor: '#a07d36', backgroundColor: 'rgba(202, 157, 65, 0.20)' },
     clipSelected: { borderColor: colors.accent, borderWidth: 2 }, clipTitle: { color: colors.text, fontSize: 12, fontWeight: '700' }, clipMeta: { color: colors.muted, fontSize: 12, marginTop: 1 },

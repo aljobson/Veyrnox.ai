@@ -43,9 +43,9 @@ describe('orientation-safe layout contracts', () => {
         expect(onboardingChoiceLayout(width, fontScale, appScale)).toBe(expected);
     });
 
-    test.each([[320, false], [360, false], [389, false], [390, true], [430, true]] as const)(
-        'the %ipx tab header wordmark visibility is %s', (width, expected) => {
-            expect(tabHeaderShowsWordmark(width)).toBe(expected);
+    test.each([[320, 1, false], [360, 1, false], [389, 1, false], [390, 1, true], [430, 1, true], [390, 1.6, false], [430, 1.6, false]] as const)(
+        'the %ipx tab header at %ix text scale wordmark visibility is %s', (width, fontScale, expected) => {
+            expect(tabHeaderShowsWordmark(width, fontScale)).toBe(expected);
         },
     );
 });
