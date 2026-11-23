@@ -3666,6 +3666,36 @@
     "ratio": 3.33
   },
   {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Masculino",
+    "ratio": 2.25
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "Desativada",
+    "ratio": 3.33
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Máxima",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.style.cinematic",
+    "english": "Cinematic",
+    "translation": "Cinematográfico",
+    "ratio": 1.67
+  },
+  {
     "id": "musicActions.stems.title",
     "english": "Stems",
     "translation": "Faixas separadas",

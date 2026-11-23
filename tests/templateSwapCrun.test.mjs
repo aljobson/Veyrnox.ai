@@ -155,7 +155,8 @@ test('an upstream message with a signed URL never leaves the adapter; failover c
   t.mock.restoreAll();
   t.mock.method(globalThis, 'fetch', async () => Response.json({ code: 400, message: 'plain refusal' }, { status: 400 }));
   const other = await submitTask({ job_id: 'job-2', provider_endpoint: 'crun:kling/v2-6', inputs: { prompt: 'a cat' } }, { apiKey: 'k' });
-  assert.equal(other.error, 'crun 400/400: plain refusal', 'existing Crun models keep their message');
+  // Plan D8 (Crun Suno): every non-swap Crun model now uses the sanitized boundary, so vendor text never reaches results or logs.
+  assert.equal(other.error, 'provider_refused', 'ordinary Crun models no longer echo vendor text');
 });
 
 test('with the private row active a swap debits it and submits one Crun task; the client sees only the public offer', async t => {
@@ -298,7 +299,9 @@ test('replay crosses activation and rollback without a second task on the other 
 test('rollback leaves a submitted Crun job pollable: it completes or refunds through its retained route', async t => {
   const rows = { model_routes: [{ model_id: PRIVATE, endpoint: ENDPOINT }], jobs: [{ id: JOB, user_id: AUTH, credits: 47, state: 'SUBMITTED', provider_job_id: 'crun-task-1', created_at: new Date().toISOString(), model_id: PRIVATE }] };
   t.mock.method(globalThis, 'fetch', async target => Response.json(rows[new URL(String(target)).pathname.split('/').at(-1)] || []));
-  const args = { cfg: { supabaseUrl: 'https://db.test', serviceRoleKey: 'k' }, r2cfg: { accountId: 'a', accessKeyId: 'b', secretAccessKey: 'c', bucket: 'd' }, apiKey: 'k' };
+  const args = { cfg: { supabaseUrl: 'https://db.test', serviceRoleKey: 'k' }, r2cfg: { accountId: 'a', accessKeyId: 'b', secretAccessKey: 'c', bucket: 'd' }, apiKey: 'k',
+    // The shared TaskInfo pacer needs its reservation RPC; this test is about the retained route, not pacing.
+    pace: async () => true };
   const settled = [];
   const complete = async call => { settled.push(call); return { status: 200, body: {} }; };
   assert.equal((await sweepCrun({ ...args, complete, read: async () => ({ ok: true, state: 'success', outputUrl: 'https://static.test/out.mp4' }) })).applied, 1);

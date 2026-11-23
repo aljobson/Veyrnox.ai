@@ -3798,6 +3798,30 @@
     "ratio": 2.67
   },
   {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Männlich",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.weirdness",
+    "english": "Weirdness",
+    "translation": "Ungewöhnlichkeit",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Maximal",
+    "ratio": 2.33
+  },
+  {
     "id": "musicActions.action.network",
     "english": "Could not connect. Check your connection and try again.",
     "translation": "Die Verbindung konnte nicht hergestellt werden. Prüfe deine Verbindung und versuche es erneut.",

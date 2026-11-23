@@ -1980,6 +1980,12 @@
     "ratio": 1.83
   },
   {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "متوقف",
+    "ratio": 1.67
+  },
+  {
     "id": "musicActions.action.reload",
     "english": "Reload song",
     "translation": "إعادة تحميل الأغنية",

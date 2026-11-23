@@ -3732,6 +3732,54 @@
     "ratio": 3.67
   },
   {
+    "id": "music.create.suno.offer",
+    "english": "Music model",
+    "translation": "Музыкальная модель",
+    "ratio": 1.64
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Мужской",
+    "ratio": 1.75
+  },
+  {
+    "id": "music.create.suno.variety",
+    "english": "Variety",
+    "translation": "Вариативность",
+    "ratio": 1.86
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "Выкл.",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.create.suno.variety.2",
+    "english": "High",
+    "translation": "Высокая",
+    "ratio": 1.75
+  },
+  {
+    "id": "music.create.suno.variety.3",
+    "english": "Extra",
+    "translation": "Дополнительная",
+    "ratio": 2.8
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Максимальная",
+    "ratio": 4
+  },
+  {
+    "id": "music.create.suno.style.cinematic",
+    "english": "Cinematic",
+    "translation": "Кинематографичный",
+    "ratio": 1.89
+  },
+  {
     "id": "musicActions.action.reload",
     "english": "Reload song",
     "translation": "Загрузить песню заново",
