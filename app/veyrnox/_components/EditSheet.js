@@ -1,4 +1,5 @@
 'use client';
+import { pushJobHistory } from '../_lib/jobHistory';
 import { mixedShapes, shapeMismatch, shapeValue } from '../../../lib/videoShape.mjs';
 import { VideoShapeBadge } from './VideoShapeBadge';
 import { useI18n } from '../../../components/I18nProvider';
@@ -198,7 +199,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         method: 'POST',
         body: JSON.stringify({ model_id: 'clip-edit', idempotency_key: makeIdempotencyKey(), inputs }),
       });
-      onSubmitted({ job_id: r.job_id, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
+      pushJobHistory({ job_id: r.job_id, idempotent: r.idempotent, model_id: 'clip-edit', credits: cost });
+      onSubmitted({ job_id: r.job_id, idempotent: r.idempotent, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
     } catch (e) {
       setError(e instanceof GatewayError ? e.code : INTERNAL_ERROR);
       setBusy(false);

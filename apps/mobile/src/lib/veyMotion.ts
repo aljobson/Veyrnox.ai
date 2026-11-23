@@ -2,7 +2,7 @@
 // or changes anything.
 export type VeyMood = 'idle' | 'hop' | 'cheer' | 'clap' | 'worried' | 'working' | 'wave';
 
-export type CelebrationKind = 'firstCreation' | 'firstVideo' | 'afterOnboarding';
+export type CelebrationKind = 'firstCreation' | 'firstVideo' | 'afterOnboarding' | 'success';
 export type CelebrationEvent = { onShown: () => void; onDone: () => void } & (
     { kind: CelebrationKind } | { kind: 'winsMilestone'; milestone: import('./yourWins').MilestoneKey }
 );

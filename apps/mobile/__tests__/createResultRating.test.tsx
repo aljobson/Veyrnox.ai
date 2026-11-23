@@ -14,7 +14,7 @@ jest.mock('../src/lib/createResult', () => ({
     useJobResult: () => ({ state: 'succeeded', job: { refunded: false }, asset: { url: 'https://x/a.png', mime_type: 'image/png' } }),
     soundPassFor: () => null,
 }));
-jest.mock('../src/lib/celebrate', () => ({
+jest.mock('../src/lib/celebrate', () => ({ ...jest.requireActual('../src/lib/celebrate'),
     celebrateOutput: jest.fn(() => ({ big: true, done: Promise.resolve() })),
     afterCelebration: jest.fn((_r: unknown, _d: number, _s: AbortSignal, cb: () => void) => { cb(); return () => {}; }),
 }));

@@ -446,7 +446,7 @@ const ar = {
     'presets.swap.submitting': 'جارٍ بدء الفيديو…',
     'presets.swap.queued': 'تم قبول الفيديو. التكلفة: {credits} رصيد. افتح المكتبة لمتابعته.',
     'presets.swap.running': 'جارٍ إنشاء الفيديو. افتح المكتبة لمتابعته.',
-    'presets.swap.succeeded': 'الفيديو جاهز. افتح المكتبة لمشاهدته.',
+    'presets.swap.succeeded': 'الفيديو جاهز.',
     'presets.swap.busy_background': 'استخدم صورة بخلفية بسيطة ولا يظهر فيها سواك.',
     'presets.swap.ragged_matte': 'حواف القص غير واضحة. استخدم صورة بخلفية بسيطة ولا يظهر فيها سواك.',
     'presets.swap.several_people': 'تم اكتشاف عدة أشخاص. استخدم صورة لك وحدك بخلفية بسيطة.',

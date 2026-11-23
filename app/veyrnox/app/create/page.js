@@ -766,7 +766,7 @@ function CreateStudio() {
         (i === 0 ? startJobs : addJob)({ job_id: submitted.job_id, state: 'queued', credits: jobCredits, model_id: modelId, ...submittedPresentation });
         if (i === 0) trackJourneyJob(submitted.job_id, model.kind, submittedTask);
         pushJobHistory({
-          job_id: submitted.job_id,
+          idempotent: submitted.idempotent, recovering: run.unknown.has(i), job_id: submitted.job_id,
           model_id: modelId,
           credits: jobCredits,
           ...jobHistoryLabels(activeTemplate || keptTemplate, prompt),
@@ -892,7 +892,7 @@ function CreateStudio() {
               className={`relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`}
               style={{ aspectRatio: resultAspect.replace(':', '/') }}
             >
-              {job?.asset_url ? (
+              {(job?.asset_url || job?.state === 'succeeded') ? (
                 <JobAssetPreview job={job} />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">

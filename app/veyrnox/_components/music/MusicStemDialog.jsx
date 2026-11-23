@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMusicCelebrations } from '../../_lib/useMusicCelebrations';
 import { gatewayFetch } from '../../_lib/gateway';
 
 const TERMINAL = new Set(['ready', 'failed', 'refunded']);
@@ -20,6 +21,7 @@ export function MusicStemDialog({ song, onClose }) {
   const [rights, setRights] = useState(false);
   const [quote, setQuote] = useState(null);
   const [request, setRequest] = useState(null);
+  const registerCelebration = useMusicCelebrations(request ? [request] : []);
   const [archive, setArchive] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -65,6 +67,7 @@ export function MusicStemDialog({ song, onClose }) {
         method: 'POST',
         body: JSON.stringify({ quote_id: quote.quote_id, idempotency_key: key }),
       });
+      registerCelebration(accepted, quote.total_credits);
       attemptRef.current = null;
       setRequest({ id: accepted.request_id, job_id: accepted.job_id, state: accepted.state });
       await refresh(accepted.request_id);

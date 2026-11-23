@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useI18n } from '../../../components/I18nProvider';
 import { getSession, onSessionChange } from '../../lib/authClient';
 import { gatewayDownload, gatewayFetch } from '../_lib/gateway';
+import { pushJobHistory } from '../_lib/jobHistory';
+import { VoiceCloneResult } from './VoiceCloneResult';
 import { MfaPanel } from './MfaPanel';
 
 const CONSENT_VERSION = 'voice-owner-2026-10-25';
@@ -165,6 +167,7 @@ export default function VoiceCloneStudio() {
         method: 'POST',
         body: JSON.stringify({ text: speechText, idempotency_key: `voice-${crypto.randomUUID()}` }),
       });
+      if (result.job_id) pushJobHistory({ job_id: result.job_id, idempotent: result.idempotent, credits: result.credits, name: profile.name });
       setSpeechJob(result.job_id || '');
       setSpeechText('');
     });
@@ -239,11 +242,11 @@ export default function VoiceCloneStudio() {
             <span className="font-vx-mono text-[10px] text-vx-fg-faint">{speechText.length}/1000</span>
           </div>
           <p className="mt-3 text-sm leading-6 text-vx-fg-muted">{t('app.voiceClone.speakHelp')}</p>
-          <textarea value={speechText} maxLength={1000} rows={6} onChange={(event) => { setSpeechText(event.target.value); setSpeechJob(''); }} placeholder={t('app.voiceClone.speakPlaceholder')} className="mt-4 w-full resize-y rounded-xl border border-vx-field bg-vx-base px-4 py-3 text-sm focus:border-vx-accent focus:outline-hidden" />
+          <textarea value={speechText} maxLength={1000} rows={6} onChange={(event) => { setSpeechText(event.target.value); }} placeholder={t('app.voiceClone.speakPlaceholder')} className="mt-4 w-full resize-y rounded-xl border border-vx-field bg-vx-base px-4 py-3 text-sm focus:border-vx-accent focus:outline-hidden" />
           {!speechAvailable && <p role="status" className="mt-3 rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-xs leading-5 text-vx-fg-muted">{t('app.voiceClone.speakUnavailable')}</p>}
           <button type="button" disabled={!speechAvailable || !speechText.trim() || busy} onClick={generateSpeech} className="mt-5 min-h-12 rounded-full bg-vx-accent px-6 text-sm font-black text-vx-accent-ink disabled:opacity-45">{busy === 'speech' ? t('app.voiceClone.working') : t('app.voiceClone.speakAction')}</button>
           <p className="mt-3 text-xs text-vx-fg-muted">{t('app.voiceClone.speakPrice')}</p>
-          {speechJob && <div role="status" className="mt-4 rounded-xl border border-vx-accent/40 bg-vx-accent/[0.06] px-4 py-3 text-sm"><p className="font-black">{t('app.voiceClone.speakDone')}</p><Link href="/app/library" className="mt-2 inline-block font-bold text-vx-accent underline underline-offset-4">{t('app.voiceClone.openLibrary')}</Link></div>}
+          {speechJob && <VoiceCloneResult key={speechJob} jobId={speechJob} />}
         </section>}
 
         {error && <p role="alert" className="rounded-xl border border-vx-danger/35 bg-vx-danger/[0.06] px-4 py-3 text-sm text-vx-danger">{t('app.voiceClone.error', { code: error })}</p>}

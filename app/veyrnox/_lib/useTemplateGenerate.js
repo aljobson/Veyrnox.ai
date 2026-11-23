@@ -79,7 +79,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
         freeAllowance: async () => { const r = await gatewayFetch('/free-allowance'); return r?.enabled ? r.left : {}; },
         onJob: (submitted, credits) => {
           startJobs({ job_id: submitted.job_id, state: 'queued', credits, model_id: model.id, ...presentation });
-          pushJobHistory({ job_id: submitted.job_id, model_id: model.id, credits, ...jobHistoryLabels(preset, prompt) });
+          pushJobHistory({ idempotent: submitted.idempotent, recovering: run.unknown.has(0), job_id: submitted.job_id, model_id: model.id, credits, ...jobHistoryLabels(preset, prompt) });
           if (submitted.balance_after != null) setBalance(submitted.balance_after);
         },
       } });
