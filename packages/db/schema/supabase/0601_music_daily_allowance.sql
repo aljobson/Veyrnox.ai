@@ -89,6 +89,10 @@ CREATE INDEX IF NOT EXISTS music_daily_allowance_claims_user_day_idx
   ON public.music_daily_allowance_claims(user_id,day,state);
 CREATE INDEX IF NOT EXISTS music_daily_allowance_claims_day_idx
   ON public.music_daily_allowance_claims(day,state);
+CREATE INDEX IF NOT EXISTS music_daily_allowance_claims_quote_idx
+  ON public.music_daily_allowance_claims(quote_id);
+CREATE INDEX IF NOT EXISTS music_daily_allowance_claims_model_idx
+  ON public.music_daily_allowance_claims(model_id);
 ALTER TABLE public.music_daily_allowance_claims ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.music_daily_allowance_claims FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.music_daily_allowance_claims FROM PUBLIC,anon,authenticated,service_role;

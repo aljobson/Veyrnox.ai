@@ -42,6 +42,8 @@ test('migration keeps both switches dark and serializes global then user reserva
   assert.match(sql, /UPDATE public\.music_daily_allowance_claims SET user_id=NULL/);
   assert.match(sql, /UPDATE public\.music_daily_allowance_claims c SET state='RETURNED'/);
   assert.match(sql, /music_return_drift/);
+  assert.match(sql, /music_daily_allowance_claims_quote_idx[\s\S]*\(quote_id\)/);
+  assert.match(sql, /music_daily_allowance_claims_model_idx[\s\S]*\(model_id\)/);
 });
 
 test('route contracts isolate entitlement failure and use unique capable RPC names', async () => {

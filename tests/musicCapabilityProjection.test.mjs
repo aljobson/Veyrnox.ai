@@ -15,6 +15,7 @@ register(data(`export async function resolve(specifier, context, nextResolve) {
     export const musicSchemaEnabled = () => true;
     export const musicGenerationEnabled = () => false;
     export const musicAlbumsEnabled = () => false;
+    export const musicDailyCreditsEnabled = () => false;
     export const musicEntitlementProjection = () => ({ available: true });
   `))}, shortCircuit: true };
   return nextResolve(specifier, context);
