@@ -26,6 +26,31 @@ function watchProgress(onChange) {
 }
 const noProgress = () => null;
 
+// Jobs a page draws in their own card (Create's canvas, the swap screen). The floating bar leaves those rows out,
+// so a job's progress shows once, on top of the generation it belongs to.
+let inline = new Set();
+let inlineWatchers = new Set();
+function watchInline(onChange) {
+  inlineWatchers = new Set([...inlineWatchers, onChange]);
+  return () => { inlineWatchers = new Set([...inlineWatchers].filter((w) => w !== onChange)); };
+}
+const noInline = () => new Set();
+const emptyInline = noInline();
+const inlineNow = () => inline;
+const inlineServer = () => emptyInline;
+/** Mark a job as drawn by its own card while the caller is mounted. */
+export function useInlineProgress(jobId) {
+  useEffect(() => {
+    if (!jobId) return undefined;
+    inline = new Set([...inline, jobId]);
+    inlineWatchers.forEach((notify) => notify());
+    return () => {
+      inline = new Set([...inline].filter((id) => id !== jobId));
+      inlineWatchers.forEach((notify) => notify());
+    };
+  }, [jobId]);
+}
+
 /** `{ percent, elapsedMs }` for a job the bar is tracking, else null. */
 export function useGenerationProgress(jobId) {
   return useSyncExternalStore(watchProgress, () => progress.get(jobId) ?? null, noProgress);
@@ -90,6 +115,19 @@ function useBarRows() {
   return [...rows, ...finished.filter((f) => !rows.some((r) => r.job_id === f.job_id))];
 }
 
+/** The percent and the bar itself, for a card that shows a job's progress in its own layout. */
+export function ProgressMeter({ percent }) {
+  const { t } = useI18n();
+  return (
+    <div className="mt-3 w-full max-w-sm">
+      <div className="flex justify-end font-vx-mono text-xs tabular-nums text-vx-fg">{percent}%</div>
+      <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={t('public.jobs.progress.aria', { percent })} className="mt-1 h-1.5 overflow-hidden rounded-full bg-vx-border">
+        <div className="h-full rounded-full bg-vx-accent transition-[width] duration-700 ease-out motion-reduce:transition-none" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function BarRow({ row }) {
   const { t } = useI18n();
   return (
@@ -117,7 +155,9 @@ function BarRow({ row }) {
 
 export function GenerationStatusBar() {
   const { t } = useI18n();
-  const shown = useBarRows();
+  const all = useBarRows();
+  const owned = useSyncExternalStore(watchInline, inlineNow, inlineServer);
+  const shown = all.filter((row) => !owned.has(row.job_id));
   if (!shown.length) return null;
   const visible = shown.slice(0, MAX_ROWS);
   const hidden = shown.length - visible.length;
