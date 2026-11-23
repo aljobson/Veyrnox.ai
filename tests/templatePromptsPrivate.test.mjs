@@ -335,3 +335,11 @@ test('web: Create, the template page and the prompt panel hydrate through Edit p
     assert.match(page, /prompt: finalPrompt\(\),/, 'Create still sends what the box holds');
     assert.match(readFileSync('app/veyrnox/_lib/templateGenerate.js', 'utf8'), /template_id: !templateClip && auditedInputs\.has\(inputs\)/);
 });
+
+test('an audio template keeps its prompt with the key on, because the signed-in route answers 404 for audio', () => {
+  const audio = kindTemplates('audio').templates[0];
+  assert.ok(audio, 'there is an audio template');
+  const detail = templateDetail(audio.id, { hidePrompt: true });
+  assert.equal(detail.prompt, templateDetail(audio.id).prompt);
+  assert.ok(!String(detail.prompt).includes('[[template-prompt:'));
+});
