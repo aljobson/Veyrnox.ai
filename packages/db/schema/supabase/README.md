@@ -9,6 +9,7 @@ Files here run **only against Supabase Postgres**, not against local Postgres.
 | Migration | State and activation |
 | --- | --- |
 | `0596_crun_qwen3_tts_speech.sql` | Qwen3 TTS inactive; required Crun standby route enables sweep discovery. Deploy Worker first. Activate only with a separate catalog flip after staging proof. |
+| `0597_crun_qwen3_tts_activate.sql` | Activates Qwen3 TTS (catalog row + Crun route, parity record from the 2026-11-23 staging proofs). Apply only after 0596 and a deployed Worker; owner's word. |
 
 ## Why separate
 
