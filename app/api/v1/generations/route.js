@@ -28,6 +28,7 @@ import { resolveRouteSet } from '../../../../lib/supplierRoutesDispatch.js';
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
+import { withDerivedAspect } from '../../../../lib/crunKlingO1Reference.js';
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJobDetailed } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
 import { crunInputRefusal } from '../../../../lib/crunInputRefusal.js';
@@ -358,7 +359,8 @@ export async function POST(req) {
     // refuse extras. Legacy records keep the shared-control filtering path.
     // Photo-to-video records that require a prompt while the create page calls it optional: fill an empty one.
     if (record.defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: record.defaultPrompt };
-    const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) });
+    // A record that needs a frame shape (Crun Kling O1 reference) gets it from the uploaded video's own size, never from the client.
+    const modelInputs = withDerivedAspect(record, record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) }), sources);
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
