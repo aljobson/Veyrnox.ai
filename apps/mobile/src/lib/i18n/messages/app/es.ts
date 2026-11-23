@@ -8741,4 +8741,8 @@ export default {
   "editorSpeech.autoStale": "El clip seleccionado cambió. Vuelve a iniciar los subtítulos.",
   "editorSpeech.autoFull": "La pista de subtítulos está llena. Quita algo de texto o algunos subtítulos e inténtalo de nuevo.",
   "editorSpeech.autoFailed": "No se pudieron crear los subtítulos. Inténtalo de nuevo con otro clip descargado."
+  ,"music.create.style_required": "Añade un estilo antes de revisar el precio.",
+  "music.create.draft_stale": "El borrador activo cambió. Se actualizó sin modificarlo; revisa el precio de nuevo.",
+  "music.create.draft_refreshed": "El borrador activo se actualizó sin cambios. Tu texto anterior se guardó por separado.",
+  "music.create.copy_previous_text": "Copiar el texto anterior en este borrador"
 } as const;

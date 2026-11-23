@@ -2,6 +2,37 @@
 -- version's authoritative asset facts, and fence local PCM edits by format.
 -- Existing fal signatures remain unchanged compatibility entry points.
 
+CREATE OR REPLACE FUNCTION public.music_get_crun_availability()
+RETURNS JSONB LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_admission BOOLEAN; v_endpoint BOOLEAN;
+BEGIN
+ SELECT admission_open INTO v_admission FROM public.provider_spend_provider_policy WHERE provider='crun';
+ v_admission:=COALESCE(v_admission,false);
+ SELECT NOT EXISTS(SELECT 1 FROM public.model_routes WHERE supplier='crun'
+  AND endpoint='crun:suno/music-generate' AND breaker_opened_at IS NOT NULL) INTO v_endpoint;
+ RETURN jsonb_build_object('ok',true,'admission_open',v_admission,'endpoint_open',v_endpoint,
+  'suno_models',jsonb_build_object(
+   'v6',NOT EXISTS(SELECT 1 FROM public.crun_suno_model_breakers WHERE endpoint='crun:suno/music-generate' AND suno_model='v6' AND is_open),
+   'v6_mini',NOT EXISTS(SELECT 1 FROM public.crun_suno_model_breakers WHERE endpoint='crun:suno/music-generate' AND suno_model='v6_mini' AND is_open),
+   'v6_wild',NOT EXISTS(SELECT 1 FROM public.crun_suno_model_breakers WHERE endpoint='crun:suno/music-generate' AND suno_model='v6_wild' AND is_open)));
+END $$;
+REVOKE ALL ON FUNCTION public.music_get_crun_availability() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.music_get_crun_availability() TO service_role;
+
+CREATE OR REPLACE FUNCTION private.music_crun_quote_available(p_endpoint TEXT,p_suno_model TEXT)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_admission BOOLEAN;
+BEGIN
+ SELECT admission_open INTO v_admission FROM public.provider_spend_provider_policy WHERE provider='crun' FOR SHARE;
+ IF NOT FOUND OR v_admission IS DISTINCT FROM true THEN RETURN false; END IF;
+ PERFORM 1 FROM public.model_routes WHERE supplier='crun' AND endpoint=p_endpoint
+  AND breaker_opened_at IS NOT NULL FOR SHARE;
+ IF FOUND THEN RETURN false; END IF;
+ PERFORM 1 FROM public.crun_suno_model_breakers WHERE endpoint=p_endpoint AND suno_model=p_suno_model AND is_open FOR SHARE;
+ RETURN NOT FOUND;
+END $$;
+REVOKE ALL ON FUNCTION private.music_crun_quote_available(TEXT,TEXT) FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE OR REPLACE FUNCTION public.music_create_quote(
  p_auth_id TEXT,p_prompt TEXT,p_title TEXT,p_model_id TEXT,p_variety INTEGER,
  p_style_influence INTEGER,p_exclude_styles TEXT,p_duration_seconds INTEGER,
@@ -21,6 +52,8 @@ BEGIN
   OR (p_exclude_styles IS NOT NULL AND char_length(btrim(p_exclude_styles)) NOT BETWEEN 1 AND 1000)
   OR p_duration_seconds NOT BETWEEN 1 AND 135
  THEN RETURN jsonb_build_object('ok',false,'code','INVALID_INPUTS'); END IF;
+ IF NOT private.music_crun_quote_available('crun:suno/music-generate',p_suno_model) THEN
+  RETURN jsonb_build_object('ok',false,'code','MUSIC_UNAVAILABLE','retry_after_seconds',60); END IF;
  SELECT CASE provider_endpoint WHEN 'fal-ai/ace-step' THEN 'fal-ace-v1'
   WHEN 'fal-ai/ace-step-1.5' THEN 'fal-ace-v1'
   WHEN 'crun:suno/music-generate' THEN 'crun-suno-v1' END INTO v_active
@@ -35,7 +68,9 @@ BEGIN
  IF v_custom AND NOT p_instrumental THEN
   RETURN jsonb_build_object('ok',false,'code','INVALID_INPUTS'); END IF;
 
+ PERFORM set_config('veyrnox.crun_suno_model',p_suno_model,true);
  v_result:=public.music_create_quote(p_auth_id,p_prompt,p_title,p_model_id);
+ PERFORM set_config('veyrnox.crun_suno_model','',true);
  IF v_result->>'ok' IS DISTINCT FROM 'true' THEN RETURN v_result; END IF;
  IF v_result->>'provider_contract' IS DISTINCT FROM p_provider_contract THEN
   RAISE EXCEPTION 'music quote contract changed during creation'; END IF;
@@ -77,8 +112,12 @@ BEGIN
   OR (p_variety IS NOT NULL AND p_variety NOT BETWEEN 0 AND 100)
   OR (p_exclude_styles IS NOT NULL AND char_length(btrim(p_exclude_styles)) NOT BETWEEN 1 AND 1000)
  THEN RETURN jsonb_build_object('ok',false,'code','INVALID_INPUTS'); END IF;
+ IF NOT private.music_crun_quote_available('crun:suno/music-generate',p_suno_model) THEN
+  RETURN jsonb_build_object('ok',false,'code','MUSIC_UNAVAILABLE','retry_after_seconds',60); END IF;
+ PERFORM set_config('veyrnox.crun_suno_model',p_suno_model,true);
  v_result:=public.music_create_custom_quote(p_auth_id,p_provider_contract,p_draft_id,
   p_draft_revision,p_instrumental,p_rights_confirmed,p_duration_seconds);
+ PERFORM set_config('veyrnox.crun_suno_model','',true);
  IF v_result->>'ok' IS DISTINCT FROM 'true' THEN RETURN v_result; END IF;
  IF v_result->>'provider_contract' IS DISTINCT FROM p_provider_contract THEN
   RAISE EXCEPTION 'music custom quote contract changed during creation'; END IF;
@@ -148,20 +187,20 @@ BEGIN
     'parent_version_id',cv.parent_version_id,'created_at',cv.created_at,
     'mime_type',ca.mime_type,'size_bytes',ca.size_bytes,
     'capabilities',jsonb_build_object(
-      'playback',ca.mime_type LIKE 'audio/%' AND ca.size_bytes>0,
-      'download',ca.mime_type LIKE 'audio/%' AND ca.size_bytes>0,
-      'render',ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,
-      'crop',ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,
-      'remix',ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,
-      'mashup',ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,
-      'sample',ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,
-      'stems',ca.mime_type IN ('audio/mpeg','audio/mp3') AND ca.size_bytes<=10485760,
-      'target_stem',ca.mime_type IN ('audio/mpeg','audio/wav'),
-      'track_add',ca.mime_type='audio/mpeg' AND ca.size_bytes<=10485760,
-      'cover',ca.mime_type IN ('audio/mpeg','audio/wav'),
-      'extend',ca.mime_type IN ('audio/mpeg','audio/wav'),
-      'replace_section',ca.mime_type IN ('audio/mpeg','audio/wav'),
-      'add_section',ca.mime_type IN ('audio/mpeg','audio/wav'))),
+      'playback',COALESCE(ca.mime_type LIKE 'audio/%' AND ca.size_bytes>0,false),
+      'download',COALESCE(ca.mime_type LIKE 'audio/%' AND ca.size_bytes>0,false),
+      'render',COALESCE(ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,false),
+      'crop',COALESCE(ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,false),
+      'remix',COALESCE(ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,false),
+      'mashup',COALESCE(ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,false),
+      'sample',COALESCE(ca.mime_type='audio/wav' AND ca.size_bytes<=26214400,false),
+      'stems',COALESCE(ca.mime_type IN ('audio/mpeg','audio/mp3') AND ca.size_bytes<=10485760,false),
+      'target_stem',COALESCE(ca.mime_type IN ('audio/mpeg','audio/wav'),false),
+      'track_add',COALESCE(ca.mime_type='audio/mpeg' AND ca.size_bytes<=10485760,false),
+      'cover',COALESCE(ca.mime_type IN ('audio/mpeg','audio/wav'),false),
+      'extend',COALESCE(ca.mime_type IN ('audio/mpeg','audio/wav'),false),
+      'replace_section',COALESCE(ca.mime_type IN ('audio/mpeg','audio/wav'),false),
+      'add_section',COALESCE(ca.mime_type IN ('audio/mpeg','audio/wav'),false))),
   'versions',(SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'id',v.id,'version_number',v.version_number,'operation',v.operation,
     'parent_version_id',v.parent_version_id,'is_current',v.id=s.current_version_id,
@@ -180,7 +219,7 @@ BEGIN
   'actions',jsonb_build_array('view_lineage','organize')) INTO v_row
  FROM public.music_songs s
  JOIN public.music_song_versions cv ON cv.id=s.current_version_id
- JOIN public.assets ca ON ca.id=cv.audio_asset_id
+ LEFT JOIN public.assets ca ON ca.id=cv.audio_asset_id
  WHERE s.id=p_song_id AND s.user_id=v_user AND s.status='active';
  IF v_row IS NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
  RETURN jsonb_build_object('ok',true,'song',v_row);

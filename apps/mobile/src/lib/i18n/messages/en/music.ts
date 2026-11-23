@@ -175,4 +175,8 @@ export default {
     "music.actions.editUnavailableForFormat": "Some editing tools are unavailable for this audio format. Playback and the actions shown above still work.",
     "music.create.durationPriceHint": "The price grows with length in 60-second steps. Review the quote to see the exact price before any credits move.",
     "music.create.longerGenerationHint": "Longer songs take longer to generate.",
+    "music.create.style_required": "Add a style before reviewing the price.",
+    "music.create.draft_stale": "The active draft changed. It was refreshed unchanged; review the price again.",
+    "music.create.draft_refreshed": "The active draft was refreshed unchanged. Your previous text is kept separately.",
+    "music.create.copy_previous_text": "Copy previous text into this draft",
 } as const;

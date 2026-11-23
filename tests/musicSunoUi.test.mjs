@@ -94,6 +94,7 @@ test('simple and custom quote wires carry contract and immutable draft identity'
   assert.equal(request.exclude_styles, 'noise');
   assert.equal(sunoCustomReady({ model, draft, controls: { instrumental: false, rightsConfirmed: true } }), true);
   assert.equal(sunoCustomReady({ model, draft: { ...draft, lyrics: '' }, controls: { instrumental: false, rightsConfirmed: true } }), false);
+  assert.equal(sunoCustomReady({ model, draft: { ...draft, styles: '  ' }, controls: { instrumental: true, rightsConfirmed: false } }), false);
 });
 
 test('style picker de-duplicates values and respects the projected cap', () => {
@@ -108,14 +109,14 @@ test('instrumental-only offers, stale drafts and format explanations preserve th
   assert.equal(sunoControlsForModel({}, controls), controls);
   assert.deepEqual(preserveSunoDraftText(
     { id: 'new', provider_contract: 'crun-suno-v1', revision: 1, lyrics: '', styles: '', title: '' },
-    { lyrics: 'local lyrics', styles: 'local style', title: 'local title' },
-  ), { id: 'new', provider_contract: 'crun-suno-v1', revision: 1, lyrics: 'local lyrics', styles: 'local style', title: 'local title' });
+    { id: 'old', provider_contract: 'fal-ace-v1', lyrics: 'local lyrics', styles: 'local style', title: 'local title' },
+  ), { id: 'new', provider_contract: 'crun-suno-v1', revision: 1, lyrics: '', styles: '', title: '' });
   assert.equal(sunoFormatEditsUnavailable({ playback: true, render: false, crop: false }), true);
   assert.equal(sunoFormatEditsUnavailable({ playback: true, render: true, crop: true, stems: false }), false);
   assert.equal(sunoFormatEditsUnavailable({ render: false, crop: false }), false, 'legacy rows do not get a misleading note');
 });
 
-test('draft hook refreshes stale identity while preserving local Suno text', async t => {
+test('draft hook refreshes stale identity unchanged and copies previous text only on explicit action', async t => {
   const previous = Object.getOwnPropertyDescriptor(globalThis, 'window');
   const timers = [];
   Object.defineProperty(globalThis, 'window', { configurable: true, value: { setTimeout: fn => { timers.push(fn); return timers.length; }, clearTimeout() {} } });
@@ -139,14 +140,22 @@ test('draft hook refreshes stale identity while preserving local Suno text', asy
   await custom.refresh();
   custom = render();
   assert.deepEqual({ id: custom.draft.id, contract: custom.draft.provider_contract, lyrics: custom.draft.lyrics, styles: custom.draft.styles, title: custom.draft.title }, {
-    id: 'new', contract: 'crun-suno-v1', lyrics: 'local lyrics', styles: 'local style', title: 'local title',
+    id: 'new', contract: 'crun-suno-v1', lyrics: 'server new', styles: 'new style', title: 'new title',
+  });
+  assert.deepEqual(custom.previousText, { lyrics: 'local lyrics', styles: 'local style', title: 'local title' });
+  assert.equal(custom.dirty, false);
+  assert.equal(custom.needsReview, true);
+  assert.equal(custom.notice, 'draft_refreshed');
+  custom.copyPreviousText();
+  custom = render();
+  assert.deepEqual({ lyrics: custom.draft.lyrics, styles: custom.draft.styles, title: custom.draft.title }, {
+    lyrics: 'local lyrics', styles: 'local style', title: 'local title',
   });
   assert.equal(custom.dirty, true);
-  assert.equal(custom.needsReview, true);
-  assert.equal(custom.notice, 'contract_refreshed');
+  assert.equal(custom.previousText, null);
 });
 
-test('quote hook normalizes stale contract codes, refreshes, then permits a re-quote', async () => {
+test('quote hook refreshes stale identity and retries once with the active draft request', async () => {
   const harness = hookHarness();
   const calls = [];
   let quoteAttempt = 0;
@@ -164,12 +173,12 @@ test('quote hook normalizes stale contract codes, refreshes, then permits a re-q
   });
   const render = () => harness.render(() => useMusicServerState({ active: false }));
   let state = render(), refreshed = 0;
-  assert.equal(await state.reviewQuote({ mode: 'custom' }, undefined, async () => { refreshed++; }), null);
+  const quote = await state.reviewQuote({ mode: 'custom', draft_id: 'old' }, undefined, async () => {
+    refreshed++;
+    return { mode: 'custom', draft_id: 'new' };
+  });
   state = render();
-  assert.equal(state.errorCode, 'contract_stale');
   assert.equal(refreshed, 1);
-  const quote = await state.reviewQuote({ mode: 'custom' });
-  state = render();
   assert.equal(quote.quote_id, 'fresh');
   assert.equal(state.quote.quote_id, 'fresh');
   assert.deepEqual(calls.map(([path]) => path), ['/music/generation-quotes', '/music/entitlements', '/music/generation-quotes']);
@@ -277,10 +286,13 @@ test('draft saves and pair confirmation carry contract identity and refresh stal
   assert.match(draft, /provider_contract: draft\.provider_contract/);
   assert.match(draft, /draft_id: draft\.id/);
   assert.match(draft, /contract_stale/);
-  assert.match(draft, /preserveSunoDraftText\(server, local\)/);
+  assert.match(draft, /draft_stale/);
+  assert.match(draft, /setPreviousText/);
+  assert.match(draft, /copyPreviousText/);
   assert.match(draft, /await onContractStale\?\.\(\)/);
   assert.match(state, /provider_contract: quote\.provider_contract/);
   assert.match(state, /REQUOTE_ERRORS[\s\S]*contract_stale/);
+  assert.match(state, /REQUOTE_ERRORS[\s\S]*draft_stale/);
   assert.match(state, /await loadEntitlements\(\)/);
   assert.match(draft, /needsReview/);
   assert.match(draft, /refresh/);

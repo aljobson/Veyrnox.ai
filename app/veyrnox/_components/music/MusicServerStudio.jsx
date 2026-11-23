@@ -221,6 +221,15 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
     setControls((current) => ({ ...current, [field]: value }));
   }
 
+  async function refreshQuoteRequest(freshEntitlements) {
+    const serverDraft = await custom.refresh(false);
+    const activeModel = freshEntitlements?.models?.find((item) => item.id === serverDraft?.model_id
+      && isSunoContract(item) && item.generation_modes?.includes('custom') && item.available !== false);
+    return serverDraft && activeModel
+      ? sunoCustomQuoteRequest({ model: activeModel, draft: serverDraft, controls })
+      : null;
+  }
+
   async function review() {
     if (!sunoCustomReady({ model, draft: custom.draft, controls }) || busy || custom.status === 'saving') return;
     if (custom.draft.provider_contract !== model.provider_contract) {
@@ -230,7 +239,7 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
     const startedAt = quoteRevisionNow();
     const saved = custom.dirty || !custom.draft.id ? await custom.saveNow() : custom.draft;
     if (!saved) return;
-    await reviewQuote(sunoCustomQuoteRequest({ model, draft: saved, controls }), startedAt, custom.refresh);
+    await reviewQuote(sunoCustomQuoteRequest({ model, draft: saved, controls }), startedAt, refreshQuoteRequest);
   }
 
   if (!custom.loaded) return <div aria-busy="true" className="space-y-3"><div className="vx-shimmer h-48 rounded-2xl bg-vx-base"/><div className="vx-shimmer h-12 rounded-xl bg-vx-base"/></div>;
@@ -240,6 +249,7 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
   return (
     <>
       {custom.notice ? <p role="status" className="rounded-xl border border-vx-accent/40 bg-vx-accent/[0.06] p-3 text-sm text-vx-fg-body">{t(`app.music.suno.${custom.notice}`)}</p> : null}
+      {custom.previousText ? <button type="button" onClick={custom.copyPreviousText} className="min-h-11 rounded-full border border-vx-accent px-4 text-sm font-bold">{t('app.music.suno.copyPreviousText')}</button> : null}
       <label className="flex min-h-12 items-center justify-between gap-4 rounded-2xl border border-vx-border bg-vx-base px-4 py-3 text-sm font-bold text-vx-fg-body">
         <span>{t('app.music.suno.instrumental')}</span>
         <input type="checkbox" checked={controls.instrumental} onChange={(event) => updateControl('instrumental', event.target.checked)} className="h-5 w-5 accent-vx-accent" />
@@ -251,7 +261,7 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
       {custom.conflict ? <div className="flex flex-wrap gap-2"><button type="button" onClick={custom.loadNewer} className="min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">{t('app.music.suno.useServer')}</button><button type="button" onClick={custom.keepMine} className="min-h-11 rounded-full border border-vx-accent px-4 text-sm font-bold">{t('app.music.suno.keepMine')}</button></div> : null}
       {quote?.mode === 'custom' ? <div className="rounded-xl border border-vx-border-boost p-3 text-sm"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="float-right font-vx-mono text-vx-money">{musicCredits(t, locale, quote.total_credits)}</strong></div> : null}
       {quote?.mode === 'custom'
-        ? <button type="button" onClick={() => confirmQuote({ title: custom.draft.title.trim(), onContractStale: custom.refresh })} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? t('app.music.suno.sending') : t('app.music.suno.sendWithCredits', { credits: musicCredits(t, locale, quote.total_credits) })}</button>
+        ? <button type="button" onClick={() => confirmQuote({ title: custom.draft.title.trim(), onContractStale: refreshQuoteRequest })} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? t('app.music.suno.sending') : t('app.music.suno.sendWithCredits', { credits: musicCredits(t, locale, quote.total_credits) })}</button>
         : <button type="button" onClick={review} disabled={!ready || Boolean(busy)} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'quoting' ? t('app.music.suno.quoting') : t('app.music.suno.reviewPrice')}</button>}
     </>
   );
@@ -300,6 +310,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
       </section>
     );
   }
+  const previousTextAction = custom.previousText ? <button type="button" onClick={custom.copyPreviousText} className="min-h-10 rounded-full border border-vx-accent px-4 text-sm font-bold">{t('app.music.suno.copyPreviousText')}</button> : null;
 
   async function launchLyricAssistant({ request, prompt, selection = null }) {
     if (!prompt) return;
@@ -484,6 +495,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
           </div>
         </section>
       ) : null}
+      {previousTextAction}
 
       <div className="rounded-2xl border border-dashed border-vx-border-boost bg-vx-base p-4">
         <div aria-live="polite" className="text-sm text-vx-fg-body">

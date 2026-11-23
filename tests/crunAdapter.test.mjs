@@ -72,6 +72,10 @@ test('CreateTask and TaskInfo classifiers never retain vendor text', () => {
   assert.deepEqual(rejected, { httpStatus: 422, bodyCode: 422, class: 'rejected', errorCode: 'provider_input_rejected' });
   assert.doesNotMatch(JSON.stringify(sanitizeCrunFailure(rejected)), /SECRET-VENDOR-SENTINEL/);
   assert.equal(classifyCreateTaskResponse(429, { code: 429, message: sentinel }).class, 'deferred');
+  assert.equal(classifyCreateTaskResponse(429, { code: 200, message: sentinel }).class, 'deferred');
+  assert.equal(classifyCreateTaskResponse(401, { code: 200, message: sentinel }).class, 'account');
+  assert.equal(classifyCreateTaskResponse(200, { code: 429, message: sentinel }).class, 'deferred');
+  assert.equal(classifyCreateTaskResponse(400, { code: 401, message: sentinel }).class, 'rejected');
   assert.equal(classifyCreateTaskResponse(503, { code: 503, message: sentinel }).class, 'unknown');
   assert.equal(classifyCreateTaskResponse(200, { code: 200, data: {} }).class, 'unknown');
   assert.deepEqual(classifyTaskInfoResponse(200, { code: 501, message: sentinel }), {

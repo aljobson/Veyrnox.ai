@@ -176,16 +176,23 @@ export function classifyCreateTaskResponse(httpStatus, body) {
     const status = safeCode(httpStatus);
     const bodyCode = safeCode(body?.code, status);
     const base = { httpStatus: status, bodyCode };
-    // A timeout/5xx is ambiguous even when a proxy attaches a documented
-    // refusal code to a JSON error body.
+    // A known non-200 HTTP status is authoritative. A contradictory success
+    // code in the body must never turn 401/429 into acceptance or a refund.
     if (status === 408 || status >= 500) return { ...base, class: 'unknown', errorCode: status === 408 ? 'provider_timeout' : 'provider_unreachable' };
+    if ([401, 402, 403].includes(status)) return { ...base, class: 'account', errorCode: status === 402 ? 'provider_payment_required' : 'provider_auth_failed' };
+    if (status === 429) return { ...base, class: 'deferred', errorCode: 'provider_rate_limited' };
+    if ([455, 505].includes(status)) return { ...base, class: 'route', errorCode: 'provider_route_unavailable' };
+    if (status === 422) return { ...base, class: 'rejected', errorCode: 'provider_input_rejected' };
+    if (status === 451) return { ...base, class: 'rejected', errorCode: 'provider_moderation' };
     if (status === 200 && bodyCode === 200) {
         const taskId = body?.data?.task_id;
         return typeof taskId === 'string' && TASK_ID_RE.test(taskId)
             ? { ...base, class: 'accepted', taskId }
             : { ...base, class: 'unknown', errorCode: 'provider_missing_task_id' };
     }
-    const code = bodyCode || status;
+    // HTTP 200 may carry the documented refusal code. For other compatible
+    // responses, a matching body code corroborates the HTTP classification.
+    const code = status === 200 ? bodyCode : status;
     if (code === 422) return { ...base, class: 'rejected', errorCode: 'provider_input_rejected' };
     if (code === 451) return { ...base, class: 'rejected', errorCode: 'provider_moderation' };
     if ([401, 402, 403].includes(code)) return { ...base, class: 'account', errorCode: code === 402 ? 'provider_payment_required' : 'provider_auth_failed' };

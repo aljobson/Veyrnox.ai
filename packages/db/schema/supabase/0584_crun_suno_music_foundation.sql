@@ -41,33 +41,6 @@ REVOKE ALL ON TABLE public.crun_create_reservations FROM PUBLIC, anon, authentic
 GRANT SELECT, INSERT, DELETE ON TABLE public.crun_create_reservations TO service_role;
 CREATE INDEX IF NOT EXISTS crun_create_reservations_window_idx ON public.crun_create_reservations(reserved_at);
 
-CREATE OR REPLACE FUNCTION public.reserve_crun_create_slot(p_reservation_key TEXT, p_purpose TEXT)
-RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
-DECLARE v_now TIMESTAMPTZ; v_count INTEGER; v_retry INTEGER;
-BEGIN
-    IF p_reservation_key IS NULL OR p_reservation_key !~ '^[A-Za-z0-9._:-]{8,160}$'
-       OR p_purpose IS NULL OR p_purpose !~ '^[a-z0-9._:-]{2,64}$' THEN
-        RETURN jsonb_build_object('ok',false,'code','INVALID_INPUTS');
-    END IF;
-    PERFORM pg_advisory_xact_lock(hashtextextended('crun:create:account', 0));
-    v_now:=clock_timestamp();
-    IF EXISTS (SELECT 1 FROM public.crun_create_reservations WHERE reservation_key=p_reservation_key) THEN
-        RETURN jsonb_build_object('ok',true,'idempotent',true);
-    END IF;
-    DELETE FROM public.crun_create_reservations WHERE reserved_at<=v_now-interval '10 seconds';
-    SELECT count(*) INTO v_count FROM public.crun_create_reservations
-      WHERE reserved_at > v_now - interval '10 seconds';
-    IF v_count >= 20 THEN
-        SELECT GREATEST(1,ceil(extract(epoch FROM min(reserved_at)+interval '10 seconds'-v_now)))::INTEGER
-          INTO v_retry FROM public.crun_create_reservations WHERE reserved_at > v_now-interval '10 seconds';
-        RETURN jsonb_build_object('ok',false,'code','CRUN_RATE_LIMITED','retry_after_seconds',COALESCE(v_retry,1));
-    END IF;
-    INSERT INTO public.crun_create_reservations(reservation_key,purpose,reserved_at) VALUES(p_reservation_key,p_purpose,v_now);
-    RETURN jsonb_build_object('ok',true,'idempotent',false,'remaining',19-v_count);
-END $$;
-REVOKE ALL ON FUNCTION public.reserve_crun_create_slot(TEXT,TEXT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.reserve_crun_create_slot(TEXT,TEXT) TO service_role;
-
 -- Endpoint+frozen-Suno-model breaker. Route-wide 455/505 still uses every
 -- matching model_routes.breaker_opened_at; this table is for one disabled Suno model.
 CREATE TABLE IF NOT EXISTS public.crun_suno_model_breakers (
@@ -121,6 +94,76 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION public.reopen_crun_suno_model_breaker(TEXT,TEXT,BIGINT) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.reopen_crun_suno_model_breaker(TEXT,TEXT,BIGINT) TO service_role;
+
+-- The single atomic pre-submit gate for every Crun CreateTask. Admission is
+-- checked while the shared policy row is locked and before a limiter row is
+-- consumed. The endpoint/model parameters keep generic and Suno callers on
+-- the same gate without making legacy two-argument callers fail deployment.
+CREATE OR REPLACE FUNCTION public.reserve_crun_create_slot(
+ p_reservation_key TEXT,p_purpose TEXT,p_endpoint TEXT,p_suno_model TEXT
+) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_now TIMESTAMPTZ; v_count INTEGER; v_retry INTEGER; v_admission BOOLEAN;
+BEGIN
+ IF p_reservation_key IS NULL OR p_reservation_key !~ '^[A-Za-z0-9._:-]{8,160}$'
+ OR p_purpose IS NULL OR p_purpose !~ '^[a-z0-9._:-]{2,64}$'
+ OR (p_endpoint IS NOT NULL AND p_endpoint !~ '^crun:[A-Za-z0-9._/-]{1,120}$')
+ OR (p_suno_model IS NOT NULL AND (p_endpoint<>'crun:suno/music-generate'
+     OR p_suno_model NOT IN ('v6','v6_mini','v6_wild'))) THEN
+  RETURN jsonb_build_object('ok',false,'code','INVALID_INPUTS');
+ END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('crun:create:account',0));
+ SELECT admission_open INTO v_admission FROM public.provider_spend_provider_policy
+  WHERE provider='crun' FOR UPDATE;
+ IF NOT FOUND OR v_admission IS DISTINCT FROM true THEN
+  RETURN jsonb_build_object('ok',false,'code','PROVIDER_ADMISSION_PAUSED','retry_after_seconds',60);
+ END IF;
+ IF p_endpoint IS NOT NULL AND EXISTS(SELECT 1 FROM public.model_routes
+   WHERE supplier='crun' AND endpoint=p_endpoint AND breaker_opened_at IS NOT NULL) THEN
+  RETURN jsonb_build_object('ok',false,'code','CRUN_UNAVAILABLE','retry_after_seconds',60);
+ END IF;
+ IF p_endpoint='crun:suno/music-generate' AND p_suno_model IS NOT NULL
+ AND EXISTS(SELECT 1 FROM public.crun_suno_model_breakers
+   WHERE endpoint=p_endpoint AND suno_model=p_suno_model AND is_open) THEN
+  RETURN jsonb_build_object('ok',false,'code','CRUN_UNAVAILABLE','retry_after_seconds',60);
+ END IF;
+ v_now:=clock_timestamp();
+ IF EXISTS(SELECT 1 FROM public.crun_create_reservations WHERE reservation_key=p_reservation_key) THEN
+  RETURN jsonb_build_object('ok',true,'idempotent',true);
+ END IF;
+ DELETE FROM public.crun_create_reservations WHERE reserved_at<=v_now-interval '10 seconds';
+ SELECT count(*) INTO v_count FROM public.crun_create_reservations WHERE reserved_at > v_now - interval '10 seconds';
+ IF v_count >= 20 THEN
+  SELECT GREATEST(1,ceil(extract(epoch FROM min(reserved_at)+interval '10 seconds'-v_now)))::INTEGER
+   INTO v_retry FROM public.crun_create_reservations WHERE reserved_at > v_now - interval '10 seconds';
+  RETURN jsonb_build_object('ok',false,'code','CRUN_RATE_LIMITED','retry_after_seconds',COALESCE(v_retry,1));
+ END IF;
+ INSERT INTO public.crun_create_reservations(reservation_key,purpose,reserved_at)
+  VALUES(p_reservation_key,p_purpose,v_now);
+ RETURN jsonb_build_object('ok',true,'idempotent',false,'remaining',19-v_count);
+END $$;
+REVOKE ALL ON FUNCTION public.reserve_crun_create_slot(TEXT,TEXT,TEXT,TEXT) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.reserve_crun_create_slot(TEXT,TEXT,TEXT,TEXT) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.reserve_crun_create_slot(p_reservation_key TEXT,p_purpose TEXT)
+RETURNS JSONB LANGUAGE SQL SECURITY DEFINER SET search_path='' AS $$
+ SELECT public.reserve_crun_create_slot(p_reservation_key,p_purpose,NULL,NULL)
+$$;
+REVOKE ALL ON FUNCTION public.reserve_crun_create_slot(TEXT,TEXT) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.reserve_crun_create_slot(TEXT,TEXT) TO service_role;
+
+CREATE OR REPLACE FUNCTION private.music_crun_quote_available(p_endpoint TEXT,p_suno_model TEXT)
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_admission BOOLEAN;
+BEGIN
+ SELECT admission_open INTO v_admission FROM public.provider_spend_provider_policy WHERE provider='crun' FOR SHARE;
+ IF NOT FOUND OR v_admission IS DISTINCT FROM true THEN RETURN false; END IF;
+ PERFORM 1 FROM public.model_routes WHERE supplier='crun' AND endpoint=p_endpoint
+  AND breaker_opened_at IS NOT NULL FOR SHARE;
+ IF FOUND THEN RETURN false; END IF;
+ PERFORM 1 FROM public.crun_suno_model_breakers WHERE endpoint=p_endpoint AND suno_model=p_suno_model AND is_open FOR SHARE;
+ RETURN NOT FOUND;
+END $$;
+REVOKE ALL ON FUNCTION private.music_crun_quote_available(TEXT,TEXT) FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE OR REPLACE FUNCTION public.trip_crun_endpoint_routes(p_endpoint TEXT,p_observed_at TIMESTAMPTZ)
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
@@ -456,6 +499,9 @@ BEGIN
       ELSE (CASE p_model_id WHEN 'ace-step' THEN 'fal-ai/ace-step' ELSE 'fal-ai/ace-step-1.5' END) END)
   OR (v_contract='crun-suno-v1' AND p_model_id='ace-step-loop')
   THEN RETURN jsonb_build_object('ok',false,'code','MODEL_UNAVAILABLE'); END IF;
+ IF v_contract='crun-suno-v1' AND NOT private.music_crun_quote_available(m.provider_endpoint,
+   COALESCE(NULLIF(current_setting('veyrnox.crun_suno_model',true),''),'v6')) THEN
+  RETURN jsonb_build_object('ok',false,'code','MUSIC_UNAVAILABLE','retry_after_seconds',60); END IF;
  SELECT balance-CASE WHEN subscription_expires_at>now() THEN 0 ELSE subscription_balance END INTO v_balance
   FROM public.credit_balances WHERE user_id=v_user;
  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','NO_BALANCE_ROW'); END IF;
@@ -503,6 +549,9 @@ BEGIN
   OR private.music_active_provider_contract(m.id) IS DISTINCT FROM p_provider_contract
   OR m.provider_endpoint IS DISTINCT FROM (CASE p_provider_contract WHEN 'crun-suno-v1' THEN 'crun:suno/music-generate' ELSE 'fal-ai/ace-step-1.5' END)
  THEN RETURN jsonb_build_object('ok',false,'code','CONTRACT_STALE'); END IF;
+ IF p_provider_contract='crun-suno-v1' AND NOT private.music_crun_quote_available(m.provider_endpoint,
+   COALESCE(NULLIF(current_setting('veyrnox.crun_suno_model',true),''),'v6')) THEN
+  RETURN jsonb_build_object('ok',false,'code','MUSIC_UNAVAILABLE','retry_after_seconds',60); END IF;
  IF NOT private.music_paid_plan_active(v_user) THEN RETURN jsonb_build_object('ok',false,'code','PLAN_UNAVAILABLE'); END IF;
  SELECT balance-CASE WHEN subscription_expires_at>now() THEN 0 ELSE subscription_balance END INTO v_balance
   FROM public.credit_balances WHERE user_id=v_user;
@@ -889,10 +938,10 @@ BEGIN
  THEN RETURN jsonb_build_object('ok',false,'code','INVALID_OUTCOME'); END IF;
  PERFORM 1 FROM public.jobs WHERE id=p_job_id FOR UPDATE;
  SELECT * INTO d FROM public.crun_dispatch WHERE job_id=p_job_id FOR UPDATE;
- IF NOT FOUND OR d.attempt_token IS DISTINCT FROM p_attempt_token THEN
-  RETURN jsonb_build_object('ok',false,'code','ATTEMPT_MISMATCH'); END IF;
  IF d.state=p_outcome AND d.provider_job_id IS NOT DISTINCT FROM p_provider_job_id THEN
   RETURN jsonb_build_object('ok',true,'idempotent',true); END IF;
+ IF NOT FOUND OR d.attempt_token IS DISTINCT FROM p_attempt_token THEN
+  RETURN jsonb_build_object('ok',false,'code','ATTEMPT_MISMATCH'); END IF;
  -- A stale STARTED becomes UNKNOWN exactly once. UNKNOWN is operator-fenced
  -- and may only leave through reconcile_crun_dispatch_unknown.
  IF d.state NOT IN ('STARTED','UNKNOWN') OR (d.state='UNKNOWN' AND p_outcome<>'ACCEPTED') THEN

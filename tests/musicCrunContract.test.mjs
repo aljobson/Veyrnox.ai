@@ -122,6 +122,43 @@ test('entitlements use the active contract table and catalog price', () => {
   assert.equal(result.models[0].controls.tempo_key_meter, false);
 });
 
+test('entitlements fail closed for the shared account, endpoint and selected Suno-model breakers', () => {
+  const models = [
+    { id: 'ace-step', name: 'Base', modality: 'text-to-audio', credits: 4, gated: false, provider_contract: MUSIC_CRUN_CONTRACT },
+    { id: 'ace-step-1.5', name: 'Premium', modality: 'text-to-audio', credits: 4, gated: false, provider_contract: MUSIC_CRUN_CONTRACT },
+  ];
+  const project = (crunAvailability) => musicEntitlementProjection({ models, credits: { balance: 20 },
+    generationEnabled: true, subscription: { status: 'active', current_period_end: '2099-01-01T00:00:00Z' }, crunAvailability });
+  for (const unavailable of [
+    { admission_open: false, endpoint_open: true, suno_models: { v6: true, v6_mini: true, v6_wild: true } },
+    { admission_open: true, endpoint_open: false, suno_models: { v6: true, v6_mini: true, v6_wild: true } },
+  ]) assert.ok(project(unavailable).models.every((model) => model.available === false));
+
+  const perModel = project({ admission_open: true, endpoint_open: true,
+    suno_models: { v6: false, v6_mini: true, v6_wild: false } });
+  assert.equal(perModel.models[0].available, false);
+  assert.equal(perModel.models[1].available, true);
+  assert.deepEqual(perModel.models[1].controls.suno_model, ['v6_mini']);
+});
+
+test('song projection keeps an asset-less row and makes every capability null-safe', async () => {
+  const sql = await readFile(new URL('../packages/db/schema/supabase/0586_crun_suno_quote_controls.sql', import.meta.url), 'utf8');
+  const song = sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.music_get_song'),
+    sql.indexOf('CREATE OR REPLACE FUNCTION public.music_get_remix_source_context'));
+  assert.match(song, /LEFT JOIN public\.assets ca ON ca\.id=cv\.audio_asset_id/);
+  const capabilities = [...song.matchAll(/'(playback|download|render|crop|remix|mashup|sample|stems|target_stem|track_add|cover|extend|replace_section|add_section)',([^\n]+)/g)];
+  assert.equal(capabilities.length, 14);
+  assert.ok(capabilities.every(([, , expression]) => expression.includes('COALESCE(') && expression.includes(',false)')));
+});
+
+test('quote route rejects an unknown model before configuration or catalog access', async () => {
+  const source = await readFile(new URL('../app/api/v1/music/generation-quotes/route.js', import.meta.url), 'utf8');
+  const validation = source.indexOf("return reply({ error: 'model_not_supported' }, 400)");
+  assert.ok(validation > 0);
+  assert.ok(validation < source.indexOf('const cfg = envConfig()'));
+  assert.ok(validation < source.indexOf('await readFreshMusicCatalog'));
+});
+
 test('current-version action matrix is MIME and size based, never provider based', () => {
   const wav = musicVersionCapabilities({ mimeType: 'audio/wav', sizeBytes: 26_214_400 });
   assert.equal(wav.render, true); assert.equal(wav.crop, true); assert.equal(wav.remix, true);

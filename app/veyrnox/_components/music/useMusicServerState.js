@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 
 const TERMINAL_STATES = new Set(['succeeded', 'partial', 'failed', 'refunded']);
-const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used', 'contract_stale']);
+const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used', 'contract_stale', 'draft_stale']);
+const settleRender = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function normalizedCode(error) {
   return String(error?.code || error?.message || 'unknown').toLowerCase();
@@ -23,6 +24,7 @@ export function musicServerError(error) {
     quote_expired: 'That quote expired. Review a new quote before creating.',
     quote_stale: 'The model price changed. Review the refreshed quote before creating.',
     contract_stale: 'contract_stale',
+    draft_stale: 'draft_stale',
     quote_already_used: 'That quote was already used. Review a new quote to create again.',
     pair_acceptance_unknown: 'We could not confirm the result. Retry safely with the same request key.',
     network_error: 'The network is unavailable. Your quote has not been confirmed.',
@@ -41,6 +43,7 @@ export function useMusicServerState({ active = true } = {}) {
   const [errorCode, setErrorCode] = useState('');
   const confirmKey = useRef(null);
   const confirming = useRef(false);
+  const lastQuoteRequest = useRef(null);
   // A quote response that arrives after the input changed is discarded instead
   // of restoring a quote for text the person no longer has.
   const [gate] = useState(createQuoteGate);
@@ -51,10 +54,13 @@ export function useMusicServerState({ active = true } = {}) {
     setError('');
     setErrorCode('');
     try {
-      setEntitlements(await gatewayFetch('/music/entitlements'));
+      const next = await gatewayFetch('/music/entitlements');
+      setEntitlements(next);
+      return next;
     } catch (reason) {
       setErrorCode(reason?.code || 'unknown');
       setError(musicServerError(reason));
+      return null;
     } finally {
       setBusy('');
     }
@@ -70,6 +76,7 @@ export function useMusicServerState({ active = true } = {}) {
     gate.invalidate();
     setQuote(null);
     confirmKey.current = null;
+    lastQuoteRequest.current = null;
   }, [gate]);
 
   const quoteRevisionNow = useCallback(() => gate.current(), [gate]);
@@ -79,7 +86,7 @@ export function useMusicServerState({ active = true } = {}) {
   // draft save); if anything invalidated the quote meanwhile, do not request one.
   const reviewQuote = useCallback(async (request, startedAt, onContractStale) => {
     if (startedAt !== undefined && !gate.unchanged(startedAt)) return null;
-    const mine = gate.start();
+    let mine = gate.start();
     setBusy('quoting');
     setError('');
     setErrorCode('');
@@ -92,13 +99,33 @@ export function useMusicServerState({ active = true } = {}) {
       });
       if (!gate.isCurrent(mine)) return null;
       setQuote(next);
+      lastQuoteRequest.current = { request, refresh: onContractStale };
       return next;
     } catch (reason) {
       if (gate.isCurrent(mine)) {
         const code = normalizedCode(reason);
-        if (code === 'contract_stale' || code === 'quote_stale') {
-          await loadEntitlements();
-          await onContractStale?.();
+        if (code === 'contract_stale' || code === 'draft_stale' || code === 'quote_stale') {
+          const fresh = await loadEntitlements();
+          const replacement = await onContractStale?.(fresh);
+          if (replacement?.mode) {
+            // Draft refresh changes controlled fields whose effects invalidate
+            // the old quote revision. Retry only after those effects settle.
+            await settleRender();
+            mine = gate.start();
+            try {
+              const next = await gatewayFetch('/music/generation-quotes', {
+                method: 'POST', body: JSON.stringify(replacement),
+              });
+              if (!gate.isCurrent(mine)) return null;
+              setQuote(next);
+              lastQuoteRequest.current = { request: replacement, refresh: onContractStale };
+              return next;
+            } catch (retryError) {
+              setErrorCode(normalizedCode(retryError));
+              setError(musicServerError(retryError));
+              return null;
+            }
+          }
         }
         setErrorCode(code);
         setError(musicServerError(reason));
@@ -139,16 +166,22 @@ export function useMusicServerState({ active = true } = {}) {
       setEntitlements((current) => current ? { ...current, balance: Number(result.balance_after) } : current);
       setQuote(null);
       confirmKey.current = null;
+      lastQuoteRequest.current = null;
       notifyBalanceChanged();
       return result;
     } catch (reason) {
       const code = normalizedCode(reason);
       if (REQUOTE_ERRORS.has(code)) {
+        const previous = lastQuoteRequest.current;
         setQuote(null);
         confirmKey.current = null;
-        if (code === 'quote_stale' || code === 'contract_stale') {
-          await loadEntitlements();
-          await context.onContractStale?.();
+        if (code === 'quote_stale' || code === 'contract_stale' || code === 'draft_stale') {
+          const fresh = await loadEntitlements();
+          const replacement = await (context.onContractStale || previous?.refresh)?.(fresh);
+          if (replacement?.mode) {
+            await settleRender();
+            await reviewQuote(replacement, undefined, previous?.refresh);
+          }
         }
       }
       setErrorCode(code);
@@ -158,7 +191,7 @@ export function useMusicServerState({ active = true } = {}) {
       confirming.current = false;
       setBusy('');
     }
-  }, [loadEntitlements, quote]);
+  }, [loadEntitlements, quote, reviewQuote]);
 
   const activeGenerationKey = generations
     .filter((item) => item?.id && !TERMINAL_STATES.has(item.state))

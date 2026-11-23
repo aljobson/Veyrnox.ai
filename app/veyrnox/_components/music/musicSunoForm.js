@@ -21,7 +21,9 @@ export function sunoControlsForModel(model, controls) {
 }
 
 export function preserveSunoDraftText(server, local) {
-  return { ...server, lyrics: local.lyrics, styles: local.styles, title: local.title };
+  const sameIdentity = server?.id && local?.id && server.id === local.id
+    && server.provider_contract === local.provider_contract;
+  return sameIdentity ? { ...server, lyrics: local.lyrics, styles: local.styles, title: local.title } : server;
 }
 
 export function sunoFormatEditsUnavailable(capabilities) {
@@ -80,6 +82,7 @@ export function sunoCustomQuoteRequest({ model, draft, controls }) {
 export function sunoCustomReady({ model, draft, controls }) {
   if (!isSunoContract(model) || !model.generation_modes?.includes('custom') || model.available === false) return false;
   if (!draft) return false;
+  if (!String(draft.styles || '').trim()) return false;
   if (!controls.instrumental && (!String(draft.lyrics || '').trim() || !controls.rightsConfirmed)) return false;
   return true;
 }

@@ -2,7 +2,7 @@ import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
-    MUSIC_BEAT_MODEL_ID, MUSIC_CRUN_CONTRACT, MUSIC_CRUN_JSON_MAX_BYTES,
+    MUSIC_BEAT_MODEL_ID, MUSIC_CRUN_CONTRACT, MUSIC_CRUN_JSON_MAX_BYTES, MUSIC_MODEL_IDS,
     musicBeatAiEnabled, musicGenerationEnabled, musicPromptPolicy, musicRpcStatus, parseMusicQuote, publicMusicError,
     readMusicJson, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
@@ -24,10 +24,13 @@ export async function POST(request) {
         && decoded.value.model_id === MUSIC_BEAT_MODEL_ID && !musicBeatAiEnabled()) {
         return reply({ error: 'beat_ai_unavailable' }, 404);
     }
-    const cfg = envConfig();
-    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
     const requestedModel = decoded.value?.mode === 'custom'
         ? 'ace-step-1.5' : decoded.value?.model_id ?? 'ace-step';
+    if (requestedModel !== MUSIC_BEAT_MODEL_ID && !MUSIC_MODEL_IDS.includes(requestedModel)) {
+        return reply({ error: 'model_not_supported' }, 400);
+    }
+    const cfg = envConfig();
+    if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
     let providerContract;
     if (requestedModel !== MUSIC_BEAT_MODEL_ID) {
         try {

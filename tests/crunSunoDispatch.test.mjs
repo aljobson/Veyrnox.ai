@@ -44,6 +44,41 @@ test('generic and music submissions share the one database CreateTask window and
   }
 });
 
+test('generic limiter saturation waits twice then returns retryable not_sent without submitting', async () => {
+  const waits = []; const reservations = []; let submits = 0;
+  const result = await submitCrunAtBoundary({ job_id: uuid(7), provider_endpoint: 'crun:google/veo3-1-lite-t2v', inputs: {} }, {
+    apiKey: 'key', cfg, reservationKey: `generic:${uuid(7)}`, purpose: 'generic.create',
+    rpc: async (_name, args) => { reservations.push(args); return { ok: false, code: 'CRUN_RATE_LIMITED', retry_after_seconds: 9 }; },
+    wait: async (ms) => waits.push(ms), submit: async () => { submits += 1; },
+  });
+  assert.deepEqual(waits, [2000, 2000]);
+  assert.equal(reservations.length, 3);
+  assert.equal(reservations[0].p_endpoint, 'crun:google/veo3-1-lite-t2v');
+  assert.equal(reservations[0].p_suno_model, null);
+  assert.deepEqual(result, { ok: false, outcome: 'not_sent', error: 'provider_rate_limited',
+    errorCode: 'provider_rate_limited', scope: 'deferred', retryAfterSeconds: 9, localLimit: true, retryable: true });
+  assert.equal(submits, 0);
+});
+
+test('generic limiter retry can reserve and submit while music local limits remain DEFERRED', async () => {
+  let calls = 0;
+  const accepted = await submitCrunAtBoundary({ job_id: uuid(8), provider_endpoint: 'crun:google/veo3-1-lite-t2v', inputs: {} }, {
+    apiKey: 'key', cfg, reservationKey: `generic:${uuid(8)}`, purpose: 'generic.create', wait: async () => {},
+    rpc: async () => (++calls === 1 ? { ok: false, code: 'CRUN_RATE_LIMITED', retry_after_seconds: 1 } : { ok: true }),
+    submit: async () => ({ ok: true, providerJobId: 'after-wait' }),
+  });
+  assert.equal(accepted.providerJobId, 'after-wait');
+
+  const records = [];
+  const out = await runCrunDispatchAttempt(claim(), { apiKey: 'key', cfg }, {
+    boundary: async () => ({ ok: false, outcome: 'rejected', errorCode: 'provider_rate_limited',
+      scope: 'deferred', retryAfterSeconds: 5, localLimit: true }),
+    rpc: async (name, args) => { if (name === 'record_crun_dispatch') records.push(args); return { ok: true }; },
+  });
+  assert.equal(out.outcome, 'DEFERRED');
+  assert.equal(records[0].p_retry_after_seconds, 30);
+});
+
 test('each generic Crun submit attempt consumes a distinct limiter reservation', async (t) => {
   const keys = [];
   const keep = [process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY];

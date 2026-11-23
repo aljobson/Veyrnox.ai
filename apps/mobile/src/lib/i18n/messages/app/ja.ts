@@ -8508,4 +8508,8 @@ export default {
   "editorSpeech.autoStale": "選択したクリップが変更されました。字幕をもう一度開始してください。",
   "editorSpeech.autoFull": "字幕トラックがいっぱいです。テキストや字幕をいくつか削除して、もう一度お試しください。",
   "editorSpeech.autoFailed": "字幕を作成できませんでした。別のダウンロード済みクリップでもう一度お試しください。"
+  ,"music.create.style_required": "価格を確認する前にスタイルを追加してください。",
+  "music.create.draft_stale": "現在の下書きが変更されました。内容を変えず更新したので、価格を再確認してください。",
+  "music.create.draft_refreshed": "現在の下書きを変更せず更新しました。以前のテキストは別に保持されています。",
+  "music.create.copy_previous_text": "以前のテキストをこの下書きにコピー"
 } as const;

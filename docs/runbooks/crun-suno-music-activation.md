@@ -25,31 +25,50 @@ Replace the placeholders. The legal and probe evidence goes into `parity_record`
 
 ```sql
 BEGIN;
--- 1. Evidence-bearing provenance + parity for BOTH offers' Crun routes.
-UPDATE public.model_routes
-   SET provenance = 'licensed_reseller',
-       parity_record = '<probe date, probe job ids, Crun written answer reference>',
-       state = 'active', updated_at = now()
- WHERE supplier = 'crun' AND endpoint = 'crun:suno/music-generate'
-   AND model_id IN ('ace-step', 'ace-step-1.5');
--- exact ROW_COUNT must be 2: abort if not.
+DO $activation$
+DECLARE n BIGINT; r JSONB; v_model TEXT;
+BEGIN
+  UPDATE public.model_routes
+     SET provenance='licensed_reseller',
+         parity_record='<probe date, probe job ids, Crun written answer reference>',
+         state='active', updated_at=now()
+   WHERE supplier='crun' AND endpoint='crun:suno/music-generate'
+     AND model_id IN ('ace-step','ace-step-1.5');
+  GET DIAGNOSTICS n=ROW_COUNT;
+  IF n<>2 THEN RAISE EXCEPTION 'activation expected 2 Crun routes, updated %',n; END IF;
 
--- 2. Customer price: 4 credits per candidate (catalog value read by quotes; reorder does NOT change credits).
-UPDATE public.model_catalog SET credits_5s = 4, updated_at = now() WHERE id IN ('ace-step', 'ace-step-1.5');
--- exact ROW_COUNT must be 2.
+  UPDATE public.model_catalog SET credits_5s=4,updated_at=now()
+   WHERE id IN ('ace-step','ace-step-1.5');
+  GET DIAGNOSTICS n=ROW_COUNT;
+  IF n<>2 THEN RAISE EXCEPTION 'activation expected 2 catalog prices, updated %',n; END IF;
 
--- 3. Put Crun first for each offer. Every ACTIVE route of the offer must be listed.
-SELECT public.model_route_reorder('ace-step',
-  ARRAY[(SELECT id FROM public.model_routes WHERE model_id='ace-step' AND supplier='crun' AND endpoint='crun:suno/music-generate'),
-        (SELECT id FROM public.model_routes WHERE model_id='ace-step' AND supplier='fal')], 'crun suno activation');
-SELECT public.model_route_reorder('ace-step-1.5',
-  ARRAY[(SELECT id FROM public.model_routes WHERE model_id='ace-step-1.5' AND supplier='crun' AND endpoint='crun:suno/music-generate'),
-        (SELECT id FROM public.model_routes WHERE model_id='ace-step-1.5' AND supplier='fal')], 'crun suno activation');
--- each result must be {"ok": true}; the RPC syncs catalog provider, endpoint, cost, cost unit, billing seconds and updated_at.
+  FOREACH v_model IN ARRAY ARRAY['ace-step','ace-step-1.5'] LOOP
+    SELECT public.model_route_reorder(v_model,ARRAY[
+      (SELECT id FROM public.model_routes WHERE model_id=v_model AND supplier='crun' AND endpoint='crun:suno/music-generate'),
+      (SELECT id FROM public.model_routes WHERE model_id=v_model AND supplier='fal')
+    ],'crun suno activation') INTO r;
+    IF r->>'ok' IS DISTINCT FROM 'true' THEN
+      RAISE EXCEPTION 'activation reorder failed for %: %',v_model,r;
+    END IF;
+  END LOOP;
 
--- 4. Assert the final state before COMMIT.
-SELECT id, provider, provider_endpoint, credits_5s, provider_cost_per_unit FROM public.model_catalog WHERE id IN ('ace-step','ace-step-1.5');
--- expect provider 'crun', endpoint 'crun:suno/music-generate', credits_5s 4, cost 0.0536.
+  IF (SELECT count(*) FROM public.model_catalog WHERE id IN ('ace-step','ace-step-1.5')
+      AND provider='crun' AND provider_endpoint='crun:suno/music-generate'
+      AND credits_5s=4 AND provider_cost_per_unit=0.0536
+      AND credits_5s*0.033>=2*provider_cost_per_unit)<>2 THEN
+    RAISE EXCEPTION 'activation catalog/provider/price/margin assertion failed';
+  END IF;
+  IF (SELECT count(*) FROM public.model_routes WHERE model_id IN ('ace-step','ace-step-1.5')
+      AND supplier='crun' AND endpoint='crun:suno/music-generate' AND state='active'
+      AND priority=1 AND provenance='licensed_reseller'
+      AND parity_record IS NOT NULL AND btrim(parity_record)<>'')<>2 THEN
+    RAISE EXCEPTION 'activation Crun route evidence/priority assertion failed';
+  END IF;
+  IF (SELECT count(*) FROM public.model_routes WHERE model_id IN ('ace-step','ace-step-1.5')
+      AND supplier='fal' AND state='active' AND priority=2)<>2 THEN
+    RAISE EXCEPTION 'activation fal standby priority assertion failed';
+  END IF;
+END $activation$;
 COMMIT;
 ```
 
@@ -61,20 +80,55 @@ Do not depend on the breaker being closed: a tripped breaker makes `model_route_
 
 ```sql
 BEGIN;
-UPDATE public.model_routes SET state = 'standby', updated_at = now()
- WHERE supplier = 'crun' AND endpoint = 'crun:suno/music-generate' AND model_id IN ('ace-step', 'ace-step-1.5');
--- exact ROW_COUNT 2.
-SELECT public.model_route_reorder('ace-step',
-  ARRAY[(SELECT id FROM public.model_routes WHERE model_id='ace-step' AND supplier='fal')], 'crun suno rollback');
-SELECT public.model_route_reorder('ace-step-1.5',
-  ARRAY[(SELECT id FROM public.model_routes WHERE model_id='ace-step-1.5' AND supplier='fal')], 'crun suno rollback');
-UPDATE public.model_catalog SET credits_5s = 2, updated_at = now() WHERE id = 'ace-step';
-UPDATE public.model_catalog SET credits_5s = 3, updated_at = now() WHERE id = 'ace-step-1.5';
--- exact ROW_COUNT 1 each; then assert provider 'fal' and endpoints 'fal-ai/ace-step' and 'fal-ai/ace-step-1.5'.
+DO $rollback$
+DECLARE n BIGINT; r JSONB; v_model TEXT;
+BEGIN
+  UPDATE public.model_routes SET state='standby',updated_at=now()
+   WHERE supplier='crun' AND endpoint='crun:suno/music-generate'
+     AND model_id IN ('ace-step','ace-step-1.5');
+  GET DIAGNOSTICS n=ROW_COUNT;
+  IF n<>2 THEN RAISE EXCEPTION 'rollback expected 2 Crun routes, updated %',n; END IF;
+
+  FOREACH v_model IN ARRAY ARRAY['ace-step','ace-step-1.5'] LOOP
+    SELECT public.model_route_reorder(v_model,ARRAY[
+      (SELECT id FROM public.model_routes WHERE model_id=v_model AND supplier='fal')
+    ],'crun suno rollback') INTO r;
+    IF r->>'ok' IS DISTINCT FROM 'true' THEN
+      RAISE EXCEPTION 'rollback reorder failed for %: %',v_model,r;
+    END IF;
+  END LOOP;
+
+  UPDATE public.model_catalog SET credits_5s=2,updated_at=now() WHERE id='ace-step';
+  GET DIAGNOSTICS n=ROW_COUNT;
+  IF n<>1 THEN RAISE EXCEPTION 'rollback ace-step price expected 1 row, updated %',n; END IF;
+  UPDATE public.model_catalog SET credits_5s=3,updated_at=now() WHERE id='ace-step-1.5';
+  GET DIAGNOSTICS n=ROW_COUNT;
+  IF n<>1 THEN RAISE EXCEPTION 'rollback ace-step-1.5 price expected 1 row, updated %',n; END IF;
+
+  IF (SELECT count(*) FROM public.model_catalog WHERE
+      (id='ace-step' AND provider='fal' AND provider_endpoint='fal-ai/ace-step' AND credits_5s=2
+       AND credits_5s*0.033>=2*provider_cost_per_unit)
+      OR (id='ace-step-1.5' AND provider='fal' AND provider_endpoint='fal-ai/ace-step-1.5' AND credits_5s=3
+       AND credits_5s*0.033>=2*provider_cost_per_unit))<>2 THEN
+    RAISE EXCEPTION 'rollback catalog/provider/price/margin assertion failed';
+  END IF;
+  IF (SELECT count(*) FROM public.model_routes WHERE model_id IN ('ace-step','ace-step-1.5')
+      AND supplier='fal' AND state='active' AND priority=1)<>2 THEN
+    RAISE EXCEPTION 'rollback fal route priority assertion failed';
+  END IF;
+  IF (SELECT count(*) FROM public.model_routes WHERE model_id IN ('ace-step','ace-step-1.5')
+      AND supplier='crun' AND endpoint='crun:suno/music-generate' AND state='standby'
+      AND priority=2 AND provenance='licensed_reseller'
+      AND parity_record IS NOT NULL AND btrim(parity_record)<>'')<>2 THEN
+    RAISE EXCEPTION 'rollback Crun standby evidence/priority assertion failed';
+  END IF;
+END $rollback$;
 COMMIT;
 ```
 
 Jobs already submitted to Crun stay on their retained route and settle through the Crun sweep; rows still READY or DEFERRED can be cancelled by the owner, which refunds once. Songs made under the Crun contract keep it (`provider_contract` is immutable) and stay reusable only while they fit the fal draft limits.
+
+The request-time Crun wake-up is intentionally a no-op. A newly debited pair waits for the per-minute backstop, so accepted latency can include roughly 60 seconds plus Crun's own processing time. The existing queue can be wired later once its worker carries the Crun credential and the same fenced claim semantics.
 
 ## 5. Operate
 

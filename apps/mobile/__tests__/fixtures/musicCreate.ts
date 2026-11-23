@@ -18,7 +18,8 @@ export const draft: MusicDraft = { id: null, updated_at: null, revision: 0, mode
 export const input: MusicInputSnapshot = { mode: 'simple', model_id: 'ace-step', prompt: 'ambient music', title: 'Evening', lyrics: '', styles: '', instrumental: true, duration: 30,
     variety: 50, styleInfluence: 0, excludeStyles: '', sunoModel: 'v6', vocalGender: 'auto', weirdness: 0.5,
     bpm: '', keyScale: '', timeSignature: '' };
-export const custom: MusicInputSnapshot = { ...input, mode: 'custom', model_id: 'ace-step-1.5', lyrics: '[Verse]\nOriginal lyrics', instrumental: false };
+export const custom: MusicInputSnapshot = { ...input, mode: 'custom', model_id: 'ace-step-1.5', lyrics: '[Verse]\nOriginal lyrics',
+    styles: 'cinematic', instrumental: false };
 export const crunControls = {
     description: true, variety: ['Off', 'Normal', 'High', 'Extra', 'Max'], style_influence: true,
     exclude_styles: true, tempo_key_meter: false, duration_seconds: { min: 1, max: 135, default: 60, custom_only: true },

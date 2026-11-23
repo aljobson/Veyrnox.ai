@@ -90,8 +90,8 @@ export async function createQuote(api: ApiClient, input: MusicSimpleQuoteInput |
     return v;
 }
 export const isContractStale = (error: unknown): error is ApiError => error instanceof ApiError
-    && error.status === 409 && error.code === 'contract_stale';
-// A contract flip invalidates both policy and draft identity. The caller rebuilds the
+    && error.status === 409 && ['contract_stale', 'draft_stale'].includes(error.code);
+// A contract or draft flip invalidates policy and/or draft identity. The caller rebuilds the
 // payload from one fresh entitlement/draft read; the network request is retried once only.
 export async function createQuoteWithContractRefresh(api: ApiClient, input: MusicSimpleQuoteInput | MusicCustomQuoteInput,
     refresh: () => Promise<MusicSimpleQuoteInput | MusicCustomQuoteInput>): Promise<MusicQuote> {

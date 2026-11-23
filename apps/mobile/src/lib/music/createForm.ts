@@ -1,7 +1,7 @@
 import type { MusicCustomQuoteInput, MusicDraft, MusicEntitlements, MusicInputSnapshot, MusicModel, MusicQuote, MusicSimpleQuoteInput } from './types';
 import { MUSIC_BPM_MAX, MUSIC_BPM_MIN, MUSIC_EXCLUDE_STYLES_MAX, parseMusicTempoControls } from './shared';
 export type ModelState = 'usable' | 'locked_plan' | 'unavailable';
-export type QuoteBlocker = 'empty_prompt' | 'lyrics_required' | 'over_length' | 'bpm_invalid' | 'locked_plan' | 'unavailable' | 'rights' | 'no_slot' | 'not_affordable' | 'quote_expired';
+export type QuoteBlocker = 'empty_prompt' | 'lyrics_required' | 'style_required' | 'over_length' | 'bpm_invalid' | 'locked_plan' | 'unavailable' | 'rights' | 'no_slot' | 'not_affordable' | 'quote_expired';
 export function modelState(model: MusicModel | undefined, entitlements: MusicEntitlements): ModelState {
     if (!entitlements.available || !model) return 'unavailable';
     if (!model.available) return model.requires_paid_plan ? 'locked_plan' : 'unavailable';
@@ -82,6 +82,7 @@ export function quoteBlockers(o: {
             || (suno && excludeMax !== null && Array.from(input.excludeStyles).length > excludeMax)))) reasons.push('over_length');
     if (input.mode === 'custom' && suno && !normalizeInput(input, model!).instrumental
         && model?.controls.lyrics_required_for_custom_vocal && !input.lyrics.trim()) reasons.push('lyrics_required');
+    if (input.mode === 'custom' && !input.styles.trim()) reasons.push('style_required');
     if (model && input.mode === 'custom' && !normalizeInput(input, model).instrumental && !o.rights) reasons.push('rights');
     if ((o.activeCount ?? 0) >= e.concurrency_limit) reasons.push('no_slot');
     if (o.quote && !o.quote.affordable) reasons.push('not_affordable');

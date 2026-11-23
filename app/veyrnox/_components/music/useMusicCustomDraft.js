@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch } from '../../_lib/gateway';
-import { preserveSunoDraftText } from './musicSunoForm';
 
 const blankDraft = (modelId, providerContract = null) => ({
   id: null,
@@ -47,6 +46,7 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
   const [conflict, setConflict] = useState(null);
   const [notice, setNotice] = useState('');
   const [needsReview, setNeedsReview] = useState(false);
+  const [previousText, setPreviousText] = useState(null);
   const editSerial = useRef(0);
   const saving = useRef(false);
   const baseDraft = useRef(blankDraft(defaultModelId));
@@ -77,7 +77,7 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
     }
   }, [defaultModelId, providerContract]);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (notifyContractChange = true) => {
     const local = draftRef.current;
     setError('');
     try {
@@ -85,20 +85,20 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
       const server = result.draft
         ? { ...result.draft, provider_contract: result.draft.provider_contract || result.provider_contract }
         : blankDraft(defaultModelId, result.provider_contract || providerContract);
-      const preserved = preserveSunoDraftText(server, local);
       baseDraft.current = server;
-      draftRef.current = preserved;
+      draftRef.current = server;
       editSerial.current += 1;
-      setDraft(preserved);
+      setDraft(server);
       setLoaded(true);
       setLoadFailed(false);
       setConflict(null);
-      setDirty(true);
+      setDirty(false);
       setNeedsReview(true);
-      setNotice('contract_refreshed');
-      setStatus('unsaved');
-      await onContractStale?.();
-      return preserved;
+      setPreviousText({ title: local.title, lyrics: local.lyrics, styles: local.styles });
+      setNotice('draft_refreshed');
+      setStatus('saved');
+      if (notifyContractChange) await onContractStale?.();
+      return server;
     } catch {
       setError('contract_refresh_failed');
       setStatus('error');
@@ -146,7 +146,7 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
       }
       return savedDraft;
     } catch (reason) {
-      if (String(reason?.code || '').toLowerCase() === 'contract_stale') {
+      if (['contract_stale', 'draft_stale'].includes(String(reason?.code || '').toLowerCase())) {
         draftRef.current = serial === editSerial.current ? payload : draftRef.current;
         await refresh();
       } else if (reason?.code === 'revision_conflict' && reason?.body?.draft) {
@@ -206,9 +206,26 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
       local: { ...current.local, [field]: value },
     } : null);
     setDirty(true);
+    setNeedsReview(false);
     setError('');
     setStatus((current) => current === 'conflict' ? current : 'unsaved');
   }, []);
+
+  const copyPreviousText = useCallback(() => {
+    if (!previousText) return false;
+    editSerial.current += 1;
+    setDraft((current) => {
+      const next = { ...current, ...previousText };
+      draftRef.current = next;
+      return next;
+    });
+    setPreviousText(null);
+    setNotice('');
+    setNeedsReview(false);
+    setDirty(true);
+    setStatus('unsaved');
+    return true;
+  }, [previousText]);
 
   const saveNow = useCallback(() => {
     if (!loaded || saving.current || conflict) return false;
@@ -257,7 +274,7 @@ export function useMusicCustomDraft({ active, defaultModelId = 'ace-step', provi
   }, [load, loadFailed, loaded]);
 
   return {
-    draft, loaded, loadFailed, dirty, status, error, conflict, notice, needsReview,
-    update, saveNow, refresh, loadNewer, keepMine, retry,
+    draft, loaded, loadFailed, dirty, status, error, conflict, notice, needsReview, previousText,
+    update, saveNow, refresh, loadNewer, keepMine, copyPreviousText, retry,
   };
 }

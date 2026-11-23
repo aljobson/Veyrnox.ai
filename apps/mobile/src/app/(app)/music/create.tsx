@@ -14,7 +14,7 @@ import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../..
 import { t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
-const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'contract_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
+const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
@@ -103,6 +103,10 @@ export default function MusicCreate() {
                             <Text>{state.conflict.model_id}</Text>
                             <Button label={t('music.create.useServer')} onPress={flow.useServer} />
                             <Button label={t('music.create.keepMine')} onPress={() => { flow.keepMine(); void flow.review(); }} />
+                        </View> : null}
+                        {state.previousText ? <View style={s.content}>
+                            <MusicNotice message={t('music.create.draft_refreshed')} />
+                            <Button variant="secondary" label={t('music.create.copy_previous_text')} onPress={flow.copyPreviousText} />
                         </View> : null}
                         {error ? <MusicNotice message={error} retry={input.mode === 'custom' && !state.draft ? () => void flow.loadDraft() : undefined} /> : null}
                         <Button label={t('music.create.review')} disabled={state.busy || ambiguous || !!state.conflict || (input.mode === 'custom' && !state.draft)

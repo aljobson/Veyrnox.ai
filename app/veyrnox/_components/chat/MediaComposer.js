@@ -100,6 +100,7 @@ function ChatSunoComposer({ media, prompt, onPrompt }) {
       </div>
       {media.blockReason ? <p id={sendHintId} role="status" className="border-t border-vx-border px-3 py-2 text-xs text-vx-fg-muted">{t(`app.music.suno.hint.${media.blockReason}`)}</p> : null}
       {custom.notice ? <p role="status" className="border-t border-vx-border px-3 py-2 text-xs text-vx-fg-muted">{t(`app.music.suno.${custom.notice}`)}</p> : null}
+      {custom.previousText ? <div className="border-t border-vx-border px-3 py-2"><button type="button" onClick={custom.copyPreviousText} className="min-h-10 rounded-full border border-vx-accent px-4 text-xs font-bold">{t('app.music.suno.copyPreviousText')}</button></div> : null}
       {error ? <p role="alert" className="border-t border-vx-danger/30 bg-vx-danger/[0.06] px-3 py-2 text-sm text-vx-danger">{errorCopy}</p> : null}
     </fieldset>
   );

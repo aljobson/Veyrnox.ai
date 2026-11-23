@@ -44,6 +44,8 @@ test('uses only projection counters for Crun text limits and requires custom voc
     expect(quoteBlockers({ input: crunCustom, entitlements: small, rights: true })).toContain('over_length');
     expect(quoteBlockers({ input: { ...crunCustom, lyrics: '' }, entitlements: crunEntitlements, rights: true })).toContain('lyrics_required');
     expect(quoteBlockers({ input: { ...crunCustom, lyrics: '', instrumental: true }, entitlements: crunEntitlements, rights: false })).not.toContain('lyrics_required');
+    expect(quoteBlockers({ input: { ...crunCustom, styles: '' }, entitlements: crunEntitlements, rights: true })).toContain('style_required');
+    expect(quoteBlockers({ input: { ...crunCustom, styles: '', instrumental: true }, entitlements: crunEntitlements, rights: false })).toContain('style_required');
 });
 
 test('client sends contract identity on draft, generation and refreshed quote wires', async () => {
@@ -64,6 +66,12 @@ test('client sends contract identity on draft, generation and refreshed quote wi
         buildCustomQuote(crunCustom, crunEntitlements, crunDraft, true), refresh)).resolves.toEqual(crunQuote);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(quoteRequest).toHaveBeenCalledTimes(2);
+
+    const draftStaleRequest = jest.fn().mockRejectedValueOnce(new ApiError(409, 'draft_stale')).mockResolvedValueOnce(crunQuote);
+    const refreshDraft = jest.fn(async () => buildCustomQuote(crunCustom, crunEntitlements, crunDraft, true));
+    await expect(createQuoteWithContractRefresh({ request: draftStaleRequest } as unknown as ApiClient,
+        buildCustomQuote(crunCustom, crunEntitlements, crunDraft, true), refreshDraft)).resolves.toEqual(crunQuote);
+    expect(refreshDraft).toHaveBeenCalledTimes(1);
 });
 
 test('reuse reads and sends the active contract plus immutable draft identity', async () => {
@@ -80,10 +88,13 @@ test('reuse reads and sends the active contract plus immutable draft identity', 
 });
 
 test('flow refreshes entitlements and draft once after contract_stale, then re-quotes', async () => {
-    let saves = 0;
-    const request = jest.fn(async (path: string, init?: RequestInit) => {
+    let saves = 0, draftReads = 0;
+    const activeDraft = { ...crunDraft, id: '00000000-0000-4000-8000-000000000099',
+        title: 'Active title', lyrics: 'Active lyrics', styles: 'Active styles' };
+    const request: jest.Mock = jest.fn(async (path: string, init?: RequestInit): Promise<unknown> => {
         if (path.endsWith('/entitlements')) return crunEntitlements;
-        if (path.endsWith('/drafts/custom') && !init) return { provider_contract: 'crun-suno-v1', draft: crunDraft };
+        if (path.endsWith('/drafts/custom') && !init) return { provider_contract: 'crun-suno-v1',
+            draft: ++draftReads > 1 ? activeDraft : crunDraft };
         if (path.endsWith('/drafts/custom')) {
             if (++saves === 1) throw new ApiError(409, 'contract_stale');
             return { draft: { ...crunDraft, ...JSON.parse(String(init?.body)), revision: 1 } };
@@ -94,10 +105,18 @@ test('flow refreshes entitlements and draft once after contract_stale, then re-q
     const api = { request } as unknown as ApiClient;
     const flow = createMusicCreateFlow(api, createGenerationTracker({ api, subscribeAppState: () => () => {}, setTimer: () => () => {} }));
     await flow.load(); flow.edit({ mode: 'custom' }); await flow.loadDraft(); flow.edit(crunCustom, true); await flow.review();
-    expect(request.mock.calls.filter(([path]) => path.endsWith('/entitlements'))).toHaveLength(2);
-    expect(request.mock.calls.filter(([path, init]) => path.endsWith('/drafts/custom') && !init)).toHaveLength(2);
-    expect(request.mock.calls.filter(([path]) => path.endsWith('/generation-quotes'))).toHaveLength(1);
+    const calls = request.mock.calls as [string, RequestInit?][];
+    expect(calls.filter(([path]) => path.endsWith('/entitlements'))).toHaveLength(2);
+    expect(calls.filter(([path, init]) => path.endsWith('/drafts/custom') && !init)).toHaveLength(2);
+    expect(calls.filter(([path]) => path.endsWith('/generation-quotes'))).toHaveLength(1);
     expect(flow.snapshot().error).toBeNull();
     expect(flow.attempts.snapshot()?.quote.provider_contract).toBe('crun-suno-v1');
+    expect(flow.attempts.snapshot()?.input).toMatchObject({ title: activeDraft.title, lyrics: activeDraft.lyrics, styles: activeDraft.styles });
+    expect(flow.snapshot().input).toMatchObject({ title: activeDraft.title, lyrics: activeDraft.lyrics, styles: activeDraft.styles });
+    expect(flow.snapshot().previousText).toEqual({ title: crunCustom.title, lyrics: crunCustom.lyrics, styles: crunCustom.styles });
+    expect(saves).toBe(1);
+    flow.copyPreviousText();
+    expect(flow.snapshot().input).toMatchObject({ title: crunCustom.title, lyrics: crunCustom.lyrics, styles: crunCustom.styles });
+    expect(flow.snapshot().previousText).toBeNull();
     flow.dispose();
 });

@@ -8508,4 +8508,8 @@ export default {
   "editorSpeech.autoStale": "所选片段已更改。请重新生成字幕。",
   "editorSpeech.autoFull": "字幕轨道已满。请删除部分文字或字幕后重试。",
   "editorSpeech.autoFailed": "无法生成字幕。请换一个已下载的片段重试。"
+  ,"music.create.style_required": "请先添加风格，再查看价格。",
+  "music.create.draft_stale": "当前草稿已更改。系统已原样刷新，请重新查看价格。",
+  "music.create.draft_refreshed": "已原样刷新当前草稿。之前的文本已单独保留。",
+  "music.create.copy_previous_text": "将之前的文本复制到此草稿"
 } as const;

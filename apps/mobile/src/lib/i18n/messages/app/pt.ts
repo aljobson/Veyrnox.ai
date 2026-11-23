@@ -8739,4 +8739,8 @@ export default {
   "editorSpeech.autoStale": "O clipe selecionado mudou. Crie as legendas novamente.",
   "editorSpeech.autoFull": "A faixa de legendas está cheia. Remova algum texto ou algumas legendas e tente novamente.",
   "editorSpeech.autoFailed": "Não foi possível criar as legendas. Tente novamente ou use outro clipe baixado."
+  ,"music.create.style_required": "Adicione um estilo antes de revisar o preço.",
+  "music.create.draft_stale": "O rascunho ativo mudou. Ele foi atualizado sem alterações; revise o preço novamente.",
+  "music.create.draft_refreshed": "O rascunho ativo foi atualizado sem alterações. Seu texto anterior ficou separado.",
+  "music.create.copy_previous_text": "Copiar o texto anterior para este rascunho"
 } as const;

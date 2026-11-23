@@ -128,6 +128,16 @@ describe('Crun Suno music foundation (0584)', { skip: !local && 'disposable loca
     assert.equal(afterEdge.ok, true);
   });
 
+  it('refuses a generic-path reservation while the shared Crun account circuit is paused', async () => isolated(async () => {
+    await client.query('DELETE FROM public.crun_create_reservations');
+    await client.query("UPDATE public.provider_spend_provider_policy SET admission_open=false WHERE provider='crun'");
+    const key = `generic.paused.${randomUUID()}`;
+    const blocked = (await one(`SELECT public.reserve_crun_create_slot($1,'generic.create',
+      'crun:google/veo3-1-lite-t2v',NULL) r`, [key])).r;
+    assert.equal(blocked.code, 'PROVIDER_ADMISSION_PAUSED');
+    assert.equal(Number((await one('SELECT count(*) n FROM public.crun_create_reservations WHERE reservation_key=$1', [key])).n), 0);
+  }));
+
   it('keeps fal and Crun drafts side by side under the composite key', async () => {
     const auth = randomUUID();
     const user = (await one('SELECT public.signup_grant($1,$2) id', [auth, `${auth}@accept.test`])).id;
@@ -222,6 +232,8 @@ describe('Crun Suno music foundation (0584)', { skip: !local && 'disposable loca
     assert.equal((await one('SELECT state FROM public.jobs WHERE id=$1', [deferred.job])).state, 'DEBITED');
     await one('SELECT public.recover_crun_dispatch() r');
     assert.equal((await one('SELECT state FROM public.jobs WHERE id=$1', [deferred.job])).state, 'REFUNDED');
+    const terminal = await one('SELECT state,attempt_count,failure_code FROM public.crun_dispatch WHERE job_id=$1', [deferred.job]);
+    assert.deepEqual([terminal.state, Number(terminal.attempt_count), terminal.failure_code], ['CLOSED', 5, 'supplier_busy']);
 
     const accepted = await debit();
     await client.query(`INSERT INTO public.crun_dispatch(job_id,endpoint,payload,state,provider_job_id,resolved_at,projected_at)
@@ -231,6 +243,27 @@ describe('Crun Suno music foundation (0584)', { skip: !local && 'disposable loca
     await one('SELECT public.sweep_stuck_jobs(0,0,200,0) r');
     assert.equal((await one('SELECT state FROM public.jobs WHERE id=$1', [accepted.job])).state, 'SUBMITTED');
   });
+
+  it('replays cleared-token DEFERRED and READY outcomes idempotently', async () => isolated(async () => {
+    for (const outcome of ['DEFERRED', 'READY'] as const) {
+      const { job } = await debit();
+      const token = randomUUID();
+      await client.query(`INSERT INTO public.crun_dispatch(job_id,endpoint,payload,state,attempt_token,started_at)
+        VALUES($1,'crun:suno/music-generate',$2,'STARTED',$3,clock_timestamp())`, [job, payload, token]);
+      const args = outcome === 'DEFERRED'
+        ? [job, token, outcome, null, 'provider_rate_limited', 30]
+        : [job, token, outcome, null, 'provider_auth_failed', null];
+      const first = (await one('SELECT public.record_crun_dispatch($1,$2,$3,$4,$5,$6) r', args)).r;
+      const before = await one('SELECT state,attempt_token,attempt_count,retry_at FROM public.crun_dispatch WHERE job_id=$1', [job]);
+      const replay = (await one('SELECT public.record_crun_dispatch($1,$2,$3,$4,$5,$6) r', args)).r;
+      const after = await one('SELECT state,attempt_token,attempt_count,retry_at FROM public.crun_dispatch WHERE job_id=$1', [job]);
+      assert.equal(first.ok, true);
+      assert.equal(replay.idempotent, true);
+      assert.equal(before.attempt_token, null);
+      assert.deepEqual(after, before);
+      assert.equal(Number(after.attempt_count), outcome === 'DEFERRED' ? 1 : 0);
+    }
+  }));
 
   it('refunds authoritative task failure once and preserves speech-analysis sweep ownership', async () => {
     const failed = await debit();

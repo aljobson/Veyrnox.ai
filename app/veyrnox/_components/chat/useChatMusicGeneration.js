@@ -61,11 +61,20 @@ export function useChatMusicGeneration({ active, prompt }) {
     invalidate();
   }
 
+  async function refreshQuoteRequest(freshEntitlements) {
+    const serverDraft = await custom.refresh(false);
+    const activeModel = freshEntitlements?.models?.find((item) => item.id === serverDraft?.model_id
+      && isSunoContract(item) && item.generation_modes?.includes('custom') && item.available !== false);
+    return serverDraft && activeModel
+      ? sunoCustomQuoteRequest({ model: activeModel, draft: serverDraft, controls: effectiveControls })
+      : null;
+  }
+
   async function action() {
     if (!model || busy) return false;
     if (quote) return Boolean(await confirmQuote({
       title: customMode ? custom.draft.title.trim() : '',
-      onContractStale: customMode ? custom.refresh : undefined,
+      onContractStale: customMode ? refreshQuoteRequest : undefined,
     }));
     if (customMode) {
       if (!String(custom.draft.styles || '').trim() || !sunoCustomReady({ model, draft: custom.draft, controls })) return false;
@@ -79,7 +88,7 @@ export function useChatMusicGeneration({ active, prompt }) {
       return Boolean(await reviewQuote(
         sunoCustomQuoteRequest({ model, draft: saved, controls: effectiveControls }),
         startedAt,
-        custom.refresh,
+        refreshQuoteRequest,
       ));
     }
     const brief = String(prompt || '').trim();

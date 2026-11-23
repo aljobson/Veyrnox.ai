@@ -18,10 +18,11 @@ export async function GET(request) {
     const cfg = envConfig();
     if (!cfg.supabaseUrl || !cfg.serviceRoleKey) return reply({ error: 'gateway_not_configured' }, 503);
     try {
-        const [models, credits, subscription] = await Promise.all([
+        const [models, credits, subscription, crunAvailability] = await Promise.all([
             readFreshMusicCatalog({ cfg }),
             rpc('read_user_credits', { p_auth_id: authId }, cfg),
             rpc('read_own_credit_subscription', { p_auth_id: authId }, cfg),
+            rpc('music_get_crun_availability', {}, cfg),
         ]);
         return reply(musicEntitlementProjection({
             models,
@@ -29,6 +30,9 @@ export async function GET(request) {
             generationEnabled: musicGenerationEnabled(),
             longSongs: musicRuntimeFlag('longSongs'),
             subscription: subscription?.ok ? subscription.subscription : null,
+            crunAvailability: crunAvailability?.ok ? crunAvailability : {
+                admission_open: false, endpoint_open: false, suno_models: {},
+            },
         }));
     } catch (error) {
         console.error('[music/entitlements] read failed:', error?.message);

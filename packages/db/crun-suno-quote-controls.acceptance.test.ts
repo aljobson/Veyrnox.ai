@@ -92,4 +92,35 @@ describe('Crun Suno quote controls (0586)', { skip: !local && 'disposable localh
     assert.equal(result.ok, true, JSON.stringify(result));
     assert.equal(result.provider_contract, 'fal-ace-v1');
   }));
+
+  it('projects account, endpoint and Suno-model breakers and refuses matching quotes', async () => isolated(async () => {
+    const { auth } = await paidUser();
+    const endpoint = 'crun:suno/music-generate';
+    await client.query(`UPDATE public.model_catalog SET provider='crun',provider_endpoint=$1,
+      credits_5s=4,provider_cost_per_unit=0.0536,updated_at=clock_timestamp() WHERE id='ace-step-1.5'`, [endpoint]);
+    await client.query("UPDATE public.provider_spend_provider_policy SET admission_open=true WHERE provider='crun'");
+    await client.query("UPDATE public.model_routes SET breaker_opened_at=NULL WHERE supplier='crun' AND endpoint=$1", [endpoint]);
+
+    const call = (model: string) => one(`SELECT public.music_create_quote(
+      $1,'breaker fixture',NULL,'ace-step-1.5',NULL,NULL,NULL,60,
+      'crun-suno-v1',false,$2,'auto',NULL) r`, [auth, model]);
+    const trip = (await one("SELECT public.trip_crun_suno_model_breaker($1,'v6_wild','acceptance_trip',clock_timestamp()) r", [endpoint])).r;
+    assert.equal(trip.ok, true);
+    let availability = (await one('SELECT public.music_get_crun_availability() r')).r;
+    assert.equal(availability.suno_models.v6_wild, false);
+    assert.equal(availability.suno_models.v6, true);
+    assert.equal((await call('v6_wild')).r.code, 'MUSIC_UNAVAILABLE');
+    assert.equal((await call('v6')).r.ok, true);
+
+    await client.query("UPDATE public.model_routes SET breaker_opened_at=clock_timestamp() WHERE supplier='crun' AND endpoint=$1", [endpoint]);
+    availability = (await one('SELECT public.music_get_crun_availability() r')).r;
+    assert.equal(availability.endpoint_open, false);
+    assert.equal((await call('v6')).r.code, 'MUSIC_UNAVAILABLE');
+
+    await client.query("UPDATE public.model_routes SET breaker_opened_at=NULL WHERE supplier='crun' AND endpoint=$1", [endpoint]);
+    await client.query("UPDATE public.provider_spend_provider_policy SET admission_open=false WHERE provider='crun'");
+    availability = (await one('SELECT public.music_get_crun_availability() r')).r;
+    assert.equal(availability.admission_open, false);
+    assert.equal((await call('v6')).r.code, 'MUSIC_UNAVAILABLE');
+  }));
 });

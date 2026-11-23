@@ -12,11 +12,11 @@ const empty: MusicInputSnapshot = { mode: 'simple', model_id: '', prompt: '', ti
 type State = Readonly<{
     status: 'loading' | 'on' | 'off' | 'error'; entitlements: MusicEntitlements | null;
     input: MusicInputSnapshot; rights: boolean; draft: MusicDraft | null; conflict: MusicDraft | null;
-    busy: boolean; error: string | null;
+    busy: boolean; error: string | null; previousText: Pick<MusicInputSnapshot, 'title' | 'lyrics' | 'styles'> | null;
 }>;
 export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof createGenerationTracker>, mintKey?: () => string) {
     const attempts = createGenerationAttempts(api, mintKey), gate = createQuoteGate();
-    let state: State = { status: 'loading', entitlements: null, input: empty, rights: false, draft: null, conflict: null, busy: false, error: null };
+    let state: State = { status: 'loading', entitlements: null, input: empty, rights: false, draft: null, conflict: null, busy: false, error: null, previousText: null };
     let disposed = false, loading = false, confirming = false, refreshing = false;
     const listeners = new Set<() => void>();
     const emit = () => listeners.forEach(fn => fn());
@@ -109,6 +109,7 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
             if (blockers.length) { update({ error: blockers[0] }); return; }
             const model = e.models.find(m => m.id === input.model_id)!;
             const captured = effectiveInput(input, model);
+            let preparedInput = captured;
             const token = gate.start(); attempts.invalidate(); update({ busy: true, error: null, conflict: null });
             try {
                 let refreshed = false;
@@ -120,19 +121,21 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                     if (!freshModel) throw new ApiError(409, 'model_unavailable');
                     const nextInput = effectiveInput({ ...captured, model_id: freshModel.id }, freshModel);
                     if (captured.mode === 'simple') {
+                        preparedInput = nextInput;
                         update({ entitlements: fresh, input: { ...state.input, instrumental: nextInput.instrumental,
                             duration: nextInput.duration, model_id: nextInput.model_id } });
                         return buildSimpleQuote(nextInput, fresh);
                     }
                     const serverDraft = await getCustomDraft(api);
-                    const preserved = { ...serverDraft, model_id: freshModel.id, title: captured.title,
-                        lyrics: captured.lyrics, styles: captured.styles };
-                    const saved = await saveCustomDraft(api, { provider_contract: preserved.provider_contract, draft_id: preserved.id,
-                        revision: preserved.revision, model_id: preserved.model_id, lyrics: preserved.lyrics,
-                        styles: preserved.styles, title: preserved.title });
-                    update({ entitlements: fresh, draft: saved, input: { ...state.input, model_id: freshModel.id,
-                        instrumental: nextInput.instrumental, duration: nextInput.duration } });
-                    return buildCustomQuote(nextInput, fresh, saved, rights);
+                    const activeInput = effectiveInput({ ...captured, model_id: freshModel.id, title: serverDraft.title,
+                        lyrics: serverDraft.lyrics, styles: serverDraft.styles }, freshModel);
+                    preparedInput = activeInput;
+                    update({ entitlements: fresh, draft: serverDraft, previousText: {
+                        title: captured.title, lyrics: captured.lyrics, styles: captured.styles,
+                    }, input: { ...state.input, model_id: freshModel.id, title: serverDraft.title,
+                        lyrics: serverDraft.lyrics, styles: serverDraft.styles,
+                        instrumental: activeInput.instrumental, duration: activeInput.duration } });
+                    return buildCustomQuote(activeInput, fresh, serverDraft, rights);
                 };
                 let payload;
                 if (input.mode === 'custom') {
@@ -158,7 +161,8 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 const quote = await createQuoteWithContractRefresh(api, payload!, refreshedPayload);
                 if (disposed || !gate.isCurrent(token) || state.status !== 'on') return;
                 if (quote.model_id !== captured.model_id || quote.mode !== captured.mode) throw new ApiError(201, 'bad_response');
-                attempts.prepare(quote, { ...captured, ...(captured.mode === 'simple' ? { prompt: captured.prompt.trim(), title: captured.title.trim() } : {}) });
+                attempts.prepare(quote, { ...preparedInput, ...(preparedInput.mode === 'simple'
+                    ? { prompt: preparedInput.prompt.trim(), title: preparedInput.title.trim() } : {}) });
             } catch (error) { if (!disposed && (isMusicOff(error) || gate.isCurrent(token))) fail(error); }
             finally { if (gate.isLatestStart(token)) update({ busy: false }); }
         },
@@ -191,6 +195,11 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
         keepMine() {
             const draft = state.conflict; if (!draft) return;
             gate.invalidate(); attempts.invalidate(); update({ draft, conflict: null, error: null });
+        },
+        copyPreviousText() {
+            if (!state.previousText) return;
+            edit(state.previousText);
+            update({ previousText: null });
         },
         dispose() { disposed = true; gate.invalidate(); attempts.reset(); tracker.dispose(); stopTracker(); listeners.clear(); },
     };
