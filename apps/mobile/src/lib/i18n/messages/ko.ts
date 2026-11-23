@@ -294,7 +294,7 @@ const ko = {
     'app.create.error.upload_unreadable': '파일을 읽을 수 없습니다. 요금이 부과되지 않았습니다.',
     'app.create.error.source_too_large': '이 모델에 사용하기에는 이미지 픽셀이 너무 많습니다. 더 작은 이미지를 사용하세요. 요금이 부과되지 않았습니다.',
     'app.create.error.source_too_long': '녹음이 이 모델에서 허용하는 길이보다 깁니다(업로드의 제한을 확인하세요). 요금이 부과되지 않았습니다.',
-    'app.create.error.source_length_unknown': '파일 길이를 읽을 수 없습니다. WAV 또는 표지 이미지가 없는 MP3를 사용해 보세요. 요금이 부과되지 않았습니다.',
+    'app.create.error.source_length_unknown': '파일 길이를 읽을 수 없습니다. 휴대폰이나 동영상 편집 앱에서 저장한 MP4, 또는 표지 이미지가 없는 WAV나 MP3를 사용해 보세요. 요금이 부과되지 않았습니다.',
     'app.create.error.lipsync_video_length_unknown': '입 모양 동기화를 위한 영상의 시각적 길이를 확인할 수 없습니다. 영상 트랙이 하나인 일반 MP4로 내보내고 다시 시도하세요. 요금이 부과되지 않았습니다.',
     'app.create.error.lipsync_audio_exceeds_video': '음성이 영상보다 깁니다. 끝부분이 잘리지 않도록 더 짧은 음성이나 더 긴 영상을 사용하세요. 요금이 부과되지 않았습니다.',
     'app.create.error.dialogue_invalid': '화자마다 한 줄씩 "Ana: 안녕하세요!"처럼 작성하세요. 화자는 최대 네 명입니다. 요금이 부과되지 않았습니다.',
