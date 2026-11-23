@@ -11,6 +11,7 @@ import { ds, radius } from '../../theme';
 import { Button, Chip, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import { AttachStrip, AttachThumbs } from './AttachStrip';
 import { ReplyOptionChip } from './ReplyOptionChip';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 interface Props {
     readonly free?: boolean;
@@ -58,6 +59,7 @@ export function composerMaxHeight(windowHeight: number, typing: boolean): number
 
 export function ChatComposerDeck(props: Props) {
     const styles = useThemedStyles(sheets);
+    const insets = useOptionalSafeAreaInsets();
     const typing = useKeyboardOpen();
     const { height } = useWindowDimensions();
     const [sheet, setSheet] = useState(false);
@@ -111,7 +113,7 @@ export function ChatComposerDeck(props: Props) {
             </Text>}
             <Modal visible={sheet} transparent animationType="slide" onRequestClose={() => setSheet(false)}>
                 <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t('chat.make.close')} onPress={() => setSheet(false)} />
-                <View style={styles.sheet} onAccessibilityEscape={() => setSheet(false)}>
+                <View style={[styles.sheet, { paddingLeft: insets.left + 16, paddingRight: insets.right + 16, paddingBottom: insets.bottom + 16 }]} onAccessibilityEscape={() => setSheet(false)}>
                     <Text variant="title3" accessibilityRole="header">{t('chat.make.title')}</Text>
                     <View style={styles.types} accessibilityRole="tablist">
                         {TYPES.map((item) => (
@@ -139,7 +141,7 @@ const sheets = themedStyles((p) => ({
     plus: { minWidth: 44, minHeight: 44 },
     sendGroup: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },
     backdrop: { flex: 1, backgroundColor: p.scrim },
-    sheet: { backgroundColor: p.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 16, paddingBottom: 28, gap: 12 },
+    sheet: { backgroundColor: p.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 16, gap: 12 },
     types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     action: { minHeight: 44, maxWidth: 150 },
     sendPrice: { textAlign: 'right', flexShrink: 1 },

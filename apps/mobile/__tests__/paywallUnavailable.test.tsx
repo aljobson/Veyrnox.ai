@@ -1,5 +1,6 @@
 import { act } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { createRoot, type Root } from 'test-renderer';
 import Paywall from '../src/app/(app)/paywall';
 
@@ -15,7 +16,7 @@ const mockRetryOfferings = jest.fn();
 const mockRefreshSales = jest.fn(async () => true);
 let mockBilling: Record<string, unknown>;
 jest.mock('expo-router', () => ({ Redirect: (props: unknown) => mockRedirect(props), Stack: { Screen: () => null }, useRouter: () => ({ back: mockBack, replace: mockReplace, canGoBack: () => mockCanGoBack }), useLocalSearchParams: () => ({ offering: 'generation' }) }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ ...jest.requireActual('react-native-safe-area-context'), useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('react-native-purchases-ui', () => ({ __esModule: true, default: { Paywall: (props: unknown) => { nativeProps = props; return mockNativePaywall(); } } }), { virtual: true });
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
 jest.mock('../src/billing/BillingProvider', () => ({ useBilling: () => mockBilling }));
@@ -60,6 +61,18 @@ test('QA-008: when purchases are not ready the paywall offers Try again and Clos
     expect(mockRefreshSales).toHaveBeenCalledTimes(1);
     await act(async () => close[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
     expect(mockBack).toHaveBeenCalledTimes(1);
+});
+
+test('unavailable paywall fallback keeps its controls inside landscape side and bottom insets', async () => {
+    await act(async () => root.render(
+        <SafeAreaInsetsContext.Provider value={{ top: 0, right: 59, bottom: 21, left: 59 }}><Paywall /></SafeAreaInsetsContext.Provider>,
+    ));
+    expect(root.container.queryAll(node => {
+        const style = StyleSheet.flatten(node.props.contentContainerStyle);
+        return style?.paddingLeft === 83 && style?.paddingRight === 83 && style?.paddingBottom === 45;
+    })).toHaveLength(1);
+    expect(button('Try again').length).toBeGreaterThan(0);
+    expect(button('Close').length).toBeGreaterThan(0);
 });
 
 test('sales closed also shows the escape hatch', async () => {

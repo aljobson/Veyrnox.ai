@@ -9,8 +9,16 @@ import { PickSheet } from '../src/components/oddlings/PickSheet';
 let mockAsk: (() => Promise<boolean>) | null;
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { setPrompter: (fn: typeof mockAsk) => { mockAsk = fn; } } }));
 jest.mock('expo-secure-store', () => ({ getItem: () => null }));
-jest.mock('react-native', () => ({ Modal: 'Modal', View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Text: 'Text', FlatList: 'FlatList', ActivityIndicator: 'ActivityIndicator', Platform: { OS: 'ios' }, NativeModules: {}, StyleSheet: { create: (s: any) => s, hairlineWidth: 1 } }));
-jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
+jest.mock('react-native', () => ({
+    Modal: 'Modal', View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Text: 'Text', TextInput: { State: { currentlyFocusedInput: () => null } },
+    FlatList: 'FlatList', ActivityIndicator: 'ActivityIndicator', KeyboardAvoidingView: 'KeyboardAvoidingView',
+    Keyboard: { addListener: () => ({ remove: () => {} }), isVisible: () => false }, Platform: { OS: 'ios' }, NativeModules: {},
+    StyleSheet: { create: (s: any) => s, hairlineWidth: 1 },
+}));
+jest.mock('react-native-safe-area-context', () => {
+    const React = jest.requireActual('react');
+    return { SafeAreaView: 'SafeAreaView', SafeAreaInsetsContext: React.createContext({ top: 0, right: 59, bottom: 21, left: 59 }) };
+});
 jest.mock('../src/components/ui/useReducedMotion', () => ({ useReducedMotion: () => true }));
 jest.mock('../src/components/legal/LegalDocumentView', () => ({ LegalDocumentView: () => null }));
 jest.mock('../src/components/ui', () => {
@@ -24,6 +32,7 @@ let root: Root;
 beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot(); });
 afterEach(async () => { await act(async () => root.unmount()); });
 const nativeEscapes = (node: TestInstance) => node.queryAll(n => (n.type === 'View' || n.type === 'ScrollView') && typeof n.props.onAccessibilityEscape === 'function');
+const flatten = (style: unknown): Record<string, unknown> => (Array.isArray(style) ? style : [style]).filter(Boolean).reduce((all, item) => ({ ...all, ...item }), {});
 const press = async (label: string) => {
     const button = root.container.queryAll(n => n.type === 'Button' && n.props.label === label)[0];
     expect(button).toBeDefined();
@@ -41,6 +50,7 @@ test('AI consent escape declines just like Not now, but leaving privacy does not
     await act(async () => root.render(<AiConsentHost />));
     let result!: Promise<boolean>;
     await act(async () => { result = mockAsk!(); });
+    expect(flatten(nativeEscapes(root.container)[0].props.style)).toMatchObject({ paddingLeft: 75, paddingRight: 75, paddingBottom: 37 });
     const answered = jest.fn(); result.then(answered);
     await press('Read the Privacy Policy');
     await act(async () => modalEscape()());
@@ -74,6 +84,8 @@ test('reusable legal sheet content also closes when mounted without a Modal', as
 test('ChatSettings escape closes without saving unsaved settings', async () => {
     const close = jest.fn(), save = jest.fn();
     await act(async () => root.render(<ChatSettings visible thread={{ model_id: 'model', system_prompt: '' }} models={[]} onSave={save} onClose={close} />));
+    const form = root.container.queryAll(n => n.type === 'ScrollView' && n.props.keyboardDismissMode === 'on-drag')[0];
+    expect(flatten(form.props.contentContainerStyle)).toMatchObject({ paddingLeft: 75, paddingRight: 75, paddingBottom: 37 });
     const field = root.container.queryAll(n => n.type === 'TextField')[0];
     await act(async () => field.props.onChangeText('unsaved'));
     await act(async () => modalEscape()());
@@ -84,6 +96,7 @@ test('ChatSettings escape closes without saving unsaved settings', async () => {
 test('model and option picker escape closes without choosing an item', async () => {
     const close = jest.fn(), pick = jest.fn();
     await act(async () => root.render(<ModelPicker visible currentId="model" models={[]} onPick={pick} onClose={close} />));
+    expect(flatten(nativeEscapes(root.container)[0].props.style)).toMatchObject({ paddingLeft: 75, paddingRight: 75, paddingBottom: 37 });
     await act(async () => modalEscape()());
     await press('Close model list');
     expect(close).toHaveBeenCalledTimes(2); expect(pick).not.toHaveBeenCalled();

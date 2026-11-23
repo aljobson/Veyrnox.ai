@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicActionQuoteCard } from '../../../components/music/MusicActionQuoteCard';
@@ -16,6 +16,7 @@ import type { TargetStemKind } from '../../../lib/music/targetStemTypes';
 import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { ds } from '../../../theme';
+import { SafeContentScrollView } from '../../../components/SafeContentScrollView';
 
 export default function TargetStems() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,7 +44,7 @@ export default function TargetStems() {
         } catch (error) { flow.fail(error); }
         finally { if (flow.isLive()) { assetLock.current = false; setOpening(false); } }
     }
-    return <ScrollView style={s.screen} contentContainerStyle={s.content}>
+    return <SafeContentScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('musicTargetStems.title') }} />
         <Text variant="title1" accessibilityRole="header">{t('musicTargetStems.title')}</Text>
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
@@ -82,7 +83,7 @@ export default function TargetStems() {
                     {state.error ? <MusicNotice message={targetStemMessage(state.error)} /> : null}
                     {state.error === 'revision_conflict' ? <Button label={t('musicActions.action.reload')} onPress={() => void flow.load()} /> : null}
                 </>}
-    </ScrollView>;
+    </SafeContentScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.md },
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md },
     instruments: { gap: ds.space.sm } }));

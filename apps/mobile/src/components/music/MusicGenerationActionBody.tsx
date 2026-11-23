@@ -9,7 +9,7 @@ import { MusicSectionQuoteDetails } from './MusicSectionQuoteDetails';
 import { MusicReplaceTakeControls, MusicReplaceTakeNotices } from './MusicReplaceTakeControls';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Stack } from 'expo-router';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { MusicNotice } from './MusicNotice';
 import { MusicActionQuoteCard } from './MusicActionQuoteCard';
@@ -26,6 +26,7 @@ import type { PlaybackInput } from '../../lib/music/player';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { ds } from '../../theme';
+import { SafeKeyboardFormScrollView } from '../SafeContentScrollView';
 
 export function MusicGenerationActionBody({ id, kind }: { id: string; kind: GenerationActionKind }) {
     const { api, flow, state, pending } = useSongActionScreen(id, kind === 'extend' ? extendAction : kind === 'cover' ? coverAction : kind === 'add_section' ? addSectionAction : replaceAction);
@@ -47,7 +48,7 @@ export function MusicGenerationActionBody({ id, kind }: { id: string; kind: Gene
     const statusKey = status && ['queued', 'running', 'succeeded', 'partial', 'failed', 'refunded'].includes(status) ? status : 'running';
     useAnnouncement(state.result ? t(`musicGenerationActions.state.${statusKey}`) : null, { everywhere: true });
     const candidates = state.poll?.value?.candidates ?? state.result?.candidates.map(c => ({ ...c, song_id: null, version_id: null, audio_url: null, error_code: null }));
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title }} />
         <Text variant="title1" accessibilityRole="header">{title}</Text>
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
@@ -100,8 +101,8 @@ export function MusicGenerationActionBody({ id, kind }: { id: string; kind: Gene
                     {state.error === 'revision_conflict' || state.error === 'source_changed'
                         ? <Button label={t('musicActions.action.reload')} onPress={() => void flow.load()} /> : null}
                 </>}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.md },
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md },
     input: { color: p.textPrimary, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: 12, padding: ds.space.md, minHeight: 100, textAlignVertical: 'top' },
     stepper: { gap: ds.space.sm } }));

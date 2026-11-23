@@ -1,7 +1,7 @@
 import { Text as StatusText } from '../ui/Text';
 import * as Crypto from 'expo-crypto';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { AnalyticsEntry } from './AnalyticsEntry';
 import { CreatorUploadShell } from './CreatorUploadShell';
@@ -11,6 +11,8 @@ import { bioOk, BIO_MAX, createProfile, creatorErrorKey, fetchApplication, fetch
 import { readOf, type Read } from '../../lib/cinemaSocial';
 import { t } from '../../lib/i18n';
 import { colors } from '../../theme';
+import { KeyboardScreen } from '../KeyboardScreen';
+import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
 
 // The Cinema profile tab: make a profile (username, display name, bio), see it, and apply to become a creator. Both
 // parts are off in production, so each shows a closed message. There is no upload or creator workspace in the app yet.
@@ -27,12 +29,12 @@ export function CinemaProfile() {
     if (profile.kind === 'closed') return <View style={styles.center}><Text style={styles.muted}>{t('cinemaCreator.closed.profile')}</Text></View>;
     if (profile.kind === 'error') return <Pressable accessibilityRole="button" style={styles.center} onPress={load}><Text style={styles.error}>{t(profile.key)} {t('cinemaSocial.tapRetry')}</Text></Pressable>;
     return (
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardScreen style={styles.flex}>
+            <KeyboardFormScrollView contentContainerStyle={styles.content}>
                 <PassCard />
                 {profile.value ? <><ProfileCard profile={profile.value} />{profile.value.role === 'creator' ? <><CreatorUploadShell /><AnalyticsEntry /></> : <Apply />}</> : <NewProfile onDone={load} />}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

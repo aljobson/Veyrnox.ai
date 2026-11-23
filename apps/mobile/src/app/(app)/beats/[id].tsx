@@ -50,6 +50,8 @@ import type { ApplyOptions } from '../../../lib/beatNative/regionActions';
 import { createMidiRecording, type MidiRecordingController } from '../../../lib/beatNative/midiRecording';
 import type { MidiSoundTrack } from '../../../lib/beatNative/midi';
 import { getCacheUser } from '../../../lib/appCache';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 const clampBpm = (n: number) => Math.min(MAX_BPM, Math.max(MIN_BPM, n));
 const playbackNotice = (error: unknown) => t((error as Error)?.message === 'audio_playback_too_large' ? 'beat.audioTooLarge' : 'beat.audioError');
@@ -548,7 +550,7 @@ export default function BeatEditor() {
     return (
         <SafeAreaView edges={['left', 'right']} testID="beat-editor-shell" style={s.screen}>
             <Stack.Screen options={{ title: doc.title }} />
-            <ScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
+            <KeyboardScreen><KeyboardFormScrollView ref={workspace} testID="beat-editor-workspace" scrollEnabled={!held} style={s.workspaceScroll}
                 contentContainerStyle={[s.content, layout === 'regular' && s.contentRegular]} keyboardShouldPersistTaps="handled"
                 scrollEventThrottle={16}
                 onLayout={event => {
@@ -670,7 +672,7 @@ export default function BeatEditor() {
                         {doc.tracks.length >= MAX_TRACKS ? <Text variant="footnote" tone="secondary">{t('beat.track.max', { max: MAX_TRACKS })}</Text> : null}
                     </View>
                 </View>
-            </ScrollView>
+            </KeyboardFormScrollView></KeyboardScreen>
             <BeatEditorTransport playing={playing} starting={starting} locked={locked}
                 pattern={doc.currentPattern} patternDisabled={patternLocked} canUndo={undoable} canRedo={redoable}
                 patternControlsRef={patternControlsTrigger}

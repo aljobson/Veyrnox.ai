@@ -8,6 +8,8 @@ import { confirmSignOut } from '../../lib/confirmSignOut';
 import { t } from '../../lib/i18n';
 import { Status } from './AccountParts';
 import { Button, Checkbox, Text, themedStyles, useThemedStyles } from '../ui';
+import { modalSafePadding } from '../../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 type Phase = 'unknown' | 'ask' | 'declined' | 'confirmed';
 
@@ -15,6 +17,7 @@ type Phase = 'unknown' | 'ask' | 'declined' | 'confirmed';
 // stays mounted underneath (nothing unsent is lost); the question covers it. A decline is kept in memory only.
 export function AgeConfirmationGate({ children }: { children: ReactNode }) {
     const styles = useThemedStyles(sheets);
+    const insets = useOptionalSafeAreaInsets();
     const { api, signOut } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -75,7 +78,7 @@ export function AgeConfirmationGate({ children }: { children: ReactNode }) {
         <>
             {children}
             <Modal visible={blocked} animationType="none" onRequestClose={() => {}} presentationStyle="fullScreen">
-                <ScrollView contentContainerStyle={styles.screen} keyboardShouldPersistTaps="handled">
+                <ScrollView contentContainerStyle={[styles.screen, modalSafePadding(insets, 24)]} keyboardShouldPersistTaps="handled">
                     <Text variant="title2" accessibilityRole="header">{t('app.age.title')}</Text>
                     {phase === 'ask' ? (
                         <>

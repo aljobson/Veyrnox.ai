@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, ScrollView, View, useWindowDimensions } from 'react-native';
+import { AppState, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../../../components/EmptyState';
 import { MusicNotice } from '../../../../components/music/MusicNotice';
@@ -20,6 +20,8 @@ import { t } from '../../../../lib/i18n';
 import { useAnnouncement } from '../../../../lib/useAnnouncement';
 import { beatPianoLayout } from '../../../../lib/beatNative/pianoLayout';
 import { TEXT_SCALE } from '../../../../theme';
+import { KeyboardScreen } from '../../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../../components/KeyboardFormScrollView';
 
 export default function BeatPianoScreen() {
     const params = useLocalSearchParams<{ id: string; region: string }>(), id = String(params.id);
@@ -80,14 +82,14 @@ export default function BeatPianoScreen() {
     const keyboard = <BeatKeyboard compact={layout.compactKeyboard} track={{ ...track, gain: audibleGain(doc, track) }} velocity={velocity} setVelocity={setVelocity} audio={engine} onError={() => edit.setNotice(t('beat.audioError'))} />;
     return <SafeAreaView style={s.screen} edges={layout.dockKeyboard ? ['left', 'right'] : ['left', 'right', 'bottom']}>
         <Stack.Screen options={{ title: t('beatPiano.title') }} />
-        <ScrollView style={s.workspace} contentContainerStyle={[s.content, layout.mode === 'regular' && s.contentWide]} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+        <KeyboardScreen><KeyboardFormScrollView style={s.workspace} contentContainerStyle={[s.content, layout.mode === 'regular' && s.contentWide]} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
             {edit.notice && <MusicNotice message={edit.notice} announce={false} />}
             {layout.mode === 'regular' ? <>
                 <View style={s.main}>{timeline}{noteActions}</View>
                 <View style={s.sidebar}>{toolbar}</View>
             </> : <>{toolbar}{timeline}{noteActions}</>}
             {!layout.dockKeyboard && keyboard}
-        </ScrollView>
+        </KeyboardFormScrollView></KeyboardScreen>
         {layout.dockKeyboard && <SafeAreaView edges={['bottom']} style={s.keyboardDock}>{keyboard}</SafeAreaView>}
     </SafeAreaView>;
 }

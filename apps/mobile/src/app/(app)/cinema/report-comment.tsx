@@ -2,12 +2,13 @@ import { Text as StatusText } from '../../../components/ui/Text';
 import * as Crypto from 'expo-crypto';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { touchTarget } from '../../../lib/a11y';
 import { DETAILS_MAX, DETAILS_MIN, REPORT_CATEGORIES, commentsErrorKey, detailsOk, reportComment, type ReportCategory } from '../../../lib/cinemaComments';
 import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
+import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
 
 // Reports one Cinema comment to the operator, who acts for everyone. Blocking is separate and only hides it from you.
 export default function ReportComment() {
@@ -39,7 +40,7 @@ export default function ReportComment() {
     }
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <SafeKeyboardFormScrollView style={styles.screen} contentContainerStyle={styles.body} gutter={16}>
             <Stack.Screen options={{ title: t('comments.reportTitle') }} />
             {done ? (
                 <>
@@ -75,13 +76,13 @@ export default function ReportComment() {
                     </Pressable>
                 </>
             )}
-        </ScrollView>
+        </SafeKeyboardFormScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    body: { padding: 16, gap: 12 },
+    body: { gap: 12 },
     intro: { color: colors.body },
     chips: { gap: 8 },
     chip: { paddingHorizontal: 14, borderRadius: 10, backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, justifyContent: 'center' },

@@ -29,6 +29,8 @@ import { useTemplateGenerate } from '../../../lib/useTemplateGenerate';
 import { templateModelEligible, templateOptions, type TemplateChoices } from '../../../lib/templateChoices';
 import { useTemplateClipAvailable, templateClipModel } from '../../../lib/templateClips';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 // The longest prompt the generations route accepts.
 const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
@@ -105,7 +107,7 @@ export default function TemplatePage() {
         revealResult.current = false;
         requestAnimationFrame(() => revealNode(resultTarget.current));
     }, [generation.run, generation.error]);
-    return <ScrollView {...(swapOffer || boundCount ? { ref: scroll, scrollEventThrottle: 32, onScroll: (event: { nativeEvent: { contentOffset: { y: number } } }) => { scrollY.current = event.nativeEvent.contentOffset.y; } } : {})} contentContainerStyle={styles.screen}>
+    return <KeyboardScreen><KeyboardFormScrollView {...(swapOffer || boundCount ? { ref: scroll, scrollEventThrottle: 32, onScroll: (event: { nativeEvent: { contentOffset: { y: number } } }) => { scrollY.current = event.nativeEvent.contentOffset.y; } } : {})} contentContainerStyle={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
         {TEMPLATE_SWAP_RUNTIME && !swapOffer && <SwapAttemptStatus templateId={id} />}
         {swapOffer ? <>
@@ -166,6 +168,6 @@ export default function TemplatePage() {
                 <Button label={t('libraryCreate.useTemplate')} disabled={tooLong || !prompt.trim()} onPress={() => router.push(presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog))} />
             </> : <Text>{t('presets.notavailablerightnow')}</Text>}
         </>}
-    </ScrollView>;
+    </KeyboardFormScrollView></KeyboardScreen>;
 }
 const sheets = themedStyles(p => ({ screen: { padding: 20, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, promptBox: { maxHeight: 180 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { DISCOVER_SEEDS, buildSamplePrompt } from '../../../lib/music/discoverSeeds';
-import { ScrollView, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
 import { MusicQueue } from '../../../components/music/MusicQueue';
@@ -12,6 +12,7 @@ import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
+import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
 const KNOWN = new Set(['empty_prompt', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
@@ -39,7 +40,7 @@ export default function MusicCreate() {
     const blockers = e && pending ? quoteBlockers({ input: pending.input, entitlements: e, rights: !pending.input.instrumental,
         activeCount: flow.tracker.activeCount(), quote: pending.quote, now, ambiguous }) : [];
     const error = state.error && t(`music.create.${messageKey(state.error)}`);
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('music.create.title') }} />
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
             : state.status === 'loading' ? <Text>{t('music.loading')}</Text>
@@ -102,6 +103,6 @@ export default function MusicCreate() {
                         </> : null}
                         <MusicQueue entries={queue.entries} activeCount={flow.tracker.activeCount()} limit={e.concurrency_limit} />
                     </> : null}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.md }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm } }));

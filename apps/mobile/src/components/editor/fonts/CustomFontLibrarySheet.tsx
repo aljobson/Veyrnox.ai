@@ -1,5 +1,5 @@
 import { useState, type ComponentProps } from 'react';
-import { AccessibilityInfo, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { AccessibilityInfo, Alert, Modal, Platform, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { plural, rawText, t } from '../../../lib/i18n';
 import type { CustomFont } from '../../../lib/nativeEditorModel';
@@ -8,6 +8,8 @@ import { touchTarget } from '../../../lib/a11y';
 import type { EditorFontActions } from '../useEditorFonts';
 import { Action } from '../EditorControls';
 import { Text as UiText } from '../../ui';
+import { KeyboardScreen } from '../../KeyboardScreen';
+import { KeyboardFormScrollView } from '../../KeyboardFormScrollView';
 
 type Props = {
     visible: boolean; fonts: readonly CustomFont[]; actions: EditorFontActions; used: Readonly<Record<string, number>>;
@@ -31,13 +33,13 @@ export function CustomFontLibrarySheet({ visible, fonts, actions, used, selected
     ]);
     return <Modal visible={visible} animationType="slide" presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal={!actions.busy}
         onRequestClose={() => { if (!actions.busy) onClose(); }} accessibilityViewIsModal>
-        <SafeAreaView style={sheet.screen} edges={['top', 'bottom']}>
+        <SafeAreaView style={sheet.screen} edges={['top', 'right', 'bottom', 'left']}>
             <View style={sheet.header}>
                 <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorFont.close'))} style={({ pressed }) => [sheet.headerAction, touchTarget, pressed && sheet.pressed]}
                     disabled={!!actions.busy} onPress={onClose}><Text style={[sheet.headerActionText, !!actions.busy && sheet.disabled]}>{t('editorFont.close')}</Text></Pressable>
                 <Text accessibilityRole="header" style={sheet.title}>{t('editorFont.title')}</Text><View style={sheet.headerAction} />
             </View>
-            <ScrollView contentContainerStyle={sheet.content} keyboardShouldPersistTaps="handled">
+            <KeyboardScreen><KeyboardFormScrollView contentContainerStyle={sheet.content} keyboardShouldPersistTaps="handled">
                 <Text style={sheet.intro}>{t('editorFont.help')}</Text>
                 {fonts.map(font => {
                     const ready = actions.has(font.family), count = used[font.family] ?? 0, isSelected = selected === font.family;
@@ -74,7 +76,7 @@ export function CustomFontLibrarySheet({ visible, fonts, actions, used, selected
                 </View> : <Action label={t('editorFont.add')} disabled={!!actions.busy || fonts.length >= 8} onPress={() => { actions.clearProblem(); setAdding(true);
                     AccessibilityInfo.announceForAccessibility(t('editorFont.importTitle')); }} />}
                 <Text style={sheet.note}>{t('editorFont.note')}</Text><Text style={sheet.note}>{t('editorFont.exportNote')}</Text>
-            </ScrollView>
+            </KeyboardFormScrollView></KeyboardScreen>
         </SafeAreaView>
     </Modal>;
 }

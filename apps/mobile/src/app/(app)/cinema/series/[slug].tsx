@@ -1,19 +1,22 @@
 import { rawText } from '../../../../lib/i18n/translate';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../../../lib/a11y';
 import { formatDuration } from '../../../../lib/cinema';
 import { editorialSeriesBySlug } from '../../../../lib/cinemaSeries';
 import { plural, t } from '../../../../lib/i18n';
 import { colors, fonts } from '../../../../theme';
+import { SafeContentScrollView, screenSafePadding } from '../../../../components/SafeContentScrollView';
+import { useOptionalSafeAreaInsets } from '../../../../lib/safeArea';
 
 export default function EditorialSeriesPage() {
     const { slug } = useLocalSearchParams<{ slug: string }>();
     const router = useRouter();
+    const insets = useOptionalSafeAreaInsets();
     const series = editorialSeriesBySlug(slug);
     if (!series) return (
-        <View style={styles.content}>
+        <View style={[styles.content, screenSafePadding(insets, 16)]}>
             <Text style={styles.body}>{t('cinemaSeries.unavailable')}</Text>
             <Pressable accessibilityRole="link" style={touchTarget} onPress={() => router.replace('/cinema')}>
                 <Text style={styles.link}>{t('cinemaSeries.back')}</Text>
@@ -21,7 +24,7 @@ export default function EditorialSeriesPage() {
         </View>
     );
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <SafeContentScrollView style={styles.screen} contentContainerStyle={styles.content} gutter={16}>
             <Stack.Screen options={{ title: series.title }} />
             <Image source={{ uri: series.posterUrl }} style={styles.poster} contentFit="cover" accessibilityLabel={rawText(t('cinemaSeries.poster', { title: series.title }))} accessibilityIgnoresInvertColors />
             <Text style={styles.title} accessibilityRole="header">{series.title}</Text>
@@ -41,12 +44,12 @@ export default function EditorialSeriesPage() {
                     <Text style={styles.body}>{episode.title}</Text>
                 </Pressable>
             ))}
-        </ScrollView>
+        </SafeContentScrollView>
     );
 }
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 12 },
+    content: { gap: 12 },
     poster: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: colors.surface },
     title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },
     body: { color: colors.body, fontSize: 16 },

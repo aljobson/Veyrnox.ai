@@ -1,7 +1,7 @@
 import { t } from '../../lib/i18n';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import {
     REPORT_CATEGORIES,
@@ -12,6 +12,8 @@ import {
     type ReportSubject,
 } from '../../lib/account';
 import { colors, fonts } from '../../theme';
+import { KeyboardScreen } from '../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../components/KeyboardFormScrollView';
 
 // Opened from a creation (kind=job&id=...) or from Account (no params: a general report).
 export default function ReportScreen() {
@@ -58,7 +60,7 @@ export default function ReportScreen() {
     }
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: kind === 'job' ? t('report.reportthiscreation') : kind === 'cinema_title' ? t('report.reportthistitle') : t('report.reportaproblem') }} />
             <Text style={styles.body}>
                 {kind === 'job' ? t('report.whatiswrongwiththiscreation') : kind === 'cinema_title' ? t('report.whatiswrongwiththistitle') : t('report.whatwouldyouliketoreport')}
@@ -89,7 +91,7 @@ export default function ReportScreen() {
                 {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.primaryText}>{t('report.sendreport')}</Text>}
             </Pressable>
             <Text style={styles.small}>{t('report.donotsendillegalimagesina')}</Text>
-        </ScrollView>
+        </KeyboardFormScrollView></KeyboardScreen>
     );
 }
 

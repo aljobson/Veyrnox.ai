@@ -8,7 +8,9 @@ import { canPublish } from '../../../lib/publishDashboard';
 import { PublishMediaSelection } from '../../../components/PublishMediaSelection';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { NetworkTextFields, YoutubeVisibilityChips } from '../../../components/ComposeExtras';
 import { WhenPicker, whenFrom } from '../../../components/WhenPicker';
 import { touchTarget } from '../../../lib/a11y';
@@ -176,9 +178,9 @@ export default function ApprovalNew() {
     }
 
     return (
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.flex}>
             <Stack.Screen options={{ title: t('approvals.newTitle') }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <Text style={styles.muted}>{t('approvals.newIntro')}</Text>
                 <Text style={styles.heading} accessibilityRole="header">{t('approvals.step.creation')}</Text>
                 {picks.length === 0 ? <Text style={styles.muted}>{t('approvals.noCreations')}</Text> : null}
@@ -234,8 +236,8 @@ export default function ApprovalNew() {
                         </Pressable>
                     </>
                 ) : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

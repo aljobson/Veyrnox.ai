@@ -4,13 +4,15 @@ import { t } from '../../lib/i18n';
 import { english } from '../../lib/i18n/binding';
 import { Stack, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { PRIVACY_EMAIL } from '../../lib/account';
 import { getCacheUser } from '../../lib/appCache';
 import { eraseLocalBeats } from '../../lib/beatNative/eraseLocal';
 import { blockerText, confirmDeletion, prepareDeletion, type Forfeit, type Prepared } from '../../lib/accountDeletion';
 import { colors, fonts } from '../../theme';
+import { KeyboardScreen } from '../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../components/KeyboardFormScrollView';
 
 const CONFIRM_WORD = 'DELETE';
 
@@ -73,7 +75,7 @@ export default function DeleteAccount() {
     }
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: t('deleteaccount.deleteaccount') }} />
             {view.step === 'loading' || view.step === 'erasing' ? (
                 <View style={styles.center}>
@@ -83,7 +85,7 @@ export default function DeleteAccount() {
             ) : (
                 <Prepared_ result={view.result} typed={typed} setTyped={setTyped} note={note} onErase={erase} onRetry={prepare} />
             )}
-        </ScrollView>
+        </KeyboardFormScrollView></KeyboardScreen>
     );
 }
 

@@ -2,7 +2,9 @@ import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
 import { fetchAccounts, type PublishAccount } from '../../../lib/publish';
@@ -93,8 +95,8 @@ export default function ReportEdit() {
     const normalizedAccent = form.accentColor.trim().toLowerCase();
     if (!state || (id && !template)) return <View style={styles.screen}><Stack.Screen options={{ title }} />
         {error ? <Text style={styles.muted}>{error}</Text> : <ActivityIndicator color={colors.accent} />}</View>;
-    return <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Stack.Screen options={{ title }} /><ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    return <KeyboardScreen style={styles.screen}>
+        <Stack.Screen options={{ title }} /><KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Text style={styles.title} accessibilityRole="header">{title}</Text>
             {!canEdit ? <Text style={styles.muted}>{t('publishReporting.roleNote')}</Text> : null}
             {mode.noteKey ? <Text style={styles.muted}>{t(mode.noteKey)}</Text> : null}
@@ -139,8 +141,8 @@ export default function ReportEdit() {
                 accessibilityState={{ busy, disabled: busy }} disabled={busy} style={[styles.choice, styles.selected, touchTarget]} onPress={() => save(mode.readOnly)}>
                 <Text style={styles.text}>{mode.readOnly ? t('publishReporting.schedule.convert') : t('publishReporting.save')}</Text>
             </Pressable> : null}
-        </ScrollView>
-    </KeyboardAvoidingView>;
+        </KeyboardFormScrollView>
+    </KeyboardScreen>;
 }
 const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: colors.background }, body: { padding: 16, gap: 12 },
     group: { gap: 6 }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, toggle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

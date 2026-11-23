@@ -10,6 +10,8 @@ import { colors, fonts as themeFonts } from '../../../theme';
 import { touchTarget } from '../../../lib/a11y';
 import { createNativeAssetPack, editorAssetPackCatalog, packFileProblem, parseNativeAssetPack, shareNativeAssetPack,
     type AssetPack, type PackAsset, type PickedPackFile } from '../../../lib/editorAssetPackCatalog';
+import { KeyboardScreen } from '../../KeyboardScreen';
+import { KeyboardFormScrollView } from '../../KeyboardFormScrollView';
 
 type Progress = 'copying' | 'verifying' | 'placing' | 'creating' | null;
 type Props = { visible: boolean; playhead: string; onClose(): void; onAdd(pack: AssetPack, asset: PackAsset, picked: PickedPackFile,
@@ -117,12 +119,12 @@ export function AssetPackLibrarySheet({ visible, playhead, onClose, onAdd }: Pro
     const update = (field: keyof typeof form, value: string | boolean) => setForm(current => ({ ...current, [field]: value }));
     const createValid = !!createFiles.length && !!form.name.trim() && !!form.credit.trim() && !!form.usage.trim() && form.confirmed;
     return <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={close} accessibilityViewIsModal>
-        <SafeAreaView style={s.screen} edges={['top', 'bottom']}>
+        <SafeAreaView style={s.screen} edges={['top', 'right', 'bottom', 'left']}>
             <View style={s.header}><Pressable accessibilityRole="button" accessibilityLabel={rawText(selected ? t('editorPack.back') : t('editorPack.close'))}
                 style={({ pressed }) => [s.headerAction, touchTarget, pressed && s.pressed]} disabled={busy} onPress={() => selected ? (setSelected(null), setAcknowledged(false), setProblem(null)) : close()}>
                 <Text tone="accent">{selected ? t('editorPack.back') : t('editorPack.close')}</Text></Pressable>
                 <Text accessibilityRole="header" variant="title3" style={s.title}>{t('editorPack.title')}</Text><View style={s.headerAction} /></View>
-            <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+            <KeyboardScreen><KeyboardFormScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
                 {selected && active ? <>
                     <Text variant="title2">{selected.name}</Text><Text tone="secondary">{active.name} · {t(`editorPack.category.${selected.category}`)}</Text>
                     <View style={s.card}><Text variant="bodyStrong">{t('editorPack.expectedFile')}</Text><Text>{selected.file}</Text>
@@ -167,7 +169,7 @@ export function AssetPackLibrarySheet({ visible, playhead, onClose, onAdd }: Pro
                     ? t('editorPack.progress.creating', { done: createProgress.done, total: createProgress.total }) : t(`editorPack.progress.${progress}`)}</Text> : null}
                 {problem ? <Text accessibilityRole="alert" style={s.error}>{problem}</Text> : null}
                 {busy ? <Button label={t('editorPack.cancelOperation')} variant="secondary" onPress={cancelBusy} /> : null}
-            </ScrollView>
+            </KeyboardFormScrollView></KeyboardScreen>
         </SafeAreaView>
     </Modal>;
 }

@@ -25,6 +25,8 @@ import { FilmTestsStage } from '../../../components/film/FilmTestsStage';
 import { FilmPromptsStage } from '../../../components/film/FilmPromptsStage';
 import { clearStudio } from '../../../lib/filmStudioStore';
 import { colors, fonts } from '../../../theme';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 
 export default function FilmWorkspace() {
@@ -141,7 +143,7 @@ export default function FilmWorkspace() {
                     </Pressable>;
                 })}
             </ScrollView>
-            <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} contentContainerStyle={styles.content}>
+            <KeyboardScreen><KeyboardFormScrollView ref={scroller} keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} contentContainerStyle={styles.content}>
                 <View style={styles.titleRow}>
                     <View style={{ flex: 1 }}><Text style={styles.kicker}>{t('film.sTAGEOF7', { value1: stage + 1 })}</Text><Text style={styles.title} accessibilityRole="header">{FILM_STAGES[stage][1]}</Text></View>
                     <Pressable accessibilityRole="button" style={styles.smallButton} onPress={newFilm}><Text style={styles.smallButtonText}>{t('film.new')}</Text></Pressable>
@@ -159,7 +161,7 @@ export default function FilmWorkspace() {
                 <FilmCloudBar key={`cloud-${generation.current}`} api={api} film={film} flush={flush} snapshot={() => latestFilm.current ?? film} valid={valid}
                     onSaved={() => setCloudLink(getActiveCloudLink())}
                     beginInstall={() => { installing.current = true; cancel(); }} endInstall={() => { cloudGeneration.current = getFilmGeneration(); installing.current = false; }} installFilm={installFilm} />
-            </ScrollView>
+            </KeyboardFormScrollView></KeyboardScreen>
         </View>
     );
 }
