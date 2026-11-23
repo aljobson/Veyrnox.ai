@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Stack } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { MusicNotice } from './MusicNotice';
 import { useAuth } from '../../auth/AuthProvider';
@@ -10,6 +10,7 @@ import { EXPORT_FORMATS } from '../../lib/music/validateExport';
 import { exportMessage } from '../../lib/music/exportMessages';
 import { t, plural } from '../../lib/i18n';
 import { ds } from '../../theme';
+import { SafeContentScrollView } from '../SafeContentScrollView';
 export function MusicExportBody({ id }: { id: string }) {
     const { api } = useAuth(), s = useThemedStyles(sheets);
     const user = useSyncExternalStore(subscribeCacheUser, getCacheUser, getCacheUser);
@@ -24,7 +25,7 @@ export function MusicExportBody({ id }: { id: string }) {
     const busy = ['loading', 'reviewing', 'confirming', 'saving'].includes(state.status);
     const ambiguous = state.pending?.phase === 'AMBIGUOUS';
     const quote = state.pending?.quote;
-    return <ScrollView style={s.screen} contentContainerStyle={s.content}>
+    return <SafeContentScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('musicExport.title') }} />
         <Text variant="title2" accessibilityRole="header">{t('musicExport.title')}</Text>
         {state.status === 'off' ? <MusicNotice message={t('musicExport.off')} /> : <>
@@ -56,7 +57,7 @@ export function MusicExportBody({ id }: { id: string }) {
             </> : null}
             {state.error ? <MusicNotice message={exportMessage(state.error)} retry={!state.song ? () => void flow.load() : undefined} /> : null}
         </>}
-    </ScrollView>;
+    </SafeContentScrollView>;
 }
 const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: ds.space.lg, gap: ds.space.md }, choices: { gap: ds.space.sm } }));
+    content: { gap: ds.space.md }, choices: { gap: ds.space.sm } }));

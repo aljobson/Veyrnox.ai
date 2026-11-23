@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'test-renderer';
 import * as RN from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import FirstRun from '../src/app/(app)/first-run';
 import { fetchCatalogCached, type CatalogModel } from '../src/lib/media';
 import { t } from '../src/lib/i18n';
@@ -16,7 +17,7 @@ const mockPush = jest.fn();
 const mockReplace = jest.fn();
 const mockPrompt: CatalogModel = { id: 'prompt-image', name: 'Prompt image', modality: 'text-to-image', credits: 2, durations: [], gated: false, capabilities: { inputs: { prompt: {} } } };
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush, replace: mockReplace }) }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ ...jest.requireActual('react-native-safe-area-context'), useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: jest.fn() }));
 jest.mock('../src/lib/firstGoalStore', () => ({ writeFirstGoal: jest.fn(async () => undefined) }));
 jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstOnboarding: jest.fn(), replayFirstOnboarding: jest.fn(async () => null), writeFirstOnboarding: jest.fn(async () => undefined), writeFirstProfile: jest.fn(async () => ({})) }));
@@ -62,10 +63,10 @@ test('asks the goal first (under Vey\'s hello), then where it will go, then the 
     for (const card of goalCards) {
         const icon = card.queryAll(n => n.props.testID === 'onboarding-choice-icon')[0];
         const label = card.queryAll(n => n.props.testID === 'onboarding-choice-label')[0];
-        expect(RN.StyleSheet.flatten(icon.props.style)).toMatchObject({ alignSelf: 'flex-end', width: 58, height: 58 });
+        expect(RN.StyleSheet.flatten(icon.props.style)).toMatchObject({ alignSelf: 'flex-end', width: 64, height: 64 });
         expect(icon.queryAll(n => {
             const style = RN.StyleSheet.flatten(n.props.style);
-            return style?.width === 36 && style?.height === 36;
+            return style?.width === 40 && style?.height === 40;
         })).toHaveLength(1);
         expect(RN.StyleSheet.flatten(label.props.style)).toMatchObject({ alignSelf: 'flex-start', marginTop: 'auto' });
     }
@@ -94,6 +95,22 @@ test('account-backed resume loading is visible and named instead of presenting a
     const progress = root.container.queryAll(n => n.props.accessibilityRole === 'progressbar' && n.props.accessibilityLabel === t('common.loading'));
     expect(progress).toHaveLength(1);
     expect(hasText(t('common.loading'))).toBe(true);
+});
+
+test('landscape AX journey keeps colourful choices inside both physical side insets', async () => {
+    windowDimensions.mockReturnValue({ width: 844, height: 390, scale: 3, fontScale: 1.3 });
+    await act(async () => {
+        root.render(<SafeAreaInsetsContext.Provider value={{ top: 0, right: 59, bottom: 21, left: 59 }}><FirstRun /></SafeAreaInsetsContext.Provider>);
+        await Promise.resolve(); await Promise.resolve();
+    });
+    const safeFrame = root.container.queryAll(node => {
+        const style = RN.StyleSheet.flatten(node.props.style);
+        return style?.paddingLeft === 59 && style?.paddingRight === 59 && style?.paddingBottom === 21;
+    });
+    expect(safeFrame).toHaveLength(1);
+    const choices = root.container.queryAll(node => node.props.testID === 'onboarding-choice-row');
+    expect(choices).toHaveLength(6);
+    expect(choices.every(choice => RN.StyleSheet.flatten(choice.props.style).minHeight === 64)).toBe(true);
 });
 
 test('a goal card keeps its icon when a real template preview is available', async () => {

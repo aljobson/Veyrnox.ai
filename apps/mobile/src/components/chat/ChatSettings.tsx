@@ -1,11 +1,15 @@
 import { rawText } from '../../lib/i18n/translate';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView } from 'react-native';
+import { ActivityIndicator, Modal } from 'react-native';
 import { MIN_TARGET } from '../../lib/a11y';
 import { MAX_SYSTEM_PROMPT, settingsPatch, switchableModels, type ChatModel, type ChatThread } from '../../lib/chat';
 import { plural, t } from '../../lib/i18n';
 import { Text, TextField, Button, Card, Icon, themedStyles, useThemedStyles } from '../ui';
+import { KeyboardScreen } from '../KeyboardScreen';
+import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
+import { modalSafePadding } from '../../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 interface Props {
     readonly visible: boolean;
@@ -20,6 +24,7 @@ interface Props {
 // model shows next to its name; changing the model changes what the next reply costs, not what an earlier one did.
 export function ChatSettings({ visible, thread, models, onSave, onClose, instructionsLocked = false }: Props) {
     const styles = useThemedStyles(sheets);
+    const insets = useOptionalSafeAreaInsets();
     const reducedMotion = useReducedMotion();
     const [modelId, setModelId] = useState(thread.model_id);
     const [instructions, setInstructions] = useState(thread.system_prompt ?? '');
@@ -43,7 +48,8 @@ export function ChatSettings({ visible, thread, models, onSave, onClose, instruc
 
     return (
         <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
-            <ScrollView style={styles.screen} onAccessibilityEscape={onClose} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <KeyboardScreen style={styles.screen}>
+            <KeyboardFormScrollView onAccessibilityEscape={onClose} contentContainerStyle={[styles.content, modalSafePadding(insets), { paddingTop: Math.max(56, insets.top + 16) }]} keyboardShouldPersistTaps="handled">
                 <Button accessibilityRole="button" accessibilityLabel={t('chat.settings.back')} containerStyle={styles.back} onPress={onClose} variant="tertiary" size="md" label={t('chat.settings.back')}><Icon name="arrowLeft" size={20} /><Text style={styles.closeText}>{t('chat.settings.back')}</Text></Button>
                 <Text variant="title2" style={styles.title} accessibilityRole="header">{t('chat.settings.title')}</Text>
                 <Text variant="footnote" style={styles.heading} accessibilityRole="header">{t('chat.settings.model')}</Text>
@@ -63,7 +69,8 @@ export function ChatSettings({ visible, thread, models, onSave, onClose, instruc
                     {busy ? <ActivityIndicator color={styles.accentInkInk.color} /> : <Text variant="bodyStrong" style={styles.saveText}>{t('chat.settings.save')}</Text>}
                 </Button>
                 <Button accessibilityRole="button" containerStyle={styles.close} onPress={onClose} variant="tertiary" size="md" label={(t('chat.settings.close'))}><Text style={styles.closeText}>{t('chat.settings.close')}</Text></Button>
-            </ScrollView>
+            </KeyboardFormScrollView>
+            </KeyboardScreen>
         </Modal>
     );
 }
@@ -71,7 +78,7 @@ export function ChatSettings({ visible, thread, models, onSave, onClose, instruc
 const sheets = themedStyles((p) => ({
     accentInkInk: { color: p.textPrimary },
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: 16, paddingTop: 56, gap: 10 },
+    content: { flexGrow: 1, padding: 16, paddingTop: 56, gap: 10 },
     title: { color: p.textPrimary },
     heading: { color: p.textTertiary, marginTop: 8 },
     row: { minHeight: MIN_TARGET, padding: 12 },

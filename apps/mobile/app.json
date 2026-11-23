@@ -2,9 +2,9 @@
   "expo": {
     "name": "Veyrnox.ai",
     "slug": "veyrnoxai",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "newArchEnabled": true,
-    "orientation": "portrait",
+    "orientation": "default",
     "platforms": [
       "ios",
       "android"
@@ -18,7 +18,12 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIViewControllerBasedStatusBarAppearance": false,
-        "CFBundleName": "Veyrnox.ai"
+        "CFBundleName": "Veyrnox.ai",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       },
       "associatedDomains": [
         "applinks:veyrnox.ai",

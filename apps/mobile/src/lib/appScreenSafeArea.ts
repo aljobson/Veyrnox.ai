@@ -1,0 +1,48 @@
+// The signed-in stack is safe by default. A route may opt out only when it owns
+// physical left/right insets itself (usually because a canvas stays edge-to-edge).
+const SELF_SAFE_ROUTES = new Set([
+    '(tabs)',
+    'analytics-consent',
+    'beats/[id]',
+    'beats/piano/[id]',
+    'cinema/[id]',
+    'cinema/creator/[id]',
+    'cinema/creator/draft',
+    'cinema/creator/index',
+    'cinema/index',
+    'cinema/report-comment',
+    'cinema/series/[slug]',
+    'cinema/watch/[id]',
+    'credits',
+    'editor/[projectId]',
+    'first-run',
+    'paywall',
+    'rate',
+    'smart-cut',
+    'music',
+    'music/[id]',
+    'music/add-section',
+    'music/blocked',
+    'music/cover',
+    'music/create',
+    'music/creator/[handle]',
+    'music/crop',
+    'music/discover',
+    'music/explore',
+    'music/export',
+    'music/extend',
+    'music/playlists',
+    'music/playlists/[id]',
+    'music/render',
+    'music/replace-section',
+    'music/report-comment',
+    'music/report-track',
+    'music/stems',
+    'music/target-stems',
+    'music/track-add',
+    'music/track/[slug]',
+]);
+
+export function needsStackHorizontalSafeArea(routeName: string): boolean {
+    return !SELF_SAFE_ROUTES.has(routeName);
+}

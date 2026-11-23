@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { Alert, Modal, ScrollView, View } from 'react-native';
+import { Alert, Modal, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button, Checkbox, Text, TextField, themedStyles, useThemedStyles } from '../ui';
 import { createPublicationFlow } from '../../lib/music/publicationFlow';
@@ -10,6 +10,7 @@ import { MusicLinkShare } from './MusicLinkShare';
 import { t, rawText } from '../../lib/i18n';
 import { ds } from '../../theme';
 import { subscribeCacheUser } from '../../lib/appCache';
+import { SafeKeyboardFormScrollView } from '../SafeContentScrollView';
 export function MusicPublication({ song }: { song: MusicSongDetail }) {
     const { generation } = useAuth();
     return <PublicationBody key={`${song.id}:${generation}`} song={song} />;
@@ -57,7 +58,7 @@ function PublicationBody({ song }: { song: MusicSongDetail }) {
         {message ? <Text accessibilityRole="alert">{message}</Text> : null}
         {state.pending ? <Button label={t('musicPublication.retry')} disabled={state.busy || read?.state !== 'on'} onPress={() => void flow.publish(state.pending!)} /> : null}
         <Modal visible={open} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
-            <ScrollView contentContainerStyle={s.dialog} keyboardShouldPersistTaps="handled">
+            <SafeKeyboardFormScrollView contentContainerStyle={s.dialog} gutter={ds.space.lg}>
                 <Text variant="title2">{t('musicPublication.title')}</Text>
                 <Text>{t('musicPublication.explanation')}</Text>
                 <Text>{t('music.version', { number: song.versions.find(v => v.id === (state.pending?.version_id ?? song.version_id))?.version_number ?? 1 })}</Text>
@@ -75,8 +76,8 @@ function PublicationBody({ song }: { song: MusicSongDetail }) {
                     disabled={state.busy || read?.state !== 'on' || (!state.pending && (!rights || !publicHandle(handle) || !publicationName(name)))}
                     onPress={() => void flow.publish(state.pending ?? { version_id: song.version_id, handle, display_name: name.trim(), allow_comments: comments, allow_remixes: remixes, rights_confirmed: true })} />}
                 <Button variant="tertiary" label={t('music.cancel')} onPress={() => setOpen(false)} />
-            </ScrollView>
+            </SafeKeyboardFormScrollView>
         </Modal>
     </View>;
 }
-const sheets = themedStyles(p => ({ group: { gap: ds.space.md }, dialog: { flexGrow: 1, backgroundColor: p.bg, padding: ds.space.lg, gap: ds.space.md } }));
+const sheets = themedStyles(p => ({ group: { gap: ds.space.md }, dialog: { flexGrow: 1, backgroundColor: p.bg, gap: ds.space.md } }));

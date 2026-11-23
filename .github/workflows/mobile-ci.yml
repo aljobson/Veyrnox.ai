@@ -87,6 +87,9 @@ jobs:
           node scripts/gen-en-registry.mjs --check
           node scripts/sync-web-i18n.mjs --check
 
+      - name: Check generated iOS configuration contracts
+        run: node --test scripts/orientation-config.test.mjs
+
       - name: Generate localization list
         run: node scripts/sync-web-i18n.mjs
 

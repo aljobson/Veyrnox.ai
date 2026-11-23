@@ -4,7 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Example } from '../../../components/ExampleCard';
 import { SourcePicker } from '../../../components/SourcePicker';
@@ -15,6 +15,8 @@ import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { requiredNamedSlots, type Slot, type GenerationReference, replaceSlotReferences, type SlotName } from '../../../lib/sources';
 import { plural, t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 export default function CreativeFeatureDetail() {
     const { slug, sourceJobId, sourceKind } = useLocalSearchParams<{ slug?: string; sourceJobId?: string; sourceKind?: string }>();
@@ -70,7 +72,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
         const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references, rightsConfirmed: true });
         router.push({ pathname: '/create/[modelId]', params: { modelId: feature.model, prompt: prompt || feature.title, ...(feature.kind === 'video' ? { duration: '5' } : {}), recipe: feature.slug, sourceHandoff } });
     }
-    return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    return <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: feature.title }} />
         <View style={styles.hero}><Text style={styles.kicker}>{feature.group.toUpperCase()} · {feature.kind.toUpperCase()}</Text><Text style={styles.title} accessibilityRole="header">{feature.title}</Text><Text style={styles.lead}>{t('features.followtheguidedsetupthenreviewuploads')}</Text></View>
         <Example feature={feature} />
@@ -82,7 +84,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
         <View style={styles.card}><Text style={styles.kicker}>{t('features.rEQUIREDSOURCES')}</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : t('features.nomediarequired')}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={t('features.requiredfor', { value1: feature.title })} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? t('features.checkingtheliveuploadrequirements') : t('features.yourscriptisthesourceforthis')}</Text>}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.wORKFLOW')}</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.lIVEMODEL')}</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? plural('features.modelCredits', model.credits, { name: feature.title }) : t('features.unavailable')}</Text>}{error ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.error}>{error}</StatusText> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>{t('features.continuetofinalreview')}</Text></Pressable><Text style={styles.note}>{t('features.youwillseetheexactpricebefore')}</Text></View>
-    </ScrollView>;
+    </KeyboardFormScrollView></KeyboardScreen>;
 }
 
 const styles = StyleSheet.create({

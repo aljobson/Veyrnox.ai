@@ -2,7 +2,7 @@ import { useAnnouncement } from '../../../../lib/useAnnouncement';
 import { EmptyState } from '../../../../components/EmptyState';
 import { useEffect, useState } from 'react';
 import { Stack, useRouter } from 'expo-router';
-import { RefreshControl, ScrollView } from 'react-native';
+import { RefreshControl } from 'react-native';
 import { Button, ListRow, Text, TextField, themedStyles, useThemedStyles } from '../../../../components/ui';
 import { MusicNotice } from '../../../../components/music/MusicNotice';
 import { usePlaylists } from '../../../../lib/music/usePlaylists';
@@ -10,6 +10,7 @@ import { playlistMessage } from '../../../../lib/music/playlistMessages';
 import { playlistTitle } from '../../../../lib/music/validatePlaylists';
 import { t } from '../../../../lib/i18n';
 import { ds } from '../../../../theme';
+import { SafeKeyboardFormScrollView } from '../../../../components/SafeContentScrollView';
 export default function Playlists() {
     const { flow, state } = usePlaylists(), router = useRouter(), s = useThemedStyles(sheets);
     const [title, setTitle] = useState(''), [invalid, setInvalid] = useState(false);
@@ -19,7 +20,7 @@ export default function Playlists() {
     const pendingTitle = pending?.write.kind === 'create' ? pending.write.title : undefined;
     useEffect(() => { if (pendingTitle !== undefined) setTitle(pendingTitle); }, [pendingTitle]);
     useAnnouncement(state.notice ? playlistMessage(state.notice) : state.busy ? t('musicPlaylists.working') : state.status === 'on' ? t('music.loaded', { count: state.playlists.length }) : null, { everywhere: true });
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.gutter}
         refreshControl={<RefreshControl refreshing={state.refreshing} onRefresh={() => { if (!state.busy) void flow.load(); }} />}>
         <Stack.Screen options={{ title: t('musicPlaylists.title') }} />
         {state.status === 'off' ? <><EmptyState title={t('music.off')} body={t('music.offBody')} /><Button variant="secondary" label={t('music.refresh')} onPress={() => void flow.load()} /></> : <>
@@ -38,6 +39,6 @@ export default function Playlists() {
             {state.playlists.map(p => <ListRow key={p.id} title={p.title} subtitle={p.pinned ? t('musicPlaylists.pinned') : undefined}
                 accessibilityLabel={p.title} onPress={() => router.push({ pathname: '/music/playlists/[id]', params: { id: p.id } } as never)} />)}
         </>}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.gutter, gap: ds.space.md } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md } }));

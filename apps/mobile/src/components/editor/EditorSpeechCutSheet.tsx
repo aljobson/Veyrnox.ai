@@ -15,10 +15,13 @@ import { fetchSpeechQuote, forgetSpeechKey, pollSpeech, recoverSpeech, speechKey
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { Text } from '../ui/Text';
 import { colors, ds, text, tokensForScheme, getAppearance, resolveScheme } from '../../theme';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
+import { bottomSheetSafePadding } from '../../lib/modalLayout';
 type Snapshot = { timeline: Timeline; freshness: Freshness; selection: Selection | null };
 type Props = { api: ApiClient; quote: SpeechQuote; mode: SpeechMode; snapshot(): Snapshot; apply(next: Timeline, expected: Freshness): DocumentApplyResult; onClose(): void; onUnavailable(): void };
 type Phase = 'quoting' | 'idle' | 'queued' | 'transcribing' | 'planning' | 'preview' | 'error' | 'pending';
 export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot, apply, onClose, onUnavailable }: Props) {
+    const insets = useOptionalSafeAreaInsets();
     const [opening] = useState(snapshot), [selected, setSelected] = useState(opening.selection), [quote, setQuote] = useState(initialQuote);
     const [phase, setPhase] = useState<Phase>('quoting'), [message, setMessage] = useState(''), [refunded, setRefunded] = useState(false);
     const [removals, setRemovals] = useState<SpeechRange[]>([]), [checked, setChecked] = useState<boolean[]>([]);
@@ -98,8 +101,9 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
     };
     const button = (label: string, action: () => void, disabled = false) => <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={action} style={[styles.button, touchTarget, disabled && styles.disabled]}><Text style={styles.action}>{label}</Text></Pressable>;
     const stamp = (r: SpeechRange) => `${r.start.toFixed(2)}–${r.end.toFixed(2)} s`;
+    const sheetInsets = bottomSheetSafePadding(insets, ds.space.gutter, ds.space.gutter, ds.space.xxxl);
     return <Modal visible transparent animationType={reduced ? 'none' : 'slide'} onRequestClose={onClose} accessibilityViewIsModal>
-        <View style={styles.backdrop}><View style={styles.sheet}><ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.backdrop}><View style={styles.sheet}><ScrollView contentContainerStyle={[styles.content, sheetInsets]}>
             <Text variant="title2" accessibilityRole="header" style={styles.heading}>{heading}</Text>
             {phase !== 'preview' ? <>
                 <Text style={styles.body}>{t('editorSpeech.clip')}</Text>

@@ -5,7 +5,9 @@ import { PlanLocked } from '../../../components/publish/PlanLocked';
 import { isPlanLockMessage } from '../../../lib/publishPlanLocked';
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { touchTarget } from '../../../lib/a11y';
 import { formatLocale, t } from '../../../lib/i18n';
 import { roleLabel } from '../../../lib/publishBrand';
@@ -136,7 +138,7 @@ export default function TeamScreen() {
     const mayChange = team ? team.actorRole === 'owner' || team.actorRole === 'manager' : false;
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}>
+        <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={styles.body} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.accent} onRefresh={async () => { setRefreshing(true); await load(); }} />}>
             <Stack.Screen options={{ title: t('team.title') }} />
             {error ? (
                 isPlanLockMessage(error) ? <PlanLocked message={error} /> : <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{error}</StatusText>
@@ -217,7 +219,7 @@ export default function TeamScreen() {
                     ) : <Text style={styles.muted}>{t('team.manageNote')}</Text>}
                 </>
             )}
-        </ScrollView>
+        </KeyboardFormScrollView></KeyboardScreen>
     );
 }
 

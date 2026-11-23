@@ -2,7 +2,7 @@ import type { DocumentApplyResult } from '../../lib/editorDocumentGate';
 import { EDITOR_AI_EDIT_ENABLED } from '../../lib/editorFlag';
 import { subscribeCacheUser } from '../../lib/appCache';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { randomUUID } from 'expo-crypto';
 import { ApiError, type ApiClient } from '../../lib/api';
 import { touchTarget } from '../../lib/a11y';
@@ -15,11 +15,16 @@ import { useReducedMotion } from '../ui/useReducedMotion';
 import { colors, ds, text, tokensForScheme, getAppearance, resolveScheme } from '../../theme';
 import { Text } from '../ui/Text';
 import { useAnnouncement } from '../../lib/useAnnouncement';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
+import { bottomSheetSafePadding } from '../../lib/modalLayout';
+import { KeyboardScreen } from '../KeyboardScreen';
+import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
 
 type Snapshot = { timeline: Timeline; freshness: Freshness };
 type Props = { api: ApiClient; quote: AiEditQuote; snapshot(): Snapshot; apply(next: Timeline, expected: Freshness): DocumentApplyResult; onClose(): void; onUnavailable(): void };
 export function EditorAiEditSheet({ api, quote: initialQuote, snapshot, apply, onClose, onUnavailable }: Props) {
     const reduced = useReducedMotion();
+    const insets = useOptionalSafeAreaInsets();
     const [quote, setQuote] = useState(initialQuote);
     const [instruction, setInstruction] = useState('');
     const [state, setState] = useState<'quoting' | 'idle' | 'sending' | 'pending' | 'error' | 'preview'>('quoting');
@@ -112,8 +117,9 @@ export function EditorAiEditSheet({ api, quote: initialQuote, snapshot, apply, o
     };
     const button = (label: string, action: () => void, disabled = false) => <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={action} style={[styles.button, touchTarget, disabled && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></Pressable>;
     const price = t('editorAi.price', { n: quote.credits });
+    const sheetInsets = bottomSheetSafePadding(insets, ds.space.gutter, ds.space.gutter, ds.space.xxxl);
     return <Modal visible transparent animationType={reduced ? 'none' : 'slide'} onRequestClose={() => { if (!unresolved) onClose(); }} accessibilityViewIsModal>
-        <View style={styles.backdrop}><View style={styles.sheet}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <KeyboardScreen><View style={styles.backdrop}><View style={styles.sheet}><KeyboardFormScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, sheetInsets]}>
             <Text variant="title2" accessibilityRole="header" style={styles.heading}>{t('editorAi.describe')}</Text>
             {state !== 'preview' ? <>
                 <TextInput accessibilityLabel={rawText(t('editorAi.instruction'))} multiline maxLength={500} editable={!unresolved && state !== 'quoting'} value={instruction} onChangeText={setInstruction} style={styles.input} placeholder={rawText(t('editorAi.instruction'))} placeholderTextColor={colors.muted} />
@@ -133,7 +139,7 @@ export function EditorAiEditSheet({ api, quote: initialQuote, snapshot, apply, o
             {!!message && <Text accessibilityRole="alert" style={styles.text}>{message}</Text>}
             {refunded && <Text accessibilityLiveRegion="polite" style={styles.text}>{t('editorAi.notCharged')}</Text>}
             {state !== 'preview' && button(t('editorSimple.close'), onClose, unresolved)}
-        </ScrollView></View></View>
+        </KeyboardFormScrollView></View></View></KeyboardScreen>
     </Modal>;
 }
 const styles = StyleSheet.create({

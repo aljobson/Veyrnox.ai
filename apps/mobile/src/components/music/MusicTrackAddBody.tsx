@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Stack } from 'expo-router';
-import { ScrollView, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import { Button, Card, Text, themedStyles, useThemedStyles } from '../ui';
 import { MusicNotice } from './MusicNotice';
 import { MusicActionQuoteCard } from './MusicActionQuoteCard';
@@ -15,6 +15,7 @@ import type { TrackAddParameters } from '../../lib/music/trackAddTypes';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { ds } from '../../theme';
+import { SafeKeyboardFormScrollView } from '../SafeContentScrollView';
 export function MusicTrackAddBody({ id }: { id: string }) {
     const { flow, state, pending } = useSongActionScreen(id, trackAddAction);
     const s = useThemedStyles(sheets);
@@ -28,7 +29,7 @@ export function MusicTrackAddBody({ id }: { id: string }) {
     const playback = useMemo(() => state.result ? {
         songId: id, jobId: state.result.track_job_id, trackAddRequestId: state.result.request_id, start: 0,
     } : null, [id, state.result]);
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('musicTrackAdd.title') }} />
         <Text variant="title1" accessibilityRole="header">{t('musicTrackAdd.title')}</Text>
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
@@ -81,8 +82,8 @@ export function MusicTrackAddBody({ id }: { id: string }) {
                     {state.error ? <MusicNotice message={trackAddMessage(state.error)} /> : null}
                     {state.error === 'revision_conflict' ? <Button label={t('musicActions.action.reload')} onPress={() => void flow.load()} /> : null}
                 </>}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.md },
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md },
     input: { color: p.textPrimary, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: 12, padding: ds.space.md, minHeight: 100, textAlignVertical: 'top' },
     choices: { gap: ds.space.sm } }));

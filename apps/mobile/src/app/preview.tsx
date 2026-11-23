@@ -43,7 +43,7 @@ export default function Preview() {
     const signIn = () => router.push('/sign-in');
     const loading = tab === 'templates' ? presets === null : titles === null;
     return (
-        <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <View style={[styles.screen, { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right }]}>
             <View style={styles.bar}>
                 <Pressable accessibilityRole="button" accessibilityLabel={t('preview.back')} style={[styles.back, touchTarget]} onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))}>
                     <Icon name="arrowLeft" size={24} tint={styles.backText.color} />

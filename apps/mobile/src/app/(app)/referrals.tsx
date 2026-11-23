@@ -2,10 +2,12 @@ import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { attachMessage, attachReferral, fetchReferrals, friendsLine, referralLink, type ReferralInfo } from '../../lib/referrals';
 import { colors } from '../../theme';
+import { KeyboardScreen } from '../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../components/KeyboardFormScrollView';
 
 export default function Referrals() {
     const { api } = useAuth();
@@ -46,9 +48,8 @@ export default function Referrals() {
     }
 
     return (
-        <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: t('referrals.referafriend') }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 {failed ? (
                     <Text style={styles.error}>{t('referrals.couldnotloadthisCheckyourconnection')}</Text>
                 ) : info === null ? (
@@ -91,8 +92,7 @@ export default function Referrals() {
                         {note ? <Text style={styles.muted}>{note}</Text> : null}
                     </View>
                 ) : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+        </KeyboardFormScrollView></KeyboardScreen>
     );
 }
 

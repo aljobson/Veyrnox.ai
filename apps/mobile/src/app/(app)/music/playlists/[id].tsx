@@ -1,7 +1,7 @@
 import { useAnnouncement } from '../../../../lib/useAnnouncement';
 import { EmptyState } from '../../../../components/EmptyState';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
 import { Button, Text, themedStyles, useThemedStyles } from '../../../../components/ui';
 import { MusicNotice } from '../../../../components/music/MusicNotice';
 import { PlaylistPlayer } from '../../../../components/music/PlaylistPlayer';
@@ -10,13 +10,14 @@ import { playlistMessage } from '../../../../lib/music/playlistMessages';
 import { addPlaylistSongs, removePlaylistSong, movePlaylistSong, playlistIds, playlistReplace } from '../../../../lib/music/playlistEdits';
 import { plural, t } from '../../../../lib/i18n';
 import { ds } from '../../../../theme';
+import { SafeContentScrollView } from '../../../../components/SafeContentScrollView';
 export default function PlaylistDetail() {
     const { id } = useLocalSearchParams<{ id: string }>(), { flow, state } = usePlaylists(id), s = useThemedStyles(sheets);
     const playlist = flow.selected(), pending = flow.attempts.snapshot();
     const disabled = state.busy || state.refreshing || !!pending || state.status !== 'on';
     const ids = playlist ? playlistIds(playlist) : [];
     useAnnouncement(state.notice ? playlistMessage(state.notice) : state.busy ? t('musicPlaylists.working') : state.status === 'on' ? t('music.loaded', { count: ids.length }) : null, { everywhere: true });
-    return <ScrollView style={s.screen} contentContainerStyle={s.content}
+    return <SafeContentScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.gutter}
         refreshControl={<RefreshControl refreshing={state.refreshing} onRefresh={() => { if (!state.busy) void flow.load(); }} />}>
         <Stack.Screen options={{ title: playlist?.title ?? t('musicPlaylists.title') }} />
         {state.status === 'off' ? <><EmptyState title={t('music.off')} body={t('music.offBody')} /><Button variant="secondary" label={t('music.refresh')} onPress={() => void flow.load()} /></> : <>
@@ -57,7 +58,7 @@ export default function PlaylistDetail() {
                     disabled={disabled} onPress={() => void flow.removeUnavailable()} /> : null}
             </> : null}
         </>}
-    </ScrollView>;
+    </SafeContentScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.gutter, gap: ds.space.md },
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md },
     song: { gap: ds.space.sm }, controls: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm } }));

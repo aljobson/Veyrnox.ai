@@ -17,6 +17,8 @@ import { colors } from '../../../../theme';
 import { fetchEntitlement, isTitleId } from '../../../../lib/cinemaBrowse';
 import { t } from '../../../../lib/i18n';
 import { CinemaPlayer } from '../../../../components/cinema/CinemaPlayer';
+import { useOptionalSafeAreaInsets } from '../../../../lib/safeArea';
+import { screenSafePadding } from '../../../../components/SafeContentScrollView';
 
 // Full-screen player for one film, short or episode. The token is minted when this screen opens.
 export default function Watch() {
@@ -25,6 +27,7 @@ export default function Watch() {
     const navigation = useNavigation();
     const { api, getAccessToken } = useAuth();
     const beginHandoff = useHandoffScope();
+    const insets = useOptionalSafeAreaInsets();
     const resumedId = useRef<string | null>(null);
     const [resume, setResume] = useState<{ id: string; position: number } | null>(null);
     useFocusEffect(useCallback(() => {
@@ -106,8 +109,8 @@ export default function Watch() {
         <View style={styles.screen}>
             <Stack.Screen options={{ title: title ?? t('cinema.nowplaying'), ...(allEpisodes ? { headerRight: () => <HeaderAction label={t('cinemaSeries.allEpisodes')} onPress={allEpisodes} /> } : {}) }} />
             {resume?.id === id ? <CinemaPlayer key={id} contentId={id} resumePosition={resume.position} onBlocked={onBlocked} /> : null}
-            <ScrollView style={{ flexGrow: 0, maxHeight: height * 0.45, backgroundColor: colors.background }}>
-                {data && episode ? <View style={{ padding: 16, gap: 8 }}>
+            <ScrollView style={{ flexGrow: 0, maxHeight: height * 0.45, backgroundColor: colors.background }} contentContainerStyle={[screenSafePadding(insets, 16), { gap: 8 }]}>
+                {data && episode ? <View style={{ gap: 8 }}>
                     <Text>{data.detail.title.title}</Text>
                     <Text tone="secondary">{t('cinema.title.position', { season: episode.season, episode: episode.position })}</Text>
                     <Text variant="title3" accessibilityRole="header">{episode.title}</Text>

@@ -20,6 +20,8 @@ import { ServiceBanner } from '../../components/ServiceBanner';
 import { PaywallPrompt } from '../../components/PaywallPrompt';
 import { HardPaywallGate } from '../../components/HardPaywallGate';
 import { paletteForScheme } from '../../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { needsStackHorizontalSafeArea } from '../../lib/appScreenSafeArea';
 
 export const unstable_settings = { anchor: '(tabs)' };
 
@@ -48,7 +50,9 @@ export default function AppLayout() {
                         <>
                             <OfflineBanner topInset={route.name === '(tabs)'} />
                             <ServiceBanner />
-                            {children}
+                            {needsStackHorizontalSafeArea(route.name)
+                                ? <SafeAreaView edges={['left', 'right']} style={{ flex: 1 }}>{children}</SafeAreaView>
+                                : children}
                         </>
                     )}
                     screenOptions={({ navigation }) => ({

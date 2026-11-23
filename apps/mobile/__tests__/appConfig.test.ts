@@ -62,7 +62,7 @@ describe('permissions', () => {
     });
 
     test('no other usage strings are set by hand', () => {
-        expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption', 'UIViewControllerBasedStatusBarAppearance', 'CFBundleName']);
+        expect(Object.keys(expo.ios.infoPlist)).toEqual(['ITSAppUsesNonExemptEncryption', 'UIViewControllerBasedStatusBarAppearance', 'CFBundleName', 'UISupportedInterfaceOrientations']);
     });
 
     test('the status bar style is the app\'s own, not the system appearance', () => {

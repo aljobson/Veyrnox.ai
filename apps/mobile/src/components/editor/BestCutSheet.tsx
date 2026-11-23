@@ -26,6 +26,8 @@ import { validateAgentTimeline } from '../../lib/editorAgentOperations';
 import { t, plural, rawText } from '../../lib/i18n';
 import { BestCutSettings } from './BestCutSettings';
 import type { BestCutSettings as Settings } from '../../lib/bestCutSettings';
+import { KeyboardScreen } from '../KeyboardScreen';
+import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
 type Result = { timeline: Timeline; before: Timeline; plan: BestCutPlan | null; uris: Record<string, string>; captionsOmitted?: boolean; refunded?: number };
 type Props = { api: ApiClient; projectId: string; quote: SpeechQuote; onClose(): void; onApply(result: Result): DocumentApplyResult };
 export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onApply }: Props) {
@@ -134,7 +136,8 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
     };
     const locked = busy || applyBlocked;
     const inputStyle = { color: colors.text, borderColor: colors.border, borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 80 };
-    return <Modal visible animationType="slide" onRequestClose={() => { abort.current.abort(); onClose(); }}><View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, backgroundColor: colors.background }}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 24, paddingTop: 16, gap: 16 }}>
+    const contentInsets = { paddingTop: 16, paddingLeft: insets.left + 16, paddingRight: insets.right + 16, paddingBottom: insets.bottom + 16 };
+    return <Modal visible animationType="slide" onRequestClose={() => { abort.current.abort(); onClose(); }}><View style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}><KeyboardScreen><KeyboardFormScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[{ gap: 16 }, contentInsets]}>
         <Text variant="title2">{t('bestCut.title')}</Text><Text>{t('bestCut.limits')}</Text><Text>{t('bestCut.uploadBudget')}</Text><Text>{t('bestCut.replace')}</Text>
         <Button label={t('bestCut.camera')} onPress={() => void pick()} disabled={locked || clips.length >= 10} />
         <Button label={t('bestCut.library')} onPress={() => setLibraryOpen(true)} disabled={locked || clips.length >= 10} />
@@ -159,5 +162,5 @@ export function BestCutSheet({ api, projectId, quote: initialQuote, onClose, onA
             {!!result.plan.missingLines.length && <Text>{t('bestCut.missing', { lines: result.plan.missingLines.join(', ') })}</Text>}
             </> : null}<Button label={t('bestCut.apply')} onPress={() => apply(result)} /></> : <><Button label={t('bestCut.title')} accessibilityHint={!consent && !busy ? t('bestCut.needsAgree') : undefined} onPress={() => void run()} disabled={busy || !clips.length || !consent} />{!consent && !busy ? <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('bestCut.needsAgree')}</Text> : null}</>}
         <Button variant="tertiary" label={t('bestCut.notNow')} onPress={() => { abort.current.abort(); onClose(); }} />
-    </ScrollView></View>{libraryOpen ? <LibraryChooser api={api} kind="video" onClose={() => setLibraryOpen(false)} onPick={choice => { setLibraryOpen(false); void select(choice); }} /> : null}</Modal>;
+    </KeyboardFormScrollView></KeyboardScreen></View>{libraryOpen ? <LibraryChooser api={api} kind="video" onClose={() => setLibraryOpen(false)} onPick={choice => { setLibraryOpen(false); void select(choice); }} /> : null}</Modal>;
 }

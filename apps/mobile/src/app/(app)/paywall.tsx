@@ -269,6 +269,6 @@ const styles = StyleSheet.create({
 const sheets = themedStyles(p => ({
     page: { backgroundColor: p.bg },
     header: { width: '100%', maxWidth: 900, alignSelf: 'center', flexDirection: 'row', alignItems: 'flex-start', gap: ds.space.md, paddingHorizontal: ds.space.gutter, paddingBottom: ds.space.sm },
-    bubble: { flex: 1, padding: ds.space.md, borderRadius: ds.radius.xl, borderBottomLeftRadius: ds.space.xs, backgroundColor: p.bgElevated1 },
+    bubble: { flex: 1, padding: ds.space.md, borderRadius: ds.radius.xl, borderBottomStartRadius: ds.space.xs, backgroundColor: p.bgElevated1 },
     activeCard: { alignSelf: 'stretch', gap: ds.space.lg, padding: ds.space.xl, borderRadius: ds.radius.xl, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1 },
 }));

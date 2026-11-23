@@ -9,7 +9,7 @@ import { CommentsPreview } from '../../../components/cinema/CommentsPreview';
 import { typeLabel } from '../../../lib/cinemaViewer';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { recordShare } from '../../../lib/cinemaSocial';
 import { SaveFollow } from '../../../components/cinema/SaveFollow';
 import { VotePolls } from '../../../components/cinema/VotePolls';
@@ -20,11 +20,14 @@ import { parseTitleDetail, type TitleDetail } from '../../../lib/cinema';
 import { categoryKey, fetchEntitlement, firstEpisode, firstWatchable, lockMessageKey, titleShareUrl, type LockReason } from '../../../lib/cinemaBrowse';
 import { parseEpisodeLocks } from '../../../lib/cinemaSeries';
 import { colors, fonts } from '../../../theme';
+import { SafeContentScrollView, screenSafePadding } from '../../../components/SafeContentScrollView';
+import { useOptionalSafeAreaInsets } from '../../../lib/safeArea';
 
 export default function CinemaTitlePage() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const { api } = useAuth();
     const router = useRouter();
+    const insets = useOptionalSafeAreaInsets();
     const [detail, setDetail] = useState<TitleDetail | null>(null);
     const [detailLocks, setDetailLocks] = useState<ReadonlyMap<string, LockReason | null>>(new Map());
     const [episodeLocks, setEpisodeLocks] = useState<ReadonlyMap<string, LockReason | null>>(new Map());
@@ -142,14 +145,14 @@ export default function CinemaTitlePage() {
         ]);
     };
 
-    if (failed) return <View style={styles.center}><Text style={styles.muted}>{t(failed)}</Text>
+    if (failed) return <View style={[styles.center, screenSafePadding(insets, 16)]}><Text style={styles.muted}>{t(failed)}</Text>
         {failed === 'cinema.titlePage.couldNotLoadThisTitleTry' ? <Button label={t('recovery.retry')} onPress={() => setRetry(n => n + 1)} /> : null}
         <Button variant="tertiary" label={t('cinema.back')} onPress={back} /></View>;
-    if (!detail) return <View style={styles.center}><ActivityIndicator color={colors.accent} /><Button variant="tertiary" label={t('cinema.back')} onPress={back} /></View>;
+    if (!detail) return <View style={[styles.center, screenSafePadding(insets, 16)]}><ActivityIndicator color={colors.accent} /><Button variant="tertiary" label={t('cinema.back')} onPress={back} /></View>;
 
     const { title } = detail;
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <SafeContentScrollView style={styles.screen} contentContainerStyle={styles.content} gutter={16}>
             <Stack.Screen options={{ title: title.title }} />
             <Chip label={typeLabel(title.contentType)} />
             <CinemaPosterImage id={title.id} style={styles.poster} label={t('cinema.posterfor', { value1: title.title })} />
@@ -194,14 +197,14 @@ export default function CinemaTitlePage() {
                 label={t('blocks.blockMember', { name: title.creator || title.creatorUsername })} onPress={block} /> : null}
             <Button variant="tertiary" label={t('cinema.back')} onPress={back} />
             {blockNote ? <StatusText variant="inherit" style={styles.muted} accessibilityRole="alert">{blockNote}</StatusText> : null}
-        </ScrollView>
+        </SafeContentScrollView>
     );
 }
 
 const styles = StyleSheet.create({
     badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     screen: { flex: 1, backgroundColor: colors.background },
-    content: { padding: 16, gap: 10 },
+    content: { gap: 10 },
     center: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
     poster: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: colors.surface },
     title: { color: colors.text, fontFamily: fonts.display, fontSize: 24 },

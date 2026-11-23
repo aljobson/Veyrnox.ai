@@ -1,5 +1,7 @@
 import { act } from 'react';
 import { createRoot } from 'test-renderer';
+import { StyleSheet } from 'react-native';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Rate from '../src/app/(app)/rate';
 import { markReviewAsked, openRatingSheet } from '../src/lib/storeReview';
 import { t } from '../src/lib/i18n';
@@ -36,4 +38,14 @@ test('opened with nothing behind it, Not now goes home instead of doing nothing'
     await press(t('rate.later'));
     expect(mockRouter.back).not.toHaveBeenCalled();
     expect(mockRouter.replace).toHaveBeenCalledWith('/');
+});
+
+test('Rate remains scrollable inside landscape physical edges', async () => {
+    const root = createRoot();
+    await act(async () => root.render(
+        <SafeAreaInsetsContext.Provider value={{ top: 0, right: 59, bottom: 21, left: 59 }}><Rate /></SafeAreaInsetsContext.Provider>,
+    ));
+    const page = root.container.queryAll(node => node.props.keyboardShouldPersistTaps === 'handled')[0];
+    expect(StyleSheet.flatten(page.props.contentContainerStyle)).toMatchObject({ paddingLeft: 83, paddingRight: 83, paddingBottom: 45 });
+    await act(async () => root.unmount());
 });

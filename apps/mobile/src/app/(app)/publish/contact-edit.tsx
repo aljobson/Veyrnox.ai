@@ -2,7 +2,9 @@ import { usePublishScope } from '../../../lib/usePublishScope';
 import { Text as StatusText } from '../../../components/ui/Text';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { STATUSES, contactsErrorKey, fetchContacts, parseTags, saveContact, validateEdit, type Contact, type Subscription } from '../../../lib/publishContacts';
@@ -73,9 +75,9 @@ export default function ContactEdit() {
     if (!contact) return <View style={styles.screen}><Stack.Screen options={{ title: t('contacts.edit') }} />{problem ? <StatusText variant="inherit" style={styles.error} accessibilityRole="alert">{problem}</StatusText> : <ActivityIndicator color={colors.accent} />}</View>;
 
     return (
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.flex}>
             <Stack.Screen options={{ title: contact.name }} />
-            <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
                 <Text style={styles.muted}>{contact.network} · {contact.accountName}</Text>
                 <Text style={styles.muted}>{t('contacts.counts', { messages: contact.messages, unread: contact.unread })}</Text>
                 <Text style={styles.label} accessibilityRole="header">{t('contacts.subscription')}</Text>
@@ -98,8 +100,8 @@ export default function ContactEdit() {
                         {busy ? <ActivityIndicator color={colors.accentInk} /> : <Text style={styles.buttonText}>{t('contacts.save')}</Text>}
                     </Pressable>
                 ) : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

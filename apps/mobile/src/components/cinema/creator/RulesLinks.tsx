@@ -9,6 +9,8 @@ import { ComingToApp } from '../../ComingToApp';
 import { cinemaUploadStore } from '../../../lib/cinemaUploadStore';
 import { t } from '../../../lib/i18n';
 import { colors } from '../../../theme';
+import { useOptionalSafeAreaInsets } from '../../../lib/safeArea';
+import { screenSafePadding } from '../../SafeContentScrollView';
 
 export function Action({ label, onPress, disabled = false }: { label: string; onPress(): void; disabled?: boolean }) {
     return <Pressable accessibilityRole="button" accessibilityLabel={rawText(label)} accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[ui.button, disabled && { opacity: 0.5 }]}><Text style={ui.link}>{label}</Text></Pressable>;
@@ -17,7 +19,8 @@ export function Check({ label, checked, onPress, disabled = false, english = fal
     return <Pressable accessibilityRole="checkbox" accessibilityLabel={rawText(label)} accessibilityLanguage={english ? 'en' : undefined} accessibilityState={{ checked, disabled }} disabled={disabled} onPress={onPress} style={ui.button}><Text style={ui.text}>{checked ? '☑ ' : '☐ '}{label}</Text></Pressable>;
 }
 export function CreatorClosed({ message = 'cinemaUpload.closed' }: { message?: string }) {
-    return <View style={ui.page}><Text style={ui.text}>{t(message === 'cinemaUpload.role' ? 'cinemaCreator.upload.body' : message)}</Text><ComingToApp /></View>;
+    const insets = useOptionalSafeAreaInsets();
+    return <View style={[ui.page, screenSafePadding(insets, 20)]}><Text style={ui.text}>{t(message === 'cinemaUpload.role' ? 'cinemaCreator.upload.body' : message)}</Text><ComingToApp /></View>;
 }
 export const useCreatorOwner = () => useSyncExternalStore(subscribeCacheUser, getCacheUser, () => undefined);
 export function useCreatorScope() {

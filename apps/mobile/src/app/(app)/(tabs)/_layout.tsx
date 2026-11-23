@@ -9,6 +9,7 @@ import { t } from '../../../lib/i18n';
 import { type MenuIcon } from '../../../lib/menuIcons';
 import { paletteForScheme } from '../../../theme';
 import { Text, Icon, useAppearance } from '../../../components/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // The tab bar has a fixed height, so its labels stop growing at the same limit as the header; everything else follows the system text size.
 function tabLabel(key: string) {
@@ -33,6 +34,7 @@ function tabIcon(name: MenuIcon) {
 export default function TabsLayout() {
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
+    const insets = useSafeAreaInsets();
     // While the side menu is open the screens behind it are hidden from screen readers (QA-A1).
     const menuOpen = useMenuOpen();
     return (
@@ -48,7 +50,7 @@ export default function TabsLayout() {
                     headerTitle: () => <Logo size={20} palette={palette} />,
                     headerLeft: () => <MenuButton palette={palette} />,
                     headerRight: () => <HeaderRight palette={palette} />,
-                    sceneStyle: { backgroundColor: palette.background },
+                    sceneStyle: { backgroundColor: palette.background, paddingLeft: insets.left, paddingRight: insets.right },
                     tabBarStyle: { backgroundColor: palette.background, borderTopColor: palette.border, borderTopWidth: StyleSheet.hairlineWidth },
                     tabBarActiveTintColor: palette.accent,
                     tabBarInactiveTintColor: palette.muted,

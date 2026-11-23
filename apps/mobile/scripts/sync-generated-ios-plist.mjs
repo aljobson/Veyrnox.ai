@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 export const PHONE_ORIENTATIONS = Object.freeze([
     'UIInterfaceOrientationPortrait',
+    'UIInterfaceOrientationLandscapeLeft',
+    'UIInterfaceOrientationLandscapeRight',
 ]);
 export const SPEECH_USAGE = 'Veyrnox creates editable captions from audio on this device.';
 export const MICROPHONE_USAGE = 'Veyrnox uses the microphone only when you choose to record a voiceover, a beat take, or audio for editable captions.';

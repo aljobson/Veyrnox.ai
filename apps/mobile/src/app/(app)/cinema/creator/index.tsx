@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useAuth } from '../../../../auth/AuthProvider';
 import { Action, CreatorClosed, ui, useCreatorOwner, useCreatorScope } from '../../../../components/cinema/creator/RulesLinks';
 import { ApiError } from '../../../../lib/api';
@@ -8,6 +8,7 @@ import { creatorMessage, listTitles, type CreatorTitle } from '../../../../lib/c
 import { CINEMA_DEVICE_UPLOAD_ENABLED } from '../../../../lib/cinemaUpload';
 import { cinemaUploadStore } from '../../../../lib/cinemaUploadStore';
 import { t } from '../../../../lib/i18n';
+import { SafeContentScrollView } from '../../../../components/SafeContentScrollView';
 
 export default function CreatorIndex() {
     const owner = useCreatorOwner();
@@ -40,7 +41,7 @@ function Titles() {
         return () => { focused.current = false; generation.current++; clearTimeout(timer.current); };
     }, [load]));
     if (['cinemaUpload.role', 'cinemaUpload.closed'].includes(note)) return <CreatorClosed message={note} />;
-    return <ScrollView contentContainerStyle={ui.page}>
+    return <SafeContentScrollView contentContainerStyle={ui.page} gutter={20}>
         <Text accessibilityRole="header" style={ui.heading}>{t('cinemaUpload.titles')}</Text>
         <Action label={t('cinemaUpload.new')} onPress={() => router.push('/cinema/creator/draft')} />
         {note ? <><Text style={ui.text}>{t(note)}</Text><Action label={t('cinemaUpload.retry')} disabled={waiting} onPress={() => void load()} /></> : null}
@@ -53,5 +54,5 @@ function Titles() {
             {title.video_ready && <Text style={ui.text}>{t('cinemaUpload.videoReady')}</Text>}
             <Action label={title.title} onPress={() => router.push({ pathname: '/cinema/creator/[id]', params: { id: title.id } })} />
         </View>)}
-    </ScrollView>;
+    </SafeContentScrollView>;
 }
