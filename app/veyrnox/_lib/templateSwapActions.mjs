@@ -9,12 +9,19 @@ export const POLL_LIMIT = 12;
 export const LIVE_POLL_LIMIT = POLL_LIMIT + 180;
 const live = a => Boolean(a && !a.uncertain && ['queued', 'running'].includes(a.state));
 export const pollDelay = index => Math.min(20000, 2000 * 2 ** index);
+// The job watcher learns a job finished every few seconds, but this poll backs off to 20 s between checks. A settled
+// job (the watcher fires this event) wakes the wait at once, so the result shows when the success card does.
+const JOBS_CHANGED = 'veyrnox:jobs-changed';
 export function waitForPoll(ms, signal) {
   checkAbort(signal);
   return new Promise((resolve, reject) => {
-    const abort = () => { clearTimeout(timer); reject(abortError()); };
-    const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, ms);
+    const browser = typeof window !== 'undefined' && typeof window.addEventListener === 'function' ? window : null;
+    const cleanup = () => { clearTimeout(timer); signal.removeEventListener('abort', abort); browser?.removeEventListener(JOBS_CHANGED, wake); };
+    const abort = () => { cleanup(); reject(abortError()); };
+    const wake = () => { cleanup(); resolve(); };
+    const timer = setTimeout(wake, ms);
     signal.addEventListener('abort', abort, { once: true });
+    browser?.addEventListener(JOBS_CHANGED, wake, { once: true });
   });
 }
 export function createSwapActions(store, { makeKey, processPhoto, upload, gateway, objectURL = file => URL.createObjectURL(file), revokeURL = url => URL.revokeObjectURL(url), wait = waitForPoll, refreshOffer = () => {}, balanceChanged = () => {}, discardPhoto = () => {}, jobStarted = () => {}, jobSettled = () => {} }) {
