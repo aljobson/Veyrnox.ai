@@ -77,7 +77,6 @@ import area_deleteCreation from './en/deleteCreation';
 import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
 import area_developers from './en/developers';
-import area_devs1editor from './en/devs1editor';
 import area_dialogue from './en/dialogue';
 import area_drafts from './en/drafts';
 import area_draw from './en/draw';
@@ -103,7 +102,6 @@ import area_editorScenes from './en/editorScenes';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
-import area_editorSpike from './en/editorSpike';
 import area_editorText from './en/editorText';
 import area_editorTools from './en/editorTools';
 import area_editorVoiceover from './en/editorVoiceover';
@@ -336,7 +334,6 @@ const catalog = {
     ...area_deleteaccount,
     ...area_dev,
     ...area_developers,
-    ...area_devs1editor,
     ...area_dialogue,
     ...area_drafts,
     ...area_draw,
@@ -362,7 +359,6 @@ const catalog = {
     ...area_editorServerExport,
     ...area_editorSimple,
     ...area_editorSpeech,
-    ...area_editorSpike,
     ...area_editorText,
     ...area_editorTools,
     ...area_editorVoiceover,

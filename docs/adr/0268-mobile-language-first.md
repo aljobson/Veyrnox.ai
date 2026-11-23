@@ -63,7 +63,7 @@ are untouched. Original English values and the historical key ordering remain in
 and object-literal `title`, `text` and `message` values throughout app, components and lib.
 Tests include ternaries, templates, concatenation, placeholders and accessibility
 labels/hints. Exceptions are product/brand names, the existing T/CC editor glyphs,
-the development-only EditorSpikeHarness, imported Cinema film/episode titles, and
+development-only diagnostic harnesses, imported Cinema film/episode titles, and
 generated legal documents covered by their own parity guard. Three catalog-key tables
 (Publish navigation, workflow messages and help-guide metadata) may contain actual
 English catalog keys in object values. Other literals in those files remain checked.

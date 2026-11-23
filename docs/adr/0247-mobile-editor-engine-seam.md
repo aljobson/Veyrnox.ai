@@ -4,7 +4,7 @@ Status: Proposed
 
 ## Context
 
-The owner chose option C on 2026-10-19 (mobile PARITY and TRD §2.4): a native shell for projects, Library, export and credits, with a bundled web editing engine. This work implements slice 1 only, before the S1 device experiment has run. The installed S1 harness remains separate and deletable. It is not imported by the editor.
+The owner chose option C on 2026-10-19 (mobile PARITY and TRD §2.4): a native shell for projects, Library, export and credits, with a bundled web editing engine. This work implemented slice 1 before the native editor superseded that engine seam. The separate S1 diagnostic was later deleted and is not imported by the editor.
 
 Projects are tenant-scoped behind TENANT_PROJECTS_ENABLED. Version 3 saving also depends on EDITOR_MULTITRACK_ENABLED. Project errors are object-shaped; the mobile UI maps their HTTP statuses instead of displaying server messages. GET document returns revision zero and an empty document for a new project. PUT requires expected_revision, a document of at most 32768 UTF-8 bytes, and an Idempotency-Key. Conflict is 409; audited write limits return 429 with Retry-After.
 
