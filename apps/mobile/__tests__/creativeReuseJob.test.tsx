@@ -18,7 +18,7 @@ jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media')
 jest.mock('expo-image', () => ({ Image: jest.requireActual('react-native').Image }));
 jest.mock('../src/components/FacelessSoundCard', () => ({ FacelessSoundCard: () => null }));
 jest.mock('../src/lib/storeReview', () => ({ loadReviewAsk: async () => null }));
-jest.mock('../src/lib/celebrate', () => ({ celebrateOutput: jest.fn(), afterCelebration: jest.fn() }));
+jest.mock('../src/lib/celebrate', () => ({ ...jest.requireActual('../src/lib/celebrate'), celebrateOutput: jest.fn(), afterCelebration: jest.fn() }));
 void [RN.ActivityIndicator, RN.View, RN.Text, RN.StyleSheet, RN.ScrollView, RN.Pressable];
 let root: Root;
 const file = { url: 'https://file', mime_type: 'image/png' };

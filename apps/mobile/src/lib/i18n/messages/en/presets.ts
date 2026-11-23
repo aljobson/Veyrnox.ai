@@ -54,7 +54,7 @@ export default {
   "presets.swap.submitting": "Starting your video…",
   "presets.swap.queued": "Video accepted. Cost: {credits} credits. Open Library to follow it.",
   "presets.swap.running": "Your video is running. Open Library to follow it.",
-  "presets.swap.succeeded": "Your video is ready. Open Library to view it.",
+  "presets.swap.succeeded": "Your video is ready.",
   "presets.swap.busy_background": "Use a photo with a plain background and only you in it.",
   "presets.swap.ragged_matte": "The cut-out edges are unclear. Use a photo with a plain background and only you in it.",
   "presets.swap.several_people": "Several people were detected. Use a photo with only you in it and a plain background.",
