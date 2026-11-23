@@ -36,7 +36,7 @@ const composer=load('app/veyrnox/_components/SwapComposer.js',{
 const recipe=load('app/veyrnox/_components/TemplateRecipe.js',{
   ...shared,'./TemplateSwapBoundary.js':boundary,'./SwapAttemptStatus.js':attempts,'./TemplatePhotoExample.js':{TemplatePhotoExample:()=>null},
   '../../../lib/i18n/presetSteps.mjs':{presetStep:()=>''},'next/link':{default:'a',__esModule:true},
-  '../_lib/useSwapSceneAvailable':{useSwapSceneAvailable:()=>true},'../_lib/useTemplateClipAvailable':{useTemplateClipAvailable:()=>null},
+  '../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) }, './TemplatePromptReady': { TemplatePromptReady: () => null }, '../_lib/useSwapSceneAvailable':{useSwapSceneAvailable:()=>true},'../_lib/useTemplateClipAvailable':{useTemplateClipAvailable:()=>null},
   '../_lib/templateDraft':{TEMPLATE_PROMPT_MAX:2000},'../_lib/templateSourceBlock':{templateSourceUnsupported:()=>true},
   './UseTemplate':{UseTemplate:({templateSwap})=>templateSwap?React.createElement(composer.SwapComposer,{offer:templateSwap}):React.createElement('span',null,'Legacy composer')},
 });

@@ -456,6 +456,9 @@ const es = {
     'presets.swap.unavailable': 'Esta plantilla no está disponible. Elige otra o inténtalo más tarde.',
     'presets.swap.cutout_failed': 'El recorte local no pudo completarse. Reintenta o elige una foto con fondo liso. Nunca se sube el original.',
     'presets.swap.price_changed': 'El precio cambió. Revisa el precio actual antes de reintentar.',
+    'app.create.templatePrompt.edit': 'Editar prompt',
+    'app.create.templatePrompt.help': 'El prompt de esta plantilla se usará tal como está escrito.',
+    'app.create.templatePrompt.ready': 'Prompt de la plantilla listo',
 } as const;
 
 export default es;

@@ -456,6 +456,9 @@ const ko = {
     'presets.swap.unavailable': '이 템플릿을 사용할 수 없습니다. 다른 템플릿을 선택하거나 나중에 시도하세요.',
     'presets.swap.cutout_failed': '기기에서 누끼 처리를 완료하지 못했습니다. 다시 시도하거나 배경이 단순한 사진을 선택하세요. 원본은 업로드되지 않습니다.',
     'presets.swap.price_changed': '가격이 변경되었습니다. 현재 가격을 확인한 후 다시 시도하세요。',
+    'app.create.templatePrompt.edit': '프롬프트 편집',
+    'app.create.templatePrompt.help': '이 템플릿의 프롬프트를 작성된 그대로 사용합니다.',
+    'app.create.templatePrompt.ready': '템플릿 프롬프트 준비 완료',
 } as const;
 
 export default ko;

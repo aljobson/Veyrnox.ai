@@ -456,6 +456,9 @@ const ar = {
     'presets.swap.unavailable': 'هذا القالب غير متاح. اختر غيره أو حاول لاحقًا.',
     'presets.swap.cutout_failed': 'تعذّر إتمام إزالة الخلفية محليًا. أعد المحاولة أو اختر صورة بخلفية بسيطة. لا تُرفع الصورة الأصلية أبدًا.',
     'presets.swap.price_changed': 'تغير السعر. راجع السعر الحالي قبل إعادة المحاولة.',
+    'app.create.templatePrompt.edit': 'تعديل الموجّه',
+    'app.create.templatePrompt.help': 'سيُستخدم موجّه هذا القالب كما هو مكتوب.',
+    'app.create.templatePrompt.ready': 'موجّه القالب جاهز',
 } as const;
 
 export default ar;

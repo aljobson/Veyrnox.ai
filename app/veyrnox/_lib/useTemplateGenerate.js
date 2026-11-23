@@ -11,6 +11,7 @@ import { TEMPLATE_PROMPT_MAX } from './templateDraft';
 import { mediaGenerationSources } from './chatMedia';
 import { normalizeTemplateClipPrompt, validTemplateClipPrompt } from '../../../lib/templateClipPrompt.mjs';
 import { uploadSourceFile } from './uploadSourceFile';
+import { jobHistoryLabels } from './templatePromptVisibility.js';
 
 // The template page's Generate (ADR-0120 amendment 1): Create's submit for one item with nothing attached. The run keeps
 // its idempotency key across a retry of the same request, the quote caps the charge, a price change asks to confirm,
@@ -78,7 +79,7 @@ export function useTemplateGenerate({ preset, model, prompt, aspect, aspectOptio
         freeAllowance: async () => { const r = await gatewayFetch('/free-allowance'); return r?.enabled ? r.left : {}; },
         onJob: (submitted, credits) => {
           startJobs({ job_id: submitted.job_id, state: 'queued', credits, model_id: model.id, ...presentation });
-          pushJobHistory({ idempotent: submitted.idempotent, recovering: run.unknown.has(0), job_id: submitted.job_id, model_id: model.id, credits, prompt: prompt.slice(0, 60), name: prompt.slice(0, 40) });
+          pushJobHistory({ idempotent: submitted.idempotent, recovering: run.unknown.has(0), job_id: submitted.job_id, model_id: model.id, credits, ...jobHistoryLabels(preset, prompt) });
           if (submitted.balance_after != null) setBalance(submitted.balance_after);
         },
       } });

@@ -2800,5 +2800,11 @@
     "english": "Sign in",
     "translation": "साइन इन करें",
     "ratio": 1.71
+  },
+  {
+    "id": "app.create.templatePrompt.edit",
+    "english": "Edit prompt",
+    "translation": "प्रॉम्प्ट संपादित करें",
+    "ratio": 2
   }
 ]
