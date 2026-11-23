@@ -395,7 +395,7 @@ function SpeechCard({
             scriptLimit={scriptLimit}
             showExamples={false}
           />
-          <VoiceRecipeLibrary title="Signature voices for this performance" onApply={(recipe, name) => { onTtsSettings(recipe); setVoiceRecipeNotice({ name, settings: recipe }); }} />
+          <VoiceRecipeLibrary acceptedModels={['minimax-speech-2.6-hd']} title="Signature voices for this performance" onApply={(recipe, name) => { onTtsSettings(recipe); setVoiceRecipeNotice({ name, settings: recipe }); }} />
           {voiceRecipeNotice&&<div role="status" className={`mt-3 rounded-xl border px-4 py-3 text-xs leading-5 ${voiceRecipeMatches?'border-vx-accent/30 bg-vx-accent/[0.06] text-vx-fg-muted':'border-vx-danger/30 bg-vx-danger/[0.05] text-vx-danger'}`}><strong>{voiceRecipeMatches?'Voice Recipe applied:':'Voice Recipe modified:'}</strong> {voiceRecipeNotice.name}. {voiceRecipeMatches?'Review this script, duration estimate and current quote before generating.':'Current voice controls no longer match this saved recipe.'}{!voiceRecipeMatches&&<button type="button" onClick={()=>onTtsSettings(voiceRecipeNotice.settings)} className="ml-2 font-extrabold underline">Restore recipe</button>}</div>}
         </div>
       )}

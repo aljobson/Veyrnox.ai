@@ -1,6 +1,6 @@
 -- Frozen Seedance 2.5 edit/extend order, 2026-11-23. Deploy Worker BEFORE apply.
--- Numbered 0595 (was 0587): main reached 0593 (Crun Suno) while this was in review, and an apply workflow skips a file
--- numbered below production's latest. Open PRs hold 0590 (Qwen3 TTS) and 0594 (template prompts) at the time of writing.
+-- Numbered 0598 (first 0587, then 0595, then 0597): main kept advancing (Crun Suno 0591-0593, template prompts 0594, Qwen3 TTS 0596, open PR 2669 0596-0597) while this
+-- was in review, and an apply workflow skips a file numbered below production's latest. Recheck open PRs for 0598 before merging.
 -- PLACEHOLDERS, NOT APPROVED CUSTOMER PRICES: ceil(cost / 0.01796) = 76 / 78.
 -- Edit multiplies 76 by ceil(server-measured source seconds / 5): 5.055 s costs 152.
 -- Extend is one 5-second output unit, only for measured 4–6s sources.
@@ -45,8 +45,8 @@ END $$;
 -- Preserve every older offer's spend contract. The server-persisted billing units, not client duration,
 -- reserve the same number of supplier units as quote/debit. Admission alone writes this metadata.
 DO $$ BEGIN
-    IF to_regprocedure('private.provider_spend_model_cost_pre_0595(text,jsonb,integer)') IS NULL THEN
-        ALTER FUNCTION private.provider_spend_model_cost(TEXT,JSONB,INTEGER) RENAME TO provider_spend_model_cost_pre_0595;
+    IF to_regprocedure('private.provider_spend_model_cost_pre_0598(text,jsonb,integer)') IS NULL THEN
+        ALTER FUNCTION private.provider_spend_model_cost(TEXT,JSONB,INTEGER) RENAME TO provider_spend_model_cost_pre_0598;
     END IF;
 END $$;
 CREATE OR REPLACE FUNCTION private.provider_spend_model_cost(p_model_id TEXT,p_inputs JSONB,p_credits INTEGER)
@@ -60,7 +60,7 @@ DECLARE
     c public.model_catalog%ROWTYPE;
 BEGIN
     IF p_model_id NOT IN ('seedance-2.5-edit','seedance-2.5-extend') OR p_model_id IS NULL THEN
-        RETURN QUERY SELECT * FROM private.provider_spend_model_cost_pre_0595(p_model_id,p_inputs,p_credits);
+        RETURN QUERY SELECT * FROM private.provider_spend_model_cost_pre_0598(p_model_id,p_inputs,p_credits);
         RETURN;
     END IF;
     IF b IS NULL OR jsonb_typeof(b->'source_seconds') IS DISTINCT FROM 'number'
@@ -85,20 +85,20 @@ EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range OR no_d
     END IF;
     RAISE;
 END $$;
-REVOKE ALL ON FUNCTION private.provider_spend_model_cost_pre_0595(TEXT,JSONB,INTEGER) FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION private.provider_spend_model_cost_pre_0598(TEXT,JSONB,INTEGER) FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION private.provider_spend_model_cost(TEXT,JSONB,INTEGER) FROM PUBLIC,anon,authenticated,service_role;
 -- Public admission already has service-role-only execute; no new client-callable function or table grant.
 REVOKE ALL ON FUNCTION public.provider_spend_admit_model(UUID,TEXT,TEXT,JSONB,INTEGER) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.provider_spend_admit_model(UUID,TEXT,TEXT,JSONB,INTEGER) TO service_role;
 -- Register the read-only quote route in the privacy-safe telemetry inventory.
 DO $$ BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0595(text)') IS NULL THEN
-        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0595;
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0598(text)') IS NULL THEN
+        ALTER FUNCTION public.telemetry_path_allowed(TEXT) RENAME TO telemetry_path_allowed_pre_0598;
     END IF;
 END $$;
 CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path TEXT)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path='' AS $$
-    SELECT p_path = '/api/v1/generations/quote' OR public.telemetry_path_allowed_pre_0595(p_path)
+    SELECT p_path = '/api/v1/generations/quote' OR public.telemetry_path_allowed_pre_0598(p_path)
 $$;
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT) FROM PUBLIC,anon,authenticated,service_role;
 -- Quotes inspect owned media but create no jobs. Keep their abuse bound at the

@@ -9082,8 +9082,10 @@ export default {
   "editorSpeech.autoUnavailable": "الترجمات النصية على الجهاز غير متاحة على هذا الجهاز أو لهذه اللغة.",
   "editorSpeech.autoStale": "تغيّر المقطع المحدد. ابدأ الترجمات النصية مجددًا.",
   "editorSpeech.autoFull": "مسار الترجمات النصية ممتلئ. أزل بعض النصوص أو الترجمات النصية وحاول مجددًا.",
-  "editorSpeech.autoFailed": "تعذّر إنشاء الترجمات النصية. حاول مجددًا بمقطع مُنزّل آخر."
-  ,"music.create.style_required": "أضف نمطًا قبل مراجعة السعر.",
+  "editorSpeech.autoFailed": "تعذّر إنشاء الترجمات النصية. حاول مجددًا بمقطع مُنزّل آخر.",
+    "speech.qwen.intro": "اختر صوتًا ولغة ثم راجع التكلفة.",
+    "speech.qwen.tooLong": "يجب ألا يتجاوز النص {limit} حرفًا.",
+  "music.create.style_required": "أضف نمطًا قبل مراجعة السعر.",
   "music.create.draft_stale": "تغيّرت المسودة النشطة. تم تحديثها دون تغيير؛ راجع السعر مجددًا.",
   "music.create.draft_refreshed": "تم تحديث المسودة النشطة دون تغييرها. حُفظ النص السابق بشكل منفصل.",
   "music.create.copy_previous_text": "نسخ النص السابق إلى هذه المسودة"

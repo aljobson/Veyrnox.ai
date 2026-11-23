@@ -8507,8 +8507,10 @@ export default {
   "editorSpeech.autoUnavailable": "이 기기 또는 이 언어에서는 기기 내 자막을 사용할 수 없습니다.",
   "editorSpeech.autoStale": "선택한 클립이 변경되었습니다. 자막 만들기를 다시 시작하세요.",
   "editorSpeech.autoFull": "자막 트랙이 가득 찼습니다. 텍스트나 자막 일부를 제거한 후 다시 시도하세요.",
-  "editorSpeech.autoFailed": "자막을 만들지 못했습니다. 다운로드한 다른 클립으로 다시 시도하세요."
-  ,"music.create.style_required": "가격을 확인하기 전에 스타일을 추가하세요.",
+  "editorSpeech.autoFailed": "자막을 만들지 못했습니다. 다운로드한 다른 클립으로 다시 시도하세요.",
+    "speech.qwen.intro": "음성과 언어를 선택한 뒤 비용을 확인하세요.",
+    "speech.qwen.tooLong": "대본을 {limit}자 이내로 작성하세요.",
+  "music.create.style_required": "가격을 확인하기 전에 스타일을 추가하세요.",
   "music.create.draft_stale": "현재 초안이 변경되었습니다. 그대로 새로 불러왔으니 가격을 다시 확인하세요.",
   "music.create.draft_refreshed": "현재 초안을 변경하지 않고 새로 불러왔습니다. 이전 텍스트는 별도로 보관했습니다.",
   "music.create.copy_previous_text": "이전 텍스트를 이 초안에 복사"

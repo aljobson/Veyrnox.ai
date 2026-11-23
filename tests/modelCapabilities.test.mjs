@@ -18,6 +18,7 @@ import * as openrouter from '../packages/adapters/openrouter.js';
 // be listed or bought, so the record ships before the row is switched on).
 const CATALOG = [
     'crun:bytedance/seedance2-5-r2v:edit', 'crun:bytedance/seedance2-5-r2v:extend',
+    'crun:qwen3-tts/speech-synthesis',
     // Swap offers ship inactive (ADR-0329).
     'fal-ai/minimax-h3-max-recast', 'crun:wan/2-2-animate-replace',
     'bytedance/seedance-2.0/reference-to-video', 'market:bytedance/seedance-2',

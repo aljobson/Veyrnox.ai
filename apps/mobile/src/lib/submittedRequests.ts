@@ -6,7 +6,7 @@ import { fetchCatalog, mediaApi } from './media';
 import type { GenerationReference } from './sources';
 import { makeAnotherHref } from './nextSteps';
 import { normalizeTemplateCarry } from './templateHandoff';
-import { speechModel, SPEECH_MODEL_ID } from './speech/model';
+import { speechModel, isSpeechModelId, SPEECH_MODEL_ID } from './speech/model';
 import { dialogueModel, restoreDialogue } from './speech/dialogue';
 import { restoreSpeech } from './speech/restore';
 import { DIALOGUE_MODEL_ID } from './speech/dialogueShared';
@@ -26,7 +26,7 @@ export async function submittedHref(api: ApiClient, jobId: string, modelId: stri
     if (!current()) return null;
     const missing = () => ({ ...makeAnotherHref(targetModelId ?? modelId), params: { modelId: targetModelId ?? modelId, prompt: '', kind: 'prompt-unavailable' } });
     const sourceModelId = saved?.request?.modelId ?? modelId;
-    const studio = sourceModelId === DIALOGUE_MODEL_ID || sourceModelId === SPEECH_MODEL_ID;
+    const studio = sourceModelId === DIALOGUE_MODEL_ID || isSpeechModelId(sourceModelId);
     if (!saved && !studio) return missing();
     let catalog: Awaited<ReturnType<typeof fetchCatalog>>;
     try { catalog = await fetchCatalog(); }
@@ -38,13 +38,14 @@ export async function submittedHref(api: ApiClient, jobId: string, modelId: stri
     const switching = targetModelId !== undefined && targetModelId !== sourceModelId;
     const hasStudioInputs = Object.keys(saved?.request?.extraInputs ?? {}).some(key => key.startsWith('dialogue_voice_') || key.startsWith('tts_'));
     const restorable = saved?.request && (sourceModelId === DIALOGUE_MODEL_ID ? restoreDialogue(saved.request)
-        : sourceModelId === SPEECH_MODEL_ID ? restoreSpeech(saved.request) : null);
+        : isSpeechModelId(sourceModelId) ? restoreSpeech(saved.request) : null);
     // Generic Create jobs have no studio controls: keep their original prompt handoff.
     // Corrupt studio controls still open the studio, which explains why restoration failed.
     if (!switching && (!saved?.request || restorable || hasStudioInputs)) {
         if (sourceModelId === DIALOGUE_MODEL_ID && dialogueModel(catalog)) return { pathname: '/dialogue' as const, params: { reopen: jobId } };
-        if (sourceModelId === SPEECH_MODEL_ID && speechModel(catalog)) return { pathname: '/speech' as const, params: { reopen: jobId } };
+        if (isSpeechModelId(sourceModelId) && speechModel(catalog, sourceModelId)) return { pathname: '/speech' as const, params: { reopen: jobId } };
     }
+    if (!switching && isSpeechModelId(sourceModelId) && sourceModelId !== SPEECH_MODEL_ID && !speechModel(catalog, sourceModelId)) return missing();
     if (!saved?.request) return missing();
     const carry = normalizeTemplateCarry(saved.carry, switching ? targetModelId : saved.request.modelId);
     const model = catalog.find(m => m.id === (targetModelId ?? saved.request.modelId));

@@ -8624,8 +8624,10 @@ export default {
   "editorSpeech.autoUnavailable": "Untertitel auf dem Gerät sind auf diesem Gerät oder für diese Sprache nicht verfügbar.",
   "editorSpeech.autoStale": "Der ausgewählte Clip wurde geändert. Starte die Untertitel erneut.",
   "editorSpeech.autoFull": "Die Untertitelspur ist voll. Entferne Text oder Untertitel und versuche es erneut.",
-  "editorSpeech.autoFailed": "Die Untertitel konnten nicht erstellt werden. Versuche es mit einem anderen heruntergeladenen Clip."
-  ,"music.create.style_required": "Füge einen Stil hinzu, bevor du den Preis prüfst.",
+  "editorSpeech.autoFailed": "Die Untertitel konnten nicht erstellt werden. Versuche es mit einem anderen heruntergeladenen Clip.",
+    "speech.qwen.intro": "Wähle Stimme und Sprache und prüfe die Kosten.",
+    "speech.qwen.tooLong": "Der Text darf höchstens {limit} Zeichen enthalten.",
+  "music.create.style_required": "Füge einen Stil hinzu, bevor du den Preis prüfst.",
   "music.create.draft_stale": "Der aktive Entwurf hat sich geändert. Er wurde unverändert aktualisiert; prüfe den Preis erneut.",
   "music.create.draft_refreshed": "Der aktive Entwurf wurde unverändert aktualisiert. Dein vorheriger Text bleibt separat erhalten.",
   "music.create.copy_previous_text": "Vorherigen Text in diesen Entwurf kopieren"

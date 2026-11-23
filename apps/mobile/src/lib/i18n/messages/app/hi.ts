@@ -8623,8 +8623,10 @@ export default {
   "editorSpeech.autoUnavailable": "इस डिवाइस पर या इस भाषा के लिए ऑन-डिवाइस कैप्शन उपलब्ध नहीं हैं।",
   "editorSpeech.autoStale": "चुनी गई क्लिप बदल गई है। कैप्शन फिर से शुरू करें।",
   "editorSpeech.autoFull": "कैप्शन ट्रैक भर गया है। कुछ टेक्स्ट या कैप्शन हटाकर फिर कोशिश करें।",
-  "editorSpeech.autoFailed": "कैप्शन नहीं बन सके। किसी दूसरी डाउनलोड की गई क्लिप के साथ फिर कोशिश करें।"
-  ,"music.create.style_required": "कीमत देखने से पहले शैली जोड़ें।",
+  "editorSpeech.autoFailed": "कैप्शन नहीं बन सके। किसी दूसरी डाउनलोड की गई क्लिप के साथ फिर कोशिश करें।",
+    "speech.qwen.intro": "आवाज़ और भाषा चुनें, फिर लागत जाँचें।",
+    "speech.qwen.tooLong": "स्क्रिप्ट {limit} अक्षरों के भीतर रखें।",
+  "music.create.style_required": "कीमत देखने से पहले शैली जोड़ें।",
   "music.create.draft_stale": "सक्रिय ड्राफ़्ट बदल गया। इसे बिना बदलाव के ताज़ा किया गया है; कीमत फिर देखें।",
   "music.create.draft_refreshed": "सक्रिय ड्राफ़्ट बिना बदलाव के ताज़ा किया गया। पिछला टेक्स्ट अलग रखा गया है।",
   "music.create.copy_previous_text": "पिछला टेक्स्ट इस ड्राफ़्ट में कॉपी करें"

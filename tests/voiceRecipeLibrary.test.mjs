@@ -21,11 +21,11 @@ test('My Voice Recipes reads only the active account shelf and applies settings 
 
 test('Text to Speech exposes the personal recipe library and keeps a visible review notice', () => {
   const page = read('../app/veyrnox/app/text-to-speech/TextToSpeechStudioClient.js');
-  assert.match(page, /<VoiceRecipeLibrary onApply=/);
-  assert.match(page, /setSettings\(recipe\); setReusedRecipe\(\{ name, settings: recipe \}\)/);
+  assert.match(page, /<VoiceRecipeLibrary acceptedModels=/);
+  assert.match(page, /setSettings\(recipe\); setAuditionVoices\(\[\]\); setReusedRecipe\(\{ name, settings: recipe \}\)/);
   assert.match(page, /Voice Recipe loaded:/);
   assert.match(page, /Voice Recipe modified:/);
-  assert.match(page, /voiceRecipesMatch\(settings, reusedRecipe\.settings\)/);
+  assert.match(page, /voiceRecipesMatch\(\{ \.\.\.settings, modelId \}, reusedRecipe\.settings\)/);
   assert.match(page, /Restore recipe/);
   assert.match(page, /review every setting and approve the current price/);
   assert.match(page, /purpose="character-performance" voiceRecipe=\{item\.voice_recipe\} offerSignature/);

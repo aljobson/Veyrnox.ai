@@ -162,6 +162,33 @@ test('an image offer completes as a picture: its own extension and no MP4 rule',
   assert.equal(video.copyOptions.expectMp4, true);
 });
 
+test('standby Qwen route discovers its jobs and completes audio as WAV without MP4 enforcement', async () => {
+  const calls = [];
+  await withRows([{ ...job('qwen'), model_id: 'qwen3-tts' }], async urls => {
+    const out = await sweepCrun({ ...args,
+      read: async () => ({ ok: true, state: 'success', outputUrl: 'https://static.mediaoss.bar/audio.wav' }),
+      complete: async value => { calls.push(value); return { status: 200, body: { ok: true } }; },
+    });
+    assert.equal(urls.find(url => url.pathname.endsWith('/jobs')).searchParams.get('model_id'), 'in.(qwen3-tts)');
+    assert.equal(out.applied, 1);
+  }, [{ model_id: 'qwen3-tts', supplier: 'crun', state: 'standby', endpoint: 'crun:qwen3-tts/speech-synthesis' }]);
+  assert.equal(calls[0].ext, '.wav');
+  assert.equal(calls[0].copyOptions.expectMp4, undefined);
+  assert.equal(calls[0].outcome.outputUrl, 'https://static.mediaoss.bar/audio.wav');
+});
+
+test('a failed Qwen speech task refunds through completeJob and a pending one waits', async () => {
+  const seen = [];
+  const routes = [{ model_id: 'qwen3-tts', supplier: 'crun', state: 'standby', endpoint: 'crun:qwen3-tts/speech-synthesis' }];
+  await withRows([{ ...job('qf'), model_id: 'qwen3-tts' }, { ...job('qp'), model_id: 'qwen3-tts' }], async () => {
+    const out = await sweepCrun({ ...args,
+      read: async id => (id === 'task-qf' ? { ok: true, state: 'fail', errorCode: 'provider_failed' } : { ok: true, state: 'pending' }),
+      complete: async x => { seen.push([x.job.id, x.outcome.state, x.outcome.errorCode]); return { status: 200, body: { ok: true } }; } });
+    assert.deepEqual(out, { checked: 2, applied: 1, pending: 1, errors: 0 });
+  }, routes);
+  assert.deepEqual(seen, [['qf', 'fail', 'provider_failed']]);
+});
+
 test('an audio (Suno) route is never swept as video: the video sweep skips audio-kind routes', async () => {
   const routes = [{ model_id: 'ace-step', endpoint: 'crun:suno/music-generate' }];
   await withRows([], async () => assert.deepEqual(await sweepCrun({ ...args, read: async () => assert.fail('audio must not be read here') }), { skipped: 'no_routes' }), routes);
