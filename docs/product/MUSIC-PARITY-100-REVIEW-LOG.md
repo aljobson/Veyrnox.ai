@@ -336,8 +336,9 @@ Host dispositions:
 - S0-1 fixed: native-affecting changes now use the explicit 1.0.17 app/OTA cohort. A store upload remains a separate release action.
 - S0-2 fixed: the Expo dependency compatibility check was repeated online and passed.
 - S0-3 fixed: an absent server `features` object normalizes to all false, while a present malformed object is still rejected.
-- S0-4 fixed as far as the approved no-paid-probe boundary allows: the branch's own Metro bundle was exercised on the Xcode-built iPhone 17 Pro simulator and the Music route was reached; local mock endpoint absence is recorded instead of misreported as an end-to-end pass. Exact commit/tree evidence and PR #2665 supersession are recorded after the reviewed source is committed.
+- S0-4 fixed as far as the approved no-paid-probe boundary allows: the branch's own Metro bundle was exercised on the Xcode-built iPhone 17 Pro simulator and the Music route was reached; local mock endpoint absence is recorded instead of misreported as an end-to-end pass. The reviewed implementation commit is `5ac7e51f9e11986b35d26de46c79f0c01fe334e9`; its `apps/mobile` tree is `a36e2939b80975bd67cc8f5665e2f8078823cf8c`. PR #2665 supersession is recorded once the replacement PR URL exists.
 - S0-5 fixed: the OTA test asserts the exact 1.0.17 release cohort.
 - S0-6 fixed: the entitlement GET handler is executed under mocks and its keys/defaults are compared with the shared server rollout constant.
+- The committed native-version guard passes: `Native mobile change is paired with expo.version 1.0.16 -> 1.0.17.`
 
 Implementation inspection round 2 remains pending.
