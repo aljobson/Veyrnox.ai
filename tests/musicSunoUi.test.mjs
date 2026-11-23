@@ -324,3 +324,11 @@ test('Suno controls name every field and slider, format decimals by locale, and 
   assert.doesNotMatch(source, /toFixed\(2\)/);
   assert.match(source, /\{showTextFields \? <StylePicker label=\{t\('app\.music\.suno\.style'\)\}/, 'the composer shows its own Style box, so the picker hides there');
 });
+
+test('the Suno Simple brief box shows the typed text untrimmed, so a trailing space can be typed', () => {
+  const source = readFileSync(new URL('../app/veyrnox/_components/music/MusicServerStudio.jsx', import.meta.url), 'utf8');
+  assert.match(source, /const sunoField = capSunoText\(description, sunoLimit\(model, 'prompt'\)\);/, 'the field value is the capped raw description');
+  assert.match(source, /<SunoSimpleFields[^>]*description=\{sunoField\}/, 'the textarea is fed the untrimmed value');
+  assert.doesNotMatch(source, /<SunoSimpleFields[^>]*description=\{sunoPrompt\}/, 'the trimmed quote prompt must not feed the box');
+  assert.equal(capSunoText('warm lo-fi ', 500), 'warm lo-fi ', 'capping keeps a trailing space');
+});

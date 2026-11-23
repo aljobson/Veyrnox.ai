@@ -26,11 +26,19 @@ const BASE = '/api/v1/music';
 const bad = (status = 200): ApiError => new ApiError(status, 'bad_response');
 const rows = (value: unknown): readonly MusicRow[] | null => Array.isArray(value) && value.every(isRecord) ? value : null;
 const post = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const DEFAULT_MUSIC_FEATURES: MusicEntitlements['features'] = Object.freeze({
+    albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
+});
 
 export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements> {
-    const v = await api.request<unknown>(`${BASE}/entitlements`);
-    if (!isMusicEntitlements(v)) throw bad();
-    return v;
+    const response = await api.request<unknown>(`${BASE}/entitlements`);
+    // Mobile and web deploy independently. A server rollback that predates rollout capabilities must fail closed,
+    // while a present but malformed capabilities object remains a bad response.
+    const value = isRecord(response) && response.features === undefined
+        ? { ...response, features: DEFAULT_MUSIC_FEATURES }
+        : response;
+    if (!isMusicEntitlements(value)) throw bad();
+    return value;
 }
 
 // GET ?tab=history|hooks|covers. The key in the answer depends on the tab.

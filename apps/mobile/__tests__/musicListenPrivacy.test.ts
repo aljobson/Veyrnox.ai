@@ -5,15 +5,26 @@ import { setLocaleFromDevice } from '../src/lib/i18n';
 import { saveThemeReturnPath, takeThemeReturnPath, applyAppearance, getAppearance, THEME_RETURN_KEY } from '../src/theme';
 import { token } from './fixtures/musicPublication';
 const mockStore = new Map<string, string>(), mockWrites = jest.fn();
+const mockFiles = new Map<string, string>();
 jest.mock('expo-secure-store', () => ({
     getItem: (key: string) => mockStore.get(key) ?? null, getItemAsync: async (key: string) => mockStore.get(key) ?? null,
     setItem: (key: string, value: string) => { mockWrites(key, value); mockStore.set(key, value); },
     setItemAsync: async (key: string, value: string) => { mockWrites(key, value); mockStore.set(key, value); },
     deleteItemAsync: async (key: string) => { mockStore.delete(key); },
 }));
+jest.mock('expo-file-system', () => ({
+    Paths: { document: 'docs' },
+    File: class {
+        uri: string;
+        constructor(...parts: any[]) { this.uri = parts.map(part => part.uri ?? part).join('/'); }
+        get exists() { return mockFiles.has(this.uri); }
+        textSync() { return mockFiles.get(this.uri)!; }
+        writeSync(value: string) { mockFiles.set(this.uri, value); }
+    },
+}));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn(async () => {}) }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
-beforeEach(() => { mockStore.clear(); mockWrites.mockClear(); setLocaleFromDevice(['en']); });
+beforeEach(() => { mockStore.clear(); mockFiles.clear(); mockWrites.mockClear(); setLocaleFromDevice(['en']); });
 const forms = [`/api/music/shared/${token}`, `/api/music/shared/${token}/asset`, `/listen/${token}`, `/music/listen/${token}`];
 test.each(forms.flatMap(path => [path, `https://veyrnox.ai${path}`]))('breadcrumb and event redact every occurrence in %s', url => {
     const crumb = { category: 'navigation', message: url, data: { url, from: url, to: url, route: { params: { token, share_token: token }, pathname: url } } };
@@ -34,8 +45,8 @@ test.each([`/listen/${token}`, `/music/listen/${token}`, `/music/listen/${token}
 });
 test('real reconcileLanguageDirection stores only root for an unavoidable direction reload', async () => {
     setLocaleFromDevice(['ar']); await reconcileLanguageDirection(`/music/listen/${token}`, { signedIn: false, canReloadSession: () => false });
-    expect(JSON.parse(mockStore.get(DIRECTION_SLOT)!)).toEqual({ locale: 'ar', returnPath: '/' });
-    expect(JSON.stringify(mockWrites.mock.calls)).not.toContain(token);
+    expect(JSON.parse(mockFiles.get(`docs/${DIRECTION_SLOT}.json`)!)).toEqual({ locale: 'ar', returnPath: '/' });
+    expect(JSON.stringify([mockWrites.mock.calls, [...mockFiles.entries()]])).not.toContain(token);
 });
 test.each([`/listen/${token}`, `/music/listen/${token}`])('real language transition and storage sanitize %s', async path => {
     // A fresh module has no prior automatic reload in flight.
