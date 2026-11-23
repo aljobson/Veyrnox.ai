@@ -55,15 +55,23 @@ function files(dir: string, prefix = ''): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry: any) => entry.isDirectory()
         ? files(join(dir, entry.name), prefix + entry.name + '/') : /\.[jt]sx?$/.test(entry.name) ? [prefix + entry.name] : []);
 }
-type WebViewLoad = 'import' | 'require' | 'dynamic-import' | 'export-from';
+type WebViewLoad = 'import' | 'import-equals' | 'require' | 'dynamic-import' | 'export-from';
+const genericWebViewInputs = new Set(['source', 'uri', 'url']);
+function sourceFile(source: string) {
+    return ts.createSourceFile('screen.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+}
+function webViewTarget(node: ts.Expression | undefined) {
+    return !!node && ts.isStringLiteralLike(node) && node.text === 'react-native-webview';
+}
 function webViewLoads(source: string): WebViewLoad[] {
-    const file = ts.createSourceFile('screen.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const file = sourceFile(source);
     const found: WebViewLoad[] = [];
-    const target = (node: ts.Expression | undefined) => !!node && ts.isStringLiteral(node) && node.text === 'react-native-webview';
     function visit(node: ts.Node) {
-        if (ts.isImportDeclaration(node) && target(node.moduleSpecifier)) found.push('import');
-        else if (ts.isExportDeclaration(node) && target(node.moduleSpecifier)) found.push('export-from');
-        else if (ts.isCallExpression(node) && target(node.arguments[0])) {
+        if (ts.isImportDeclaration(node) && webViewTarget(node.moduleSpecifier)) found.push('import');
+        else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)
+            && webViewTarget(node.moduleReference.expression)) found.push('import-equals');
+        else if (ts.isExportDeclaration(node) && webViewTarget(node.moduleSpecifier)) found.push('export-from');
+        else if (ts.isCallExpression(node) && webViewTarget(node.arguments[0])) {
             if (ts.isIdentifier(node.expression) && node.expression.text === 'require') found.push('require');
             else if (node.expression.kind === ts.SyntaxKind.ImportKeyword) found.push('dynamic-import');
         }
@@ -71,6 +79,88 @@ function webViewLoads(source: string): WebViewLoad[] {
     }
     visit(file);
     return found;
+}
+function importedWebViewBindings(file: ts.SourceFile) {
+    const bindings = new Set<string>();
+    for (const statement of file.statements) {
+        if (ts.isImportDeclaration(statement) && webViewTarget(statement.moduleSpecifier)) {
+            const clause = statement.importClause;
+            if (clause?.name) bindings.add(clause.name.text);
+            if (clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)) bindings.add(clause.namedBindings.name.text);
+            else if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+                clause.namedBindings.elements.forEach(element => bindings.add(element.name.text));
+            }
+        } else if (ts.isImportEqualsDeclaration(statement) && ts.isExternalModuleReference(statement.moduleReference)
+            && webViewTarget(statement.moduleReference.expression)) bindings.add(statement.name.text);
+    }
+    return bindings;
+}
+function reExportedWebViewBindings(source: string) {
+    const file = sourceFile(source);
+    const imported = importedWebViewBindings(file);
+    const found = new Set<string>();
+    for (const statement of file.statements) {
+        if (ts.isExportDeclaration(statement) && !statement.moduleSpecifier && statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+            for (const element of statement.exportClause.elements) {
+                const local = (element.propertyName ?? element.name).text;
+                if (imported.has(local)) found.add(local);
+            }
+        } else if (ts.isExportAssignment(statement) && ts.isIdentifier(statement.expression) && imported.has(statement.expression.text)) {
+            found.add(statement.expression.text);
+        } else if (ts.isVariableStatement(statement) && statement.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)) {
+            for (const declaration of statement.declarationList.declarations) {
+                if (declaration.initializer && ts.isIdentifier(declaration.initializer) && imported.has(declaration.initializer.text)) {
+                    found.add(declaration.initializer.text);
+                }
+            }
+        }
+    }
+    return [...found].sort();
+}
+function genericWrapperInputs(source: string) {
+    const file = sourceFile(source);
+    const namedTypes = new Map<string, readonly ts.TypeElement[]>();
+    for (const statement of file.statements) {
+        if (ts.isInterfaceDeclaration(statement)) namedTypes.set(statement.name.text, statement.members);
+        else if (ts.isTypeAliasDeclaration(statement) && ts.isTypeLiteralNode(statement.type)) namedTypes.set(statement.name.text, statement.type.members);
+    }
+    const found = new Set<string>();
+    const addName = (name: ts.PropertyName | ts.BindingName | undefined) => {
+        if (!name) return;
+        if (ts.isIdentifier(name) || ts.isStringLiteralLike(name)) {
+            if (genericWebViewInputs.has(name.text)) found.add(name.text);
+        } else if (ts.isObjectBindingPattern(name) || ts.isArrayBindingPattern(name)) {
+            name.elements.forEach(element => { if (ts.isBindingElement(element)) addName(element.name); });
+        }
+    };
+    const addMembers = (members: readonly ts.TypeElement[]) => members.forEach(member => {
+        if (ts.isPropertySignature(member) || ts.isMethodSignature(member)) addName(member.name);
+    });
+    const addType = (type: ts.TypeNode | undefined) => {
+        if (!type) return;
+        if (ts.isTypeLiteralNode(type)) addMembers(type.members);
+        else if (ts.isTypeReferenceNode(type) && ts.isIdentifier(type.typeName)) addMembers(namedTypes.get(type.typeName.text) ?? []);
+        else if (ts.isUnionTypeNode(type) || ts.isIntersectionTypeNode(type)) type.types.forEach(addType);
+    };
+    const addParameter = (parameter: ts.ParameterDeclaration) => { addName(parameter.name); addType(parameter.type); };
+    const addCallable = (node: ts.Expression | undefined) => {
+        if (!node) return;
+        if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) node.parameters.forEach(addParameter);
+        else if (ts.isCallExpression(node)) {
+            node.typeArguments?.forEach(addType);
+            node.arguments.forEach(argument => {
+                if (ts.isArrowFunction(argument) || ts.isFunctionExpression(argument)) argument.parameters.forEach(addParameter);
+            });
+        }
+    };
+    const exported = (node: { modifiers?: ts.NodeArray<ts.ModifierLike> }) => node.modifiers?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+    for (const statement of file.statements) {
+        if (ts.isFunctionDeclaration(statement) && exported(statement)) statement.parameters.forEach(addParameter);
+        else if (ts.isVariableStatement(statement) && exported(statement)) {
+            statement.declarationList.declarations.forEach(declaration => addCallable(declaration.initializer));
+        } else if (ts.isExportAssignment(statement)) addCallable(statement.expression);
+    }
+    return [...found].sort();
 }
 test('every external call has an explicit system-flow exception, with no unused exceptions', () => {
     const found: Record<string, string[]> = {};
@@ -88,7 +178,10 @@ test('only the exact native-boundary allowlist directly imports react-native-web
         expect(reason.length).toBeGreaterThan(20);
         // An allowlisted boundary owns its WebView directly. It may not become a generic re-export that lets any
         // caller bypass this file-level review.
-        expect(webViewLoads(readFileSync(join(root, file), 'utf8'))).toEqual(['import']);
+        const source = readFileSync(join(root, file), 'utf8');
+        expect(webViewLoads(source)).toEqual(['import']);
+        expect(reExportedWebViewBindings(source)).toEqual([]);
+        expect(genericWrapperInputs(source)).toEqual([]);
     }
     const route = readFileSync(join(root, 'app/(app)/dev-b1-beat.tsx'), 'utf8');
     expect(route).toContain('process.env.EXPO_PUBLIC_DEV_B1_BEAT_SPIKE');
@@ -99,6 +192,9 @@ test.each([
     ["const webview = require('react-native-webview');", ['require']],
     ["const webview = import('react-native-webview');", ['dynamic-import']],
     ["export * from 'react-native-webview';", ['export-from']],
+    ["import WebView = require('react-native-webview');", ['import-equals']],
+    ['const webview = require(`react-native-webview`);', ['require']],
+    ['const webview = import(`react-native-webview`);', ['dynamic-import']],
 ] as const)('WebView scanner catches alternate module loading: %s', (source, expected) => {
     expect(webViewLoads(source)).toEqual(expected);
 });
@@ -106,6 +202,22 @@ test('an allowlisted file cannot hide a generic WebView re-export beside its dir
     const source = "import { WebView } from 'react-native-webview'; export * from 'react-native-webview';";
     expect(webViewLoads(source)).toEqual(['import', 'export-from']);
     expect(webViewLoads(source)).not.toEqual(['import']);
+});
+test.each([
+    "import { WebView } from 'react-native-webview'; export { WebView };",
+    "import { WebView as NativeWebView } from 'react-native-webview'; export { NativeWebView as WebView };",
+    "import WebView from 'react-native-webview'; export default WebView;",
+    "import WebView from 'react-native-webview'; export const GenericWebView = WebView;",
+])('allowlisted modules cannot re-export their imported WebView binding: %s', source => {
+    expect(reExportedWebViewBindings(source).length).toBeGreaterThan(0);
+});
+test.each([
+    'export function Generic({ url }: { url: string }) { return null; }',
+    'interface Props { uri: string } export function Generic(props: Props) { return null; }',
+    'export const Generic = ({ source }: { source: unknown }) => null;',
+    'type Props = { url: string }; export const Generic = forwardRef<unknown, Props>(function Generic(props) { return null; });',
+])('allowlisted modules cannot expose generic WebView loading inputs: %s', source => {
+    expect(genericWrapperInputs(source).length).toBeGreaterThan(0);
 });
 test('mail and authenticator exceptions retain scheme guards', () => {
     const read = (path: string) => readFileSync(join(root, path), 'utf8');
