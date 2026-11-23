@@ -220,5 +220,6 @@ export default {
     "app.editor.sheet.style": "Style",
     "app.create.templatePrompt.ready": "Template prompt ready",
     "app.create.templatePrompt.help": "This template’s prompt will be used as written.",
-    "app.create.templatePrompt.edit": "Edit prompt"
+    "app.create.templatePrompt.edit": "Edit prompt",
+    "app.create.templatePrompt.error": "Couldn’t load the prompt. Sign in and try again."
 } as const;
