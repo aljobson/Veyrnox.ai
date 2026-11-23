@@ -2,6 +2,8 @@
 
 Repo aljobson/Veyrnox.ai, base origin/main 00d62b684. Coordinator: Claude (host). Plan reviewer: Codex (gpt-6-astra, effort high). Builder per slice: Codex. Inspector per slice: a fresh Claude session. One PR per slice against `main`; the owner merges. Owner instruction: "Complete the FULL gap between Mobile and Web", everything native (no web views, no veyrnox.ai link-outs), iOS builds by local Xcode only.
 
+Delivery status (2026-11-23): S7-S14 source implementation and deterministic fixture coverage are merged through #2646 (`ba83c2c8672f21b248de6bd28d01779eca6ad522`). S11-S14 are no longer planned-only rows. Native compilation and consolidated iPhone qualification remain release gates; this source status does not claim that the App Store binary has completed them.
+
 This file is the master plan. Each slice gets its own work order (PLAN-Sn.md, outside the checkout) that is reviewed again before its build. This file lands in the repo as `docs/mobile/EDITOR-ADVANCED-PARITY-2026-11-20.md` with slice 1.
 
 ## 1. Audit: what the web editor has and what the phone has (verified in code)

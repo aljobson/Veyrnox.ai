@@ -7,7 +7,7 @@ test('app points at this project\'s EAS Update endpoint', () => {
     expect(expo.updates.url).toBe(`https://u.expo.dev/${expo.extra.eas.projectId}`);
 });
 test('updates target the current native app release', () => {
-    expect(expo.version).toBe('1.0.6');
+    expect(expo.version).toBe('1.0.7');
     expect(expo.runtimeVersion).toEqual({ policy: 'appVersion' });
 });
 test('launch never waits on the network and nothing reloads the running app', () => {

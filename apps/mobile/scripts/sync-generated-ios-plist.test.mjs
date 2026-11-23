@@ -47,7 +47,8 @@ test('sync writes the declared phone orientation and privacy descriptions, then 
 test('local generated settings stay aligned with source app config and the Vision plugin', () => {
     const app = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'utf8'));
     const plugin = readFileSync(new URL('../modules/veyrnox-vision/app.plugin.js', import.meta.url), 'utf8');
-    assert.equal(app.expo.orientation, 'portrait');
+    assert.equal(app.expo.orientation, 'default');
+    assert.deepEqual(app.expo.ios.infoPlist.UISupportedInterfaceOrientations, PHONE_ORIENTATIONS);
     assert.match(plugin, new RegExp(SPEECH_USAGE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.match(plugin, new RegExp(MICROPHONE_USAGE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.doesNotMatch(plugin, /NSSpeechRecognitionUsageDescription\s*\|\|=/);

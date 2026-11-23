@@ -1,12 +1,12 @@
-import { modalSafePadding, readableWidth } from '../src/lib/modalLayout';
+import { bottomSheetSafePadding, modalSafePadding, readableWidth } from '../src/lib/modalLayout';
 import { onboardingChoiceLayout } from '../src/lib/onboardingLayout';
 
 declare const require: (id: string) => { expo: { orientation?: string } };
 const appConfig = require('../app.json');
 
 describe('orientation-safe layout contracts', () => {
-    test('app-wide landscape stays deferred until the isolated integration audit', () => {
-        expect(appConfig.expo.orientation).toBe('portrait');
+    test('the isolated integration audit unlocks portrait and landscape', () => {
+        expect(appConfig.expo.orientation).toBe('default');
     });
     test('full-screen modal padding protects every physical safe-area edge', () => {
         expect(modalSafePadding({ top: 0, right: 59, bottom: 21, left: 59 }, 16)).toEqual({
@@ -21,6 +21,15 @@ describe('orientation-safe layout contracts', () => {
         const insets = { top: 0, right: 59, bottom: 21, left: 59 };
         expect(readableWidth(844, insets, 960)).toBe(726);
         expect(readableWidth(1194, insets, 720)).toBe(720);
+    });
+
+    test('bottom sheets protect landscape sides and bottom without adding the portrait status-bar inset', () => {
+        expect(bottomSheetSafePadding({ top: 62, right: 59, bottom: 34, left: 59 }, 16, 24, 48)).toEqual({
+            paddingTop: 24,
+            paddingRight: 75,
+            paddingBottom: 50,
+            paddingLeft: 75,
+        });
     });
 
     test.each([
