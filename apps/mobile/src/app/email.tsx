@@ -232,7 +232,12 @@ export default function EmailAuth() {
     return (
         <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView
-                contentContainerStyle={[styles.body, { paddingTop: insets.top + ds.space.lg, paddingBottom: insets.bottom + ds.space.xxl }]}
+                contentContainerStyle={[styles.body, {
+                    paddingTop: insets.top + ds.space.lg,
+                    paddingRight: insets.right + ds.space.gutter,
+                    paddingBottom: insets.bottom + ds.space.xxl,
+                    paddingLeft: insets.left + ds.space.gutter,
+                }]}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="interactive"
                 showsVerticalScrollIndicator={false}
@@ -357,7 +362,7 @@ export default function EmailAuth() {
 }
 const sheets = themedStyles((p) => ({
     screen: { flex: 1, backgroundColor: p.bg },
-    body: { paddingHorizontal: ds.space.gutter, gap: ds.space.md },
+    body: { gap: ds.space.md },
     divider: { flexDirection: 'row', alignItems: 'center', gap: ds.space.md },
     line: { flex: 1, height: 1, backgroundColor: p.borderSubtle },
     security: { flexDirection: 'row', alignItems: 'center', gap: ds.space.sm },

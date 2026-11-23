@@ -19,6 +19,10 @@ import { CreateOptions, type OptionValues } from '../CreateOptions';
 import { Text, TextField, Button, Card, Chip, themedStyles, useThemedStyles } from '../ui';
 import { MakeResult } from './MakeResult';
 import { MakeSources } from './MakeSources';
+import { KeyboardScreen } from '../KeyboardScreen';
+import { KeyboardFormScrollView } from '../KeyboardFormScrollView';
+import { modalSafePadding } from '../../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 interface Props {
     readonly visible: boolean;
@@ -34,6 +38,7 @@ const defaults = (model?: CatalogModel | null): OptionValues => ({
 
 export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', onClose, onJobStarted, resultNote }: Props) {
     const styles = useThemedStyles(sheets);
+    const insets = useOptionalSafeAreaInsets();
     const reducedMotion = useReducedMotion();
     const { api } = useAuth();
     const router = useRouter();
@@ -103,7 +108,8 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
 
     return (
         <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={close}>
-            <ScrollView style={styles.screen} onAccessibilityEscape={close} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <KeyboardScreen style={styles.screen}>
+            <KeyboardFormScrollView onAccessibilityEscape={close} contentContainerStyle={[styles.content, modalSafePadding(insets), { paddingTop: Math.max(56, insets.top + 16) }]} keyboardShouldPersistTaps="handled">
                 <Text variant="title2" accessibilityRole="header">{t('chat.make.title')}</Text>
                 <MakeResult jobs={state.jobs} count={state.count} modelId={model?.id} canMakeAnother={!state.submitting && !state.retry?.blocked}
                     onOpen={id => { close(); router.push({ pathname: '/job/[id]', params: { id } }); }}
@@ -148,14 +154,15 @@ export function MakePanel({ visible, initialPrompt = '', initialKind = 'image', 
                     {state.submitting ? <ActivityIndicator color={styles.ink.color} /> : <Text tone={price !== null ? 'warning' : 'primary'}>{retry?.quote ? label : price === null ? t('chat.make.button') : price === 0 ? t('create.workspace.generateFree') : plural('chat.make.buttonPrice', price)}</Text>}
                 </Button>
                 <Button variant="tertiary" onPress={close} label={t('chat.make.close')} />
-            </ScrollView>
+            </KeyboardFormScrollView>
+            </KeyboardScreen>
         </Modal>
     );
 }
 const sheets = themedStyles(p => ({
     accentInk: { color: p.accent }, ink: { color: p.textPrimary },
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: 16, paddingTop: 56, gap: 12 },
+    content: { flexGrow: 1, padding: 16, paddingTop: 56, gap: 12 },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     models: { gap: 8 }, model: { minHeight: MIN_TARGET, padding: 12 },
     input: { minHeight: 96, maxHeight: 200 },

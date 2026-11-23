@@ -118,8 +118,8 @@ test('Editor device draft is recovered after reload and sign-out removes the pri
   await expect.poll(() => page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith('veyrnox-editor-draft-v1:') && localStorage.getItem(key).includes('Synthetic recovered title')))).toBe(true);
   await fixture.open('/app/editor'); await page.getByTestId('editor-recover').click();
   const timeline = page.getByTestId('editor-stage-timeline'); if (await timeline.isVisible()) await timeline.click();
-  await expect(page.getByRole('button', { name: /^Synthetic recovered title,/ })).toBeVisible();
-  await fixture.switchUser(null); await expect(page.getByRole('button', { name: /^Synthetic recovered title,/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Synthetic recovered title / })).toBeVisible();
+  await fixture.switchUser(null); await expect(page.getByRole('button', { name: /^Synthetic recovered title / })).toHaveCount(0);
 });
 
 test('Editor Library refuses a failed read then imports a synthetic source after an explicit retry', async ({ page }) => {

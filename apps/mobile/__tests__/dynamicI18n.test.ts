@@ -14,6 +14,7 @@ const fs = require('fs'), path = require('path'), ts = require('typescript');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
+    'dialogue.{}': ['turnLimit', 'wordsRequired', 'speakerLimit', 'tooLong', 'invalid', 'castInvalid'],
     'musicExport.format.{}': ['mp3', 'wav', 'flac'],
     'musicExport.{}': ['loading', 'reviewing', 'confirming', 'saving'],
     'musicRender.{}': ['fadeIn', 'fadeOut', 'speed', 'split', 'fade', 'reorder', 'remaster', 'reverse',
@@ -68,6 +69,9 @@ const domains: Record<string, readonly string[]> = {
     'musicActions.stems.{}': ['queued', 'running', 'ready', 'failed', 'refunded'],
     'musicActions.{}.title': ['stems', 'crop'],
     'musicActions.action.{}': ['rights', 'format', 'plan', 'model', 'notAffordable', 'expired', 'changed', 'consent', 'range', 'short', 'busy', 'source', 'recovery', 'network', 'error'],
+    'music.create.suno.style.{}': ['cinematic', 'electronic', 'indie', 'jazz', 'pop', 'rock'],
+    'music.create.suno.gender.{}': ['auto', 'male', 'female'],
+    'music.create.suno.variety.{}': ['0', '1', '2', '3', '4'],
     'music.create.{}': ['simple', 'custom', 'empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable', 'rights_required', 'error', 'queued', 'running', 'ready', 'failed', 'refunded', 'cancelled'],
     'beatAi.{}': ['generate', 'stems', 'targetStems', 'extend', 'replace', ...Array.from({ length: 45 }, (_, n) => `a${n}`)],
     'beat.{}': ['gain', 'pan'],
@@ -82,6 +86,9 @@ const domains: Record<string, readonly string[]> = {
     'beat.local.{}': ['saved', 'saving', 'error', 'busy'],
     'beat.cloud.{}': ['checking', 'off', 'unlinked', 'other', 'signed_out', 'syncing', 'synced', 'conflict', 'paused_conflict', 'removed', 'limit', 'rate_limited', 'offline', 'error', 'takes'],
     'beat.pad.{}': ['kick', 'snare', 'hat', 'openhat', 'clap', 'tom', 'rim', 'crash'],
+    'beat.padRecord.status.{}': ['off', 'armed', 'recording'],
+    'beat.midiRecord.status.{}': ['idle', 'starting', 'countIn', 'recording', 'finishing', 'failed'],
+    'beat.midiRecord.recovery.{}.detail': ['restore', 'retry', 'conflict', 'discardOnly'],
     'beat.kit.{}': ['acoustic', '808', 'lofi'],
     'music.tab.{}': ['songs', 'history', 'hooks'],
     'music.empty.{}': ['songs', 'history', 'hooks'],
@@ -125,6 +132,9 @@ const domains: Record<string, readonly string[]> = {
     "bestCut.language.{}": ["en", "es", "zh", "hi", "ar", "fr", "pt", "ru", "ja", "de", "ko"],
     "bestCut.warning.{}": ["tail", "sections", "language"],
     "bestCut.{}": ["balanced", "vlog", "educational", "punchy", "steps", "ready", "uploading", "preflight", "transcribing", "no-speech", "complete"],
+    "editorPack.progress.{}": ["copying", "verifying", "placing", "creating"],
+    "editorPack.{}": ["manifestTooLarge", "invalidManifest", "missingItem", "wrongName", "invalidFile", "wrongType", "accountChanged", "changed", "cannotAdd", "projectFull", "tooLarge"],
+    "editorPack.category.{}": ["All", "Photos", "Video", "Stickers", "Avatars", "Music", "Sound effects"],
     "brand.problem.{}": ["name", "palette", "fonts", "size", "styles", "assets"],
     "brand.asset.field.{}": ["name", "credit", "usage", "url"],
     "brand.style.{}": ["name", "size", "color", "background", "stroke", "strokeWidth", "font", "weight", "align", "normal", "bold", "left", "center", "right", "italic", "underline"],

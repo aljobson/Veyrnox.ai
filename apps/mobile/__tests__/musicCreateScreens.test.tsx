@@ -138,8 +138,35 @@ test('locked model is visible, disabled and cannot submit', async () => {
     await act(async () => locked.props.onClick({ nativeEvent: {} })); await edit('prompt', 'Piano');
     await click(t('music.create.review')); expect(mockApi.request.mock.calls.filter(([p]) => /generation/.test(p))).toHaveLength(0);
 });
+test('advanced controls are capability-gated progressive disclosure and never render in Custom', async () => {
+    await mount();
+    expect(button(t('music.create.advanced.show'))).toBeUndefined();
+    await click('ACE-Step 1.5');
+    const disclosure = button(t('music.create.advanced.show'));
+    expect(disclosure.props.accessibilityState.expanded).toBe(false);
+    await click(t('music.create.advanced.show'));
+    const variety = root.container.queryAll(n => n.props.accessibilityRole === 'adjustable'
+        && n.props.accessibilityLabel === t('music.create.advanced.variety'))[0];
+    await act(async () => variety.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
+    expect(getMusicCreateSession(mockApi as unknown as ApiClient).snapshot().input.variety).toBe(51);
+    expect(field(t('music.create.advanced.excludeStyles'))).toBeDefined();
+    const bpm = field(t('music.create.advanced.bpm'));
+    await act(async () => bpm.props.onChangeText('221'));
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
+    expect(button(t('music.create.review')).props.accessibilityState.disabled).toBe(true);
+    await click(t('music.create.advanced.hide'));
+    expect(field(t('music.create.advanced.bpm'))).toBeUndefined();
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
+    await mode('custom');
+    expect(button(t('music.create.advanced.hide'))).toBeUndefined();
+    expect(field(t('music.create.advanced.excludeStyles'))).toBeUndefined();
+    expect(field(t('music.create.advanced.bpm'))).toBeUndefined();
+    await mode('simple');
+    expect(button(t('music.create.advanced.hide')).props.accessibilityState.expanded).toBe(true);
+    expect(text(t('music.create.advanced.bpmInvalid', { min: 40, max: 220 })).length).toBeGreaterThan(0);
+});
 test('custom saves draft then quotes saved revision and resolves conflict', async () => {
-    await mount(); await mode('custom'); await edit('lyrics', 'My lyrics');
+    await mount(); await mode('custom'); await edit('lyrics', 'My lyrics'); await edit('styles', 'warm piano');
     let conflicted = false;
     mockApi.request.mockImplementation((path, init) => {
         if (init?.method === 'PUT' && !conflicted) { conflicted = true; throw new ApiError(409, 'revision_conflict', { draft: { ...draft, revision: 9, lyrics: 'server lyrics' } }); }
@@ -161,7 +188,7 @@ test('lost acknowledgement survives expiry and remount with same key and snapsho
         }
         return baseResponse(path, init);
     });
-    await mount(); await mode('custom'); await edit('lyrics', 'Submitted words');
+    await mount(); await mode('custom'); await edit('lyrics', 'Submitted words'); await edit('styles', 'warm piano');
     const toggle = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental') && typeof n.props.onChange === 'function')[0];
     await act(async () => toggle.props.onChange({ nativeEvent: { value: false } }));
     const rights = root.container.queryAll(n => n.props.accessibilityRole === 'checkbox')[0];
@@ -218,7 +245,7 @@ test('server concurrency rejection displays the local slot message', async () =>
 test('editing while draft loads keeps local text and still obtains its revision', async () => {
     let finish!: (value: unknown) => void;
     mockApi.request.mockImplementation((path, init) => path.endsWith('/drafts/custom') && !init ? new Promise(resolve => { finish = resolve; }) : baseResponse(path, init));
-    await mount(); await mode('custom'); await edit('lyrics', 'New local words');
+    await mount(); await mode('custom'); await edit('lyrics', 'New local words'); await edit('styles', 'warm piano');
     await act(async () => finish({ draft: { ...draft, lyrics: 'Old server words' } }));
     expect(field(t('music.create.lyrics')).props.value).toBe('New local words');
     expect(button(t('music.create.review')).props.accessibilityState.disabled).toBe(false);
@@ -268,7 +295,7 @@ test.each([[400, 'prompt_not_allowed'], [503, 'model_unavailable'], [503, 'plan_
     });
 
 test('F3 the rights blocker has its own message, separate from the checkbox label', async () => {
-    await mount(); await mode('custom'); await edit('lyrics', 'My lyrics');
+    await mount(); await mode('custom'); await edit('lyrics', 'My lyrics'); await edit('styles', 'warm piano');
     const toggle = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental') && typeof n.props.onChange === 'function')[0];
     await act(async () => toggle.props.onChange({ nativeEvent: { value: false } }));
     expect(t('music.create.rights_required')).not.toBe(t('music.create.rights'));

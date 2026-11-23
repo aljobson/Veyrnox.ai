@@ -34,6 +34,7 @@
 import { NextResponse } from 'next/server';
 import { jobReadLimitResponse } from '../../../../../lib/jobReadLimit.js';
 import { publicJob } from '../../../../../lib/jobState.js';
+import { clientModelId } from '../../../../../lib/privateModelIds.js';
 import { refreshPolledJob } from '../../../../../lib/refreshPolledJob.js';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 
@@ -76,7 +77,8 @@ export async function GET(req, { params }) {
     }
 
     // The mapping lives in lib/jobState.js, shared with the route that answers for a send by its key.
-    return NextResponse.json(publicJob(row), { headers: { 'Cache-Control': 'no-store' } });
+    const job = publicJob(row);
+    return NextResponse.json({ ...job, model_id: clientModelId(job.model_id) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 const DELETE_REFUSALS = {

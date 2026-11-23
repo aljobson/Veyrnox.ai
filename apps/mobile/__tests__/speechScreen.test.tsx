@@ -13,6 +13,8 @@ import { rawText } from '../src/lib/i18n/translate';
 import { OfflineError } from '../src/lib/network';
 const mockRouter = { push: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => false), back: jest.fn() };
 const mockTitles: string[] = [];
+let mockReopen: string | undefined;
+const mockSavedList = jest.fn();
 const mockLoadCatalog = jest.fn();
 const mockRequest = jest.fn(), mockRemember = jest.fn(), mockRefresh = jest.fn();
 const mockApi = { request: mockRequest, getBalance: jest.fn(), stream: jest.fn() };
@@ -20,21 +22,24 @@ const mockModel: CatalogModel = { id: 'minimax-speech-2.6-hd', name: 'Speech', m
 let mockCatalog: CatalogModel[], mockBalance: number | null, mockResult: JobResult, mockOwner: string;
 const mockSubscribers = new Set<() => void>();
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
-jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: { options: { title: string } }) => { mockTitles.push(options.title); return null; } }, useRouter: () => mockRouter }));
+jest.mock('expo-router', () => ({ useLocalSearchParams: () => ({ reopen: mockReopen }), Stack: { Screen: ({ options }: { options: { title: string } }) => { mockTitles.push(options.title); return null; } }, useRouter: () => mockRouter }));
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => mockOwner, subscribeCacheUser: (fn: () => void) => { mockSubscribers.add(fn); return () => mockSubscribers.delete(fn); } }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: () => mockLoadCatalog() }));
 jest.mock('../src/lib/useBalance', () => ({ useBalance: () => mockBalance }));
 jest.mock('../src/lib/createResult', () => ({ useJobResult: () => mockResult, soundPassFor: () => null, refreshBalance: (...args: unknown[]) => mockRefresh(...args) }));
 jest.mock('../src/lib/submittedRequests', () => ({ rememberSubmitted: (...args: unknown[]) => mockRemember(...args),
-    submittedRequests: { list: async () => mockRemember.mock.calls.map(([id]) => ({ id })) } }));
+    submittedRequests: { list: async () => [...((await mockSavedList()) ?? []), ...mockRemember.mock.calls.map(([id]) => ({ id }))] } }));
 jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: async () => {}, hasAgreed: async () => true } }));
-jest.mock('../src/lib/celebrate', () => ({ noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
+jest.mock('../src/lib/celebrate', () => ({
+    captureCelebrationAccount: () => jest.requireActual('../src/lib/celebrate').captureCelebrationAccount(),
+    isCelebrationAccountCurrent: (token: unknown) => jest.requireActual('../src/lib/celebrate').isCelebrationAccountCurrent(token),
+    noteLocalSubmission: jest.fn(), celebrateOutput: jest.fn() }));
 jest.mock('../src/lib/milestoneHistory', () => ({ settleFirstMilestones: async () => {} }));
 jest.mock('../src/lib/analytics/generations', () => ({ noteGenerationSubmitted: jest.fn() }));
 jest.mock('../src/lib/generationProgress', () => ({ noteJobStarted: jest.fn() }));
 jest.mock('../src/components/GenerationProgress', () => ({ GenerationProgress: () => null }));
 jest.mock('../src/components/VeyCharacter', () => ({ VeyCharacter: () => null }));
-jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: (props: object) => require('react').createElement(require('react-native').View, { ...props, testID: 'speech-player' }) }));
+jest.mock('../src/components/InlineMedia', () => ({ InlineMedia: (props: object) => jest.requireActual('react').createElement(jest.requireActual('react-native').View, { ...props, testID: 'speech-player' }) }));
 jest.mock('../src/components/library/GeneratedChip', () => ({ GeneratedChip: () => null }));
 jest.mock('../src/components/KeyboardScreen', () => ({ KeyboardScreen: jest.requireActual('react-native').View }));
 jest.mock('../src/components/KeyboardFormScrollView', () => ({ KeyboardFormScrollView: jest.requireActual('react-native').View }));
@@ -55,7 +60,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     setLocaleFromDevice(['en']); mockTitles.length = 0; mockLoadCatalog.mockReset().mockImplementation(async () => mockCatalog);
     mockRouter.replace.mockClear(); mockRouter.back.mockClear(); mockRouter.canGoBack.mockReturnValue(false);
-    mockOwner = 'a'; mockSubscribers.forEach(fn => fn()); mockCatalog = [mockModel]; mockBalance = 10;
+    mockOwner = 'a'; mockSubscribers.forEach(fn => fn()); mockReopen = undefined; mockSavedList.mockReset().mockResolvedValue([]); mockCatalog = [mockModel]; mockBalance = 10;
     mockResult = { state: 'queued' }; mockRequest.mockReset().mockResolvedValue({ job_id: 'speech-job' });
     mockRemember.mockReset().mockResolvedValue(undefined); mockRefresh.mockReset(); mockRouter.push.mockClear();
     root = createRoot();
@@ -193,6 +198,23 @@ test('unknown balance is not formatted as a numeric plural', async () => {
     expect(textOf(root.container)).toContain(t('speech.balanceUnknown'));
 });
 
+
+test('Make another restores all six speech controls as one voice with an empty audition board', async () => {
+    mockReopen = 'audition-job';
+    const inputs = { tts_voice: 'Wise_Woman', tts_language: 'English', tts_emotion: 'happy', tts_speed: 1.2, tts_volume: 2, tts_pitch: 3 };
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: mockModel.id, prompt: 'Remembered words', extraInputs: inputs } }]);
+    await render(); expect(mockRequest).not.toHaveBeenCalled();
+    expect(generate()).toBeDefined(); await click(generate());
+    expect(mockRequest).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body).inputs).toEqual({ prompt: 'Remembered words', ...inputs });
+});
+test('corrupt speech restore opens empty with a translated note', async () => {
+    mockReopen = 'broken-job'; mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: mockModel.id, prompt: 'Secret', extraInputs: { tts_voice: 'invalid' } } }]);
+    await render(); expect(textOf(root.container)).toContain(t('dialogue.restoreUnavailable'));
+    expect(generate().props.accessibilityState.disabled).toBe(true); expect(mockRequest).not.toHaveBeenCalled();
+    await write('New script'); expect(textOf(root.container)).not.toContain(t('dialogue.restoreUnavailable'));
+    await click(generate()); expect(textOf(root.container)).not.toContain(t('dialogue.restoreUnavailable'));
+});
 test('leaving and reopening preserves an unknown key; no-op edits preserve its warning', async () => {
     mockRequest.mockRejectedValueOnce(new ApiError(0, 'network'));
     await render(); await write('Hello'); await click(generate());
@@ -210,4 +232,75 @@ test('Adjust after a completed take permits a new take with a fresh key', async 
     const bodies = mockRequest.mock.calls.map(([, init]) => JSON.parse(init.body));
     expect(bodies).toHaveLength(2);
     expect(bodies[1].idempotency_key).not.toBe(bodies[0].idempotency_key);
+});
+
+const qwenModel: CatalogModel = { ...mockModel, id: 'qwen3-tts', name: 'Qwen3 TTS', credits: 2 };
+const qwenGenerate = () => button(plural('speech.generate', 2));
+test('model chooser is absent for MiniMax alone and present when both models are available', async () => {
+    await render();
+    expect(button(mockModel.name)).toBeUndefined();
+    expect(button(qwenModel.name)).toBeUndefined();
+    await act(async () => root.unmount()); root = createRoot();
+    mockCatalog = [qwenModel, mockModel]; await render();
+    expect(button(mockModel.name)).toBeDefined(); expect(button(qwenModel.name)).toBeDefined();
+    expect(generate()).toBeDefined(); // MiniMax remains the default, independent of catalog order.
+});
+test('Qwen hides MiniMax delivery controls and audition actions, uses 600 characters and submits two credits', async () => {
+    mockCatalog = [mockModel, qwenModel]; await render(); await click(button(qwenModel.name));
+    for (const key of ['emotion', 'speed', 'volume', 'pitch', 'pauses', 'interjections', 'audition.title']) {
+        expect(textOf(root.container)).not.toContain(t(`speech.${key}`));
+    }
+    const voiceButton = button(`Cherry · ${t('speech.gender.female')}`);
+    await click(voiceButton);
+    expect(button(t('speech.audition.testVoice', { voice: 'Cherry' }))).toBeUndefined();
+    expect(button(t('speech.audition.add', { voice: 'Cherry' }))).toBeUndefined();
+    const input = root.container.queryAll(node => node.props.onChangeText && node.props.accessibilityLabel === t('speech.script'))[0];
+    expect(input.props.maxLength).toBe(600);
+    await write('x'.repeat(601)); expect(qwenGenerate().props.accessibilityState.disabled).toBe(true);
+    await write('x'.repeat(600)); expect(qwenGenerate().props.accessibilityState.disabled).toBe(false);
+    await click(qwenGenerate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: qwenModel.id,
+        inputs: { prompt: 'x'.repeat(600), tts_voice: 'Cherry', tts_language: 'auto' } });
+    expect(mockRemember.mock.calls[0][1]).toMatchObject({ confirmedCredits: 2, extraInputs: { tts_voice: 'Cherry', tts_language: 'auto' } });
+});
+test('switching models resets voice/language and flags an over-limit script without cutting it', async () => {
+    mockCatalog = [mockModel, qwenModel]; await render(); await click(button('English'));
+    await click(button(qwenModel.name));
+    expect(button(t('speech.auto')).props.accessibilityState.selected).toBe(true);
+    expect(button(`Cherry · ${t('speech.gender.female')}`)).toBeDefined();
+    await click(button(`Cherry · ${t('speech.gender.female')}`));
+    await click(button(`Serena, ${t('speech.gender.female')}`)); await click(button('French'));
+    await write('x'.repeat(600)); await click(button(mockModel.name));
+    const voice = TTS_VOICES[0];
+    expect(button(`${voice.label} · ${t(`speech.tone.${voice.tone}`)} · ${t(`speech.gender.${voice.gender}`)}`)).toBeDefined();
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    expect(button(t('speech.auto')).props.accessibilityState.selected).toBe(true);
+    expect(textOf(root.container)).toContain(t('speech.tooLong'));
+    expect(root.container.queryAll(node => node.props.onChangeText && node.props.value === 'x'.repeat(600)).length).toBeGreaterThan(0);
+    await click(button(qwenModel.name)); await click(qwenGenerate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body).inputs).toEqual({ prompt: 'x'.repeat(600), tts_voice: 'Cherry', tts_language: 'auto' });
+});
+test('reopened Qwen restores model, script, voice and language together', async () => {
+    mockCatalog = [mockModel, qwenModel]; mockReopen = 'qwen-job';
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: qwenModel.id, prompt: 'Bonjour', extraInputs: { tts_voice: 'Serena', tts_language: 'French' } } }]);
+    await render(); await click(qwenGenerate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: qwenModel.id, inputs: { prompt: 'Bonjour', tts_voice: 'Serena', tts_language: 'French' } });
+});
+test('a MiniMax saved recipe switches to MiniMax instead of replaying its controls on Qwen', async () => {
+    mockCatalog = [mockModel, qwenModel]; await render(); await click(button(qwenModel.name));
+    mockReopen = 'mini-recipe';
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: mockModel.id, prompt: 'Saved MiniMax', extraInputs: {
+        tts_voice: 'Friendly_Person', tts_language: 'English', tts_emotion: 'happy', tts_speed: 1.2, tts_volume: 2, tts_pitch: 3,
+    } } }]);
+    await render(); expect(qwenGenerate()).toBeUndefined(); await click(generate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: mockModel.id, inputs: { prompt: 'Saved MiniMax', tts_voice: 'Friendly_Person' } });
+});
+test('unavailable saved Qwen opens safely without applying its voice to MiniMax', async () => {
+    mockReopen = 'qwen-unavailable';
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: qwenModel.id, prompt: 'Private Qwen words', extraInputs: { tts_voice: 'Serena', tts_language: 'French' } } }]);
+    await render();
+    expect(textOf(root.container)).toContain(t('dialogue.restoreUnavailable'));
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    await write('New MiniMax'); await click(generate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: mockModel.id, inputs: { tts_voice: 'Wise_Woman', tts_language: 'auto' } });
 });

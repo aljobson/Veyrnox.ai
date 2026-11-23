@@ -10,6 +10,8 @@ import { parseProvenance, sizeLabel, type Provenance } from '../lib/libraryView'
 import { mediaApi } from '../lib/media';
 import { copyText } from '../lib/clipboard';
 import { submittedRequests } from '../lib/submittedRequests';
+import { fetchPresets } from '../lib/presets';
+import { isUneditedVideoTemplateRun } from '../lib/templatePromptVisibility';
 import type { ApiClient } from '../lib/api';
 import { ds } from '../theme';
 
@@ -26,12 +28,14 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
     // creation made on another device or before the request was remembered.
     const [prompt, setPrompt] = useState<string | null>(null);
     const [copyNote, setCopyNote] = useState<string | null>(null);
+    // A run that used a video template's own words shows no prompt line; a customer's edited prompt stays visible.
+    const [templateRun, setTemplateRun] = useState(false);
 
     const visibleText = !open ? null : state === 'error' ? t('prov.error') : state === 'notReady' ? t('prov.notReady') : prov ? [
         t('prov.model', { model: prov.model }),
         prov.madeAt ? t('prov.when', { date: new Date(prov.madeAt).toLocaleDateString(formatLocale()) }) : '',
         prov.credits !== null ? t('prov.cost', { credits: prov.credits > 0 ? plural('library.cost', prov.credits) : t('library.costFree') }) : '',
-        prompt ? `${t('prov.prompt')}: ${prompt}` : t('prov.promptNone'),
+        prompt ? `${t('prov.prompt')}: ${prompt}` : templateRun ? '' : t('prov.promptNone'),
     ].filter(Boolean).join('. ') : null;
     useAnnouncement(visibleText);
 
@@ -45,7 +49,9 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
             setProv(p);
             setState(p ? 'idle' : 'error');
             const saved = (await submittedRequests.list().catch(() => [])).find((r) => r.id === jobId);
-            setPrompt(saved?.request.prompt?.trim() || null);
+            const hide = saved ? isUneditedVideoTemplateRun(saved, saved.request.templateId ? [] : await fetchPresets().catch(() => [])) : false;
+            setTemplateRun(hide);
+            setPrompt(hide ? null : saved?.request.prompt?.trim() || null);
         } catch (err) {
             setState(err instanceof ApiError && err.status === 409 ? 'notReady' : 'error');
         }
@@ -71,7 +77,7 @@ export function JobProvenance({ api, jobId }: { readonly api: ApiClient; readonl
                                     <Button variant="tertiary" label={t('prov.copyPrompt')} accessibilityRole="button" onPress={async () => setCopyNote(t(await copyText(prompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
                                     {copyNote ? <Text variant="footnote" tone="tertiary" style={styles.muted} accessibilityLiveRegion="polite">{copyNote}</Text> : null}
                                 </>
-                            ) : (
+                            ) : templateRun ? null : (
                                 <Text variant="footnote" tone="tertiary" style={styles.muted}>{t('prov.promptNone')}</Text>
                             )}
                             <Button variant="tertiary" label={t('prov.tech')} accessibilityRole="button" accessibilityLabel={rawText(tech ? t('prov.techHide') : t('prov.techShow'))} accessibilityState={{ expanded: tech }} icon={tech ? 'caretDown' : 'caretRight'} onPress={() => setTech(!tech)} />

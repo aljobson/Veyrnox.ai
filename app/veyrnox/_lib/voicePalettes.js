@@ -1,3 +1,6 @@
+import { speechContractFor } from '../../../lib/speechInputs.js';
+export const recipeModelId = value => value?.modelId || 'minimax-speech-2.6-hd';
+
 import {
   TTS_EMOTIONS,
   TTS_LANGUAGES,
@@ -52,6 +55,13 @@ const stepped = (value, min, max, step) => {
 
 export function normalizeVoicePaletteSettings(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const modelId = recipeModelId(value);
+  if (modelId === 'qwen3-tts') {
+    const contract = speechContractFor(modelId);
+    return contract.voices.some(voice => voice.id === value.voice) && contract.languages.includes(value.language)
+      ? { modelId, voice: value.voice, language: value.language } : null;
+  }
+  if (modelId !== 'minimax-speech-2.6-hd') return null;
   const voice = VOICES.has(value.voice) ? value.voice : null;
   const emotion = EMOTIONS.has(value.emotion) ? value.emotion : null;
   const language = LANGUAGES.has(value.language) ? value.language : null;
@@ -59,12 +69,13 @@ export function normalizeVoicePaletteSettings(value) {
   const volume = stepped(value.volume, 0, 10, 1);
   const pitch = stepped(value.pitch, -12, 12, 1);
   if (!voice || !emotion || !language || speed === null || volume === null || pitch === null) return null;
-  return { voice, emotion, speed, volume, pitch, language };
+  return { ...(value.modelId ? { modelId } : {}), voice, emotion, speed, volume, pitch, language };
 }
 
 export function voiceRecipeSummary(value) {
   const settings = normalizeVoicePaletteSettings(value);
   if (!settings) return '';
+  if (recipeModelId(settings) === 'qwen3-tts') return `Qwen3 TTS · ${settings.voice} · ${settings.language}`;
   const voice = TTS_VOICES.find((item) => item.id === settings.voice);
   return `${voice?.label || 'Stock voice'} · ${settings.emotion} · ${settings.speed}×`;
 }
@@ -72,7 +83,7 @@ export function voiceRecipeSummary(value) {
 export function voiceRecipesMatch(left, right) {
   const first = normalizeVoicePaletteSettings(left);
   const second = normalizeVoicePaletteSettings(right);
-  if (!first || !second) return false;
+  if (!first || !second || recipeModelId(first) !== recipeModelId(second)) return false;
   return ['voice', 'emotion', 'speed', 'volume', 'pitch', 'language']
     .every((key) => first[key] === second[key]);
 }
@@ -156,4 +167,8 @@ export function removeVoicePalette(storage, paletteId) {
   } catch {
     return current;
   }
+}
+
+export function acceptedVoiceRecipe(value, acceptedModels = ['minimax-speech-2.6-hd']) {
+  return acceptedModels.includes(recipeModelId(value)) ? normalizeVoicePaletteSettings(value) : null;
 }

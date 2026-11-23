@@ -3,13 +3,15 @@ import { usePublishRole } from '../../../lib/usePublishRole';
 import { usePublishApi } from '../../../lib/usePublishApi';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DeveloperKeys } from '../../../components/developer/DeveloperKeys';
 import { DeveloperLogs } from '../../../components/developer/DeveloperLogs';
 import { DeveloperWebhooks } from '../../../components/developer/DeveloperWebhooks';
 import { styles as shared } from '../../../components/account/shared';
 import { t } from '../../../lib/i18n';
 import { colors, LIST_END_PADDING } from '../../../theme';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 type Tab = 'keys' | 'hooks' | 'logs';
 
@@ -21,7 +23,7 @@ export default function Developer() {
     useAnnouncement(roleNotice);
     const [tab, setTab] = useState<Tab>('keys');
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Stack.Screen options={{ title: t('dev.title') }} />
             <Text style={shared.help}>{t('dev.intro')}</Text>
             {role === null ? <ActivityIndicator color={colors.accent} /> : role !== 'owner' && role !== 'manager' ? <Text style={shared.help}>{roleNotice}</Text> : <>
@@ -34,7 +36,7 @@ export default function Developer() {
             </View>
             {tab === 'keys' ? <DeveloperKeys /> : tab === 'hooks' ? <DeveloperWebhooks /> : <DeveloperLogs />}
             </>}
-        </ScrollView>
+        </KeyboardFormScrollView></KeyboardScreen>
     );
 }
 

@@ -35,6 +35,8 @@ export interface Preset {
     readonly sourcePromptIssues?: readonly string[];
     readonly sourcePromptModelPromptMax?: number | null;
     readonly sourcePromptDuplicateOf?: string | null;
+    // True while the server keeps this video template's words private: prompt and sourcePrompt then hold a placeholder (lib/privateTemplate.ts).
+    readonly promptPrivate?: boolean;
     readonly needs: string | null;
     // Desired crop of the starting image for source-framed I2V models. This is guidance, not a provider aspect option.
     readonly sourceAspect?: string | null;
@@ -88,6 +90,7 @@ function parseOne(raw: unknown): Preset | null {
         sourcePromptIssues: Array.isArray(r.sourcePromptIssues) ? r.sourcePromptIssues.map(str).filter((v): v is string => v !== null) : [],
         sourcePromptModelPromptMax: typeof r.sourcePromptModelPromptMax === 'number' && Number.isInteger(r.sourcePromptModelPromptMax) ? r.sourcePromptModelPromptMax : null,
         sourcePromptDuplicateOf: str(r.sourcePromptDuplicateOf),
+        ...(r.promptPrivate === true ? { promptPrivate: true } : {}),
         needs: str(r.needs),
         sourceAspect: str(r.sourceAspect),
         durationSeconds: typeof r.durationSeconds === 'number' && r.durationSeconds > 0 ? r.durationSeconds : null,

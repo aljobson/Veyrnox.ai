@@ -417,3 +417,84 @@ test('the slow-motion flag is only on for the exact string "true"', () => {
     for (const v of ['false', '', 'TRUE', '1', undefined]) assert.equal(clipSlowEnabled({ CLIP_EDIT_SLOW_ENABLED: v }), false);
     assert.equal(clipSlowEnabled(undefined), false);
 });
+
+// The audio step failing to submit after a paid merge (job 1c90b2ee, 2026-11-21) refunded the whole edit at once.
+const twoClipsWithSound = () => validateEdit({ clips: [clip('a', 0, 10), clip('b', 0, 10)], audio: { key: 'm', offset_s: 0 } });
+const failNextSubmit = (w, times, answer) => {
+    const real = w.deps.submit;
+    let left = times;
+    w.deps.submit = async (...args) => (left-- > 0 ? answer : real(...args));
+};
+
+test('a next step that fal does not take (timeout or 5xx) is submitted once more, and the edit goes on', async () => {
+    const w = world(twoClipsWithSound());
+    await start({ jobId: JOB, edit: twoClipsWithSound() }, w.deps);
+    failNextSubmit(w, 1, { ok: false, outcome: 'unknown', error: 'fal 503: busy' });
+    assert.equal((await w.deliver()).advanced, 'audio');
+    assert.equal(w.calls.refunds, 0);
+    assert.equal(w.steps.find((x) => x.step === 'audio').provider_job_id != null, true);
+});
+
+test('a next step that fal refuses (4xx) is not retried: the reason is kept on the step and the job is refunded once', async () => {
+    const w = world(twoClipsWithSound());
+    await start({ jobId: JOB, edit: twoClipsWithSound() }, w.deps);
+    let attempts = 0;
+    w.deps.submit = async () => { attempts += 1; return { ok: false, outcome: 'rejected', error: 'fal 422: {"detail":"bad audio"}' }; };
+    const r = await w.deliver();
+    assert.equal(r.refunded, true);
+    assert.equal(attempts, 1);
+    const audio = w.steps.find((x) => x.step === 'audio');
+    assert.equal(audio.state, 'FAILED');
+    assert.equal(w.calls.refunds, 1);
+});
+
+test('a failed submit stays refunded after one failed retry, and the step keeps the reason slug', async () => {
+    const edit = twoClipsWithSound();
+    const w = world(edit);
+    const recorded = [];
+    const rpc = w.deps.rpc;
+    w.deps.rpc = async (name, a) => { if (name === 'job_step_failed') recorded.push(a.p_error_code); return rpc(name, a); };
+    await start({ jobId: JOB, edit }, w.deps);
+    failNextSubmit(w, 2, { ok: false, outcome: 'unknown', error: 'fal 503: busy' });
+    assert.equal((await w.deliver()).refunded, true);
+    assert.deepEqual(recorded, ['submit_unknown_503']);
+    assert.equal(w.calls.refunds, 1);
+});
+
+test('the dear captions step is not submitted twice when its first submit is unclear', async () => {
+    const edit = validateEdit({ clips: [clip('a', 0, 10), clip('b', 0, 10)], captions: { preset: 'simple' } });
+    const w = world(edit);
+    await start({ jobId: JOB, edit }, w.deps);
+    let attempts = 0;
+    w.deps.submit = async () => { attempts += 1; return { ok: false, outcome: 'unknown', error: 'transport: timeout' }; };
+    assert.equal((await w.deliver()).refunded, true);
+    assert.equal(attempts, 1);
+});
+
+// A whole successful Smart Cut: two clips with timed speech -> the speech-aware plan -> the exact clip-edit request
+// the sheet sends (one entry per kept section, same source more than once) -> every step to a stored result.
+test('a successful two-video Smart Cut: plan, validate, trim every section, merge in order, add sound, store once', async () => {
+    const { buildSpeechAwareCutPlan } = await import('../app/veyrnox/_lib/smartCutAnalysis.js');
+    const analysis = (id, duration) => ({ version: 1, assetId: id, duration, provider: 'fal-scribe-v2', transcript: 'hello world', language: 'en',
+        chunks: [{ start: 0.5, end: 1, text: 'hello' }, { start: 3, end: 4, text: 'world' }] });
+    const sources = [{ uid: 'a#0', job_id: 'ja', duration: 10, name: 'A' }, { uid: 'b#1', job_id: 'jb', duration: 8, name: 'B' }];
+    const plan = buildSpeechAwareCutPlan({ clips: sources, analyses: new Map([['ja', analysis('ja', 10)], ['jb', analysis('jb', 8)]]) });
+    assert.deepEqual(plan.segments.map((s) => s.takeId), ['a#0', 'a#0', 'b#1', 'b#1']);
+    const keyOf = { 'a#0': 'keyA', 'b#1': 'keyB' }, lengthOf = { 'a#0': 10, 'b#1': 8 };
+    const request = plan.segments.map((s) => ({ key: keyOf[s.takeId], in_s: s.start, out_s: s.end, duration_s: lengthOf[s.takeId], aspect: '0.56' }));
+    const edit = validateEdit({ clips: request, audio: { key: 'm', offset_s: 0 } });
+    assert.equal(edit.ok, true);
+    assert.equal(edit.output_s, plan.totalDuration);
+    assert.deepEqual(planEdit(edit).map((p) => p.step), ['trim', 'trim', 'trim', 'trim', 'merge', 'audio']);
+
+    const w = world(edit);
+    assert.deepEqual(await start({ jobId: JOB, edit }, w.deps), { ok: true });
+    for (let i = 0; i < 4; i += 1) await w.deliver();            // four trims, one at a time
+    assert.equal((await w.deliver()).advanced, 'audio');          // merge done
+    const merge = w.calls.submits.find((c) => c.endpoint.includes('merge-videos'));
+    assert.deepEqual(merge.inputs.video_urls, [0, 1, 2, 3].map((i) => `https://r2.example/edits/${JOB}/trim-${i}.mp4`));
+    assert.equal((await w.deliver()).stored, true);               // audio done -> parent stored
+    assert.equal(w.job.state, 'STORED');
+    assert.equal(w.calls.refunds, 0);
+    assert.equal(w.steps.every((s) => s.state === 'STORED'), true);
+});

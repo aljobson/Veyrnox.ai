@@ -6,6 +6,7 @@ import { switchableModels, type ChatModel } from '../../lib/chat';
 import { plural, t } from '../../lib/i18n';
 import { Text, Button, Card, themedStyles, useThemedStyles } from '../ui';
 import { radius } from '../../theme';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 interface Props {
     readonly visible: boolean;
@@ -19,11 +20,12 @@ interface Props {
 // back and the parent saves it and closes the list; the price shows next to each name, as in the full chat settings.
 export function ModelPicker({ visible, currentId, models, onPick, onClose }: Props) {
     const styles = useThemedStyles(sheets);
+    const insets = useOptionalSafeAreaInsets();
     const reducedMotion = useReducedMotion();
     return (
         <Modal visible={visible} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={onClose}>
             <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t('chat.model.close')} onPress={onClose} />
-            <View style={styles.sheet} onAccessibilityEscape={onClose}>
+            <View style={[styles.sheet, { paddingLeft: insets.left + 16, paddingRight: insets.right + 16, paddingBottom: insets.bottom + 16 }]} onAccessibilityEscape={onClose}>
                 <Text variant="title3" style={styles.title} accessibilityRole="header">{t('chat.model.title')}</Text>
                 <ScrollView contentContainerStyle={styles.list}>
                     {switchableModels(models).map((m) => (
@@ -41,7 +43,7 @@ export function ModelPicker({ visible, currentId, models, onPick, onClose }: Pro
 
 const sheets = themedStyles((p) => ({
     backdrop: { flex: 1, backgroundColor: p.scrim },
-    sheet: { maxHeight: '70%', backgroundColor: p.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 16, paddingBottom: 28, gap: 10 },
+    sheet: { maxHeight: '70%', backgroundColor: p.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 16, gap: 10 },
     title: { color: p.textPrimary },
     list: { gap: 8 },
     row: { minHeight: MIN_TARGET, padding: 12 },

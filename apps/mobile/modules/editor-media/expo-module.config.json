@@ -1,0 +1,5 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": { "modules": ["VeyrnoxEditorMediaModule", "VeyrnoxEditorCompositorModule", "VeyrnoxEditorMotionModule", "VeyrnoxEditorSpeechModule"] },
+  "android": { "modules": ["ai.veyrnox.editormedia.VeyrnoxEditorMediaModule"] }
+}

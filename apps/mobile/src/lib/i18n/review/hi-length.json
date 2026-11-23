@@ -2070,10 +2070,40 @@
     "ratio": 1.67
   },
   {
+    "id": "music.create.advanced.percent",
+    "english": "{value}%",
+    "translation": "{value} प्रतिशत",
+    "ratio": 1.88
+  },
+  {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "मेरा संस्करण रखें",
     "ratio": 1.89
+  },
+  {
+    "id": "music.create.suno.clear",
+    "english": "Clear",
+    "translation": "साफ़ करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "अधिकतम",
+    "ratio": 2
   },
   {
     "id": "musicActions.action.reload",
@@ -2164,6 +2194,36 @@
     "english": "Hot",
     "translation": "जबरदस्त",
     "ratio": 2.33
+  },
+  {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "चालू",
+    "ratio": 2
+  },
+  {
+    "id": "beat.pattern.clearBody",
+    "english": "You can use Undo to restore it.",
+    "translation": "इसे वापस लाने के लिए पहले जैसा करें का उपयोग करें।",
+    "ratio": 1.61
+  },
+  {
+    "id": "beat.pattern.clearAction",
+    "english": "Clear",
+    "translation": "साफ़ करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveNew",
+    "english": "Save as new beat",
+    "translation": "नए बीट के रूप में सेव करें",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveAsNew",
+    "english": "Save as new beat",
+    "translation": "नए बीट के रूप में सेव करें",
+    "ratio": 1.63
   },
   {
     "id": "musicTrackAdd.lyrics",
@@ -2394,6 +2454,12 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "ग्रिड से मिलाएँ",
@@ -2452,6 +2518,12 @@
     "english": "Save to Music",
     "translation": "संगीत लाइब्रेरी में सहेजें",
     "ratio": 2
+  },
+  {
+    "id": "dialogue.cast",
+    "english": "Cast voices",
+    "translation": "वक्ताओं की आवाज़ें",
+    "ratio": 1.64
   },
   {
     "id": "musicExport.retry",
@@ -2518,6 +2590,120 @@
     "english": "Edit type",
     "translation": "संपादन का प्रकार",
     "ratio": 1.78
+  },
+  {
+    "id": "editorMotion.rise",
+    "english": "Rise",
+    "translation": "ऊपर उठना",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "गति में सहजता",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.none",
+    "english": "None",
+    "translation": "कोई नहीं",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.feather",
+    "english": "Mask feather",
+    "translation": "मास्क के किनारों की नरमी",
+    "ratio": 2
+  },
+  {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "इस्तेमाल में है",
+    "ratio": 2.5
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "फिर से जोड़ना ज़रूरी है",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorFont.usedCount.one",
+    "english": "Used by 1 text layer",
+    "translation": "1 टेक्स्ट लेयर में इस्तेमाल किया गया",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorFont.use",
+    "english": "Use {name}",
+    "translation": "{name} इस्तेमाल करें",
+    "ratio": 2
+  },
+  {
+    "id": "editorFont.checking",
+    "english": "Checking font…",
+    "translation": "फ़ॉन्ट की जाँच हो रही है…",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorPack.review",
+    "english": "Review {name}",
+    "translation": "{name} की समीक्षा करें",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorScenes.checking",
+    "english": "Checking on-device analysis…",
+    "translation": "डिवाइस पर विश्लेषण की सुविधा जाँची जा रही है…",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorScenes.preview",
+    "english": "Preview {value1}",
+    "translation": "{value1} का प्रीव्यू देखें",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorClips.ranking",
+    "english": "Ranking moments",
+    "translation": "पलों को क्रम दिया जा रहा है",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "सबसे अच्छा विकल्प",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorLocalExport.cloud",
+    "english": "Use cloud export instead",
+    "translation": "इसके बजाय क्लाउड एक्सपोर्ट इस्तेमाल करें",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorNativeMotion.analysing",
+    "english": "Analysing",
+    "translation": "विश्लेषण हो रहा है",
+    "ratio": 2
+  },
+  {
+    "id": "editorNativeMotion.processing",
+    "english": "Processing",
+    "translation": "प्रोसेस हो रहा है",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorNativeMotion.encoding",
+    "english": "Encoding",
+    "translation": "एन्कोड हो रहा है",
+    "ratio": 2
+  },
+  {
+    "id": "editorSpeech.autoApplying",
+    "english": "Adding editable captions…",
+    "translation": "बदले जा सकने वाले कैप्शन जोड़े जा रहे हैं…",
+    "ratio": 1.68
   },
   {
     "id": "oauth.signIn",
@@ -2632,5 +2818,11 @@
     "english": "Sign in",
     "translation": "साइन इन करें",
     "ratio": 1.71
+  },
+  {
+    "id": "app.create.templatePrompt.edit",
+    "english": "Edit prompt",
+    "translation": "प्रॉम्प्ट संपादित करें",
+    "ratio": 2
   }
 ]

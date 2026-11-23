@@ -1,18 +1,19 @@
 import type { ReactNode } from 'react';
 import { Stack } from 'expo-router';
-import { RefreshControl, ScrollView } from 'react-native';
+import { RefreshControl } from 'react-native';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 import { MusicNotice } from './MusicNotice';
 import { ds } from '../../theme';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { publicMessage } from '../../lib/music/publicMessages';
+import { SafeKeyboardFormScrollView } from '../SafeContentScrollView';
 export function PublicShell({ title, status, refreshing, error, refresh, goneMessage, children }: {
     title: string; status: string; refreshing: boolean; error: unknown; refresh(): void; children?: ReactNode; goneMessage?: string;
 }) {
     const s = useThemedStyles(sheets);
     useAnnouncement(error ? publicMessage(error) : status === 'loading' ? t('music.loading') : status === 'on' ? t('musicPublic.loaded') : t('music.off'), { everywhere: true });
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled"
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.gutter}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
         <Stack.Screen options={{ title }} />
         {status === 'loading' ? <Text accessibilityLiveRegion="polite">{t('music.loading')}</Text> : null}
@@ -23,7 +24,7 @@ export function PublicShell({ title, status, refreshing, error, refresh, goneMes
             {error ? <MusicNotice message={publicMessage(error)} retry={refresh} /> : null}
             {children}
         </>}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
 export const publicSheets = themedStyles(() => ({ group: { gap: ds.space.sm } }));
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.gutter, gap: ds.space.lg } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.lg } }));

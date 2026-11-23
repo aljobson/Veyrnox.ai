@@ -1962,6 +1962,12 @@
     "ratio": 2.17
   },
   {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "المقام",
+    "ratio": 2
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "الاحتفاظ بنسختي",
@@ -1972,6 +1978,12 @@
     "english": "Queued",
     "translation": "في الانتظار",
     "ratio": 1.83
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "متوقف",
+    "ratio": 1.67
   },
   {
     "id": "musicActions.action.reload",
@@ -2038,6 +2050,30 @@
     "english": "Hot",
     "translation": "حماسي",
     "ratio": 1.67
+  },
+  {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "تشغيل",
+    "ratio": 2.5
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.midiRecord.status.countIn",
+    "english": "Count-in",
+    "translation": "العد التمهيدي",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "إعادة محاولة الحفظ",
+    "ratio": 1.8
   },
   {
     "id": "beat.pad.kick",
@@ -2256,6 +2292,12 @@
     "ratio": 1.8
   },
   {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "محاذاة للشبكة",
@@ -2382,6 +2424,12 @@
     "ratio": 1.62
   },
   {
+    "id": "dialogue.turnLimit",
+    "english": "Use 2 to 12 turns.",
+    "translation": "استخدم من مقطعين إلى 12 مقطعًا.",
+    "ratio": 1.72
+  },
+  {
     "id": "editorLook.hsl",
     "english": "HSL",
     "translation": "تدرج اللون والتشبع والإضاءة",
@@ -2476,6 +2524,48 @@
     "english": "Saving new master…",
     "translation": "جارٍ حفظ النسخة الرئيسية الجديدة…",
     "ratio": 1.83
+  },
+  {
+    "id": "editorMotion.picture",
+    "english": "Picture keys",
+    "translation": "إطارات الصورة الرئيسية",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "تحريك أفقي لليمين",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorMotion.go",
+    "english": "Go to point",
+    "translation": "الانتقال إلى النقطة",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorMotion.ease-out",
+    "english": "Ease out",
+    "translation": "نهاية تدريجية",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "قيد الاستخدام",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorPack.category.Avatars",
+    "english": "Avatars",
+    "translation": "الصور الرمزية",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "الإبقاء على",
+    "ratio": 2.75
   },
   {
     "id": "oauth.signIn",

@@ -5688,6 +5688,18 @@
     "ratio": 2
   },
   {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "Automatique",
+    "ratio": 2.75
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Tonalité",
+    "ratio": 2.67
+  },
+  {
     "id": "music.create.useServer",
     "english": "Use server version",
     "translation": "Utiliser la version du serveur",
@@ -5716,6 +5728,18 @@
     "english": "Open song",
     "translation": "Ouvrir le morceau",
     "ratio": 1.89
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Masculin",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "Désactivée",
+    "ratio": 3.33
   },
   {
     "id": "musicActions.action.model",
@@ -5856,6 +5880,18 @@
     "ratio": 2.08
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "Activé",
+    "ratio": 3
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "Désactivé",
+    "ratio": 3
+  },
+  {
     "id": "beat.stop",
     "english": "Stop",
     "translation": "Arrêter",
@@ -5872,6 +5908,60 @@
     "english": "Drum pads",
     "translation": "Pads de batterie",
     "ratio": 1.78
+  },
+  {
+    "id": "beat.padRecord.disable",
+    "english": "Turn off pad recording",
+    "translation": "Désactiver l’enregistrement des pads",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "L’enregistrement des pads est désactivé",
+    "ratio": 1.95
+  },
+  {
+    "id": "beat.padRecord.drumOnly",
+    "english": "Select a drum track to use pads and steps.",
+    "translation": "Sélectionnez une piste de batterie pour utiliser les pads et les pas.",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.midiRecord.record",
+    "english": "Record MIDI",
+    "translation": "Enregistrer en MIDI",
+    "ratio": 1.73
+  },
+  {
+    "id": "beat.midiRecord.status.recording",
+    "english": "Recording MIDI",
+    "translation": "Enregistrement MIDI en cours",
+    "ratio": 2
+  },
+  {
+    "id": "beat.midiRecord.status.finishing",
+    "english": "Saving MIDI recording…",
+    "translation": "Enregistrement MIDI en cours de sauvegarde…",
+    "ratio": 1.95
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Réessayer la sauvegarde",
+    "ratio": 2.3
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveNew",
+    "english": "Save as new beat",
+    "translation": "Sauvegarder comme nouveau beat",
+    "ratio": 1.88
+  },
+  {
+    "id": "beat.midiRecord.recovery.saveAsNew",
+    "english": "Save as new beat",
+    "translation": "Sauvegarder comme nouveau beat",
+    "ratio": 1.88
   },
   {
     "id": "beat.pad.kick",
@@ -6522,6 +6612,84 @@
     "ratio": 1.66
   },
   {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Décalage désactivé",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Décalage activé",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Insérer un espace d’une mesure",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.label",
+    "english": "Search clips",
+    "translation": "Rechercher des clips",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.search.results",
+    "english": "Clip search results",
+    "translation": "Résultats de recherche de clips",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Bibliothèque musicale",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.library.title",
+    "english": "Add from Music Library",
+    "translation": "Ajouter depuis la bibliothèque musicale",
+    "ratio": 1.77
+  },
+  {
+    "id": "beat.library.close",
+    "english": "Close Music Library",
+    "translation": "Fermer la bibliothèque musicale",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.library.clear",
+    "english": "Clear search",
+    "translation": "Effacer la recherche",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.library.empty.title",
+    "english": "No owned songs yet",
+    "translation": "Aucun morceau à vous pour le moment",
+    "ratio": 1.94
+  },
+  {
+    "id": "beat.library.searchEmpty",
+    "english": "No owned songs match “{query}”.",
+    "translation": "Aucun de vos morceaux ne correspond à « {query} ».",
+    "ratio": 1.61
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
     "id": "beat.snap.bar",
     "english": "Bar",
     "translation": "Mesure",
@@ -6718,6 +6886,36 @@
     "english": "Saved to Music as {title}",
     "translation": "Enregistré dans Music sous le nom {title}",
     "ratio": 1.64
+  },
+  {
+    "id": "dialogue.cast",
+    "english": "Cast voices",
+    "translation": "Voix des personnages",
+    "ratio": 1.82
+  },
+  {
+    "id": "dialogue.resetCast",
+    "english": "Reset voices",
+    "translation": "Réinitialiser les voix",
+    "ratio": 1.83
+  },
+  {
+    "id": "dialogue.add",
+    "english": "Add turn",
+    "translation": "Ajouter une réplique",
+    "ratio": 2.5
+  },
+  {
+    "id": "dialogue.turnLimit",
+    "english": "Use 2 to 12 turns.",
+    "translation": "Utilisez de 2 à 12 répliques.",
+    "ratio": 1.61
+  },
+  {
+    "id": "dialogue.addCredits",
+    "english": "Add credits",
+    "translation": "Ajouter des crédits",
+    "ratio": 1.73
   },
   {
     "id": "musicExport.review",
@@ -6984,6 +7182,324 @@
     "ratio": 1.75
   },
   {
+    "id": "editorMotion.picture",
+    "english": "Picture keys",
+    "translation": "Images clés de l’image",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Panoramique à droite",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorMotion.add",
+    "english": "Add keyframe at playhead",
+    "translation": "Ajouter une image clé à la tête de lecture",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Déplacer à la tête de lecture",
+    "ratio": 1.81
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Interpolation",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Accélération",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorMotion.ease-in-out",
+    "english": "Ease in and out",
+    "translation": "Accélération et décélération",
+    "ratio": 1.87
+  },
+  {
+    "id": "editorMotion.inverted",
+    "english": "Invert mask",
+    "translation": "Inverser le masque",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorMotion.feather",
+    "english": "Mask feather",
+    "translation": "Contour progressif du masque",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorMotion.width",
+    "english": "Mask width",
+    "translation": "Largeur du masque",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorMotion.addMask",
+    "english": "Add mask keyframe at playhead",
+    "translation": "Ajouter une image clé du masque à la tête de lecture",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorMotion.deleteMask",
+    "english": "Delete mask key {n}",
+    "translation": "Supprimer l’image clé du masque {n}",
+    "ratio": 1.84
+  },
+  {
+    "id": "editorMotion.resetMask",
+    "english": "Reset mask",
+    "translation": "Réinitialiser le masque",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorMotion.keyColor",
+    "english": "Background key colour",
+    "translation": "Couleur de découpe de l’arrière-plan",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorMotion.keyTolerance",
+    "english": "Key colour tolerance",
+    "translation": "Tolérance de la couleur de découpe",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorMotion.keyFeather",
+    "english": "Key edge feather",
+    "translation": "Adoucissement du bord de découpe",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.resetSmart",
+    "english": "Reset Smart picture",
+    "translation": "Réinitialiser l’image intelligente",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorMotion.left",
+    "english": "Move left",
+    "translation": "Déplacer à gauche",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorMotion.right",
+    "english": "Move right",
+    "translation": "Déplacer à droite",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorMotion.up",
+    "english": "Move up",
+    "translation": "Déplacer vers le haut",
+    "ratio": 3
+  },
+  {
+    "id": "editorMotion.down",
+    "english": "Move down",
+    "translation": "Déplacer vers le bas",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorFont.title",
+    "english": "Custom fonts",
+    "translation": "Polices personnalisées",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Gérer les polices personnalisées",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorFont.removeConfirmTitle",
+    "english": "Remove custom font?",
+    "translation": "Supprimer la police personnalisée ?",
+    "ratio": 1.84
+  },
+  {
+    "id": "editorFont.removeConfirm",
+    "english": "Remove font",
+    "translation": "Supprimer la police",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorFont.importTitle",
+    "english": "Add a custom font",
+    "translation": "Ajouter une police personnalisée",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorFont.name",
+    "english": "Font name",
+    "translation": "Nom de la police",
+    "ratio": 1.78
+  },
+  {
+    "id": "editorFont.usage",
+    "english": "Usage permission",
+    "translation": "Autorisation d’utilisation",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorFont.choose",
+    "english": "Choose font file",
+    "translation": "Choisir le fichier de police",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorFont.checking",
+    "english": "Checking font…",
+    "translation": "Vérification de la police…",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Ajouter une police personnalisée",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorPack.title",
+    "english": "Asset Packs",
+    "translation": "Packs de ressources",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorPack.open",
+    "english": "Open Asset-Pack JSON",
+    "translation": "Ouvrir le JSON d’un pack de ressources",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorPack.emptyTitle",
+    "english": "No asset packs yet",
+    "translation": "Aucun pack de ressources pour le moment",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorPack.search",
+    "english": "Search this asset pack",
+    "translation": "Rechercher dans ce pack de ressources",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorPack.rights",
+    "english": "Usage rights",
+    "translation": "Droits d’utilisation",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPack.progress.creating",
+    "english": "Hashing local files… {done} of {total}",
+    "translation": "Calcul des empreintes des fichiers locaux… {done} sur {total}",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Choisir les fichiers multimédias du pack",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Réinitialisez d’abord la vitesse, la lecture inversée et l’arrêt sur image de ce clip.",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorScenes.hard",
+    "english": "Hard cuts",
+    "translation": "Coupes franches",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorScenes.applied",
+    "english": "Split at {value1} scene changes. You can undo this in one step.",
+    "translation": "Le clip a été scindé selon {value1} changements de scène. Vous pouvez annuler le tout en une seule étape.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorClips.title",
+    "english": "Clip Finder",
+    "translation": "Détecteur de clips",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorClips.find",
+    "english": "Find clips",
+    "translation": "Trouver des clips",
+    "ratio": 1.7
+  },
+  {
+    "id": "editorClips.again",
+    "english": "Find again",
+    "translation": "Relancer la recherche",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "Meilleur choix",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorClips.blocker.resolution",
+    "english": "Clip Finder handles videos up to 720p.",
+    "translation": "Le Détecteur de clips prend en charge les vidéos jusqu’à 720p.",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorLocalExport.cloud",
+    "english": "Use cloud export instead",
+    "translation": "Utiliser plutôt l’exportation dans le cloud",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorNativeMotion.flicker",
+    "english": "Reduce flicker",
+    "translation": "Réduire le scintillement",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorPersonMask.title",
+    "english": "Person mask",
+    "translation": "Masque de personne",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Conserver",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorPersonMask.hair",
+    "english": "Hair",
+    "translation": "Cheveux",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorPersonMask.remove",
+    "english": "Remove person mask",
+    "translation": "Supprimer le masque de personne",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorSpeech.autoEdit",
+    "english": "Automatic captions currently need a forward clip at normal speed. Reset reverse, freeze and speed changes first.",
+    "translation": "Les sous-titres automatiques nécessitent pour l’instant un clip lu dans le bon sens à vitesse normale. Réinitialisez d’abord la lecture inversée, les images figées et les changements de vitesse.",
+    "ratio": 1.73
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",
@@ -7198,5 +7714,11 @@
     "english": "We could not confirm this run; checking.",
     "translation": "Nous n’avons pas pu confirmer cette génération ; vérification en cours.",
     "ratio": 1.77
+  },
+  {
+    "id": "app.create.templatePrompt.edit",
+    "english": "Edit prompt",
+    "translation": "Modifier le prompt",
+    "ratio": 1.64
   }
 ]

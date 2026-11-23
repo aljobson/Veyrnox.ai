@@ -26,6 +26,7 @@ jest.mock('expo-router', () => ({
     Link: 'Link', router: { push: jest.fn(), replace: jest.fn() }, useLocalSearchParams: () => ({ id: '33333333-3333-4333-8333-333333333333' }),
     useFocusEffect: (fn: () => void) => { if (mockCollect) mockEffects.push(fn); },
 }));
+jest.mock('../src/lib/safeArea', () => ({ useOptionalSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }) }));
 jest.mock('../src/components/ui/Button', () => ({ Button: ({ label, ...props }: any) => require('react').createElement('Pressable', props, label) }));
 jest.mock('../src/components/ui/Text', () => ({ Text: 'Text' }));
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));

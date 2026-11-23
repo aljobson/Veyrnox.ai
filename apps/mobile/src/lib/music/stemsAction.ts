@@ -2,7 +2,7 @@ import { guardedBeforeSend } from '../guardedBeforeSend';
 import { defaultProbe, ensureOnline } from '../network';
 import { createStemQuote, startStems, getStemRequest } from './client';
 import type { ActionSpec, StemStart, StemRequest } from './actionTypes';
-export const STEM_REJECTIONS = new Set(['format_unavailable', 'plan_unavailable', 'model_unavailable', 'source_unavailable',
+export const STEM_REJECTIONS = new Set(['format_unavailable', 'edit_unavailable_for_format', 'plan_unavailable', 'model_unavailable', 'source_unavailable',
     'source_rights_required', 'version_id_invalid', 'song_id_invalid']);
 export const stemsAction = (songId: string): ActionSpec<StemStart, StemRequest> => ({
     name: 'stems', keyPrefix: 'stems', definitiveCodes: STEM_REJECTIONS,

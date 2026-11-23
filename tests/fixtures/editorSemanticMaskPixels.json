@@ -1,0 +1,9 @@
+{
+  "cases": [
+    { "name": "transparent static edge uses alpha", "rgba": [255, 255, 255, 64], "hasAlpha": true, "expected": 64 },
+    { "name": "opaque static foreground remains visible", "rgba": [255, 255, 255, 255], "hasAlpha": true, "expected": 255 },
+    { "name": "black H264 matte is hidden", "rgba": [0, 0, 0, 255], "hasAlpha": false, "expected": 0 },
+    { "name": "gray H264 matte retains confidence", "rgba": [128, 128, 128, 255], "hasAlpha": false, "expected": 128 },
+    { "name": "opaque colour uses Rec.709 luminance", "rgba": [255, 0, 0, 255], "hasAlpha": false, "expected": 54 }
+  ]
+}

@@ -388,6 +388,7 @@
   "templateClip.videoName",
   "templateClip.photoName",
   "templateClip.invalid",
+  "presets.swap.people_unsupported",
   "presets.swap.upload_failed",
   "presets.swap.rejected",
   "presets.swap.insufficient_balance",
@@ -407,6 +408,13 @@
   "presets.swap.privacy",
   "presets.swap.photo",
   "presets.swap.guidance",
+  "presets.photoExample.title",
+  "presets.photoExample.face",
+  "presets.photoExample.fullBody",
+  "presets.photoExample.limits",
+  "presets.photoExample.scene",
+  "presets.photoExample.swapLimits",
+  "presets.swap.refundedReason",
   "presets.swap.replace",
   "presets.swap.choose",
   "presets.swap.crop",
@@ -444,5 +452,9 @@
   "presets.swap.photo_too_small",
   "presets.swap.unavailable",
   "presets.swap.cutout_failed",
-  "presets.swap.price_changed"
+  "presets.swap.price_changed",
+  "app.create.templatePrompt.edit",
+  "app.create.templatePrompt.error",
+  "app.create.templatePrompt.help",
+  "app.create.templatePrompt.ready"
 ]

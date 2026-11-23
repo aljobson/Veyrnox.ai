@@ -33,3 +33,48 @@ Each answer is one fixed word (or `skipped`): no free text, never in a URL, neve
 - No backfill, as in ADR-0336.
 - Migration 0499 is applied only by the `apply-migrations` workflow after the owner approves the run. Do not turn the flag on before it has landed.
 - Vey's greeting wording is not personalised in this slice.
+
+## Amendment — resumable account progress (2026-11-21)
+
+Migration 0578 adds a small versioned progress contract beside the existing fixed-word answers. Version 1 has one
+canonical order on web and mobile: `goal`, `destination`, `role`, then the sample-result recap. A skipped goal takes the
+short path after role; every other answered goal reaches recap. `completed` is latched only after that journey finishes.
+Skipping skips the current question only. Dismissing the web dialog does not manufacture skipped answers.
+
+Existing rows containing all three answers are complete. A row containing role or destination but missing another answer
+resumes at the first missing canonical step. A goal-only row is grandfathered as version 0 complete: an ADR-0336 account
+cannot safely be distinguished from a phone closed after the newer goal screen, and re-asking every such account would
+collect unnecessary profile answers. No completion timestamp, device identifier, free text or answer telemetry is added.
+
+Migration 0578 also materialises a nullable-answer, version-0 completed `first_goals` row for every existing non-deleted
+account that lacks one. Accounts created after that one-time statement remain rowless, so the same RPC starts them at
+version 1 `goal`. This durable migration boundary avoids guessing from device state, activity, credits, purchases, age,
+or any new profile signal; replay is harmless and deleted accounts are excluded.
+
+`GET /api/v1/first-goal` appends `version`, `current_step` and `completed`. Old PUT bodies retain their exact contract;
+version-1 clients send the displayed step with its one answer, and send a separate recap completion. The database locks
+the account row, applies the existing answer ranks and derives the next step, so replay, Back edits and concurrent devices
+cannot move progress backwards. One owner-stamped device envelope is only an offline cache; mismatched accounts cannot
+read it. The account copy remains authoritative and is erased/exported with `public.first_goals` as before.
+
+Roll out in dependency order: apply 0578, deploy the additive route, then release web and mobile callers. The existing
+`FIRST_GOAL_SYNC_ENABLED` flag remains the emergency stop. A client/route backout is safe while the additive columns and
+RPC remain in place; do not reverse the data migration after version-1 writes exist. Old clients continue through the
+unchanged RPC signatures and response shapes throughout the rollout.
+
+Completion is never inferred from an unacknowledged client write. Web and mobile first persist an owner-stamped pending
+envelope, replay its fixed-word answers in canonical `goal`, `destination`, `role`, `recap` order with bounded requests,
+and clear pending only when the account read is authoritative. A conflict or transport failure is reconciled by GET and
+otherwise remains pending for the next launch, online event or foreground. The person can leave immediately while that
+bounded sync runs; no account switch may finish another owner's pending work.
+
+Escape on the web dismisses the flow for that owner in the current tab session only. It writes no skipped answers and a
+remount does not reopen it; another account in the same tab remains independent. A failed account read falls back to the
+ordinary signed-in shell with neutral ordering while it remains explicitly unresolved; web and mobile stop timer-driven
+launch retries after three attempts, and an online/foreground signal retries.
+Until an owner-matching account or device envelope exists, the flow remains unresolved and never borrows another user's
+global device answers.
+
+The pre-existing Home start action deliberately keeps sending the legacy `{ goal }` body. Under the migration's legacy
+classification that goal-only row is version 0 complete, so using Home does not later force the new optional destination
+or role questions. This is the only intentional shortcut; version-1 Escape and partial progress never fabricate skips.

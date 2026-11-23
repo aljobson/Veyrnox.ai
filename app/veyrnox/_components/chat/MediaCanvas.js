@@ -6,10 +6,28 @@ import { JobAssetPreview } from '../JobAssetPreview';
 import { StudioJobGrid } from '../StudioJobGrid';
 import { failedJobCopy } from '../../_lib/createErrors';
 import { jobStateUi } from '../../_lib/studioStates';
+import { MusicServerCandidate } from '../music/MusicServerCandidate';
 
 
 export function MediaCanvas({ kind, media }) {
   const { t, locale } = useI18n();
+  if (media.suno) {
+    const latest = media.generations[0];
+    if (!latest) return (
+      <div className="mx-auto flex h-full max-w-[760px] flex-col items-center justify-center px-4 py-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-vx-border text-2xl text-vx-accent" aria-hidden="true">◖</div>
+        <h1 className="vx-display mt-5 text-[32px]">{t('app.music.suno.canvasTitle')}</h1>
+        <p className="mt-2 max-w-xl text-vx-fg-muted">{t('app.music.suno.canvasHelp')}</p>
+      </div>
+    );
+    return (
+      <div className="mx-auto w-full max-w-[760px] space-y-3 px-4 py-6">
+        <div><p className="font-vx-mono text-[10px] uppercase tracking-[0.14em] text-vx-fg-muted">{media.model?.name}</p><h1 className="mt-1 text-xl font-black">{media.generating ? t('app.music.suno.generatingPair') : t('app.music.suno.pairReady')}</h1></div>
+        {(latest.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={latest.title} />)}
+      </div>
+    );
+  }
+
   const { jobs, generating, model, aspect, clearJobs } = media;
   const job = jobs.length === 1 ? jobs[0] : null;
   const label = tOr(t,`app.editor.media.kind.${kind}`,t('app.publish.composer.mediaFallback'));
@@ -39,7 +57,7 @@ export function MediaCanvas({ kind, media }) {
       {jobs.length > 1 ? <StudioJobGrid jobs={jobs} aspect={aspect || '1:1'} /> : (
         <div className={`relative overflow-hidden rounded-2xl border border-vx-border bg-vx-panel ${generating ? 'vx-shimmer' : ''}`}
           style={kind === 'audio' ? { minHeight: '12rem' } : { aspectRatio: (aspect || '1:1').replace(':', '/') }}>
-          {job?.asset_url ? <JobAssetPreview job={job} /> : (
+          {(job?.asset_url || job?.state === 'succeeded') ? <JobAssetPreview job={job} /> : (
             <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
               <div>
                 <p className={`font-vx-mono text-[11px] uppercase tracking-[0.14em] ${job?.state === 'failed' ? 'text-vx-danger' : 'text-vx-accent'}`}>

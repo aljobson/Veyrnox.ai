@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMusicCelebrations } from '../../_lib/useMusicCelebrations';
 import { gatewayFetch } from '../../_lib/gateway';
 
 const INSTRUMENTS = ['vocals', 'drums', 'bass', 'guitar', 'piano', 'strings', 'synthesizer', 'brass', 'woodwinds'];
@@ -20,7 +21,9 @@ export function MusicTargetStemDialog({ song, onClose }) {
   const closeRef = useRef(null); const attemptRef = useRef(null);
   const [instrument, setInstrument] = useState('guitar');
   const [rights, setRights] = useState(false); const [quote, setQuote] = useState(null);
-  const [request, setRequest] = useState(null); const [assets, setAssets] = useState(null);
+  const [request, setRequest] = useState(null);
+  const registerCelebration = useMusicCelebrations(request ? [request] : []);
+  const [assets, setAssets] = useState(null);
   const [busy, setBusy] = useState(false); const [error, setError] = useState('');
 
   useEffect(() => {
@@ -59,6 +62,7 @@ export function MusicTargetStemDialog({ song, onClose }) {
       const accepted = await gatewayFetch(`/music/songs/${song.id}/target-stems`, {
         method: 'POST', body: JSON.stringify({ quote_id: quote.quote_id, idempotency_key: key }),
       });
+      registerCelebration(accepted, quote.total_credits);
       attemptRef.current = null;
       setRequest({ id: accepted.request_id, job_id: accepted.job_id, state: accepted.state });
       await refresh(accepted.request_id);

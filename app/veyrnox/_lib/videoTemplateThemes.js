@@ -22,6 +22,15 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'DANCE',
     templateIds: [
+      // Tested swap templates (ADR-0351 amendment 20).
+      'community-beachside-dance', 'community-blonde-sport-set', 'community-brooklyn-bridge-groove',
+      'community-cardigan-groove', 'community-chandelier-lounge-performance', 'community-city-plaza-dance',
+      'community-formal-dance-swap', 'community-festival-stage-presence', 'community-ballroom-dance-switch',
+      'community-kitchen-dance-swap', 'community-midnight-city-shuffle', 'community-nightlife-dj-set',
+      'community-parkside-dance-reimagined', 'community-party-dancer-swap', 'community-retro-housewife-dance',
+      'community-retro-tracksuit-groove', 'community-skyline-rhythm-walk', 'community-street-dance-recast',
+      'community-street-dance-swap', 'community-street-dancer-recast', 'community-street-style-strut',
+      'community-marble-hallway-pose', 'community-identity-swap',
       'community-street-shuffle-walk', 'community-urban-dance-walk', 'community-skyline-terrace-groove',
       'community-boardwalk-dance-routine', 'community-subway-mascot-dance', 'community-canyon-groove',
       'community-london-gentleman-walk',
@@ -32,6 +41,10 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'ACTION',
     templateIds: [
+      // Tested swap templates (ADR-0351 amendment 20).
+      'community-action-hero-strut', 'community-apocalypse-lounge', 'community-costume-basketball-swap',
+      'community-equestrian-sunset-gallop', 'community-extreme-pizza-freefall', 'community-skyscraper-ledge-spin',
+      'community-folding-ancient-city', 'community-gentleman-branch-chop', 'community-cash-burner',
       'community-explosive-exit', 'community-mansion-raid-swap', 'community-midnight-forest-run',
       'community-cartoon-puppet-swap', 'seedance-quick-change',
       // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
@@ -41,6 +54,10 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'COMEDY',
     templateIds: [
+      // Tested swap templates (ADR-0351 amendment 20).
+      'community-arctic-water-pour', 'community-bottle-topple-kick', 'community-currency-phone-call',
+      'community-sour-drink-reaction', 'community-natural-face-swap', 'community-neon-selfie-swap',
+      'community-mirror-flip-transition', 'community-minimalist-cafe-swap', 'community-private-jet-swap',
       'community-skyline-flamingo-prank', 'community-championship-slap-duel', 'community-dramatic-office-outburst',
       'seedance-anothers-opinion',
       // ADR-0309 amendment 3: listed only while the seedanceLongTemplates runtime key is on.
@@ -69,6 +86,11 @@ export const VIDEO_TEMPLATE_THEMES = Object.freeze([
   {
     id: 'FILM',
     templateIds: [
+      // Tested swap templates (ADR-0351 amendment 20).
+      'community-alleyway-identity-swap', 'community-ballroom-tuxedo-shift', 'community-black-dress-walk',
+      'community-burgundy-stride', 'community-ceiling-fan-transition', 'community-golden-gown-walk',
+      'community-marble-vanity-mirror', 'community-metropolitan-crosswalk', 'community-noir-espionage-flow',
+      'community-suit-walk',
       'community-modern-listing-dolly', 'noir-film', 'underground-lab-transformation', 'window-explode', 'seedance-glass-cube', 'x-ray-matter', 'game-character-rig',
       'reflection-in-the-mirror',
     ],

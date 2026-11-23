@@ -5,8 +5,8 @@ import { t } from '../../lib/i18n';
 import { selectPattern, setRegionPattern, setAudioRegion, type BeatDoc, type BeatRegionDoc, type BeatTrackDoc } from '../../lib/beatNative/doc';
 import { regionActions, type Apply } from '../../lib/beatNative/regionActions';
 
-type Props = { doc: BeatDoc; track: BeatTrackDoc; region: BeatRegionDoc; snap: number; locator: number; apply: Apply };
-function AudioControls({ region, apply }: Pick<Props, 'region' | 'apply'>) {
+type Props = { doc: BeatDoc; track: BeatTrackDoc; region: BeatRegionDoc; snap: number; locator: number; ripple: boolean; disabled: boolean; apply: Apply };
+function AudioControls({ region, apply, disabled }: Pick<Props, 'region' | 'apply' | 'disabled'>) {
     const s = useThemedStyles(sheets);
     const gain = region.gainDb ?? 0;
     const fadeIn = Math.round((region.fadeIn?.endSec ?? 0) * 1000);
@@ -29,24 +29,24 @@ function AudioControls({ region, apply }: Pick<Props, 'region' | 'apply'>) {
             {field.partial && <Text variant="footnote">{t('beat.audio.partialFade', { field: field.label })}</Text>}
             <View style={s.row}>{[-1, 1].map(direction => <Button key={direction} size="md" variant="secondary"
                 label={t(direction < 0 ? 'beat.value.decrease' : 'beat.value.increase', { field: field.label })}
-                disabled={field.min > field.max || (direction < 0 ? field.value <= field.min : field.value >= field.max)}
+                disabled={disabled || field.min > field.max || (direction < 0 ? field.value <= field.min : field.value >= field.max)}
                 onPress={() => apply(d => setAudioRegion(d, region.id, field.change(Math.max(field.min, Math.min(field.max, field.value + direction * field.step)))), t('beat.region.changed'))} />)}</View>
         </View>)}
-        <Button size="md" variant="secondary" label={t('beat.audio.reverse')} accessibilityState={{ selected: !!region.reverse }}
+        <Button size="md" variant="secondary" label={t('beat.audio.reverse')} accessibilityState={{ selected: !!region.reverse }} disabled={disabled}
             onPress={() => apply(d => setAudioRegion(d, region.id, { reverse: !region.reverse }), t('beat.region.changed'))} />
         <Text variant="footnote">{t('beat.audio.webOnly')}</Text>
     </>;
 }
-export function BeatRegionInspector({ doc, track, region, snap, locator, apply }: Props) {
+export function BeatRegionInspector({ doc, track, region, snap, locator, ripple, disabled, apply }: Props) {
     const s = useThemedStyles(sheets);
     return <View style={s.group} testID="region-inspector">
         <Text variant="bodyStrong" accessibilityRole="header">{t('beat.region.inspector')}</Text>
-        {region.pattern && <SegmentedControl accessibilityLabel={t('beat.region.pattern')} value={region.pattern}
-            options={['A', 'B', 'C', 'D'].map(value => ({ value, label: value, accessibilityLabel: t('beat.region.patternNamed', { pattern: value }) }))}
+        {region.pattern && <SegmentedControl accessibilityLabel={t('beat.region.pattern')} value={region.pattern} disabled={disabled}
+            options={(['A', 'B', 'C', 'D'] as const).map(value => ({ value, label: value, accessibilityLabel: t('beat.region.patternNamed', { pattern: value }) }))}
             onChange={pattern => apply(d => selectPattern(setRegionPattern(d, region.id, pattern), pattern), t('beat.region.changed'))} />}
-        <View style={s.row}>{regionActions(doc, track, region, snap, locator).map(action => <Button key={action.name} size="md"
-            variant={action.name === 'delete' ? 'destructive' : 'secondary'} label={action.label} onPress={() => apply(action.operation, action.label)} />)}</View>
-        {region.assetId && <AudioControls region={region} apply={apply} />}
+        <View style={s.row}>{regionActions(doc, track, region, snap, locator, ripple).map(action => <Button key={action.name} size="md"
+            variant={action.name === 'delete' ? 'destructive' : 'secondary'} label={action.label} disabled={disabled} onPress={() => apply(action.operation, action.label)} />)}</View>
+        {region.assetId && <AudioControls region={region} apply={apply} disabled={disabled} />}
     </View>;
 }
 const sheets = themedStyles(() => ({

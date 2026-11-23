@@ -6,10 +6,11 @@
 //   2. hand that wrapper to `createBeatEngine()` by answering `window.AudioContext` for the length of the call.
 // No web code is copied or edited. Anything the native library cannot do is reported in `report.gaps`, never hidden.
 import { createBeatEngine as sharedCreateBeatEngine, type BeatEngine, type EngineContext, type ParamLike } from './shared';
+import { createDynamicsProcessor, type DynamicsSettings } from './dynamicsProcessor';
 
 export type NativeContextCtor = new (options?: { sampleRate?: number; latencyHint?: 'interactive' | 'balanced' | 'playback' }) => EngineContext;
 
-export type GapKey = 'dynamicsCompressor' | 'connectReturnsVoid';
+export type GapKey = 'connectReturnsVoid';
 export type AdapterReport = {
     /** Gaps the adapter papered over. A listed gap means the sound differs from the web page, not that nothing plays. */
     gaps: GapKey[];
@@ -36,9 +37,13 @@ export function chainable<T>(node: T): T {
     return node;
 }
 
-type Params = Record<'threshold' | 'knee' | 'ratio' | 'attack' | 'release', ParamLike>;
-function inertParam(value: number): ParamLike {
-    return { value,
+type DynamicsName = 'threshold' | 'knee' | 'ratio' | 'attack' | 'release';
+type Params = Record<DynamicsName, ParamLike>;
+function dynamicsParam(initial: number, changed: (value: number) => void): ParamLike {
+    let current = initial;
+    return {
+        get value() { return current; },
+        set value(value: number) { if (Number.isFinite(value)) { current = value; changed(value); } },
         setValueAtTime(v) { this.value = v; return this; },
         setTargetAtTime(v) { this.value = v; return this; },
         linearRampToValueAtTime(v) { this.value = v; return this; },
@@ -47,17 +52,31 @@ function inertParam(value: number): ParamLike {
     };
 }
 
-// react-native-audio-api 1.0.1 has no DynamicsCompressorNode (docs: web-audio-api-coverage). The engine builds one on the
-// master output (beatOutput.js), in the master limiter (beatMixGraph.js) and in the per-track compressor effect (beatEffects.js).
-// Stand-in: a real GainNode, so connect() works, carrying inert parameter objects so `limiter.threshold.value = -1` does not
-// throw. It does not compress; the headroom stays in the master gain. This is gap G1 in the audit, and the first thing to hear on a device.
-export function passThroughCompressor(context: Record<string, unknown>): unknown {
-    const node = chainable((context.createGain as () => Record<string, unknown>).call(context));
-    const params: Params = { threshold: inertParam(-24), knee: inertParam(30), ratio: inertParam(12), attack: inertParam(0.003), release: inertParam(0.25) };
+type DynamicsNodeFactory = (context: Record<string, unknown>, settings: DynamicsSettings) => Record<string, unknown>;
+const workletDynamicsNode: DynamicsNodeFactory = (context, settings) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- deliberate lazy load; screens without sound never initialize worklets
+    const { WorkletProcessingNode } = require('react-native-audio-worklets') as {
+        WorkletProcessingNode: new (context: unknown, processor: ReturnType<typeof createDynamicsProcessor>) => Record<string, unknown>;
+    };
+    return new WorkletProcessingNode(context, createDynamicsProcessor(settings, Number(context.sampleRate)));
+};
+
+// react-native-audio-api 1.0.1 deliberately exposes custom processing nodes through react-native-audio-worklets rather than
+// DynamicsCompressorNode. This is a real stereo-linked, time-domain envelope compressor with 6 ms look-ahead. The same node
+// is accepted by AudioContext and OfflineAudioContext. Editable threshold/ratio values are part of the native run key, so a
+// changed setting rebuilds a fresh processor instead of attempting unsafe cross-runtime mutation.
+export function nativeDynamicsCompressor(context: Record<string, unknown>, initial: DynamicsSettings = {}, makeNode: DynamicsNodeFactory = workletDynamicsNode): unknown {
+    const values: Record<DynamicsName, number> = {
+        threshold: initial.threshold ?? -24, knee: initial.knee ?? 30, ratio: initial.ratio ?? 12,
+        attack: initial.attack ?? 0.003, release: initial.release ?? 0.25,
+    };
+    const node = chainable(makeNode(context, values));
+    const params = {} as Params;
+    for (const name of Object.keys(values) as DynamicsName[]) params[name] = dynamicsParam(values[name], value => { values[name] = value; });
     for (const [name, param] of Object.entries(params)) {
         Object.defineProperty(node, name, { value: param, configurable: true });
     }
-    Object.defineProperty(node, 'reduction', { value: 0, configurable: true });
+    Object.defineProperty(node, 'reduction', { get: () => 0, configurable: true });
     return node;
 }
 
@@ -69,9 +88,10 @@ export function wrapNativeContext(native: EngineContext, report: AdapterReport):
     return new Proxy(native, {
         get(target, prop) {
             if (prop === 'createDynamicsCompressor') {
-                return () => {
-                    gapNote('dynamicsCompressor');
-                    return passThroughCompressor(target as unknown as Record<string, unknown>);
+                return (settings?: DynamicsSettings) => {
+                    const native = Reflect.get(target, prop, target);
+                    if (typeof native === 'function') return chainable(native.call(target, settings));
+                    return nativeDynamicsCompressor(target as unknown as Record<string, unknown>, settings);
                 };
             }
             const value = Reflect.get(target, prop, target);

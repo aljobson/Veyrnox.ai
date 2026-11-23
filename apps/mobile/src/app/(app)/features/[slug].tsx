@@ -2,20 +2,21 @@ import { rawText } from '../../../lib/i18n/translate';
 import { Text as StatusText } from '../../../components/ui/Text';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
-import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
+import { Example } from '../../../components/ExampleCard';
 import { SourcePicker } from '../../../components/SourcePicker';
-import { creativeFeature, examplePlaysOn, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
+import { creativeFeature, featurePrompt, type CreativeFeature } from '../../../lib/creativeFeatures';
 import { readCreativeReuse, type CreativeReuse } from '../../../lib/creativeReuse';
 import { stageCreativeSourceHandoff } from '../../../lib/creativeSourceHandoff';
 import { fetchCatalog, type CatalogModel } from '../../../lib/media';
 import { requiredNamedSlots, type Slot, type GenerationReference, replaceSlotReferences, type SlotName } from '../../../lib/sources';
 import { plural, t } from '../../../lib/i18n';
 import { colors, fonts } from '../../../theme';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 
 export default function CreativeFeatureDetail() {
     const { slug, sourceJobId, sourceKind } = useLocalSearchParams<{ slug?: string; sourceJobId?: string; sourceKind?: string }>();
@@ -71,7 +72,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
         const sourceHandoff = stageCreativeSourceHandoff({ recipe: feature.slug, modelId: feature.model, aspect: feature.kind === 'video' ? '9:16' : '1:1', uploaded: {}, fromLibrary: {}, references, rightsConfirmed: true });
         router.push({ pathname: '/create/[modelId]', params: { modelId: feature.model, prompt: prompt || feature.title, ...(feature.kind === 'video' ? { duration: '5' } : {}), recipe: feature.slug, sourceHandoff } });
     }
-    return <ScrollView style={styles.screen} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    return <KeyboardScreen style={styles.screen}><KeyboardFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Stack.Screen options={{ title: feature.title }} />
         <View style={styles.hero}><Text style={styles.kicker}>{feature.group.toUpperCase()} · {feature.kind.toUpperCase()}</Text><Text style={styles.title} accessibilityRole="header">{feature.title}</Text><Text style={styles.lead}>{t('features.followtheguidedsetupthenreviewuploads')}</Text></View>
         <Example feature={feature} />
@@ -83,26 +84,7 @@ function FeatureStudio({ feature, reuse }: { feature: CreativeFeature; reuse: Cr
         <View style={styles.card}><Text style={styles.kicker}>{t('features.rEQUIREDSOURCES')}</Text><Text style={styles.cardTitle}>{required.length ? required.join(' + ') : t('features.nomediarequired')}</Text>{model && slots.length ? slots.map((slot) => <SourcePicker key={slot.slot} slot={slot} api={api} references={references.filter(ref => ref.slot === slot.slot)} onReferences={files => { setReferences(all => replaceSlotReferences(all, slot.slot, files)); }} onChange={() => {}} onLibrary={() => {}} onBusy={(busy) => setSending((current) => ({ ...current, [slot.slot]: busy }))} hint={t('features.requiredfor', { value1: feature.title })} initialReady={reuse?.kind === slot.slot} initialReadyLabel={reuse?.kind === slot.slot ? t('features.reuse.selected') : undefined} />) : <Text style={styles.note}>{required.length ? t('features.checkingtheliveuploadrequirements') : t('features.yourscriptisthesourceforthis')}</Text>}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.wORKFLOW')}</Text>{feature.steps.map((step, index) => <View key={step} style={styles.step}><Text style={styles.number}>0{index + 1}</Text><Text style={styles.stepText}>{step}</Text></View>)}</View>
         <View style={styles.card}><Text style={styles.kicker}>{t('features.lIVEMODEL')}</Text>{model === undefined ? <ActivityIndicator color={colors.accent} /> : <Text style={styles.cardTitle}>{model ? plural('features.modelCredits', model.credits, { name: feature.title }) : t('features.unavailable')}</Text>}{error ? <StatusText variant="inherit" accessibilityRole="alert" style={styles.error}>{error}</StatusText> : null}<Pressable accessibilityRole="button" disabled={model === undefined || waiting} style={[styles.primary, (model === undefined || waiting) && styles.off]} onPress={openCreate}><Text style={styles.primaryText}>{t('features.continuetofinalreview')}</Text></Pressable><Text style={styles.note}>{t('features.youwillseetheexactpricebefore')}</Text></View>
-    </ScrollView>;
-}
-
-function Example({ feature }: { feature: CreativeFeature }) {
-    return <View style={styles.example}><View style={styles.exampleHead}><View><Text style={styles.kicker}>{t('features.wORKINGEXAMPLE')}</Text><Text style={styles.cardTitle}>{t('features.seetheintendedresult')}</Text></View></View>{examplePlaysOn(feature.example, Platform.OS) ? <ExampleVideo url={feature.example.url} poster={feature.example.posterUrl} title={feature.title} /> : <ExampleStill uri={feature.example.kind === 'video' ? feature.example.posterUrl ?? feature.example.url : feature.example.url} title={feature.title} />}</View>;
-}
-function ExampleStill({ uri, title }: { uri: string; title: string }) {
-    return <Image source={{ uri }} style={styles.exampleMedia} contentFit="contain" accessibilityLabel={rawText(t('features.example', { value1: title }))} accessibilityIgnoresInvertColors />;
-}
-// The example starts on its own, muted and looping like the web preview, so it is visibly a moving result; the native
-// controls still unmute or pause it. A clip that cannot load falls back to its first-frame still.
-function ExampleVideo({ url, poster, title }: { url: string; poster?: string; title: string }) {
-    const [failed, setFailed] = useState(false);
-    const player = useVideoPlayer(url, (instance) => { instance.loop = true; instance.muted = true; instance.play(); });
-    useEffect(() => {
-        const subscription = player.addListener('statusChange', (event) => { if (event.status === 'error') setFailed(true); });
-        return () => subscription.remove();
-    }, [player]);
-    if (failed && poster) return <ExampleStill uri={poster} title={title} />;
-    return <VideoView player={player} style={styles.exampleMedia} nativeControls contentFit="contain" accessibilityLabel={rawText(t('features.examplevideo', { value1: title }))} />;
+    </KeyboardFormScrollView></KeyboardScreen>;
 }
 
 const styles = StyleSheet.create({
@@ -111,6 +93,6 @@ const styles = StyleSheet.create({
     card: { gap: 12, padding: 16, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, cardTitle: { color: colors.text, fontSize: 19, fontWeight: '900' }, row: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 }, counter: { color: colors.muted, fontSize: 11 },
     input: { minHeight: 132, color: colors.text, borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.background, padding: 13, fontSize: 15, lineHeight: 22, textAlignVertical: 'top' }, note: { color: colors.muted, fontSize: 12, lineHeight: 18 },
     step: { flexDirection: 'row', gap: 12 }, number: { color: colors.accent, fontSize: 12, fontWeight: '900' }, stepText: { flex: 1, color: colors.body, fontSize: 14, lineHeight: 20 },
-    example: { overflow: 'hidden', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: '#050506' }, exampleHead: { padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface }, exampleMedia: { width: '100%', height: 260, backgroundColor: '#050506' }, link: { color: colors.accent, fontSize: 13, fontWeight: '800', textDecorationLine: 'underline' },
+    link: { color: colors.accent, fontSize: 13, fontWeight: '800', textDecorationLine: 'underline' },
     primary: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.accent, paddingHorizontal: 16 }, primaryText: { color: colors.accentInk, fontSize: 15, fontWeight: '900', textAlign: 'center' }, secondary: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.accent }, secondaryText: { color: colors.accent, fontSize: 14, fontWeight: '800' }, off: { opacity: 0.45 }, error: { color: colors.danger, fontSize: 13, lineHeight: 19 },
 });

@@ -280,3 +280,30 @@ test('ornament never offers an absent, fallback-only, or photo-incompatible mode
     assert.match(JSON.stringify(tree), /presets.fidelity.blocked/);
   }
 });
+
+test('an image template that needs no photo offers an optional reference image and runs it on the edit model', async () => {
+  const { IMAGE_TEMPLATES } = await import('../app/veyrnox/_lib/imageTemplates.js');
+  const template = IMAGE_TEMPLATES.find(p => !p.photo);
+  const base = { ...imageFallbackCatalog().find(model => model.id === template.model), modality: 'text-to-image', credits: 3 };
+  const savedWindow = globalThis.window;
+  try {
+    const storage = new Map();
+    globalThis.window = { sessionStorage: { setItem: (key, value) => storage.set(key, value) } };
+    const h = harness({ template, models: [base, ornamentModel] });
+    const tree = h.render();
+    assert.match(JSON.stringify(tree), /label\.Optional reference/);
+    assert.doesNotMatch(JSON.stringify(tree), /presets\.use\.photoRequired/);
+    assert.match(JSON.stringify(tree), /"3 cr"|3 cr/);
+    const picker = nodes(tree).find(node => node.type === 'input' && node.props.type === 'file');
+    assert.ok(picker, 'a file input is offered');
+    const photo = Object.assign(new Blob(['photo'], { type: 'image/png' }), { name: 'ref.png' });
+    await picker.props.onChange({ target: { files: [photo], value: 'ref.png' } });
+    const withPhoto = h.render();
+    assert.match(JSON.stringify(withPhoto), new RegExp(`${ornamentModel.credits} cr`));
+    launchButton(withPhoto).props.onClick();
+    assert.equal(takeTemplateMediaHandoff(globalThis.window, template.id, ornamentModel.id).image.name, 'ref.png');
+    // Without the edit model in the catalog there is no reference picker.
+    const none = harness({ template, models: [base] });
+    assert.equal(nodes(none.render()).find(node => node.type === 'input' && node.props.type === 'file'), undefined);
+  } finally { globalThis.window = savedWindow; }
+});

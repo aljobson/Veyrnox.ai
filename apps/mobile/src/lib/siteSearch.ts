@@ -1,6 +1,7 @@
 import { kindOf, type CatalogModel } from './media';
 import { FILM_STUDIO_ENABLED } from './filmStudioSwitch';
 import { CREATIVE_FEATURES } from './creativeFeatures';
+import { MOBILE_FEATURES, searchableFeatures } from './featureRegistry';
 
 // Search over the app's own screens and the model catalogue (parity P7, the web's site search). It works on the
 // phone: nothing is sent anywhere, and the models come from the catalogue the app already loads.
@@ -21,39 +22,30 @@ export interface ScreenDef {
     readonly keywords: string;
 }
 
-// Only screens a signed-in person can open. Titles are looked up by the caller so they follow the language.
-export const SCREENS: readonly ScreenDef[] = [
-    { id: 'explore', titleKey: 'srch.s.explore', href: '/', keywords: 'home templates start' },
-    { id: 'create', titleKey: 'srch.s.create', href: '/create', keywords: 'generate image video audio make' },
-    { id: 'tools', titleKey: 'srch.s.tools', href: '/create/tools', keywords: 'upscale remove background face filters edit photo video' },
-    { id: 'film', titleKey: 'srch.s.film', href: '/film', keywords: 'studio shots script references assets prompts movie' },
-    { id: 'mcp', titleKey: 'srch.s.mcp', href: '/mcp', keywords: 'connector assistant oauth endpoint integrations' },
-    { id: 'oddlings', titleKey: 'srch.s.oddlings', href: '/oddlings', keywords: 'characters creator mascot animate' },
-    { id: 'templates', titleKey: 'srch.s.templates', href: '/create/presets', keywords: 'presets gallery' },
-    { id: 'library', titleKey: 'srch.s.library', href: '/library', keywords: 'creations files downloads saved' },
-    { id: 'chat', titleKey: 'menu.chat', href: '/chat', keywords: 'assistant talk ai' },
-    { id: 'cinema', titleKey: 'srch.s.cinema', href: '/cinema', keywords: 'watch films vote' },
-    { id: 'publish', titleKey: 'srch.s.publish', href: '/publish', keywords: 'post schedule social calendar' },
-    { id: 'projects', titleKey: 'srch.s.projects', href: '/projects', keywords: 'edit saved' },
-    { id: 'editor', titleKey: 'tabs.editor', href: '/editor', keywords: 'edit trim join captions clip timeline cut' },
-    { id: 'credits', titleKey: 'srch.s.credits', href: '/credits', keywords: 'balance buy top up packs' },
-    { id: 'history', titleKey: 'srch.s.history', href: '/history', keywords: 'ledger charges refunds' },
-    { id: 'referrals', titleKey: 'srch.s.referrals', href: '/referrals', keywords: 'invite friends code' },
-    { id: 'models', titleKey: 'srch.s.models', href: '/models', keywords: 'catalogue catalog list' },
-    { id: 'pricing', titleKey: 'srch.s.pricing', href: '/pricing', keywords: 'cost price credits' },
-    { id: 'brand', titleKey: 'srch.s.brand', href: '/brand-kit', keywords: 'colours colors fonts palette' },
-    { id: 'account', titleKey: 'srch.s.account', href: '/account', keywords: 'profile email settings' },
-    { id: 'security', titleKey: 'srch.s.security', href: '/security', keywords: 'password two-factor 2fa devices assistants sessions' },
-    { id: 'blocked', titleKey: 'srch.s.blocked', href: '/blocked', keywords: 'mute members' },
-    { id: 'appeals', titleKey: 'srch.s.appeals', href: '/appeals', keywords: 'content decisions' },
-    { id: 'report', titleKey: 'srch.s.report', href: '/report', keywords: 'problem abuse flag' },
-    { id: 'help', titleKey: 'srch.s.help', href: '/help', keywords: 'support contact question' },
-    { id: 'about', titleKey: 'srch.s.about', href: '/about', keywords: 'company legal terms privacy' },
-];
+export interface SearchCapabilities {
+    readonly musicAvailable: boolean;
+}
 
-export function screenEntries(title: (key: string) => string): SearchEntry[] {
+// Only screens a signed-in person can open. Titles are looked up by the caller so they follow the language.
+export const SCREENS: readonly ScreenDef[] = MOBILE_FEATURES.filter((feature) => feature.keywords).map((feature) => ({
+    id: feature.id,
+    titleKey: feature.titleKey,
+    href: feature.href,
+    keywords: feature.keywords as string,
+}));
+
+export function screenEntries(title: (key: string) => string, capabilities: SearchCapabilities = { musicAvailable: false }): SearchEntry[] {
+    const registry = searchableFeatures({ filmStudio: FILM_STUDIO_ENABLED, musicAvailable: capabilities.musicAvailable }).map((s) => ({
+        id: `screen:${s.id}`,
+        kind: 'screen' as const,
+        title: title(s.titleKey),
+        detail: '',
+        href: s.href,
+        keywords: s.keywords as string,
+    }));
+    const registeredHrefs = new Set(registry.map((entry) => entry.href));
     return [
-        ...SCREENS.filter(s => (s.id !== 'film' || FILM_STUDIO_ENABLED)).map((s) => ({ id: `screen:${s.id}`, kind: 'screen' as const, title: title(s.titleKey), detail: '', href: s.href, keywords: s.keywords })),
+        ...registry,
         ...CREATIVE_FEATURES.map((feature) => ({
             id: `feature:${feature.slug}`,
             kind: 'screen' as const,
@@ -61,7 +53,7 @@ export function screenEntries(title: (key: string) => string): SearchEntry[] {
             detail: feature.group,
             href: `/features/${feature.slug}`,
             keywords: `${feature.group} ${feature.kind} ${feature.media.join(' ')} ${feature.steps.join(' ')}`.toLowerCase(),
-        })),
+        })).filter((entry) => !registeredHrefs.has(entry.href)),
     ];
 }
 

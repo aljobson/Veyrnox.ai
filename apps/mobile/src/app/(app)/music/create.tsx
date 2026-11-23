@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { DISCOVER_SEEDS, buildSamplePrompt } from '../../../lib/music/discoverSeeds';
-import { ScrollView, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
 import { MusicQueue } from '../../../components/music/MusicQueue';
 import { MusicLyricsPanel } from '../../../components/music/MusicLyricsPanel';
 import { MusicNotice } from '../../../components/music/MusicNotice';
+import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
+import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
-import { modelState, quoteBlockers } from '../../../lib/music/createForm';
+import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
-const KNOWN = new Set(['empty_prompt', 'over_length', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
+import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
+const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
@@ -34,27 +37,46 @@ export default function MusicCreate() {
     }, [pending]);
     const e = state.entitlements, input = state.input;
     const model = e?.models.find(m => m.id === input.model_id);
+    const suno = isSunoModel(model);
     const ambiguous = pending?.phase === 'AMBIGUOUS';
     const blockers = e && pending ? quoteBlockers({ input: pending.input, entitlements: e, rights: !pending.input.instrumental,
         activeCount: flow.tracker.activeCount(), quote: pending.quote, now, ambiguous }) : [];
     const error = state.error && t(`music.create.${messageKey(state.error)}`);
-    return <ScrollView style={s.screen} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('music.create.title') }} />
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
             : state.status === 'loading' ? <Text>{t('music.loading')}</Text>
                 : state.status === 'error' ? <MusicNotice message={t('music.loadError')} retry={() => void flow.load()} />
-                    : e ? <>
+                    : e && e.models.length === 0 ? <MusicNotice message={t('music.create.unavailable')} />
+                        : e ? <>
                         <Text variant="title1">{t('music.create.title')}</Text>
                         <SegmentedControl value={input.mode} options={(['simple', 'custom'] as const).map(value => ({ value, label: t(`music.create.${value}`) }))}
                             onChange={mode => edit({ mode })} />
+                        {suno ? <Text variant="bodyStrong">{t('music.create.suno.offer')}</Text> : null}
                         <View style={s.row}>{e.models.filter(m => m.generation_modes.includes(input.mode)).map(m => {
                             const status = modelState(m, e);
                             return <Button key={m.id} variant={input.model_id === m.id ? 'primary' : 'secondary'}
                                 label={status === 'locked_plan' ? t('music.create.paidModel', { model: m.name }) : m.name}
                                 disabled={status !== 'usable'} onPress={() => { if (status === 'usable') edit({ model_id: m.id }); }} />;
                         })}</View>
-                        {input.mode === 'simple' ? <TextField label={t('music.create.prompt')} value={input.prompt} multiline maxLength={500} onChangeText={prompt => edit({ prompt })} />
-                            : <>
+                        {input.mode === 'simple' ? <>
+                            <TextField label={t('music.create.prompt')} value={input.prompt} multiline
+                                maxLength={suno && model ? modelCounterLimit(model, 'prompt') ?? undefined : 500} onChangeText={prompt => edit({ prompt })} />
+                            {suno && model?.controls.instrumental ? <View style={s.row}>
+                                <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')}
+                                    disabled={model.controls.instrumental === 'required'} value={input.instrumental}
+                                    onValueChange={instrumental => edit({ instrumental })} />
+                            </View> : null}
+                        </> : suno && model ? <>
+                            <View style={s.row}>
+                                <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')}
+                                    value={input.instrumental} onValueChange={instrumental => edit({ instrumental })} />
+                            </View>
+                            <MusicSunoControls input={input} model={model} rights={state.rights} onChange={edit}
+                                onRights={rights => edit({}, rights)} />
+                            {!input.instrumental && !input.lyrics.trim() ? <MusicNotice message={t('music.create.lyrics_required')} /> : null}
+                            {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
+                        </> : <>
                                 <MusicLyricsPanel value={input.lyrics} max={Math.min(3000, e.custom_drafts.lyrics_max)} onChange={lyrics => edit({ lyrics })} />
                                 <TextField label={t('music.create.styles')} value={input.styles} maxLength={Math.min(500, e.custom_drafts.styles_max)} onChangeText={styles => edit({ styles })} />
                                 {model?.controls.instrumental === 'optional' && model.controls.lyrics ? <View style={s.row}>
@@ -64,20 +86,27 @@ export default function MusicCreate() {
                                     label={t('music.create.rights')} onPress={() => edit({}, !state.rights)} /> : null}
                                 {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
                             </>}
-                        <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => edit({ title })} />
-                        <Text>{t('music.create.duration', { seconds: input.duration })}</Text>
-                        <View style={s.row}>
-                            <Button variant="secondary" label={t('music.create.shorter')} disabled={!model || input.duration <= model.controls.duration_seconds.min} onPress={() => edit({ duration: input.duration - 5 })} />
-                            <Button variant="secondary" label={t('music.create.longer')} disabled={!model || input.duration >= model.controls.duration_seconds.max} onPress={() => edit({ duration: input.duration + 5 })} />
-                        </View>
-                        {model?.controls.duration_price_block_seconds === 60 ? <Text>{t('music.create.durationPriceHint')}</Text> : null}
-                        {input.duration > 60 ? <Text>{t('music.create.longerGenerationHint')}</Text> : null}
+                        {!suno ? <>
+                            <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => edit({ title })} />
+                            <Text>{t('music.create.duration', { seconds: input.duration })}</Text>
+                            <View style={s.row}>
+                                <Button variant="secondary" label={t('music.create.shorter')} disabled={!model?.controls.duration_seconds || input.duration <= model.controls.duration_seconds.min} onPress={() => edit({ duration: input.duration - 5 })} />
+                                <Button variant="secondary" label={t('music.create.longer')} disabled={!model?.controls.duration_seconds || input.duration >= model.controls.duration_seconds.max} onPress={() => edit({ duration: input.duration + 5 })} />
+                            </View>
+                            {model?.controls.duration_price_block_seconds === 60 ? <Text>{t('music.create.durationPriceHint')}</Text> : null}
+                            {input.duration > 60 ? <Text>{t('music.create.longerGenerationHint')}</Text> : null}
+                            {input.mode === 'simple' && model ? <MusicAdvancedControls input={input} controls={model.controls} onChange={edit} /> : null}
+                        </> : null}
                         {state.conflict ? <View style={s.content}>
                             <Text>{t('music.create.conflict')}</Text>
                             <Text selectable>{state.conflict.title}</Text><Text selectable>{state.conflict.lyrics}</Text><Text selectable>{state.conflict.styles}</Text>
                             <Text>{state.conflict.model_id}</Text>
                             <Button label={t('music.create.useServer')} onPress={flow.useServer} />
                             <Button label={t('music.create.keepMine')} onPress={() => { flow.keepMine(); void flow.review(); }} />
+                        </View> : null}
+                        {state.previousText ? <View style={s.content}>
+                            <MusicNotice message={t('music.create.draft_refreshed')} />
+                            <Button variant="secondary" label={t('music.create.copy_previous_text')} onPress={flow.copyPreviousText} />
                         </View> : null}
                         {error ? <MusicNotice message={error} retry={input.mode === 'custom' && !state.draft ? () => void flow.loadDraft() : undefined} /> : null}
                         <Button label={t('music.create.review')} disabled={state.busy || ambiguous || !!state.conflict || (input.mode === 'custom' && !state.draft)
@@ -100,6 +129,6 @@ export default function MusicCreate() {
                         </> : null}
                         <MusicQueue entries={queue.entries} activeCount={flow.tracker.activeCount()} limit={e.concurrency_limit} />
                     </> : null}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.md }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm } }));

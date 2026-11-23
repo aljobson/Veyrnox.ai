@@ -2796,6 +2796,12 @@
     "ratio": 1.82
   },
   {
+    "id": "studio.eyebrow",
+    "english": "Make and refine",
+    "translation": "Создавайте и дорабатывайте",
+    "ratio": 1.73
+  },
+  {
     "id": "team.title",
     "english": "Team",
     "translation": "Команда",
@@ -3714,6 +3720,66 @@
     "ratio": 1.83
   },
   {
+    "id": "music.create.advanced.variety",
+    "english": "Variety",
+    "translation": "Разнообразие",
+    "ratio": 1.71
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Тональность",
+    "ratio": 3.67
+  },
+  {
+    "id": "music.create.suno.offer",
+    "english": "Music model",
+    "translation": "Музыкальная модель",
+    "ratio": 1.64
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Мужской",
+    "ratio": 1.75
+  },
+  {
+    "id": "music.create.suno.variety",
+    "english": "Variety",
+    "translation": "Вариативность",
+    "ratio": 1.86
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "Выкл.",
+    "ratio": 1.67
+  },
+  {
+    "id": "music.create.suno.variety.2",
+    "english": "High",
+    "translation": "Высокая",
+    "ratio": 1.75
+  },
+  {
+    "id": "music.create.suno.variety.3",
+    "english": "Extra",
+    "translation": "Дополнительная",
+    "ratio": 2.8
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Максимальная",
+    "ratio": 4
+  },
+  {
+    "id": "music.create.suno.style.cinematic",
+    "english": "Cinematic",
+    "translation": "Кинематографичный",
+    "ratio": 1.89
+  },
+  {
     "id": "musicActions.action.reload",
     "english": "Reload song",
     "translation": "Загрузить песню заново",
@@ -3834,10 +3900,40 @@
     "ratio": 1.67
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "Вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "Выкл.",
+    "ratio": 1.67
+  },
+  {
     "id": "beat.playing",
     "english": "Playing",
     "translation": "Воспроизводится",
     "ratio": 2.14
+  },
+  {
+    "id": "beat.padRecord.status.armed",
+    "english": "Armed — press Play to record pads",
+    "translation": "Готово — нажмите «Воспроизвести», чтобы записывать пэды",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.midiRecord.key.audition",
+    "english": "preview",
+    "translation": "прослушивание",
+    "ratio": 1.86
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Повторить сохранение",
+    "ratio": 2
   },
   {
     "id": "beat.pad.snare",
@@ -4242,6 +4338,42 @@
     "ratio": 2.08
   },
   {
+    "id": "beat.track.rename",
+    "english": "Rename track",
+    "translation": "Переименовать дорожку",
+    "ratio": 1.75
+  },
+  {
+    "id": "beat.track.renamed",
+    "english": "Track renamed",
+    "translation": "Дорожка переименована",
+    "ratio": 1.62
+  },
+  {
+    "id": "beat.library.open",
+    "english": "Music Library",
+    "translation": "Музыкальная библиотека",
+    "ratio": 1.69
+  },
+  {
+    "id": "beat.library.searchEmpty",
+    "english": "No owned songs match “{query}”.",
+    "translation": "Среди своих песен нет совпадений с запросом «{query}».",
+    "ratio": 1.74
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.library.destination",
+    "english": "Add at {position}",
+    "translation": "Добавить в позицию {position}",
+    "ratio": 1.71
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Привязка",
@@ -4414,6 +4546,18 @@
     "english": "Save to Music",
     "translation": "Сохранить в музыкальную библиотеку",
     "ratio": 2.62
+  },
+  {
+    "id": "dialogue.add",
+    "english": "Add turn",
+    "translation": "Добавить реплику",
+    "ratio": 2
+  },
+  {
+    "id": "dialogue.turnLimit",
+    "english": "Use 2 to 12 turns.",
+    "translation": "Используйте от 2 до 12 реплик.",
+    "ratio": 1.67
   },
   {
     "id": "musicExport.save",
@@ -4624,6 +4768,168 @@
     "english": "Fade",
     "translation": "Затухание",
     "ratio": 2.25
+  },
+  {
+    "id": "editorMotion.opacity",
+    "english": "Opacity",
+    "translation": "Непрозрачность",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Панорама вправо",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Переместить к курсору воспроизведения",
+    "ratio": 2.31
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Интерполяция",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Плавное начало",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.ease-out",
+    "english": "Ease out",
+    "translation": "Плавное окончание",
+    "ratio": 2.13
+  },
+  {
+    "id": "editorMotion.ease-in-out",
+    "english": "Ease in and out",
+    "translation": "Плавное ускорение и замедление",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.inverted",
+    "english": "Invert mask",
+    "translation": "Инвертировать маску",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Управлять собственными шрифтами",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "Используется",
+    "ratio": 2
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "Нужно подключить заново",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorFont.use",
+    "english": "Use {name}",
+    "translation": "Использовать {name}",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorFont.relink",
+    "english": "Relink {name}",
+    "translation": "Подключить {name} заново",
+    "ratio": 1.85
+  },
+  {
+    "id": "editorFont.name",
+    "english": "Font name",
+    "translation": "Название шрифта",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorFont.credit",
+    "english": "Creator or credit",
+    "translation": "Автор или указание авторства",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorFont.usage",
+    "english": "Usage permission",
+    "translation": "Разрешение на использование",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Добавить собственный шрифт",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorPack.creator",
+    "english": "Creator or credit",
+    "translation": "Автор или указание авторства",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorPack.rights",
+    "english": "Usage rights",
+    "translation": "Права на использование",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorPack.progress.placing",
+    "english": "Adding at the playhead…",
+    "translation": "Добавление в позицию указателя воспроизведения…",
+    "ratio": 2.04
+  },
+  {
+    "id": "editorPack.packName",
+    "english": "Pack name",
+    "translation": "Название пакета",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorScenes.apply",
+    "english": "Split at {value1} cuts",
+    "translation": "Разделить по точкам склейки: {value1}",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorClips.topPick",
+    "english": "Top pick",
+    "translation": "Лучший вариант",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorClips.reason.cutAligned",
+    "english": "Starts and ends on cuts",
+    "translation": "Начинается и заканчивается на склейках",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorClips.reason.goodLength",
+    "english": "Good short-clip length",
+    "translation": "Подходящая длина для короткого клипа",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorClips.applyNone",
+    "english": "Add clips to timeline",
+    "translation": "Добавить клипы на монтажную линейку",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Оставить",
+    "ratio": 2
   },
   {
     "id": "chrome.privacyPolicy",

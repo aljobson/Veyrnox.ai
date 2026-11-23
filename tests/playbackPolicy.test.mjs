@@ -50,7 +50,7 @@ test('Library clips play by the same policy as the landing tiles, never on their
     assert.match(clip, /useClipPlayback\(cardRef, videoRef\)/);
     assert.doesNotMatch(clip, /autoPlay|controls/);
     const tile = read('_components/MediaTile.js');
-    assert.match(tile, /useClipPlayback\(rootRef, videoRef, nearViewport\)/);
+    assert.match(tile, /useClipPlayback\(rootRef, videoRef, nearViewport && !player\)/);
     assert.match(tile, /rootMargin: '600px 0px'/, 'tiles only mount video players near the viewport');
     assert.match(tile, /\{clip\?\.poster && \(/, 'a still poster is available before the video player mounts');
     const hook = read('_lib/useClipPlayback.js');

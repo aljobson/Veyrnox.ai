@@ -13,16 +13,18 @@ import { setLocaleFromDevice, t } from '../src/lib/i18n';
 const pkg = (id: string, product: string, price: number) => ({ identifier: id, product: { identifier: product, title: id, price, priceString: `£${price}.00`, currencyCode: 'GBP' } });
 const packs = [pkg('small', 'ai.veyrnox.credits.156', 10), pkg('medium', 'ai.veyrnox.credits.392', 25), pkg('best', 'ai.veyrnox.credits.1177', 70)];
 const plans = [pkg('starter', 'ai.veyrnox.generation.starter.monthly', 10), pkg('annual', 'ai.veyrnox.generation.starter.annual', 100)];
-let mockBalance = 0, mockGeneration = 1, mockPath = '/', mockCreated = new Date().toISOString();
+let mockBalance = 0, mockGeneration = 1, mockPath = '/', mockCreated = new Date().toISOString(), mockSubscription: unknown = null;
 const mockPush = jest.fn();
 const mockBegin = () => { const gen = mockGeneration, user = getCacheUser(); return { gen, user: user ?? null, tokens: {} as any, current: () => gen === mockGeneration && user === getCacheUser() }; };
 const mockApi = { getBalance: jest.fn(async () => ({ balance: mockBalance, free_credits: 0, free_expires_at: null })), request: jest.fn(async (path: string) => {
     if (path === '/api/v1/account') return { created_at: mockCreated };
-    if (path === '/api/v1/subscriptions') return { subscription: null };
+    if (path === '/api/v1/subscriptions') return { subscription: mockSubscription };
     return { plans: [{ id: 'starter-monthly', credits: 200 }] };
 }) };
-const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, paidAccess: false, generationActive: false,
+const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, salesOpen: true, paidAccess: false, generationActive: false,
+    generationSource: null as 'store' | 'web' | 'both' | 'complimentary' | null, generationPeriodEnd: null as string | null,
     generationPurchaseReady: true, generationAccessResolved: true, refreshSales: jest.fn(async () => true), refreshGenerationAccess: jest.fn(async () => false),
+    retryOfferings: jest.fn(), managementURL: null as string | null,
     offerings: { all: { credits: { availablePackages: packs }, generation: { availablePackages: plans } } },
     purchase: jest.fn(), restore: jest.fn(async () => true) };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: mockGeneration, beginSessionTask: mockBegin }) }));
@@ -53,10 +55,12 @@ const buy = () => nodes('button').find(n => n.props.accessibilityLabel?.startsWi
 const tick = async (ms: number) => { await act(async () => jest.advanceTimersByTimeAsync(ms)); };
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.useFakeTimers(); jest.clearAllMocks(); setLocaleFromDevice(['en']);
-    await wipeCache(); await bindCacheUser(`paywall-${++serial}`); mockGeneration++; mockBalance = 0; mockPath = '/'; mockCreated = new Date().toISOString();
-    mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.paidAccess = false;
+    await wipeCache(); await bindCacheUser(`paywall-${++serial}`); mockGeneration++; mockBalance = 0; mockPath = '/'; mockCreated = new Date().toISOString(); mockSubscription = null;
+    mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.salesOpen = true; mockBilling.paidAccess = false; mockBilling.managementURL = null;
+    mockBilling.generationSource = null; mockBilling.generationPeriodEnd = null;
     mockBilling.offerings = { all: { credits: { availablePackages: packs }, generation: { availablePackages: plans } } };
     mockBilling.purchase.mockReset().mockResolvedValue('cancelled');
+    mockBilling.restore.mockReset().mockResolvedValue(true);
     mockApi.getBalance.mockReset().mockImplementation(async () => ({ balance: mockBalance, free_credits: 0, free_expires_at: null }));
     jest.spyOn(RN.AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     root = createRoot();
@@ -64,16 +68,16 @@ beforeEach(async () => {
 afterEach(async () => { await act(async () => root.unmount()); await wipeCache(); jest.clearAllTimers(); jest.useRealTimers(); jest.restoreAllMocks(); });
 test('depleted shows store prices, best radio, interactive Vey, selection and an in-place purchase', async () => {
     await mount(); expect(text()).toContain(t('credits.paywall.emptyTitle')); expect(mood('worried')).toBe(true); expect(button('Vey')).toBeDefined();
-    const radios = nodes('radio'); expect(radios).toHaveLength(3); expect(radios[2].props.accessibilityState.selected).toBe(true);
+    const radios = nodes('radio'); expect(radios).toHaveLength(3); expect(radios[2].props.accessibilityState.checked).toBe(true);
     expect(text()).toContain('£70.00'); await click(radios[0]); expect(playSelection).toHaveBeenCalledTimes(1);
-    expect(nodes('radio')[0].props.accessibilityState.selected).toBe(true); expect(mood('hop')).toBe(true);
+    expect(nodes('radio')[0].props.accessibilityState.checked).toBe(true); expect(mood('hop')).toBe(true);
     await click(buy()); expect(mockBilling.purchase).toHaveBeenCalledWith(packs[0]); expect(mockPush).not.toHaveBeenCalled();
     expect(text()).toContain(t('credits.cancelled')); expect(mood('worried')).toBe(true); expect(button(t('credits.paywall.later'))).toBeDefined();
 });
 test('success announces, claps then cheers for 1.5s, suppresses first/low and ignores the retained outcome next cycle', async () => {
     await mount(); mockBilling.purchase.mockImplementation(async () => { mockBalance = 1571; return 'purchased'; });
     await click(buy()); expect(mood('clap')).toBe(true); expect(playSuccess).toHaveBeenCalledTimes(1);
-    expect(useAnnouncement).toHaveBeenCalledWith(t('credits.added', { balance: 1571 }));
+    expect(useAnnouncement).toHaveBeenCalledWith(t('credits.added', { balance: 1571 }), { onMount: true });
     await tick(700); expect(mood('cheer')).toBe(true); await tick(799); expect(button(t('credits.paywall.later'))).toBeDefined();
     await tick(1); expect(nodes('radio')).toHaveLength(0); await balance(5); expect(nodes('radio')).toHaveLength(0);
     await balance(0); expect(mood('worried')).toBe(true); expect(text()).not.toContain(t('credits.added', { balance: 1571 }));
@@ -82,7 +86,7 @@ test('success announces, claps then cheers for 1.5s, suppresses first/low and ig
 test('Reduce Motion announces success and closes immediately', async () => {
     jest.spyOn(RN.AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
     await mount(); mockBilling.purchase.mockImplementation(async () => { mockBalance = 1571; return 'purchased'; });
-    await click(buy()); expect(useAnnouncement).toHaveBeenCalledWith(t('credits.added', { balance: 1571 }));
+    await click(buy()); expect(useAnnouncement).toHaveBeenCalledWith(t('credits.added', { balance: 1571 }), { onMount: true });
     expect(playSuccess).toHaveBeenCalledTimes(1); expect(nodes('radio')).toHaveLength(0);
 });
 test.each(['error', 'sales_closed'])('%s shows existing feedback and worried Vey', async error => {
@@ -92,22 +96,66 @@ test.each(['error', 'sales_closed'])('%s shows existing feedback and worried Vey
     if (error === 'sales_closed') expect(buy().props.accessibilityState.disabled).toBe(true);
     expect(button(t('credits.restore')).props.accessibilityState.disabled).toBe(false);
 });
-test.each(['empty', 'loading'])('%s store shows only fallback actions', async mode => {
+test('restore presents localized progress until the store finishes', async () => {
+    const restoring = deferred<boolean>(); mockBilling.restore.mockReturnValue(restoring.promise);
+    await mount(); await press(t('credits.restore'));
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-restoring')).toHaveLength(1);
+    expect(text()).toContain(t('projectDocument.restoring'));
+    expect(button(t('credits.restore')).props.accessibilityState).toMatchObject({ disabled: true, busy: true });
+    await act(async () => restoring.resolve(true));
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-restoring')).toHaveLength(0);
+});
+test.each(['empty', 'loading'])('%s store keeps recovery, legal and fallback actions', async mode => {
     if (mode === 'empty') mockBilling.offerings.all = {} as any; else mockBilling.status = 'loading';
     await mount(); expect(nodes('radio')).toHaveLength(0); expect(buy()).toBeUndefined(); expect(text()).not.toContain('£');
-    expect(button(t('credits.paywall.allOptions'))).toBeDefined(); expect(button(t('credits.paywall.later'))).toBeDefined(); expect(button(t('credits.restore'))).toBeUndefined();
+    expect(root.container.queryAll(n => n.props.testID === `purchase-state-${mode === 'empty' ? 'unavailable' : 'loading'}`)).toHaveLength(1);
+    expect(button(t('credits.paywall.allOptions'))).toBeDefined(); expect(button(t('credits.paywall.later'))).toBeDefined(); expect(button(t('credits.restore'))).toBeDefined();
+    expect(nodes('link')).toHaveLength(2);
+    if (mode === 'empty') {
+        await press(t('credits.hardPaywall.retry'));
+        expect(mockBilling.retryOfferings).toHaveBeenCalledTimes(1);
+        expect(mockBilling.refreshSales).toHaveBeenCalledTimes(2);
+    } else expect(button(t('credits.hardPaywall.retry'))).toBeUndefined();
+});
+test('billing-off builds explain that purchases are unavailable without dead retry or restore actions', async () => {
+    mockBilling.status = 'off'; mockBilling.canPurchase = false; mockBilling.canRestore = false; mockBilling.offerings = null as any;
+    await mount();
+    expect(text()).toContain(t('billing.paywall.unavailableBuild'));
+    expect(button(t('credits.hardPaywall.retry'))).toBeUndefined();
+    expect(button(t('credits.restore'))).toBeUndefined();
+    expect(nodes('link')).toHaveLength(2);
+});
+test('an existing subscriber with no packs sees active status and the provider management action', async () => {
+    mockBilling.paidAccess = true; mockBilling.generationActive = true; mockBilling.generationSource = 'store';
+    mockBilling.generationPeriodEnd = '2026-11-27T00:00:00Z'; mockBilling.managementURL = 'https://apps.apple.com/account/subscriptions';
+    mockSubscription = { id: '11111111-1111-1111-1111-111111111111', plan_id: 'starter-monthly', status: 'active', price_usd_cents: 999,
+        credits: 200, current_period_end: '2026-11-27T00:00:00Z', cancel_at_period_end: false, started_at: '2026-10-27T00:00:00Z', ended_at: null, end_reason: null };
+    mockBilling.offerings.all.credits.availablePackages = [];
+    await mount();
+    expect(text()).toContain(t('credits.subscriptions.active'));
+    expect(text()).toContain(t('creditsPage.periodEnd', { date: 'Nov 27, 2026' }));
+    expect(button(t('credits.hardPaywall.retry'))).toBeUndefined();
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'link' && n.props.accessibilityLabel === t('billing.paywall.manageStore'))).toHaveLength(1);
+});
+test('Publish-only access does not masquerade as an AI Generation subscription', async () => {
+    mockBilling.paidAccess = true; mockBilling.generationActive = false; mockBilling.offerings.all.credits.availablePackages = [];
+    await mount();
+    expect(text()).not.toContain(t('credits.subscriptions.active'));
+    expect(nodes('radio')).toHaveLength(1);
 });
 test('plans toggle uses Starter, renewal and expiry terms without a never-expire line', async () => {
     await mount(); await click(nodes('tab').find(n => n.props.accessibilityLabel === t('credits.paywall.planTab'))!);
-    expect(nodes('radio')).toHaveLength(1); expect(nodes('radio')[0].props.accessibilityState.selected).toBe(true);
+    expect(nodes('radio')).toHaveLength(1); expect(nodes('radio')[0].props.accessibilityState.checked).toBe(true);
     expect(text()).toContain(t('credits.paywall.emptyTitle'));
     expect(text()).not.toContain(t('credits.paywall.emptyBody'));
     expect(text()).toContain('Renews automatically'); expect(text()).toContain(t('creditsPage.monthlyExpiry'));
     expect(text()).not.toContain(t('credits.paywall.packsNeverExpire')); expect(text()).not.toContain('Credits never expire');
     await click(buy()); expect(mockBilling.purchase).toHaveBeenCalledWith(plans[0]);
 });
-test.each(['paid', 'missing'])('plans toggle is absent for %s access/catalog', async kind => {
-    if (kind === 'paid') mockBilling.paidAccess = true; else mockBilling.offerings.all.generation.availablePackages = [];
+test.each(['generation-active', 'missing'])('plans toggle is absent for %s access/catalog', async kind => {
+    if (kind === 'generation-active') { mockBilling.paidAccess = true; mockBilling.generationActive = true; }
+    else mockBilling.offerings.all.generation.availablePackages = [];
     await mount(); expect(nodes('tab')).toHaveLength(0);
 });
 test('store blocks dismissal and every control; confirmation allows dismissal and Credits shares its lock and outcome', async () => {

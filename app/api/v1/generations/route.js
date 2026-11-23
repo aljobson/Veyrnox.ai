@@ -1,12 +1,14 @@
 import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
 import { seedanceLongModelOpen } from '../../../../lib/seedanceLongTemplates.js';
-import { loadTemplateSwapClip } from '../../../../lib/templateSwapClipGate.js';
+import { loadTemplateSwapClip, loadTemplateSwapDispatch } from '../../../../lib/templateSwapClipGate.js';
+import { isPrivateModelId } from '../../../../lib/privateModelIds.js';
 import { checkTemplateSwapRequest, resolveTemplateSwapVideo, templateSwapCapability, checkTemplateSwapImages } from '../../../../lib/templateSwapClipGeneration.js';
 import { replayTemplateSwapClip } from '../../../../lib/templateSwapClipReplay.js';
 import { templateSwapImageCounts } from '../../../../lib/templateSwapFullBody.mjs';
 import { templateSwapPrompt, templateSwapPeoplePrompt } from '../../../../lib/templateSwapClipPrompt.mjs';
 import { templateRequestFingerprint } from '../../../../lib/templateRequestFingerprint.js';
 import { checkTemplateRequest } from '../../../../lib/templateFidelity.js';
+import { resolveTemplatePrompt } from '../../../../lib/templatePromptResolve.js';
 import { finishGenerationSubmit } from '../../../../lib/generationProviderSubmit.js';
 import { replaySwapScene } from '../../../../lib/swapSceneReplay.js';
 import { loadSwapScene } from '../../../../lib/swapSceneGate.js';
@@ -27,8 +29,10 @@ import { resolveRouteSet } from '../../../../lib/supplierRoutesDispatch.js';
 import { NextResponse } from 'next/server';
 import { rpc, select, envConfig } from '../../../../packages/db/supabase-client.js';
 import { capabilityFor, declaredInputs, checkSource } from '../../../../lib/modelCapabilities.js';
+import { withDerivedAspect } from '../../../../lib/crunKlingO1Reference.js';
 import { freeAllowanceOn as isFreeAllowanceOn, takeFreeJobDetailed } from '../../../../lib/freeJob.js';
 import { templateStartId } from '../../../../lib/templateStart.js';
+import { crunInputRefusal } from '../../../../lib/crunInputRefusal.js';
 import { readGenerationSources, resolveGenerationSources, sourceErrorStatus } from '../../../../lib/generationSources.js';
 import { mediaInputKey } from '../../../../lib/generationSourceSlots.mjs';
 import { envConfig as r2EnvConfig, isConfigured as r2IsConfigured } from '../../../../packages/adapters/r2.js';
@@ -100,6 +104,8 @@ export async function POST(req) {
     const maxCharge = maxChargeEnabled(process.env) ? requestedMaxCharge : undefined;
     let inputs = body && body.inputs;
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
+    // A private row is reached only through swap admission below, never by naming it.
+    if (isPrivateModelId(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
     }
@@ -113,6 +119,11 @@ export async function POST(req) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
     if (['template_swap', 'template_clip', 'swap'].filter(key => Object.hasOwn(body, key)).length > 1) return NextResponse.json({ error: 'template_source_conflict' }, { status: 400 });
+    // ADR-0351 amendment 23: a template run that names its prompt instead of carrying it gets the server's own text here, before every
+    // check below, so limits, refusals, the fingerprint and the stored inputs treat it exactly like a client-sent prompt.
+    const templatePrompt = resolveTemplatePrompt(body, modelId);
+    if (templatePrompt.error) return NextResponse.json({ error: templatePrompt.error }, { status: 400 });
+    if (templatePrompt.body !== body) { body = templatePrompt.body; inputs = body.inputs; }
     const hasTemplateSwap = Object.hasOwn(body, 'template_swap');
     const suppliedInputKeys = Object.keys(inputs);
     // A server-held template clip has its own gate (checkTemplateClipRequest); the template_id contract does not apply to it.
@@ -267,6 +278,10 @@ export async function POST(req) {
     if (rawKeys.length || rawAssets.length) {
         if (!consent) return NextResponse.json({ error: 'consent_required' }, { status: 400 });
     }
+    // The client still names the public offer; the server picks the row that is charged and dispatched (ADR-0351 amendment 21).
+    const swapDispatch = templateSwap ? await loadTemplateSwapDispatch(templateSwap.modelRow, cfg) : null;
+    if (swapDispatch && !swapDispatch.ok) return NextResponse.json({ error: 'catalog_lookup_failed' }, { status: 502 });
+    if (swapDispatch && isPrivateModelId(swapDispatch.row.id) && swapPeople === 2) return NextResponse.json({ error: 'template_swap_people_unsupported' }, { status: 400 });
     for (const slot of ['image','endImage','video','audio']) delete inputs[mediaInputKey(slot)];
 
     // 1. Look up the model in the catalog. The allowance column is asked for only when the flag is on, so a
@@ -274,7 +289,7 @@ export async function POST(req) {
     const freeAllowanceOn = isFreeAllowanceOn(process.env);
     let modelRow;
     try {
-        const rows = templateSwap ? [templateSwap.modelRow] : templateClip ? [templateClip.modelRow] : swap ? [swap.modelRow] : await select(
+        const rows = templateSwap ? [swapDispatch.row] : templateClip ? [templateClip.modelRow] : swap ? [swap.modelRow] : await select(
             'model_catalog',
             { columns: `id,provider,provider_endpoint,modality,credits_5s,gated_flag,active${freeAllowanceOn ? ',free_allowance_per_day' : ''}`, filter: `id=eq.${encodeURIComponent(modelId)}` },
             cfg,
@@ -319,6 +334,8 @@ export async function POST(req) {
             return NextResponse.json({ error: `inputs_key_not_allowed:${key}` }, { status: 400 });
         }
     }
+    const crunRefusal = crunInputRefusal(modelRow, inputs, body);
+    if (crunRefusal) return NextResponse.json({ error: crunRefusal }, { status: 400 });
     const providerKey = provider.key();
     if (!providerKey) return NextResponse.json({ error: 'gateway_not_configured' }, { status: 503 });
     // Active capabilities precede source signing/inspection. Both frames pass caller
@@ -348,7 +365,8 @@ export async function POST(req) {
     // refuse extras. Legacy records keep the shared-control filtering path.
     // Photo-to-video records that require a prompt while the create page calls it optional: fill an empty one.
     if (record.defaultPrompt && !(typeof inputs.prompt === 'string' && inputs.prompt.trim())) inputs = { ...inputs, prompt: record.defaultPrompt };
-    const modelInputs = record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) });
+    // A record that needs a frame shape (Crun Kling O1 reference) gets it from the uploaded video's own size, never from the client.
+    const modelInputs = withDerivedAspect(record, record.strictInputs ? inputs : declaredInputs(record, inputs, { serverMedia: !!(templateClip || templateSwap) }), sources);
     // Refuse before the debit anything the provider request cannot express at
     // the priced unit (a longer clip, an aspect ratio the model lacks, ...).
     const providerCheck = provider.check(record, modelRow, modelInputs);
@@ -473,7 +491,7 @@ export async function POST(req) {
     // after a lost acknowledgement ledger_debit finds the existing job by key.
     if (freeAllowanceOn && Number(modelRow.free_allowance_per_day) > 0) {
         const allowance = await takeFreeJobDetailed({
-            cfg, authId, userId, key: idempotencyKey, modelId, inputs: jobInputs,
+            cfg, authId, userId, key: idempotencyKey, modelId: templateSwap ? modelRow.id : modelId, inputs: jobInputs,
             limit: effectiveLimit, windowSeconds: RATE_WINDOW_SECONDS,
         });
         allowanceKind = allowance.kind;
@@ -501,7 +519,7 @@ export async function POST(req) {
             p_idempotency_key: idempotencyKey,
             p_credits: credits,
             p_reason: 'debit:generation',
-            p_model_id: modelId,
+            p_model_id: templateSwap ? modelRow.id : modelId,
             p_inputs: jobInputs,
             // Authoritative rate limit, counted under the same row lock as
             // the insert (0030). The RPC above is only the cheap early 429.
@@ -533,6 +551,11 @@ export async function POST(req) {
     if (spendLimit) return NextResponse.json(providerSpendBody(spendLimit), {
         status: spendLimit.status, headers: { 'retry-after': String(spendLimit.retryAfter) },
     });
+    // Two identical swaps can straddle activation or rollback and pick different private models: answer with the stored job.
+    if (templateSwap && debit?.ok === false && debit.code === 'IDEMPOTENCY_CONFLICT') {
+        const replay = await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() });
+        if (replay) return NextResponse.json(replay.body, { status: replay.status });
+    }
     if (!debit || debit.ok === false) {
         const status = debit?.code === 'IDEMPOTENCY_CONFLICT' || debit?.code === 'VIDEO_AGENT_IN_PROGRESS' ? 409
             : debit && debit.code === 'INSUFFICIENT_BALANCE' ? 402

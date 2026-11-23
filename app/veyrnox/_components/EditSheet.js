@@ -1,4 +1,5 @@
 'use client';
+import { pushJobHistory } from '../_lib/jobHistory';
 import { mixedShapes, shapeMismatch, shapeValue } from '../../../lib/videoShape.mjs';
 import { VideoShapeBadge } from './VideoShapeBadge';
 import { useI18n } from '../../../components/I18nProvider';
@@ -74,6 +75,10 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   }));
   const { items, smartCutSnapshot, smartCutApplied, editPast, editFuture } = editState;
   const [analyses, setAnalyses] = useState(() => new Map());
+  // job id -> whether its file has an audio track. The server refuses to join clips with and without sound,
+  // so it is read up front: Smart Cut analysis is paid, and must not run on a set that cannot be joined.
+  const [audioByJob, setAudioByJob] = useState(() => ({}));
+  const audioAsked = useRef(new Set());
   const addAnalysis = (jobId, analysis) => setAnalyses((map) => new Map(map).set(jobId, analysis));
   const [audioId, setAudioId] = useState('');
   const [offset, setOffset] = useState(0);
@@ -138,6 +143,17 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const undoEdit = () => setEditState(undoSmartCutEditState);
   const redoEdit = () => setEditState(redoSmartCutEditState);
 
+  useEffect(() => {
+    for (const jobId of new Set(items.map((x) => x.job_id))) {
+      if (!jobId || audioAsked.current.has(jobId)) continue;
+      audioAsked.current.add(jobId);
+      gatewayFetch(`/jobs/${encodeURIComponent(jobId)}/media-info`)
+        // null = could not be read: that never blocks (the server still checks), it only ends the wait.
+        .then((info) => setAudioByJob((current) => ({ ...current, [jobId]: typeof info?.has_audio === 'boolean' ? info.has_audio : null })))
+        .catch(() => setAudioByJob((current) => ({ ...current, [jobId]: null })));
+    }
+  }, [items]);
+
   const loaded = items.every((x) => x.duration != null);
   // A slowed clip runs `slow` times longer in the result (the server counts it the same way).
   const slowOf = (x) => (showSlow && x.slow > 1 ? x.slow : 1);
@@ -146,6 +162,13 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
   const slowNoAudio = slowedSource > 0 && !audioId;
   const slowTooLong = slowedSource > SLOW_MAX_SOURCE_S;
   const mixed = mixedShapes(items);
+  const audioFlags = items.map((x) => audioByJob[x.job_id]).filter((v) => typeof v === 'boolean');
+  const mixedAudio = audioFlags.some((v) => v !== audioFlags[0]);
+  // Until every clip's sound has been read, a pair could still turn out mixed: no paid step may start in that gap.
+  // Smart Cut's render ran on supplier steps; editing is Veyrnox.ai's own work, so Create (and the paid analysis that only
+  // feeds it) stay off until the own render replaces them. The free local plan still works.
+  const createPaused = smartCut;
+  const audioPending = items.length > 1 && items.some((x) => audioByJob[x.job_id] === undefined);
   const badRange = items.some((x) => x.duration != null && !(x.in_s >= 0 && x.out_s > x.in_s && x.out_s <= x.duration));
   const tooManyClips = items.length > MAX_CLIPS;
   const noop = items.length === 1 && !audioId && !captions && slowOf(items[0]) === 1 && loaded && items[0].in_s === 0 && items[0].out_s >= items[0].duration;
@@ -156,7 +179,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
     + items.reduce((n, x) => n + (slowOf(x) > 1 ? SLOW_UNITS_PER_SECOND * Math.ceil((x.out_s ?? 0) - x.in_s - 1e-9) : 0), 0);
   const units = Math.max(1, Math.ceil(output / UNIT_S), steps);
   const cost = credits5s != null && output > 0 ? credits5s * units : null;
-  const blocked = !items.length || !loaded || mixed || badRange || tooManyClips || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
+  const blocked = createPaused || !items.length || !loaded || mixed || mixedAudio || audioPending || badRange || tooManyClips || noop || output > MAX_OUTPUT_S || slowNoAudio || slowTooLong || cost == null || busy;
 
   useEffect(() => {
     if (confirmCreate && (cost == null || blocked)) setConfirmCreate(false);
@@ -176,7 +199,8 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
         method: 'POST',
         body: JSON.stringify({ model_id: 'clip-edit', idempotency_key: makeIdempotencyKey(), inputs }),
       });
-      onSubmitted({ job_id: r.job_id, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
+      pushJobHistory({ job_id: r.job_id, idempotent: r.idempotent, model_id: 'clip-edit', credits: cost });
+      onSubmitted({ job_id: r.job_id, idempotent: r.idempotent, credits: cost, balance_after: r.balance_after, name: t(pluralKey(t, locale, 'app.editor.sheet.job', items.length), { count: number(items.length) }) });
     } catch (e) {
       setError(e instanceof GatewayError ? e.code : INTERNAL_ERROR);
       setBusy(false);
@@ -204,13 +228,15 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 sm:px-6 sm:pb-6">
           {smartCut && <SmartCutWorkbench showText={showCaptions} items={items} output={output} showSlow={showSlow} disabled={busy} canUndo={editPast.length > 0} canRedo={editFuture.length > 0} onUndo={undoEdit} onRedo={redoEdit} />}
-          {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy || mixed} />}
+          {createPaused && <p role="status" className="mb-4 rounded-xl border border-vx-border bg-vx-base p-3 text-xs font-semibold leading-5 text-vx-fg-muted">{t('app.smartCut.create.paused')}</p>}
+          {smartCut && (mixed || mixedAudio) && <p role="alert" className="mb-4 rounded-xl border border-vx-danger/50 bg-vx-danger/10 p-3 text-xs font-semibold leading-5 text-vx-danger">{t(mixed ? 'app.editor.sheet.error.mixed_aspect' : 'app.editor.sheet.error.mixed_audio')}</p>}
+          {smartCut && <SmartCutAnalyse clips={items} analyses={analyses} onAnalysed={addAnalysis} disabled={busy || mixed || mixedAudio || audioPending || createPaused} />}
           {smartCut && <div id="smart-cut-panel" className="scroll-mt-4">
             <SmartCutPlanner
               clips={items}
               analyses={analyses.size ? analyses : null}
               disabled={busy}
-              planningDisabled={mixed}
+              planningDisabled={mixed || mixedAudio || audioPending}
               applyRevision={smartCutApplyRevision}
               onApply={applySmartCut}
               onUndo={smartCutSnapshot ? undoSmartCut : null}
@@ -265,6 +291,7 @@ export function EditSheet({ clips, audios, credits5s, onClose, onSubmitted, smar
 
           <div role="status" className="mt-3 text-sm min-h-[1.25rem]">
             {mixed && <span className="text-vx-danger">{t('app.editor.sheet.error.mixed_aspect')}</span>}
+            {!mixed && mixedAudio && <span className="text-vx-danger">{t('app.editor.sheet.error.mixed_audio')}</span>}
             {!mixed && output > MAX_OUTPUT_S && <span className="text-vx-danger">{t('app.editor.sheet.error.too_long', { limit: number(MAX_OUTPUT_S) })}</span>}
             {!mixed && badRange && <span className="text-vx-danger">{t('app.editor.sheet.error.clip_range')}</span>}
             {tooManyClips && <span className="text-vx-danger">{t('app.editor.sheet.error.too_many_clips', { limit: number(MAX_CLIPS) })}</span>}

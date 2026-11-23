@@ -1,3 +1,5 @@
+import { featureHref } from './featureRegistry';
+
 // First visit to Create: "What do you want to make first?" (one question, skippable, asked once per phone). Mirrors
 // app/veyrnox/_lib/firstGoal.js on the web; __tests__/firstGoal.test.ts checks both list the same goals. Slice 1 keeps
 // the answer on this phone only: a goal id, never a file, a prompt or a key.
@@ -20,8 +22,8 @@ export type FirstGoalTarget =
 // Where a goal leads: the starter form for a creation goal, another tab, or nowhere ("not sure" keeps the goal list).
 export function firstGoalTarget(goal: string): FirstGoalTarget {
     if (goal === 'image' || goal === 'video' || goal === 'audio') return { kind: 'create', goal };
-    if (goal === 'edit') return { kind: 'tab', href: '/editor' };
-    if (goal === 'publish') return { kind: 'tab', href: '/publish' };
+    if (goal === 'edit') return { kind: 'tab', href: featureHref('editor') as '/editor' };
+    if (goal === 'publish') return { kind: 'tab', href: featureHref('publish') as '/publish' };
     return { kind: 'stay' };
 }
 

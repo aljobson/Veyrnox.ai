@@ -121,8 +121,17 @@ describe('destination-aware catalog prices', () => {
 
 const source = (path: string) => readFileSync(resolve(__dirname, '..', path), 'utf8');
 
+test('Audio exposes the native Beat maker as a first-class studio', () => {
+    const audio = source('src/app/(app)/audio.tsx');
+    expect(audio).toContain("['yourMusic', 'beats', ...AUDIO_STUDIOS]");
+    expect(audio).toContain("const beats = mobileFeature('beats')");
+    expect(audio).toContain('icon={beats.icon}');
+    expect(audio).toContain("subtitle={t('beat.home.emptyBody')}");
+    expect(audio).toContain('router.push(beats.href as never)');
+});
+
 // Evaluate only the selected prop expression, without mounting a native screen or starting playback.
-function propExpression(file: string, tag: string, prop: string): string {
+function propExpression(file: string, tag: string, prop: string, contains?: string): string {
     const tree = ts.createSourceFile(file, source(file), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     let expression: string | undefined;
     const visit = (node: ts.Node) => {
@@ -130,7 +139,8 @@ function propExpression(file: string, tag: string, prop: string): string {
         if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && node.tagName.getText(tree) === tag) {
             const attribute = node.attributes.properties.find(item => ts.isJsxAttribute(item) && item.name.getText(tree) === prop);
             if (attribute && ts.isJsxAttribute(attribute) && attribute.initializer && ts.isJsxExpression(attribute.initializer)) {
-                expression = attribute.initializer.expression?.getText(tree);
+                const candidate = attribute.initializer.expression?.getText(tree);
+                if (candidate && (!contains || candidate.includes(contains))) expression = candidate;
             }
         }
         ts.forEachChild(node, visit);
@@ -145,8 +155,8 @@ test('hub subtitles and accessibility labels use singular/plural prices only whe
     const upperFirstSource = source(file).match(/^const upperFirst = (.+);$/m)![1];
     const formatter = ts.transpileModule(`const upperFirst = ${upperFirstSource};`, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
     const upperFirst = new Function(`${formatter}\nreturn upperFirst;`)();
-    const subtitle = new Function('credits', 'text', 'id', 'plural', 'upperFirst', `return ${propExpression(file, 'ListRow', 'subtitle')}`);
-    const label = new Function('credits', 'text', 'id', 'plural', 'rawText', `return ${propExpression(file, 'ListRow', 'accessibilityLabel')}`);
+    const subtitle = new Function('credits', 'text', 'id', 'plural', 'upperFirst', `return ${propExpression(file, 'ListRow', 'subtitle', 'credits')}`);
+    const label = new Function('credits', 'text', 'id', 'plural', 'rawText', `return ${propExpression(file, 'ListRow', 'accessibilityLabel', 'credits')}`);
     const text = { speech: { title: 'Speech', blurb: 'Read a script.' } };
     for (const [credits, price, priceLine] of [[null, null, null], [1, 'from 1 credit', 'From 1 credit'], [2, 'from 2 credits', 'From 2 credits']] as const) {
         expect(subtitle(credits, text, 'speech', plural, upperFirst)).toBe(priceLine === null ? 'Read a script.' : `Read a script.\n${priceLine}`);
@@ -235,4 +245,14 @@ test('speech studio takes priority and prices its actual catalog model; missing 
         expect(audioTarget('speech', models)).toEqual({ pathname: '/create/[modelId]', params: { modelId: cheaper.id } });
         expect(fromCredits(models, 'speech', false, true)).toBe(2);
     }
+});
+
+
+test('native dialogue takes priority and prices its exact model; unavailable retains fallback', () => {
+    const studio = model('elevenlabs-dialogue', 'Dialogue', 6);
+    const fallback = model('other-dialogue', 'Dialogue', 2);
+    expect(audioTarget('dialogue', [fallback, studio])).toEqual({ pathname: '/dialogue' });
+    expect(fromCredits([fallback, studio], 'dialogue', false, true)).toBe(6);
+    expect(fromCredits([studio], 'dialogue', false, false)).toBeNull();
+    expect(audioTarget('dialogue', [fallback, { ...studio, gated: true }])).toEqual({ pathname: '/create/[modelId]', params: { modelId: fallback.id } });
 });

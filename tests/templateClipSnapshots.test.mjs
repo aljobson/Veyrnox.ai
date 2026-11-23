@@ -22,12 +22,17 @@ function load(file, source, mocks) {
   return compiled.exports;
 }
 // Frozen before this work: mock translations, catalog and imported child components are stable.
-const FROZEN = { TemplateRecipe: 'b8266a3e7eccadda1ffcb7499f6bd6e887ac1a2765c2b279c5facba518b39e3f', UseTemplate: '19959a30ae93891dcbc91bcf5e17e84ad4cb84656b75f93ef828cea2c388740f', mobile: '8dee856206106ce25d35549dd4223150c7d35a113660f05c8a23ff8d5f269bac' };
+// The mobile baseline includes the keyboard-safe screen/form wrappers added for
+// landscape reachability. The feature-off content beneath those wrappers is unchanged.
+const FROZEN = { TemplateRecipe: 'b8266a3e7eccadda1ffcb7499f6bd6e887ac1a2765c2b279c5facba518b39e3f', UseTemplate: '19959a30ae93891dcbc91bcf5e17e84ad4cb84656b75f93ef828cea2c388740f', mobile: '50e80ffb1240e87921e72e05aa2a31e2502fc3197ece801eb3242d979e8b6789' };
 const digest = text => createHash('sha256').update(text).digest('hex');
 const versions = file => [readFileSync(file, 'utf8')];
 const webMocks = {
   './TemplateSwapBoundary.js': { useResolvedSwap: () => ({ offer: null, loading: false }) },
   './SwapAttemptStatus.js': { SwapAttemptStatus: () => null },
+  // The frozen markup is the revealed prompt; the hidden state has its own tests.
+  '../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) },
+  './TemplatePromptReady': { TemplatePromptReady: 'template-prompt-ready' },
   react: React, 'next/link': { __esModule: true, default: 'a' }, 'next/navigation': { useRouter: () => ({}) },
   '../../../components/I18nProvider.jsx': { useI18n: () => ({ t }) },
   '../../../lib/i18n/rich': { rich: value => value },
@@ -63,11 +68,13 @@ test('mobile template: flag-off render tree matches the frozen checkout', () => 
   const trees = versions(file).map(source => {
     let state = 0;
     const Component = load(file, source, {
-      react: { useEffect() {}, useState(initial) { const values = [preset, false, false, 0, preset.prompt, promptHelpers.templateClipPhotoPrompt(promptHelpers.TEMPLATE_CLIP_PROMPT, false), null, 0, null, [model], {}]; const i = state++; return [i < values.length ? values[i] : typeof initial === 'function' ? initial() : initial, () => {}]; } },
+      react: { useEffect() {}, useRef: current => ({ current }), useState(initial) { const values = [preset, false, false, 0, preset.prompt, promptHelpers.templateClipPhotoPrompt(promptHelpers.TEMPLATE_CLIP_PROMPT, false), null, 0, null, [model], {}]; const i = state++; return [i < values.length ? values[i] : typeof initial === 'function' ? initial() : initial, () => {}]; } },
       'react-native': { ScrollView: 'scroll', View: 'view' }, 'expo-router': { Stack: { Screen: 'screen' }, useLocalSearchParams: () => ({ id: preset.id }), useRouter: () => ({}) },
       '../../../lib/i18n': { t }, '../../../lib/i18n/translate': { rawText: value => value },
       '../../../components/ui': { Button: 'button', Card: 'card', Chip: 'chip', Text: 'text', TextField: 'field', themedStyles: () => ({}), useThemedStyles: () => ({}) },
       '../../../lib/templateClips': { useTemplateClipAvailable: () => null },
+      // The frozen tree is the revealed prompt; the hidden state has its own tests.
+      '../../../lib/templatePromptVisibility': { isVideoPreset: () => false, isOwnTemplatePrompt: () => false },
       '../../../lib/templateSwap/availability': { useSwapAvailability: () => null },
       '../../../lib/templateFidelity': { templateContract: () => undefined, templatePhotosUnavailable: () => false, templatePhotoHints: () => [] },
       '../../../lib/templateChoices': { templateModelEligible: () => true, templateOptions: () => ({ aspects: [], durations: [5], duration: 5 }) },

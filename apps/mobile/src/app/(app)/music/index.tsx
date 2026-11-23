@@ -1,7 +1,7 @@
 import { subscribeSongChanges } from '../../../lib/music/songChanges';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
 import { useAuth } from '../../../auth/AuthProvider';
 import { Button, ListRow, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { EmptyState } from '../../../components/EmptyState';
@@ -15,6 +15,7 @@ import type { MusicHook, MusicSongRow } from '../../../lib/music/types';
 import { t } from '../../../lib/i18n';
 import { useAnnouncement } from '../../../lib/useAnnouncement';
 import { ds } from '../../../theme';
+import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
 
 type Tab = 'songs' | 'history' | 'hooks';
 type Rows = readonly MusicSongRow[] | readonly MusicHook[];
@@ -64,11 +65,12 @@ export default function MusicLibrary() {
     const partial = !off && (hooksPartial || Object.values(results).some(r => r.state === 'error'));
     const open = (row: MusicSongRow) => router.push({ pathname: '/music/[id]', params: { id: row.id,
         ...(typeof row.revision === 'number' ? { revision: String(row.revision) } : {}) } } as never);
-    return <ScrollView style={s.screen} contentContainerStyle={s.content}
+    return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}>
         <Stack.Screen options={{ title: t('music.title') }} />
         {results.songs?.state === 'on' ? <>
             <Button label={t('music.create.title')} onPress={() => router.push('/music/create' as never)} />
+            <ListRow icon="pianoKeys" title={t('beat.title')} accessibilityLabel={t('beat.title')} onPress={() => router.push('/beats' as never)} />
             <ListRow icon="playlist" title={t('musicPlaylists.title')} accessibilityLabel={t('musicPlaylists.title')} onPress={() => router.push('/music/playlists' as never)} />
             <ListRow icon="usersThree" title={t('musicPublic.explore')} accessibilityLabel={t('musicPublic.explore')} onPress={() => router.push('/music/explore' as never)} />
             <ListRow icon="compass" title={t('musicDiscover.title')} accessibilityLabel={t('musicDiscover.title')} onPress={() => router.push('/music/discover' as never)} />
@@ -98,6 +100,6 @@ export default function MusicLibrary() {
             </View>) : (rows as readonly MusicSongRow[]).map(row => <ListRow key={row.id} title={row.title}
                 subtitle={row.workspace_name} accessibilityLabel={t('music.openNamed', { title: row.title })} onPress={() => open(row)} />)}
         </>}
-    </ScrollView>;
+    </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { padding: ds.space.lg, gap: ds.space.lg }, search: { gap: ds.space.sm } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.lg }, search: { gap: ds.space.sm } }));

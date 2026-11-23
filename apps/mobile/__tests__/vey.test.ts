@@ -31,8 +31,10 @@ describe('Vey is not a chat bot', () => {
     });
 
     test('search and the chat transcript do not present the chat as Vey', () => {
-        expect(read('lib', 'siteSearch.ts')).toContain("{ id: 'chat', titleKey: 'menu.chat', href: '/chat'");
-        expect(read('lib', 'siteSearch.ts')).not.toMatch(/srch\.s\.chat|keywords: '[^']*vey/);
+        const registry = read('lib', 'featureRegistry.ts');
+        const search = read('lib', 'siteSearch.ts');
+        expect(registry).toContain("{ id: 'chat', titleKey: 'menu.chat', href: '/chat'");
+        expect(`${registry}\n${search}`).not.toMatch(/srch\.s\.chat|keywords: '[^']*vey/);
         expect(read('app', '(app)', 'chat', '[id].tsx')).not.toMatch(/'Vey'/);
     });
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
@@ -8,65 +9,83 @@ import { LEGAL_LINKS } from '../../lib/account';
 import { webParityPacks, parseGenerationCatalog, renewalTerms, toDisplayPackages, type GenerationCatalogPlan } from '../../lib/billing';
 import { bestPackId, packSavingPercent, planName, typicalCosts } from '../../lib/creditOffers';
 import { fetchCatalog } from '../../lib/media';
-import { t } from '../../lib/i18n';
+import { formatLocale, t } from '../../lib/i18n';
 import type { PaywallReason } from '../../lib/paywallPrompt';
+import { ds } from '../../theme';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 import { VeyCharacter } from '../VeyCharacter';
 import { VeyCardPeek } from '../VeyCardPeek';
 import { PackCard, PackTaxNote } from '../credits/PackCard';
 import { PlanCards, initialCadence, type Cadence } from '../credits/PlanCards';
+import { PurchaseState } from '../credits/PurchaseState';
+import { PurchaseOutcomeState } from '../credits/PurchaseOutcomeState';
 import { usePaywallFeedback } from './PaywallFeedback';
+import { modalSafePadding } from '../../lib/modalLayout';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     reason: PaywallReason; onClose: () => void; onOptions: () => void; onLegal: (index: number) => void;
 }) {
     const s = useThemedStyles(sheets);
-    const { height } = useWindowDimensions();
+    const { height, fontScale } = useWindowDimensions();
+    const insets = useOptionalSafeAreaInsets();
     const { api } = useAuth();
     const billing = useBilling();
-    const purchase = useStorePurchase();
+    const { refreshSales } = billing;
+    const { abortPreparing, actions, busy, operation, start: startPurchase, viewState } = useStorePurchase();
     const [observedOpId, setObservedOpId] = useState<number | null>(null);
     const observed = useRef<number | null>(null);
-    const outcome = purchase.operation.opId === observedOpId ? purchase.operation.outcome : null;
-    const feedback = usePaywallFeedback(reason, outcome, purchase.busy, onClose);
+    const outcome = operation.opId === observedOpId ? operation.outcome : null;
+    const feedback = usePaywallFeedback(reason, outcome, busy, onClose);
     const [mode, setMode] = useState<'packs' | 'plans'>('packs');
     const [chosenId, setChosenId] = useState<string | null>(null);
     const [chosenPlanId, setChosenPlanId] = useState<string | null>(null);
     const [cadenceChoice, setCadence] = useState<Cadence | null>(null);
     const [catalog, setCatalog] = useState<GenerationCatalogPlan[]>([]);
     const [costs, setCosts] = useState<ReturnType<typeof typicalCosts> | null>(null);
-    useEffect(() => { void billing.refreshSales(); }, [billing.refreshSales]);
+    useEffect(() => { void refreshSales(); }, [refreshSales]);
     useEffect(() => {
         let live = true;
         void api.request<unknown>('/api/credit-subscription-plans').then(value => { if (live) setCatalog(parseGenerationCatalog(value)); }).catch(() => {});
         void fetchCatalog().then(models => { if (live) setCosts(typicalCosts(models)); }).catch(() => {});
-        return () => { live = false; if (observed.current !== null) purchase.abortPreparing(observed.current); };
-    }, [api, purchase.abortPreparing]);
+        return () => { live = false; if (observed.current !== null) abortPreparing(observed.current); };
+    }, [api, abortPreparing]);
     const packPackages = useMemo(() => (billing.offerings?.all.credits?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const planPackages = useMemo(() => (billing.offerings?.all.generation?.availablePackages ?? []).filter(pkg => pkg?.product), [billing.offerings]);
     const packs = useMemo(() => webParityPacks(toDisplayPackages(packPackages)), [packPackages]);
     const plans = useMemo(() => toDisplayPackages(planPackages).filter(plan => plan.generationPlan !== null && plan.interval !== null), [planPackages]);
     const subscriptionsOpen = billing.status === 'ready' && plans.length > 0;
-    const showToggle = subscriptionsOpen && !billing.paidAccess;
+    const showToggle = subscriptionsOpen && !billing.generationActive;
     const showingPlans = showToggle && (mode === 'plans' || packs.length === 0);
     const hasProducts = billing.status === 'ready' && (packs.length > 0 || showToggle);
+    const subscriberOnly = billing.status === 'ready' && billing.generationActive && packs.length === 0;
+    const storeEmpty = billing.status === 'ready' && packPackages.length === 0 && planPackages.length === 0;
+    const canRetryStore = !subscriberOnly && (billing.status === 'unavailable' || storeEmpty);
     const cadence = cadenceChoice ?? initialCadence(plans);
     const chosenPack = packs.find(pack => pack.id === chosenId) ?? packs.find(pack => pack.id === bestPackId(packs)) ?? packs[0];
     const chosenPlan = plans.find(plan => plan.id === chosenPlanId && plan.interval === cadence)
         ?? (cadenceChoice === null ? plans.find(plan => plan.generationPlan === 'starter' && plan.interval === cadence) ?? plans.find(plan => plan.interval === cadence) : null);
-    const nativeBusy = purchase.operation.phase === 'store';
+    const nativeBusy = viewState.tag === 'store';
+    const storeSubscription = billing.generationSource === 'store' || billing.generationSource === 'both';
+    const webSubscription = billing.generationSource === 'web' || billing.generationSource === 'both';
+    const subscriptionPeriod = billing.generationPeriodEnd ? t('creditsPage.periodEnd', {
+        date: new Date(billing.generationPeriodEnd).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }),
+    }) : null;
     const selected = showingPlans ? chosenPlan : chosenPack;
-    const canBuy = billing.canPurchase && (!showingPlans || billing.generationPurchaseReady) && !!selected && !purchase.busy;
+    const canBuy = actions.buy && billing.canPurchase && (!showingPlans || billing.generationPurchaseReady) && !!selected && !busy;
     const copy = {
         first: { title: t('credits.paywall.firstTitle'), body: t('credits.paywall.firstBody') },
         low: { title: t('credits.paywall.lowTitle'), body: t('credits.paywall.lowBody') },
         depleted: { title: t('credits.paywall.emptyTitle'), body: t('credits.paywall.emptyBody') },
     }[reason];
+    const unavailableCopy = billing.status === 'off' ? t('billing.paywall.unavailableBuild')
+        : billing.canRestore ? t('credits.hardPaywall.unavailable')
+        : `${t('credits.subscriptions.unavailable')} ${t('credits.unavailable')}`;
     const primaryLabel = showingPlans ? t('credits.paywall.buyPlan', { plan: planName(chosenPlan?.generationPlan ?? ''),
         price: chosenPlan?.priceString ?? '', period: t(chosenPlan?.interval === 'year' ? 'credits.paywall.year' : 'credits.paywall.month') })
         : t('credits.paywall.buyPack', { credits: chosenPack?.credits ?? 0, price: chosenPack?.priceString ?? '' });
     function start(request: PurchaseRequest) {
-        const started = purchase.start(request);
+        const started = startPurchase(request);
         if (typeof started === 'string') return;
         observed.current = started.opId; setObservedOpId(started.opId);
     }
@@ -85,38 +104,51 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
         if (phase !== 'idle' && phase !== 'done') return;
         action(); feedback.choose();
     }
-    return <Modal transparent visible animationType={feedback.still ? 'none' : 'fade'} onRequestClose={onClose}>
-        <View style={s.backdrop} onAccessibilityEscape={onClose}>
-            <View style={s.card} accessibilityViewIsModal>
+    function retryStore() {
+        billing.retryOfferings();
+        void billing.refreshSales();
+    }
+    const close = () => { if (actions.close) onClose(); };
+    const short = height < 500;
+    return <Modal transparent visible animationType={feedback.still ? 'none' : 'fade'} onRequestClose={close}>
+        <View style={[s.backdrop, modalSafePadding(insets)]} onAccessibilityEscape={close}>
+            <View testID="purchase-paywall" style={[s.card, { maxHeight: Math.max(240, height - insets.top - insets.bottom - 32) }]} accessibilityViewIsModal>
                 <ScrollView style={s.scroll} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
                     <View style={s.vey} pointerEvents={nativeBusy ? 'none' : 'auto'} accessibilityElementsHidden={nativeBusy} importantForAccessibility={nativeBusy ? 'no-hide-descendants' : 'auto'}>
-                        <VeyCharacter width={120} interactive={!nativeBusy} mood={feedback.mood} />
+                        <VeyCharacter width={short || fontScale >= 1.3 ? 72 : 120} interactive={!nativeBusy} mood={feedback.mood} />
                     </View>
                     <Text variant="title1" accessibilityRole="header">{copy.title}</Text>
                     {!(showingPlans && reason === 'depleted') ? <Text tone="secondary">{copy.body}</Text> : null}
+                    {billing.generationActive ? <View style={s.subscriber}>
+                        <Text variant="bodyStrong">{t('credits.subscriptions.active')}</Text>
+                        {subscriptionPeriod ? <Text variant="footnote" tone="secondary">{subscriptionPeriod}</Text> : null}
+                    </View> : null}
                     {hasProducts ? <>
                         {showToggle ? <View style={s.toggle} accessibilityRole="tablist">
                             {(['packs', 'plans'] as const).map(value => <Button key={value} variant={showingPlans === (value === 'plans') ? 'primary' : 'secondary'}
-                                accessibilityRole="tab" accessibilityState={{ selected: showingPlans === (value === 'plans'), disabled: purchase.busy }}
-                                disabled={purchase.busy} containerStyle={s.tab} label={t(value === 'packs' ? 'credits.paywall.packTab' : 'credits.paywall.planTab')}
+                                accessibilityRole="tab" accessibilityState={{ selected: showingPlans === (value === 'plans'), disabled: busy }}
+                                disabled={busy} containerStyle={s.tab} label={t(value === 'packs' ? 'credits.paywall.packTab' : 'credits.paywall.planTab')}
                                 onPress={() => choose(() => setMode(value))} />)}
                         </View> : null}
                         {showingPlans ? <>
                             <PlanCards plans={plans} packs={packs} credits={new Map(catalog.map(plan => [plan.id, plan.credits]))}
-                                cadence={cadence} chosenId={chosenPlan?.id} disabled={purchase.busy}
+                                cadence={cadence} chosenId={chosenPlan?.id} disabled={busy}
                                 onCadence={next => choose(() => { setCadence(next); setChosenPlanId(null); })}
                                 onChoose={id => choose(() => setChosenPlanId(id))} />
                             {chosenPlan?.interval ? <Text variant="caption" tone="tertiary" accessibilityLanguage="en">{renewalTerms(chosenPlan.interval, chosenPlan.priceString, Platform.OS === 'ios' ? 'ios' : 'android')}</Text> : null}
-                        </> : <>
+                        </> : <View accessibilityRole="radiogroup" accessibilityLabel={copy.title} style={s.packGroup}>
                             {packs.map(pack => <PackCard key={pack.id} compact selectionMode="radio" selected={pack.id === chosenPack?.id}
                                 pack={pack} best={pack.id === bestPackId(packs)} saving={packSavingPercent(pack, packs)} costs={costs}
-                                disabled={purchase.busy} onPress={() => choose(() => setChosenId(pack.id))}>
+                                disabled={busy} onPress={() => choose(() => setChosenId(pack.id))}>
                                 {pack.id === chosenPack?.id ? <VeyCardPeek /> : null}
                             </PackCard>)}
                             <Text variant="caption" tone="tertiary">{t('credits.paywall.packsNeverExpire')}</Text>
-                        </>}
-                    </> : null}
-                    {feedback.message ? <Text tone={outcome?.kind === 'error' ? 'danger' : 'secondary'}>{feedback.message}</Text> : null}
+                        </View>}
+                    </> : subscriberOnly ? null : <PurchaseState kind={billing.status === 'loading' ? 'loading' : 'unavailable'} text={billing.status === 'loading' ? t('common.loading') : unavailableCopy}>
+                        {canRetryStore ? <Button variant="secondary" label={t('credits.hardPaywall.retry')} disabled={busy} onPress={retryStore} /> : null}
+                    </PurchaseState>}
+                    <PurchaseOutcomeState outcome={outcome} />
+                    {busy && operation.kind === 'restore' ? <PurchaseState kind="restoring" text={t('projectDocument.restoring')} /> : null}
                 </ScrollView>
                 <View style={s.footer}>
                     {hasProducts ? <>
@@ -124,16 +156,17 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
                         <Button label={primaryLabel} disabled={!canBuy} onPress={buy} />
                     </> : null}
                     <ScrollView style={{ maxHeight: height * 0.3 }} contentContainerStyle={s.actions}>
-                        <Button variant="secondary" label={t('credits.paywall.allOptions')} disabled={nativeBusy} onPress={onOptions} />
-                        <Button variant="tertiary" label={t('credits.paywall.later')} accessibilityState={{ busy: nativeBusy }} disabled={nativeBusy} onPress={onClose} />
-                        {hasProducts ? <>
-                            <View style={s.legal}>
-                                {LEGAL_LINKS.slice(0, 2).map((item, index) => <Button key={item.route} variant="tertiary" accessibilityRole="link"
-                                    label={t(item.labelKey)} disabled={nativeBusy} onPress={() => onLegal(index)} />)}
-                                <Button variant="tertiary" label={t('credits.restore')} disabled={purchase.busy || !billing.canRestore} onPress={() => start({ kind: 'restore' })} />
-                            </View>
-                            <PackTaxNote />
-                        </> : null}
+                        <Button variant="tertiary" label={t('credits.paywall.allOptions')} disabled={!actions.manage} onPress={onOptions} />
+                        {storeSubscription && billing.managementURL ? <Button variant="tertiary" accessibilityRole="link" label={t('billing.paywall.manageStore')}
+                            disabled={!actions.manage} onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} /> : null}
+                        {webSubscription ? <Button variant="tertiary" label={t('billing.paywall.manageWeb')} disabled={!actions.manage} onPress={onOptions} /> : null}
+                        <Button variant="tertiary" label={t('credits.paywall.later')} accessibilityState={{ busy: !actions.close }} disabled={!actions.close} onPress={close} />
+                        <View style={s.legal}>
+                            {LEGAL_LINKS.slice(0, 2).map((item, index) => <Button key={item.route} variant="tertiary" accessibilityRole="link"
+                                label={t(item.labelKey)} disabled={!actions.manage} onPress={() => onLegal(index)} />)}
+                            {billing.canRestore ? <Button variant="tertiary" label={t('credits.restore')} loading={busy && operation.kind === 'restore'} disabled={!actions.restore || busy} onPress={() => start({ kind: 'restore' })} /> : null}
+                        </View>
+                        {hasProducts ? <PackTaxNote /> : null}
                     </ScrollView>
                 </View>
             </View>
@@ -141,11 +174,13 @@ export function PaywallSheet({ reason, onClose, onOptions, onLegal }: {
     </Modal>;
 }
 const sheets = themedStyles(p => ({
-    backdrop: { flex: 1, justifyContent: 'center', padding: 16, backgroundColor: p.scrim },
-    card: { maxHeight: '95%', flexShrink: 1, borderRadius: 20, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1, overflow: 'hidden' },
+    backdrop: { flex: 1, justifyContent: 'center', backgroundColor: p.scrim },
+    card: { width: '100%', maxWidth: 720, alignSelf: 'center', maxHeight: '95%', flexShrink: 1, borderRadius: 20, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated1, overflow: 'hidden' },
     scroll: { flexShrink: 1 }, content: { padding: 16, gap: 12 }, vey: { alignItems: 'center' },
     footer: { padding: 12, gap: 4, borderTopWidth: 1, borderColor: p.borderSubtle },
     toggle: { flexDirection: 'row', gap: 8 }, tab: { flex: 1 },
+    packGroup: { gap: ds.space.md },
     actions: { gap: 4 },
+    subscriber: { gap: ds.space.xs, padding: ds.space.md, borderRadius: ds.radius.md, borderWidth: 1, borderColor: p.borderSubtle, backgroundColor: p.bgElevated2 },
     legal: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' },
 }));

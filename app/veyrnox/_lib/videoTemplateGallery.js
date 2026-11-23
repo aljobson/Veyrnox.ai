@@ -32,17 +32,38 @@ export const VIDEO_TEMPLATE_CAP = 150;
 // cannot produce the scene, and two paid swap tests failed (original man left in the wide shots; then the scene was lost). Link still resolves.
 // Hidden 2026-11-21 (owner, "only templates which work"): community-skyline-flamingo-prank, community-drive-thru-dialogue, community-skyline-terrace-groove,
 // community-subway-mascot-dance and community-cartoon-puppet-swap. Their short prompts depend on a source clip that image-to-video never receives. Links still resolve.
+// Swap templates proven before listing (owner, 2026-11-21, "only have templates which work"; ADR-0351 amendment 20). Each passed a paid
+// Kling O1 run with a real photo and a shot-by-shot comparison with its source clip. They run on the swap path, which supplies that clip.
+// An id joins this list only after the same test. tests/videoTemplateCap.test.mjs requires each one to be a registered swap clip.
+export const TESTED_SWAP_GALLERY_TEMPLATE_IDS = Object.freeze([
+  'community-action-hero-strut', 'community-alleyway-identity-swap', 'community-apocalypse-lounge',
+  'community-arctic-water-pour', 'community-ballroom-dance-switch', 'community-ballroom-tuxedo-shift',
+  'community-beachside-dance', 'community-black-dress-walk', 'community-blonde-sport-set',
+  'community-bottle-topple-kick', 'community-brooklyn-bridge-groove', 'community-burgundy-stride',
+  'community-cardigan-groove', 'community-cash-burner', 'community-ceiling-fan-transition',
+  'community-chandelier-lounge-performance', 'community-city-plaza-dance', 'community-costume-basketball-swap',
+  'community-currency-phone-call', 'community-equestrian-sunset-gallop', 'community-extreme-pizza-freefall',
+  'community-festival-stage-presence', 'community-folding-ancient-city', 'community-formal-dance-swap',
+  'community-gentleman-branch-chop', 'community-golden-gown-walk', 'community-identity-swap',
+  'community-kitchen-dance-swap', 'community-marble-hallway-pose', 'community-marble-vanity-mirror',
+  'community-metropolitan-crosswalk', 'community-midnight-city-shuffle', 'community-minimalist-cafe-swap',
+  'community-mirror-flip-transition', 'community-natural-face-swap', 'community-neon-selfie-swap',
+  'community-nightlife-dj-set', 'community-noir-espionage-flow', 'community-parkside-dance-reimagined',
+  'community-party-dancer-swap', 'community-private-jet-swap', 'community-retro-housewife-dance',
+  'community-retro-tracksuit-groove', 'community-skyline-rhythm-walk', 'community-skyscraper-ledge-spin',
+  'community-sour-drink-reaction', 'community-street-dance-recast', 'community-street-dance-swap',
+  'community-street-dancer-recast', 'community-street-style-strut', 'community-suit-walk',
+]);
+
+// Locked 2026-11-21 (owner, "these are the working templates"): only templates with a passed paid test stay listed. Hidden, links still resolve:
+// community-explosive-exit, animal-pov-to-the-club, car-sky-fall, desert-rider, community-pet-affection-reveal, seedance-anothers-opinion,
+// seedance-quick-change, community-synchronized-pet-portrait, community-dramatic-office-outburst and community-modern-listing-dolly.
 export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
-  'community-explosive-exit',
-  'community-mansion-raid-swap', 'animal-pov-to-the-club',
-  'car-sky-fall', 'desert-rider', 'community-pet-affection-reveal',
-  'seedance-anothers-opinion',
-  'seedance-quick-change', 'community-championship-slap-duel',
+  ...TESTED_SWAP_GALLERY_TEMPLATE_IDS,
+  'community-mansion-raid-swap', 'community-championship-slap-duel',
   'community-truck-window-confrontation', 'community-street-shuffle-walk',
-  'community-urban-dance-walk',
-  'community-london-gentleman-walk', 'community-synchronized-pet-portrait', 'community-dramatic-office-outburst',
+  'community-urban-dance-walk', 'community-london-gentleman-walk',
   'community-midnight-forest-run', 'community-midnight-sports-drive', 'community-boardwalk-dance-routine',
-  'community-modern-listing-dolly',
   'community-canyon-groove',
 ]);
 
@@ -51,14 +72,15 @@ export const VIDEO_GALLERY_TEMPLATE_IDS = Object.freeze([
 // seedanceLongTemplates runtime key is on (lib/seedanceLongTemplates.js, templates.js galleryVideoPresets); impact and
 // cake-in-the-fridge stay out (over 20,000), and jellyfish-airlines (kie's copyright filter refused it in the 2026-11-20
 // probe, nothing charged; runnable by link). They count toward VIDEO_TEMPLATE_CAP when listed.
+// Hidden 2026-11-21 (owner, "only templates which work"): sea-snakes and community-parkour-vault-shift were weak or failed a paid test; thrille, underground-lab-transformation,
+// the-spirit and office-kitchen name or depict outside properties or real people; community-subway-combat-strike is a male-only gun fight. Links still resolve.
+// Locked 2026-11-21 (owner, "these are the working templates"): the 15 Seedance templates the owner accepted after paid runs. Hidden, links still resolve:
+// trick-or-skin, seedance-rescue-myself, ruins-escape-run, born-from-sand, community-shockwave-horizon-shift, community-dragon-rider-encounter,
+// community-dragon-awakening, seedance-glass-cube, theater-ceiling-horror, ghost-makeover, curious-garden-journey, the-wrong-one, holiday-heist-run,
+// enchanted-forest-selfie, pizzeria-hide-and-seek, seedance-subway-fight, rooftop-agent-pursuit, sm-brand-new-day, ocean-car-sinking and freefall.
 export const LONG_PROMPT_GALLERY_TEMPLATE_IDS = Object.freeze([
-  'trick-or-skin', 'seedance-rescue-myself', 'ruins-escape-run', 'born-from-sand', 'community-shockwave-horizon-shift',
-  'community-dragon-rider-encounter', 'community-dragon-awakening', 'seedance-glass-cube', 'theater-ceiling-horror',
-  'ghost-makeover', 'pumpkin-guardian', 'seedance-blocked-light', 'curious-garden-journey', 'the-wrong-one', 'holiday-heist-run',
-  'enchanted-forest-selfie', 'fashion-halloween', 'pizzeria-hide-and-seek', 'seedance-subway-fight', 'x-ray-matter',
-  'reflection-in-the-mirror', 'dandelion-ball', 'rooftop-agent-pursuit', 'game-character-rig', 'sm-brand-new-day',
-  'seedance-roof-jump', 'window-explode', 'ocean-car-sinking', 'seedance-bunny-taxi', 'the-crown',
-  'office-kitchen', 'dragon-lord', 'studio-ballerina-turns', 'community-subway-combat-strike', 'noir-film', 'the-spirit',
-  'underground-lab-transformation', 'freefall', 'sea-snakes', 'seedance-quick-change-2', 'community-parkour-vault-shift',
-  'thrille',
+  'pumpkin-guardian', 'seedance-blocked-light', 'fashion-halloween', 'x-ray-matter',
+  'reflection-in-the-mirror', 'dandelion-ball', 'game-character-rig',
+  'seedance-roof-jump', 'window-explode', 'seedance-bunny-taxi', 'the-crown',
+  'dragon-lord', 'studio-ballerina-turns', 'noir-film', 'seedance-quick-change-2',
 ]);

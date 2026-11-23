@@ -10,6 +10,7 @@ const binding = new Set<string>(BINDING_ENGLISH_KEYS);
 const appKeys = Object.keys(en).filter(key => !webKeys.includes(key));
 const slots = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 const complete = Object.entries(APP_CATALOGS) as [LocaleCode, Record<string, string>][];
+const studioKeys = ['studio.eyebrow', 'studio.summary', 'studio.projectsBody', 'studio.beatsBody', 'tabs.studio'] as const;
 // A suffix alone is not a plural family: share.review.one is an ordinary label.
 const bases = Object.keys(en).filter(key => key.endsWith('.one') && Object.hasOwn(en, key.slice(0, -4) + '.other')).map(key => key.slice(0, -4));
 const pluralBase = (key: string) => {
@@ -22,9 +23,22 @@ test('all eleven languages are enabled in LANGUAGES order with complete app cata
     expect(ACTIVE_LOCALES).toEqual(LANGUAGES.map(language => language.code));
     expect(ACTIVE_LOCALES).toEqual(['en', ...complete.map(([locale]) => locale)]);
 });
+test.each(complete)('%s owns all Studio directory copy without English fallback', (_locale, own) => {
+    for (const key of studioKeys) expect(Object.hasOwn(own, key)).toBe(true);
+});
+test.each(complete)('%s names Clip Finder locally in its 720p blocker', (_locale, own) => {
+    expect(own['editorClips.blocker.resolution']).toContain(own['editorClips.title']);
+});
+test.each(complete)('%s owns the approximate editor preview status', (_locale, own) => {
+    expect(own['editor.previewApproximate']).toBeDefined();
+    expect(own['editor.previewApproximate']).not.toBe(en['editor.previewApproximate']);
+});
+test('Studio summary only promises workspaces available in every build', () => {
+    expect(en['studio.summary']).not.toMatch(/\bfilm\b/i);
+});
 test('Japanese omits all unused one forms but retains ordinary one labels', () => {
     const unused = Object.keys(APP_CATALOGS.de).filter(key => key.endsWith('.one') && pluralBase(key));
-    expect(unused).toHaveLength(101);
+    expect(unused).toHaveLength(115);
     expect(Object.keys(APP_CATALOGS.ja).sort()).toEqual(Object.keys(APP_CATALOGS.de).filter(key => !unused.includes(key)).sort());
     expect(APP_CATALOGS.ja['share.review.one']).toBeDefined();
     expect(new Intl.PluralRules('ja').resolvedOptions().pluralCategories).toEqual(['other']);
@@ -99,6 +113,15 @@ test.each([
     }
 });
 
+
+test('Portuguese dialogue copy uses the Brazilian catalog register', () => {
+    expect(APP_CATALOGS.pt['dialogue.resetCast']).toBe('Redefinir vozes');
+    expect(APP_CATALOGS.pt['dialogue.accepted']).toBe('Seu diálogo está na biblioteca.');
+    expect(APP_CATALOGS.pt['dialogue.tooLong']).toBe('O roteiro completo deve ter no máximo 1000 caracteres.');
+    expect(APP_CATALOGS.pt['dialogue.characters.other']).toBe('{count} de {max} caracteres');
+    const copy = Object.entries(APP_CATALOGS.pt).filter(([key]) => key.startsWith('dialogue.')).map(([, value]) => value).join(' ');
+    expect(copy).not.toMatch(/guião|Repor|carateres|hífenes/);
+});
 test('Korean shortened sound announcement preserves both name particle forms and slots', () => {
     const template = '{time}에 {name}을(를) 추가하고 동영상과 함께 끝나도록 줄였습니다.';
     expect(CATALOGS.ko!['editorAudioTools.addedTrimmed']).toBe(template);

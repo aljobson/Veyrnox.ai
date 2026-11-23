@@ -77,7 +77,7 @@ import area_deleteCreation from './en/deleteCreation';
 import area_deleteaccount from './en/deleteaccount';
 import area_dev from './en/dev';
 import area_developers from './en/developers';
-import area_devs1editor from './en/devs1editor';
+import area_dialogue from './en/dialogue';
 import area_drafts from './en/drafts';
 import area_draw from './en/draw';
 import area_edit from './en/edit';
@@ -85,16 +85,23 @@ import area_editor from './en/editor';
 import area_editorAi from './en/editorAi';
 import area_editorAudioTools from './en/editorAudioTools';
 import area_editorCaptionTools from './en/editorCaptionTools';
+import area_editorClips from './en/editorClips';
 import area_editorCore from './en/editorCore';
 import area_editorEditGate from './en/editorEditGate';
 import area_editorExportRefusal from './en/editorExportRefusal';
+import area_editorFont from './en/editorFont';
+import area_editorLocalExport from './en/editorLocalExport';
 import area_editorLook from './en/editorLook';
+import area_editorMotion from './en/editorMotion';
+import area_editorNativeMotion from './en/editorNativeMotion';
+import area_editorPack from './en/editorPack';
+import area_editorPersonMask from './en/editorPersonMask';
 import area_editorProjects from './en/editorProjects';
 import area_editorSave from './en/editorSave';
+import area_editorScenes from './en/editorScenes';
 import area_editorServerExport from './en/editorServerExport';
 import area_editorSimple from './en/editorSimple';
 import area_editorSpeech from './en/editorSpeech';
-import area_editorSpike from './en/editorSpike';
 import area_editorText from './en/editorText';
 import area_editorTools from './en/editorTools';
 import area_editorVoiceover from './en/editorVoiceover';
@@ -227,6 +234,7 @@ import area_srch from './en/srch';
 import area_start from './en/start';
 import area_stem from './en/stem';
 import area_stems from './en/stems';
+import area_studio from './en/studio';
 import area_studioSkills from './en/studioSkills';
 import area_tabs from './en/tabs';
 import area_team from './en/team';
@@ -326,7 +334,7 @@ const catalog = {
     ...area_deleteaccount,
     ...area_dev,
     ...area_developers,
-    ...area_devs1editor,
+    ...area_dialogue,
     ...area_drafts,
     ...area_draw,
     ...area_edit,
@@ -334,16 +342,23 @@ const catalog = {
     ...area_editorAi,
     ...area_editorAudioTools,
     ...area_editorCaptionTools,
+    ...area_editorClips,
     ...area_editorCore,
     ...area_editorEditGate,
     ...area_editorExportRefusal,
+    ...area_editorFont,
+    ...area_editorLocalExport,
     ...area_editorLook,
+    ...area_editorMotion,
+    ...area_editorNativeMotion,
+    ...area_editorPack,
+    ...area_editorPersonMask,
     ...area_editorProjects,
     ...area_editorSave,
+    ...area_editorScenes,
     ...area_editorServerExport,
     ...area_editorSimple,
     ...area_editorSpeech,
-    ...area_editorSpike,
     ...area_editorText,
     ...area_editorTools,
     ...area_editorVoiceover,
@@ -476,6 +491,7 @@ const catalog = {
     ...area_start,
     ...area_stem,
     ...area_stems,
+    ...area_studio,
     ...area_studioSkills,
     ...area_tabs,
     ...area_team,

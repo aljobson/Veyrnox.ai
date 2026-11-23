@@ -11,7 +11,7 @@ import { action, button, input } from './beatStyles';
 
 const viewModes = ['song', 'pattern'];
 const cycleFields = ['start', 'end'];
-export default function BeatTransport({ doc, edit, selectPattern, playing, loading, toggle, clear, announce }) {
+export default function BeatTransport({ doc, edit, selectPattern, playing, loading, toggle, clear, announce, patternPanel = false }) {
   const { t } = useI18n();
   const [bpmDraft, setBpmDraft] = useState(null);
   const [cycleDrafts, setCycleDrafts] = useState({ start: null, end: null });
@@ -97,7 +97,7 @@ export default function BeatTransport({ doc, edit, selectPattern, playing, loadi
     <div className="flex flex-wrap items-center gap-3">
       <div role="tablist" aria-label={t('app.music.beat.ui.patterns')} className="flex gap-1">
         {BEAT_LIMITS.patterns.map((slot, index) => <button key={slot} role="tab" id={`pattern-${slot}`}
-          aria-selected={doc.currentPattern === slot} aria-controls="beat-pattern"
+          aria-selected={doc.currentPattern === slot} aria-controls={patternPanel ? 'beat-pattern' : undefined}
           tabIndex={doc.currentPattern === slot ? 0 : -1} className={doc.currentPattern === slot ? action : button}
           onClick={() => pattern(slot)} onKeyDown={(e) => {
             const direction = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;

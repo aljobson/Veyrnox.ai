@@ -3582,10 +3582,46 @@
     "ratio": 2
   },
   {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Tonalidad",
+    "ratio": 3
+  },
+  {
     "id": "music.create.keepMine",
     "english": "Keep mine",
     "translation": "Conservar la mía",
     "ratio": 1.78
+  },
+  {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Masculino",
+    "ratio": 2.25
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "Desactivada",
+    "ratio": 3.67
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Máxima",
+    "ratio": 2
   },
   {
     "id": "musicActions.action.reload",
@@ -3690,6 +3726,18 @@
     "ratio": 2.67
   },
   {
+    "id": "beat.pattern.on",
+    "english": "On",
+    "translation": "Activado",
+    "ratio": 4
+  },
+  {
+    "id": "beat.pattern.off",
+    "english": "Off",
+    "translation": "Desactivado",
+    "ratio": 3.67
+  },
+  {
     "id": "beat.play",
     "english": "Play",
     "translation": "Reproducir",
@@ -3712,6 +3760,30 @@
     "english": "Drum pads",
     "translation": "Pads de batería",
     "ratio": 1.67
+  },
+  {
+    "id": "beat.padRecord.status.off",
+    "english": "Pad recording is off",
+    "translation": "La grabación de pads está desactivada",
+    "ratio": 1.85
+  },
+  {
+    "id": "beat.padRecord.noTarget",
+    "english": "No drum region on {track} at the playhead.",
+    "translation": "No hay una región de batería en {track} en el cabezal de reproducción.",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.midiRecord.key.audition",
+    "english": "preview",
+    "translation": "vista previa",
+    "ratio": 1.71
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Reintentar guardado",
+    "ratio": 1.9
   },
   {
     "id": "beat.pad.openhat",
@@ -4096,6 +4168,60 @@
     "english": "Song",
     "translation": "Canción",
     "ratio": 1.75
+  },
+  {
+    "id": "beat.ripple.label",
+    "english": "Ripple editing",
+    "translation": "Edición con desplazamiento",
+    "ratio": 1.86
+  },
+  {
+    "id": "beat.ripple.off",
+    "english": "Ripple off",
+    "translation": "Desplazamiento desactivado",
+    "ratio": 2.6
+  },
+  {
+    "id": "beat.ripple.on",
+    "english": "Ripple on",
+    "translation": "Desplazamiento activado",
+    "ratio": 2.56
+  },
+  {
+    "id": "beat.ripple.insert",
+    "english": "Insert one-bar gap",
+    "translation": "Insertar un hueco de un compás",
+    "ratio": 1.67
+  },
+  {
+    "id": "beat.ripple.changed",
+    "english": "Ripple editing changed",
+    "translation": "Edición con desplazamiento modificada",
+    "ratio": 1.68
+  },
+  {
+    "id": "beat.track.name",
+    "english": "Track name",
+    "translation": "Nombre de la pista",
+    "ratio": 1.8
+  },
+  {
+    "id": "beat.search.results",
+    "english": "Clip search results",
+    "translation": "Resultados de búsqueda de clips",
+    "ratio": 1.63
+  },
+  {
+    "id": "beat.library.title",
+    "english": "Add from Music Library",
+    "translation": "Añadir desde la biblioteca de música",
+    "ratio": 1.64
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
   },
   {
     "id": "beat.snap.label",
@@ -4528,6 +4654,294 @@
     "english": "Fade in (seconds)",
     "translation": "Fundido de entrada (segundos)",
     "ratio": 1.71
+  },
+  {
+    "id": "editorMotion.motion",
+    "english": "Motion",
+    "translation": "Movimiento",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorMotion.mask",
+    "english": "Mask",
+    "translation": "Máscara",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.picture",
+    "english": "Picture keys",
+    "translation": "Fotogramas clave de imagen",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Paneo a la derecha",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.rise",
+    "english": "Rise",
+    "translation": "Ascenso",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.push-in",
+    "english": "Push in",
+    "translation": "Acercamiento",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Mover al cabezal de reproducción",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Interpolación",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Entrada suave",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorMotion.deletePicture",
+    "english": "Delete picture key {n}",
+    "translation": "Eliminar fotograma clave de imagen {n}",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorMotion.shape",
+    "english": "Mask shape",
+    "translation": "Forma de la máscara",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorMotion.none",
+    "english": "None",
+    "translation": "Ninguna",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.feather",
+    "english": "Mask feather",
+    "translation": "Difuminado de la máscara",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.width",
+    "english": "Mask width",
+    "translation": "Ancho de la máscara",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorMotion.height",
+    "english": "Mask height",
+    "translation": "Alto de la máscara",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorMotion.addMask",
+    "english": "Add mask keyframe at playhead",
+    "translation": "Añadir fotograma clave de máscara en el cabezal",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorMotion.deleteMask",
+    "english": "Delete mask key {n}",
+    "translation": "Eliminar fotograma clave de máscara {n}",
+    "ratio": 2.05
+  },
+  {
+    "id": "editorMotion.resetMask",
+    "english": "Reset mask",
+    "translation": "Restablecer máscara",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorMotion.keyFeather",
+    "english": "Key edge feather",
+    "translation": "Suavizado del borde de recorte",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorMotion.left",
+    "english": "Move left",
+    "translation": "Mover a la izquierda",
+    "ratio": 2.22
+  },
+  {
+    "id": "editorMotion.right",
+    "english": "Move right",
+    "translation": "Mover a la derecha",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorMotion.up",
+    "english": "Move up",
+    "translation": "Mover arriba",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorFont.title",
+    "english": "Custom fonts",
+    "translation": "Fuentes personalizadas",
+    "ratio": 1.83
+  },
+  {
+    "id": "editorFont.manage",
+    "english": "Manage custom fonts",
+    "translation": "Gestionar fuentes personalizadas",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "Hay que volver a vincularla",
+    "ratio": 2.08
+  },
+  {
+    "id": "editorFont.relink",
+    "english": "Relink {name}",
+    "translation": "Volver a vincular {name}",
+    "ratio": 1.85
+  },
+  {
+    "id": "editorFont.removeConfirmTitle",
+    "english": "Remove custom font?",
+    "translation": "¿Quitar la fuente personalizada?",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorFont.emptyTitle",
+    "english": "No custom fonts yet",
+    "translation": "Aún no hay fuentes personalizadas",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorFont.importTitle",
+    "english": "Add a custom font",
+    "translation": "Añadir una fuente personalizada",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorFont.name",
+    "english": "Font name",
+    "translation": "Nombre de la fuente",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorFont.licence",
+    "english": "Licence URL",
+    "translation": "URL de la licencia",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Añadir fuente personalizada",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorPack.title",
+    "english": "Asset Packs",
+    "translation": "Paquetes de recursos",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorPack.open",
+    "english": "Open Asset-Pack JSON",
+    "translation": "Abrir JSON de paquete de recursos",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorPack.emptyTitle",
+    "english": "No asset packs yet",
+    "translation": "Aún no hay paquetes de recursos",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorPack.noResults",
+    "english": "No matching items",
+    "translation": "No hay elementos coincidentes",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorPack.progress.placing",
+    "english": "Adding at the playhead…",
+    "translation": "Añadiendo en el cabezal de reproducción…",
+    "ratio": 1.74
+  },
+  {
+    "id": "editorPack.progress.creating",
+    "english": "Hashing local files… {done} of {total}",
+    "translation": "Calculando el hash de los archivos locales… {done} de {total}",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorPack.packName",
+    "english": "Pack name",
+    "translation": "Nombre del paquete",
+    "ratio": 2
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Elegir archivos multimedia del paquete",
+    "ratio": 1.65
+  },
+  {
+    "id": "editorPack.category.All",
+    "english": "All",
+    "translation": "Todos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Restablece primero la velocidad, la reproducción inversa y el fotograma congelado de este clip.",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorScenes.hard",
+    "english": "Hard cuts",
+    "translation": "Cortes directos",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorScenes.possible",
+    "english": "Possible dissolves",
+    "translation": "Posibles fundidos encadenados",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorPersonMask.title",
+    "english": "Person mask",
+    "translation": "Máscara de persona",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Conservar",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorPersonMask.bodySkin",
+    "english": "Body skin",
+    "translation": "Piel del cuerpo",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPersonMask.faceSkin",
+    "english": "Face skin",
+    "translation": "Piel de la cara",
+    "ratio": 1.67
   },
   {
     "id": "oauth.signIn",

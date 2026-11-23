@@ -141,3 +141,90 @@ test('server speech bounds sit inside fal\'s live MiniMax schema', () => {
         assert.ok(vol >= voice.vol.minimum && vol <= voice.vol.maximum, String(volume));
     }
 });
+
+// Qwen owns a separate contract. Keep all MiniMax assertions above unchanged.
+const { QWEN_VOICES, QWEN_LANGUAGES, QWEN_SCRIPT_LIMIT } = await import('../lib/qwenSpeechInputs.js');
+const { speechContractFor } = await import('../lib/speechInputs.js');
+const { defaultSpeechSettings, speechContractFor: webContract } = await import('../app/veyrnox/_lib/textToSpeech.js');
+const { buildRequest, parseEndpoint, endpointKind, interpretTask, submitTask } = await import('../packages/adapters/crun.js');
+const { providerFor } = await import('../packages/provider-sdk/registry.js');
+const qwenEndpoint = 'crun:qwen3-tts/speech-synthesis';
+const qwen = capabilityFor(qwenEndpoint);
+const target = parseEndpoint(qwenEndpoint);
+
+test('Qwen contract is identical on web and server, public, and separate from MiniMax', () => {
+    assert.equal(QWEN_VOICES.length, 35);
+    assert.equal(QWEN_SCRIPT_LIMIT, 600);
+    assert.equal(speechContractFor('minimax-speech-2.6-hd').scriptLimit, 500);
+    for (const id of ['qwen3-tts', 'minimax-speech-2.6-hd']) assert.deepEqual(webContract(id), speechContractFor(id));
+    assert.deepEqual(speechContractFor('qwen3-tts').controls, []);
+    const caps = publicCapabilities(qwen);
+    assert.equal(caps.inputs.prompt.max, 600);
+    assert.deepEqual(caps.inputs.tts_voice.values, QWEN_VOICES.map(v => v.id));
+    assert.deepEqual(caps.inputs.tts_language.values, QWEN_LANGUAGES);
+    assert.deepEqual(caps.speech.voices, QWEN_VOICES);
+    // 'speech', not 'audio': the video/image sweep settles speech, while 'audio' routes (Suno music) are excluded from it.
+    assert.equal(endpointKind(qwenEndpoint), 'speech');
+    assert.deepEqual(ttsGenerationInputs(defaultSpeechSettings('qwen3-tts'), 'qwen3-tts'), { tts_voice: 'Cherry', tts_language: 'auto' });
+});
+
+test('Qwen accepts its pinned voices and languages; both models reject cross-model controls before submit', () => {
+    for (const voice of QWEN_VOICES) {
+        const inputs = { prompt: 'Hello', tts_voice: voice.id };
+        assert.deepEqual(validateInputs(inputs), { ok: true });
+        assert.deepEqual(checkInputs(qwen, inputs), { ok: true });
+        assert.equal(providerFor('crun').check(qwen, { provider_endpoint: qwenEndpoint }, inputs).ok, true);
+        assert.deepEqual(checkInputs(minimax, inputs), { ok: false, error: 'inputs_invalid:tts_voice' });
+    }
+    for (const voice of TTS_VOICE_IDS) {
+        const inputs = { prompt: 'Hello', tts_voice: voice };
+        assert.deepEqual(checkInputs(qwen, inputs), { ok: false, error: 'inputs_invalid:tts_voice' });
+        assert.deepEqual(buildRequest(target, inputs), { ok: false, error: 'inputs_invalid:tts_voice' });
+    }
+    for (const language of QWEN_LANGUAGES) {
+        const inputs = { prompt: 'Hello', tts_language: language };
+        assert.equal(validateInputs(inputs).ok, true);
+        assert.equal(buildRequest(target, inputs).body.input.language_type, language === 'auto' ? 'Auto' : language);
+    }
+    for (const key of ['tts_emotion', 'tts_speed', 'tts_volume', 'tts_pitch', 'instructions', 'unknown']) {
+        const inputs = { prompt: 'Hello', [key]: 'ignored?' };
+        assert.deepEqual(buildRequest(target, inputs), { ok: false, error: `inputs_key_not_allowed:${key}` });
+        assert.equal(checkInputs(qwen, inputs).ok, false);
+    }
+});
+
+test('Qwen request is exact, bounded and refuses unsupported fields instead of dropping them', () => {
+    assert.deepEqual(buildRequest(target, { prompt: 'Hello' }), { ok: true, body: {
+        model: 'qwen3-tts/speech-synthesis', input: { text: 'Hello', voice: 'Cherry', language_type: 'Auto' },
+    } });
+    assert.equal(buildRequest(target, { prompt: 'x'.repeat(600) }).ok, true);
+    for (const prompt of ['', '   ', undefined]) assert.deepEqual(buildRequest(target, { prompt }), { ok: false, error: 'prompt_required' });
+    assert.deepEqual(buildRequest(target, { prompt: 'x'.repeat(601) }), { ok: false, error: 'inputs_invalid:prompt' });
+    assert.deepEqual(checkInputs(qwen, { prompt: 'x'.repeat(601) }), { ok: false, error: 'inputs_invalid:prompt' });
+    for (const [key, value] of [['tts_voice', 'Jada'], ['tts_voice', 'Eldric Sage'], ['tts_voice', null], ['tts_language', 'Russian'], ['tts_language', 'Auto']]) {
+        assert.deepEqual(buildRequest(target, { prompt: 'Hello', [key]: value }), { ok: false, error: `inputs_invalid:${key}` });
+    }
+    for (const duration_seconds of [null, 5, undefined]) assert.equal(buildRequest(target, { prompt: 'Hello', duration_seconds }).ok, true);
+    assert.deepEqual(buildRequest(target, { prompt: 'Hello', duration_seconds: 10 }), { ok: false, error: 'duration_not_supported' });
+});
+
+test('Qwen submit uses Crun CreateTask, API header, exact JSON and redacts upstream text', async () => {
+    const original = globalThis.fetch;
+    const job = { job_id: 'qwen-test', provider_endpoint: qwenEndpoint, inputs: { prompt: 'Private script', tts_voice: 'Serena', tts_language: 'French' } };
+    try {
+        globalThis.fetch = async (url, options) => {
+            assert.equal(url, 'https://api.crun.ai/api/v1/client/job/CreateTask');
+            assert.equal(options.headers['X-API-KEY'], 'test-key');
+            assert.equal(options.method, 'POST');
+            assert.deepEqual(JSON.parse(options.body), { model: 'qwen3-tts/speech-synthesis', input: { text: 'Private script', voice: 'Serena', language_type: 'French' } });
+            return Response.json({ code: 200, data: { task_id: 'qwen-task' } });
+        };
+        assert.deepEqual(await submitTask(job, { apiKey: 'test-key' }), { ok: true, providerJobId: 'qwen-task' });
+        globalThis.fetch = async () => Response.json({ code: 400, message: 'invalid: Private script' }, { status: 400 });
+        const refusal = await submitTask(job, { apiKey: 'test-key' });
+        assert.equal(refusal.ok, false);
+        assert.equal(refusal.error.includes('Private script'), false);
+    } finally { globalThis.fetch = original; }
+    assert.deepEqual(interpretTask({ data: { status: 'success', result: { media_urls: ['https://static.mediaoss.bar/speech.wav'] } } }), { ok: true, state: 'success', outputUrl: 'https://static.mediaoss.bar/speech.wav' });
+    assert.equal(interpretTask({ data: { status: 'success', result: { media_urls: ['http://static.mediaoss.bar/speech.wav'] } } }).ok, false);
+});

@@ -5,16 +5,14 @@ const plan = pkg('ai.veyrnox.generation.plus.monthly');
 const pack = pkg('ai.veyrnox.credits.300');
 
 function deps(over: Partial<PaywallGateDeps> = {}) {
-    const release = jest.fn();
     const value: PaywallGateDeps = {
         canPurchase: true,
         generationActive: false,
-        acquireLock: jest.fn(() => release),
         refreshSales: jest.fn(async () => true),
         refreshGenerationAccess: jest.fn(async () => false),
         ...over,
     };
-    return { value, release };
+    return { value };
 }
 
 test('the switch is on only for the exact word true', () => {
@@ -30,51 +28,37 @@ test('only the three known offerings can be opened', () => {
     expect(parsePaywallOffering(['credits'])).toBeNull();
 });
 
-test('a ready account with open sales may buy a pack and keeps the lock until the purchase ends', async () => {
-    const { value, release } = deps();
-    const gate = await checkPaywallPurchase(pack, value);
-    expect(gate.result).toBe('ok');
+test('a ready account with open sales may buy a pack', async () => {
+    const { value } = deps();
+    expect(await checkPaywallPurchase(pack, value)).toBe('ok');
     expect(value.refreshGenerationAccess).not.toHaveBeenCalled();
-    expect(release).not.toHaveBeenCalled();
-    gate.release();
-    expect(release).toHaveBeenCalledTimes(1);
 });
 
-test('an account that is not bound to the store is refused without taking the lock', async () => {
+test('an account that is not bound to the store is refused without contacting the server', async () => {
     const { value } = deps({ canPurchase: false });
-    expect((await checkPaywallPurchase(pack, value)).result).toBe('not_ready');
-    expect(value.acquireLock).not.toHaveBeenCalled();
-});
-
-test('another purchase in progress blocks the paywall', async () => {
-    const { value } = deps({ acquireLock: jest.fn(() => null) });
-    expect((await checkPaywallPurchase(pack, value)).result).toBe('busy');
+    expect(await checkPaywallPurchase(pack, value)).toBe('not_ready');
     expect(value.refreshSales).not.toHaveBeenCalled();
 });
 
-test('sales closed on a fresh read stops the purchase and frees the lock', async () => {
-    const { value, release } = deps({ refreshSales: jest.fn(async () => false) });
-    expect((await checkPaywallPurchase(pack, value)).result).toBe('sales_closed');
-    expect(release).toHaveBeenCalledTimes(1);
+test('sales closed on a fresh read stops the purchase', async () => {
+    const { value } = deps({ refreshSales: jest.fn(async () => false) });
+    expect(await checkPaywallPurchase(pack, value)).toBe('sales_closed');
 });
 
 test('a plan is refused when a web or store plan is already active', async () => {
-    const { value, release } = deps({ refreshGenerationAccess: jest.fn(async () => true) });
-    expect((await checkPaywallPurchase(plan, value)).result).toBe('generation_already_active');
-    expect(release).toHaveBeenCalledTimes(1);
+    const { value } = deps({ refreshGenerationAccess: jest.fn(async () => true) });
+    expect(await checkPaywallPurchase(plan, value)).toBe('generation_already_active');
 });
 
 test('a plan fails closed when the existing plan cannot be checked', async () => {
-    const { value, release } = deps({ refreshGenerationAccess: jest.fn(async () => { throw new Error('offline'); }) });
-    expect((await checkPaywallPurchase(plan, value)).result).toBe('not_ready');
-    expect(release).toHaveBeenCalledTimes(1);
+    const { value } = deps({ refreshGenerationAccess: jest.fn(async () => { throw new Error('offline'); }) });
+    expect(await checkPaywallPurchase(plan, value)).toBe('not_ready');
 });
 
 test('a retired package is refused before taking a lock or contacting the store', async () => {
     for (const id of ['ai.veyrnox.generation.ultra.monthly', 'ai.veyrnox.generation.ultra.annual:annual']) {
         const { value } = deps();
-        expect((await checkPaywallPurchase(pkg(id), value)).result).toBe('not_ready');
-        expect(value.acquireLock).not.toHaveBeenCalled();
+        expect(await checkPaywallPurchase(pkg(id), value)).toBe('not_ready');
         expect(value.refreshSales).not.toHaveBeenCalled();
     }
 });

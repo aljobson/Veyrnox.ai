@@ -8,7 +8,7 @@ import { SwapAttemptStatus } from './SwapAttemptStatus.js';
 function Placeholder() { return <div aria-busy="true" className="min-h-96" />; }
 function Entry({ id, children }) {
   const resolved = useResolvedSwap();
-  return <><SwapAttemptStatus templateId={id} />{resolved?.offer ? <section className="mx-auto max-w-3xl px-4 py-8"><TemplateSwapSummary /><div className="mt-4"><SwapTemplatePreview id={id} /></div><SwapComposer offer={resolved.offer} /></section> : resolved?.loading ? <Placeholder /> : children}</>;
+  return <>{resolved?.offer ? <section className="mx-auto max-w-3xl px-4 py-8"><TemplateSwapSummary /><div className="mt-4"><SwapTemplatePreview id={id} /></div><SwapComposer offer={resolved.offer} /></section> : resolved?.loading ? <Placeholder /> : children}<SwapAttemptStatus templateId={id} /></>;
 }
 function QueryEntry({ children }) {
   const query = useSearchParams();

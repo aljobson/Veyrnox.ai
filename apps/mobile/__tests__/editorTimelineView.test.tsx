@@ -1,9 +1,11 @@
 import { act } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
-import { EditorTimeline } from '../src/components/editor/EditorTimeline';
+import { EditorTimeline, type ClipRangeBand } from '../src/components/editor/EditorTimeline';
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import { playSelection } from '../src/lib/haptics';
+import { HEADER_MAX_FONT_SCALE } from '../src/lib/a11y';
+import { EDITOR_DECORATIVE_RULER_FONT_SIZE, EDITOR_MEANINGFUL_LABEL_MIN_SIZE } from '../src/components/editor/fullEditorStyles';
 void [ScrollView, StyleSheet, Text, View];
 jest.mock('../src/lib/haptics', () => ({ playSelection: jest.fn() }));
 jest.mock('../src/components/ui/Icon', () => ({ Icon: () => null }));
@@ -13,9 +15,10 @@ const onSeek = jest.fn(), onSelect = jest.fn(), onApply = jest.fn(), onViewport 
 const selected = { track: 'video' as const, id: 'v1' };
 const event = (pageX = 0, pageY = 0, locationX = 0, locationY = 10) => ({ nativeEvent: { pageX, pageY, locationX, locationY } });
 const node = (id: string) => root.container.queryAll(n => n.props.testID === id)[0];
-async function render(selections = [selected], snap = false, ripple?: 'none' | 'lane' | 'all') {
+async function render(selections = [selected], snap = false, ripple?: 'none' | 'lane' | 'all', analysisMarks?: readonly { frame: number; kind: 'hard' | 'possible'; selected: boolean }[],
+    clipRanges?: readonly ClipRangeBand[]) {
     await act(async () => root.render(<EditorTimeline timeline={timeline} selections={selections} ppf={2} total={300} frame={0} playing={false} snap={snap} ripple={ripple} onSeek={onSeek}
-        onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
+        analysisMarks={analysisMarks} clipRanges={clipRanges} onSelect={onSelect} onApply={onApply} onViewport={onViewport} />));
 }
 async function call(id: string, prop: string, value = event()) { await act(async () => node(id).props[prop](value)); }
 beforeEach(() => {
@@ -24,12 +27,65 @@ beforeEach(() => {
     timeline.tracks.push({ ...timeline.tracks[0], id: 'video-2', name: 'Video 2' });
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
+test('meaningful editor labels keep a 12pt floor while decorative ruler marks expose time through the adjustable ruler', async () => {
+    expect(EDITOR_DECORATIVE_RULER_FONT_SIZE).toBeLessThan(EDITOR_MEANINGFUL_LABEL_MIN_SIZE);
+    await render([]);
+    const mark = node('timeline-ruler-label-0');
+    expect(mark.props.accessibilityElementsHidden).toBe(true);
+    expect(mark.props.importantForAccessibility).toBe('no');
+    expect(node('timeline-ruler').props).toMatchObject({ accessibilityRole: 'adjustable', accessibilityValue: { text: '00:00:00:00' } });
+});
+test('compact track headers keep long AX-scaled state text on one bounded line', async () => {
+    timeline.tracks[0] = { ...timeline.tracks[0], name: 'A deliberately long video track name', locked: true, muted: true, hidden: true };
+    await render([]);
+    const state = node('track-state-video-0');
+    expect(state.props.children).toBe('LOCK · MUTE · HIDE');
+    expect(state.props.numberOfLines).toBe(1);
+    expect(state.props.maxFontSizeMultiplier).toBe(HEADER_MAX_FONT_SCALE);
+    expect(StyleSheet.flatten(state.props.style)).toMatchObject({ minWidth: 0, flexShrink: 1, fontSize: 12 });
+    const label = node('track-header-video-0').queryAll(n => n.children.includes('A deliberately long video track name'))[0];
+    expect(label.props).toMatchObject({ numberOfLines: 1, maxFontSizeMultiplier: HEADER_MAX_FONT_SCALE });
+});
 test('positions clips and playhead in a single scroller and scrubs on grant and move', async () => {
     await render(); expect(StyleSheet.flatten(node('clip-v1').props.style)).toMatchObject({ left: 120, width: 178, height: 44 });
     expect(StyleSheet.flatten(node('timeline-playhead').props.style)).toMatchObject({ left: 0, width: 2, height: 256 });
     await call('timeline-ruler', 'onResponderGrant', event(100, 0, 120)); await call('timeline-ruler', 'onResponderMove', event(140));
     expect(onSeek.mock.calls).toEqual([[60], [80]]); expect(node('timeline-ruler').props.onResponderTerminationRequest()).toBe(false);
     await call('timeline-ruler', 'onResponderRelease'); expect(onApply).not.toHaveBeenCalled();
+});
+test('scene suggestions render as transient non-document marks with an accessible ruler summary', async () => {
+    await render([], false, undefined, [{ frame: 75, kind: 'hard', selected: true }, { frame: 90, kind: 'possible', selected: false }]);
+    expect(StyleSheet.flatten(node('analysis-mark-75').props.style)).toMatchObject({ left: 150, width: 3 });
+    expect(StyleSheet.flatten(node('analysis-mark-90').props.style)).toMatchObject({ left: 180, width: 7, opacity: 0.45 });
+    expect(node('analysis-mark-75').props.accessibilityLabel).toBe('Hard cut suggestion at 00:00:02:15');
+    expect(node('analysis-mark-90').props.accessibilityLabel).toBe('Possible dissolve suggestion at 00:00:03:00');
+    expect(node('timeline-ruler').props.accessibilityHint).toContain('Hard cut suggestion');
+    expect(timeline.markers).toEqual([]);
+});
+test('clip suggestions render as bounded, ranked ranges with non-colour selection cues and a distinct accessible summary', async () => {
+    await render([], false, undefined, undefined, [
+        { id: 'pick-1', startFrame: 75, endFrame: 135, rank: 1, selected: true },
+        { id: 'pick-2', startFrame: 150, endFrame: 225, rank: 2, selected: false },
+    ]);
+    expect(StyleSheet.flatten(node('clip-range-pick-1').props.style)).toMatchObject({ left: 150, width: 120, height: 22, borderWidth: 2, borderStyle: 'solid' });
+    expect(StyleSheet.flatten(node('clip-range-pick-2').props.style)).toMatchObject({ left: 300, width: 150, borderWidth: 1, borderStyle: 'dashed' });
+    expect(node('clip-range-pick-1').props.accessibilityLabel).toBe('Suggestion 1, 00:00:02:15 to 00:00:04:15, selected');
+    expect(node('clip-range-pick-1').props.accessibilityState).toEqual({ selected: true });
+    expect(node('clip-range-pick-2').props.accessibilityState).toEqual({ selected: false });
+    expect(node('clip-range-pick-1-rank').props.children).toBe('✓ 1');
+    expect(node('clip-range-pick-2-rank').props.children).toBe('2');
+    expect(StyleSheet.flatten(node('clip-range-pick-1-start').props.style)).toMatchObject({ left: 0, width: 2 });
+    expect(StyleSheet.flatten(node('clip-range-pick-1-end').props.style)).toMatchObject({ right: 0, width: 2 });
+    expect(node('timeline-ruler').props.accessibilityHint).toContain('2 suggested clip ranges are shown on the timeline.');
+    expect(node('timeline-ruler').props.accessibilityHint).toContain('Suggestion 2, 00:00:05:00 to 00:00:07:15, not selected');
+    expect(node('timeline-ruler').props.accessibilityHint).not.toContain('scene suggestions');
+    expect(timeline.markers).toEqual([]);
+});
+test('ruler accessibility summarizes scene points and clip ranges independently when both are visible', async () => {
+    await render([], false, undefined, [{ frame: 75, kind: 'hard', selected: true }],
+        [{ id: 'pick-1', startFrame: 75, endFrame: 135, rank: 1, selected: true }]);
+    expect(node('timeline-ruler').props.accessibilityHint).toContain('1 scene suggestions');
+    expect(node('timeline-ruler').props.accessibilityHint).toContain('1 suggested clip range is shown on the timeline.');
 });
 test('taps select while movement before hold yields to scrolling', async () => {
     await render([]); await call('clip-v1', 'onResponderGrant'); await call('clip-v1', 'onResponderRelease'); expect(onSelect).toHaveBeenCalledWith(selected);

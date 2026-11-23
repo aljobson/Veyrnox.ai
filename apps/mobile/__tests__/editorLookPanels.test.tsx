@@ -7,7 +7,8 @@ import { FiltersPanel, EffectsPanel, TransitionsPanel } from '../src/components/
 import { useLookActions } from '../src/components/editor/tools/useLookActions';
 import { createFrameStore } from '../src/components/editor/editorFrameStore';
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
-import { parameterKeyframe } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { FILTER_DEFAULTS, parameterKeyframe } from '../../../app/veyrnox/_lib/editorAnimation.mjs';
+import { validateSequence } from '../../../app/veyrnox/_lib/editorSequenceValidation.mjs';
 import type { ToolPanelProps } from '../src/components/editor/tools/types';
 const mockCurveRender = jest.fn();
 jest.mock('../src/components/editor/tools/CurveEditor', () => {
@@ -113,6 +114,50 @@ describe('FullEditorScreen look commits', () => {
             expect(mockSession.currentDocument()).toBe(before); expect(mockSession.getEditRevision()).toBe(revision);
             expect(mockSession.history.canUndo).toBe(false); expect(mockSession.dirty).toBe(false);
         });
+    test.each([[2, false], [2, true], [40, false], [40, true]] as const)(
+        'neutral resets preserve %s picture keys (filter first: %s)', async (count, filterFirst) => {
+        const tl: Timeline = timeline(), clip = tl.video[1];
+        const frames = count === 2 ? [0, 89] : [0, ...Array.from({ length: 38 }, (_, i) => i * 2 + 1), 89];
+        clip.parameterKeyframes = frames.map(frame => parameterKeyframe(clip, frame));
+        clip.colourAdjustment = { ...colourDefaults(), exposure: 1 }; clip.filter = { ...FILTER_DEFAULTS, brightness: 2 };
+        const before = lookEdit.lookValues(clip, 30), keys = structuredClone(clip.parameterKeyframes);
+        expect(keys.some(key => key.frame === 30)).toBe(false);
+        expect(validateSequence(tl)).toBeNull();
+        await open(tl as ReturnType<typeof timeline>);
+        await act(async () => mockSession.setFrame(120));
+        await press('Filters');
+        const resets = [['Reset colour', 'colourAdjustment'], ['Reset filter', 'filter']] as const;
+        for (const [label, field] of filterFirst ? [...resets].reverse() : resets) {
+            const revision = mockSession.getEditRevision();
+            await press(label);
+            const current = mockSession.currentDocument()!.timeline as Timeline, reset = current.video[1];
+            expect(mockSession.getEditRevision()).toBe(revision + 1);
+            expect(mockSession.problem).toBeNull(); expect(validateSequence(current)).toBeNull();
+            expect(Object.hasOwn(reset, field)).toBe(false);
+            expect(lookEdit.lookValues(reset, 30)).toEqual(before);
+            expect(reset.parameterKeyframes).toEqual(keys);
+        }
+        await press('Motion'); await press(t('editorMotion.clearPicture'));
+        const cleared = (mockSession.currentDocument()!.timeline as Timeline).video[1];
+        expect(cleared.parameterKeyframes ?? []).toHaveLength(0);
+        expect(Object.hasOwn(cleared, 'colourAdjustment')).toBe(false); expect(Object.hasOwn(cleared, 'filter')).toBe(false);
+        expect(lookEdit.lookValues(cleared, 30)).toEqual(before);
+    });
+    test.each(['colour', 'filter'] as const)('non-neutral %s reset keeps its existing picture-key upsert', async kind => {
+        const tl: Timeline = timeline(), clip = tl.video[1];
+        clip.colourAdjustment = { ...colourDefaults(), exposure: 1 }; clip.filter = { ...FILTER_DEFAULTS, brightness: 2 };
+        clip.parameterKeyframes = [parameterKeyframe(clip, 0), parameterKeyframe(clip, 89)];
+        const expected = kind === 'colour' ? lookEdit.colourReset(tl, clip.id, 30) : lookEdit.filterReset(tl, clip.id, 30);
+        if (!('timeline' in expected)) throw Error('refused');
+        await open(tl as ReturnType<typeof timeline>);
+        await act(async () => mockSession.setFrame(120));
+        await press('Filters'); await press(`Reset ${kind}`);
+        const reset = (mockSession.currentDocument()!.timeline as Timeline).video[1];
+        expect(reset).toEqual(expected.timeline.video[1]);
+        expect(reset.parameterKeyframes!.map(key => key.frame)).toEqual([0, 30, 89]);
+        const values = lookEdit.lookValues(reset, 30);
+        expect(kind === 'colour' ? values.colour.exposure : values.filter.brightness).toBe(kind === 'colour' ? 0 : 1);
+    });
     test.each([['Filters', 'Blur', 'decrement', false], ['Effects', 'Width', 'increment', false],
         ['Filters', 'Blur', 'decrement', true]] as const)('%s / %s %s at a bound preserves document, history and keys (animated %s)', async (panel, label, actionName, animated) => {
         const tl: Timeline = timeline();

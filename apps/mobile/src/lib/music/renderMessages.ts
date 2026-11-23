@@ -9,7 +9,7 @@ export const RENDER_DEFINITIVE_CODES = [
     'version_id_invalid', 'idempotency_key_invalid', 'fade_range_invalid', 'speed_ratio_invalid',
     'reorder_range_invalid', 'remaster_target_invalid', 'not_found', 'invalid_inputs',
     'idempotency_conflict', 'revision_conflict', 'render_format_unsupported', 'source_too_large',
-    'source_duration_unavailable', 'source_unavailable', 'source_changed', 'wav_invalid',
+    'source_duration_unavailable', 'source_unavailable', 'source_changed', 'edit_unavailable_for_format', 'wav_invalid',
     'wav_format_unsupported', 'remaster_silence', 'render_storage_failed',
 ] as const;
 export const isDefinitiveRenderError = (error: unknown) => error instanceof ApiError && error.status >= 400
@@ -24,7 +24,7 @@ const messages = {
     version_id_invalid: 'request', idempotency_key_invalid: 'request', invalid_inputs: 'request',
     fade_range_invalid: 'fadeRange', speed_ratio_invalid: 'speedRange', reorder_range_invalid: 'splitRange',
     remaster_target_invalid: 'peakRange', idempotency_conflict: 'conflict', revision_conflict: 'changed', source_changed: 'changed',
-    render_format_unsupported: 'format', wav_format_unsupported: 'format', wav_invalid: 'wav', source_too_large: 'size',
+    render_format_unsupported: 'format', edit_unavailable_for_format: 'format', wav_format_unsupported: 'format', wav_invalid: 'wav', source_too_large: 'size',
     source_duration_unavailable: 'duration', source_unavailable: 'source', remaster_silence: 'silence', render_storage_failed: 'storage',
     duration_required: 'measure', offline: 'offline', network: 'uncertain', bad_response: 'uncertain', refresh_failed: 'refreshFailed',
 } as const;

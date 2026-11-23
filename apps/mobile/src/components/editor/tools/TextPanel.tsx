@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { t, plural } from '../../../lib/i18n';
 import { touchTarget } from '../../../lib/a11y';
 import { styles } from '../fullEditorStyles';
-import { Choice, Stepper, LabeledInput, PanelHeading } from '../EditorControls';
+import { Action, Choice, Stepper, LabeledInput, PanelHeading } from '../EditorControls';
 
 import type { ToolPanelProps } from './types';
 import { TextStyleCatalog } from './TextStyleCatalog';
@@ -11,8 +12,12 @@ import { TypographySection } from './TypographySection';
 import { documentIdentity } from '../../../lib/editorBridge';
 import { SERVER_PLAIN_TEXT_STYLE } from '../../../lib/editorServerExport';
 import { exportRefusal } from '../../../lib/editorExportRefusal';
-export function TextPanel({ timeline, selection, selected, addText, updateSelectedText, patchSelected, textActions }: Pick<ToolPanelProps, 'timeline' | 'selection' | 'selected' | 'addText' |
-    'updateSelectedText' | 'patchSelected' | 'textActions'>) {
+import { CustomFontLibrarySheet } from '../fonts/CustomFontLibrarySheet';
+import { validCustomFonts } from '../../../lib/nativeEditorModel';
+export function TextPanel({ timeline, selection, selected, addText, updateSelectedText, patchSelected, textActions, fontActions }: Pick<ToolPanelProps, 'timeline' | 'selection' | 'selected' | 'addText' |
+    'updateSelectedText' | 'patchSelected' | 'textActions' | 'fontActions'>) {
+    const [fontsOpen, setFontsOpen] = useState(false);
+    const customFonts = validCustomFonts(timeline);
     return <>
         <PanelHeading title={t('editor.text2')} detail={selection?.track === 'text' ? t('editor.layerselected') : plural('editor.textLayersCount', timeline.text.length)} />
         <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addText')} style={({ pressed }) => [styles.primary, touchTarget, pressed && styles.pressed]}
@@ -27,11 +32,20 @@ export function TextPanel({ timeline, selection, selected, addText, updateSelect
                 selected={(selected.style?.weight ?? 'bold') === value} onPress={() => textActions?.style('weight', value)} />)}</View>
             <Text style={styles.fieldLabel}>{t('editor.alignment')}</Text><View style={styles.choices}>{['left', 'center', 'right'].map((value) => <Choice key={value} label={value}
                 selected={(selected.style?.align ?? 'center') === value} onPress={() => textActions?.style('align', value)} />)}</View>
-            <TextStyleSection item={selected} onChange={(key, value) => textActions?.style(key, value) ?? false} />
+            <TextStyleSection item={selected} fonts={customFonts} fontReady={fontActions?.has} fontFailed={fontActions?.failed} fontChecking={fontActions?.checking}
+                organizationAvailable={fontActions?.available} onChange={(key, value) => textActions?.style(key, value) ?? false} />
             <TypographySection item={selected} onChange={(key, value) => textActions?.typography(key, value) ?? false} />
             {selected.style && documentIdentity(selected.style) !== documentIdentity(SERVER_PLAIN_TEXT_STYLE)
                 ? <Text style={styles.panelDetail}>{exportRefusal('text.style')}</Text> : null}
         </> : <Text style={styles.body}>{t('editor.selectatextlayeronthetimeline')}</Text>}
+        {fontActions?.available ? <>
+            <Action label={t('editorFont.manage')} onPress={() => { fontActions.clearProblem(); setFontsOpen(true); }} />
+            <CustomFontLibrarySheet visible={fontsOpen} fonts={customFonts} actions={fontActions}
+                used={Object.fromEntries(customFonts.map(font => [font.family, timeline.text.filter(item => item.style?.font === font.family).length]))}
+                selected={selection?.track === 'text' && selected && 'text' in selected ? selected.style?.font : undefined}
+                onUse={selection?.track === 'text' && selected && 'text' in selected ? family => { if (textActions?.style('font', family)) setFontsOpen(false); } : undefined}
+                onClose={() => setFontsOpen(false)} />
+        </> : null}
         <Text style={styles.panelDetail}>{t('editorText.previewText')}</Text>
     </>;
 }

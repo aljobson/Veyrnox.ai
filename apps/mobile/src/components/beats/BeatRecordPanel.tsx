@@ -7,7 +7,7 @@ import type { TakeRecording, TakeRecordingView } from '../../lib/beatNative/take
 import { beatReadOnly, readLatency } from '../../lib/beatNative/takeShared';
 import { latencyStorage } from '../../lib/beatNative/latencyStore';
 import { BeatCalibrationSheet } from './BeatCalibrationSheet';
-export function BeatRecordPanel({ doc, controller, view, playing }: { doc: BeatDoc; controller: TakeRecording; view: TakeRecordingView; playing: boolean }) {
+export function BeatRecordPanel({ doc, controller, view, playing, externalLocked = false }: { doc: BeatDoc; controller: TakeRecording; view: TakeRecordingView; playing: boolean; externalLocked?: boolean }) {
     const [countIn, setCountIn] = useState(false), [calibrate, setCalibrate] = useState(false);
     const storage = latencyStorage();
     useSyncExternalStore(storage.subscribe, storage.snapshot, storage.snapshot);
@@ -17,7 +17,7 @@ export function BeatRecordPanel({ doc, controller, view, playing }: { doc: BeatD
     return <View>
         {doc.tracks.filter(track => track.kind === 'audio').map(track => <Button key={track.id}
             label={t(view.armedId === track.id ? 'beatTakes.disarm' : 'beatTakes.arm', { track: track.name })}
-            accessibilityState={{ selected: view.armedId === track.id }} disabled={Platform.OS === 'android' || locked || readOnly || calibrate}
+            accessibilityState={{ selected: view.armedId === track.id }} disabled={Platform.OS === 'android' || locked || externalLocked || readOnly || calibrate}
             onPress={() => void controller.arm(view.armedId === track.id ? null : track.id)} />)}
         {Platform.OS === 'android' ? <Text>{t('beatTakes.android')}</Text> : null}
         {readOnly ? <Text accessibilityRole="alert">{t('beatTakes.readOnly')}</Text> : null}
@@ -26,9 +26,14 @@ export function BeatRecordPanel({ doc, controller, view, playing }: { doc: BeatD
         {view.armedId ? <>
             <Text>{t('beatTakes.headphones')}</Text>
             <Text>{latency ? t('beatTakes.latency', { ms: Math.round(latency.ms) }) : t('beatTakes.notCalibrated')}</Text>
-            <Button label={t('beatTakes.countIn')} accessibilityState={{ checked: countIn }} disabled={locked || calibrate} onPress={() => setCountIn(v => !v)} />
-            <Button label={t('beatTakes.calibrate')} disabled={locked || playing || calibrate} onPress={() => setCalibrate(true)} />
-            <Button label={t(locked ? 'beatTakes.stop' : 'beatTakes.record')} disabled={readOnly || calibrate || view.status === 'finishing' || view.status === 'opening'} onPress={() => void (locked ? controller.finish() : controller.record(countIn))} />
+            <Button variant="secondary" label={t('beatTakes.countIn')} accessibilityRole="switch" accessibilityState={{ checked: countIn }}
+                disabled={locked || externalLocked || calibrate} onPress={() => setCountIn(v => !v)}>
+                <Text testID={countIn ? 'beat-count-in-selected' : undefined} variant="bodyStrong">
+                    {countIn ? '✓ ' : ''}{t('beatTakes.countIn')}
+                </Text>
+            </Button>
+            <Button label={t('beatTakes.calibrate')} disabled={locked || externalLocked || playing || calibrate} onPress={() => setCalibrate(true)} />
+            <Button label={t(locked ? 'beatTakes.stop' : 'beatTakes.record')} disabled={(!locked && externalLocked) || readOnly || calibrate || view.status === 'finishing' || view.status === 'opening'} onPress={() => void (locked ? controller.finish() : controller.record(countIn))} />
         </> : null}
         {locked ? <Text accessibilityLiveRegion="polite">{t(view.status === 'finishing' ? 'beatTakes.finishing' : 'beatTakes.status', { seconds: view.seconds.toFixed(1), pass: view.pass })}</Text> : null}
         {view.status === 'error' || view.recoveryFailed ? <Button label={t('beatTakes.retry')} onPress={() => void controller.retry()} /> : null}

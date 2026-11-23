@@ -12,7 +12,6 @@
   "creditHistory.delta": "Placeholders and version/punctuation notation only; substitutions are localized at the call site.",
   "editor.v": "Standard abbreviation, size or visual mark used in Russian interfaces: V.",
   "editor.v2": "Placeholders and version/punctuation notation only; substitutions are localized at the call site.",
-  "editorSpike.webcodecsoffscreen": "Diagnostic API identifiers webcodecs/offscreen and placeholders; keep technical spelling.",
   "email.emailPlaceholder": "Literal input-format example, not translatable prose: you@example.com.",
   "explore.oddlings.title": "Brand or product name retained as on the website: Oddlings.",
   "logo.ai": "Brand or product name retained as on the website: .ai.",
@@ -126,5 +125,7 @@
   "editorLook.fixedInput": "Shared technical term or locale-independent notation, reviewed for this editor control.",
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
-  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending."
+  "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
+  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose."
 }

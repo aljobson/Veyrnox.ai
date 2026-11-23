@@ -1,15 +1,24 @@
-import { createNativeBeatEngine, passThroughCompressor } from '../src/lib/beatNative/nativeContext';
+import { createNativeBeatEngine, nativeDynamicsCompressor } from '../src/lib/beatNative/nativeContext';
 import { createMixRun } from '../src/lib/beatNative/mixRun';
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
-import { createBeat, addKitTrack, setTrackGain, stepSeconds, eventTime, type BeatDoc } from '../src/lib/beatNative/doc';
+import { createBeat, addKitTrack, setTrackGain, stepSeconds, eventTime, type BeatAsset, type BeatDoc } from '../src/lib/beatNative/doc';
+import { addAudioTrack } from '../src/lib/beatNative/takeShared';
 import { addEffect, setEffectParam, addAutomationPoint, setSend, setMaster, type MixDoc } from '../src/lib/beatNative/mix';
 import type { Run } from '../src/lib/beatNative/shared';
 import { mockAudioContextClass, createMockContext } from './helpers/mockNativeAudio';
+import { resetAudioWorklets } from './helpers/mockAudioWorklets';
 
 type Param = { value: number; setValueAtTime: jest.Mock; linearRampToValueAtTime: jest.Mock; setTargetAtTime: jest.Mock };
 type Node = { gain: Param; pan: Param; connect: jest.Mock; disconnect: jest.Mock };
-type DetailedRun = Omit<Run, 'channels'> & { bus: Node; channels: Map<string, { input: Node; fader: Node; panner: Node; sends: Record<string, Node>; chain: { input: Node & { threshold: Param; ratio: Param } }[]; schedule: jest.Mock }> };
+type DetailedRun = Omit<Run, 'channels'> & { bus: Node; master?: { input: Node } | null; channels: Map<string, { input: Node; fader: Node; panner: Node; sends: Record<string, Node>; chain: { input: Node & { threshold: Param; ratio: Param } }[]; schedule: jest.Mock }> };
 const make = () => createBeat({ id: '00000000-0000-4000-8000-000000000052' });
+function withAudio(doc: BeatDoc, start = 0): BeatDoc {
+    const added = addAudioTrack(doc), track = added.tracks.at(-1)!;
+    const asset: BeatAsset = { source: 'song', ref: { songId: '1', versionId: '2', jobId: '3' }, name: 'Song', durationSec: 1,
+        bpm: null, sourceChannels: 2, encodedBytes: 100 };
+    return { ...added, assets: { ...added.assets, a1: asset }, tracks: added.tracks.map(item => item.id === track.id ? { ...item,
+        regions: [{ id: 'r1', start, length: 960, assetId: 'a1', phaseSec: 0, gainDb: 0, fadeIn: null, fadeOut: null, reverse: false }] } : item) };
+}
 function build() {
     const { Ctor, state } = mockAudioContextClass();
     const { engine } = createNativeBeatEngine({ Context: Ctor });
@@ -17,7 +26,7 @@ function build() {
     const run = () => start.mock.results.at(-1)!.value as DetailedRun;
     return { engine, context: state.last!.context, start, stop, run, mix: createMixRun(engine) };
 }
-beforeEach(() => jest.useFakeTimers());
+beforeEach(() => { jest.useFakeTimers(); resetAudioWorklets(); });
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
 test('starts every track, returns strip input, updates gain live, and rebuilds topology/tempo/view', async () => {
@@ -56,16 +65,21 @@ test('song automation writes straight-time fader ramps; pattern view does not', 
     b.mix.schedule(pattern, 0, 0.1, 3); expect(next.setValueAtTime).not.toHaveBeenCalled();
     b.mix.stop(); await b.engine.close();
 });
-test('compressor live threshold/ratio updates use value-setting G1 parameters', async () => {
+test('compressor threshold/ratio edits rebuild a fresh envelope processor with the new settings', async () => {
     const b = build(); let doc = addEffect(make(), 't1', 'compressor');
-    b.mix.sync(doc); const compressor = b.run().channels.get('t1')!.chain[0].input;
+    b.mix.sync(doc); const old = b.run(), compressor = old.channels.get('t1')!.chain[0].input;
     doc = setEffectParam(setEffectParam(doc, 't1', 'f1', 'threshold', -12), 't1', 'f1', 'ratio', 8);
-    expect(() => b.mix.sync(doc)).not.toThrow(); expect(b.start).toHaveBeenCalledTimes(1);
-    expect(compressor.threshold.value).toBe(-12); expect(compressor.ratio.value).toBe(8);
+    expect(() => b.mix.sync(doc)).not.toThrow(); expect(b.start).toHaveBeenCalledTimes(2);
+    const replacement = b.run(); expect(replacement).not.toBe(old);
+    expect(compressor.threshold.value).not.toBe(-12);
+    expect(replacement.channels.get('t1')!.chain[0].input.threshold.value).toBe(-12);
+    expect(replacement.channels.get('t1')!.chain[0].input.ratio.value).toBe(8);
     b.mix.stop(); await b.engine.close();
 });
-test('all inert compressor automation methods set values and return their parameter', () => {
-    const node = passThroughCompressor(createMockContext().context) as { threshold: Record<string, any> };
+test('compressor compatibility parameters accept Web Audio writes and return their parameter', () => {
+    const node = nativeDynamicsCompressor(createMockContext().context, {}, (_context, settings) => ({
+        settings, connect: jest.fn(), disconnect: jest.fn(),
+    })) as { threshold: Record<string, any> };
     const param = node.threshold;
     for (const method of ['setValueAtTime', 'setTargetAtTime', 'linearRampToValueAtTime', 'exponentialRampToValueAtTime']) {
         expect(param[method](-18, 1, 0.01)).toBe(param); expect(param.value).toBe(-18);
@@ -80,6 +94,37 @@ test('sends/master update live within topology, and meter taps follow the curren
     expect(b.mix.sync(doc).restarted).toBe(false);
     expect(b.run().channels.get('t1')!.sends.delay.gain.setTargetAtTime).toHaveBeenCalledWith(0.7, 0, 0.01);
     b.mix.stop(); await b.engine.close();
+});
+
+test('metronome output follows the document master and keeps a retired run alive through the queued click', async () => {
+    const b = build(); let doc = setMaster(make(), { gain: 0.8 });
+    b.mix.sync(doc); const old = b.run();
+    expect(b.mix.clickDestination(doc, 0.15)).toBe((old as unknown as { master: { input: unknown } }).master.input);
+    doc = addEffect(doc, 't1', 'eq');
+    b.context.currentTime = 0.05; b.mix.sync(doc);
+    expect(b.run()).not.toBe(old); expect(b.stop).not.toHaveBeenCalled();
+    b.context.currentTime = 0.179; b.mix.sync(doc); expect(b.stop).not.toHaveBeenCalled();
+    b.context.currentTime = 0.181; b.mix.sync(doc); expect(b.stop).toHaveBeenCalledWith(old);
+    b.mix.stop(); await b.engine.close();
+});
+
+test('live metronome uses straight quarter-step times, accents every sixteen, and stops scheduling when toggled off or stopped', async () => {
+    const b = build(); let fire = () => {};
+    let doc = { ...make(), view: 'pattern' as const, tempo: { bpm: 240 }, swing: 0.6, metronome: true };
+    const click = jest.spyOn(b.engine, 'click');
+    const audio = createBeatAudioFromEngine({ engine: b.engine, setTimer: fn => { fire = fn; return 1; }, clearTimer: jest.fn() });
+    await audio.play(() => doc);
+    expect(click.mock.calls.map(call => call.slice(0, 2))).toEqual([[0.1, true]]);
+    b.context.currentTime = 0.3; fire();
+    expect(click.mock.calls.map(call => call.slice(0, 2))).toEqual([[0.1, true], [0.35, false]]);
+    doc = { ...doc, metronome: false }; b.context.currentTime = 0.55; fire();
+    expect(click).toHaveBeenCalledTimes(2);
+    doc = { ...doc, metronome: true }; b.context.currentTime = 0.8; fire();
+    b.context.currentTime = 1.05; fire();
+    expect(click.mock.calls.map(call => call.slice(0, 2))).toEqual([[0.1, true], [0.35, false], [0.85, false], [1.1, true]]);
+    expect(new Set(click.mock.calls.map(call => call[2]))).toEqual(new Set([b.run().master?.input ?? b.run().bus]));
+    audio.stop(); const count = click.mock.calls.length; b.context.currentTime = 2; fire(); expect(click).toHaveBeenCalledTimes(count);
+    await audio.close();
 });
 
 // Each case changes topology just before an already queued hit. Odd steps include swing.
@@ -135,6 +180,23 @@ test.each(['sync', 'destination', 'schedule', 'playPad'])('timer errors in %s st
     expect(() => fire()).not.toThrow(); expect(audio.isPlaying()).toBe(false);
     expect(onError).toHaveBeenCalledTimes(1); expect(onError).toHaveBeenCalledWith(error);
     expect(timer).toHaveBeenCalledTimes(scheduled); expect(b.stop).toHaveBeenCalledWith(old);
+    await audio.close();
+});
+test('a newly added unavailable audio region stays silent and leaves the live run playing', async () => {
+    const b = build(); let fire = () => {}, doc = withAudio(make(), 240);
+    let notified!: () => void; const notice = new Promise<void>(resolve => { notified = resolve; });
+    const error = new Error('asset unavailable'), onError = jest.fn(notified), timer = jest.fn(fn => { fire = fn; return 1; });
+    const decoded = (b.context as unknown as { createBuffer(channels: number, length: number, rate: number): unknown }).createBuffer(2, 48_000, 48_000);
+    const load = jest.fn().mockResolvedValueOnce(decoded).mockRejectedValueOnce(error);
+    const assetError = jest.fn(notified);
+    const audio = createBeatAudioFromEngine({ engine: b.engine, assets: { load }, onAssetError: assetError,
+        setTimer: timer, clearTimer: jest.fn() });
+    await audio.play(() => doc, undefined, undefined, 0, { onError });
+    doc = { ...doc, assets: { ...doc.assets, a1: { ...doc.assets!.a1, encodedBytes: 101 } } };
+    b.context.currentTime = 0.2; fire();
+    await notice;
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(audio.isPlaying()).toBe(true); expect(onError).not.toHaveBeenCalled(); expect(assetError).toHaveBeenCalledWith('Song', error);
     await audio.close();
 });
 test('an effect the native context cannot build is reported once per run, never hidden', async () => {

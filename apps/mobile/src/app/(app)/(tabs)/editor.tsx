@@ -12,8 +12,10 @@ import { useAssetLinks } from '../../../components/JobThumb';
 import { ProjectThumb } from '../../../components/CreationThumbs';
 import { BestCutEntry } from '../../../components/editor/BestCutEntry';
 import { EDITOR_ENABLED } from '../../../lib/editorFlag';
+import { FILM_STUDIO_ENABLED } from '../../../lib/filmStudioSwitch';
+import { mobileFeature, type MobileFeatureDefinition } from '../../../lib/featureRegistry';
 import { formatLocale, t } from '../../../lib/i18n';
-import { MENU_ICONS } from '../../../lib/menuIcons';
+import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
 import { fetchProjects, fetchWorkspaces, projectSavedAt, projectsErrorMessage, projectVersion, type Project, type Workspace } from '../../../lib/projects';
 import { projectsChangedGeneration, subscribeProjectsChanged } from '../../../lib/projectsChanged';
 import { ds } from '../../../theme';
@@ -26,12 +28,34 @@ const newestFirst = (items: readonly Project[]): Project[] => [...items].sort((a
     return bTime - aTime || projectVersion(b) - projectVersion(a) || a.name.localeCompare(b.name);
 });
 
+function StudioRow({ feature, body, onPress }: { feature: MobileFeatureDefinition; body: string; onPress: () => void }) {
+    const styles = useThemedStyles(sheets);
+    const title = t(feature.titleKey as Parameters<typeof t>[0]);
+    return (
+        <Button label={title} variant="secondary" accessibilityRole="button" accessibilityLabel={rawText(title)} style={styles.tool} onPress={onPress}>
+            <View style={styles.toolIconBox}>
+                <Image source={MENU_ICONS[feature.icon as MenuIcon]} style={styles.toolIcon} tintColor={styles.accentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
+            </View>
+            <View style={styles.toolCopy}>
+                <Text variant="bodyStrong">{title}</Text>
+                <Text variant="footnote" tone="secondary">{body}</Text>
+            </View>
+            <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
+        </Button>
+    );
+}
+
 export default function EditorHome() {
     const styles = useThemedStyles(sheets);
     const { scheme } = useAppearance();
     const { api } = useAuth();
     const links = useAssetLinks(api);
     const router = useRouter();
+    const projectsFeature = mobileFeature('projects');
+    const beatsFeature = mobileFeature('beats');
+    const smartCutFeature = mobileFeature('smartCut');
+    const featuresFeature = mobileFeature('features');
+    const filmFeature = mobileFeature('film');
     const selectedWorkspace = useRef<string | null>(null);
     const request = useRef(0);
     const loadedOnce = useRef(false);
@@ -58,13 +82,15 @@ export default function EditorHome() {
                 setProjects([]);
                 return;
             }
-            const list = await fetchProjects(api, selected.id);
-            if (currentRequest === request.current) {
-                loadedOnce.current = true;
-                setProjects(newestFirst(list));
-                // A save finished while this fetch was in flight: it may have missed it, so fetch once more (rows stay on screen).
-                if (projectsChangedGeneration() !== startedAt) void load(selected.id, true);
+            let list = await fetchProjects(api, selected.id);
+            if (currentRequest !== request.current) return;
+            // A save finished while this fetch was in flight: it may have missed it, so fetch once more (rows stay on screen).
+            if (projectsChangedGeneration() !== startedAt) {
+                list = await fetchProjects(api, selected.id);
+                if (currentRequest !== request.current) return;
             }
+            loadedOnce.current = true;
+            setProjects(newestFirst(list));
         } catch (error) {
             if (currentRequest === request.current) {
                 setProblem(projectsErrorMessage(error));
@@ -82,39 +108,32 @@ export default function EditorHome() {
         return () => { unsubscribe(); request.current += 1; };
     }, [load]));
 
-    if (!EDITOR_ENABLED) {
-        return (
-            <View style={styles.screen}>
-                <Stack.Screen options={{ title: t('editor.title') }} />
-                <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-                <View style={styles.unavailable}>
-                    <Image source={MENU_ICONS.slate} style={styles.heroIcon} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
-                    <Text variant="bodyStrong" style={styles.emptyTitle}>{t('editor.unavailable')}</Text>
-                </View>
-            </View>
-        );
-    }
-
     return (
         <View style={styles.screen}>
-            <Stack.Screen options={{ title: t('editor.title') }} />
+            <Stack.Screen options={{ title: t('tabs.studio') }} />
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
             <FlatList
-                data={projects ?? []}
+                data={EDITOR_ENABLED ? projects ?? [] : []}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
-                refreshing={projects === null && workspaces !== null}
-                onRefresh={() => { void load(workspaceId ?? undefined); }}
+                refreshing={EDITOR_ENABLED && projects === null && workspaces !== null}
+                onRefresh={EDITOR_ENABLED ? () => { void load(workspaceId ?? undefined); } : undefined}
                 ListHeaderComponent={
                     <View style={styles.header}>
                         <View style={styles.intro}>
-                            <Text variant="caption" style={styles.eyebrow}>{t('editor.home.eyebrow')}</Text>
-                            <Text variant="display" style={styles.heading} accessibilityRole="header">{t('editor.title')}</Text>
-                            <Text variant="body" style={styles.summary}>{t('editor.home.summary')}</Text>
+                            <Text variant="caption" style={styles.eyebrow}>{t('studio.eyebrow')}</Text>
+                            <Text variant="display" style={styles.heading} accessibilityRole="header">{t('tabs.studio')}</Text>
+                            <Text variant="body" style={styles.summary}>{t('studio.summary')}</Text>
                         </View>
-                        <Button label={t('editor.new')} variant="primary"
+                        <StudioRow feature={projectsFeature} body={t('studio.projectsBody')} onPress={() => router.push(projectsFeature.href as never)} />
+                        <StudioRow feature={beatsFeature} body={t('studio.beatsBody')} onPress={() => router.push(beatsFeature.href as never)} />
+                        <StudioRow feature={smartCutFeature} body={t('app.explore.smartCutStart')} onPress={() => router.push(smartCutFeature.href as never)} />
+                        <StudioRow feature={featuresFeature} body={t('features.chooseaworkflowVeyrnoxsetstheright')} onPress={() => router.push(featuresFeature.href as never)} />
+                        <BestCutEntry />
+                        {FILM_STUDIO_ENABLED ? <StudioRow feature={filmFeature} body={t('filmCloud.intro')} onPress={() => router.push(filmFeature.href as never)} /> : null}
+                        {EDITOR_ENABLED ? <Button label={t('menu.professional')} variant="primary"
                             accessibilityRole="button"
-                            accessibilityLabel={t('editor.new')}
+                            accessibilityLabel={t('menu.professional')}
                             accessibilityHint={t('editor.home.newHint')}
                             style={styles.primary}
                             onPress={() => router.push({ pathname: '/editor/new', params: { blank: '1' } })}
@@ -123,25 +142,12 @@ export default function EditorHome() {
                                 <Image source={MENU_ICONS.slate} style={styles.primaryIcon} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
                             </View>
                             <View style={styles.primaryCopy}>
-                                <Text variant="bodyStrong" style={styles.primaryTitle}>{t('editor.new')}</Text>
+                                <Text variant="bodyStrong" style={styles.primaryTitle}>{t('menu.professional')}</Text>
                                 <Text variant="footnote" style={styles.primaryBody}>{t('editor.home.newBody')}</Text>
                             </View>
                             <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.onAccentInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
-                        </Button>
-                        <Button label={t('app.library.openSmartCut')} variant="secondary"
-                            accessibilityRole="button"
-                            accessibilityLabel={t('app.library.openSmartCut')}
-                            accessibilityHint={t('app.explore.smartCutStart')}
-                            onPress={() => router.push('/smart-cut')}
-                        >
-                            <View style={styles.smartCutCopy}>
-                                <Text variant="bodyStrong">{t('app.library.openSmartCut')}</Text>
-                                <Text variant="footnote" tone="secondary">{t('app.explore.smartCutStart')}</Text>
-                            </View>
-                            <Image source={MENU_ICONS.caretRight} style={[styles.caret, directionalStyle()]} tintColor={styles.mutedInk.color} contentFit="contain" alt="" accessibilityElementsHidden />
-                        </Button>
-                        <BestCutEntry />
-                        {workspaces && workspaces.length > 1 ? (
+                        </Button> : null}
+                        {EDITOR_ENABLED && workspaces && workspaces.length > 1 ? (
                             <View style={styles.chips} accessibilityRole="tablist">
                                 {workspaces.map((workspace) => (
                                     <Button label={workspace.name} containerStyle={{ maxWidth: '100%' }} variant="tertiary"
@@ -156,21 +162,21 @@ export default function EditorHome() {
                                 ))}
                             </View>
                         ) : null}
-                        <View style={styles.sectionTop}>
+                        {EDITOR_ENABLED ? <View style={styles.sectionTop}>
                             <Text variant="footnote" accessibilityRole="header" style={styles.sectionTitle}>{t('editor.home.recent')}</Text>
                             <Button label={t('editor.home.allProjects')} variant="tertiary" accessibilityRole="button" onPress={() => router.push('/projects')}>
                                 <Text variant="bodyStrong" style={styles.allProjects}>{t('editor.home.allProjects')}</Text>
                             </Button>
-                        </View>
-                        {problem ? (
+                        </View> : null}
+                        {EDITOR_ENABLED && problem ? (
                             <Button label={t('editor.home.retry')} variant="tertiary" accessibilityRole="button" accessibilityLabel={t('editor.home.retry')} style={styles.problem} onPress={() => { void load(workspaceId ?? undefined); }}>
                                 <Text style={styles.error}>{problem}</Text>
                                 <Text variant="bodyStrong" style={styles.retry}>{t('editor.home.retry')}</Text>
                             </Button>
-                        ) : projects === null ? <View style={styles.loading}><VeyLoader label={t('editor.home.loading')} showLabel /></View> : null}
+                        ) : EDITOR_ENABLED && projects === null ? <View style={styles.loading}><VeyLoader label={t('editor.home.loading')} showLabel /></View> : null}
                     </View>
                 }
-                ListEmptyComponent={projects !== null && !problem ? (
+                ListEmptyComponent={EDITOR_ENABLED && projects !== null && !problem ? (
                     <View style={styles.empty}>
                         <Text variant="bodyStrong" style={styles.emptyTitle}>{workspaces?.length ? t('editor.home.empty') : t('editor.home.noWorkspace')}</Text>
                         <Text variant="footnote" style={styles.emptyBody}>{workspaces?.length ? t('editor.home.emptyBody') : t('editor.home.noWorkspaceBody')}</Text>
@@ -214,7 +220,10 @@ const sheets = themedStyles((p) => ({
     primaryCopy: { flex: 1, gap: 2 },
     primaryTitle: { color: p.onAccent },
     primaryBody: { color: p.onAccent, opacity: 0.82 },
-    smartCutCopy: { flex: 1, gap: 2 },
+    tool: { minHeight: 76, paddingVertical: ds.space.md },
+    toolIconBox: { width: 44, height: 44, borderRadius: ds.radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: p.accentSubtle },
+    toolIcon: { width: 24, height: 24 },
+    toolCopy: { flex: 1, gap: 2 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: { minHeight: 44, maxWidth: '100%', justifyContent: 'center', paddingHorizontal: ds.space.md, borderRadius: 999, backgroundColor: p.surface, borderColor: p.borderSubtle, borderWidth: 1 },
     chipOn: { backgroundColor: p.accentSubtle, borderColor: p.accent },
@@ -236,8 +245,6 @@ const sheets = themedStyles((p) => ({
     error: { color: p.danger },
     retry: { color: p.accent },
     empty: { marginTop: 8, padding: ds.space.xxl, gap: ds.space.sm, borderRadius: ds.radius.md, borderColor: p.borderSubtle, borderWidth: 1, borderStyle: 'dashed', backgroundColor: p.surface },
-    unavailable: { flex: 1, padding: 24, gap: 12, alignItems: 'center', justifyContent: 'center' },
-    heroIcon: { width: 42, height: 42 },
     emptyTitle: { color: p.textPrimary, textAlign: 'center' },
     emptyBody: { color: p.textSecondary, textAlign: 'center' },
 }));

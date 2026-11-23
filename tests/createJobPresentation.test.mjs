@@ -34,6 +34,9 @@ function harness(initialJobs, selected = audio) {
     useRef: initial => ({ current: initial }), useEffect() {}, useCallback: fn => fn, useMemo: fn => fn(), useSyncExternalStore: () => false,
   };
   const stubs = {
+    '../../_lib/useSourceFit': { useSourceFit: () => ({ blocked: false, trimmed: false, min: '', max: '' }) },
+    '../../_lib/templatePromptDisplay': { useTemplatePromptDisplay: () => ({ hidden: false, revealed: false, unedited: false, reveal() {} }) },
+    '../../_lib/templatePromptVisibility': { jobHistoryLabels: (_template, prompt) => ({ prompt: prompt.slice(0, 60), name: prompt.slice(0, 40) }) },
     '../../_lib/templateDraft': templateDraft,
     '../../../../lib/i18n/helperCopy.mjs': helperDisplay,
     '../../../../lib/generationSourceSlots.mjs': { ...generationSlots, generationSourceState: () => ({ needsReattach: false, hasSource: false, missingSource: false }) },

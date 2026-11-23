@@ -59,6 +59,11 @@ test('native signature rebuilds topology, drive, tempo and view but preserves li
     expect(mix.runKey({ ...fx, tempo: { bpm: 120 } })).not.toBe(mix.runKey(fx));
     expect(mix.runKey({ ...fx, view: 'pattern' } as mix.MixDoc)).not.toBe(mix.runKey(fx));
 });
+test('native signature rebuilds when compressor DSP settings change', () => {
+    const compressor = mix.addEffect(make(), 't1', 'compressor');
+    expect(mix.runKey(mix.setEffectParam(compressor, 't1', 'f1', 'threshold', -12))).not.toBe(mix.runKey(compressor));
+    expect(mix.runKey(mix.setEffectParam(compressor, 't1', 'f1', 'ratio', 8))).not.toBe(mix.runKey(compressor));
+});
 test('slider mapping is clamped, rounded and reversible across signed and unsigned ranges', () => {
     expect(toUnit(0, -1, 1)).toBe(0.5); expect(fromUnit(0.5, -1, 1, 0.01)).toBe(0);
     expect(fromUnit(0.51, -12, 12, 1)).toBe(0); expect(fromUnit(0.7, 0, 1, 0.01)).toBe(0.7);

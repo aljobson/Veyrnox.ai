@@ -3,11 +3,10 @@ import { Text, Button, themedStyles, useThemedStyles } from '../../components/ui
 import * as WebBrowser from 'expo-web-browser';
 import { Link, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 import { useAuth } from '../../auth/AuthProvider';
 import { useBilling } from '../../billing/BillingProvider';
 import { useStorePurchase } from '../../billing/useStorePurchase';
-import { paywallsEnabled } from '../../billing/paywallGate';
 import { getPurchaseSnapshot, type PurchaseOutcome } from '../../billing/storePurchaseStore';
 import { LEGAL_LINKS } from '../../lib/account';
 import {
@@ -24,6 +23,8 @@ import { CheckInEntry } from '../../components/credits/CheckInEntry';
 import { PackCard, PackTaxNote } from '../../components/credits/PackCard';
 import { PlanCards, initialCadence, type Cadence } from '../../components/credits/PlanCards';
 import { PlanCatalogNotice } from '../../components/credits/PlanCatalogNotice';
+import { PurchaseState } from '../../components/credits/PurchaseState';
+import { PurchaseOutcomeState } from '../../components/credits/PurchaseOutcomeState';
 import { usePlanCatalog } from '../../lib/usePlanCatalog';
 import { CurrentPlanCard } from '../../components/credits/CurrentPlanCard';
 import { useBalanceDetails } from '../../lib/useBalance';
@@ -33,11 +34,13 @@ import { bestPackId, packSavingPercent, typicalCosts } from '../../lib/creditOff
 import { fetchCatalog } from '../../lib/media';
 import { ApiError } from '../../lib/api';
 import { cancelSubscription, creditsRemoved, readSubscription, subscriptionErrorKey, visibleSubscription, type CancelMode, type CreditSubscription } from '../../lib/creditSubscription';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 const store = Platform.OS === 'ios' ? 'ios' : 'android';
 
 export default function Credits() {
     const styles = useThemedStyles(sheets);
+    const insets = useOptionalSafeAreaInsets();
     const { api } = useAuth();
     const billing = useBilling();
     useFocusEffect(useCallback(() => { void billing.refreshSales(); }, [billing.refreshSales]));
@@ -125,6 +128,10 @@ export default function Credits() {
         ?? null;
     const { catalog, status: catalogStatus, retry: retryCatalog } = usePlanCatalog(api);
     const catalogCredits = new Map(catalog.map((plan) => [plan.id, plan.credits]));
+    const storeUnavailable = billing.status === 'off' || billing.status === 'unavailable'
+        || (billing.status === 'ready' && plans.length === 0 && packs.length === 0);
+    const storeBusy = billing.status === 'loading' || storeUnavailable;
+    const canRetryStore = billing.status === 'unavailable' || (billing.status === 'ready' && plans.length === 0 && packs.length === 0);
 
     async function runPurchase(request: Parameters<typeof purchase.start>[0]) {
         if (busyId) return;
@@ -150,6 +157,12 @@ export default function Credits() {
     }
     async function restore() { await runPurchase({ kind: 'restore' }); }
 
+    function retryStore() {
+        setOutcome(null);
+        billing.retryOfferings();
+        void billing.refreshSales();
+    }
+
     async function retryGenerationAccess() {
         if (busyId) return;
         const release = purchase.acquireAuxiliary();
@@ -168,7 +181,9 @@ export default function Credits() {
     }
 
     return (
-        <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.screen} contentInsetAdjustmentBehavior="automatic" scrollIndicatorInsets={{ bottom: ds.space.lg }} contentContainerStyle={[styles.content, {
+            paddingLeft: insets.left + ds.space.lg, paddingRight: insets.right + ds.space.lg, paddingBottom: insets.bottom + ds.space.huge,
+        }]}>
             <Stack.Screen options={{ title: t(billing.canPurchase ? 'pricing.packs.buy' : 'menu.credits') }} />
             <Text variant="title1" tone="primary" style={styles.title} accessibilityRole="header">{t('credits.title')}</Text>
             <Text variant="callout" tone="secondary" style={styles.lead}>{t('credits.lead')}</Text>
@@ -177,7 +192,13 @@ export default function Credits() {
                 <CheckInEntry />
                 <Link href="/history" asChild><Button variant="tertiary" label={t('credits.history')} /></Link>
             </BalanceCard>
-            {!billing.canPurchase && billing.status !== 'loading' ? <Text variant="body" tone="secondary" style={styles.notice}>{t('credits.notOpen')}</Text> : null}
+            {!billing.canPurchase && billing.status !== 'loading' && !storeUnavailable ? <Text variant="body" tone="secondary" style={styles.notice}>{t('credits.notOpen')}</Text> : null}
+            {billing.status === 'loading' ? <PurchaseState kind="loading" text={t('common.loading')} /> : storeUnavailable ? (
+                <PurchaseState kind="unavailable" text={billing.status === 'off' ? t('billing.paywall.unavailableBuild')
+                    : billing.generationActive ? t('credits.unavailable') : `${t('credits.subscriptions.unavailable')} ${t('credits.unavailable')}`}>
+                    {canRetryStore ? <Button variant="secondary" label={t('credits.hardPaywall.retry')} disabled={busyId !== null} onPress={retryStore} /> : null}
+                </PurchaseState>
+            ) : null}
 
             <View style={styles.section}>
                 <Text variant="title2" tone="primary" accessibilityRole="header" style={styles.sectionTitle}>{t('credits.subscriptions.title')}</Text>
@@ -191,8 +212,8 @@ export default function Credits() {
                         <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => void retryGenerationAccess()} label={t('credits.subscriptions.retryAccess')} />
                     </View>
                 ) : null}
-                {billing.generationActive ? null : billing.status === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : plans.length === 0 ? (
-                    <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.subscriptions.unavailable')}</Text>
+                {billing.generationActive || storeBusy ? null : plans.length === 0 ? (
+                    <PurchaseState kind="unavailable" text={t('credits.subscriptions.unavailable')} />
                 ) : (
                     <View style={styles.list}>
                         <PlanCatalogNotice status={catalogStatus} onRetry={retryCatalog} />
@@ -202,22 +223,20 @@ export default function Credits() {
                     </View>
                 )}
                 {!billing.generationActive && chosenPlan?.interval ? <Text accessibilityLanguage="en" variant="caption" tone="tertiary" style={styles.terms}>{renewalTerms(chosenPlan.interval, chosenPlan.priceString, store)}</Text> : null}
-                {!billing.generationActive ? <Button variant="primary" accessibilityRole="button" disabled={!billing.generationPurchaseReady || !chosenPlan || busyId !== null} onPress={() => void buyPlan()} label={t('credits.subscriptions.continue')} loading={busyId === chosenPlan?.id} /> : null}
-                {paywallsEnabled() && billing.generationPurchaseReady ? <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'generation' } })} label={t('billing.paywall.seePlans')} /> : null}
+                {!billing.generationActive && !storeBusy ? <Button variant="primary" accessibilityRole="button" disabled={!purchase.actions.buy || !billing.generationPurchaseReady || !chosenPlan || busyId !== null} onPress={() => void buyPlan()} label={t('credits.subscriptions.continue')} loading={busyId === chosenPlan?.id} /> : null}
             </View>
 
             <View style={styles.section}>
                 <Text variant="title2" tone="primary" accessibilityRole="header" style={styles.sectionTitle}>{t('credits.packs.title')}</Text>
                 <Text variant="body" tone="tertiary" style={styles.sectionBody}>{t('credits.packs.body')}</Text>
-                {billing.status === 'loading' ? <ActivityIndicator color={styles.accentInk.color} /> : packs.length === 0 ? (
-                    <Text variant="body" tone="tertiary" style={styles.muted}>{t('credits.unavailable')}</Text>
+                {storeBusy ? null : packs.length === 0 ? (
+                    <PurchaseState kind="unavailable" text={t('credits.unavailable')} />
                 ) : <View style={styles.packList}>{packs.map(item => (
                     <PackCard key={item.id} pack={item} best={bestPackId(packs) === item.id} saving={packSavingPercent(item, packs)} costs={costs}
-                        busy={busyId === item.id} chosen={chosenId === item.id} disabled={!billing.canPurchase || busyId !== null} onPress={() => void buyPack(item.id)}>
+                        busy={busyId === item.id} chosen={chosenId === item.id} disabled={!purchase.actions.buy || !billing.canPurchase || busyId !== null} onPress={() => void buyPack(item.id)}>
                         {chosenId === item.id ? <VeyCardPeek /> : null}
                     </PackCard>
                 ))}</View>}
-                {paywallsEnabled() && billing.canPurchase && packs.length > 0 ? <Button variant="secondary" accessibilityRole="button" disabled={busyId !== null} onPress={() => router.push({ pathname: '/paywall', params: { offering: 'credits' } })} label={t('billing.paywall.seePacks')} /> : null}
                 <PackTaxNote />
             </View>
 
@@ -228,19 +247,13 @@ export default function Credits() {
                         { label: t('credits.receipt.paid'), value: outcome.price },
                         { label: t('credits.receipt.balance'), value: String(outcome.balance) },
                     ]} />
-                    <Text variant="body" tone="secondary" style={styles.balance} accessibilityLiveRegion="polite">{t('credits.added', { balance: outcome.balance })}</Text>
                 </>
             ) : null}
-            {outcome?.kind === 'subscribed' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.subscriptions.started')}</Text> : null}
-            {outcome?.kind === 'restored' ? <Text variant="body" tone="accent" accessibilityLiveRegion="polite" style={styles.ok}>{t('credits.restored')}</Text> : null}
-            {outcome?.kind === 'nothingToRestore' ? <Text variant="body" tone="secondary" accessibilityLiveRegion="polite">{t('credits.nothingToRestore')}</Text> : null}
-            {outcome?.kind === 'cancelled' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.cancelled')}</Text> : null}
-            {outcome?.kind === 'pending' ? <Text variant="body" tone="tertiary" accessibilityLiveRegion="polite" style={styles.muted}>{t('credits.pending')}</Text> : null}
-            {outcome?.kind === 'sales_closed' ? <Text variant="body" tone="secondary">{t('credits.notOpen')}</Text> : null}
-            {outcome?.kind === 'error' ? <Text variant="body" tone="danger" accessibilityLiveRegion="polite" style={styles.error}>{t('credits.error')}</Text> : null}
+            <PurchaseOutcomeState outcome={outcome} />
 
-            <Button variant="tertiary" accessibilityRole="button" disabled={busyId !== null || !billing.canRestore} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />
-            {billing.managementURL ? (
+            {busyId === 'restore' ? <PurchaseState kind="restoring" text={t('projectDocument.restoring')} /> : null}
+            <Button variant="tertiary" accessibilityRole="button" disabled={!purchase.actions.restore || busyId !== null || !billing.canRestore} onPress={() => void restore()} textStyle={styles.accentInk} label={t('credits.restore')} loading={busyId === 'restore'} />
+            {purchase.actions.manage && ([billing.generationSource, billing.publishSource].some(source => source === 'store' || source === 'both')) && billing.managementURL ? (
                 <Button variant="tertiary" accessibilityRole="link" onPress={() => void WebBrowser.openBrowserAsync(billing.managementURL as string)} textStyle={styles.accentInk} label={t('credits.manage')} />
             ) : null}
             <View style={styles.legal}>
@@ -258,7 +271,7 @@ const sheets = themedStyles((p) => ({
     accentInk: { color: p.accent },
 
     screen: { flex: 1, backgroundColor: p.bg },
-    content: { padding: ds.space.lg, paddingBottom: ds.space.huge, gap: ds.space.lg },
+    content: { width: '100%', maxWidth: 960, alignSelf: 'center', padding: ds.space.lg, paddingBottom: ds.space.huge, gap: ds.space.lg },
     title: { color: p.textPrimary, },
     lead: { color: p.textSecondary, },
     notice: { color: p.textSecondary, backgroundColor: p.bgElevated1, borderColor: p.borderSubtle, borderWidth: 1, borderRadius: ds.radius.md, padding: ds.space.md },

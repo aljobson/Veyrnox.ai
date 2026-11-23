@@ -9,6 +9,7 @@ import { configureNativeTakeStorage } from './takeShared';
 import { type BeatEngine as NativeBeatEngine } from './shared';
 import { createMixRun } from './mixRun';
 import { createNativeBeatEngine, loadNativeContext, type NativeContextCtor } from './nativeContext';
+import type { NativeAssetPort } from './nativeAssets';
 import type { BeatEngine, BeatVoice, EngineContext } from './shared';
 import { DRUM_KITS, audibleGain, eventsAtStep, eventTime, loopSteps, stepSeconds, type BeatDoc, type PadId } from './doc';
 
@@ -17,17 +18,24 @@ import { midiNoteOnsInWindow, midiTracks, type Instrument, type MidiSoundTrack }
 export type TrackMix = { gain: number; pan: number };
 /** `onError`: an engine error stopped playback. `onEffectError`: an effect the native context cannot build was skipped. */
 export type PlayHandlers = { onError?: (error: unknown) => void; onEffectError?: (message: string) => void };
+export type BeatPlayOutcome = 'started' | 'cancelled' | 'busy';
+export type ScheduledBeatStep = { step: number; time: number };
 export interface BeatAudio {
     recordingEngine?(): NativeBeatEngine;
-    playRange?(options: PlayRange): Promise<{ contextStart: number }>;
+    playRange?(options: PlayRange): Promise<{ contextStart: number; recordContextStart: number }>;
+    /** Current native audio-context time. Capture timestamps must be sampled synchronously before async resume work. */
+    now(): number;
     /** Start looping the document. Edits made while it plays are heard from the next step (`getDoc` is read each tick). */
-    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number, handlers?: PlayHandlers): Promise<void>;
+    play(getDoc: () => BeatDoc | undefined, onStep?: (step: number) => void, onWindow?: (window: SongWindow) => void, startOffsetSec?: number, handlers?: PlayHandlers): Promise<BeatPlayOutcome>;
     readonly context: EngineContext;
     /** The node a level meter reads (the web engine's meter tap); null while nothing plays. */
     meterTap(trackId: string | 'master'): unknown | null;
     stop(): void;
     isPlaying(): boolean;
-    hitPad(pad: PadId, kit: string, velocity?: number): void;
+    /** Audition immediately and return the audio-clock time captured before resume/scheduling work. */
+    hitPad(pad: PadId, kit: string, velocity?: number): number;
+    /** Closest actual scheduled onset, including swing. Null outside ordinary playback. */
+    nearestStepAt(at?: number): ScheduledBeatStep | null;
     /** Fader and pan for one track; mute and solo are folded into `gain` by the caller (see `audibleGain`). */
     setTrackMix(trackId: string, mix: TrackMix): void;
     noteOn(key: string, track: MidiSoundTrack, pitch: number, velocity: number): Promise<void>;
@@ -44,6 +52,8 @@ export function playRange(doc: BeatDoc): { from: number; to: number } {
 
 const LOOKAHEAD_S = 0.15;
 const TICK_MS = 25;
+const SCHEDULE_LEDGER_LIMIT = 256;
+const SCHEDULE_LEDGER_AGE_S = 2;
 const MASTER_GAIN = 0.8;
 const PAD_VELOCITY = 100 / 127;
 type Param = { value: number; setTargetAtTime?: (v: number, at: number, tc: number) => unknown };
@@ -52,11 +62,13 @@ type Ctx = EngineContext & { createGain(): { gain: Param; connect(n: unknown): u
 
 export type AudioDeps = {
     engine: BeatEngine;
+    assets?: NativeAssetPort;
+    onAssetError?: (name: string, error: unknown) => void;
     setTimer?: (fn: () => void, ms: number) => unknown;
     clearTimer?: (handle: unknown) => void;
 };
 
-export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTimeout(fn, ms), clearTimer = h => clearTimeout(h as never) }: AudioDeps): BeatAudio {
+export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTimer = (fn, ms) => setTimeout(fn, ms), clearTimer = h => clearTimeout(h as never) }: AudioDeps): BeatAudio {
     const ctx = engine.context as Ctx;
     let master: { gain: Param; connect(n: unknown): unknown } | null = null;
     const strips = new Map<string, Strip>();
@@ -71,6 +83,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     const keys = new Map<string, { voice?: BeatVoice }>();
     let cursor = 0;
     let nextTime = 0;
+    let scheduledSteps: ScheduledBeatStep[] = [];
     let getDoc: (() => BeatDoc | undefined) | null = null;
     let onStep: ((step: number) => void) | undefined;
     let windowCallback: ((window: SongWindow) => void) | undefined;
@@ -82,14 +95,29 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     const rangeOutput = (id: string, doc: BeatDoc, at: number) => {
         try { return mixRun.destination(id, doc, at); } catch { return plainOutput(id, doc); }
     };
+    // A click follows the document master graph, but a broken effect must never end an active take.
+    const rangeClickOutput = (doc: BeatDoc, at: number) => {
+        try { return mixRun.clickDestination(doc, at); } catch { return bus(); }
+    };
     const takes = createTakePlayback(ctx as PlaybackContext, undefined, (id, doc, untilTime) => {
         if (range.isPlaying()) return rangeOutput(id, doc, untilTime);
         return mixRun.run() ? mixRun.destination(id, doc, untilTime) : plainOutput(id, doc);
-    });
+    }, assets, (asset, error) => onAssetError?.(asset.name, error));
+    let rangeAssetMode: PlayRange['assetMode'] = 'takes-only';
     const range = createRecordingTransport(engine, rangeOutput, (doc, w, bounds) => {
         try { mixRun.sync(doc); mixRun.schedule(doc, w.fromSec, w.toSec, w.contextTime); } catch { /* rangeOutput falls back. */ }
-        void takes.window(doc, w, bounds).catch(() => undefined);
-    }, setTimer, clearTimer);
+        for (const event of midiNoteOnsInWindow(doc, w.fromSec, w.toSec, { endSec: bounds.endSec })) {
+            const track = midiTracks(doc).find(item => item.id === event.trackId);
+            if (!track) continue;
+            const noteAt = w.contextTime + event.songTimeSec - w.fromSec;
+            mixRun.destination(track.id, doc, noteAt);
+            const run = mixRun.run();
+            if (!run) continue;
+            engine.playMidi(track, event.pitch, event.velocity, noteAt, run, audibleGain(doc, track)).release(noteAt + event.durationSec);
+        }
+        const token = playGeneration;
+        void takes.window(doc, w, bounds, { recording: true, assetMode: rangeAssetMode }).catch(error => { if (token === playGeneration) fail(error); });
+    }, setTimer, clearTimer, rangeClickOutput);
     let playGeneration = 0;
     const kitOf = new Map<string, string>();
 
@@ -117,6 +145,7 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
     }
     function halt() {
         playGeneration++; starting = false; playing = false;
+        scheduledSteps = [];
         range.stop(); takes.stop();
         if (timer !== null) clearTimer(timer);
         timer = null;
@@ -126,73 +155,127 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
         try { halt(); } catch { /* Preserve the original engine error. */ }
         try { handlers.onError?.(error); } catch { /* A consumer callback cannot escape the timer. */ }
     }
+    function pruneScheduled(now: number) {
+        scheduledSteps = scheduledSteps.filter(item => item.time >= now - SCHEDULE_LEDGER_AGE_S);
+        if (scheduledSteps.length > SCHEDULE_LEDGER_LIMIT) scheduledSteps = scheduledSteps.slice(-SCHEDULE_LEDGER_LIMIT);
+    }
+    function nextScheduledCandidate(): ScheduledBeatStep | null {
+        if (!getDoc || !playing) return null;
+        const doc = getDoc();
+        if (!doc) return null;
+        const { from, to } = playRange(doc);
+        if (to <= from) return null;
+        const step = from + (cursor % (to - from));
+        return { step, time: eventTime(nextTime, step, doc.tempo.bpm, doc.swing) };
+    }
+    // A tap can request a refill synchronously. This pass never installs a timer; `tick` owns the single timer chain.
+    function schedulePass() {
+        if (!getDoc || !playing) return;
+        const current = getDoc();
+        // The beat can leave the store while it plays (deleted, account reset): stop instead of throwing in a timer.
+        if (!current) { halt(); return; }
+        mixRun.sync(current); syncMidi(current);
+        const horizon = engine.now() + LOOKAHEAD_S;
+        while (nextTime < horizon) {
+            const doc = getDoc();
+            if (!doc) { halt(); return; }
+            const { from, to } = playRange(doc);
+            const step = from + (cursor % (to - from));
+            const seconds = stepSeconds(doc.tempo.bpm);
+            const fromSec = step * seconds;
+            const at = eventTime(nextTime, step, doc.tempo.bpm, doc.swing);
+            mixRun.schedule(doc, fromSec, fromSec + seconds, nextTime);
+            if (doc.metronome && step % 4 === 0 && nextTime >= engine.now()) {
+                engine.click(nextTime, step % 16 === 0, mixRun.clickDestination(doc, nextTime));
+            }
+            for (const event of eventsAtStep(doc, step)) {
+                engine.playPad(event.pad, event.velocity, at, mixRun.destination(event.trackId, doc, at), doc.tracks.find(t => t.id === event.trackId)?.kit ?? DRUM_KITS[0].id);
+            }
+            for (const event of midiNoteOnsInWindow(doc, fromSec, fromSec + seconds)) {
+                const track = midiTracks(doc).find(t => t.id === event.trackId);
+                if (!track) continue;
+                const noteAt = nextTime + event.songTimeSec - fromSec;
+                mixRun.destination(track.id, doc, noteAt);
+                engine.playMidi(track, event.pitch, event.velocity, noteAt, mixRun.run()!, audibleGain(doc, track)).release(noteAt + event.durationSec);
+            }
+            const window = { fromSec, toSec: fromSec + seconds, contextTime: nextTime };
+            windowCallback?.(window);
+            const token = playGeneration;
+            void takes.window(doc, window, { startSec: 0, endSec: tickSeconds(songEnd(doc), doc.tempo.bpm) })
+                .catch(error => { if (token === playGeneration) fail(error); });
+            scheduledSteps.push({ step, time: at });
+            onStep?.(step);
+            if (!playing) return;
+            cursor += 1;
+            nextTime += seconds;
+        }
+        pruneScheduled(engine.now());
+    }
     function tick() {
         timer = null;
         if (!getDoc || !playing) return;
         try {
-            const current = getDoc();
-            // The beat can leave the store while it plays (deleted, account reset): stop instead of throwing in a timer.
-            if (!current) { halt(); return; }
-            mixRun.sync(current); syncMidi(current);
-            const horizon = engine.now() + LOOKAHEAD_S;
-            while (nextTime < horizon) {
-                const doc = getDoc();
-                if (!doc) { halt(); return; }
-                const { from, to } = playRange(doc);
-                const step = from + (cursor % (to - from));
-                const seconds = stepSeconds(doc.tempo.bpm);
-                const fromSec = step * seconds;
-                mixRun.schedule(doc, fromSec, fromSec + seconds, nextTime);
-                for (const event of eventsAtStep(doc, step)) {
-                    const at = eventTime(nextTime, step, doc.tempo.bpm, doc.swing);
-                    engine.playPad(event.pad, event.velocity, at, mixRun.destination(event.trackId, doc, at), doc.tracks.find(t => t.id === event.trackId)?.kit ?? DRUM_KITS[0].id);
-                }
-                for (const event of midiNoteOnsInWindow(doc, fromSec, fromSec + seconds)) {
-                    const track = midiTracks(doc).find(t => t.id === event.trackId);
-                    if (!track) continue;
-                    const at = nextTime + event.songTimeSec - fromSec;
-                    mixRun.destination(track.id, doc, at);
-                    engine.playMidi(track, event.pitch, event.velocity, at, mixRun.run()!, audibleGain(doc, track)).release(at + event.durationSec);
-                }
-                const window = { fromSec, toSec: fromSec + seconds, contextTime: nextTime };
-                windowCallback?.(window);
-                void takes.window(doc, window, { startSec: 0, endSec: tickSeconds(songEnd(doc), doc.tempo.bpm) }).catch(() => undefined);
-                onStep?.(step);
-                if (!playing) return;
-                cursor += 1;
-                nextTime += seconds;
-            }
-            timer = setTimer(tick, TICK_MS);
+            schedulePass();
+            if (playing) timer = setTimer(tick, TICK_MS);
         } catch (error) { fail(error); }
     }
 
     return {
         context: engine.context,
+        now: () => engine.now(),
         meterTap: trackId => playing || range.isPlaying() ? mixRun.meterTap(trackId) : null,
         recordingEngine: () => engine,
         async playRange(options) {
-            this.stop(); const token = playGeneration; configureNativeTakeStorage();
-            await takes.preload(options.getDoc());
+            this.stop(); handlers = { onError: options.onError }; const token = playGeneration; configureNativeTakeStorage();
+            rangeAssetMode = options.assetMode ?? 'takes-only';
+            const doc = options.getDoc();
+            if (!doc) throw new Error('beat_unavailable');
+            await takes.preload(doc, { recording: true, assetMode: rangeAssetMode });
             if (token !== playGeneration) throw new Error('transport_cancelled');
             return range.play(options);
         },
         async play(read, step, onWindow, startOffsetSec = 0, on = {}) {
-            if (playing || starting || closed) return;
+            if (playing) return 'started';
+            if (starting) return 'busy';
+            if (closed) return 'cancelled';
             const token = ++playGeneration;
+            scheduledSteps = [];
             starting = true;
-            try { await engine.resume(); } finally { if (token === playGeneration) starting = false; }
-            if (token !== playGeneration || closed) return;
-            handlers = on; playing = true;
+            handlers = on;
+            try {
+                const initial = read();
+                if (!initial) return 'cancelled';
+                await takes.preload(initial);
+                if (token === playGeneration && !closed) await engine.resume();
+            } catch (error) {
+                if (token !== playGeneration || closed || (error as { name?: string })?.name === 'AbortError') return 'cancelled';
+                throw error;
+            } finally { if (token === playGeneration) starting = false; }
+            if (token !== playGeneration || closed) return 'cancelled';
+            playing = true;
             windowCallback = onWindow;
             getDoc = read; onStep = step; cursor = 0; nextTime = engine.now() + 0.1 + startOffsetSec;
             tick();
+            return 'started';
         },
         // A UI stop or close never throws: the player is already stopped when a node fails to release.
         stop() { try { halt(); } catch (error) { try { handlers.onError?.(error); } catch { /* ignore */ } } },
         isPlaying: () => playing || range.isPlaying(),
         hitPad(pad, kit, velocity = PAD_VELOCITY) {
+            const at = engine.now();
             void engine.resume();
-            engine.playPad(pad, velocity, engine.now(), bus(), kit);
+            engine.playPad(pad, velocity, at, bus(), kit);
+            return at;
+        },
+        nearestStepAt(at = engine.now()) {
+            if (!playing || !getDoc) return null;
+            try { schedulePass(); }
+            catch (error) { fail(error); return null; }
+            if (!playing) return null;
+            const next = nextScheduledCandidate();
+            const candidates = next ? [...scheduledSteps, next] : scheduledSteps;
+            return candidates.reduce<ScheduledBeatStep | null>((best, item) => !best
+                || Math.abs(item.time - at) < Math.abs(best.time - at) ? item : best, null);
         },
         setTrackMix(trackId, mix) {
             levels.set(trackId, mix);
@@ -228,11 +311,11 @@ export function createBeatAudioFromEngine({ engine, setTimer = (fn, ms) => setTi
                 engine.playMidi(track, pitch, 100, at, engine.live).release(at + 0.25);
             }
         },
-        async close() { closed = true; this.stop(); this.releaseKeys(); takes.close(); await engine.close(); },
+        async close() { closed = true; this.stop(); this.releaseKeys(); takes.close(); assets?.close?.(); await engine.close(); },
     };
 }
 
 /** The shipping implementation: the shared web engine on `react-native-audio-api` (docs/mobile/spikes/N0-NATIVE-ENGINE.md). */
-export function createBeatAudio(Context: NativeContextCtor = loadNativeContext()): BeatAudio {
-    return createBeatAudioFromEngine({ engine: createNativeBeatEngine({ Context }).engine });
+export function createBeatAudio(Context: NativeContextCtor = loadNativeContext(), assets?: NativeAssetPort, onAssetError?: (name: string, error: unknown) => void): BeatAudio {
+    return createBeatAudioFromEngine({ engine: createNativeBeatEngine({ Context }).engine, assets, onAssetError });
 }

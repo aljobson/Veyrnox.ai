@@ -2,6 +2,7 @@ import { upgradeSequence } from '../../../../app/veyrnox/_lib/editorSequence.mjs
 import { slicedWords } from '../../../../app/veyrnox/_lib/editorWords.mjs';
 import { slicedAnimation } from '../../../../app/veyrnox/_lib/editorAnimation.mjs';
 import { sliceMaskKeyframes as webSliceMaskKeyframes } from '../../../../app/veyrnox/_lib/editorMask.mjs';
+import { fontMetadataProblem } from '../../../../app/veyrnox/_lib/editorOrganization.mjs';
 // The web caller supplies the retained length; today's helper preserves keys beyond that boundary.
 const sliceMaskKeyframes = webSliceMaskKeyframes as (clip: Clip | TextClip, from: number, len: number) => ReturnType<typeof webSliceMaskKeyframes>;
 import { sourceFrame, shiftedSpeedKeys } from '../../../../app/veyrnox/_lib/editorSpeed.mjs';
@@ -12,6 +13,7 @@ export type Selection = { track: TrackKind; id: string };
 export type Canvas = { aspect_ratio: '16:9' | '9:16' | '1:1'; frame_rate: 24 | 25 | 30 | 60 };
 export type Media = {
     id: string; name?: string; kind?: string; frames?: number; hasAudio?: boolean; width?: number; height?: number;
+    graphic?: { shape: string; color: string };
     sourceName?: string; folder?: string; attribution?: { credit: string; usage: string; url: string };
     originalAudio?: { version: 1; presetId: string };
     assetSource?: { projectId: string; assetId: string };
@@ -30,6 +32,12 @@ export type ColourAdjustment = {
     curves: Record<string, { x: number; y: number }[]>;
 };
 export type Clip = TimedFields & {
+    semanticMask?: { version: 1; mediaId: string; category: 'background' | 'hair' | 'bodySkin' | 'faceSkin' | 'clothes' | 'others' | 'person'; sourceFrame: number;
+        dynamic?: { fps: 24 | 25 | 30 | 50 | 60; frames: number; identity: string } };
+    mask?: string;
+    maskSettings?: { x: number; y: number; width: number; height: number; rotation: number; feather: number; inverted: boolean };
+    smartPicture?: { denoise: number; keyEnabled: boolean; keyColor: string; keyTolerance: number; keyFeather: number; despill: number;
+        light: number; lightX: number; lightY: number; lightRadius: number };
     colourAdjustment?: ColourAdjustment; crop?: { x: number; y: number; width: number; height: number }; blend?: string;
     background?: { type: 'none' | 'solid' | 'blur' | 'image'; color: string; blur: number; mediaId: string };
     id: string; mediaId?: string; start: number; in?: number; len: number; trackId?: string;
@@ -53,10 +61,15 @@ export type TextClip = TimedFields & {
 };
 export type EditorTrack = { id: string; kind: TrackKind; name: string; locked: boolean; muted: boolean; hidden: boolean; solo?: boolean };
 export type Marker = { id: string; frame: number; label: string; color: string };
+export type CustomFont = { family: string; name: string; sourceName: string; sha256: string; bytes: number; format: 'ttf' | 'otf' | 'woff' | 'woff2';
+    rights: { credit: string; usage: string; url: string } };
 export type Timeline = {
     schemaVersion: 3; fps: number; seq: number; aspect: 'source' | Canvas['aspect_ratio']; background: string;
     media: Record<string, Media>; video: Clip[]; audio: Clip[]; text: TextClip[]; tracks: EditorTrack[]; markers: Marker[];
+    fonts?: CustomFont[];
 };
+export const validCustomFonts = (timeline: Pick<Timeline, 'fonts'>): CustomFont[] => Array.isArray(timeline.fonts)
+    ? timeline.fonts.filter((font): font is CustomFont => !fontMetadataProblem(font)) : [];
 export type Clipboard = { items: readonly { track: TrackKind; item: Clip | TextClip }[] } | null;
 
 const starterTracks = (): EditorTrack[] => [
@@ -82,6 +95,7 @@ export function timelineOf(value: unknown): Timeline {
     const input = value as Partial<Omit<Timeline, 'schemaVersion'>> & { schemaVersion?: number };
     if (!Array.isArray(input.video) || !Array.isArray(input.audio) || !Array.isArray(input.text) || !input.media || typeof input.media !== 'object') return emptyTimeline();
     const raw = (input.schemaVersion === 2 ? upgradeSequence(input) : input) as Partial<Timeline> & Pick<Timeline, 'video' | 'audio' | 'text' | 'media'>;
+    const { fonts: rawFonts, ...rawWithoutFonts } = raw;
     const tracks = Array.isArray(raw.tracks) && raw.tracks.length ? raw.tracks.map((track) => ({
         id: String(track.id), kind: track.kind, name: String(track.name), locked: !!track.locked, muted: !!track.muted, hidden: !!track.hidden,
         ...(typeof track.solo === 'boolean' ? { solo: track.solo } : {}),
@@ -96,7 +110,8 @@ export function timelineOf(value: unknown): Timeline {
     const clip = (kind: 'video' | 'audio', item: Clip) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), in: Math.max(0, Number(item.in) || 0), len: Math.max(1,
         Math.round(Number(item.len) || 1)), trackId: trackId(kind, item.trackId), volume: item.volume ?? 1, ...(kind === 'video' ? { transition: item.transition ?? 0 } : {}) });
     return {
-        ...emptyTimeline(), ...raw, schemaVersion: 3, fps: 30, media, tracks, markers: Array.isArray(raw.markers) ? raw.markers : [],
+        ...emptyTimeline(), ...rawWithoutFonts, schemaVersion: 3, fps: 30, media, tracks, markers: Array.isArray(raw.markers) ? raw.markers : [],
+        ...(rawFonts !== undefined ? { fonts: rawFonts } : {}),
         video: raw.video.map((item) => clip('video', item)),
         audio: raw.audio.map((item) => clip('audio', item)),
         text: raw.text.map((item) => ({ ...item, start: Math.max(0, Math.round(Number(item.start) || 0)), len: Math.max(1, Math.round(Number(item.len) || 1)), trackId: trackId('text',
@@ -114,6 +129,22 @@ export const selectionItems = (timeline: Timeline, selections: readonly Selectio
 
 export function updateClip(timeline: Timeline, selection: Selection, patch: Partial<Clip & TextClip>): Timeline {
     return { ...timeline, [selection.track]: timeline[selection.track].map((item) => item.id === selection.id ? { ...item, ...patch, id: item.id } : item) } as Timeline;
+}
+
+const semanticMaskIdentity = (clip: Clip) => JSON.stringify([clip.mediaId ?? null, clip.in ?? 0, clip.len, clip.rate ?? 1,
+    clip.reverse === true, clip.freezeFrame ?? null, clip.speedCurve ?? null]);
+
+/** Person masks are inferred for one exact source-time mapping. */
+export function invalidateChangedSemanticMasks(previous: Timeline, next: Timeline): Timeline {
+    const before = new Map(previous.video.map(clip => [clip.id, clip]));
+    let changed = false;
+    const video = next.video.map(clip => {
+        if (!clip.semanticMask) return clip;
+        const old = before.get(clip.id);
+        if (old && !old.semanticMask || old?.semanticMask && semanticMaskIdentity(old) === semanticMaskIdentity(clip)) return clip;
+        const { semanticMask: _semanticMask, ...withoutMask } = clip; changed = true; return withoutMask;
+    });
+    return changed ? { ...next, video } : next;
 }
 
 // Shared slicing math, used by both explicit splits and insertion into an occupied lane.
@@ -136,6 +167,21 @@ export function splitClip(timeline: Timeline, selection: Selection, frame: numbe
     const seq = timeline.seq + 1;
     const pair = splitPair(item, selection.track, frame, seq);
     return { ...timeline, seq, [selection.track]: timeline[selection.track].flatMap(candidate => candidate.id === item.id ? pair : [candidate]) } as Timeline;
+}
+
+/** Build every requested split against one immutable candidate so the caller can commit and undo the batch once. */
+export function splitClipAtFrames(timeline: Timeline, selection: Selection, frames: readonly number[]): Timeline | null {
+    const item = clipAt(timeline, selection);
+    if (!item || timeline.tracks.some(track => track.id === item.trackId && track.locked)) return null;
+    const cuts = [...new Set(frames)].sort((a, b) => b - a);
+    if (!cuts.length || cuts.some(frame => !Number.isInteger(frame) || frame <= item.start || frame >= item.start + item.len)) return null;
+    let candidate = timeline;
+    for (const frame of cuts) {
+        const next = splitClip(candidate, selection, frame);
+        if (!next) return null;
+        candidate = next;
+    }
+    return candidate;
 }
 
 export function removeSelections(timeline: Timeline, selections: readonly Selection[], ripple: 'none' | 'lane' | 'all'): Timeline {

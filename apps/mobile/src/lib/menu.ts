@@ -4,40 +4,28 @@
 // Audio opens the four-card Audio hub (src/app/(app)/audio.tsx), as on the web. Every href is an existing route; the
 // drawer only navigates, it owns no screens.
 import type { MenuIcon } from './menuIcons';
+import { menuFeatures } from './featureRegistry';
 
 export type MenuItem = { key: string; label: string; href: string; icon: MenuIcon; hint?: string };
-export type MenuSection = { id: 'agents' | 'tools' | 'assets' | 'inspire'; label: string; items: MenuItem[] };
+export type MenuSection = { id: 'tools' | 'assets'; label: string; items: MenuItem[] };
 
 export const HOME_ICON: MenuIcon = 'house';
 
+const asMenuItem = (feature: ReturnType<typeof menuFeatures>[number]): MenuItem => ({
+    key: feature.id,
+    label: feature.menu?.labelKey ?? feature.titleKey,
+    href: feature.href,
+    icon: feature.icon as MenuIcon,
+    ...(feature.menu?.hintKey ? { hint: feature.menu.hintKey } : {}),
+});
+
 export const MENU_SECTIONS: MenuSection[] = [
-    {
-        id: 'tools',
-        label: 'menu.tools',
-        items: [
-            { key: 'create', label: 'menu.create', href: '/create', icon: 'image' },
-            { key: 'audio', label: 'menu.audio', href: '/audio', icon: 'headphones' },
-            // Two editors: Smart Cut picks clips and cuts speech for you; Professional is the full timeline.
-            { key: 'smartCut', label: 'menu.smartCut', hint: 'menu.smartCutHint', href: '/smart-cut', icon: 'sparkle' },
-            { key: 'editor', label: 'menu.professional', hint: 'menu.professionalHint', href: '/editor', icon: 'video' },
-            { key: 'publish', label: 'menu.publish', href: '/publish', icon: 'send' },
-            { key: 'cinema', label: 'menu.cinema', href: '/cinema', icon: 'slate' },
-        ],
-    },
-    {
-        id: 'assets',
-        label: 'menu.assets',
-        items: [
-            { key: 'library', label: 'menu.library', href: '/library', icon: 'play' },
-            { key: 'brandKit', label: 'menu.brandKit', href: '/brand-kit', icon: 'palette' },
-            { key: 'credits', label: 'menu.credits', href: '/credits', icon: 'coins' },
-            { key: 'chat', label: 'menu.chat', href: '/chat', icon: 'chat' },
-        ],
-    },
+    { id: 'tools', label: 'menu.tools', items: menuFeatures('tools').map(asMenuItem) },
+    { id: 'assets', label: 'menu.assets', items: menuFeatures('assets').map(asMenuItem) },
 ];
 
 // Below the groups, as the web sidebar keeps Help at its foot.
-export const MENU_FOOTER: MenuItem[] = [{ key: 'help', label: 'menu.help', href: '/help', icon: 'help' }];
+export const MENU_FOOTER: MenuItem[] = menuFeatures('footer').map(asMenuItem);
 
 // The item whose screen you are on: the longest menu href that is the current path or a parent of it, so a nested screen
 // lights its own section. Home is lit only on the home screen.

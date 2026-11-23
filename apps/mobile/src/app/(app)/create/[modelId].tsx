@@ -2,8 +2,7 @@ import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/cre
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
-import { fetchFreeAllowance } from '../../../lib/freeAllowance';
-import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
+import { fetchFreeAllowance } from '../../../lib/freeAllowance'; import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
 import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
 import { rememberFilmJob } from '../../../lib/filmGenerationReturns';
 import { rememberSubmitted } from '../../../lib/submittedRequests';
@@ -39,14 +38,14 @@ import { CharacterPanel } from '../../../components/CharacterPanel';
 import { CreateOptions, type OptionValues } from '../../../components/CreateOptions';
 import { AttachMore, UploadLimitNote } from '../../../components/create/AttachMore';
 import { TemplatePhotoSlots } from '../../../components/TemplatePhotoSlots';
-import { SourcePicker } from '../../../components/SourcePicker';
+import { SourcePicker } from '../../../components/SourcePicker'; import { TemplatePhotoExample } from '../../../components/templates/TemplatePhotoExample';
 import { TemplateBanner } from '../../../components/TemplateBanner';
 import { DEFAULT_CINEMA, buildCinemaPrompt, sanitizeCinema, type Cinema } from '../../../lib/cinemaCamera';
 import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore';
 import { SAVED_DRAFT_VERSION, modelChoices, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect, readDestinationAspect } from '../../../lib/creatorTaste';
-import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
+import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady'; import { fetchPrivatePrompt, placeholderTemplateId } from '../../../lib/privateTemplate'; import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -64,7 +63,7 @@ import { consumeCreativeSourceHandoff, readCreativeSourceHandoff } from '../../.
 const PLACEHOLDER: Record<string, string> = { topic: 'form.topicPlaceholder' };
 export default function CreateWithModel() {
     const styles = useThemedStyles(sheets);
-    const { modelId: linkedModelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext } = useLocalSearchParams<{ modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>(); useSwapRedirect(tid); const modelId = /* a link carries the public id (nano-banana-a1); the catalog uses the internal one */ typeof linkedModelId === 'string' ? internalModelId(linkedModelId) : linkedModelId;
+    const { modelId: linkedModelId, swap, prompt: presetPrompt, duration: presetDuration, aspect: presetAspect, startOddling, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, recipe, sourceHandoff, switched, followup, kind, sourceJob, filmId, shotId, promptVersion, promptContext, photoGuide } = useLocalSearchParams<{ photoGuide?: string; modelId: string; swap?: string; prompt?: string; duration?: string; aspect?: string; startOddling?: string; tpl?: string; tid?: string; tmodel?: string; tneeds?: string; tsource?: string; tratio?: string; tposter?: string; tnegative?: string; recipe?: string; sourceHandoff?: string; switched?: string; followup?: string; kind?: string; sourceJob?: string; filmId?: string; shotId?: string; promptVersion?: string; promptContext?: string }>(); useSwapRedirect(tid); const modelId = /* a link carries the public id (nano-banana-a1); the catalog uses the internal one */ typeof linkedModelId === 'string' ? internalModelId(linkedModelId) : linkedModelId;
     // A template also brings its name, picture, shape and what it needs; each is checked before it is used.
     const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, modelId]);
     const templatePreset = templateOnOriginalModel({ tmodel }, modelId);
@@ -78,7 +77,7 @@ export default function CreateWithModel() {
     const [model, setModel] = useState<CatalogModel | null>(null); const frame = useFrameChoice(model?.id);
     const [swapScene, setSwapScene] = useState<SwapScene | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
-    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : '');
+    const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : ''); const [revealedPrompt, setRevealedPrompt] = useState<string | null>(null); const [revealing, setRevealing] = useState<'idle' | 'loading' | 'error'>('idle');
     const [duration, setDuration] = useState<number | null>(null);
     const [busy, setBusy] = useState(false);
     // Storage keys of the files already uploaded, by slot, and the slots still uploading.
@@ -222,10 +221,10 @@ export default function CreateWithModel() {
         if (duration !== null) add('duration', String(duration));
         add('aspect', opts.aspect ?? undefined);
         add('recipe', recipe); add('followup', followup ?? handedSources?.followup); if (kind !== 'prompt-unavailable') add('kind', kind); add('sourceJob', sourceJob); add('startOddling', startOddling);
-        add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext);
+        add('filmId', filmId); add('shotId', shotId); add('promptVersion', promptVersion); add('promptContext', promptContext); add('photoGuide', photoGuide);
         add('tpl', tpl); add('tid', tid); add('tmodel', tmodel); add('tneeds', tneeds); add('tsource', tsource); add('tratio', tratio); add('tposter', tposter); add('tnegative', opts.negative);
         return normalizeTemplateCarry(out, modelId);
-    }, [modelId, prompt, duration, opts.aspect, opts.negative, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext]);
+    }, [modelId, prompt, duration, opts.aspect, opts.negative, tpl, tid, tmodel, tneeds, tsource, tratio, tposter, recipe, followup, handedSources, kind, sourceJob, startOddling, filmId, shotId, promptVersion, promptContext, photoGuide]);
     const takesStartImage = !!model && slotsFor(model).some((s) => s.slot === 'image' && s.kind === 'image');
     useEffect(() => {
         if (!startId || !takesStartImage) return;
@@ -306,7 +305,8 @@ export default function CreateWithModel() {
     const requestPrompt = !cameraOn && !characterOn ? templateBoundPrompt(contract, text, modelId, references.length) : text;
     let request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: requestPrompt, templateId: prompt === contract?.sourcePrompt && !cameraOn && !characterOn && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, requestPrompt, modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), duration_seconds: !swapScene && isVideo ? duration : null }) : undefined, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
     if (request.templateId && typeof request.extraInputs?.negative_prompt === 'string') request = { ...request, extraInputs: { ...request.extraInputs, negative_prompt: request.extraInputs.negative_prompt.trimEnd() } };
-    const signature = generationSignature(request, n);
+    const templatePromptHidden = !!template && isVideo && !swapScene && typeof presetPrompt === 'string' && prompt === presetPrompt && revealedPrompt !== presetPrompt; const signature = generationSignature(request, n);
+    const revealTemplatePrompt = async () => { const id = placeholderTemplateId(prompt); if (id) { setRevealing('loading'); const full = await fetchPrivatePrompt(api, id); if (!full) { setRevealing('error'); return; } setRecoveredPrompt(full.own); setPrompt(full.own); } setRevealing('idle'); setRevealedPrompt(prompt); }; // private template: Edit prompt reads the words (ADR-0351 am. 23)
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
     const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
@@ -388,7 +388,7 @@ export default function CreateWithModel() {
                 {template ? <TemplateBanner template={template} aspect={options.aspects.length ? opts.aspect : null} /> : null}
                 {startId && takesStartImage ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{startProblem ?? t('oddlings.animate.startNote')}</Text> : null}
                 {['swap-recast', 'swap-quick'].includes(model.id) ? <Text variant="caption" tone="secondary" style={styles.consent}>{t('app.create.swapConsentNotice')}</Text> : null}
-                {slots.length && !photosUnavailable ? (
+                {photoGuide === 'scene' && !boundCount && !photosUnavailable && kindOf(model.modality) === 'image' && <TemplatePhotoExample kind="scene" />}{slots.length && !photosUnavailable ? (
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{t('create.workspace.references')}</SectionLabel>
@@ -421,9 +421,9 @@ export default function CreateWithModel() {
                     <View style={styles.section}>
                         <View style={styles.sectionTop}>
                             <SectionLabel style={styles.sectionLabel}>{text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('create.workspace.prompt')}</SectionLabel>
-                            <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>
+                            {templatePromptHidden ? null : <Text variant="footnote" tone="secondary">{text.length}/{text_.max}</Text>}
                         </View>
-                        <TextField
+                        {templatePromptHidden ? <TemplatePromptReady status={revealing} onEdit={revealTemplatePrompt} /> : <TextField {...(revealedPrompt !== null && revealedPrompt === presetPrompt ? { autoFocus: true } : {})}
                             style={[styles.prompt, text_.key === 'topic' && styles.topic]}
                             value={prompt}
                             onChangeText={setPrompt}
@@ -431,13 +431,13 @@ export default function CreateWithModel() {
                             placeholderTextColor={styles.mutedInk.color}
                             accessibilityLabel={rawText(text_.key === 'topic' ? t('form.topic') : speech ? t('create.workspace.script') : t('mobile.prompt'))}
                             multiline
-                        />
+                        />}
                         {promptTooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t(text_.key === 'topic' ? 'public.TemplateRecipe.topicTooLong' : text_.max < GENERATION_PROMPT_MAX ? 'public.TemplateRecipe.promptTooLong' : 'public.TemplateRecipe.productPromptTooLong', { count: text.length, max: text_.max })}</Text> : null}
-                        <View style={styles.skillsRow}>
+                        {templatePromptHidden ? null : <View style={styles.skillsRow}>
                             <Text variant="caption" tone="tertiary" style={styles.skillsIntro}>{t('create.workspace.skills')}</Text>
                             <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push(skillPromptHref('prompt-writer', prompt, model.id))} label={t('create.workspace.promptWriter')} />
                             <Button variant="tertiary" accessibilityRole="link" onPress={() => router.push(skillPromptHref('fix-my-prompt', prompt, model.id))} label={t('create.workspace.fixPrompt')} />
-                        </View>
+                        </View>}
                     </View>
                 ) : null}
                 {restored ? (

@@ -4,6 +4,7 @@ import { TemplateImage } from './TemplateImage';
 import { MediaTile } from './MediaTile';
 import { FILM_STUDIO_ENABLED } from '../_lib/filmStudioSwitch';
 import { templateHref, presetCredits, presetTitle } from '../_lib/tokens.js';
+import { isVideoTemplate } from '../_lib/templatePromptVisibility.js';
 
 const DURATION_KEY = FILM_STUDIO_ENABLED ? 'mobile.templateDuration' : 'mobile.templateDurationNoFilm';
 
@@ -39,6 +40,7 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
       href={href}
       clip={clip && { ...clip, objectFit: 'contain' }}
       onClick={onClick}
+      playLabel={!roller && clip?.video ? t('mobile.templatePlay', { name: title }) : undefined}
       badge={badge}
       ariaLabel={t('mobile.templateOpen', { name: title })}
       className={`${roller ? 'h-full min-h-0' : 'block w-full'} text-start ${className}`}
@@ -53,7 +55,7 @@ export function PresetCard({ preset, clip = preset.clip ?? null, size = 'md', on
             <div className="shrink-0 font-vx-mono text-[14px] font-bold text-vx-money vx-num">{presetCredits(preset, catalog) ?? '—'} cr</div>
           </div>
           <div className="mt-0.5 text-vx-fg-muted text-xs truncate">{categoryLabel && !badge ? `${categoryLabel} · ` : ''}{preset.model}{preset.durationSeconds ? t(DURATION_KEY, { n: preset.durationSeconds }) : ''}</div>
-          <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>
+          {!isVideoTemplate(preset) && <div className="mt-1 line-clamp-1 text-[11px] text-vx-fg-muted">{preset.promptPreview ?? preset.prompt}</div>}
         </div>
       }
     >

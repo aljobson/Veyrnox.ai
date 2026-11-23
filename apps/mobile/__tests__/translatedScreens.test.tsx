@@ -46,7 +46,7 @@ jest.mock('expo-router', () => ({
     useRouter: () => mockRouter, useLocalSearchParams: () => ({}), usePathname: () => '/',
     useFocusEffect: (fn: any) => require('react').useEffect(fn, [fn]),
 }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }), SafeAreaView: require('react-native').View }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }), SafeAreaView: require('react-native').View }));
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalogCached: async (callback: any) => { callback([]); return []; }, mediaApi: () => ({ listJobs: async () => ({ jobs: [] }) }) }));
 jest.mock('../src/lib/presets', () => ({ ...jest.requireActual('../src/lib/presets'), fetchPresets: async () => [] }));
 jest.mock('../src/lib/montage', () => ({ ...jest.requireActual('../src/lib/montage'), fetchAgentListing: async () => null }));

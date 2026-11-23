@@ -354,3 +354,59 @@ test('every unknown key survives a long session', async () => {
     await submit.run(api, single(voices[0], 'unknown-0'));
     expect(bodies()[100].idempotency_key).toBe(bodies()[0].idempotency_key);
 });
+
+test('a reopened accepted voice can make a new take while its unfinished board keeps the old job', async () => {
+    const submit = createSpeechSubmit();
+    post.mockResolvedValueOnce({ job_id: 'one' }).mockRejectedValueOnce(lost());
+    await expect(submit.run(api, board(), 2)).rejects.toThrow();
+    expect(submit.snapshot(single(), 1, 6, 0).ceilings).toEqual([null]);
+    submit.markDelivered('one');
+    expect(submit.snapshot(single(), 1, 6, 0).ceilings).toEqual([6]);
+    post.mockResolvedValueOnce({ job_id: 'new-take' });
+    await submit.run(api, single());
+    expect(bodies()[2].idempotency_key).not.toBe(bodies()[0].idempotency_key);
+    expect(submit.accepted(board(), 2)).toEqual([{ index: 0, jobId: 'one' }]);
+    post.mockResolvedValueOnce({ job_id: 'two' });
+    await submit.run(api, board(), 2);
+    expect(post).toHaveBeenCalledTimes(4);
+    expect(bodies()[3].idempotency_key).toBe(bodies()[1].idempotency_key);
+});
+test('marking an unknown job id delivered changes nothing', async () => {
+    const submit = createSpeechSubmit();
+    post.mockRejectedValueOnce(lost());
+    await expect(submit.run(api, single())).rejects.toThrow();
+    submit.markDelivered('not-this-job');
+    expect(submit.hasUnknownOutcome(single(), 1)).toBe(true);
+});
+
+const untilPosts = async (count: number) => { for (let i = 0; i < 50 && post.mock.calls.length < count; i++) await new Promise(resolve => setTimeout(resolve, 0)); };
+test('Make another during an in-flight board keeps the accepted voice after a lost reply', async () => {
+    const submit = createSpeechSubmit();
+    let fail!: (error: unknown) => void;
+    post.mockResolvedValueOnce({ job_id: 'one' }).mockImplementationOnce(() => new Promise((_, reject) => { fail = reject; }));
+    const run = submit.run(api, board(), 2);
+    await untilPosts(2);
+    submit.markDelivered('one');
+    fail(lost());
+    await expect(run).rejects.toThrow();
+    expect(submit.accepted(board(), 2)).toEqual([{ index: 0, jobId: 'one' }]);
+    expect(submit.snapshot(single(), 1, 6, 0).ceilings).toEqual([6]);
+    post.mockResolvedValueOnce({ job_id: 'two' });
+    await submit.run(api, board(), 2);
+    expect(post).toHaveBeenCalledTimes(3);
+    expect(bodies()[2].idempotency_key).toBe(bodies()[1].idempotency_key);
+});
+test('Make another during a detached board keeps every job when it finishes', async () => {
+    const submit = createSpeechSubmit();
+    let finish!: (value: unknown) => void;
+    post.mockResolvedValueOnce({ job_id: 'one' }).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const run = submit.run(api, board(), 2, undefined, undefined, undefined, undefined, () => false);
+    await untilPosts(2);
+    submit.markDelivered('one');
+    finish({ job_id: 'two' });
+    await run;
+    expect(submit.accepted(board(), 2)).toEqual([{ index: 0, jobId: 'one' }, { index: 1, jobId: 'two' }]);
+    await submit.run(api, board(), 2);
+    expect(post).toHaveBeenCalledTimes(2);
+});
+

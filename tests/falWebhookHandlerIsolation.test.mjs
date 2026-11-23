@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createFalWebhookHandler } from '../lib/falWebhookHandler.js';
+import { WEBHOOK_BODY_LIMIT } from '../lib/requestBodyLimit.js';
 
 const storageConfig = () => ({ accountId: 'fixture', accessKeyId: 'fixture', secretAccessKey: 'fixture', bucket: 'fixture' });
 function fixture(tenant) {
@@ -37,4 +38,22 @@ test('handler instances keep tenant verification and I/O dependencies isolated',
     assert.equal(a.calls.length, 3);
     assert.equal((await a.handler(request('tenant-b'))).status, 401);
     assert.equal(a.calls.length, 3, 'wrong tenant fails before database I/O');
+});
+
+test('oversized webhook bodies are refused before verification or database I/O', async () => {
+    const { handler, calls } = fixture('tenant-a');
+    const oversized = new Request('https://fixture.invalid/api/webhook/fal', {
+        method: 'POST',
+        body: 'x'.repeat(WEBHOOK_BODY_LIMIT + 1),
+        headers: {
+            'content-length': '1',
+            'x-fal-webhook-request-id': 'fixture-request',
+            'x-fal-webhook-user-id': 'tenant-a',
+        },
+    });
+
+    const response = await handler(oversized);
+    assert.equal(response.status, 413);
+    assert.deepEqual(await response.json(), { error: 'body_too_large' });
+    assert.equal(calls.length, 0);
 });

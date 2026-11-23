@@ -42,7 +42,7 @@ export function swapRequest(offer, key, references) {
   return { template_swap: offer.id, model_id: offer.model, idempotency_key: key, inputs: {},
     max_charge_credits: offer.credits, references: references.map(r => ({ ...r })), consent: true };
 }
-const PRE_DEBIT = new Set(['template_swap_image_size', 'template_swap_image_type', 'template_swap_photo_count',
+const PRE_DEBIT = new Set(['template_swap_people_unsupported', 'template_swap_image_size', 'template_swap_image_type', 'template_swap_photo_count',
   'template_swap_not_found', 'template_blocked', 'consent_required', 'price_changed', 'insufficient_balance', 'rate_limited', 'unauthenticated', 'no_token']);
 const PROVIDER_REFUSAL = new Set(['provider_moderation', 'provider_input_rejected', 'provider_submit_failed']);
 export const unsettled = a => ['submitting', 'unknown', 'unresolved', 'refund_pending', 'queued', 'running'].includes(a.state);
@@ -81,7 +81,7 @@ export async function lookupJobByKey(key, gateway, signal) {
   return job;
 }
 export function swapErrorKey(code) {
-  const aliases = { template_swap_image_size: 'photo_too_small', template_swap_image_type: 'invalid_image', template_swap_photo_count: 'invalid_image',
+  const aliases = { template_swap_people_unsupported: 'people_unsupported', template_swap_image_size: 'photo_too_small', template_swap_image_type: 'invalid_image', template_swap_photo_count: 'invalid_image',
     template_swap_not_found: 'unavailable', consent_required: 'rights', no_person: 'busy_background', person_coverage: 'busy_background',
     invalid_mask: 'cutout_failed', invalid_face: 'no_face', no_token: 'session', unauthenticated: 'session',
     NotAllowedError: 'permission', SecurityError: 'permission', network_error: 'offline', upload_failed: 'upload_failed', insufficient_balance: 'insufficient_balance', rate_limited: 'rate_limited',

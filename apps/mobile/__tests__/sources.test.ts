@@ -45,8 +45,19 @@ describe('checkPicked', () => {
         expect(checkPicked('image', file({ mimeType: 'video/mp4' }))).toEqual({ ok: false, error: 'type' });
         expect(checkPicked('image', file({ mimeType: 'image/heic' }))).toEqual({ ok: false, error: 'type' });
         expect(checkPicked('audio', file({ mimeType: 'audio/aac' }))).toEqual({ ok: false, error: 'type' });
-        expect(checkPicked('video', file({ mimeType: 'video/quicktime' }))).toEqual({ ok: false, error: 'type' });
+        for (const mimeType of ['video/quicktime', 'video/webm']) {
+            expect(checkPicked('video', file({ mimeType }))).toEqual({ ok: false, error: 'type' });
+        }
     });
+
+    test('records the web-to-mobile source-video compatibility gap without relabelling bytes', () => {
+        const webAccepted = ['video/mp4', 'video/quicktime', 'video/webm'];
+        const mobileAccepted = webAccepted.filter(mimeType => checkPicked('video', file({ mimeType })).ok);
+        expect(mobileAccepted).toEqual(['video/mp4']);
+    });
+
+    test.todo('MOV source parity: transcode with AVAssetExportSession, then revalidate type, size, duration and metadata before upload');
+    test.todo('WebM source parity: add a verified native decoder/transcoder and integrated fixtures before allowing the picker type');
 
     test('refuses a file over the cap, an unknown size and an empty file', () => {
         expect(checkPicked('image', file({ size: 21 * MB }))).toEqual({ ok: false, error: 'too_large' });

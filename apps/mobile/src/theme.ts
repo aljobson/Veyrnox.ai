@@ -41,7 +41,7 @@ export type Typeface = (typeof TYPEFACES)[number];
 export type TextSize = (typeof TEXT_SIZES)[number];
 export type Scheme = 'light' | 'dark';
 export type AppearanceSettings = { theme: ThemePreference; accent: Accent; typeface: Typeface; textSize: TextSize };
-export const DEFAULT_APPEARANCE: AppearanceSettings = { theme: 'light', accent: 'mint', typeface: 'studio', textSize: 'm' };
+export const DEFAULT_APPEARANCE: AppearanceSettings = { theme: 'system', accent: 'mint', typeface: 'studio', textSize: 'm' };
 const parse = <T extends string>(value: unknown, options: readonly T[], fallback: T): T => (options.includes(value as T) ? (value as T) : fallback);
 export const parseThemePreference = (v: unknown) => parse(v, THEME_PREFERENCES, 'system');
 export const parseAccent = (v: unknown) => parse(v, ACCENTS, 'mint');
@@ -57,12 +57,9 @@ export function readAppearance(): AppearanceSettings {
         textSize: parseTextSize(read('veyrnox.textSize')),
     };
 }
-// Every cold launch starts in light mode, whatever was saved or the phone uses. The one exception is the reload that an
-// Appearance change triggers: it leaves a one-shot flag so the person's choice survives that reload.
-const KEEP_THEME_KEY = 'veyrnox.themeKeep';
-const keepThemeOnce = read(KEEP_THEME_KEY) === '1';
-if (keepThemeOnce) save(KEEP_THEME_KEY, '');
-let current: AppearanceSettings = keepThemeOnce ? readAppearance() : { ...readAppearance(), theme: 'light' };
+// SecureStore's synchronous read lets the first rendered frame use the saved device preference.
+// With no saved preference, System follows the phone from the first frame onward.
+let current: AppearanceSettings = readAppearance();
 const listeners = new Set<() => void>();
 export const subscribeAppearance = (listener: () => void) => {
     listeners.add(listener);
@@ -118,7 +115,6 @@ export async function applyAppearance(partial: Partial<AppearanceSettings>, retu
     }
     listeners.forEach((fn) => fn());
     if (reload) {
-        save(KEEP_THEME_KEY, '1');
         if (returnPath?.startsWith('/') && !(await saveThemeReturnPath(returnPath))) return;
         try {
             await require('expo').reloadAppAsync('Veyrnox appearance changed');
@@ -187,15 +183,26 @@ export const accentPairs = {
 function alpha(hex: string, opacity: number) {
     return `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${opacity})`;
 }
-export function tokensForScheme(value: Scheme, settings: AppearanceSettings = current) {
+export function tokensForScheme(value: Scheme, settings: AppearanceSettings = current, increasedContrast = false) {
     const [accent, onAccent, accentPressed] = accentPairs[settings.accent][value];
+    const contrast = increasedContrast
+        ? value === 'light'
+            ? { borderSubtle: '#8a8a94', borderStrong: '#4d4d55', textSecondary: '#34343b', textTertiary: '#45454d' }
+            : { borderSubtle: '#5d5d66', borderStrong: '#b8b8c0', textSecondary: '#d0d0d5', textTertiary: '#c0c0c8' }
+        : {};
+    const base = value === 'light' ? light : dark;
     return {
-        ...(value === 'light' ? light : dark),
+        ...base,
         ...(settings.theme === 'oled' && value === 'dark' ? { bg: '#000000', bgElevated1: '#0e0e10', bgElevated2: '#17171a', surface: '#1c1c1f', borderSubtle: '#222226' } : {}),
+        ...contrast,
         accent,
         onAccent,
         accentPressed,
         accentSubtle: alpha(accent, value === 'dark' ? 0.14 : 0.1),
+        successSubtle: alpha(base.success, value === 'dark' ? 0.16 : 0.1),
+        warningSubtle: alpha(base.warning, value === 'dark' ? 0.16 : 0.1),
+        noticeSubtle: alpha(base.notice, value === 'dark' ? 0.16 : 0.1),
+        dangerSubtle: alpha(base.danger, value === 'dark' ? 0.16 : 0.1),
         iris: accentPairs.iris[value][0],
         rose: accentPairs.rose[value][0],
     };

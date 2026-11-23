@@ -1,6 +1,6 @@
 'use client';
 
-import LipSyncExampleCard from '../../_components/LipSyncExampleCard';
+import StudioExampleCard from '../../_components/StudioExampleCard';
 import { PromptBox } from '../../_components/PromptBox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -27,6 +27,8 @@ import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { ERROR_COPY, failedJobCopy } from '../../_lib/createErrors';
 import useVeyErrorMood from '../../_lib/useVeyErrorMood';
 import { gatewayFetch, GatewayError, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
+import { getSession } from '../../../lib/authClient.js';
+import { captionCeilingCredits, createChargeAttempts, isChargeUnknown, isProviderRefusal, lipSyncRequest, submitCaption } from '../../_lib/performanceSubmit';
 import { pushJobHistory } from '../../_lib/jobHistory';
 import { jobStateUi } from '../../_lib/studioStates';
 import {
@@ -61,7 +63,16 @@ import { readDialogueDubbingHandoff } from '../../_lib/dialogueDubbingHandoff';
 const card = 'rounded-2xl border border-vx-border bg-vx-panel';
 const input = 'w-full rounded-xl border border-vx-border bg-vx-base px-4 py-3 text-sm text-vx-fg placeholder:text-vx-fg-faint focus:border-vx-accent focus:outline-hidden';
 
+const postGeneration = (body) => gatewayFetch('/generations', { method: 'POST', body: JSON.stringify(body) });
+const lookupGeneration = (key) => gatewayFetch(`/jobs?idempotency_key=${encodeURIComponent(key)}`);
+const readClipSeconds = async (jobId) => (await gatewayFetch(`/jobs/${encodeURIComponent(jobId)}/media-info`))?.seconds;
+const CHARGE_UNKNOWN_COPY = 'The connection dropped before we could confirm this step. Check Library or use Retry: it looks for the first request and will not charge twice.';
+
 function gatewayError(error) {
+  if (error?.userMessage) return { message: error.userMessage };
+  if (isChargeUnknown(error) && !isProviderRefusal(error)) {
+    return { message: CHARGE_UNKNOWN_COPY, retryAfter: error.retryAfter };
+  }
   if (error instanceof GatewayError) {
     return { code: error.code || 'gateway_error', retryAfter: error.retryAfter };
   }
@@ -384,7 +395,7 @@ function SpeechCard({
             scriptLimit={scriptLimit}
             showExamples={false}
           />
-          <VoiceRecipeLibrary title="Signature voices for this performance" onApply={(recipe, name) => { onTtsSettings(recipe); setVoiceRecipeNotice({ name, settings: recipe }); }} />
+          <VoiceRecipeLibrary acceptedModels={['minimax-speech-2.6-hd']} title="Signature voices for this performance" onApply={(recipe, name) => { onTtsSettings(recipe); setVoiceRecipeNotice({ name, settings: recipe }); }} />
           {voiceRecipeNotice&&<div role="status" className={`mt-3 rounded-xl border px-4 py-3 text-xs leading-5 ${voiceRecipeMatches?'border-vx-accent/30 bg-vx-accent/[0.06] text-vx-fg-muted':'border-vx-danger/30 bg-vx-danger/[0.05] text-vx-danger'}`}><strong>{voiceRecipeMatches?'Voice Recipe applied:':'Voice Recipe modified:'}</strong> {voiceRecipeNotice.name}. {voiceRecipeMatches?'Review this script, duration estimate and current quote before generating.':'Current voice controls no longer match this saved recipe.'}{!voiceRecipeMatches&&<button type="button" onClick={()=>onTtsSettings(voiceRecipeNotice.settings)} className="ml-2 font-extrabold underline">Restore recipe</button>}</div>}
         </div>
       )}
@@ -619,7 +630,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
   const ttsModel = models.find((model) => model.id === DEFAULT_TTS_MODEL_ID) || null;
   const clipEditModel = models.find((model) => model.id === 'clip-edit') || null;
   const captionRendererAvailable = Number.isFinite(clipEditModel?.credits);
-  const captionsCredits = composition.subtitles && captionRendererAvailable ? clipEditModel.credits * 7 : 0;
+  const captionsCredits = composition.subtitles && captionRendererAvailable ? captionCeilingCredits(Number(clipEditModel.credits), Number(activeMaxSeconds)) : 0;
   const quote = useMemo(() => performanceQuote({
     lipSyncCredits: lipModel?.credits,
     speechSource,
@@ -632,7 +643,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     ttsCredits: ttsModel?.credits,
     captionsCredits,
   }).totalCredits, [captionsCredits, lipModel?.credits, ttsModel?.credits]);
-  const speechEstimate = estimatedSpeechSeconds(script);
+  const speechEstimate = estimatedSpeechSeconds(script, undefined, Number(ttsSettings.speed));
   const scriptTooLong = speechSource === 'script' && speechEstimate > activeMaxSeconds;
   const onUnreachable = useCallback(() => setError({ code: 'poll_unreachable' }), []);
   const { jobs, generating, startJobs, addJob, clearJobs } = useStudioJobs({ onUnreachable });
@@ -892,7 +903,25 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     }
   }
 
+  const [chargeAttempts] = useState(() => createChargeAttempts({
+    post: postGeneration,
+    lookup: lookupGeneration,
+    makeKey: makeIdempotencyKey,
+    owner: () => getSession()?.user?.id,
+  }));
+  const uploadedFiles = useRef(new WeakMap());
+  const sendCharge = useCallback(async (request) => {
+    try {
+      return await chargeAttempts.send(request);
+    } catch (error) {
+      if (String(error?.code || '').startsWith('source_')) uploadedFiles.current = new WeakMap();
+      throw error;
+    }
+  }, [chargeAttempts]);
+
   const uploadSource = useCallback(async (file) => {
+    const uploaded = uploadedFiles.current.get(file);
+    if (uploaded) return uploaded;
     const reservation = await gatewayFetch('/uploads', {
       method: 'POST',
       body: JSON.stringify({ content_type: file.type, size_bytes: file.size }),
@@ -908,39 +937,38 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
       throw new GatewayError('upload_failed', { code: 'upload_failed' });
     }
     if (!result.ok) throw new GatewayError('upload_failed', { status: result.status, code: 'upload_failed' });
+    uploadedFiles.current.set(file, reservation.key);
     return reservation.key;
   }, []);
 
-  const submitCaptionRender = useCallback((baseJobId, preset) => gatewayFetch('/generations', {
-    method: 'POST',
-    body: JSON.stringify({
-      model_id: 'clip-edit',
-      idempotency_key: makeIdempotencyKey(),
-      inputs: { clips: [{ asset_id: baseJobId, whole: true }], captions: { preset } },
-    }),
-  }), []);
+  const submitCaptionRender = useCallback((baseJobId, preset, approvedCredits) => submitCaption({
+    attempts: { send: sendCharge },
+    post: postGeneration,
+    makeKey: makeIdempotencyKey,
+    fetchLength: readClipSeconds,
+    baseJobId,
+    preset,
+    approvedCredits,
+  }), [sendCharge]);
 
   const submitLipSync = useCallback(async ({ visualKey, visualAssetId, audioKey, audioJobId }) => {
     if (!lipModel) throw new GatewayError('model_not_found', { code: 'model_not_found' });
-    const submitted = await gatewayFetch('/generations', {
-      method: 'POST',
-      body: JSON.stringify({
-        model_id: lipModel.id,
-        idempotency_key: makeIdempotencyKey(),
-        confirmed_credits: lipModel.credits,
-        inputs: lipModel.id === 'sync-lipsync-1.9-long' ? { sync_mode: longFormSyncMode } : {},
-        source_keys: [visualKey, audioKey].filter(Boolean),
-        source_assets: [visualAssetId, audioJobId].filter(Boolean),
-        consent: true,
-      }),
-    });
+    const submitted = await sendCharge(lipSyncRequest({
+      model: { id: String(lipModel.id), credits: Number(lipModel.credits) },
+      sourceKind: workflow.sourceKind,
+      visualKey,
+      visualAssetId,
+      audioKey,
+      audioJobId,
+      syncMode: longFormSyncMode,
+    }));
     setProjectJobs((current) => [
       ...current.map((item) => audioJobId && item.job_id === audioJobId ? { ...item, state: 'succeeded' } : item),
       { role: 'performance', job_id: submitted.job_id, state: 'queued', credits: lipModel.credits, model_id: lipModel.id },
     ]);
     startJobs({ job_id: submitted.job_id, state: 'queued', credits: lipModel.credits, model_id: lipModel.id });
     pushJobHistory({
-      job_id: submitted.job_id,
+      idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
       model_id: lipModel.id,
       credits: lipModel.credits,
       prompt: script.trim().slice(0, 60) || 'Performance Studio',
@@ -952,7 +980,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
       ? { baseJobId: submitted.job_id, preset: composition.captionPreset || 'simple', submitting: false }
       : null;
     setStage('rendering');
-  }, [composition.captionPreset, composition.subtitles, lipModel, longFormSyncMode, script, selectedAvatar, startJobs, workflowLabel]);
+  }, [composition.captionPreset, composition.subtitles, lipModel, longFormSyncMode, script, selectedAvatar, sendCharge, startJobs, workflow.sourceKind, workflowLabel]);
 
   useEffect(() => {
     if (stage !== 'speech' || !chain.current || !job) return;
@@ -986,14 +1014,14 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         const preset = captionPlan.current.preset;
         (async () => {
           try {
-            const submitted = await submitCaptionRender(job.job_id, preset);
+            const submitted = await submitCaptionRender(job.job_id, preset, captionsCredits);
             setProjectJobs((current) => [
               ...current.map((item) => item.job_id === job.job_id ? { ...item, state: 'succeeded' } : item),
-              { role: 'finishing', job_id: submitted.job_id, state: 'queued', credits: captionsCredits, model_id: 'clip-edit' },
+              { role: 'finishing', job_id: submitted.job_id, state: 'queued', credits: submitted.credits, model_id: 'clip-edit' },
             ]);
             captionPlan.current = null;
-            startJobs({ job_id: submitted.job_id, state: 'queued', credits: captionsCredits, model_id: 'clip-edit' });
-            pushJobHistory({ job_id: submitted.job_id, model_id: 'clip-edit', credits: captionsCredits, prompt: 'Burned subtitles', name: `${workflow.label} · subtitles` });
+            startJobs({ job_id: submitted.job_id, state: 'queued', credits: submitted.credits, model_id: 'clip-edit' });
+            pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: 'clip-edit', credits: submitted.credits, prompt: 'Burned subtitles', name: `${workflow.label} · subtitles` });
             if (submitted.balance_after != null) setBalance(submitted.balance_after);
             notifyBalanceChanged();
             setStage('captioning');
@@ -1049,18 +1077,14 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         (async () => {
           try {
             const visualKey = run.visual.file ? await uploadSource(run.visual.file) : undefined;
-            const submitted = await gatewayFetch('/generations', {
-              method: 'POST',
-              body: JSON.stringify({
-                model_id: run.lipModel.id,
-                idempotency_key: makeIdempotencyKey(),
-                confirmed_credits: run.lipModel.credits,
-                inputs: run.lipModel.id === 'sync-lipsync-1.9-long' ? { sync_mode: run.longFormSyncMode } : {},
-                source_keys: [visualKey].filter(Boolean),
-                source_assets: [run.visual.jobId, item.speechJobId].filter(Boolean),
-                consent: true,
-              }),
-            });
+            const submitted = await sendCharge(lipSyncRequest({
+              model: run.lipModel,
+              sourceKind: run.sourceKind,
+              visualKey,
+              visualAssetId: run.visual.jobId,
+              audioJobId: item.speechJobId,
+              syncMode: run.longFormSyncMode,
+            }));
             item.performanceJobId = submitted.job_id;
             item.state = 'rendering';
             addJob({ job_id: submitted.job_id, state: 'queued', credits: run.lipModel.credits, model_id: run.lipModel.id });
@@ -1081,7 +1105,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
               } : candidate),
             } : current);
             pushJobHistory({
-              job_id: submitted.job_id,
+              idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
               model_id: run.lipModel.id,
               credits: run.lipModel.credits,
               prompt: item.script.slice(0, 60),
@@ -1136,9 +1160,9 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         } : current);
         (async () => {
           try {
-            const submitted = await submitCaptionRender(item.performanceJobId, run.caption.preset);
+            const submitted = await submitCaptionRender(item.performanceJobId, run.caption.preset, run.caption.credits);
             item.captionJobId = submitted.job_id;
-            addJob({ job_id: submitted.job_id, state: 'queued', credits: run.caption.credits, model_id: 'clip-edit' });
+            addJob({ job_id: submitted.job_id, state: 'queued', credits: submitted.credits, model_id: 'clip-edit' });
             setProjectJobs((current) => [
               ...current.map((candidate) => candidate.job_id === item.performanceJobId ? { ...candidate, state: 'succeeded' } : candidate),
               {
@@ -1146,7 +1170,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 locale: item.targetLanguage,
                 job_id: submitted.job_id,
                 state: 'queued',
-                credits: run.caption.credits,
+                credits: submitted.credits,
                 model_id: 'clip-edit',
               },
             ]);
@@ -1155,9 +1179,9 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
               items: current.items.map((candidate) => candidate.id === item.id ? { ...candidate, captionJobId: submitted.job_id } : candidate),
             } : current);
             pushJobHistory({
-              job_id: submitted.job_id,
+              idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
               model_id: 'clip-edit',
-              credits: run.caption.credits,
+              credits: submitted.credits,
               prompt: `${item.targetLanguage} burned subtitles`,
               name: `${run.projectName} · ${item.targetLanguage} subtitles`,
             });
@@ -1192,7 +1216,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         } : current);
       }
     }
-  }, [addJob, jobs, submitCaptionRender, uploadSource]);
+  }, [addJob, jobs, sendCharge, submitCaptionRender, uploadSource]);
 
   useEffect(() => {
     if (!dubbingBatchRun?.items.length) return;
@@ -1237,23 +1261,19 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         item.performanceJobId = null;
         item.captionJobId = null;
         setDubbingBatchRun({ ...run, items: run.items.map((candidate) => ({ ...candidate })) });
-        const submitted = await gatewayFetch('/generations', {
-          method: 'POST',
-          body: JSON.stringify({
-            model_id: run.ttsModel.id,
-            idempotency_key: makeIdempotencyKey(),
-            confirmed_credits: run.ttsModel.credits,
-            inputs: {
-              prompt: item.script,
-              ...ttsGenerationInputs({ ...run.ttsSettings, language: item.targetLanguage }),
-            },
-          }),
+        const submitted = await sendCharge({
+          model_id: run.ttsModel.id,
+          confirmed_credits: run.ttsModel.credits,
+          inputs: {
+            prompt: item.script,
+            ...ttsGenerationInputs({ ...run.ttsSettings, language: item.targetLanguage }),
+          },
         });
         item.speechJobId = submitted.job_id;
         const queued = { job_id: submitted.job_id, state: 'queued', credits: run.ttsModel.credits, model_id: run.ttsModel.id };
         addJob(queued);
         setProjectJobs((current) => [...current, { ...queued, role: 'speech', locale: item.targetLanguage }]);
-        pushJobHistory({ job_id: submitted.job_id, model_id: run.ttsModel.id, credits: run.ttsModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} speech retry` });
+        pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: run.ttsModel.id, credits: run.ttsModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} speech retry` });
         setStage('batch-speech');
       } else if (retryQuote.stage === 'performance') {
         item.state = 'uploading';
@@ -1263,24 +1283,20 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         item.captionJobId = null;
         setDubbingBatchRun({ ...run, items: run.items.map((candidate) => ({ ...candidate })) });
         const visualKey = run.visual.file ? await uploadSource(run.visual.file) : undefined;
-        const submitted = await gatewayFetch('/generations', {
-          method: 'POST',
-          body: JSON.stringify({
-            model_id: run.lipModel.id,
-            idempotency_key: makeIdempotencyKey(),
-            confirmed_credits: run.lipModel.credits,
-            inputs: run.lipModel.id === 'sync-lipsync-1.9-long' ? { sync_mode: run.longFormSyncMode } : {},
-            source_keys: [visualKey].filter(Boolean),
-            source_assets: [run.visual.jobId, item.speechJobId].filter(Boolean),
-            consent: true,
-          }),
-        });
+        const submitted = await sendCharge(lipSyncRequest({
+          model: run.lipModel,
+          sourceKind: run.sourceKind,
+          visualKey,
+          visualAssetId: run.visual.jobId,
+          audioJobId: item.speechJobId,
+          syncMode: run.longFormSyncMode,
+        }));
         item.performanceJobId = submitted.job_id;
         item.state = 'rendering';
         const queued = { job_id: submitted.job_id, state: 'queued', credits: run.lipModel.credits, model_id: run.lipModel.id };
         addJob(queued);
         setProjectJobs((current) => [...current, { ...queued, role: 'performance', locale: item.targetLanguage }]);
-        pushJobHistory({ job_id: submitted.job_id, model_id: run.lipModel.id, credits: run.lipModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} retry` });
+        pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: run.lipModel.id, credits: run.lipModel.credits, prompt: item.script.slice(0, 60), name: `${run.projectName} · ${item.targetLanguage} retry` });
         setStage('batch-rendering');
       } else {
         item.state = 'captioning';
@@ -1288,12 +1304,12 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         item.failureStage = null;
         item.captionJobId = null;
         setDubbingBatchRun({ ...run, items: run.items.map((candidate) => ({ ...candidate })) });
-        const submitted = await submitCaptionRender(item.performanceJobId, run.caption.preset);
+        const submitted = await submitCaptionRender(item.performanceJobId, run.caption.preset, run.caption.credits);
         item.captionJobId = submitted.job_id;
-        const queued = { job_id: submitted.job_id, state: 'queued', credits: run.caption.credits, model_id: 'clip-edit' };
+        const queued = { job_id: submitted.job_id, state: 'queued', credits: submitted.credits, model_id: 'clip-edit' };
         addJob(queued);
         setProjectJobs((current) => [...current, { ...queued, role: 'finishing', locale: item.targetLanguage }]);
-        pushJobHistory({ job_id: submitted.job_id, model_id: 'clip-edit', credits: run.caption.credits, prompt: `${item.targetLanguage} burned subtitles retry`, name: `${run.projectName} · ${item.targetLanguage} subtitles retry` });
+        pushJobHistory({ idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id, model_id: 'clip-edit', credits: submitted.credits, prompt: `${item.targetLanguage} burned subtitles retry`, name: `${run.projectName} · ${item.targetLanguage} subtitles retry` });
         setStage('batch-captioning');
       }
       setDubbingBatchRun({ ...run, items: run.items.map((candidate) => ({ ...candidate })) });
@@ -1304,7 +1320,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         state: retryQuote.stage === 'caption' ? 'partial' : 'failed',
         failureStage: retryQuote.stage,
         failure: retryQuote.stage === 'speech'
-          ? 'Speech retry could not start and was not charged.'
+          ? (isChargeUnknown(next) ? 'Speech retry is unconfirmed. Check Library, or Retry without a second charge.' : 'Speech retry could not start. No credits were taken.')
           : retryQuote.stage === 'performance'
             ? 'Lip-sync retry could not start; the speech remains in Library.'
             : 'Subtitle retry could not start; the base dubbed video remains ready.',
@@ -1323,7 +1339,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     const batchQuote = dubbingBatchQuote(plan, dubbingBatchUnitCredits);
     if (inFlight.current || busy || !localizedBatchEnabled || !plan || !batchQuote) return;
     if (!visual || !consent || !lipModel || !ttsModel || !compositionStatus.ready || balance == null || batchQuote.totalCredits > balance) return;
-    if (plan.locales.some((locale) => estimatedSpeechSeconds(locale.script) > activeMaxSeconds)) {
+    if (plan.locales.some((locale) => estimatedSpeechSeconds(locale.script, undefined, Number(ttsSettings.speed)) > activeMaxSeconds)) {
       setError({ message: `Every reviewed translation must fit the ${activeMaxSeconds}-second speech limit.` });
       return;
     }
@@ -1337,6 +1353,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     const run = {
       projectName: plan.projectName,
       workflowId: workflow.id,
+      sourceKind: workflow.sourceKind,
       quote: batchQuote,
       visual: { file: visual.file, jobId: visual.jobId },
       lipModel: { id: lipModel.id, credits: lipModel.credits },
@@ -1367,17 +1384,13 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
     try {
       for (const item of run.items) {
         try {
-          const submitted = await gatewayFetch('/generations', {
-            method: 'POST',
-            body: JSON.stringify({
-              model_id: ttsModel.id,
-              idempotency_key: makeIdempotencyKey(),
-              confirmed_credits: ttsModel.credits,
-              inputs: {
-                prompt: item.script,
-                ...ttsGenerationInputs({ ...ttsSettings, language: item.targetLanguage }),
-              },
-            }),
+          const submitted = await sendCharge({
+            model_id: ttsModel.id,
+            confirmed_credits: ttsModel.credits,
+            inputs: {
+              prompt: item.script,
+              ...ttsGenerationInputs({ ...ttsSettings, language: item.targetLanguage }),
+            },
           });
           item.speechJobId = submitted.job_id;
           item.state = 'speech';
@@ -1402,7 +1415,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
             } : candidate),
           } : current);
           pushJobHistory({
-            job_id: submitted.job_id,
+            idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
             model_id: ttsModel.id,
             credits: ttsModel.credits,
             prompt: item.script.slice(0, 60),
@@ -1412,7 +1425,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
         } catch (next) {
           item.state = 'failed';
           item.failureStage = 'speech';
-          item.failure = 'This locale could not queue speech and was not charged.';
+          item.failure = isChargeUnknown(next) ? 'Speech for this locale is unconfirmed. Check Library, or Retry without a second charge.' : 'This locale could not queue speech. No credits were taken.';
           setError(gatewayError(next));
           setDubbingBatchRun((current) => current ? {
             ...current,
@@ -1462,20 +1475,16 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
       const visualKey = visual.file ? await uploadSource(visual.file) : undefined;
       const visualAssetId = visual.jobId;
       if (speechSource === 'script') {
-        const submitted = await gatewayFetch('/generations', {
-          method: 'POST',
-          body: JSON.stringify({
-            model_id: ttsModel.id,
-            idempotency_key: makeIdempotencyKey(),
-            confirmed_credits: ttsModel.credits,
-            inputs: { prompt: script.trim(), ...ttsGenerationInputs(ttsSettings) },
-          }),
+        const submitted = await sendCharge({
+          model_id: ttsModel.id,
+          confirmed_credits: ttsModel.credits,
+          inputs: { prompt: script.trim(), ...ttsGenerationInputs(ttsSettings) },
         });
         setProjectJobs([{ role: 'speech', job_id: submitted.job_id, state: 'queued', credits: ttsModel.credits, model_id: ttsModel.id }]);
         chain.current = { visualKey, visualAssetId, submitting: false };
         startJobs({ job_id: submitted.job_id, state: 'queued', credits: ttsModel.credits, model_id: ttsModel.id });
         pushJobHistory({
-          job_id: submitted.job_id,
+          idempotent: submitted.idempotent, recovering: submitted.recovering, job_id: submitted.job_id,
           model_id: ttsModel.id,
           credits: ttsModel.credits,
           prompt: script.trim().slice(0, 60),
@@ -1721,7 +1730,8 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
           </div>
         </header>
 
-        {dedicatedLipSync && workflow.id === 'video-lip-sync' && <LipSyncExampleCard />}
+        {dedicatedLipSync && workflow.id === 'video-lip-sync' && <StudioExampleCard slug="lip-sync" title="AI Lip Sync" poster="/examples/lip-sync.jpg" />}
+        {dedicatedCharacterWorkflow === 'talking-object' && <StudioExampleCard slug="talking-objects" title="Talking Objects" />}
 
         {activeRecipe && (
           <section aria-label={`${activeRecipe.title} recipe`} className="mt-6 rounded-2xl border border-vx-accent/35 bg-vx-accent/[0.06] p-4 sm:p-5">
@@ -2040,7 +2050,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 {job && <Chip tone={job.state === 'failed' ? 'danger' : 'accent'}>{jobStateUi(job).label}</Chip>}
               </div>
               <div className="relative aspect-video bg-black">
-                {outputJob?.asset_url ? <JobAssetPreview job={outputJob} /> : visual ? (
+                {(outputJob?.asset_url || outputJob?.state === 'succeeded') ? <JobAssetPreview job={outputJob} /> : visual ? (
                   <>
                     <FilePreview source={visual} kind={workflow.sourceKind} />
                     {(sending || generating) && (
@@ -2108,7 +2118,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                 <div className="mt-4 border-t border-vx-border pt-4">
                   <div className="flex items-start justify-between gap-4">
                     <div><p className="text-sm font-bold">Burned subtitles</p><p className="mt-1 text-xs text-vx-fg-muted">Runs after lip sync as a separately refunded render.</p></div>
-                    <span className="font-vx-mono text-sm font-bold text-vx-money">{captionsCredits} cr</span>
+                    <span className="font-vx-mono text-sm font-bold text-vx-money">up to {captionsCredits} cr</span>
                   </div>
                 </div>
               )}
@@ -2125,7 +2135,7 @@ export default function PerformanceStudio({ initialWorkflowId = null, initialRec
                   {quote.speechCredits} credits for speech, then {quote.lipSyncCredits} for {workflow.id === 'product-presenter' ? 'presenter animation' : 'lip sync'}. If speech succeeds but {workflow.id === 'product-presenter' ? 'animation' : 'lip sync'} cannot start, the speech stays in Library and only its charge stands.
                 </p>
               )}
-              {composition.subtitles && <p className="mt-2 text-xs leading-5 text-vx-fg-muted">The base performance is created first, then {captionsCredits} credits are charged for burned subtitles. If captioning fails, that second job is refunded and the base video remains in Library.</p>}
+              {composition.subtitles && <p className="mt-2 text-xs leading-5 text-vx-fg-muted">The base performance is created first, then up to {captionsCredits} credits are charged for burned subtitles, based on the finished video&apos;s length. If captioning fails, that second job is refunded and the base video remains in Library.</p>}
               {composition.pictureInPicture && <p className="mt-2 text-xs leading-5 text-vx-fg-muted">Picture-in-picture adds no credits. After the performance succeeds, this browser combines it with the selected background and prepares a local WebM download.</p>}
               <Button className="mt-5 w-full justify-between" cost={quote.totalCredits} disabled={blocked} onClick={submit}>
                 {sending ? 'Preparing…' : generating ? 'Generation running' : workflow.id === 'video-dubbing' ? 'Create dubbed video' : workflow.id === 'product-presenter' ? 'Create product presenter' : workflow.id === 'baby-podcast' ? 'Create synthetic baby podcast' : workflow.id === 'talking-object' ? 'Create talking object' : workflow.id === 'talking-animal' ? 'Create talking animal' : workflow.id === 'talking-cartoon' ? 'Create talking illustration' : 'Create performance'}

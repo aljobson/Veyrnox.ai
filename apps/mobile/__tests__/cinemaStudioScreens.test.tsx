@@ -22,6 +22,12 @@ jest.mock('expo-router', () => ({ Link: 'Link', Stack: { Screen: 'Screen' }, rou
     useLocalSearchParams: () => mockParams, useFocusEffect: (fn: any) => require('react').useEffect(fn, []),
 }));
 jest.mock('expo-image', () => ({ Image: 'Image' }));
+jest.mock('../src/lib/safeArea', () => ({ useOptionalSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }) }));
+jest.mock('../src/components/SafeContentScrollView', () => ({
+    SafeContentScrollView: ({ children, ...props }: any) => require('react').createElement('ScrollView', props, children),
+    SafeKeyboardFormScrollView: ({ children, ...props }: any) => require('react').createElement('ScrollView', props, children),
+    screenSafePadding: (_insets: unknown, gutter: number) => ({ padding: gutter }),
+}));
 jest.mock('expo-secure-store', () => ({ getItemAsync: async () => null }));
 jest.mock('expo-file-system', () => ({ FileMode: { ReadOnly: 'r' } }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => `key-${++mockKey}` }));

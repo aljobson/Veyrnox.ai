@@ -168,7 +168,8 @@ test('web recipe runs the exact community prompt whenever it is runnable, not a 
     './UseTemplate': { UseTemplate: props => { handoff = props; return null; } },
   } });
   const html = f.render(React.createElement(f.load('app/veyrnox/_components/TemplateRecipe.js').TemplateRecipe, { preset }));
-  assert.ok(html.includes(row.sourcePrompt), 'exact source remains visible byte-for-byte');
+  assert.ok(!html.includes(row.sourcePrompt), 'a video template prompt is hidden until Edit');
+  assert.ok(html.includes('template-prompt-ready'));
   assert.ok(!html.includes('GENERATION PROMPT'), 'one prompt only: the community one');
   assert.equal(handoff.prompt, row.sourcePrompt);
   assert.equal(handoff.preset.prompt, row.sourcePrompt);

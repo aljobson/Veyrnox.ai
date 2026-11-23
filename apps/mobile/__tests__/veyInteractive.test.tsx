@@ -11,11 +11,17 @@ import { t } from '../src/lib/i18n';
 
 jest.mock('../src/lib/haptics', () => ({ playSelection: jest.fn() }));
 const mockApi = { getBalance: jest.fn(async () => ({ free_credits: 10 })) };
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: 0, beginSessionTask: () => ({ current: () => true }) }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: 0, beginSessionTask: () => ({ user: 'vey-test', gen: 0, current: () => true }) }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, Link: ({ children }: any) => children, useRouter: () => ({}), useLocalSearchParams: () => ({}) }));
 jest.mock('../src/lib/analytics/events', () => ({ captureEvent: jest.fn() }));
 // The first-run screen shows Vey above its first question; it needs no network or storage here.
-jest.mock('../src/lib/firstProfileStore', () => ({ loadFirstAnswers: async () => ({ goal: null, role: null, destination: null }), writeFirstProfile: async () => ({}) }));
+jest.mock('../src/lib/firstProfileStore', () => ({
+    loadFirstAnswers: async () => ({ goal: null, role: null, destination: null }),
+    loadFirstOnboarding: async () => ({ goal: null, role: null, destination: null, version: 1, currentStep: 'goal', completed: false }),
+    replayFirstOnboarding: async (_api: unknown, _task: unknown, state: unknown) => state,
+    writeFirstOnboarding: async () => undefined,
+    writeFirstProfile: async () => ({}),
+}));
 jest.mock('../src/lib/firstGoalStore', () => ({ writeFirstGoal: async () => undefined }));
 jest.mock('../src/lib/firstProfileSync', () => ({ pushFirstAnswers: async () => undefined }));
 jest.mock('../src/lib/markWelcomeSeen', () => ({ markWelcomeSeen: async () => undefined }));

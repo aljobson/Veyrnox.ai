@@ -40,8 +40,14 @@ test('success persists a valid single audio track and web-shaped metadata, norma
     const doc = store.getBeat(id)!; expect(validateBeat(doc).ok).toBe(true); expect(doc.title).toBe('Song');
     expect(doc.tracks).toHaveLength(1); expect(doc.tracks[0]).toMatchObject({ kind: 'audio', name: '  Ｓong  ', regions: [{ start: 0 }] });
     expect(Object.values((doc as unknown as { assets: Record<string, unknown> }).assets)).toEqual([{ ...base, name: '  Ｓong  ', durationSec: 1, sourceChannels: 1, encodedBytes: bytes.length }]);
+    expect(JSON.stringify(doc)).not.toContain('private.invalid');
     expect(files.data.size).toBe(1); expect(deps.sign).toHaveBeenCalledWith(USER, signal);
     for (const call of (deps.fetchAudio as jest.Mock).mock.calls) expect(call[1].signal).toBe(signal);
+});
+test.each([undefined, '', 'not a URL', 'http://private.invalid/signed'])('missing or invalid signer URL %p retains r34', async url => {
+    const { deps, signal } = setup(); deps.sign = async () => ({ url } as { url: string });
+    await expect(seedSongBeat(deps, PROJECT, signal)).rejects.toMatchObject({ code: 'r34' });
+    expect(deps.fetchAudio).not.toHaveBeenCalled();
 });
 test.each(['', '   ', 'x'.repeat(100)])('seed title fallback / bound for %s', async title => {
     const { deps, store, signal } = setup(); deps.getSong = async () => ({ id: PROJECT, version_id: VERSION, job_id: USER, title });

@@ -55,8 +55,6 @@
   "editor.v2": "Technical notation, unit, format example or typeface specimen; no translatable prose.",
   "editor.volume": "Established Brazilian Portuguese term or loanword: Volume.",
   "editor.zoom": "Established Brazilian Portuguese term or loanword: Zoom.",
-  "editorSpike.mB": "Technical notation, unit, format example or typeface specimen; no translatable prose.",
-  "editorSpike.webcodecsoffscreen": "Technical notation, unit, format example or typeface specimen; no translatable prose.",
   "explore.oddlings.title": "Brand or product name retained as in the Portuguese website catalog.",
   "faceFilters.natural": "Established Brazilian Portuguese term or loanword: Natural.",
   "film.promptv": "Portuguese loanword with unchanged placeholders: Prompt v{value1}.",
@@ -184,6 +182,7 @@
   "beat.home.untitled": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
   "beat.home.loaded": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
   "beat.tempoValue": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
+  "beat.pattern.swing": "Swing is established Portuguese music-production terminology and is intentionally unchanged.",
   "beat.pad.tom": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
   "beat.mixer": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
   "beat.gain": "Same in pt: a loanword, brand-style name or number used unchanged in this language.",
@@ -274,5 +273,14 @@
   "musicExport.format.flac": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
-  "musicRender.fade": "Established audio term shared with English; machine translation, native review pending."
+  "musicRender.fade": "Established audio term shared with English; machine translation, native review pending.",
+  "editorMotion.linear": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose.",
+  "music.create.suno.variety.1": "Same spelling in Portuguese and English for this label: Normal.",
+  "music.create.suno.variety.3": "Same spelling in Portuguese and English for this label: Extra.",
+  "music.create.suno.style.indie": "Same spelling in Portuguese and English for this label: Indie.",
+  "music.create.suno.style.jazz": "Same spelling in Portuguese and English for this label: Jazz.",
+  "music.create.suno.style.pop": "Same spelling in Portuguese and English for this label: Pop.",
+  "music.create.suno.style.rock": "Same spelling in Portuguese and English for this label: Rock."
 }

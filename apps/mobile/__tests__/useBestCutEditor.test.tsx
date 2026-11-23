@@ -6,6 +6,7 @@ import { createRoot } from 'test-renderer';
 import { useBestCutEditor } from '../src/components/editor/useBestCutEditor';
 import { useFullEditorSession } from '../src/components/editor/useFullEditorSession';
 import { emptyTimeline } from '../src/lib/nativeEditorModel';
+import { editorMedia } from '../src/lib/editorMedia';
 import { webSequenceV3, envelope } from './fixtures/webSequenceV3';
 let mockApply: (value: any) => import('../src/lib/editorDocumentGate').DocumentApplyResult;
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
@@ -39,6 +40,25 @@ jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValu
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, beginSessionTask: () => ({ current: () => true }) }) }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn() }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}) } }));
+
+test('unmount fences every native media operation for the project generation', async () => {
+    jest.useFakeTimers();
+    const doc = envelope(emptyTimeline());
+    mockRequest.mockImplementation(async (path: string) => path.endsWith('/document') ? { document: doc, revision: 1 } : { project: { name: 'Test' } });
+    const bump = jest.spyOn(editorMedia, 'bumpProjectGeneration').mockResolvedValue(1);
+    function Harness() { useFullEditorSession({ projectId: doc.project_id }); return null; }
+    const root = createRoot();
+    try {
+        await act(async () => root.render(<Harness />));
+        bump.mockClear();
+        await act(async () => root.unmount());
+        expect(bump).toHaveBeenCalledTimes(1);
+        expect(bump).toHaveBeenCalledWith(doc.project_id);
+    } finally {
+        bump.mockRestore();
+        jest.useRealTimers();
+    }
+});
 
 test('Best Cut on an invalid empty legacy project keeps its derived history base undoable', async () => {
     jest.useFakeTimers();

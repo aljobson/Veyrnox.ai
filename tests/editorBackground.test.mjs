@@ -10,7 +10,7 @@ test('background image resolves and survives document/copy without source loss',
     const tl=updateSequenceClip(fixture(),'video','v1',{background:{...BACKGROUND_DEFAULTS,type:'image',mediaId:'backdrop'}}),id='11111111-1111-4111-8111-111111111111';
     assert.equal(validProjectDocument(JSON.parse(JSON.stringify(withTimeline(emptyProjectDocument(id),tl))),id),true);
     const calls=[],pictures=await resolvePictures(frameLayers(tl,30),(k,time,mediaId)=>{calls.push([k,time,mediaId]);return mediaId || 'source';});
-    assert.deepEqual(pictures,{visuals:['source'],backgrounds:['backdrop']});assert.deepEqual(calls,[[0,1,undefined],[0,0,'backdrop']]);
+    assert.deepEqual(pictures,{visuals:['source'],backgrounds:['backdrop'],masks:[null]});assert.deepEqual(calls,[[0,1,undefined],[0,0,'backdrop']]);
     const clipboard=copySelection(tl,[{track:'video',id:'v1'}]);assert.ok(clipboard.media.backdrop);
     const pasted=pasteSelection(emptySequence(),clipboard,0);assert.equal(pasted.error,undefined);assert.equal(pasted.video[0].background.mediaId,'backdrop');
     assert.match(removeSequenceMedia(tl,'backdrop').error,/backgrounds/);

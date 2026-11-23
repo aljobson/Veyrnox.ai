@@ -49,9 +49,9 @@ test('each mood moves the arms, but never interrupts walking or pointing', async
 test('job results and refused submits drive Vey from one shared place each', async () => {
   const history = await readFile(new URL('app/veyrnox/_lib/jobHistory.js', root), 'utf8');
   assert.match(history, /signalVeyMood\('generation-succeeded'\)/);
-  assert.match(history, /markJobSettled\(job_id, state, errorCode\)/);
+  assert.match(history, /markJobSettled\(job_id, state, errorCode, credits, refunded = false\)/);
   for (const file of ['app/veyrnox/_components/JobWatcher.js', 'app/veyrnox/_lib/useStudioJobs.js']) {
-    assert.match(await readFile(new URL(file, root), 'utf8'), /\.error_code\)/, `${file} passes the error code`);
+    assert.match(await readFile(new URL(file, root), 'utf8'), /\.error_code, next\.credits, next\.refunded\)/, `${file} passes the error code`);
   }
   for (const file of ['app/veyrnox/app/create/page.js', 'app/veyrnox/app/text-to-speech/TextToSpeechStudioClient.js', 'app/veyrnox/app/dialogue/DialogueStudioClient.js', 'app/veyrnox/app/performance/PerformanceStudioClient.js', 'app/veyrnox/app/video-agent/page.js', 'app/veyrnox/_components/TemplateGenerate.js']) {
     assert.match(await readFile(new URL(file, root), 'utf8'), /veyErrorSituation|useVeyErrorMood\(error\?\.code\)/, `${file} reports its errors to Vey`);

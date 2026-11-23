@@ -1,6 +1,7 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root, type TestInstance } from 'test-renderer';
+import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import Credits from '../src/app/(app)/credits';
 import { publishBalance } from '../src/lib/balanceEvents';
 import { ApiError } from '../src/lib/api';
@@ -20,9 +21,9 @@ const mockApi = { getBalance: jest.fn(async () => mockBalance), request: jest.fn
     if (path === '/api/v1/subscriptions') return { subscription: mockRow };
     return mockPlans();
 }) };
-const mockBilling = { status: 'ready', canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
+const mockBilling = { status: 'ready', salesOpen: true, canPurchase: true, canRestore: true, refreshSales: jest.fn(), generationActive: false, generationAccessResolved: true, generationPurchaseReady: true,
     activeProductIds: [] as string[], managementURL: null, offerings: { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.156', 10), pkg('large', 'ai.veyrnox.credits.1177', 70)] } } },
-    purchase: jest.fn(), restore: jest.fn(), refreshGenerationAccess: jest.fn(),
+    purchase: jest.fn(), restore: jest.fn(), refreshGenerationAccess: jest.fn(), retryOfferings: jest.fn(),
 };
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: 0, beginSessionTask: () => {
     const owner = require('../src/lib/appCache').getCacheUser();
@@ -34,12 +35,13 @@ jest.mock('../src/components/VeyCardPeek', () => ({ VeyCardPeek: () => null, pee
 jest.mock('../src/lib/media', () => ({ ...jest.requireActual('../src/lib/media'), fetchCatalog: async () => [] }));
 void [RN.View, RN.Text, RN.Pressable, RN.ScrollView, RN.ActivityIndicator];
 let root: Root, serial = 0;
+let mockInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const textOf = (node: TestInstance): string => node.props.accessibilityElementsHidden ? '' : node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
 const text = () => textOf(root.container);
 const controls = (label: string) => root.container.queryAll(n => n.props.accessibilityLabel === label && n.props.accessibilityRole === 'button');
 async function click(node: TestInstance) { await act(async () => node.props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 })); }
 async function press(label: string) { const nodes = controls(label); expect(nodes).toHaveLength(1); await click(nodes[0]); }
-async function mount() { await act(async () => root.render(<Credits />)); }
+async function mount() { await act(async () => root.render(<SafeAreaInsetsContext.Provider value={mockInsets}><Credits /></SafeAreaInsetsContext.Provider>)); }
 async function cancel(label = t('creditsPage.cancel')) {
     await press(label);
     expect(controls(t('creditsPage.confirm'))[0].props.accessibilityState.disabled).toBe(true);
@@ -48,18 +50,25 @@ async function cancel(label = t('creditsPage.cancel')) {
 }
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; setLocaleFromDevice(['en']); markOnline();
+    mockInsets = { top: 0, right: 0, bottom: 0, left: 0 };
     await wipeCache(); await bindCacheUser(`credits-${++serial}`); root = createRoot();
     mockRow = null; mockPlans = mockPlansOk; mockBalance = { balance: 1234, free_credits: 20, free_expires_at: '2026-11-01T00:00:00Z' };
     mockApi.getBalance.mockReset().mockImplementation(async () => mockBalance); mockApi.request.mockClear(); mockPost.mockReset();
-    mockBilling.status = 'ready'; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.refreshSales.mockClear();
+    mockBilling.status = 'ready'; mockBilling.salesOpen = true; mockBilling.canPurchase = true; mockBilling.canRestore = true; mockBilling.refreshSales.mockClear(); mockBilling.retryOfferings.mockClear();
     mockBilling.offerings = { all: { generation: { availablePackages: [monthly, annual] }, credits: { availablePackages: [pkg('pack', 'ai.veyrnox.credits.156', 10), pkg('large', 'ai.veyrnox.credits.1177', 70)] } } };
     mockBilling.generationActive = false; mockBilling.activeProductIds = []; mockBilling.offerings.all.generation.availablePackages = [monthly, annual];
     mockBilling.purchase.mockReset().mockResolvedValue('purchased'); mockBilling.restore.mockReset().mockResolvedValue(undefined); mockBilling.refreshGenerationAccess.mockReset().mockResolvedValue(false);
 });
-afterEach(async () => { await act(async () => root.unmount()); await wipeCache(); markOnline(); });
+afterEach(async () => { await act(async () => root.unmount()); await wipeCache(); markOnline(); jest.restoreAllMocks(); });
 test('renders balance, free-credit expiry, store cards and no per-credit price', async () => {
     await mount(); expect(text()).toContain('1,234'); expect(text()).toContain('20 credits'); expect(text()).toContain('Nov 1, 2026');
     expect(text()).toContain('Best value'); expect(text()).toContain('£70.00'); expect(text()).not.toMatch(/per credit|\/ credit/i);
+});
+test('Credits keeps every purchase surface inside landscape physical edges', async () => {
+    mockInsets = { top: 0, right: 59, bottom: 21, left: 59 };
+    await mount();
+    const page = root.container.queryAll(node => node.props.contentInsetAdjustmentBehavior === 'automatic')[0];
+    expect(RN.StyleSheet.flatten(page.props.contentContainerStyle)).toMatchObject({ paddingLeft: 75, paddingRight: 75, paddingBottom: 61 });
 });
 test('switching cadence clears selection and renewal terms until the exact visible annual card is chosen', async () => {
     await mount();
@@ -109,12 +118,24 @@ test.each(['post','access','balance'])('refreshes independent pieces despite %s 
     if (failure === 'post') expect(text()).toContain(t('creditsPage.retry'));
 });
 test('top-up updates the mounted focused balance card and refreshes free fields', async () => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
     await mount(); mockBilling.purchase.mockImplementation(async () => { mockBalance = { balance: 1443, free_credits: 30, free_expires_at: '2026-12-01T00:00:00Z' }; return 'purchased'; });
     await press('156 credits, £10.00'); expect(text()).toContain('1,443'); expect(text()).toContain('30 credits'); expect(text()).toContain('Dec 1, 2026');
+    expect(announce).toHaveBeenCalledWith(t('credits.added', { balance: 1443 }));
 });
 test('restore republishes balance and rereads details', async () => {
     await mount(); mockBilling.restore.mockImplementation(async () => { mockBalance = { ...mockBalance, balance: 1500 }; });
     await press(t('credits.restore')); expect(text()).toContain('1,500');
+});
+test('restore keeps a labelled in-place progress state until the store finishes', async () => {
+    let finish!: (value: boolean) => void;
+    mockBilling.restore.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    await mount(); await press(t('credits.restore'));
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-restoring')).toHaveLength(1);
+    expect(text()).toContain(t('projectDocument.restoring'));
+    expect(controls(t('credits.restore'))[0].props.accessibilityState).toMatchObject({ disabled: true, busy: true });
+    await act(async () => finish(true));
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-restoring')).toHaveLength(0);
 });
 test('offline confirmation is disabled and keeping a subscription makes no POST', async () => {
     mockRow = { ...baseRow }; await mount(); await press(t('creditsPage.stop'));
@@ -152,13 +173,16 @@ test('late subscription results from another owner are discarded', async () => {
 });
 
 test('tapping the active cadence preserves selection, renewal terms and Continue', async () => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
     await mount();
     const before = text();
     await click(root.container.queryAll(n => n.props.accessibilityRole === 'tab' && textOf(n) === 'Monthly')[0]);
     expect(text()).toBe(before);
     expect(controls(t('credits.subscriptions.continue'))[0].props.accessibilityState.disabled).toBe(false);
-    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')[0].props.accessibilityState.selected).toBe(true);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radiogroup')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')[0].props.accessibilityState.checked).toBe(true);
     await press(t('credits.subscriptions.continue')); expect(mockBilling.purchase).toHaveBeenCalledWith(monthly);
+    expect(announce).toHaveBeenCalledWith(t('credits.subscriptions.started'));
 });
 test('a previously ended cooling-off row shows neutral refund guidance until an action returns a result', async () => {
     mockRow = { ...baseRow, status: 'ended', end_reason: 'cancelled_cooling_off' };
@@ -181,15 +205,26 @@ test('a balance publication during the first read keeps its amount and receives 
 });
 
 test.each([true, false])('restore feedback reflects returned active access=%s', async restored => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
     mockBilling.restore.mockResolvedValue(restored); await mount(); await press(t('credits.restore'));
     expect(text()).toContain(t(restored ? 'credits.restored' : 'credits.nothingToRestore'));
     expect(text()).not.toContain(t(restored ? 'credits.nothingToRestore' : 'credits.restored'));
+    expect(announce).toHaveBeenCalledWith(t(restored ? 'credits.restored' : 'credits.nothingToRestore'));
 });
 test('restore failure retains the existing error path', async () => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
     mockBilling.restore.mockRejectedValue(new Error('offline')); await mount(); await press(t('credits.restore'));
     expect(text()).toContain(t('credits.error')); expect(text()).not.toContain(t('credits.restored'));
+    expect(announce).toHaveBeenCalledWith(t('credits.error'));
+});
+test('sales closure is announced once through the shared outcome state', async () => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
+    mockBilling.purchase.mockRejectedValue(new Error('sales_closed')); await mount(); await press('156 credits, £10.00');
+    expect(text()).toContain(t('credits.notOpen'));
+    expect(announce).toHaveBeenCalledWith(t('credits.notOpen'));
 });
 test.each(['pending', 'throwAfterPurchase', 'cancelled', 'failed'])('purchase result %s uses the correct feedback', async result => {
+    const announce = jest.spyOn(RN.AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
     await mount();
     const unsubscribe = result === 'throwAfterPurchase'
         ? require('../src/lib/balanceEvents').subscribeBalance(() => { throw new Error('bookkeeping'); }) : () => {};
@@ -203,6 +238,7 @@ test.each(['pending', 'throwAfterPurchase', 'cancelled', 'failed'])('purchase re
         const key = result === 'cancelled' ? 'credits.cancelled' : result === 'failed' ? 'credits.error' : 'credits.pending';
         expect(text()).toContain(t(key));
         if (key !== 'credits.error') expect(text()).not.toContain(t('credits.error'));
+        expect(announce).toHaveBeenCalledWith(t(key));
     } finally { unsubscribe(); }
 });
 
@@ -226,10 +262,32 @@ test.each(['missing', 'null-products', 'error'])('catalog %s shows unavailable c
     mockBilling.offerings = (kind === 'missing' ? { current: null, all: {} } : kind === 'error' ? null : {
         all: { credits: { availablePackages: [{ identifier: 'empty', product: null }] }, generation: { availablePackages: [] } },
     }) as any;
-    if (kind === 'error') mockBilling.status = 'unavailable';
+    if (kind === 'error') { mockBilling.status = 'unavailable'; mockBilling.canPurchase = false; }
     await mount(); expect(text()).toContain(t('credits.unavailable'));
     expect(text()).not.toContain('£'); expect(text()).not.toContain('$');
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'radio')).toHaveLength(0);
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable')).toHaveLength(1);
+    expect(text()).not.toContain(t('credits.notOpen'));
+});
+test('the combined unavailable store state retries offerings and sales once', async () => {
+    mockBilling.offerings = { current: null, all: {} } as any;
+    await mount(); await press(t('credits.hardPaywall.retry'));
+    expect(mockBilling.retryOfferings).toHaveBeenCalledTimes(1);
+    expect(mockBilling.refreshSales.mock.calls.length).toBeGreaterThanOrEqual(2);
+});
+test('billing-off Credits has one honest unavailable state and no dead retry', async () => {
+    mockBilling.status = 'off'; mockBilling.canPurchase = false; mockBilling.canRestore = false; mockBilling.offerings = null as any;
+    await mount();
+    expect(text()).toContain(t('billing.paywall.unavailableBuild'));
+    expect(root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable')).toHaveLength(1);
+    expect(controls(t('credits.hardPaywall.retry'))).toHaveLength(0);
+    expect(text()).not.toContain(t('credits.notOpen'));
+});
+test('an active Generation subscriber with an empty store sees only the relevant pack message', async () => {
+    mockBilling.generationActive = true; mockBilling.offerings = { current: null, all: {} } as any;
+    await mount();
+    expect(text()).toContain(t('credits.unavailable'));
+    expect(text()).not.toContain(t('credits.subscriptions.unavailable'));
 });
 test('a failed plan-credits load shows an error with a retry beside the plan cards; retrying loads the amounts', async () => {
     mockPlans = async () => { throw new Error('offline'); };

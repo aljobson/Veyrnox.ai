@@ -508,14 +508,14 @@
     "area": "helper",
     "text": "Close Vey",
     "labels": [
-      "aria-label=\"Close Veyrnox.ai helper\""
+      "aria-label=\"Close Vey, Close Veyrnox.ai helper\""
     ]
   },
   {
     "area": "helper",
     "text": "Ask Vey",
     "labels": [
-      "aria-label=\"Ask Veyrnox.ai helper\""
+      "aria-label=\"Ask Vey, Ask Veyrnox.ai helper\""
     ]
   },
   {

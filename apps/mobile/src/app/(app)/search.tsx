@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t } from '../../lib/i18n';
 import { fetchCatalog } from '../../lib/media';
+import { useMusicAvailable } from '../../lib/music/useMusicAvailable';
 import { modelEntries, screenEntries, searchEntries, type SearchEntry } from '../../lib/siteSearch';
 import { colors, LIST_END_PADDING } from '../../theme';
 
 // Search the app's own screens and the model catalogue. Nothing leaves the phone except the catalogue fetch the
 // app already makes; if that fails, screens are still searchable.
 export default function Search() {
+    const musicAvailable = useMusicAvailable();
     const [query, setQuery] = useState('');
     const [models, setModels] = useState<SearchEntry[]>([]);
     useEffect(() => {
@@ -20,7 +22,7 @@ export default function Search() {
             live = false;
         };
     }, []);
-    const entries = useMemo(() => [...screenEntries((k) => t(k as Parameters<typeof t>[0])), ...models], [models]);
+    const entries = useMemo(() => [...screenEntries((k) => t(k as Parameters<typeof t>[0]), { musicAvailable }), ...models], [models, musicAvailable]);
     const results = useMemo(() => searchEntries(query, entries), [query, entries]);
 
     return (

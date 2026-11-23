@@ -87,3 +87,24 @@ test('the app route and sidebar expose the workflow suite', async () => {
   assert.match(nav, /href: '\/app\/features'/);
   assert.match(nav, /key: 'features', href: '\/app\/features'/);
 });
+
+test('studio example cards share one component and show only media we host', async () => {
+  const [card, performance, speech, tools] = await Promise.all([
+    readFile(new URL('../app/veyrnox/_components/StudioExampleCard.js', import.meta.url), 'utf8'),
+    readFile(new URL('../app/veyrnox/app/performance/PerformanceStudioClient.js', import.meta.url), 'utf8'),
+    readFile(new URL('../app/veyrnox/app/text-to-speech/TextToSpeechStudioClient.js', import.meta.url), 'utf8'),
+    readFile(new URL('../app/veyrnox/_components/CreativeFeatureStudio.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(card, /startsWith\('\/examples\/'\)/);
+  assert.match(card, /app\.features\.example'/);
+  assert.match(card, /app\.features\.exampleTitle/);
+  assert.match(card, /app\.features\.exampleAria/);
+  assert.doesNotMatch(card, /lipsync\.video/);
+  assert.match(performance, /<StudioExampleCard slug="lip-sync"/);
+  assert.match(performance, /dedicatedCharacterWorkflow === 'talking-object' && <StudioExampleCard slug="talking-objects"/);
+  assert.match(speech, /<StudioExampleCard slug="text-to-speech"/);
+  assert.doesNotMatch(performance + speech + tools, /LipSyncExampleCard/);
+  for (const slug of ['lip-sync', 'text-to-speech', 'talking-objects']) {
+    assert.ok(creativeFeatureExample(slug).url.startsWith('/examples/'), `${slug} must stay on owned media`);
+  }
+});

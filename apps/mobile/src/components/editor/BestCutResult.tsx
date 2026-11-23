@@ -8,7 +8,10 @@ import { t } from '../../lib/i18n';
 import { createFrameStore } from './editorFrameStore';
 import { PlaybackPreview, PlaybackTransport } from './EditorPlayback';
 import { colors } from '../../theme';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
+import { modalSafePadding } from '../../lib/modalLayout';
 export function BestCutResult({ before, after, plan, api, uris, onOpen, captionsOmitted, refunded }: { onOpen(): void; before: Timeline; after: Timeline; plan: BestCutPlan | null; api: ApiClient; uris: Record<string, string>; captionsOmitted?: boolean; refunded?: number }) {
+    const insets = useOptionalSafeAreaInsets();
     const [open, setOpen] = useState(false), [view, setView] = useState<'before' | 'after'>('after'), [details, setDetails] = useState(false);
     const [playing, setPlaying] = useState(false), [store] = useState(createFrameStore);
     const timeline = view === 'before' ? before : after, total = framesIn(timeline);
@@ -20,7 +23,7 @@ export function BestCutResult({ before, after, plan, api, uris, onOpen, captions
         <Chip label={t('bestCut.before')} selected={open && view === 'before'} onPress={() => { onOpen(); setView('before'); store.set(0); setOpen(true); }} />
         <Chip label={t('bestCut.afterView')} selected={!open || view === 'after'} onPress={() => { onOpen(); setView('after'); store.set(0); setOpen(true); }} />
     </View><Modal visible={open} onRequestClose={() => { setOpen(false); setPlaying(false); }} animationType="slide">
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 60, gap: 16, backgroundColor: colors.background }}>
+        <ScrollView contentContainerStyle={[{ gap: 16, backgroundColor: colors.background }, modalSafePadding(insets, 24)]}>
             <Text>{t('bestCut.readOnly')}</Text><View style={{ flexDirection: 'row', gap: 8 }}>{(['before', 'after'] as const).map(v => <Chip key={v} label={t(v === 'before' ? 'bestCut.before' : 'bestCut.afterView')} selected={v === view} onPress={() => { setView(v); setPlaying(false); store.set(0); }} />)}</View>
             <View style={{ height: 320 }}><PlaybackPreview frameStore={store} timeline={timeline} api={api} playing={playing} localMediaUris={uris} /></View>
             <PlaybackTransport frameStore={store} total={total} fps={timeline.fps} playing={playing} onSeek={store.set} onPlaying={setPlaying} />

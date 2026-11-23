@@ -17,9 +17,9 @@ const require = createRequire(import.meta.url);
 function load(path, mocks) {
     const source = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
     const code = ts.transpileModule(source, { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS } }).outputText;
-    const module = { exports: {} };
-    new Function('require', 'module', 'exports', code)(id => mocks[id] ?? require(id), module, module.exports);
-    return module.exports;
+    const loaded = { exports: {} };
+    new Function('require', 'module', 'exports', code)(id => mocks[id] ?? require(id), loaded, loaded.exports);
+    return loaded.exports;
 }
 function hooks(context = () => null) {
     const values = [], deps = [], cleanups = [];
@@ -148,14 +148,18 @@ test('applying a plan can change the shape anchor; planning blocks but Undo rest
     });
     const { EditSheet } = load('app/veyrnox/_components/EditSheet.js', {
         ...common, react: sheet.react, '../../../lib/videoShape.mjs': shapes,
+        '../_lib/jobHistory': { pushJobHistory() {} },
         '../../../lib/i18n/translate.mjs': { pluralKey: (_t, _locale, key) => key },
         'next/link': 'a', './VideoShapeBadge': { VideoShapeBadge: 'badge' }, './Modal': { Modal: 'modal' },
         './AssetLoadStatus': {}, './ConfirmDialog': { ConfirmDialog: 'confirm' }, './SmartCutPlanner': { SmartCutPlanner },
-        './SmartCutAnalyse': { SmartCutAnalyse: 'analyse' }, './SmartCutWorkbench': { SmartCutWorkbench: 'workbench' }, '../_lib/gateway': {},
+        './SmartCutAnalyse': { SmartCutAnalyse: 'analyse' }, './SmartCutWorkbench': { SmartCutWorkbench: 'workbench' },
+        // The sheet reads each clip's sound before any paid step; no `has_audio` here means it could not be read.
+        '../_lib/gateway': { gatewayFetch: async () => ({}) },
     });
     const clips = [1030, 1000, 1060].map((width, i) => ({ job_id: String(i), video_width: width, video_height: 1000 }));
     const renderSheet = () => sheet.render(() => EditSheet({ clips, audios: [], credits5s: 1, smartCut: true }));
     nodes(renderSheet()).filter(n => n.props?.onMetadata).forEach(n => n.props.onMetadata({ duration: 10 }));
+    await sheet.flush();
     const props = () => nodes(renderSheet()).find(n => n.type === SmartCutPlanner).props;
     const renderPlanner = (overrides = {}) => planner.render(() => SmartCutPlanner({ ...props(), ...overrides }));
     const button = (tree, name) => nodes(tree).find(n => n.type === 'button' && n.props.children === `app.smartCut.action.${name}`);
@@ -247,4 +251,38 @@ test('web Create refreshes its cached hint only after successful measurement on 
     assert.equal(completed, 'new'); renderHint(); await h.flush();
     assert.equal(renderHint(), null); assert.equal(calls, 2);
     renderHint(); await h.flush(); assert.equal(calls, 2);
+});
+test('no paid Smart Cut step is open while the clips\' sound is still being read, or when they mix sound and silence', async () => {
+    const sound = { 0: true, 1: false };
+    const build = (audioFor) => {
+        const sheet = hooks(), planner = hooks();
+        const common = { '../../../components/I18nProvider': { useI18n: () => ({ t: key => key, locale: 'en' }) },
+            '../../../lib/i18n/locales.mjs': { localeTag: () => 'en' }, '../_lib/useAssetUrl': {}, '../_lib/smartCut': smartCut };
+        const { SmartCutPlanner } = load('app/veyrnox/_components/SmartCutPlanner.js', { ...common, react: planner.react, '../_lib/smartCutAnalysis': {}, '../_lib/smartCutFillers': {} });
+        const { EditSheet } = load('app/veyrnox/_components/EditSheet.js', {
+            ...common, react: sheet.react, '../../../lib/videoShape.mjs': shapes,
+            '../_lib/jobHistory': { pushJobHistory() {} },
+            '../../../lib/i18n/translate.mjs': { pluralKey: (_t, _locale, key) => key },
+            'next/link': 'a', './VideoShapeBadge': { VideoShapeBadge: 'badge' }, './Modal': { Modal: 'modal' },
+            './AssetLoadStatus': {}, './ConfirmDialog': { ConfirmDialog: 'confirm' }, './SmartCutPlanner': { SmartCutPlanner },
+            './SmartCutAnalyse': { SmartCutAnalyse: 'analyse' }, './SmartCutWorkbench': { SmartCutWorkbench: 'workbench' },
+            '../_lib/gateway': { gatewayFetch: async (path) => ({ has_audio: audioFor(decodeURIComponent(path.split('/')[2])) }) },
+        });
+        const clips = [0, 1].map((i) => ({ job_id: String(i), video_width: 1000, video_height: 1000 }));
+        const render = () => sheet.render(() => EditSheet({ clips, audios: [], credits5s: 1, smartCut: true }));
+        const analyse = () => nodes(render()).find(n => n.type === 'analyse').props;
+        const planning = () => nodes(render()).find(n => n.type === SmartCutPlanner).props.planningDisabled;
+        nodes(render()).filter(n => n.props?.onMetadata).forEach(n => n.props.onMetadata({ duration: 10 }));
+        return { sheet, planning, analyse };
+    };
+    const same = build(() => true);
+    assert.equal(same.planning(), true, 'blocked before the sound is known');
+    assert.equal(same.analyse().disabled, true);
+    await same.sheet.flush();
+    assert.equal(same.planning(), false, 'open once both clips have sound');
+    assert.equal(same.analyse().disabled, true, 'the paid analysis stays off while Smart Cut Create is paused');
+    const mixed = build((id) => sound[id]);
+    await mixed.sheet.flush();
+    assert.equal(mixed.planning(), true, 'blocked for sound beside silence');
+    assert.equal(mixed.analyse().disabled, true);
 });

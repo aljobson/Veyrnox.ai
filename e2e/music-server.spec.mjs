@@ -3133,7 +3133,28 @@ test('F21-H1/F22-H1 an owned song opens in Studio and records local audio plus M
   await expect(page.getByText('Project guide · 96 BPM · 3/4')).toBeVisible();
   await page.getByRole('button', { name: 'Hide' }).click();
   await expect(page.getByText('Track hidden from timeline')).toBeVisible();
+  // The seek button shows different text while the track is hidden; its accessible name must still contain it.
+  const hiddenScan = await new AxeBuilder({ page }).include('#main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(hiddenScan.violations.filter((item) => item.id === 'label-content-name-mismatch'), 'label in name while the track is hidden').toEqual([]);
   await page.getByRole('button', { name: 'Show' }).click();
+  // Keyboard seeking: relative steps must accumulate even when timeupdate has not fired between key presses.
+  await page.evaluate(() => {
+    const audio = document.querySelector('audio'); let time = 10;
+    Object.defineProperty(audio, 'duration', { get: () => 100, configurable: true });
+    Object.defineProperty(audio, 'currentTime', { get: () => time, set: (value) => { time = value; }, configurable: true });
+    window.__seekTime = () => time;
+    audio.dispatchEvent(new Event('loadedmetadata'));
+  });
+  const seekButton = page.getByRole('button', { name: /seek within audio clip$/i });
+  await seekButton.focus();
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight');
+  expect(await page.evaluate(() => window.__seekTime()), 'two quick ArrowRight presses add 10 s').toBe(20);
+  await page.keyboard.press('Home'); await page.keyboard.press('ArrowRight');
+  expect(await page.evaluate(() => window.__seekTime()), 'Home then ArrowRight lands at 5 s').toBe(5);
+  await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft');
+  expect(await page.evaluate(() => window.__seekTime()), 'seeking never goes below 0').toBe(0);
+  await page.keyboard.press('End');
+  expect(await page.evaluate(() => window.__seekTime())).toBe(100);
   await expect(page.getByText(/Local clip renders, microphone takes, measured latency, MIDI notes, effects and automation are unsaved/)).toBeVisible();
   expect(await page.evaluate(() => window.__studioMicrophoneRequests)).toEqual([]);
   await page.getByRole('button', { name: 'Prepare input' }).click();
@@ -3194,14 +3215,14 @@ test('F21-H1/F22-H1 an owned song opens in Studio and records local audio plus M
   await expect(page.getByRole('button', { name: 'Audio effects enabled' })).toBeDisabled();
   await expect(page.getByText('Five local effects are live on Audio 1. Adjustments are audible immediately.')).toBeVisible();
   expect(await page.evaluate(() => window.__studioMediaSourceRequests)).toBe(1);
-  await page.getByRole('button', { name: 'Edit EQ' }).click();
+  await page.getByRole('button', { name: 'EQ Peaking filter', exact: true }).click();
   await page.getByLabel('EQ gain').fill('6');
   const chain = page.getByLabel('Ordered effects chain');
   await chain.getByRole('listitem').first().getByRole('button', { name: 'Copy EQ' }).click();
   await page.getByRole('button', { name: 'Paste copied effect' }).click();
   await expect(chain.getByRole('listitem')).toHaveCount(6);
   const pastedEq = chain.getByRole('listitem').last();
-  await expect(pastedEq.getByRole('button', { name: 'Edit EQ copy 1' })).toBeVisible();
+  await expect(pastedEq.getByRole('button', { name: 'EQ copy 1 Peaking filter', exact: true })).toBeVisible();
   await pastedEq.getByLabel('EQ copy 1 gain').fill('-4');
   await expect(chain.getByRole('listitem').first().getByLabel('EQ gain')).toHaveValue('6');
   await pastedEq.getByRole('button', { name: 'Move EQ copy 1 earlier' }).click();

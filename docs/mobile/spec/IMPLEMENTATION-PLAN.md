@@ -98,7 +98,7 @@ Run on a real iPhone and a mid-range Android phone. Pass criteria are in PARITY 
 
 | Blocked work | Why / next concrete gate |
 |--------------|--------------------------|
-| Full editor timeline | S1 harness is built (`src/app/(app)/dev-s1-editor.tsx`, #1411), but needs a real iPhone and Android export/background/audio/frame-count result. Owner selected native shell plus WebView engine conditional on S1; fallback rendering needs the result and a decision |
+| Full editor timeline | The native timeline is built. Device qualification now covers the native preview/export path directly; the retired hosted-editor WebView spike is no longer a release gate. |
 | Native device uploads | S3 must prove a 1 GB resumable/background transfer through force-quit and network changes. Cinema only has a web-link upload shell (ADR-0208); native draft/Rights Declaration/submit follow. Publish device upload is also unfinished. `PUBLISH_UPLOADS_ENABLED` and `PROJECT_MEDIA_UPLOADS_ENABLED` are false in production/true staging; Cinema packed `uploads` is true both, which does not prove device upload or scanner readiness (source: `wrangler.jsonc`, `lib/cinema/features.js`) |
 | Passkey enrolment/sign-in | S2 must prove a native WebAuthn dependency, relying-party association/origin and real Auth roundtrip. List/remove already exists; not a reason to mark enrolment built (ADR-0204) |
 | Film Studio cross-device list/open | Web state is account-scoped browser-local, explicitly outside Projects (`docs/product/film-studio.md`). Server-side persistence/discovery does not exist. Phone JSON import/read/Create handoff exists; native stage editing and S8 master export are separate remaining work, not solved by adding a list screen |
@@ -112,7 +112,6 @@ The remaining PARITY scope also includes complete inbox/workflow editing, creato
 
 | Spike | Gates |
 |-------|-------|
-| S1 Web editor in a web view, export 1080p | Harness built; real iPhone/Android proof blocks P4 |
 | S2 Passkeys on a native build | Native enrolment and sign-in blocked; list/remove already built (P7) |
 | S3 Resumable 1 GB upload | Native creator upload blocked; web continuation shell only (P6) |
 | S4 Import shared web logic | Film/Oddlings ported logic and drift tests exist; real-device qualification **not verified** (P8) |

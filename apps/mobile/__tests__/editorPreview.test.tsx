@@ -74,6 +74,15 @@ describe('EditorMediaPreview', () => {
     });
     afterEach(async () => { await act(async () => root.unmount()); });
 
+    test('announces unresolved media loading as progress', async () => {
+        const media: Media = { id: `j-${jobId}`, kind: 'video', name: 'Loading clip', frames: 90 };
+        const request = <T,>() => new Promise<T>(() => {});
+        await act(async () => root.render(<EditorMediaPreview api={{ request }} clip={{ ...clip, mediaId: media.id }} media={media}
+            frameStore={frameStore} fps={30} playing={false} />));
+        expect(root.container.queryAll((node) => node.props.accessibilityRole === 'progressbar'
+            && node.props.accessibilityLabel === 'Loading media preview')).toHaveLength(1);
+    });
+
     test('renders a picked device image immediately from its session URI', async () => {
         const media: Media = { id: 'l-local', kind: 'image', name: 'Device image', frames: 90 };
         frameStore.set(30);

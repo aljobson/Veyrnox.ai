@@ -2,6 +2,7 @@ const mockValues = new Map<string, string>();
 const mockSetScheme = jest.fn(),
     mockReload = jest.fn(async () => {});
 let mockPlatform = 'ios';
+let mockSystemScheme: 'light' | 'dark' = 'dark';
 jest.mock('expo-secure-store', () => ({
     getItem: (key: string) => mockValues.get(key) ?? null,
     setItem: (key: string, value: string) => mockValues.set(key, value),
@@ -15,18 +16,57 @@ jest.mock('react-native', () => ({
             return mockPlatform;
         },
     },
-    Appearance: { getColorScheme: () => 'dark', setColorScheme: mockSetScheme },
+    Appearance: { getColorScheme: () => mockSystemScheme, setColorScheme: mockSetScheme },
     DynamicColorIOS: (values: object) => values,
 }));
 jest.mock('expo', () => ({ reloadAppAsync: () => mockReload() }));
 let theme: typeof import('../src/theme');
+const loadTheme = () => jest.requireActual<typeof import('../src/theme')>('../src/theme');
 beforeEach(() => {
     jest.resetModules();
     mockValues.clear();
     mockSetScheme.mockClear();
     mockReload.mockClear();
     mockPlatform = 'ios';
-    theme = require('../src/theme');
+    mockSystemScheme = 'dark';
+    theme = loadTheme();
+});
+test.each([
+    ['light', 'dark', 'light', 'light'],
+    ['dark', 'light', 'dark', 'dark'],
+    ['oled', 'light', 'dark', 'dark'],
+] as const)('a cold launch restores saved %s instead of flashing light', (preference, system, expectedScheme, expectedNative) => {
+    mockValues.set('veyrnox.theme', preference);
+    mockSystemScheme = system;
+    mockSetScheme.mockClear();
+    jest.resetModules();
+    theme = loadTheme();
+
+    expect(theme.getAppearance().theme).toBe(preference);
+    expect(theme.scheme).toBe(expectedScheme);
+    expect(mockSetScheme).toHaveBeenCalledWith(expectedNative);
+    expect(theme.paletteForScheme(theme.scheme).background).toBe(preference === 'oled' ? '#000000' : preference === 'light' ? '#ffffff' : '#0a0a0b');
+});
+test.each(['light', 'dark'] as const)('a cold launch with System follows the phone\'s %s appearance without forcing native chrome', (system) => {
+    mockValues.set('veyrnox.theme', 'system');
+    mockSystemScheme = system;
+    mockSetScheme.mockClear();
+    jest.resetModules();
+    theme = loadTheme();
+
+    expect(theme.getAppearance().theme).toBe('system');
+    expect(theme.scheme).toBe(system);
+    expect(mockSetScheme).not.toHaveBeenCalled();
+});
+test('a first cold launch defaults to System rather than resetting to light', () => {
+    mockSystemScheme = 'dark';
+    mockSetScheme.mockClear();
+    jest.resetModules();
+    theme = loadTheme();
+
+    expect(theme.getAppearance()).toEqual(theme.DEFAULT_APPEARANCE);
+    expect(theme.scheme).toBe('dark');
+    expect(mockSetScheme).not.toHaveBeenCalled();
 });
 test('light/dark/system changes update native chrome without reload and notify mounted v2 text', async () => {
     const listener = jest.fn(),
@@ -47,7 +87,7 @@ test('accent persistence reloads and consumes the saved route once', async () =>
     expect(await theme.takeThemeReturnPath()).toBe('/appearance');
     expect(await theme.takeThemeReturnPath()).toBeNull();
     jest.resetModules();
-    theme = require('../src/theme');
+    theme = loadTheme();
     expect(theme.getAppearance().accent).toBe('rose');
     expect(theme.studioColors.accent).toBe(theme.accentPairs.rose.dark[0]);
 });
@@ -64,7 +104,7 @@ test('OLED reloads despite native dark being unchanged, and Studio remains stand
     expect(mockReload).toHaveBeenCalledTimes(1);
     expect(mockSetScheme).toHaveBeenLastCalledWith('dark');
     jest.resetModules();
-    theme = require('../src/theme');
+    theme = loadTheme();
     expect(theme.paletteForScheme('dark').background).toBe('#000000');
     expect(theme.studioColors.background).toBe('#0a0a0b');
 });

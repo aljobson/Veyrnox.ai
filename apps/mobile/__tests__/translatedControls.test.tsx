@@ -6,6 +6,7 @@ import { APP_CATALOGS, setLocaleFromDevice, t } from '../src/lib/i18n';
 import TabsLayout from '../src/app/(app)/(tabs)/_layout';
 import { CreditsChip } from '../src/components/HeaderChips';
 import { DEFAULT_APPEARANCE } from '../src/theme';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 declare const require: (id: string) => any;
 jest.mock('react-native', () => {
@@ -36,6 +37,7 @@ beforeEach(() => { (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; root = c
 afterEach(async () => { await act(async () => root.unmount()); setLocaleFromDevice(['en']); });
 const textOf = (node: TestInstance): string => node.children.map(c => typeof c === 'string' ? c : textOf(c)).join('');
 const nativeText = () => root.container.queryAll(n => n.type === 'Text' && !n.props.accessibilityElementsHidden);
+const safeMetrics = { frame: { x: 0, y: 0, width: 320, height: 640 }, insets: { top: 0, right: 0, bottom: 0, left: 0 } };
 function expectFit(node: TestInstance, lines: number) {
     expect(node.props.numberOfLines).toBe(lines);
     expect(node.props.adjustsFontSizeToFit).toBe(true);
@@ -72,9 +74,9 @@ test.each(locales)('%s: every length flag has wrap/shrink protection in fixed-wi
 
 test.each(locales)('%s: actual bottom tabs and header captions retain one line with bounded shrink', async locale => {
     setLocaleFromDevice([locale]);
-    await act(async () => root.render(<><TabsLayout /><CreditsChip /></>));
+    await act(async () => root.render(<><SafeAreaProvider initialMetrics={safeMetrics}><TabsLayout /></SafeAreaProvider><CreditsChip /></>));
     const labels = nativeText();
-    for (const key of ['tabs.explore', 'tabs.create', 'tabs.editor', 'tabs.library', 'tabs.publish']) {
+    for (const key of ['tabs.explore', 'tabs.create', 'tabs.studio', 'tabs.library', 'tabs.publish']) {
         const node = labels.find(n => textOf(n) === t(key));
         expect(node).toBeDefined();
         expectFit(node!, 1);
@@ -93,11 +95,11 @@ test('German Create price chip keeps Jeder Preis and permits two lines and 0.85 
 
 test('English controls and tabs retain their original text layout defaults', async () => {
     setLocaleFromDevice(['en']);
-    await act(async () => root.render(<><Button label="Continue" /><Chip label="Any price" /><SegmentedControl options={[{ value: 'all', label: 'All' }]} value="all" onChange={() => {}} /><TabsLayout /></>));
+    await act(async () => root.render(<><Button label="Continue" /><Chip label="Any price" /><SegmentedControl options={[{ value: 'all', label: 'All' }]} value="all" onChange={() => {}} /><SafeAreaProvider initialMetrics={safeMetrics}><TabsLayout /></SafeAreaProvider></>));
     for (const node of nativeText()) {
         expect(node.props.adjustsFontSizeToFit).toBeUndefined();
         expect(node.props.minimumFontScale).toBeUndefined();
-        expect(node.props.numberOfLines).toBe(['Explore', 'Create', 'Editor', 'Library', 'Publish'].includes(textOf(node)) ? 1 : undefined);
+        expect(node.props.numberOfLines).toBe(['Explore', 'Create', 'Studio', 'Library', 'Publish'].includes(textOf(node)) ? 1 : undefined);
     }
 });
 

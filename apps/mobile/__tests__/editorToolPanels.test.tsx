@@ -106,6 +106,8 @@ import { AudioPanel } from '../src/components/editor/tools/AudioPanel';
 import { TextPanel } from '../src/components/editor/tools/TextPanel';
 import { CaptionsPanel, TranscriptPanel } from '../src/components/editor/tools/CaptionsPanels';
 import { EffectsPanel, TransitionsPanel, FiltersPanel } from '../src/components/editor/tools/LookPanels';
+import { MotionPanel } from '../src/components/editor/tools/MotionPanel';
+import { MaskPanel } from '../src/components/editor/tools/MaskPanel';
 import { AnimationPanel } from '../src/components/editor/tools/AnimationPanel';
 import { MarkersPanel } from '../src/components/editor/tools/MarkersPanel';
 import { AdjustPanel } from '../src/components/editor/tools/AdjustPanel';
@@ -142,4 +144,12 @@ test('tool rail preserves order and selected state', async () => {
     const buttons = root.container.queryAll(n => n.props.accessibilityRole === 'button' && typeof n.props.onClick === 'function');
     expect(buttons.map(n => n.props.accessibilityLabel)).toEqual(tools.map(tool => tool.label));
     expect(buttons.filter(n => n.props.accessibilityState.selected).map(n => n.props.accessibilityLabel)).toEqual([t('editor.animation')]);
+});
+
+ test('motion and mask follow Animation in the rail and explain an unsuitable selection', async () => {
+    const ids = tools.map(tool => tool.id), at = ids.indexOf('animation');
+    expect(ids.slice(at + 1, at + 3)).toEqual(['motion', 'mask']);
+    const timeline = webSequenceV3();
+    await act(async () => root.render(<><MotionPanel timeline={timeline} selection={null} /><MaskPanel timeline={timeline} selection={null} /></>));
+    expect(visible('Select a video clip or title.')).toBe(true); expect(visible('Select a video clip.')).toBe(true);
 });

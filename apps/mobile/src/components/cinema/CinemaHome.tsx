@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { t } from '../../lib/i18n';
 import { MIN_TARGET } from '../../lib/a11y';
 import { MENU_ICONS, type MenuIcon } from '../../lib/menuIcons';
@@ -12,6 +12,7 @@ import { CinemaProfile } from './CinemaProfile';
 import { DiscoveryList } from './DiscoveryList';
 import { SavedList } from './SavedList';
 import { WinnersList } from './WinnersList';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 
 // The Cinema tab: section tabs over the category chips over the section. It opens on Series, as the web does; "Watch"
 // is the one-title-per-screen feed (the phone's own way in); Series, Vote, Saved, Following and Winners are the web's tabs (ADR-0164, ADR-0178, ADR-0168).
@@ -27,13 +28,14 @@ const SECTIONS: readonly { key: Section; label: string; icon: MenuIcon }[] = [
 ];
 
 export function CinemaHome({ requestedSection = null }: { requestedSection?: Section | null }) {
+    const insets = useOptionalSafeAreaInsets();
     const [section, setSection] = useState<Section>('series');
     useEffect(() => { if (requestedSection !== null) setSection(requestedSection); }, [requestedSection]);
     const [category, setCategory] = useState<string | null>(null);
     const [follow, setFollow] = useState<'creator' | 'series'>('creator');
     const browsing = section === 'watch' || section === 'series' || section === 'vote';
     return (
-        <View style={styles.screen}>
+        <View style={[styles.screen, { paddingLeft: insets.left, paddingRight: insets.right }]}>
             <View style={styles.tabRow} accessibilityRole="tablist">
                 {SECTIONS.map((s) => {
                     const on = section === s.key;

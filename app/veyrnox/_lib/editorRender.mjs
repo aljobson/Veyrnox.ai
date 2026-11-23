@@ -47,7 +47,12 @@ export function frameLayers(tl, i) {
 
 /** Fetch the drawables a frame needs. `picture(k, time)` resolves to a drawable for video clip k at that source time, or null. */
 export async function resolvePictures(layers, picture) {
-    if (layers.visuals) return { visuals: await Promise.all(layers.visuals.map(v => picture(v.k, v.time))), backgrounds: await Promise.all(layers.visuals.map(v => v.clip.background?.type === 'image' ? picture(v.k, 0, v.clip.background.mediaId) : null)) };
+    if (layers.visuals) return {
+        visuals: await Promise.all(layers.visuals.map(v => picture(v.k, v.time))),
+        backgrounds: await Promise.all(layers.visuals.map(v => v.clip.background?.type === 'image' ? picture(v.k, 0, v.clip.background.mediaId) : null)),
+        masks: await Promise.all(layers.visuals.map(v => v.clip.semanticMask?.mediaId
+            ? picture(v.k, v.clip.semanticMask.dynamic ? v.offset / v.clip.semanticMask.dynamic.fps : 0, v.clip.semanticMask.mediaId) : null)),
+    };
     return {
         base: layers.base ? await picture(layers.base.k, layers.base.time) : null,
         over: layers.over ? await picture(layers.over.k, layers.over.time) : null,

@@ -1,7 +1,7 @@
 import { createBeatAudioFromEngine } from '../src/lib/beatNative/audio';
 import { createNativeBeatEngine } from '../src/lib/beatNative/nativeContext';
 import { addAutomationPoint, addEffect } from '../src/lib/beatNative/mix';
-import { createBeat, type BeatDoc } from '../src/lib/beatNative/doc';
+import { createBeat, type BeatAsset, type BeatDoc } from '../src/lib/beatNative/doc';
 import { createTakePlayback } from '../src/lib/beatNative/takePlayback';
 import { addAudioTrack, commitRecording, takeAsset } from '../src/lib/beatNative/takeShared';
 import { fixedDoc } from './beatNativeFixtures';
@@ -11,14 +11,22 @@ import { mockAudioContextClass } from './helpers/mockNativeAudio';
 jest.mock('../src/lib/beatNative/takeShared', () => ({ ...jest.requireActual('../src/lib/beatNative/takeShared'), configureNativeTakeStorage: jest.fn() }));
 
 const make = () => createBeat({ id: '00000000-0000-4000-8000-000000000053' });
-function build() {
+function build(options: { assets?: { load: jest.Mock }; onAssetError?: jest.Mock } = {}) {
     const { Ctor } = mockAudioContextClass();
     const { engine } = createNativeBeatEngine({ Context: Ctor });
     const start = jest.spyOn(engine, 'startRun');
     const pad = jest.spyOn(engine, 'playPad').mockImplementation(() => undefined as never);
-    return { engine, start, pad, audio: createBeatAudioFromEngine({ engine }) };
+    return { engine, start, pad, audio: createBeatAudioFromEngine({ engine, ...options }) };
 }
-const range = (doc: () => BeatDoc) => ({ getDoc: doc, startTick: 0, endTick: 3840, cycle: null, countInBars: 0 as const, onWindow: () => undefined });
+function withSong(doc: BeatDoc): BeatDoc {
+    const added = addAudioTrack(doc), track = added.tracks.at(-1)!;
+    const asset: BeatAsset = { source: 'song', ref: { songId: '1', versionId: '2', jobId: '3' }, name: 'Backing song',
+        durationSec: 2, bpm: null, sourceChannels: 2, encodedBytes: 100 };
+    return { ...added, assets: { ...added.assets, song: asset }, tracks: added.tracks.map(item => item.id === track.id ? { ...item,
+        regions: [{ id: 'song-region', start: 0, length: 1920, assetId: 'song', phaseSec: 0, gainDb: 0, fadeIn: null, fadeOut: null, reverse: false }] } : item) };
+}
+const range = (doc: () => BeatDoc) => ({ getDoc: doc, startTick: 0, endTick: 3840, cycle: null, countInBars: 0 as const,
+    assetMode: 'all-supported' as const, onWindow: () => undefined });
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
@@ -51,13 +59,27 @@ test('recording playback schedules automation for each song window', async () =>
 });
 
 test('a mixer failure during recording never ends the take', async () => {
-    const b = build(), doc = make();
+    const b = build(), doc = { ...make(), metronome: true };
+    const click = jest.spyOn(b.engine, 'click');
     b.start.mockImplementation(() => { throw new Error('graph failed'); });
     await b.audio.playRange!(range(() => doc));
+    expect(click).toHaveBeenCalledWith(0.1, true, expect.anything());
+    expect(b.pad).toHaveBeenCalled();
     jest.spyOn(b.engine, 'now').mockReturnValue(1);
     expect(() => jest.advanceTimersByTime(60)).not.toThrow();
     expect(b.audio.isPlaying()).toBe(true);
     await b.audio.close();
+});
+
+test('offline backing audio stays silent without blocking or stopping recording transport', async () => {
+    const error = Object.assign(new Error('offline'), { status: 0 }), onAssetError = jest.fn();
+    const b = build({ assets: { load: jest.fn(async () => { throw error; }) }, onAssetError }), doc = withSong(make());
+    await expect(b.audio.playRange!(range(() => doc))).resolves.toBeDefined();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    expect(b.audio.isPlaying()).toBe(true); expect(onAssetError).toHaveBeenCalledWith('Backing song', error);
+    jest.spyOn(b.engine, 'now').mockReturnValue(1); jest.advanceTimersByTime(60);
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    expect(b.audio.isPlaying()).toBe(true); await b.audio.close();
 });
 
 test('take playback tells the mixer when each piece ends', async () => {

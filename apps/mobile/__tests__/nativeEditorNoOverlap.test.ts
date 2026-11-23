@@ -1,4 +1,4 @@
-import { duplicateSelections, emptyTimeline, pasteClipboard, copySelections, splitClip, type Timeline, type Clip, type TextClip } from '../src/lib/nativeEditorModel';
+import { duplicateSelections, emptyTimeline, pasteClipboard, copySelections, splitClip, splitClipAtFrames, type Timeline, type Clip, type TextClip } from '../src/lib/nativeEditorModel';
 
 const clip = (id: string, start: number, len: number, trackId = 'video-0'): Clip => ({ id, mediaId: 'm1', start, in: 0, len, trackId });
 const text = (id: string, start: number, len: number): TextClip => ({ id, text: 'Hi', start, len, trackId: 'text-0', x: .5, y: .5, size: 6 });
@@ -47,5 +47,19 @@ describe('editor timeline never overlaps on one track', () => {
 
     it('split never creates overlap', () => {
         expect(overlaps(splitClip(base(), { track: 'video', id: 'v2' }, 130)!)).toBe(false);
+    });
+
+    it('batches sorted unique scene cuts without changing the input', () => {
+        const timeline = base(), frozen = JSON.stringify(timeline);
+        const next = splitClipAtFrames(timeline, { track: 'video', id: 'v1' }, [70, 40, 70])!;
+        expect(next.video.filter(item => item.start < 100).map(item => [item.start, item.len, item.in]).sort((a, b) => Number(a[0]) - Number(b[0])))
+            .toEqual([[0, 40, 0], [40, 30, 40], [70, 30, 70]]);
+        expect(next.seq).toBe(timeline.seq + 2); expect(overlaps(next)).toBe(false); expect(JSON.stringify(timeline)).toBe(frozen);
+    });
+
+    it('refuses the whole scene batch for invalid, endpoint or locked cuts', () => {
+        const timeline = base(), locked = { ...timeline, tracks: timeline.tracks.map(track => track.id === 'video-0' ? { ...track, locked: true } : track) };
+        for (const frames of [[], [0, 40], [40.5], [101]]) expect(splitClipAtFrames(timeline, { track: 'video', id: 'v1' }, frames)).toBeNull();
+        expect(splitClipAtFrames(locked, { track: 'video', id: 'v1' }, [40])).toBeNull();
     });
 });

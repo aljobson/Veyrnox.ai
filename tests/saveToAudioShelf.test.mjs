@@ -42,7 +42,7 @@ test('Library exposes the same validated shelf action for every completed audio 
   assert.match(card, /<SaveToAudioShelfButton/);
   assert.match(card, /name=\{`Library · \$\{model\?\.name \|\| 'Owned audio'\}`\}/);
   assert.match(card, /row\.model_id === 'elevenlabs-dialogue'[\s\S]*?'lip-sync-dialogue'/);
-  assert.match(card, /row\.model_id === 'minimax-speech-2\.6-hd'[\s\S]*?'narration-presenter'/);
+  assert.match(card, /\['minimax-speech-2\.6-hd', 'qwen3-tts'\]\.includes\(row\.model_id\)\s*\? 'narration-presenter'/);
   assert.match(card, /: 'timing-rhythm'/);
   assert.doesNotMatch(card, /name=\{`Library · \$\{row\.(?:prompt|name)/);
 });

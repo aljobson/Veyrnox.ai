@@ -2,6 +2,8 @@
 
 Repo aljobson/Veyrnox.ai, base origin/main 00d62b684. Coordinator: Claude (host). Plan reviewer: Codex (gpt-6-astra, effort high). Builder per slice: Codex. Inspector per slice: a fresh Claude session. One PR per slice against `main`; the owner merges. Owner instruction: "Complete the FULL gap between Mobile and Web", everything native (no web views, no veyrnox.ai link-outs), iOS builds by local Xcode only.
 
+Delivery status (2026-11-23): S7-S14 source implementation and deterministic fixture coverage are merged through #2646 (`ba83c2c8672f21b248de6bd28d01779eca6ad522`). S11-S14 are no longer planned-only rows. Native compilation and consolidated iPhone qualification remain release gates; this source status does not claim that the App Store binary has completed them.
+
 This file is the master plan. Each slice gets its own work order (PLAN-Sn.md, outside the checkout) that is reviewed again before its build. This file lands in the repo as `docs/mobile/EDITOR-ADVANCED-PARITY-2026-11-20.md` with slice 1.
 
 ## 1. Audit: what the web editor has and what the phone has (verified in code)
@@ -53,6 +55,10 @@ Gap table (web fields from `editorSequenceValidation.mjs`; "phone today" from th
 | S12 | Motion processing: stabilise, flicker, optical flow, track-reframe, camera movement using the pure `editorMotionAnalysis/Processing` with S9 decode/encode; output as new local media | S9 | L |
 | S13 | On-device language: caption translation (Apple Translation framework, 11 languages, drops word timing like the web) and automatic captions (Apple Speech on-device recognition with word timings -> `speechResultCaptions`), gated by `localInference`; Android stub | S4, S9 | L |
 | S14 | Person tools: the web needs per-pixel background, face-skin and body-skin confidences (`editorVisionPixelProcessing.mjs:4-5`, `editorPersonGeometry.mjs:5-15`), which Apple's whole-person matte cannot supply. Use MediaPipe Tasks Vision for iOS with the same `selfie_multiclass_256x256.tflite` the web uses, fetched on first use from the existing same-origin gated asset route with a SHA-256 check (no third-party host at run time); the slice plan verifies the pod's SDK 58 / New Architecture fit and states its size. If that fit fails, the tools that need semantic masks are deferred explicitly in the PR and this doc instead of shipping degraded | S9 | L |
+
+### S13 privacy decision
+
+Automatic captions are local processing, not a new collection path. The Speech request sets `requiresOnDeviceRecognition = true`, refuses devices/locales that cannot satisfy it, and reads only a project-local audio file. Translation uses installed Apple Translation language assets and returns directly to the project document. Neither feature uploads source audio or transcript text. Therefore S13 adds no new App Store privacy-label category and no new required-reason API entry to `PrivacyInfo.xcprivacy`; the existing app manifest already declares linked Audio Data for the product's separate account-backed audio features. The final generated Info.plist still carries explicit Speech authorization copy and one microphone string naming voiceovers, Beat takes and editable captions. Config tests pin the final plugin value so another plugin cannot silently replace that wording.
 
 ## 4. Rules every slice plan carries
 - Touch only `apps/mobile/**`, the slice's ADR in `docs/adr/` (0000-<slug>.md, host renumbers) and, for S1, this doc. No server, migration, wrangler or web change. Files < 500 lines. No `git add -A`. No Co-Authored-By.

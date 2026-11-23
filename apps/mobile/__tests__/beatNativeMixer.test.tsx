@@ -16,10 +16,10 @@ jest.mock('../src/lib/beatNative/persist', () => ({ ...jest.requireActual('../sr
 jest.mock('../src/components/beats/ai/BeatAiPanel', () => ({ BeatAiPanel: () => null }));
 const mockGetAccessToken = jest.fn(async () => '');
 const mockApi = { request: jest.fn(async () => ({ projects: [] })) };
-const mockAudio = { play: jest.fn(async (..._args: unknown[]) => undefined), stop: jest.fn(), isPlaying: () => true, hitPad: jest.fn(), setTrackMix: jest.fn(), close: jest.fn(async () => undefined), meterTap: () => null, context: {} };
+const mockAudio = { play: jest.fn(async (..._args: unknown[]) => 'started' as const), stop: jest.fn(), isPlaying: () => true, hitPad: jest.fn(() => 0), nearestStepAt: jest.fn(() => null), setTrackMix: jest.fn(), close: jest.fn(async () => undefined), meterTap: () => null, context: {} };
 let mockParams = { id: 'x' };
 let mockReduced = true;
-jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0 }) }));
+jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, getAccessToken: mockGetAccessToken, generation: 0, beginSessionTask: () => ({}) }) }));
 jest.mock('expo-router', () => ({ Link: ({ children }: { children: unknown }) => children, Stack: { Screen: () => null }, useLocalSearchParams: () => mockParams }));
 jest.mock('../src/lib/beatNative/audio', () => ({ createBeatAudio: () => mockAudio }));
 jest.mock('../src/components/ui/useReducedMotion', () => ({ useReducedMotion: () => mockReduced }));
@@ -61,15 +61,49 @@ test('opens the full sheet, adds effects through the store/history, and undo res
     expect(recorded).toHaveBeenCalledTimes(1); expect(recorded.mock.results[0].value.past).toHaveLength(1);
     await press(t('beatMix.close')); await press(t('beat.undo')); expect(track().fx).toBeUndefined();
 });
-test('G2 offers no Drive control; G1 notices appear for compressor and limiter', async () => {
+test('channel mute and solo use visible selected cues as well as accessibility state', async () => {
+    await open(); await press(t('beatMix.title'));
+    await press(t('beat.mute', { track: track().name }));
+    await press(t('beat.solo', { track: track().name }));
+    expect(track().mute).toBe(true); expect(track().solo).toBe(true);
+    expect(root.container.queryAll(n => n.props.testID === `channel-mute-selected-${track().id}`)).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.testID === `channel-solo-selected-${track().id}`)).toHaveLength(1);
+    expect(button(t('beat.mute', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
+    expect(button(t('beat.solo', { track: track().name }))?.props.accessibilityState.selected).toBe(true);
+});
+test('Drive and compressor DSP settings use native topology rebuilds without stand-in notices', async () => {
     await open(); await press(t('beatMix.title'));
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.distortion') }));
-    expect(text(t('beatMix.fx.distortion.web')).length).toBeGreaterThan(0);
-    expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && /drive/i.test(n.props.accessibilityLabel ?? ''))).toHaveLength(0);
+    const drive = t('beatMix.fx.param', { effect: t('beatMix.fx.name', { effect: t('beatMix.fx.distortion'), n: 1 }), param: t('beatMix.param.drive') });
+    expect(root.container.queryAll(n => n.props.accessibilityRole === 'adjustable' && n.props.accessibilityLabel === drive)).toHaveLength(1);
+    await adjust(drive, 'increment'); expect(track().fx?.[0].params.drive).toBe(10);
     await press(t('beatMix.fx.add', { effect: t('beatMix.fx.compressor') }));
-    expect(text(t('beatMix.fx.compressor.standIn')).length).toBeGreaterThan(0);
-    expect(text(t('beatMix.limiter.standIn')).length).toBeGreaterThan(0);
+    expect(root.container.queryAll(n => n.props.testID === 'mix-slider-commit-on-end')).toHaveLength(2);
+    expect(text(t('beatMix.fx.compressor.standIn'))).toHaveLength(0);
+    expect(text(t('beatMix.limiter.standIn'))).toHaveLength(0);
     expect(current().master).toBeUndefined(); await press(t('beatMix.limiter')); expect(current().master?.limiter).toBe(false);
+});
+test('compressor topology settings preview during a drag and commit only once on release', async () => {
+    const commit = jest.fn();
+    await act(async () => root.render(<MixSlider label="Threshold" value={-24} min={-60} max={0} step={1} unit="db" commitOnEnd onChange={commit} />));
+    const control = root.container.queryAll(n => typeof n.props.onResponderGrant === 'function')[0];
+    expect(control).toBeDefined();
+    const gesture = (x: number, previous: number, time: number) => ({
+        nativeEvent: { locationX: x },
+        touchHistory: { numberActiveTouches: 1, indexOfSingleActiveTouch: 0, mostRecentTimeStamp: time, touchBank: [{
+            touchActive: true, currentPageX: x, currentPageY: 0, previousPageX: previous, previousPageY: 0,
+            currentTimeStamp: time, previousTimeStamp: time - 1,
+        }] },
+    });
+    await act(async () => {
+        control.props.onLayout({ nativeEvent: { layout: { width: 100 } } });
+        control.props.onResponderGrant(gesture(50, 50, 1));
+        control.props.onResponderMove(gesture(75, 50, 2));
+    });
+    expect(commit).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => n.props.testID === 'strength-slider-value')[0].children).toContain('-15');
+    await act(async () => control.props.onResponderRelease());
+    expect(commit).toHaveBeenCalledTimes(1); expect(commit).toHaveBeenCalledWith(-15);
 });
 test('both mixer entry points disable automated gain and pan with translated reasons', async () => {
     await open(d => addAutomationPoint(addAutomationPoint(d, 't1', 'gain', 0, 0.8), 't1', 'pan', 0, 0));
@@ -167,6 +201,14 @@ test('mixer sliders read their own value and unit to the screen reader', async (
     expect(slider('Threshold').props.accessibilityValue.text).toBe(t('beatMix.unit.db', { value: -24 }));
     await act(async () => root.render(<MixSlider label="Pan" value={0} min={-1} max={1} onChange={() => undefined} />));
     expect(slider('Pan').props.accessibilityValue.text).toBe(t('beatMix.unit.percent', { value: 0 }));
+});
+test('an opt-in real-unit accessibility step does not change existing mixer defaults', async () => {
+    const precise = jest.fn();
+    await act(async () => root.render(<MixSlider label="Swing" value={0.3} min={0} max={0.6} step={0.01} accessibilityStep={0.01} onChange={precise} />));
+    await adjust('Swing', 'increment'); expect(precise).toHaveBeenLastCalledWith(0.31);
+    const legacy = jest.fn();
+    await act(async () => root.render(<MixSlider label="Pan default" value={0} min={-1} max={1} step={0.01} onChange={legacy} />));
+    await adjust('Pan default', 'increment'); expect(legacy).toHaveBeenLastCalledWith(0.2);
 });
 test('a touch on overlapping point targets selects the nearest dot', async () => {
     let doc = addAutomationPoint(newBeat('Near'), 't1', 'gain', 0, 0.5);

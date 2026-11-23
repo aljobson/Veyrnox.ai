@@ -34,7 +34,7 @@ export default {
     'credits.paywall.firstTitle': 'Get credits to start creating',
     'credits.paywall.firstBody': 'Every generation is priced up front in credits. Pick a pack to top up.',
     'credits.paywall.lowTitle': "You're running low on credits",
-    'credits.paywall.lowBody': 'Top up now so your next generation does not stop halfway.',
+    'credits.paywall.lowBody': 'Top up now so you are ready for your next creation.',
     'credits.paywall.emptyTitle': "You're out of credits",
     'credits.paywall.emptyBody': 'Nothing was charged. Choose another one-off pack to keep creating.',
     'credits.paywall.repeat': 'You can buy another pack whenever you need more credits. Every completed purchase adds to your balance.',

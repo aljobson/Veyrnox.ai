@@ -50,6 +50,7 @@ export const POLICIES = {
     favouritesSynced: { name: 'favourites-synced', perUser: true, freshMs: 0, maxAgeMs: 365 * DAY },
     // The words of an unsent Create form (ADR-0153). Per account; no files or keys.
     createDraft: { name: 'create-draft', perUser: true, freshMs: 0, maxAgeMs: 7 * DAY },
+    dialogueCast: { name: 'dialogue-cast', perUser: true, freshMs: 0, maxAgeMs: 365 * DAY },
     // The studio a person imported from the web's Film Studio export (ADR-0210). Per account; words only, no media.
     filmStudio: { name: 'film-studio', perUser: true, freshMs: 0, maxAgeMs: 90 * DAY },
     catalog: { name: 'catalog', perUser: false, freshMs: 10 * MINUTE, maxAgeMs: 7 * DAY },

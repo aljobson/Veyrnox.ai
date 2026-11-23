@@ -1,15 +1,16 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, type ColorValue } from 'react-native';
+import { StyleSheet, useWindowDimensions, View, type ColorValue } from 'react-native';
 import { useMenuOpen } from '../../../lib/menuOpen';
 import { HeaderRight } from '../../../components/HeaderChips';
 import { Logo } from '../../../components/Logo';
 import { MenuButton } from '../../../components/MenuDrawer';
 import { HEADER_MAX_FONT_SCALE, MIN_TARGET } from '../../../lib/a11y';
-import { EDITOR_ENABLED } from '../../../lib/editorFlag';
 import { t } from '../../../lib/i18n';
-import { MENU_ICONS, type MenuIcon } from '../../../lib/menuIcons';
+import { type MenuIcon } from '../../../lib/menuIcons';
 import { paletteForScheme } from '../../../theme';
 import { Text, Icon, useAppearance } from '../../../components/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { tabHeaderShowsWordmark } from '../../../lib/headerLayout';
 
 // The tab bar has a fixed height, so its labels stop growing at the same limit as the header; everything else follows the system text size.
 function tabLabel(key: string) {
@@ -29,11 +30,13 @@ function tabIcon(name: MenuIcon) {
     };
 }
 
-// Five bottom tabs. Editor is a top-level destination; Cinema remains available from the main menu without
+// Five bottom tabs. Studio is a top-level destination at the stable /editor route; Cinema remains available from the main menu without
 // crowding the bar with a sixth item. The (tabs) folder is a group, so each tab keeps its short public URL.
 export default function TabsLayout() {
     const { settings, scheme } = useAppearance();
     const palette = paletteForScheme(scheme, settings);
+    const insets = useSafeAreaInsets();
+    const { width, fontScale } = useWindowDimensions();
     // While the side menu is open the screens behind it are hidden from screen readers (QA-A1).
     const menuOpen = useMenuOpen();
     return (
@@ -46,10 +49,10 @@ export default function TabsLayout() {
                     // The action group is much wider than the menu button. Leading alignment keeps the complete
                     // VEYRNOX.ai wordmark clear of credits, theme and account on compact phones.
                     headerTitleAlign: 'left',
-                    headerTitle: () => <Logo size={20} palette={palette} />,
+                    headerTitle: () => <Logo size={20} wordmark={tabHeaderShowsWordmark(width, fontScale)} palette={palette} />,
                     headerLeft: () => <MenuButton palette={palette} />,
                     headerRight: () => <HeaderRight palette={palette} />,
-                    sceneStyle: { backgroundColor: palette.background },
+                    sceneStyle: { backgroundColor: palette.background, paddingLeft: insets.left, paddingRight: insets.right },
                     tabBarStyle: { backgroundColor: palette.background, borderTopColor: palette.border, borderTopWidth: StyleSheet.hairlineWidth },
                     tabBarActiveTintColor: palette.accent,
                     tabBarInactiveTintColor: palette.muted,
@@ -67,7 +70,7 @@ export default function TabsLayout() {
             />
             <Tabs.Screen
                 name="editor"
-                options={{ href: EDITOR_ENABLED ? undefined : null, tabBarIcon: tabIcon('slate'), title: t('tabs.editor'), tabBarLabel: tabLabel('tabs.editor'), tabBarAccessibilityLabel: t('tabs.editor') }}
+                options={{ tabBarIcon: tabIcon('scissors'), title: t('tabs.studio'), tabBarLabel: tabLabel('tabs.studio'), tabBarAccessibilityLabel: t('tabs.studio') }}
             />
             <Tabs.Screen
                 name="library"

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { parseAccounts, parsePosts } from '../src/lib/publish';
 import { canConnectAccounts, canManageBrand, canPublish, canReview, hasPublishPlan, publishDestinations, publishSummary } from '../src/lib/publishDashboard';
 
@@ -13,7 +15,7 @@ const state = (overrides: Record<string, unknown> = {}) => parseAccounts({
 describe('Publish dashboard visibility', () => {
     test('a paid owner sees enabled advanced tools', () => {
         const visible = publishDestinations(state());
-        expect(visible).toEqual(expect.arrayContaining(['calendar', 'approvals', 'inbox', 'workflows', 'autolists', 'reports', 'team', 'activity', 'developer']));
+        expect(visible).toEqual(expect.arrayContaining(['calendar', 'approvals', 'inbox', 'workflows', 'autolists', 'reports', 'ads', 'commerce', 'team', 'activity', 'developer']));
     });
 
     test('free plans and limited roles hide actions they cannot use', () => {
@@ -41,6 +43,15 @@ describe('Publish dashboard visibility', () => {
         expect(canConnectAccounts(state({ accounts: [] }), '22222222-2222-4222-8222-222222222222')).toBe(false);
         expect(canConnectAccounts(state({ accountLimit: 1, accounts: [{ id: 'a1', network: 'instagram', status: 'expired' }] }), null)).toBe(false);
     });
+});
+
+test('Publish home advertises every destination that passes the capability and role gates', () => {
+    const screen = readFileSync(resolve(__dirname, '../src/app/(app)/(tabs)/publish.tsx'), 'utf8');
+    expect(screen).not.toContain('OFF_HOME');
+    expect(screen).toContain('data ? publishDestinations(data) : []');
+    for (const id of ['ads', 'commerce', 'workflows', 'developer']) {
+        expect(screen).toContain(`${id}: {`);
+    }
 });
 
 describe('Publish dashboard summary', () => {

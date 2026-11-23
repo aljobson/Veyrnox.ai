@@ -28,7 +28,7 @@ test('record → durable save → undo → save → reopen retains committed aud
     jest.useFakeTimers(); const h = harness(); await h.store.flushBeat(h.id); await h.controller.arm(h.trackId); await h.controller.record(false);
     h.window({ fromSec: 0, toSec: 2, contextTime: 0 }); h.input.send({ frame: 0, samples: new Float32Array(2000).fill(0.3) }); await h.controller.finish();
     expect(h.edits).toHaveBeenCalledTimes(1); expect(h.edits.mock.calls[0][1].recordingCommit).toBe(true);
-    const ref = Object.values(h.store.getBeat(h.id)!.assets!)[0].ref;
+    const asset = Object.values(h.store.getBeat(h.id)!.assets!)[0]; if (asset.source !== 'take') throw new Error('expected_take'); const ref = asset.ref;
     expect(pendingBeatTakes(h.id)).toHaveLength(1); await h.store.flushBeat(h.id);
     h.undo(); await h.store.flushBeat(h.id); configureBeatTakeStorage(createTakeFiles(h.io)); await hydrateBeatTakes();
     expect(pendingBeatTakes(h.id)).toEqual([]); expect((await loadBeatTake(ref))?.samples.length).toBe(2000); await h.controller.dispose();
@@ -79,6 +79,27 @@ test('transport maps nonzero cycles, four count-in clicks, and non-cycle windows
     context.currentTime = 20; fire(); expect(windows.at(-1)!.toSec).toBeGreaterThan(20); transport.stop(); await h.controller.dispose();
 });
 
+test('recording keeps four count-in clicks and adds straight live metronome clicks after the origin', async () => {
+    jest.useFakeTimers(); const h = harness(), context = h.input.capture.context;
+    let fire = () => {}, now = 0;
+    const destination = { kind: 'recording-master' };
+    const engine = { context, now: () => now, resume: async () => {}, click: jest.fn(), playPad: jest.fn() };
+    let doc = { ...h.store.getBeat(h.id)!, tempo: { bpm: 120 }, swing: 0.6, metronome: true };
+    const clickOutput = jest.fn(() => destination);
+    const transport = createRecordingTransport(engine as never, () => ({}), () => {}, fn => { fire = fn; return 1; }, () => {}, clickOutput);
+    await transport.play({ getDoc: () => doc, startTick: 0, endTick: 3840, cycle: null, countInBars: 1, onWindow: () => {} });
+    for (let i = 1; i <= 10; i++) { now = i * 0.2; context.currentTime = now; fire(); }
+    now = 2.5; context.currentTime = now; fire();
+    expect(engine.click.mock.calls.map(call => call.slice(0, 2))).toEqual([
+        [0.1, true], [0.6, false], [1.1, false], [1.6, false], [2.1, true], [2.6, false],
+    ]);
+    expect(engine.click.mock.calls.every(call => call[2] === destination)).toBe(true);
+    doc = { ...doc, metronome: false }; now = 3; context.currentTime = now; fire();
+    expect(engine.click).toHaveBeenCalledTimes(6);
+    transport.stop(); now = 4; context.currentTime = now; fire(); expect(engine.click).toHaveBeenCalledTimes(6);
+    await h.controller.dispose();
+});
+
 test('all shared-session announcements map to mobile strings, including the eight-pass limit', async () => {
     jest.useFakeTimers(); const h = harness(true), messages: string[] = [];
     const off = h.controller.subscribe(() => messages.push(h.controller.snapshot().error));
@@ -125,7 +146,7 @@ test('failed save, recovery refresh and Discard leave a live take pending until 
     await h.controller.arm(h.trackId); await h.controller.record(false);
     h.window({ fromSec: 0, toSec: 2, contextTime: 0 });
     h.input.send({ frame: 0, samples: new Float32Array(2000).fill(0.3) }); await h.controller.finish();
-    const ref = Object.values(h.store.getBeat(h.id)!.assets!)[0].ref;
+    const asset = Object.values(h.store.getBeat(h.id)!.assets!)[0]; if (asset.source !== 'take') throw new Error('expected_take'); const ref = asset.ref;
     jest.mocked(h.files.write).mockRejectedValueOnce(new Error('disk_full'));
     await expect(h.store.flushBeat(h.id)).rejects.toThrow('disk_full');
     await h.controller.refreshRecovery(h.store.getPersistedBeat(h.id));
@@ -148,4 +169,15 @@ test('Discard rechecks a recovery row that became referenced after the panel ref
     expect((await loadBeatTake(row.id))?.state).toBe('pending');
     await h.store.flushBeat(h.id); expect((await loadBeatTake(row.id))?.state).toBe('committed');
     await h.controller.dispose();
+});
+
+test('replacement settles every registered recorder in order, retains peers on unregister, and blocks on any rejection', async () => {
+    const id = 'multi-finalizer', order: string[] = [];
+    const first = registerRecordingFinalizer(id, async () => { order.push('first'); throw new Error('midi_failed'); });
+    const removed = registerRecordingFinalizer(id, async () => { order.push('removed'); });
+    const last = registerRecordingFinalizer(id, async () => { order.push('last'); });
+    removed();
+    await expect(beforeReplace(id)).rejects.toThrow('midi_failed');
+    expect(order).toEqual(['first', 'last']); expect(replacementUnderway(id)).toBe(false);
+    first(); last();
 });

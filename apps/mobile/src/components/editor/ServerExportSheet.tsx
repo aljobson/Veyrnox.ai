@@ -6,10 +6,14 @@ import { touchTarget } from '../../lib/a11y';
 import { formatNumber, t } from '../../lib/i18n';
 import { colors } from '../../theme';
 import { useServerExport, type ServerExportProps } from './useServerExport';
+import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
+import { bottomSheetSafePadding } from '../../lib/modalLayout';
 
 export function ServerExportSheet(props: ServerExportProps) {
+    const insets = useOptionalSafeAreaInsets();
     const state = useServerExport(props);
     const working = ['preparing', 'uploading', 'sending', 'rendering'].includes(state.phase);
+    const sheetInsets = bottomSheetSafePadding(insets, 24, 24, 24);
     const cancel = () => {
         if (state.phase === 'uploading') { void state.cancel(); return; }
         Alert.alert(t('editorServerExport.cancel'), t('editorServerExport.cancelConfirm', { credits: state.credits }), [
@@ -18,7 +22,7 @@ export function ServerExportSheet(props: ServerExportProps) {
         ]);
     };
     return <Modal visible={props.visible} animationType="none" transparent onRequestClose={state.close}>
-        <View style={styles.backdrop} onAccessibilityEscape={state.close}><ScrollView style={styles.sheet} contentContainerStyle={styles.content}>
+        <View style={styles.backdrop} onAccessibilityEscape={state.close}><ScrollView style={styles.sheet} contentContainerStyle={[styles.content, sheetInsets]}>
             <Text accessibilityRole="header" style={styles.heading}>{t('editorServerExport.title')}</Text>
             {state.message ? <StatusText variant="inherit" accessibilityRole={Platform.OS === 'android' ? 'alert' : undefined} style={styles.text}>{state.message}</StatusText> : null}
             {working ? <StatusText variant="inherit" accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.text}>{t(`editorServerExport.${state.phase}` as Parameters<typeof t>[0])}</StatusText> : null}

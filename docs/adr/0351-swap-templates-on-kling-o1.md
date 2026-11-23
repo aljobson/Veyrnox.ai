@@ -622,3 +622,74 @@ The importer copied each one-photo clip's role from its source prompt, which des
 **Decision.** The owner approved the ten clips, roles and hashes. The importer gains a `bound_source` kind, reached only with `--kinds bound_source`, and `--add-to-live`, which reads the pinned live manifest first and adds to it without replacing a clip. The registry goes from 276 to 286 ids and the manifest from 411 to 421 clips. Price and prompt follow the existing swap path (47 credits per 5 s).
 
 **Proof.** All ten clips and the new manifest were read back from production R2 and matched by SHA-256. One paid fal run per template (ten runs, about $8.40) used the same photo, prompt and element shape as the route, and each result was compared frame by frame with its source. All ten kept the scene and motion and replaced the named person. These were direct provider calls: the signed-in product flow was not run for these ids before merge. Known limits: the model may carry an object from the photo into the clip and invent footwear when the photo does not show feet.
+
+## Amendment 20 (2026-11-21): tested swap templates join the gallery, and the phone composer turns on
+
+**Decision.** The owner asked that the gallery list only templates that work. `TESTED_SWAP_GALLERY_TEMPLATE_IDS` holds 51 registered swap clips. Each passed one paid Kling O1 run with a real photo and a frame comparison with its source clip, and its exact role is in `TEMPLATE_SWAP_ROLE_OVERRIDES`. Of 60 clips tested, 3 failed, 5 were weak and 1 redirects to a duplicate, so those 9 stay unlisted. The listed video gallery goes from 20 to 71.
+
+The phone flag `TEMPLATE_SWAP_RUNTIME` turns on. Its old comment described a WebView package that was removed. The composer's cut-out now runs on the native `veyrnox-vision` module, whose models are added and hash-checked at prebuild, so an installed phone build needs a new native build to include this change.
+
+**Limits.** Runs were direct provider calls with one photo per clip; four clips also passed with a second photo. A signed-in web and phone job must still be run after deployment.
+
+## Amendment 21 (2026-11-22): template swaps on Crun through a private catalog row
+
+**Problem.** fal refused swaps on 2026-11-22 with HTTP 403 `User is locked. Reason: Exhausted balance`. `kling-o1-reference` has no route rows.
+
+**Decision.** Migration 0579 adds one server-only catalog row, `kling-o1-swap-crun` (`crun:kling/o1-r2v`, 47 credits per 5 s, recorded cost $0.4854), with one active Crun route. The public offer stays on fal, unchanged, for every request without `template_swap`.
+
+- **Client contract.** `/api/catalog?template_swap=<id>` keeps returning `kling-o1-reference`, and web and phone keep sending it, so installed apps need no update. The private id is removed from the public catalog, refused if named on `POST /api/v1/generations`, and mapped back to the public id in job, history, provenance, appeals, account export and Vey account reads (`lib/privateModelIds.js`).
+- **Admission.** For a validated `template_swap` only, the server resolves the public offer to the private row while that row is active. Debit, job row and dispatch use it. An absent or inactive row means the fal path exactly as before. An active row that does not match the offer, or a failed read, refuses before debit.
+- **Request.** One Crun task with `reference_videos`, `reference_video_type: 'base_video'`, ordered `reference_images`, `resolution: '720p'`, `aspect_ratio: 'auto'` and `audio: false`. `@Video1` and `@Element1` become plain wording, and a prompt over 2,500 characters is refused before debit.
+- **Two people.** Crun has no element grouping and this is unproven, so a two-person swap answers `template_swap_people_unsupported` before debit while the Crun row is active. No id in the live registry is two-person today, and the `templateSwapPeople` key is off.
+- **Errors.** For this model the adapter returns only `crun <status>/<code>` and a fixed reason word. Crun's own message, which could echo a signed URL, reaches neither logs nor responses.
+- **Replay.** A stored job replays on the model and endpoint it was admitted on, across activation and rollback, and never creates a task on the other supplier.
+
+**Owner exception, 2026-11-22.** The route goes active with no prior direct supplier probe. The owner decided that the first proof is a live website test as a customer, and the route's parity record states this. Whether Crun bills input seconds in addition is not established; read the first job's charge. If it bills input and output at the same rate, a 5 s job costs about $0.97, above the 47-credit floor of $0.8441, and the route should be rolled back.
+
+**Order.** Merge the code first, so production can serve both endpoints. Apply 0579 only after the owner approves the `apply-migrations` run.
+
+**Rollback (forward migration, not shipped as a file so it cannot run by accident).** New swaps return to the fal offer. The rows stay, so jobs already at Crun still poll, complete or refund, and their replays still return them.
+
+```sql
+-- NNNN_kling_o1_swap_crun_off.sql: take the next free number when it is needed.
+DO $$
+DECLARE affected BIGINT;
+BEGIN
+    UPDATE public.model_catalog
+       SET active = false, updated_at = now()
+     WHERE id = 'kling-o1-swap-crun' AND provider = 'crun';
+    GET DIAGNOSTICS affected = ROW_COUNT;
+    IF affected <> 1 THEN
+        RAISE EXCEPTION 'Expected one private Kling O1 swap row, updated %', affected;
+    END IF;
+END $$;
+```
+
+## Amendment 22 (2026-11-22): 1080p swaps on Crun behind their own key, dark
+
+**Why.** The 720p Crun run of a full-length photo smeared the face in fast motion. One paid 1080p run (Crun task `5c03181d`, three images) held the face close to the earlier fal result. Crun's TaskInfo recorded 135 credits for it, against 90 for each 720p run: $0.6553 per 5 s at 206 credits per $1, inside the $0.8441 floor for 47 credits.
+
+**Decision.** Migration 0580 adds a second server-only row, `kling-o1-swap-crun-1080` (`crun:kling/o1-r2v-1080`, our endpoint name for Crun's `kling/o1-r2v` with `resolution: 1080p`), at the same 47 credits. It is dispatched only while `templateSwapCrun1080` in `APP_RUNTIME_FLAGS` is exactly `true`. With the key off, the catalog read, row, request and job are the 720p ones. With it on, an absent or inactive 1080p row keeps 720p, a mismatched row refuses before any debit, and turning the 720p row off also stops 1080p. A job keeps the row it was admitted on, so replay does not read the key.
+
+**Evidence.** Two direct paid runs at 1080p, one of each photo set: `5c03181d` (three images, full-length photo) and `eae8a8e9` (two images, head-and-shoulders photo). Crun recorded 135 credits for each.
+
+**Not proven.** No 1080p swap has run through the website. The second run took about 36 minutes against about 6 at 720p, and one run does not show whether that is typical, so the key stays off until the owner accepts that wait. `templateSwapFullBody` stays a separate decision.
+
+## Amendment 23 (2026-11-23): video template prompts stay on the server, behind their own key, dark
+
+**Why.** The owner asked to hide the long prompts of all video templates. #2664 hid them on screen only ("Template prompt ready" with Edit prompt); the words still travelled to every browser and phone in `GET /api/presets`, `GET /api/templates/:id`, the `promptPreview` of `GET /api/templates` and the props of `/presets/:id`.
+
+**Decision.**
+1. **The server resolves the words.** `lib/templatePromptResolve.js` runs in `POST /api/v1/generations` right after the body is parsed, before the template check, the fingerprint, the rate-limit and replay reads, input validation, admission and the debit. A prompt that holds the placeholder `[[template-prompt:<id>]]` (anywhere in it, so the photo line, a camera or a character description may surround it), or no prompt at all with `template_id` set, gets the template's own text: the community prompt when one is recorded, otherwise the recipe, then the same photo-slot binding the clients do (`templateBoundPrompt`: only the whole, unedited text, on the bound model, with every slot filled). After that the request is the request a client-sent prompt would have been, so length caps per model, `crunInputRefusal`, `checkTemplateRequest`, `checkMediaBounds`, the exact-prompt rules, price, ledger and refund see the same bytes, and the job row stores what the supplier gets. Any other prompt, including a client-sent copy of the template's text, is the customer's own words and is untouched, so shipped builds and open tabs keep working. A placeholder naming an unknown, image or audio template is `template_not_found`; `template_id` disagreeing with the placeholder is `template_mismatch`; both 400 before any debit. Server-held clips and swaps keep their own prompt paths.
+2. **The text for Edit.** `GET /api/v1/templates/:id/prompt` answers `{ template }`, the object `GET /api/templates/:id` gave before this change, to a signed-in caller only (middleware 401, handler 401 without the identity header), `private, no-store`. Image and audio ids answer 404: their prompts stay public.
+3. **Public routes, behind `templatePromptsPrivate`.** A key of `APP_RUNTIME_FLAGS` (no new Worker binding), exactly `true` to turn on, absent means off. On: `/api/presets` and `/api/templates/:id` carry the placeholder in `prompt`, `sourcePrompt` and the contract's `prompt`/`sourcePrompt`, drop the contract's `photoPrompt`, and add `promptPrivate: true`; a bound template's contract gains `photoHints` and `photoHintsPhone`, cut out on the server because the client can no longer cut them out of the text; `GET /api/templates` cards lose `promptPreview`; the `/presets` gallery props and the `/presets/:id` recipe props follow the same rules, and the staging-only Recreate card is not rendered. Image and audio answers, `?kind=` lists, metadata, Open Graph and structured data are unchanged (none printed a prompt). Off: every answer is byte for byte what it was.
+4. **Search** still matches the whole prompt on the server and answers ids only. It is an oracle for prompt words (a word query tells whether a template contains it); the key does not change that, and a limit on it is a separate decision. `taste` (the Vibe Check words found in the prompt) stays on the cards.
+5. **Clients treat the placeholder as the template's own unedited prompt.** They compare it for equality and send it as it is; the server fills in the words. Edit prompt calls the route above, swaps the whole template in and shows the field. Chat and film handoffs read the words for the signed-in caller, because they need the text itself.
+
+**Replay.** The fingerprint and the stored inputs are those of the resolved body. The same key sent with the placeholder (or no prompt) and sent with the template's text is one request and replays the first job. If a template's text is revised between two attempts of one key, a placeholder attempt resolves to the new text and answers `idempotency_conflict`; a client-sent copy of the old text still replays.
+
+**Not covered.** Template clips (`TEMPLATE_CLIP_ENABLED`, off) read the client's prompt and are not supported with private prompts. A signed-in person can still read any template's text through the route above; this key keeps it out of anonymous traffic and scraping, not out of reach of an account. Edge caches hold the public answers for up to five minutes after the key changes.
+
+**Older clients.** A web tab or phone build from before this change still runs a template with the key on, because it sends whatever its feed gave it and the server resolves the placeholder. What degrades: its prompt box (after Edit, on builds that have it) shows the placeholder instead of the words, an edit made around the placeholder is kept and the words are filled in where it stands, and a bound template's photo-slot hints come out blank. So turn the key on after the new web and phone builds are out.
+
+**To turn on.** Add `"templatePromptsPrivate": true` to `APP_RUNTIME_FLAGS` through the production runtime-flags change, with the owner's word. To turn off, set it to `false` or remove it.

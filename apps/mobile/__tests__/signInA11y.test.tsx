@@ -22,7 +22,7 @@ jest.mock('../src/auth/AuthProvider', () => ({
     useAuth: () => ({ status: 'signedOut', appleNativeAvailable: false, signInWithApple: jest.fn(), signInWithOAuth: jest.fn(), signInWithEmail: jest.fn() }),
 }));
 jest.mock('expo-router', () => ({ Link: ({ children }: any) => children, Redirect: () => null, useRouter: () => ({ replace: jest.fn(), push: jest.fn(), back: jest.fn() }) }));
-jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 54, bottom: 0 }) }));
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 54, right: 59, bottom: 21, left: 59 }) }));
 jest.mock('../src/components/BrandIntro', () => ({ BrandIntro: () => null }));
 jest.mock('../src/components/SignupOffer', () => ({ SignupOffer: () => null }));
 jest.mock('../src/lib/passkeys', () => ({ passkeyGate: () => false }));
@@ -95,12 +95,13 @@ describe('sign-in screen', () => {
         expect(announce).toHaveBeenCalledWith(t('signIn.ready'));
     });
 
-    test('scrolled content stays below the status bar', async () => {
+    test('scrolled content protects portrait top and landscape side insets', async () => {
         await act(async () => root.render(<SignIn />));
         const scroll = root.container.queryAll((n) => n.type === 'RCTScrollView' || n.props.keyboardShouldPersistTaps === 'handled')[0];
         const frame = scroll.parent!;
         expect(RN.StyleSheet.flatten(frame.props.style)).toMatchObject({ paddingTop: 54 });
         expect(RN.StyleSheet.flatten(frame.props.style).backgroundColor).toBeTruthy();
+        expect(RN.StyleSheet.flatten(scroll.props.contentContainerStyle)).toMatchObject({ paddingLeft: 79, paddingRight: 79, paddingBottom: 45 });
         expect(RN.StyleSheet.flatten(scroll.props.contentContainerStyle).paddingTop).toBeLessThan(54);
     });
 });

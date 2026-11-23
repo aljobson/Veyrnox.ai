@@ -3762,6 +3762,24 @@
     "ratio": 1.83
   },
   {
+    "id": "music.create.advanced.bpm",
+    "english": "Tempo (BPM)",
+    "translation": "Geschwindigkeit (BPM)",
+    "ratio": 1.91
+  },
+  {
+    "id": "music.create.advanced.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "music.create.advanced.key",
+    "english": "Key",
+    "translation": "Tonart",
+    "ratio": 2
+  },
+  {
     "id": "music.create.locked_plan",
     "english": "This model requires a paid plan.",
     "translation": "Dieses Modell erfordert einen kostenpflichtigen Tarif.",
@@ -3778,6 +3796,30 @@
     "english": "Queued",
     "translation": "In Warteschlange",
     "ratio": 2.67
+  },
+  {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "Automatisch",
+    "ratio": 2.75
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Männlich",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.weirdness",
+    "english": "Weirdness",
+    "translation": "Ungewöhnlichkeit",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Maximal",
+    "ratio": 2.33
   },
   {
     "id": "musicActions.action.network",
@@ -3964,6 +4006,18 @@
     "english": "Playing",
     "translation": "Wiedergabe läuft",
     "ratio": 2.29
+  },
+  {
+    "id": "beat.midiRecord.recovery.retry",
+    "english": "Retry save",
+    "translation": "Speichern erneut versuchen",
+    "ratio": 2.6
+  },
+  {
+    "id": "beat.midiRecord.recovery.retryQuantise",
+    "english": "Retry with quantise",
+    "translation": "Mit Quantisierung erneut versuchen",
+    "ratio": 1.79
   },
   {
     "id": "beat.pad.kick",
@@ -4458,6 +4512,18 @@
     "ratio": 1.75
   },
   {
+    "id": "beat.search.empty",
+    "english": "No clips match “{query}”.",
+    "translation": "Keine Clips stimmen mit „{query}“ überein.",
+    "ratio": 1.68
+  },
+  {
+    "id": "beat.library.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
     "id": "beat.snap.label",
     "english": "Snap",
     "translation": "Einrasten",
@@ -4636,6 +4702,30 @@
     "english": "This save changed. Try again to start a new save.",
     "translation": "Dieser Speichervorgang wurde geändert. Erneut versuchen, um einen neuen zu starten.",
     "ratio": 1.69
+  },
+  {
+    "id": "dialogue.resetCast",
+    "english": "Reset voices",
+    "translation": "Stimmen zurücksetzen",
+    "ratio": 1.67
+  },
+  {
+    "id": "dialogue.add",
+    "english": "Add turn",
+    "translation": "Beitrag hinzufügen",
+    "ratio": 2.25
+  },
+  {
+    "id": "dialogue.modelLoad",
+    "english": "Could not load models. Try again later.",
+    "translation": "Modelle konnten nicht geladen werden. Versuche es später erneut.",
+    "ratio": 1.64
+  },
+  {
+    "id": "dialogue.addCredits",
+    "english": "Add credits",
+    "translation": "Credits hinzufügen",
+    "ratio": 1.64
   },
   {
     "id": "musicExport.save",
@@ -4896,6 +4986,186 @@
     "ratio": 1.91
   },
   {
+    "id": "editorMotion.scale",
+    "english": "Scale",
+    "translation": "Skalierung",
+    "ratio": 2
+  },
+  {
+    "id": "editorMotion.pan-right",
+    "english": "Pan right",
+    "translation": "Schwenk nach rechts",
+    "ratio": 2.11
+  },
+  {
+    "id": "editorMotion.rise",
+    "english": "Rise",
+    "translation": "Anstieg",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorMotion.arc",
+    "english": "Arc",
+    "translation": "Bogen",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorMotion.move",
+    "english": "Move to playhead",
+    "translation": "Zum Abspielkopf verschieben",
+    "ratio": 1.69
+  },
+  {
+    "id": "editorMotion.go",
+    "english": "Go to point",
+    "translation": "Zum Punkt springen",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorMotion.easing",
+    "english": "Easing",
+    "translation": "Interpolation",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorMotion.ease-in",
+    "english": "Ease in",
+    "translation": "Langsam beginnen",
+    "ratio": 2.29
+  },
+  {
+    "id": "editorMotion.ease-out",
+    "english": "Ease out",
+    "translation": "Langsam enden",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorMotion.ease-in-out",
+    "english": "Ease in and out",
+    "translation": "Sanft beschleunigen und abbremsen",
+    "ratio": 2.2
+  },
+  {
+    "id": "editorMotion.resetMask",
+    "english": "Reset mask",
+    "translation": "Maske zurücksetzen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorMotion.resetSmart",
+    "english": "Reset Smart picture",
+    "translation": "Intelligentes Bild zurücksetzen",
+    "ratio": 1.63
+  },
+  {
+    "id": "editorMotion.left",
+    "english": "Move left",
+    "translation": "Nach links verschieben",
+    "ratio": 2.44
+  },
+  {
+    "id": "editorMotion.right",
+    "english": "Move right",
+    "translation": "Nach rechts verschieben",
+    "ratio": 2.3
+  },
+  {
+    "id": "editorFont.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorFont.inUse",
+    "english": "In use",
+    "translation": "In Verwendung",
+    "ratio": 2.17
+  },
+  {
+    "id": "editorFont.relinkNeeded",
+    "english": "Relink needed",
+    "translation": "Erneute Verknüpfung nötig",
+    "ratio": 1.92
+  },
+  {
+    "id": "editorFont.relink",
+    "english": "Relink {name}",
+    "translation": "{name} neu verknüpfen",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorFont.unsupportedOnIphone",
+    "english": "Can’t load on this iPhone",
+    "translation": "Kann auf diesem iPhone nicht geladen werden",
+    "ratio": 1.72
+  },
+  {
+    "id": "editorFont.add",
+    "english": "Add custom font",
+    "translation": "Eigene Schrift hinzufügen",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPack.close",
+    "english": "Close",
+    "translation": "Schließen",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorPack.chooseFiles",
+    "english": "Choose Pack Media Files",
+    "translation": "Mediendateien für das Paket auswählen",
+    "ratio": 1.61
+  },
+  {
+    "id": "editorScenes.transform",
+    "english": "Reset speed, reverse and freeze on this clip first.",
+    "translation": "Setze zuerst Geschwindigkeit, Rückwärtswiedergabe und Standbild für diesen Clip zurück.",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorScenes.long",
+    "english": "Scene detection handles clips up to 30 seconds.",
+    "translation": "Die Szenenerkennung unterstützt Clips mit einer Länge von bis zu 30 Sekunden.",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorScenes.error",
+    "english": "Scene detection could not finish. Try again.",
+    "translation": "Die Szenenerkennung konnte nicht abgeschlossen werden. Versuche es erneut.",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorScenes.applied",
+    "english": "Split at {value1} scene changes. You can undo this in one step.",
+    "translation": "Der Clip wurde bei {value1} Szenenwechseln geteilt. Du kannst dies in einem Schritt rückgängig machen.",
+    "ratio": 1.62
+  },
+  {
+    "id": "editorLocalExport.finishing",
+    "english": "Finishing MP4…",
+    "translation": "MP4 wird fertiggestellt…",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorNativeMotion.analysing",
+    "english": "Analysing",
+    "translation": "Wird analysiert",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorPersonMask.category",
+    "english": "Keep",
+    "translation": "Behalten",
+    "ratio": 2
+  },
+  {
+    "id": "editorSpeech.autoApplying",
+    "english": "Adding editable captions…",
+    "translation": "Bearbeitbare Untertitel werden hinzugefügt…",
+    "ratio": 1.72
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
@@ -5050,5 +5320,11 @@
     "english": "Retry",
     "translation": "Erneut versuchen",
     "ratio": 3.2
+  },
+  {
+    "id": "app.create.templatePrompt.error",
+    "english": "Couldn’t load the prompt. Sign in and try again.",
+    "translation": "Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.",
+    "ratio": 1.6
   }
 ]

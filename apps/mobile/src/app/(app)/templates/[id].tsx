@@ -10,8 +10,8 @@ import { phonePhotoHints } from '../../../lib/templatePhotoHintText';
 import { templatePhotosUnavailable, templateContract } from '../../../lib/templateFidelity';
 import { TEMPLATE_CLIP_PROMPT, templateClipPhotoPrompt, validTemplateClipPrompt } from '../../../../../../lib/templateClipPrompt.mjs';
 import { rawText } from '../../../lib/i18n/translate';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Card, Chip, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
@@ -29,6 +29,12 @@ import { useTemplateGenerate } from '../../../lib/useTemplateGenerate';
 import { templateModelEligible, templateOptions, type TemplateChoices } from '../../../lib/templateChoices';
 import { useTemplateClipAvailable, templateClipModel } from '../../../lib/templateClips';
 import { GENERATION_PROMPT_MAX } from '../../../lib/promptLimits';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
+import { VeyLoader } from '../../../components/VeyLoader';
+import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady';
+import { fetchPrivatePrompt, isTemplatePromptPlaceholder } from '../../../lib/privateTemplate';
+import { isOwnTemplatePrompt, isVideoPreset } from '../../../lib/templatePromptVisibility';
 
 // The longest prompt the generations route accepts.
 const TEMPLATE_PROMPT_MAX = GENERATION_PROMPT_MAX;
@@ -37,6 +43,9 @@ export default function TemplatePage() {
     const styles = useThemedStyles(sheets);
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
+    const scroll = useRef<ComponentRef<typeof ScrollView>>(null), scrollY = useRef(0), revealAttempt = useRef<string | null>(null), resultTarget = useRef<ComponentRef<typeof View>>(null), revealResult = useRef(false);
+    // Place the node below the header; measured against the live offset so old history never decides the target.
+    const revealNode = (node: ComponentRef<typeof View> | null) => node?.measureInWindow?.((_x: number, y: number) => scroll.current?.scrollTo({ y: Math.max(0, scrollY.current + y - 160), animated: true }));
     const [preset, setPreset] = useState<Preset | null>(null);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
@@ -55,9 +64,12 @@ export default function TemplatePage() {
     const sourcePromptDuplicate = typeof preset?.sourcePromptDuplicateOf === 'string';
     const [catalog, setCatalog] = useState<CatalogModel[] | undefined>();
     const [choices, setChoices] = useState<TemplateChoices>({});
+    const [revealedId, setRevealedId] = useState<string | null>(null);
+    const [revealing, setRevealing] = useState<'idle' | 'loading' | 'error'>('idle');
     const templateClip = useTemplateClipAvailable(id);
     const swapOffer = useSwapAvailability(id);
     const displayPrompt = templateClip && preset ? (hasExactSourcePrompt ? preset.sourcePrompt! : preset.prompt) : prompt;
+    const promptHidden = !!preset && revealedId !== preset.id && isVideoPreset(preset) && isOwnTemplatePrompt(preset, displayPrompt);
     const catalogModel = catalog?.find(model => model.id === (templateClip?.model ?? preset?.modelId));
     const original = templateClip && catalogModel ? templateClipModel(catalogModel, templateClip) : catalogModel;
     const models = preset && original && templateModelEligible(original, original)
@@ -85,6 +97,19 @@ export default function TemplatePage() {
     const photoReady = !photoBusy && (boundCount ? photos.length === boundCount : !slot || photos.length > 0);
     const request = inline && preset && model && options && (templateClip ? validTemplateClipPrompt(clipPrompt) : (!tooLong && prompt.trim())) ? templateRequest(preset, model, { prompt: templateClip ? clipPrompt : prompt, aspect: options.aspect, duration: options.duration, references: slot ? photos : [], sourceRights: true, templateClip: templateClip?.id }) : null;
     const generation = useTemplateGenerate(request, model && options ? estimateCredits(model, options.duration) : 0);
+    // A private template (ADR-0351 amendment 23) holds a placeholder; Edit prompt reads the words for this signed-in person.
+    const revealPrompt = async () => {
+        if (!preset) return;
+        if (preset.promptPrivate) {
+            setRevealing('loading');
+            const full = await fetchPrivatePrompt(generation.api, preset.id);
+            if (!full) { setRevealing('error'); return; }
+            setPreset({ ...preset, prompt: full.prompt, sourcePrompt: full.sourcePrompt, promptPrivate: false });
+            setPrompt(current => isTemplatePromptPlaceholder(current) ? full.own : current);
+        }
+        setRevealing('idle');
+        setRevealedId(preset.id);
+    };
     useEffect(() => { setClipPrompt(text => templateClipPhotoPrompt(text, photos.length > 0)); }, [photos.length]);
     useEffect(() => {
         setClipPrompt(templateClipPhotoPrompt(TEMPLATE_CLIP_PROMPT, false));
@@ -97,14 +122,20 @@ export default function TemplatePage() {
         fetchCatalog().then(models => { if (live) setCatalog(models); }).catch(() => { if (live) setCatalog(undefined); });
         return () => { live = false; };
     }, []);
-    return <ScrollView contentContainerStyle={styles.screen}>
+    useEffect(() => {
+        if (!revealResult.current || (!generation.run && !generation.error)) return;
+        revealResult.current = false;
+        requestAnimationFrame(() => revealNode(resultTarget.current));
+    }, [generation.run, generation.error]);
+    return <KeyboardScreen><KeyboardFormScrollView {...(swapOffer || boundCount ? { ref: scroll, scrollEventThrottle: 32, onScroll: (event: { nativeEvent: { contentOffset: { y: number } } }) => { scrollY.current = event.nativeEvent.contentOffset.y; } } : {})} contentContainerStyle={styles.screen}>
         <Stack.Screen options={{ title: t('presets.templates') }} />
-        {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} />}
+        {TEMPLATE_SWAP_RUNTIME && !swapOffer && <SwapAttemptStatus templateId={id} />}
         {swapOffer ? <>
             {preset && <Text variant="title1" accessibilityRole="header">{preset.title}</Text>}
             <SwapTemplatePreview id={id} title={preset?.title} />
-            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} />
-        </> : loading ? <ActivityIndicator /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
+            <SwapComposer offer={{ ...swapOffer, name: catalog?.find(m => m.id === swapOffer.model)?.name }} revealAttempt={revealAttempt} onReveal={revealNode} />
+            {TEMPLATE_SWAP_RUNTIME && <SwapAttemptStatus templateId={id} revealAttempt={revealAttempt} onReveal={revealNode} />}
+        </> : loading ? <VeyLoader label={t('common.loading')} showLabel /> : failed ? <><Text tone="danger">{t('presets.couldnotloadtemplatesCheckyourconnection')}</Text><Button label={t('recovery.retry')} onPress={() => setAttempt(n => n + 1)} /></> : !preset ? <><Text>{t('presets.thattemplateisnotavailablerightnow')}</Text><Button label={t('presets.templates')} onPress={() => router.push('/create/presets')} /></> : <>
             <View style={styles.row}><Text variant="caption">{themeTitle(preset.category)}</Text>{preset.isNew ? <Text variant="caption">{t('explore.new')}</Text> : null}</View>
             <Text variant="title1" accessibilityRole="header">{preset.title}</Text>
             <Text>{t('libraryCreate.runsOn', { model: model?.name ?? preset.modelName })}</Text>
@@ -114,9 +145,10 @@ export default function TemplatePage() {
             {sourcePromptUnavailable ? <Card><Text>{t('public.TemplateRecipe.sourcePromptUnavailable')}</Text></Card> : null}
             {sourcePromptNotRecorded ? <Card><Text>{t('public.TemplateRecipe.sourcePromptNotRecorded')}</Text></Card> : null}
             {templateClip && slot && model && available && inline ? <TemplateClipComposer poster={preset.posterUrl} prompt={clipPrompt} attached={photos.length > 0} onChange={setClipPrompt} picker={<SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />} /> : null}
-            <TextField label={promptLabel} accessibilityLabel={promptLabel} value={displayPrompt} editable={templateClip ? false : undefined} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />
-            <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(displayPrompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />
-            {copied ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
+            {promptHidden ? <TemplatePromptReady onEdit={revealPrompt} status={revealing} /> : null}
+            {promptHidden ? null : <TextField {...(revealedId === preset.id ? { autoFocus: true } : {})} label={promptLabel} accessibilityLabel={promptLabel} value={displayPrompt} editable={templateClip ? false : undefined} onChangeText={value => { setPrompt(value); setCopied(null); }} multiline scrollEnabled style={hasExactSourcePrompt ? [styles.promptBox, { writingDirection: 'auto', textAlign: 'auto' }] : styles.promptBox} />}
+            {promptHidden ? null : <Button label={t(hasExactSourcePrompt ? 'public.TemplateRecipe.copyExactCommunityPrompt' : 'editor.copy')} onPress={async () => setCopied(t(await copyText(displayPrompt) ? 'libraryCreate.copied' : 'libraryCreate.copyFailed'))} />}
+            {copied && !promptHidden ? <Text accessibilityLiveRegion="polite">{copied}</Text> : null}
             {tooLong ? <Text tone="danger" accessibilityLiveRegion="polite">{t('public.TemplateRecipe.productPromptTooLong', { count: prompt.length, max: TEMPLATE_PROMPT_MAX })}</Text> : null}
             {hasExactSourcePrompt ? <Text>{t('public.TemplateRecipe.exactCommunityPromptHelp')}</Text> : null}
             {templateClip ? <><Text>{t('public.TemplateRecipe.templateClipUsed')}</Text><Text>{t('app.create.referenceLikenessNotice')}</Text></> : null}
@@ -139,11 +171,12 @@ export default function TemplatePage() {
                 {boundCount && model ? <TemplatePhotoSlots key={`${preset.id}:${model.id}:${pickerEpoch}`} count={boundCount} hints={phonePhotoHints(contract)} model={model} api={generation.api} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.busy || false }))} onBusy={busy => setAttached(previous => ({ modelId: model.id, refs: previous?.refs ?? [], busy }))} /> : !templateClip && slot && model ? <View style={{ gap: 12 }}>
                     <SourcePicker key={`${model.id}:${pickerEpoch}`} slot={slot} api={generation.api} drawable={false} references={photos} onReferences={refs => setAttached(previous => ({ modelId: model.id, refs, busy: previous?.modelId === model.id && previous.busy }))} onBusy={busy => setAttached(previous => previous && previous.modelId !== model.id ? previous : { modelId: model.id, refs: previous?.refs ?? [], busy })} onChange={() => {}} onLibrary={() => {}} />
                 </View> : null}
+                {boundCount ? <View ref={resultTarget} collapsable={false} /> : undefined}
                 {generation.run && model ? <CreateResult api={generation.api} batch={{ ids: [...generation.run.ids], modelId: generation.run.modelId, kind: kindOf(model.modality), aspect: options?.aspect ?? null, duration: options?.duration ?? null, count: 1 }} catalog={catalog ?? []} onTerminal={generation.settled} /> : null}
                 {generation.error ? <Text tone="danger" accessibilityLiveRegion="polite">{generation.error}</Text> : null}
                 {generation.run
                     ? <Button label={t('libraryCreate.newGeneration')} disabled={generation.busy} onPress={() => { generation.reset(); setAttached(null); setPickerEpoch(n => n + 1); }} />
-                    : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready || !photoReady} onPress={() => void generation.generate()} />}
+                    : <Button label={generation.confirming ? t('app.create.confirmPrice', { credits: String(generation.price) }) : t('slip.generate')} disabled={!generation.ready || !photoReady} {...(boundCount ? { loading: generation.busy } : {})} onPress={() => { revealResult.current = !!boundCount; void generation.generate(); }} />}
                 {generation.missing > 0 && !generation.run ? <Text accessibilityLiveRegion="polite">{t('form.err.insufficient')}</Text> : null}
                 {!templateClip && <Button variant="secondary" label={t('libraryCreate.editBeforeGenerating')} disabled={generation.busy || tooLong || !prompt.trim() || !photoReady} onPress={() => {
                     const href = presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog);
@@ -156,6 +189,6 @@ export default function TemplatePage() {
                 <Button label={t('libraryCreate.useTemplate')} disabled={tooLong || !prompt.trim()} onPress={() => router.push(presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog))} />
             </> : <Text>{t('presets.notavailablerightnow')}</Text>}
         </>}
-    </ScrollView>;
+    </KeyboardFormScrollView></KeyboardScreen>;
 }
 const sheets = themedStyles(p => ({ screen: { padding: 20, paddingBottom: 80, gap: 12, backgroundColor: p.bg }, row: { flexDirection: 'row', gap: 8 }, promptBox: { maxHeight: 180 }, choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 } }));

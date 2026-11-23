@@ -8,7 +8,9 @@ import { Stack } from 'expo-router';
 import { PlanLocked } from '../../../components/publish/PlanLocked';
 import { isPlanLockMessage } from '../../../lib/publishPlanLocked';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Share, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { KeyboardScreen } from '../../../components/KeyboardScreen';
+import { KeyboardFormScrollView } from '../../../components/KeyboardFormScrollView';
 import { touchTarget } from '../../../lib/a11y';
 import { t } from '../../../lib/i18n';
 import { EMPTY, MAX_ITEMS, THEMES, fetchSmartlink, publicUrl, saveSmartlink, slugFrom, smartlinkErrorKey, validateSmartlink, type LinkItem, type SmartLink } from '../../../lib/publishSmartlink';
@@ -100,9 +102,9 @@ export default function SmartlinkScreen() {
     const saved = link !== EMPTY && link.slug !== '';
 
     return (
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+        <KeyboardScreen style={styles.flex}>
             <Stack.Screen options={{ title: t('smartlink.title') }} />
-            <ScrollView style={styles.flex} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <KeyboardFormScrollView style={styles.flex} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             {!canWrite ? <Text style={styles.muted}>{t('publishOps.readOnly')}</Text> : null}
 
                 <Text style={styles.muted}>{t('smartlink.intro')}</Text>
@@ -159,8 +161,8 @@ export default function SmartlinkScreen() {
                         <Text style={styles.addText}>{t('smartlink.share')}</Text>
                     </Pressable>
                 ) : null}
-            </ScrollView>
-        </KeyboardAvoidingView>
+            </KeyboardFormScrollView>
+        </KeyboardScreen>
     );
 }
 

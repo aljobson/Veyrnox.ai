@@ -248,7 +248,7 @@ Each is a short procedure on **both** a real iPhone and the mid-range Android ph
 
 ### S1. Editor export in a web view
 
-Procedure and results: [spikes/S1-editor-export.md](spikes/S1-editor-export.md). Another session is preparing that file; this kit does not repeat it.
+The S1 hosted-editor experiment was retired after the native editor replaced it. Current qualification exercises the native preview and export path instead.
 
 - **Pass:** export under 3x real time; no web-view kill, including after backgrounding; correct frame count and audio within 0.1 s; thumb trim works.
 - **Unlocks:** the owner's decision of 2026-10-19 (option C, native shell plus web engine). A pass starts the editor build.

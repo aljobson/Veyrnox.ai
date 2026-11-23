@@ -19,7 +19,13 @@ test('font table covers every web font', () => expect(fonts.map(f => f[0])).toEq
 test.each(fonts)('%s maps by platform', (font, ios, android) => {
     expect(platformFontFamily(font, 'ios')).toBe(ios); expect(platformFontFamily(font, 'android')).toBe(android);
 });
-test.each([`VXFont_${'a'.repeat(64)}`, 'missing'])('%s uses the system fallback', font => {
+const customFamily = `VXFont_${'a'.repeat(64)}`;
+test('a verified custom family is passed through on both native platforms', () => {
+    expect(platformFontFamily(customFamily, 'ios')).toBe(customFamily); expect(platformFontFamily(customFamily, 'android')).toBe(customFamily);
+    expect(editorTextPreviewStyle({ font: customFamily }, 6, 'ios', { customFontReady: true }).fontFamily).toBe(customFamily);
+    expect(editorTextPreviewStyle({ font: customFamily }, 6, 'ios').fontFamily).toBeUndefined();
+});
+test.each(['missing', 'VXFont_short', `VXFont_${'A'.repeat(64)}`, `Other_${'a'.repeat(64)}`])('%s uses the system fallback', font => {
     expect(platformFontFamily(font, 'ios')).toBeUndefined(); expect(platformFontFamily(font, 'android')).toBeUndefined();
 });
 test('defaults override every legacy caption style', () => {
@@ -38,17 +44,28 @@ test.each(['Retro pop', 'Serif quote', 'Minimal subtitle', 'Neon heading'])('%s 
 test('underline and letter spacing are drawn', () => {
     expect(editorTextPreviewStyle({ underline: true, letterSpacing: 2 }, 5, 'ios')).toMatchObject({ textDecorationLine: 'underline', letterSpacing: 1 });
 });
-test('PlaybackPreview renders the active styled clip and preserves fallback choice', async () => {
+test('PlaybackPreview renders the active styled clip only inside its timeline range', async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     const root = createRoot(), tl = webSequenceV3(), preset = TITLE_STYLES.find(p => p.name === 'Serif quote')!;
     tl.text[0] = { ...tl.text[0], style: preset.style, size: preset.size };
     const store = createFrameStore(10);
     try {
-        await act(async () => root.render(<PlaybackPreview frameStore={store} timeline={tl} api={{ request: jest.fn() }} playing={false} localMediaUris={{}} />));
+        await act(async () => root.render(<PlaybackPreview frameStore={store} timeline={tl} api={{ request: jest.fn() }} playing={false} localMediaUris={{}} fontReady={() => true} />));
         const textContent = (node: TestNode): string => typeof node === 'string' ? node : node.children.map(textContent).join('');
         const caption = () => root.container.queryAll(n => textContent(n) === 'Hello world' && !!n.props.style,
             { matchDeepestOnly: true })[0];
         expect(StyleSheet.flatten(caption().props.style)).toMatchObject(editorTextPreviewStyle(preset.style, preset.size, Platform.OS));
-        await act(async () => store.set(1000)); expect(caption()).toBeDefined();
+        await act(async () => store.set(1000)); expect(caption()).toBeUndefined();
+    } finally { await act(async () => root.unmount()); }
+});
+test('PlaybackPreview applies a verified custom family to the text overlay', async () => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    const root = createRoot(), tl = webSequenceV3(), store = createFrameStore(10);
+    tl.text[0] = { ...tl.text[0], style: { ...tl.text[0].style, font: customFamily } };
+    try {
+        await act(async () => root.render(<PlaybackPreview frameStore={store} timeline={tl} api={{ request: jest.fn() }} playing={false} localMediaUris={{}} fontReady={() => true} />));
+        const textContent = (node: TestNode): string => typeof node === 'string' ? node : node.children.map(textContent).join('');
+        const caption = root.container.queryAll(node => textContent(node) === 'Hello world' && !!node.props.style, { matchDeepestOnly: true })[0];
+        expect(StyleSheet.flatten(caption.props.style).fontFamily).toBe(customFamily);
     } finally { await act(async () => root.unmount()); }
 });
