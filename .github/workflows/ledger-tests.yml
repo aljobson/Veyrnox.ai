@@ -320,6 +320,7 @@ jobs:
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-deletion.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-job-cancel.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-route-failover.mjs
+          DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-seedance25.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-aware-recovery.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-route-reorder.mjs
           DATABASE_URL="${DATABASE_URL%/*}/rebuild_check" node scripts/test-supplier-route-breaker.mjs

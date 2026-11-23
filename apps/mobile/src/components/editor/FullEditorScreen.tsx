@@ -1,3 +1,4 @@
+import { Seedance25EditorActions } from '../Seedance25Actions';
 import { MotionPanel } from './tools/MotionPanel'; import { MaskPanel } from './tools/MaskPanel';
 import { useMotionActions } from './tools/useMotionActions'; import { useMaskActions } from './tools/useMaskActions';
 import { useLookActions } from './tools/useLookActions'; import { useAudioSettingsActions } from './tools/useAudioSettingsActions';
@@ -513,6 +514,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             rail={advanced ? <ToolRail tool={tool} setTool={setTool} /> : undefined}>
         {!advanced && panelOpen ? <View style={styles.simpleActions}><Action label={t('editorSimple.closePanel')} onPress={() => setPanelOpen(false)} /></View> : null}
         <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent} keyboardShouldPersistTaps="handled">
+            {selectedMedia?.kind === 'video' && (tool === 'media' || tool === 'generate') ? <Seedance25EditorActions key={selectedMedia.id} uri={localMediaUris[selectedMedia.id]} assetId={selectedMedia.id.startsWith('j-') ? selectedMedia.id.slice(2) : undefined} /> : null}
             {tool === 'media' ? <MediaPanel {...panelProps} /> : null}
             {tool === 'audio' ? <AudioPanel {...panelProps} /> : null}
             {tool === 'generate' ? <EditorGeneratePanel rows={returns.rows} note={returns.note} onOpen={() => openGenerate('video')} onAdd={id => void returns.addAtPlayhead(id,

@@ -1,3 +1,5 @@
+import { Seedance25Actions } from './Seedance25Actions';
+import type { CatalogModel } from '../lib/media';
 import { VideoShapeBadge } from './VideoShapeBadge';
 import { rawText } from '../lib/i18n/translate';
 import { Text, Button, Card, themedStyles, useThemedStyles } from './ui';
@@ -17,6 +19,7 @@ import { ds } from '../theme';
 const THUMBNAIL_SIZE = 72;
 
 interface Props {
+    readonly models?: readonly CatalogModel[];
     readonly audioSeek?: { position: number; duration: number; onSeek(seconds: number): void };
     readonly onLipSync?: () => void;
     readonly job: Job;
@@ -42,7 +45,7 @@ const STAR_PULSE = 1.06;
 
 // One creation in the Library: what it is, its state, its price, when its file goes, and the actions that apply.
 // A failed job says how many credits came back; a file near the end of its life says when.
-export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media, audioSeek, onLipSync }: Props) {
+export function LibraryItem({ models = [], job, retentionKnown, now, name, kind, grid, starred, canSchedule, canReuse, canAsk, onAsk, onOpen, onStar, onSchedule, onReuse, media, audioSeek, onLipSync }: Props) {
     const styles = useThemedStyles(sheets);
     const status = rowStatus(job);
     const retention = retentionKnown ? retentionOf(job, now) : { kind: 'none' } as const;
@@ -91,6 +94,7 @@ export function LibraryItem({ job, retentionKnown, now, name, kind, grid, starre
             {!grid && kind === 'audio' && audioSeek ? <View style={styles.seek}>
                 <AudioSeekBar {...audioSeek} label={name} testID="library-audio-position" />
             </View> : null}
+            {canReuse && kind === 'video' ? <Seedance25Actions models={models} assetId={job.job_id} /> : null}
             <View style={styles.actions}>
                 <Animated.View style={popStyle}>
                     <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={rawText(t('library.favouriteLabel', { name }))} accessibilityState={{ selected: starred }} onPress={toggleStar} label={t('library.favouriteLabel', { name })} icon={starred ? 'starFill' : 'star'} iconOnly />

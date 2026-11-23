@@ -18,7 +18,7 @@ import { POLICIES, type CacheMeta } from '../../../lib/cache';
 import { observe } from '../../../lib/network';
 import { KIND_FILTERS, STATE_FILTERS, expiryOf, canReuse, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
 import { fetchLibrarySync, pushFavourite, reconcileFavourites } from '../../../lib/librarySync';
-import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
+import { fetchAllCatalog, fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref, askAboutHref } from '../../../lib/nextSteps';
 import { creativeReuseHref, lipSyncSourceHref } from '../../../lib/creativeReuse';
 import { ds, LIST_END_PADDING } from '../../../theme';
@@ -60,6 +60,8 @@ export default function Library() {
     const [view, setView] = useState<LayoutView>('grid');
     const [favourites, setFavourites] = useState<string[]>([]);
     const [models, setModels] = useState<CatalogModel[]>([]);
+    // The two Seedance 2.5 offers are hidden from the supported list (isSupported), so they come from the full catalog.
+    const [offers, setOffers] = useState<CatalogModel[]>([]);
     const kinds = useMemo(() => kindMap(models), [models]);
     const names = useMemo(() => new Map(models.map((m) => [m.id, m.name])), [models]);
     const [focused, setFocused] = useState(false);
@@ -235,6 +237,7 @@ export default function Library() {
             });
             // The model list only names and sorts what the server returned; a failed read leaves them unfiltered by type.
             fetchCatalogCached((list) => setModels(list)).catch(() => undefined);
+            fetchAllCatalog().then((list) => setOffers(list.filter((m) => m.id === 'seedance-2.5-edit' || m.id === 'seedance-2.5-extend'))).catch(() => undefined);
             return () => { setFocused(false); };
         }, [load, api]),
     );
@@ -321,7 +324,7 @@ export default function Library() {
                     }
                     renderItem={({ item }) => {
                         const kind = kinds.get(item.model_id);
-                        return <LibraryItem
+                        return <LibraryItem models={offers}
                             job={item}
                             retentionKnown={!retentionPending.current.has(item.job_id)}
                             now={now}

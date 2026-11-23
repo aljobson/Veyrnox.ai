@@ -25,7 +25,7 @@ export function fromFallback() {
     resolutionTiers: capabilities?.resolutionTiers || null,
     audioOptions: inputs.audio_enabled?.values || [],
     takesTopic: !!inputs.topic,
-    isEdit: !!inputs.clips,
+    isEdit: !!inputs.clips || ['seedance-2.5-edit', 'seedance-2.5-extend'].includes(m.id),
     takesPlan: !!inputs.plan_id,
     takesSeed: !!inputs.seed,
     takesNegative: !!inputs.negative_prompt,
@@ -60,7 +60,7 @@ export function fromApi(models) {
     // Auto Short (ADR-0029): takes a topic instead of a prompt.
     takesTopic: !!m.capabilities?.inputs?.topic,
     // Clip Editor: edits Library files, so it is started from the Library, never Create.
-    isEdit: !!m.capabilities?.inputs?.clips,
+    isEdit: !!m.capabilities?.inputs?.clips || ['seedance-2.5-edit', 'seedance-2.5-extend'].includes(m.id),
     // Video agent (ADR-0074): bought from an approved plan on its own page, never from the picker.
     takesPlan: !!m.capabilities?.inputs?.plan_id,
     // Optional settings the gateway accepts for this model.

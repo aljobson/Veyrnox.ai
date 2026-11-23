@@ -39,3 +39,10 @@ test('a retired model falls back to a supplier-neutral id', async () => {
     assert.equal(body.model.id, 'nano-banana-pro-a2');
     assert.equal(body.model.name, 'nano-banana-pro');
 });
+
+for (const task of ['edit', 'extend']) test(`Seedance 2.5 ${task} provenance never names its supplier`, async () => {
+    mockDb({ catalogName: task === 'edit' ? 'Restyle clip' : 'Extend clip', modelId: `seedance-2.5-${task}` });
+    const response = await call();
+    assert.equal(response.status, 200);
+    assert.doesNotMatch(JSON.stringify(await response.json()), /\b(crun|byteplus|mediaoss)\b/i);
+});

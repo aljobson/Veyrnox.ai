@@ -102,3 +102,15 @@ test('Swap stages one whole bounded job per generation at the minimum 50 percent
   assert.match(sql, /active=EXCLUDED.active/);
   assert.match(sql, /count\(\*\)[\s\S]*active = false AND gated_flag = false\) <> 2/);
 });
+
+
+test('Seedance 2.5 placeholders cover the cost floor while both offers stay dark', () => {
+  const sql = readFileSync('packages/db/schema/supabase/0598_seedance25_edit_extend_standby.sql', 'utf8');
+  const rows = [...sql.matchAll(/'video-to-video',(\d+),([\d.]+),'per_second',5,true,false/g)];
+  assert.equal(rows.length, 2);
+  for (const [, price, cost] of rows) {
+    assert.equal(Number(price), creditsForFloor(Number(cost)));
+    assert.ok(Number(cost) * 2 <= Number(price) * 2 * 0.01796);
+  }
+  assert.doesNotMatch(sql, /state\s*=\s*'active'/);
+});
