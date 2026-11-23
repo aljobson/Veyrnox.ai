@@ -6,6 +6,8 @@ import { useI18n } from '../../../components/I18nProvider';
 import { claimWinsCelebration, useCheckinDialogOpen } from '../_lib/yourWins';
 import { Modal } from './Modal';
 import VeyCharacter from './VeyCharacter';
+import { ConfettiBurst } from './ConfettiBurst';
+import { playCelebrationSound } from '../_lib/celebrationSound';
 export function YourWinsCelebration({ owner, data }) {
     const { t } = useI18n();
     const reduced = useReducedMotion();
@@ -25,9 +27,13 @@ export function YourWinsCelebration({ owner, data }) {
     useEffect(() => {
         if (!checkinOpen && data && event?.owner === owner && close.current?.closest('dialog')?.open) event.onShown();
     }, [checkinOpen, data, event, owner]);
+    const showing = !checkinOpen && Boolean(data) && event?.owner === owner;
+    const milestoneKey = showing ? event.milestone.key : null;
+    useEffect(() => { if (milestoneKey) playCelebrationSound(); }, [milestoneKey]);
     if (checkinOpen || !data || !event || event.owner !== owner) return null;
     return <Modal onCancel={() => setEvent(null)} initialFocusRef={close} instant={Boolean(reduced)} aria-labelledby="wins-celebration-title" className="items-center justify-center p-4">
         <div className="w-full max-w-sm rounded-2xl border border-vx-border bg-vx-panel p-6 text-center">
+            <ConfettiBurst />
             <div aria-hidden="true" className="mx-auto w-40"><VeyCharacter pose="cheer" mood="happy" reducedMotion={reduced !== false} /></div>
             <h2 id="wins-celebration-title" className="mb-6 text-2xl font-bold">{t(`wins.${event.milestone.key}`)}</h2>
             <Link href="/app/account/wins" onClick={() => setEvent(null)} className="flex min-h-11 items-center justify-center rounded-xl bg-vx-accent px-4 text-vx-accent-ink">{t('wins.see')}</Link>
