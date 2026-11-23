@@ -50,6 +50,13 @@ export function sunoVarietyValue(index) {
   return Math.min(4, Math.max(0, Number(index) || 0)) * 25;
 }
 
+/** The Suno model to send: the preferred one when the projection allows it, else the first allowed (a tripped model breaker removes choices). */
+export function sunoModelFor(model, preferred = 'v6') {
+  const list = Array.isArray(model?.controls?.suno_model) ? model.controls.suno_model : null;
+  if (!list || !list.length) return preferred;
+  return list.includes(preferred) ? preferred : list[0];
+}
+
 export function sunoSimpleQuoteRequest({ model, prompt, instrumental }) {
   return {
     mode: 'simple',
@@ -57,7 +64,7 @@ export function sunoSimpleQuoteRequest({ model, prompt, instrumental }) {
     model_id: model.id,
     prompt: String(prompt || '').trim(),
     instrumental: instrumental === true,
-    suno_model: 'v6',
+    suno_model: sunoModelFor(model),
   };
 }
 
@@ -70,7 +77,7 @@ export function sunoCustomQuoteRequest({ model, draft, controls }) {
     instrumental: controls.instrumental === true,
     rights_confirmed: controls.instrumental ? false : controls.rightsConfirmed === true,
     duration_seconds: sunoDuration(model, controls.durationSeconds),
-    suno_model: controls.sunoModel,
+    suno_model: sunoModelFor(model, controls.sunoModel),
     vocal_gender: controls.instrumental ? 'auto' : controls.vocalGender,
     style_influence: Math.round(Number(controls.styleWeight) * 100),
     weirdness: Number(controls.weirdness),

@@ -1,4 +1,5 @@
 import { buildCustomQuote, buildSimpleQuote, clampDuration, modelState, quoteBlockers } from '../src/lib/music/createForm';
+import { crunCustom, crunDraft, crunEntitlements } from './fixtures/musicCreate';
 import { isMusicDraft, isMusicGenerationView, isMusicCandidateView } from '../src/lib/music/validate';
 import { getCustomDraft, saveCustomDraft, getGeneration, conflictDraft } from '../src/lib/music/client';
 import { ApiError, type ApiClient } from '../src/lib/api';
@@ -64,4 +65,13 @@ test('locked plan cannot build either payload; blockers cover balance, slots and
     expect(() => buildCustomQuote(custom, locked, 0, true)).toThrow('locked_plan');
     expect(() => buildSimpleQuote({ ...input, model_id: custom.model_id }, locked)).toThrow('locked_plan');
     expect(quoteBlockers({ input, entitlements: e, rights: false, activeCount: 4, quote: { ...quote, affordable: false, expires_at: '2000-01-01' } })).toEqual(['no_slot', 'not_affordable', 'quote_expired']);
+});
+
+test('the Suno model sent follows the projection when a model breaker removed v6', () => {
+    const premium = crunEntitlements.models[1];
+    const e = { ...crunEntitlements, models: [crunEntitlements.models[0], { ...premium, controls: { ...premium.controls, suno_model: ['v6_mini', 'v6_wild'] } }] };
+    const simple = buildSimpleQuote({ ...crunCustom, mode: 'simple', model_id: premium.id, prompt: 'warm piano', instrumental: true } as never, e as never);
+    expect(simple.suno_model).toBe('v6_mini');
+    const custom = buildCustomQuote({ ...crunCustom, model_id: premium.id, sunoModel: 'v6' } as never, e as never, crunDraft as never, 1 as never);
+    expect((custom as { suno_model?: string }).suno_model).toBe('v6_mini');
 });

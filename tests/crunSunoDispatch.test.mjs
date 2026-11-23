@@ -331,3 +331,13 @@ test('music route chooses wakeup by frozen contract and skips every replay wakeu
   assert.match(worker, /runCrunDispatch\(env\)/);
   assert.match(worker, /sweepCrunSunoMusic\(/);
 });
+
+test('a generic not_sent submit refunds at once and stays retryable: no DEBITED job waits for the sweep', async () => {
+  const { readFileSync } = await import('node:fs');
+  const helper = readFileSync(new URL('../lib/generationProviderSubmit.js', import.meta.url), 'utf8');
+  const branch = helper.slice(helper.indexOf("submitResult.outcome === 'not_sent'"));
+  const refund = branch.indexOf("refundRejectedSubmit({ jobId, userId, credits, errorCode: 'provider_busy' }");
+  const busy = branch.indexOf("error: 'provider_busy'");
+  assert.ok(refund > 0 && busy > refund, 'the refund happens before the retryable 503');
+  assert.match(branch.slice(busy, busy + 120), /retryable: true/);
+});

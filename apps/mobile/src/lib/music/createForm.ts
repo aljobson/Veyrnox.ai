@@ -1,4 +1,4 @@
-import type { MusicCustomQuoteInput, MusicDraft, MusicEntitlements, MusicInputSnapshot, MusicModel, MusicQuote, MusicSimpleQuoteInput } from './types';
+import type { MusicCustomQuoteInput, MusicDraft, MusicEntitlements, MusicInputSnapshot, MusicModel, MusicQuote, MusicSimpleQuoteInput, MusicSunoModel } from './types';
 import { MUSIC_BPM_MAX, MUSIC_BPM_MIN, MUSIC_EXCLUDE_STYLES_MAX, parseMusicTempoControls } from './shared';
 export type ModelState = 'usable' | 'locked_plan' | 'unavailable';
 export type QuoteBlocker = 'empty_prompt' | 'lyrics_required' | 'style_required' | 'over_length' | 'bpm_invalid' | 'locked_plan' | 'unavailable' | 'rights' | 'no_slot' | 'not_affordable' | 'quote_expired';
@@ -94,12 +94,18 @@ function checked(input: MusicInputSnapshot, e: MusicEntitlements, rights: boolea
     if (blockers.length) throw new Error(blockers[0]);
     return effectiveInput(input, e.models.find(m => m.id === input.model_id)!);
 }
+/** Preferred Suno model when the projection allows it, else the first allowed (a tripped model breaker removes choices). */
+function pickSunoModel(model: MusicModel, preferred: MusicSunoModel = 'v6'): MusicSunoModel {
+    const list = model.controls.suno_model;
+    if (!list || !list.length) return preferred;
+    return list.includes(preferred) ? preferred : list[0];
+}
 export function buildSimpleQuote(input: MusicInputSnapshot, e: MusicEntitlements): MusicSimpleQuoteInput {
     if (input.mode !== 'simple') throw new Error('unavailable');
     const v = checked(input, e, false);
     const model = e.models.find(m => m.id === v.model_id)!;
     if (isSunoModel(model)) return { mode: 'simple', provider_contract: 'crun-suno-v1', prompt: v.prompt.trim(),
-        instrumental: v.instrumental, model_id: v.model_id, suno_model: 'v6' };
+        instrumental: v.instrumental, model_id: v.model_id, suno_model: pickSunoModel(model) };
     const tempo = model.controls.tempo_key_meter ? parseMusicTempoControls(tempoValues(v))
         : { ok: true as const, bpm: null, keyScale: null, timeSignature: null, used: false };
     if (!tempo.ok) throw new Error(tempo.error);
@@ -120,7 +126,7 @@ export function buildCustomQuote(input: MusicInputSnapshot, e: MusicEntitlements
         if (typeof draft === 'number' || !draft.id || draft.provider_contract !== 'crun-suno-v1') throw new Error('draft_required');
         return { mode: 'custom', provider_contract: 'crun-suno-v1', draft_id: draft.id, draft_revision: revision,
             instrumental: v.instrumental, rights_confirmed: !v.instrumental, duration_seconds: v.duration,
-            suno_model: v.sunoModel, vocal_gender: v.instrumental ? 'auto' : v.vocalGender,
+            suno_model: pickSunoModel(model, v.sunoModel), vocal_gender: v.instrumental ? 'auto' : v.vocalGender,
             style_influence: v.styleInfluence, weirdness: v.weirdness, variety: v.variety,
             exclude_styles: v.excludeStyles.trim() };
     }
