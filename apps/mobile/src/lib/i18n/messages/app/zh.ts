@@ -8478,5 +8478,7 @@ export default {
   "editorSpeech.autoUnavailable": "此设备或此语言不支持设备端字幕。",
   "editorSpeech.autoStale": "所选片段已更改。请重新生成字幕。",
   "editorSpeech.autoFull": "字幕轨道已满。请删除部分文字或字幕后重试。",
-  "editorSpeech.autoFailed": "无法生成字幕。请换一个已下载的片段重试。"
+  "editorSpeech.autoFailed": "无法生成字幕。请换一个已下载的片段重试。",
+    "speech.qwen.intro": "选择声音和语言，然后确认费用。",
+    "speech.qwen.tooLong": "请将脚本控制在 {limit} 个字符以内。",
 } as const;

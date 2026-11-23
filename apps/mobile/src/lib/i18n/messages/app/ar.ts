@@ -9053,5 +9053,7 @@ export default {
   "editorSpeech.autoUnavailable": "الترجمات النصية على الجهاز غير متاحة على هذا الجهاز أو لهذه اللغة.",
   "editorSpeech.autoStale": "تغيّر المقطع المحدد. ابدأ الترجمات النصية مجددًا.",
   "editorSpeech.autoFull": "مسار الترجمات النصية ممتلئ. أزل بعض النصوص أو الترجمات النصية وحاول مجددًا.",
-  "editorSpeech.autoFailed": "تعذّر إنشاء الترجمات النصية. حاول مجددًا بمقطع مُنزّل آخر."
+  "editorSpeech.autoFailed": "تعذّر إنشاء الترجمات النصية. حاول مجددًا بمقطع مُنزّل آخر.",
+    "speech.qwen.intro": "اختر صوتًا ولغة ثم راجع التكلفة.",
+    "speech.qwen.tooLong": "يجب ألا يتجاوز النص {limit} حرفًا.",
 } as const;

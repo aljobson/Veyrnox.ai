@@ -8711,5 +8711,7 @@ export default {
   "editorSpeech.autoUnavailable": "Les sous-titres sur l’appareil ne sont pas disponibles sur cet appareil ou pour cette langue.",
   "editorSpeech.autoStale": "Le clip sélectionné a changé. Relancez les sous-titres.",
   "editorSpeech.autoFull": "La piste de sous-titres est pleine. Supprimez du texte ou des sous-titres, puis réessayez.",
-  "editorSpeech.autoFailed": "Les sous-titres n’ont pas pu être créés. Réessayez avec un autre clip téléchargé."
+  "editorSpeech.autoFailed": "Les sous-titres n’ont pas pu être créés. Réessayez avec un autre clip téléchargé.",
+    "speech.qwen.intro": "Choisissez une voix et une langue, puis vérifiez le coût.",
+    "speech.qwen.tooLong": "Limitez le texte à {limit} caractères.",
 } as const;

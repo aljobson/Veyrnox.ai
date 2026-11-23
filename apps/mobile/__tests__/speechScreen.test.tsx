@@ -230,3 +230,74 @@ test('Adjust after a completed take permits a new take with a fresh key', async 
     expect(bodies).toHaveLength(2);
     expect(bodies[1].idempotency_key).not.toBe(bodies[0].idempotency_key);
 });
+
+const qwenModel: CatalogModel = { ...mockModel, id: 'qwen3-tts', name: 'Qwen3 TTS', credits: 2 };
+const qwenGenerate = () => button(plural('speech.generate', 2));
+test('model chooser is absent for MiniMax alone and present when both models are available', async () => {
+    await render();
+    expect(button(mockModel.name)).toBeUndefined();
+    expect(button(qwenModel.name)).toBeUndefined();
+    await act(async () => root.unmount()); root = createRoot();
+    mockCatalog = [qwenModel, mockModel]; await render();
+    expect(button(mockModel.name)).toBeDefined(); expect(button(qwenModel.name)).toBeDefined();
+    expect(generate()).toBeDefined(); // MiniMax remains the default, independent of catalog order.
+});
+test('Qwen hides MiniMax delivery controls and audition actions, uses 600 characters and submits two credits', async () => {
+    mockCatalog = [mockModel, qwenModel]; await render(); await click(button(qwenModel.name));
+    for (const key of ['emotion', 'speed', 'volume', 'pitch', 'pauses', 'interjections', 'audition.title']) {
+        expect(textOf(root.container)).not.toContain(t(`speech.${key}`));
+    }
+    const voiceButton = button(`Cherry · ${t('speech.gender.female')}`);
+    await click(voiceButton);
+    expect(button(t('speech.audition.testVoice', { voice: 'Cherry' }))).toBeUndefined();
+    expect(button(t('speech.audition.add', { voice: 'Cherry' }))).toBeUndefined();
+    const input = root.container.queryAll(node => node.props.onChangeText && node.props.accessibilityLabel === t('speech.script'))[0];
+    expect(input.props.maxLength).toBe(600);
+    await write('x'.repeat(601)); expect(qwenGenerate().props.accessibilityState.disabled).toBe(true);
+    await write('x'.repeat(600)); expect(qwenGenerate().props.accessibilityState.disabled).toBe(false);
+    await click(qwenGenerate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: qwenModel.id,
+        inputs: { prompt: 'x'.repeat(600), tts_voice: 'Cherry', tts_language: 'auto' } });
+    expect(mockRemember.mock.calls[0][1]).toMatchObject({ confirmedCredits: 2, extraInputs: { tts_voice: 'Cherry', tts_language: 'auto' } });
+});
+test('switching models resets voice/language and flags an over-limit script without cutting it', async () => {
+    mockCatalog = [mockModel, qwenModel]; await render(); await click(button('English'));
+    await click(button(qwenModel.name));
+    expect(button(t('speech.auto')).props.accessibilityState.selected).toBe(true);
+    expect(button(`Cherry · ${t('speech.gender.female')}`)).toBeDefined();
+    await click(button(`Cherry · ${t('speech.gender.female')}`));
+    await click(button(`Serena, ${t('speech.gender.female')}`)); await click(button('French'));
+    await write('x'.repeat(600)); await click(button(mockModel.name));
+    const voice = TTS_VOICES[0];
+    expect(button(`${voice.label} · ${t(`speech.tone.${voice.tone}`)} · ${t(`speech.gender.${voice.gender}`)}`)).toBeDefined();
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    expect(button(t('speech.auto')).props.accessibilityState.selected).toBe(true);
+    expect(textOf(root.container)).toContain(t('speech.tooLong'));
+    expect(root.container.queryAll(node => node.props.onChangeText && node.props.value === 'x'.repeat(600)).length).toBeGreaterThan(0);
+    await click(button(qwenModel.name)); await click(qwenGenerate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body).inputs).toEqual({ prompt: 'x'.repeat(600), tts_voice: 'Cherry', tts_language: 'auto' });
+});
+test('reopened Qwen restores model, script, voice and language together', async () => {
+    mockCatalog = [mockModel, qwenModel]; mockReopen = 'qwen-job';
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: qwenModel.id, prompt: 'Bonjour', extraInputs: { tts_voice: 'Serena', tts_language: 'French' } } }]);
+    await render(); await click(qwenGenerate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: qwenModel.id, inputs: { prompt: 'Bonjour', tts_voice: 'Serena', tts_language: 'French' } });
+});
+test('a MiniMax saved recipe switches to MiniMax instead of replaying its controls on Qwen', async () => {
+    mockCatalog = [mockModel, qwenModel]; await render(); await click(button(qwenModel.name));
+    mockReopen = 'mini-recipe';
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: mockModel.id, prompt: 'Saved MiniMax', extraInputs: {
+        tts_voice: 'Friendly_Person', tts_language: 'English', tts_emotion: 'happy', tts_speed: 1.2, tts_volume: 2, tts_pitch: 3,
+    } } }]);
+    await render(); expect(qwenGenerate()).toBeUndefined(); await click(generate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: mockModel.id, inputs: { prompt: 'Saved MiniMax', tts_voice: 'Friendly_Person' } });
+});
+test('unavailable saved Qwen opens safely without applying its voice to MiniMax', async () => {
+    mockReopen = 'qwen-unavailable';
+    mockSavedList.mockResolvedValue([{ id: mockReopen, request: { modelId: qwenModel.id, prompt: 'Private Qwen words', extraInputs: { tts_voice: 'Serena', tts_language: 'French' } } }]);
+    await render();
+    expect(textOf(root.container)).toContain(t('dialogue.restoreUnavailable'));
+    expect(generate().props.accessibilityState.disabled).toBe(true);
+    await write('New MiniMax'); await click(generate());
+    expect(JSON.parse(mockRequest.mock.calls[0][1].body)).toMatchObject({ model_id: mockModel.id, inputs: { tts_voice: 'Wise_Woman', tts_language: 'auto' } });
+});

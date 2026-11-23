@@ -8478,5 +8478,7 @@ export default {
   "editorSpeech.autoUnavailable": "このデバイスまたはこの言語では、デバイス上の字幕を利用できません。",
   "editorSpeech.autoStale": "選択したクリップが変更されました。字幕をもう一度開始してください。",
   "editorSpeech.autoFull": "字幕トラックがいっぱいです。テキストや字幕をいくつか削除して、もう一度お試しください。",
-  "editorSpeech.autoFailed": "字幕を作成できませんでした。別のダウンロード済みクリップでもう一度お試しください。"
+  "editorSpeech.autoFailed": "字幕を作成できませんでした。別のダウンロード済みクリップでもう一度お試しください。",
+    "speech.qwen.intro": "音声と言語を選び、料金を確認してください。",
+    "speech.qwen.tooLong": "台本は {limit} 文字以内にしてください。",
 } as const;

@@ -8595,5 +8595,7 @@ export default {
   "editorSpeech.autoUnavailable": "Untertitel auf dem Gerät sind auf diesem Gerät oder für diese Sprache nicht verfügbar.",
   "editorSpeech.autoStale": "Der ausgewählte Clip wurde geändert. Starte die Untertitel erneut.",
   "editorSpeech.autoFull": "Die Untertitelspur ist voll. Entferne Text oder Untertitel und versuche es erneut.",
-  "editorSpeech.autoFailed": "Die Untertitel konnten nicht erstellt werden. Versuche es mit einem anderen heruntergeladenen Clip."
+  "editorSpeech.autoFailed": "Die Untertitel konnten nicht erstellt werden. Versuche es mit einem anderen heruntergeladenen Clip.",
+    "speech.qwen.intro": "Wähle Stimme und Sprache und prüfe die Kosten.",
+    "speech.qwen.tooLong": "Der Text darf höchstens {limit} Zeichen enthalten.",
 } as const;

@@ -4,6 +4,12 @@ Files here run **only against Supabase Postgres**, not against local Postgres.
 
 `scripts/migrate.mjs` reads `packages/db/schema/*.sql` non-recursively — it does not descend into subdirectories. Production applies them with `scripts/apply-migrations.mjs` (the `apply-migrations` workflow, ADR-0023); `scripts/replay-migrations.mjs` replays them for tests. `migrate.mjs` has no `--dir` flag.
 
+## Staged speech addition
+
+| Migration | State and activation |
+| --- | --- |
+| `0585_crun_qwen3_tts_speech.sql` | Qwen3 TTS inactive; required Crun standby route enables sweep discovery. Deploy Worker first. Activate only with a separate catalog flip after staging proof. |
+
 ## Why separate
 
 - `auth.uid()` and `auth.role()` are Supabase's built-in helpers used inside every RLS policy. Local Postgres does not have them.

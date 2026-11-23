@@ -145,3 +145,18 @@ test('an image offer completes as a picture: its own extension and no MP4 rule',
   assert.equal(video.ext, '.mp4');
   assert.equal(video.copyOptions.expectMp4, true);
 });
+
+test('standby Qwen route discovers its jobs and completes audio as WAV without MP4 enforcement', async () => {
+  const calls = [];
+  await withRows([{ ...job('qwen'), model_id: 'qwen3-tts' }], async urls => {
+    const out = await sweepCrun({ ...args,
+      read: async () => ({ ok: true, state: 'success', outputUrl: 'https://static.mediaoss.bar/audio.wav' }),
+      complete: async value => { calls.push(value); return { status: 200, body: { ok: true } }; },
+    });
+    assert.equal(urls.find(url => url.pathname.endsWith('/jobs')).searchParams.get('model_id'), 'in.(qwen3-tts)');
+    assert.equal(out.applied, 1);
+  }, [{ model_id: 'qwen3-tts', supplier: 'crun', state: 'standby', endpoint: 'crun:qwen3-tts/speech-synthesis' }]);
+  assert.equal(calls[0].ext, '.wav');
+  assert.equal(calls[0].copyOptions.expectMp4, undefined);
+  assert.equal(calls[0].outcome.outputUrl, 'https://static.mediaoss.bar/audio.wav');
+});

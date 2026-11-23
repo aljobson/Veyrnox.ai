@@ -7,7 +7,7 @@ import type { SubmitRequest } from '../../lib/generationSubmit';
 // Only a bounded opaque job id is accepted; words and controls never travel in routes.
 export const validReopenId = (value: unknown): value is string => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(value);
 export function useStudioReopen(reopen: string | string[] | undefined, restore: (request: SubmitRequest) => boolean, clear: () => void,
-    onRestored?: (jobId: string) => void) {
+    onRestored?: (jobId: string) => void, ready = true) {
     const callbacks = useRef({ restore, clear, onRestored });
     useEffect(() => { callbacks.current = { restore, clear, onRestored }; });
     const [loading, setLoading] = useState(!!reopen), [unavailable, setUnavailable] = useState(false);
@@ -15,7 +15,7 @@ export function useStudioReopen(reopen: string | string[] | undefined, restore: 
         let live = true;
         const currentOwner = captureHandoffOwner();
         const unsubscribe = subscribeCacheUser(() => { live = false; setLoading(false); setUnavailable(!!reopen); });
-        if (reopen !== undefined) {
+        if (ready && reopen !== undefined) {
             // Clear the previous job before starting the asynchronous account-scoped read.
             // eslint-disable-next-line react-hooks/set-state-in-effect
             callbacks.current.clear(); setLoading(true); setUnavailable(false);
@@ -32,6 +32,6 @@ export function useStudioReopen(reopen: string | string[] | undefined, restore: 
             })();
         }
         return () => { live = false; unsubscribe(); };
-    }, [reopen]);
+    }, [reopen, ready]);
     return { loading, unavailable, dismiss: () => setUnavailable(false) };
 }

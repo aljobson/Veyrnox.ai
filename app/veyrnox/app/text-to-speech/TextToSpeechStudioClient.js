@@ -1,5 +1,8 @@
 'use client';
 
+import { useI18n } from '../../../../components/I18nProvider';
+import { SPEECH_MODEL_IDS } from '../../../../lib/speechInputs.js';
+import { QwenSpeechControls } from '../../_components/QwenSpeechControls';
 import { ChipSelect } from '../../_components/ChipSelect';
 import { PromptBox } from '../../_components/PromptBox';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,8 +29,8 @@ import { sendInOrder, submitErrorCode } from '../../_lib/imageBatch';
 import {
   DEFAULT_TTS_SETTINGS,
   TTS_EMOTIONS,
-  TTS_LANGUAGES,
-  TTS_SCRIPT_LIMIT,
+  speechContractFor,
+  defaultSpeechSettings,
   TTS_VOICES,
   ttsGenerationInputs,
 } from '../../_lib/textToSpeech';
@@ -36,9 +39,8 @@ import {
   auditionBatchNote,
   auditionCost,
 } from '../../_lib/voiceAuditions';
-import { consumeVoiceRecipeHandoff, voiceRecipesMatch } from '../../_lib/voicePalettes';
+import { recipeModelId, consumeVoiceRecipeHandoff, voiceRecipesMatch } from '../../_lib/voicePalettes';
 
-const MODEL_ID = 'minimax-speech-2.6-hd';
 const card = 'rounded-2xl border border-vx-border bg-vx-panel';
 
 function errorFor(error) {
@@ -47,7 +49,13 @@ function errorFor(error) {
 
 export default function TextToSpeechStudio() {
   const { models, live, loading: catalogLoading } = useCatalog();
-  const model = models.find((item) => item.id === MODEL_ID) || null;
+  const { t } = useI18n();
+  const [modelId, setModelId] = useState('minimax-speech-2.6-hd');
+  const availableModels = models.filter(item => SPEECH_MODEL_IDS.includes(item.id) && item.isSpeech && !item.gated);
+  const model = availableModels.find(item => item.id === modelId) || null;
+  const contract = speechContractFor(modelId);
+  const isQwen = modelId === 'qwen3-tts';
+  const scriptLimit = contract.scriptLimit;
   const [script, setScript] = useState('');
   const [settings, setSettings] = useState(DEFAULT_TTS_SETTINGS);
   const [balance, setBalance] = useState(null);
@@ -62,8 +70,8 @@ export default function TextToSpeechStudio() {
   const job = jobs[0] || null;
   const busy = sending || generating;
   const cleanScript = script.trim();
-  const boardActive = auditionVoices.length > 0;
-  const boardReady = auditionVoices.length >= MIN_AUDITION_VOICES;
+  const boardActive = !isQwen && auditionVoices.length > 0;
+  const boardReady = boardActive && auditionVoices.length >= MIN_AUDITION_VOICES;
   const totalCredits = boardActive ? auditionCost(model?.credits, auditionVoices) : model?.credits || 0;
   const auditionResults = jobs.some((item) => !!item.voice_id);
 
@@ -86,17 +94,37 @@ export default function TextToSpeechStudio() {
   }, [loadBalance]);
 
   useEffect(() => {
+    if (catalogLoading) return undefined;
     const handoff = consumeVoiceRecipeHandoff(window.sessionStorage, getStoredUserId() || '');
-    if (!handoff) return undefined;
+    if (!handoff) {
+      if (models.some(item => item.id === modelId && item.isSpeech && !item.gated)) return undefined;
+      const first = SPEECH_MODEL_IDS.map(id => models.find(item => item.id === id && item.isSpeech && !item.gated)).find(Boolean);
+      if (!first) return undefined;
+      const timer = window.setTimeout(() => { setModelId(first.id); setSettings(defaultSpeechSettings(first.id)); setAuditionVoices([]); setReusedRecipe(null); }, 0);
+      return () => window.clearTimeout(timer);
+    }
     const timer = window.setTimeout(() => {
+      const id = recipeModelId(handoff.settings);
+      if (!models.some(item => item.id === id && item.isSpeech && !item.gated)) { setError({ code: 'recipe_unavailable' }); return; }
+      setModelId(id);
       setSettings(handoff.settings);
       setReusedRecipe({ name: handoff.label, settings: handoff.settings });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [catalogLoading, models, modelId]);
+
+  function switchModel(id) {
+    if (busy || !availableModels.some(item => item.id === id)) return;
+    setModelId(id); setSettings(defaultSpeechSettings(id)); setAuditionVoices([]); setReusedRecipe(null); setError(null); clearJobs();
+  }
+  function applyRecipe(recipe, name) {
+    const id = recipeModelId(recipe);
+    if (busy || !availableModels.some(item => item.id === id)) { setError({ code: 'recipe_unavailable' }); return; }
+    setModelId(id); setSettings(recipe); setAuditionVoices([]); setReusedRecipe({ name, settings: recipe });
+  }
 
   async function submit() {
-    if (inFlight.current || busy || catalogLoading || !model || !cleanScript || cleanScript.length > TTS_SCRIPT_LIMIT || balance == null || totalCredits > balance || (boardActive && !boardReady)) return;
+    if (inFlight.current || busy || catalogLoading || !model || !cleanScript || script.length > scriptLimit || balance == null || totalCredits > balance || (boardActive && !boardReady)) return;
     inFlight.current = true;
     setSending(true);
     setError(null);
@@ -106,18 +134,18 @@ export default function TextToSpeechStudio() {
     try {
       const { started, error: failure } = await sendInOrder(voices.length, async (index) => {
         const voiceId = voices[index];
-        const voice = TTS_VOICES.find((item) => item.id === voiceId);
+        const voice = contract.voices.find((item) => item.id === voiceId);
         const submitted = await gatewayFetch('/generations', {
           method: 'POST',
           body: JSON.stringify({
             model_id: model.id,
             idempotency_key: keys[index],
             confirmed_credits: model.credits,
-            inputs: { prompt: cleanScript, ...ttsGenerationInputs({ ...settings, voice: voiceId }) },
+            inputs: { prompt: cleanScript, ...ttsGenerationInputs({ ...settings, voice: voiceId }, modelId) },
           }),
         });
         const credits = submitted.free_allowance === true ? 0 : model.credits;
-        const queued = { job_id: submitted.job_id, state: 'queued', credits, model_id: model.id, voice_id: voices.length > 1 ? voiceId : undefined, voice_recipe: { ...settings, voice: voiceId } };
+        const queued = { job_id: submitted.job_id, state: 'queued', credits, model_id: model.id, voice_id: voices.length > 1 ? voiceId : undefined, voice_recipe: { ...settings, modelId, voice: voiceId } };
         (index === 0 ? startJobs : addJob)(queued);
         pushJobHistory({ job_id: submitted.job_id, model_id: model.id, credits, prompt: cleanScript.slice(0, 60), name: voices.length > 1 ? `Audition · ${voice?.label || 'Stock voice'}` : 'Stock voice' });
         if (submitted.balance_after != null) setBalance(submitted.balance_after);
@@ -140,9 +168,9 @@ export default function TextToSpeechStudio() {
     setError(null);
   }
 
-  const blocked = busy || catalogLoading || !model || !cleanScript || cleanScript.length > TTS_SCRIPT_LIMIT || balance == null || totalCredits > balance || (boardActive && !boardReady);
-  const errorCopy = error ? ERROR_COPY[error.code] || 'The speech job did not start. Check Library before trying again.' : '';
-  const reusedRecipeMatches = Boolean(reusedRecipe && voiceRecipesMatch(settings, reusedRecipe.settings));
+  const blocked = busy || catalogLoading || !model || !cleanScript || script.length > scriptLimit || balance == null || totalCredits > balance || (boardActive && !boardReady);
+  const errorCopy = error?.code === 'recipe_unavailable' ? t('app.audio.qwen.recipeUnavailable') : error ? ERROR_COPY[error.code] || 'The speech job did not start. Check Library before trying again.' : '';
+  const reusedRecipeMatches = Boolean(reusedRecipe && voiceRecipesMatch({ ...settings, modelId }, reusedRecipe.settings));
 
   return (
     <div className="min-h-dvh bg-vx-base text-vx-fg">
@@ -154,9 +182,10 @@ export default function TextToSpeechStudio() {
             <Chip tone="neutral">{live ? 'Live catalog' : 'Cached catalog'}</Chip>
           </div>
           <h1 className="vx-display mt-3 text-[40px] leading-[0.95] sm:text-[58px]">Give the script a voice.</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-vx-fg-muted sm:text-base">Write up to {TTS_SCRIPT_LIMIT} characters, choose one of 17 stock voices, tune language and delivery, then approve one exact audio-job price. This studio never clones a real person&apos;s voice.</p>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-vx-fg-muted sm:text-base">{isQwen ? t('app.audio.qwen.intro', { limit: scriptLimit, count: contract.voices.length }) : <>Write up to {scriptLimit} characters, choose one of 17 stock voices, tune language and delivery, then approve one exact audio-job price. This studio never clones a real person&apos;s voice.</>}</p>
         </header>
 
+        {availableModels.length > 1 && <div className="mt-6"><ChipSelect aria-label={t('app.create.generationModel')} options={availableModels.map(item => item.id)} value={modelId} onChange={switchModel} disabled={busy} formatOption={id => availableModels.find(item => item.id === id)?.name || id} /></div>}
         <StudioExampleCard slug="text-to-speech" title="Text to Speech" />
 
         <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -167,15 +196,16 @@ export default function TextToSpeechStudio() {
                 {cleanScript && <Chip tone="accent">Ready</Chip>}
               </div>
               <label htmlFor="tts-script" className="sr-only">Speech script</label>
-              <PromptBox id="tts-script" aria-label="Speech script" value={script} maxLength={TTS_SCRIPT_LIMIT} rows={7} disabled={busy} onChange={(event) => { setScript(event.target.value); setError(null); }} placeholder="Write exactly what the stock voice should say…">
-                <ChipSelect aria-label="Speech language" options={TTS_LANGUAGES} value={settings.language} disabled={busy} onChange={(language) => setSettings({ ...settings, language })} formatOption={(language) => (language === 'auto' ? 'Auto language' : language)} />
-                <ChipSelect aria-label="Speaking style" options={TTS_EMOTIONS} value={settings.emotion} disabled={busy} onChange={(emotion) => setSettings({ ...settings, emotion })} formatOption={(emotion) => emotion[0].toUpperCase() + emotion.slice(1)} />
+              <PromptBox id="tts-script" aria-label="Speech script" value={script} maxLength={scriptLimit} rows={7} disabled={busy} onChange={(event) => { setScript(event.target.value); setError(null); }} placeholder="Write exactly what the stock voice should say…">
+                <ChipSelect aria-label="Speech language" options={contract.languages} value={settings.language} disabled={busy} onChange={(language) => setSettings({ ...settings, language })} formatOption={(language) => (language === 'auto' ? 'Auto language' : language)} />
+                {!isQwen && <ChipSelect aria-label="Speaking style" options={TTS_EMOTIONS} value={settings.emotion} disabled={busy} onChange={(emotion) => setSettings({ ...settings, emotion })} formatOption={(emotion) => emotion[0].toUpperCase() + emotion.slice(1)} />}
               </PromptBox>
-              <div className="mt-2 flex justify-between gap-3 text-xs text-vx-fg-muted"><span>Edits are local until you approve Generate.</span><span className="font-vx-mono">{script.length}/{TTS_SCRIPT_LIMIT}</span></div>
+              {script.length > scriptLimit && <p role="alert" className="mt-3 text-xs text-vx-danger">{t('app.audio.qwen.tooLong', { limit: scriptLimit })}</p>}
+              <div className="mt-2 flex justify-between gap-3 text-xs text-vx-fg-muted"><span>Edits are local until you approve Generate.</span><span className="font-vx-mono">{script.length}/{scriptLimit}</span></div>
             </section>
-            <TextToSpeechControls recipeId="stock-voice" script={script} settings={settings} onSettings={setSettings} onScript={setScript} auditionVoices={auditionVoices} onAuditionVoices={setAuditionVoices} />
-            <VoiceRecipeLibrary onApply={(recipe, name) => { setSettings(recipe); setReusedRecipe({ name, settings: recipe }); }} />
-            {reusedRecipe&&<div role="status" className={`mt-4 rounded-xl border px-4 py-3 text-xs leading-5 ${reusedRecipeMatches?'border-vx-accent/30 bg-vx-accent/[0.06] text-vx-fg-muted':'border-vx-danger/30 bg-vx-danger/[0.05] text-vx-danger'}`}><strong>{reusedRecipeMatches?'Voice Recipe loaded:':'Voice Recipe modified:'}</strong> {reusedRecipe.name}. {reusedRecipeMatches?'Add a fresh script, review every setting and approve the current price when ready. No script or audio was carried here.':'Current controls no longer match this saved recipe.'}{!reusedRecipeMatches&&<button type="button" onClick={()=>setSettings(reusedRecipe.settings)} className="ml-2 font-extrabold underline">Restore recipe</button>}</div>}
+            {isQwen ? <QwenSpeechControls settings={settings} onSettings={setSettings} disabled={busy} /> : <TextToSpeechControls recipeId="stock-voice" script={script} settings={settings} onSettings={setSettings} onScript={setScript} auditionVoices={auditionVoices} onAuditionVoices={setAuditionVoices} />}
+            <VoiceRecipeLibrary acceptedModels={availableModels.map(item => item.id)} onApply={applyRecipe} />
+            {reusedRecipe&&<div role="status" className={`mt-4 rounded-xl border px-4 py-3 text-xs leading-5 ${reusedRecipeMatches?'border-vx-accent/30 bg-vx-accent/[0.06] text-vx-fg-muted':'border-vx-danger/30 bg-vx-danger/[0.05] text-vx-danger'}`}><strong>{reusedRecipeMatches?'Voice Recipe loaded:':'Voice Recipe modified:'}</strong> {reusedRecipe.name}. {reusedRecipeMatches?'Add a fresh script, review every setting and approve the current price when ready. No script or audio was carried here.':'Current controls no longer match this saved recipe.'}{!reusedRecipeMatches&&<button type="button" onClick={()=>applyRecipe(reusedRecipe.settings, reusedRecipe.name)} className="ml-2 font-extrabold underline">Restore recipe</button>}</div>}
           </div>
 
           <aside className="space-y-5 lg:sticky lg:top-24">
@@ -206,7 +236,7 @@ export default function TextToSpeechStudio() {
                 <div className="flex flex-wrap gap-2 border-t border-vx-border px-5 py-4">
                   <DownloadAsset row={job} label="Download audio" className="inline-flex min-h-10 items-center rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink" errorClassName="basis-full text-xs text-vx-danger" />
                   
-                  <SaveToAudioShelfButton jobId={job.job_id} name={`Stock voice · ${TTS_VOICES.find((item) => item.id === (job.voice_recipe?.voice || settings.voice))?.label || 'Speech'}`} purpose="narration-presenter" voiceRecipe={job.voice_recipe} offerSignature className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold disabled:opacity-60"/>
+                  <SaveToAudioShelfButton jobId={job.job_id} name={`Stock voice · ${speechContractFor(job.model_id)?.voices.find((item) => item.id === (job.voice_recipe?.voice || settings.voice))?.label || 'Speech'}`} purpose="narration-presenter" voiceRecipe={job.voice_recipe} offerSignature className="inline-flex min-h-10 items-center rounded-full border border-vx-border px-4 text-xs font-extrabold disabled:opacity-60"/>
                   <Link href={`/app/performance?audio=${encodeURIComponent(job.job_id)}`} className="inline-flex min-h-10 items-center px-2 text-xs font-bold text-vx-accent underline">Use for lip sync</Link>
                   <button type="button" onClick={startAgain} className="min-h-10 px-2 text-xs font-bold text-vx-fg-muted underline">Adjust and make another</button>
                 </div>
@@ -217,7 +247,7 @@ export default function TextToSpeechStudio() {
 
             <section className={`${card} p-5`}>
               <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-fg-muted">MODEL</p>
-              <div className="mt-3 flex items-start justify-between gap-4"><div><p className="text-sm font-black">{model?.name || 'Model unavailable'}</p><p className="mt-1 text-xs leading-5 text-vx-fg-muted">17 stock voices · 17 named languages plus auto-detect · no cloning</p></div>{model && <span className="font-vx-mono text-sm font-bold text-vx-money">{model.credits} cr each</span>}</div>
+              <div className="mt-3 flex items-start justify-between gap-4"><div><p className="text-sm font-black">{model?.name || 'Model unavailable'}</p>{!isQwen && <p className="mt-1 text-xs leading-5 text-vx-fg-muted">17 stock voices · 17 named languages plus auto-detect · no cloning</p>}</div>{model && <span className="font-vx-mono text-sm font-bold text-vx-money">{model.credits} cr each</span>}</div>
             </section>
 
             <section className={`${card} p-5`}>

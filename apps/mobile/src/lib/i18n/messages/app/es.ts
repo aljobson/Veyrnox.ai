@@ -8711,5 +8711,7 @@ export default {
   "editorSpeech.autoUnavailable": "Los subtítulos en el dispositivo no están disponibles en este dispositivo o para este idioma.",
   "editorSpeech.autoStale": "El clip seleccionado cambió. Vuelve a iniciar los subtítulos.",
   "editorSpeech.autoFull": "La pista de subtítulos está llena. Quita algo de texto o algunos subtítulos e inténtalo de nuevo.",
-  "editorSpeech.autoFailed": "No se pudieron crear los subtítulos. Inténtalo de nuevo con otro clip descargado."
+  "editorSpeech.autoFailed": "No se pudieron crear los subtítulos. Inténtalo de nuevo con otro clip descargado.",
+    "speech.qwen.intro": "Elige una voz y un idioma y revisa el coste.",
+    "speech.qwen.tooLong": "El texto debe tener como máximo {limit} caracteres.",
 } as const;

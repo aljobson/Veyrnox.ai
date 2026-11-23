@@ -16,6 +16,7 @@ import {
 import { useI18n } from '../../../components/I18nProvider';
 import { readVoiceFavourites, toggleVoiceFavourite } from '../_lib/voiceFavourites';
 import {
+  recipeModelId,
   BUILTIN_VOICE_PALETTES,
   VOICE_PALETTE_CATEGORIES,
   readVoicePalettes,
@@ -94,7 +95,7 @@ export function TextToSpeechControls({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setFavourites(readVoiceFavourites(window.localStorage));
-      setPersonalPalettes(readVoicePalettes(window.localStorage));
+      setPersonalPalettes(readVoicePalettes(window.localStorage).filter(palette => recipeModelId(palette.settings) === 'minimax-speech-2.6-hd'));
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
@@ -119,6 +120,7 @@ export function TextToSpeechControls({
   }
 
   function applyPalette(palette) {
+    if (recipeModelId(palette.settings) !== 'minimax-speech-2.6-hd') return;
     const keepLanguage = VOICE_TEMPLATE_LANGUAGES.includes(templateLanguage) && !palette.id.startsWith('personal-');
     onSettings({ ...settings, ...palette.settings, ...(keepLanguage ? { language: templateLanguage } : {}) });
   }
@@ -133,7 +135,7 @@ export function TextToSpeechControls({
   function saveCurrentPalette(event) {
     event.preventDefault();
     if (!paletteName.trim()) return;
-    setPersonalPalettes(saveVoicePalette(window.localStorage, paletteName, settings));
+    setPersonalPalettes(saveVoicePalette(window.localStorage, paletteName, settings).filter(palette => recipeModelId(palette.settings) === 'minimax-speech-2.6-hd'));
     setPaletteName('');
   }
 
@@ -277,7 +279,7 @@ export function TextToSpeechControls({
                       <span className="mt-1 block text-[11px] leading-4 text-vx-fg-muted">{`${voice?.label || 'Stock voice'} · ${palette.settings.emotion} · ${palette.settings.speed}×`}</span>
                       <span className="mt-1.5 block font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-accent">Personal · Apply</span>
                     </button>
-                    <button type="button" aria-label={`Delete ${palette.name} voice palette`} onClick={() => setPersonalPalettes(removeVoicePalette(window.localStorage, palette.id))} className={`${pressable} w-11 shrink-0 border-l border-vx-border text-lg text-vx-fg-faint hover:text-red-300`}>×</button>
+                    <button type="button" aria-label={`Delete ${palette.name} voice palette`} onClick={() => setPersonalPalettes(removeVoicePalette(window.localStorage, palette.id).filter(item => recipeModelId(item.settings) === 'minimax-speech-2.6-hd'))} className={`${pressable} w-11 shrink-0 border-l border-vx-border text-lg text-vx-fg-faint hover:text-red-300`}>×</button>
                   </div>
                 );
               })}

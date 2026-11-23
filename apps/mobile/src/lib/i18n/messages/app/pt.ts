@@ -8709,5 +8709,7 @@ export default {
   "editorSpeech.autoUnavailable": "Legendas no dispositivo não estão disponíveis neste aparelho ou para este idioma.",
   "editorSpeech.autoStale": "O clipe selecionado mudou. Crie as legendas novamente.",
   "editorSpeech.autoFull": "A faixa de legendas está cheia. Remova algum texto ou algumas legendas e tente novamente.",
-  "editorSpeech.autoFailed": "Não foi possível criar as legendas. Tente novamente ou use outro clipe baixado."
+  "editorSpeech.autoFailed": "Não foi possível criar as legendas. Tente novamente ou use outro clipe baixado.",
+    "speech.qwen.intro": "Escolha uma voz e um idioma e confira o custo.",
+    "speech.qwen.tooLong": "Mantenha o texto dentro de {limit} caracteres.",
 } as const;
