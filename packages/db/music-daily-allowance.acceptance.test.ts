@@ -3,7 +3,10 @@ import { after, before, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 
-const url = process.env.CRUN_SUNO_MUSIC_TEST_DATABASE_URL || process.env.DATABASE_URL;
+// This suite requires the fully replayed Crun/Music database. The broader
+// ledger job also exposes DATABASE_URL, but that points at its lean fixture
+// and intentionally lacks provider-spend and 0601 tables.
+const url = process.env.CRUN_SUNO_MUSIC_TEST_DATABASE_URL;
 const local = (() => {
   if (!url) return false;
   try { return ['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname); } catch { return false; }
