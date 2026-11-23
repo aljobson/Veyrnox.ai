@@ -457,6 +457,7 @@ const zh = {
     'presets.swap.cutout_failed': '本地抠图未能完成。请重试或选择背景简单的照片。原始照片绝不会被上传。',
     'presets.swap.price_changed': '价格已改变。请查看当前价格后重试。',
     'app.create.templatePrompt.edit': '编辑提示词',
+    'app.create.templatePrompt.error': '无法加载提示词。请登录后重试。',
     'app.create.templatePrompt.help': '将按原文使用此模板的提示词。',
     'app.create.templatePrompt.ready': '模板提示词已就绪',
 } as const;

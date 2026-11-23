@@ -457,6 +457,7 @@ const fr = {
     'presets.swap.cutout_failed': 'Le détourage local a échoué. Réessayez ou choisissez une photo avec un fond uni. L’original n’est jamais envoyé.',
     'presets.swap.price_changed': 'Le prix a changé. Vérifiez le prix actuel avant de réessayer.',
     'app.create.templatePrompt.edit': 'Modifier le prompt',
+    'app.create.templatePrompt.error': 'Impossible de charger le prompt. Connectez-vous et réessayez.',
     'app.create.templatePrompt.help': 'Le prompt de ce modèle sera utilisé tel quel.',
     'app.create.templatePrompt.ready': 'Prompt du modèle prêt',
 } as const;

@@ -10,6 +10,7 @@ import { writeTemplateChatDraft } from '../_lib/chatTemplateDraft';
 import { useCatalog } from '../_lib/useCatalog';
 import { FILM_STUDIO_ENABLED } from '../_lib/filmStudioSwitch';
 import { writeFilmStarter } from '../_lib/filmTemplateDraft';
+import { withTemplateText } from '../_lib/privateTemplatePrompt';
 import { writeStudioDraft } from '../_lib/landingDraft';
 import { clearTemplateMediaHandoff, TEMPLATE_IMAGE_ACCEPT, templateImageFileError, writeTemplateMediaHandoff } from '../_lib/templateMediaHandoff';
 import { prepareUpload } from '../_lib/uploadConvert.mjs';
@@ -161,9 +162,11 @@ export function LegacyUseTemplate({ preset, prompt = preset.prompt, generationBl
     router.push(href);
   }
 
-  function buildFilm() {
+  async function buildFilm() {
     try {
-      if (!writeFilmStarter(window.sessionStorage, preset, prompt, targetSeconds)) throw new Error('not saved');
+      // The film plan needs the words themselves; a private template's prompt is read for this signed-in caller (ADR-0351 amendment 23).
+      const words = await withTemplateText(prompt);
+      if (typeof words !== 'string' || !writeFilmStarter(window.sessionStorage, preset, words, targetSeconds)) throw new Error('not saved');
       router.push('/app/film-studio');
     } catch {
       setHandoffError('studio');
