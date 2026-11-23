@@ -4848,6 +4848,30 @@
     "ratio": 1.75
   },
   {
+    "id": "musicAlbums.addTrack",
+    "english": "Add",
+    "translation": "Adicionar",
+    "ratio": 3
+  },
+  {
+    "id": "musicAlbums.down",
+    "english": "Move down",
+    "translation": "Mover para baixo",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicAlbums.unpublish",
+    "english": "Unpublish album",
+    "translation": "Cancelar publicação do álbum",
+    "ratio": 1.87
+  },
+  {
+    "id": "musicAlbums.up",
+    "english": "Move up",
+    "translation": "Mover para cima",
+    "ratio": 2.14
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",

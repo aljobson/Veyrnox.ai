@@ -267,5 +267,6 @@
   "music.create.suno.style.indie": "Same spelling in Spanish and English for this label: Indie.",
   "music.create.suno.style.jazz": "Same spelling in Spanish and English for this label: Jazz.",
   "music.create.suno.style.pop": "Same spelling in Spanish and English for this label: Pop.",
-  "music.create.suno.style.rock": "Same spelling in Spanish and English for this label: Rock."
+  "music.create.suno.style.rock": "Same spelling in Spanish and English for this label: Rock.",
+  "musicAlbums.type.ep": "EP is the standard music-release abbreviation in Spanish and English."
 }

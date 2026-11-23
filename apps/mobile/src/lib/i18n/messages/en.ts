@@ -155,6 +155,7 @@ import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
 import area_music from './en/music';
 import area_musicActions from './en/musicActions';
+import area_musicAlbums from './en/musicAlbums';
 import area_musicDiscover from './en/musicDiscover';
 import area_musicExport from './en/musicExport';
 import area_musicGenerationActions from './en/musicGenerationActions';
@@ -412,6 +413,7 @@ const catalog = {
     ...area_montage,
     ...area_music,
     ...area_musicActions,
+    ...area_musicAlbums,
     ...area_musicDiscover,
     ...area_musicExport,
     ...area_musicGenerationActions,
