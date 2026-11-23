@@ -7716,6 +7716,18 @@
     "ratio": 1.77
   },
   {
+    "id": "app.seedance25.edit",
+    "english": "Restyle",
+    "translation": "Changer le style",
+    "ratio": 2.29
+  },
+  {
+    "id": "app.seedance25.result",
+    "english": "Open Library result",
+    "translation": "Ouvrir le résultat dans la bibliothèque",
+    "ratio": 2.05
+  },
+  {
     "id": "app.create.templatePrompt.edit",
     "english": "Edit prompt",
     "translation": "Modifier le prompt",

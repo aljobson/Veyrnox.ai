@@ -106,6 +106,7 @@ export function textInput(model: CatalogModel): { readonly key: string; readonly
 // and something to send (a text input, or at least one required file). Stem splitting is included (ADR-0157): the
 // server gates it in the catalog and answers audio_stems_unavailable (503) before any charge while its flag is off.
 export function isSupported(model: CatalogModel): boolean {
+    if (['seedance-2.5-edit', 'seedance-2.5-extend'].includes(model.id)) return false; // Own measured quote/confirmation surface.
     if (model.gated || kindOf(model.modality) === null) return false;
     const caps = model.capabilities;
     if (!caps) return false;

@@ -35,6 +35,7 @@ import { CaptionPanel } from './CaptionPanel';
 import { FilterPanel } from './FilterPanel';
 import { TranscriptPanel } from './TranscriptPanel';
 import { ScenesPanel } from './ScenesPanel';
+import { Seedance25EditorActions } from '../Seedance25Actions';
 import { ClipFinderPanel } from './ClipFinderPanel';
 import { AgentPanel } from './AgentPanel';
 import { AnimationCatalogPanel } from './AnimationCatalogPanel';
@@ -390,6 +391,7 @@ export function MultitrackWorkspace({ onCredits }) {
             <aside aria-label={t("app.editor.workspace.inspector")} hidden={!layout.inspector} style={{order:layout.mediaDock==='right'?1:3,maxHeight:fitScreen?`var(--panel-max-height, ${layout.previewHeight+5}vh)`:`${layout.previewHeight+5}vh`}} className={`${mobileStage==='inspector'?'block':'hidden'} space-y-3 overflow-y-auto bg-vx-panel p-3 lg:block`}>
                 <fieldset disabled={disabled || locked} className="space-y-3">
                     <h2 className="text-sm font-bold">{item ? selected.track === 'text' ? t("app.editor.workspace.text") : tl.media[item.mediaId]?.name : t("app.editor.workspace.selectClip")}</h2>
+                    {item && selected?.track === 'video' && tl.media[item.mediaId]?.kind === 'video' && selectedBlob && <Seedance25EditorActions key={item.mediaId} file={selectedBlob} />}
                     {item && <><label className="block text-xs">{t("app.editor.workspace.track")}<select aria-label={t("app.editor.workspace.clipTrack")} className={field} value={item.trackId} onChange={e => apply(sequence => moveSequence(sequence, selected.track, item.id, item.start, e.target.value, false))}>{tl.tracks.filter(sequence => sequence.kind === selected.track).map(sequence => <option key={sequence.id} value={sequence.id}>{sequence.name}</option>)}</select></label>
                     <NumberControl label={t("app.editor.workspace.clipStart")} value={item.start / 30} min={0} max={600} step={1 / 30} onChange={n => apply(sequence => moveSelection(sequence, selection, selected, n * 30, item.trackId, false, frame))} />
                     <NumberControl label={t("app.editor.workspace.clipDuration")} value={item.len / 30} min={1 / 30} max={600} step={1 / 30} onChange={n => apply(sequence => trimSequence(sequence, selected.track, item.id, 'out', Math.round(n * 30) - item.len))} />

@@ -5002,5 +5002,11 @@
     "english": "Check again",
     "translation": "Verificar novamente",
     "ratio": 1.73
+  },
+  {
+    "id": "app.seedance25.edit",
+    "english": "Restyle",
+    "translation": "Mudar estilo",
+    "ratio": 1.71
   }
 ]
