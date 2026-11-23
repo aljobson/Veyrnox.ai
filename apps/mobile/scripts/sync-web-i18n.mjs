@@ -67,6 +67,7 @@ export function syncWebI18n(check = false) {
 
     for (const code of CODES) {
         const web = { ...readCatalog(join(WEB, `${code}.mjs`)),
+            ...readCatalog(join(WEB, 'app', code, 'seedance25.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'publish-composer.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'create-sources.mjs')),
             ...readCatalog(join(WEB, 'app', code, 'data-errors.mjs')),

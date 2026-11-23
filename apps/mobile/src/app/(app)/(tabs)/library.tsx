@@ -18,7 +18,7 @@ import { POLICIES, type CacheMeta } from '../../../lib/cache';
 import { observe } from '../../../lib/network';
 import { KIND_FILTERS, STATE_FILTERS, expiryOf, canReuse, canSchedule, filterJobs, kindMap, readFavourites, toggled, writeFavourites, type KindFilter, type StateFilter, type View as LayoutView } from '../../../lib/libraryView';
 import { fetchLibrarySync, pushFavourite, reconcileFavourites } from '../../../lib/librarySync';
-import { fetchCatalogCached, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
+import { fetchAllCatalog, mediaApi, type CatalogModel, type Job, type JobPage } from '../../../lib/media';
 import { publishHref, askAboutHref } from '../../../lib/nextSteps';
 import { creativeReuseHref, lipSyncSourceHref } from '../../../lib/creativeReuse';
 import { ds, LIST_END_PADDING } from '../../../theme';
@@ -234,7 +234,7 @@ export default function Library() {
                 for (const id of upload) await pushFavourite(api, id, true);
             });
             // The model list only names and sorts what the server returned; a failed read leaves them unfiltered by type.
-            fetchCatalogCached((list) => setModels(list)).catch(() => undefined);
+            fetchAllCatalog().then(setModels).catch(() => undefined);
             return () => { setFocused(false); };
         }, [load, api]),
     );
@@ -321,7 +321,7 @@ export default function Library() {
                     }
                     renderItem={({ item }) => {
                         const kind = kinds.get(item.model_id);
-                        return <LibraryItem
+                        return <LibraryItem models={models}
                             job={item}
                             retentionKnown={!retentionPending.current.has(item.job_id)}
                             now={now}

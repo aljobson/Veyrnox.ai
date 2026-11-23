@@ -21,6 +21,7 @@
  * `crun:google/veo3-1-lite-t2v`.
  */
 
+import { seedance25Task, buildSeedance25Request } from '../../lib/crunSeedance25.js';
 import { readBoundedBody } from '../../lib/boundedBody.js';
 import { CRUN_FLUX_2_PRO_ASPECTS, CRUN_FLUX_2_PRO_PROMPT_MAX, CRUN_KLING_AVATAR_PROMPT_MAX } from '../../lib/crunPrimaryCapabilities.js';
 import { templateFacePrompt } from '../../lib/templateFaceWording.mjs';
@@ -75,12 +76,13 @@ const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
 const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'kling/o1-r2v-1080': '1080p' });
 const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
 // These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
-const redactsRefusal = model => isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL;
+const redactsRefusal = model => !!seedance25Task(model) || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL;
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
+    if (typeof endpoint === 'string' && endpoint.startsWith('crun:') && seedance25Task(endpoint.slice(5))) return { model: endpoint.slice(5) };
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
     return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
@@ -97,6 +99,7 @@ export function endpointKind(endpoint) {
  * @returns {{ok:true, body:object}|{ok:false, error:string}}
  */
 export function buildRequest(target, inputs) {
+    if (seedance25Task(target.model)) return buildSeedance25Request(seedance25Task(target.model), inputs);
     if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
     if (isKlingO1Swap(target.model)) return buildKlingO1SwapRequest(inputs, KLING_O1_SWAP_TIERS[target.model]);
     if (target.model === FLUX_2_PRO_MODEL) return buildFluxRequest(inputs);

@@ -1,3 +1,4 @@
+import { Seedance25Actions } from './Seedance25Actions';
 import { VideoShapeBadge, videoShapeLabel } from './VideoShapeBadge';
 import Link from 'next/link';
 import { useRef } from 'react';
@@ -136,6 +137,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
           />
         </div>
       )}
+      {row.state === 'succeeded' && row.mime_type?.startsWith('video/') && <Seedance25Actions models={models} assetId={row.job_id} />}
       {editorEnabled && editHref && (
         <div className="mx-4 mb-3">
           <Link href={editHref} data-testid="library-open-editor"

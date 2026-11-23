@@ -237,7 +237,7 @@ try {
         'cinema_watch_sessions', 'cinema_audience_clock', 'cinema_share_actions', 'cinema_ranking_snapshots', 'cinema_ranking_decisions',
         // ids only: counters and actor columns inside brands the person owned or joined
         'asset_link_rate_limits', 'generation_attempt_rate_limits', 'job_read_rate_limits', 'upload_request_rate_limits', 'account_read_rate_limits',
-        'top_up_checkout_rate_limits', 'top_up_read_rate_limits', 'top_up_return_rate_limits', 'cinema_unlock_rate_limits', 'social_post_write_rate_limits',
+        'top_up_checkout_rate_limits', 'top_up_read_rate_limits', 'top_up_return_rate_limits', 'cinema_unlock_rate_limits', 'social_post_write_rate_limits', 'seedance25_quote_rate_limits',
         'social_account_actions', 'social_team_events', 'social_inbox_threads', 'social_inbox_actions', 'social_inbox_notes', 'social_inbox_suggestions',
         'social_inbox_contact_profiles', 'social_inbox_workflows', 'social_approval_requests', 'social_approval_events', 'social_report_templates',
         'social_commerce_products', 'social_ad_campaigns', 'social_publish_autolists',

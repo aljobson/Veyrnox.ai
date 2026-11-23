@@ -452,5 +452,17 @@
   "presets.swap.photo_too_small",
   "presets.swap.unavailable",
   "presets.swap.cutout_failed",
-  "presets.swap.price_changed"
+  "presets.swap.price_changed",
+  "app.seedance25.edit",
+  "app.seedance25.extend",
+  "app.seedance25.cap",
+  "app.seedance25.prompt",
+  "app.seedance25.rights",
+  "app.seedance25.price",
+  "app.seedance25.quote",
+  "app.seedance25.confirm",
+  "app.seedance25.wait",
+  "app.seedance25.retry",
+  "app.seedance25.result",
+  "app.seedance25.error"
 ]

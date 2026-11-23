@@ -1,3 +1,5 @@
+import { seedance25Offer, seedance25RawRefusal, seedance25Open, seedance25Bill } from '../../../../lib/seedance25Billing.js';
+import { seedance25Fingerprint, replaySeedance25 } from '../../../../lib/seedance25Replay.js';
 import { appRuntimeFlag, templateSwapSwitchOn } from '../../../../lib/appRuntime.js';
 import { seedanceLongModelOpen } from '../../../../lib/seedanceLongTemplates.js';
 import { loadTemplateSwapClip, loadTemplateSwapDispatch } from '../../../../lib/templateSwapClipGate.js';
@@ -61,6 +63,7 @@ const MODEL_ID_RE = /^[a-z0-9][a-z0-9.-]{0,63}$/;
 const MAX_REQUEST_BYTES = 512 * 1024;
 const UNIT_SECONDS = 5;
 const RATE_LIMIT_PER_WINDOW = 10;
+const SEEDANCE25_TEMPLATE_KEYS = ['template_swap', 'template_clip', 'swap', 'template_id', 'preset'];
 const RATE_WINDOW_SECONDS = 60;
 
 // Per-provider submit. Each entry: the secret it needs, a pre-debit check that
@@ -104,6 +107,23 @@ export async function POST(req) {
     if (typeof modelId !== 'string' || !MODEL_ID_RE.test(modelId)) return NextResponse.json({ error: 'model_id_required' }, { status: 400 });
     // A private row is reached only through swap admission below, never by naming it.
     if (isPrivateModelId(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+    // A dark offer reveals no input contract. Only an owned, fingerprint-matched
+    // existing job may bypass this gate; rate-limit that lookup before DB reads.
+    if (!seedance25Open(modelId)) {
+        if (typeof idempotencyKey === 'string' && IDEMPOTENCY_RE.test(idempotencyKey)
+            && !SEEDANCE25_TEMPLATE_KEYS.some(key => Object.hasOwn(body, key))) {
+            try {
+                const rate = await rpc('check_generation_rate_limit', {
+                    p_auth_id: authId, p_limit_per_window: RATE_LIMIT_PER_WINDOW, p_window_seconds: RATE_WINDOW_SECONDS,
+                }, cfg);
+                if (rate?.ok === true) {
+                    const replay = await replaySeedance25(authId, modelId, idempotencyKey, await seedance25Fingerprint(body), cfg);
+                    if (replay?.status === 200) return NextResponse.json(replay.body);
+                }
+            } catch { /* Without verified replay evidence the dark offer stays hidden. */ }
+        }
+        return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+    }
     if (typeof idempotencyKey !== 'string' || !IDEMPOTENCY_RE.test(idempotencyKey)) {
         return NextResponse.json({ error: 'idempotency_key_required' }, { status: 400 });
     }
@@ -116,6 +136,12 @@ export async function POST(req) {
     if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
         return NextResponse.json({ error: 'inputs_must_be_object' }, { status: 400 });
     }
+    const seedance25Error = seedance25RawRefusal(modelId, inputs);
+    if (seedance25Error) return NextResponse.json({ error: seedance25Error }, { status: 400 });
+    if (seedance25Offer(modelId) && SEEDANCE25_TEMPLATE_KEYS.some(key => Object.hasOwn(body, key))) {
+        return NextResponse.json({ error: 'inputs_key_not_allowed' }, { status: 400 });
+    }
+    const seedance25Hash = seedance25Offer(modelId) ? await seedance25Fingerprint(body) : null;
     if (['template_swap', 'template_clip', 'swap'].filter(key => Object.hasOwn(body, key)).length > 1) return NextResponse.json({ error: 'template_source_conflict' }, { status: 400 });
     const hasTemplateSwap = Object.hasOwn(body, 'template_swap');
     const suppliedInputKeys = Object.keys(inputs);
@@ -219,6 +245,12 @@ export async function POST(req) {
         return NextResponse.json({ error: 'rate_check_unavailable' }, { status: 503 });
     }
 
+    if (seedance25Hash) {
+        const replay = await replaySeedance25(authId, modelId, idempotencyKey, seedance25Hash, cfg);
+        if (replay) return NextResponse.json(replay.body, { status: replay.status });
+        if (!seedance25Open(modelId)) return NextResponse.json({ error: 'model_not_found' }, { status: 404 });
+    }
+
     if (hasTemplateSwap && (!templateSwapSwitchOn(process.env) || typeof body.template_swap !== 'string'
         || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(body.template_swap))) return NextResponse.json({ error: 'template_swap_not_found' }, { status: 404 });
     const swapClipReplay = hasTemplateSwap ? await replayTemplateSwapClip(authId, body, cfg, { r2cfg: r2EnvConfig() }) : null;
@@ -299,6 +331,7 @@ export async function POST(req) {
     if (modelRow.provider === 'byteplus' && req.headers.get('cf-ipcountry')?.trim().toUpperCase() === 'US') {
         return NextResponse.json({ error: 'model_region_unavailable' }, { status: 451 });
     }
+    if (seedance25Offer(modelId) && (modelRow.provider !== 'crun' || modelRow.provider_endpoint !== `crun:bytedance/seedance2-5-r2v:${modelId.endsWith('-edit') ? 'edit' : 'extend'}`)) return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     const provider = providerFor(modelRow.provider);
     if (!provider) return NextResponse.json({ error: 'provider_unsupported' }, { status: 501 });
     // ADR-0256 shadow mode: log the route chooseRoute would pick. Never awaited and never throws; waitUntil lets the read and the log finish after an early response. Off unless SUPPLIER_ROUTES_SHADOW is "true".
@@ -413,8 +446,15 @@ export async function POST(req) {
 
     // An enabled net ceiling takes precedence over the legacy gross-price equality check.
     // Both fields are still type-validated; without an enabled ceiling, preserve the exact check.
-    const quotedCredits = priceFor(modelRow, pricedInputs, record);
-    if (maxCharge === undefined && confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
+    const seedance25Billing = seedance25Offer(modelId) ? seedance25Bill(modelId, modelRow.credits_5s, sources) : null;
+    if (seedance25Billing && !seedance25Billing.ok) return NextResponse.json({ error: seedance25Billing.error }, { status: 400 });
+    if (seedance25Billing) {
+        if (confirmedCredits === undefined) return NextResponse.json({ error: 'confirmed_credits_required' }, { status: 400 });
+        const { ok: _ok, ...billing } = seedance25Billing;
+        storedInputs = { ...storedInputs, seedance25_billing: { ...billing, request_hash: seedance25Hash } };
+    }
+    const quotedCredits = seedance25Billing ? seedance25Billing.credits : priceFor(modelRow, pricedInputs, record);
+    if ((maxCharge === undefined || seedance25Billing) && confirmedCredits !== undefined && confirmedCredits !== quotedCredits) {
         return NextResponse.json({
             error: 'credit_confirmation_mismatch',
             confirmed_credits: confirmedCredits,
