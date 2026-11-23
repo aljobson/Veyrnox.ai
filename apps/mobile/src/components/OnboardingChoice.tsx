@@ -70,15 +70,18 @@ export function OnboardingChoice({ label, icon, tone, layout, selected = false, 
                         <Image testID="onboarding-choice-photo" source={{ uri: imageUri }} style={s.photo} contentFit="cover" transition={reduced ? 0 : 200} onError={() => setFailed(true)} accessibilityIgnoresInvertColors accessible={false} />
                         <View style={s.scrim} />
                         <View testID="onboarding-choice-icon" style={[s.badge, { borderColor: ink }, s.badgeBig]}>
-                            <Icon name={icon} size={36} tint={ink} />
+                            <Icon name={icon} size={40} tint={ink} />
                         </View>
                         <Text testID="onboarding-choice-label" variant="bodyStrong" style={s.photoLabel}>{label}</Text>
                     </>
                 ) : (
                     <>
-                        {layout === 'tile' ? <View pointerEvents="none" accessible={false} importantForAccessibility="no" style={[s.tileAccent, vividAccent]} /> : null}
+                        {layout === 'tile' ? <>
+                            <View pointerEvents="none" accessible={false} importantForAccessibility="no" style={[s.tileAccent, vividAccent]} />
+                            <View pointerEvents="none" accessible={false} importantForAccessibility="no" style={[s.tileAccentSecondary, vividAccent]} />
+                        </> : null}
                         <View testID="onboarding-choice-icon" style={[s.badge, { borderColor: ink }, layout === 'tile' && s.badgeBig]}>
-                            <Icon name={icon} size={layout === 'tile' ? 36 : 24} tint={ink} />
+                            <Icon name={icon} size={layout === 'tile' ? 40 : 24} tint={ink} />
                         </View>
                         <Text testID="onboarding-choice-label" variant="bodyStrong" tone="primary" style={layout === 'tile' ? s.tileLabel : s.rowLabel}>{label}</Text>
                     </>
@@ -95,12 +98,13 @@ export function OnboardingChoice({ label, icon, tone, layout, selected = false, 
 const sheets = themedStyles((p, _ramp, scheme) => ({
     tileWrap: { width: '48%' },
     rowWrap: { width: '100%' },
-    tile: { minHeight: 160, overflow: 'hidden', borderRadius: ds.radius.lg, borderWidth: 2, borderColor: p.borderStrong, backgroundColor: p.bgElevated1, padding: ds.space.lg, justifyContent: 'space-between' },
+    tile: { minHeight: 160, overflow: 'hidden', borderRadius: ds.radius.lg, borderWidth: 1, borderColor: p.borderStrong, backgroundColor: p.bgElevated1, padding: ds.space.lg, justifyContent: 'space-between' },
     row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: ds.space.md, borderRadius: ds.radius.lg, borderWidth: 2, borderColor: p.borderStrong, backgroundColor: p.bgElevated1, paddingHorizontal: ds.space.lg, paddingVertical: ds.space.md },
     on: { borderWidth: 3, borderColor: p.textPrimary },
     badge: { width: 40, height: 40, borderRadius: ds.radius.md, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: p.bgElevated2 },
-    badgeBig: { width: 58, height: 58, alignSelf: 'flex-end', borderRadius: ds.radius.lg, borderColor: 'rgba(255,255,255,0.72)', backgroundColor: 'rgba(255,255,255,0.14)' },
+    badgeBig: { width: 64, height: 64, alignSelf: 'flex-end', borderRadius: ds.radius.lg, borderColor: 'rgba(255,255,255,0.72)', backgroundColor: 'rgba(255,255,255,0.16)' },
     tileAccent: { position: 'absolute', width: 150, height: 150, borderRadius: 75, top: -76, left: -46 },
+    tileAccentSecondary: { position: 'absolute', width: 128, height: 128, borderRadius: 64, top: -62, right: -52, opacity: 0.58 },
     tileLabel: { marginTop: 'auto', alignSelf: 'flex-start', color: p.onMedia },
     rowLabel: { flex: 1 },
     // Let the assigned card hue remain visible through a real template preview, preserving the colourful journey system.

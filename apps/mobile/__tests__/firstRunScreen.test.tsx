@@ -63,10 +63,10 @@ test('asks the goal first (under Vey\'s hello), then where it will go, then the 
     for (const card of goalCards) {
         const icon = card.queryAll(n => n.props.testID === 'onboarding-choice-icon')[0];
         const label = card.queryAll(n => n.props.testID === 'onboarding-choice-label')[0];
-        expect(RN.StyleSheet.flatten(icon.props.style)).toMatchObject({ alignSelf: 'flex-end', width: 58, height: 58 });
+        expect(RN.StyleSheet.flatten(icon.props.style)).toMatchObject({ alignSelf: 'flex-end', width: 64, height: 64 });
         expect(icon.queryAll(n => {
             const style = RN.StyleSheet.flatten(n.props.style);
-            return style?.width === 36 && style?.height === 36;
+            return style?.width === 40 && style?.height === 40;
         })).toHaveLength(1);
         expect(RN.StyleSheet.flatten(label.props.style)).toMatchObject({ alignSelf: 'flex-start', marginTop: 'auto' });
     }
