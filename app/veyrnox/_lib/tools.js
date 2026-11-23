@@ -7,8 +7,8 @@
 import { translator } from '../../../lib/i18n/translate.mjs';
 
 export const TOOL_TASKS = [
-  { key: 'upscale', label: 'Upscale', blurb: 'Make an image larger and sharper.', ids: ['topaz-upscale'] },
-  { key: 'background', label: 'Remove background', blurb: 'Cut the subject out of a photo.', ids: ['bria-bg-remove'] },
+  { key: 'upscale', label: 'Upscale', blurb: 'Make an image larger and sharper.', ids: ['topaz-upscale', 'upscale-2x-clean'] },
+  { key: 'background', label: 'Remove background', blurb: 'Cut the subject out of a photo.', ids: ['bria-bg-remove', 'background-remove-fast'] },
   { key: 'expand', label: 'Expand', blurb: 'Extend an image beyond its edges.', ids: ['bria-expand'] },
   { key: 'edit', label: 'Edit with a prompt', blurb: 'Change an image by describing the change.', ids: ['nano-banana-pro-edit', 'nano-banana-pro-edit-grsai'] },
   { key: 'animate', label: 'Photo to video', blurb: 'Turn a still image into a moving clip.', ids: ['kling-3.0-i2v', 'kling-3.0-standard-i2v', 'kling-3.0-i2v-kie'] },
