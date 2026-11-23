@@ -3,7 +3,7 @@ import { Icon } from '../components/ui';
 import { Image } from 'expo-image';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthProvider';
 import { touchTarget } from '../lib/a11y';
@@ -11,6 +11,7 @@ import { fetchTitlesPage, posterUrl, type CinemaTitle } from '../lib/cinema';
 import { t } from '../lib/i18n';
 import { fetchPresets, presetPrice, type Preset } from '../lib/presets';
 import { colors } from '../theme';
+import { VeyLoader } from '../components/VeyLoader';
 
 type Tab = 'templates' | 'cinema';
 
@@ -66,7 +67,7 @@ export default function Preview() {
             </View>
             <ScrollView contentContainerStyle={styles.body}>
                 <Text style={styles.heading} accessibilityRole="header">{t(tab === 'templates' ? 'preview.templates.heading' : 'preview.cinema.heading')}</Text>
-                {loading && !failed ? <ActivityIndicator color={colors.accent} /> : null}
+                {loading && !failed ? <VeyLoader label={t('common.loading')} showLabel /> : null}
                 {failed && loading ? <Text style={styles.note}>{t('preview.error')}</Text> : null}
                 {tab === 'templates'
                     ? (presets ?? []).slice(0, 30).map((p) => (

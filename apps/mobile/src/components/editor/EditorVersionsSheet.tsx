@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, View } from 'react-native';
+import { FlatList, Modal, View } from 'react-native';
 import type { ApiClient } from '../../lib/api';
 import { isAccountChanged } from '../../auth/sessionTask';
 import { fetchHistory, mergeVersions, projectsErrorMessage, type Version } from '../../lib/projects';
@@ -14,6 +14,7 @@ import { Text } from '../ui/Text';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import type { EditorSaveSync } from './useEditorSaveSync';
 import { saveSheetStyles } from './EditorSaveSheets';
+import { VeyLoader } from '../VeyLoader';
 
 export function EditorVersionsSheet({ sync, api, projectId }: { sync: EditorSaveSync; api: ApiClient; projectId: string }) {
     const visible = sync.sheet === 'versions';
@@ -60,24 +61,29 @@ export function EditorVersionsSheet({ sync, api, projectId }: { sync: EditorSave
             {error || sync.problem ? <Text accessibilityRole="alert">{error || sync.problem}</Text> : null}
             {preview ? <Card testID="version-preview"><Text accessibilityRole="header">{`${t('editorSave.versionRow', { value1: preview.revision })} · ${t('editorCore.totalTime', { value1: formatTimecode(framesIn(timeline), timeline.fps) })}`}</Text><Text>{plural('editor.clips2Count', timeline.video.length + timeline.audio.length + timeline.text.length)}</Text>
                 {!sync.restoreUnknown ? <Button label={t('projects.restore')} disabled={sync.dirty || preview.revision === sync.revision || !sync.canStart} onPress={() => sync.restore(preview.revision)} /> : null}
-            </Card> : previewBusy ? <ActivityIndicator /> : null}
+            </Card> : previewBusy ? <VeyLoader label={t('common.loading')} showLabel /> : null}
             {sync.dirty ? <Text>{t('editorSave.saveFirst')}</Text> : null}
             {sync.imports > 0 ? <Text>{t('editorSave.waitingImport')}</Text> : null}
             {sync.restoreUnknown ? <>
                 <Button label={t('editorSave.retryRestore')} disabled={!sync.retryAllowed} onPress={() => void sync.retryRestore()} />
                 <Text>{t('editorSave.restoreUnknown')}</Text>
             </> : null}
-            <ScrollView>
-                {versions.map(version => <ListRow key={version.revision}
+            <FlatList
+                data={versions}
+                keyExtractor={version => String(version.revision)}
+                style={{ flexGrow: 0, flexShrink: 1 }}
+                renderItem={({ item: version }) => <ListRow
                     accessibilityLabel={`${t('editorSave.versionRow', { value1: version.revision })}${version.revision === sync.revision ? t('editorSave.current') : ''}`}
                     accessibilityState={{ selected: preview?.revision === version.revision }}
                     title={`${t('editorSave.versionRow', { value1: version.revision })}${version.revision === sync.revision ? t('editorSave.current') : ''}${preview?.revision === version.revision ? ' ✓' : ''}`}
                     subtitle={`${version.createdAt ? new Date(version.createdAt).toLocaleString(formatLocale()) : ''}${version.restoredFrom !== null ? ` · ${t('editorSave.restoredFrom', { value1: version.restoredFrom })}` : ''}`}
-                    onPress={() => void select(version.revision)} />)}
-                {!busy && !versions.length ? <Text>{t('projects.nosavedversionsyet')}</Text> : null}
-                {busy ? <ActivityIndicator /> : null}
-                {nextBefore !== null ? <Button label={t('editorSave.loadOlder')} disabled={busy} onPress={() => void load(nextBefore)} /> : null}
-            </ScrollView>
+                    onPress={() => void select(version.revision)} />}
+                ListEmptyComponent={busy ? undefined : <Text>{t('projects.nosavedversionsyet')}</Text>}
+                ListFooterComponent={<View>
+                    {busy ? <VeyLoader label={t('common.loading')} showLabel /> : null}
+                    {nextBefore !== null ? <Button label={t('editorSave.loadOlder')} disabled={busy} onPress={() => void load(nextBefore)} /> : null}
+                </View>}
+            />
             <Button label={t('editorSave.close')} variant="tertiary" onPress={sync.closeVersions} />
         </Card></View>
     </Modal>;

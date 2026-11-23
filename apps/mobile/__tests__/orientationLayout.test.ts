@@ -1,5 +1,6 @@
 import { bottomSheetSafePadding, modalSafePadding, readableWidth } from '../src/lib/modalLayout';
 import { onboardingChoiceLayout } from '../src/lib/onboardingLayout';
+import { tabHeaderShowsWordmark } from '../src/lib/headerLayout';
 
 declare const require: (id: string) => { expo: { orientation?: string } };
 const appConfig = require('../app.json');
@@ -41,4 +42,10 @@ describe('orientation-safe layout contracts', () => {
     ] as const)('onboarding choices at %ipx, %ix system and %ix app text use %s layout', (width, fontScale, appScale, expected) => {
         expect(onboardingChoiceLayout(width, fontScale, appScale)).toBe(expected);
     });
+
+    test.each([[320, false], [360, false], [389, false], [390, true], [430, true]] as const)(
+        'the %ipx tab header wordmark visibility is %s', (width, expected) => {
+            expect(tabHeaderShowsWordmark(width)).toBe(expected);
+        },
+    );
 });

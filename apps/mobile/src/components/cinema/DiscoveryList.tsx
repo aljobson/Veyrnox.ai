@@ -1,7 +1,7 @@
 import { rawText } from '../../lib/i18n/translate';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { discoveryTarget, typeLabel } from '../../lib/cinemaViewer';
 import { CinemaPosterImage } from './CinemaPosterImage';
 import { SeriesTile } from './SeriesTile';
@@ -11,6 +11,7 @@ import { editorialSeriesList, type EditorialSeries } from '../../lib/cinemaSerie
 import { formatLocale, plural, t } from '../../lib/i18n';
 import { MIN_TARGET } from '../../lib/a11y';
 import { colors } from '../../theme';
+import { VeyLoader } from '../VeyLoader';
 
 interface Props {
     readonly mode: BrowseMode;
@@ -68,7 +69,7 @@ export function DiscoveryList({ mode, category }: Props) {
 
     const refresh = useCallback(() => { void load(null, true); }, [load]);
 
-    if (state === 'loading') return <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>;
+    if (state === 'loading') return <View style={styles.center}><VeyLoader label={t('common.loading')} showLabel /></View>;
     if (state === 'closed' && !editorial.length) return <View style={styles.center}><Text style={styles.muted} accessibilityRole="text">{t(mode === 'voting' ? 'cinemaBrowse.voteClosed' : 'cinemaBrowse.viewingClosed')}</Text></View>;
     if (state === 'error' && !editorial.length) {
         return (
