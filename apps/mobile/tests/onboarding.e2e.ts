@@ -2,8 +2,8 @@ import { test } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { openFirstRun } from './helpers.js';
 
-test('first run presents every colourful journey question and completes into the chosen workspace', { tags: ['smoke', 'onboarding'] }, async ({ app, screen }) => {
-  await openFirstRun(app, screen);
+test('first run presents every colourful journey question and completes into the chosen workspace', { tags: ['smoke', 'onboarding'] }, async ({ app, device, screen }) => {
+  await openFirstRun(app, device, screen);
 
   const goal = screen.getByRole('radiogroup', 'What do you want to make first?');
   await expect(goal).toBeVisible({ timeout: 30_000 });

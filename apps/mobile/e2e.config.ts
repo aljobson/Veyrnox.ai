@@ -29,7 +29,6 @@ export default {
         command: {
           executable: 'node',
           args: ['dev/e2e-stack.mjs'],
-          inheritEnv: ['EXPO_PUBLIC_HARD_PAYWALL_ENABLED'],
           log: '.e2e/logs/stack.log',
           reuseExisting: true,
           startupTimeout: 120_000,

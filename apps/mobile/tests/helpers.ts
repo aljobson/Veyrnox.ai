@@ -1,12 +1,15 @@
 import type { App, Screen } from 'e2e';
+import type { Device } from '@e2e-dev/mobile';
 
 const FIRST_RUN_TITLE = 'What do you want to make first?';
 
 // Opens a clean first-run journey without using openSignedIn(), whose job is to skip onboarding. Clearing app state
 // preserves the simulator keychain but removes local onboarding answers; the mock server's demo sign-in remains the
 // deterministic fallback when no session is available.
-export async function openFirstRun(app: App, screen: Screen) {
+export async function openFirstRun(app: App, device: Device, screen: Screen) {
+  await device.clearKeychain();
   await app.clearState();
+  await app.open();
   const firstQuestion = screen.getByRole('radiogroup', FIRST_RUN_TITLE);
   const english = screen.getByRole('button', 'English');
   const agreement = screen.getByRole('checkbox', 'I am 18 or older and agree to the Terms and Privacy Policy.');

@@ -3,6 +3,7 @@ import { MENU_FOOTER, MENU_SECTIONS } from '../src/lib/menu';
 import {
     ERROR_STATE_ROUTE_TAGS,
     INTERACTION_CRAWL_ROUTE_EXCLUSIONS,
+    LANDSCAPE_ORIENTATIONS,
     NAVIGATION_MENU_LABELS,
     STATIC_ROUTE_CRAWL_EXCLUSIONS,
     selectInventoryRoutes,
@@ -91,11 +92,32 @@ describe('mobile E2E route inventory', () => {
 });
 
 describe('mobile E2E configuration contracts', () => {
-    test.each(['e2e.config.ts', 'e2e.crawl.config.ts'])('%s accepts an E2E_DEVICE override and keeps the target label', (file) => {
+    test.each([
+        ['e2e.config.ts', 'ios-simulator'],
+        ['e2e.crawl.config.ts', 'ios-simulator'],
+        ['e2e.hard-paywall.config.ts', 'ios-hard-paywall'],
+    ])('%s accepts an E2E_DEVICE override and keeps the target label', (file, label) => {
         const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
         expect(source).toContain("process.env.E2E_DEVICE ?? 'iPhone 17 Pro'");
         expect(source).toMatch(/device:\s*e2eDevice/);
-        expect(source).toMatch(/name:\s*'ios-simulator'/);
+        expect(source).toContain(`name: '${label}'`);
+    });
+
+    test('the hard-paywall runner cannot reuse or contaminate the default and crawl stacks', () => {
+        const normalConfig = fs.readFileSync(path.join(ROOT, 'e2e.config.ts'), 'utf8');
+        const paywallConfig = fs.readFileSync(path.join(ROOT, 'e2e.hard-paywall.config.ts'), 'utf8');
+        const normalStack = fs.readFileSync(path.join(ROOT, 'dev', 'e2e-stack.mjs'), 'utf8');
+        const crawlStack = fs.readFileSync(path.join(ROOT, 'dev', 'e2e-crawl-stack.mjs'), 'utf8');
+        const paywallStack = fs.readFileSync(path.join(ROOT, 'dev', 'e2e-hard-paywall-stack.mjs'), 'utf8');
+
+        expect(normalConfig).not.toContain('inheritEnv');
+        expect(normalStack).toContain("EXPO_PUBLIC_HARD_PAYWALL_ENABLED: 'false'");
+        expect(crawlStack).toContain("EXPO_PUBLIC_HARD_PAYWALL_ENABLED: 'false'");
+        expect(paywallConfig).toContain("tests: 'tests/**/*.paywall.ts'");
+        expect(paywallConfig).toContain("reuseExisting: false");
+        expect(paywallConfig).toContain('http://localhost:8084');
+        expect(paywallStack).toContain("EXPO_PUBLIC_HARD_PAYWALL_ENABLED: 'true'");
+        expect(paywallStack).toContain("MOCK_PORT: '8804'");
     });
 });
 
@@ -108,7 +130,12 @@ test('the drawer E2E labels cannot drift from the production menu registry', () 
 
 test('the bounded landscape/keyboard smoke uses supported deterministic device APIs', () => {
     const source = fs.readFileSync(path.join(ROOT, 'tests', 'layout-smoke.e2e.ts'), 'utf8');
-    expect(source.match(/device\.setOrientation\('landscape-left'\)/g)).toHaveLength(4);
+    const paywall = fs.readFileSync(path.join(ROOT, 'tests', 'hard-paywall.paywall.ts'), 'utf8');
+    expect(LANDSCAPE_ORIENTATIONS).toEqual(['landscape-left', 'landscape-right']);
+    expect(source).toContain('for (const orientation of LANDSCAPE_ORIENTATIONS)');
+    expect(source).toContain('device.setOrientation(orientation)');
+    expect(paywall).toContain('for (const orientation of LANDSCAPE_ORIENTATIONS)');
+    expect(paywall).toContain('device.setOrientation(orientation)');
     expect(source).toContain('prompt.pressSequentially');
     expect(source).toContain('device.dismissKeyboard()');
     expect(source).toContain("device.setOrientation('portrait')");
@@ -120,10 +147,19 @@ test('the bounded landscape/keyboard smoke uses supported deterministic device A
     expect(source).toContain("getByRole('button', 'Continue', { exact: true }).tap()");
     expect(source).toContain("getByRole('textbox', 'Email')");
     expect(source).toContain("getByRole('button', 'Sign in and start creating')");
-    expect(source).toContain("getByTestId('hard-paywall')");
-    expect(source).toContain("getByRole('button', 'Not now')");
-    expect(source).toContain("EXPO_PUBLIC_HARD_PAYWALL_ENABLED === 'true'");
-    const paywallCase = source.slice(source.indexOf("test('the hard paywall"));
-    expect(paywallCase).not.toMatch(/\.tap\s*\(/);
+    expect(paywall).toContain("getByTestId('hard-paywall')");
+    expect(paywall).toContain("getByRole('button', 'Not now')");
+    expect(paywall).not.toMatch(/\.tap\s*\(/);
     expect(source).not.toMatch(/setTimeout|waitForTimeout/);
+    expect(paywall).not.toMatch(/setTimeout|waitForTimeout/);
+});
+
+test('interaction purchase safety uses route and overlay contracts, not only English CTA text', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'tests', 'interaction-crawl.crawl.ts'), 'utf8');
+    const paywall = fs.readFileSync(path.join(ROOT, 'src', 'components', 'paywall', 'PaywallSheet.tsx'), 'utf8');
+    expect(source).toContain('INTERACTION_CRAWL_ROUTE_EXCLUSIONS');
+    expect(source).toContain("screen.getByTestId('hard-paywall')");
+    expect(source).toContain("screen.getByTestId('purchase-paywall')");
+    expect(source).toContain('a purchase paywall overlay is visible');
+    expect(paywall).toContain('testID="purchase-paywall"');
 });

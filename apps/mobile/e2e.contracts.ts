@@ -65,3 +65,5 @@ export const NAVIGATION_MENU_LABELS = [
     'LLM Chat',
     'Help',
 ] as const;
+
+export const LANDSCAPE_ORIENTATIONS = ['landscape-left', 'landscape-right'] as const;
