@@ -10,7 +10,7 @@ import en from '../src/lib/i18n/messages/en';
 import { TTS_VOICES, TTS_EMOTIONS, TTS_EXAMPLES, TTS_INTERJECTIONS, TTS_INPUT_RULES, voiceGenderOptions } from '../src/lib/speech/shared';
 declare const require: (id: string) => any;
 declare const __dirname: string;
-const fs = require('fs'), path = require('path'), ts = require('typescript');
+const fs = require('fs'), path = require('path'), ts = require('typescript-legacy');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {

@@ -61,6 +61,7 @@
     "jest": "~30.5.2",
     "jest-expo": "~58.0.14",
     "typescript": "~7.0.2",
+    "typescript-legacy": "npm:typescript@6.0.3",
     "wobnimo": "0.2.0",
     "esbuild": "0.28.2",
     "eslint": "^9.39.5",

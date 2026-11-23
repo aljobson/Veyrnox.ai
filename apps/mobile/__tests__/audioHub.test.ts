@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import ts from 'typescript';
+import ts from 'typescript-legacy';
 import { act, createElement } from 'react';
 import { createRoot } from 'test-renderer';
 import { creativeFeature } from '../src/lib/creativeFeatures';

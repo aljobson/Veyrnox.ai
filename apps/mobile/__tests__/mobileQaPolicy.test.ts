@@ -1,4 +1,4 @@
-import ts from 'typescript';
+import ts from 'typescript-legacy';
 import { BODY_MAX_FONT_SCALE, HEADING_MAX_FONT_SCALE, HEADER_MAX_FONT_SCALE, fontScaleCap } from '../src/lib/a11y';
 import { RAMP, TEXT_SCALE } from '../src/theme';
 import { createTileColumns } from '../src/lib/createLayout';
