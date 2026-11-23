@@ -32,7 +32,8 @@ export function generationAction(kind: GenerationActionKind, songId: string): Ac
         accepted(api, result, input, quote) {
             getMusicCreateSession(api).tracker.add(result, { mode: 'simple', model_id: quote.model_id,
                 prompt: String(input.parameters?.prompt ?? '').trim(), title: '', lyrics: '', styles: '', instrumental: true, duration: 30,
-                variety: 50, styleInfluence: 0, excludeStyles: '', bpm: '', keyScale: '', timeSignature: '' }, kind);
+                variety: 50, styleInfluence: 0, excludeStyles: '', sunoModel: 'v6', vocalGender: 'auto', weirdness: 0.5,
+                bpm: '', keyScale: '', timeSignature: '' }, kind);
         },
         status: (api, result) => getGeneration(api, result.generation_id),
         terminal(value) {

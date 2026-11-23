@@ -1,25 +1,45 @@
 // Response shapes of /api/v1/music/*, copied from the route handlers (ADR-0352), not guessed.
 // Fields the phone does not read are left out; unknown extra fields are ignored by the parsers.
 
+export type MusicProviderContract = 'fal-ace-v1' | 'crun-suno-v1';
+export type MusicSunoModel = 'v6' | 'v6_mini' | 'v6_wild';
+export type MusicVocalGender = 'auto' | 'male' | 'female';
+export type MusicRange = { readonly min: number; readonly max: number };
+export type MusicCounter = { readonly max: number; readonly applied?: number };
+
 export type MusicModelControls = {
     readonly description: boolean;
-    readonly seed: boolean;
-    readonly variety: boolean;
+    readonly seed?: boolean;
+    readonly variety: boolean | readonly string[];
     readonly style_influence: boolean;
     readonly exclude_styles: boolean;
     readonly tempo_key_meter: boolean;
-    readonly duration_seconds: { readonly min: number; readonly max: number; readonly default: number };
+    readonly duration_seconds: { readonly min: number; readonly max: number; readonly default: number; readonly custom_only?: boolean } | null;
     readonly duration_price_block_seconds?: number;
     readonly lyrics: boolean;
+    readonly lyrics_required_for_custom_vocal?: boolean;
     readonly styles: boolean;
+    readonly title?: boolean;
+    readonly vocal_gender?: readonly MusicVocalGender[];
+    readonly suno_model?: readonly MusicSunoModel[];
+    readonly weirdness?: boolean;
     readonly instrumental: 'optional' | 'required';
 };
 
 export type MusicModel = {
     readonly id: string;
     readonly name: string;
+    readonly provider_contract?: MusicProviderContract;
     readonly generation_modes: readonly string[];
     readonly controls: MusicModelControls;
+    readonly limits?: Readonly<{
+        prompt: number; title: number; lyrics: number; styles: number; exclude_styles: number;
+        duration_seconds: { readonly min: number; readonly max: number; readonly default: number; readonly custom_only?: boolean };
+        variety?: MusicRange & { readonly provider_min?: number; readonly provider_max?: number };
+        style_weight?: MusicRange;
+        weirdness?: MusicRange;
+    }>;
+    readonly counters?: Readonly<Record<'prompt' | 'title' | 'lyrics' | 'styles' | 'exclude_styles', MusicCounter>>;
     readonly credits_per_candidate: number;
     readonly total_credits: number;
     readonly instrumental_only: boolean;
@@ -44,6 +64,7 @@ export type MusicEntitlements = {
         readonly lyrics_max: number;
         readonly styles_max: number;
         readonly title_max: number;
+        readonly provider_contract?: MusicProviderContract;
     };
     readonly policy: { readonly version: string; readonly pre_debit: boolean };
 };
@@ -84,7 +105,15 @@ export type MusicVersion = {
     readonly operation: string;
     readonly parent_version_id: string | null;
     readonly created_at: string;
+    readonly mime_type?: string;
+    readonly size_bytes?: number;
+    readonly capabilities?: MusicVersionCapabilities;
 };
+export type MusicVersionCapabilities = Readonly<{
+    playback?: boolean; download?: boolean; render: boolean; crop: boolean; remix?: boolean; mashup?: boolean; sample?: boolean;
+    stems?: boolean; target_stem?: boolean; track_add?: boolean; cover?: boolean; extend?: boolean;
+    replace_section?: boolean; add_section?: boolean;
+}>;
 export type MusicSongDetail = MusicSongRow & {
     readonly job_id: string;
     readonly version_id: string;
@@ -123,33 +152,62 @@ export type MusicSimpleQuoteInput = {
     readonly mode: 'simple';
     readonly prompt: string;
     readonly title?: string;
-    readonly instrumental: true;
+    readonly instrumental: boolean;
     readonly model_id: string;
-    readonly duration_seconds: number;
+    readonly provider_contract?: MusicProviderContract;
+    readonly duration_seconds?: number;
+    readonly suno_model?: MusicSunoModel;
     readonly variety?: number;
     readonly style_influence?: number;
     readonly exclude_styles?: string | null;
     readonly bpm?: number | null;
     readonly key_scale?: string | null;
     readonly time_signature?: string | null;
+    readonly vocal_gender?: MusicVocalGender;
+    readonly weirdness?: number;
 };
 export type MusicCustomQuoteInput = {
     readonly mode: 'custom';
+    readonly provider_contract?: MusicProviderContract;
+    readonly draft_id?: string;
     readonly draft_revision: number;
     readonly instrumental: boolean;
     readonly rights_confirmed: boolean;
     readonly duration_seconds: number;
+    readonly suno_model?: MusicSunoModel;
+    readonly vocal_gender?: MusicVocalGender;
+    readonly style_influence?: number;
+    readonly weirdness?: number;
+    readonly variety?: number;
+    readonly exclude_styles?: string;
 };
 export type MusicDraft = {
     readonly id: string | null;
     readonly updated_at: string | null;
     readonly revision: number;
+    readonly provider_contract?: MusicProviderContract;
     readonly model_id: string;
     readonly lyrics: string;
     readonly styles: string;
     readonly title: string;
 };
-export type MusicDraftInput = Pick<MusicDraft, 'revision' | 'model_id' | 'lyrics' | 'styles' | 'title'>;
+export type MusicDraftInput = Pick<MusicDraft, 'revision' | 'model_id' | 'lyrics' | 'styles' | 'title'>
+    & Pick<MusicDraft, 'provider_contract'> & { readonly draft_id?: string | null };
+export type MusicReuseContext = {
+    readonly source: Readonly<Record<string, unknown>>;
+    readonly draft_id: string | null;
+    readonly draft_revision: number;
+    readonly provider_contract: MusicProviderContract;
+};
+export type MusicReuseInput = {
+    readonly version_id: string;
+    readonly provider_contract: MusicProviderContract;
+    readonly draft_id: string | null;
+    readonly draft_revision: number;
+    readonly reuse_lyrics: boolean;
+    readonly reuse_styles: boolean;
+    readonly idempotency_key: string;
+};
 export type MusicCandidateView = {
     readonly ordinal: number;
     readonly label: string;
@@ -174,6 +232,7 @@ export type MusicInputSnapshot = Readonly<{
     mode: MusicQuoteMode; title: string; lyrics: string; styles: string; prompt: string;
     instrumental: boolean; duration: number; model_id: string;
     variety: number; styleInfluence: number; excludeStyles: string;
+    sunoModel: MusicSunoModel; vocalGender: MusicVocalGender; weirdness: number;
     bpm: string; keyScale: string; timeSignature: string;
 }>;
 
@@ -190,7 +249,16 @@ export type MusicQuote = {
     readonly affordable: boolean;
     readonly expires_at: string;
     readonly policy_version: string;
+    readonly provider_contract?: MusicProviderContract;
+    readonly suno_model?: MusicSunoModel;
+    readonly vocal_gender?: MusicVocalGender;
+    readonly style_weight?: number;
+    readonly weirdness?: number;
+    readonly variety?: number;
+    readonly exclude_styles_applied_chars?: number;
 };
+
+export type MusicTypedErrorCode = 'contract_stale' | 'quote_stale' | 'edit_unavailable_for_format';
 
 export type MusicCandidate = {
     readonly ordinal: number;

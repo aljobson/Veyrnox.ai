@@ -48,6 +48,8 @@ import { montageDeps, runtimeConfig as montageConfig } from './lib/montageRuntim
 import { sweepGrsai } from './lib/grsaiSweep.js';
 import { sweepByteplus } from './lib/byteplusSweep.js';
 import { sweepCrun } from './lib/crunSweep.js';
+import { sweepCrunSunoMusic } from './lib/crunSunoSweep.js';
+import { runCrunDispatch } from './lib/crunDispatch.js';
 import { sweepHiggsfield } from './lib/higgsfieldSweep.js';
 import { reapAssets } from './lib/assetReap.js';
 import { runtimeDeps, runtimeKeys } from './lib/autoShortRuntime.js';
@@ -128,7 +130,24 @@ export default {
             ...(env.CRUN_ENABLED === 'true' ? [sweepCrun({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
                 r2cfg: r2EnvFrom(env), apiKey: env.CRUN_API_KEY,
-            }).then((out) => { if (out.checked) console.error('[crun-sweep]', JSON.stringify(out)); return out; })] : []),
+            }).catch(() => {
+                console.error('[crun-sweep] failed before completion');
+                return { errors: 1 };
+            }).then(async (out) => {
+                if (out.checked) console.error('[crun-sweep]', JSON.stringify(out));
+                const music = await sweepCrunSunoMusic({
+                    cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
+                    r2cfg: r2EnvFrom(env), apiKey: env.CRUN_API_KEY,
+                }).catch(() => {
+                    console.error('[crun-suno-sweep] failed before completion');
+                    return { errors: 1 };
+                });
+                if (music.checked || music.errors) console.error('[crun-suno-sweep]', JSON.stringify(music));
+                return { media: out, music };
+            }),
+            runCrunDispatch(env).then((out) => { if (out.submitted || out.ok === false) console.error('[crun-dispatch]', JSON.stringify(out)); return out; })
+                .catch(() => { console.error('[crun-dispatch] failed before completion'); return { ok: false, errors: 1 }; }),
+            ] : []),
             // ADR-0256 phase 5: off unless HIGGSFIELD_ENABLED is "true". Not a recovery task: worker_task_health (0157) has no name for it.
             ...(env.HIGGSFIELD_ENABLED === 'true' ? [sweepHiggsfield({
                 cfg: { supabaseUrl: env.SUPABASE_URL, serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY },
