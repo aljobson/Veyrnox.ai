@@ -105,7 +105,7 @@ test('Swap stages one whole bounded job per generation at the minimum 50 percent
 
 
 test('Seedance 2.5 placeholders cover the cost floor while both offers stay dark', () => {
-  const sql = readFileSync('packages/db/schema/supabase/0587_seedance25_edit_extend_standby.sql', 'utf8');
+  const sql = readFileSync('packages/db/schema/supabase/0595_seedance25_edit_extend_standby.sql', 'utf8');
   const rows = [...sql.matchAll(/'video-to-video',(\d+),([\d.]+),'per_second',5,true,false/g)];
   assert.equal(rows.length, 2);
   for (const [, price, cost] of rows) {

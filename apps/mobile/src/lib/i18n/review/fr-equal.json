@@ -357,5 +357,13 @@
   "editorMotion.point": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
   "editorPack.category.Photos": "Photos is the standard French category label and is spelled identically to English.",
-  "editorPack.category.Avatars": "Avatars is the standard French category label and is spelled identically to English."
+  "editorPack.category.Avatars": "Avatars is the standard French category label and is spelled identically to English.",
+  "music.create.suno.style": "Same spelling in French and English for this label: Style.",
+  "music.create.suno.gender.auto": "Same spelling in French and English for this label: Auto.",
+  "music.create.suno.variety.3": "Same spelling in French and English for this label: Extra.",
+  "music.create.suno.variety.4": "Same spelling in French and English for this label: Max.",
+  "music.create.suno.style.indie": "Same spelling in French and English for this label: Indie.",
+  "music.create.suno.style.jazz": "Same spelling in French and English for this label: Jazz.",
+  "music.create.suno.style.pop": "Same spelling in French and English for this label: Pop.",
+  "music.create.suno.style.rock": "Same spelling in French and English for this label: Rock."
 }

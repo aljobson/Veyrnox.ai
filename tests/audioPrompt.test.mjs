@@ -106,7 +106,9 @@ test('a sound model says what the box is for; every other placeholder is unchang
 
 // Text-to-audio needs a prompt; source-driven separation needs inspected audio.
 test('every text-driven audio capability record refuses an empty prompt', () => {
-    const records = Object.entries(REGISTRY).filter(([, r]) => r.kind === 'audio' && !r.media?.audio?.required);
+    // The Music (Suno) song record is not a chat sound model: its custom mode needs title, tags and lyrics, not a prompt, so
+    // its inputs are checked by the Music contract (lib/musicCrunContract.js), not here.
+    const records = Object.entries(REGISTRY).filter(([endpoint, r]) => r.kind === 'audio' && !r.media?.audio?.required && endpoint !== 'crun:suno/music-generate');
     assert.deepEqual(records.map(([endpoint]) => endpoint).sort(), Object.values(LIVE_SOUND).sort(), 'the audio records are the four sound models');
     for (const [endpoint, record] of records) {
         assert.equal(record.inputs.prompt?.required, true, endpoint);

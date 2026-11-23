@@ -19,7 +19,7 @@ for(const task of ['edit','extend']) for(const state of ['success','fail','pendi
   if(u.hostname.endsWith('.r2.cloudflarestorage.com'))return new Response(null,{status:200});
   assert.fail(`unexpected ${u.hostname}${u.pathname}`);
  });
- const out=await sweepCrun({cfg,r2cfg,apiKey:'test',now,read:async()=>({ok:true,state,outputUrl:'https://static.mediaoss.bar/output.mp4',errorCode:'Unsupported signed https://private.test/video'})});
+ const out=await sweepCrun({cfg,r2cfg,apiKey:'test',now,pace:async()=>true,read:async()=>({ok:true,state,outputUrl:'https://static.mediaoss.bar/output.mp4',errorCode:'Unsupported signed https://private.test/video'})});
  assert.equal(out.errors,0);
  if(state==='pending') {assert.equal(out.pending,1);assert.equal(calls.some(c=>c.path.includes('/rpc/')),false);}
  if(state==='fail') {

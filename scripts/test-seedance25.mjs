@@ -13,7 +13,7 @@ try {
     // script. The checks below need the real guard, so switch it on inside this transaction (rolled back at the end).
     await c.query('ALTER TABLE public.jobs ENABLE TRIGGER jobs_provider_spend_guard');
     // Replays cannot commit the test transaction or leave older function definitions installed.
-    const migration = (await readFile(new URL('../packages/db/schema/supabase/0587_seedance25_edit_extend_standby.sql', import.meta.url), 'utf8'))
+    const migration = (await readFile(new URL('../packages/db/schema/supabase/0595_seedance25_edit_extend_standby.sql', import.meta.url), 'utf8'))
         .replace(/^BEGIN;\s*$/m, '').replace(/^COMMIT;\s*$/m, '');
     const otherRows = async () => (await c.query("SELECT * FROM public.model_routes WHERE model_id NOT IN ('seedance-2.5-edit','seedance-2.5-extend') ORDER BY id")).rows;
     const before = await otherRows();
