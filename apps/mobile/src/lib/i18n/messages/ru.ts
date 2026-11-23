@@ -446,7 +446,7 @@ const ru = {
     'presets.swap.submitting': 'Запуск видео…',
     'presets.swap.queued': 'Видео принято. Стоимость: {credits} кредитов. Следите за ним в библиотеке.',
     'presets.swap.running': 'Видео создаётся. Следите за ним в библиотеке.',
-    'presets.swap.succeeded': 'Видео готово. Откройте библиотеку для просмотра.',
+    'presets.swap.succeeded': 'Видео готово.',
     'presets.swap.busy_background': 'Используйте фото с простым фоном, где только вы.',
     'presets.swap.ragged_matte': 'Края вырезки нечёткие. Используйте фото с простым фоном, где только вы.',
     'presets.swap.several_people': 'Обнаружено несколько людей. Используйте фото только с вами и простым фоном.',
@@ -468,6 +468,9 @@ const ru = {
     'app.seedance25.retry': 'Проверить этот запрос снова',
     'app.seedance25.result': 'Открыть результат в библиотеке',
     'app.seedance25.error': 'Не удалось завершить этот шаг. Проверьте исходник и повторите попытку. Повторная попытка использует тот же запрос.',
+    'app.create.templatePrompt.edit': 'Изменить промпт',
+    'app.create.templatePrompt.help': 'Промпт этого шаблона будет использован без изменений.',
+    'app.create.templatePrompt.ready': 'Промпт шаблона готов',
 } as const;
 
 export default ru;

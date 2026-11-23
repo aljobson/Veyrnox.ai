@@ -446,7 +446,7 @@ const fr = {
     'presets.swap.submitting': 'Lancement de votre vidéo…',
     'presets.swap.queued': 'Vidéo acceptée. Coût : {credits} crédits. Suivez-la dans la bibliothèque.',
     'presets.swap.running': 'Votre vidéo est en cours. Suivez-la dans la bibliothèque.',
-    'presets.swap.succeeded': 'Votre vidéo est prête. Ouvrez la bibliothèque pour la voir.',
+    'presets.swap.succeeded': 'Votre vidéo est prête.',
     'presets.swap.busy_background': 'Utilisez une photo avec un fond uni et vous seul.',
     'presets.swap.ragged_matte': 'Les contours sont flous. Utilisez une photo avec un fond uni et vous seul.',
     'presets.swap.several_people': 'Plusieurs personnes ont été détectées. Utilisez une photo avec vous seul et un fond uni.',
@@ -468,6 +468,9 @@ const fr = {
     'app.seedance25.retry': 'Revérifier cette demande',
     'app.seedance25.result': 'Ouvrir le résultat dans la bibliothèque',
     'app.seedance25.error': 'Cette étape a échoué. Vérifiez la source et réessayez. La même demande est conservée lors des nouvelles tentatives.',
+    'app.create.templatePrompt.edit': 'Modifier le prompt',
+    'app.create.templatePrompt.help': 'Le prompt de ce modèle sera utilisé tel quel.',
+    'app.create.templatePrompt.ready': 'Prompt du modèle prêt',
 } as const;
 
 export default fr;

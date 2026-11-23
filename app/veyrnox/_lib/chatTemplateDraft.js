@@ -1,4 +1,5 @@
 import { CHAT_USER_TEXT_MAX } from '../../../lib/chatLimits.js';
+import { isUneditedTemplatePrompt } from './templatePromptVisibility.js';
 
 const KEY = 'veyrnox_chat_template_draft_v1';
 const MAX_PROMPT = CHAT_USER_TEXT_MAX;
@@ -17,6 +18,7 @@ export function writeTemplateChatDraft(storage, preset, prompt, now = Date.now()
     templateId: clean(preset?.id, 100),
     prompt: exactPrompt,
     at: now,
+    ...(isUneditedTemplatePrompt(preset, prompt) ? { hidePrompt: true } : {}),
   };
   if (!draft.templateId || !draft.prompt) return false;
   try {
@@ -44,7 +46,7 @@ export function takeTemplateChatDraft(storage, now = Date.now()) {
     const prompt = typeof draft?.prompt === 'string' && draft.prompt.trim() ? draft.prompt : '';
     if (prompt.length > MAX_PROMPT) return null;
     if (!templateId || !prompt || !Number.isFinite(draft?.at) || now - draft.at > MAX_AGE_MS || draft.at > now) return null;
-    return { templateId, prompt };
+    return { templateId, prompt, ...(draft.hidePrompt === true ? { hidePrompt: true } : {}) };
   } catch {
     return null;
   }

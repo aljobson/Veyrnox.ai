@@ -222,7 +222,7 @@ export function useChatMediaGeneration({ kind, models, catalogLive }) {
           startJobs(job);
         } else addJob(job);
         pushJobHistory({
-          job_id: submitted.job_id,
+          idempotent: submitted.idempotent, job_id: submitted.job_id,
           model_id: model.id,
           credits: jobCredits,
           prompt: cleanPrompt.slice(0, 60),

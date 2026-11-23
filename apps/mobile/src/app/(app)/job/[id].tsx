@@ -20,7 +20,7 @@ import { JobProvenance } from '../../../components/JobProvenance';
 import { StemList } from '../../../components/StemList';
 import { CONFIRM_MESSAGE, CONFIRM_TITLE, deleteCreation, deleteMessage, isAlreadyGone } from '../../../lib/deleteCreation';
 import { HoldToConfirmButton } from '../../../components/HoldToConfirmButton';
-import { afterCelebration, celebrateOutput, type CelebrationResult } from '../../../lib/celebrate';
+import { captureCelebrationAccount, afterCelebration, celebrateOutput, type CelebrationResult } from '../../../lib/celebrate';
 import { settleFirstMilestones } from '../../../lib/milestoneHistory';
 import { REVIEW_ASK_DELAY_MS, claimReviewAsk, shouldAskForReview } from '../../../lib/reviewAsk';
 import { loadReviewAsk } from '../../../lib/storeReview';
@@ -128,6 +128,7 @@ export default function JobScreen() {
         const media = mediaApi(api);
         // Only a creation you waited for gets the buzz; opening a finished one from the library does not.
         // A result opened from Create's own result card is the first win the person just waited for (QA-006).
+        const celebrationAccount = captureCelebrationAccount();
         let waited = fromCreate === '1';
         waitForJob(media, id, (nextState) => {
             if (controller.signal.aborted) return;
@@ -177,9 +178,9 @@ export default function JobScreen() {
                 setLookup('file');
                 setExpiresAt(a.asset_expires_at ?? null);
                 setStems(a.output_stems ?? []);
-                await settleFirstMilestones(api);
+                await settleFirstMilestones(api, undefined, celebrationAccount);
                 if (controller.signal.aborted) return;
-                const celebration = celebrateOutput(id, a.mime_type, waited);
+                const celebration = celebrateOutput(id, a.mime_type, waited, celebrationAccount);
                 // Keep the original rating eligibility, and wait for the celebration to finish.
                 const asked = await loadReviewAsk();
                 if (controller.signal.aborted || ratingController.signal.aborted || !shouldAskForReview(asked, { waited, hasOutput: true })) return;

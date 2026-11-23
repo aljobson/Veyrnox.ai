@@ -446,7 +446,7 @@ const de = {
     'presets.swap.submitting': 'Dein Video wird gestartet…',
     'presets.swap.queued': 'Video angenommen. Kosten: {credits} Credits. Verfolge es in der Bibliothek.',
     'presets.swap.running': 'Dein Video wird erstellt. Verfolge es in der Bibliothek.',
-    'presets.swap.succeeded': 'Dein Video ist fertig. Öffne die Bibliothek zum Ansehen.',
+    'presets.swap.succeeded': 'Dein Video ist fertig.',
     'presets.swap.busy_background': 'Verwende ein Foto mit schlichtem Hintergrund und nur dir.',
     'presets.swap.ragged_matte': 'Die Freistellung ist unsauber. Verwende ein Foto mit schlichtem Hintergrund und nur dir.',
     'presets.swap.several_people': 'Mehrere Personen erkannt. Verwende ein Foto mit nur dir und schlichtem Hintergrund.',
@@ -468,6 +468,9 @@ const de = {
     'app.seedance25.retry': 'Diese Anfrage erneut prüfen',
     'app.seedance25.result': 'Ergebnis in der Bibliothek öffnen',
     'app.seedance25.error': 'Dieser Schritt konnte nicht abgeschlossen werden. Prüfe die Quelle und versuche es erneut. Die gleiche Anfrage bleibt beim Wiederholen erhalten.',
+    'app.create.templatePrompt.edit': 'Prompt bearbeiten',
+    'app.create.templatePrompt.help': 'Der Prompt dieser Vorlage wird unverändert verwendet.',
+    'app.create.templatePrompt.ready': 'Vorlagen-Prompt bereit',
 } as const;
 
 export default de;

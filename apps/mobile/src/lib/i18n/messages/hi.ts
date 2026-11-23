@@ -446,7 +446,7 @@ const hi = {
     'presets.swap.submitting': 'आपका वीडियो शुरू हो रहा है…',
     'presets.swap.queued': 'वीडियो स्वीकार किया गया। लागत: {credits} क्रेडिट। प्रगति के लिए लाइब्रेरी खोलें।',
     'presets.swap.running': 'आपका वीडियो बन रहा है। प्रगति के लिए लाइब्रेरी खोलें।',
-    'presets.swap.succeeded': 'आपका वीडियो तैयार है। देखने के लिए लाइब्रेरी खोलें।',
+    'presets.swap.succeeded': 'आपका वीडियो तैयार है।',
     'presets.swap.busy_background': 'सादी पृष्ठभूमि वाली फ़ोटो लें जिसमें केवल आप हों।',
     'presets.swap.ragged_matte': 'कट-आउट के किनारे स्पष्ट नहीं हैं। सादी पृष्ठभूमि वाली फ़ोटो लें जिसमें केवल आप हों।',
     'presets.swap.several_people': 'कई लोग मिले। सादी पृष्ठभूमि वाली फ़ोटो लें जिसमें केवल आप हों।',
@@ -468,6 +468,9 @@ const hi = {
     'app.seedance25.retry': 'इस अनुरोध को फिर जाँचें',
     'app.seedance25.result': 'लाइब्रेरी में परिणाम खोलें',
     'app.seedance25.error': 'यह चरण पूरा नहीं हो सका। स्रोत जाँचें और फिर प्रयास करें। दोबारा प्रयास में वही अनुरोध बना रहता है।',
+    'app.create.templatePrompt.edit': 'प्रॉम्प्ट संपादित करें',
+    'app.create.templatePrompt.help': 'इस टेम्पलेट का प्रॉम्प्ट जैसा लिखा है वैसा ही इस्तेमाल होगा।',
+    'app.create.templatePrompt.ready': 'टेम्पलेट प्रॉम्प्ट तैयार है',
 } as const;
 
 export default hi;

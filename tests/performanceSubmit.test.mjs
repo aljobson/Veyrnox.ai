@@ -172,6 +172,7 @@ test('a lost reply followed by Retry charges once and adopts the job', async () 
 
   assert.equal(server.charges, 1);
   assert.equal(retried.job_id, 'job-1');
+  assert.equal(retried.idempotent, true); assert.equal(retried.recovering, true);
   assert.equal(keys.length, 1, 'the job was found, so nothing was sent again');
 });
 
@@ -188,7 +189,8 @@ test('a request that never arrived replays the same key and body', async () => {
   const request = { model_id: 'tts', inputs: { prompt: 'Hola' } };
 
   await assert.rejects(attempts.send(request));
-  await attempts.send(request);
+  const retried = await attempts.send(request);
+  assert.equal(retried.recovering, true);
 
   assert.equal(bodies[0], bodies[1]);
   assert.equal(server.charges, 1);
@@ -272,6 +274,7 @@ test('the real gateway client: lost reply, replay and the server price all reach
     const retried = await submitCaption(args);
 
     assert.equal(retried.job_id, 'job-1');
+  assert.equal(retried.idempotent, true); assert.equal(retried.recovering, true);
     assert.equal(retried.credits, 16);
     assert.equal(server.charges, 1);
     assert.equal(requests.filter((line) => line.includes('/jobs?idempotency_key=')).length, 1);

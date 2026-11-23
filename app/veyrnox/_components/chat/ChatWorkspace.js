@@ -12,6 +12,7 @@ import { gatewayFetch } from '../../_lib/gateway';
 import { getStoredUserId, onSessionChange } from '../../../lib/authClient';
 import { chatApi, chatErrorCopy } from '../../_lib/chatApi';
 import { takeTemplateChatDraft } from '../../_lib/chatTemplateDraft';
+import { TemplatePromptReady } from '../TemplatePromptReady';
 import { longTextState } from '../../_lib/chatLongText';
 import { CHAT_USER_TEXT_MAX } from '../../../../lib/chatLimits.js';
 import { admitLibraryImage, attachmentLabel } from '../../_lib/chatImages';
@@ -203,13 +204,16 @@ export function ChatWorkspace() {
   // The unsent text follows the chat it was typed in, for the user who typed it; sending or clearing it forgets it.
   useEffect(() => { saveDraft(active?.id ?? NEW_CHAT, text); }, [text, active?.id]);
   const templateDraftHandoff = useRef(false);
+  // A video template's own words stay off screen until Edit; any change makes them the customer's text.
+  const [hiddenTemplateText, setHiddenTemplateText] = useState(null);
+  const templateTextHidden = hiddenTemplateText !== null && text === hiddenTemplateText;
   useEffect(() => {
     // Keep the handoff queued while authentication is required; signing in may reload this page.
     if (templateDraftHandoff.current || active || !ready || signedOut) return;
     templateDraftHandoff.current = true;
     let draft = null;
     try { draft = takeTemplateChatDraft(window.sessionStorage); } catch { /* Browser storage can be unavailable. */ }
-    if (draft) setText(draft.prompt);
+    if (draft) { setText(draft.prompt); setHiddenTemplateText(draft.hidePrompt ? draft.prompt : null); }
   }, [active, ready, signedOut]);
 
   const model = models.find((x) => x.id === (active?.model_id ?? draftModel)) || defaultModel(models) || models[0];
@@ -654,9 +658,9 @@ export function ChatWorkspace() {
               )}
               <div className="px-3 pt-3">
                 <label className="sr-only" htmlFor="chat-msg">{t("app.chat.message")}</label>
-                <textarea id="chat-msg" rows={3} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
+                {templateTextHidden ? <TemplatePromptReady onEdit={() => { setHiddenTemplateText(null); requestAnimationFrame(() => document.getElementById('chat-msg')?.focus()); }} /> : <textarea id="chat-msg" rows={3} value={text} maxLength={MAX_TEXT} placeholder={skillIds.length ? tOr(t, `app.chat.skill.${skillIds[0]}.starter`, skillById(skillIds[0])?.starter || t('app.chat.ask')) : t('app.chat.ask')} onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!oddlingSendPending && !longText.tooLong) send(); } }}
-                  className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />
+                  className="max-h-56 min-h-[4.5rem] w-full resize-none bg-transparent px-1 py-1 text-[15px] text-vx-fg outline-hidden placeholder:text-vx-fg-faint" />}
                 {longText.showCounter && <p aria-live="polite" className={`px-1 pb-1 text-end text-xs ${longText.tooLong ? 'font-bold text-vx-danger' : 'text-vx-fg-muted'}`}>
                   <span className="font-vx-mono vx-num">{longText.count}/{longText.limit}</span>
                   {longText.extra > 0 && <>{' · '}{t('app.chat.workspace.longMessage', { price: credits(t, locale, longText.extra) })}</>}
@@ -667,8 +671,8 @@ export function ChatWorkspace() {
                 {offer.images && <AttachButton onPick={att.add} disabled={busy} full={att.items.length >= limits.maxAttachments} />}
                 <ComposerControls compact models={models} model={model} offer={offer} opts={{ ...opts, research: researchOn }} busy={busy} onSelectModel={selectModel} onOpts={setOpts}
                   onLibrary={() => { libraryStamp.current = att.stamp(); setPickingLibrary(true); }} libraryDisabled={att.items.length >= limits.maxAttachments} onSettings={() => setSettingsOpen(true)} settingsOpen={settingsOpen} />
-                <DictateButton disabled={busy} onText={(spoken) => setText((current) => appendSpoken(current, spoken).slice(0, MAX_TEXT))} />
-                <EnhanceButton disabled={busy} text={text} />
+                {!templateTextHidden && <DictateButton disabled={busy} onText={(spoken) => setText((current) => appendSpoken(current, spoken).slice(0, MAX_TEXT))} />}
+                {!templateTextHidden && <EnhanceButton disabled={busy} text={text} />}
                 {busy
                   ? <button type="button" onClick={stop} disabled={stopping || checking} className="shrink-0 rounded-full border border-vx-border px-5 py-2.5 text-sm font-semibold disabled:opacity-50">{stopping ? t("app.chat.workspace.stopping") : checking ? t("app.chat.workspace.checking") : t("app.chat.workspace.stop")}</button>
                   : <button type="button" onClick={send} disabled={!text.trim() || imagesBlocked || oddlingSendPending || longText.tooLong} className="shrink-0 rounded-full bg-vx-accent px-4 py-2.5 text-sm font-semibold text-vx-accent-ink transition-colors hover:bg-vx-accent-hover disabled:opacity-50">{isFree ? t("app.chat.workspace.sendFree") : t('app.chat.workspace.send', { price: credits(t, locale, price) })}</button>}

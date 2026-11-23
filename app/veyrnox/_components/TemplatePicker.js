@@ -82,7 +82,7 @@ export function TemplatePicker({ models, goal, selectedKind, onPick, onClose, ga
                     {model.name}
                     {Number.isFinite(credits) ? ` · ${t(pluralKey(t, locale, 'model.credits', credits), { n: credits })}` : ''}
                   </p>
-                  <p className="mt-2 line-clamp-3 text-xs leading-5 text-vx-fg-body">{preset.prompt ?? preset.promptPreview}</p>
+                  {kind !== 'video' && <p className="mt-2 line-clamp-3 text-xs leading-5 text-vx-fg-body">{preset.prompt ?? preset.promptPreview}</p>}
                   <button ref={index === 0 ? firstChoice : undefined} type="button" onClick={() => onPick(preset)}
                     aria-label={t('app.create.templates.use', { title })} data-testid={`create-template-${preset.id}`}
                     className="vx-press mt-3 min-h-11 w-full rounded-full bg-vx-accent px-4 text-sm font-extrabold text-vx-accent-ink">

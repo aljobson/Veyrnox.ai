@@ -446,7 +446,7 @@ const ja = {
     'presets.swap.submitting': '動画を開始中…',
     'presets.swap.queued': '動画を受け付けました。費用：{credits} クレジット。ライブラリで進行状況を確認してください。',
     'presets.swap.running': '動画を生成中です。ライブラリで進行状況を確認してください。',
-    'presets.swap.succeeded': '動画が完成しました。ライブラリでご覧ください。',
+    'presets.swap.succeeded': '動画が完成しました。',
     'presets.swap.busy_background': '無地の背景で、あなた一人だけが写った写真を使ってください。',
     'presets.swap.ragged_matte': '切り抜きの輪郭が不鮮明です。無地の背景で、あなた一人だけが写った写真を使ってください。',
     'presets.swap.several_people': '複数の人物が検出されました。無地の背景で、あなた一人だけの写真を使ってください。',
@@ -468,6 +468,9 @@ const ja = {
     'app.seedance25.retry': 'このリクエストを再確認',
     'app.seedance25.result': 'ライブラリで結果を開く',
     'app.seedance25.error': 'この手順を完了できませんでした。元動画を確認して再試行してください。送信済みのリクエストは同じ識別子で再確認します。',
+    'app.create.templatePrompt.edit': 'プロンプトを編集',
+    'app.create.templatePrompt.help': 'このテンプレートのプロンプトをそのまま使用します。',
+    'app.create.templatePrompt.ready': 'テンプレートのプロンプトを準備しました',
 } as const;
 
 export default ja;

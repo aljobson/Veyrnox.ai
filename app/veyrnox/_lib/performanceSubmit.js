@@ -55,7 +55,7 @@ export function createChargeAttempts({ post, lookup, makeKey, owner = () => '' }
         attempt = null;
       } else if (found?.job?.id) {
         open.delete(id);
-        return { job_id: found.job.id, idempotent: true };
+        return { job_id: found.job.id, idempotent: true, recovering: true };
       }
     }
     const replay = Boolean(attempt);
@@ -66,7 +66,7 @@ export function createChargeAttempts({ post, lookup, makeKey, owner = () => '' }
     try {
       const result = await post({ ...request, idempotency_key: attempt.key });
       open.delete(id);
-      return result;
+      return replay ? { ...result, recovering: true } : result;
     } catch (error) {
       if (replay || mayHaveCharged(error)) throw markUnresolved(error);
       open.delete(id);

@@ -464,5 +464,8 @@
   "app.seedance25.wait",
   "app.seedance25.retry",
   "app.seedance25.result",
-  "app.seedance25.error"
+  "app.seedance25.error",
+  "app.create.templatePrompt.edit",
+  "app.create.templatePrompt.help",
+  "app.create.templatePrompt.ready"
 ]

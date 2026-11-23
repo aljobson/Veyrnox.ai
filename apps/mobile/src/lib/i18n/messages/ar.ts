@@ -446,7 +446,7 @@ const ar = {
     'presets.swap.submitting': 'جارٍ بدء الفيديو…',
     'presets.swap.queued': 'تم قبول الفيديو. التكلفة: {credits} رصيد. افتح المكتبة لمتابعته.',
     'presets.swap.running': 'جارٍ إنشاء الفيديو. افتح المكتبة لمتابعته.',
-    'presets.swap.succeeded': 'الفيديو جاهز. افتح المكتبة لمشاهدته.',
+    'presets.swap.succeeded': 'الفيديو جاهز.',
     'presets.swap.busy_background': 'استخدم صورة بخلفية بسيطة ولا يظهر فيها سواك.',
     'presets.swap.ragged_matte': 'حواف القص غير واضحة. استخدم صورة بخلفية بسيطة ولا يظهر فيها سواك.',
     'presets.swap.several_people': 'تم اكتشاف عدة أشخاص. استخدم صورة لك وحدك بخلفية بسيطة.',
@@ -468,6 +468,9 @@ const ar = {
     'app.seedance25.retry': 'تحقق من هذا الطلب مجددًا',
     'app.seedance25.result': 'فتح النتيجة في المكتبة',
     'app.seedance25.error': 'تعذر إكمال هذه الخطوة. تحقق من المصدر وحاول مجددًا. تحتفظ إعادة المحاولة بنفس الطلب المُرسل.',
+    'app.create.templatePrompt.edit': 'تعديل الموجّه',
+    'app.create.templatePrompt.help': 'سيُستخدم موجّه هذا القالب كما هو مكتوب.',
+    'app.create.templatePrompt.ready': 'موجّه القالب جاهز',
 } as const;
 
 export default ar;

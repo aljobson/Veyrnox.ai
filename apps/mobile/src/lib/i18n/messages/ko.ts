@@ -446,7 +446,7 @@ const ko = {
     'presets.swap.submitting': '영상 시작 중…',
     'presets.swap.queued': '영상이 접수되었습니다. 비용: {credits} 크레딧. 라이브러리에서 확인하세요.',
     'presets.swap.running': '영상을 생성 중입니다. 라이브러리에서 확인하세요.',
-    'presets.swap.succeeded': '영상이 준비되었습니다. 라이브러리에서 보세요.',
+    'presets.swap.succeeded': '영상이 준비되었습니다.',
     'presets.swap.busy_background': '배경이 단순하고 본인만 있는 사진을 사용하세요.',
     'presets.swap.ragged_matte': '누끼 가장자리가 불분명합니다. 배경이 단순하고 본인만 있는 사진을 사용하세요.',
     'presets.swap.several_people': '여러 사람이 감지되었습니다. 배경이 단순하고 본인만 있는 사진을 사용하세요.',
@@ -468,6 +468,9 @@ const ko = {
     'app.seedance25.retry': '이 요청 다시 확인',
     'app.seedance25.result': '라이브러리에서 결과 열기',
     'app.seedance25.error': '이 단계를 완료하지 못했습니다. 원본을 확인하고 다시 시도하세요. 재시도 시 같은 요청을 유지합니다.',
+    'app.create.templatePrompt.edit': '프롬프트 편집',
+    'app.create.templatePrompt.help': '이 템플릿의 프롬프트를 작성된 그대로 사용합니다.',
+    'app.create.templatePrompt.ready': '템플릿 프롬프트 준비 완료',
 } as const;
 
 export default ko;

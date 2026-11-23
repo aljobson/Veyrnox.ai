@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMusicCelebrations } from '../../_lib/useMusicCelebrations';
 import { gatewayFetch } from '../../_lib/gateway';
 
 const TERMINAL = new Set(['ready', 'failed', 'refunded']);
@@ -21,7 +22,8 @@ export function MusicTrackAddDialog({ song, onClose }) {
   const [vocalGender, setVocalGender] = useState('auto');
   const [lyrics, setLyrics] = useState(''); const [rights, setRights] = useState(false);
   const [lyricsRights, setLyricsRights] = useState(false); const [quote, setQuote] = useState(null);
-  const [request, setRequest] = useState(null); const [asset, setAsset] = useState(null);
+  const [request, setRequest] = useState(null);
+  const registerCelebration = useMusicCelebrations(request ? [request] : []); const [asset, setAsset] = useState(null);
   const [busy, setBusy] = useState(false); const [error, setError] = useState('');
 
   useEffect(() => {
@@ -68,6 +70,7 @@ export function MusicTrackAddDialog({ song, onClose }) {
       const accepted = await gatewayFetch(`/music/songs/${song.id}/track-adds`, {
         method: 'POST', body: JSON.stringify({ quote_id: quote.quote_id, idempotency_key: key }),
       });
+      registerCelebration(accepted, quote.total_credits);
       attemptRef.current = null;
       setRequest({ id: accepted.request_id, state: accepted.state, mode });
       await refresh(accepted.request_id);
