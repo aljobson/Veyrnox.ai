@@ -2088,6 +2088,24 @@
     "ratio": 1.89
   },
   {
+    "id": "music.create.suno.clear",
+    "english": "Clear",
+    "translation": "साफ़ करें",
+    "ratio": 1.8
+  },
+  {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "स्वचालित",
+    "ratio": 2
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "अधिकतम",
+    "ratio": 2
+  },
+  {
     "id": "musicActions.action.reload",
     "english": "Reload song",
     "translation": "गाना फिर से लोड करें",

@@ -3600,6 +3600,30 @@
     "ratio": 1.78
   },
   {
+    "id": "music.create.suno.gender.auto",
+    "english": "Auto",
+    "translation": "Automático",
+    "ratio": 2.5
+  },
+  {
+    "id": "music.create.suno.gender.male",
+    "english": "Male",
+    "translation": "Masculino",
+    "ratio": 2.25
+  },
+  {
+    "id": "music.create.suno.variety.0",
+    "english": "Off",
+    "translation": "Desactivada",
+    "ratio": 3.67
+  },
+  {
+    "id": "music.create.suno.variety.4",
+    "english": "Max",
+    "translation": "Máxima",
+    "ratio": 2
+  },
+  {
     "id": "musicActions.action.reload",
     "english": "Reload song",
     "translation": "Volver a cargar la canción",

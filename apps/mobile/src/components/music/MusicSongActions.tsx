@@ -13,7 +13,7 @@ export function MusicSongActions({ song }: { song: MusicSongDetail }) {
     const exportOff = useSyncExternalStore(subscribeExportAvailability, isExportUnavailable, isExportUnavailable);
     const render = useSyncExternalStore(subscribeRenderAvailability, renderAvailability, renderAvailability);
     if (song.lifecycle_status === 'trashed') return null;
-    const capabilities = song.current_version.capabilities;
+    const capabilities = song.current_version?.capabilities;
     const formatEditsUnavailable = capabilities?.playback === true && (capabilities.render === false || capabilities.crop === false);
     return <>{render.editing && song.actions.includes('render') && capability(capabilities, 'render') ? <Button variant="secondary" icon="faders" label={t('musicRender.title')}
         onPress={() => router.push({ pathname: '/music/render', params: { id: song.id } } as never)} /> : null}{!exportOff && song.actions.includes('download_mp3') ? <Button variant="secondary" icon="arrowDown" label={t('musicExport.title')}
