@@ -31,9 +31,9 @@ const SOURCE_HOSTS = {
     // the sweep copies at once. Exact hosts only. Nothing fetches from them unless CRUN_ENABLED is "true" and a
     // Crun route is active.
     crun: { hosts: ['tempfile.mediaoss.bar', 'static.mediaoss.bar'], suffixes: [] },
-    // Suno audio is a separate, deliberately empty allowlist. A paid staging
-    // probe must verify the exact MP3 host before anything is added here.
-    crunAudio: { hosts: [], suffixes: [] },
+    // Suno audio is its own allowlist, separate from video. The paid probe (2026-11-23, task 838759d0) saw the MP3 served
+    // straight from audiostream.kie.ai/stream/<id>.mp3: HTTP 200, no redirect, audio/mpeg, ID3 tag, no-store. Exact host only.
+    crunAudio: { hosts: ['audiostream.kie.ai'], suffixes: [] },
 };
 // Providers whose output download carries our API key. The key may only go to
 // a host in that provider's list above, which for these is its own API host.
@@ -41,7 +41,7 @@ const AUTHENTICATED_SOURCES = new Set(['openrouter']);
 // ponytail: 100 MB cap, the Worker holds the body in memory. Stream to R2 multipart if outputs grow.
 const COPY_MAX_BYTES = 100 * 1024 * 1024;
 
-function isAllowedSourceHost(hostname, provider) {
+export function isAllowedSourceHost(hostname, provider) {
     const allow = Object.prototype.hasOwnProperty.call(SOURCE_HOSTS, provider) ? SOURCE_HOSTS[provider] : null;
     if (!allow) return false;
     const h = String(hostname || '').toLowerCase();
