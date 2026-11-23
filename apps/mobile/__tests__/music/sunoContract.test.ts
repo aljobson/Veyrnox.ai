@@ -1,0 +1,103 @@
+import { ApiError, type ApiClient } from '../../src/lib/api';
+import { buildCustomQuote, buildSimpleQuote, quoteBlockers } from '../../src/lib/music/createForm';
+import { applyReuseToDraft, createQuoteWithContractRefresh, getCustomDraft, getReuseDraftContext, saveCustomDraft, startGeneration } from '../../src/lib/music/client';
+import { createMusicCreateFlow } from '../../src/lib/music/createFlow';
+import { createGenerationTracker } from '../../src/lib/music/queue';
+import { isMusicDraft, isMusicEntitlements, isMusicQuote } from '../../src/lib/music/validate';
+import { crunCustom, crunDraft, crunEntitlements, crunQuote, generation } from '../fixtures/musicCreate';
+// @ts-ignore The server parser is intentionally shared to prove the exact mobile wire contract.
+import { parseCrunMusicQuote } from '../../../../lib/musicCrunContract.js';
+
+const body = (request: jest.Mock, index = request.mock.calls.length - 1) => JSON.parse(request.mock.calls[index][1].body);
+
+test('validates the complete Crun projection, quote controls and immutable draft identity', () => {
+    expect(isMusicEntitlements(crunEntitlements)).toBe(true);
+    expect(isMusicQuote(crunQuote)).toBe(true);
+    expect(isMusicDraft(crunDraft)).toBe(true);
+    expect(isMusicEntitlements({ ...crunEntitlements, models: [{ ...crunEntitlements.models[1], counters: undefined }] })).toBe(false);
+    expect(isMusicEntitlements({ ...crunEntitlements, models: [{ ...crunEntitlements.models[1], controls: {
+        ...crunEntitlements.models[1].controls, suno_model: ['v5'],
+    } }] })).toBe(false);
+    expect(isMusicQuote({ ...crunQuote, weirdness: 2 })).toBe(false);
+    expect(isMusicDraft({ ...crunDraft, provider_contract: 'unknown' })).toBe(false);
+});
+
+test('builds Crun simple/custom payloads from projection controls without tempo fields', () => {
+    const simple = buildSimpleQuote({ ...crunCustom, mode: 'simple', prompt: '  warm synths  ', instrumental: false }, crunEntitlements);
+    expect(simple).toEqual({ mode: 'simple', provider_contract: 'crun-suno-v1', model_id: 'ace-step-1.5',
+        prompt: 'warm synths', instrumental: false, suno_model: 'v6' });
+    expect(parseCrunMusicQuote(simple)).toMatchObject({ ok: true, providerContract: 'crun-suno-v1' });
+    const custom = buildCustomQuote(crunCustom, crunEntitlements, crunDraft, true);
+    expect(custom).toEqual({ mode: 'custom', provider_contract: 'crun-suno-v1', draft_id: crunDraft.id,
+        draft_revision: crunDraft.revision, instrumental: false, rights_confirmed: true, duration_seconds: 135,
+        suno_model: 'v6_wild', vocal_gender: 'female', style_influence: 70, weirdness: 0.35,
+        variety: 75, exclude_styles: 'choir' });
+    expect(custom).not.toHaveProperty('bpm');
+    expect(custom).not.toHaveProperty('key_scale');
+    expect(custom).not.toHaveProperty('time_signature');
+    expect(parseCrunMusicQuote(custom).ok).toBe(true);
+});
+
+test('uses only projection counters for Crun text limits and requires custom vocal lyrics', () => {
+    const model = crunEntitlements.models[1];
+    const small = { ...crunEntitlements, models: [{ ...model, counters: { ...model.counters!, lyrics: { max: 2 } } }] };
+    expect(quoteBlockers({ input: crunCustom, entitlements: small, rights: true })).toContain('over_length');
+    expect(quoteBlockers({ input: { ...crunCustom, lyrics: '' }, entitlements: crunEntitlements, rights: true })).toContain('lyrics_required');
+    expect(quoteBlockers({ input: { ...crunCustom, lyrics: '', instrumental: true }, entitlements: crunEntitlements, rights: false })).not.toContain('lyrics_required');
+});
+
+test('client sends contract identity on draft, generation and refreshed quote wires', async () => {
+    const request = jest.fn()
+        .mockResolvedValueOnce({ provider_contract: 'crun-suno-v1', draft: { ...crunDraft, provider_contract: undefined } })
+        .mockResolvedValueOnce({ draft: { ...crunDraft, revision: 1 } })
+        .mockResolvedValueOnce(generation);
+    const api = { request } as unknown as ApiClient;
+    expect((await getCustomDraft(api)).provider_contract).toBe('crun-suno-v1');
+    await saveCustomDraft(api, { ...crunDraft, draft_id: crunDraft.id });
+    expect(body(request, 1)).toMatchObject({ provider_contract: 'crun-suno-v1', draft_id: crunDraft.id, revision: 0 });
+    await startGeneration(api, crunQuote.quote_id, 'music-key-12345678', 'crun-suno-v1');
+    expect(body(request, 2)).toEqual({ quote_id: crunQuote.quote_id, idempotency_key: 'music-key-12345678', provider_contract: 'crun-suno-v1' });
+
+    const quoteRequest = jest.fn().mockRejectedValueOnce(new ApiError(409, 'contract_stale')).mockResolvedValueOnce(crunQuote);
+    const refresh = jest.fn(async () => buildCustomQuote(crunCustom, crunEntitlements, crunDraft, true));
+    await expect(createQuoteWithContractRefresh({ request: quoteRequest } as unknown as ApiClient,
+        buildCustomQuote(crunCustom, crunEntitlements, crunDraft, true), refresh)).resolves.toEqual(crunQuote);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(quoteRequest).toHaveBeenCalledTimes(2);
+});
+
+test('reuse reads and sends the active contract plus immutable draft identity', async () => {
+    const context = { source: { has_lyrics: true }, draft_id: crunDraft.id, draft_revision: 4, provider_contract: 'crun-suno-v1' as const };
+    const request = jest.fn().mockResolvedValueOnce(context).mockResolvedValueOnce({ draft: { ...crunDraft, revision: 5 }, idempotent: false });
+    const api = { request } as unknown as ApiClient;
+    expect(await getReuseDraftContext(api, 'song/one', 'version/one')).toEqual(context);
+    expect(request.mock.calls[0][0]).toBe('/api/v1/music/songs/song%2Fone/reuse?version_id=version%2Fone');
+    await applyReuseToDraft(api, 'song/one', { version_id: 'version/one', provider_contract: context.provider_contract,
+        draft_id: context.draft_id, draft_revision: context.draft_revision, reuse_lyrics: true, reuse_styles: false,
+        idempotency_key: 'reuse-key-12345678' });
+    expect(body(request, 1)).toEqual({ version_id: 'version/one', provider_contract: 'crun-suno-v1', draft_id: crunDraft.id,
+        draft_revision: 4, reuse_lyrics: true, reuse_styles: false, idempotency_key: 'reuse-key-12345678' });
+});
+
+test('flow refreshes entitlements and draft once after contract_stale, then re-quotes', async () => {
+    let saves = 0;
+    const request = jest.fn(async (path: string, init?: RequestInit) => {
+        if (path.endsWith('/entitlements')) return crunEntitlements;
+        if (path.endsWith('/drafts/custom') && !init) return { provider_contract: 'crun-suno-v1', draft: crunDraft };
+        if (path.endsWith('/drafts/custom')) {
+            if (++saves === 1) throw new ApiError(409, 'contract_stale');
+            return { draft: { ...crunDraft, ...JSON.parse(String(init?.body)), revision: 1 } };
+        }
+        if (path.endsWith('/generation-quotes')) return { ...crunQuote, quote_id: crunQuote.quote_id };
+        throw new Error(path);
+    });
+    const api = { request } as unknown as ApiClient;
+    const flow = createMusicCreateFlow(api, createGenerationTracker({ api, subscribeAppState: () => () => {}, setTimer: () => () => {} }));
+    await flow.load(); flow.edit({ mode: 'custom' }); await flow.loadDraft(); flow.edit(crunCustom, true); await flow.review();
+    expect(request.mock.calls.filter(([path]) => path.endsWith('/entitlements'))).toHaveLength(2);
+    expect(request.mock.calls.filter(([path, init]) => path.endsWith('/drafts/custom') && !init)).toHaveLength(2);
+    expect(request.mock.calls.filter(([path]) => path.endsWith('/generation-quotes'))).toHaveLength(1);
+    expect(flow.snapshot().error).toBeNull();
+    expect(flow.attempts.snapshot()?.quote.provider_contract).toBe('crun-suno-v1');
+    flow.dispose();
+});

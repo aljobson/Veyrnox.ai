@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../api';
-import { conflictDraft, createQuote, getCustomDraft, getEntitlements, saveCustomDraft } from './client';
+import { conflictDraft, createQuoteWithContractRefresh, getCustomDraft, getEntitlements, isContractStale, saveCustomDraft } from './client';
 import { createGenerationAttempts } from './attempts';
 import { createGenerationTracker } from './queue';
 import { buildCustomQuote, buildSimpleQuote, clampDuration, effectiveInput, normalizeInput, quoteBlockers } from './createForm';
@@ -7,7 +7,8 @@ import { createQuoteGate } from './shared';
 import { isMusicOff, probeMusic } from './probe';
 import type { MusicDraft, MusicEntitlements, MusicInputSnapshot } from './types';
 const empty: MusicInputSnapshot = { mode: 'simple', model_id: '', prompt: '', title: '', lyrics: '', styles: '', instrumental: true, duration: 60,
-    variety: 50, styleInfluence: 0, excludeStyles: '', bpm: '', keyScale: '', timeSignature: '' };
+    variety: 50, styleInfluence: 0, excludeStyles: '', sunoModel: 'v6', vocalGender: 'auto', weirdness: 0.5,
+    bpm: '', keyScale: '', timeSignature: '' };
 type State = Readonly<{
     status: 'loading' | 'on' | 'off' | 'error'; entitlements: MusicEntitlements | null;
     input: MusicInputSnapshot; rights: boolean; draft: MusicDraft | null; conflict: MusicDraft | null;
@@ -38,7 +39,13 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 input.model_id = e.models.find(m => m.available && m.generation_modes.includes(input.mode))?.id ?? '';
             }
             const model = e.models.find(m => m.id === input.model_id);
-            if (model) input = normalizeInput(input, model);
+            if (model) {
+                if (patch.mode === 'custom' && model.provider_contract === 'crun-suno-v1') {
+                    input = { ...input, instrumental: false, sunoModel: 'v6', vocalGender: 'auto',
+                        styleInfluence: 50, weirdness: 0.5, variety: 25 };
+                }
+                input = normalizeInput(input, model);
+            }
         }
         update({ input, rights, busy: false, error: null, conflict: null });
     }
@@ -70,7 +77,9 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
             if (result.state === 'error') { update({ status: 'error', error: result.code }); return; }
             const model = result.data.models.find(m => m.available && m.generation_modes.includes('simple'));
             update({ status: 'on', entitlements: result.data, input: model
-                ? normalizeInput({ ...empty, model_id: model.id, duration: model.controls.duration_seconds.default }, model) : empty });
+                ? normalizeInput({ ...empty, ...(model.provider_contract === 'crun-suno-v1' ? { variety: 25, styleInfluence: 50 } : {}),
+                    model_id: model.id, duration: model.controls.duration_seconds?.default
+                    ?? model.limits?.duration_seconds.default ?? empty.duration }, model) : empty });
         },
         edit, loadDraft,
         async refreshEntitlements() {
@@ -82,11 +91,10 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
                 if (result.state === 'off' || (result.state === 'on' && !result.data.available)) { off(); return; }
                 // A background refresh failure must not replace submission recovery state.
                 if (result.state === 'error') return;
-                const previous = state.entitlements.models.find(m => m.id === state.input.model_id)?.controls;
+                const previous = state.entitlements.models.find(m => m.id === state.input.model_id);
                 const model = result.data.models.find(m => m.id === state.input.model_id);
-                const controls = model?.controls;
                 const duration = model ? clampDuration(state.input.duration, model) : state.input.duration;
-                if (duration !== state.input.duration || controlsChanged(previous, controls)) {
+                if (duration !== state.input.duration || modelChanged(previous, model)) {
                     gate.invalidate();
                     // invalidate keeps ambiguous and in-flight attempts, including their original input/key.
                     attempts.invalidate();
@@ -103,21 +111,51 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
             const captured = effectiveInput(input, model);
             const token = gate.start(); attempts.invalidate(); update({ busy: true, error: null, conflict: null });
             try {
+                let refreshed = false;
+                const refreshedPayload = async () => {
+                    if (refreshed) throw new ApiError(409, 'contract_stale');
+                    refreshed = true;
+                    const fresh = await getEntitlements(api);
+                    const freshModel = fresh.models.find(m => m.id === captured.model_id && m.available && m.generation_modes.includes(captured.mode));
+                    if (!freshModel) throw new ApiError(409, 'model_unavailable');
+                    const nextInput = effectiveInput({ ...captured, model_id: freshModel.id }, freshModel);
+                    if (captured.mode === 'simple') {
+                        update({ entitlements: fresh, input: { ...state.input, instrumental: nextInput.instrumental,
+                            duration: nextInput.duration, model_id: nextInput.model_id } });
+                        return buildSimpleQuote(nextInput, fresh);
+                    }
+                    const serverDraft = await getCustomDraft(api);
+                    const preserved = { ...serverDraft, model_id: freshModel.id, title: captured.title,
+                        lyrics: captured.lyrics, styles: captured.styles };
+                    const saved = await saveCustomDraft(api, { provider_contract: preserved.provider_contract, draft_id: preserved.id,
+                        revision: preserved.revision, model_id: preserved.model_id, lyrics: preserved.lyrics,
+                        styles: preserved.styles, title: preserved.title });
+                    update({ entitlements: fresh, draft: saved, input: { ...state.input, model_id: freshModel.id,
+                        instrumental: nextInput.instrumental, duration: nextInput.duration } });
+                    return buildCustomQuote(nextInput, fresh, saved, rights);
+                };
                 let payload;
                 if (input.mode === 'custom') {
                     if (!state.draft) throw new Error('draft_required');
-                    const draft = await saveCustomDraft(api, { revision: state.draft.revision, model_id: input.model_id,
-                        lyrics: input.lyrics, styles: input.styles, title: input.title });
+                    let draft: MusicDraft | undefined;
+                    try {
+                        draft = await saveCustomDraft(api, { provider_contract: state.draft.provider_contract, draft_id: state.draft.id,
+                            revision: state.draft.revision, model_id: input.model_id, lyrics: input.lyrics,
+                            styles: input.styles, title: input.title });
+                    } catch (error) {
+                        if (!isContractStale(error)) throw error;
+                        payload = await refreshedPayload();
+                    }
                     if (disposed) return;
                     // A stale save still advanced the server revision; preserve newer local text.
-                    if (!gate.unchanged(token) || state.status !== 'on') {
+                    if (draft && (!gate.unchanged(token) || state.status !== 'on')) {
                         update({ draft: { ...state.draft, revision: Math.max(state.draft.revision, draft.revision) } });
                         return;
                     }
-                    update({ draft }); payload = buildCustomQuote(captured, e, draft.revision, rights);
+                    if (draft) { update({ draft }); payload = buildCustomQuote(captured, e, draft, rights); }
                 } else payload = buildSimpleQuote(captured, e);
                 if (!gate.isCurrent(token)) return;
-                const quote = await createQuote(api, payload);
+                const quote = await createQuoteWithContractRefresh(api, payload!, refreshedPayload);
                 if (disposed || !gate.isCurrent(token) || state.status !== 'on') return;
                 if (quote.model_id !== captured.model_id || quote.mode !== captured.mode) throw new ApiError(201, 'bad_response');
                 attempts.prepare(quote, { ...captured, ...(captured.mode === 'simple' ? { prompt: captured.prompt.trim(), title: captured.title.trim() } : {}) });
@@ -158,12 +196,6 @@ export function createMusicCreateFlow(api: ApiClient, tracker: ReturnType<typeof
     };
 }
 
-function controlsChanged(previous: MusicEntitlements['models'][number]['controls'] | undefined, next: MusicEntitlements['models'][number]['controls'] | undefined): boolean {
-    if (!previous || !next) return previous !== next;
-    return previous.description !== next.description || previous.seed !== next.seed || previous.variety !== next.variety
-        || previous.style_influence !== next.style_influence || previous.exclude_styles !== next.exclude_styles
-        || previous.tempo_key_meter !== next.tempo_key_meter || previous.lyrics !== next.lyrics || previous.styles !== next.styles
-        || previous.instrumental !== next.instrumental || previous.duration_seconds.min !== next.duration_seconds.min
-        || previous.duration_seconds.max !== next.duration_seconds.max || previous.duration_seconds.default !== next.duration_seconds.default
-        || previous.duration_price_block_seconds !== next.duration_price_block_seconds;
+function modelChanged(previous: MusicEntitlements['models'][number] | undefined, next: MusicEntitlements['models'][number] | undefined): boolean {
+    return JSON.stringify(previous) !== JSON.stringify(next);
 }

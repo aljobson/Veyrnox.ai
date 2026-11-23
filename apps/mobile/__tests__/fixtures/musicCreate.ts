@@ -16,5 +16,31 @@ export const view: MusicGenerationView = { id: HOOK_JOB, state: 'running', model
     created_at: '2026-11-18T10:00:00Z', candidates: generation.candidates.map(c => ({ ...c, state: 'running', song_id: null, version_id: null, error_code: null, audio_url: null })) };
 export const draft: MusicDraft = { id: null, updated_at: null, revision: 0, model_id: 'ace-step-1.5', title: '', lyrics: '', styles: '' };
 export const input: MusicInputSnapshot = { mode: 'simple', model_id: 'ace-step', prompt: 'ambient music', title: 'Evening', lyrics: '', styles: '', instrumental: true, duration: 30,
-    variety: 50, styleInfluence: 0, excludeStyles: '', bpm: '', keyScale: '', timeSignature: '' };
+    variety: 50, styleInfluence: 0, excludeStyles: '', sunoModel: 'v6', vocalGender: 'auto', weirdness: 0.5,
+    bpm: '', keyScale: '', timeSignature: '' };
 export const custom: MusicInputSnapshot = { ...input, mode: 'custom', model_id: 'ace-step-1.5', lyrics: '[Verse]\nOriginal lyrics', instrumental: false };
+export const crunControls = {
+    description: true, variety: ['Off', 'Normal', 'High', 'Extra', 'Max'], style_influence: true,
+    exclude_styles: true, tempo_key_meter: false, duration_seconds: { min: 1, max: 135, default: 60, custom_only: true },
+    lyrics: true, lyrics_required_for_custom_vocal: true, styles: true, title: true,
+    vocal_gender: ['auto', 'male', 'female'] as const, suno_model: ['v6', 'v6_mini', 'v6_wild'] as const,
+    weirdness: true, instrumental: 'optional' as const,
+};
+export const crunLimits = { prompt: 500, title: 80, lyrics: 5000, styles: 1000, exclude_styles: 1000,
+    duration_seconds: { min: 1, max: 135, default: 60, custom_only: true },
+    variety: { min: 0, max: 100, provider_min: 0, provider_max: 4 }, style_weight: { min: 0, max: 1 }, weirdness: { min: 0, max: 1 } };
+export const crunCounters = { prompt: { max: 500 }, title: { max: 80 }, lyrics: { max: 5000 }, styles: { max: 1000 }, exclude_styles: { max: 1000, applied: 200 } };
+export const crunEntitlements: MusicEntitlements = { ...entitlements,
+    models: [{ ...entitlements.models[0], provider_contract: 'crun-suno-v1', controls: { ...crunControls,
+        duration_seconds: null, lyrics: false, lyrics_required_for_custom_vocal: false, styles: false, title: false, weirdness: false,
+        variety: [], style_influence: false, exclude_styles: false, vocal_gender: [], suno_model: ['v6'], instrumental: 'required' },
+        limits: crunLimits, counters: crunCounters, credits_per_candidate: 4, total_credits: 8 },
+    { ...entitlements.models[1], provider_contract: 'crun-suno-v1', controls: crunControls, limits: crunLimits,
+        counters: crunCounters, credits_per_candidate: 4, total_credits: 8 }],
+    custom_drafts: { ...entitlements.custom_drafts, provider_contract: 'crun-suno-v1', lyrics_max: 5000, styles_max: 1000 } };
+export const crunDraft: MusicDraft = { ...draft, id: JOB, provider_contract: 'crun-suno-v1' };
+export const crunCustom: MusicInputSnapshot = { ...custom, duration: 135, styles: 'cinematic', excludeStyles: 'choir',
+    sunoModel: 'v6_wild', vocalGender: 'female', styleInfluence: 70, weirdness: 0.35, variety: 75 };
+export const crunQuote: MusicQuote = { ...quote, mode: 'custom', provider_contract: 'crun-suno-v1', model_id: 'ace-step-1.5',
+    credits_per_candidate: 4, total_credits: 8, balance_after: 92, suno_model: 'v6_wild', vocal_gender: 'female',
+    style_weight: 0.7, weirdness: 0.35, variety: 3, exclude_styles_applied_chars: 200 };
