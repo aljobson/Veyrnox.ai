@@ -228,7 +228,7 @@ const local = StyleSheet.create({
     clipRange: { position: 'absolute', top: 5, height: 22, minWidth: 8, borderColor: colors.accent, backgroundColor: colors.accentSoft, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
     clipRangeSelected: { borderWidth: 2, borderStyle: 'solid' }, clipRangeUnselected: { borderWidth: 1, borderStyle: 'dashed' },
     clipRangeCap: { position: 'absolute', top: 0, bottom: 0, width: 2, backgroundColor: colors.accent },
-    clipRangeCapStart: { left: 0 }, clipRangeCapEnd: { right: 0 }, clipRangeRank: { color: colors.accent, fontSize: 11, fontWeight: '700', lineHeight: 14 },
+    clipRangeCapStart: { left: 0 }, clipRangeCapEnd: { right: 0 }, clipRangeRank: { color: colors.accent, fontSize: 12, fontWeight: '700', lineHeight: 14 },
     playhead: { position: 'absolute', top: 0, width: 2, backgroundColor: colors.accent }, ghost: { opacity: 0.6, borderColor: colors.accent, borderWidth: 2 },
     handle: { position: 'absolute', height: 44, top: 6, zIndex: 2, alignItems: 'center', justifyContent: 'center' }, handleLine: { width: 3, height: 24, borderRadius: 2, backgroundColor: colors.accent },
 });

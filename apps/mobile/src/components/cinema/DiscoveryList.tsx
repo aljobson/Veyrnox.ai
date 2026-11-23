@@ -1,11 +1,11 @@
 import { rawText } from '../../lib/i18n/translate';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, Platform, Pressable, RefreshControl, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { discoveryTarget, typeLabel } from '../../lib/cinemaViewer';
 import { CinemaPosterImage } from './CinemaPosterImage';
 import { SeriesTile } from './SeriesTile';
-import { Card, Text as UiText } from '../ui';
+import { Card, Text } from '../ui';
 import { fetchDiscovery, type BrowseMode, type DiscoveryCursor, type DiscoveryTitle } from '../../lib/cinemaBrowse';
 import { editorialSeriesList, type EditorialSeries } from '../../lib/cinemaSeries';
 import { formatLocale, plural, t } from '../../lib/i18n';
@@ -70,15 +70,15 @@ export function DiscoveryList({ mode, category }: Props) {
     const refresh = useCallback(() => { void load(null, true); }, [load]);
 
     if (state === 'loading') return <View style={styles.center}><VeyLoader label={t('common.loading')} showLabel /></View>;
-    if (state === 'closed' && !editorial.length) return <View style={styles.center}><Text style={styles.muted} accessibilityRole="text">{t(mode === 'voting' ? 'cinemaBrowse.voteClosed' : 'cinemaBrowse.viewingClosed')}</Text></View>;
+    if (state === 'closed' && !editorial.length) return <View style={styles.center}><Text variant="inherit" style={styles.muted} accessibilityRole="text">{t(mode === 'voting' ? 'cinemaBrowse.voteClosed' : 'cinemaBrowse.viewingClosed')}</Text></View>;
     if (state === 'error' && !editorial.length) {
         return (
             <Pressable accessibilityRole="button" style={styles.center} onPress={() => load(null)}>
-                <Text style={styles.error}>{t('cinemaBrowse.loadFailed')}</Text>
+                <Text variant="inherit" style={styles.error}>{t('cinemaBrowse.loadFailed')}</Text>
             </Pressable>
         );
     }
-    if (titles.length === 0 && editorial.length === 0) return <View style={styles.center}><Text style={styles.muted}>{t(mode === 'voting' ? 'cinemaBrowse.voteEmpty' : 'cinemaBrowse.seriesEmpty')}</Text></View>;
+    if (titles.length === 0 && editorial.length === 0) return <View style={styles.center}><Text variant="inherit" style={styles.muted}>{t(mode === 'voting' ? 'cinemaBrowse.voteEmpty' : 'cinemaBrowse.seriesEmpty')}</Text></View>;
     const tiles = mode === 'series';
     const tileWidth = Math.max(0, ((listWidth || screen.width) - LIST_PADDING * 2 - GAP) / 2);
     return (
@@ -92,9 +92,9 @@ export function DiscoveryList({ mode, category }: Props) {
             onEndReached={() => next && load(next)}
             onEndReachedThreshold={0.6}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.accent} />}
-            ListHeaderComponent={mode === 'voting' && titles.length ? <UiText tone="secondary">{t('cinema.discovery.exploreTitlesEligibleForAnOpen')}</UiText> : undefined}
+            ListHeaderComponent={mode === 'voting' && titles.length ? <Text tone="secondary">{t('cinema.discovery.exploreTitlesEligibleForAnOpen')}</Text> : undefined}
             ListFooterComponent={moreFailed ? (
-                <Pressable accessibilityRole="button" style={styles.more} onPress={() => next && load(next)}><Text style={styles.error}>{t('cinemaBrowse.moreFailed')}</Text></Pressable>
+                <Pressable accessibilityRole="button" style={styles.more} onPress={() => next && load(next)}><Text variant="inherit" style={styles.error}>{t('cinemaBrowse.moreFailed')}</Text></Pressable>
             ) : undefined}
             renderItem={({ item }) => {
                 const open = () => 'slug' in item ? router.push({ pathname: '/cinema/series/[slug]', params: { slug: item.slug } }) : router.push(discoveryTarget(item));
@@ -112,21 +112,21 @@ function Row({ item, mode, onOpen }: { item: DiscoveryTitle; mode: BrowseMode; o
             <CinemaPosterImage id={item.id} style={{ borderTopLeftRadius: 12, borderTopRightRadius: 12 }} />
             <View style={{ padding: 12, gap: 8 }}>
                 <View style={styles.badges}>
-                    <UiText variant="micro" style={styles.badge}>{typeLabel(item.contentType)}</UiText>
-                    {series ? <UiText variant="micro" style={styles.badge}>{plural('cinemaBrowse.episodes', item.episodeCount)}</UiText>
-                        : item.durationSeconds !== null ? <UiText variant="micro" style={styles.badge}>{t('cinema.duration', { n: Math.max(1, Math.round(item.durationSeconds / 60)) })}</UiText> : null}
+                    <Text variant="micro" style={styles.badge}>{typeLabel(item.contentType)}</Text>
+                    {series ? <Text variant="micro" style={styles.badge}>{plural('cinemaBrowse.episodes', item.episodeCount)}</Text>
+                        : item.durationSeconds !== null ? <Text variant="micro" style={styles.badge}>{t('cinema.duration', { n: Math.max(1, Math.round(item.durationSeconds / 60)) })}</Text> : null}
                 </View>
-                <UiText variant="title3" accessibilityRole="header">{item.title}</UiText>
-                {item.contentType === 'EPISODE' && item.seriesTitle ? <UiText tone="secondary">{t('cinemaViewer.fromSeries', { series: item.seriesTitle })}</UiText> : null}
-                {item.creator ? <UiText tone="secondary">{t('cinemaSeries.by', { creator: item.creator })}</UiText> : null}
-                <View style={styles.badges}>{item.categories.map(c => <UiText key={c} variant="micro" style={styles.badge}>{t(`cinemaBrowse.cat.${c}`)}</UiText>)}</View>
-                {item.synopsis ? <UiText numberOfLines={2}>{item.synopsis}</UiText> : null}
+                <Text variant="title3" accessibilityRole="header">{item.title}</Text>
+                {item.contentType === 'EPISODE' && item.seriesTitle ? <Text tone="secondary">{t('cinemaViewer.fromSeries', { series: item.seriesTitle })}</Text> : null}
+                {item.creator ? <Text tone="secondary">{t('cinemaSeries.by', { creator: item.creator })}</Text> : null}
+                <View style={styles.badges}>{item.categories.map(c => <Text key={c} variant="micro" style={styles.badge}>{t(`cinemaBrowse.cat.${c}`)}</Text>)}</View>
+                {item.synopsis ? <Text numberOfLines={2}>{item.synopsis}</Text> : null}
                 {mode === 'voting' ? item.competitions.map(comp => <View key={comp.id} style={{ gap: 4 }}>
-                    <UiText variant="bodyStrong">{comp.name}</UiText>
-                    <UiText tone="secondary">{t('cinemaSocial.voteCount', { count: comp.qualifiedVotes })}</UiText>
-                    {Number.isFinite(Date.parse(comp.endsAt)) ? <UiText tone="secondary">{t('cinemaSocial.endsOn', { date: new Date(comp.endsAt).toLocaleDateString(formatLocale()) })}</UiText> : null}
+                    <Text variant="bodyStrong">{comp.name}</Text>
+                    <Text tone="secondary">{t('cinemaSocial.voteCount', { count: comp.qualifiedVotes })}</Text>
+                    {Number.isFinite(Date.parse(comp.endsAt)) ? <Text tone="secondary">{t('cinemaSocial.endsOn', { date: new Date(comp.endsAt).toLocaleDateString(formatLocale()) })}</Text> : null}
                 </View>) : null}
-                <View style={styles.watch}><UiText style={styles.watchText}>{series ? t('cinemaBrowse.watch') : mode === 'voting' ? t('cinemaBrowse.openTitle') : t('cinemaBrowse.play')}</UiText></View>
+                <View style={styles.watch}><Text style={styles.watchText}>{series ? t('cinemaBrowse.watch') : mode === 'voting' ? t('cinemaBrowse.openTitle') : t('cinemaBrowse.play')}</Text></View>
             </View>
         </Card>
     );

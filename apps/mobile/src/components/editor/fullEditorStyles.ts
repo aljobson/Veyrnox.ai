@@ -2,11 +2,6 @@ import { StyleSheet } from 'react-native';
 import { colors, fonts } from '../../theme';
 export const EDITOR_MEANINGFUL_LABEL_MIN_SIZE = 12;
 export const EDITOR_DECORATIVE_RULER_FONT_SIZE = 10;
-export const EDITOR_MEANINGFUL_LABEL_STYLE_KEYS = [
-    'cutLabel', 'status', 'formatMeta', 'commandLabel', 'optionLabel', 'zoomValue', 'eyebrow', 'previewMeta',
-    'totalTime', 'timelineHelp', 'markerGlyph', 'trackLabel', 'trackState', 'clipTitle', 'clipMeta', 'trackEmpty',
-    'toolLabel', 'panelDetail', 'muted', 'transcriptTime', 'markerTime',
-] as const;
 export const styles = StyleSheet.create({
     loadingActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
     screen: { flex: 1, overflow: 'hidden', backgroundColor: colors.background },

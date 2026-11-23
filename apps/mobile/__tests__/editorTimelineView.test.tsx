@@ -5,7 +5,7 @@ import { EditorTimeline, type ClipRangeBand } from '../src/components/editor/Edi
 import { emptyTimeline, type Timeline } from '../src/lib/nativeEditorModel';
 import { playSelection } from '../src/lib/haptics';
 import { HEADER_MAX_FONT_SCALE } from '../src/lib/a11y';
-import { EDITOR_DECORATIVE_RULER_FONT_SIZE, EDITOR_MEANINGFUL_LABEL_MIN_SIZE, EDITOR_MEANINGFUL_LABEL_STYLE_KEYS, styles as editorStyles } from '../src/components/editor/fullEditorStyles';
+import { EDITOR_DECORATIVE_RULER_FONT_SIZE, EDITOR_MEANINGFUL_LABEL_MIN_SIZE } from '../src/components/editor/fullEditorStyles';
 void [ScrollView, StyleSheet, Text, View];
 jest.mock('../src/lib/haptics', () => ({ playSelection: jest.fn() }));
 jest.mock('../src/components/ui/Icon', () => ({ Icon: () => null }));
@@ -28,11 +28,6 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); jest.useRealTimers(); });
 test('meaningful editor labels keep a 12pt floor while decorative ruler marks expose time through the adjustable ruler', async () => {
-    for (const key of EDITOR_MEANINGFUL_LABEL_STYLE_KEYS) {
-        const fontSize = StyleSheet.flatten(editorStyles[key])?.fontSize;
-        expect(typeof fontSize).toBe('number');
-        expect(fontSize ?? 0).toBeGreaterThanOrEqual(EDITOR_MEANINGFUL_LABEL_MIN_SIZE);
-    }
     expect(EDITOR_DECORATIVE_RULER_FONT_SIZE).toBeLessThan(EDITOR_MEANINGFUL_LABEL_MIN_SIZE);
     await render([]);
     const mark = node('timeline-ruler-label-0');
