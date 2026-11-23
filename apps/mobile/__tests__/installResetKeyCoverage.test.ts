@@ -1,5 +1,5 @@
 import { INSTALL_KEPT_KEYS, INSTALL_RESET_KEYS } from '../src/lib/installReset';
-const ts = require('typescript') as typeof import('typescript');
+const ts = require('typescript-legacy') as typeof import('typescript-legacy');
 declare const __dirname: string;
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,7 +12,7 @@ test('every fixed SecureStore key is reset or kept with a reason', () => {
         e.isDirectory() ? files(path.join(dir, e.name)) : /\.tsx?$/.test(e.name) ? [path.join(dir, e.name)] : []);
     const program = ts.createProgram(files(root), { target: ts.ScriptTarget.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.ReactJSX });
     const checker = program.getTypeChecker();
-    function constant(node: import('typescript').Node, depth = 0): string | undefined {
+    function constant(node: import('typescript-legacy').Node, depth = 0): string | undefined {
         if (depth > 15) return undefined;
         if (ts.isStringLiteralLike(node) || ts.isNumericLiteral(node)) return node.text;
         if (ts.isTemplateExpression(node)) {
@@ -48,7 +48,7 @@ test('every fixed SecureStore key is reset or kept with a reason', () => {
         if (!source.fileName.startsWith(root + path.sep)) continue;
         const relative = path.relative(root, source.fileName);
         if (relative === 'lib/installReset.ts') continue;
-        function visit(node: import('typescript').Node) {
+        function visit(node: import('typescript-legacy').Node) {
             if (ts.isCallExpression(node)) {
                 const call = node.expression.getText(source);
                 // Resolve the declaration as well: aliases such as store.deleteItemAsync and

@@ -1,5 +1,5 @@
 // Deliberately inspect syntax, including ternaries/templates, instead of grepping source lines.
-const ts = require('typescript');
+const ts = require('typescript-legacy');
 const props = new Set(['alt', 'accessibilityLabel', 'accessibilityHint', 'placeholder', 'label', 'title', 'subtitle', 'detail', 'description', 'hint', 'body', 'action', 'emptyText', 'errorMessage', 'confirmLabel', 'cancelLabel']);
 // Product/brand names and established font names retain their spelling in every language.
 // T and CC are the existing editor's text/captions glyphs.

@@ -2,7 +2,7 @@ declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs') as { readdirSync(p: string, options: { withFileTypes: true }): { name: string; isDirectory(): boolean }[]; readFileSync(p: string, encoding: string): string };
 const path = require('path') as { join(...parts: string[]): string; relative(from: string, to: string): string };
-import ts from 'typescript';
+import ts from 'typescript-legacy';
 
 const root = path.join(__dirname, '../src');
 function files(dir: string): string[] {
