@@ -348,6 +348,8 @@ test('celebration listener survives navigation and uses localized credits withou
     '../../lib/authClient': { getSession: () => ({ user: { id: 'A' } }), onSessionChange: () => () => {} },
     '../_lib/jobHistory': { GENERATION_SUCCEEDED_EVENT: 'success' },
     '../_lib/generationQueue.mjs': { createGenerationQueue }, '../_lib/resultPresence': { resultIsPresent: () => true },
+    '../_lib/celebrationSound': { playCelebrationSound() {} }, './ConfettiBurst': { ConfettiBurst: () => null },
+    './VeyCharacter': { default: () => null }, 'motion/react': { useReducedMotion: () => true },
   });
   const render = () => h.render(component.GenerationCelebration, {});
   try {

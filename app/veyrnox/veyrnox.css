@@ -367,6 +367,9 @@ html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
 /* Below the 64 px header, away from the bottom Generate controls; no layout reservation. */
 .vx-root .vx-generation-notice { pointer-events: none; position: fixed; z-index: 100; top: calc(env(safe-area-inset-top, 0px) + 72px); inset-inline-end: 16px; width: min(384px, calc(100% - 32px)); }
 .vx-root .vx-celebrate-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 12px 16px; margin: 0; border: 1px solid rgb(var(--vx-accent)); border-radius: 24px; color: rgb(var(--vx-fg)); background: rgb(var(--vx-panel)); animation: vxGenerationArrive 240ms ease-out; }
+/* The mascot cheers beside the words; the tick it replaces stays only as a fallback class. */
+.vx-root .vx-celebrate-mascot { flex: none; width: 44px; }
+.vx-root .vx-celebrate-mascot svg { display: block; width: 100%; height: auto; filter: none; }
 .vx-root .vx-celebrate-mark { color: rgb(var(--vx-accent)); font-size: 24px; animation: vxGenerationCheer 800ms ease-out; }
 .vx-root .vx-celebrate-link { pointer-events: auto; display: inline-flex; min-height: 44px; align-items: center; padding: 0 16px; border-radius: 16px; color: rgb(var(--vx-accent)); text-decoration: underline; }
 .vx-root .vx-celebrate-link:focus-visible { outline: 2px solid rgb(var(--vx-accent)); outline-offset: 4px; }
@@ -374,7 +377,13 @@ html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
 @keyframes vxGenerationCheer { 0% { transform: scale(.8); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) {
   .vx-root .vx-celebrate-card, .vx-root .vx-celebrate-mark { animation: none; }
+  .vx-root .vx-confetti { display: none; }
 }
+
+/* Confetti: fixed, pointer-transparent, never part of the layout. */
+.vx-root .vx-confetti { pointer-events: none; position: fixed; inset: 0; z-index: 101; overflow: hidden; }
+.vx-root .vx-confetti-piece { position: absolute; top: 24%; inset-inline-start: 50%; border-radius: 2px; opacity: 0; animation: vxConfetti 1500ms cubic-bezier(.2,.7,.3,1) forwards; }
+@keyframes vxConfetti { 0% { opacity: 1; transform: translate(0, 0) rotate(0deg); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 220px)) rotate(var(--rot)); } }
 
 .vx-root .vx-celebrate-card p { min-width: 0; overflow-wrap: anywhere; }
 
@@ -384,5 +393,6 @@ html[data-vey-mobile-workspace="true"] [data-create-cost-card] {
   .vx-root .vx-celebrate-card { flex-wrap: nowrap; justify-content: flex-start; gap: 8px; padding: 4px 12px; border-radius: 16px; }
   .vx-root .vx-celebrate-card p { max-width: none; flex: 1 1 auto; font-size: 14px; line-height: 1.25; }
   .vx-root .vx-celebrate-mark { font-size: 20px; }
+  .vx-root .vx-celebrate-mascot { width: 32px; }
   .vx-root .vx-celebrate-link { flex: none; padding: 0 8px; white-space: nowrap; }
 }
