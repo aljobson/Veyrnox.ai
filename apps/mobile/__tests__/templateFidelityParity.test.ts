@@ -86,7 +86,7 @@ test('long negative retains a safe template identity on web, mobile and server a
 
 // Execute the actual Create request assembly after the real feed -> detail href ->
 // readTemplate handoff. This catches divergence from the detail-page builder.
-const ts = require('typescript');
+const ts = require('typescript-legacy');
 const createSource = require('fs').readFileSync(resolve('src/app/(app)/create/[modelId].tsx'), 'utf8');
 const createAst = ts.createSourceFile('create.tsx', createSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const assembly: string[] = [];

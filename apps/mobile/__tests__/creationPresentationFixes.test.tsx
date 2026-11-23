@@ -1,7 +1,7 @@
 import { act } from 'react';
 import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
-import ts from 'typescript';
+import ts from 'typescript-legacy';
 import { Chip, TextField } from '../src/components/ui';
 import { AppearanceContext } from '../src/components/ui/AppearanceContext';
 import { CreateOptions } from '../src/components/CreateOptions';

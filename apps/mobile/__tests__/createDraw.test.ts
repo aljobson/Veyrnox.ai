@@ -1,7 +1,7 @@
 declare const __dirname: string;
 const { readFileSync } = require('fs') as { readFileSync: (path: string, encoding: string) => string };
 const { resolve } = require('path') as { resolve: (...paths: string[]) => string };
-import ts from 'typescript';
+import ts from 'typescript-legacy';
 import { canDraw } from '../src/lib/drawOnImage';
 import type { CatalogModel } from '../src/lib/media';
 
