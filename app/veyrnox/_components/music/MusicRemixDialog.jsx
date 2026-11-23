@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMusicCelebrations } from '../../_lib/useMusicCelebrations';
 import { gatewayFetch } from '../../_lib/gateway';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 
@@ -55,6 +56,7 @@ export function MusicRemixDialog({ kind, song, onClose }) {
   const [rights, setRights] = useState(false);
   const [quote, setQuote] = useState(null);
   const [generation, setGeneration] = useState(null);
+  const registerCelebration = useMusicCelebrations(generation ? [generation] : []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -123,6 +125,7 @@ export function MusicRemixDialog({ kind, song, onClose }) {
       const accepted = await gatewayFetch(`/music/songs/${song.id}`, {
         method: 'POST', body: JSON.stringify({ phase: 'confirm', quote_id: quote.quote_id, idempotency_key: key }),
       });
+      registerCelebration(accepted, quote.total_credits);
       attemptRef.current = null;
       setGeneration({ id: accepted.generation_id, state: accepted.state, candidates: accepted.candidates });
       await refresh(accepted.generation_id);

@@ -44,6 +44,7 @@ const hooks = registerHooks({ resolve(specifier, context, next) {
 } });
 const { useBeatAiRequest } = await import('../app/veyrnox/_components/music/beat/useBeatAiRequest.js');
 hooks.deregister();
+function BeatAiProbe(options) { return useBeatAiRequest(options); }
 const draft = { op: 'generate', source: null, prompt: 'Warm keys', submitPath: '/music/generations',
   placement: { afterTrackId: null, sourceTrackId: null, start: 0, length: 3840, phaseSec: 0, cycle: { start: 0, end: 3840 } } };
 async function setup(t) {
@@ -62,7 +63,7 @@ async function setup(t) {
   const options = { beatId, project: {}, announce: s => announcements.push(s), enabled: true };
   const r = { slots: [], effects: [], cursor: 0, dirty: true,
     render() {
-      activeRunner = r; r.cursor = 0; r.dirty = false; r.output = useBeatAiRequest(options);
+      activeRunner = r; r.cursor = 0; r.dirty = false; r.output = BeatAiProbe(options);
       for (const effect of r.effects.splice(0)) effect();
     },
   };
@@ -155,4 +156,20 @@ test('a quote opened before rollback cannot submit after v5 capability is lost',
   const count = h.calls.length; await h.send();
   assert.equal(h.calls.length, count); assert.match(h.request.error, /read-only/);
   assert.deepEqual(readPending(h.beatId), []);
+});
+
+test('Beat stamps the first POST time, not a quote left open over an hour, and preserves it on retry', async t => {
+  const h = await setup(t), realNow = Date.now;
+  let now = 100000;
+  Date.now = () => now;
+  t.after(() => { Date.now = realNow; });
+  h.refuse({ code: 'network_error' });
+  await h.price();
+  now += 3600001;
+  await h.send();
+  assert.equal(readPending(h.beatId)[0].createdAt, now);
+  const submittedAt = now;
+  now += 1000;
+  await h.send();
+  assert.equal(readPending(h.beatId)[0].createdAt, submittedAt);
 });

@@ -100,9 +100,9 @@ test('one interval polls every in-flight job and keeps the give-up', () => {
     assert.equal((hook.match(/setInterval\(/g) || []).length, 1);
     assert.match(hook, /export const POLL_GIVE_UP_AFTER = 30;/);
     assert.match(hook, /const POLL_MS = 2000;/);
-    assert.match(hook, /markJobSettled\(id, next\.state, next\.error_code\);/);
+    assert.match(hook, /markJobSettled\(id, next\.state, next\.error_code, next\.credits, next\.refunded\);/);
     assert.match(hook, /notifyBalanceChanged\(\);/);
-    assert.match(hook, /gatewayFetch\(`\/jobs\/\$\{id\}\/asset`\)/);
+    assert.match(hook, /gatewayFetch\(`\/jobs\/\$\{id\}\/asset`, \{ signal: read.controller.signal \}\)/);
     assert.match(page, /setError\(LOCAL_ERRORS\.poll_unreachable\)/);
 });
 
@@ -119,8 +119,8 @@ test('one job keeps the single canvas; more get the grid', () => {
 
 test('a new click replaces the last click\'s jobs instead of piling onto them', () => {
     // The hook appends; only startJobs resets the list, and it is the hook's only other setter.
-    assert.match(hook, /const startJobs = useCallback\(\(job\) => setJobs\(\[job\]\), \[\]\);/);
-    assert.match(hook, /return \{ jobs, generating, startJobs, addJob, clearJobs \};/);
+    assert.match(hook, /const startJobs = useCallback\(\(job\) => \{ stopAssetReads\(\); setJobs\(\[job\]\); \}, \[stopAssetReads\]\);/);
+    assert.match(hook, /return \{ jobs: results, generating, startJobs, addJob, clearJobs \};/);
     // onSubmit only runs once every earlier job has settled, and its first
     // accepted job resets the list, so one image keeps the single canvas.
     assert.match(page, /onClick=\{hasJobs && !activeBatch \? cancel : onSubmit\}/);
@@ -235,7 +235,7 @@ async function retryHandlerHarness(count, replies) {
     }
     visit(ast);
     let sequence = 0;
-    const requests = [], jobs = [];
+    const requests = [], jobs = [], history = [];
     const context = {
         ...helpers, draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false },
         sending: false, generating: false, model: { id: 'image', name: 'Image', kind: 'image' }, modelId: 'image',
@@ -255,12 +255,12 @@ async function retryHandlerHarness(count, replies) {
             if (reply?.code) throw reply;
             return reply ?? { job_id: `job-${body.idempotency_key}` };
         },
-        startJobs: job => jobs.push(job), addJob: job => jobs.push(job), trackJourneyJob: () => {}, pushJobHistory: () => {},
+        startJobs: job => jobs.push(job), addJob: job => jobs.push(job), trackJourneyJob: () => {}, pushJobHistory: entry => history.push(entry),
         setBalance: () => {}, notifyBalanceChanged: () => {}, errorFor: error => error,
         freeLeftFor: () => 0, setBatchView: value => { context.activeBatch = value; },
     };
     const onSubmit = new Function('context', `with (context) { return (${handler}); }`)(context);
-    return { context, requests, jobs, async submit() {
+    return { context, requests, jobs, history, async submit() {
         const run = context.continuation.current;
         context.quote = run?.quote ?? helpers.allocationSnapshot(run ?? { accepted: Array(count).fill(null), unknown: new Set() }, run?.unit ?? 2, 0);
         context.cost = context.quote.total; context.payable = context.quote.payable;
@@ -314,4 +314,14 @@ test('actual web partial retry rotates only the definitively refused item and ke
     ]);
     assert.equal(h.jobs.length, 3);
     assert.equal(h.context.continuation.current, null);
+});
+
+test('Create forwards replay and own-retry evidence for each batch slot', async () => {
+    const h = await retryHandlerHarness(2, [{ job_id: 'one', idempotent: false }, { code: 'network_error' }, { job_id: 'two', idempotent: true }]);
+    await h.submit(); await h.submit();
+    assert.deepEqual(h.history.map(({ job_id, idempotent, recovering }) => ({ job_id, idempotent, recovering })), [
+        { job_id: 'one', idempotent: false, recovering: false }, { job_id: 'two', idempotent: true, recovering: true },
+    ]);
+    const replay = await retryHandlerHarness(1, [{ job_id: 'old', idempotent: true }]);
+    await replay.submit(); assert.equal(replay.history[0].recovering, false);
 });

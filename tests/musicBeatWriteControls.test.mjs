@@ -22,6 +22,7 @@ test('read-only existing layer remove/mute/add never write localStorage; stale a
 test('Magic Bar quote cannot submit after rollback; existing loop controls stay visible and disabled', async t => {
   const h = harness(), calls = []; t.after(() => h.close());
   const Bar = h.load('BeatMagicBar', {
+    '../../../_lib/useMusicCelebrations': { useMusicCelebrations: () => () => {} },
     '../../../_lib/music/beat/magicBar.mjs': { ...magic, startExampleRotation: () => () => {} },
     '../../../_lib/useMusicAudioSrc': { MusicPrivateAudio: () => null },
     '../../../_lib/gateway': { gatewayFetch: async (path, init) => { calls.push(path); init.beforeSend?.(); return { quote_id: 'q', affordable: true, total_credits: 2 }; } },

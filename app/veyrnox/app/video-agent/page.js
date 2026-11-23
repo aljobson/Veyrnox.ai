@@ -45,6 +45,7 @@ export default function VideoAgent() {
   const [narrationText, setNarrationText] = useState('');
   const [approving, setApproving] = useState(false);
   const inFlight = useRef(false);
+  const approvalAttempt = useRef(null);
   const balanceRequest = useRef(0);
   const draftVersion = useRef(0);
   const mounted = useRef(true);
@@ -124,12 +125,13 @@ export default function VideoAgent() {
     setBusy(true); setApproving(true); setError(null);
     try {
       const inputs = { brief: plan.brief, plan_id: plan.plan_id, aspect_ratio: plan.aspect, ...(plan.narrationText ? { narration_text: plan.narrationText } : {}) };
+      const recovering = approvalAttempt.current === plan; approvalAttempt.current = plan;
       const sent = await gatewayFetch('/generations', {
         method: 'POST',
         body: JSON.stringify({ model_id: MODEL_ID, idempotency_key: plan.idempotency_key, inputs }),
       });
       startJobs({ job_id: sent.job_id, state: 'queued', credits: plan.credits, model_id: MODEL_ID });
-      pushJobHistory({ job_id: sent.job_id, model_id: MODEL_ID, credits: plan.credits, prompt: plan.brief.slice(0, 60), name: plan.brief.slice(0, 40) });
+      pushJobHistory({ idempotent: sent.idempotent, recovering, job_id: sent.job_id, model_id: MODEL_ID, credits: plan.credits, prompt: plan.brief.slice(0, 60), name: plan.brief.slice(0, 40) });
       if (sent.balance_after != null) setBalance(sent.balance_after);
       notifyBalanceChanged();
       setPlan(null);
@@ -220,7 +222,7 @@ export default function VideoAgent() {
 
         {job && (
           <div className={`mt-4 relative rounded-2xl border border-vx-border bg-vx-panel overflow-hidden ${generating ? 'vx-shimmer' : ''}`} style={{ aspectRatio: aspect.replace(':', '/') }}>
-            {job.asset_url ? <JobAssetPreview job={job} /> : (
+            {(job?.asset_url || job?.state === 'succeeded') ? <JobAssetPreview job={job} /> : (
               <div className="absolute inset-0 flex items-center justify-center text-center px-6">
                 <div>
                   <div className={`font-vx-mono text-[11px] tracking-[0.14em] ${job.state === 'failed' ? 'text-vx-danger' : 'text-vx-accent'}`}>

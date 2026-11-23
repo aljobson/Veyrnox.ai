@@ -51,10 +51,10 @@ test('first creation and first video fire once, later completions stay small', (
     events[0].onDone();
     expect(c.celebrateOutput('two', 'image/png', true).big).toBe(false);
     expect(c.celebrateOutput('three', 'video/mp4', true).big).toBe(true);
-    expect(events[1].kind).toBe('firstVideo');
-    events[1].onDone();
+    expect(events[2].kind).toBe('firstVideo');
+    events[2].onDone();
     expect(c.celebrateOutput('four', 'video/mp4', true).big).toBe(false);
-    expect(events).toHaveLength(2);
+    expect(events.map(e => e.kind)).toEqual(['firstCreation', 'success', 'firstVideo', 'success']);
     off();
     boot();
     expect(c.celebrateOutput('five', 'video/mp4', true).big).toBe(false);
@@ -73,6 +73,26 @@ test('the host must acknowledge display before any flag is saved', () => {
     expect(mockStore.get('veyrnox.celebrate.first.v1')).toBeUndefined();
     events[0].onDone();
     expect(mockStore.get('veyrnox.celebrate.video.v1')).toBeUndefined();
+});
+test.each([false, true])('no visible host falls back to one haptic and remembers completion (routine: %s)', async routine => {
+    if (routine) c.settleMilestones({ creation: true, video: true });
+    off();
+    c.noteLocalSubmission('unhosted');
+    expect(c.celebrateOutput('unhosted', 'video/mp4', true).big).toBe(false);
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    expect(c.isLocalSubmission('unhosted')).toBe(false);
+    c.celebrateOutput('unhosted', 'video/mp4', true);
+    c.celebrateFinished([job('unhosted', 'succeeded')], async () => ({ mime_type: 'video/mp4' }));
+    await Promise.resolve();
+    expect(mockSuccess).toHaveBeenCalledTimes(1);
+    expect(events).toEqual([]);
+    if (!routine) {
+        expect(mockStore.get('veyrnox.celebrate.first.v1')).toBeUndefined();
+        expect(mockStore.get('veyrnox.celebrate.video.v1')).toBeUndefined();
+    }
+    off = require('../src/lib/veyMotion').onCelebrate((event: CelebrationEvent) => { events.push(event); event.onShown(); });
+    c.celebrateOutput('unhosted', 'video/mp4', true);
+    expect(events).toEqual([]);
 });
 test('local submission already succeeded at first poll is eligible and dedupes both paths', async () => {
     c.noteLocalSubmission('one');
@@ -131,6 +151,21 @@ test('account changes and sign-out discard local submissions, while milestones s
     mockOwner = undefined;
     mockUsers.forEach((fn) => fn());
     expect(c.celebrateOutput('two', 'image/png', false).big).toBe(false);
+});
+test('Home output read captured for A cannot celebrate after sign-out and B sign-in', async () => {
+    let resolve!: (output: { mime_type: string }) => void;
+    c.noteLocalSubmission('a-job');
+    c.celebrateFinished([job('a-job', 'succeeded')], () => new Promise(r => { resolve = r; }));
+    mockOwner = undefined;
+    mockUsers.forEach(fn => fn());
+    mockOwner = 'b';
+    mockUsers.forEach(fn => fn());
+    resolve({ mime_type: 'video/mp4' });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(events).toEqual([]);
+    expect(mockStore.get('veyrnox.celebrate.first.v1')).toBeUndefined();
+    expect(mockStore.get('veyrnox.celebrate.video.v1')).toBeUndefined();
 });
 test('rating waits for done, uses the existing delay otherwise, and never fires after abort', async () => {
     jest.useFakeTimers();

@@ -1,4 +1,6 @@
 'use client';
+import { getSession } from '../../../../lib/authClient.js';
+import { settleGenerationResult } from '../../../_lib/jobHistory.js';
 import { assertBeatWritable, beatReadOnly, BEAT_READ_ONLY_MESSAGE, capabilityGeneration, assertBeatGeneration } from '../../../_lib/music/beat/beatCompatibility.mjs';
 import { tOr } from '../../../../../lib/i18n/translate.mjs';
 import { beatFailure } from '../../../_lib/music/beat/beatErrors.mjs';
@@ -17,6 +19,8 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
   const [quote, setQuote] = useState(null), [busy, setBusy] = useState(''), [error, setError] = useState('');
   const [message, setMessage] = useState(''), [online, setOnline] = useState(true), [elapsed, setElapsed] = useState(0);
   const live = useRef(true), gate = useRef(singleFlight()), quoteRef = useRef(null), recordRef = useRef(null);
+  // Screen-local: navigate-away completion is excluded; Beat needs a separate poller after unmount. Resumed results stay silent.
+  const fresh = useRef(null);
   const current = useRef({ project, announce });
   useEffect(() => { current.current = { project, announce }; }, [project, announce]);
   const refreshPending = useCallback(() => setPending(readPending(beatId)), [beatId]);
@@ -54,6 +58,12 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
     const { results, messages } = await loadAiResults(r, status, project.current?.current, t);
     if (!live.current || recordRef.current?.key !== r.key) return;
     if (results.length && beatReadOnly(project.current?.current)) { say(t(BEAT_READ_ONLY_MESSAGE)); return; }
+    if (results.length && fresh.current?.key === r.key && !['failed', 'refunded'].includes(status.state)) {
+      for (const item of results) {
+        const candidate = status.candidates?.find(c => c.ordinal === item.ordinal + 1);
+        void settleGenerationResult({ job_id: candidate?.job_id || `beat:${r.requestId}:${item.ordinal}`, submitted_at: r.createdAt, name: r.prompt }, fresh.current.owner);
+      }
+    }
     if (results.length) {
       const sourceGone = r.placement.sourceTrackId && !project.current?.current.tracks.some(t => t.id === r.placement.sourceTrackId && t.regions.some(region => region.id === r.placement.regionId));
       const already = results.every(item => placedAlready(project.current?.current, r, item.ordinal));
@@ -85,6 +95,7 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
     return () => clearInterval(timer);
   }, [busy, record?.requestId]);
   function open(next, resumed = null) {
+    fresh.current = null;
     quoteRef.current = null; setQuote(null); recordRef.current = resumed; setRecord(resumed);
     setSelection(next); setError(''); setMessage(resumed && !resumed.requestId ? t('app.music.beat.status.s76') : '');
   }
@@ -99,7 +110,7 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
         const result = await gatewayFetch(path, { method: 'POST', body: JSON.stringify(body) });
         if (!live.current) return;
         const key = `beat-ai.${crypto.randomUUID()}`;
-        const next = { ...draft, quoteId: result.quote_id, key, placementIds: placementIds(key), state: 'pending', createdAt: Date.now(), credits: result.total_credits };
+        const next = { ...draft, quoteId: result.quote_id, key, placementIds: placementIds(key), state: 'pending', credits: result.total_credits };
         quoteRef.current = { result, record: next }; setQuote(result); say(t('app.music.beat.status.s112', { p0: result.total_credits }));
       } catch (e) { fail(e); } finally { if (live.current) setBusy(''); }
     });
@@ -113,12 +124,15 @@ export function useBeatAiRequest({ beatId, project, announce, enabled }) {
       setBusy(t('app.music.beat.shared.sending')); setElapsed(0); setError('');
       try {
         assertBeatWritable(current.current.project.current?.current);
+        if (!recordRef.current) r.createdAt = Date.now();
+        fresh.current = { key: r.key, owner: getSession()?.user?.id };
         keep(r); // If durable storage fails, there is no POST.
         const generation = capabilityGeneration();
         const beforeSend = () => { assertBeatGeneration(generation); assertBeatWritable(current.current.project.current?.current); };
         let result;
         try { result = await submitPending(r, (path, init) => gatewayFetch(path, { ...init, beforeSend })); }
         catch (e) { if (definitivelyRefused(e)) clearRequest(r); throw e; }
+        if (result.idempotent) fresh.current = null;
         const next = { ...r, requestId: result.generation_id || result.request_id, state: 'accepted', balanceAfter: result.balance_after };
         keep(next); notifyBalanceChanged(); say(t('app.music.beat.status.s106'));
       } catch (e) { fail(e, r.op); } finally { if (live.current) setBusy(''); }

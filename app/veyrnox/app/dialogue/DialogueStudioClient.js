@@ -296,7 +296,7 @@ export default function DialogueStudio() {
         }),
       });
       startJobs({ job_id: submitted.job_id, state: 'queued', credits: model.credits, model_id: model.id });
-      pushJobHistory({ job_id: submitted.job_id, model_id: model.id, credits: model.credits, prompt: validation.script.slice(0, 60), name: photo ? 'Two-person photo dialogue' : 'Dialogue audio' });
+      pushJobHistory({ idempotent: submitted.idempotent, job_id: submitted.job_id, model_id: model.id, credits: model.credits, prompt: validation.script.slice(0, 60), name: photo ? 'Two-person photo dialogue' : 'Dialogue audio' });
       if (submitted.balance_after != null) setBalance(submitted.balance_after);
       notifyBalanceChanged();
     } catch (next) {
@@ -416,7 +416,7 @@ export default function DialogueStudio() {
                 {job && <Chip tone={job.state === 'failed' ? 'danger' : 'accent'}>{jobStateUi(job).label}</Chip>}
               </div>
               <div className="min-h-44 bg-vx-base p-5">
-                {job?.asset_url ? <JobAssetPreview job={job} /> : (
+                {(job?.asset_url || job?.state === 'succeeded') ? <JobAssetPreview job={job} /> : (
                   <div className="flex min-h-32 items-center justify-center rounded-xl border border-dashed border-vx-border px-6 text-center text-sm text-vx-fg-muted">The finished {modeId === 'photo-dialogue' ? 'conversation video' : 'dialogue audio'} will be playable here and stored in Library.</div>
                 )}
               </div>
