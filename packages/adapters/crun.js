@@ -25,6 +25,7 @@ import { readBoundedBody } from '../../lib/boundedBody.js';
 import { CRUN_FLUX_2_PRO_ASPECTS, CRUN_FLUX_2_PRO_PROMPT_MAX, CRUN_KLING_AVATAR_PROMPT_MAX } from '../../lib/crunPrimaryCapabilities.js';
 import { templateFacePrompt } from '../../lib/templateFaceWording.mjs';
 import { SEEDANCE_R2V_MODEL, buildSeedanceReferenceRequest } from '../../lib/crunSeedanceReference.js';
+import { QWEN_ENDPOINT, QWEN_SCRIPT_LIMIT, QWEN_INPUT_RULES } from '../../lib/qwenSpeechInputs.js';
 import { CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL, buildKlingO1ReferenceRequest } from '../../lib/crunKlingO1Reference.js';
 
 export const CRUN_API_BASE = 'https://api.crun.ai';
@@ -79,20 +80,20 @@ const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
 const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'kling/o1-r2v-1080': '1080p' });
 const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
 // These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
-const redactsRefusal = model => isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL;
+const redactsRefusal = model => model === QWEN_ENDPOINT || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL;
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
 /** @returns {{model:string}|null} */
 export function parseEndpoint(endpoint) {
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || m[1] === SUNO_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (m[1] === QWEN_ENDPOINT || MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || m[1] === SUNO_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
-/** 'video', 'image' or 'audio' for a Crun endpoint this adapter owns, else null. */
+/** 'video', 'image', 'audio' (music) or 'speech' for a Crun endpoint this adapter owns, else null. */
 export function endpointKind(endpoint) {
     const target = parseEndpoint(endpoint);
-    return target ? (target.model === SUNO_MODEL ? 'audio' : IMAGE_MODELS[target.model] ? 'image' : 'video') : null;
+    return target ? (target.model === SUNO_MODEL ? 'audio' : target.model === QWEN_ENDPOINT ? 'speech' : IMAGE_MODELS[target.model] ? 'image' : 'video') : null;
 }
 
 /**
@@ -101,6 +102,7 @@ export function endpointKind(endpoint) {
  * @returns {{ok:true, body:object}|{ok:false, error:string}}
  */
 export function buildRequest(target, inputs) {
+    if (target.model === QWEN_ENDPOINT) return buildQwenRequest(inputs);
     if (target.model === SUNO_MODEL) return buildSunoRequest(inputs);
     if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
     if (isKlingO1Swap(target.model)) return buildKlingO1SwapRequest(inputs, KLING_O1_SWAP_TIERS[target.model]);
@@ -467,4 +469,17 @@ export async function fetchTask(taskId, cfg) {
     } finally {
         clearTimeout(timer);
     }
+}
+
+function buildQwenRequest(inputs) {
+    const refused = refuseOtherKeys(inputs, new Set(['prompt', 'tts_voice', 'tts_language', 'duration_seconds']));
+    if (refused) return refused;
+    const text = typeof inputs.prompt === 'string' ? inputs.prompt : '';
+    if (!text.trim()) return { ok: false, error: 'prompt_required' };
+    if (text.length > QWEN_SCRIPT_LIMIT) return { ok: false, error: 'inputs_invalid:prompt' };
+    const voice = inputs.tts_voice === undefined ? 'Cherry' : inputs.tts_voice;
+    const language = inputs.tts_language === undefined ? 'auto' : inputs.tts_language;
+    if (!QWEN_INPUT_RULES.tts_voice.values.includes(voice)) return { ok: false, error: 'inputs_invalid:tts_voice' };
+    if (!QWEN_INPUT_RULES.tts_language.values.includes(language)) return { ok: false, error: 'inputs_invalid:tts_language' };
+    return { ok: true, body: { model: QWEN_ENDPOINT, input: { text, voice, language_type: language === 'auto' ? 'Auto' : language } } };
 }

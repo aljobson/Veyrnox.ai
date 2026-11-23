@@ -8738,8 +8738,10 @@ export default {
   "editorSpeech.autoUnavailable": "Legendas no dispositivo não estão disponíveis neste aparelho ou para este idioma.",
   "editorSpeech.autoStale": "O clipe selecionado mudou. Crie as legendas novamente.",
   "editorSpeech.autoFull": "A faixa de legendas está cheia. Remova algum texto ou algumas legendas e tente novamente.",
-  "editorSpeech.autoFailed": "Não foi possível criar as legendas. Tente novamente ou use outro clipe baixado."
-  ,"music.create.style_required": "Adicione um estilo antes de revisar o preço.",
+  "editorSpeech.autoFailed": "Não foi possível criar as legendas. Tente novamente ou use outro clipe baixado.",
+    "speech.qwen.intro": "Escolha uma voz e um idioma e confira o custo.",
+    "speech.qwen.tooLong": "Mantenha o texto dentro de {limit} caracteres.",
+  "music.create.style_required": "Adicione um estilo antes de revisar o preço.",
   "music.create.draft_stale": "O rascunho ativo mudou. Ele foi atualizado sem alterações; revise o preço novamente.",
   "music.create.draft_refreshed": "O rascunho ativo foi atualizado sem alterações. Seu texto anterior ficou separado.",
   "music.create.copy_previous_text": "Copiar o texto anterior para este rascunho"

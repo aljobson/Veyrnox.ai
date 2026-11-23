@@ -8740,8 +8740,10 @@ export default {
   "editorSpeech.autoUnavailable": "Les sous-titres sur l’appareil ne sont pas disponibles sur cet appareil ou pour cette langue.",
   "editorSpeech.autoStale": "Le clip sélectionné a changé. Relancez les sous-titres.",
   "editorSpeech.autoFull": "La piste de sous-titres est pleine. Supprimez du texte ou des sous-titres, puis réessayez.",
-  "editorSpeech.autoFailed": "Les sous-titres n’ont pas pu être créés. Réessayez avec un autre clip téléchargé."
-  ,"music.create.style_required": "Ajoutez un style avant de vérifier le prix.",
+  "editorSpeech.autoFailed": "Les sous-titres n’ont pas pu être créés. Réessayez avec un autre clip téléchargé.",
+    "speech.qwen.intro": "Choisissez une voix et une langue, puis vérifiez le coût.",
+    "speech.qwen.tooLong": "Limitez le texte à {limit} caractères.",
+  "music.create.style_required": "Ajoutez un style avant de vérifier le prix.",
   "music.create.draft_stale": "Le brouillon actif a changé. Il a été actualisé sans modification ; vérifiez à nouveau le prix.",
   "music.create.draft_refreshed": "Le brouillon actif a été actualisé sans modification. Votre texte précédent est conservé séparément.",
   "music.create.copy_previous_text": "Copier le texte précédent dans ce brouillon"

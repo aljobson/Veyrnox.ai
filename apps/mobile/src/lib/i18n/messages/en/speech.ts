@@ -108,4 +108,6 @@ export default {
     "speech.audition.stopped.other": "{started} of {count} auditions started; voice {next} did not.",
     "speech.audition.uncertain.one": "{started} of {count} audition started; voice {next} may have too. Check Library.",
     "speech.audition.uncertain.other": "{started} of {count} auditions started; voice {next} may have too. Check Library.",
+    "speech.qwen.intro": "Choose a voice and language, then review the cost.",
+    "speech.qwen.tooLong": "Keep the script within {limit} characters.",
 } as const;
