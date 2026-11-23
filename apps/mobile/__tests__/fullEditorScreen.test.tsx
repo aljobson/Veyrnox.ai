@@ -386,12 +386,12 @@ test('keeps the Library item selected while a new project opens in the full nati
     expect(saved.video).toEqual([expect.objectContaining({ mediaId: 'j-33333333-3333-3333-3333-333333333333', len: 120 })]);
 });
 
-test('B1: flag off Export saves and says export is on veyrnox.ai, not in the app (QA F09)', async () => {
-    await render(); await press('Add text'); const before = puts().length; await press('Export');
-    await act(async () => jest.advanceTimersByTimeAsync(900));
+test('B1: flag off Export opens the private on-device MP4 flow without a server render (QA F09)', async () => {
+    await render(); await press('Export');
     expect(mockRouter.push).not.toHaveBeenCalled();
-    expect(puts().length).toBeGreaterThan(before);
-    expect(visible("Export isn't in the app yet. Your edit is saved: open it in the editor on veyrnox.ai to export. Clips added from this phone's Photos or Files need adding there again.")).toBe(true);
+    expect(visible('Export on this iPhone')).toBe(true);
+    expect(visible('Makes a private MP4 on this iPhone for supported projects up to 30 seconds. No upload or credits.')).toBe(true);
+    expect(visible('Use cloud export instead')).toBe(true);
     expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
 });
 

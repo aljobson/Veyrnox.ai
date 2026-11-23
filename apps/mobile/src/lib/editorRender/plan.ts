@@ -64,8 +64,8 @@ export function bindStaticPreviewPlan(preview: EditorPreviewPlan, width: number,
         if (!fullReveal(visual)) features.push('animation-reveal');
         if (!image) features.push(visual.media?.kind === 'video' ? 'video' : 'missing-source-image');
         features.push(...backdrop.unsupported);
-        const mask = visual.mask && visual.clip.mask && visual.clip.mask !== 'none'
-            ? { shape: visual.clip.mask as NonNullable<StaticPreviewLayer['mask']>['shape'], ...visual.mask }
+        const mask: StaticPreviewLayer['mask'] = visual.mask && visual.clip.mask && visual.clip.mask !== 'none'
+            ? { ...visual.mask, shape: visual.clip.mask as NonNullable<StaticPreviewLayer['mask']>['shape'] }
             : undefined;
         return {
             id,

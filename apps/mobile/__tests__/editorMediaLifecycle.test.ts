@@ -7,6 +7,7 @@ function nativeHarness() {
     const native: NativeEditorMediaModule = {
         capabilities: jest.fn(async () => ({ ok: true, available: true, platform: 'ios', protocolVersion: 1, operations: {} })), setOwner: jest.fn(async () => {}),
         setProjectGeneration: jest.fn(async () => {}), inspect: jest.fn(async () => ({})), sampleFrames: jest.fn(), decodePcm: jest.fn(),
+        mixAudio: jest.fn(async () => ({})),
         beginEncode: jest.fn(async () => ({ ok: true, sessionId: 'session-1' })), appendFrameBatch: jest.fn(async () => ({ ok: true })),
         finishEncode: jest.fn(async () => ({ ok: true, artifactId: 'mp4-1', uri: 'file:///cache/mp4-1.mp4', kind: 'mp4', size: 4096, width: 1280, height: 720,
             fps: 30, frames: 1, durationUs: 33333, videoCodec: 'avc1', audioCodec: 'mp4a', audioSampleRate: 48000, audioChannels: 2 })),

@@ -311,7 +311,7 @@ export function createBeatAudioFromEngine({ engine, assets, onAssetError, setTim
                 engine.playMidi(track, pitch, 100, at, engine.live).release(at + 0.25);
             }
         },
-        async close() { closed = true; this.stop(); this.releaseKeys(); takes.close(); await engine.close(); },
+        async close() { closed = true; this.stop(); this.releaseKeys(); takes.close(); assets?.close?.(); await engine.close(); },
     };
 }
 

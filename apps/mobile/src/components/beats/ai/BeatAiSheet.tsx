@@ -38,8 +38,7 @@ export function BeatAiSheet({ request, client, doc, op, onClose }: { request: Re
     }, [selected, client, request]);
     let reason = '';
     if (!view.record) {
-        if (op === 'stems') reason = t('beatAi.stemsWeb');
-        else if (op !== 'generate' && !selected) reason = t('beatAi.chooseSource');
+        if (op !== 'generate' && !selected) reason = t('beatAi.chooseSource');
         else if (op === 'generate') reason = trackCapacity(doc, phoneTranslator);
         else if (selected) reason = songError ? t('beatAi.error') : actionEligibility(op, doc, selected.region, selected.asset, song, {}, phoneTranslator);
         if (!reason && ['generate', 'extend', 'replace'].includes(op) && (!prompt.trim() || prompt.trim().length > 400)) reason = t('beatAi.promptError');

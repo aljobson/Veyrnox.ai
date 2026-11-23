@@ -52,6 +52,7 @@ test('QA-008: when purchases are not ready the paywall offers Try again and Clos
     expect(announce).toHaveBeenCalledWith('Purchases are not ready yet. Try again in a moment.');
     const retry = button('Try again'), close = button('Close');
     expect(root.container.queryAll(n => n.props.testID === 'purchase-state-unavailable')).toHaveLength(1);
+    expect(root.container.queryAll(n => n.props.contentInsetAdjustmentBehavior === 'automatic')).toHaveLength(1);
     expect(retry.length).toBeGreaterThan(0);
     expect(close.length).toBeGreaterThan(0);
     await act(async () => retry[0].props.onClick({ nativeEvent: {}, currentTarget: 1, target: 1 }));
@@ -114,6 +115,7 @@ test('an active Generation subscriber sees status and management instead of acqu
         offerings: { all: { generation: { availablePackages: [] } } } };
     await act(async () => root.render(<Paywall />));
     expect(mockNativePaywall).not.toHaveBeenCalled();
+    expect(root.container.queryAll(n => n.props.contentInsetAdjustmentBehavior === 'automatic')).toHaveLength(1);
     expect(root.container.queryAll(n => n.props.accessibilityRole === 'header' && n.children.join('').includes('AI Generation plan is active'))).toHaveLength(1);
     const manage = button('Manage web subscription');
     expect(manage).toHaveLength(1);

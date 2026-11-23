@@ -1,4 +1,4 @@
-// A stand-in for react-native-audio-api's AudioContext that supports exactly what the library documents
+// A stand-in for react-native-audio-api's AudioContext that supports exactly what the core library documents
 // (docs/other/web-audio-api-coverage.mdx, 1.0.1) and nothing more: no DynamicsCompressorNode, a WaveShaper curve
 // that can be set once. It records every node kind the engine asks for, so a test can prove coverage without a device.
 export type Mock = ReturnType<typeof createMockContext>;

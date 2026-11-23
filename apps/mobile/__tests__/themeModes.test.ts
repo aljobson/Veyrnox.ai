@@ -1,4 +1,4 @@
-import { DEFAULT_APPEARANCE, paletteForScheme, resolveScheme, THEME_PREFERENCES, toggledTheme } from '../src/theme';
+import { ACCENTS, DEFAULT_APPEARANCE, paletteForScheme, resolveScheme, THEME_PREFERENCES, toggledTheme, tokensForScheme } from '../src/theme';
 
 const light = {
     background: '#ffffff',
@@ -46,5 +46,23 @@ describe('light and dark', () => {
             expect(ratio(text, light.surface)).toBeGreaterThanOrEqual(4.5);
         }
         expect(ratio(light.accentInk, light.accent)).toBeGreaterThanOrEqual(4.5);
+    });
+    test.each(['light', 'dark'] as const)('every %s accent and OLED keep semantic status cues and stronger increased-contrast tokens', scheme => {
+        for (const accent of ACCENTS) {
+            const settings = { ...DEFAULT_APPEARANCE, accent, theme: scheme === 'dark' ? 'oled' as const : 'light' as const };
+            const standard = tokensForScheme(scheme, settings);
+            const stronger = tokensForScheme(scheme, settings, true);
+            expect(stronger.borderSubtle).not.toBe(standard.borderSubtle);
+            expect(ratio(stronger.borderSubtle, stronger.bg)).toBeGreaterThanOrEqual(3);
+            expect(ratio(stronger.textSecondary, stronger.bg)).toBeGreaterThanOrEqual(4.5);
+            expect(ratio(stronger.textTertiary, stronger.bg)).toBeGreaterThanOrEqual(4.5);
+            expect(ratio(stronger.accent, stronger.bg)).toBeGreaterThanOrEqual(3);
+            expect(ratio(stronger.onAccent, stronger.accent)).toBeGreaterThanOrEqual(4.5);
+            for (const tone of ['success', 'warning', 'notice', 'danger'] as const) {
+                expect(stronger[tone]).toMatch(/^#/);
+                expect(stronger[`${tone}Subtle`]).toMatch(/^rgba\(/);
+            }
+            if (scheme === 'dark') expect(stronger.bg).toBe('#000000');
+        }
     });
 });

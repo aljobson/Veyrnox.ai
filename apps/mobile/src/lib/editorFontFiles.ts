@@ -181,6 +181,14 @@ export function createEditorFontStore(load: typeof Font.loadAsync = Font.loadAsy
     return {
         setOwner, setProject, releaseProject, declare, install, hydrate, remove, removeProjectFonts,
         has: (projectId: string, family: string) => !!projects.get(projectId)?.families.has(family) && loaded.has(family),
+        exportSources(projectId: string, fonts: readonly CustomFont[]) {
+            const user = owner, record = projects.get(projectId); if (!user || !record) return {} as Record<string, string>;
+            return Object.fromEntries(fonts.flatMap(font => {
+                if (!record.families.has(font.family) || !loaded.has(font.family) || fontMetadataProblem(font)) return [];
+                const file = destination(user, projectId, font);
+                return file.exists && file.size === font.bytes ? [[font.family, file.uri] as const] : [];
+            }));
+        },
         failed: (projectId: string, family: string) => !!projects.get(projectId)?.failed.has(family),
         subscribe(listener: () => void) { listeners.add(listener); return () => listeners.delete(listener); },
     };

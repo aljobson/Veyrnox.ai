@@ -59,7 +59,7 @@ export function buildEffect(context, fx) {
       bands[0].connect(bands[1]).connect(bands[2]); [input, , output] = bands;
       apply = (p, now) => ['low', 'mid', 'high'].forEach((k, i) => write(bands[i].gain, p[k], now));
     } else if (fx.type === 'compressor') {
-      input = output = node('createDynamicsCompressor');
+      input = output = context.createDynamicsCompressor(fx.params); nodes.push(input);
       apply = (p, now) => { write(input.threshold, p.threshold, now); write(input.ratio, p.ratio, now); };
     } else if (fx.type === 'distortion') {
       input = output = node('createWaveShaper'); input.oversample = '2x'; let drive;
