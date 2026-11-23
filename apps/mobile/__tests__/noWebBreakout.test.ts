@@ -53,7 +53,7 @@ function calls(source: string) {
 }
 function files(dir: string, prefix = ''): string[] {
     return readdirSync(dir, { withFileTypes: true }).flatMap((entry: any) => entry.isDirectory()
-        ? files(join(dir, entry.name), prefix + entry.name + '/') : /\.[jt]sx?$/.test(entry.name) ? [prefix + entry.name] : []);
+        ? files(join(dir, entry.name), prefix + entry.name + '/') : /\.(?:[jt]sx?|[cm]js)$/.test(entry.name) ? [prefix + entry.name] : []);
 }
 type WebViewLoad = 'import' | 'import-equals' | 'require' | 'dynamic-import' | 'export-from';
 const genericWebViewInputs = new Set(['source', 'uri', 'url']);
@@ -61,7 +61,7 @@ function sourceFile(source: string) {
     return ts.createSourceFile('screen.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 }
 function webViewTarget(node: ts.Expression | undefined) {
-    return !!node && ts.isStringLiteralLike(node) && node.text === 'react-native-webview';
+    return !!node && ts.isStringLiteralLike(node) && /^react-native-webview(?:\/|$)/.test(node.text);
 }
 function webViewLoads(source: string): WebViewLoad[] {
     const file = sourceFile(source);
@@ -75,6 +75,19 @@ function webViewLoads(source: string): WebViewLoad[] {
             if (ts.isIdentifier(node.expression) && node.expression.text === 'require') found.push('require');
             else if (node.expression.kind === ts.SyntaxKind.ImportKeyword) found.push('dynamic-import');
         }
+        ts.forEachChild(node, visit);
+    }
+    visit(file);
+    return found;
+}
+function webViewSpecifiers(source: string) {
+    const file = sourceFile(source);
+    const found: string[] = [];
+    function add(node: ts.Expression | undefined) { if (node && ts.isStringLiteralLike(node) && webViewTarget(node)) found.push(node.text); }
+    function visit(node: ts.Node) {
+        if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) add(node.moduleSpecifier);
+        else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) add(node.moduleReference.expression);
+        else if (ts.isCallExpression(node)) add(node.arguments[0]);
         ts.forEachChild(node, visit);
     }
     visit(file);
@@ -180,6 +193,7 @@ test('only the exact native-boundary allowlist directly imports react-native-web
         // caller bypass this file-level review.
         const source = readFileSync(join(root, file), 'utf8');
         expect(webViewLoads(source)).toEqual(['import']);
+        expect(webViewSpecifiers(source)).toEqual(['react-native-webview']);
         expect(reExportedWebViewBindings(source)).toEqual([]);
         expect(genericWrapperInputs(source)).toEqual([]);
     }
@@ -195,8 +209,19 @@ test.each([
     ["import WebView = require('react-native-webview');", ['import-equals']],
     ['const webview = require(`react-native-webview`);', ['require']],
     ['const webview = import(`react-native-webview`);', ['dynamic-import']],
+    ["import { WebView } from 'react-native-webview/lib/WebView';", ['import']],
+    ["const webview = require('react-native-webview/lib/WebView');", ['require']],
+    ["const webview = import('react-native-webview/lib/WebView');", ['dynamic-import']],
+    ["export * from 'react-native-webview/lib/WebView';", ['export-from']],
+    ["import WebView = require('react-native-webview/lib/WebView');", ['import-equals']],
+    ['const webview = require(`react-native-webview/lib/WebView`);', ['require']],
+    ['const webview = import(`react-native-webview/lib/WebView`);', ['dynamic-import']],
 ] as const)('WebView scanner catches alternate module loading: %s', (source, expected) => {
     expect(webViewLoads(source)).toEqual(expected);
+});
+test('WebView source inventory includes CommonJS and ES module script extensions', () => {
+    expect(['boundary.js', 'boundary.jsx', 'boundary.ts', 'boundary.tsx', 'boundary.cjs', 'boundary.mjs']
+        .every(name => /\.(?:[jt]sx?|[cm]js)$/.test(name))).toBe(true);
 });
 test('an allowlisted file cannot hide a generic WebView re-export beside its direct import', () => {
     const source = "import { WebView } from 'react-native-webview'; export * from 'react-native-webview';";
