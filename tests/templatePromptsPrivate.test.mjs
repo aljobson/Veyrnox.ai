@@ -203,7 +203,7 @@ test('an audited run still passes through the route to normal admission with the
 
 const videoTemplates = ALL_TEMPLATES.filter(isVideoTemplate);
 const probes = videoTemplates.flatMap(t => [ownTemplatePrompt(t), t.prompt].filter(Boolean).map(text => text.replace(/\s+/g, ' ').slice(20, 70))).filter(s => s.length >= 40);
-const leaks = (value) => { const text = JSON.stringify(value).replace(/\\n|\\r|\s+/g, ' '); return probes.filter(p => text.includes(p.replace(/"/g, '\\"'))).length; };
+const leaks = (value) => { const text = JSON.stringify(value).replace(/\\n|\\r|\s+/g, ' '); return probes.filter(p => text.includes(p.replace(/\\/g, '\\\\').replace(/"/g, '\\"'))).length; };
 const withFlag = (value, fn) => { const old = process.env.APP_RUNTIME_FLAGS; const restore = () => { if (old === undefined) delete process.env.APP_RUNTIME_FLAGS; else process.env.APP_RUNTIME_FLAGS = old; }; if (value === undefined) delete process.env.APP_RUNTIME_FLAGS; else process.env.APP_RUNTIME_FLAGS = value; let out; try { out = fn(); } catch (e) { restore(); throw e; } if (out && typeof out.then === 'function') return out.finally(restore); restore(); return out; };
 // A bound template's photo-slot hints are the one deliberate exception: the words around each photo token, so a person knows which photo goes where.
 const withoutHints = (value) => (value?.fidelity ? { ...value, fidelity: { ...value.fidelity, photoHints: undefined, photoHintsPhone: undefined } } : value);

@@ -2,8 +2,7 @@ import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/cre
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
 import { fetchSwapScene, swapSceneModel, type SwapScene } from '../../../lib/swapScenes';
-import { fetchFreeAllowance } from '../../../lib/freeAllowance';
-import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
+import { fetchFreeAllowance } from '../../../lib/freeAllowance'; import { captureHandoffOwner } from '../../../lib/accountHandoffStore';
 import { createFormSheets as sheets } from '../../../components/create/createFormStyles';
 import { rememberFilmJob } from '../../../lib/filmGenerationReturns';
 import { rememberSubmitted } from '../../../lib/submittedRequests';
@@ -46,8 +45,7 @@ import { clearDraft, loadDraft, saveDraft } from '../../../lib/createDraftStore'
 import { SAVED_DRAFT_VERSION, modelChoices, type CreateDraft, audioLengthInvalid, freeLeftFor, hasAnyOption, imageCount, inputsForIndex, optionsFor, resolveAudio, resolveResolution, resolveTier, seedIsInvalid, settingsInputs, takesImageCount, voiceIsMissing } from '../../../lib/createOptions';
 import { loadVibe } from '../../../lib/creatorProfileStore';
 import { defaultAspect, readDestinationAspect } from '../../../lib/creatorTaste';
-import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady';
-import { fetchPrivatePrompt, placeholderTemplateId } from '../../../lib/privateTemplate'; import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
+import { TemplatePromptReady } from '../../../components/templates/TemplatePromptReady'; import { fetchPrivatePrompt, placeholderTemplateId } from '../../../lib/privateTemplate'; import { hostOf, nearestAspect, parseRatio, activeTemplate, normalizeTemplateCarry, templateOnOriginalModel } from '../../../lib/templateHandoff';
 import { buildCharacterPrompt, sanitizePicks, type Picks } from '../../../lib/oddlingsBuilder';
 import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
@@ -308,17 +306,7 @@ export default function CreateWithModel() {
     let request: SubmitRequest = { analyticsKind: kindOf(model.modality), modelId: model.id, swap: swapScene?.id, prompt: requestPrompt, templateId: prompt === contract?.sourcePrompt && !cameraOn && !characterOn && (contract?.class !== 'bound' || references.length === contract.slotCount) ? fidelityTemplateId(contract, requestPrompt, modelId, { ...settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), duration_seconds: !swapScene && isVideo ? duration : null }) : undefined, confirmedCredits: unit, durationSeconds: !swapScene && isVideo ? duration : null, references, sourceRights: hasReference ? true : undefined, textKey: text_?.key, extraInputs: settingsInputs(options, { seed: opts.seed, negative: opts.negative, aspect: opts.aspect, voice: opts.voice, audioSeconds: opts.audioSeconds, resolution, audio, tier }), preset: !swapScene && templatePreset ? template?.id ?? undefined : undefined };
     if (request.templateId && typeof request.extraInputs?.negative_prompt === 'string') request = { ...request, extraInputs: { ...request.extraInputs, negative_prompt: request.extraInputs.negative_prompt.trimEnd() } };
     const templatePromptHidden = !!template && isVideo && !swapScene && typeof presetPrompt === 'string' && prompt === presetPrompt && revealedPrompt !== presetPrompt; const signature = generationSignature(request, n);
-    // A private template (ADR-0351 amendment 23) holds a placeholder; Edit prompt reads the words for this signed-in person.
-    const revealTemplatePrompt = async () => {
-        const id = placeholderTemplateId(prompt);
-        if (id) {
-            setRevealing('loading');
-            const full = await fetchPrivatePrompt(api, id);
-            if (!full) { setRevealing('error'); return; }
-            setRecoveredPrompt(full.own); setPrompt(full.own); // the words keep their bytes, as an unedited recovered draft does
-        }
-        setRevealing('idle'); setRevealedPrompt(prompt);
-    };
+    const revealTemplatePrompt = async () => { const id = placeholderTemplateId(prompt); if (id) { setRevealing('loading'); const full = await fetchPrivatePrompt(api, id); if (!full) { setRevealing('error'); return; } setRecoveredPrompt(full.own); setPrompt(full.own); } setRevealing('idle'); setRevealedPrompt(prompt); }; // private template: Edit prompt reads the words (ADR-0351 am. 23)
     const matchingRetry = retry.current?.signature === signature ? retry.current : null;
     // Only an unchanged request retains its confirmed items and retry price.
     const quote = matchingRetry?.quote ?? pending.current.snapshot(request, n, matchingRetry?.unit ?? unit, freeLeft);
