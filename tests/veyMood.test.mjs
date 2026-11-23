@@ -57,3 +57,14 @@ test('job results and refused submits drive Vey from one shared place each', asy
     assert.match(await readFile(new URL(file, root), 'utf8'), /veyErrorSituation|useVeyErrorMood\(error\?\.code\)/, `${file} reports its errors to Vey`);
   }
 });
+
+test('failures, refusals and empty credits show Vey inline, not through the helper', async () => {
+  const moment = await readFile(new URL('app/veyrnox/_components/VeyMoment.jsx', root), 'utf8');
+  assert.match(moment, /veyMoodFor\(situation\)/);
+  assert.match(moment, /aria-hidden="true"/);
+  assert.match(moment, /useReducedMotion/);
+  assert.doesNotMatch(moment, /fixed|absolute|pointer-events-auto/);
+  for (const file of ['app/veyrnox/app/create/page.js', 'app/veyrnox/_components/TemplateGenerate.js', 'app/veyrnox/_components/StudioJobGrid.js']) {
+    assert.match(await readFile(new URL(file, root), 'utf8'), /<VeyMoment /, `${file} shows Vey beside its failure`);
+  }
+});

@@ -2,6 +2,8 @@
 import { JobAssetPreview } from './JobAssetPreview';
 import { jobStateUi } from '../_lib/studioStates';
 import { failedJobCopy } from '../_lib/createErrors';
+import VeyMoment from './VeyMoment';
+import { veyErrorSituation } from '../../../lib/veyMood.js';
 
 // The studio canvas when one click made 2–4 images: one tile per job.
 export function StudioJobGrid({ jobs, aspect }) {
@@ -25,7 +27,8 @@ export function StudioJobGrid({ jobs, aspect }) {
                     <span aria-hidden="true">{ui.glyph}</span> {ui.label} · {i + 1}/{jobs.length}
                   </div>
                   {job.state === 'failed' && (
-                    <div className="mt-2 text-xs text-vx-fg-body">
+                    <div className="mt-2 flex items-center justify-center gap-2 text-xs text-vx-fg-body">
+                      <VeyMoment size={36} situation={veyErrorSituation(job.error_code, { refunded: job.refunded }) || 'generation-failed'} />
                       {failedJobCopy(job)}
                     </div>
                   )}
