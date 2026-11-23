@@ -66,6 +66,13 @@ export type MusicEntitlements = {
         readonly title_max: number;
         readonly provider_contract?: MusicProviderContract;
     };
+    readonly features: {
+        readonly albums: boolean;
+        readonly inspiration: boolean;
+        readonly studioChat: boolean;
+        readonly dailyChallenge: boolean;
+        readonly persistentQueue: boolean;
+    };
     readonly policy: { readonly version: string; readonly pre_debit: boolean };
 };
 

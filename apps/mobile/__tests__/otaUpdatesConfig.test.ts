@@ -7,6 +7,7 @@ test('app points at this project\'s EAS Update endpoint', () => {
     expect(expo.updates.url).toBe(`https://u.expo.dev/${expo.extra.eas.projectId}`);
 });
 test('updates target the current native app release', () => {
+    // Intentional cohort assertion: native dependency/plugin changes must advance this recorded release together.
     expect(expo.version).toBe('1.0.17');
     expect(expo.runtimeVersion).toEqual({ policy: 'appVersion' });
 });

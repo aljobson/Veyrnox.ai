@@ -239,6 +239,7 @@
       ],
       "expo-apple-authentication",
       "expo-web-browser",
+      "expo-image",
       "expo-notifications",
       [
         "@sentry/react-native",

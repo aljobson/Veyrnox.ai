@@ -153,7 +153,7 @@ test('both routes wire the runtime flag and quotes preserve database prices', as
   const quote = await readFile(new URL('../app/api/v1/music/generation-quotes/route.js', import.meta.url), 'utf8');
   const entitlements = await readFile(new URL('../app/api/v1/music/entitlements/route.js', import.meta.url), 'utf8');
   for (const route of [quote, entitlements]) {
-    assert.match(route, /import \{ musicRuntimeFlag \} from '\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/lib\/musicRuntime\.js';/);
+    assert.match(route, /import \{ [^}]*musicRuntimeFlag[^}]* \} from '\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/lib\/musicRuntime\.js';/);
   }
   assert.match(quote, /parseMusicQuote\(decoded\.value, \{ longSongs: musicRuntimeFlag\('longSongs'\) \}\)/);
   assert.match(entitlements, /musicEntitlementProjection\(\{[^}]*longSongs: musicRuntimeFlag\('longSongs'\)/);

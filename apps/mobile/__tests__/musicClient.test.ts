@@ -26,6 +26,7 @@ const entitlements = {
     available: true, mode: 'simple', output_count: 2, concurrency_limit: 4, balance: 40, free_credits: 0, free_expires_at: null,
     models: [model],
     custom_drafts: { available: true, autosave: true, generation_supported: false, lyrics_max: 3000, styles_max: 500, title_max: 80 },
+    features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false },
     policy: { version: 'music-prompt-v1', pre_debit: true },
 };
 
@@ -35,10 +36,19 @@ describe('entitlements', () => {
         expect((await getEntitlements(api)).models[0].id).toBe('ace-step');
         expect(request).toHaveBeenCalledWith('/api/v1/music/entitlements');
     });
+    test('fails closed when an older or rolled-back server omits rollout capabilities', async () => {
+        const { features: _features, ...legacyEntitlements } = entitlements;
+        request.mockResolvedValue(legacyEntitlements);
+        expect((await getEntitlements(api)).features).toEqual({
+            albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
+        });
+    });
     const without = (o: Record<string, unknown>, k: string) => { const { [k]: _drop, ...rest } = o; return rest; };
     test.each([
         null, {}, { ...entitlements, models: 'x' }, { ...entitlements, balance: '40' }, { ...entitlements, custom_drafts: null },
-        without(entitlements, 'policy'), { ...entitlements, policy: { version: 'v' } },
+        without(entitlements, 'policy'),
+        { ...entitlements, features: { ...entitlements.features, albums: 'yes' } },
+        { ...entitlements, policy: { version: 'v' } },
         { ...entitlements, custom_drafts: without(entitlements.custom_drafts, 'lyrics_max') },
         { ...entitlements, models: [without(model, 'controls')] },
         { ...entitlements, models: [without(model, 'generation_modes')] },
