@@ -41,6 +41,7 @@ test('positive generation capabilities use 30,000 or an explicit verified provid
     ['crun:kling/v3-std', 2500],
     ['crun:kling/v2-6', 2500],
     ['crun:kling/o1-r2v-1080', 2500],
+    ['crun:kling/o1-r2v-ref', 2500], // Crun's documented limit (0586).
     ['crun:kling/o1-r2v', 2500], // Crun's documented limit for template swaps (ADR-0351 amendment 21).
     ['crun:suno/music-generate', 500], // Our Suno simple-brief cap (Suno allows 3000; ADR-0376).
     ['crun:flux-2-pro', 5000], // Crun's documented limit (0581).

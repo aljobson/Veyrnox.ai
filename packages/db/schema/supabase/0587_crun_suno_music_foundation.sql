@@ -215,7 +215,7 @@ UPDATE public.music_prompt_specs SET provider_contract='fal-ace-v1'
 DO $$ BEGIN
  IF EXISTS(SELECT 1 FROM public.music_prompt_specs WHERE mode IN ('simple','custom')
   AND model_id IN ('ace-step','ace-step-1.5','ace-step-loop') AND provider_contract IS NULL)
- THEN RAISE EXCEPTION '0584 prompt contract backfill left target rows unclassified'; END IF; END $$;
+ THEN RAISE EXCEPTION '0587 prompt contract backfill left target rows unclassified'; END IF; END $$;
 UPDATE public.music_generation_quotes q SET provider_contract='fal-ace-v1'
  FROM public.music_prompt_specs p WHERE p.id=q.prompt_spec_id AND p.mode IN ('simple','custom')
  AND p.model_id IN ('ace-step','ace-step-1.5','ace-step-loop') AND q.provider_contract IS NULL
@@ -223,7 +223,7 @@ UPDATE public.music_generation_quotes q SET provider_contract='fal-ace-v1'
 DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.music_generation_quotes q JOIN public.music_prompt_specs p ON p.id=q.prompt_spec_id
  WHERE p.mode IN ('simple','custom') AND p.model_id IN ('ace-step','ace-step-1.5','ace-step-loop')
  AND q.provider_endpoint IN ('fal-ai/ace-step','fal-ai/ace-step-1.5') AND q.provider_contract IS NULL)
- THEN RAISE EXCEPTION '0584 quote contract backfill left target rows unclassified'; END IF; END $$;
+ THEN RAISE EXCEPTION '0587 quote contract backfill left target rows unclassified'; END IF; END $$;
 UPDATE public.music_lyric_drafts SET provider_contract='fal-ace-v1' WHERE provider_contract IS NULL;
 ALTER TABLE public.music_lyric_drafts ALTER COLUMN provider_contract SET DEFAULT 'fal-ace-v1';
 ALTER TABLE public.music_lyric_drafts ALTER COLUMN provider_contract SET NOT NULL;
@@ -275,7 +275,7 @@ BEGIN
   WHERE conrelid='public.music_prompt_specs'::regclass AND conname='music_prompt_specs_mode_shape_check';
  IF v_def IS NOT NULL AND v_def NOT LIKE '%provider_contract%crun-suno-v1%' THEN
   IF position('(mode = ''simple''::text) AND instrumental' IN v_def)=0 THEN
-   RAISE EXCEPTION '0584 could not widen music_prompt_specs_mode_shape_check';
+   RAISE EXCEPTION '0587 could not widen music_prompt_specs_mode_shape_check';
   END IF;
   v_def:=replace(v_def,'(mode = ''simple''::text) AND instrumental',
    '(mode = ''simple''::text) AND (instrumental OR provider_contract = ''crun-suno-v1''::text)');
@@ -334,7 +334,7 @@ ON CONFLICT(model_id,supplier,endpoint) DO NOTHING;
 DO $$ DECLARE n BIGINT; BEGIN
  SELECT count(*) INTO n FROM public.model_routes WHERE model_id IN ('ace-step','ace-step-1.5')
   AND supplier='crun' AND endpoint='crun:suno/music-generate';
- IF n<>2 THEN RAISE EXCEPTION '0584 expected exactly two Crun Suno routes, got %',n; END IF;
+ IF n<>2 THEN RAISE EXCEPTION '0587 expected exactly two Crun Suno routes, got %',n; END IF;
 END $$;
 
 CREATE OR REPLACE FUNCTION private.music_active_provider_contract(p_model_id TEXT)

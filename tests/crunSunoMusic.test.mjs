@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import { capabilityFor } from '../lib/modelCapabilities.js';
 import { FALLBACK_CONTRACT_ENDPOINTS } from '../lib/fallbackModelCapabilities.js';
 
-const sql = readFileSync(new URL('../packages/db/schema/supabase/0584_crun_suno_music_foundation.sql', import.meta.url), 'utf8');
-const consumers = readFileSync(new URL('../packages/db/schema/supabase/0585_crun_suno_music_consumers.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../packages/db/schema/supabase/0587_crun_suno_music_foundation.sql', import.meta.url), 'utf8');
+const consumers = readFileSync(new URL('../packages/db/schema/supabase/0588_crun_suno_music_consumers.sql', import.meta.url), 'utf8');
 
 test('Suno capability exists in the server registry and fallback contract copy', () => {
   const cap = capabilityFor('crun:suno/music-generate');
@@ -17,7 +17,7 @@ test('Suno capability exists in the server registry and fallback contract copy',
   assert.equal(FALLBACK_CONTRACT_ENDPOINTS['crun-suno-v1'], 'crun:suno/music-generate');
 });
 
-test('0584 adds a forced-RLS durable Crun outbox and fenced recovery RPCs', () => {
+test('0587 adds a forced-RLS durable Crun outbox and fenced recovery RPCs', () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.crun_dispatch/);
   assert.match(sql, /'READY','STARTED','ACCEPTED','REJECTED','UNKNOWN','DEFERRED','CLOSED'/);
   assert.match(sql, /ALTER TABLE public\.crun_dispatch FORCE ROW LEVEL SECURITY/);
@@ -83,7 +83,7 @@ test('duration pricing is contract-aware and Crun remains flat', () => {
   assert.match(sql, /p_credits\*0\.033 >= 2\*p_cost_per_request/);
 });
 
-test('0585 adds fenced account control and account-wide TaskInfo pacing', () => {
+test('0588 adds fenced account control and account-wide TaskInfo pacing', () => {
   assert.match(consumers, /pause_crun_account_admission\(p_reason TEXT,p_observed_at TIMESTAMPTZ\)/);
   assert.match(consumers, /resume_crun_account_admission\(p_expected_fence BIGINT\)/);
   assert.match(consumers, /p_observed_at<=COALESCE\(v\.admission_resumed_at/);
@@ -93,7 +93,7 @@ test('0585 adds fenced account control and account-wide TaskInfo pacing', () => 
   assert.match(consumers, /FORCE ROW LEVEL SECURITY/);
 });
 
-test('0585 records authoritative status and exposes age-only health', () => {
+test('0588 records authoritative status and exposes age-only health', () => {
   assert.match(consumers, /ADD COLUMN IF NOT EXISTS last_authoritative_at TIMESTAMPTZ/);
   assert.match(consumers, /record_crun_task_status\(p_job_id UUID,p_status TEXT,p_observed_at TIMESTAMPTZ\)/);
   assert.match(consumers, /crun_dispatch_health\(p_accepted_unobservable_minutes INTEGER DEFAULT 5\)/);
@@ -102,7 +102,7 @@ test('0585 records authoritative status and exposes age-only health', () => {
     consumers.indexOf('CREATE OR REPLACE FUNCTION public.claim_crun_dispatch')), /payload|prompt|lyrics/);
 });
 
-test('0585 extends every current shared dispatch consumer without changing fal eligibility', () => {
+test('0588 extends every current shared dispatch consumer without changing fal eligibility', () => {
   assert.match(consumers, /'attempt_count',d\.attempt_count,'retry_at',v_retry_at/);
   assert.match(consumers, /NOT \(v_result \? 'provider_contract'\)/);
   assert.match(consumers, /v_crun\.state NOT IN \('READY','DEFERRED'\)/);

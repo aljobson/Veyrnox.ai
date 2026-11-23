@@ -1,12 +1,12 @@
 # Crun Suno music: activate, roll back, operate (ADR-0376)
 
-Songs are built to run on Crun's Suno (`suno/music-generate`) with fal as standby, and ship DARK: migrations 0584-0586 add schema and two standby, unverified Crun routes beneath `ace-step` and `ace-step-1.5`. Nothing flips until the **OWNER** runs the transaction in section 3. Rehearse everything on staging first. SQL here is reviewed text to paste into a reviewed session, never a committed migration.
+Songs are built to run on Crun's Suno (`suno/music-generate`) with fal as standby, and ship DARK: migrations 0587-0589 add schema and two standby, unverified Crun routes beneath `ace-step` and `ace-step-1.5`. Nothing flips until the **OWNER** runs the transaction in section 3. Rehearse everything on staging first. SQL here is reviewed text to paste into a reviewed session, never a committed migration.
 
 Project ids: production `xdxdzmsztyzbnzeforxx`, staging `nszlbcmcysftwyudthjz` (check `list_projects`: "Veyrnox PRODUCTION (live)" is not the live project).
 
 ## 1. Preconditions (all must be true)
 
-1. Migrations 0584, 0585 and 0586 are applied by the `apply-migrations` workflow (never by hand on production), and the Worker with the matching code is deployed. Deploy order: migrations first, then the Worker; a Worker without them fails closed.
+1. Migrations 0587, 0588 and 0589 are applied by the `apply-migrations` workflow (never by hand on production), and the Worker with the matching code is deployed. Deploy order: migrations first, then the Worker; a Worker without them fails closed.
 2. **Crun's written answer** (to the owner's email) covers: music generation through Suno on credits (Terms 6.2 names only images and videos), reselling the generated audio to our customers in a paid product, who holds the rights and any upstream Suno licence, idempotency or lookup, failed-task credit treatment, CreateTask limits beyond 20 per 10 s, and audio URL and credit expiry. Keep the email with the activation record.
 3. Privacy policy and sub-processor list updated for Crun (US hosted, prompts and lyrics sent, logs keep them 2 months, generated files 14 days).
 4. The paid staging probe passed (section 2) and its evidence is saved.
