@@ -92,6 +92,8 @@ export default function AppLayout() {
                     <Stack.Screen name="music/create" options={{ title: t('music.create.title') }} />
                     <Stack.Screen name="music/track/[slug]" options={{ title: t('musicPublic.track') }} />
                     <Stack.Screen name="music/creator/[handle]" options={{ title: t('musicPublic.creator') }} />
+                    <Stack.Screen name="music/album/[slug]" options={{ title: t('musicAlbums.publicTitle') }} />
+                    <Stack.Screen name="music/albums/[id]" options={{ title: t('musicAlbums.title') }} />
                     <Stack.Screen name="music/playlists/[id]" options={{ title: t('musicPlaylists.title') }} />
                     <Stack.Screen name="music/[id]" options={{ title: t('music.title') }} />
                     <Stack.Screen name="beats/[id]" options={{ title: t('beat.title') }} />

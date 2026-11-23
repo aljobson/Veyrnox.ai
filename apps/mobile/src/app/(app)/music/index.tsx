@@ -8,7 +8,7 @@ import { EmptyState } from '../../../components/EmptyState';
 import { VeyLoader } from '../../../components/VeyLoader';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicPlayer } from '../../../components/music/MusicPlayer';
-import { listSongs, getLibraryTab } from '../../../lib/music/client';
+import { listSongs, getEntitlements, getLibraryTab } from '../../../lib/music/client';
 import { probeMusic, type MusicProbe } from '../../../lib/music/probe';
 import { hookPlayback } from '../../../lib/music/player';
 import type { MusicHook, MusicSongRow } from '../../../lib/music/types';
@@ -28,6 +28,7 @@ export default function MusicLibrary() {
     const [searchOn, setSearchOn] = useState(false); const [query, setQuery] = useState('');
     const [applied, setApplied] = useState(''); const [searchRejected, setSearchRejected] = useState(false); const [loading, setLoading] = useState(false);
     const [droppedHooks, setDroppedHooks] = useState(0);
+    const [albumsOn, setAlbumsOn] = useState(false);
     const [hook, setHook] = useState<MusicHook | null>(null);
     const epoch = useRef(0);
     const load = useCallback(async () => {
@@ -38,15 +39,17 @@ export default function MusicLibrary() {
             const songs = rejected ? await probeMusic(() => listSongs(api, { limit: 50 })) : result;
             return { songs, rejected };
         };
-        const [{ songs, rejected }, history, hookResult] = await Promise.all([
+        const [{ songs, rejected }, history, hookResult, entitlementResult] = await Promise.all([
             readSongs(),
             probeMusic(async () => { const v = await getLibraryTab(api, 'history'); return v.tab === 'history' ? v.songs : []; }),
             probeMusic(async () => { const v = await getLibraryTab(api, 'hooks'); return v.tab === 'hooks' ? v : { hooks: [], dropped: 0 }; }),
+            probeMusic(() => getEntitlements(api)),
         ]);
         if (ticket !== epoch.current) return;
         const hooks: Result = hookResult.state === 'on' ? { state: 'on', data: hookResult.data.hooks } : hookResult;
         if (hookResult.state === 'on') setDroppedHooks(hookResult.data.dropped);
         else if (hookResult.state === 'off') setDroppedHooks(0);
+        setAlbumsOn(entitlementResult.state === 'on' && entitlementResult.data.features.albums);
         setResults({ songs, history, hooks }); setSearchRejected(rejected);
         if (rejected || songs.state === 'off') setSearchOn(false);
         else if (songs.state === 'on') setSearchOn(true);
@@ -72,6 +75,7 @@ export default function MusicLibrary() {
             <Button label={t('music.create.title')} onPress={() => router.push('/music/create' as never)} />
             <ListRow icon="pianoKeys" title={t('beat.title')} accessibilityLabel={t('beat.title')} onPress={() => router.push('/beats' as never)} />
             <ListRow icon="playlist" title={t('musicPlaylists.title')} accessibilityLabel={t('musicPlaylists.title')} onPress={() => router.push('/music/playlists' as never)} />
+            {albumsOn ? <ListRow icon="vinylRecord" title={t('musicAlbums.title')} accessibilityLabel={t('musicAlbums.title')} onPress={() => router.push('/music/albums' as never)} /> : null}
             <ListRow icon="usersThree" title={t('musicPublic.explore')} accessibilityLabel={t('musicPublic.explore')} onPress={() => router.push('/music/explore' as never)} />
             <ListRow icon="compass" title={t('musicDiscover.title')} accessibilityLabel={t('musicDiscover.title')} onPress={() => router.push('/music/discover' as never)} />
         </> : null}

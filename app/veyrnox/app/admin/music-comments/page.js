@@ -167,6 +167,29 @@ function Queue() {
               )}
             </>
           )}
+          {Array.isArray(data.album_reports) && (
+            <>
+              <h2 className="mt-8 text-xl font-bold">Reported albums</h2>
+              {data.album_reports.length === 0 && (
+                <p role="status">No open album reports.</p>
+              )}
+              {data.album_reports.map((r) => (
+                <article key={r.id} className="mt-5 rounded-xl border border-vx-border p-4">
+                  <Link href={`/music/albums/${r.slug}`} className="font-bold underline">
+                    {r.title}
+                  </Link>
+                  <p className="mt-2 text-sm">
+                    {r.category} · {new Date(r.created_at).toLocaleString()} ·{' '}
+                    {r.open_reports} open {r.open_reports === 1 ? 'report' : 'reports'} on this album
+                  </p>
+                  <p className="mt-3 whitespace-pre-wrap wrap-break-word">Report: {r.details}</p>
+                  <p className="mt-2">Album status: {r.album_status}</p>
+                  <Decision action="resolve_album_report" id={r.id} onDone={load} />
+                </article>
+              ))}
+              {data.album_reports.length === 50 && <p>Showing the oldest 50 album reports.</p>}
+            </>
+          )}
         </>
       )}
     </div>
@@ -182,6 +205,7 @@ function Decision({ action, id, remove = false, onDone }) {
       payload = { action, id, reason: f.get('reason').trim() };
     if (action === 'review_comment')
       payload.decision = remove ? 'removed' : f.get('decision');
+    if (action === 'resolve_album_report') payload.decision = f.get('decision');
     const body = JSON.stringify(payload);
     if (attempt.current?.body !== body)
       attempt.current = { body, key: crypto.randomUUID() };
@@ -215,6 +239,16 @@ function Decision({ action, id, remove = false, onDone }) {
           </select>
         </label>
       )}
+      {action === 'resolve_album_report' && (
+        <label className="block">
+          Album action
+          <select name="decision" required className="ml-2 rounded-lg bg-vx-panel p-2">
+            <option value="">Choose…</option>
+            <option value="resolve">Resolve report only</option>
+            <option value="takedown">Take down album</option>
+          </select>
+        </label>
+      )}
       <label className="block">
         Internal audit reason
         <textarea
@@ -233,8 +267,9 @@ function Decision({ action, id, remove = false, onDone }) {
           ? 'Saving…'
           : remove
             ? 'Remove comment'
-            : action === 'resolve_report' || action === 'resolve_song_report'
+            : ['resolve_report', 'resolve_song_report'].includes(action)
               ? 'Resolve report'
+              : action === 'resolve_album_report' ? 'Save album decision'
               : 'Save comment decision'}
       </Button>
     </form>

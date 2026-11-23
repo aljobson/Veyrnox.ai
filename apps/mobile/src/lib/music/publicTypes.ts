@@ -17,7 +17,9 @@ export type Comments = { allow_comments: boolean; comments: ApprovedComment[]; n
 export type TrackPage = { track: PublicTrack; lyrics?: string; plays?: { count: number }; reports?: { open: true };
     social?: Counts; comments?: Comments; rails?: { by_creator: RailTrack[]; similar: RailTrack[] } };
 export type ProfilePage = { profile: Creator; tracks: { slug: string; title: string; published_at: string;
-    commercial_status: CommercialStatus; creator_id: string }[]; social?: Counts };
+    commercial_status: CommercialStatus; creator_id: string }[]; albums?: PublicAlbum[]; social?: Counts };
+export type PublicAlbum = { id: string; slug: string; title: string; album_type: 'album' | 'ep' | 'single'; description: string; has_artwork: boolean; artwork_url?: string; published_at: string;
+    creator_id: string; handle: string; display_name?: string; tracks: { publication_id: string; slug: string; title: string; position: number }[] };
 export type BestOf = { playlists: { genre: typeof GENRES[number]; tracks: RailTrack[] }[] };
 export type Blocked = { blocked: { creator_id: string; display_name: string } };
 export type BlockRow = { actor_id: string; display_name: string; created_at: string };

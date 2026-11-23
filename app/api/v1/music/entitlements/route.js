@@ -2,7 +2,7 @@ import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { MUSIC_MOBILE_ROLLOUT_FLAGS, musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
-    musicEntitlementProjection, musicGenerationEnabled, musicSchemaEnabled, validMusicAuthId,
+    musicAlbumsEnabled, musicEntitlementProjection, musicGenerationEnabled, musicSchemaEnabled, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
 const reply = (body, status = 200) => Response.json(body, {
@@ -35,7 +35,8 @@ export async function GET(request) {
                     admission_open: false, endpoint_open: false, suno_models: {},
                 },
             }),
-            features: Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name, musicRuntimeFlag(name)])),
+            features: Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name,
+                name === 'albums' ? musicAlbumsEnabled() : musicRuntimeFlag(name)])),
         });
     } catch (error) {
         console.error('[music/entitlements] read failed:', error?.message);

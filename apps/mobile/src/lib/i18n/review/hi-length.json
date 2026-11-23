@@ -2706,6 +2706,30 @@
     "ratio": 1.68
   },
   {
+    "id": "musicAlbums.addTrack",
+    "english": "Add",
+    "translation": "जोड़ें",
+    "ratio": 2
+  },
+  {
+    "id": "musicAlbums.empty",
+    "english": "No albums yet",
+    "translation": "अभी तक कोई एल्बम नहीं",
+    "ratio": 1.62
+  },
+  {
+    "id": "musicAlbums.report",
+    "english": "Report album",
+    "translation": "एल्बम की रिपोर्ट करें",
+    "ratio": 1.75
+  },
+  {
+    "id": "musicAlbums.unpublish",
+    "english": "Unpublish album",
+    "translation": "एल्बम का प्रकाशन रद्द करें",
+    "ratio": 1.73
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "साइन इन करें",

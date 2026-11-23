@@ -1,5 +1,6 @@
 import { isRecord } from '../responseShapes';
 import { GENRES, REACTIONS, type BestOf, type Comments, type Counts, type ProfilePage, type RailTrack, type Social, type TrackPage } from './publicTypes';
+import { isPublicAlbum } from './validateAlbums';
 export const publicUuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 export const publicSlug = (v: unknown): v is string => typeof v === 'string' && /^[a-f0-9]{24}$/.test(v);
 export const publicHandle = (v: unknown): v is string => typeof v === 'string' && /^[a-z][a-z0-9_]{2,29}$/.test(v);
@@ -53,6 +54,7 @@ export function isProfilePage(v: unknown): v is ProfilePage {
     return isRecord(v) && !('blocked' in v) && isCreator(v.profile) && Array.isArray(v.tracks)
         && v.tracks.every(r => isRecord(r) && publicSlug(r.slug) && publicText(r.title, 120) && publicDate(r.published_at)
             && commercial(r.commercial_status) && publicUuid(r.creator_id) && isRecord(v.profile) && r.creator_id === v.profile.creator_id)
+        && (!('albums' in v) || Array.isArray(v.albums) && v.albums.length <= 50 && v.albums.every(isPublicAlbum))
         && (!('social' in v) || isCounts(v.social));
 }
 export function isBestOf(v: unknown): v is BestOf {

@@ -5166,6 +5166,30 @@
     "ratio": 1.72
   },
   {
+    "id": "musicAlbums.addTrack",
+    "english": "Add",
+    "translation": "Hinzufügen",
+    "ratio": 3.33
+  },
+  {
+    "id": "musicAlbums.publish",
+    "english": "Publish album",
+    "translation": "Album veröffentlichen",
+    "ratio": 1.62
+  },
+  {
+    "id": "musicAlbums.status.unpublished",
+    "english": "Unpublished",
+    "translation": "Nicht veröffentlicht",
+    "ratio": 1.82
+  },
+  {
+    "id": "musicAlbums.unpublish",
+    "english": "Unpublish album",
+    "translation": "Veröffentlichung des Albums aufheben",
+    "ratio": 2.4
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",
