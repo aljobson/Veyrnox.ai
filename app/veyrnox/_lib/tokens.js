@@ -37,6 +37,8 @@ export const MODELS = [
   { id: 'seedream-4',         name: 'Seedream 4',          credits: 2,                                          kind: 'image', durations: [5] },
   { id: 'topaz-upscale',      name: 'Topaz Upscale 2x',    credits: 5,                                          kind: 'image', durations: [5] },
   { id: 'bria-bg-remove',     name: 'Background Removal',  credits: 3,                                          kind: 'image', durations: [5] },
+  { id: 'background-remove-fast', name: 'Background Removal Fast', credits: 1, tag: 'NEW',                      kind: 'image', durations: [5] },
+  { id: 'upscale-2x-clean',   name: 'Upscale 2x Clean',    credits: 2,   tag: 'NEW',                            kind: 'image', durations: [5] },
   { id: 'bria-expand',        name: 'Bria Expand',         credits: 3,                                          kind: 'image', durations: [5] },
   { id: 'ace-step',           name: 'ACE Step',            credits: 2,                                          kind: 'audio', durations: [5], durationInput: { type: 'int', min: 5, max: 60, default: 60 } },
   { id: 'ace-step-1.5',       name: 'ACE-Step 1.5',        credits: 3,                                          kind: 'audio', durations: [5], presentation: { fixedDurationLabel: '60s' } },

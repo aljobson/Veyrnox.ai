@@ -120,5 +120,5 @@ test('the migration moves only the two offers, through the guarded reorder, with
 test('the DB acceptance script expects both new routes', () => {
   const failover = readFileSync('scripts/test-supplier-route-failover.mjs', 'utf8');
   assert.match(failover, /'crun:bytedance\/seedream-4', 'crun:flux-2-pro', 'crun:google\/nano-banana'/);
-  assert.match(failover, /'crun:google\/veo3-1-lite-t2v', 'crun:google\/veo3-1-t2v', 'crun:kling\/avatar', 'crun:kling\/o1-r2v'/);
+  assert.match(failover, /'crun:google\/veo3-1-lite-t2v', 'crun:google\/veo3-1-t2v', 'crun:image-background-remove', 'crun:image-upscale', 'crun:kling\/avatar', 'crun:kling\/o1-r2v'/);
 });
