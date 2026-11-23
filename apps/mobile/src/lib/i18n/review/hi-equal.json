@@ -136,5 +136,6 @@
   "musicExport.format.mp3": "Standard audio format name; machine translation, native review pending.",
   "musicExport.format.wav": "Standard audio format name; machine translation, native review pending.",
   "editorMotion.positionValue": "Established label or coordinate notation retained from the translated catalog; machine translation review pending.",
-  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose."
+  "editorNativeMotion.progress": "Only translated stage and numeric placeholders with locale-independent punctuation; no English prose.",
+  "musicAlbums.type.ep": "EP is the standard music-release abbreviation in Hindi and English."
 }

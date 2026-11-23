@@ -17,6 +17,7 @@ const LINKS = [
   { href: '/app/music/library', label: 'Music Library', key: 'library' },
   { href: '/app/music/workspaces', label: 'Workspaces', key: 'workspaces' },
   { href: '/app/music/playlists', label: 'Playlists', key: 'playlists' },
+  { href: '/app/music/albums', label: 'Albums', key: 'albums' },
   { href: '/app/music/sounds', label: 'Sounds', key: 'sounds', independent: true },
   { href: '/app/music/beats', label: 'Beats', key: 'beats', beats: true },
   { href: '/app/music/labs', label: 'Labs', key: 'labs', labs: true },
@@ -37,7 +38,7 @@ const subscribePreview = (onChange) => {
   };
 };
 
-export function MusicPreviewShell({ children, initialEnabled = false, serverMode = false, libraryMode = false, playlistsMode = false, studioMode = false, beatsMode = false, labsMode = false }) {
+export function MusicPreviewShell({ children, initialEnabled = false, serverMode = false, libraryMode = false, playlistsMode = false, albumsMode = false, studioMode = false, beatsMode = false, labsMode = false }) {
   const pathname = usePathname().replace(/^\/veyrnox/, '');
   const { t } = useI18n();
   const shell = (key) => t(`app.music.beat.shell.${key}`);
@@ -95,6 +96,7 @@ export function MusicPreviewShell({ children, initialEnabled = false, serverMode
                   if (link.studio) return studioMode;
                   if (link.discover) return true;
                   if (link.href.endsWith('/playlists')) return playlistsMode;
+                  if (link.href.endsWith('/albums')) return albumsMode;
                   return !serverMode ? !link.href.endsWith('/workspaces') : libraryMode || link.href.endsWith('/create');
                 }).map((entry) => {
                   const link = entry.studio && beatsMode ? { ...entry, href: '/app/music/beats', label: 'Beats', key: 'beats', beats: true } : entry;

@@ -4944,6 +4944,30 @@
     "ratio": 1.67
   },
   {
+    "id": "musicAlbums.addTrack",
+    "english": "Add",
+    "translation": "Añadir",
+    "ratio": 2
+  },
+  {
+    "id": "musicAlbums.convert",
+    "english": "Convert a playlist",
+    "translation": "Convertir una lista de reproducción",
+    "ratio": 1.94
+  },
+  {
+    "id": "musicAlbums.down",
+    "english": "Move down",
+    "translation": "Mover hacia abajo",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicAlbums.up",
+    "english": "Move up",
+    "translation": "Mover hacia arriba",
+    "ratio": 2.57
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

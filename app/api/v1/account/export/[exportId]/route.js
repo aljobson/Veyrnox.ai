@@ -1,5 +1,6 @@
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { privacyExportEnabled, UUID_RE, exportJson as json, exportCursor, exportLedgerRow, exportPageLimit } from '../../../../../../lib/privacyExport.js';
+import { missingAlbumExportReader } from '../../../../../../lib/privacyExportCompatibility.js';
 import { withClientModelIds } from '../../../../../../lib/privateModelIds.js';
 
 export async function GET(req, context) {
@@ -18,10 +19,17 @@ export async function GET(req, context) {
     if (limited) return limited;
     let result;
     try {
-        result = await rpc('read_privacy_export_page', {
-            p_auth_id: authId, p_aal: req.headers.get('x-veyrnox-auth-aal') || 'aal1', p_export_id: exportId, ...args,
-        }, cfg);
-    } catch { /* never return or log database text */ }
+        const aal = req.headers.get('x-veyrnox-auth-aal') || 'aal1';
+        result = args.p_section === 'music_albums'
+            ? await rpc('read_music_album_export_page', { p_auth_id: authId, p_aal: aal, p_export_id: exportId,
+                p_after: args.p_after, p_key: args.p_key, p_page_size: null }, cfg)
+            : await rpc('read_privacy_export_page', { p_auth_id: authId, p_aal: aal, p_export_id: exportId, ...args }, cfg);
+    } catch (error) {
+        // Code can deploy before migration 0600. A missing album reader means no
+        // album rows can exist yet, so preserve the rest of the legal export.
+        if (args.p_section === 'music_albums' && missingAlbumExportReader(error)) result = { ok: true, rows: [], next: null };
+        /* never return or log database text */
+    }
     if (result?.ok === true) {
         return json({ rows: withClientModelIds(args.p_section === 'credit_history' ? result.rows.map(exportLedgerRow) : result.rows), next: result.next });
     }

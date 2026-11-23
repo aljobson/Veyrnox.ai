@@ -42,9 +42,13 @@ try {
     const migration = await readFile(new URL('../packages/db/schema/supabase/0347_account_deletion.sql', import.meta.url), 'utf8');
     await c.query('SAVEPOINT again'); await c.query(migration); await c.query(migration); await c.query('RELEASE SAVEPOINT again');
     // 0347's idempotency replay restores its historical blocker body. Reapply the
-    // current Music guard so the rest of this full-schema test exercises production.
+    // current Music guards so the rest of this full-schema test exercises production.
     const musicGuard = await readFile(new URL('../packages/db/schema/supabase/0490_music_account_deletion_guard.sql', import.meta.url), 'utf8');
     await c.query(musicGuard);
+    const albumMigration = await readFile(new URL('../packages/db/schema/supabase/0600_music_albums.sql', import.meta.url), 'utf8');
+    const albumGuard = albumMigration.match(/CREATE OR REPLACE FUNCTION private\.account_deletion_blockers\(p_user_id UUID,p_auth_id TEXT\)[\s\S]*?REVOKE ALL ON FUNCTION private\.account_deletion_blockers\(UUID,TEXT\) FROM PUBLIC,anon,authenticated,service_role;/)?.[0];
+    assert.ok(albumGuard, 'album account-deletion guard is present');
+    await c.query(albumGuard);
 
     // 1. Nobody else's account, nobody's guess.
     assert.equal((await prepare(randomUUID())).error, 'account_not_found');
@@ -173,6 +177,34 @@ try {
     await blocked((u) => c.query(
         `INSERT INTO public.music_lyric_drafts (user_id, model_id, lyrics, title)
          VALUES ($1, 'ace-step', '[Verse]\nPrivate words', 'Private draft')`, [u.userId]), 'music_content_present');
+    await blocked((u) => c.query(
+        `INSERT INTO public.music_albums(user_id,title,album_type,description,create_key)
+         VALUES ($1,'Private album','album','','account-delete.album')`, [u.userId]), 'music_content_present');
+
+    const removedAlbumOwner = await signUp();
+    const removedAlbumId = randomUUID();
+    assert.equal((await call('music_create_album', removedAlbumOwner.authId, removedAlbumId, 'Private removed title', 'album', 'Private removed description', null, 'account-delete.removed')).ok, true);
+    assert.equal((await call('music_patch_album', removedAlbumOwner.authId, removedAlbumId, 0, 'delete', null, null, null, null, null, 'account-delete.removed.delete')).deleted, true);
+    const removedToken = await token(removedAlbumOwner.authId);
+    assert.equal((await erase(removedAlbumOwner.authId, removedToken)).ok, true);
+    assert.deepEqual(await one('SELECT title,description,status FROM public.music_albums WHERE id=$1',[removedAlbumId]),
+        { title: 'Deleted album', description: '', status: 'deleted' });
+
+    // Album reports and mutation receipts are incidental: erasing their actor must
+    // remove the receipt/report without deleting the independently owned target album.
+    const albumOwner = await signUp();
+    const albumReporter = await signUp();
+    const targetAlbum = await one(`INSERT INTO public.music_albums(user_id,title,album_type,description,create_key)
+        VALUES ($1,'Reported album','album','','account-delete.target') RETURNING id`, [albumOwner.userId]);
+    await c.query(`INSERT INTO public.music_album_reports(album_id,reporter_id,category,details,idempotency_key)
+        VALUES ($1,$2,'other','Fixture report','account-delete.report')`, [targetAlbum.id, albumReporter.userId]);
+    await c.query(`INSERT INTO public.music_album_mutations(user_id,album_id,idempotency_key,request,result)
+        VALUES ($1,$2,'account-delete.receipt','{}','{}')`, [albumReporter.userId, targetAlbum.id]);
+    const reporterToken = await token(albumReporter.authId);
+    assert.equal((await erase(albumReporter.authId, reporterToken)).ok, true);
+    assert.equal((await one('SELECT count(*)::int AS n FROM public.music_album_reports WHERE reporter_id=$1', [albumReporter.userId])).n, 0);
+    assert.equal((await one('SELECT count(*)::int AS n FROM public.music_album_mutations WHERE user_id=$1', [albumReporter.userId])).n, 0);
+    assert.equal((await one('SELECT count(*)::int AS n FROM public.music_albums WHERE id=$1', [targetAlbum.id])).n, 1);
 
     // 8. A token is short-lived and rate limited.
     const slow = await signUp();
@@ -204,7 +236,7 @@ try {
         'chat_threads', 'chat_folders', 'chat_personas', 'chat_closed_sends', 'cinema_profiles', 'cinema_memberships',
         'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests', 'cinema_watch_resume',
         'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders',
-        'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs', 'music_reference_links', 'music_actors', 'music_user_blocks', 'music_song_reactions', 'music_creator_follows', 'music_social_mutations', 'music_comments', 'music_comment_reports', 'music_comment_mutations', 'music_remix_sources', 'music_listen_history', 'music_hooks', 'music_song_covers', 'music_play_listens', 'music_song_reports', 'labs_rank_pairs',
+        'social_brands', 'social_api_keys', 'social_webhook_endpoints', 'social_posts', 'jobs', 'music_reference_links', 'music_actors', 'music_user_blocks', 'music_song_reactions', 'music_creator_follows', 'music_social_mutations', 'music_comments', 'music_comment_reports', 'music_comment_mutations', 'music_remix_sources', 'music_listen_history', 'music_hooks', 'music_song_covers', 'music_play_listens', 'music_song_reports', 'music_album_mutations', 'music_album_reports', 'labs_rank_pairs',
         'push_tokens', 'push_outbox', 'push_token_writes', 'user_blocks', 'creator_profiles', 'first_goals', 'library_favourites', 'create_drafts', 'checkin_streaks']);
     const WITH_AUTH_USER = new Set(['organisation_members', 'workspace_members', 'project_members', 'api_requests', 'editor_requests',
         'social_connection_selections', 'social_oauth_states', 'film_studio_projects', 'film_studio_save_windows', 'music_beat_projects', 'music_beat_project_versions', 'music_beat_project_takes', 'music_beat_save_windows', 'mfa_recovery_codes', 'mfa_recovery_attempts']);
@@ -214,7 +246,7 @@ try {
         // provider/media cleanup path exists, refuse erasure rather than retain it silently.
         'music_collaboration_profiles', 'music_creator_profiles', 'music_download_claims', 'music_download_periods',
         'music_export_attempts', 'music_export_quotes', 'music_generation_candidates', 'music_generation_quotes',
-        'music_generation_requests', 'music_lyric_drafts', 'music_playlist_mutations', 'music_playlists',
+        'music_generation_requests', 'music_lyric_drafts', 'music_playlist_mutations', 'music_playlists', 'music_albums', 'music_album_items',
         'music_prompt_specs', 'music_publication_attestations', 'music_publications', 'music_replace_take_commits',
         'music_reuse_draft_receipts', 'music_rights_attestations', 'music_share_links', 'music_song_feedback',
         'music_song_versions', 'music_songs', 'music_source_assets', 'music_stem_quotes', 'music_stem_requests',

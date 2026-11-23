@@ -1,6 +1,7 @@
 import { publicMusicCreator } from '../../../../../lib/musicActors.js';
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
-import { musicPublicationEnabled } from '../../../../../lib/musicBackend.js';
+import { musicAlbumsEnabled, musicPublicationEnabled } from '../../../../../lib/musicBackend.js';
+import { publicMusicAlbum } from '../../../../../lib/musicAlbums.js';
 import { musicSocialEnabled, publicMusicSocial } from '../../../../../lib/musicSocial.js';
 
 const HANDLE_RE = /^[a-z][a-z0-9_]{2,29}$/;
@@ -16,7 +17,10 @@ export async function GET(_request, { params }) {
         if (!result?.ok) return reply({ error: 'not_found' }, 404);
         const social = musicSocialEnabled()
             ? await rpc('music_social_summary', { p_slug: null, p_handle: handle, p_auth_id: null }, cfg).catch(() => null) : null;
-        return reply({ profile: publicMusicCreator(result.profile), tracks: (result.tracks || []).map(publicMusicCreator), ...(social?.ok ? { social: publicMusicSocial(social) } : {}) });
+        const albums = musicAlbumsEnabled() ? await rpc('music_list_profile_albums', { p_handle: handle }, cfg).catch(() => null) : null;
+        return reply({ profile: publicMusicCreator(result.profile), tracks: (result.tracks || []).map(publicMusicCreator),
+            ...(albums?.ok ? { albums: (albums.albums || []).map(publicMusicAlbum).filter(Boolean) } : {}),
+            ...(social?.ok ? { social: publicMusicSocial(social) } : {}) });
     } catch (error) {
         console.error('[music/profile] resolve failed:', error?.message);
         return reply({ error: 'temporarily_unavailable' }, 502);

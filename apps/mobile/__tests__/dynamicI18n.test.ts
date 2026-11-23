@@ -54,6 +54,8 @@ const domains: Record<string, readonly string[]> = {
     'editorEditGate.{}': ['invalid', 'tooLarge'],
     'editorExportRefusal.{}': ['speed', 'audio', 'motion', 'animation', 'colour', 'crop', 'effects', 'blend', 'background', 'masks', 'smart', 'transitions', 'text', 'captions', 'position', 'fonts', 'images', 'originalAudio', 'assets', 'groups', 'unknown'],
     'musicDiscover.mood.{}': ['all', 'Hip-hop', 'Rock', 'Jazz'],
+    'musicAlbums.status.{}': ['draft', 'published', 'unpublished', 'blocked'],
+    'musicAlbums.type.{}': ['album', 'ep', 'single'],
     'musicPlaylists.{}': ['titleInvalid', 'conflict', 'invalidSongs', 'offline', 'scanStale', 'saved', 'noneUnavailable', 'pending', 'signIn', 'denied', 'error'],
     'musicSectionActions.{}.title': ['add_section', 'replace_section'],
     'musicSectionActions.position.{}': ['beginning', 'end'],

@@ -299,7 +299,7 @@ try {
     const EXPORTED = new Set([
         'account_actions', 'chat_folders', 'chat_personas', 'chat_threads', 'cinema_creator_follows',
         'cinema_memberships', 'cinema_profiles', 'cinema_saved_titles', 'cinema_series_follows', 'cinema_watch_resume',
-        'content_appeals', 'content_reports', 'credit_balances', 'credit_subscriptions', 'jobs',
+        'content_appeals', 'content_reports', 'credit_balances', 'credit_subscriptions', 'jobs', 'music_albums', 'music_album_items',
         'checkin_streaks', 'creator_profiles', 'first_goals', 'library_favourites', 'create_drafts', 'ledger_entries', 'push_tokens', 'referral_codes', 'referrals', 'social_brands',
         'social_posts', 'social_publish_subscriptions', 'top_ups', 'user_blocks', 'voice_profiles',
     ]);
@@ -336,7 +336,7 @@ try {
         // songs, erased with the account. The generic export has no Music section yet.
         'music_listen_history', 'music_hooks', 'music_song_covers',
         // Who played a public track (for the 30-minute check) and song reports (0533): erased with the account.
-        'music_play_listens', 'music_song_reports',
+        'music_play_listens', 'music_song_reports', 'music_album_mutations', 'music_album_reports',
         // Labs listen-and-rank pairs and votes (0538): ids and an a/b choice, erased with the account.
         'labs_rank_pairs',
         // Music export is deliberately not implied by the generic profile/jobs projections. Account
