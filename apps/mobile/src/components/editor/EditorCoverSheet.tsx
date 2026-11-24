@@ -5,7 +5,7 @@ import { touchTarget } from '../../lib/a11y';
 import { formatNumber, t } from '../../lib/i18n';
 import { rawText } from '../../lib/i18n/translate';
 import type { Timeline } from '../../lib/nativeEditorModel';
-import { colors, ds, fonts } from '../../theme';
+import { studioColors as colors, ds, fonts } from '../../theme';
 import { PlaybackPreview } from './EditorPlayback';
 import { createFrameStore, type FrameStore } from './editorFrameStore';
 import { Slider } from './tools/Slider';

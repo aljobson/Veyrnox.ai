@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, Text, View } from 'react-native';
-import { colors, ds, type } from '../../../theme';
+import { studioColors as colors, ds, type } from '../../../theme';
 import { touchTarget } from '../../../lib/a11y';
 import { rawText } from '../../../lib/i18n/translate';
 import { sliderValue, stepValue } from './sliderMath';

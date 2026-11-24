@@ -4,7 +4,7 @@ import { Text as StatusText } from '../ui/Text';
 import { Alert, Platform, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
 import { formatNumber, t } from '../../lib/i18n';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { SERVER_EXPORT_RESOLUTIONS, useServerExport, type ServerExportProps } from './useServerExport';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import { bottomSheetSafePadding } from '../../lib/modalLayout';

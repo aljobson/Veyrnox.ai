@@ -4,7 +4,7 @@ import { I18nManager, Pressable, StyleSheet, Text, TextInput, View } from 'react
 import { HEADER_MAX_FONT_SCALE, touchTarget } from '../../lib/a11y';
 import { formatTimecode, parseTimecode } from '../../lib/editorTimeline';
 import { t } from '../../lib/i18n';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { Icon } from '../ui/Icon';
 import { Text as StatusText } from '../ui/Text';
 import { styles } from './fullEditorStyles';

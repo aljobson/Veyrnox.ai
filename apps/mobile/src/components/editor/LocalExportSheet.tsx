@@ -9,7 +9,7 @@ import { canvasPixelSize, framesIn, type Canvas, type Timeline } from '../../lib
 import { formatNumber, t } from '../../lib/i18n';
 import { rawText } from '../../lib/i18n/translate';
 import { touchTarget } from '../../lib/a11y';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { withEditorExportSources, type EditorExportSourceFailureCode, type EditorExportSourceResult } from '../../lib/editorExportSources';
 import type { ApiClient } from '../../lib/api';
 import { useSessionTask } from '../../auth/sessionTask';

@@ -7,7 +7,7 @@ import { playSelection } from '../../lib/haptics';
 import { hiddenLabelIds, trimHandleWidth } from '../../lib/editorTimelineLayout';
 import { canTrim, formatTimecode, frameAtX, moveItems, movingSelections, snapTo, trimItem } from '../../lib/editorTimeline';
 import { clipAt, type Clip, type Selection, type TextClip, type Timeline } from '../../lib/nativeEditorModel';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { HEADER_MAX_FONT_SCALE } from '../../lib/a11y';
 import { Icon } from '../ui/Icon';
 import { useReducedMotion } from '../ui/useReducedMotion';

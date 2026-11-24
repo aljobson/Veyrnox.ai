@@ -3,7 +3,7 @@ import { AccessibilityInfo, Alert, Modal, Platform, Pressable, StyleSheet, Switc
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { plural, rawText, t } from '../../../lib/i18n';
 import type { CustomFont } from '../../../lib/nativeEditorModel';
-import { colors, fonts as themeFonts } from '../../../theme';
+import { studioColors as colors, fonts as themeFonts } from '../../../theme';
 import { touchTarget } from '../../../lib/a11y';
 import type { EditorFontActions } from '../useEditorFonts';
 import { Action } from '../EditorControls';

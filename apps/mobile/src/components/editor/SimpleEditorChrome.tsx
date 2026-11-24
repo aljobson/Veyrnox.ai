@@ -8,7 +8,7 @@ import { touchTarget } from '../../lib/a11y';
 import { runAfterSheetCloses } from './runAfterSheetCloses';
 import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
-import { colors, fonts } from '../../theme';
+import { studioColors as colors, fonts } from '../../theme';
 
 export interface SheetRow { id: string; icon: string; label: string; hint?: string; disabled?: boolean; afterClose?: boolean; onPress(): void }
 export type SimpleSheetName = 'add' | 'ai' | 'cut' | 'sound' | 'text' | 'layers' | 'more';

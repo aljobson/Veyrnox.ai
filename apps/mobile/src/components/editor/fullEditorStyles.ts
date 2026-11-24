@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, fonts } from '../../theme';
+import { studioColors as colors, fonts } from '../../theme';
 export const EDITOR_MEANINGFUL_LABEL_MIN_SIZE = 12;
 export const EDITOR_DECORATIVE_RULER_FONT_SIZE = 10;
 export const styles = StyleSheet.create({

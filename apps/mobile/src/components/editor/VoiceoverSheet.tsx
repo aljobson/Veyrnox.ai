@@ -1,7 +1,7 @@
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { t } from '../../lib/i18n';
 import { clock, meterLevel } from '../../lib/editorVoiceover';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Text } from '../ui/Text';

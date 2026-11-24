@@ -6,7 +6,7 @@ import { File } from 'expo-file-system';
 import { ASSET_PACK_CATEGORIES, ASSET_PACK_LIMITS, matchingPackAssets } from '../../../../../../app/veyrnox/_lib/editorAssetPacks.mjs';
 import { Button, Checkbox, Chip, Text } from '../../ui';
 import { plural, rawText, t } from '../../../lib/i18n';
-import { colors, fonts as themeFonts } from '../../../theme';
+import { studioColors as colors, fonts as themeFonts } from '../../../theme';
 import { touchTarget } from '../../../lib/a11y';
 import { createNativeAssetPack, editorAssetPackCatalog, packFileProblem, parseNativeAssetPack, shareNativeAssetPack,
     type AssetPack, type PackAsset, type PickedPackFile } from '../../../lib/editorAssetPackCatalog';

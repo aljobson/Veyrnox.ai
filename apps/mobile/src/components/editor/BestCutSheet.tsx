@@ -7,7 +7,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Chip, Text } from '../ui';
 import { brandText } from '../BrandText';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { ApiError, type ApiClient } from '../../lib/api';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
 import { createConsentGate } from '../../lib/aiConsent';

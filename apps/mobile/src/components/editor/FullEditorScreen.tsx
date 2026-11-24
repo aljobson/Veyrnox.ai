@@ -61,6 +61,7 @@ import { LocalExportSheet } from './LocalExportSheet';
 import { styles } from './fullEditorStyles'; import { EditorToolSheet } from './EditorToolSheet';
 import { SimpleEditorBar, SimpleEditorSheet, type SheetRow, type SimpleSheetName, type SimpleDockTab } from './SimpleEditorChrome';
 import { randomUUID } from 'expo-crypto';
+import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
@@ -73,6 +74,7 @@ import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasAspectSize, canvasOf, cl
     '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
 import { HeaderAction } from '../HeaderAction';
+import { studioColors } from '../../theme';
 import { LibraryChooser } from '../LibraryChooser';
 import { JobThumb, useAssetLinks } from '../JobThumb';
 import { mediaFrames, overlaySpan } from '../../lib/editorOverlay';
@@ -506,12 +508,14 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         addText, updateSelectedText, addCaption, setFrame, addTimelineMarker, setPlaying, currentDocument, selectedMedia, selectedTrack,
         canMove, moveSelection, removeSelection, adjustStart, adjustLength, speedActions, document, markDocument, canvas, updateCanvas, updateTrack, };
     return <View style={[styles.screen, { paddingLeft: insets?.left ?? 0, paddingRight: insets?.right ?? 0 }]}>
+        <StatusBar style="light" />
         <LocalExportSheet visible={localExportVisible} api={api} account={getCacheUser() ?? ''} projectId={projectId} revision={getEditRevision()} timeline={timeline} canvas={canvas} localMediaUris={localMediaUris}
             onClose={() => setLocalExportVisible(false)} onCloud={() => { setLocalExportVisible(false); void openCloudExport(); }} />
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit
-            */, title: t('editor.cut'), headerRight: () => <HeaderAction label={t('editor.done')} onPress={guard.done} /> }} />
+            */, title: t('editor.cut'), headerStyle: { backgroundColor: studioColors.background }, headerTintColor: studioColors.text,
+            headerRight: () => advanced ? <HeaderAction label={t('editor.done')} onPress={guard.done} /> : <HeaderAction label={t('editor.export')} onPress={openExport} /> }} />
         <View style={styles.projectBar}>
             {advanced ? <View style={styles.cutBadge}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutMark}>{t('editor.v')}</Text><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}
             {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCover.open')} onPress={openCover} style={({ pressed }) => [styles.coverButton, pressed && styles.pressed]}>

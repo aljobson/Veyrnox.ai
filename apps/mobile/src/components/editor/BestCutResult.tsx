@@ -7,7 +7,7 @@ import { bestCutWarningKey, type BestCutPlan } from '../../lib/bestCutPlan';
 import { t } from '../../lib/i18n';
 import { createFrameStore } from './editorFrameStore';
 import { PlaybackPreview, PlaybackTransport } from './EditorPlayback';
-import { colors } from '../../theme';
+import { studioColors as colors } from '../../theme';
 import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import { modalSafePadding } from '../../lib/modalLayout';
 export function BestCutResult({ before, after, plan, api, uris, onOpen, captionsOmitted, refunded }: { onOpen(): void; before: Timeline; after: Timeline; plan: BestCutPlan | null; api: ApiClient; uris: Record<string, string>; captionsOmitted?: boolean; refunded?: number }) {
