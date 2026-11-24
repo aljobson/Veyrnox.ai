@@ -153,7 +153,7 @@ try {
         const erased = await person('smart-cut-erased');
         const expired = randomUUID(), live = randomUUID();
         assert.equal((await submit(erased.auth, expired)).ok, true);
-        await db.query("UPDATE public.smart_cut_feedback SET expires_at=now()-interval '1 second' WHERE response_id=$1", [expired]);
+        await db.query("UPDATE public.smart_cut_feedback SET created_at=now()-interval '2 seconds',expires_at=now()-interval '1 second' WHERE response_id=$1", [expired]);
         assert.equal(Number(await scalar('SELECT private.purge_smart_cut_feedback(1)')), 1);
         assert.equal((await submit(erased.auth, live)).ok, true);
         assert.equal(Number(await scalar('SELECT count(*) FROM public.smart_cut_feedback WHERE response_id=$1', [expired])), 0);
