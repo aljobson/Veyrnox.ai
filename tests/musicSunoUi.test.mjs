@@ -513,3 +513,10 @@ test('the Suno Simple brief box shows the typed text untrimmed, so a trailing sp
   assert.doesNotMatch(source, /<SunoSimpleFields[^>]*description=\{sunoPrompt\}/, 'the trimmed quote prompt must not feed the box');
   assert.equal(capSunoText('warm lo-fi ', 500), 'warm lo-fi ', 'capping keeps a trailing space');
 });
+
+test('an invalid brief or title shows a specific message, not "temporarily unavailable"', () => {
+  const source = readFileSync(new URL('../app/veyrnox/_components/music/useMusicServerState.js', import.meta.url), 'utf8');
+  assert.match(source, /prompt_invalid: '[^']*brief[^']*'/, 'prompt_invalid has its own message');
+  assert.match(source, /title_invalid: '[^']*title[^']*'/, 'title_invalid has its own message');
+  assert.doesNotMatch(source.match(/prompt_invalid: '([^']*)'/)[1], /temporarily unavailable/);
+});
