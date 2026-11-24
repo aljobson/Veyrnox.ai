@@ -188,6 +188,7 @@ export const PRIMARY_NAV_CATEGORIES = [
   { href: '/models', label: 'Models', group: 'Discover' },
   { href: '/app/create?model=nano-banana-a1', label: 'Create', group: 'Product' },
   { href: '/tools', label: 'Tools', group: 'Product' },
+  { href: '/editors', label: 'Editors', group: 'Product' },
   { href: '/publish', label: 'Publish', group: 'Product' },
   { href: '/pricing', label: 'Pricing', group: 'Product' },
 ];
@@ -223,6 +224,7 @@ export const SITE_PAGES = [
   { href: '/',                  label: 'Home',               description: 'Credit-metered AI image, video and audio generation.' },
   { href: '/pricing',           label: 'Pricing',            description: 'Every model, every credit price, one balance.' },
   { href: '/presets',           label: 'Templates',          description: 'Ready-made looks with their prompt and price up front.' },
+  { href: '/editors',           label: 'Editors',            description: 'Video, audio and Smart Cut workflows for media you already own.' },
   { href: '/tools',             label: 'Tools',              description: 'Upscale, cut out, expand, edit and animate your own files.' },
   { href: '/mcp',               label: 'MCP',                description: 'Connect an assistant to Veyrnox.ai models, credits and generations.' },
   { href: '/developers',        label: 'Developers',         description: 'Build with the OAuth-secured Veyrnox.ai API and command-line client.' },
