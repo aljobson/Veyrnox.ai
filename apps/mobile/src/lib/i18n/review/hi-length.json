@@ -2736,6 +2736,12 @@
     "ratio": 1.73
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "फिर कोशिश करें",
+    "ratio": 2.8
+  },
+  {
     "id": "studioAssistant.ask",
     "english": "Review",
     "translation": "समीक्षा करें",

@@ -2580,6 +2580,12 @@
     "ratio": 1.67
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "إعادة المحاولة",
+    "ratio": 2.8
+  },
+  {
     "id": "studioAssistant.value_on",
     "english": "on",
     "translation": "تشغيل",

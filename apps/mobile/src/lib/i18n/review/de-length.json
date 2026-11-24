@@ -5214,6 +5214,24 @@
     "ratio": 1.64
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "musicLyricist.examples",
+    "english": "Examples you wrote or own",
+    "translation": "Beispiele, die du geschrieben hast oder besitzt",
+    "ratio": 1.88
+  },
+  {
+    "id": "musicLyricist.coWrite",
+    "english": "Co-write in Chat",
+    "translation": "Gemeinsam in Chat schreiben",
+    "ratio": 1.69
+  },
+  {
     "id": "studioAssistant.value_on",
     "english": "on",
     "translation": "einschalten",

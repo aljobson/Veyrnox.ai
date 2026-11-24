@@ -4968,6 +4968,18 @@
     "ratio": 2.43
   },
   {
+    "id": "musicLyricist.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
+    "id": "musicLyricist.examples",
+    "english": "Examples you wrote or own",
+    "translation": "Примеры, которые вы написали или которыми владеете",
+    "ratio": 2
+  },
+  {
     "id": "studioAssistant.apply",
     "english": "Apply local edit",
     "translation": "Применить локальное изменение",

@@ -1,6 +1,7 @@
 import { t } from './i18n';
 import type { ApiClient } from './api';
 import { chatApi } from './chat';
+import { estimateTokens } from './chatLongText';
 
 // ADR-0126: personas and folders for chat, over /api/v1/chat/*. The server is the authority on every rule; the
 // limits here (copied from lib/chat.js) only save a round trip.
@@ -90,7 +91,7 @@ export function validatePersonaForm(form: PersonaForm): Checked<PersonaBody> {
     if (!name) return { ok: false, message: t('chatLibrary.givethepersonaaname') };
     if (name.length > MAX_PERSONA_NAME) return { ok: false, message: t('chatLibrary.thenamecanbeatmostcharacters', { value1: MAX_PERSONA_NAME }) };
     if (!instructions) return { ok: false, message: t('chatLibrary.writetheinstructionsthepersonashouldfollow') };
-    if (instructions.length > MAX_PERSONA_TEXT || Math.ceil(instructions.length / 4) > MAX_PERSONA_TOKENS) return { ok: false, message: t('chatLibrary.theinstructionscanbeatmostcharacters', { value1: MAX_PERSONA_TEXT }) };
+    if (instructions.length > MAX_PERSONA_TEXT || estimateTokens(instructions) > MAX_PERSONA_TOKENS) return { ok: false, message: t('chatLibrary.theinstructionscanbeatmostcharacters', { value1: MAX_PERSONA_TEXT }) };
     if (form.modelId !== null && !MODEL_ID_RE.test(form.modelId)) return { ok: false, message: t('chatLibrary.chooseamodelfromthelist') };
     return { ok: true, value: { name, instructions, model_id: form.modelId, thinking: form.thinking, web: form.web } };
 }
@@ -121,10 +122,12 @@ export const moveThread = (api: ApiClient, threadId: string, folderId: string | 
 
 // There is no single call that starts a chat from a persona, so it is a chat on the persona's model (or the one
 // picked) followed by its instructions. If the second step fails the half-made chat is removed.
-export async function startFromPersona(api: ApiClient, persona: Persona, pickedModelId: string): Promise<string> {
+export async function startFromPersona(api: ApiClient, persona: Persona, pickedModelId: string, stillCurrent: () => boolean = () => true): Promise<string> {
     const thread = await chatApi(api).createThread(persona.modelId ?? pickedModelId);
     try {
+        if (!stillCurrent()) throw new Error('account_changed');
         await api.request(`/api/v1/chat/threads/${enc(thread.id)}`, json('PATCH', { system_prompt: persona.instructions }));
+        if (!stillCurrent()) throw new Error('account_changed');
     } catch (err) {
         await api.request(`/api/v1/chat/threads/${enc(thread.id)}`, json('DELETE')).catch(() => undefined);
         throw err;

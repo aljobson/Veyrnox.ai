@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Switch, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
@@ -9,6 +9,8 @@ import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { MusicInspirationCard } from '../../../components/music/MusicInspirationCard';
+import { MusicLyricistProfiles } from '../../../components/music/MusicLyricistProfiles';
+import { useAuth } from '../../../auth/AuthProvider';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { formatLocale, t } from '../../../lib/i18n';
@@ -20,6 +22,8 @@ const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'ove
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { api, flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
+    const { generation: sessionGeneration = 0 } = useAuth();
+    const router = useRouter();
     const { sample, challenge } = useLocalSearchParams<{ sample?: string; challenge?: string }>();
     const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
     const edit: typeof flow.edit = (...args) => { touched.current = flow; flow.edit(...args); };
@@ -102,6 +106,8 @@ export default function MusicCreate() {
                                     label={t('music.create.rights')} onPress={() => edit({}, !state.rights)} /> : null}
                                 {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
                             </>}
+                        {input.mode === 'custom' && !input.instrumental ? <MusicLyricistProfiles api={api} lyrics={input.lyrics}
+                            sessionGeneration={sessionGeneration} onOpenChat={id => router.push({ pathname: '/chat/[id]', params: { id } })} /> : null}
                         {!suno ? <>
                             <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => edit({ title })} />
                             <Text>{t('music.create.duration', { seconds: input.duration })}</Text>
