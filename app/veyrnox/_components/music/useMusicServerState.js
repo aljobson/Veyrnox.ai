@@ -21,6 +21,8 @@ export function musicServerError(error) {
     account_changed: 'Your account changed. Reload Music before confirming a quote.',
     music_unavailable: 'Server generation is paused. No credits were spent.',
     prompt_not_allowed: 'That direction cannot be used. Try a different musical description.',
+    prompt_invalid: 'The song brief has a character that cannot be used. Remove it and review the price again.',
+    title_invalid: 'The title has a character that cannot be used. Remove it and review the price again.',
     insufficient_balance: 'You do not have enough spendable credits for both versions.',
     quote_expired: 'That quote expired. Review a new quote before creating.',
     quote_stale: 'The model price changed. Review the refreshed quote before creating.',
