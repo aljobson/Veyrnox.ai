@@ -68,6 +68,7 @@ BEGIN
        OR jsonb_typeof(content->'canvas') IS DISTINCT FROM 'object' THEN RETURN false; END IF;
     schema_version:=(content->>'schema_version')::integer; brief_text:=content->>'brief';
     IF schema_version NOT IN (1,2,3,4) OR content->>'project_id' IS DISTINCT FROM project::text
+       OR brief_text ~ U&'[\0001-\001F]'
        OR char_length(brief_text)+char_length(regexp_replace(brief_text,U&'[^\+010000-\+10FFFF]','','g'))>6000
        OR (content->'canvas')-ARRAY['aspect_ratio','frame_rate']<>'{}'::jsonb
        OR NOT ((content->'canvas')?&ARRAY['aspect_ratio','frame_rate'])

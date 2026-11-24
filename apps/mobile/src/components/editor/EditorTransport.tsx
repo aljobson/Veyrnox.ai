@@ -35,7 +35,7 @@ export function EditorTransport({ frame, total, fps, playing, simple = false, ca
             {button(t('editor.gotostart'), total <= 0 || frame <= 0, () => seek(0), -1, true)}
             <Pressable accessibilityRole="button" accessibilityLabel={rawText(playing ? t('editor.pause') : t('editor.play'))} accessibilityState={{ disabled: total <= 0 }}
                 disabled={total <= 0} onPress={() => onPlaying(!playing)} style={[local.playPrimary, touchTarget, total <= 0 && styles.disabled]}>
-                {playing ? <View style={local.symbol}><View style={local.playBar} /><View style={local.playBar} /></View> : <Icon name="play" size={25} tint={colors.accentInk} />}
+                {playing ? <View style={local.symbol}><View style={local.playBar} /><View style={local.playBar} /></View> : <Icon name="play" size={24} tint={colors.accentInk} />}
             </Pressable>
             <View style={local.simpleTime}>
                 {entry === null ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.enterTimecode')} onPress={() => { setEntry(formatTimecode(frame, fps)); setInvalid(false); }}

@@ -15,6 +15,7 @@ test('project document parity migration admits every new bounded editor field', 
     assert.match(sql, /project_editor_timeline_within_bounds/);
     assert.match(sql, /jsonb_set\(value,'\{aspect\}','"1:1"'::jsonb,false\)/);
     assert.match(sql, /private\.project_oddlings_within_bounds/);
+    assert.match(sql, /brief_text ~ U&'\[\\0001-\\001F\]'/);
     assert.match(sql, /COMMIT;\s*$/);
 });
 
