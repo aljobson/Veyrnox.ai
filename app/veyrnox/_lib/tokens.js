@@ -188,6 +188,7 @@ export const PRIMARY_NAV_CATEGORIES = [
   { href: '/models', label: 'Models', group: 'Discover' },
   { href: '/app/create?model=nano-banana-a1', label: 'Create', group: 'Product' },
   { href: '/tools', label: 'Tools', group: 'Product' },
+  { href: '/editors', label: 'Editors', group: 'Product' },
   { href: '/publish', label: 'Publish', group: 'Product' },
   { href: '/pricing', label: 'Pricing', group: 'Product' },
 ];
@@ -205,7 +206,6 @@ export const SECONDARY_NAV_CATEGORIES = [
   { href: '/oddlings', studioHref: '/app/oddlings', label: 'Oddlings', group: 'Discover' },
   { href: '/models',     label: 'Models', group: 'Discover' },
   { href: '/presets',   label: 'Templates', group: 'Discover' },
-  { href: '/editors',   label: 'Editors', group: 'Product' },
   { href: '/guides',    label: 'Guides', group: 'Learn' },
   { href: '/mcp',       label: 'MCP', group: 'Build' },
   { href: '/developers', label: 'Developers', group: 'Build' },
