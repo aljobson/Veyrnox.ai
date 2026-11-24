@@ -34,3 +34,9 @@ test('new parity capabilities are recognized but remain default off', () => {
   }
   assert.equal(musicRuntimeFlag('notARealMusicCapability', { MUSIC_RUNTIME_FLAGS: '{"notARealMusicCapability":true}' }), false);
 });
+
+test('candidate cancellation evidence stays partial until live route and device proof exist', () => {
+  const row = MUSIC_PARITY_ROWS.find(item => item.id === 'create.production-route-health');
+  assert.equal(row.current, 'qualified');
+  assert.match(row.proof, /candidate_cancel_contract_ui/);
+});

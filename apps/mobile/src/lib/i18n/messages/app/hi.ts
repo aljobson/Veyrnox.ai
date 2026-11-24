@@ -6749,6 +6749,8 @@ export default {
     "music.create.ready": "तैयार",
     "music.create.failed": "यह विकल्प पूरा नहीं हुआ। काटे गए क्रेडिट अपने आप लौटाए जाते हैं।",
     "music.create.refunded": "इस विकल्प के क्रेडिट लौटा दिए गए हैं।",
+    "music.create.refundedPaid": "यह संस्करण पूरा नहीं हुआ। भुगतान वाले क्रेडिट अपने मूल स्रोत में लौट गए।",
+    "music.create.refundedFree": "यह संस्करण पूरा नहीं हुआ। मुफ़्त उपयोग मूल दिन में लौट गया।",
     "music.create.cancelled": "रद्द",
     "music.create.unplayable": "यह विकल्प चलाया नहीं जा सकता।",
     "music.create.openSong": "गीत खोलें",

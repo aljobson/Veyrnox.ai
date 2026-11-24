@@ -558,7 +558,7 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
 
 export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null }) {
   const { t } = useI18n();
-  const { entitlements, quote, generations, busy, error, errorCode, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, reload } = useMusicServerState();
+  const { entitlements, quote, generations, busy, error, errorCode, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, refreshGeneration, reload } = useMusicServerState();
   const [mode, setMode] = useState('simple');
   const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate }));
   const [activeTemplate, setActiveTemplate] = useState(sampleSeed ? null : licensedTemplate);
@@ -780,7 +780,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
             <div className="space-y-5">{generations.map((generation, index) => (
               <section key={generation.id} data-testid={`music-generation-${generation.id}`} aria-label={`Music request ${generations.length - index}`} className="rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Pair request</p><h3 className="mt-1 font-vx text-xl font-black">{generation.title || 'Untitled sound draft'}</h3></div><span className="rounded-full border border-vx-border px-3 py-1 font-vx-mono text-xs uppercase text-vx-fg-muted">{generation.state}</span></div>
-                <div className="space-y-3">{(generation.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={generation.title} />)}</div>
+                <div className="space-y-3">{(generation.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={generation.title} onCancelled={() => refreshGeneration(generation.id)} />)}</div>
               </section>
             ))}</div>
           )}

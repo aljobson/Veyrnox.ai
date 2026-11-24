@@ -6837,6 +6837,8 @@ export default {
     "music.create.ready": "Prêt",
     "music.create.failed": "Cette version n’a pas abouti. Tout débit est remboursé automatiquement.",
     "music.create.refunded": "Crédits remboursés pour cette version.",
+    "music.create.refundedPaid": "Cette version n’a pas abouti. Ses crédits payés ont été rendus à leur source.",
+    "music.create.refundedFree": "Cette version n’a pas abouti. Son utilisation gratuite a été restituée au jour d’origine.",
     "music.create.cancelled": "Annulé",
     "music.create.unplayable": "Cette version ne peut pas être lue.",
     "music.create.openSong": "Ouvrir le morceau",

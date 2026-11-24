@@ -6662,6 +6662,8 @@ export default {
     "music.create.ready": "준비됨",
     "music.create.failed": "이 후보는 완성되지 않았습니다. 부과된 크레딧은 자동으로 반환됩니다.",
     "music.create.refunded": "이 후보의 크레딧이 반환되었습니다.",
+    "music.create.refundedPaid": "이 버전은 완료되지 않았습니다. 유료 크레딧이 원래 출처로 환불되었습니다.",
+    "music.create.refundedFree": "이 버전은 완료되지 않았습니다. 무료 사용 횟수가 원래 날짜로 돌아갔습니다.",
     "music.create.cancelled": "취소됨",
     "music.create.unplayable": "이 후보를 재생할 수 없습니다.",
     "music.create.openSong": "곡 열기",

@@ -233,6 +233,7 @@ export type MusicCandidateView = {
     readonly song_id: string | null;
     readonly version_id: string | null;
     readonly error_code: string | null;
+    readonly credits?: number;
     readonly audio_url: string | null;
 };
 export type MusicGenerationView = {

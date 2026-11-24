@@ -6662,6 +6662,8 @@ export default {
     "music.create.ready": "再生可能",
     "music.create.failed": "この候補は完成しませんでした。請求されたクレジットは自動的に返却されます。",
     "music.create.refunded": "この候補のクレジットは返却済みです。",
+    "music.create.refundedPaid": "このバージョンは完了しませんでした。有料クレジットを元の残高に返金しました。",
+    "music.create.refundedFree": "このバージョンは完了しませんでした。無料利用枠を元の日に戻しました。",
     "music.create.cancelled": "キャンセル済み",
     "music.create.unplayable": "この候補は再生できません。",
     "music.create.openSong": "曲を開く",

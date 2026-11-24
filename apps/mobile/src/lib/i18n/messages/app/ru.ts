@@ -6920,6 +6920,8 @@ export default {
     "music.create.ready": "Готово",
     "music.create.failed": "Этот вариант не завершён. Списанные кредиты возвращаются автоматически.",
     "music.create.refunded": "Кредиты за этот вариант возвращены.",
+    "music.create.refundedPaid": "Эта версия не завершилась. Платные кредиты возвращены в исходный источник.",
+    "music.create.refundedFree": "Эта версия не завершилась. Бесплатный запуск возвращён в исходный день.",
     "music.create.cancelled": "Отменено",
     "music.create.unplayable": "Этот вариант нельзя воспроизвести.",
     "music.create.openSong": "Открыть песню",

@@ -67,6 +67,18 @@ test('ceiling also bounds a hung read without overlapping manual requests', asyn
     wait.resolve({ state: 'running' }); await Promise.resolve(); await Promise.resolve(); expect(poll.snapshot().state).toBe('waiting');
 });
 
+test('manual refresh during a read queues exactly one immediate follow-up', async () => {
+    const first = deferred<Status>();
+    read.mockReturnValueOnce(first.promise).mockResolvedValueOnce({ state: 'refunded' });
+    start(); await jest.advanceTimersByTimeAsync(1500);
+    void poll.refresh(); void poll.refresh();
+    expect(read).toHaveBeenCalledTimes(1);
+    first.resolve({ state: 'running' }); await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    expect(read).toHaveBeenCalledTimes(2);
+    await Promise.resolve(); expect(poll.snapshot()).toEqual({ state: 'done', value: { state: 'refunded' } });
+    await jest.advanceTimersByTimeAsync(10000); expect(read).toHaveBeenCalledTimes(2);
+});
+
 test('time spent in the background does not count toward the ceiling', async () => {
     start('active', 10000); await jest.advanceTimersByTimeAsync(4000); changeApp('background');
     await jest.advanceTimersByTimeAsync(60000); expect(poll.snapshot().state).toBe('polling');
