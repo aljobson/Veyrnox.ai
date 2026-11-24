@@ -47,12 +47,16 @@ test('unknown, malformed and non-string ids resolve to nothing', () => {
   }
 });
 
-test('an explicit sample or template beats the stored public draft', () => {
+test('sample, template and challenge precedence beats the stored public draft', () => {
   const template = licensedTemplateFor('savfk-rounding');
   const saved = 'a stored public prompt';
+  const challenge = 'today challenge prompt';
   assert.equal(resolveInitialDescription({ licensedTemplate: template, savedPrompt: saved }), template.direction);
+  assert.equal(resolveInitialDescription({ licensedTemplate: template, challengePrompt: challenge, savedPrompt: saved }), template.direction);
   assert.equal(resolveInitialDescription({ sampleSeed: { id: 'x' }, licensedTemplate: template, savedPrompt: saved }), '');
+  assert.equal(resolveInitialDescription({ sampleSeed: { id: 'x' }, challengePrompt: challenge, savedPrompt: saved }), '');
   assert.equal(resolveInitialDescription({ sampleSeed: { id: 'x' }, savedPrompt: saved }), '');
+  assert.equal(resolveInitialDescription({ challengePrompt: `  ${challenge}  `, savedPrompt: saved }), challenge);
   assert.equal(resolveInitialDescription({ savedPrompt: `  ${saved}  ` }), saved);
   assert.equal(resolveInitialDescription({ savedPrompt: 'x'.repeat(501) }), '');
   assert.equal(resolveInitialDescription({}), '');
@@ -111,5 +115,5 @@ test('the Create page ignores a template when a sample is present', () => {
 
 test('the server studio consumes the stored draft without overriding a handoff', () => {
   const source = readFileSync(new URL('../app/veyrnox/_components/music/MusicServerStudio.jsx', import.meta.url), 'utf8');
-  assert.match(source, /if \(!sampleSeed && !licensedTemplate && restored\) setDescription\(restored\);\s*sessionStorage\.removeItem\(MUSIC_PUBLIC_DRAFT_KEY\);/);
+  assert.match(source, /if \(!sampleSeed && !licensedTemplate && !challengeSeed && restored\) setDescription\(restored\);\s*sessionStorage\.removeItem\(MUSIC_PUBLIC_DRAFT_KEY\);/);
 });

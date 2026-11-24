@@ -43,6 +43,20 @@ describe('entitlements', () => {
             albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
         });
     });
+    test('keeps a known daily challenge but drops only malformed or disabled challenge fields', async () => {
+        const daily = {
+            catalog_version: 'v1', id: 'v1:2026-11-24:glass-after-rain', date: '2026-11-24',
+            reset_at: '2026-11-25T00:00:00.000Z', title_key: 'music.dailyChallenge.prompt.glass-after-rain.title',
+            prompt_key: 'music.dailyChallenge.prompt.glass-after-rain.prompt', no_reward: true,
+        };
+        const enabled = { ...entitlements, features: { ...entitlements.features, dailyChallenge: true }, daily_challenge: daily };
+        request.mockResolvedValueOnce(enabled);
+        expect((await getEntitlements(api)).daily_challenge).toEqual(daily);
+        request.mockResolvedValueOnce({ ...enabled, daily_challenge: { ...daily, catalog_version: 'v2' } });
+        expect((await getEntitlements(api)).daily_challenge).toBeUndefined();
+        request.mockResolvedValueOnce({ ...entitlements, daily_challenge: daily });
+        expect((await getEntitlements(api)).daily_challenge).toBeUndefined();
+    });
     const without = (o: Record<string, unknown>, k: string) => { const { [k]: _drop, ...rest } = o; return rest; };
     test.each([
         null, {}, { ...entitlements, models: 'x' }, { ...entitlements, balance: '40' }, { ...entitlements, custom_drafts: null },

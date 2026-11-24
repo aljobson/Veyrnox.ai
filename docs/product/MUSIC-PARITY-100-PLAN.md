@@ -33,6 +33,8 @@ This target is feature parity, not a claim that ACE-Step or any standby supplier
 
 The target arithmetic is `(25×90 + 20×85 + 20×97.5 + 15×100 + 10×100 + 10×93) / 100 = 93.3`. The evidence-corrected current arithmetic is `(25×80 + 20×72.5 + 20×62.5 + 15×75 + 10×60 + 10×52.5) / 100 = 69.5`, displayed as 70 using round-half-up to a whole percentage. This corrects the earlier 77 estimate, which wrongly counted physical-device-dependent source rows as shipped and counted Music MCP before it supported Music. The rubric and row weights below are frozen before implementation. Subjective audio quality is excluded and reported separately.
 
+Status update (2026-11-24): the default-off daily-challenge feed and editable web/iOS Create handoff now qualify `create.daily-challenge` at half credit from UTC, entitlement and source-contract evidence. The current inventory is Creation 82.5 and weighted total 70.125. This does not rewrite the frozen 69.5 baseline above, activate the flag, or claim the required Reticle/simulator proof; challenge participation and discovery-shelf rows remain missing. The score and row tables below are the frozen pre-implementation baseline; `lib/musicParityInventory.js` is authoritative for the dated current status.
+
 ### Frozen row rubric
 
 Status credits are `shipped=1`, `qualified=0.5`, `missing=0`, `externally_blocked=0`, and `intentionally_different=1` only when the same outcome is proved. Weights sum to 100 inside each area. `Target` is the planned closeout status; exceeding it may raise an area above its table minimum, but falling below it cannot be hidden by changing weights.

@@ -6,6 +6,15 @@ export type MusicSunoModel = 'v6' | 'v6_mini' | 'v6_wild';
 export type MusicVocalGender = 'auto' | 'male' | 'female';
 export type MusicRange = { readonly min: number; readonly max: number };
 export type MusicCounter = { readonly max: number; readonly applied?: number };
+export type MusicDailyChallenge = {
+    readonly catalog_version: 'v1';
+    readonly id: string;
+    readonly date: string;
+    readonly reset_at: string;
+    readonly title_key: string;
+    readonly prompt_key: string;
+    readonly no_reward: true;
+};
 
 export type MusicModelControls = {
     readonly description: boolean;
@@ -81,6 +90,7 @@ export type MusicEntitlements = {
         readonly pairs_remaining?: number;
         readonly reset_at?: string;
     };
+    readonly daily_challenge?: MusicDailyChallenge;
     readonly policy: { readonly version: string; readonly pre_debit: boolean };
 };
 

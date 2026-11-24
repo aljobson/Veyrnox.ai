@@ -1,5 +1,6 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
 import { MUSIC_MOBILE_ROLLOUT_FLAGS, musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
+import { musicDailyChallengeAt } from '../../../../../lib/musicDailyChallenge.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
     musicAlbumsEnabled, musicDailyCreditsEnabled, musicEntitlementProjection, musicGenerationEnabled,
@@ -36,6 +37,8 @@ export async function GET(request) {
                 dailyAllowance = { enabled: false, unavailable: true };
             }
         }
+        const features = Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name,
+            name === 'albums' ? musicAlbumsEnabled() : musicRuntimeFlag(name)]));
         return reply({
             ...musicEntitlementProjection({
                 models,
@@ -47,8 +50,8 @@ export async function GET(request) {
                     admission_open: false, endpoint_open: false, suno_models: {},
                 },
             }),
-            features: Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name,
-                name === 'albums' ? musicAlbumsEnabled() : musicRuntimeFlag(name)])),
+            features,
+            ...(features.dailyChallenge ? { daily_challenge: musicDailyChallengeAt() } : {}),
             ...(dailyCredits ? { daily_allowance: dailyAllowance } : {}),
         });
     } catch (error) {
