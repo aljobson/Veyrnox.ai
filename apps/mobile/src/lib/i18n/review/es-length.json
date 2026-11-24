@@ -4974,6 +4974,12 @@
     "ratio": 2.57
   },
   {
+    "id": "music.dailyChallenge.prompt.glass-after-rain.title",
+    "english": "Glass after rain",
+    "translation": "Cristal después de la lluvia",
+    "ratio": 1.75
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "Iniciar sesión",

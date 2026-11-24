@@ -5196,6 +5196,12 @@
     "ratio": 2.4
   },
   {
+    "id": "music.dailyChallenge.prompt.copper-sunrise.title",
+    "english": "Copper sunrise",
+    "translation": "Kupferner Sonnenaufgang",
+    "ratio": 1.64
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

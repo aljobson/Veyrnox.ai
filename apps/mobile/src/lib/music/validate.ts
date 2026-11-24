@@ -1,5 +1,6 @@
 import { isFiniteNumber, isRecord } from '../responseShapes';
 import type { MusicDraft, MusicCandidateView, MusicGenerationView, MusicEntitlements, MusicGeneration, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle, MusicVersionCapabilities, MusicReuseContext } from './types';
+import { isMusicDailyChallenge } from './dailyChallenge';
 
 // Boundary checks: every field the exported types promise is verified, so a screen never meets a
 // missing nested field as a throw on access (the caller gets `bad_response` instead).
@@ -67,6 +68,7 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
         && optional(v.daily_allowance, ['unavailable', 'eligible'], bool)
         && optional(v.daily_allowance, ['candidates_remaining', 'pairs_remaining'], isNonNegativeInteger)
         && optional(v.daily_allowance, ['reset_at'], str)))
+    && (v.daily_challenge === undefined || isMusicDailyChallenge(v.daily_challenge))
     && isRecord(v.policy) && str(v.policy.version) && bool(v.policy.pre_debit);
 
 export const isMusicQuote = (v: unknown): v is MusicQuote => isRecord(v)

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { DISCOVER_SEEDS, buildSamplePrompt } from '../../../lib/music/discoverSeeds';
 import { Switch, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
@@ -14,20 +13,21 @@ import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../..
 import { formatLocale, t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
+import { resolveMusicCreateHandoff } from '../../../lib/music/createHandoff';
 const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'daily_allowance_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { api, flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
-    const { sample } = useLocalSearchParams<{ sample?: string }>();
+    const { sample, challenge } = useLocalSearchParams<{ sample?: string; challenge?: string }>();
     const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
     const edit: typeof flow.edit = (...args) => { touched.current = flow; flow.edit(...args); };
     useEffect(() => {
-        const seed = DISCOVER_SEEDS.find(s => s.id === sample), input = state.input;
-        if (seeded.current === flow || !seed || state.status !== 'on') return;
+        if (seeded.current === flow || state.status !== 'on' || (!sample && !challenge)) return;
         seeded.current = flow;
-        if (touched.current !== flow && !pending && input.mode === 'simple' && !input.prompt && !input.title && !input.lyrics && !input.styles && !state.rights)
-            flow.edit({ prompt: buildSamplePrompt(seed), title: seed.title });
-    }, [flow, sample, state.status, state.input, state.rights, pending]);
+        const handoff = resolveMusicCreateHandoff({ sampleId: sample, challengeId: challenge, entitlements: state.entitlements,
+            input: state.input, rights: state.rights, touched: touched.current === flow, pending: Boolean(pending), translate: t });
+        if (handoff) flow.edit(handoff);
+    }, [flow, sample, challenge, state.status, state.input, state.rights, state.entitlements, pending]);
     const lock = useRef(false);
     const [now, setNow] = useState(Date.now);
     useEffect(() => {

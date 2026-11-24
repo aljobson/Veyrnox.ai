@@ -556,15 +556,17 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
   );
 }
 
-export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null }) {
+export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null, challengeSeed = null }) {
   const { t } = useI18n();
+  const challengePrompt = challengeSeed ? t(challengeSeed.prompt_key) : '';
+  const challengeTitle = challengeSeed ? t(challengeSeed.title_key) : '';
   const { entitlements, quote, generations, busy, error, errorCode, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, refreshGeneration, reload } = useMusicServerState();
   const [mode, setMode] = useState('simple');
-  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate }));
+  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate, challengePrompt }));
   const [activeTemplate, setActiveTemplate] = useState(sampleSeed ? null : licensedTemplate);
   const [activeSeed, setActiveSeed] = useState(sampleSeed);
   const [activeMix, setActiveMix] = useState(sampleMix);
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(() => challengeTitle.slice(0, 80));
   const [modelId, setModelId] = useState('ace-step');
   const [variety, setVariety] = useState(50);
   const [styleInfluence, setStyleInfluence] = useState(0);
@@ -599,15 +601,15 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
       try {
         const saved = JSON.parse(sessionStorage.getItem(MUSIC_PUBLIC_DRAFT_KEY) || 'null');
         // An explicit sample or template handoff wins; the stored draft is still consumed.
-        const restored = resolveInitialDescription({ sampleSeed, licensedTemplate, savedPrompt: saved?.prompt });
-        if (!sampleSeed && !licensedTemplate && restored) setDescription(restored);
+        const restored = resolveInitialDescription({ sampleSeed, licensedTemplate, challengePrompt, savedPrompt: saved?.prompt });
+        if (!sampleSeed && !licensedTemplate && !challengeSeed && restored) setDescription(restored);
         sessionStorage.removeItem(MUSIC_PUBLIC_DRAFT_KEY);
       } catch {
         sessionStorage.removeItem(MUSIC_PUBLIC_DRAFT_KEY);
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [sampleSeed, licensedTemplate]);
+  }, [sampleSeed, licensedTemplate, challengeSeed, challengePrompt]);
 
   function change(setter) {
     return (event) => {

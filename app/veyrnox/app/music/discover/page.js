@@ -2,6 +2,8 @@ import { MusicDiscover } from '../../../_components/music/MusicDiscover';
 import { getT } from '../../../../../lib/i18n/server';
 import { getMusicDiscoverSeed, normalizeMusicSampleMix } from '../../../../../lib/musicDiscover.js';
 import { isMusicSavedMixId } from '../../../_lib/music/savedMixes.js';
+import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
+import { musicDailyChallengeAt } from '../../../../../lib/musicDailyChallenge.js';
 
 export async function generateMetadata() {
   const { t } = await getT();
@@ -26,5 +28,6 @@ export default async function MusicDiscoverPage({ searchParams }) {
   const rawMixName = Array.isArray(params?.mixName) ? params.mixName[0] : params?.mixName;
   const initialSavedMixId = initialSample && isMusicSavedMixId(rawSavedMixId) ? rawSavedMixId : '';
   const initialMixName = initialSavedMixId && typeof rawMixName === 'string' ? rawMixName.slice(0, 64) : '';
-  return <MusicDiscover initialSample={initialSample} initialMix={initialMix} initialSavedMixId={initialSavedMixId} initialMixName={initialMixName} />;
+  const dailyChallenge = musicRuntimeFlag('dailyChallenge') ? musicDailyChallengeAt() : null;
+  return <MusicDiscover initialSample={initialSample} initialMix={initialMix} initialSavedMixId={initialSavedMixId} initialMixName={initialMixName} dailyChallenge={dailyChallenge} />;
 }
