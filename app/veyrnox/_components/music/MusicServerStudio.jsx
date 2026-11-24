@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getStoredUserId } from '../../../lib/authClient';
 import { addToDraft, NEW_CHAT, readDraft } from '../../_lib/chatLocal';
@@ -547,10 +548,22 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
           <p className="text-center text-xs text-vx-fg-faint">The saved revision and selected vocal mode are frozen into the quote. Credits move only after confirmation.</p>
         </section>
       ) : (
-        <>
-          <button type="button" disabled className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink opacity-40">Custom generation unavailable for this model</button>
-          <p className="text-center text-xs text-vx-fg-faint">Drafting is active. Choose a current Custom-ready paid model before any quote, credit spend, or provider request can start.</p>
-        </>
+        <section aria-label="Custom generation availability" className="rounded-2xl border border-vx-border bg-vx-base p-4 sm:p-5">
+          <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-money">Writing workspace ready</p>
+          <h3 className="mt-2 font-vx text-xl font-black">Draft now. Generate with a plan.</h3>
+          <p className="mt-2 text-sm leading-6 text-vx-fg-muted">
+            Lyrics, style direction, titles, private revisions and the Chat handoff above all work without starting a generation. A paid plan unlocks the Custom-ready model, its exact quote and the final two-version request.
+          </p>
+          <div className="mt-4 grid gap-2 text-sm sm:grid-cols-3">
+            <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">1. Write</strong><span className="mt-1 block text-vx-fg-muted">Shape lyrics and structure.</span></div>
+            <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">2. Save</strong><span className="mt-1 block text-vx-fg-muted">Keep a private revision.</span></div>
+            <div className="rounded-xl border border-vx-border px-3 py-3"><strong className="block text-vx-fg">3. Generate</strong><span className="mt-1 block text-vx-fg-muted">Unlock quote and pair creation.</span></div>
+          </div>
+          <Link href="/app/credits#subscriptions" className="vx-press mt-4 inline-flex min-h-11 items-center justify-center rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
+            Compare plans for Custom
+          </Link>
+          <p className="mt-3 text-xs leading-5 text-vx-fg-faint">Nothing is quoted, sent to a provider or charged while you draft.</p>
+        </section>
       )}
     </>
   );
