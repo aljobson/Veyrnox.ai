@@ -294,7 +294,7 @@ const fr = {
     'app.create.error.upload_unreadable': 'Le fichier n’a pas pu être lu. Rien n’a été facturé.',
     'app.create.error.source_too_large': 'L’image contient trop de pixels pour ce modèle. Utilisez une image plus petite. Rien n’a été facturé.',
     'app.create.error.source_too_long': 'Cet enregistrement dépasse la durée acceptée par ce modèle (voir la limite à l’import). Rien n’a été facturé.',
-    'app.create.error.source_length_unknown': 'La durée du fichier n’a pas pu être lue. Essayez un WAV ou un MP3 sans pochette. Rien n’a été facturé.',
+    'app.create.error.source_length_unknown': 'La durée du fichier n’a pas pu être lue. Essayez un MP4 enregistré par votre téléphone ou un éditeur vidéo, ou un WAV ou MP3 sans pochette. Rien n’a été facturé.',
     'app.create.error.lipsync_video_length_unknown': 'La durée visuelle de la vidéo n’a pas pu être vérifiée pour la synchronisation labiale. Exportez un MP4 simple avec une piste vidéo et réessayez. Rien n’a été facturé.',
     'app.create.error.lipsync_audio_exceeds_video': 'La voix est plus longue que la vidéo. Utilisez une voix plus courte ou une vidéo plus longue pour ne pas couper la fin. Rien n’a été facturé.',
     'app.create.error.dialogue_invalid': 'Écrivez une ligne par locuteur, par exemple "Ana: Bonjour !", avec au plus quatre locuteurs. Rien n’a été facturé.',

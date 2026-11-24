@@ -365,5 +365,10 @@
   "music.create.suno.style.indie": "Same spelling in French and English for this label: Indie.",
   "music.create.suno.style.jazz": "Same spelling in French and English for this label: Jazz.",
   "music.create.suno.style.pop": "Same spelling in French and English for this label: Pop.",
-  "music.create.suno.style.rock": "Same spelling in French and English for this label: Rock."
+  "music.create.suno.style.rock": "Same spelling in French and English for this label: Rock.",
+  "musicAlbums.description": "Description is spelled identically in French and English.",
+  "musicAlbums.publicTitle": "Albums is spelled identically in French and English.",
+  "musicAlbums.type.album": "Album and LP are standard French music-release terms.",
+  "musicAlbums.type.ep": "EP is the standard music-release abbreviation in French and English.",
+  "musicAlbums.type.single": "Single is the established French music-release term."
 }

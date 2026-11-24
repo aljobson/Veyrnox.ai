@@ -6,6 +6,7 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 import { translator, tOr } from '../lib/i18n/translate.mjs';
 import en from '../lib/i18n/messages/app/en/music-suno.mjs';
+import { en as cancelEn } from '../lib/i18n/musicCandidateCancelTranslations.mjs';
 import { createQuoteGate } from '../lib/quoteRevisionGate.js';
 import {
   appendSunoStyle, capSunoText, isSunoContract, sunoCustomQuoteRequest, sunoCustomReady,
@@ -58,6 +59,18 @@ function hookHarness() {
       return result;
     },
   };
+}
+
+function elementList(tree) {
+  const found = [];
+  const visit = node => {
+    if (Array.isArray(node)) return node.forEach(visit);
+    if (!node?.props) return;
+    found.push(node);
+    visit(node.props.children);
+  };
+  visit(tree);
+  return found;
 }
 
 const model = {
@@ -253,6 +266,131 @@ test('Chat composer keeps editing enabled during generation but disables Send wi
   assert.equal(send.props['aria-describedby'], 'chat-music-send-hint');
 });
 
+test('web candidate cancel re-probes 429 and false states, then ignores a late GET after one POST', async t => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const timers = [];
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: {
+    setTimeout(fn, ms) { const row = { fn, ms, cleared: false }; timers.push(row); return row; },
+    clearTimeout(row) { if (row) row.cleared = true; },
+  } });
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'window', previous); else delete globalThis.window; });
+  let gets = 0, posts = 0, finishLate;
+  const gatewayFetch = async (_path, init = {}) => {
+    if (init.method === 'POST') { posts++; return { cancelled: true, replayed: false, credits: 5 }; }
+    gets++;
+    if (gets === 1) throw { code: 'rate_limited', retryAfter: 18 };
+    if (gets === 2) return { cancellable: false, credits: 5 };
+    if (gets === 3) return { cancellable: true, credits: 5 };
+    return new Promise(resolve => { finishLate = resolve; });
+  };
+  const harness = hookHarness(), cancelled = [];
+  const messages = { ...en, ...cancelEn }, translate = translator('en', messages);
+  const { MusicCandidateCancel } = load('app/veyrnox/_components/music/MusicCandidateCancel.jsx', {
+    react: harness.hooks,
+    '../../../../components/I18nProvider': { useI18n: () => ({ t: translate, locale: 'en' }) },
+    '../../../../lib/i18n/translate.mjs': { pluralKey: (_t, _locale, key, count) => `${key}.${count === 1 ? 'one' : 'other'}` },
+    '../../_lib/gateway': { gatewayFetch },
+  });
+  const candidate = { state: 'queued', job_id: 'job/1' };
+  const render = effects => harness.render(() => MusicCandidateCancel({ candidate, onCancelled: value => cancelled.push(value) }), effects);
+  let tree = render(true); await Promise.resolve(); await Promise.resolve();
+  assert.equal(gets, 1); assert.equal(timers.at(-1).ms, 18_000);
+  await timers.at(-1).fn(); tree = render(); assert.equal(gets, 2); assert.equal(timers.at(-1).ms, 15_000);
+  await timers.at(-1).fn(); tree = render(); assert.equal(gets, 3);
+  let nodes = elementList(tree);
+  nodes.find(node => node.type === 'button' && node.props.children === 'Cancel queued version').props.onClick();
+  tree = render(); nodes = elementList(tree);
+  assert.ok(nodes.some(node => node.props.role === 'group' && node.props['aria-label'] === 'Cancel this version?'));
+  assert.ok(nodes.some(node => typeof node.props.children === 'string' && node.props.children.includes('5 Credits')));
+  void timers.at(-1).fn(); await Promise.resolve();
+  const confirm = nodes.find(node => node.type === 'button' && node.props.children === 'Cancel version');
+  await Promise.all([confirm.props.onClick(), confirm.props.onClick()]);
+  finishLate({ cancellable: true, credits: 5 }); await Promise.resolve(); await Promise.resolve();
+  tree = render(); nodes = elementList(tree);
+  assert.equal(posts, 1); assert.equal(cancelled.length, 1);
+  assert.equal(nodes.some(node => node.type === 'button' && node.props.children === 'Cancel queued version'), false);
+  assert.ok(nodes.some(node => node.props.role === 'status' && String(node.props.children).includes('5 Credits')));
+});
+
+test('web candidate cancel re-probes a transient GET and a claimed-then-deferred refusal', async t => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const timers = [];
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: {
+    setTimeout(fn, ms) { const row = { fn, ms, cleared: false }; timers.push(row); return row; },
+    clearTimeout(row) { if (row) row.cleared = true; },
+  } });
+  t.after(() => { if (previous) Object.defineProperty(globalThis, 'window', previous); else delete globalThis.window; });
+  let gets = 0;
+  const gatewayFetch = async (_path, init = {}) => {
+    if (init.method === 'POST') throw { code: 'job_started' };
+    gets++;
+    if (gets === 1) throw { code: 'network_error' };
+    return { cancellable: true, credits: 5 };
+  };
+  const harness = hookHarness();
+  const messages = { ...en, ...cancelEn }, translate = translator('en', messages);
+  const { MusicCandidateCancel } = load('app/veyrnox/_components/music/MusicCandidateCancel.jsx', {
+    react: harness.hooks,
+    '../../../../components/I18nProvider': { useI18n: () => ({ t: translate, locale: 'en' }) },
+    '../../../../lib/i18n/translate.mjs': { pluralKey: (_t, _locale, key, count) => `${key}.${count === 1 ? 'one' : 'other'}` },
+    '../../_lib/gateway': { gatewayFetch },
+  });
+  const candidate = { state: 'queued', job_id: 'job' };
+  const render = effects => harness.render(() => MusicCandidateCancel({ candidate }), effects);
+  let tree = render(true); await Promise.resolve(); await Promise.resolve();
+  assert.equal(timers.at(-1).ms, 15_000);
+  await timers.at(-1).fn(); tree = render();
+  let nodes = elementList(tree);
+  nodes.find(node => node.type === 'button' && node.props.children === 'Cancel queued version').props.onClick();
+  tree = render(); nodes = elementList(tree);
+  await nodes.find(node => node.type === 'button' && node.props.children === 'Cancel version').props.onClick();
+  tree = render(); nodes = elementList(tree);
+  assert.ok(nodes.some(node => node.props.role === 'status' && node.props.children === 'This version has already started, so it will finish normally.'));
+  await timers.at(-1).fn(); tree = render(); nodes = elementList(tree);
+  assert.ok(nodes.some(node => node.type === 'button' && node.props.children === 'Cancel queued version'));
+  assert.equal(nodes.some(node => node.props.role === 'status'), false);
+});
+
+test('web generation refresh sequence rejects older responses in both completion orders', async () => {
+  const harness = hookHarness(), pending = [], notifications = [];
+  let generationReads = false, rejectNext = false, entitlementReads = 0;
+  const gatewayFetch = async (path) => {
+    if (path === '/music/generation-quotes') return { quote_id: 'quote', model_id: 'model', total_credits: 10 };
+    if (path === '/music/generations') return { generation_id: 'generation', state: 'debited', candidates: [], balance_after: 90 };
+    if (path === '/music/entitlements') { entitlementReads++; return { balance: 90 }; }
+    if (path === '/music/generations/generation' && generationReads) {
+      if (rejectNext) { rejectNext = false; throw new Error('temporary read failure'); }
+      return new Promise(resolve => pending.push(resolve));
+    }
+    throw new Error(path);
+  };
+  const { useMusicServerState } = load('app/veyrnox/_components/music/useMusicServerState.js', {
+    react: harness.hooks,
+    '../../../../lib/quoteRevisionGate.js': { createQuoteGate },
+    '../../_lib/gateway': { gatewayFetch, makeIdempotencyKey: () => 'key', notifyBalanceChanged: () => notifications.push(true) },
+    '../../_lib/useMusicCelebrations': { useMusicCelebrations: () => () => {} },
+  });
+  const render = () => harness.render(() => useMusicServerState({ active: false }));
+  let state = render(); await state.reviewQuote({ mode: 'simple' }); state = render();
+  await state.confirmQuote({ title: 'Song' }); state = render(); generationReads = true;
+  const oldFirst = state.refreshGeneration('generation'), newFirst = state.refreshGeneration('generation');
+  pending[1]({ id: 'generation', state: 'refunded', title: 'Song', candidates: [] }); await newFirst;
+  state = render(); assert.equal(state.generations[0].state, 'refunded');
+  pending[0]({ id: 'generation', state: 'queued', title: 'Song', candidates: [] }); await oldFirst;
+  state = render(); assert.equal(state.generations[0].state, 'refunded');
+  const oldSecond = state.refreshGeneration('generation'), newSecond = state.refreshGeneration('generation');
+  pending[2]({ id: 'generation', state: 'running', title: 'Song', candidates: [] }); await oldSecond;
+  state = render(); assert.equal(state.generations[0].state, 'refunded');
+  pending[3]({ id: 'generation', state: 'partial', title: 'Song', candidates: [] }); await newSecond;
+  state = render(); assert.equal(state.generations[0].state, 'partial');
+  assert.ok(notifications.length >= 3);
+  assert.ok(entitlementReads >= 4, 'every refresh re-reads entitlements even when its generation result loses');
+  const beforeFailure = entitlementReads;
+  rejectNext = true;
+  await assert.rejects(state.refreshGeneration('generation'), /temporary read failure/);
+  assert.equal(entitlementReads, beforeFailure + 1, 'a failed generation read cannot suppress the entitlement refresh');
+});
+
 test('Suno error codes resolve through the locale catalog instead of rendering raw keys', async () => {
   const de = (await import('../lib/i18n/messages/app/de/music-suno.mjs')).default;
   const t = translator('de', de);
@@ -315,6 +453,49 @@ test('song actions consume reader capabilities and explain hidden format edits',
   assert.match(actions, /app\.music\.suno\.editUnavailable/);
 });
 
+test('queued candidate cancellation is wired through Studio, chat, iOS queue and iOS actions', async () => {
+  const cancel = await readFile(new URL('../app/veyrnox/_components/music/MusicCandidateCancel.jsx', import.meta.url), 'utf8');
+  const candidate = await readFile(new URL('../app/veyrnox/_components/music/MusicServerCandidate.jsx', import.meta.url), 'utf8');
+  const studio = await readFile(new URL('../app/veyrnox/_components/music/MusicServerStudio.jsx', import.meta.url), 'utf8');
+  const chat = await readFile(new URL('../app/veyrnox/_components/chat/MediaCanvas.js', import.meta.url), 'utf8');
+  const queue = await readFile(new URL('../apps/mobile/src/components/music/MusicQueue.tsx', import.meta.url), 'utf8');
+  const action = await readFile(new URL('../apps/mobile/src/components/music/MusicGenerationActionBody.tsx', import.meta.url), 'utf8');
+  assert.match(cancel, /candidate\?\.state === 'queued'/);
+  assert.match(cancel, /PROBE_INTERVAL_MS = 15_000/);
+  assert.match(cancel, /Math\.max\(PROBE_INTERVAL_MS, delay\)/);
+  assert.match(cancel, /busy\.current \|\| !status\?\.cancellable/);
+  assert.match(cancel, /await Promise\.resolve\(onCancelled\?\./);
+  assert.match(candidate, /error_code === 'user_cancelled'/);
+  assert.match(candidate, /role=\{userCancelled \? 'status'/);
+  assert.match(candidate, /candidate\.credits > 0[\s\S]*candidate\.credits === 0/);
+  assert.match(studio, /onCancelled=\{\(\) => refreshGeneration\(generation\.id\)\}/);
+  assert.match(chat, /onCancelled=\{\(\) => media\.refreshGeneration\(latest\.id\)\}/);
+  assert.match(queue, /afterCancel/);
+  assert.match(action, /afterCancel: flow\.refreshBalance/);
+  const create = await readFile(new URL('../apps/mobile/src/app/(app)/music/create.tsx', import.meta.url), 'utf8');
+  assert.match(create, /afterCancel=\{flow\.refreshEntitlements\}/);
+});
+
+test('every Music locale carries cancellation copy instead of falling back to English', async () => {
+  const locales = ['ar', 'de', 'en', 'es', 'fr', 'hi', 'ja', 'ko', 'pt', 'ru', 'zh'];
+  const keys = ['action', 'confirmTitle', 'confirmPaid', 'confirmFree', 'keep', 'confirm', 'cancelling',
+    'cancelledPaid', 'cancelledFree', 'cancelled', 'started', 'finished', 'frozen', 'rateLimited',
+    'unavailable', 'unsure', 'state'];
+  for (const locale of locales) {
+    const messages = (await import(`../lib/i18n/messages/app/${locale}/music-suno.mjs`)).default;
+    for (const key of keys) assert.equal(typeof messages[`app.music.suno.cancel.${key}`], 'string', `${locale} ${key}`);
+    if (locale !== 'en') assert.notEqual(messages['app.music.suno.cancel.confirmTitle'], en['app.music.suno.cancel.confirmTitle']);
+    const app = (await import(`../lib/i18n/messages/app/${locale}.mjs`)).default;
+    for (const key of ['confirmPaidFormatted', 'cancelledPaidFormatted']) {
+      assert.equal(typeof app[`app.music.suno.cancel.${key}`], 'string', `${locale} ${key}`);
+      assert.match(app[`app.music.suno.cancel.${key}`], /\{credits\}/, `${locale} ${key} credit slot`);
+    }
+    for (const key of ['candidateRefundedPaid', 'candidateRefundedFree']) {
+      assert.equal(typeof app[`app.music.suno.${key}`], 'string', `${locale} ${key}`);
+    }
+  }
+});
+
 test('Suno controls name every field and slider, format decimals by locale, and show Style once in the chat composer', () => {
   const source = readFileSync(new URL('../app/veyrnox/_components/music/MusicSunoControls.jsx', import.meta.url), 'utf8');
   assert.match(source, /<textarea value=\{value\}[\s\S]{0,160}aria-label=\{label\}/, 'Style and Exclude textareas carry an accessible name');
@@ -331,4 +512,11 @@ test('the Suno Simple brief box shows the typed text untrimmed, so a trailing sp
   assert.match(source, /<SunoSimpleFields[^>]*description=\{sunoField\}/, 'the textarea is fed the untrimmed value');
   assert.doesNotMatch(source, /<SunoSimpleFields[^>]*description=\{sunoPrompt\}/, 'the trimmed quote prompt must not feed the box');
   assert.equal(capSunoText('warm lo-fi ', 500), 'warm lo-fi ', 'capping keeps a trailing space');
+});
+
+test('an invalid brief or title shows a specific message, not "temporarily unavailable"', () => {
+  const source = readFileSync(new URL('../app/veyrnox/_components/music/useMusicServerState.js', import.meta.url), 'utf8');
+  assert.match(source, /prompt_invalid: '[^']*brief[^']*'/, 'prompt_invalid has its own message');
+  assert.match(source, /title_invalid: '[^']*title[^']*'/, 'title_invalid has its own message');
+  assert.doesNotMatch(source.match(/prompt_invalid: '([^']*)'/)[1], /temporarily unavailable/);
 });

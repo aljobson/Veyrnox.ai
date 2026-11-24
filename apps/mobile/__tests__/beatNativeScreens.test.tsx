@@ -704,9 +704,9 @@ test('a linked beat with a local-only take offers Retry and usable Versions', as
         mockParams = { id: doc.id }; await act(async () => root.render(<BeatEditor />));
         expect(text(t('beat.cloud.takes')).length).toBeGreaterThan(0);
         expect(byLabel(t('beat.retry'))).toBeDefined();
-        expect(mockApi.request.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(1);
+        expect(mockApi.request.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(1);
         await press(t('beat.retry')); expect(retry).toHaveBeenCalledTimes(1);
-        expect(mockApi.request.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(2);
+        expect(mockApi.request.mock.calls.filter(([, init]) => init?.method === 'POST')).toHaveLength(2);
         await press(t('beat.versions.title'));
         expect(text(t('beat.versions.linkFirst'))).toHaveLength(0);
         expect(byLabel(t('beat.versions.save'))).toBeDefined();

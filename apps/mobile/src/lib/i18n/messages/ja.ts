@@ -294,7 +294,7 @@ const ja = {
     'app.create.error.upload_unreadable': 'ファイルを読み取れませんでした。 課金されていません.',
     'app.create.error.source_too_large': '画像の画素数がこのモデルには多すぎます。小さい画像を使ってください。 課金されていません.',
     'app.create.error.source_too_long': '録音がモデルの対応時間を超えています（アップロード欄の上限を確認してください）。 課金されていません.',
-    'app.create.error.source_length_unknown': 'ファイルの長さを読み取れませんでした。WAVまたはカバー画像のないMP3を試してください。 課金されていません.',
+    'app.create.error.source_length_unknown': 'ファイルの長さを読み取れませんでした。スマートフォンや動画編集アプリで保存したMP4、またはカバー画像のないWAVかMP3を試してください。 課金されていません.',
     'app.create.error.lipsync_video_length_unknown': 'リップシンク用の映像の長さを確認できませんでした。映像トラックが一つの通常のMP4を書き出して再試行してください。 課金されていません.',
     'app.create.error.lipsync_audio_exceeds_video': '音声が動画より長くなっています。末尾が切れないよう、短い音声または長い動画を使ってください。 課金されていません.',
     'app.create.error.dialogue_invalid': '話者ごとに一行で、"Ana: こんにちは！"のように書いてください。話者は四人までです。 課金されていません.',

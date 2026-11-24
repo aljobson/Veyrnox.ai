@@ -6,6 +6,15 @@ export type MusicSunoModel = 'v6' | 'v6_mini' | 'v6_wild';
 export type MusicVocalGender = 'auto' | 'male' | 'female';
 export type MusicRange = { readonly min: number; readonly max: number };
 export type MusicCounter = { readonly max: number; readonly applied?: number };
+export type MusicDailyChallenge = {
+    readonly catalog_version: 'v1';
+    readonly id: string;
+    readonly date: string;
+    readonly reset_at: string;
+    readonly title_key: string;
+    readonly prompt_key: string;
+    readonly no_reward: true;
+};
 
 export type MusicModelControls = {
     readonly description: boolean;
@@ -73,6 +82,15 @@ export type MusicEntitlements = {
         readonly dailyChallenge: boolean;
         readonly persistentQueue: boolean;
     };
+    readonly daily_allowance?: {
+        readonly enabled: boolean;
+        readonly unavailable?: boolean;
+        readonly eligible?: boolean;
+        readonly candidates_remaining?: number;
+        readonly pairs_remaining?: number;
+        readonly reset_at?: string;
+    };
+    readonly daily_challenge?: MusicDailyChallenge;
     readonly policy: { readonly version: string; readonly pre_debit: boolean };
 };
 
@@ -172,6 +190,7 @@ export type MusicSimpleQuoteInput = {
     readonly time_signature?: string | null;
     readonly vocal_gender?: MusicVocalGender;
     readonly weirdness?: number;
+    readonly daily_allowance_capable?: boolean;
 };
 export type MusicCustomQuoteInput = {
     readonly mode: 'custom';
@@ -187,6 +206,7 @@ export type MusicCustomQuoteInput = {
     readonly weirdness?: number;
     readonly variety?: number;
     readonly exclude_styles?: string;
+    readonly daily_allowance_capable?: boolean;
 };
 export type MusicDraft = {
     readonly id: string | null;
@@ -223,6 +243,7 @@ export type MusicCandidateView = {
     readonly song_id: string | null;
     readonly version_id: string | null;
     readonly error_code: string | null;
+    readonly credits?: number;
     readonly audio_url: string | null;
 };
 export type MusicGenerationView = {
@@ -251,6 +272,9 @@ export type MusicQuote = {
     readonly output_count: number;
     readonly credits_per_candidate: number;
     readonly total_credits: number;
+    readonly list_credits?: number;
+    readonly daily_free_candidates?: number;
+    readonly daily_allowance_reset_at?: string;
     readonly balance: number;
     readonly balance_after: number;
     readonly affordable: boolean;

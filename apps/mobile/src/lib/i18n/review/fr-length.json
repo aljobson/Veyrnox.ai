@@ -7500,6 +7500,54 @@
     "ratio": 1.73
   },
   {
+    "id": "musicAlbums.addTrack",
+    "english": "Add",
+    "translation": "Ajouter",
+    "ratio": 2.33
+  },
+  {
+    "id": "musicAlbums.empty",
+    "english": "No albums yet",
+    "translation": "Aucun album pour le moment",
+    "ratio": 2
+  },
+  {
+    "id": "musicAlbums.noArtwork",
+    "english": "No cover",
+    "translation": "Sans pochette",
+    "ratio": 1.63
+  },
+  {
+    "id": "musicAlbums.saveDetails",
+    "english": "Save album details",
+    "translation": "Enregistrer les détails de l’album",
+    "ratio": 1.89
+  },
+  {
+    "id": "musicAlbums.saveTracks",
+    "english": "Save track list",
+    "translation": "Enregistrer la liste des titres",
+    "ratio": 2.07
+  },
+  {
+    "id": "musicAlbums.status.draft",
+    "english": "Draft",
+    "translation": "Brouillon",
+    "ratio": 1.8
+  },
+  {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "activé",
+    "ratio": 3
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "désactivé",
+    "ratio": 3
+  },
+  {
     "id": "label.Terms",
     "english": "Terms",
     "translation": "Conditions",

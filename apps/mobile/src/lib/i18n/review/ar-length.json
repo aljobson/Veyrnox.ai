@@ -2568,6 +2568,30 @@
     "ratio": 2.75
   },
   {
+    "id": "musicAlbums.addTrack",
+    "english": "Add",
+    "translation": "إضافة",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicAlbums.missing",
+    "english": "Album not found",
+    "translation": "لم يتم العثور على الألبوم",
+    "ratio": 1.67
+  },
+  {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "تشغيل",
+    "ratio": 2.5
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
     "id": "oauth.signIn",
     "english": "Sign in",
     "translation": "تسجيل الدخول",

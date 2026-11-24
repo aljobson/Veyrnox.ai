@@ -56,3 +56,32 @@ test('unknown initial AppState waits for foreground before the first poll', asyn
     tracker.add(generation, input); await tick(5000); expect(request).not.toHaveBeenCalled();
     appState('active'); await tick(800); expect(request).toHaveBeenCalledTimes(1);
 });
+test('refresh cancels a timer, polls now and queues exactly one follow-up during flight', async () => {
+    let finish!: (value: typeof view) => void;
+    request.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    tracker.add(generation, input);
+    tracker.refresh(generation.generation_id);
+    expect(request).toHaveBeenCalledTimes(1);
+    tracker.refresh(generation.generation_id);
+    tracker.refresh(generation.generation_id);
+    expect(request).toHaveBeenCalledTimes(1);
+    await actPromise(() => finish(view));
+    await tick(0);
+    expect(request).toHaveBeenCalledTimes(2);
+    await tick(1999); expect(request).toHaveBeenCalledTimes(2);
+    await tick(1); expect(request).toHaveBeenCalledTimes(3);
+});
+test('refresh is inert while hidden, off, missing, terminal or unknown', async () => {
+    tracker.add(generation, input); appState('background'); tracker.refresh(generation.generation_id);
+    expect(request).not.toHaveBeenCalled();
+    appState('active'); tracker.off(); tracker.refresh(generation.generation_id);
+    tracker.refresh('unknown'); await tick(1000); expect(request).not.toHaveBeenCalled();
+    tracker.reset(); request.mockRejectedValueOnce(new ApiError(404, 'not_found'));
+    tracker.add(generation, input); await tick(800); expect(request).toHaveBeenCalledTimes(1);
+    tracker.refresh(generation.generation_id); expect(request).toHaveBeenCalledTimes(1);
+    tracker.reset(); request.mockResolvedValueOnce({ ...view, state: 'succeeded' });
+    tracker.add(generation, input); await tick(800); expect(request).toHaveBeenCalledTimes(2);
+    tracker.refresh(generation.generation_id); expect(request).toHaveBeenCalledTimes(2);
+});
+
+const actPromise = async (finish: () => void) => { finish(); await Promise.resolve(); await Promise.resolve(); };

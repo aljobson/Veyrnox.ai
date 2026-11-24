@@ -4932,6 +4932,60 @@
     "ratio": 2
   },
   {
+    "id": "musicAlbums.addTrack",
+    "english": "Add",
+    "translation": "Добавить",
+    "ratio": 2.67
+  },
+  {
+    "id": "musicAlbums.down",
+    "english": "Move down",
+    "translation": "Переместить вниз",
+    "ratio": 1.78
+  },
+  {
+    "id": "musicAlbums.report",
+    "english": "Report album",
+    "translation": "Пожаловаться на альбом",
+    "ratio": 1.83
+  },
+  {
+    "id": "musicAlbums.status.blocked",
+    "english": "Taken down",
+    "translation": "Удалён модерацией",
+    "ratio": 1.7
+  },
+  {
+    "id": "musicAlbums.unpublish",
+    "english": "Unpublish album",
+    "translation": "Снять альбом с публикации",
+    "ratio": 1.67
+  },
+  {
+    "id": "musicAlbums.up",
+    "english": "Move up",
+    "translation": "Переместить вверх",
+    "ratio": 2.43
+  },
+  {
+    "id": "studioAssistant.apply",
+    "english": "Apply local edit",
+    "translation": "Применить локальное изменение",
+    "ratio": 1.81
+  },
+  {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "выкл.",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

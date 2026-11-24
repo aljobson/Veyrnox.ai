@@ -294,7 +294,7 @@ const pt = {
     'app.create.error.upload_unreadable': 'Não foi possível ler o arquivo. Nada foi cobrado.',
     'app.create.error.source_too_large': 'A imagem tem pixels demais para este modelo. Use uma menor. Nada foi cobrado.',
     'app.create.error.source_too_long': 'A gravação é mais longa do que este modelo aceita (veja o limite no envio). Nada foi cobrado.',
-    'app.create.error.source_length_unknown': 'Não foi possível ler a duração do arquivo. Tente um WAV ou MP3 sem capa. Nada foi cobrado.',
+    'app.create.error.source_length_unknown': 'Não foi possível ler a duração do arquivo. Tente um MP4 salvo pelo celular ou por um editor de vídeo, ou um WAV ou MP3 sem capa. Nada foi cobrado.',
     'app.create.error.lipsync_video_length_unknown': 'Não foi possível verificar a duração visual do vídeo para sincronização labial. Exporte um MP4 simples com uma faixa de vídeo e tente novamente. Nada foi cobrado.',
     'app.create.error.lipsync_audio_exceeds_video': 'A fala é mais longa que o vídeo. Use uma fala mais curta ou um vídeo mais longo para não cortar o final. Nada foi cobrado.',
     'app.create.error.dialogue_invalid': 'Escreva uma linha por falante, como "Ana: Olá!", com até quatro falantes. Nada foi cobrado.',

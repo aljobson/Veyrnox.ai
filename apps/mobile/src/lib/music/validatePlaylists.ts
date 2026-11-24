@@ -6,7 +6,7 @@ export const playlistTitle = (v: unknown): v is string => typeof v === 'string'
     && v.trim().length > 0 && v.length <= 80 && !/[\u0000-\u001f]/.test(v);
 export const playlistRevision = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 export const playlistKey = (v: string) => /^[A-Za-z0-9._-]{8,120}$/.test(v) && !/\s/.test(v);
-const iso = (v: unknown) => {
+export const playlistTimestamp = (v: unknown) => {
     if (typeof v !== 'string' || !/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(v) || /\s/.test(v)) return false;
     const [year, month, day] = v.slice(0, 10).split('-').map(Number);
     const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
@@ -19,7 +19,7 @@ export function isPlaylistSong(v: unknown): v is PlaylistSong {
 }
 export function isPlaylist(v: unknown, requireCreated = false): v is Playlist {
     if (!isRecord(v) || !playlistUuid(v.id) || !playlistTitle(v.title) || typeof v.pinned !== 'boolean'
-        || !playlistRevision(v.revision) || ((requireCreated || 'created_at' in v) && !iso(v.created_at))
+        || !playlistRevision(v.revision) || ((requireCreated || 'created_at' in v) && !playlistTimestamp(v.created_at))
         || !Array.isArray(v.songs) || v.songs.length > 100 || !v.songs.every(isPlaylistSong)) return false;
     const ids = new Set<string>(); let position = 0;
     for (const song of v.songs) {

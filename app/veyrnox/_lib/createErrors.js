@@ -70,7 +70,7 @@ export const ERROR_COPY = {
   source_too_large:      'That image has too many pixels for this model. Use a smaller one. Nothing was charged.',
   source_size_unknown: "We could not verify a source file’s size. Reattach it or choose another file. Nothing was charged.",
   source_too_long:       'That recording is longer than this model takes (see the limit on the upload). Nothing was charged.',
-  source_length_unknown: 'We could not read that file\'s length. Try a WAV or an MP3 without cover art. Nothing was charged.',
+  source_length_unknown: 'We could not read that file\'s length. Try an MP4 saved by your phone or a video editor, or a WAV or MP3 without cover art. Nothing was charged.',
   lipsync_video_length_unknown: 'We could not verify the video\'s visual duration for lip sync. Export a plain MP4 with one video track and try again. Nothing was charged.',
   lipsync_audio_exceeds_video: 'The speech is longer than the video. Use shorter speech or a longer video so the ending is not cut off. Nothing was charged.',
   consent_required:      'Tick the consent box: you need to own the file you uploaded, or have the permission of everyone in it. Nothing was charged.',

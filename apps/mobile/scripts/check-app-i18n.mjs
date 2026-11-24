@@ -4,8 +4,17 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readEnglishCatalog } from './sync-web-i18n.mjs';
+import { MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS } from '../../../lib/i18n/musicStudioAssistantTranslations.mjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'lib', 'i18n');
 const en = readEnglishCatalog();
+const sharedSource = readFileSync(join(root, 'messages', 'musicAlbums.ts'), 'utf8');
+const musicAlbumsByLocale = new Function(sharedSource
+    .replace('const musicAlbumsByLocale =', 'return')
+    .replace(/ as const;\s*export default musicAlbumsByLocale;\s*$/, ';'))();
+const dailyChallengeSource = readFileSync(join(root, 'messages', 'musicDailyChallenge.ts'), 'utf8');
+const musicDailyChallengeByLocale = new Function(dailyChallengeSource
+    .replace('const musicDailyChallengeByLocale =', 'return')
+    .replace(/ as const;\s*export default musicDailyChallengeByLocale;\s*$/, ';'))();
 // Plural forms English lacks (few, many, two, zero) are reviewed against the English `.other` form, as
 // __tests__/appTranslations.test.ts does; otherwise --write drops rows the test expects.
 const bases = new Set(Object.keys(en).filter(key => key.endsWith('.one') && Object.hasOwn(en, key.slice(0, -4) + '.other')).map(key => key.slice(0, -4)));
@@ -21,7 +30,7 @@ for (const file of readdirSync(join(root, 'messages', 'app')).filter(f => f.ends
     const app = JSON.parse(source.split('export default ')[1].replace(/ as const;\s*$/, '').replace(/,(\s*})\s*$/, '$1'));
     const webSource = readFileSync(join(root, 'messages', `${locale}.ts`), 'utf8');
     const web = new Function(webSource.replace(/ as const;/, ';').replace(/export default (\w+);/, 'return $1;'))();
-    const catalog = { ...app, ...web };
+    const catalog = { ...app, ...musicAlbumsByLocale[locale], ...musicDailyChallengeByLocale[locale], ...MUSIC_STUDIO_ASSISTANT_NATIVE_TRANSLATIONS[locale], ...web };
     const rows = Object.entries(catalog).filter(([key, value]) => sourceFor(key) && [...value].length > [...sourceFor(key)].length * 1.6)
         .map(([key, value]) => ({ id: key, english: sourceFor(key), translation: value, ratio: Number(([...value].length / [...sourceFor(key)].length).toFixed(2)) }));
     const body = JSON.stringify(rows, null, 2) + '\n';

@@ -12,7 +12,7 @@ import { MUSIC_COVER_PROMPT_MAX, MUSIC_EXTEND_DURATION_MAX, MUSIC_COVER_DURATION
 import { t } from '../src/lib/i18n';
 import { SONG_ID } from './fixtures/musicActions';
 import { generationSong, extendQuote, coverQuote, generationStart, generationReplay, generationView, readyView } from './fixtures/musicGenerationActions';
-const mockApi = { request: jest.fn() }, mockPush = jest.fn(), mockPlay = jest.fn();
+const mockApi = { request: jest.fn(), getBalance: jest.fn() }, mockPush = jest.fn(), mockPlay = jest.fn();
 jest.mock('../src/components/VeyLoader', () => ({ VeyLoader: () => null }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi }) }));
 jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => ({ push: mockPush }),
@@ -42,7 +42,7 @@ for (const kind of ['extend', 'cover'] as const) describe(kind, () => {
     const posts = () => mockApi.request.mock.calls.filter(([p]) => p.endsWith(`/${kind}s`));
     beforeEach(async () => {
         RN.AppState.currentState = 'active'; resetCacheUser(); resetNetworkState(); await bindCacheUser('generation-screen-user');
-        jest.clearAllMocks(); mockApi.request.mockImplementation(baseResponse); jest.useFakeTimers();
+        jest.clearAllMocks(); mockApi.request.mockImplementation(baseResponse); mockApi.getBalance.mockResolvedValue({ balance: 95 }); jest.useFakeTimers();
         (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true; root = createRoot();
     });
     afterEach(async () => { await act(async () => { root.unmount(); resetCacheUser(); }); jest.restoreAllMocks(); jest.useRealTimers(); resetNetworkState(); });
@@ -104,6 +104,23 @@ for (const kind of ['extend', 'cover'] as const) describe(kind, () => {
     test.each(['queued', 'running', 'ready', 'failed', 'refunded'])('candidate %s uses its own state copy', async state => {
         mockApi.request.mockImplementation((p, init) => p.includes('/generations/') ? { ...readyView, state: 'partial', candidates: readyView.candidates.map(c => ({ ...c, state })) } : baseResponse(p, init));
         await mount(); await review(); await confirm(); await tick(); expect(text(t(`music.create.${state}`))).toHaveLength(2);
+    });
+    test('queued action candidates opt into server cancellation on both cards', async () => {
+        const queuedView = { ...generationView, state: 'queued' as const,
+            candidates: generationView.candidates.map(candidate => ({ ...candidate, state: 'queued' as const })) };
+        mockApi.request.mockImplementation((p, init) => p.endsWith('/cancel')
+            ? init?.method === 'POST' ? { cancelled: true, replayed: false, credits: 5 } : { cancellable: true, credits: 5 }
+            : p.includes('/generations/') ? queuedView : baseResponse(p, init));
+        const alert = jest.spyOn(RN.Alert, 'alert').mockImplementation(() => undefined);
+        await mount(); await review(); await confirm(); await tick();
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+        expect(controls('button', t('jobCancel.confirm'))).toHaveLength(2);
+        expect(mockApi.request.mock.calls.filter(([p]) => p.endsWith('/cancel'))).toHaveLength(2);
+        await act(async () => controls('button', t('jobCancel.confirm'))[0].props.onClick({ nativeEvent: {} }));
+        await act(async () => alert.mock.calls[0][2]!.find(action => action.style === 'destructive')!.onPress?.());
+        await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+        expect(mockApi.getBalance).toHaveBeenCalledTimes(1);
+        expect(text(t('musicActions.action.remaining', { balance: 95 }))).toHaveLength(1);
     });
     test.each(['source_duration_unavailable', 'source_duration_invalid'])('%s shows shared duration limit with no spend', async code => {
         mockApi.request.mockImplementation((p, init) => { if (p.endsWith(`/${kind}-quotes`)) throw new ApiError(400, code); return baseResponse(p, init); });

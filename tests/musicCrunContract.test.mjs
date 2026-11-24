@@ -182,3 +182,19 @@ test('only draft, quote and generation routes opt into the expanded body ceiling
   ].map((path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')));
   for (const source of files) assert.match(source, /readMusicJson\(request, MUSIC_CRUN_JSON_MAX_BYTES\)/);
 });
+
+test('control characters are refused in every free-text field, tabs and newlines stay allowed', () => {
+  const simple = { provider_contract: MUSIC_CRUN_CONTRACT, model_id: 'ace-step', instrumental: true };
+  assert.deepEqual(parseCrunMusicQuote({ ...simple, prompt: 'a\u0000b' }), { ok: false, error: 'prompt_invalid' });
+  assert.deepEqual(parseCrunMusicQuote({ ...simple, prompt: 'a\u001fb' }), { ok: false, error: 'prompt_invalid' });
+  assert.deepEqual(parseCrunMusicQuote({ ...simple, prompt: 'ok', title: 'x\u0000' }), { ok: false, error: 'title_invalid' });
+  assert.equal(parseCrunMusicQuote({ ...simple, prompt: 'two\nlines\tand a tab' }).ok, true);
+  const premium = { ...simple, model_id: 'ace-step-1.5', prompt: 'ok' };
+  assert.equal(parseCrunMusicQuote({ ...premium, exclude_styles: 'lo-fi, trap' }).ok, true);
+  assert.deepEqual(parseCrunMusicQuote({ ...premium, exclude_styles: 'lo-fi\u0000' }), { ok: false, error: 'exclude_styles_invalid' });
+  const draft = { provider_contract: MUSIC_CRUN_CONTRACT, draft_id: DRAFT_ID, revision: 0, model_id: 'ace-step-1.5', lyrics: 'la', styles: 'pop', title: 't' };
+  assert.equal(parseCrunMusicDraft(draft).ok, true);
+  assert.deepEqual(parseCrunMusicDraft({ ...draft, lyrics: 'la\u0000' }), { ok: false, error: 'lyrics_invalid' });
+  assert.deepEqual(parseCrunMusicDraft({ ...draft, styles: 'p\u0007' }), { ok: false, error: 'styles_invalid' });
+  assert.deepEqual(parseCrunMusicDraft({ ...draft, title: '\u0000' }), { ok: false, error: 'title_invalid' });
+});
