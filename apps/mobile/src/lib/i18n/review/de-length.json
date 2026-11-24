@@ -5190,6 +5190,108 @@
     "ratio": 2.75
   },
   {
+    "id": "app.smartCut.feedback.sending",
+    "english": "Sending…",
+    "translation": "Wird gesendet…",
+    "ratio": 1.75
+  },
+  {
+    "id": "app.smartCut.feedback.error",
+    "english": "Feedback was not saved. Try again.",
+    "translation": "Das Feedback wurde nicht gespeichert. Versuche es erneut.",
+    "ratio": 1.68
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Einrichtung wiederherstellen",
+    "ratio": 2.15
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "Untertitel-Voreinstellung",
+    "ratio": 1.79
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Kasten",
+    "ratio": 2
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Speichern",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "Text hinzufügen",
+    "ratio": 1.88
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Schnitt",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorSimple.editText",
+    "english": "Edit Text",
+    "translation": "Text bearbeiten",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.clear",
+    "english": "Clear completed queue",
+    "translation": "Abgeschlossene Warteschlange löschen",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.smartCutBatch.discard",
+    "english": "Discard queue",
+    "translation": "Warteschlange verwerfen",
+    "ratio": 1.77
+  },
+  {
+    "id": "projects.smartCutBatch.next",
+    "english": "Next: {name}",
+    "translation": "Als Nächstes: {name}",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Nächstes öffnen",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.complete",
+    "english": "Mark complete",
+    "translation": "Als abgeschlossen markieren",
+    "ratio": 2.08
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "Erneuter Versuch nötig",
+    "ratio": 2
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Erneut versuchen",
+    "ratio": 3.2
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "Erneuter Versuch nötig",
+    "ratio": 2
+  },
+  {
     "id": "projectCloud.title",
     "english": "Cloud sync",
     "translation": "Cloud-Synchronisierung",

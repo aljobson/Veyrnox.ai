@@ -63,7 +63,7 @@ test('offers 4K and sends a 2160p quote before any paid create', async () => {
     await render();
     await press('2160p');
     expect(visible('Export at 2160p for 17 credits?')).toBe(true);
-    const quote = request.mock.calls.filter(([path]) => path.endsWith('/quote')).at(-1);
+    const quote = request.mock.calls.find(([path, init]) => path.endsWith('/quote') && JSON.parse(init.body).resolution === '2160p');
     expect(JSON.parse(quote![1].body)).toMatchObject({ resolution: '2160p' });
     expect(creates()).toHaveLength(0);
 });

@@ -70,8 +70,17 @@ describe('best cut planner', () => {
         const one = input('a', [['x y z w.', 1]]);
         expect(buildBestCutPlan(Array.from({ length: 11 }, (_, i) => input(`c${i}`, [['x y z w.', 1]])))).toBeNull();
         expect(buildBestCutPlan([one, one])).toBeNull();
-        expect(buildBestCutPlan([input('a', [['x y z w.', 1]], 61)])).toBeNull();
+        expect(buildBestCutPlan([input('a', [['x y z w.', 1]], 601)])).toBeNull();
+        expect(buildBestCutPlan([input('a', [['x y z w.', 1]], 301), input('b', [['x y z w.', 1]], 301)])).toBeNull();
         expect(buildBestCutPlan([one], '', 'balanced', 29)).toBeNull();
+    });
+    test('plans speech after the first minute of a long paid source while keeping output within 60 seconds', () => {
+        const inputs = [input('long', [['speech well after the first minute.', 100]], 146)];
+        const plan = buildBestCutPlan(inputs)!;
+        expect(plan).not.toBeNull();
+        expect(plan.ranges[0].from).toBeGreaterThan(60 * 30);
+        expect(plan.ranges.at(-1)!.start + plan.ranges.at(-1)!.to - plan.ranges.at(-1)!.from).toBeLessThanOrEqual(60 * 30);
+        expect(validateBestCutPlan(plan, inputs)).toBe(true);
     });
     test('caps output at the last complete word and reports the omitted speech', () => {
         const inputs: BestCutInput[] = [

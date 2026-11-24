@@ -76,9 +76,10 @@ beforeEach(() => {
     mockAppendFoundClips.mockReset();
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
         if (init?.method === 'PUT') return { revision: JSON.parse(init.body as string).expected_revision + 1 };
+        if (init?.method === 'PATCH') return { project: { id: projectId, workspace_id: 'workspace', name: JSON.parse(init.body as string).name, version: 2 } };
         if (path.endsWith('/media-info')) return { seconds: 4 };
         if (path.endsWith('/document')) return { revision: 4, document: serverDocument };
-        return { project: { id: projectId, workspace_id: 'workspace', name: 'Native cut' } };
+        return { project: { id: projectId, workspace_id: 'workspace', name: 'Native cut', version: 1 } };
     });
     serverDocument = document;
     root = createRoot();
@@ -105,9 +106,24 @@ test('opens in the simple view with the ByeCut-style five-tab dock and full tool
     expect(visible('PREVIEW')).toBe(true);
     expect(visible('TIMELINE')).toBe(true);
     for (const label of ['AI Edit', 'Cut', 'Sound', 'Text', 'Layers', 'Undo', 'Redo', 'Export']) expect(labelled(label).length).toBeGreaterThan(0);
-    for (const label of ['Media', 'Audio', 'Captions', 'Transitions', 'Filters', 'Markers', 'Adjust', 'Snap', 'Zoom out', 'Add video track']) expect(labelled(label)).toHaveLength(0);
+    for (const label of ['Media', 'Audio', 'Captions', 'Transitions', 'Filters', 'Markers', 'Adjust', 'Snap']) expect(labelled(label)).toHaveLength(0);
+    for (const label of ['Back', 'Choose cover', 'Rename Native cut', 'Go to start', 'Zoom out', 'Zoom in', 'Add video track', 'Add audio track', 'Add text track', 'Rotation +90°', 'Fit', 'Canvas · 9:16'])
+        expect(labelled(label)).toHaveLength(1);
+    for (const label of ['Previous frame', 'Next frame', 'Go to end']) expect(labelled(label)).toHaveLength(0);
+    expect(labelled('Export')).toHaveLength(1);
     expect(labelled('Canvas · 16:9')).toHaveLength(1);
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
+});
+
+test('renames the project from the editable simple header', async () => {
+    await renderSimple();
+    await press('Rename Native cut');
+    const input = labelled('Project name');
+    expect(input).toHaveLength(1);
+    await act(async () => input[0].props.onChangeText('Morning routine'));
+    await press('Save');
+    expect(visible('Morning routine')).toBe(true);
+    expect(mockRequest).toHaveBeenCalledWith(`/api/v1/projects/${projectId}`, expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ name: 'Morning routine', version: 1 }) }));
 });
 
 test('the five-tab dock opens AI, Cut, Sound, Text and Layers without hiding the dock', async () => {
@@ -151,7 +167,7 @@ test('chooses a project cover frame, title and colour and autosaves them', async
     const input = labelled('Cover text');
     expect(input).toHaveLength(1);
     await act(async () => input[0].props.onChangeText('Track session'));
-    await press('Text color #FFE66D');
+    await press('Colour #FFE66D');
     await press('Save');
     await act(async () => jest.advanceTimersByTimeAsync(900));
     const body = JSON.parse(puts().at(-1)![1].body);

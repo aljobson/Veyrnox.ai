@@ -7452,6 +7452,12 @@
     "ratio": 1.63
   },
   {
+    "id": "editorLocalExport.codec.hevcHelp",
+    "english": "Smaller modern video. Some older apps and devices may not open it.",
+    "translation": "Vidéo moderne plus légère. Certaines applications et certains appareils plus anciens peuvent ne pas l’ouvrir.",
+    "ratio": 1.65
+  },
+  {
     "id": "editorLocalExport.cloud",
     "english": "Use cloud export instead",
     "translation": "Utiliser plutôt l’exportation dans le cloud",
@@ -7516,6 +7522,120 @@
     "english": "Keep titles inside",
     "translation": "Gardez les titres à l’intérieur",
     "ratio": 1.72
+  },
+  {
+    "id": "app.smartCut.feedback.send",
+    "english": "Send feedback",
+    "translation": "Envoyer le commentaire",
+    "ratio": 1.69
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Restaurer la configuration",
+    "ratio": 2
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "Préréglage des sous-titres",
+    "ratio": 1.86
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Encadré",
+    "ratio": 2.33
+  },
+  {
+    "id": "editorCover.title",
+    "english": "Choose Cover",
+    "translation": "Choisir la couverture",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Enregistrer",
+    "ratio": 2.75
+  },
+  {
+    "id": "editorCover.open",
+    "english": "Choose cover",
+    "translation": "Choisir la couverture",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCover.scrub",
+    "english": "Cover frame",
+    "translation": "Image de couverture",
+    "ratio": 1.73
+  },
+  {
+    "id": "editorCover.text",
+    "english": "Cover text",
+    "translation": "Texte de couverture",
+    "ratio": 1.9
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "Ajouter du texte",
+    "ratio": 2
+  },
+  {
+    "id": "editorCover.hideText",
+    "english": "Hide Cover Text",
+    "translation": "Masquer le texte de couverture",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Découper",
+    "ratio": 2.67
+  },
+  {
+    "id": "editorSimple.editText",
+    "english": "Edit Text",
+    "translation": "Modifier le texte",
+    "ratio": 1.89
+  },
+  {
+    "id": "editorSimple.reportIssue",
+    "english": "Report Issue",
+    "translation": "Signaler un problème",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Ouvrir le suivant",
+    "ratio": 1.89
+  },
+  {
+    "id": "projects.smartCutBatch.complete",
+    "english": "Mark complete",
+    "translation": "Marquer comme terminé",
+    "ratio": 1.62
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "Nouvel essai requis",
+    "ratio": 1.73
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Réessayer",
+    "ratio": 1.8
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "Nouvel essai requis",
+    "ratio": 1.73
   },
   {
     "id": "projectCloud.title",

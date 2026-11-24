@@ -4968,6 +4968,78 @@
     "ratio": 1.76
   },
   {
+    "id": "app.smartCut.draft.title",
+    "english": "Pick up where you left off?",
+    "translation": "Продолжить с того места, где вы остановились?",
+    "ratio": 1.67
+  },
+  {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Восстановить настройку",
+    "ratio": 1.69
+  },
+  {
+    "id": "bestCut.files",
+    "english": "From Files",
+    "translation": "Из приложения «Файлы»",
+    "ratio": 2.1
+  },
+  {
+    "id": "editorCaptionTools.style.classic",
+    "english": "Classic",
+    "translation": "Классический",
+    "ratio": 1.71
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Рамка",
+    "ratio": 1.67
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Сохранить",
+    "ratio": 2.25
+  },
+  {
+    "id": "editorCover.help",
+    "english": "Drag to pick the frame shown on this project.",
+    "translation": "Перетащите ползунок, чтобы выбрать кадр, который будет показан для этого проекта.",
+    "ratio": 1.8
+  },
+  {
+    "id": "editorCover.textPlaceholder",
+    "english": "Add text",
+    "translation": "Добавить текст",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Монтаж",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.title",
+    "english": "Title",
+    "translation": "Заголовок",
+    "ratio": 1.8
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Открыть следующий",
+    "ratio": 1.89
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Повторить",
+    "ratio": 1.8
+  },
+  {
     "id": "projectCloud.title",
     "english": "Cloud sync",
     "translation": "Облачная синхронизация",

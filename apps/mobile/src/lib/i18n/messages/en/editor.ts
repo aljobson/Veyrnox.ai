@@ -304,4 +304,10 @@ export default {
     'editor.safeArea.shortForm': "Short-form safe guide",
     'editor.safeArea.help': "Approximate common-platform guide. Platform controls can change; exports never include it.",
     'editor.safeArea.keepInside': "Keep titles inside",
+    'editor.behindSubject': 'Behind subject',
+    'editor.behindSubjectHelp': 'Place this title or image between the original scene and a whole-person mask. The source media stays unchanged.',
+    'editor.maskedSubject': 'Masked subject',
+    'editor.behindSubjectMissing': 'The masked subject no longer covers this overlay. Turn the effect off or adjust its timing.',
+    'editor.axisX': 'X axis',
+    'editor.axisY': 'Y axis',
 } as const;

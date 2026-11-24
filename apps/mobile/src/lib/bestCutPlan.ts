@@ -1,5 +1,7 @@
 import { parseSmartCutAnalysis, type SpeechAnalysis, type SpeechChunk } from './speechCut';
 export const BEST_CUT_LANGUAGES = ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'] as const;
+/** Maximum admitted source duration. The generated edit remains capped at 60 seconds below. */
+export const BEST_CUT_SOURCE_MAX_SECONDS = 600;
 export type BestCutPreset = 'balanced' | 'vlog' | 'educational' | 'punchy' | 'steps';
 export type BestCutInput = { mediaId: string; analysis: SpeechAnalysis };
 export type BestCutRange = { mediaId: string; from: number; to: number; start: number; label: string };
@@ -58,9 +60,12 @@ function buildBestCutPlanInternal(inputs: BestCutInput[], script = '', preset: B
     if (!inputs.length || inputs.length > 10 || script.length > 20000 || ![24, 25, 30, 60].includes(fps)
         || new Set(inputs.map(c => c.mediaId)).size !== inputs.length) return null;
     const parsed: BestCutInput[] = [];
+    let sourceSeconds = 0;
     for (const input of inputs) {
         const result = parseSmartCutAnalysis(input.analysis);
-        if (!result.ok || result.analysis.duration < .5 || result.analysis.duration > 60) return null;
+        if (!result.ok || result.analysis.duration < .5 || result.analysis.duration > BEST_CUT_SOURCE_MAX_SECONDS) return null;
+        sourceSeconds += result.analysis.duration;
+        if (sourceSeconds > BEST_CUT_SOURCE_MAX_SECONDS) return null;
         parsed.push({ mediaId: input.mediaId, analysis: result.analysis });
     }
     const all = utterances(parsed), budget = { remaining: 2000000 };

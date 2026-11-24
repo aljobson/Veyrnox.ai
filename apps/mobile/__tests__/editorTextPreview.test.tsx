@@ -61,7 +61,7 @@ test('PlaybackPreview renders the active styled clip only inside its timeline ra
         const textContent = (node: TestNode): string => typeof node === 'string' ? node : node.children.map(textContent).join('');
         const caption = () => root.container.queryAll(n => textContent(n) === 'Hello world' && !!n.props.style,
             { matchDeepestOnly: true })[0];
-        expect(StyleSheet.flatten(caption().props.style)).toMatchObject(editorTextPreviewStyle(preset.style, preset.size, Platform.OS));
+        expect(StyleSheet.flatten(caption().props.style)).toMatchObject(editorTextOverlayStyles(tl.text[0], Platform.OS).text);
         await act(async () => store.set(1000)); expect(caption()).toBeUndefined();
     } finally { await act(async () => root.unmount()); }
 });

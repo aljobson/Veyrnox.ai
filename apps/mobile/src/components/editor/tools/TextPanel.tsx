@@ -31,9 +31,9 @@ export function TextPanel({ timeline, selection, selected, addText, updateSelect
             <Stepper label={t('editor.horizontalposition')} value={selected.x * 100} min={0} max={100} step={5} suffix="%" onChange={(value) => patchSelected({ x: value / 100 })} />
             <Stepper label={t('editor.verticalposition')} value={selected.y * 100} min={0} max={100} step={5} suffix="%" onChange={(value) => patchSelected({ y: value / 100 })} />
             <Text style={styles.fieldLabel}>{t('editor.snap')} · {t('editor.horizontalposition')}</Text><View style={styles.choices}>{TEXT_GUIDES.map(value => <Choice key={value}
-                label={`X ${value * 100}%`} selected={selected.x === value} onPress={() => patchSelected({ x: value })} />)}</View>
+                label={`${t('editor.axisX')} ${value * 100}%`} selected={selected.x === value} onPress={() => patchSelected({ x: value })} />)}</View>
             <Text style={styles.fieldLabel}>{t('editor.snap')} · {t('editor.verticalposition')}</Text><View style={styles.choices}>{TEXT_GUIDES.map(value => <Choice key={value}
-                label={`Y ${value * 100}%`} selected={selected.y === value} onPress={() => patchSelected({ y: value })} />)}</View>
+                label={`${t('editor.axisY')} ${value * 100}%`} selected={selected.y === value} onPress={() => patchSelected({ y: value })} />)}</View>
             <Text style={styles.fieldLabel}>{t('editor.weight')}</Text><View style={styles.choices}>{['normal', 'bold'].map((value) => <Choice key={value} label={value}
                 selected={(selected.style?.weight ?? 'bold') === value} onPress={() => textActions?.style('weight', value)} />)}</View>
             <Text style={styles.fieldLabel}>{t('editor.alignment')}</Text><View style={styles.choices}>{['left', 'center', 'right'].map((value) => <Choice key={value} label={value}

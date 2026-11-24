@@ -33,6 +33,8 @@ export function smartCutLiveActivityProps(stage: SmartCutProgressStage, done: nu
         total: count,
         progress: complete ? 1 : Math.min(0.98, Math.max(0.02, (Math.max(0, done) + 0.2) / count)),
         complete,
+        doneLabel: t('editor.done'),
+        featureLabel: t('editorSimple.smartCut'),
     };
 }
 

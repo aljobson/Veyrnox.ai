@@ -184,6 +184,7 @@ export async function installProductFixtures(page, options = {}) {
         if (url.pathname === '/api/v1/chat/folders') return json({ folders: [] });
         if (url.pathname === '/api/v1/chat/personas') return json({ enabled: false, personas: [] });
         if (url.pathname === '/api/v1/workspaces') return json({ workspaces: [{ id: WORKSPACE, name: 'Synthetic workspace', role: 'owner' }] });
+        if (url.pathname === '/api/v1/project-folders') return json({ folders: [] });
       }
       fixture.unhandled.push({ method, path: url.pathname });
       return ['GET', 'HEAD', 'OPTIONS'].includes(method) ? json({ error: 'synthetic_route_unhandled' }, 501) : route.abort('blockedbyclient');

@@ -9,6 +9,8 @@ export type SmartCutLiveActivityProps = {
     total: number;
     progress: number;
     complete: boolean;
+    doneLabel: string;
+    featureLabel: string;
 };
 
 const green = '#34C759';
@@ -24,17 +26,17 @@ const SmartCutLiveActivity = createLiveActivity<SmartCutLiveActivityProps>('Veyr
                 <HStack alignment="center" spacing={8}>
                     <Text modifiers={[font({ weight: 'bold' }), foregroundStyle('#FFFFFF')]}>{props.title}</Text>
                     <Spacer />
-                    <Text modifiers={[font({ weight: 'semibold' }), foregroundStyle(accent)]}>{props.complete ? 'Done' : count}</Text>
+                    <Text modifiers={[font({ weight: 'semibold' }), foregroundStyle(accent)]}>{props.complete ? props.doneLabel : count}</Text>
                 </HStack>
                 <ProgressView value={Math.min(1, Math.max(0, props.progress))} modifiers={[progressViewStyle('linear'), tint(accent)]} />
                 <Text modifiers={[font({ size: 13 }), foregroundStyle(secondary)]}>{props.status}</Text>
             </VStack>
         ),
         compactLeading: <Text modifiers={[font({ weight: 'bold' }), foregroundStyle(accent)]}>✦</Text>,
-        compactTrailing: <Text modifiers={[font({ weight: 'semibold' }), foregroundStyle('#FFFFFF')]}>{props.complete ? 'Done' : count}</Text>,
+        compactTrailing: <Text modifiers={[font({ weight: 'semibold' }), foregroundStyle('#FFFFFF')]}>{props.complete ? props.doneLabel : count}</Text>,
         minimal: <Text modifiers={[font({ weight: 'bold' }), foregroundStyle(accent)]}>✦</Text>,
-        expandedLeading: <Text modifiers={[font({ weight: 'bold' }), foregroundStyle(accent)]}>✦ Smart Cut</Text>,
-        expandedTrailing: <Text modifiers={[font({ weight: 'semibold' }), foregroundStyle('#FFFFFF')]}>{props.complete ? 'Done' : count}</Text>,
+        expandedLeading: <Text modifiers={[font({ weight: 'bold' }), foregroundStyle(accent)]}>✦ {props.featureLabel}</Text>,
+        expandedTrailing: <Text modifiers={[font({ weight: 'semibold' }), foregroundStyle('#FFFFFF')]}>{props.complete ? props.doneLabel : count}</Text>,
         expandedBottom: <ProgressView value={Math.min(1, Math.max(0, props.progress))} modifiers={[progressViewStyle('linear'), tint(accent)]} />,
     };
 });

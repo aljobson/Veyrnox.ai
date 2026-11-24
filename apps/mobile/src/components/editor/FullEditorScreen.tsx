@@ -65,7 +65,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
-import { Linking, Platform, Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Linking, Platform, Modal, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { HEADER_MAX_FONT_SCALE, touchTarget } from '../../lib/a11y';
 import { formatNumber, plural, t } from '../../lib/i18n';
 import type { LibraryChoice } from '../../lib/librarySource';
@@ -73,8 +73,6 @@ import { DEFAULT_TEXT_STYLE, addMarker, addTrack, canvasAspectSize, canvasOf, cl
     removeSelections, splitClip, splitClipAtFrames, timelineOf, updateClip, validCustomFonts, type Canvas, type Clip, type EditorTrack, type Media, type Selection, type TextClip, type Timeline, type TrackKind } from
     '../../lib/nativeEditorModel';
 import type { SlotKind } from '../../lib/sources';
-import { HeaderAction } from '../HeaderAction';
-import { studioColors } from '../../theme';
 import { LibraryChooser } from '../LibraryChooser';
 import { JobThumb, useAssetLinks } from '../JobThumb';
 import { mediaFrames, overlaySpan } from '../../lib/editorOverlay';
@@ -88,6 +86,7 @@ import { editorDeviceMedia } from '../../lib/editorDeviceMedia';
 import { editorImportHasSpace } from '../../lib/editorImportSpace';
 import { waitForEditorPickedFile } from '../../lib/editorPickedFileReady';
 import { pickNativeProjectFile, shareNativeProjectFile } from '../../lib/editorProjectFiles';
+import { cleanProjectName, fetchProject, projectsErrorMessage, renameProject } from '../../lib/projects';
 import { useEditorSpeechCaptions } from './tools/useEditorSpeechCaptions';
 import { editorMotionSelectedRange, useEditorMotionProcessing } from './tools/useEditorMotionProcessing';
 import { useEditorPersonMask } from './tools/useEditorPersonMask';
@@ -114,6 +113,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const { getEditRevision, beginImport, replacing, leaveEditor, saveStatus, sync, currentDocument, preparePicked, savedDocument, api, router, name, document, dirty, problem, setProblem, tool,
         setTool, selection, setSelection, selections, setSelections, multiSelect, setMultiSelect, clipboard, setClipboard, snap, setSnap, ripple, setRipple, zoom, setZoom, privacyNotice,
         history, frameStore, setFrame, playing, setPlaying, projectAssets, localMediaUris, libraryKind, setLibraryKind, markDocument, save, acknowledgePrivacy, travel } = session;
+    const [displayName, setDisplayName] = useState(name);
+    const [renameOpen, setRenameOpen] = useState(false);
+    const [renameDraft, setRenameDraft] = useState(name);
+    const [renameBusy, setRenameBusy] = useState(false);
+    const syncedName = useRef(name);
+    useEffect(() => { if (syncedName.current !== name) { syncedName.current = name; setDisplayName(name); setRenameDraft(name); } }, [name]);
     const bestCut = useBestCutEditor(session, projectId, startBestCut); const thumbLinks = useAssetLinks(api);
     const { aiQuote, setAiQuote, aiEditOpen, setAiEditOpen } = useAiEditAvailability(api, projectId);
     const [aiAnnouncement, setAiAnnouncement] = useState<string | null>(null); useAnnouncement(aiAnnouncement);
@@ -127,6 +132,24 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const [stemChoice, setStemChoice] = useState<{ choice: LibraryChoice; stems: EditorStem[] } | null>(null);
     const isReady = () => currentDocument()?.project_id === projectId && sync.draftDecided && !sync.sheet && !sync.replacing && sync.live(), ready = isReady();
     const liveProject = useRef(projectId), readiness = useRef(ready); liveProject.current = projectId; readiness.current = ready;
+    const openRename = () => { setRenameDraft(displayName); setRenameOpen(true); setProblem(null); };
+    const saveRename = async () => {
+        const cleaned = cleanProjectName(renameDraft);
+        if (!cleaned || renameBusy) { if (!cleaned) setProblem(t('projects.givetheprojectanameofup')); return; }
+        const owner = projectId;
+        setRenameBusy(true); setProblem(null);
+        try {
+            const current = await fetchProject(api, owner);
+            if (!current) throw new Error('project-unavailable');
+            const updated = await renameProject(api, owner, cleaned, current.version);
+            if (!mounted.current || liveProject.current !== owner) return;
+            setDisplayName(updated?.name ?? cleaned); setRenameDraft(updated?.name ?? cleaned); setRenameOpen(false);
+        } catch (error) {
+            if (mounted.current && liveProject.current === owner) setProblem(projectsErrorMessage(error));
+        } finally {
+            if (mounted.current && liveProject.current === owner) setRenameBusy(false);
+        }
+    };
     useEffect(() => { fileWaitTicket.current++; setFileImport({ status: 'idle' }); setGenerate(null); setStemChoice(null); setAssetPackAt(null); return subscribeCacheUser(() => {
         fileWaitTicket.current++; setFileImport({ status: 'idle' }); setGenerate(null); setStemChoice(null); setAssetPackAt(null); }); }, [projectId]);
     useEffect(() => { if (!ready && assetPackAt !== null) setAssetPackAt(null); }, [assetPackAt, ready]);
@@ -511,24 +534,24 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         <StatusBar style="light" />
         <LocalExportSheet visible={localExportVisible} api={api} account={getCacheUser() ?? ''} projectId={projectId} revision={getEditRevision()} timeline={timeline} canvas={canvas} localMediaUris={localMediaUris}
             onClose={() => setLocalExportVisible(false)} onCloud={() => { setLocalExportVisible(false); void openCloudExport(); }} />
-        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={name} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
+        {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
-        <Stack.Screen options={{ gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit
-            */, title: t('editor.cut'), headerStyle: { backgroundColor: studioColors.background }, headerTintColor: studioColors.text,
-            headerRight: () => advanced ? <HeaderAction label={t('editor.done')} onPress={guard.done} /> : <HeaderAction label={t('editor.export')} onPress={openExport} /> }} />
+        <Stack.Screen options={{ headerShown: false, gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */ }} />
         <View style={styles.projectBar}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={guard.done} style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
+                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerButtonIcon}>‹</Text>
+            </Pressable>
             {advanced ? <View style={styles.cutBadge}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutMark}>{t('editor.v')}</Text><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}
             {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCover.open')} onPress={openCover} style={({ pressed }) => [styles.coverButton, pressed && styles.pressed]}>
                 <Text style={styles.coverButtonIcon}>▧</Text>
             </Pressable> : null}
-            <View style={styles.titleGroup}>
-                <Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.title}>{name}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={`${t('projects.rename')} ${displayName}`} onPress={openRename} style={({ pressed }) => [styles.titleGroup, touchTarget, pressed && styles.pressed]}>
+                <View style={styles.titleRow}><Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.title}>{displayName}</Text><Text style={styles.titleEdit}>✎</Text></View>
                 <StatusText variant="inherit" maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText>
-            </View>
-            {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}<Pressable
-                accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => showPanel('canvas')}
-                style={({ pressed }) => [styles.formatBadge, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.formatText}>{canvas.aspect_ratio}</Text><Text
-                maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.formatMeta}>{t('editor.fPS', { value1: canvas.frame_rate })}</Text></Pressable>
+            </Pressable>
+            {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
+            <Pressable accessibilityRole="button" accessibilityLabel={advanced ? t('editor.done') : t('editor.export')} onPress={advanced ? guard.done : openExport}
+                style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerActionText}>{advanced ? t('editor.done') : t('editor.export')}</Text></Pressable>
         </View>
         {problem ? <StatusText key={placement} variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
         {fileImport.status !== 'idle' ? <View testID="editor-files-recovery" style={styles.workflowCard}>
@@ -538,10 +561,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 <Action label={t('editor.files')} onPress={() => void chooseFiles()} />
             </View> : null}
         </View> : null}
-        {advanced ? null : <View style={styles.simpleActions}>
-            <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
-            <Command icon="↷" label={t('editor.redo')} disabled={!history.canRedo} onPress={() => travel('redo')} />
-            {selection ? <>
+        {advanced || !selection ? null : <View style={styles.simpleActions}>
+            <>
                 <Command icon="⇥" label={t('editorSimple.closeGaps')} selected={ripple !== 'none'} onPress={() => setRipple(ripple === 'none' ? 'lane' : 'none')} />{selection.track === 'audio' ?
                     <Command icon="♪" label={t('editor.volume')} onPress={() => showPanel('adjust')} /> : null}
                 <Command icon="✂" label={t('editor.split')} onPress={splitSelection} />
@@ -549,9 +570,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 <Command icon="◀" label={t('editor.moveLeft')} disabled={!canMove(-1)} onPress={() => moveSelection(-1)} />
                 <Command icon="▶" label={t('editor.moveRight')} disabled={!canMove(1)} onPress={() => moveSelection(1)} />
                 <Command icon="⌫" label={t('editor.delete')} danger onPress={removeSelection} />
-            </> : null}
-            <View style={styles.simpleSpacer} />
-            <Command icon="⇩" label={t('editor.export')} onPress={openExport} />
+            </>
         </View>}
         {advanced ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.commandStrip} contentContainerStyle={styles.commandContent}>
             <Command icon="↶" label={t('editor.undo')} disabled={!history.canUndo} onPress={() => travel('undo')} />
@@ -596,7 +615,9 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             {bestCut.result}
             {advanced && !budget.showPreviewHeading ? null : <View style={styles.previewHeading}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
-                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewMeta}>{clipCount ? plural('editor.clipsOnTimelineCount', clipCount) : t('editor.emptysequence')}</Text>
+                {advanced ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewMeta}>{clipCount ? plural('editor.clipsOnTimelineCount', clipCount) : t('editor.emptysequence')}</Text>
+                    : <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => showPanel('canvas')}
+                        style={({ pressed }) => [styles.previewAspect, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewAspectText}>{String.fromCodePoint(9635)} {canvas.aspect_ratio}</Text></Pressable>}
             </View>}
             {safeGuideSize.height > safeGuideSize.width ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.safeAreaStrip} contentContainerStyle={styles.safeAreaControls}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.optionLabel}>{t('editor.safeArea')}</Text>
@@ -612,15 +633,37 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                         motionHandle={(advanced || panelOpen) && tool === 'motion' ? { selection, actions: motionActions } : undefined} />
                     <EditorSafeAreaOverlay id={safeAreaGuideId} width={safeGuideSize.width} height={safeGuideSize.height} />
                 </View>
+                {!advanced && !panelOpen ? <View style={styles.previewQuickActions}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.rotation')} +90°`} accessibilityState={{ disabled: selection?.track !== 'video' || !selected }} hitSlop={4}
+                        disabled={selection?.track !== 'video' || !selected} onPress={() => motionActions.transform('rotation', (((selected as Clip)?.transform?.rotation ?? 0) + 90) % 360)}
+                        style={({ pressed }) => [styles.previewQuickButton, (selection?.track !== 'video' || !selected) && styles.disabled, pressed && styles.pressed]}><Text style={styles.previewQuickIcon}>↻</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.fit')} accessibilityState={{ disabled: selection?.track !== 'video' || !selected }} hitSlop={4}
+                        disabled={selection?.track !== 'video' || !selected} onPress={() => motionActions.transform('scale', 1)}
+                        style={({ pressed }) => [styles.previewQuickButton, (selection?.track !== 'video' || !selected) && styles.disabled, pressed && styles.pressed]}><Text style={styles.previewQuickIcon}>⤢</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · 9:16`} accessibilityState={{ selected: canvas.aspect_ratio === '9:16' }} hitSlop={4}
+                        onPress={() => updateCanvas({ aspect_ratio: '9:16' })} style={({ pressed }) => [styles.previewQuickButton, canvas.aspect_ratio === '9:16' && styles.previewQuickSelected, pressed && styles.pressed]}><Text style={styles.previewQuickIcon}>▯</Text></Pressable>
+                </View> : null}
             </View>
-            <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} onSeek={setFrame} onPlaying={setPlaying} />
+            <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} simple={!advanced} canUndo={history.canUndo} canRedo={history.canRedo}
+                onUndo={() => travel('undo')} onRedo={() => travel('redo')} onSeek={setFrame} onPlaying={setPlaying} />
         </View>
         <View testID="editor-timeline-section" style={[styles.timelineSection, advanced && (budget.wideShort ? styles.timelineSectionWide
             : { flexShrink: 1, flexGrow: 0, maxHeight: budget.timelineMax, minHeight: Math.min(budget.timelineMax, 119) })]}>
-            <View style={styles.timelineHeading}>
+            <View style={[styles.timelineHeading, !advanced && styles.simpleTimelineHeading]}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
-                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection ? (advanced ? t('editor.tapacommandtoeditselection')
-                    : t('editor.clipSelectedUseButtons')) : t('editor.tapacliptoselect')}</Text>
+                {advanced ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection
+                    ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text> : <View style={styles.simpleTimelineTools}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomOut')} accessibilityState={{ disabled: zoom <= PPF_MIN }} disabled={zoom <= PPF_MIN}
+                        onPress={() => setZoom(value => Math.max(PPF_MIN, value / 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom <= PPF_MIN && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>−</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomIn')} accessibilityState={{ disabled: zoom >= PPF_MAX }} disabled={zoom >= PPF_MAX}
+                        onPress={() => setZoom(value => Math.min(PPF_MAX, value * 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom >= PPF_MAX && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>+</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addvideotrack')} onPress={() => addTimelineTrack('video')}
+                        style={({ pressed }) => [styles.timelineQuickButton, pressed && styles.pressed]}><Text style={styles.timelineQuickLabel}>{t('editor.track.video').slice(0, 1)}+</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')}
+                        style={({ pressed }) => [styles.timelineQuickButton, pressed && styles.pressed]}><Text style={styles.timelineQuickLabel}>{t('editor.track.audio').slice(0, 1)}+</Text></Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addtexttrack')} onPress={() => addTimelineTrack('text')}
+                        style={({ pressed }) => [styles.timelineQuickButton, pressed && styles.pressed]}><Text style={styles.timelineQuickLabel}>{t('editor.track.text').slice(0, 1)}+</Text></Pressable>
+                </View>}
             </View>
             {advanced ? <ScrollView testID="editor-timeline-scroll" nestedScrollEnabled scrollEnabled={!timelineTouch} style={{ maxHeight: budget.timelineScrollMax }}
                 showsVerticalScrollIndicator>
@@ -708,6 +751,22 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         <AssetPackLibrarySheet key={`asset-pack-${projectId}`} visible={assetPackAt !== null && ready} playhead={timecode(assetPackAt ?? 0, timeline.fps)} onClose={() => setAssetPackAt(null)} onAdd={addPackAsset} />
         <EditorSaveSheets sync={sync} /><EditorVersionsSheet sync={sync} api={api} projectId={projectId} />
         {libraryKind ? <LibraryChooser api={api} kind={libraryKind} onClose={() => setLibraryKind(null)} onPick={(choice) => importLibrary(choice, libraryKind)} /> : null}
+        <Modal visible={renameOpen} transparent animationType="fade" onRequestClose={() => { if (!renameBusy) setRenameOpen(false); }} accessibilityViewIsModal>
+            <View style={styles.noticeBackdrop}><View style={styles.renameCard}>
+                <Text accessibilityRole="header" style={styles.noticeTitle}>{t('projects.rename')}</Text>
+                <TextInput autoFocus accessibilityLabel={t('projects.projectname')} value={renameDraft} maxLength={120} returnKeyType="done" submitBehavior="submit"
+                    editable={!renameBusy} onChangeText={setRenameDraft} onSubmitEditing={() => void saveRename()} style={styles.input} />
+                <View style={styles.renameActions}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('projects.cancel')} disabled={renameBusy} onPress={() => setRenameOpen(false)} style={[styles.renameSecondary, touchTarget, renameBusy && styles.disabled]}>
+                        <Text style={styles.actionText}>{t('projects.cancel')}</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={t('projects.save')} accessibilityState={{ disabled: renameBusy || !cleanProjectName(renameDraft) }}
+                        disabled={renameBusy || !cleanProjectName(renameDraft)} onPress={() => void saveRename()} style={[styles.primary, styles.renamePrimary, touchTarget, (renameBusy || !cleanProjectName(renameDraft)) && styles.disabled]}>
+                        <Text style={styles.primaryText}>{t('projects.save')}</Text>
+                    </Pressable>
+                </View>
+            </View></View>
+        </Modal>
         {/* Required privacy acknowledgement: escape must not imply consent. */}
         <Modal visible={privacyNotice} transparent animationType="fade" onRequestClose={acknowledgePrivacy} accessibilityViewIsModal><View style={styles.noticeBackdrop}><View
             style={styles.noticeCard}><Text accessibilityRole="header" style={styles.noticeTitle}>{t('editor.privacyTitle')}</Text><Text

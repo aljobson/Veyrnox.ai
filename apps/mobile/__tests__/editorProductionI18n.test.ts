@@ -6,10 +6,10 @@ const keys = (Object.keys(en) as Array<keyof typeof en>)
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
 test.each(Object.entries(APP_CATALOGS))('%s owns the production editor actions with exact placeholders', (_locale, catalog) => {
-    expect(keys).toHaveLength(78);
+    expect(keys).toHaveLength(93);
     for (const key of keys) {
         expect({ key, present: Object.hasOwn(catalog, key) }).toEqual({ key, present: true });
         expect({ key, placeholders: placeholders(catalog[key]) }).toEqual({ key, placeholders: placeholders(en[key]) });
-        if (key !== 'editorNativeMotion.progress') expect(catalog[key]).not.toBe(en[key]);
+        if (!['editorNativeMotion.progress', 'editorLocalExport.quality.standard', 'editorLocalExport.codec.h264', 'editorLocalExport.codec.hevc'].includes(key)) expect(catalog[key]).not.toBe(en[key]);
     }
 });

@@ -8,6 +8,7 @@ import type { Timeline } from '../../lib/nativeEditorModel';
 import { studioColors as colors, ds, fonts } from '../../theme';
 import { PlaybackPreview } from './EditorPlayback';
 import { createFrameStore, type FrameStore } from './editorFrameStore';
+import { ColourField } from './tools/ColourField';
 import { Slider } from './tools/Slider';
 
 export type EditorCover = { frame: number; text: string; text_color: string };
@@ -59,13 +60,7 @@ export function EditorCoverSheet({ initial, frameStore, total, timeline, aspectR
                     <TextInput accessibilityLabel={rawText(t('editorCover.text'))} value={text} onChangeText={setText} maxLength={120} placeholder={t('editorCover.textPlaceholder')}
                         placeholderTextColor={colors.muted} style={styles.input} returnKeyType="done" />
                 </View>
-                <View style={styles.field}>
-                    <Text style={styles.label}>{t('editorCover.textColor')}</Text>
-                    <View style={styles.swatches}>{COVER_SWATCHES.map(hex => <Pressable key={hex} accessibilityRole="button" accessibilityLabel={rawText(t('editorCover.color', { value1: hex }))}
-                        accessibilityState={{ selected: textColor === hex }} onPress={() => setTextColor(hex)} style={[touchTarget, styles.swatchButton, textColor === hex && styles.swatchSelected]}>
-                        <View style={[styles.swatch, { backgroundColor: hex }]} />
-                    </Pressable>)}</View>
-                </View>
+                <ColourField label={t('editorCover.textColor')} value={textColor} swatches={COVER_SWATCHES} onChange={setTextColor} />
                 {text ? <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorCover.hideText'))} onPress={() => setText('')} style={[touchTarget, styles.hideText]}>
                     <Text style={styles.hideTextLabel}>{t('editorCover.hideText')}</Text>
                 </Pressable> : null}
@@ -88,13 +83,10 @@ const styles = StyleSheet.create({
     frameChoice: { flex: 1, minWidth: 0, gap: 4, padding: 3, borderWidth: 2, borderColor: 'transparent', borderRadius: 10, backgroundColor: colors.surface },
     frameSelected: { borderColor: colors.accent },
     framePreview: { height: 54, overflow: 'hidden', borderRadius: 7, backgroundColor: '#050506' },
-    frameTime: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'], textAlign: 'center' },
+    frameTime: { color: colors.muted, fontSize: 12, fontVariant: ['tabular-nums'], textAlign: 'center' },
     help: { color: colors.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
     field: { gap: 8 }, label: { color: colors.text, fontSize: 16, fontWeight: '800' },
     input: { minHeight: 50, color: colors.text, fontSize: 16, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface },
-    swatches: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    swatchButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.border, borderRadius: 24 },
-    swatchSelected: { borderColor: colors.accent }, swatch: { width: 30, height: 30, borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.borderStrong },
     hideText: { alignSelf: 'flex-start', justifyContent: 'center' }, hideTextLabel: { color: colors.accent, fontSize: 15, fontWeight: '800' },
     frameReadout: { color: colors.muted, fontSize: 12, textAlign: 'center', fontVariant: ['tabular-nums'] },
 });

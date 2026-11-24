@@ -47,12 +47,14 @@ export function parseSmartCutAnalysis(v: unknown, expected: { assetId?: string; 
         transcript: clean(v.transcript), language: languages.includes(code) ? code : iso3[code] || 'und', timingQuality: v.provider === 'fal-wizper' ? 'phrase' : 'word', chunks: chunks.sort((a, b) => a.start - b.start || a.end - b.end) } };
 }
 /** Same complete-unit, padded, overlap-merged ranges as the web and Smart Cut planners. */
-export function silenceRangePlan(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural', maxOutputSeconds = 60): SpeechRangePlan {
+export function silenceRangePlan(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural', maxOutputSeconds = 60, omitRetakes = true): SpeechRangePlan {
     const { minimumSeconds, edgePaddingSeconds } = SILENCE_PRESETS[silencePreset(preset)];
     type Group = SpeechRange & { entries: SpeechChunk[] };
     const overlapping = analysis.chunks.filter((chunk) => chunk.end > start && chunk.start < end);
     const intersections = overlapping.filter((chunk) => chunk.start < start || chunk.end > end);
-    const entries = overlapping.filter((chunk) => chunk.start >= start && chunk.end <= end);
+    const repeated = omitRetakes ? retakeRanges(analysis) : [];
+    const entries = overlapping.filter((chunk) => chunk.start >= start && chunk.end <= end
+        && !repeated.some((range) => chunk.start >= range.start && chunk.end <= range.end));
     if (!entries.length && intersections.length) throw new SpeechCutPlanError('trim_intersects_unit', 'No complete timed speech unit fits inside the selected clip range.', {
         reason: 'trim_intersects_all_units', units: intersections,
     });
@@ -66,7 +68,13 @@ export function silenceRangePlan(analysis: SpeechAnalysis, start = 0, end = anal
     const trailingBarrier = intersections.filter((unit) => unit.start < end && unit.end > end).reduce((bound, unit) => Math.min(bound, unit.start), end);
     const merged: Group[] = [];
     for (const group of groups) {
-        const padded = { ...group, entries: [...group.entries], start: Math.min(trailingBarrier, Math.max(leadingBarrier, ceil(group.start - edgePaddingSeconds))), end: Math.min(floor(trailingBarrier), floor(group.end + edgePaddingSeconds)) };
+        const first = group.entries[0], lastEntry = group.entries.at(-1);
+        const previous = analysis.chunks.filter((chunk) => chunk.end <= first.start + 1e-9).at(-1);
+        const following = analysis.chunks.find((chunk) => chunk.start >= (lastEntry?.end ?? group.end) - 1e-9);
+        const safeLeadingBarrier = previous ? Math.max(leadingBarrier, (previous.end + first.start) / 2 + .01) : leadingBarrier;
+        const safeTrailingBarrier = following ? Math.min(trailingBarrier, ((lastEntry?.end ?? group.end) + following.start) / 2 - .01) : trailingBarrier;
+        const paddedStart = Math.min(safeTrailingBarrier, Math.max(safeLeadingBarrier, ceil(group.start - edgePaddingSeconds)));
+        const padded = { ...group, entries: [...group.entries], start: paddedStart, end: Math.max(paddedStart, Math.min(floor(safeTrailingBarrier), floor(group.end + edgePaddingSeconds))) };
         const last = merged.at(-1);
         if (last && padded.start <= last.end) { last.end = Math.max(last.end, padded.end); last.label += ` ${padded.label}`; last.entries.push(...padded.entries); }
         else merged.push(padded);
@@ -117,7 +125,7 @@ export function silenceRanges(analysis: SpeechAnalysis, start = 0, end = analysi
  * suggestion can never silently delete timed speech.
  */
 export function silenceRemovalProposalPlan(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural'): SilenceRemovalProposalPlan {
-    const plan = silenceRangePlan(analysis, start, end, preset, Math.max(0.01, end - start));
+    const plan = silenceRangePlan(analysis, start, end, preset, Math.max(0.01, end - start), false);
     const removals = keptAfterRemovals(plan.ranges, start, end);
     const unsafeUnits = plan.warningDetails
         .filter((warning) => warning.code === 'trim_intersects_unit')

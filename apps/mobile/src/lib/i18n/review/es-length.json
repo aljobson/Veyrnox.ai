@@ -4968,6 +4968,84 @@
     "ratio": 3.67
   },
   {
+    "id": "app.smartCut.draft.restore",
+    "english": "Restore setup",
+    "translation": "Restaurar configuración",
+    "ratio": 1.77
+  },
+  {
+    "id": "editorCaptionTools.stylePicker",
+    "english": "Caption preset",
+    "translation": "Preajuste de subtítulos",
+    "ratio": 1.64
+  },
+  {
+    "id": "editorCaptionTools.style.box",
+    "english": "Box",
+    "translation": "Recuadro",
+    "ratio": 2.67
+  },
+  {
+    "id": "editorCover.save",
+    "english": "Save",
+    "translation": "Guardar",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorCover.frames",
+    "english": "Cover frame choices",
+    "translation": "Opciones de fotograma de portada",
+    "ratio": 1.68
+  },
+  {
+    "id": "editorCover.scrub",
+    "english": "Cover frame",
+    "translation": "Fotograma de portada",
+    "ratio": 1.82
+  },
+  {
+    "id": "editorSimple.cut",
+    "english": "Cut",
+    "translation": "Cortar",
+    "ratio": 2
+  },
+  {
+    "id": "editorSimple.reportIssue",
+    "english": "Report Issue",
+    "translation": "Informar de un problema",
+    "ratio": 1.92
+  },
+  {
+    "id": "projects.smartCutBatch.open",
+    "english": "Open next",
+    "translation": "Abrir siguiente",
+    "ratio": 1.67
+  },
+  {
+    "id": "projects.smartCutBatch.complete",
+    "english": "Mark complete",
+    "translation": "Marcar como completado",
+    "ratio": 1.69
+  },
+  {
+    "id": "projects.smartCutBatch.fail",
+    "english": "Needs retry",
+    "translation": "Necesita otro intento",
+    "ratio": 1.91
+  },
+  {
+    "id": "projects.smartCutBatch.retry",
+    "english": "Retry",
+    "translation": "Reintentar",
+    "ratio": 2
+  },
+  {
+    "id": "projects.smartCutBatch.state.failed",
+    "english": "Needs retry",
+    "translation": "Necesita otro intento",
+    "ratio": 1.91
+  },
+  {
     "id": "projectCloud.title",
     "english": "Cloud sync",
     "translation": "Sincronización en la nube",

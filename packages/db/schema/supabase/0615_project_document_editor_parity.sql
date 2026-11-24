@@ -83,7 +83,7 @@ BEGIN
            AND (NOT (content?'cover') OR private.project_cover_within_bounds(content->'cover'))
            AND (NOT (content?'editing_summary') OR private.project_editing_summary_within_bounds(content->'editing_summary'))
            AND private.project_editor_timeline_within_bounds(content->'timeline')
-           AND (schema_version<>3 OR content->'timeline'->'schemaVersion'='3'::jsonb)
+           AND (schema_version<>3 OR content->'timeline'->'schemaVersion' IS NOT DISTINCT FROM '3'::jsonb)
            AND (schema_version<>2 OR content->'timeline'->'schemaVersion' IS DISTINCT FROM '3'::jsonb);
     END IF;
     RETURN content-ARRAY['schema_version','project_id','brief','canvas','oddlings']='{}'::jsonb

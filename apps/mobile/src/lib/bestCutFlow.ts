@@ -6,12 +6,12 @@ import { pollSpeech, recoverSpeech, forgetSpeechKey, speechKeyFor, startSpeech, 
 import { uploadSource, putFromDisk } from './uploads';
 import type { Media } from './nativeEditorModel';
 import type { DeviceFile } from './editorDeviceMedia';
-import type { BestCutInput } from './bestCutPlan';
+import { BEST_CUT_SOURCE_MAX_SECONDS, type BestCutInput } from './bestCutPlan';
 export type BestCutSource = { type: 'job'; jobId: string } | { type: 'upload'; key: string };
 export type BestCutClip = { media: Media; duration: number; file?: DeviceFile; source?: BestCutSource };
 export type BestCutPhase = 'ready' | 'uploading' | 'preflight' | 'transcribing' | 'no-speech' | 'complete';
 export type BestCutPrice = { cached: boolean; credits: number; free?: boolean; paidCredits?: number };
-export const BEST_CUT_MAX_SECONDS = 600;
+export const BEST_CUT_MAX_SECONDS = BEST_CUT_SOURCE_MAX_SECONDS;
 export type BestCutProgress = { phase: BestCutPhase; index: number; fraction: number; refunded: number; prices?: BestCutPrice[] };
 export function bestCutPrice(quote: SpeechQuote, count: number, balance: number, prices?: BestCutPrice[]) {
     const total = prices ? prices.reduce((n, p) => n + p.credits, 0) : quote.credits * count;
