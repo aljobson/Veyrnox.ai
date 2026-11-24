@@ -16,6 +16,10 @@ register(data(`export async function resolve(specifier, context, nextResolve) {
     export const musicSchemaEnabled = () => true;
     export const musicGenerationEnabled = () => false;
     export const musicAlbumsEnabled = () => false;
+    export const musicStudioChatEnabled = () => {
+      const flags = JSON.parse(process.env.MUSIC_RUNTIME_FLAGS || '{}');
+      return flags.ui === true && flags.beatEditor === true && flags.studioChat === true;
+    };
     export const musicDailyCreditsEnabled = () => false;
     export const musicEntitlementProjection = () => ({ available: true });
   `))}, shortCircuit: true };
@@ -51,6 +55,27 @@ test('enabled daily challenge is carried by the existing no-store entitlement co
     assert.deepEqual(body.daily_challenge, musicDailyChallengeAt(Date.now()));
   } finally {
     Date.now = realNow;
+    if (previous === undefined) delete process.env.MUSIC_RUNTIME_FLAGS;
+    else process.env.MUSIC_RUNTIME_FLAGS = previous;
+  }
+});
+
+test('native Studio actions require the same combined UI, beat editor and studioChat gate as web', async () => {
+  const previous = process.env.MUSIC_RUNTIME_FLAGS;
+  try {
+    for (const [flags, expected] of [
+      [{ studioChat: true }, false],
+      [{ ui: true, studioChat: true }, false],
+      [{ ui: true, beatEditor: true, studioChat: true }, true],
+    ]) {
+      process.env.MUSIC_RUNTIME_FLAGS = JSON.stringify(flags);
+      const { GET } = await import(`../app/api/v1/music/entitlements/route.js?studio-chat=${JSON.stringify(flags)}-${Date.now()}`);
+      const response = await GET(new Request('https://veyrnox.test/api/v1/music/entitlements', {
+        headers: { 'x-veyrnox-auth-id': 'auth-user' },
+      }));
+      assert.equal((await response.json()).features.studioChat, expected);
+    }
+  } finally {
     if (previous === undefined) delete process.env.MUSIC_RUNTIME_FLAGS;
     else process.env.MUSIC_RUNTIME_FLAGS = previous;
   }

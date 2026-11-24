@@ -27,6 +27,7 @@ export function useBeatProject(id, announce) {
   const [persistent, setPersistent] = useState(true);
   const [conflict, setConflict] = useState(null);
   const [saveError, setSaveError] = useState(false);
+  const [replacingState, setReplacingState] = useState(false);
   const current = useRef(null);
   const beforeFlush = useRef(null);
   const recordingState = useRef(() => false);
@@ -160,11 +161,12 @@ export function useBeatProject(id, announce) {
     } catch { announce(t('app.music.beat.status.s98')); return null; }
   }, [announce, accept, t, normalize, writable]);
   const selectPattern = useCallback((slot) => {
-    if (replacing.current || recordingState.current() || !writable()) return;
-    if (!current.current || slot === current.current.currentPattern) return;
+    if (replacing.current || recordingState.current() || !writable()) return false;
+    if (!current.current || slot === current.current.currentPattern) return false;
     const next = normalize(selectPatternOp(current.current, slot));
     history.current = historyOps.replacePresent(history.current, next);
     accept(next);
+    return true;
   }, [accept, normalize, writable]);
   const travel = useCallback((direction) => {
     if (replacing.current || !history.current || recordingState.current() || !writable()) return;
@@ -212,6 +214,7 @@ export function useBeatProject(id, announce) {
     theirsDoc = normalize(withBeatVersionFloor(theirsDoc, current.current.version));
     if (replacing.current || blocked.current) throw beatFailure('recovery-r32');
     await beforeFlush.current?.(); replacing.current = true;
+    if (mounted.current) setReplacingState(true);
     try {
       await replaceAfterStash({
         latest: async () => {
@@ -233,7 +236,11 @@ export function useBeatProject(id, announce) {
         },
       });
       announce(expected ? t('app.music.beat.status.s101') : t('app.music.beat.status.s102'));
-    } finally { replacing.current = false; void flush(); }
+    } finally {
+      replacing.current = false;
+      if (mounted.current) setReplacingState(false);
+      void flush();
+    }
   }
   function raiseVersionFloor(version) {
     const next = normalize(withBeatVersionFloor(current.current, version));
@@ -249,7 +256,7 @@ export function useBeatProject(id, announce) {
     if (result.error) throw Object.assign(new Error(result.error), { code: result.error });
     await reload();
   }
-  return { readOnly: beatReadOnly(doc), raiseVersionFloor, loadReadOnlyCloud, doc, saved, flushLatest, replaceFromCloud, current, finishRecording: () => beforeFlush.current?.(), registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
+  return { readOnly: beatReadOnly(doc), replacing: replacingState, raiseVersionFloor, loadReadOnlyCloud, doc, saved, flushLatest, replaceFromCloud, current, finishRecording: () => beforeFlush.current?.(), registerFinalizer, registerRecordingState, error, persistent, conflict, saveError, retry: flush, edit, reload, copy, selectPattern,
     undo: () => travel('undo'), redo: () => travel('redo'),
     canUndo: !beatReadOnly(doc) && Boolean(history.current && historyOps.canUndo(history.current)),
     canRedo: !beatReadOnly(doc) && Boolean(history.current && historyOps.canRedo(history.current)),
