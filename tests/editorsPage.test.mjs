@@ -29,3 +29,12 @@ test('the page documents real editor boundaries and launches the existing tools'
   assert.match(page, /<Main>/);
   assert.match(page, /<FooterForest locale=\{locale\} t=\{t\} flush \/>/);
 });
+
+test('Vey documents the editor choice and telemetry recognizes the public route', () => {
+  const knowledge = read('lib/productKnowledge.js');
+  const migration = read('packages/db/schema/supabase/0603_editors_route_telemetry.sql');
+
+  assert.match(knowledge, /id: 'editor-suite'.*routes: \['\/editors'\]/);
+  assert.match(knowledge, /default Smart Cut is a deterministic local preview/);
+  assert.match(migration, /SELECT p_path = '\/editors'/);
+});
