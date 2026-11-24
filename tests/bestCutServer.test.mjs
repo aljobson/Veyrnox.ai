@@ -111,7 +111,7 @@ test('migration guards: receipt capability, source-independent upload reads, ato
     assert.doesNotMatch(sql, /INSERT INTO public.ledger_entries|UPDATE public.credit_balances/);
 });
 test('requested-language migration scopes cache and idempotency while preserving legacy auto', () => {
-    const sql = readFileSync(new URL('../packages/db/schema/supabase/0609_speech_requested_language.sql', import.meta.url), 'utf8');
+    const sql = readFileSync(new URL('../packages/db/schema/supabase/0616_speech_requested_language.sql', import.meta.url), 'utf8');
     assert.match(sql, /speech_analysis_request_v3/);
     assert.match(sql, /speech_analysis_preflight_v2/);
     assert.match(sql, /COALESCE\(j\.inputs->>'requested_language','auto'\)=p_requested_language/);

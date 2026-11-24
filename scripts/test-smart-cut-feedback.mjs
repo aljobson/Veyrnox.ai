@@ -19,9 +19,18 @@ const rows = async (sql, args = []) => (await db.query(sql, args)).rows;
 const one = async (sql, args = []) => (await rows(sql, args))[0];
 const scalar = async (sql, args = []) => Object.values(await one(sql, args))[0];
 const asRole = async (role, sql, args = []) => {
-    await db.query(`SET LOCAL ROLE ${role}`);
-    try { return await one(sql, args); }
-    finally { await db.query('RESET ROLE'); }
+    await db.query('SAVEPOINT role_call');
+    try {
+        await db.query(`SET LOCAL ROLE ${role}`);
+        const result = await one(sql, args);
+        await db.query('RESET ROLE');
+        await db.query('RELEASE SAVEPOINT role_call');
+        return result;
+    } catch (error) {
+        await db.query('ROLLBACK TO SAVEPOINT role_call');
+        await db.query('RELEASE SAVEPOINT role_call');
+        throw error;
+    }
 };
 const denied = async (role, sql, args = []) => {
     await db.query('SAVEPOINT expected_denial');
@@ -30,6 +39,8 @@ const denied = async (role, sql, args = []) => {
         await assert.rejects(db.query(sql, args), (error) => error.code === '42501');
     } finally {
         await db.query('ROLLBACK TO SAVEPOINT expected_denial');
+        await db.query('RESET ROLE');
+        await db.query('RELEASE SAVEPOINT expected_denial');
     }
 };
 const person = async (label) => {

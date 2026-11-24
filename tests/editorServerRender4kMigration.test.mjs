@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const sql = readFileSync(new URL('../packages/db/schema/supabase/0610_editor_render_4k60.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../packages/db/schema/supabase/0617_editor_render_4k60.sql', import.meta.url), 'utf8');
 const runtime = readFileSync(new URL('../lib/editorServerRenderRuntime.js', import.meta.url), 'utf8');
 const bytes = readFileSync(new URL('../lib/filmMasterBytes.js', import.meta.url), 'utf8');
 
