@@ -4968,6 +4968,24 @@
     "ratio": 2.43
   },
   {
+    "id": "studioAssistant.apply",
+    "english": "Apply local edit",
+    "translation": "Применить локальное изменение",
+    "ratio": 1.81
+  },
+  {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "вкл.",
+    "ratio": 2
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "выкл.",
+    "ratio": 1.67
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Политика конфиденциальности",

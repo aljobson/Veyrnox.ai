@@ -5202,6 +5202,18 @@
     "ratio": 1.64
   },
   {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "einschalten",
+    "ratio": 5.5
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "ausschalten",
+    "ratio": 3.67
+  },
+  {
     "id": "recovery.retry",
     "english": "Try again",
     "translation": "Erneut versuchen",

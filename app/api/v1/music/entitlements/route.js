@@ -3,7 +3,7 @@ import { MUSIC_MOBILE_ROLLOUT_FLAGS, musicRuntimeFlag } from '../../../../../lib
 import { musicDailyChallengeAt } from '../../../../../lib/musicDailyChallenge.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
-    musicAlbumsEnabled, musicDailyCreditsEnabled, musicEntitlementProjection, musicGenerationEnabled,
+    musicAlbumsEnabled, musicDailyCreditsEnabled, musicEntitlementProjection, musicGenerationEnabled, musicStudioChatEnabled,
     musicSchemaEnabled, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
@@ -38,7 +38,7 @@ export async function GET(request) {
             }
         }
         const features = Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name,
-            name === 'albums' ? musicAlbumsEnabled() : musicRuntimeFlag(name)]));
+            name === 'albums' ? musicAlbumsEnabled() : name === 'studioChat' ? musicStudioChatEnabled() : musicRuntimeFlag(name)]));
         return reply({
             ...musicEntitlementProjection({
                 models,
