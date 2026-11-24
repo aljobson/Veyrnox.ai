@@ -59,11 +59,11 @@ export function AdjustPanel({ timeline, selection, selected, selectedMedia, sele
         </> : null}
         <LabeledInput label={t('editor.brief')} value={document.brief || ''} multiline onChangeText={(brief) => markDocument({ ...document, brief: brief.slice(0, 6000) })} />
         <Text style={styles.fieldLabel}>{t('editor.shape')}</Text><View style={styles.choices}>{(['16:9', '9:16', '1:1', '4:5'] as const).map((value) => <Choice key={value} label={value}
-            selected={canvas.aspect_ratio === value} onPress={() => updateCanvas({ aspect_ratio: value })} />)}<Choice label="Custom" selected={!!custom}
+            selected={canvas.aspect_ratio === value} onPress={() => updateCanvas({ aspect_ratio: value })} />)}<Choice label={t('editorTools.custom')} selected={!!custom}
             onPress={() => updateCanvas({ aspect_ratio: customValue ?? 'custom:4x5' })} /></View>
-        {custom ? <><View style={styles.choices}><LabeledInput label="Custom canvas width" value={customWidth} onChangeText={setCustomWidth} /><LabeledInput
-            label="Custom canvas height" value={customHeight} onChangeText={setCustomHeight} /></View><Text style={styles.body}>Whole numbers 1–100; ratio 1:4–4:1.</Text><Action
-            label="Apply custom ratio" disabled={!customValue} onPress={() => { if (customValue) updateCanvas({ aspect_ratio: customValue }); }} /></> : null}
+        {custom ? <><View style={styles.choices}><LabeledInput label={t('editorLook.crop.width')} value={customWidth} onChangeText={setCustomWidth} /><LabeledInput
+            label={t('editorLook.crop.height')} value={customHeight} onChangeText={setCustomHeight} /></View><Text style={styles.body}>1–100 · 1:4–4:1</Text><Action
+            label={t('editorAi.apply')} disabled={!customValue} onPress={() => { if (customValue) updateCanvas({ aspect_ratio: customValue }); }} /></> : null}
         <Text style={styles.fieldLabel}>{t('editor.rate')}</Text><View style={styles.choices}>{([24, 25, 30, 60] as const).map((value) => <Choice key={value} label={`${value}`}
             selected={canvas.frame_rate === value} onPress={() => updateCanvas({ frame_rate: value })} />)}</View>
         <ColourField label={t('editor.canvascolour')} value={timeline.background} swatches={['#000000', '#ffffff', '#15211f', '#301c36', '#17233f']}

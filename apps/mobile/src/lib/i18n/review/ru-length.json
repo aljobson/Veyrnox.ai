@@ -234,12 +234,6 @@
     "ratio": 2
   },
   {
-    "id": "bestCut.settings",
-    "english": "Best Cut",
-    "translation": "Лучший монтаж",
-    "ratio": 1.63
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Всё равно попробовать",
@@ -3342,6 +3336,18 @@
     "ratio": 1.79
   },
   {
+    "id": "editorSimple.projectFileShare",
+    "english": "Share project backup",
+    "translation": "Поделиться резервной копией проекта",
+    "ratio": 1.75
+  },
+  {
+    "id": "editorSimple.projectFileOpen",
+    "english": "Open project backup",
+    "translation": "Открыть резервную копию проекта",
+    "ratio": 1.63
+  },
+  {
     "id": "mediaKind.image",
     "english": "Image",
     "translation": "Изображение",
@@ -3571,9 +3577,9 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "Quick tools",
+    "english": "AI Edit",
     "translation": "Быстрые инструменты",
-    "ratio": 1.73
+    "ratio": 2.71
   },
   {
     "id": "editorAi.apply",
@@ -4926,10 +4932,46 @@
     "ratio": 1.67
   },
   {
+    "id": "editorLocalExport.quality.high",
+    "english": "High",
+    "translation": "Высокое",
+    "ratio": 1.75
+  },
+  {
     "id": "editorPersonMask.category",
     "english": "Keep",
     "translation": "Оставить",
     "ratio": 2
+  },
+  {
+    "id": "projects.move",
+    "english": "Move",
+    "translation": "Переместить",
+    "ratio": 2.75
+  },
+  {
+    "id": "editor.safeArea",
+    "english": "Safe-area preview",
+    "translation": "Предпросмотр безопасной области",
+    "ratio": 1.82
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "Выкл.",
+    "ratio": 1.67
+  },
+  {
+    "id": "editor.safeArea.shortForm",
+    "english": "Short-form safe guide",
+    "translation": "Безопасная область для коротких видео",
+    "ratio": 1.76
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Облачная синхронизация",
+    "ratio": 2.2
   },
   {
     "id": "musicAlbums.addTrack",

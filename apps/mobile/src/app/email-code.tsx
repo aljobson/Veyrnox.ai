@@ -37,7 +37,7 @@ export default function EmailCodeSignIn() {
     }
     async function send() {
         const address = email.trim().toLowerCase();
-        if (running.current || !EMAIL.test(address)) { setMessage('Enter a valid email address.'); return; }
+        if (running.current || !EMAIL.test(address)) { setMessage(t('email.err.invalid')); return; }
         if (!captcha) { setMessage(captchaError ? t('email.securityFirst') : t('email.checking')); return; }
         running.current = true; setBusy(true); setMessage(null);
         try {
@@ -47,7 +47,7 @@ export default function EmailCodeSignIn() {
         finally { running.current = false; setBusy(false); setCaptcha(null); setResetKey(value => value + 1); }
     }
     async function verify() {
-        if (running.current || !sentTo || !/^\d{6}$/.test(code)) { setMessage('Enter the 6-digit code from your email.'); return; }
+        if (running.current || !sentTo || !/^\d{6}$/.test(code)) { setMessage(t('acct.pw.badCode')); return; }
         running.current = true; setBusy(true); setMessage(null);
         try { await verifyEmailSignInCode(sentTo, code); }
         catch (error) { setMessage(emailAuthMessage(error instanceof AuthError ? error.code : 'unknown')); }
@@ -59,18 +59,18 @@ export default function EmailCodeSignIn() {
         <ScrollView contentContainerStyle={[styles.body, { paddingTop: insets.top + ds.space.lg, paddingRight: insets.right + ds.space.gutter,
             paddingBottom: insets.bottom + ds.space.xxl, paddingLeft: insets.left + ds.space.gutter }]} keyboardShouldPersistTaps="handled">
             <Button variant="tertiary" icon="arrowLeft" label={t('public.vey.back')} onPress={() => router.canGoBack() ? router.back() : router.replace('/email')} />
-            <Text variant="display">Sign in with an email code</Text>
-            <Text tone="secondary">We’ll email a six-digit code. No password is needed.</Text>
+            <Text variant="display">{t('email.signInTitle')}</Text>
+            <Text tone="secondary">{t('email.signInBody')}</Text>
             <TextField label={t('authGate.email')} value={sentTo || email} editable={!sentTo && !busy} onChangeText={setEmail}
                 autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" />
             {sentTo ? <>
-                <TextField label="6-digit code" value={code} editable={!busy} onChangeText={value => setCode(value.replace(/\D/g, '').slice(0, 6))}
+                <TextField label={t('acct.pw.code')} value={code} editable={!busy} onChangeText={value => setCode(value.replace(/\D/g, '').slice(0, 6))}
                     keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" returnKeyType="done" onSubmitEditing={() => void verify()} />
-                <Button label="Verify code" loading={busy} disabled={busy || code.length !== 6} onPress={() => void verify()} />
-                <Button variant="secondary" label={seconds > 0 ? `Send another code in ${seconds}s` : 'Send another code'} disabled={busy || seconds > 0 || !captcha}
+                <Button label={t('acct.mfa.verify')} loading={busy} disabled={busy || code.length !== 6} onPress={() => void verify()} />
+                <Button variant="secondary" label={seconds > 0 ? t('email.resendIn', { seconds }) : t('email.resendEmail')} disabled={busy || seconds > 0 || !captcha}
                     onPress={() => void send()} />
                 <Button variant="tertiary" label={t('email.changeAddress')} disabled={busy} onPress={changeAddress} />
-            </> : <Button label="Send 6-digit code" loading={busy} disabled={busy || !EMAIL.test(email.trim())} onPress={() => void send()} />}
+            </> : <Button label={t('acct.pw.send')} loading={busy} disabled={busy || !EMAIL.test(email.trim())} onPress={() => void send()} />}
             <View style={styles.security}><Icon name="shieldCheck" size={20} /><Text variant="footnote" tone="tertiary">{captcha ? t('email.securityReady') : t('email.securityTitle')}</Text></View>
             <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
             {captchaError ? <Button variant="tertiary" label={t('email.securityRetry')} onPress={() => { setCaptchaError(false); setResetKey(value => value + 1); }} /> : null}

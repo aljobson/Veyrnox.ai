@@ -71,10 +71,12 @@ ALTER TABLE public.audit_events ADD CONSTRAINT audit_events_action_check CHECK (
 CREATE OR REPLACE FUNCTION private.check_project_folder_write_limit(actor uuid) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
-    IF (SELECT count(*) FROM public.audit_events e WHERE e.actor_id=actor AND e.created_at>now()-interval '1 minute') >= 30 THEN
+    IF (SELECT count(*) FROM public.audit_events e WHERE e.actor_id=actor AND e.created_at>now()-interval '1 minute'
+        AND e.action IN ('PROJECT_FOLDER_CREATED','PROJECT_FOLDER_RENAMED','PROJECT_FOLDER_DELETED','PROJECT_FOLDER_MOVED')) >= 30 THEN
         RAISE EXCEPTION 'RATE_LIMITED' USING ERRCODE='PT429';
     END IF;
-    IF (SELECT count(*) FROM public.audit_events e WHERE e.actor_id=actor AND e.created_at>now()-interval '1 day') >= 2000 THEN
+    IF (SELECT count(*) FROM public.audit_events e WHERE e.actor_id=actor AND e.created_at>now()-interval '1 day'
+        AND e.action IN ('PROJECT_FOLDER_CREATED','PROJECT_FOLDER_RENAMED','PROJECT_FOLDER_DELETED','PROJECT_FOLDER_MOVED')) >= 2000 THEN
         RAISE EXCEPTION 'LIMIT_REACHED' USING ERRCODE='PT429';
     END IF;
 END $$;

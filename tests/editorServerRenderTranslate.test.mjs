@@ -36,7 +36,7 @@ test('4K 60 fps changes the render project while timeline timing stays source-ti
     const tl = fixture('v3');
     const result = translateEditorRender(tl, { resolution: '2160p', frameRate: 60 });
     assert.equal(result.error, undefined);
-    assert.deepEqual([result.width, result.height, result.frameRate, result.maxOutputBytes], [3840, 2160, 60, 100 * 1024 * 1024]);
+    assert.deepEqual([result.width, result.height, result.frameRate, result.maxOutputBytes], [3840, 2160, 60, 50 * 1024 * 1024]);
     assert.deepEqual(result.calls[0].params.video, { width: 3840, height: 2160, rateNum: 60, rateDen: 1 });
     assert.equal(result.calls.at(-1).params.width, 3840);
     assert.equal(result.calls.at(-1).params.height, 2160);

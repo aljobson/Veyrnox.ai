@@ -1,6 +1,6 @@
 -- F070: phone/server editor exports may request the saved project's frame rate,
 -- including 2160p at 60 fps. 4K is intentionally capped at 30 seconds and
--- 100 MiB; 720p/1080p retain their existing duration and 25 MiB ceilings.
+-- 50 MiB; 720p/1080p retain their existing duration and 25 MiB ceilings.
 BEGIN;
 
 DO $$
@@ -18,7 +18,7 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT (SELECT count(*) FROM public.editor_library_renders WHERE owner_id=p_actor)
        +(SELECT count(*) FROM public.jobs WHERE user_id=p_user AND provider='concat-render' AND state IN ('DEBITED','SUBMITTED') AND id IS DISTINCT FROM p_exclude)<100
  AND (SELECT coalesce(sum(size_bytes),0) FROM public.editor_library_renders WHERE owner_id=p_actor)
-       +(SELECT coalesce(sum(CASE WHEN inputs->>'resolution'='2160p' THEN 104857600 ELSE 26214400 END),0)
+       +(SELECT coalesce(sum(CASE WHEN inputs->>'resolution'='2160p' THEN 52428800 ELSE 26214400 END),0)
          FROM public.jobs WHERE user_id=p_user AND provider='concat-render' AND state IN ('DEBITED','SUBMITTED') AND id IS DISTINCT FROM p_exclude)
        +p_bytes<=209715200;
 $$;
@@ -52,7 +52,7 @@ BEGIN
  SELECT * INTO u FROM public.users WHERE auth_id=p_auth_id AND deleted_at IS NULL;
  IF NOT FOUND OR u.frozen_at IS NOT NULL THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
  maximum:=CASE p_resolution WHEN '2160p' THEN 30 WHEN '1080p' THEN 120 WHEN '720p' THEN 300 END;
- reserved:=CASE WHEN p_resolution='2160p' THEN 104857600 ELSE 26214400 END;
+ reserved:=CASE WHEN p_resolution='2160p' THEN 52428800 ELSE 26214400 END;
  IF p_request_key IS NULL OR p_request_key !~ '^[A-Za-z0-9._-]{8,128}$'
  OR maximum IS NULL OR p_seconds IS NULL OR p_seconds<=0 OR p_seconds>maximum
  OR p_label IS NULL OR length(btrim(p_label)) NOT BETWEEN 1 AND 160 OR p_label ~ '[[:cntrl:]]'
@@ -95,7 +95,7 @@ BEGIN
  OR EXISTS(SELECT 1 FROM public.evidence_holds WHERE r2_key=j.inputs->>'output_key' AND released_at IS NULL) THEN
   RETURN jsonb_build_object('ok',false,'code','UPLOAD_CLOSED'); END IF;
  IF j.editor_render_upload_grants>=4 THEN RETURN jsonb_build_object('ok',false,'code','UPLOAD_CLOSED'); END IF;
- maximum:=CASE WHEN j.inputs->>'resolution'='2160p' THEN 104857600 ELSE 26214400 END;
+ maximum:=CASE WHEN j.inputs->>'resolution'='2160p' THEN 52428800 ELSE 26214400 END;
  IF p_size IS NULL OR p_size NOT BETWEEN 1 AND maximum THEN RETURN jsonb_build_object('ok',false,'code','RENDER_TOO_LARGE'); END IF;
  IF j.inputs ? 'upload_size' AND (j.inputs->>'upload_size')::bigint<>p_size THEN RETURN jsonb_build_object('ok',false,'code','UPLOAD_SIZE_CONFLICT'); END IF;
  UPDATE public.jobs SET inputs=inputs||jsonb_build_object('upload_size',p_size,'upload_granted_at',now()),
@@ -124,7 +124,7 @@ BEGIN
  IF j.state<>'SUBMITTED' OR j.deleted_at IS NOT NULL THEN RETURN jsonb_build_object('ok',false,'code','JOB_CLOSED'); END IF;
  IF u.frozen_at IS NOT NULL OR u.deleted_at IS NOT NULL OR EXISTS(SELECT 1 FROM public.evidence_holds WHERE r2_key=j.inputs->>'output_key' AND released_at IS NULL) THEN
   RETURN public.fail_server_render(j.id,'render_unavailable'); END IF;
- maximum:=CASE WHEN j.inputs->>'resolution'='2160p' THEN 104857600 ELSE 26214400 END;
+ maximum:=CASE WHEN j.inputs->>'resolution'='2160p' THEN 52428800 ELSE 26214400 END;
  edge:=CASE j.inputs->>'resolution' WHEN '2160p' THEN 2160 WHEN '1080p' THEN 1080 WHEN '720p' THEN 720 END;
  aspect:=j.inputs#>>'{document,canvas,aspect_ratio}'; expected_rate:=(j.inputs#>>'{document,canvas,frame_rate}')::integer;
  CASE aspect

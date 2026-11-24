@@ -294,12 +294,6 @@
     "ratio": 1.89
   },
   {
-    "id": "bestCut.auto",
-    "english": "Auto-detect",
-    "translation": "Detectar automáticamente",
-    "ratio": 2.18
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Probar de todos modos",
@@ -3409,9 +3403,9 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "Quick tools",
+    "english": "AI Edit",
     "translation": "Herramientas rápidas",
-    "ratio": 1.82
+    "ratio": 2.86
   },
   {
     "id": "editorAi.stale",
@@ -4948,6 +4942,42 @@
     "english": "Face skin",
     "translation": "Piel de la cara",
     "ratio": 1.67
+  },
+  {
+    "id": "projects.unfiled",
+    "english": "Unfiled",
+    "translation": "Sin archivar",
+    "ratio": 1.71
+  },
+  {
+    "id": "projects.folderName",
+    "english": "Folder name",
+    "translation": "Nombre de la carpeta",
+    "ratio": 1.82
+  },
+  {
+    "id": "editor.safeArea",
+    "english": "Safe-area preview",
+    "translation": "Vista previa del área segura",
+    "ratio": 1.65
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "Desactivada",
+    "ratio": 3.67
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Sincronización en la nube",
+    "ratio": 2.5
+  },
+  {
+    "id": "projectCloud.error",
+    "english": "Could not change cloud sync.",
+    "translation": "No se pudo cambiar la sincronización en la nube.",
+    "ratio": 1.71
   },
   {
     "id": "musicAlbums.addTrack",

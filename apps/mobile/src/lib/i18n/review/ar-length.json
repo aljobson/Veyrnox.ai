@@ -2568,6 +2568,18 @@
     "ratio": 2.75
   },
   {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "إيقاف",
+    "ratio": 1.67
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "المزامنة السحابية",
+    "ratio": 1.7
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "إضافة",

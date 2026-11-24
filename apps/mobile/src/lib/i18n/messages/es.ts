@@ -377,7 +377,7 @@ const es = {
     'app.smartCut.language.autoDetected': 'Automatic · {language}',
     'app.smartCut.language.autoMixed': 'Automatic · mixed languages',
     'app.smartCut.language.autoUnknown': 'Automatic · not identified',
-    'app.smartCut.language.help': 'This changes script, retake and filler matching only. Paid transcription language is chosen before analysis, not here.',
+    'app.smartCut.language.help': 'This changes script, retake and filler matching only. To re-transcribe, choose a language in Speech analysis before confirming the credit charge.',
     'app.smartCut.action.removePauses': 'Remove long pauses',
     'app.smartCut.removed': ' · {duration} s removed',
     'app.smartCut.fillers.title': 'FILLER SOUNDS',

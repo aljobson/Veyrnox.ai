@@ -285,12 +285,14 @@
         "replica/byecut/recon.md",
         "replica/byecut/screens/android-projects.jpg",
         "lib/projectDocument.js",
+        "packages/db/schema/supabase/0615_project_document_editor_parity.sql",
         "app/api/v1/projects/route.js",
         "app/api/v1/projects/[id]/document/route.js",
         "app/veyrnox/app/projects/page.js",
         "apps/mobile/src/lib/projects.ts",
         "apps/mobile/src/app/(app)/projects/index.tsx",
         "tests/projectDocumentV2.test.mjs",
+        "tests/projectDocumentPersistenceMigration.test.mjs",
         "tests/projectDocumentRoutes.test.mjs",
         "tests/tenantRoutes.test.mjs",
         "apps/mobile/__tests__/projects.test.ts"
@@ -1676,6 +1678,8 @@
         "apps/mobile/src/lib/nativeEditorModel.ts",
         "apps/mobile/src/components/editor/tools/AdjustPanel.tsx",
         "apps/mobile/src/components/editor/LocalExportSheet.tsx",
+        "packages/db/schema/supabase/0615_project_document_editor_parity.sql",
+        "tests/projectDocumentPersistenceMigration.test.mjs",
         "apps/mobile/__tests__/fullEditorScreen.test.tsx"
       ],
       "evidenceRationale": "Aspect ratios 9:16 16:9 1:1 and 4:5 has a source-audited Veyrnox implementation; required live journeys remain before yes.",
@@ -1702,9 +1706,11 @@
         "app/veyrnox/_lib/editorCanvasFormat.mjs",
         "app/veyrnox/_components/editor/MultitrackWorkspace.js",
         "lib/editorServerRenderTranslate.js",
+        "packages/db/schema/supabase/0615_project_document_editor_parity.sql",
         "apps/mobile/src/lib/nativeEditorModel.ts",
         "apps/mobile/src/components/editor/FullEditorScreen.tsx",
         "tests/editorCanvasFormat.test.mjs",
+        "tests/projectDocumentPersistenceMigration.test.mjs",
         "tests/editorServerRenderTranslate.test.mjs"
       ],
       "evidenceRationale": "Validated reduced custom widths/heights within a 1:4–4:1 envelope flow through web and shared iOS/Android documents, previews, persistence, export and Pro interchange. Server render preserves ratio while bounding the longest output edge to 4096 pixels.",
@@ -2004,7 +2010,7 @@
       "evidenceRationale": "Web export already exposes 2160p and 60 fps. The shared iOS/Android server-export sheet now offers 2160p, preserves the saved 24/25/30/60 project rate, creates a 3840x2160 render plan at 60 fps, and validates resolution, rate, duration and bounded output bytes again at the Worker and database settlement boundaries.",
       "auditNote": "Completed in source on 2026-11-23 for web and shared iOS/Android export paths. Migration 0603 is authored but unapplied; live web, iOS and Android 4K/60 render journeys remain required before yes.",
       "journeyEvidence": [],
-      "notes": "4K server exports are capped at 30 seconds and 100 MiB; 720p/1080p retain their existing duration and 25 MiB ceilings. Native local export remains lower-resolution, so iOS and Android use the paid server path for 4K."
+      "notes": "4K server exports are capped at 30 seconds and 50 MiB so full-object inspection stays inside the Worker memory budget; 720p/1080p retain their existing duration and 25 MiB ceilings. Native local export remains lower-resolution, so iOS and Android use the paid server path for 4K."
     },
     "F071": {
       "feature": "H.264 and HEVC export",

@@ -10,7 +10,7 @@ const ASPECT_KEYS = { '16:9': 'projectDocument.landscape', '9:16': 'projectDocum
 export const aspectLabel = (value: unknown) => {
     if (value === '4:5') return '4:5';
     const custom = customCanvasParts(value);
-    if (custom) return `Custom ${custom.width}:${custom.height}`;
+    if (custom) return `${t('editorTools.custom')} ${custom.width}:${custom.height}`;
     return typeof value === 'string' && value in ASPECT_KEYS ? t(ASPECT_KEYS[value as keyof typeof ASPECT_KEYS]) : '';
 };
 export const fpsLabel = (value: unknown) => (typeof value === 'number' ? t('projectDocument.fps', { value1: value }) : '');
@@ -120,15 +120,15 @@ export function ProjectDocumentCard({ doc }: { doc: ProjectDocumentState }) {
                         <SegmentedControl
                             accessibilityLabel={t('projectDocument.aspectRatio')}
                             options={[...ASPECT_RATIOS.map((value) => ({ value, label: aspectLabel(value), accessibilityLabel: aspectLabel(value) })),
-                                { value: 'custom', label: 'Custom', accessibilityLabel: 'Custom canvas ratio' }]}
+                                { value: 'custom', label: t('editorTools.custom'), accessibilityLabel: t('editorTools.custom') }]}
                             value={custom ? 'custom' : draft.aspectRatio}
                             onChange={(value) => pick('aspectRatio', value === 'custom' ? customValue ?? 'custom:4x5' : value as Editable['aspectRatio'])}
                         />
                     </View>
-                    {custom ? <><View style={s.customRow}><TextField label="Custom width" value={customWidth} maxLength={3} keyboardType="number-pad"
-                        editable={!locked} onChangeText={setCustomWidth} containerStyle={s.customField} /><TextField label="Custom height" value={customHeight} maxLength={3}
+                    {custom ? <><View style={s.customRow}><TextField label={t('editorLook.crop.width')} value={customWidth} maxLength={3} keyboardType="number-pad"
+                        editable={!locked} onChangeText={setCustomWidth} containerStyle={s.customField} /><TextField label={t('editorLook.crop.height')} value={customHeight} maxLength={3}
                         keyboardType="number-pad" editable={!locked} onChangeText={setCustomHeight} containerStyle={s.customField}
-                        error={customValue ? false : 'Use whole numbers 1–100 and a ratio from 1:4 to 4:1.'} /></View><Button variant="secondary" size="md" label="Apply custom ratio"
+                        error={customValue ? false : '1–100 · 1:4–4:1'} /></View><Button variant="secondary" size="md" label={t('editorAi.apply')}
                         disabled={locked || !customValue} onPress={() => { if (customValue) pick('aspectRatio', customValue); }} /></> : null}
                     <Text variant="footnote" tone="secondary">{t('projectDocument.frameRate')}</Text>
                     <View {...lockedProps(locked, t('projectDocument.frameRate'), fpsLabel(draft.frameRate), s.off)}>

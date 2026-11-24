@@ -348,12 +348,6 @@
     "ratio": 1.78
   },
   {
-    "id": "bestCut.auto",
-    "english": "Auto-detect",
-    "translation": "Detectar automaticamente",
-    "ratio": 2.18
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Tentar mesmo assim",
@@ -3457,9 +3451,9 @@
   },
   {
     "id": "editorSimple.aiEdit",
-    "english": "Quick tools",
+    "english": "AI Edit",
     "translation": "Ferramentas rápidas",
-    "ratio": 1.73
+    "ratio": 2.71
   },
   {
     "id": "editorSimple.allTools",
@@ -4852,6 +4846,24 @@
     "english": "Retry analysis",
     "translation": "Tentar a análise novamente",
     "ratio": 1.86
+  },
+  {
+    "id": "editor.safeArea.off",
+    "english": "Off",
+    "translation": "Desativado",
+    "ratio": 3.33
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Sincronização na nuvem",
+    "ratio": 2.2
+  },
+  {
+    "id": "projectCloud.error",
+    "english": "Could not change cloud sync.",
+    "translation": "Não foi possível alterar a sincronização na nuvem.",
+    "ratio": 1.79
   },
   {
     "id": "musicAlbums.addTrack",

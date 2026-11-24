@@ -102,9 +102,9 @@ function Detail({ id }: { id: string }) {
             await setProjectCloudSyncEnabled(id, enabled);
             if (owned()) {
                 setCloudSync(enabled);
-                setNote({ text: enabled ? 'Cloud sync will resume when the editor opens.' : 'Future editor changes stay on this iPhone until cloud sync is turned on.', reload: false });
+                setNote({ text: enabled ? t('projectCloud.resume') : t('projectCloud.paused'), reload: false });
             }
-        } catch { if (owned()) setNote({ text: 'Could not change cloud sync.', reload: false }); }
+        } catch { if (owned()) setNote({ text: t('projectCloud.error'), reload: false }); }
         finally { if (owned()) setBusy(false); }
     }
 
@@ -251,10 +251,10 @@ function Detail({ id }: { id: string }) {
                         <Text style={styles.meta}>{projectDates(project, true)}</Text>
                         <View style={styles.syncRow}>
                             <View style={styles.syncCopy}>
-                                <Text style={styles.name}>Cloud sync</Text>
-                                <Text style={styles.muted}>{cloudSync ? 'Changes are saved to your Veyrnox.ai account.' : 'Editor changes are stored only on this iPhone.'}</Text>
+                                <Text style={styles.name}>{t('projectCloud.title')}</Text>
+                                <Text style={styles.muted}>{cloudSync ? t('projectCloud.enabled') : t('projectCloud.disabled')}</Text>
                             </View>
-                            <Switch accessibilityLabel="Cloud sync" value={cloudSync} disabled={busy} onValueChange={value => void changeCloudSync(value)} />
+                            <Switch accessibilityLabel={t('projectCloud.title')} value={cloudSync} disabled={busy} onValueChange={value => void changeCloudSync(value)} />
                         </View>
                         <Pressable accessibilityRole="button" disabled={busy} style={touchTarget} onPress={chooseFolder}><Text style={styles.action}>{t('projects.folder')}: {project.folderId ? folderLabel(folders.find((folder) => folder.id === project.folderId) ?? { id: project.folderId, workspaceId: project.workspaceId ?? '', parentId: null, name: t('projects.folder'), version: 1 }, folders) : t('projects.unfiled')} · {t('projects.move')}</Text></Pressable>
                         {moving ? <View style={styles.folderChoices}>

@@ -192,18 +192,6 @@
     "ratio": 1.67
   },
   {
-    "id": "bestCut.settings",
-    "english": "Best Cut",
-    "translation": "Bester Schnitt",
-    "ratio": 1.75
-  },
-  {
-    "id": "bestCut.auto",
-    "english": "Auto-detect",
-    "translation": "Automatisch erkennen",
-    "ratio": 1.82
-  },
-  {
     "id": "bestCut.tryAnyway",
     "english": "Try Anyway",
     "translation": "Trotzdem versuchen",
@@ -3606,6 +3594,12 @@
     "ratio": 3.33
   },
   {
+    "id": "editorSimple.aiEdit",
+    "english": "AI Edit",
+    "translation": "Schnellwerkzeuge",
+    "ratio": 2.29
+  },
+  {
     "id": "editorSimple.close",
     "english": "Close",
     "translation": "Schließen",
@@ -5182,6 +5176,30 @@
     "english": "Retry analysis",
     "translation": "Analyse erneut versuchen",
     "ratio": 1.71
+  },
+  {
+    "id": "projects.unfiled",
+    "english": "Unfiled",
+    "translation": "Nicht abgelegt",
+    "ratio": 2
+  },
+  {
+    "id": "projects.move",
+    "english": "Move",
+    "translation": "Verschieben",
+    "ratio": 2.75
+  },
+  {
+    "id": "projectCloud.title",
+    "english": "Cloud sync",
+    "translation": "Cloud-Synchronisierung",
+    "ratio": 2.2
+  },
+  {
+    "id": "projectCloud.error",
+    "english": "Could not change cloud sync.",
+    "translation": "Die Cloud-Synchronisierung konnte nicht geändert werden.",
+    "ratio": 2
   },
   {
     "id": "musicAlbums.addTrack",

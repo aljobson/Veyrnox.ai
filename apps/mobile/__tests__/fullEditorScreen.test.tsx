@@ -453,8 +453,8 @@ test('keeps the Library item selected while a new project opens in the full nati
 test('B1: flag off Export opens the private on-device MP4 flow without a server render (QA F09)', async () => {
     await render(); await press('Export');
     expect(mockRouter.push).not.toHaveBeenCalled();
-    expect(visible('Export on this iPhone')).toBe(true);
-    expect(visible('Makes a private MP4 on this iPhone for supported projects up to 30 seconds. No upload or credits.')).toBe(true);
+    expect(visible('Export on this device')).toBe(true);
+    expect(visible('Makes a private MP4 on this device for supported projects up to 30 seconds. No upload or credits.')).toBe(true);
     expect(visible('Use cloud export instead')).toBe(true);
     expect(mockRequest.mock.calls.some(([path]) => path.includes('/editor/server-render'))).toBe(false);
 });
@@ -500,7 +500,7 @@ test('an unavailable iCloud pick stays outside the timeline and retries the same
     await render(); await press('Files'); await act(async () => Promise.resolve());
     expect(visible('Preparing…')).toBe(true);
     await act(async () => finishWait('unavailable'));
-    expect(visible('One of this project’s source files is still being prepared. Try again when it is ready.')).toBe(true);
+    expect(visible('This file is still unavailable. Retry it, or choose it again from Files.')).toBe(true);
     expect(puts()).toHaveLength(0);
     await press('Retry now'); await act(async () => Promise.resolve()); await act(async () => jest.advanceTimersByTimeAsync(900));
     expect(waitForEditorPickedFile).toHaveBeenCalledTimes(2);
