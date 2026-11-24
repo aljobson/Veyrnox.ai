@@ -172,7 +172,7 @@ export function PersistentAudioQueueProvider({ children }: { children: ReactNode
 
 const sheets = themedStyles(p => ({
     host: { flex: 1 },
-    bar: { padding: ds.space.sm, gap: ds.space.xs, backgroundColor: p.bgElevated1, borderTopWidth: 1, borderTopColor: p.border },
+    bar: { padding: ds.space.sm, gap: ds.space.xs, backgroundColor: p.bgElevated1, borderTopWidth: 1, borderTopColor: p.borderStrong },
     copy: { flex: 1, minWidth: 0 },
     controls: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: ds.space.xs },
 }));
