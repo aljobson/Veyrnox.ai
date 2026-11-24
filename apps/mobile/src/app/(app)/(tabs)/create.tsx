@@ -1,3 +1,4 @@
+import { useOwnerProofCatalog } from '../../../lib/useOwnerProofModels';
 import { rawText } from '../../../lib/i18n/translate';
 import { createTileColumns } from '../../../lib/createLayout';
 import { SectionLabel } from '../../../components/create/SectionLabel';
@@ -44,7 +45,8 @@ export default function Create() {
     const styles = useThemedStyles(sheets);
     const pressStyle = usePressStyle();
     const router = useRouter();
-    const [models, setModels] = useState<CatalogModel[] | null>(null);
+    const [publicModels, setModels] = useState<CatalogModel[] | null>(null);
+    const models = useOwnerProofCatalog(publicModels ?? []);
     const [failed, setFailed] = useState(false);
     const [agent, setAgent] = useState<{ readonly credits: number } | null>(null);
 
@@ -99,7 +101,7 @@ export default function Create() {
                     <Text variant="body" tone="danger" style={styles.error}>{t('create.loadError')}</Text>
                     <Button label={t('recovery.retry')} onPress={loadCatalog} />
                 </View>
-            ) : models === null ? (
+            ) : publicModels === null ? (
                 <VeyLoader />
             ) : (
                 <ScrollView contentContainerStyle={styles.list}>

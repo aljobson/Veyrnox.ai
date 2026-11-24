@@ -1,3 +1,4 @@
+import * as ownerProofOverlay from '../lib/ownerProofOverlay.mjs';
 import * as imageBatch from '../app/veyrnox/_lib/imageBatch.js';
 import * as generationSlots from '../lib/generationSourceSlots.mjs';
 import * as helperDisplay from '../lib/i18n/helperCopy.mjs';
@@ -39,11 +40,13 @@ function harness(initialJobs, selected = audio) {
     '../../_lib/templatePromptVisibility': { jobHistoryLabels: (_template, prompt) => ({ prompt: prompt.slice(0, 60), name: prompt.slice(0, 40) }) },
     '../../_lib/templateDraft': templateDraft,
     '../../../../lib/i18n/helperCopy.mjs': helperDisplay,
+    '../../../../lib/ownerProofOverlay.mjs': ownerProofOverlay,
     '../../../../lib/generationSourceSlots.mjs': { ...generationSlots, generationSourceState: () => ({ needsReattach: false, hasSource: false, missingSource: false }) },
     react,
     '../../../../components/I18nProvider': { useI18n: () => ({ t, locale: 'en' }) },
     '../../../../lib/i18n/locales.mjs': { localeTag },
     '../../../../lib/i18n/translate.mjs': { tOr, pluralKey },
+    '../../_lib/useOwnerProofModels.js': { useOwnerProofCatalog: models => models },
     '../../_lib/useCatalog': { useCatalog: () => ({ models, live: true, loading: false }) },
     '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, failed: false, saved: false, status: '', retry() {}, sourceEdited() {} }) },
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },

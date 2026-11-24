@@ -369,3 +369,17 @@ test('Publish pilot authorizes only signed JWT sub, never forged headers or emai
         for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; }
     }
 });
+
+test('owner proof cannot borrow forged identity or aal2 through middleware', async () => {
+    const { ownerProofEligible } = await import('../lib/ownerProof.js');
+    const headers = await forwarded('/api/v1/owner-proof', { authorization: `Bearer ${await token({ aal: 'aal1' })}`, ...FORGED });
+    assert.equal(await ownerProofEligible(new Request('https://veyrnox.test/api/v1/owner-proof', { headers }), {}, {
+        env: { APP_RUNTIME_FLAGS: '{"ownerProof":true}' }, read: async () => assert.fail('aal1 must fail before role lookup'),
+    }), false);
+    const verified = await forwarded('/api/v1/owner-proof', { authorization: `Bearer ${await token({ aal: 'aal2' })}`, ...FORGED });
+    assert.equal(await ownerProofEligible(new Request('https://veyrnox.test/api/v1/owner-proof', { headers: verified }), {}, {
+        env: { APP_RUNTIME_FLAGS: '{"ownerProof":true}' }, read: async (_table, options) => {
+            assert.equal(options.filter, `auth_id=eq.${SUB}`); return [{ is_admin: false }];
+        },
+    }), false);
+});

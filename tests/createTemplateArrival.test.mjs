@@ -1,3 +1,5 @@
+import * as createAttach from '../lib/createAttach.mjs';
+import * as ownerProofOverlay from '../lib/ownerProofOverlay.mjs';
 import { IMAGE_TEMPLATES } from '../app/veyrnox/_lib/imageTemplates.js';
 import { registerPhotoArrivalTests, registerSyntxOverrideArrivalTests } from './helpers/imageTemplatePhotoChecks.mjs';
 import * as imageTemplateModels from '../app/veyrnox/_lib/imageTemplateModels.js';
@@ -66,6 +68,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
   };
   if (handoff) templateMediaHandoff.writeTemplateMediaHandoff(globalThis.window, { templateId: handoffTemplateId, modelId: handoffModelId || params.model || original.id, image: handoff });
   const slots = [], effects = [], requests = [], navigations = [];
+  let draftActions;
   let cursor = 0, dirty = true, tree, catalog = { models, loading, live: !loading };
   const changed = (before, after) => !before || !after || before.length !== after.length || before.some((value, index) => !Object.is(value, after[index]));
   const react = {
@@ -88,6 +91,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     '../../../../lib/i18n/locales.mjs': { localeTag: () => 'en-GB' },
     '../../../../components/I18nProvider': { useI18n: () => ({ t: (key, values) => values ? `${key}:${JSON.stringify(values)}` : key, locale: 'en' }) },
     '../../../../lib/i18n/translate.mjs': { tOr: (t, key, fallback) => fallback, pluralKey: (t, locale, key) => key },
+    '../../../../lib/ownerProofOverlay.mjs': ownerProofOverlay,
     '../../../../lib/generationSourceSlots.mjs': generationSlots,
     '../../../../lib/generationPromptLimits.js': promptLimits,
     '../../../../lib/aspectShapes.mjs': aspectShapes,
@@ -103,9 +107,11 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
     '../../_lib/freeAllowance': freeAllowance,
     '../../_lib/promptBox': promptBox,
     '../../_lib/generateHint': generateHint,
+    '../../_lib/useOwnerProofModels.js': { useOwnerProofCatalog: models => models },
     '../../_lib/useCatalog': { useCatalog: () => catalog },
     '../../_lib/useTemplates': { fetchTemplate: async () => fetchedPreset },
-    '../../_lib/useCreateDraftRecovery': { __esModule: true, default: () => ({ restoring: false, blocked: false, sourceEdited() {} }) },
+    '../../_lib/useCreateDraftRecovery': { __esModule: true, default: options => { draftActions = options; return { restoring: false, blocked: false, sourceEdited() {} }; } },
+    '../../../../lib/createAttach.mjs': createAttach,
     '../../_lib/useFreeAllowance': { useFreeAllowance: () => ({}) },
     '../../_lib/useStudioJobs': { useStudioJobs: () => ({ jobs: [], generating: false, startJobs() {}, addJob() {} }) },
     '../../_lib/starterModels': { starterModel: () => original, modelsForGoal: models => models },
@@ -114,7 +120,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
       if (path === '/balance') return { balance: 1000 };
       assert.equal(path, '/generations'); requests.push(JSON.parse(options.body)); return { job_id: 'test-job' };
     }, makeIdempotencyKey: () => 'test-key', notifyBalanceChanged() {}, GatewayError: class extends Error {} },
-    '../../_lib/chatMedia': { ...chatMedia, mediaGenerationSources: upload ? (model, sources) => chatMedia.mediaGenerationSources(model, sources, upload) : async () => ({ references: [], source_keys: [], source_assets: [] }) },
+    '../../_lib/chatMedia': { ...chatMedia, mediaGenerationSources: upload ? (model, sources, _uploadSource, options) => chatMedia.mediaGenerationSources(model, sources, upload, options) : async () => ({ references: [], source_keys: [], source_assets: [] }) },
     '../../_lib/veyJourneyStore': { getJourney: () => ({}), trackJourneyJob() {} },
     '../../_components/TemplatePicker': { TemplatePicker },
     '../../_components/TemplateHandoffCard': { TemplateHandoffCard: HandoffCard },
@@ -127,6 +133,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
   return {
     requests,
     navigations,
+    restore(saved, sources) { draftActions.apply(saved, sources); },
     async settle() {
       for (let i = 0; i < 20; i++) {
         if (dirty) { cursor = 0; dirty = false; // The availability boundary is covered by templateSwapRender; this harness exercises its legacy child.
@@ -137,7 +144,7 @@ function harness(params, { saved, handoff, handoffModelId, handoffTemplateId = p
       }
       throw Error('Page failed to settle');
     },
-    catalogReady() { catalog = { models, live: true, loading: false }; dirty = true; },
+    catalogReady(nextModels = models) { models = nextModels; catalog = { models, live: true, loading: false }; dirty = true; },
     close() { for (const slot of slots) slot?.cleanup?.(); globalThis.window = previousWindow; },
   };
 }
@@ -504,3 +511,74 @@ test('selecting a real image card inside Create replaces a video recipe and subm
 registerPhotoArrivalTests({ harness, generate, prompt, sourcePickers });
 
 registerSyntxOverrideArrivalTests({ harness, generate, sourcePickers, templates: IMAGE_TEMPLATES });
+
+
+test('public model switch keeps ordinary Generate available and ignores the old undeclared photo',async()=>{
+  const withImage={...original,media:{image:{required:false,maxFiles:1}}};
+  const textOnly={...other,media:{}};
+  const h=harness({preset:'',model:original.id},{fetchedPreset:null,models:[withImage,textOnly],upload:()=>assert.fail('Library image must not upload')});
+  try {
+    let tree=await h.settle();
+    prompt(tree).props.onChange({target:{value:'Public custom prompt'}});
+    sourcePickers(tree).props.onPick('image',null,{id:'public-photo',url:'https://fixture.test/photo.png'});
+    tree=await h.settle();
+    find(tree,node=>node.props?.id==='studio-model').props.onChange({target:{value:other.id}});
+    tree=await h.settle();
+    assert.equal(generate(tree).props.disabled,false);
+    await generate(tree).props.onClick();
+    assert.equal(h.requests.length,1);assert.equal(h.requests[0].model_id,other.id);
+    assert.deepEqual(h.requests[0].references,[]);
+  } finally {h.close();}
+});
+test('private-slot withdrawal blocks only its attached image and offers removal',async()=>{
+  const privateModel={...original,ownerProofImage:true,media:{image:{required:false,maxFiles:1}}};
+  const publicModel={...original,media:{}};
+  const h=harness({preset:'',model:original.id},{fetchedPreset:null,models:[privateModel],upload:()=>assert.fail('Library image must not upload')});
+  try {
+    let tree=await h.settle();prompt(tree).props.onChange({target:{value:'Owner proof prompt'}});
+    sourcePickers(tree).props.onPick('image',null,{id:'owner-photo',url:'https://fixture.test/photo.png'});
+    await h.settle();h.catalogReady([publicModel]);tree=await h.settle();
+    assert.equal(generate(tree).props.disabled,true);
+    await generate(tree).props.onClick();assert.equal(h.requests.length,0);
+    const remove=find(tree,node=>node.type==='button'&&node.props?.children==='app.create.sources.image.remove');
+    assert.ok(remove);remove.props.onClick();tree=await h.settle();
+    assert.equal(generate(tree).props.disabled,false);
+  } finally {h.close();}
+});
+
+for (const placement of ['Switch', 'draft restore', 'carried image']) test(`${placement}: a private image slot followed by withdrawal sends no request`, async () => {
+  const privateModel = { ...other, ownerProofImage: true, media: { image: { required: false, maxFiles: 1 } } };
+  const publicModel = { ...other, media: {} };
+  const firstModel = { ...original, media: placement === 'carried image' ? { image: { required: false, maxFiles: 1 } } : {} };
+  const h = harness({ preset: '', model: original.id }, { fetchedPreset: null, models: [firstModel, privateModel], upload: () => assert.fail('must not upload') });
+  const asset = { id: 'owned-photo', url: 'https://fixture.test/image.png', mimeType: 'image/png' };
+  try {
+    let tree = await h.settle();
+    prompt(tree).props.onChange({ target: { value: 'Move slowly' } });
+    if (placement === 'Switch') {
+      find(tree, node => node.props?.['data-testid'] === 'create-add-files').props.onClick();
+      tree = await h.settle();
+      await addFilesDialog(tree).props.onAdd([{ asset }]);
+      tree = await h.settle();
+      const switchButton = find(tree, node => node.type === 'button' && String(node.props?.children).startsWith('app.create.attach.switchTo'));
+      assert.ok(switchButton); switchButton.props.onClick();
+    } else if (placement === 'draft restore') {
+      h.restore({ modelId: other.id, goal: 'video', prompt: 'Restored image', duration: '5s', aspect: '16:9', count: 1,
+        seed: '', negative: '', voice: '', audioDurations: {}, cinemaOn: false, cinema: {}, characterOn: false, character: {} },
+        { image: { assetId: asset.id, previewUrl: asset.url } });
+    } else {
+      sourcePickers(tree).props.onPick('image', null, asset);
+      tree = await h.settle();
+      find(tree, node => node.props?.id === 'studio-model').props.onChange({ target: { value: other.id } });
+    }
+    tree = await h.settle();
+    assert.ok(sourcePickers(tree).props.media.image);
+    assert.equal(sourcePickers(tree).props.sources.image.assetId, asset.id);
+    h.catalogReady([firstModel, publicModel]); tree = await h.settle();
+    assert.equal(generate(tree).props.disabled, true);
+    await generate(tree).props.onClick(); assert.equal(h.requests.length, 0);
+    const remove = find(tree, node => node.type === 'button' && node.props?.children === 'app.create.sources.image.remove');
+    assert.ok(remove); remove.props.onClick(); tree = await h.settle();
+    assert.equal(generate(tree).props.disabled, false);
+  } finally { h.close(); }
+});

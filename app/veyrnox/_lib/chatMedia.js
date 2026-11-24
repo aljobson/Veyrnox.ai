@@ -1,4 +1,4 @@
-import { sourceList, publicSlotMax, generationSourceState } from '../../../lib/generationSourceSlots.mjs';
+import { sourceList, publicSlotMax, generationSourceState, hasUnsupportedSources } from '../../../lib/generationSourceSlots.mjs';
 import { helperEnglish, helperDiagnostic } from '../../../lib/helperMessages.mjs';
 import { fitSourcesForUpload } from './sourceAspectFit.js';
 export const COMPOSER_KINDS = Object.freeze({
@@ -34,7 +34,8 @@ export function mediaPromptIsMissing(model, prompt) {
 }
 
 /** Preserve model-declared roles when mixing uploaded files and owned Library assets. */
-export async function mediaGenerationSources(model, sources, uploadSource) {
+export async function mediaGenerationSources(model, sources, uploadSource, { strict = false } = {}) {
+  if (strict && hasUnsupportedSources(model?.media, sources)) throw Object.assign(new Error('source_type_unsupported'), { code: 'source_type_unsupported' });
   if (generationSourceState(model?.media, sources).needsReattach) throw Object.assign(new Error('source_reattach_required'), { code: 'source_reattach_required' });
   const references = [], source_keys = [], source_assets = [];
   const fitted = await fitSourcesForUpload(model?.media, sources);
