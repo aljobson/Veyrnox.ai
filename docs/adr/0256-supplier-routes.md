@@ -356,3 +356,18 @@ A job Crun refuses is refunded. Image jobs do not hop, so fal receives nothing. 
 not reachable: its only caller is the template-clip path, which is off and names the fal endpoint. Crun has no mapping
 to `reference_rejected_likeness`, so a refused real-person picture shows the generic failure with a refund. The Worker
 must be live before 0583 is applied.
+
+## Amendment 2026-11-23 (4): two Crun-only image tools, and the first Crun-first routes of 0584 to 0586
+
+Three offers moved to Crun first on the owner's decision "Crun first wherever Crun serves the same model": Kling 2.6 Pro (0584,
+the reverse of 0561: Crun median 386 s against fal 162 s on 2026-11-19, chosen anyway), Veo 3.1 (0585, probe task 586f2742,
+$1.0922 against kie $1.25) and Kling O1 reference (0586, feature mode, endpoint `crun:kling/o1-r2v-ref`, 90 credits a 5 s unit
+against fal $0.84, probe task 681e4480, 364 s). Checked and left alone because Crun is dearer or over the floor: Nano Banana Pro
+(Crun $0.0388, grsai $0.0271, floor $0.0359) and Wan 2.5 ($0.5825 against kie $0.30). Hailuo 02 saves 3% and was not moved.
+
+0599 adds Background Removal Fast (1 credit, `crun:image-background-remove`) and Upscale 2x Clean (2 credits, `crun:image-upscale`).
+They are new offers, not routes of `bria-bg-remove` or `topaz-upscale`: Crun's models are different, so decision 2 (parity
+before a route) does not apply and there is no second supplier. Each has one active route with a "current dispatch" record, and a
+job Crun refuses is refunded. The upscale pins a 1024 px long edge because a 1024x1536 source came back at its own size and was
+still charged 3 credits; a 1024 px edge doubling is confirmed with one real run after the Worker deploy. The Worker must be live
+before 0599 is applied. Bria and Topaz stay.

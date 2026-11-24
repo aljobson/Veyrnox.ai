@@ -95,14 +95,18 @@ test('every Crun endpoint has a capability record and the gateway check accepts 
   assert.equal(capabilityFor('crun:suno/music-generate')?.kind, 'audio');
 });
 
-test('the unverified Suno audio host hook is empty and refuses every host', async () => {
-  const { copyUrlToR2 } = await import('../packages/adapters/r2Copy.js');
+test('the Suno audio allowlist is the one probed host: video hosts, lookalikes, subdomains and http are refused', async () => {
+  const { copyUrlToR2, isAllowedSourceHost } = await import('../packages/adapters/r2Copy.js');
+  assert.equal(isAllowedSourceHost('audiostream.kie.ai', 'crunAudio'), true);
+  assert.equal(isAllowedSourceHost('audiostream.kie.ai', 'crun'), false, 'audio host is not a video host');
+  assert.equal(isAllowedSourceHost('static.mediaoss.bar', 'crunAudio'), false, 'video hosts are not audio hosts');
+  assert.equal((await copyUrlToR2('http://audiostream.kie.ai/stream/a.mp3', 'k', {}, { provider: 'crunAudio' })).error, 'source host not allowed');
   const real = globalThis.fetch;
   let fetched = false;
   globalThis.fetch = async () => { fetched = true; throw new Error('must not fetch'); };
   const quiet = console.error; console.error = () => {};
   try {
-    for (const host of ['static.mediaoss.bar', 'music.example', 'static.mediaoss.bar.evil.test']) {
+    for (const host of ['static.mediaoss.bar', 'music.example', 'static.mediaoss.bar.evil.test', 'x.audiostream.kie.ai', 'audiostream.kie.ai.evil.test', 'kie.ai']) {
       const out = await copyUrlToR2(`https://${host}/song.mp3`, 'k', {}, { provider: 'crunAudio' });
       assert.equal(out.error, 'source host not allowed');
     }

@@ -208,7 +208,7 @@ enum EditorCompositor {
       if let shape = transition["shape"] as? [String: Any] { clipTransitionShape(shape, rect: destination, context: context) }
     }
     if let reveal = visual["reveal"] as? [String: Any] { clipReveal(reveal, rect: destination, context: context) }
-    if let mask = visual["mask"] as? [String: Any] { try clip(mask: mask, size: size, context: context) }
+    if let mask = visual["mask"] as? [String: Any] { try Self.clip(mask: mask, size: size, context: context) }
     if let semantic = clip["semanticMask"] as? [String: Any] {
       if let dynamic = semantic["dynamic"] as? [String: Any] {
         guard let storedIdentity = dynamic["identity"] as? String, let currentIdentity = visual["semanticMaskIdentity"] as? String,
@@ -287,8 +287,9 @@ enum EditorCompositor {
       ciImage = filter.outputImage ?? ciImage
     }
     guard let rendered = ci.createCGImage(ciImage, from: ciImage.extent) else { return }
-    context.draw(rendered, in: CGRect(x: (CGFloat(width) - CGFloat(rendered.width)) / 2,
-      y: (CGFloat(height) - CGFloat(rendered.height)) / 2, width: rendered.width, height: rendered.height))
+    let renderedWidth = CGFloat(rendered.width), renderedHeight = CGFloat(rendered.height)
+    context.draw(rendered, in: CGRect(x: (CGFloat(width) - renderedWidth) / 2,
+      y: (CGFloat(height) - renderedHeight) / 2, width: renderedWidth, height: renderedHeight))
   }
 
   private static func clipReveal(_ reveal: [String: Any], rect: CGRect, context: CGContext) {

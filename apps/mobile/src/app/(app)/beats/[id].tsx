@@ -39,6 +39,10 @@ import { ds, TEXT_SCALE } from '../../../theme';
 import { createHistory, record, replacePresent, travel, canUndo, canRedo, type History } from '../../../lib/beatNative/history';
 import { useLocalBeatLifecycle } from '../../../lib/beatNative/useLocalBeatLifecycle';
 import { BeatAiPanel } from '../../../components/beats/ai/BeatAiPanel';
+import { BeatStudioAssistant } from '../../../components/beats/BeatStudioAssistant';
+import type { MusicStudioOperation } from '../../../../../../lib/musicStudioActions.mjs';
+import { MAGIC_BAR_ON_PHONE } from '../../../lib/beatAi/magicGate';
+import { getEntitlements } from '../../../lib/music/client';
 import { BeatSaveControls } from '../../../components/beats/BeatSaveControls';
 import { BeatEditorTransport } from '../../../components/beats/BeatEditorTransport';
 import { BeatMidiRecordPanel, type BeatMidiRecordPhase } from '../../../components/beats/BeatMidiRecordPanel';
@@ -164,6 +168,9 @@ export default function BeatEditor() {
     const startingRef = useRef(false);
     const [step, setStep] = useState<number | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const [studioChatGate, setStudioChatGate] = useState<{ api: typeof api | null; generation: number; enabled: boolean }>({ api: null, generation: -1, enabled: false });
+    const studioChat = studioChatGate.api === api && studioChatGate.generation === generation && studioChatGate.enabled;
+    const studioChatRequest = useRef(0);
     const [midiNotice, setMidiNotice] = useState<string | null>(null);
     const saidSequence = useRef(0);
     const [said, setSaidState] = useState<{ message: string; event: number } | null>(null);
@@ -174,6 +181,17 @@ export default function BeatEditor() {
         ordinaryPlayingRef.current = value;
         setOrdinaryPlaying(value);
     }, []);
+    useEffect(() => {
+        let mounted = true;
+        const mine = ++studioChatRequest.current;
+        const expectedGeneration = generation;
+        getEntitlements(api).then(value => {
+            if (mounted && mine === studioChatRequest.current && authRef.current.generation === expectedGeneration && value.features.studioChat) {
+                setStudioChatGate({ api, generation: expectedGeneration, enabled: true });
+            }
+        }).catch(() => undefined);
+        return () => { mounted = false; if (studioChatRequest.current === mine) studioChatRequest.current += 1; };
+    }, [api, generation]);
     const restorePatternControlsFocus = useCallback(() => {
         if (!patternControlsFocusPending.current) return;
         patternControlsFocusPending.current = false;
@@ -459,8 +477,10 @@ export default function BeatEditor() {
         if (track) audio.current?.setTrackMix(trackId, { gain: audibleGain(next, track), pan: track.pan });
     };
     const mix = (trackId: string, operation: Edit, announce?: string, key?: string) => {
-        apply(operation, announce, { ...(key ? { key } : {}), liveMix: true });
+        const applied = apply(operation, announce, { ...(key ? { key } : {}), liveMix: true });
+        if (!applied) return false;
         const next = getBeat(doc.id); if (next) { mixOf(trackId, next); next.tracks.forEach(x => mixOf(x.id, next)); }
+        return true;
     };
     const nameOf = (i: number) => t('beat.track', { n: i + 1 });
     const bpm = doc.tempo.bpm;
@@ -475,6 +495,17 @@ export default function BeatEditor() {
     const patternPlayhead = playheadTarget?.pattern === doc.currentPattern ? playheadTarget.step : null;
     const undoable = !locked && !!history.current && canUndo(history.current) && !historyBusy;
     const redoable = !locked && !!history.current && canRedo(history.current) && !historyBusy;
+    const applyStudioOperation = (operation: MusicStudioOperation) => {
+        const liveMix = operation.type === 'set_track_mute' || operation.type === 'set_track_solo';
+        if (readOnly || replacing || historyBusy || ((takes.controller.locked() || midiController.locked()) && !liveMix)) return false;
+        const announcement = t('studioAssistant.applied');
+        if (operation.type === 'set_tempo') return apply(d => setTempo(d, operation.bpm), announcement);
+        if (operation.type === 'set_view') return apply(d => setView(d, operation.view), announcement);
+        if (operation.type === 'set_track_mute') return mix(operation.trackId, d => setTrackMute(d, operation.trackId, operation.value), announcement);
+        if (operation.type === 'set_track_solo') return mix(operation.trackId, d => setTrackSolo(d, operation.trackId, operation.value), announcement);
+        if (operation.type === 'select_pattern') return selectCurrentPattern(operation.pattern, announcement);
+        return false;
+    };
     const midiTrack = editTrack?.kind === 'midi' ? editTrack as unknown as MidiSoundTrack : null;
     const midiPhase: BeatMidiRecordPhase = ['starting', 'countIn', 'recording', 'finishing'].includes(midiView.status)
         ? midiView.status as BeatMidiRecordPhase : 'idle';
@@ -585,6 +616,7 @@ export default function BeatEditor() {
                     <BeatSaveControls id={doc.id} apply={apply} />
                     <Button variant="secondary" icon="arrowUp" label={t('beatExport.title')} onPress={() => setExporting(true)} />
                     <BeatAiPanel doc={doc} apply={apply} disabled={locked} />
+                    {studioChat ? <BeatStudioAssistant key={doc.id} doc={doc} magicBar={MAGIC_BAR_ON_PHONE} readOnly={readOnly} recording={takes.controller.locked() || midiController.locked()} busy={replacing || historyBusy} applyOperation={applyStudioOperation} announce={setSaid} /> : null}
                     <BeatLabsBar doc={doc} apply={apply} targets={PHONE_TIP_TARGETS} capabilities={PHONE_CAPABILITIES}
                         showSounds={doc.view !== 'song'} />
                 </View>

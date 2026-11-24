@@ -10,7 +10,7 @@ import en from '../src/lib/i18n/messages/en';
 import { TTS_VOICES, TTS_EMOTIONS, TTS_EXAMPLES, TTS_INTERJECTIONS, TTS_INPUT_RULES, voiceGenderOptions } from '../src/lib/speech/shared';
 declare const require: (id: string) => any;
 declare const __dirname: string;
-const fs = require('fs'), path = require('path'), ts = require('typescript');
+const fs = require('fs'), path = require('path'), ts = require('typescript-legacy');
 // Fixed id domains for the dynamic t() families in production source. New families require a fixture;
 // these are input ids, deliberately independent of translated output and the current catalog contents.
 const domains: Record<string, readonly string[]> = {
@@ -54,6 +54,8 @@ const domains: Record<string, readonly string[]> = {
     'editorEditGate.{}': ['invalid', 'tooLarge'],
     'editorExportRefusal.{}': ['speed', 'audio', 'motion', 'animation', 'colour', 'crop', 'effects', 'blend', 'background', 'masks', 'smart', 'transitions', 'text', 'captions', 'position', 'fonts', 'images', 'originalAudio', 'assets', 'groups', 'unknown'],
     'musicDiscover.mood.{}': ['all', 'Hip-hop', 'Rock', 'Jazz'],
+    'musicAlbums.status.{}': ['draft', 'published', 'unpublished', 'blocked'],
+    'musicAlbums.type.{}': ['album', 'ep', 'single'],
     'musicPlaylists.{}': ['titleInvalid', 'conflict', 'invalidSongs', 'offline', 'scanStale', 'saved', 'noneUnavailable', 'pending', 'signIn', 'denied', 'error'],
     'musicSectionActions.{}.title': ['add_section', 'replace_section'],
     'musicSectionActions.position.{}': ['beginning', 'end'],

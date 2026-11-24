@@ -182,7 +182,7 @@ export default function TemplatePage() {
                     const href = presetHref(preset, { ...choices, modelId: model?.id, prompt }, catalog);
                     if (boundCount && model) {
                         const sourceHandoff = stageCreativeSourceHandoff({ recipe: 'template', modelId: model.id, references: photos, uploaded: {}, fromLibrary: {}, rightsConfirmed: true });
-                        router.push({ ...href, params: { ...href.params, recipe: 'template', sourceHandoff } });
+                        router.push({ ...href, params: { ...href.params, recipe: 'template', sourceHandoff } } as never);
                     } else router.push(href);
                 }} />}
             </> : available ? <>

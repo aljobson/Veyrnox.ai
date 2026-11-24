@@ -155,6 +155,7 @@ import area_modelPage from './en/modelPage';
 import area_montage from './en/montage';
 import area_music from './en/music';
 import area_musicActions from './en/musicActions';
+import area_musicAlbums from './en/musicAlbums';
 import area_musicDiscover from './en/musicDiscover';
 import area_musicExport from './en/musicExport';
 import area_musicGenerationActions from './en/musicGenerationActions';
@@ -235,6 +236,7 @@ import area_start from './en/start';
 import area_stem from './en/stem';
 import area_stems from './en/stems';
 import area_studio from './en/studio';
+import area_studioAssistant from './en/studioAssistant';
 import area_studioSkills from './en/studioSkills';
 import area_tabs from './en/tabs';
 import area_team from './en/team';
@@ -412,6 +414,7 @@ const catalog = {
     ...area_montage,
     ...area_music,
     ...area_musicActions,
+    ...area_musicAlbums,
     ...area_musicDiscover,
     ...area_musicExport,
     ...area_musicGenerationActions,
@@ -492,6 +495,7 @@ const catalog = {
     ...area_stem,
     ...area_stems,
     ...area_studio,
+    ...area_studioAssistant,
     ...area_studioSkills,
     ...area_tabs,
     ...area_team,

@@ -7,6 +7,9 @@ const keys = [
     'music.create.suno.excludeNote', 'music.create.suno.vocalGender', 'music.create.suno.gender.auto',
     'music.create.suno.gender.male', 'music.create.suno.gender.female', 'music.create.suno.styleWeight',
     'music.create.suno.weirdness', 'music.create.suno.duration', 'music.create.suno.variety',
+    'music.create.noAccountCredits', 'music.create.payableCredits',
+    'music.create.dailyAllowanceReset', 'music.create.dailyAllowanceUnavailable',
+    'music.create.dailyAllowanceExhausted', 'music.create.daily_allowance_stale',
     ...Array.from({ length: 5 }, (_, index) => `music.create.suno.variety.${index}`),
     ...['cinematic', 'electronic', 'indie', 'jazz', 'pop', 'rock'].map(value => `music.create.suno.style.${value}`),
     'music.actions.editUnavailableForFormat',
@@ -15,9 +18,16 @@ const slots = (value: string) => [...value.matchAll(/\{(\w+)\}/g)].map(match => 
 
 test.each(LOCALE_CODES)('Suno strings are complete in %s with matching placeholders', locale => {
     const catalog = CATALOGS[locale]!;
-    for (const key of keys) {
+    const categories = new Intl.PluralRules(locale).resolvedOptions().pluralCategories;
+    const localeKeys = [
+        ...keys,
+        ...['music.create.dailyAllowance', 'music.create.dailyAllowanceStatus']
+            .flatMap(base => categories.map(category => `${base}.${category}`)),
+    ];
+    for (const key of localeKeys) {
+        const englishKey = Object.hasOwn(en, key) ? key : key.replace(/\.(zero|two|few|many)$/, '.other');
         expect(typeof catalog[key]).toBe('string');
         expect(catalog[key]).not.toBe(key);
-        expect(slots(catalog[key]!)).toEqual(slots((en as Record<string, string>)[key]!));
+        expect(slots(catalog[key]!)).toEqual(slots((en as Record<string, string>)[englishKey]!));
     }
 });

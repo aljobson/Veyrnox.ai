@@ -241,7 +241,7 @@ function SampleMixLab({ beat, mix, mixName, savedMixId, saveNotice, playing, pro
   );
 }
 
-export function MusicDiscover({ initialSample = null, initialMix = null, initialSavedMixId = '', initialMixName = '' }) {
+export function MusicDiscover({ initialSample = null, initialMix = null, initialSavedMixId = '', initialMixName = '', dailyChallenge = null }) {
   const { t } = useI18n();
   const [mood, setMood] = useState('All');
   const [search, setSearch] = useState('');
@@ -337,6 +337,20 @@ export function MusicDiscover({ initialSample = null, initialMix = null, initial
         <p className="mt-4 text-lg leading-8 text-vx-fg-body">{t('musicDiscover.lead')}</p>
         <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-vx-fg-muted"><span className="rounded-full border border-vx-border px-3 py-1.5">{MUSIC_DISCOVER_LISTED_BEATS.length} original samples</span><span className="rounded-full border border-vx-border px-3 py-1.5">{MUSIC_DISCOVER_MOODS.length - 1} genres</span><span className="rounded-full border border-vx-border px-3 py-1.5">Tempo + 3-layer mixer</span></div>
       </header>
+
+      {dailyChallenge ? <section data-testid="music-daily-challenge" aria-labelledby="music-daily-challenge-title" className="mt-8 overflow-hidden rounded-2xl border border-vx-accent/60 bg-vx-panel p-5 shadow-2xl sm:p-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">{t('music.dailyChallenge.eyebrow')}</p>
+            <h2 id="music-daily-challenge-title" className="mt-2 font-vx text-3xl font-black">{t(dailyChallenge.title_key)}</h2>
+            <p className="mt-3 leading-7 text-vx-fg-body">{t(dailyChallenge.prompt_key)}</p>
+            <p className="mt-3 text-sm font-bold text-vx-fg-muted">{t('music.dailyChallenge.noReward')}</p>
+          </div>
+          <Link href={{ pathname: '/app/music/create', query: { challenge: dailyChallenge.id } }} className="vx-press inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-vx-accent px-6 font-extrabold text-vx-accent-ink hover:bg-vx-accent-hover">
+            {t('music.dailyChallenge.cta')}
+          </Link>
+        </div>
+      </section> : null}
 
       <section aria-label={t('musicDiscover.filters')} className="mt-8 rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

@@ -1,5 +1,5 @@
 import { ApiError, type ApiClient } from '../src/lib/api';
-import { cancelErrorKey, cancelJob, getCancelStatus } from '../src/lib/cancelJob';
+import { cancelErrorKey, cancelJob, getCancelStatus, getMusicCancelProbe } from '../src/lib/cancelJob';
 
 let request: jest.Mock;
 let api: ApiClient;
@@ -21,6 +21,25 @@ test.each([new ApiError(404, 'not_found'), new ApiError(500, 'internal'), new Ap
 test('false and zero are valid status values', async () => {
     request.mockResolvedValue({ cancellable: false, credits: 0 });
     expect(await getCancelStatus(api, 'id')).toEqual({ cancellable: false, credits: 0 });
+});
+test('Music probe preserves available, permanent hidden and bounded retry outcomes', async () => {
+    request.mockResolvedValueOnce({ cancellable: true, credits: 5 });
+    await expect(getMusicCancelProbe(api, 'music/job')).resolves.toEqual({
+        kind: 'available', status: { cancellable: true, credits: 5 },
+    });
+    expect(request).toHaveBeenLastCalledWith('/api/v1/jobs/music%2Fjob/cancel', { method: 'GET' });
+    request.mockRejectedValueOnce(new ApiError(429, 'rate_limited', { retryAfterSeconds: 19 }));
+    await expect(getMusicCancelProbe(api, 'id')).resolves.toEqual({ kind: 'retry', retryAfterMs: 19_000 });
+    request.mockRejectedValueOnce(new ApiError(429, 'rate_limited', { retryAfterSeconds: 1 }));
+    await expect(getMusicCancelProbe(api, 'id')).resolves.toEqual({ kind: 'retry', retryAfterMs: 15_000 });
+    request.mockResolvedValueOnce({ cancellable: true, credits: '5' });
+    await expect(getMusicCancelProbe(api, 'id')).resolves.toEqual({ kind: 'hidden' });
+    request.mockRejectedValueOnce(new ApiError(404, 'not_found'));
+    await expect(getMusicCancelProbe(api, 'id')).resolves.toEqual({ kind: 'hidden' });
+    request.mockRejectedValueOnce(new ApiError(500, 'internal'));
+    await expect(getMusicCancelProbe(api, 'id')).resolves.toEqual({ kind: 'retry', retryAfterMs: 15_000 });
+    request.mockRejectedValueOnce(new ApiError(0, 'network'));
+    await expect(getMusicCancelProbe(api, 'id')).resolves.toEqual({ kind: 'retry', retryAfterMs: 15_000 });
 });
 test.each([null, {}, { cancelled: false, replayed: false, credits: 2 }, { cancelled: true, credits: 2 }, ...[-1, 1.2, '2', null, Infinity].map(credits => ({ cancelled: true, replayed: false, credits }))])('malformed POST %p is uncertain', async row => {
     request.mockResolvedValue(row);

@@ -125,11 +125,16 @@ test('a timestamp can be removed even after playback moves beyond the comment ti
     expect(buttons(t('musicPublic.addTimestamp'))[0].props.accessibilityState.disabled).toBe(true);
 });
 
-test('Explore opens with two reads, lazy actions share one ownership read per creator and account', async () => {
+test('Explore opens with three reads, lazy actions share one ownership read per creator and account', async () => {
     const two = clone(best); two.playlists[0].tracks.push({ ...two.playlists[0].tracks[0], slug: 'abcdefabcdefabcdefabcdef', title: 'Second track' });
     mockApi.request.mockImplementation((path, init) => path.endsWith('best-of') ? two : defaultRequest(path, init));
     await mount(<Explore />);
-    expect(mockApi.request.mock.calls.map(([p]) => p).sort()).toEqual(['/api/v1/music/blocks', '/api/v1/music/explore/best-of']);
+    expect(mockApi.request.mock.calls.map(([p]) => p).sort()).toEqual([
+      '/api/v1/music/blocks',
+      '/api/v1/music/entitlements',
+      '/api/v1/music/explore/albums',
+      '/api/v1/music/explore/best-of',
+    ]);
     await click(t('musicPublic.actions', { title: 'First track' }));
     await click(t('musicPublic.actions', { title: 'Second track' }));
     const socialReads = () => mockApi.request.mock.calls.filter(([p]) => p.includes('/social?'));

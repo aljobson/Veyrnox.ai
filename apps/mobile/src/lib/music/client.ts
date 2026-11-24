@@ -14,6 +14,7 @@ import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropRe
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
 import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext } from './validate';
+import { isMusicDailyChallenge } from './dailyChallenge';
 import type {
     MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
     MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput,
@@ -26,11 +27,26 @@ const BASE = '/api/v1/music';
 const bad = (status = 200): ApiError => new ApiError(status, 'bad_response');
 const rows = (value: unknown): readonly MusicRow[] | null => Array.isArray(value) && value.every(isRecord) ? value : null;
 const post = (body: unknown): RequestInit => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+const DEFAULT_MUSIC_FEATURES: MusicEntitlements['features'] = Object.freeze({
+    albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
+});
+const DISABLED_DAILY_ALLOWANCE = Object.freeze({ enabled: false });
 
 export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements> {
-    const v = await api.request<unknown>(`${BASE}/entitlements`);
-    if (!isMusicEntitlements(v)) throw bad();
-    return v;
+    const response = await api.request<unknown>(`${BASE}/entitlements`);
+    // Mobile and web deploy independently. A server rollback that predates rollout capabilities must fail closed,
+    // while a present but malformed capabilities object remains a bad response.
+    const safeChallenge = isRecord(response) && isRecord(response.features)
+        && response.features.dailyChallenge === true && isMusicDailyChallenge(response.daily_challenge)
+        ? response.daily_challenge : undefined;
+    const value = isRecord(response) ? {
+        ...response,
+        ...(response.features === undefined ? { features: DEFAULT_MUSIC_FEATURES } : {}),
+        ...(response.daily_allowance === undefined ? { daily_allowance: DISABLED_DAILY_ALLOWANCE } : {}),
+        ...(response.daily_challenge === undefined ? {} : { daily_challenge: safeChallenge }),
+    } : response;
+    if (!isMusicEntitlements(value)) throw bad();
+    return value;
 }
 
 // GET ?tab=history|hooks|covers. The key in the answer depends on the tab.

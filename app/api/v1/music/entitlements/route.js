@@ -1,8 +1,10 @@
 import { rpc, envConfig } from '../../../../../packages/db/supabase-client.js';
-import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
+import { MUSIC_MOBILE_ROLLOUT_FLAGS, musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
+import { musicDailyChallengeAt } from '../../../../../lib/musicDailyChallenge.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
-    musicEntitlementProjection, musicGenerationEnabled, musicSchemaEnabled, validMusicAuthId,
+    musicAlbumsEnabled, musicDailyCreditsEnabled, musicEntitlementProjection, musicGenerationEnabled, musicStudioChatEnabled,
+    musicSchemaEnabled, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
 const reply = (body, status = 200) => Response.json(body, {
@@ -24,16 +26,34 @@ export async function GET(request) {
             rpc('read_own_credit_subscription', { p_auth_id: authId }, cfg),
             rpc('music_get_crun_availability', {}, cfg),
         ]);
-        return reply(musicEntitlementProjection({
-            models,
-            credits,
-            generationEnabled: musicGenerationEnabled(),
-            longSongs: musicRuntimeFlag('longSongs'),
-            subscription: subscription?.ok ? subscription.subscription : null,
-            crunAvailability: crunAvailability?.ok ? crunAvailability : {
-                admission_open: false, endpoint_open: false, suno_models: {},
-            },
-        }));
+        const dailyCredits = musicDailyCreditsEnabled();
+        let dailyAllowance;
+        if (dailyCredits) {
+            try {
+                const allowance = await rpc('music_daily_allowance_status', { p_auth_id: authId }, cfg);
+                dailyAllowance = allowance?.ok ? allowance : { enabled: false, unavailable: true };
+            } catch (error) {
+                console.error('[music/entitlements] daily allowance unavailable:', error?.message);
+                dailyAllowance = { enabled: false, unavailable: true };
+            }
+        }
+        const features = Object.fromEntries(MUSIC_MOBILE_ROLLOUT_FLAGS.map(name => [name,
+            name === 'albums' ? musicAlbumsEnabled() : name === 'studioChat' ? musicStudioChatEnabled() : musicRuntimeFlag(name)]));
+        return reply({
+            ...musicEntitlementProjection({
+                models,
+                credits,
+                generationEnabled: musicGenerationEnabled(),
+                longSongs: musicRuntimeFlag('longSongs'),
+                subscription: subscription?.ok ? subscription.subscription : null,
+                crunAvailability: crunAvailability?.ok ? crunAvailability : {
+                    admission_open: false, endpoint_open: false, suno_models: {},
+                },
+            }),
+            features,
+            ...(features.dailyChallenge ? { daily_challenge: musicDailyChallengeAt() } : {}),
+            ...(dailyCredits ? { daily_allowance: dailyAllowance } : {}),
+        });
     } catch (error) {
         console.error('[music/entitlements] read failed:', error?.message);
         return reply({ error: 'temporarily_unavailable' }, 502);

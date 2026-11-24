@@ -108,7 +108,7 @@ test('registered-only web availability silently handles a flag-off 404', async t
   assert.equal(useTemplateClipAvailable(id), null); effects.shift()();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(calls, 1); assert.deepEqual(states, [null]);
-  assert.deepEqual(logged.filter(line => /template_clip|404|catalog/.test(line)), []);
+  assert.deepEqual(logged.filter(line => /template_clip|\b404\b|catalog/.test(line)), []);
 });
 
 test('clip prompts remain exact and read-only beside existing help and the clip explanation', () => {

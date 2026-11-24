@@ -38,6 +38,19 @@ test('builds Crun simple/custom payloads from projection controls without tempo 
     expect(parseCrunMusicQuote(custom).ok).toBe(true);
 });
 
+test('advertised daily allowance opts capable clients in without changing legacy wires', () => {
+    const enabled = { ...crunEntitlements, daily_allowance: {
+        enabled: true, eligible: true, candidates_remaining: 10, pairs_remaining: 5,
+        reset_at: '2099-01-02T00:00:00Z',
+    } };
+    expect(buildSimpleQuote({ ...crunCustom, mode: 'simple', prompt: 'warm synths' }, enabled))
+        .toMatchObject({ daily_allowance_capable: true });
+    expect(buildCustomQuote(crunCustom, enabled, crunDraft, true))
+        .toMatchObject({ daily_allowance_capable: true });
+    expect(buildSimpleQuote({ ...crunCustom, mode: 'simple', prompt: 'warm synths' }, crunEntitlements))
+        .not.toHaveProperty('daily_allowance_capable');
+});
+
 test('uses only projection counters for Crun text limits and requires custom vocal lyrics', () => {
     const model = crunEntitlements.models[1];
     const small = { ...crunEntitlements, models: [{ ...model, counters: { ...model.counters!, lyrics: { max: 2 } } }] };
@@ -118,5 +131,62 @@ test('flow refreshes entitlements and draft once after contract_stale, then re-q
     flow.copyPreviousText();
     expect(flow.snapshot().input).toMatchObject({ title: crunCustom.title, lyrics: crunCustom.lyrics, styles: crunCustom.styles });
     expect(flow.snapshot().previousText).toBeNull();
+    flow.dispose();
+});
+
+test('daily allowance drift clears the quote and refreshes entitlements before another review', async () => {
+    const enabled = { ...crunEntitlements, daily_allowance: {
+        enabled: true, eligible: true, candidates_remaining: 2, pairs_remaining: 1,
+        reset_at: '2099-01-02T00:00:00Z',
+    } };
+    let entitlementReads = 0;
+    const request: jest.Mock = jest.fn(async (path: string): Promise<unknown> => {
+        if (path.endsWith('/entitlements')) return ++entitlementReads === 1 ? enabled : { ...crunEntitlements, daily_allowance: { enabled: false } };
+        if (path.endsWith('/generation-quotes')) return { ...crunQuote, mode: 'simple', model_id: 'ace-step-1.5',
+            list_credits: 8, total_credits: 0, daily_free_candidates: 2 };
+        if (path.endsWith('/generations')) throw new ApiError(409, 'daily_allowance_stale');
+        throw new Error(path);
+    });
+    const api = { request } as unknown as ApiClient;
+    const flow = createMusicCreateFlow(api, createGenerationTracker({ api, subscribeAppState: () => () => {}, setTimer: () => () => {} }));
+    await flow.load();
+    flow.edit({ mode: 'simple', model_id: 'ace-step-1.5', prompt: 'warm synths', instrumental: true });
+    await flow.review();
+    expect(flow.attempts.snapshot()?.quote.daily_free_candidates).toBe(2);
+    await flow.confirm();
+    expect(flow.attempts.snapshot()).toBeNull();
+    expect(flow.snapshot().error).toBe('daily_allowance_stale');
+    expect(flow.snapshot().entitlements?.daily_allowance?.enabled).toBe(false);
+    expect(entitlementReads).toBe(2);
+    flow.dispose();
+});
+
+test('successful confirmation refreshes the daily allowance projection without blocking creation', async () => {
+    const enabled = { ...crunEntitlements, daily_allowance: {
+        enabled: true, eligible: true, candidates_remaining: 2, pairs_remaining: 1,
+        reset_at: '2099-01-02T00:00:00Z',
+    } };
+    const exhausted = { ...enabled, balance: 100, daily_allowance: {
+        enabled: true, eligible: true, candidates_remaining: 0, pairs_remaining: 0,
+        reset_at: '2099-01-02T00:00:00Z',
+    } };
+    let entitlementReads = 0;
+    const request: jest.Mock = jest.fn(async (path: string, init?: RequestInit): Promise<unknown> => {
+        if (path.endsWith('/entitlements')) return ++entitlementReads === 1 ? enabled : exhausted;
+        if (path.endsWith('/generation-quotes')) return { ...crunQuote, mode: 'simple', model_id: 'ace-step',
+            credits_per_candidate: 4, list_credits: 8, total_credits: 0, daily_free_candidates: 2,
+            balance: 100, balance_after: 100 };
+        if (path.endsWith('/generations') && init?.method === 'POST') return { ...generation, balance_after: 100 };
+        throw new Error(path);
+    });
+    const api = { request } as unknown as ApiClient;
+    const flow = createMusicCreateFlow(api, createGenerationTracker({ api, subscribeAppState: () => () => {}, setTimer: () => () => {} }));
+    await flow.load();
+    flow.edit({ mode: 'simple', model_id: 'ace-step', prompt: 'warm synths', instrumental: true });
+    await flow.review();
+    await flow.confirm();
+    await Promise.resolve();
+    expect(flow.snapshot().entitlements?.daily_allowance?.candidates_remaining).toBe(0);
+    expect(entitlementReads).toBe(2);
     flow.dispose();
 });

@@ -5,16 +5,28 @@ import { loadLanguage, saveLanguage, saveAccountLanguage, syncPendingAccountLang
 import { saveThemeReturnPath, takeThemeReturnPath } from '../src/theme';
 
 const mockStore = new Map<string, string>();
+const mockFiles = new Map<string, string>();
 let mockWriteFail = false;
+let mockFileWriteFail = false;
 jest.mock('expo-secure-store', () => ({
-    getItem: (key: string) => mockStore.get(key) ?? null,
-    getItemAsync: async (key: string) => mockStore.get(key) ?? null,
-    setItem: (key: string, value: string) => { if (mockWriteFail) throw Error('storage'); mockStore.set(key, value); },
-    setItemAsync: async (key: string, value: string) => { if (mockWriteFail) throw Error('storage'); mockStore.set(key, value); },
-    deleteItemAsync: async (key: string) => { mockStore.delete(key); },
+    getItem: jest.fn((key: string) => mockStore.get(key) ?? null),
+    getItemAsync: jest.fn(async (key: string) => mockStore.get(key) ?? null),
+    setItem: jest.fn((key: string, value: string) => { if (mockWriteFail) throw Error('storage'); mockStore.set(key, value); }),
+    setItemAsync: jest.fn(async (key: string, value: string) => { if (mockWriteFail) throw Error('storage'); mockStore.set(key, value); }),
+    deleteItemAsync: jest.fn(async (key: string) => { mockStore.delete(key); }),
+}));
+jest.mock('expo-file-system', () => ({
+    Paths: { document: 'docs' },
+    File: class {
+        uri: string;
+        constructor(...parts: any[]) { this.uri = parts.map(part => part.uri ?? part).join('/'); }
+        get exists() { return mockFiles.has(this.uri); }
+        textSync() { return mockFiles.get(this.uri)!; }
+        writeSync(value: string) { if (mockFileWriteFail) throw Error('file storage'); mockFiles.set(this.uri, value); }
+    },
 }));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
-beforeEach(() => { mockStore.clear(); mockWriteFail = false; setLocaleFromDevice(['en']); });
+beforeEach(() => { mockStore.clear(); mockFiles.clear(); mockWriteFail = false; mockFileWriteFail = false; setLocaleFromDevice(['en']); });
 function fixture(overrides: Partial<LanguageTransition> = {}): LanguageTransition {
     return { active: ['en', 'es', 'ar'], current: 'en', nativeRtl: false, reconcile: jest.fn(async () => true), signedIn: true, canReloadSession: () => true,
         load: async () => 'en', save: jest.fn(async () => true), saveReturn: jest.fn(async () => true),
@@ -84,10 +96,19 @@ test('real language and return-slot adapters report storage failures', async () 
     expect(await loadLanguage()).toBe('es');
     expect(await saveThemeReturnPath('/sign-in')).toBe(true);
     expect(await takeThemeReturnPath()).toBe('/sign-in');
-    mockWriteFail = true;
+    mockFileWriteFail = true;
     expect(await saveLanguage('ar')).toBe(false);
-    expect(await saveThemeReturnPath('/language')).toBe(false);
+    mockFileWriteFail = false;
     expect(await loadLanguage()).toBe('es');
+    mockWriteFail = true;
+    expect(await saveThemeReturnPath('/language')).toBe(false);
+});
+test('language save never enters the Keychain write path', async () => {
+    const store = require('expo-secure-store') as typeof import('expo-secure-store');
+    jest.mocked(store.setItemAsync).mockImplementationOnce(() => new Promise<void>(() => {}));
+    expect(await saveLanguage('es', true)).toBe(true);
+    expect(await loadLanguage()).toBe('es');
+    expect(store.setItemAsync).not.toHaveBeenCalled();
 });
 test('English on a German-region phone retains device dates and Credits en-GB/en-US', () => {
     const at = new Date(2026, 9, 27, 13, 15);
@@ -144,7 +165,7 @@ test('inactive or unconsumable pending choices do not sync', async () => {
     await saveLanguage('ar', true);
     await syncPendingAccountLanguage({ request }, ['en', 'es']);
     await saveLanguage('es', true);
-    mockWriteFail = true;
+    mockFileWriteFail = true;
     await syncPendingAccountLanguage({ request }, ['en', 'es']);
     expect(request).not.toHaveBeenCalled();
 });

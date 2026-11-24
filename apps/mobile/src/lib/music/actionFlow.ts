@@ -1,6 +1,7 @@
 import { actionErrorMetadata, type ActionErrorMetadata } from './actionErrorMetadata';
 import { ApiError, type ApiClient } from '../api';
-import { subscribeCacheUser } from '../appCache';
+import { getCacheUser, subscribeCacheUser } from '../appCache';
+import { publishBalance } from '../balanceEvents';
 import { ensureOnline } from '../network';
 import { getSong } from './client';
 import { createActionAttempts } from './actionAttempts';
@@ -90,6 +91,17 @@ export function createSongActionFlow<R extends { balance_after?: number }, S, Q 
             } catch (error) { fail(error); }
             finally { confirming = false; update({ busy: false }); }
         },
-        refresh: () => poll?.refresh(), dispose,
+        refresh: () => poll?.refresh(),
+        async refreshBalance() {
+            const owner = getCacheUser();
+            try {
+                const next = await api.getBalance();
+                if (!disposed && owner && owner === getCacheUser()) {
+                    update({ balance: next.balance });
+                    publishBalance(owner, next.balance);
+                }
+            } catch { /* A failed balance read cannot undo a confirmed cancellation. */ }
+        },
+        dispose,
     };
 }

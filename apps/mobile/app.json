@@ -2,7 +2,7 @@
   "expo": {
     "name": "Veyrnox.ai",
     "slug": "veyrnoxai",
-    "version": "1.0.16",
+    "version": "1.0.18",
     "orientation": "default",
     "platforms": [
       "ios",
@@ -239,6 +239,7 @@
       ],
       "expo-apple-authentication",
       "expo-web-browser",
+      "expo-image",
       "expo-notifications",
       [
         "@sentry/react-native",

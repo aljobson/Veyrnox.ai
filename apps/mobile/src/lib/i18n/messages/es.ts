@@ -294,7 +294,7 @@ const es = {
     'app.create.error.upload_unreadable': 'No pudimos leer el archivo. No se cobró nada.',
     'app.create.error.source_too_large': 'La imagen tiene demasiados píxeles para este modelo. Use una más pequeña. No se cobró nada.',
     'app.create.error.source_too_long': 'La grabación supera la duración admitida por este modelo (consulte el límite en la carga). No se cobró nada.',
-    'app.create.error.source_length_unknown': 'No pudimos leer la duración del archivo. Pruebe con un WAV o un MP3 sin carátula. No se cobró nada.',
+    'app.create.error.source_length_unknown': 'No pudimos leer la duración del archivo. Pruebe con un MP4 guardado desde su teléfono o un editor de vídeo, o con un WAV o MP3 sin carátula. No se cobró nada.',
     'app.create.error.lipsync_video_length_unknown': 'No pudimos verificar la duración visual del vídeo para sincronizar labios. Exporte un MP4 sencillo con una pista de vídeo y reintente. No se cobró nada.',
     'app.create.error.lipsync_audio_exceeds_video': 'La voz dura más que el vídeo. Use una voz más corta o un vídeo más largo para no cortar el final. No se cobró nada.',
     'app.create.error.dialogue_invalid': 'Escriba una línea por hablante, como "Ana: ¡Hola!", con hasta cuatro hablantes. No se cobró nada.',

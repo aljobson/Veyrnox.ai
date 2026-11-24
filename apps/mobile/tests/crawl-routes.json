@@ -50,6 +50,7 @@
 "models",
 "music",
 "music/add-section",
+"music/albums",
 "music/blocked",
 "music/cover",
 "music/create",

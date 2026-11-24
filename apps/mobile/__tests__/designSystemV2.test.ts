@@ -1,4 +1,4 @@
-import ts from 'typescript';
+import ts from 'typescript-legacy';
 declare const require: (id: string) => any;
 declare const __dirname: string;
 const fs = require('fs') as { readFileSync(p: string, encoding: string): string; readdirSync(p: string): string[]; existsSync(p: string): boolean };

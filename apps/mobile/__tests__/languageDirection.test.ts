@@ -4,11 +4,22 @@ import { ACTIVE_LOCALES, startupLocale, type LocaleCode } from '../src/lib/i18n'
 import { LANGUAGE_SLOT } from '../src/lib/language';
 import { saveLanguage } from '../src/lib/languageStore';
 const mockStore = new Map<string, string>();
+const mockFiles = new Map<string, string>();
 jest.mock('expo-secure-store', () => ({
     getItem: (key: string) => mockStore.get(key) ?? null,
-    getItemAsync: async (key: string) => mockStore.get(key) ?? null,
-    setItemAsync: async (key: string, value: string) => { mockStore.set(key, value); },
-    deleteItemAsync: async (key: string) => { mockStore.delete(key); },
+    getItemAsync: jest.fn(async (key: string) => mockStore.get(key) ?? null),
+    setItemAsync: jest.fn(async (key: string, value: string) => { mockStore.set(key, value); }),
+    deleteItemAsync: jest.fn(async (key: string) => { mockStore.delete(key); }),
+}));
+jest.mock('expo-file-system', () => ({
+    Paths: { document: 'docs' },
+    File: class {
+        uri: string;
+        constructor(...parts: any[]) { this.uri = parts.map(part => part.uri ?? part).join('/'); }
+        get exists() { return mockFiles.has(this.uri); }
+        textSync() { return mockFiles.get(this.uri)!; }
+        writeSync(value: string) { mockFiles.set(this.uri, value); }
+    },
 }));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
 const session = { signedIn: false, canReloadSession: () => false };
@@ -21,7 +32,7 @@ function fixture(nativeRtl = false) {
     };
     return deps;
 }
-beforeEach(() => mockStore.clear());
+beforeEach(() => { mockStore.clear(); mockFiles.clear(); });
 test.each([
     { stored: 'ar', tags: ['en'], native: false, target: true },
     { stored: null, tags: ['ar-SA'], native: false, target: true },
@@ -71,12 +82,22 @@ test.each(['read', 'write', 'reload', 'session', 'lostSession'] as const)('%s fa
     if (failure !== 'reload') expect(deps.direction).not.toHaveBeenCalled();
     expect(mockStore.has(LANGUAGE_SLOT)).toBe(false);
 });
-test('default SecureStore adapter keeps an existing pending account sync byte-for-byte', async () => {
+test('default direction adapter keeps an existing pending account sync byte-for-byte', async () => {
     await saveLanguage('ar', true);
-    const before = mockStore.get(LANGUAGE_SLOT);
+    const languageFile = `docs/${LANGUAGE_SLOT}.json`;
+    const before = mockFiles.get(languageFile);
     await createDirectionReconciler().reconcile('ar', '/language', { signedIn: true, canReloadSession: () => true });
-    expect(mockStore.get(LANGUAGE_SLOT)).toBe(before);
+    expect(mockFiles.get(languageFile)).toBe(before);
     expect(JSON.parse(before!).pendingAccountSync).toBe(true);
+});
+
+test('default adapter never enters the async Keychain path during onboarding', async () => {
+    const store = require('expo-secure-store') as typeof import('expo-secure-store');
+    jest.mocked(store.getItemAsync).mockImplementationOnce(() => new Promise<string | null>(() => {}));
+    const runtime = createDirectionReconciler();
+    expect(await runtime.reconcile('en', '/sign-in', session)).toBe(true);
+    expect(await runtime.beforeChoice()).toBe(true);
+    expect(store.getItemAsync).not.toHaveBeenCalled();
 });
 
 test.each(['before preparation', 'after preparation'] as const)('retries in the same launch when session recovers %s, then reloads only once', async stage => {
