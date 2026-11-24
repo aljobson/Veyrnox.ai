@@ -372,7 +372,7 @@ job Crun refuses is refunded. The upscale pins a 1024 px long edge because a 102
 still charged 3 credits; a 1024 px edge doubling is confirmed with one real run after the Worker deploy. The Worker must be live
 before 0599 is applied. Bria and Topaz stay.
 
-## Amendment 2026-11-23: route failure accounting and breaker recovery (0601)
+## Amendment 2026-11-23: route failure accounting and breaker recovery (0603)
 
 Route failure accounting now records supplier-side failures only, and generic Crun routes recover through the
 documented cooldown.
@@ -415,7 +415,7 @@ documented cooldown.
    `crun:bytedance/seedance2-5-r2v:extend` alongside its existing grammar. No general second colon is allowed; case
    variants and suffix lookalikes remain `INVALID_INPUTS`. Breakers compare the full endpoint, so edit, extend and the
    plain endpoint trip and recover independently. The two offers remain dark as 0598 left them.
-7. **Generic Crun endpoint accounting uses admission-time evidence.** Migration 0601 adds nullable
+7. **Generic Crun endpoint accounting uses admission-time evidence.** Migration 0603 adds nullable
    `breaker_first_opened_at` without backfilling it. It records the start of the current open period and stays fixed
    when `breaker_opened_at` is refreshed. Readers fall back to `breaker_opened_at` when the new column is NULL.
    `mark_job_attempt_outcome` passes `job_attempts.created_at` to
@@ -448,11 +448,11 @@ documented cooldown.
    legacy NULL starts, repeated refreshes, sibling ordering, the grace boundary and committed `SKIP LOCKED` fixtures.
    The committed fixture requires a loopback host and a database name ending in `_check`, and restores both rows in
    `finally`.
-8. **Deployment order.** The Worker must be live before 0601 is applied: the old Worker counts circuit-gate refusals,
+8. **Deployment order.** The Worker must be live before 0603 is applied: the old Worker counts circuit-gate refusals,
    which can keep a shared generic Crun endpoint held. Worker-first is the normal order: `main` deploys the Worker on
    push, and an owner-approved workflow applies migrations afterwards. If either new uncounted-close RPC fails for any reason,
    including a missing function (`PGRST202`), the Worker logs the error and makes no counting call. With the Worker
-   first, customer-content outcomes are not counted until 0601 lands. An attempt left open in that window, or by a
+   first, customer-content outcomes are not counted until 0603 lands. An attempt left open in that window, or by a
    failed close RPC, stays open in the attempt log: nothing closes it later. The Your Wins readers select only
    `completed` attempts; `scripts/check-crun-spend.mjs` reads all attempts, shows these rows as `open` and includes
    them only in its all-attempts upper bound. No path that moves money or routes a job acts on these open rows.
