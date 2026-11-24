@@ -13,14 +13,17 @@ test('iPhone entitlement contract fails inspiration closed without usable source
   assert.match(client, /inspiration: projectedFeatures\.inspiration === true && safeSources\.length > 0/);
   assert.match(client, /inspiration_sources: inspirationEnabled \? safeSources : \[\]/);
   assert.match(validate, /new Set\(v\.inspiration_sources\)\.size === v\.inspiration_sources\.length/);
-  assert.match(types, /readonly inspiration_sources: readonly \('audio' \| 'image' \| 'video_frames'\)\[\]/);
+  assert.match(types, /export type MusicInspirationSource = 'audio' \| 'image'/);
+  assert.match(types, /readonly inspiration_sources: readonly \(MusicInspirationSource \| 'video_frames'\)\[\]/);
 });
 
-test('iPhone audio inspiration is consent-gated, size-bounded and review-before-apply', () => {
+test('iPhone media inspiration is consent-gated, source-filtered, size-bounded and review-before-apply', () => {
   assert.match(consent, /music\\\/inspiration/);
   assert.match(card, /MUSIC_INSPIRATION_MAX_BYTES = 8 \* 1024 \* 1024/);
   assert.match(card, /rights_confirmed|analyzeMusicInspiration/);
   assert.match(card, /onApply\(result\.brief\)/);
-  assert.match(create, /inspiration_sources\.includes\('audio'\)/);
-  assert.match(create, /<MusicInspirationCard api=\{api\}/);
+  assert.match(create, /source === 'audio' \|\| source === 'image'/);
+  assert.match(create, /inspirationSources\.length \? <MusicInspirationCard api=\{api\} sources=\{inspirationSources\}/);
+  assert.match(card, /sources\.includes\('audio'\)/);
+  assert.match(card, /sources\.includes\('image'\)/);
 });

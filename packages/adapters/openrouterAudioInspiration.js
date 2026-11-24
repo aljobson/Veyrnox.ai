@@ -1,14 +1,13 @@
 import { readBoundedBody } from '../../lib/boundedBody.js';
 import { parseMusicInspirationResult } from '../../lib/musicInspiration.js';
+import { InspirationProviderError } from './inspirationProviderError.js';
 
 export const AUDIO_INSPIRATION_URL = 'https://openrouter.ai/api/v1/chat/completions';
 export const AUDIO_INSPIRATION_RESPONSE_MAX_BYTES = 32 * 1024;
 export const AUDIO_INSPIRATION_TIMEOUT_MS = 45_000;
 const MODEL_RE = /^[a-z0-9][a-z0-9._:/-]{0,100}$/i;
 
-export class AudioInspirationProviderError extends Error {
-    constructor(code) { super(code); this.code = code; }
-}
+export class AudioInspirationProviderError extends InspirationProviderError {}
 
 const codeFor = status => status === 401 || status === 403 ? 'provider_auth_failed'
     : status === 402 ? 'provider_payment_required'
@@ -38,7 +37,7 @@ export async function analyzeAudioInspiration({ apiKey, model, bytes, format, si
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model, max_tokens: 512, temperature: 0, stream: false,
-                provider: { data_collection: 'deny' },
+                provider: { data_collection: 'deny', zdr: true, require_parameters: true },
                 response_format: { type: 'json_object' },
                 messages: [{ role: 'user', content: [
                     { type: 'text', text: 'Describe this audio as an original music-creation brief. Do not identify or imitate artists. Return only JSON with exactly safe:boolean, brief:string, tags:string[]. Mark safe false for sexual content involving minors or non-consensual sexual content.' },

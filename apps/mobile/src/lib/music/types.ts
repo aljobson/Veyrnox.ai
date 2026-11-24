@@ -2,6 +2,7 @@
 // Fields the phone does not read are left out; unknown extra fields are ignored by the parsers.
 
 export type MusicProviderContract = 'fal-ace-v1' | 'crun-suno-v1';
+export type MusicInspirationSource = 'audio' | 'image';
 export type MusicSunoModel = 'v6' | 'v6_mini' | 'v6_wild';
 export type MusicVocalGender = 'auto' | 'male' | 'female';
 export type MusicRange = { readonly min: number; readonly max: number };
@@ -82,7 +83,7 @@ export type MusicEntitlements = {
         readonly dailyChallenge: boolean;
         readonly persistentQueue: boolean;
     };
-    readonly inspiration_sources: readonly ('audio' | 'image' | 'video_frames')[];
+    readonly inspiration_sources: readonly (MusicInspirationSource | 'video_frames')[];
     readonly daily_allowance?: {
         readonly enabled: boolean;
         readonly unavailable?: boolean;

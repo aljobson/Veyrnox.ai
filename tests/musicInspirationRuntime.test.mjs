@@ -1,17 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { musicInspirationHandler } from '../lib/musicInspirationRuntime.js';
+import { ImageInspirationProviderError } from '../packages/adapters/openrouterImageInspiration.js';
 
 const AUTH = '11111111-1111-4111-8111-111111111111';
 const ID = '22222222-2222-4222-8222-222222222222';
 const ATTEMPT = '33333333-3333-4333-8333-333333333333';
 const KEY = `uploads/${AUTH}/44444444-4444-4444-8444-444444444444.wav`;
+const IMAGE_KEY = `uploads/${AUTH}/55555555-5555-4555-8555-555555555555.png`;
 const ENV = { MUSIC_INSPIRATION_ENABLED: 'true', MUSIC_INSPIRATION_SCHEMA_ENABLED: 'true',
   MUSIC_INSPIRATION_MODEL: 'openai/gpt-audio', MUSIC_INSPIRATION_API_KEY: 'test', UPLOAD_INTEGRITY_ENABLED: 'true',
   MUSIC_RUNTIME_FLAGS: JSON.stringify({ schema: true, inspiration: true }),
   MUSIC_INSPIRATION_RECEIPT_SECRET: 'receipt-secret-that-is-at-least-32-bytes' };
 const DB = { supabaseUrl: 'https://db.test', serviceRoleKey: 'service' };
 const R2 = { accountId: 'a', accessKeyId: 'k', secretAccessKey: 's', bucket: 'b' };
+const IMAGE_ENV = { ...ENV, MUSIC_INSPIRATION_MODEL: undefined, MUSIC_INSPIRATION_IMAGE_ENABLED: 'true',
+  MUSIC_INSPIRATION_IMAGE_MODEL: 'google/gemini-vision-test' };
 
 function wav(seconds = 1, rate = 8000) {
   const data = seconds * rate;
@@ -21,9 +25,62 @@ function wav(seconds = 1, rate = 8000) {
   v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate, true);
   v.setUint16(32, 1, true); v.setUint16(34, 8, true); text(36, 'data'); v.setUint32(40, data, true); return b;
 }
-const request = () => new Request('https://veyrnox.test/api/v1/music/inspiration', { method: 'POST',
+function png(width = 64, height = 64) {
+  const b = new Uint8Array(32); b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  b.set([0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52], 8); const v = new DataView(b.buffer);
+  v.setUint32(16, width); v.setUint32(20, height); return b;
+}
+const request = (kind = 'audio', key = KEY) => new Request('https://veyrnox.test/api/v1/music/inspiration', { method: 'POST',
   headers: { 'x-veyrnox-auth-id': AUTH, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ kind: 'audio', key: KEY, rights_confirmed: true, idempotency_key: 'aaaaaaaa' }) });
+  body: JSON.stringify({ kind, key, rights_confirmed: true, idempotency_key: 'aaaaaaaa' }) });
+
+test('image-only contract validates bytes and dimensions before using its configured provider', async () => {
+  const bytes = png(); let providerInput; const names = [];
+  const post = musicInspirationHandler({ env: IMAGE_ENV, dbcfg: DB, r2cfg: R2,
+    find: async () => [{ r2_key: IMAGE_KEY, size_bytes: bytes.length }], load: async () => ({ ok: true, response: new Response(bytes) }),
+    analyzeImage: async input => { providerInput = input; return { safe: true, brief: 'Crystalline blue rhythm', tags: ['blue'] }; },
+    call: async name => { names.push(name); if (name === 'music_inspiration_by_key') return { ok: false, code: 'NOT_FOUND' };
+      if (name === 'music_inspiration_reserve') return { ok: true, id: ID, attempt_id: ATTEMPT }; return { ok: true }; },
+  });
+  const response = await post(request('image', IMAGE_KEY)); assert.equal(response.status, 200);
+  assert.equal(providerInput.mediaType, 'image/png'); assert.equal(providerInput.model, IMAGE_ENV.MUSIC_INSPIRATION_IMAGE_MODEL);
+  assert.deepEqual(providerInput.bytes, bytes);
+  assert.deepEqual(names, ['music_inspiration_by_key', 'music_inspiration_reserve', 'music_inspiration_complete']);
+});
+
+test('per-kind readiness fails before ownership, replay and quota work', async () => {
+  for (const [env, kind, key] of [[ENV, 'image', IMAGE_KEY], [IMAGE_ENV, 'audio', KEY]]) {
+    let touched = false;
+    const post = musicInspirationHandler({ env, dbcfg: DB, r2cfg: R2, find: async () => { touched = true; },
+      load: async () => { touched = true; }, call: async () => { touched = true; } });
+    const response = await post(request(kind, key)); assert.equal(response.status, 404);
+    assert.equal((await response.json()).error, 'music_inspiration_unavailable'); assert.equal(touched, false);
+  }
+});
+
+test('permanent image provider error is persisted once and returned as a stable public code', async () => {
+  const bytes = png(); let failed;
+  const post = musicInspirationHandler({ env: IMAGE_ENV, dbcfg: DB, r2cfg: R2,
+    find: async () => [{ r2_key: IMAGE_KEY, size_bytes: bytes.length }], load: async () => ({ ok: true, response: new Response(bytes) }),
+    analyzeImage: async () => { throw new ImageInspirationProviderError('provider_response_invalid'); },
+    call: async (name, args) => { if (name === 'music_inspiration_by_key') return { ok: false, code: 'NOT_FOUND' };
+      if (name === 'music_inspiration_reserve') return { ok: true, id: ID, attempt_id: ATTEMPT };
+      if (name === 'music_inspiration_fail') failed = args; return { ok: true }; },
+  });
+  const response = await post(request('image', IMAGE_KEY)); assert.equal(response.status, 502);
+  assert.equal((await response.json()).error, 'provider_response_invalid');
+  assert.equal(failed.p_error_code, 'provider_response_invalid'); assert.equal(failed.p_permanent, true);
+});
+
+test('unreadable image dimensions fail before quota reservation', async () => {
+  const bytes = png(0, 64); let reserved = false;
+  const post = musicInspirationHandler({ env: IMAGE_ENV, dbcfg: DB, r2cfg: R2,
+    find: async () => [{ r2_key: IMAGE_KEY, size_bytes: bytes.length }], load: async () => ({ ok: true, response: new Response(bytes) }),
+    call: async name => { if (name === 'music_inspiration_by_key') return { ok: false, code: 'NOT_FOUND' }; reserved = true; },
+  });
+  const response = await post(request('image', IMAGE_KEY)); assert.equal(response.status, 400);
+  assert.equal((await response.json()).error, 'upload_unreadable'); assert.equal(reserved, false);
+});
 
 test('runtime verifies exact bytes, reserves once and returns a reviewable receipt', async () => {
   const bytes = wav(); const calls = []; let providerBytes;

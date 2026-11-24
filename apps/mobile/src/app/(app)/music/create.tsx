@@ -15,6 +15,7 @@ import { formatLocale, t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
 import { resolveMusicCreateHandoff } from '../../../lib/music/createHandoff';
+import type { MusicInspirationSource } from '../../../lib/music';
 const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'daily_allowance_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
@@ -37,6 +38,7 @@ export default function MusicCreate() {
         return () => clearTimeout(timer);
     }, [pending]);
     const e = state.entitlements, input = state.input;
+    const inspirationSources = (e?.inspiration_sources ?? []).filter((source): source is MusicInspirationSource => source === 'audio' || source === 'image');
     const model = e?.models.find(m => m.id === input.model_id);
     const suno = isSunoModel(model);
     const ambiguous = pending?.phase === 'AMBIGUOUS';
@@ -74,7 +76,7 @@ export default function MusicCreate() {
                         {input.mode === 'simple' ? <>
                             <TextField label={t('music.create.prompt')} value={input.prompt} multiline
                                 maxLength={suno && model ? modelCounterLimit(model, 'prompt') ?? undefined : 500} onChangeText={prompt => edit({ prompt })} />
-                            {e.inspiration_sources.includes('audio') ? <MusicInspirationCard api={api}
+                            {inspirationSources.length ? <MusicInspirationCard api={api} sources={inspirationSources}
                                 onApply={prompt => edit({ prompt: prompt.slice(0, model ? modelCounterLimit(model, 'prompt') ?? 500 : 500) })} /> : null}
                             {suno && model?.controls.instrumental ? <View style={s.row}>
                                 <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')}

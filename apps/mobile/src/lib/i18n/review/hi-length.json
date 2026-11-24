@@ -2707,9 +2707,9 @@
   },
   {
     "id": "music.create.inspiration.analyzing",
-    "english": "Analyzing audio…",
-    "translation": "ऑडियो का विश्लेषण हो रहा है…",
-    "ratio": 1.75
+    "english": "Analyzing media…",
+    "translation": "मीडिया का विश्लेषण हो रहा है…",
+    "ratio": 1.81
   },
   {
     "id": "musicAlbums.addTrack",
