@@ -5,6 +5,7 @@ import { swapTemplatePromptKept, swapTemplateHref } from '../../_lib/createSwapT
 import { imageTemplateNeedsPhoto, imageTemplateModelAvailable } from '../../_lib/imageTemplateModels.js';
 import { templatePhotoHints, templatePhotosUnavailable, templateContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId, templatePhotoError } from '../../../../lib/templateClientContract';
 import { generationSourceState, sourceList, publicSlotMax, editSlotSource, moveSlotSource, sourcesForModel } from '../../../../lib/generationSourceSlots.mjs';
+import { ownerProofExposure, hasOwnerProofExposure } from '../../../../lib/ownerProofOverlay.mjs';
 import LegalLink from '../../../../components/LegalLink';
 import { helperCopy } from '../../../../lib/i18n/helperCopy.mjs';
 import { tOr, pluralKey } from '../../../../lib/i18n/translate.mjs';
@@ -36,6 +37,7 @@ import { StudioJobGrid } from '../../_components/StudioJobGrid';
 import { useStudioJobs } from '../../_lib/useStudioJobs';
 import { IMAGE_COUNTS, takesImageCount, imageCount, inputsForIndex, batchNote, sendInOrder, submitErrorCode, createBatch, allocationSnapshot } from '../../_lib/imageBatch';
 import { useCatalog } from '../../_lib/useCatalog';
+import { useOwnerProofCatalog } from '../../_lib/useOwnerProofModels.js';
 import { useOnlineStatus } from '../../_lib/useOnlineStatus';
 import { useFreeAllowance } from '../../_lib/useFreeAllowance';
 import { freeLeftFor } from '../../_lib/freeAllowance';
@@ -114,7 +116,7 @@ function readFlag(name) {
   try { return window.localStorage.getItem(name) === '1'; } catch { return false; }
 }
 
-const LOCAL_ERRORS = {source_reattach_required: {"code": "source_reattach_required"}, source_count_exceeded: {"code": "source_count_exceeded"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
+const LOCAL_ERRORS = {source_type_unsupported: {"code": "source_type_unsupported"}, source_reattach_required: {"code": "source_reattach_required"}, source_count_exceeded: {"code": "source_count_exceeded"},poll_unreachable: {"code": "poll_unreachable"}, model_gated: {"code": "model_gated"}, source_required: {"code": "source_required"}, consent_required: {"code": "consent_required"}, inputs_invalid_prompt: {"code": "inputs_invalid:prompt"}, inputs_invalid_voice_description: {"code": "inputs_invalid:voice_description"}, inputs_invalid_duration: {"code": "inputs_invalid:duration"}};
 
 function errorFor(e) {
   return e instanceof GatewayError || ['source_reattach_required', 'source_count_exceeded'].includes(e?.code) ? { code: e.code, retryAfter: e.retryAfter, expectedCredits: e.body?.expected_credits } : { code: 'internal' };
@@ -138,7 +140,8 @@ function CreateStudio() {
   const number = value => locale === 'en' ? value : Number(value).toLocaleString(localeTag(locale));
   const creditLabel = value => t(pluralKey(t, locale, 'app.create.credits', value), { count: number(value) });
   const generationCostLabel = value => value === 0 ? t('publish.plan.colFree') : t('app.create.cost',{count:number(value)});
-  const { models: catalogModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const { models: publicModels, live: catalogLive, loading: catalogLoading } = useCatalog();
+  const catalogModels = useOwnerProofCatalog(publicModels);
   const freeMap = useFreeAllowance(); // ADR-0069: free jobs left today per model; empty while the feature is off
   const autoShortOn = useSyncExternalStore(never, autoShortFlag, off);
   // The server can show starter text before React attaches. Prevent edits to that
@@ -353,6 +356,7 @@ function CreateStudio() {
 
   const selectedModel = models.find((m) => m.id === (swap.scene?.swapOffer || modelId));
   const model = selectedModel || null;
+
   // The controls describe the next draft, not the already submitted job.
   // Keep the result attached to its own model even while the user browses.
   const resultModel = job ? catalogModels.find((m) => m.id === job.model_id) : null;
@@ -416,6 +420,12 @@ function CreateStudio() {
     image: { ...model.media.image, maxFiles: Math.min(model.media.image.maxFiles ?? 1, photoContract.slotCount || 1) },
     ...Object.fromEntries(Object.entries(model.media).filter(([slot]) => slot !== 'image' && sourceList(sources[slot]).length)),
   } : imagePhotoRequired && model?.media?.image ? { ...model.media, image: { ...model.media.image, required: true, maxFiles: 1 } } : model?.media || {};
+  const [proofExposure, setProofExposure] = useState(null);
+  const exposed = ownerProofExposure(proofExposure, modelId, accountEpoch, !!model?.ownerProofImage, sourceList(sources.image).length > 0);
+  // Capture the rendered capability before committing a form that can submit.
+  if (exposed !== proofExposure) setProofExposure(exposed);
+  const strictOwnerProofSources = hasOwnerProofExposure(exposed, modelId, accountEpoch);
+  const unsupportedSource = strictOwnerProofSources && !model?.media?.image;
   const sourceFit = useSourceFit(media, sources);
   // A private template (ADR-0351 amendment 23) has a placeholder where its prompt was; Edit prompt reads the whole template for the signed-in caller.
   const hydrateTemplate = useCallback((full) => {
@@ -709,6 +719,7 @@ function CreateStudio() {
   async function onSubmit() {
     if (draftRecovery.restoring || draftRecovery.blocked || attachConverting || sourcesConverting) return;
     if (inFlight.current || sending || generating || !model || balance == null || payable > balance) return;
+    if (unsupportedSource) { setError(LOCAL_ERRORS.source_type_unsupported); return; }
     if (catalogStatus !== 'live' || sourceBlocked) return;
     if (templateData && templateBlocked) return;
     inFlight.current = true;
@@ -752,7 +763,7 @@ function CreateStudio() {
       if (!run.inputs && templateData) run.templateId = await prepareTemplateRun(inputs);
       // Only the slots this model takes; a leftover upload from another model stays local.
       // Each file is uploaded once and its key reused by every request.
-      run.sources ??= await mediaGenerationSources(model, sources, uploadSource);
+      run.sources ??= await mediaGenerationSources(model, sources, uploadSource, { strict: strictOwnerProofSources });
       run.inputs ??= inputs;
       const { references, source_keys, source_assets } = run.sources;
       const anySource = source_keys.length + source_assets.length > 0;
@@ -1095,6 +1106,7 @@ function CreateStudio() {
             </div>
           )}
           {imagePhotoRequired && !imagePhotoUnavailable && templateImageCount !== 1 && <p role="status" className="mt-3 text-sm text-vx-fg-muted">{t('presets.use.photoRequired')}</p>}
+          {unsupportedSource && <p role="alert" className="mt-3 text-sm text-vx-danger">{t('app.create.error.source_type_unsupported')} <button type="button" onClick={() => pickSource('image', null)}>{t('app.create.sources.image.remove')}</button></p>}
           {(sourceBlocked || templateBlocked) && <p role="note" data-source-unsupported className="mt-3 rounded-xl border border-vx-border bg-vx-panel px-3 py-2 text-xs text-vx-fg-body">{swapPromptKept ? <>{t('presets.swap.createBlocked')} <Link className="font-bold text-vx-accent underline" href={swapTemplateHref((activeTemplate || keptTemplate).id)}>{t('presets.swap.createBlockedOpen')}</Link></> : t(imagePhotoUnavailable ? 'presets.fidelity.blocked' : photosUnavailable ? 'presets.fidelity.photosUnavailable' : 'public.TemplateRecipe.sourceVideoUnsupported')}</p>}
           <p id="vx-generate-why" aria-live="polite" className={hintText ? 'mt-3 text-xs text-vx-fg-muted' : 'sr-only'}>{hintText}</p>
           <ParticleButton
@@ -1102,7 +1114,7 @@ function CreateStudio() {
             aria-describedby={hintText ? 'vx-generate-why' : undefined}
             onClick={hasJobs && !activeBatch ? cancel : onSubmit}
             className="scroll-mt-24 mt-4 w-full flex items-center justify-between bg-vx-accent text-vx-accent-ink rounded-full px-6 py-3.5 font-extrabold hover:bg-vx-accent-hover disabled:opacity-40 disabled:cursor-not-allowed"
-            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || templateBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || sourceFit.blocked || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || !!activeBatch?.confirm}
+            disabled={draftRecovery.restoring || draftRecovery.blocked || sending || attachConverting || sourcesConverting || (!hasJobs && (catalogStatus !== 'live' || sourceBlocked || templateBlocked || !model || model.gated || animationMismatch || missingPrompt || promptTooLong || missingVoice || invalidAudioDuration || balance == null || payable > balance || missingSource || sourceFit.blocked || missingConsent)) || (!!activeBatch && (balance == null || payable > balance)) || (unsupportedSource && (!hasJobs || !!activeBatch)) || !!activeBatch?.confirm}
             aria-label={sending ? undefined : hasJobs && !activeBatch ? t("app.create.newNoCharge") : model?.gated ? undefined : n > 1 ? t(pluralKey(t,locale,cost===0?'app.create.generateImagesFree':'app.create.generateImagesPaid',n),{count:number(n),credits:creditLabel(cost)}) : t(cost===0?'app.create.generateFree':'app.create.generatePaid',{credits:creditLabel(cost)})}
           >
             <span>{sending ? t("app.publish.inbox.sending") : hasJobs && !activeBatch ? t("app.create.newGeneration") : model?.gated ? t("app.create.premiumGated") : n > 1 ? t('app.create.generateCount',{count:number(n)}) : t("label.Generate")}</span>
@@ -1114,7 +1126,7 @@ function CreateStudio() {
           <p className="mt-3 text-center text-[11px] leading-relaxed text-vx-fg-muted">
             {rich(t('app.create.commercial'),{terms:<LegalLink element="Link" href="/legal/terms" className="text-vx-accent underline underline-offset-2">{t('home.publish.terms')}</LegalLink>})}
           </p>
-          {activeBatch?.confirm && <button type="button" disabled={sending || generating || balance == null || payable > balance} onClick={onSubmit} className="vx-press mt-3 min-h-11 w-full rounded-lg border border-vx-border p-3 hover:border-vx-accent disabled:opacity-50">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
+          {activeBatch?.confirm && <button type="button" disabled={unsupportedSource || sending || generating || balance == null || payable > balance} onClick={onSubmit} className="vx-press mt-3 min-h-11 w-full rounded-lg border border-vx-border p-3 hover:border-vx-accent disabled:opacity-50">{t('app.create.confirmPrice', { credits: creditLabel(cost) })}</button>}
           {activeBatch && <button type="button" disabled={sending} onClick={cancel} className="mt-2 min-h-11 w-full p-2">{t('app.create.startNewBatch')}</button>}
           {balance != null && payable > balance && !model?.gated && (
             <div className="mt-4 rounded-xl border border-vx-money/40 bg-vx-money/[0.06] p-4 text-sm text-vx-fg-body">

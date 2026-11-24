@@ -23,7 +23,7 @@ const SOURCE = `uploads/${AUTH}/33333333-3333-4333-8333-333333333333.png`;
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jZQAAAABJRU5ErkJggg==', 'base64');
 const variants = [['lite-', 'veo-3.1-lite-kie', 'veoI2vLite'], ['fast-', 'veo-3.1-fast-kie', 'veoI2vFast'], ['', 'veo-3.1-kie', 'veoI2v31']];
 const marker = model => `[veo-i2v:${model}:signed-source:v1]`;
-function fixture({ variant = 0, flags, breaker = null, parity, provider = 'crun', admission = true, routeState = 'active', readFailure = false, mime = 'image/png', replayFailure = null, rejection = null } = {}) {
+function fixture({ variant = 0, flags, breaker = null, parity, provider = 'crun', admission = true, routeState = 'active', readFailure = false, mime = 'image/png', replayFailure = null, rejection = null, admin = false, aal = 'aal1' } = {}) {
     const [part, id, flag] = variants[variant];
     process.env.APP_RUNTIME_FLAGS = JSON.stringify(flags ?? { [flag]: true });
     const apiModel = `google/veo3-1-${part}i2v`;
@@ -43,14 +43,14 @@ function fixture({ variant = 0, flags, breaker = null, parity, provider = 'crun'
         calls.push({ url: u, body });
         if (u.pathname.endsWith('/rpc/ledger_debit')) { savedJob = { id: JOB, model_id: id, inputs: structuredClone(body.p_inputs) }; return Response.json({ ok: true, job_id: JOB, balance_after: 100 }); }
         if (u.pathname.includes('/rpc/')) return Response.json({ ok: true });
-        if (u.pathname === '/rest/v1/users') { if (replayFailure === 'users') throw new Error('offline'); return Response.json([{ id: AUTH }]); }
+        if (u.pathname === '/rest/v1/users') { if (replayFailure === 'users') throw new Error('offline'); return Response.json([{ id: AUTH, is_admin: admin }]); }
         if (u.pathname.startsWith('/rest/v1/')) return Response.json(await read(u.pathname.split('/').pop()));
         if (u.hostname === 'api.crun.ai') return rejection ? Response.json({ code: rejection, message: 'VENDOR_SECRET https://private.test/?X-Amz-Signature=secret' }) : Response.json({ code: 200, data: { task_id: 'veo-test-task' } });
         if (u.hostname.endsWith('.r2.cloudflarestorage.com')) return new Response(mime === 'image/png' ? png : Buffer.from('00000018667479706d703432000000006d70343269736f6d', 'hex'), { status: 206, headers: { 'content-type': mime, 'content-range': `bytes 0-${png.length - 1}/${png.length}` } });
         throw new Error(`Unexpected URL ${u.hostname}${u.pathname}`);
     };
     return { row, route, apiModel, calls, read, savedJob: () => savedJob, restore: () => { globalThis.fetch = real; },
-        post: (inputs = {}, extra = {}) => POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH }, body: JSON.stringify({ model_id: id, idempotency_key: 'veo-i2v-test', consent: true, source_key: SOURCE, inputs: { prompt: 'A boat sails', duration_seconds: 5, ...inputs }, ...extra }) })) };
+        post: (inputs = {}, extra = {}) => POST(new Request('https://veyrnox.test/api/v1/generations', { method: 'POST', headers: { 'x-veyrnox-auth-id': AUTH, 'x-veyrnox-auth-aal': aal }, body: JSON.stringify({ model_id: id, idempotency_key: 'veo-i2v-test', consent: true, source_key: SOURCE, inputs: { prompt: 'A boat sails', duration_seconds: 5, ...inputs }, ...extra }) })) };
 }
 const debits = f => f.calls.filter(c => c.url.pathname.endsWith('/rpc/ledger_debit'));
 const creates = f => f.calls.filter(c => c.url.hostname === 'api.crun.ai');
@@ -360,3 +360,43 @@ for (let variant = 0; variant < 3; variant++) {
         }
     });
 }
+
+for(let variant=0;variant<3;variant++) {
+ test(`owner proof Veo ${variant}: flag and parity bypass, billed signed image, public catalog byte-identical`,async()=>{
+  const f=fixture({variant,flags:{ownerProof:true},parity:'text-only proof',admin:true,aal:'aal2'});
+  try {
+   const options={cfg:{supabaseUrl:'https://db.test',serviceRoleKey:'test'},selectRows:f.read,waitUntil:null};
+   const on=JSON.stringify(await readPublicCatalog(options));process.env.APP_RUNTIME_FLAGS='{}';
+   assert.equal(JSON.stringify(await readPublicCatalog(options)),on);process.env.APP_RUNTIME_FLAGS='{"ownerProof":true}';
+   const response=await f.post();assert.equal(response.status,200,JSON.stringify(await response.json()));
+   assert.equal(debits(f)[0].body.p_inputs.owner_proof,true);assert.equal(debits(f)[0].body.p_credits,9);
+   assert.equal(creates(f)[0].body.model,f.apiModel);assert.equal(creates(f)[0].body.input.img_urls.length,1);
+  } finally {f.restore();}
+ });
+ for(const identity of [{admin:false,aal:'aal2'},{admin:true,aal:'aal1'}])
+ test(`owner proof Veo ${variant}: denied identity ${JSON.stringify(identity)} preserves response`,async()=>{
+  const f=fixture({variant,flags:{},...identity});
+  try {
+   const before=await f.post({}, {owner_proof:true,is_admin:true});process.env.APP_RUNTIME_FLAGS='{"ownerProof":true}';
+   const after=await f.post({}, {owner_proof:true,is_admin:true});
+   assert.equal(after.status,before.status);assert.equal(await after.text(),await before.text());
+   assert.equal(debits(f).length,0);assert.equal(creates(f).length,0);
+  } finally {f.restore();}
+ });
+}
+for(const options of [{breaker:'2020-01-01T00:00:00Z'},{admission:false},{routeState:'standby'},{provider:'kie'},{readFailure:true},{mime:'video/mp4'}])
+test(`owner proof Veo retains live admission and source guards ${JSON.stringify(options)}`,async()=>{
+ const f=fixture({flags:{ownerProof:true},parity:'unproved',admin:true,aal:'aal2',...options});
+ try{assert.ok((await f.post()).status>=400);assert.equal(debits(f).length,0);assert.equal(creates(f).length,0);}finally{f.restore();}
+});
+test('owner proof Veo keeps one-image, duration, resolution, ownership and raw-source limits',async()=>{
+ const f=fixture({flags:{ownerProof:true},parity:'unproved',admin:true,aal:'aal2'});
+ try {
+  for(const [inputs,extra] of [[{resolution:'1080p'},{}],[{duration_seconds:4},{}],[{image_url:'https://attacker.test/a'},{}],
+   [{},{source_key:'uploads/other/33333333-3333-4333-8333-333333333333.png'}],
+   [{},{source_key:undefined,references:[{slot:'image',origin:'upload',key:SOURCE},{slot:'image',origin:'upload',key:SOURCE}]}]]) {
+   assert.ok((await f.post(inputs,extra)).status>=400);
+  }
+  assert.equal(debits(f).length,0);assert.equal(creates(f).length,0);
+ } finally {f.restore();}
+});

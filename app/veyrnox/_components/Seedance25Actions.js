@@ -7,9 +7,11 @@ import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../_lib/
 import { uploadSourceFile } from '../_lib/uploadSourceFile';
 import { getSession } from '../../lib/authClient';
 import { useCatalog } from '../_lib/useCatalog';
+import { useOwnerProofCatalog } from '../_lib/useOwnerProofModels.js';
 
 export function Seedance25EditorActions({ file }) {
-    const { models } = useCatalog();
+    const { models: publicModels } = useCatalog();
+    const models = useOwnerProofCatalog(publicModels);
     return <Seedance25Actions models={models} file={file} />;
 }
 export function Seedance25Actions({ models, assetId, file }) {

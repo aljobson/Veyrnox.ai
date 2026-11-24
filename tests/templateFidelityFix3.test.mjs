@@ -159,7 +159,7 @@ test('Create blocks edited video templates using its separate guard before start
     ts.default.forEachChild(node, visit);
   };
   visit(ast);
-  const context = { draftRecovery: {}, attachConverting: false, sourcesConverting: false, boundBusy: false, inFlight: { current: false }, sending: false, generating: false, model: {}, balance: 100, payable: 0, catalogStatus: 'live', sourceBlocked: true };
+  const context = { draftRecovery: {}, attachConverting: false, sourcesConverting: false, boundBusy: false, inFlight: { current: false }, sending: false, generating: false, model: {}, balance: 100, payable: 0, catalogStatus: 'live', unsupportedSource: false, sourceBlocked: true };
   await new Function('context', `with (context) { return (${submit}); }`)(context)();
   assert.equal(context.inFlight.current, false);
 });

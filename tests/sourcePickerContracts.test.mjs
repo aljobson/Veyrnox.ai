@@ -76,9 +76,10 @@ test('Studio preserves mixed upload and Library slot roles with consent and batc
     source_assets: [{ asset_id: 'end-asset', slot: 'endImage' }, { asset_id: 'video-asset', slot: 'video' }],
   });
   assert.deepEqual(calls, ['start.png', 'mix.wav']);
+  await assert.rejects(mediaGenerationSources(model, { image: { file: { name: 'start.png' } }, undeclared: { assetId: 'must-not-be-dropped' } }, () => assert.fail('unsupported source must stop before uploading'), { strict: true }), error => error.code === 'source_type_unsupported');
   const page = read('app/veyrnox/app/create/page.js');
   const submit = page.slice(page.indexOf('async function onSubmit()'), page.indexOf('function cancel()'));
-  assert.match(submit, /run\.sources \?\?= await mediaGenerationSources\(model, sources, uploadSource\);/);
+  assert.match(submit, /run\.sources \?\?= await mediaGenerationSources\(model, sources, uploadSource, \{ strict: strictOwnerProofSources \}\);/);
   assert.match(submit, /const \{ references, source_keys, source_assets \} = run\.sources;/);
   assert.match(submit, /if \(missingConsent\)/);
   assert.match(submit, /consent: anySource \? true : undefined/);

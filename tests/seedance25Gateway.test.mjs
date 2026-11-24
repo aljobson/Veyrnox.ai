@@ -14,14 +14,14 @@ const model = task => ({ id: `seedance-2.5-${task}`, provider: 'crun', provider_
  modality: 'video-to-video', credits_5s: task === 'edit' ? 76 : 78, active: true, gated_flag: false });
 const body = (task='edit') => ({ model_id: model(task).id, idempotency_key: 'seedance25-test', consent: true,
  references: [{ slot: 'video', origin: 'asset', asset_id: ASSET }], inputs: { prompt: 'Restyle this clip' } });
-const req = b => new Request('https://veyrnox.test/api/v1/generations', { method:'POST', headers: { 'x-veyrnox-auth-id': AUTH, 'content-type':'application/json' }, body: JSON.stringify(b) });
-function network(t, { task='edit', seconds=5.055, active=true, gated=false, refuse=false, spendRefuse=false, audio=null }={}) {
+const req = (b, aal = 'aal1') => new Request('https://veyrnox.test/api/v1/generations', { method:'POST', headers: { 'x-veyrnox-auth-id': AUTH, 'x-veyrnox-auth-aal': aal, 'content-type':'application/json' }, body: JSON.stringify(b) });
+function network(t, { task='edit', seconds=5.055, active=true, gated=false, refuse=false, spendRefuse=false, audio=null, admin=false }={}) {
  const calls=[], state={job:null};
  const bytes=lipSyncMp4({video:seconds,audio,sampleCount:100});
  t.mock.method(globalThis,'fetch',async (url,init={}) => {
   const u=new URL(String(url)), b=init.body ? JSON.parse(init.body) : null; calls.push({path:u.pathname,host:u.hostname,body:b});
   if(u.pathname==='/rest/v1/model_catalog') return Response.json([{...model(task),active,gated_flag:gated}]);
-  if(u.pathname==='/rest/v1/users') return Response.json([{id:AUTH}]);
+  if(u.pathname==='/rest/v1/users') return Response.json([{id:AUTH,is_admin:admin}]);
   if(u.pathname==='/rest/v1/jobs') return Response.json(state.job && (!u.searchParams.has('idempotency_key') || u.searchParams.get('idempotency_key')===`eq.${state.job.idempotency_key}`) ? [state.job] : []);
   if(u.pathname.endsWith('/rpc/check_generation_rate_limit')) return Response.json({ok:true});
   if(u.pathname.endsWith('/rpc/get_user_asset')) return Response.json({ok:true,state:'STORED',r2_key:`jobs/${ASSET}/output.mp4`,mime_type:'video/mp4'});
@@ -240,4 +240,62 @@ test('quote limiter failures fail closed before source reads or debit',async t=>
   const res=await QUOTE(req(body()));assert.equal(res.status,503);assert.equal((await res.json()).error,'rate_check_unavailable');
  }
  assert.equal(net.debits().length,0);assert.equal(net.calls.filter(c=>c.host.endsWith('.r2.cloudflarestorage.com')).length,0);
+});
+
+for (const task of ['edit', 'extend']) {
+ test(`owner proof ${task}: dark quote-to-submit uses real debit, signed media and audit marker`, async t => {
+  const old=process.env.APP_RUNTIME_FLAGS; process.env.APP_RUNTIME_FLAGS='{"ownerProof":true}';
+  t.after(()=>{process.env.APP_RUNTIME_FLAGS=old;});
+  const net=network(t,{task,seconds:5,active:false,gated:true,admin:true}), b=body(task);
+  const quote=await QUOTE(req(b,'aal2')); assert.equal(quote.status,200); const q=await quote.json();
+  assert.equal(q.credits,task==='edit'?76:78);
+  const response=await POST(req({...b,confirmed_credits:q.credits},'aal2'));
+  assert.equal(response.status,200,JSON.stringify(await response.json()));
+  assert.equal(net.debits().length,1); assert.equal(net.debits()[0].body.p_credits,q.credits);
+  assert.equal(net.debits()[0].body.p_inputs.owner_proof,true);
+  assert.equal(net.submits().length,1); assert.match(net.submits()[0].body.input.reference_videos[0],/X-Amz-Signature=/);
+ });
+ test(`owner proof ${task}: non-admin and aal1 responses match switch-off bytes`,async t=>{
+  const old=process.env.APP_RUNTIME_FLAGS; t.after(()=>{process.env.APP_RUNTIME_FLAGS=old;});
+  for(const admin of [false,true]) {
+   const net=network(t,{task,active:false,gated:true,admin});
+   for(const handler of [QUOTE,POST]) {
+    const b={...body(task),owner_proof:true,is_admin:true};
+    process.env.APP_RUNTIME_FLAGS='{}'; const baseline=await handler(req(b,admin?'aal1':'aal2'));
+    process.env.APP_RUNTIME_FLAGS='{"ownerProof":true}'; const actual=await handler(req(b,admin?'aal1':'aal2'));
+    assert.equal(actual.status,baseline.status);assert.equal(await actual.text(),await baseline.text());
+   }
+   assert.equal(net.debits().length,0);assert.equal(net.submits().length,0);
+  }
+ });
+ for(const options of [{seconds:3.9},{seconds:task==='edit'?10.1:6.1},{spendRefuse:true}])
+ test(`owner proof ${task}: source/spend protections ${JSON.stringify(options)}`,async t=>{
+  const old=process.env.APP_RUNTIME_FLAGS; process.env.APP_RUNTIME_FLAGS='{"ownerProof":true}';t.after(()=>{process.env.APP_RUNTIME_FLAGS=old;});
+  const net=network(t,{task,seconds:5,active:false,gated:true,admin:true,...options});
+  const r=await POST(req({...body(task),confirmed_credits:model(task).credits_5s},'aal2'));
+  assert.equal(r.status,options.spendRefuse?503:400);assert.equal(net.state.job,null);assert.equal(net.submits().length,0);
+ });
+ test(`owner proof ${task}: supplier refusal still refunds`,async t=>{
+  const old=process.env.APP_RUNTIME_FLAGS;process.env.APP_RUNTIME_FLAGS='{"ownerProof":true}';t.after(()=>{process.env.APP_RUNTIME_FLAGS=old;});
+  const net=network(t,{task,seconds:5,active:false,gated:true,admin:true,refuse:true});
+  assert.ok((await POST(req({...body(task),confirmed_credits:model(task).credits_5s},'aal2'))).status>=400);
+  assert.equal(net.debits()[0].body.p_inputs.owner_proof,true);
+  assert.ok(net.calls.some(c=>c.path.endsWith('/rpc/ledger_refund')));
+ });
+}
+
+for(const task of ['edit','extend']) test(`owner proof ${task}: auth, consent, idempotency, exact charge, ownership and rate limits stay enforced`,async t=>{
+ const old=process.env.APP_RUNTIME_FLAGS;process.env.APP_RUNTIME_FLAGS='{"ownerProof":true}';t.after(()=>{process.env.APP_RUNTIME_FLAGS=old;});
+ const net=network(t,{task,seconds:5,active:false,gated:true,admin:true});
+ for(const patch of [{idempotency_key:''},{consent:false},{confirmed_credits:1},{inputs:{prompt:'x',resolution:'1080p'}},{references:[]}]) {
+  assert.ok((await POST(req({...body(task),confirmed_credits:model(task).credits_5s,...patch},'aal2'))).status>=400);
+ }
+ const original=globalThis.fetch;
+ for(const refusal of ['get_user_asset','check_generation_rate_limit','consume_seedance25_quote_request']) {
+  t.mock.method(globalThis,'fetch',async(url,init)=>new URL(String(url)).pathname.endsWith(`/rpc/${refusal}`)
+   ? Response.json({ok:false,code:refusal==='get_user_asset'?'ASSET_NOT_FOUND':'RATE_LIMITED'}) : original(url,init));
+  const handler=refusal==='consume_seedance25_quote_request'?QUOTE:POST;
+  assert.ok((await handler(req({...body(task),confirmed_credits:model(task).credits_5s},'aal2'))).status>=400);
+ }
+ assert.equal(net.debits().length,0);assert.equal(net.submits().length,0);
 });

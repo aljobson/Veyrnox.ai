@@ -60,6 +60,8 @@ interface AuthContextValue {
     sessionGeneration(): number;
     beginSessionTask(): SessionTask;
     canReloadSession(): boolean;
+    // Snapshot only: background discovery must never refresh or revoke a session.
+    getDiscoveryToken(): string | null;
     readonly api: ApiClient;
     // Shared by account-bound transports: clear local auth without remote revocation.
     readonly onSessionLost: (generation?: number) => void;
@@ -94,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [status, setStatus] = useState<Status>('loading');
     const [appleNativeAvailable, setAppleNativeAvailable] = useState(false);
     const sessionRef = useRef<Session | null>(null);
+    const getDiscoveryToken = useCallback(() => sessionRef.current?.accessToken ?? null, []);
     const oauthInFlight = useRef(false);
     const persistedRefresh = useRef<string | null>(null);
     const transientFailure = useRef(false);
@@ -416,8 +419,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, generation, sessionGeneration, beginSessionTask, canReloadSession, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut }),
-        [status, generation, sessionGeneration, beginSessionTask, canReloadSession, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut],
+        () => ({ status, generation, sessionGeneration, beginSessionTask, canReloadSession, getDiscoveryToken, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut }),
+        [status, generation, sessionGeneration, beginSessionTask, canReloadSession, getDiscoveryToken, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

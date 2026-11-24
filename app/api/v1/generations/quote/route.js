@@ -1,3 +1,4 @@
+import { ownerProofEligible } from '../../../../../lib/ownerProof.js';
 import { NextResponse } from 'next/server';
 import { readBoundedBody } from '../../../../../lib/boundedBody.js';
 import { envConfig, rpc, select } from '../../../../../packages/db/supabase-client.js';
@@ -18,7 +19,10 @@ export async function POST(req) {
     try { body = JSON.parse(new TextDecoder().decode(await readBoundedBody(req.body, 512 * 1024, req.signal))); }
     catch (error) { return reply({ error: error.status === 413 ? 'body_too_large' : 'invalid_json' }, error.status === 413 ? 413 : 400); }
     const id = body?.model_id;
-    if (!seedance25Offer(id) || !seedance25Open(id)) return reply({ error: 'model_not_found' }, 404);
+    // Dark discovery must resolve eligibility before its normal 404; validation
+    // and the quote limiter remain in their original order for admitted callers.
+    const ownerProof = seedance25Offer(id) && await ownerProofEligible(req, cfg, { modelId: id });
+    if (!seedance25Offer(id) || (!ownerProof && !seedance25Open(id))) return reply({ error: 'model_not_found' }, 404);
     if (isFeatureKilled('generation')) return reply({ error: 'feature_paused' }, 503);
     if (!body.inputs || typeof body.inputs !== 'object' || Array.isArray(body.inputs)) return reply({ error: 'inputs_must_be_object' }, 400);
     const refusal = seedance25RawRefusal(id, body.inputs);
@@ -34,8 +38,8 @@ export async function POST(req) {
     let row;
     try { [row] = await select('model_catalog', { columns: 'id,provider,provider_endpoint,credits_5s,active,gated_flag', filter: `id=eq.${id}`, limit: 1 }, cfg); }
     catch { return reply({ error: 'catalog_lookup_failed' }, 502); }
-    if (!row?.active) return reply({ error: 'model_not_found' }, 404);
-    if (row.gated_flag) return reply({ error: 'model_gated' }, 402);
+    if (!row || (!ownerProof && !row.active)) return reply({ error: 'model_not_found' }, 404);
+    if (!ownerProof && row.gated_flag) return reply({ error: 'model_gated' }, 402);
     const endpoint = `crun:bytedance/seedance2-5-r2v:${id.endsWith('-edit') ? 'edit' : 'extend'}`;
     if (row.provider !== 'crun' || row.provider_endpoint !== endpoint) return reply({ error: 'provider_unsupported' }, 501);
     const record = capabilityFor(endpoint), provider = providerFor('crun');

@@ -97,6 +97,7 @@ function libraryHtml({ hydrated, actor }) {
   mocks['../../../../components/I18nProvider'] = { useI18n: () => ({ t: translator('en', { ...messagesFor('en'), ...appEnglish }), locale: 'en' }) };
   mocks['../../../lib/authClient.js'].getStoredUserId = () => actor;
   mocks['../../_lib/useCatalog'].useCatalog = () => ({ models: [] });
+  mocks['../../_lib/useOwnerProofModels.js'].useOwnerProofCatalog = models => models;
   mocks['../../_lib/useOlderLibraryJobs'].useOlderLibraryJobs = () => ({});
   mocks['../../_lib/libraryFilter'].filterRows = () => [];
   mocks['../../_lib/useLibraryShapes'].useLibraryShapes = rows => rows;

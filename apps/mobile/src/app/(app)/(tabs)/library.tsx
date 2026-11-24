@@ -1,3 +1,4 @@
+import { useOwnerProofCatalog } from '../../../lib/useOwnerProofModels';
 import { useLibraryShapes } from '../../../lib/useLibraryShapes';
 import { SHAPE_FILTERS, shapeMeasurementIds, type ShapeFilter } from '../../../lib/libraryView';
 import { useMusicAvailable } from '../../../lib/music/useMusicAvailable';
@@ -61,7 +62,8 @@ export default function Library() {
     const [favourites, setFavourites] = useState<string[]>([]);
     const [models, setModels] = useState<CatalogModel[]>([]);
     // The two Seedance 2.5 offers are hidden from the supported list (isSupported), so they come from the full catalog.
-    const [offers, setOffers] = useState<CatalogModel[]>([]);
+    const [publicOffers, setOffers] = useState<CatalogModel[]>([]);
+    const offers = useOwnerProofCatalog(publicOffers, true);
     const kinds = useMemo(() => kindMap(models), [models]);
     const names = useMemo(() => new Map(models.map((m) => [m.id, m.name])), [models]);
     const [focused, setFocused] = useState(false);

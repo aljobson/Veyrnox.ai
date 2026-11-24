@@ -101,7 +101,7 @@ test('Create blocks an edited video-dependent template before starting a request
     ts.default.forEachChild(node, visit);
   };
   visit(ast);
-  const context = { draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false }, sending: false, generating: false, model: {}, templateData: { id: c.id }, templateBlocked: blocked, balance: 100, payable: 0, catalogStatus: 'live', sourceBlocked: false };
+  const context = { draftRecovery: {}, attachConverting: false, sourcesConverting: false, inFlight: { current: false }, sending: false, generating: false, model: {}, templateData: { id: c.id }, templateBlocked: blocked, balance: 100, payable: 0, catalogStatus: 'live', unsupportedSource: false, sourceBlocked: false };
   await new Function('context', `with (context) { return (${submit}); }`)(context)();
   assert.equal(context.inFlight.current, false);
 });

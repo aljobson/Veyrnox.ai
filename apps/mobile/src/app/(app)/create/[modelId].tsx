@@ -1,3 +1,5 @@
+import { mergeOwnerProofModels, ownerProofExposure, hasOwnerProofExposure, type OwnerProofExposure } from '../../../../../../lib/ownerProofOverlay.mjs';
+import { useOwnerProofModels } from '../../../lib/useOwnerProofModels';
 import { SmartCutShapeHint, SmartCutShapeSession } from '../../../components/create/SmartCutShapeHint';
 import { useTemplateContract } from '../../../lib/useTemplateContract'; import { internalModelId } from '../../../lib/publicModelIds';
 import { phonePhotoHints } from '../../../lib/templatePhotoHintText'; import { templatePhotosUnavailable, templateRouteContract, templateBoundPrompt, fidelityBlocked, fidelityTemplateId } from '../../../lib/templateFidelity';
@@ -51,7 +53,7 @@ import { useBalance } from '../../../lib/useBalance';
 import { shortfall } from '../../../lib/lowBalance';
 import { useFreeLeftState } from '../../../lib/useFreeLeft';
 import { isAudioDriven, isSoundPass, isSpeechModel, missingNeedKey, missingRequiredSlots } from '../../../lib/createModelKind';
-import { estimateCredits, fetchCatalog, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
+import { estimateCredits, fetchCatalog, isSupported, kindOf, promptRequired, textInput, type CatalogModel } from '../../../lib/media';
 import { expectedDurationMs } from '../../../lib/generationProgress';
 import { MIN_TARGET, selectedState } from '../../../lib/a11y';
 import { portraitAsPickedFile, startOddlingId } from '../../../lib/oddlingsAnimate';
@@ -68,13 +70,13 @@ export default function CreateWithModel() {
     const template = useMemo(() => activeTemplate({ tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative }, modelId, ['veyrnox.ai', hostOf(API_BASE)]), [tpl, tid, tmodel, tneeds, tsource, tratio, tposter, tnegative, modelId]);
     const templatePreset = templateOnOriginalModel({ tmodel }, modelId);
     const handedSources = useMemo(() => readCreativeSourceHandoff(typeof sourceHandoff === 'string' ? sourceHandoff : undefined, typeof recipe === 'string' ? recipe : undefined, modelId), [modelId, recipe, sourceHandoff]);
-    const { api } = useAuth();
+    const { api, generation: accountEpoch } = useAuth();
     const router = useRouter();
     const sceneServices = useRef({ api, router });
     const scrollRef = useRef<ComponentRef<typeof ScrollView> | null>(null);
     useEffect(() => { sceneServices.current = { api, router }; }, [api, router]);
     const loadedEntry = useRef<{ swap?: string; modelId: string } | null>(null);
-    const [model, setModel] = useState<CatalogModel | null>(null); const frame = useFrameChoice(model?.id);
+    const [publicModel, setModel] = useState<CatalogModel | null>(null);
     const [swapScene, setSwapScene] = useState<SwapScene | null>(null);
     // A template (ADR-0120) opens this form with its prompt and length filled in; both stay editable.
     const [prompt, setPrompt] = useState(typeof presetPrompt === 'string' ? presetPrompt : ''); const [revealedPrompt, setRevealedPrompt] = useState<string | null>(null); const [revealing, setRevealing] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -99,7 +101,19 @@ export default function CreateWithModel() {
     const [startProblem, setStartProblem] = useState<string | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const { left: freeMap, loading: freeLoading } = useFreeLeftState(refreshKey);
-    const [catalog, setCatalog] = useState<CatalogModel[]>([]);
+    const [publicCatalog, setCatalog] = useState<CatalogModel[]>([]);
+    const privateModels = useOwnerProofModels();
+    const catalog = useMemo(() => mergeOwnerProofModels(publicCatalog, privateModels.filter(isSupported)), [publicCatalog, privateModels]);
+    const model = swapScene ? publicModel : publicModel ? privateModels.find(m => m.id === publicModel.id) ?? publicModel : null;
+    const [proofExposure, setProofExposure] = useState<OwnerProofExposure | null>(null);
+    const privateImage = !swapScene && !!privateModels.find(m => m.id === model?.id)?.capabilities?.media?.image && !publicModel?.capabilities?.media?.image;
+    const exposed = ownerProofExposure(proofExposure, model?.id ?? '', accountEpoch, privateImage, references.some(ref => ref.slot === 'image') || !!startFile);
+    if (exposed !== proofExposure) setProofExposure(exposed);
+    const withdrawnProofSlots = !swapScene && hasOwnerProofExposure(exposed, model?.id ?? '', accountEpoch)
+        ? references.filter(ref => !model?.capabilities?.media?.[ref.slot]) : [];
+    const unsupportedProofSource = withdrawnProofSlots.length > 0 || (!swapScene && !!startFile && hasOwnerProofExposure(exposed, model?.id ?? '', accountEpoch) && !model?.capabilities?.media?.image);
+    const removeProofImage = () => { setReferences(current => current.filter(ref => !withdrawnProofSlots.includes(ref))); setStartFile(null); setError(null); };
+    const frame = useFrameChoice(model?.id);
     const [results, setResults] = useState<ResultBatch | null>(null);
     const [complete, setComplete] = useState(false);
     const [settled, setSettled] = useState(0);
@@ -315,7 +329,7 @@ export default function CreateWithModel() {
         : hasReference && stillNeeded.length ? t('create.workspace.stageNeeds', { items: stillNeeded.join(', ') }) : t(hasReference ? 'create.workspace.stageReference' : text.trim() ? 'create.workspace.stagePrompt' : 'create.workspace.stageEmpty');
     const modelLabel = swapScene?.name ?? creativeFeature(typeof recipe === 'string' ? recipe : undefined)?.title ?? model.name;
     async function generate() {
-        if (!model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
+        if (unsupportedProofSource || !model || (!ready && !matchingRetry) || busy || freeLoading || waiting) return;
         if (retry.current && !matchingRetry) newGeneration();
         const run: NonNullable<typeof retry.current> = matchingRetry ?? { signature, request, count: n, unit };
         retry.current = run;
@@ -366,7 +380,7 @@ export default function CreateWithModel() {
     const inProgress = complete && settled < (results?.ids.length ?? 0);
     const payable = quote.payable ?? price;
     const missing = complete ? 0 : shortfall(balance, payable);
-    const disabled = busy || waiting || inProgress || (!complete && (freeLoading || (!ready && !matchingRetry) || missing > 0));
+    const disabled = busy || waiting || inProgress || (!complete && (unsupportedProofSource || freeLoading || (!ready && !matchingRetry) || missing > 0));
     // A swap scene, a Tools recipe or a bound template is made for one model; anywhere else the model row opens the picker.
     const choices = modelChoices(catalog, model, references.length > 0), changeModel = choices.length > 1 && !swapScene && !creativeFeature(typeof recipe === 'string' ? recipe : undefined) && !boundCount && !busy && !waiting ? modelSwitch.open : undefined;
     const needKey = complete || busy || waiting || inProgress || missing > 0 ? null : missingNeedKey(model, references, !!startFile, promptRequired(model) && !text.trim());
@@ -472,6 +486,7 @@ export default function CreateWithModel() {
                         <Button variant="tertiary" accessibilityRole="button" accessibilityLabel={t('lowBalance.buy')} onPress={async () => { await flushDraft(); router.push('/credits'); }} label={t('lowBalance.buy')} />
                     </View>
                 ) : null}
+                    {unsupportedProofSource ? <View><Text variant="body" tone="danger" accessibilityLiveRegion="polite">{t('form.err.sourceMismatch')}</Text><Button variant="secondary" label={t('chat.attach.removeN', { n: 1 })} onPress={removeProofImage} /></View> : null}
                 {error ? <Text variant="body" tone="danger" style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
                 {error && matchingRetry && !disabled ? <Button variant="secondary" accessibilityRole="button" label={t('recovery.retry')} onPress={() => void generate()} /> : null}
                 {note ? <Text variant="caption" tone="tertiary" style={styles.consent} accessibilityLiveRegion="polite">{note}</Text> : null}
