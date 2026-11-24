@@ -3,7 +3,7 @@
   "auditedOn": "2026-11-24",
   "matrix": {
     "path": "replica/byecut/features.csv",
-    "sha256": "3116f260290788df206ef1650697fc15c2130ea4fa85cd17f734708f7983790c",
+    "sha256": "5d3a036463f28072140d45ffd140886a81e3e884ca22c169b6552ba9d6a3a8e1",
     "rows": 87,
     "inScopeRows": 78,
     "cleanRoomExclusions": 9
@@ -224,7 +224,7 @@
       "evidence": [
         "replica/byecut/recon.md",
         "replica/byecut/screens/android-projects.jpg",
-        "packages/db/schema/supabase/0604_project_folders.sql",
+        "packages/db/schema/supabase/0611_project_folders.sql",
         "app/api/v1/project-folders/route.js",
         "app/api/v1/project-folders/[id]/route.js",
         "app/veyrnox/app/projects/page.js",
@@ -254,7 +254,7 @@
       "owningWorkstream": "3",
       "evidence": [
         "replica/byecut/recon.md",
-        "packages/db/schema/supabase/0604_project_folders.sql",
+        "packages/db/schema/supabase/0611_project_folders.sql",
         "app/api/v1/projects/[id]/route.js",
         "app/veyrnox/app/projects/page.js",
         "apps/mobile/src/app/(app)/projects/[id].tsx",
@@ -423,7 +423,7 @@
         "apps/mobile/src/lib/speechAnalysis.ts",
         "lib/speechAnalysis.js",
         "lib/speechUploadSource.js",
-        "packages/db/schema/supabase/0602_speech_requested_language.sql",
+        "packages/db/schema/supabase/0609_speech_requested_language.sql",
         "tests/bestCutServer.test.mjs",
         "apps/mobile/__tests__/bestCutFlow.test.ts"
       ],
@@ -685,7 +685,7 @@
       "apps/mobile/src/lib/bestCutFlow.ts",
       "apps/mobile/src/lib/speechAnalysis.ts",
       "lib/speechAnalysis.js",
-      "packages/db/schema/supabase/0602_speech_requested_language.sql",
+      "packages/db/schema/supabase/0609_speech_requested_language.sql",
       "tests/smartCutAnalysis.test.mjs",
       "tests/smartCutPlanner.test.mjs",
       "tests/webSpeechCut.test.mjs",
@@ -695,7 +695,7 @@
       "apps/mobile/__tests__/smartCutRoute.test.tsx"
     ],
     "evidenceRationale": "The shared planner retains its bounded matching override, while web and native paid-analysis controls now pass an explicit language through price/preflight, language-scoped keys, the versioned database admission RPC and Scribe language_code. Automatic requests preserve their legacy payload and digest.",
-    "auditNote": "Source and server contract tests pass, but migration 0602 has not been applied, the installed mobile environment is intentionally not duplicated, and web/iOS/Android journeys remain outstanding.",
+    "auditNote": "Source and server contract tests pass, but migration 0609 has not been applied, the installed mobile environment is intentionally not duplicated, and web/iOS/Android journeys remain outstanding.",
       "journeyEvidence": [],
     "notes": "Explicit provider language is isolated from automatic cache and in-flight results; detected provider language remains authoritative in the stored analysis."
     },
@@ -801,7 +801,7 @@
         "apps/mobile/src/lib/push.ts",
         "apps/mobile/src/push/PushProviderLive.tsx",
         "lib/pushNotifications.js",
-        "packages/db/schema/supabase/0606_smart_cut_push_notifications.sql",
+        "packages/db/schema/supabase/0613_smart_cut_push_notifications.sql",
         "tests/pushNotifications.test.mjs",
         "tests/smartCutBackgroundPush.test.mjs",
         "apps/mobile/__tests__/smartCutProgressNotification.test.ts"
@@ -809,7 +809,7 @@
       "evidenceRationale": "iOS now compiles a privacy-minimal ActivityKit Live Activity with Lock Screen and Dynamic Island states, recovered in place across app relaunch; the existing silent notification fallback covers unsupported/denied paths.",
       "auditNote": "ActivityKit source-complete on 2026-11-24 using the SDK 58 native widget target. An Xcode device/simulator Lock Screen journey remains required before yes.",
       "journeyEvidence": [],
-      "notes": "Native OS notification fallback; migration 0606 is authored but unapplied."
+      "notes": "Native OS notification fallback; migration 0613 is authored but unapplied."
     },
     "F028": {
       "feature": "Automatic retry after connection interruption",
@@ -1303,12 +1303,12 @@
         "app/veyrnox/_components/SmartCutFeedback.js",
         "apps/mobile/src/lib/smartCutFeedback.ts",
         "apps/mobile/src/components/smart-cut/SmartCutFeedback.tsx",
-        "packages/db/schema/supabase/0605_smart_cut_feedback.sql",
+        "packages/db/schema/supabase/0612_smart_cut_feedback.sql",
         "tests/smartCutFeedback.test.mjs",
         "apps/mobile/__tests__/smartCutFeedback.test.ts"
       ],
       "evidenceRationale": "Web and shared iOS/Android collect only a bounded thumbs rating, optional short comment and plan mode under explicit privacy copy. Server validation, per-user idempotency, 180-day expiry, deletion/export handling and lost-reply recovery are implemented without transcript, project or media data.",
-      "auditNote": "Completed in source on 2026-11-23 after Craft Anything identified route-inventory and edited-resubmission blockers. Focused feedback, route inventory and telemetry tests pass; migration 0605 is unapplied, its disposable database harness is unrun, and live journeys remain required before yes.",
+      "auditNote": "Completed in source on 2026-11-23 after Craft Anything identified route-inventory and edited-resubmission blockers. Focused feedback, route inventory and telemetry tests pass; migration 0612 is unapplied, its disposable database harness is unrun, and live journeys remain required before yes.",
       "journeyEvidence": [],
       "notes": "Optional product-improvement feedback cannot receive a reply and is not sent to AI providers or used to train models."
     },
@@ -1988,7 +1988,7 @@
         "lib/editorServerRender.js",
         "lib/editorServerRenderWebhook.js",
         "services/concat-render/runner.mjs",
-        "packages/db/schema/supabase/0603_editor_render_4k60.sql",
+        "packages/db/schema/supabase/0610_editor_render_4k60.sql",
         "apps/mobile/src/components/editor/LocalExportSheet.tsx",
         "apps/mobile/src/components/editor/ServerExportSheet.tsx",
         "apps/mobile/src/components/editor/useServerExport.ts",
@@ -2203,7 +2203,7 @@
         "replica/byecut/recon.md",
         "packages/db/schema/supabase/0127_signup_grant_ten_credits.sql",
         "packages/db/schema/supabase/0453_editor_ai_edit_row_and_speech_activation.sql",
-        "packages/db/schema/supabase/0602_speech_requested_language.sql",
+        "packages/db/schema/supabase/0609_speech_requested_language.sql",
         "apps/mobile/src/lib/bestCutFlow.ts",
         "apps/mobile/__tests__/bestCutFlow.test.ts",
         "tests/bestCutServer.test.mjs",

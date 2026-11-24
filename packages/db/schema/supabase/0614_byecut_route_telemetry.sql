@@ -1,4 +1,6 @@
 -- Clean-room ByeCut parity routes added after the previous telemetry allowlist amendment.
+-- Migration 0575 remains immutable: this wrapper deliberately re-admits Photo
+-- Studio now that the clean-room editor work has restored that product route.
 -- Only normalized route names are admitted; request and feedback content never reaches telemetry.
 BEGIN;
 

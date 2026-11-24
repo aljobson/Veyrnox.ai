@@ -70,10 +70,11 @@ test('upload failure happens before any admission: no debit request is ever sent
     await expect(createBestCutFlow(api(request), 'acct', key).run([clip(1)], quote, new AbortController().signal, () => {})).rejects.toMatchObject({ code: 'upload_failed' });
     expect(request).not.toHaveBeenCalled();
 });
-test('a changed catalog price stops before charging', async () => {
-    const request = jest.fn(async (path: string, _init?: { method?: string }) => path.endsWith('/preflight') ? { clips: [{ cached: false, credits: 5 }] } : (() => { throw new ApiError(404, 'request_not_found'); })());
-    await expect(createBestCutFlow(api(request), 'acct', key).run([clip(1)], quote, new AbortController().signal, () => {})).rejects.toMatchObject({ code: 'price_changed' });
-    expect(request.mock.calls.some(c => c[0] === SPEECH_PATH && c[1]?.method === 'POST')).toBe(false);
+test('server preflight is authoritative at a device-duration billing boundary', async () => {
+    const request = router();
+    await createBestCutFlow(api(request), 'acct', key).run([clip(1, { duration: 60.1 })], quote, new AbortController().signal, () => {});
+    const post = request.mock.calls.find(c => c[1]?.method === 'POST' && c[0] === SPEECH_PATH)!;
+    expect(JSON.parse(post[1]!.body!)).toMatchObject({ duration: 60.1, expectedCredits: 3 });
 });
 test('a definitive provider failure surfaces the refund and allows a fresh paid retry only on another tap', async () => {
     const flow = createBestCutFlow(api(router({ fail: true })), 'acct', key);

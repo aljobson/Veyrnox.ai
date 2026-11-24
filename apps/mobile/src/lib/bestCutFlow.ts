@@ -75,8 +75,10 @@ export function createBestCutFlow(api: ApiClient, account: string, makeKey: () =
             || (p.paidCredits !== undefined && (!Number.isSafeInteger(p.paidCredits) || p.paidCredits < 1))
             || !Number.isSafeInteger(p.credits) || p.credits < 0 || ((p.cached || p.free) && p.credits !== 0))) throw new ApiError(200, 'bad_response');
         notify('preflight', 0, 0, prices);
-        const billingBlock = quote.billing_block_seconds || 60;
-        if (prices.some((p, index) => !p.cached && !p.free && p.credits !== quote.credits * Math.ceil(clips[index].duration / billingBlock))) throw new ApiError(409, 'price_changed');
+        // The server probes the uploaded media and owns the final duration and
+        // price. Binding each start to its returned preflight credits avoids a
+        // false price change at billing boundaries (for example 60.1 seconds
+        // reported by the device but 59.9 seconds measured by the server).
         const inputs: BestCutInput[] = [], silent: string[] = [];
         for (const [index, clip] of clips.entries()) {
             const id = language === 'auto' ? clip.media.id : `${clip.media.id}:language=${language}`;

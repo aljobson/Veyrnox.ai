@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { t } from './i18n';
 import type { SmartCutProgressStage } from './smartCutProgressNotification';
-import SmartCutLiveActivity, { type SmartCutLiveActivityProps } from '../components/smart-cut/SmartCutLiveActivity';
+import type { SmartCutLiveActivityProps } from '../components/smart-cut/SmartCutLiveActivity';
 
 type Instance = {
     update(props: SmartCutLiveActivityProps, staleDate?: Date): Promise<void>;
@@ -38,7 +38,14 @@ export function smartCutLiveActivityProps(stage: SmartCutProgressStage, done: nu
 
 function nativeFactory(): Factory | null {
     if (Platform.OS !== 'ios') return null;
-    return SmartCutLiveActivity as Factory;
+    // Keep Expo Widgets out of Android and test module graphs. Older installed
+    // environments may not have @expo/ui yet, so a missing optional native
+    // module must degrade to notifications instead of blocking app startup.
+    try {
+        return require('../components/smart-cut/SmartCutLiveActivity').default as Factory;
+    } catch {
+        return null;
+    }
 }
 
 export function createSmartCutLiveActivity(enabled: boolean, factory: Factory | null = nativeFactory()): SmartCutLiveActivityPort {

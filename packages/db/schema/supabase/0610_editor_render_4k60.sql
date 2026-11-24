@@ -107,6 +107,7 @@ CREATE OR REPLACE FUNCTION public.finalize_server_render(p_job_id UUID,p_size BI
 RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE j public.jobs%ROWTYPE; u public.users%ROWTYPE; a UUID; rid UUID; saved public.editor_library_renders%ROWTYPE; result JSONB;
  maximum BIGINT; edge INTEGER; expected_width INTEGER; expected_height INTEGER; expected_rate INTEGER; aspect TEXT;
+ ratio NUMERIC; base_width INTEGER; base_height INTEGER; scale NUMERIC; source_media_id TEXT; source_width TEXT; source_height TEXT;
 BEGIN
  SELECT * INTO j FROM public.jobs WHERE id=p_job_id AND provider='concat-render';
  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'code','NOT_FOUND'); END IF;
@@ -126,9 +127,37 @@ BEGIN
  maximum:=CASE WHEN j.inputs->>'resolution'='2160p' THEN 104857600 ELSE 26214400 END;
  edge:=CASE j.inputs->>'resolution' WHEN '2160p' THEN 2160 WHEN '1080p' THEN 1080 WHEN '720p' THEN 720 END;
  aspect:=j.inputs#>>'{document,canvas,aspect_ratio}'; expected_rate:=(j.inputs#>>'{document,canvas,frame_rate}')::integer;
- expected_width:=CASE aspect WHEN '16:9' THEN edge*16/9 WHEN '9:16' THEN edge ELSE edge END;
- expected_height:=CASE aspect WHEN '16:9' THEN edge WHEN '9:16' THEN edge*16/9 ELSE edge END;
- IF edge IS NULL OR expected_rate NOT IN (24,25,30,60)
+ CASE aspect
+  WHEN '16:9' THEN ratio := 16.0 / 9.0;
+  WHEN '9:16' THEN ratio := 9.0 / 16.0;
+  WHEN '1:1' THEN ratio := 1.0;
+  WHEN '4:5' THEN ratio := 4.0 / 5.0;
+  WHEN 'source' THEN
+   source_media_id:=j.inputs#>>'{document,timeline,video,0,mediaId}';
+   source_width:=(j.inputs#>'{document,timeline,media}'->source_media_id->>'width');
+   source_height:=(j.inputs#>'{document,timeline,media}'->source_media_id->>'height');
+   IF source_width ~ '^[1-9][0-9]*$' AND source_height ~ '^[1-9][0-9]*$' THEN
+    ratio:=source_width::numeric/source_height::numeric;
+   END IF;
+  ELSE
+   IF aspect ~ '^custom:[1-9][0-9]{0,2}x[1-9][0-9]{0,2}$' THEN
+    ratio:=split_part(substring(aspect from 8),'x',1)::numeric/split_part(aspect,'x',2)::numeric;
+   END IF;
+ END CASE;
+ IF edge IS NOT NULL AND ratio IS NOT NULL AND ratio>0 THEN
+  IF ratio>=1 THEN
+   base_width:=greatest(2,round(edge * ratio / 2.0) * 2)::integer; base_height:=edge;
+  ELSE
+   base_width:=edge; base_height:=greatest(2,round(edge / ratio / 2.0) * 2)::integer;
+  END IF;
+  IF greatest(base_width,base_height) > 4096 THEN
+   scale:=4096.0/greatest(base_width,base_height);
+   expected_width:=greatest(2,floor(base_width * scale / 2.0) * 2)::integer;
+   expected_height:=greatest(2,floor(base_height * scale / 2.0) * 2)::integer;
+  ELSE expected_width:=base_width; expected_height:=base_height;
+  END IF;
+ END IF;
+ IF edge IS NULL OR ratio IS NULL OR ratio<=0 OR expected_rate NOT IN (24,25,30,60)
  OR p_size IS NULL OR p_size NOT BETWEEN 1 AND maximum OR p_size IS DISTINCT FROM (j.inputs->>'upload_size')::bigint
  OR p_sha256 IS NULL OR p_sha256 !~ '^[0-9a-f]{64}$' OR p_width IS DISTINCT FROM expected_width OR p_height IS DISTINCT FROM expected_height
  OR p_seconds IS NULL OR abs(p_seconds-(j.inputs->>'seconds')::numeric)>greatest(2.0/nullif(p_frame_rate,0),0.1) OR p_frame_rate IS DISTINCT FROM expected_rate THEN

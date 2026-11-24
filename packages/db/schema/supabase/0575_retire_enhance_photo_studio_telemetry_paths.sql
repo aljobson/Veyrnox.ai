@@ -1,7 +1,7 @@
--- Video Enhance (/app/enhance) was removed on 2026-11-20 (owner decision,
--- PR 2550), so the route inventory no longer lists it. Photo Studio was later
--- restored by the clean-room editor work and is admitted again by 0607.
--- No table, grant or data changes.
+-- Video Enhance (/app/enhance) and Photo Studio (/app/photo-studio) were
+-- removed on 2026-11-20 (owner decision, PR 2550), so the route inventory no
+-- longer lists them. Stop admitting the two paths in telemetry. No table,
+-- grant or data changes.
 --
 -- Same wrapper pattern as 0507: renaming preserves the previous function's
 -- revoked ACL, and the body reads previous allowlist AND NOT a removed path.
@@ -20,7 +20,7 @@ IMMUTABLE
 SET search_path = ''
 AS $$
     SELECT public.telemetry_path_allowed_pre_0575(p_path)
-       AND p_path NOT IN ('/app/enhance')
+       AND p_path NOT IN ('/app/enhance', '/app/photo-studio')
 $$;
 
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(TEXT)
