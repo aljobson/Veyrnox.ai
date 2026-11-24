@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "Zur Wiedergabewarteschlange hinzufügen",
+  "music.queue.title": "Wiedergabewarteschlange",
+  "music.queue.position": "Wiedergabewarteschlange · {position} von {total}",
+  "music.queue.generatedAudio": "Generiertes Audio",
   "videoShape.all": "Alle Formate",
   "videoShape.portrait": "Hochformat",
   "videoShape.landscape": "Querformat",

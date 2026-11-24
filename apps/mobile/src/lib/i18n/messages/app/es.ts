@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "Añadir a la cola de reproducción",
+  "music.queue.title": "Cola de reproducción",
+  "music.queue.position": "Cola de reproducción · {position} de {total}",
+  "music.queue.generatedAudio": "Audio generado",
   "videoShape.all": "Todas las formas",
   "videoShape.portrait": "Vertical",
   "videoShape.landscape": "Horizontal",

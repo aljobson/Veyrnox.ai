@@ -7,7 +7,12 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 const source = readFileSync(new URL('../app/veyrnox/_components/CassettePlayer.js', import.meta.url), 'utf8');
 const { code } = transformSync(source, { loader: 'jsx', jsx: 'automatic', format: 'esm' });
-const { CassettePlayer } = await import(`data:text/javascript,${encodeURIComponent(code.replace('"react/jsx-runtime"', `"${import.meta.resolve('react/jsx-runtime')}"`).replace('"react"', `"${import.meta.resolve('react')}"`))}`);
+const audioFocusUrl = `data:text/javascript,${encodeURIComponent('export const claimAudioFocus = () => {}; export const releaseAudioFocus = () => {};')}`;
+const withImports = (value, reactUrl = import.meta.resolve('react')) => value
+  .replace('"react/jsx-runtime"', `"${import.meta.resolve('react/jsx-runtime')}"`)
+  .replace('"react"', `"${reactUrl}"`)
+  .replace('"../_lib/audioFocus"', `"${audioFocusUrl}"`);
+const { CassettePlayer } = await import(`data:text/javascript,${encodeURIComponent(withImports(code))}`);
 
 test('the cassette is decoration: hidden from assistive tech, with the native audio controls left in place', () => {
   const html = renderToStaticMarkup(React.createElement(CassettePlayer, { src: '/a.mp3', label: 'Result' }));
@@ -46,11 +51,12 @@ test('the audio preview grows with the player instead of being clipped by a fixe
 async function mountWith(paused) {
   const hooks = { states: [], refs: [], effects: [], s: 0, r: 0, dirty: false };
   globalThis.__cassetteHooks = hooks;
-  const fake = `export const useRef = (i) => { const h = globalThis.__cassetteHooks; return h.refs[h.r++] ??= { current: i }; };
+  const fake = `export const useId = () => 'cassette-focus';
+    export const useRef = (i) => { const h = globalThis.__cassetteHooks; return h.refs[h.r++] ??= { current: i }; };
     export const useState = (i) => { const h = globalThis.__cassetteHooks; const n = h.s++; if (!(n in h.states)) h.states[n] = i; return [h.states[n], (v) => { h.states[n] = v; h.dirty = true; }]; };
     export const useEffect = (fn) => { globalThis.__cassetteHooks.effects.push(fn); };`;
   const fakeUrl = `data:text/javascript,${encodeURIComponent(fake)}`;
-  const mod = await import(`data:text/javascript,${encodeURIComponent(code.replace('"react/jsx-runtime"', `"${import.meta.resolve('react/jsx-runtime')}"`).replace('"react"', `"${fakeUrl}"`) + `\n// ${paused}`)}`);
+  const mod = await import(`data:text/javascript,${encodeURIComponent(withImports(code, fakeUrl) + `\n// ${paused}`)}`);
   const render = () => { hooks.s = 0; hooks.r = 0; hooks.effects = []; return mod.CassettePlayer({ src: '/a.mp3' }); };
   render();
   hooks.refs[0].current = { paused }; // the browser attached the element, already playing or not

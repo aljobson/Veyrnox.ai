@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "Добавить в очередь прослушивания",
+  "music.queue.title": "Очередь прослушивания",
+  "music.queue.position": "Очередь прослушивания · {position} из {total}",
+  "music.queue.generatedAudio": "Сгенерированное аудио",
   "videoShape.all": "Все форматы",
   "videoShape.portrait": "Вертикальный",
   "videoShape.landscape": "Горизонтальный",

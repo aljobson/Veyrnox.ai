@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "再生キューに追加",
+  "music.queue.title": "再生キュー",
+  "music.queue.position": "再生キュー · {position}/{total}",
+  "music.queue.generatedAudio": "生成された音声",
   "videoShape.all": "すべての形状",
   "videoShape.portrait": "縦長",
   "videoShape.landscape": "横長",

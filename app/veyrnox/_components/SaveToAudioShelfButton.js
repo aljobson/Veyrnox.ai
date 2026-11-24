@@ -11,11 +11,13 @@ import {
   saveAudioReference,
   toggleSignatureVoiceRecipe,
 } from '../_lib/audioReferenceShelf';
+import { useMusicQueue } from './music/MusicQueue';
 
 const currentAccount = () => getStoredUserId() || '';
 const serverAccount = () => '';
 
-export function SaveToAudioShelfButton({ jobId, name, purpose, voiceRecipe, offerSignature = false, className = '' }) {
+export function SaveToAudioShelfButton({ jobId, name, purpose, queueSource, voiceRecipe, offerSignature = false, className = '' }) {
+  const queue = useMusicQueue();
   const accountId = useSyncExternalStore(onSessionChange, currentAccount, serverAccount);
   const [state, setState] = useState('idle');
   const [signatureIds, setSignatureIds] = useState([]);
@@ -64,6 +66,8 @@ export function SaveToAudioShelfButton({ jobId, name, purpose, voiceRecipe, offe
   return <>
     <button type="button" onClick={save} disabled={state === 'checking' || state === 'saved'}
       className={className || 'inline-flex min-h-9 items-center rounded-full border border-vx-border px-3 text-[11px] font-extrabold text-vx-fg disabled:opacity-60'}>{label}</button>
+    {queue?.ownedEnabled && ['music', 'speech', 'dialogue', 'audio_shelf'].includes(queueSource) ? <button type="button" onClick={() => queue.addOwned({ job_id: jobId, title: name, source: queueSource })}
+      className="inline-flex min-h-9 items-center rounded-full border border-vx-accent/40 px-3 text-[11px] font-extrabold text-vx-accent">Add to listening queue</button> : null}
     {offerSignature&&voiceRecipe&&state==='saved'&&itemId&&<button type="button" disabled={signatureFull} aria-pressed={signature} onClick={() => setSignatureIds(toggleSignatureVoiceRecipe(window.localStorage, accountId, itemId))}
       className="inline-flex min-h-9 items-center rounded-full border border-vx-accent/40 px-3 text-[11px] font-extrabold text-vx-accent disabled:cursor-not-allowed disabled:opacity-40">{signature?'Unpin signature':signatureFull?'Signature set full':'Pin as signature'}</button>}
   </>;

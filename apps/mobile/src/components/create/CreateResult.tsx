@@ -21,6 +21,7 @@ import type { ApiClient } from '../../lib/api';
 import type { CatalogModel, Kind } from '../../lib/media';
 import { plural, t } from '../../lib/i18n';
 import { failedJobMessage } from '../../lib/failedJob';
+import { usePersistentAudioQueue } from '../music/PersistentAudioQueueContext';
 
 export interface ResultBatch {
     ids: string[]; modelId: string; kind: Kind | null; aspect: string | null; duration: number | null; count: number;
@@ -53,6 +54,7 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
     const styles = useThemedStyles(sheets);
     const router = useRouter();
     const result = useJobResult(api, id);
+    const queue = usePersistentAudioQueue();
     const success = useRef(onSuccess); success.current = onSuccess;
     const callback = useRef(onTerminal); callback.current = onTerminal;
     const terminal = result.state === 'succeeded' || result.state === 'failed';
@@ -61,6 +63,9 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
     useEffect(() => { if (result.asset) success.current(id, result.asset.mime_type); }, [id, result.asset]);
     const file = result.asset;
     const generatedModel = catalog.find(model => model.id === batch.modelId);
+    const queueSource = generatedModel?.modality.includes('music') ? 'music'
+        : generatedModel?.modality.includes('dialogue') ? 'dialogue'
+        : generatedModel && (generatedModel.modality.includes('speech') || generatedModel.modality.includes('voice')) ? 'speech' : null;
     const requestedAspect = generatedModel && optionsFor(generatedModel).aspects.includes(batch.aspect ?? '') ? batch.aspect : null;
     // A 2-up grid only suits finished pictures. A job still running (or failed) takes the full row, so its text and bar
     // are not squeezed into half the screen inside a square frame.
@@ -83,6 +88,8 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
         </View>
         {result.state === 'succeeded' && file?.mime_type.startsWith('video/') && !result.held ? <FinishedShapeWarning api={api} id={id} requested={requestedAspect} /> : null}
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
+        {result.state === 'succeeded' && file?.mime_type.startsWith('audio/') && queue?.ownedEnabled && queueSource ? <Button variant="secondary" label={t('music.queue.add')}
+            onPress={() => queue.addOwned({ jobId: id, title: generatedModel?.name || t('music.queue.generatedAudio'), source: queueSource })} /> : null}
         {sound?.kind === 'tooLong' ? <Text>{t('libraryCreate.soundTooLong', { seconds: String(sound.seconds) })}</Text> : sound ? <Card>
             <Text variant="caption">{t('libraryCreate.soundEyebrow')}</Text><Text accessibilityRole="header" variant="title3">{t('libraryCreate.soundTitle')}</Text>
             <Text>{t('libraryCreate.soundHelp')}</Text><Button label={t('libraryCreate.soundAction')} onPress={addSound} />

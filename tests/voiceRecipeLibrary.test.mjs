@@ -28,5 +28,5 @@ test('Text to Speech exposes the personal recipe library and keeps a visible rev
   assert.match(page, /voiceRecipesMatch\(\{ \.\.\.settings, modelId \}, reusedRecipe\.settings\)/);
   assert.match(page, /Restore recipe/);
   assert.match(page, /review every setting and approve the current price/);
-  assert.match(page, /purpose="character-performance" voiceRecipe=\{item\.voice_recipe\} offerSignature/);
+  assert.match(page, /purpose="character-performance" queueSource="speech" voiceRecipe=\{item\.voice_recipe\} offerSignature/);
 });

@@ -60,6 +60,7 @@ const stubs = {
   '../../../../components/I18nProvider': { useI18n: () => ({ locale: 'en', t: english }) },
   '../../_lib/useMusicAudioSrc': { MusicPrivateAudio: () => null },
   '../../_lib/music/miniPlayer.mjs': rules,
+  './MusicQueue': { useMusicQueue: () => null },
 };
 const compiled = { exports: {} };
 new Function('require', 'module', 'exports', code)((id) => stubs[id] || require(id), compiled, compiled.exports);

@@ -39,14 +39,14 @@ test('phone public flow and swap scenes have no withdrawal guard without private
     assert.match(phone,/unsupportedProofSource \? <View><Text[^\n]+form.err.sourceMismatch/);
     assert.match(phone,/label=\{t\('chat.attach.removeN', \{ n: 1 \}\)\} onPress=\{removeProofImage\}/);
 });
-test('0605 requires both 0604 schema markers before the telemetry wrapper changes',()=>{
-    const sql=readFileSync('packages/db/schema/supabase/0605_owner_proof_telemetry.sql','utf8');
+test('0607 requires both 0604 schema markers before the telemetry wrapper changes',()=>{
+    const sql=readFileSync('packages/db/schema/supabase/0607_owner_proof_telemetry.sql','utf8');
     assert.equal(existsSync('packages/db/schema/supabase/0601_owner_proof_telemetry.sql'),false);
     const first=sql.match(/DO \$\$[\s\S]*?END \$\$;/)?.[0];assert.ok(first);
     assert.match(first,/IF NOT EXISTS \([\s\S]*table_schema = 'public'[\s\S]*table_name = 'model_routes'[\s\S]*column_name = 'breaker_first_opened_at'[\s\S]*\) OR NOT EXISTS \(/);
     assert.match(first,/n.nspname = 'public' AND p.proname = 'job_route_close_refused'[\s\S]*p.prokind = 'f'/);
-    assert.match(first,/RAISE EXCEPTION '0605 requires 0604_route_failure_accounting.sql \(PR 2685\)'/);
+    assert.match(first,/RAISE EXCEPTION '0607 requires 0604_route_failure_accounting.sql \(PR 2685\)'/);
     assert.ok(sql.indexOf(first)<sql.indexOf('ALTER FUNCTION'));
-    assert.match(sql,/telemetry_path_allowed_pre_0605\(p_path\)/);
+    assert.match(sql,/telemetry_path_allowed_pre_0607\(p_path\)/);
     assert.doesNotMatch(sql,/pre_0601|CREATE OR REPLACE FUNCTION public.reserve_crun_create_slot/);
 });
