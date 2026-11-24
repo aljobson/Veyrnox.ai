@@ -19,10 +19,12 @@ import type { MusicSongDetail } from '../../../lib/music/types';
 import { t, rawText } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeContentScrollView } from '../../../components/SafeContentScrollView';
+import { usePersistentAudioQueue } from '../../../components/music/PersistentAudioQueue';
 
 export default function SongDetail() {
     const { id, revision } = useLocalSearchParams<{ id: string; revision?: string }>();
     const { api } = useAuth(); const s = useThemedStyles(sheets); const router = useRouter();
+    const queue = usePersistentAudioQueue();
     const [result, setResult] = useState<MusicProbe<MusicSongDetail> | null>(null);
     const [previous, setPrevious] = useState<MusicSongDetail | null>(null);
     const [lifecycle, setLifecycle] = useState<LifecycleState | null>(() => routeRevision(revision));
@@ -79,6 +81,8 @@ export default function SongDetail() {
             {lifecycle ? <Button label={t('music.restore')} disabled={busy} onPress={() => void mutate('restore')} /> : null}
         </View> : song ? <>
             {!busy && playback ? <MusicPlayer input={playback} /> : !busy ? <MusicNotice message={t('music.player.error')} /> : null}
+            {playback && queue?.ownedEnabled ? <Button variant="secondary" label="Add to listening queue"
+                onPress={() => queue.addOwned({ jobId: song.job_id, songId: song.id, title: song.title, source: 'music' })} /> : null}
             <MusicSongActions song={song} />
             <Button variant="secondary" label={t('beatLabs.makeBeat')} onPress={() => router.push({ pathname: '/beats/new', params: { song: song.id } } as never)} />
             <MusicPublication song={song} />

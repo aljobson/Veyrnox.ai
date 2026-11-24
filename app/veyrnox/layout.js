@@ -14,6 +14,7 @@ import { publishEnabled, publishShellAvailable } from '../../lib/social/publishF
 import { oddlingsPublicEnabled } from './_lib/oddlingsPublicFlag';
 import { MusicQueueProvider } from './_components/music/MusicQueue';
 import { musicRailsEnabled } from '../../lib/musicRails.js';
+import { musicRuntimeFlag } from '../../lib/musicRuntime.js';
 
 // Self-hosted variable fonts (OFL, app/fonts); see app/layout.js.
 const archivo = localFont({
@@ -42,7 +43,7 @@ export default function VeyrnoxLayout({ children }) {
           <ProjectsFlagProvider enabled={process.env.TENANT_PROJECTS_ENABLED === 'true'}>
             <OddlingsPublicFlagProvider enabled={oddlingsPublicEnabled()}>
               <AccountBoundary>
-                <MusicQueueProvider enabled={musicRailsEnabled()}>
+                <MusicQueueProvider publicEnabled={musicRailsEnabled()} ownedEnabled={musicRuntimeFlag('persistentQueue')}>
                 <GenerationCelebration />
                 {children}
                 <JobWatcher />

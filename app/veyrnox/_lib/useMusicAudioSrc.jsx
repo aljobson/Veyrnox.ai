@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useId, useRef, useState } from 'react';
 import { gatewayFetch } from './gateway';
+import { claimAudioFocus, releaseAudioFocus } from './audioFocus';
 
 // A private Music version's audio_url is the account-checked JSON route
 // /api/v1/jobs/:id/asset. That route needs the Bearer token, which an <audio>
@@ -41,8 +42,16 @@ export function useMusicAudioSrc(audioUrl) {
 }
 
 /** An <audio> for a Music audio_url; keeps a #t= media fragment on the signed URL. */
-export function MusicPrivateAudio({ src, onError, ...props }) {
+export const MusicPrivateAudio = forwardRef(function MusicPrivateAudio({ src, onError, onPlay, onPause, onEnded, ...props }, forwardedRef) {
+  const id = useId();
+  const localRef = useRef(null);
   const [base, fragment] = typeof src === 'string' ? [src.split('#')[0], src.includes('#') ? src.slice(src.indexOf('#')) : ''] : [src, ''];
   const { url, refresh } = useMusicAudioSrc(base);
-  return <audio {...props} src={url ? `${url}${fragment}` : undefined} onError={(event) => { refresh(); onError?.(event); }} />;
-}
+  useEffect(() => () => releaseAudioFocus(id), [id]);
+  const ref = (node) => { localRef.current = node; if (typeof forwardedRef === 'function') forwardedRef(node); else if (forwardedRef) forwardedRef.current = node; };
+  return <audio {...props} ref={ref} src={url ? `${url}${fragment}` : undefined}
+    onPlay={(event) => { claimAudioFocus(id, () => localRef.current?.pause()); onPlay?.(event); }}
+    onPause={(event) => { releaseAudioFocus(id); onPause?.(event); }}
+    onEnded={(event) => { releaseAudioFocus(id); onEnded?.(event); }}
+    onError={(event) => { refresh(); onError?.(event); }} />;
+});

@@ -15,6 +15,7 @@ import { formatWhen } from '../_lib/formatWhen';
 import { useAssetUrl } from '../_lib/useAssetUrl';
 import { libraryEditorHref } from '../_lib/editorMedia.mjs';
 import { useEditorEnabled } from './EditorFlag';
+import { MusicPrivateAudio } from '../_lib/useMusicAudioSrc';
 
 // Account list is authoritative; local history supplies cached display names.
 const STATE_UI = {
@@ -58,6 +59,9 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
     : ['minimax-speech-2.6-hd', 'qwen3-tts'].includes(row.model_id)
       ? 'narration-presenter'
       : 'timing-rhythm';
+  const queueSource = row.model_id === 'elevenlabs-dialogue' ? 'dialogue'
+    : ['minimax-speech-2.6-hd', 'qwen3-tts'].includes(row.model_id) ? 'speech'
+      : model?.modality?.includes('music') ? 'music' : 'audio_shelf';
   // The whole card: hover or focus anywhere on it plays its clip (LibraryClip).
   const card = useRef(null);
 
@@ -72,7 +76,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
         )}
         {row.asset_url && row.mime_type?.startsWith('audio/') && (
           <div className="absolute inset-0 flex items-end px-4 pb-4">
-            <audio src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls className="w-full" />
+            <MusicPrivateAudio src={asset.url} onError={asset.onError} onLoadedData={asset.onLoad} controls className="w-full" />
           </div>
         )}
         {row.asset_url && row.mime_type?.startsWith('image/') && (
@@ -133,6 +137,7 @@ export function LibraryJobCard({ row, models, selectable, selected, onToggle, st
             jobId={row.job_id}
             name={`Library · ${model?.name || 'Owned audio'}`}
             purpose={shelfPurpose}
+            queueSource={queueSource}
             className="inline-flex min-h-10 w-full items-center justify-center rounded-full border border-vx-border px-4 text-xs font-extrabold disabled:opacity-60"
           />
         </div>

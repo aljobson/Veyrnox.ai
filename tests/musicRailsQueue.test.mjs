@@ -35,12 +35,14 @@ test('the switch starts off', () => {
     assert.equal(musicRailsEnabled({ MUSIC_RUNTIME_FLAGS: '{"ui":true,"schema":true,"library":true,"distribution":true,"publication":true,"rails":true}' }), true);
 });
 
-test('the queue lives in the layout, behind the switch, and stores only public fields in this tab', () => {
+test('the queue lives in the layout with independent public and account-fenced owned switches', () => {
     const layout = read('app/veyrnox/layout.js');
-    assert.match(layout, /<MusicQueueProvider enabled=\{musicRailsEnabled\(\)\}>/);
+    assert.match(layout, /<MusicQueueProvider publicEnabled=\{musicRailsEnabled\(\)\} ownedEnabled=\{musicRuntimeFlag\('persistentQueue'\)\}>/);
     const queue = read('app/veyrnox/_components/music/MusicQueue.jsx');
     assert.match(queue, /sessionStorage/);
-    assert.doesNotMatch(queue, /localStorage/);
-    assert.match(queue, /src=\{`\/api\/music\/public\/\$\{current\.slug\}\/asset`\}/);
-    assert.match(queue, /\{enabled \? <MusicPlayerBar \/> : null\}/);
+    assert.match(queue, /localStorage/);
+    assert.match(queue, /privateOwnedAssetPath\(current\)/);
+    assert.match(queue, /publicEnabled/);
+    assert.match(queue, /ownedEnabled/);
+    assert.match(queue, /tracks\.map\(publicAudioQueueEntry\)/);
 });
