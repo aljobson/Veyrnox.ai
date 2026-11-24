@@ -1,4 +1,4 @@
--- 0605_smart_cut_feedback.sql
+-- 0612_smart_cut_feedback.sql
 -- Optional, privacy-minimal feedback on an in-memory Smart Cut proposal.
 -- No project, job, media, transcript, script, prompt, segment or timing identifier is stored.
 BEGIN;
@@ -117,13 +117,13 @@ FOR EACH ROW EXECUTE FUNCTION private.erase_smart_cut_feedback_for_user();
 -- Extend the immutable privacy-export chain with this one paged section.
 DO $$
 BEGIN
-    IF to_regprocedure('private.read_privacy_export_page_pre_0605(text,text,uuid,text,uuid,text,text,integer)') IS NULL THEN
+    IF to_regprocedure('private.read_privacy_export_page_pre_0612(text,text,uuid,text,uuid,text,text,integer)') IS NULL THEN
         ALTER FUNCTION public.read_privacy_export_page(text,text,uuid,text,uuid,text,text,integer) SET SCHEMA private;
         ALTER FUNCTION private.read_privacy_export_page(text,text,uuid,text,uuid,text,text,integer)
-            RENAME TO read_privacy_export_page_pre_0605;
+            RENAME TO read_privacy_export_page_pre_0612;
     END IF;
 END $$;
-REVOKE ALL ON FUNCTION private.read_privacy_export_page_pre_0605(text,text,uuid,text,uuid,text,text,integer)
+REVOKE ALL ON FUNCTION private.read_privacy_export_page_pre_0612(text,text,uuid,text,uuid,text,text,integer)
     FROM PUBLIC,anon,authenticated,service_role;
 
 CREATE OR REPLACE FUNCTION public.read_privacy_export_page(
@@ -136,7 +136,7 @@ DECLARE
     v_size integer; v_rows jsonb; v_next jsonb;
 BEGIN
     IF p_section<>'smart_cut_feedback' THEN
-        RETURN private.read_privacy_export_page_pre_0605(
+        RETURN private.read_privacy_export_page_pre_0612(
             p_auth_id,p_aal,p_export_id,p_section,p_thread_id,p_after,p_key,p_page_size);
     END IF;
     IF p_thread_id IS NOT NULL OR (p_after IS NULL)<>(p_key IS NULL)
@@ -151,7 +151,7 @@ BEGIN
     END;
     -- The previous function remains the single authority for export ownership,
     -- expiry, MFA and account-restriction checks.
-    v_guard := private.read_privacy_export_page_pre_0605(
+    v_guard := private.read_privacy_export_page_pre_0612(
         p_auth_id,p_aal,p_export_id,'profile',NULL,NULL,NULL,1);
     IF v_guard->>'ok'<>'true' THEN RETURN v_guard; END IF;
     SELECT u.id,r.as_of INTO v_user_id,v_as_of
@@ -182,14 +182,14 @@ GRANT EXECUTE ON FUNCTION public.read_privacy_export_page(text,text,uuid,text,uu
 -- Route-only telemetry may count calls; feedback content never reaches telemetry.
 DO $$
 BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0605(text)') IS NULL THEN
-        ALTER FUNCTION public.telemetry_path_allowed(text) RENAME TO telemetry_path_allowed_pre_0605;
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0612(text)') IS NULL THEN
+        ALTER FUNCTION public.telemetry_path_allowed(text) RENAME TO telemetry_path_allowed_pre_0612;
     END IF;
 END $$;
 CREATE OR REPLACE FUNCTION public.telemetry_path_allowed(p_path text) RETURNS boolean
 LANGUAGE sql IMMUTABLE SET search_path = '' AS $$
     SELECT p_path='/api/v1/editor/smart-cut-feedback'
-        OR public.telemetry_path_allowed_pre_0605(p_path)
+        OR public.telemetry_path_allowed_pre_0612(p_path)
 $$;
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(text) FROM PUBLIC,anon,authenticated,service_role;
 

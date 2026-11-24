@@ -153,7 +153,7 @@ try {
         assert.equal(await scalar("SELECT public.telemetry_path_allowed('/api/v1/editor/smart-cut-feedback')"), true);
         assert.equal(await scalar("SELECT public.telemetry_path_allowed('/api/v1/editor/smart-cut-feedback/private-comment')"), false);
         assert.equal(await scalar("SELECT public.telemetry_path_allowed('/api/v1/generations/quote')"), true, 'older allowlist wrapper survives');
-        assert.ok(await scalar("SELECT to_regprocedure('public.telemetry_path_allowed_pre_0605(text)') IS NOT NULL"));
+        assert.ok(await scalar("SELECT to_regprocedure('public.telemetry_path_allowed_pre_0612(text)') IS NOT NULL"));
         const definition = await scalar("SELECT pg_get_functiondef('public.telemetry_path_allowed(text)'::regprocedure)");
         for (const content of ['response_id', 'rating', 'comment', 'plan_mode', 'smart_cut_feedback']) assert.ok(!definition.includes(content), content);
     });

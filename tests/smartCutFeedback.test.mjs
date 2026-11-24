@@ -56,7 +56,7 @@ test('web and shared native surfaces bind one in-memory proposal id to the minim
 });
 
 test('migration keeps feedback private, short-lived, idempotent, erasable and exportable', () => {
-  const sql = source('packages/db/schema/supabase/0605_smart_cut_feedback.sql');
+  const sql = source('packages/db/schema/supabase/0612_smart_cut_feedback.sql');
   for (const invariant of [
     'FORCE ROW LEVEL SECURITY', 'REVOKE ALL ON public.smart_cut_feedback',
     "GRANT EXECUTE ON FUNCTION public.submit_smart_cut_feedback(text,uuid,text,text,text) TO service_role",

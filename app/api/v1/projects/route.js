@@ -23,7 +23,7 @@ export async function GET(request) {
                 rows = await tenantRequest(request, context, `projects?workspace_id=eq.${workspaceId}&select=${base}&order=created_at.desc&limit=200`);
             } catch (fallbackError) {
                 if (fallbackError?.status !== 400 && fallbackError?.status !== 404) throw fallbackError;
-                // During a rolling deploy the API can arrive before migration 0604. Preserve the
+                // During a rolling deploy the API can arrive before migration 0611. Preserve the
                 // existing project list until folder_id is available instead of failing the page.
                 rows = await tenantRequest(request, context, `projects?workspace_id=eq.${workspaceId}&select=${legacyBase}&order=created_at.desc&limit=200`);
             }

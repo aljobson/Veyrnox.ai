@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const sql = readFileSync(new URL('../packages/db/schema/supabase/0603_editor_render_4k60.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../packages/db/schema/supabase/0610_editor_render_4k60.sql', import.meta.url), 'utf8');
 
 test('4K migration keeps API, admission, upload and settlement limits in one transaction', () => {
     assert.match(sql, /^-- F070:[\s\S]*\nBEGIN;/);

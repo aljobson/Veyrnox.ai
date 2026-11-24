@@ -50,7 +50,7 @@ test('project reads survive a rolling deploy before folder_id exists',async()=>{
  assert.equal(single.status,200);assert.equal((await single.json()).project.folder_id,null);assert.equal(calls,2);
 });
 test('migration bounds depth and counts, enforces same-workspace folders, RLS and conflict-safe moves',()=>{
- const sql=readFileSync(new URL('../packages/db/schema/supabase/0604_project_folders.sql',import.meta.url),'utf8');
+ const sql=readFileSync(new URL('../packages/db/schema/supabase/0611_project_folders.sql',import.meta.url),'utf8');
  for(const evidence of ['FORCE ROW LEVEL SECURITY','private.workspace_role(workspace_id)','parent_depth >= 4','count(*) FROM public.project_folders','projects_folder_fk','FOLDER_NOT_EMPTY','expected_version','move_project_to_folder','ON DELETE SET NULL (folder_id)','PROJECT_FOLDER_CREATED','check_project_folder_write_limit','clear_project_folder_on_delete']) assert.ok(sql.includes(evidence),`missing migration evidence: ${evidence}`);
  assert.doesNotMatch(sql,/GRANT (?:INSERT|UPDATE|DELETE) ON public\.project_folders TO authenticated/i);
 });

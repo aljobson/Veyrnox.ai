@@ -1,4 +1,4 @@
--- 0606: background Smart Cut analysis completion through the existing push outbox.
+-- 0613: background Smart Cut analysis completion through the existing push outbox.
 --
 -- Speech analysis jobs are deliberately excluded from generic generation pushes by 0452.
 -- This separate enqueue function preserves that boundary and uses distinct kinds so the

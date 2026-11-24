@@ -4,9 +4,9 @@ BEGIN;
 
 DO $$
 BEGIN
-    IF to_regprocedure('public.telemetry_path_allowed_pre_0607(text)') IS NULL THEN
+    IF to_regprocedure('public.telemetry_path_allowed_pre_0614(text)') IS NULL THEN
         ALTER FUNCTION public.telemetry_path_allowed(text)
-            RENAME TO telemetry_path_allowed_pre_0607;
+            RENAME TO telemetry_path_allowed_pre_0614;
     END IF;
 END $$;
 
@@ -21,7 +21,7 @@ AS $$
         '/api/v1/project-folders',
         '/api/v1/project-folders/:id',
         '/app/photo-studio'
-    ) OR public.telemetry_path_allowed_pre_0607(p_path)
+    ) OR public.telemetry_path_allowed_pre_0614(p_path)
 $$;
 
 REVOKE ALL ON FUNCTION public.telemetry_path_allowed(text)

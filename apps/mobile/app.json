@@ -2,7 +2,7 @@
   "expo": {
     "name": "Veyrnox.ai",
     "slug": "veyrnoxai",
-    "version": "1.0.18",
+    "version": "1.0.19",
     "orientation": "default",
     "platforms": [
       "ios",

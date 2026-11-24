@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const sql = readFileSync(new URL('../packages/db/schema/supabase/0606_smart_cut_push_notifications.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../packages/db/schema/supabase/0613_smart_cut_push_notifications.sql', import.meta.url), 'utf8');
 
 test('Smart Cut background completion is isolated to terminal speech-analysis jobs', () => {
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.push_enqueue_smart_cut_events/);
