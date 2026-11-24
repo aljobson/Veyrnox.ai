@@ -14,6 +14,7 @@ import { restoreVersion, projectsErrorMessage } from '../../lib/projects';
 import { isOffline } from '../../lib/networkState';
 import { t } from '../../lib/i18n';
 import { useAnnouncement } from '../../lib/useAnnouncement';
+import { projectCloudSyncEnabled } from '../../lib/projectSyncPreference';
 
 type Ref<T> = MutableRefObject<T>;
 type Options = {
@@ -34,7 +35,7 @@ export function useEditorSaveSync(options: Options) {
     const [, update] = useState(0);
     const [sync] = useState(() => {
         const owner = getCacheUser(), session = sessionFactory.current();
-        let mounted = true, stopped = false, epoch = 0, watchGen = 0, imports = 0;
+        let mounted = true, stopped = false, epoch = 0, watchGen = 0, imports = 0, localOnly = false;
         let saving: Operation | null = null, replacing: Operation | null = null;
         let pending: Save | null = null, restoreOp: Restore | null = null, copy: Copy | null = null;
         let remote: DocumentHead | null = null, recovery: EditorDraft | null = null;
@@ -137,6 +138,13 @@ export function useEditorSaveSync(options: Options) {
                 try {
                     await flushDraft();
                     if (!holds(op)) return false;
+                    if (localOnly) {
+                        pending = null; failure = null; attempt = 0; recovered = false;
+                        o().saved(op.document);
+                        if (identity() === documentIdentity(op.document)) o().dirtyRef.current = false;
+                        else timers.auto = setTimeout(() => void save(), 0);
+                        return !o().dirtyRef.current;
+                    }
                     if (!validDocument(op.document, o().projectId)) throw new ApiError(400, 'invalid_document');
                     const result = await putDocument(o().api, o().projectId, op.expectedRevision, op.document, op.key);
                     if (!holds(op)) return false;
@@ -172,7 +180,7 @@ export function useEditorSaveSync(options: Options) {
             return saveRun;
         }
         async function useSavedNow() {
-            if (!canStart(locks())) return;
+            if (localOnly || !canStart(locks())) return;
             const op = start(), agreed = identity(); replacing = op; watchGen++; notify();
             try {
                 const head = await getDocument(o().api, o().projectId);
@@ -285,6 +293,7 @@ export function useEditorSaveSync(options: Options) {
             } finally { if (replacing === op) { replacing = null; settle(); } watchGen++; if (live()) notify(); }
         }
         function restore(revision: number) {
+            if (localOnly) return;
             const allowed = () => canStart(locks()) && !o().dirtyRef.current && revision !== o().revisionRef.current;
             if (!allowed()) return;
             Alert.alert(t('projects.restoreversion', { value1: revision }), t('projects.thissavesanewversioncopiedfrom'), [
@@ -296,6 +305,7 @@ export function useEditorSaveSync(options: Options) {
             ]);
         }
         async function watch() {
+            if (localOnly) return;
             const allowed = () => live() && gate === 'open' && AppState.currentState === 'active' && !saving && !pending && !replacing && !sheet && (!restoreOp || restoreOp.state === 'ambiguous');
             if (!allowed()) return;
             const gen = watchGen, captured = epoch;
@@ -328,6 +338,7 @@ export function useEditorSaveSync(options: Options) {
             const captured = epoch;
             let draft: EditorDraft | null = null, unreadable = false;
             try { draft = await readDraft(o().projectId); } catch { unreadable = true; }
+            localOnly = !(await projectCloudSyncEnabled(o().projectId).catch(() => true));
             if (!live() || captured !== epoch) return;
             if (unreadable) {
                 // Keep editing and saving; the unreadable draft is left in place until a new one replaces it.
@@ -335,6 +346,17 @@ export function useEditorSaveSync(options: Options) {
                 if (!live()) return;
                 if (o().dirtyRef.current) changed();
                 o().setProblem(t('editorSave.draftUnreadable')); notify(); return;
+            }
+            if (localOnly) {
+                gate = 'open';
+                if (draft) {
+                    o().baseline({ document: draft.document, revision: draft.baseRevision });
+                    o().markDocument(draft.document, false);
+                }
+                await o().entryImport();
+                if (live() && o().dirtyRef.current) changed();
+                if (live()) notify();
+                return;
             }
             const decision = decideDraft(draft, head);
             if (decision === 'none') {
@@ -372,11 +394,11 @@ export function useEditorSaveSync(options: Options) {
             settle,
             get draftDecided() { return gate === 'open'; },
             get sheet() { return sheet; }, get replacing() { return !!replacing; }, get imports() { return imports; }, get epoch() { return epoch; },
-            get canStart() { return canStart(locks()); }, get copyAllowed() { return !!workspaceId && (copy ? canRetry(locks(), copy) : canStart(locks())); },
+            get canStart() { return canStart(locks()); }, get copyAllowed() { return !localOnly && !!workspaceId && (copy ? canRetry(locks(), copy) : canStart(locks())); },
             get restoreUnknown() { return restoreOp?.state === 'ambiguous'; }, get retryAllowed() { return !!restoreOp && canRetry(locks(), restoreOp); },
             get saving() { return !!saving; }, get dirty() { return o().dirtyRef.current; }, get revision() { return o().revisionRef.current; },
             get saveStatus() {
-                return saving ? t('editor.saving') : restoreOp?.state === 'ambiguous' ? t('editorSave.restoreUnknown') : sheet === 'conflict' || remote ? t('editor.conflict') : failure !== null ? t(editorErrorKey(failure)) : o().dirtyRef.current ? t(recovered ? 'editorSave.recovered' : 'editor.unsavedchanges') : t('editor.v2', { value1: t('editor.saved'), value2: o().revisionRef.current });
+                return saving ? t('editor.saving') : restoreOp?.state === 'ambiguous' ? t('editorSave.restoreUnknown') : sheet === 'conflict' || remote ? t('editor.conflict') : failure !== null ? t(editorErrorKey(failure)) : o().dirtyRef.current ? t(recovered ? 'editorSave.recovered' : 'editor.unsavedchanges') : localOnly ? 'Saved on this iPhone' : t('editor.v2', { value1: t('editor.saved'), value2: o().revisionRef.current });
             },
             get retryVisible() { return failure !== null && !refused(failure) && !sheet; },
             attach() {

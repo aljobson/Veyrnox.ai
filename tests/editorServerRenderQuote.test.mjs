@@ -16,7 +16,7 @@ function world(options = {}) {
             calls.push([name, args]);
             if (name === 'replay_server_render') return job ? { ok: true, ...job, idempotent: true } : null;
             if (name === 'consume_upload_request') return { ok: true };
-            if (name === 'quote_server_render') return { credits: price, max_seconds: args.p_resolution === '720p' ? 300 : 120 };
+            if (name === 'quote_server_render') return { credits: price, max_seconds: args.p_resolution === '720p' ? 300 : args.p_resolution === '1080p' ? 120 : 30 };
             if (name === 'server_render_source') return { ok: true, r2_key: 'source', size_bytes: 10, mime_type: args.p_media_id.includes('2222') ? 'audio/wav' : 'video/mp4' };
             if (name === 'admit_server_render') {
                 if (job) return { ok: true, ...job, idempotent: true };
@@ -71,19 +71,29 @@ test('quote validates the document and size, translates exact duration and consu
     const unsupported = doc(); unsupported.timeline.video[0].transitionType = 'wipe';
     assert.equal((await (await w.handlers.quote(request({ document: unsupported, resolution: '1080p' }))).json()).error, 'editor_render_unsupported');
     assert.equal(w.calls.length, 0);
-    for (const resolution of ['720p', '1080p']) {
+    for (const resolution of ['720p', '1080p', '2160p']) {
         for (const frames of [300, 301]) {
             const document = doc(); document.timeline.video = [{ ...document.timeline.video[0], in: 0, len: frames, transition: 0 }]; document.timeline.audio = []; document.timeline.text = [];
             document.timeline.media[document.timeline.video[0].mediaId].frames = 400;
             const r = await w.handlers.quote(request({ document, resolution }));
             assert.equal(r.status, 200);
-            assert.deepEqual(await r.json(), { credits: 1, seconds: frames / 30, resolution, max_seconds: resolution === '720p' ? 300 : 120 });
+            assert.deepEqual(await r.json(), { credits: 1, seconds: frames / 30, resolution, max_seconds: resolution === '720p' ? 300 : resolution === '1080p' ? 120 : 30 });
             assert.equal(w.calls.at(-1)[1].p_seconds, frames / 30);
         }
     }
     assert.ok(w.calls.every(([name]) => ['consume_upload_request', 'quote_server_render'].includes(name)));
     w.deps.rpc = async () => ({ ok: false });
     assert.equal((await w.handlers.quote(request())).status, 429);
+});
+test('quote and create preserve a saved 60 fps 4K request through the runner plan', async () => {
+    const w = world();
+    const document = doc(); document.canvas.frame_rate = 60;
+    const quote = await w.handlers.quote(request({ document, resolution: '2160p' }));
+    assert.equal(quote.status, 200);
+    assert.deepEqual(await quote.json(), { credits: 1, seconds: 5, resolution: '2160p', max_seconds: 30 });
+    const created = await w.handlers.create(request({ document, resolution: '2160p', label: '4K 60', quoted_credits: 1 }));
+    assert.equal(created.status, 202);
+    assert.deepEqual(w.counts(), { debits: 1, launches: 1 });
 });
 test('price_changed passes consent straight to atomic admit, with no quote RPC and no launch', async () => {
     const w = world(); w.price(2);

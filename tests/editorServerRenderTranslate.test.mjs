@@ -32,6 +32,36 @@ test('resolution caps are enforced before a call plan is returned', () => {
     tl.video[0].len = 9001;
     assert.equal(translateEditorRender(tl, { resolution: '720p' }).error, 'editor_render_duration_limit');
 });
+test('4K 60 fps changes the render project while timeline timing stays source-time based', () => {
+    const tl = fixture('v3');
+    const result = translateEditorRender(tl, { resolution: '2160p', frameRate: 60 });
+    assert.equal(result.error, undefined);
+    assert.deepEqual([result.width, result.height, result.frameRate, result.maxOutputBytes], [3840, 2160, 60, 100 * 1024 * 1024]);
+    assert.deepEqual(result.calls[0].params.video, { width: 3840, height: 2160, rateNum: 60, rateDen: 1 });
+    assert.equal(result.calls.at(-1).params.width, 3840);
+    assert.equal(result.calls.at(-1).params.height, 2160);
+    assert.equal(translateEditorRender(tl, { resolution: '2160p', frameRate: 50 }).feature, 'canvas.frame_rate');
+});
+test('4:5, canonical custom, and source canvases keep their ratio independently of resolution', () => {
+    const tl = fixture('v3');
+    tl.aspect = '4:5';
+    assert.deepEqual([translateEditorRender(tl).width, translateEditorRender(tl).height], [1080, 1350]);
+    tl.aspect = 'custom:5x8';
+    assert.deepEqual([translateEditorRender(tl).width, translateEditorRender(tl).height], [1080, 1728]);
+    tl.aspect = 'source';
+    const first = tl.media[tl.video[0].mediaId]; first.width = 1000; first.height = 2000;
+    assert.deepEqual([translateEditorRender(tl).width, translateEditorRender(tl).height], [1080, 2160]);
+    tl.aspect = 'custom:10x16';
+    assert.equal(translateEditorRender(tl).error, 'editor_render_invalid_document');
+});
+test('extreme custom canvases preserve their ratio inside the server render dimension cap', () => {
+    const tl = fixture('v3');
+    tl.aspect = 'custom:1x4';
+    const result = translateEditorRender(tl, { resolution: '2160p' });
+    assert.deepEqual([result.width, result.height], [1024, 4096]);
+    assert.deepEqual(result.calls[0].params.video, { width: 1024, height: 4096, rateNum: 30, rateDen: 1 });
+    assert.deepEqual([result.calls.at(-1).params.width, result.calls.at(-1).params.height], [1024, 4096]);
+});
 test('invalid schemas and unimplemented visual features cannot disappear silently', () => {
     const tl = fixture('v3'); tl.video[0].filter = { brightness: 2 };
     assert.equal(translateEditorRender(tl).feature, 'filter');

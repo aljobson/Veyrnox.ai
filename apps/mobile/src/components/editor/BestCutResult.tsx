@@ -3,7 +3,7 @@ import { Modal, ScrollView, View } from 'react-native';
 import { Button, Chip, Text } from '../ui';
 import type { ApiClient } from '../../lib/api';
 import { framesIn, type Timeline } from '../../lib/nativeEditorModel';
-import type { BestCutPlan } from '../../lib/bestCutPlan';
+import { bestCutWarningKey, type BestCutPlan } from '../../lib/bestCutPlan';
 import { t } from '../../lib/i18n';
 import { createFrameStore } from './editorFrameStore';
 import { PlaybackPreview, PlaybackTransport } from './EditorPlayback';
@@ -16,7 +16,7 @@ export function BestCutResult({ before, after, plan, api, uris, onOpen, captions
     const [playing, setPlaying] = useState(false), [store] = useState(createFrameStore);
     const timeline = view === 'before' ? before : after, total = framesIn(timeline);
     useEffect(() => { if (!playing || !open) return; const timer = setInterval(() => { const next = store.get() + 1; if (next >= total) { setPlaying(false); store.set(0); } else store.set(next); }, 1000 / timeline.fps); return () => clearInterval(timer); }, [playing, open, total, timeline.fps, store]);
-    return <><View style={{ gap: 8 }}>{plan?.warnings.map(w => <Text key={w}>{t(`bestCut.warning.${w}`)}</Text>)}
+    return <><View style={{ gap: 8 }}>{plan?.warnings.map(w => <Text key={w}>{t(bestCutWarningKey(w))}</Text>)}
         {captionsOmitted ? <Text>{t('bestCut.captionsOmitted')}</Text> : null}
         {refunded ? <Text>{t('bestCut.refunded', { n: refunded })}</Text> : null}</View>
     <View style={{ flexDirection: 'row', gap: 8 }}>

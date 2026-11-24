@@ -14,6 +14,8 @@ import { SERVER_PLAIN_TEXT_STYLE } from '../../../lib/editorServerExport';
 import { exportRefusal } from '../../../lib/editorExportRefusal';
 import { CustomFontLibrarySheet } from '../fonts/CustomFontLibrarySheet';
 import { validCustomFonts } from '../../../lib/nativeEditorModel';
+import { TEXT_GUIDES } from '../../../../../../app/veyrnox/_lib/editorTextGuides.mjs';
+import { BehindSubjectSection } from './BehindSubjectSection';
 export function TextPanel({ timeline, selection, selected, addText, updateSelectedText, patchSelected, textActions, fontActions }: Pick<ToolPanelProps, 'timeline' | 'selection' | 'selected' | 'addText' |
     'updateSelectedText' | 'patchSelected' | 'textActions' | 'fontActions'>) {
     const [fontsOpen, setFontsOpen] = useState(false);
@@ -28,6 +30,10 @@ export function TextPanel({ timeline, selection, selected, addText, updateSelect
             <Stepper label={t('editor.textsize')} value={selected.size} min={2} max={40} step={1} onChange={(size) => patchSelected({ size })} />
             <Stepper label={t('editor.horizontalposition')} value={selected.x * 100} min={0} max={100} step={5} suffix="%" onChange={(value) => patchSelected({ x: value / 100 })} />
             <Stepper label={t('editor.verticalposition')} value={selected.y * 100} min={0} max={100} step={5} suffix="%" onChange={(value) => patchSelected({ y: value / 100 })} />
+            <Text style={styles.fieldLabel}>{t('editor.snap')} · {t('editor.horizontalposition')}</Text><View style={styles.choices}>{TEXT_GUIDES.map(value => <Choice key={value}
+                label={`X ${value * 100}%`} selected={selected.x === value} onPress={() => patchSelected({ x: value })} />)}</View>
+            <Text style={styles.fieldLabel}>{t('editor.snap')} · {t('editor.verticalposition')}</Text><View style={styles.choices}>{TEXT_GUIDES.map(value => <Choice key={value}
+                label={`Y ${value * 100}%`} selected={selected.y === value} onPress={() => patchSelected({ y: value })} />)}</View>
             <Text style={styles.fieldLabel}>{t('editor.weight')}</Text><View style={styles.choices}>{['normal', 'bold'].map((value) => <Choice key={value} label={value}
                 selected={(selected.style?.weight ?? 'bold') === value} onPress={() => textActions?.style('weight', value)} />)}</View>
             <Text style={styles.fieldLabel}>{t('editor.alignment')}</Text><View style={styles.choices}>{['left', 'center', 'right'].map((value) => <Choice key={value} label={value}
@@ -35,6 +41,7 @@ export function TextPanel({ timeline, selection, selected, addText, updateSelect
             <TextStyleSection item={selected} fonts={customFonts} fontReady={fontActions?.has} fontFailed={fontActions?.failed} fontChecking={fontActions?.checking}
                 organizationAvailable={fontActions?.available} onChange={(key, value) => textActions?.style(key, value) ?? false} />
             <TypographySection item={selected} onChange={(key, value) => textActions?.typography(key, value) ?? false} />
+            <BehindSubjectSection timeline={timeline} item={selected} patch={patchSelected} />
             {selected.style && documentIdentity(selected.style) !== documentIdentity(SERVER_PLAIN_TEXT_STYLE)
                 ? <Text style={styles.panelDetail}>{exportRefusal('text.style')}</Text> : null}
         </> : <Text style={styles.body}>{t('editor.selectatextlayeronthetimeline')}</Text>}

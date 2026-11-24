@@ -31,7 +31,7 @@ type CanonicalLayers = { visuals: CanonicalVisual[]; texts: CanonicalText[]; bac
 
 export type EditorPreviewCapability =
     | 'timeline-background' | 'image-source' | 'graphic-source' | 'video-source' | 'missing-media' | 'unknown-media-source'
-    | 'fit' | 'crop' | 'transform' | 'visual-layering' | 'blend' | 'mask' | 'transition' | 'clip-animation' | 'animation-reveal'
+    | 'fit' | 'crop' | 'transform' | 'visual-layering' | 'behind-subject' | 'blend' | 'mask' | 'transition' | 'clip-animation' | 'animation-reveal'
     | 'clip-background-solid' | 'clip-background-blur' | 'clip-background-image'
     | 'basic-filter' | 'smart-picture' | 'advanced-colour' | 'effect'
     | 'text-layer' | 'caption-words' | 'custom-font' | 'semantic-mask' | 'semantic-mask-dynamic' | 'audio-mix';
@@ -53,7 +53,7 @@ export const STATIC_EDITOR_PREVIEW_CAPABILITIES = Object.freeze([
 
 /** What the current Expo image/video fallback actually draws before the Skia surface is mounted. */
 export const LEGACY_EDITOR_PREVIEW_CAPABILITIES = Object.freeze([
-    'timeline-background', 'image-source', 'video-source', 'fit', 'transform', 'clip-animation',
+    'timeline-background', 'image-source', 'video-source', 'fit', 'transform', 'visual-layering', 'clip-animation',
 ] as const satisfies readonly EditorPreviewCapability[]);
 
 export type EditorPreviewTransition = {
@@ -210,6 +210,7 @@ export function editorPreviewPlan(
             const matches = clip.semanticMask.dynamic ? editorSemanticMaskMatches(clip) : editorStaticSemanticMaskMatches(clip);
             requirements.push(matches ? use : { ...use, supported: false, detail: 'source-mapping-changed' });
         }
+        if (clip.behindSubject) requirements.push(capabilityUse(supported, 'behind-subject', 'visual', clip.id, clip.mediaId, clip.behindSubject));
         if (transition) requirements.push(capabilityUse(supported, 'transition', 'visual', clip.id, clip.mediaId, transition.type));
         if (activeAnimation(clip)) requirements.push(capabilityUse(supported, 'clip-animation', 'visual', clip.id, clip.mediaId));
         if (!fullReveal(reveal)) requirements.push(capabilityUse(supported, 'animation-reveal', 'visual', clip.id, clip.mediaId));
@@ -239,6 +240,7 @@ export function editorPreviewPlan(
         const reveal = evaluatedReveal(item, item.offset) as Reveal;
         const presentation = captionPresentation(item, item.offset) as EditorPreviewTextPlan['presentation'];
         requirements.push(capabilityUse(supported, 'text-layer', 'text', item.id));
+        if (item.behindSubject) requirements.push(capabilityUse(supported, 'behind-subject', 'text', item.id, undefined, item.behindSubject));
         if (item.words?.length && (item.wordStyle?.mode ?? 'highlight') !== 'none') requirements.push(capabilityUse(supported, 'caption-words', 'text', item.id, undefined, item.wordStyle?.mode ?? 'highlight'));
         if (timeline.fonts?.some(font => font.family === item.style?.font)) requirements.push(capabilityUse(supported, 'custom-font', 'text', item.id, undefined, item.style?.font));
         if (!fullReveal(reveal)) requirements.push(capabilityUse(supported, 'animation-reveal', 'text', item.id));

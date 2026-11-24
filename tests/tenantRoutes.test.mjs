@@ -53,23 +53,25 @@ test('project list reports each project\'s latest saved revision and time throug
         assert.equal(init.headers.authorization,'Bearer user-token');
         assert.ok(!JSON.stringify(init).includes('must-never-be-used'));
         return Response.json([
-            {id:projectId,workspace_id:workspaceId,name:'SMART CUT',version:1,created_at:'2026-11-15T17:38:00Z',updated_at:'2026-11-15T17:38:00Z',project_document_versions:[{revision:19,created_at:'2026-11-16T12:00:00Z'}]},
+            {id:projectId,workspace_id:workspaceId,name:'SMART CUT',version:1,created_at:'2026-11-15T17:38:00Z',updated_at:'2026-11-15T17:38:00Z',project_document_versions:[{revision:19,created_at:'2026-11-16T12:00:00Z',editing_summary:{source_frames:900,edited_frames:300,fps:30}}]},
             {id:crypto.randomUUID(),workspace_id:workspaceId,name:'Never saved',version:1,created_at:'2026-11-14T10:00:00Z',updated_at:'2026-11-14T10:00:00Z',project_document_versions:[]},
         ]);
     };
     const response=await GET(request(`?workspace_id=${workspaceId}`));
     assert.equal(response.status,200);
     assert.equal(calls.length,1);
-    assert.match(calls[0],/project_document_versions\(revision,created_at\)/);
+    assert.match(calls[0],/project_document_versions\(revision,created_at,editing_summary:document-(?:>|%3E)editing_summary\)/);
     assert.match(calls[0],/project_document_versions\.order=revision\.desc/);
     assert.match(calls[0],/project_document_versions\.limit=1/);
     const {projects}=await response.json();
     assert.equal(projects[0].latest_revision,19);
     assert.equal(projects[0].saved_at,'2026-11-16T12:00:00Z');
+    assert.equal(projects[0].editing_time_saved_seconds,20);
     assert.equal(projects[0].version,1);
     assert.equal(projects[0].project_document_versions,undefined);
     assert.equal(projects[1].latest_revision,null);
     assert.equal(projects[1].saved_at,null);
+    assert.equal(projects[1].editing_time_saved_seconds,null);
 });
 test('project list still answers with plain rows when the saved-revision read fails',async()=>{
     const calls=[];

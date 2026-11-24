@@ -91,6 +91,19 @@ test('word section is caption-only, all buttons named, trimmed start increments 
     expect(root.container.queryAll(n => n.children.includes('Word timing'))).toHaveLength(0);
 });
 
+test('caption preset picker applies a visible preset to every caption in one edit', async () => {
+    timed(); const timeline = doc.timeline as Timeline;
+    timeline.text.push({ ...timeline.text[0], id: 't2', start: 61 });
+    await act(async () => root.render(<Harness />));
+    await press('Neon');
+    expect(history).toHaveLength(1);
+    expect((doc.timeline as Timeline).text.map(item => item.style)).toEqual([
+        expect.objectContaining({ color: '#32d6c5', background: '#101827', backgroundOpacity: .78 }),
+        expect.objectContaining({ color: '#32d6c5', background: '#101827', backgroundOpacity: .78 }),
+    ]);
+    expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Neon' && n.props.accessibilityState?.selected)).toHaveLength(1);
+});
+
 // Exercise the real session and command wiring in addition to the isolated asynchronous hook cases.
 let mockSession: ReturnType<typeof useFullEditorSession>;
 jest.mock('../src/components/editor/useFullEditorSession', () => ({ useFullEditorSession: (args: unknown) => {

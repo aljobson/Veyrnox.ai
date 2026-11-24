@@ -1,0 +1,2447 @@
+{
+  "schemaVersion": 1,
+  "auditedOn": "2026-11-24",
+  "matrix": {
+    "path": "replica/byecut/features.csv",
+    "sha256": "3116f260290788df206ef1650697fc15c2130ea4fa85cd17f734708f7983790c",
+    "rows": 87,
+    "inScopeRows": 78,
+    "cleanRoomExclusions": 9
+  },
+  "statusPolicy": "Only yes after source tests and required web/iOS/Android journeys pass. Not-device-verified can be source-complete but never counts as journey-verified; partial, missing, pending-owner-authorization and skip do not count as implemented.",
+  "entries": {
+    "F001": {
+      "feature": "Sign in with Apple",
+      "area": "onboarding",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3B",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/auth/AuthProvider.tsx",
+        "apps/mobile/src/app/sign-in.tsx",
+        "apps/mobile/src/app/email.tsx",
+        "app/lib/authClient.js"
+      ],
+      "evidenceRationale": "Sign in with Apple is currently not-device-verified; the listed Veyrnox source/tests support only that status, and journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Use Veyrnox auth rather than copying ByeCut identity flows"
+    },
+    "F002": {
+      "feature": "Passwordless six-digit email sign-in",
+      "area": "onboarding",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3B",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/auth/AuthProvider.tsx",
+        "apps/mobile/src/app/sign-in.tsx",
+        "apps/mobile/src/app/email.tsx",
+        "apps/mobile/src/app/email-code.tsx",
+        "apps/mobile/__tests__/email.test.ts",
+        "app/lib/authClient.js"
+      ],
+      "evidenceRationale": "Shared iOS/Android now requests and verifies a six-digit Supabase email OTP behind Turnstile, adopts the returned session and supports bounded resend. Focused transport and auth-screen tests pass; the live Supabase email template and an iOS journey remain required before yes.",
+      "auditNote": "Completed in app source on 2026-11-24. Production verification must confirm that the Supabase email template includes the six-digit Token rather than only a magic link.",
+      "journeyEvidence": [],
+      "notes": "Use existing Veyrnox magic-code capability if available"
+    },
+    "F003": {
+      "feature": "Explain audio/text AI sharing before first analysis",
+      "area": "onboarding",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-ai-consent.jpg",
+        "apps/mobile/src/lib/aiConsent.ts",
+        "apps/mobile/src/components/AiConsentHost.tsx",
+        "apps/mobile/__tests__/aiConsent.test.ts"
+      ],
+      "evidenceRationale": "Explain audio/text AI sharing before first analysis is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Consent must describe the actual Veyrnox processor and retention"
+    },
+    "F004": {
+      "feature": "Decline AI processing and keep editing manually",
+      "area": "onboarding",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-ai-consent.jpg",
+        "apps/mobile/src/lib/aiConsent.ts",
+        "apps/mobile/src/components/AiConsentHost.tsx",
+        "apps/mobile/src/lib/clipEdit.ts",
+        "apps/mobile/__tests__/aiConsent.test.ts"
+      ],
+      "evidenceRationale": "The native AI consent gate implements Not now without sending or charging, while the existing Clip Editor remains the manual fallback; Smart Cut-specific renewed disclosure is still incomplete.",
+      "auditNote": "The Smart Cut disclosure and decline path are source-complete: declining leaves manual editing available and sends no analysis request. A live iOS journey remains required.",
+      "journeyEvidence": [],
+      "notes": "Remote analysis can be declined without sending or charging, and the existing manual Clip Editor remains usable; Smart Cut-specific renewed disclosure and end-to-end verification remain incomplete."
+    },
+    "F005": {
+      "feature": "Projects home with recent work",
+      "area": "projects",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-projects.jpg",
+        "replica/byecut/screens/android-projects-device.jpg",
+        "app/veyrnox/app/projects/page.js",
+        "apps/mobile/src/lib/projects.ts"
+      ],
+      "evidenceRationale": "Projects home with recent work is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Existing Veyrnox Projects and Library surfaces cover owned work without copying ByeCut layout"
+    },
+    "F006": {
+      "feature": "Start an AI Edit project card",
+      "area": "projects",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-projects.jpg",
+        "replica/byecut/screens/android-projects-device.jpg",
+        "app/veyrnox/_components/SmartCutEntry.js",
+        "app/veyrnox/app/library/page.js",
+        "app/veyrnox/app/page.js",
+        "apps/mobile/src/app/(app)/(tabs)/library.tsx",
+        "apps/mobile/src/app/(app)/smart-cut.tsx",
+        "tests/smartCut.test.mjs",
+        "tests/exploreLaunchpad.test.mjs",
+        "apps/mobile/__tests__/smartCutRoute.test.tsx"
+      ],
+      "evidenceRationale": "Web Explore and Library plus the native Library and Smart Cut route expose the current Veyrnox entry; source and focused tests are listed.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Original Veyrnox Smart Cut entry opens from Explore and the video-filtered Library"
+    },
+    "F007": {
+      "feature": "Batch AI Edit entry",
+      "area": "projects",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-projects.jpg",
+        "replica/byecut/screens/android-batch-ai-gate-device.jpg",
+        "app/veyrnox/_lib/smartCutBatchQueue.mjs",
+        "app/veyrnox/_components/SmartCutBatchQueue.js",
+        "app/veyrnox/app/projects/page.js",
+        "apps/mobile/src/lib/smartCutBatchQueue.ts",
+        "apps/mobile/src/components/projects/SmartCutBatchQueue.tsx",
+        "apps/mobile/src/app/(app)/projects/index.tsx",
+        "tests/smartCutBatchQueue.test.mjs",
+        "apps/mobile/__tests__/smartCutBatchQueue.test.ts"
+      ],
+      "evidenceRationale": "Web and shared iOS/Android project lists expose an owner/workspace-scoped durable 2–10 project Smart Cut queue. It serializes one active item, recovers bounded state, supports retry/cancel/complete and opens the exact project without automatically starting or charging AI work.",
+      "auditNote": "Completed in source on 2026-11-23. Focused queue/storage tests and target mobile transpilation pass. ByeCut 0.3.13's Batch AI Edit entry and subscription boundary were re-observed on the owner's Pixel on 2026-11-24 without entering plans; Veyrnox browser, iOS and Android queue-resume journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Original Veyrnox batch workflow coordinates projects without copying competitor layout or triggering paid analysis automatically."
+    },
+    "F008": {
+      "feature": "Folders and subfolders",
+      "area": "projects",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-projects.jpg",
+        "packages/db/schema/supabase/0604_project_folders.sql",
+        "app/api/v1/project-folders/route.js",
+        "app/api/v1/project-folders/[id]/route.js",
+        "app/veyrnox/app/projects/page.js",
+        "apps/mobile/src/app/(app)/projects/index.tsx",
+        "apps/mobile/src/lib/projects.ts",
+        "tests/projectFolders.test.mjs",
+        "scripts/test-project-folders.mjs"
+      ],
+      "evidenceRationale": "Original Veyrnox source implements workspace-scoped four-level folders with list, create, nested create, rename, guarded delete and filtering on web and shared iOS/Android. Focused source/API tests and a fresh disposable-PostgreSQL migration replay plus 11 acceptance checks passed; live journeys remain required.",
+      "auditNote": "Source-complete on 2026-11-23 after Craft Anything re-review found no remaining blocker. Migration 0604 is authored but unapplied; no browser, iOS or Android journey is claimed.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F009": {
+      "feature": "Move projects between folders",
+      "area": "projects",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "packages/db/schema/supabase/0604_project_folders.sql",
+        "app/api/v1/projects/[id]/route.js",
+        "app/veyrnox/app/projects/page.js",
+        "apps/mobile/src/app/(app)/projects/[id].tsx",
+        "apps/mobile/src/lib/projects.ts",
+        "tests/projectFolders.test.mjs",
+        "scripts/test-project-folders.mjs"
+      ],
+      "evidenceRationale": "Original Veyrnox source implements optimistic, same-workspace project moves into any folder or back to Unfiled on web and shared iOS/Android. Focused route/mobile tests and disposable-PostgreSQL acceptance checks cover move, unfile, stale-version and cross-workspace refusal; live journeys remain required.",
+      "auditNote": "Source-complete on 2026-11-23 after Craft Anything re-review found no remaining blocker. Migration 0604 is authored but unapplied; no browser, iOS or Android journey is claimed.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F010": {
+      "feature": "Editing-time-saved summary",
+      "area": "projects",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-projects.jpg",
+        "lib/projectDocument.js",
+        "app/api/v1/projects/route.js",
+        "app/api/v1/projects/[id]/document/route.js",
+        "app/veyrnox/app/projects/page.js",
+        "apps/mobile/src/lib/projects.ts",
+        "apps/mobile/src/app/(app)/projects/index.tsx",
+        "tests/projectDocumentV2.test.mjs",
+        "tests/projectDocumentRoutes.test.mjs",
+        "tests/tenantRoutes.test.mjs",
+        "apps/mobile/__tests__/projects.test.ts"
+      ],
+      "evidenceRationale": "Every saved timeline derives source duration from each referenced video exactly once and compares it with the accepted video-track duration. The validator recomputes the summary so a client cannot inflate it; the project API returns only saved seconds and web plus shared iOS/Android project lists render the same clock value.",
+      "auditNote": "Completed in source on 2026-11-23 for web and shared iOS/Android project lists. Focused derivation, tamper-rejection, API and parser tests pass; live browser, iOS and Android save-and-reopen journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Counts each referenced source video once, omits incomplete or non-positive claims, and stores only frame totals plus frame rate—not media or activity telemetry."
+    },
+    "F011": {
+      "feature": "Local autosave",
+      "area": "projects",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorDraft.mjs",
+        "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+        "tests/editorDraft.test.mjs",
+        "app/veyrnox/_lib/smartCutSetupDraft.mjs",
+        "app/veyrnox/_components/SmartCutPlanner.js",
+        "app/veyrnox/_components/EditSheet.js",
+        "tests/smartCutPlanner.test.mjs",
+        "tests/smartCutSetupDraft.test.mjs",
+        "apps/mobile/src/lib/editorDrafts.ts",
+        "apps/mobile/src/components/editor/useEditorSaveSync.ts",
+        "apps/mobile/src/components/editor/EditorSaveSheets.tsx",
+        "apps/mobile/src/lib/smartCutSetupDrafts.ts",
+        "apps/mobile/src/app/(app)/smart-cut.tsx",
+        "apps/mobile/__tests__/editorDrafts.test.ts",
+        "apps/mobile/__tests__/editorSaveSafety.test.ts",
+        "apps/mobile/__tests__/fullEditorSaveSafety.test.tsx",
+        "apps/mobile/__tests__/smartCutSetupDrafts.test.ts",
+        "apps/mobile/__tests__/smartCutRoute.test.tsx"
+      ],
+      "evidenceRationale": "The web Clip Editor validates and restores versioned localStorage timelines scoped by account and project, while the shared native iOS/Android editor persists validated per-project drafts, flushes on background or leave, and offers recovery, discard, or conflict-copy handling. Smart Cut now separately saves selected clip references and trims plus script, notes, pacing, language, filler and caption choices after 500 ms, with explicit restore/discard; analysis results, generated plans, signed URLs and billing data are excluded. Drafts clear on account change and successful editor or paid-job handoff, including confirmed replacement and paid Create paths. Unit and session tests cover invalid records, disk failure, account changes, offline leave, recovery, conflict, cleanup, post-apply suppression and Smart Cut privacy boundaries; live journeys remain required before yes.",
+      "auditNote": "Repository re-audit on 2026-11-23 found the previous missing classification was stale, and the Craft Anything follow-up identified Smart Cut setup as the remaining autosave gap. That gap is now source-complete on web and shared native iOS/Android code. Status is limited to not-device-verified because no current web, iOS, or Android recovery journey is recorded.",
+      "journeyEvidence": [],
+      "notes": "Web and native Clip Editors plus Smart Cut setup autosave validated account-scoped local drafts and offer recovery or discard; live journeys remain required"
+    },
+    "F012": {
+      "feature": "Optional cloud sync",
+      "area": "projects",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/api/v1/projects/route.js",
+        "app/api/v1/projects/[id]/document/route.js",
+        "app/api/v1/projects/[id]/history/route.js",
+        "app/veyrnox/app/projects/page.js",
+        "apps/mobile/src/app/(app)/projects/index.tsx",
+        "apps/mobile/src/components/projects/useProjectDocument.ts",
+        "apps/mobile/src/lib/projectSyncPreference.ts",
+        "apps/mobile/src/components/editor/useEditorSaveSync.ts",
+        "tests/projectDocumentRoutes.test.mjs",
+        "apps/mobile/__tests__/projectDocumentScreen.test.tsx",
+        "apps/mobile/__tests__/editorDocumentGate.test.ts"
+      ],
+      "evidenceRationale": "The native editor offers an account-scoped cloud-sync switch. With sync off it retains and reopens the validated on-device draft while suppressing remote PUT, watch, restore and copy operations; focused tests prove the no-network boundary.",
+      "auditNote": "Source-complete on 2026-11-24; an iOS toggle, edit, relaunch and no-cloud-write journey remains required before yes.",
+      "journeyEvidence": [],
+      "notes": "Uses Veyrnox storage when enabled and a validated on-device draft when cloud sync is disabled."
+    },
+    "F013": {
+      "feature": "Portable project backup",
+      "area": "projects",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "inference"
+      ],
+      "owningWorkstream": "3",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorProjectFile.mjs",
+        "app/veyrnox/_components/editor/ProjectFileControls.js",
+        "apps/mobile/src/lib/editorProjectFiles.ts",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "tests/editorProjectFile.test.mjs",
+        "apps/mobile/__tests__/editorProjectFiles.test.ts"
+      ],
+      "evidenceRationale": "Web and shared iOS/Android use the same bounded, versioned Veyrnox project document. Export contains edits and source metadata only; import preflights size, validates the entire document before changing state, upgrades older timelines and preserves an undo boundary. Native sharing and picking use private temporary files with cleanup and stale-operation fences.",
+      "auditNote": "Repository re-audit on 2026-11-23 found the web project-file implementation made the previous missing classification stale. Shared iOS/Android open/share support is now source-complete. Live web download/open plus iOS/Android Files/share/relink journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Project backups never embed source media, signed URLs, account identifiers or billing data. Original media and custom fonts may require relinking."
+    },
+    "F014": {
+      "feature": "Import one long talking-head recording",
+      "area": "import",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/new-menu.jpg",
+        "apps/mobile/src/components/editor/BestCutSheet.tsx",
+        "apps/mobile/src/lib/bestCutFlow.ts",
+        "apps/mobile/src/lib/speechAnalysis.ts",
+        "lib/speechAnalysis.js",
+        "lib/speechUploadSource.js",
+        "packages/db/schema/supabase/0602_speech_requested_language.sql",
+        "tests/bestCutServer.test.mjs",
+        "apps/mobile/__tests__/bestCutFlow.test.ts"
+      ],
+      "evidenceRationale": "Best Cut accepts one source or a clip set up to ten minutes total, validates the measured owned bytes server-side and prices each started minute. Ordinary Speech Cut retains its 60-second ceiling.",
+      "auditNote": "Source-complete on 2026-11-24 with server and mobile long-form tests passing. Migration 0602 is authored but unapplied and a real long-file iOS journey remains required.",
+      "journeyEvidence": [],
+      "notes": "Uses the existing owned-video Library and Clip Editor path"
+    },
+    "F015": {
+      "feature": "Import multiple clips from Photos or Files",
+      "area": "import",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/new-menu.jpg",
+        "apps/mobile/src/components/editor/BestCutSheet.tsx",
+        "apps/mobile/src/lib/bestCutFlow.ts",
+        "apps/mobile/__tests__/bestCutFlow.test.ts"
+      ],
+      "evidenceRationale": "The native Best Cut sheet accepts multiple selections from Photos or Files, copies provider-backed files into app storage and applies the same count, size, duration and timeline validation before any paid request.",
+      "auditNote": "Source-complete on 2026-11-24; live Photos and Files multi-select journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Existing Library selection admits up to 10 completed owned videos"
+    },
+    "F016": {
+      "feature": "Preserve original media quality",
+      "area": "import",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "inference"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/new-menu.jpg",
+        "app/veyrnox/_lib/deviceLibrary.mjs",
+        "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+        "app/veyrnox/_lib/editorServerRenderUploads.mjs",
+        "tests/editorLibraryCollection.test.mjs",
+        "tests/editorServerRenderUploads.test.mjs",
+        "apps/mobile/src/components/editor/BestCutSheet.tsx",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "apps/mobile/src/lib/editorDeviceMedia.ts",
+        "apps/mobile/__tests__/bestCutGate.test.tsx",
+        "apps/mobile/__tests__/fullEditorScreen.test.tsx",
+        "apps/mobile/__tests__/editorDeviceMedia.test.ts"
+      ],
+      "evidenceRationale": "The web editor hashes and stores the original Blob unchanged in its account-scoped Device Library, keeps it as the edit source, and uploads the unchanged Blob for server rendering. Shared native iOS/Android Best Cut explicitly requests video passthrough; the main Clip Editor requests the current Photos representation plus video passthrough; both copy the selected file directly into the project store without decoding or transcoding. Focused source tests cover unchanged web upload bodies, byte-count and digest validation, durable native copies, and both picker contracts.",
+      "auditNote": "Repository re-audit plus Craft Anything's adversarial audit on 2026-11-23 found and closed the remaining iOS Clip Editor conversion path: Photos now uses the current representation and passthrough video export rather than Compatible. Status remains not-device-verified until current web, iOS, and Android import journeys confirm the selected asset's metadata and visual quality.",
+      "journeyEvidence": [],
+      "notes": "Web retains original Blob bytes and unchanged render uploads; native Best Cut and Clip Editor request current/passthrough Photos assets and copy original files without transcoding; live journeys remain required"
+    },
+    "F017": {
+      "feature": "Low-storage warning before import",
+      "area": "import",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/new-menu.jpg",
+        "apps/mobile/src/lib/editorImportSpace.ts",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "apps/mobile/src/components/editor/BestCutSheet.tsx",
+        "apps/mobile/__tests__/editorDeviceMedia.test.ts"
+      ],
+      "evidenceRationale": "The shared native iOS/Android editor checks the selected Photos or Files byte total against current free device storage before copying media, preserves a 100 MB working reserve, and shows a platform-neutral storage warning instead of starting the import. Unit coverage pins the boundary; a real low-storage device journey remains required before yes.",
+      "auditNote": "Implemented on 2026-11-23 in shared native editor code for the main Photos/Files path and the Best Cut multi-video picker. Status is limited to not-device-verified because no current iOS or Android low-storage journey is recorded.",
+      "journeyEvidence": [],
+      "notes": "Shared iOS and Android editor preflight reserves 100 MB before Photos or Files media is copied; live low-storage journeys remain required"
+    },
+    "F018": {
+      "feature": "iCloud file wait and recovery",
+      "area": "import",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "ios"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/new-menu.jpg",
+        "apps/mobile/src/lib/editorPickedFileReady.ts",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "apps/mobile/src/components/editor/tools/MediaPanel.tsx",
+        "apps/mobile/__tests__/editorPickedFileReady.test.ts",
+        "apps/mobile/__tests__/editorToolPanels.test.tsx"
+      ],
+      "evidenceRationale": "The shared native Files import waits until a provider-backed file exists, has non-zero size and yields readable bytes, then makes the durable project copy. The bounded recovery state blocks duplicate picks and offers retry or a fresh Files choice with import-specific copy.",
+      "auditNote": "Completed in source on 2026-11-23 after Craft Anything identified and the implementation fixed duplicate-pick and wrong-message blockers. Focused wait-state tests and target transpilation pass; a live iOS/iCloud journey remains required before yes.",
+      "journeyEvidence": [],
+      "notes": "Native-only Files-provider recovery; account/project changes cancel stale work without importing into the new editor session."
+    },
+    "F019": {
+      "feature": "No-speech detection",
+      "area": "import",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "apps/mobile/src/lib/speechCut.ts",
+        "apps/mobile/src/components/editor/BestCutSheet.tsx",
+        "tests/smartCutAnalysis.test.mjs",
+        "apps/mobile/__tests__/bestCutPlan.test.ts",
+        "replica/byecut/screens/new-menu.jpg"
+      ],
+      "evidenceRationale": "No-speech detection has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Source-complete on 2026-11-24. Choose Another clears the receipt without repeating a paid request, while manual continuation preserves the selected media; a live iOS journey remains required.",
+      "journeyEvidence": [],
+      "notes": "Allow choose another video or continue manually"
+    },
+    "F020": {
+      "feature": "Optional intended script",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-ai-edit-settings-device.jpg",
+        "app/veyrnox/_components/SmartCutPlanner.js",
+        "app/veyrnox/_lib/smartCut.js",
+        "apps/mobile/src/app/(app)/smart-cut.tsx",
+        "apps/mobile/src/lib/smartCut.ts",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Optional intended script is currently not-device-verified; the listed Veyrnox source/tests support only that status, and journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Browser-local local-preview input"
+    },
+    "F021": {
+      "feature": "Optional editing notes",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-ai-edit-settings-device.jpg",
+        "app/veyrnox/_components/SmartCutPlanner.js",
+        "app/veyrnox/_lib/smartCut.js",
+        "apps/mobile/src/app/(app)/smart-cut.tsx",
+        "apps/mobile/src/lib/smartCut.ts",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Optional editing notes is currently not-device-verified; the listed Veyrnox source/tests support only that status, and journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Browser-local local-preview input"
+    },
+    "F022": {
+      "feature": "Automatic spoken-language detection",
+      "area": "smart-cut",
+      "priority": "should",
+    "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+    "evidence": [
+      "replica/byecut/recon.md",
+      "replica/byecut/screens/android-ai-edit-settings-device.jpg",
+      "lib/speechCutLanguage.js",
+      "app/veyrnox/_lib/smartCutAnalysis.js",
+      "app/veyrnox/_components/SmartCutPlanner.js",
+      "apps/mobile/src/app/(app)/smart-cut.tsx",
+      "tests/smartCutAnalysis.test.mjs",
+      "tests/smartCutPlanner.test.mjs"
+    ],
+    "evidenceRationale": "Scribe's detected language is normalized into the canonical analysis, returned in plan metadata and surfaced by the same automatic-language control on web and native Smart Cut. Source and focused tests pass; Reticle and device journeys remain outstanding.",
+    "auditNote": "Automatic detection is implemented without a provider request override; visible web and device journeys are still required before yes.",
+      "journeyEvidence": [],
+    "notes": "Unknown and mixed detections produce review warnings; automatic mode never clusters retakes across different detected languages."
+    },
+    "F023": {
+      "feature": "Manual spoken-language override",
+      "area": "smart-cut",
+      "priority": "should",
+    "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+    "evidence": [
+      "replica/byecut/recon.md",
+      "replica/byecut/screens/android-ai-edit-settings-device.jpg",
+      "app/veyrnox/_lib/smartCutAnalysis.js",
+      "app/veyrnox/_components/SmartCutAnalyse.js",
+      "app/veyrnox/_components/SmartCutPlanner.js",
+      "app/veyrnox/_lib/speechCutClient.js",
+      "apps/mobile/src/app/(app)/smart-cut.tsx",
+      "apps/mobile/src/components/editor/BestCutSheet.tsx",
+      "apps/mobile/src/lib/bestCutFlow.ts",
+      "apps/mobile/src/lib/speechAnalysis.ts",
+      "lib/speechAnalysis.js",
+      "packages/db/schema/supabase/0602_speech_requested_language.sql",
+      "tests/smartCutAnalysis.test.mjs",
+      "tests/smartCutPlanner.test.mjs",
+      "tests/webSpeechCut.test.mjs",
+      "tests/webSpeechCutUi.test.mjs",
+      "tests/speechAnalysis.test.mjs",
+      "tests/bestCutServer.test.mjs",
+      "apps/mobile/__tests__/smartCutRoute.test.tsx"
+    ],
+    "evidenceRationale": "The shared planner retains its bounded matching override, while web and native paid-analysis controls now pass an explicit language through price/preflight, language-scoped keys, the versioned database admission RPC and Scribe language_code. Automatic requests preserve their legacy payload and digest.",
+    "auditNote": "Source and server contract tests pass, but migration 0602 has not been applied, the installed mobile environment is intentionally not duplicated, and web/iOS/Android journeys remain outstanding.",
+      "journeyEvidence": [],
+    "notes": "Explicit provider language is isolated from automatic cache and in-flight results; detected provider language remains authoritative in the stored analysis."
+    },
+    "F024": {
+      "feature": "Snappy-to-Relaxed pacing control",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-ai-edit-settings-device.jpg",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "apps/mobile/src/lib/smartCut.ts",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Snappy-to-Relaxed pacing control is currently not-device-verified; the listed Veyrnox source/tests support only that status, and journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Snappy Balanced and Relaxed deterministic preview pacing"
+    },
+    "F025": {
+      "feature": "Preflight duration and credit quote",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "apps/mobile/src/lib/smartCut.ts",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Preflight duration and credit quote is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "Source-complete on 2026-11-24. Non-debiting per-source preflight returns exact cached, first-free or per-started-minute prices before the paid POST; a live balance journey remains required.",
+      "journeyEvidence": [],
+      "notes": "Plan duration is reviewable and the existing Clip Editor prices the render before creation"
+    },
+    "F026": {
+      "feature": "Background analysis with progress stages",
+      "area": "smart-cut",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_components/SmartCutAnalyse.js",
+        "apps/mobile/src/components/smart-cut/SmartCutAnalysisCard.tsx",
+        "apps/mobile/src/lib/speechAnalysis.ts",
+        "tests/webSpeechCutUi.test.mjs",
+        "apps/mobile/__tests__/speechAnalysisClient.test.ts"
+      ],
+      "evidenceRationale": "Once the single paid analysis POST is accepted, processing continues server-side while web and shared iOS/Android show queued, transcribing, retrying and checking states and recover the same accepted key.",
+      "auditNote": "Completed in source on 2026-11-23. Focused progress/polling tests pass; live web, iOS and Android suspension/resume journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F027": {
+      "feature": "Lock Screen Live Activity for progress",
+      "area": "smart-cut",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/lib/smartCutProgressNotification.ts",
+        "apps/mobile/src/lib/smartCutLiveActivity.ts",
+        "apps/mobile/src/components/smart-cut/SmartCutLiveActivity.tsx",
+        "apps/mobile/__tests__/smartCutLiveActivity.test.ts",
+        "apps/mobile/src/lib/push.ts",
+        "apps/mobile/src/push/PushProviderLive.tsx",
+        "lib/pushNotifications.js",
+        "packages/db/schema/supabase/0606_smart_cut_push_notifications.sql",
+        "tests/pushNotifications.test.mjs",
+        "tests/smartCutBackgroundPush.test.mjs",
+        "apps/mobile/__tests__/smartCutProgressNotification.test.ts"
+      ],
+      "evidenceRationale": "iOS now compiles a privacy-minimal ActivityKit Live Activity with Lock Screen and Dynamic Island states, recovered in place across app relaunch; the existing silent notification fallback covers unsupported/denied paths.",
+      "auditNote": "ActivityKit source-complete on 2026-11-24 using the SDK 58 native widget target. An Xcode device/simulator Lock Screen journey remains required before yes.",
+      "journeyEvidence": [],
+      "notes": "Native OS notification fallback; migration 0606 is authored but unapplied."
+    },
+    "F028": {
+      "feature": "Automatic retry after connection interruption",
+      "area": "smart-cut",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/speechCutClient.js",
+        "apps/mobile/src/lib/speechAnalysis.ts",
+        "apps/mobile/src/components/editor/EditorSpeechCutSheet.tsx",
+        "tests/webSpeechCut.test.mjs",
+        "apps/mobile/__tests__/speechAnalysisClient.test.ts"
+      ],
+      "evidenceRationale": "Web and shared iOS/Android retry only the owner-only status read after network or 5xx interruption, keep the accepted idempotency key, display a distinct retry state and never repeat the paid POST.",
+      "auditNote": "Completed in source on 2026-11-23 after Craft Anything identified statusless fetch and retry-label blockers. Focused retry tests pass; live browser and device interruption journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F029": {
+      "feature": "Recoverable failed analysis",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site",
+        "inference"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "lib/speechAnalysis.js",
+        "app/veyrnox/_lib/speechCutClient.js",
+        "app/veyrnox/_components/SmartCutAnalyse.js",
+        "apps/mobile/src/lib/speechAnalysis.ts",
+        "apps/mobile/src/lib/bestCutFlow.ts",
+        "apps/mobile/src/components/editor/BestCutSheet.tsx",
+        "tests/speechAnalysis.test.mjs",
+        "tests/webSpeechCut.test.mjs",
+        "apps/mobile/__tests__/speechAnalysisClient.test.ts",
+        "apps/mobile/__tests__/bestCutFlow.test.ts"
+      ],
+      "evidenceRationale": "Web and native retain one durable idempotency key across uncertain outcomes, recover the result by key without a second POST, show retry progress, and require a confirmed refund before creating a fresh paid attempt.",
+      "auditNote": "Source and contract tests cover lost replies, queued recovery, poll timeout, provider rejection, once-only refund and explicit retry. Real web/iOS/Android failure journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Durable keys recover uncertain requests without another charge; confirmed failures refund before a fresh explicit retry"
+    },
+    "F030": {
+      "feature": "Remove long silences",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1B",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "apps/mobile/src/lib/smartCut.ts",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Remove long silences is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "Restart now preserves completed transcript analysis while rebuilding the deterministic plan; focused web/native state tests pass and a live journey remains required.",
+      "journeyEvidence": [],
+      "notes": "Validated timed-speech planner removes real inter-group gaps but user-triggered remote analysis remains disabled pending backend privacy billing and refund work"
+    },
+    "F031": {
+      "feature": "Remove filler words and false starts",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "app/veyrnox/_lib/smartCutFillers.js",
+        "apps/mobile/src/lib/speechFillers.ts",
+        "tests/smartCutAnalysis.test.mjs",
+        "apps/mobile/__tests__/smartCut.test.ts"
+      ],
+      "evidenceRationale": "Remove filler words and false starts has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "The canonical planner removes detected prefix false starts separately while filler removal stays explicitly reviewable and opt-in; required web/iOS/Android journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Independent algorithm/provider required"
+    },
+    "F032": {
+      "feature": "Group repeated takes by intended line",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "packages/smart-cut-fixtures/corpus.v1.expected.json",
+        "tests/smartCutAnalysis.test.mjs",
+        "apps/mobile/__tests__/smartCutGolden.test.ts"
+      ],
+      "evidenceRationale": "Group repeated takes by intended line has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "The canonical shared planner groups matching line candidates across takes with bounded token alignment; required web/iOS/Android journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Core differentiator"
+    },
+    "F033": {
+      "feature": "Choose a best take for each line",
+      "area": "smart-cut",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "packages/smart-cut-fixtures/corpus.v1.expected.json",
+        "tests/smartCutAnalysis.test.mjs",
+        "apps/mobile/__tests__/smartCut.test.ts"
+      ],
+      "evidenceRationale": "Choose a best take for each line has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "The canonical shared planner deterministically ranks completeness, transcript coverage, pause density and boundary safety with structured reasons; device journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Use explainable independently designed scoring"
+    },
+    "F034": {
+      "feature": "Match footage to supplied script",
+      "area": "smart-cut",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "packages/smart-cut-fixtures/corpus.v1.expected.json",
+        "tests/smartCutAnalysis.test.mjs",
+        "apps/mobile/__tests__/smartCutGolden.test.ts"
+      ],
+      "evidenceRationale": "Match footage to supplied script has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Bounded deterministic script alignment now runs through the same planner on web and mobile; required journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F035": {
+      "feature": "Quality checks for clipped words and awkward joins",
+      "area": "smart-cut",
+      "priority": "must",
+    "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "inference"
+      ],
+      "owningWorkstream": "1",
+    "evidence": [
+      "replica/byecut/recon.md",
+      "app/veyrnox/_lib/smartCutAnalysis.js",
+      "tests/smartCutAnalysis.test.mjs",
+      "packages/smart-cut-fixtures/corpus.v1.expected.json"
+    ],
+    "evidenceRationale": "The canonical cross-platform planner now clamps padding at adjacent timed-unit midpoints, drops complete units instead of clipping intersected words, recomputes alternate-take boundary checks and fails closed on unsafe timed boundaries. Rendered joins still require web and device journey verification.",
+    "auditNote": "Source and deterministic corpus evidence cover timed-boundary safety; acoustic awkward-join review and rendered web/iOS/Android journey evidence remain outstanding.",
+      "journeyEvidence": [],
+    "notes": "Shared planner protection applies to web iOS and Android; keep not-device-verified until rendered joins are verified on representative media."
+    },
+    "F036": {
+      "feature": "RAW versus CUT comparison",
+      "area": "review",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "RAW versus CUT comparison is currently not-device-verified; the listed Veyrnox source/tests support only that status, and journey evidence remains required before yes.",
+      "auditNote": "Discard clears transcript/filler analysis while preserving clips, script, notes and setup; focused web/native state tests pass and a live journey remains required.",
+      "journeyEvidence": [],
+      "notes": "Review toggles between complete source windows and proposed sections"
+    },
+    "F037": {
+      "feature": "Show raw and cut duration",
+      "area": "review",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Show raw and cut duration is currently not-device-verified; the listed Veyrnox source/tests support only that status, and journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Source cards and plan summary show duration"
+    },
+    "F038": {
+      "feature": "Review transcript sections",
+      "area": "review",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Review transcript sections is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Timed transcript sections are supported for valid internal analysis records; remote analysis is not exposed"
+    },
+    "F039": {
+      "feature": "Preview alternate takes",
+      "area": "review",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_components/SmartCutPlanner.js",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "apps/mobile/src/app/(app)/smart-cut.tsx",
+        "tests/smartCutAnalysis.test.mjs",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs"
+      ],
+      "evidenceRationale": "Preview alternate takes has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Analysed alternate takes are now exposed only when a bounded candidate exists; required web/iOS/Android journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Each local-plan section has an in/out-bounded video preview"
+    },
+    "F040": {
+      "feature": "Swap an alternate take",
+      "area": "review",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_components/SmartCutPlanner.js",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "apps/mobile/src/app/(app)/smart-cut.tsx",
+        "apps/mobile/src/lib/smartCut.ts",
+        "tests/smartCutAnalysis.test.mjs",
+        "apps/mobile/__tests__/smartCut.test.ts",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs"
+      ],
+      "evidenceRationale": "Swap an alternate take has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Web and mobile swap only to analysed non-overlapping candidate ranges and recompute output offsets; required journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Local plans retime safely and refuse insufficient or overlapping ranges"
+    },
+    "F041": {
+      "feature": "Warnings for incomplete script match",
+      "area": "review",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/smartCutAnalysis.js",
+        "app/veyrnox/_components/SmartCutPlanner.js",
+        "apps/mobile/src/app/(app)/smart-cut.tsx",
+        "tests/smartCutAnalysis.test.mjs",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs"
+      ],
+      "evidenceRationale": "Warnings for incomplete script match has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Structured missing-line and extra-speech warnings now render on web and mobile; required journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Local preview discloses that speech is not matched and names omitted selected clips"
+    },
+    "F042": {
+      "feature": "Restart analysis",
+      "area": "review",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Restart analysis is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Users can restart the deterministic local plan; remote analysis remains unavailable"
+    },
+    "F043": {
+      "feature": "Discard analysis result",
+      "area": "review",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "2",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Discard analysis result is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Users can discard the local plan without mutating clips"
+    },
+    "F044": {
+      "feature": "Apply accepted plan non-destructively",
+      "area": "review",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "1",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-preview.jpg",
+        "app/veyrnox/_components/SmartCutWorkbench.js",
+        "apps/mobile/src/components/smart-cut/SmartCutPreview.tsx",
+        "tests/smartCut.test.mjs",
+        "tests/smartCutAnalysis.test.mjs"
+      ],
+      "evidenceRationale": "Apply accepted plan non-destructively is currently not-device-verified; the listed Veyrnox source/tests support only that status, and journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Apply rejects changed sources and keeps one original undo point across repeated applies; dirty undo requires confirmation"
+    },
+    "F045": {
+      "feature": "Thumbs rating and optional feedback",
+      "area": "review",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3B",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-preview.jpg",
+        "lib/smartCutFeedback.js",
+        "app/api/v1/editor/smart-cut-feedback/route.js",
+        "app/veyrnox/_components/SmartCutFeedback.js",
+        "apps/mobile/src/lib/smartCutFeedback.ts",
+        "apps/mobile/src/components/smart-cut/SmartCutFeedback.tsx",
+        "packages/db/schema/supabase/0605_smart_cut_feedback.sql",
+        "tests/smartCutFeedback.test.mjs",
+        "apps/mobile/__tests__/smartCutFeedback.test.ts"
+      ],
+      "evidenceRationale": "Web and shared iOS/Android collect only a bounded thumbs rating, optional short comment and plan mode under explicit privacy copy. Server validation, per-user idempotency, 180-day expiry, deletion/export handling and lost-reply recovery are implemented without transcript, project or media data.",
+      "auditNote": "Completed in source on 2026-11-23 after Craft Anything identified route-inventory and edited-resubmission blockers. Focused feedback, route inventory and telemetry tests pass; migration 0605 is unapplied, its disposable database harness is unrun, and live journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Optional product-improvement feedback cannot receive a reply and is not sent to AI providers or used to train models."
+    },
+    "F046": {
+      "feature": "Multi-track timeline",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/lib/nativeEditorModel.ts",
+        "apps/mobile/src/components/editor/EditorTimeline.tsx",
+        "apps/mobile/src/lib/editorTimelineWaveform.ts",
+        "apps/mobile/src/components/editor/useEditorTimelineWaveforms.ts",
+        "apps/mobile/__tests__/editorTimelineWaveform.test.ts",
+        "apps/mobile/__tests__/fullEditorScreen.test.tsx",
+        "replica/byecut/screens/android-editor.jpg"
+      ],
+      "evidenceRationale": "Multi-track timeline has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "The native editor models and renders multiple lockable tracks; web and device journeys are still required.",
+      "journeyEvidence": [],
+      "notes": "Reuse the existing Veyrnox editor"
+    },
+    "F047": {
+      "feature": "Mobile editor toolbar with AI Edit Cut Sound Text and Layers",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "apps/mobile/__tests__/fullEditorScreen.test.tsx",
+        "replica/byecut/screens/android-editor.jpg"
+      ],
+      "evidenceRationale": "Mobile editor toolbar with AI Edit Cut Sound Text and Layers has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "The native full editor exposes the tool surface, but the exact ByeCut device journey has not been replayed.",
+      "journeyEvidence": [],
+      "notes": "Observed on Android; map to existing Veyrnox editor capabilities without copying the layout exactly"
+    },
+    "F048": {
+      "feature": "Trim split and merge",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-editor.jpg",
+        "lib/clipEdit.js",
+        "apps/mobile/src/lib/clipEdit.ts",
+        "tests/clipEdit.test.mjs"
+      ],
+      "evidenceRationale": "Trim split and merge is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Existing Clip Editor trims reorders removes and stitches plan sections; interactive split is not added"
+    },
+    "F049": {
+      "feature": "Timeline snapping and waveforms",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/EditorTimeline.tsx",
+        "apps/mobile/__tests__/fullEditorScreen.test.tsx",
+        "replica/byecut/screens/android-editor.jpg"
+      ],
+      "evidenceRationale": "Timeline snapping and waveforms has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Source-complete on 2026-11-24 with snap behavior and bounded local iOS PCM waveform decoding/rendering; an Xcode visual journey remains required.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F050": {
+      "feature": "Speed reverse and freeze frame",
+      "area": "editor",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/tools/SpeedSection.tsx",
+        "apps/mobile/src/components/editor/tools/useSpeedActions.ts",
+        "apps/mobile/__tests__/nativeEditorWebEdits.test.ts"
+      ],
+      "evidenceRationale": "Speed reverse and freeze frame has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Speed and reverse editing exist; the complete ByeCut freeze-frame journey remains unverified.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F051": {
+      "feature": "Titles and free text",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/lib/nativeEditorModel.ts",
+        "apps/mobile/src/components/editor/tools/TextPanel.tsx",
+        "apps/mobile/__tests__/editorTextRoundTrip.test.ts"
+      ],
+      "evidenceRationale": "Titles and free text has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Editable text clips, titles, styling and preview/export round trips are source-complete; an iOS journey remains required.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F052": {
+      "feature": "Photo and video overlays",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorPresets.mjs",
+        "app/veyrnox/_lib/editorSequenceRender.mjs",
+        "apps/mobile/src/lib/editorInsertMedia.ts",
+        "apps/mobile/src/components/editor/EditorPlayback.tsx",
+        "apps/mobile/src/components/editor/EditorMediaPreview.tsx",
+        "apps/mobile/src/lib/editorPreviewPlan.ts",
+        "apps/mobile/src/lib/editorNativePreview.ts",
+        "apps/mobile/src/components/editor/EditorNativePreviewSurface.tsx",
+        "tests/editorPresets.test.mjs",
+        "tests/editorSequence.test.mjs",
+        "apps/mobile/__tests__/editorInsertMedia.test.ts",
+        "apps/mobile/__tests__/editorStaticPreviewSurface.test.tsx"
+      ],
+      "evidenceRationale": "Web Picture in picture and shared iOS/Android media imports create timed upper visual layers in the canonical timeline. Live native playback renders every active visual bottom-to-top, imports append above overlapping footage, and 16-track/18,000-frame limits are handled atomically. Focused source tests, TypeScript transpilation, diff hygiene and two Craft Anything reviews passed; device journeys remain required.",
+      "auditNote": "Source-complete on 2026-11-23. Browser, iOS and Android import, save, reopen, synchronized playback and export journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": "Uses only owned/imported media and original Veyrnox controls; live video audio mixing remains explicitly approximate in the phone preview."
+    },
+    "F053": {
+      "feature": "Music imported audio and voiceover",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/tools/AudioPanel.tsx",
+        "apps/mobile/src/components/editor/VoiceoverSheet.tsx",
+        "apps/mobile/__tests__/fullEditorVoiceover.test.tsx"
+      ],
+      "evidenceRationale": "Music imported audio and voiceover has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Imported audio and iOS voiceover are implemented; Android voiceover and full device parity remain incomplete.",
+      "journeyEvidence": [],
+      "notes": "Only user-owned or independently licensed media"
+    },
+    "F054": {
+      "feature": "Filters and colour controls",
+      "area": "editor",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/tools/FiltersPanel.tsx",
+        "apps/mobile/__tests__/nativeEditorWebEdits.test.ts"
+      ],
+      "evidenceRationale": "Filters and colour controls has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Native filter controls exist; ByeCut colour-control breadth and device parity remain unverified.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F055": {
+      "feature": "Stabilization",
+      "area": "editor",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/tools/NativeMotionProcessingSection.tsx",
+        "apps/mobile/src/components/editor/tools/useEditorMotionProcessing.ts"
+      ],
+      "evidenceRationale": "Stabilization has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Native motion processing exists, but stabilization parity and device proof are incomplete.",
+      "journeyEvidence": [],
+      "notes": "Requires independently licensed implementation"
+    },
+    "F056": {
+      "feature": "Background removal masks and chroma key",
+      "area": "editor",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/tools/MaskPanel.tsx",
+        "apps/mobile/src/components/editor/tools/PersonMaskSection.tsx",
+        "apps/mobile/src/components/editor/tools/useEditorPersonMask.ts"
+      ],
+      "evidenceRationale": "Background removal masks and chroma key has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Mask and person-isolation tools exist; full background-removal and chroma-key parity is incomplete.",
+      "journeyEvidence": [],
+      "notes": "Requires independently licensed implementation"
+    },
+    "F057": {
+      "feature": "Text or images behind subject",
+      "area": "editor",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorBehindSubject.mjs",
+        "app/veyrnox/_lib/editorSequenceValidation.mjs",
+        "app/veyrnox/_lib/editorSequenceRender.mjs",
+        "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+        "apps/mobile/src/lib/nativeEditorModel.ts",
+        "apps/mobile/src/lib/editorPreviewPlan.ts",
+        "apps/mobile/src/components/editor/tools/BehindSubjectSection.tsx",
+        "tests/editorBehindSubject.test.mjs",
+        "apps/mobile/__tests__/editorBehindSubject.test.ts"
+      ],
+      "evidenceRationale": "The canonical web and native compositors order scene, opted-in overlays and the person matte identically. iOS preview requests exact native RGBA frames with stale-work fences, and export preserves the same behind-subject order.",
+      "auditNote": "Exact iOS preview/export source-complete on 2026-11-24 with 147 focused tests passing; Xcode performance and visual output remain to be verified before yes.",
+      "journeyEvidence": [],
+      "notes": "Uses independently implemented semantic-mask composition; source media is unchanged and Pro interchange reports the unsupported relationship explicitly."
+    },
+    "F058": {
+      "feature": "Face retouch",
+      "area": "editor",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/app/photo-studio/page.js",
+        "apps/mobile/src/components/liveEdit/FaceRetouchScreen.tsx",
+        "apps/mobile/src/components/liveEdit/EffectPhoto.tsx",
+        "apps/mobile/src/app/(app)/live-edit.tsx",
+        "tests/faceRetouchSurface.test.mjs"
+      ],
+      "evidenceRationale": "Local-only web and shared native surfaces require a fresh rights acknowledgement, enforce one-face bounded smoothing, compare/reset/retry states and use the same local effect renderer for preview and saved output without uploads, credits or provider calls.",
+      "auditNote": "Completed in source on 2026-11-23 with 20 focused tests and target syntax/transpilation checks passing. MediaPipe-backed browser runtime and iOS/Android permission/save journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Consent revocation discards cached photo and inference state; processing stays local."
+    },
+    "F059": {
+      "feature": "Aspect ratios 9:16 16:9 1:1 and 4:5",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/lib/nativeEditorModel.ts",
+        "apps/mobile/src/components/editor/tools/AdjustPanel.tsx",
+        "apps/mobile/src/components/editor/LocalExportSheet.tsx",
+        "apps/mobile/__tests__/fullEditorScreen.test.tsx"
+      ],
+      "evidenceRationale": "Aspect ratios 9:16 16:9 1:1 and 4:5 has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Source-complete on 2026-11-24: the editor exposes 9:16, 16:9, 1:1, 4:5 and validated custom ratios, with rotation-aware preview/export geometry. A live iOS journey remains required.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F060": {
+      "feature": "Custom portrait and landscape canvases",
+      "area": "editor",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorCanvasFormat.mjs",
+        "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+        "lib/editorServerRenderTranslate.js",
+        "apps/mobile/src/lib/nativeEditorModel.ts",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "tests/editorCanvasFormat.test.mjs",
+        "tests/editorServerRenderTranslate.test.mjs"
+      ],
+      "evidenceRationale": "Validated reduced custom widths/heights within a 1:4–4:1 envelope flow through web and shared iOS/Android documents, previews, persistence, export and Pro interchange. Server render preserves ratio while bounding the longest output edge to 4096 pixels.",
+      "auditNote": "Completed in source on 2026-11-23 after Craft Anything identified and the implementation fixed an unbounded extreme-render risk. Focused canvas/render tests pass; live browser, iOS and Android journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F061": {
+      "feature": "Safe-area preview for short-form platforms",
+      "area": "editor",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorSafeAreas.mjs",
+        "app/veyrnox/_components/editor/SafeAreaOverlay.js",
+        "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+        "apps/mobile/src/lib/editorSafeArea.ts",
+        "apps/mobile/src/components/editor/EditorSafeAreaOverlay.tsx",
+        "apps/mobile/src/components/editor/EditorPlayback.tsx",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "tests/editorSafeAreas.test.mjs",
+        "apps/mobile/__tests__/editorSafeArea.test.ts"
+      ],
+      "evidenceRationale": "The original Veyrnox safe-area guide is implemented for portrait short-form previews across web and shared iOS/Android source, remains outside saved documents and export plans, and passed focused source, catalogue, TypeScript-resolution and Craft Anything review. Live browser, iOS and Android journeys are still required.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Preview-only original 20-by-20 guide; full mobile integration tests and live browser/iOS/Android journeys remain unavailable in the source-only checkout."
+    },
+    "F062": {
+      "feature": "Plain-language editing assistant",
+      "area": "assistant",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3B",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_components/SmartCutWorkbench.js"
+      ],
+      "evidenceRationale": "Plain-language editing assistant is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Optional script notes and reasons shape an inspectable local plan before mutation; no conversational agent is claimed"
+    },
+    "F063": {
+      "feature": "Word-by-word automatic captions",
+      "area": "captions",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/tools/AutomaticCaptionsSection.tsx",
+        "apps/mobile/src/components/editor/CaptionWords.tsx",
+        "apps/mobile/__tests__/editorSpeechCaptions.test.ts",
+        "replica/byecut/screens/editor-captions.jpg"
+      ],
+      "evidenceRationale": "Word-by-word automatic captions has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "On-device automatic word-timed captions are source-complete; an iOS generation and playback journey remains required.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F064": {
+      "feature": "Edit caption text",
+      "area": "captions",
+      "priority": "must",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/CaptionWords.tsx",
+        "apps/mobile/__tests__/editorCaptionEdit.test.ts",
+        "replica/byecut/screens/editor-captions.jpg"
+      ],
+      "evidenceRationale": "Edit caption text has a source-audited Veyrnox implementation; required live journeys remain before yes.",
+      "auditNote": "Caption text editing exists in the native editor; web and device journeys remain unverified.",
+      "journeyEvidence": [],
+      "notes": ""
+    },
+    "F065": {
+      "feature": "Caption language auto-detection and override",
+      "area": "captions",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-captions.jpg",
+        "app/veyrnox/_components/SmartCutPlanner.js",
+        "tests/smartCutPlanner.test.mjs",
+        "apps/mobile/src/components/editor/BestCutSettings.tsx",
+        "apps/mobile/src/lib/bestCutSettings.ts",
+        "apps/mobile/src/lib/bestCutFlow.ts",
+        "apps/mobile/__tests__/bestCutFlagsWordmark.test.tsx",
+        "apps/mobile/__tests__/speechAnalysisClient.test.ts"
+      ],
+      "evidenceRationale": "Web Smart Cut exposes automatic detection and manual supported-language selection, and the shared native iOS/Android Best Cut settings persist Auto or an explicit language. Auto leaves the analysis request unforced for provider detection; an override is carried into the authenticated analysis payload. Source tests cover both request shapes and the visible language controls; live journeys remain required before yes.",
+      "auditNote": "Repository re-audit on 2026-11-23 found the previous missing classification was stale. The feature is source-complete on web and shared native iOS/Android code but remains not-device-verified.",
+      "journeyEvidence": [],
+      "notes": "Web Smart Cut and shared iOS/Android Best Cut support Auto plus explicit supported-language analysis; live journeys remain required"
+    },
+    "F066": {
+      "feature": "Caption style picker",
+      "area": "captions",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-captions.jpg",
+        "lib/clipEdit.js",
+        "apps/mobile/src/lib/clipEdit.ts",
+        "apps/mobile/src/components/editor/CaptionWords.tsx",
+        "apps/mobile/__tests__/editorCaptionSections.test.tsx",
+        "tests/clipEdit.test.mjs"
+      ],
+      "evidenceRationale": "Caption style picker is source-complete in the audited Veyrnox implementation; journey evidence remains required before yes.",
+      "auditNote": "Source-complete on 2026-11-24 with six immutable caption presets, all-caption application and active-preset indication; a live iOS journey remains required.",
+      "journeyEvidence": [],
+      "notes": "Existing gated Clip Editor caption styles remain available where the preview switch is enabled"
+    },
+    "F067": {
+      "feature": "Show or hide captions without deleting",
+      "area": "captions",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-captions.jpg",
+        "app/veyrnox/_components/editor/TrackTimeline.js",
+        "app/veyrnox/_lib/editorSequenceRender.mjs",
+        "apps/mobile/src/components/editor/tools/AdjustPanel.tsx",
+        "apps/mobile/src/lib/editorPreviewPlan.ts",
+        "tests/editorSequence.test.mjs"
+      ],
+      "evidenceRationale": "Web and shared native iOS/Android editors expose text-track visibility. The canonical renderer and native preview omit layers from a hidden text track without changing or deleting its caption cues; showing the track restores the same text. A regression test pins hide, retained cue data, and show. Live journeys remain required before yes.",
+      "auditNote": "Repository re-audit on 2026-11-23 found the previous missing classification was stale. Caption visibility is source-complete through shared track semantics but remains not-device-verified.",
+      "journeyEvidence": [],
+      "notes": "Web and shared native text-track visibility hides captions while preserving every cue; live journeys remain required"
+    },
+    "F068": {
+      "feature": "Keep captions aligned after timeline insertion",
+      "area": "captions",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "inference"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/editor-captions.jpg",
+        "app/veyrnox/_lib/editorSequence.mjs",
+        "app/veyrnox/_lib/editorSelection.mjs",
+        "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+        "apps/mobile/src/lib/nativeEditorModel.ts",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "tests/editorSelection.test.mjs",
+        "apps/mobile/__tests__/nativeEditorNoOverlap.test.ts"
+      ],
+      "evidenceRationale": "Web and shared native editors route paste and duplicate through a guarded all-track gap insertion when ripple-all is selected. Focused tests prove later caption cues move by the inserted span without changing text or word timing, and locked caption tracks refuse atomically.",
+      "auditNote": "Implemented on 2026-11-23 for web and shared iOS/Android editor models; live browser and device journeys remain outstanding.",
+      "journeyEvidence": [],
+      "notes": "Default and lane-only paste behavior is unchanged; global caption alignment is opt-in through the existing All tracks ripple mode."
+    },
+    "F069": {
+      "feature": "Resize and align text with guides",
+      "area": "captions",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorTextGuides.mjs",
+        "app/veyrnox/_components/editor/CanvasHandles.js",
+        "tests/editorTextGuides.test.mjs",
+        "apps/mobile/src/lib/editorTextPreview.ts",
+        "apps/mobile/src/components/editor/EditorTextOverlay.tsx",
+        "apps/mobile/src/components/editor/CaptionWords.tsx",
+        "apps/mobile/src/components/editor/tools/TextPanel.tsx",
+        "apps/mobile/__tests__/editorTextPreview.test.tsx",
+        "apps/mobile/__tests__/editorTextInspection.test.tsx",
+        "apps/mobile/__tests__/editorTextPanels.test.tsx",
+        "replica/byecut/screens/editor-captions.jpg"
+      ],
+      "evidenceRationale": "The web canvas exposes pointer and keyboard text resizing, snaps movement to shared 10/50/90 percent anchors and displays live horizontal or vertical guides. The shared native iOS/Android preview now renders stored centre-anchored x/y and text size, while the text panel offers the identical guide anchors. Focused guide, geometry and control tests pin the behavior.",
+      "auditNote": "Completed in source on 2026-11-23 for web and shared iOS/Android editor paths. Live pointer, keyboard and device journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Safe-edge and centre anchors are Veyrnox clean-room guide semantics; the implementation does not reuse competitor code, assets or copy."
+    },
+    "F070": {
+      "feature": "Export up to 4K 60 fps",
+      "area": "export",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorExportSettings.mjs",
+        "app/veyrnox/_lib/editorServerRenderClient.mjs",
+        "lib/editorServerRenderTranslate.js",
+        "lib/editorServerRender.js",
+        "lib/editorServerRenderWebhook.js",
+        "services/concat-render/runner.mjs",
+        "packages/db/schema/supabase/0603_editor_render_4k60.sql",
+        "apps/mobile/src/components/editor/LocalExportSheet.tsx",
+        "apps/mobile/src/components/editor/ServerExportSheet.tsx",
+        "apps/mobile/src/components/editor/useServerExport.ts",
+        "apps/mobile/src/lib/editorServerExportStore.ts",
+        "tests/editorServerRenderTranslate.test.mjs",
+        "tests/editorServerRenderQuote.test.mjs",
+        "tests/editorServerRender.test.mjs",
+        "tests/editorServerRender4kMigration.test.mjs",
+        "apps/mobile/__tests__/serverExportSheet.test.tsx",
+        "replica/byecut/screens/export-settings.jpg",
+        "replica/byecut/screens/android-export-settings-device.jpg"
+      ],
+      "evidenceRationale": "Web export already exposes 2160p and 60 fps. The shared iOS/Android server-export sheet now offers 2160p, preserves the saved 24/25/30/60 project rate, creates a 3840x2160 render plan at 60 fps, and validates resolution, rate, duration and bounded output bytes again at the Worker and database settlement boundaries.",
+      "auditNote": "Completed in source on 2026-11-23 for web and shared iOS/Android export paths. Migration 0603 is authored but unapplied; live web, iOS and Android 4K/60 render journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "4K server exports are capped at 30 seconds and 100 MiB; 720p/1080p retain their existing duration and 25 MiB ceilings. Native local export remains lower-resolution, so iOS and Android use the paid server path for 4K."
+    },
+    "F071": {
+      "feature": "H.264 and HEVC export",
+      "area": "export",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_components/editor/ExportPanel.js",
+        "app/veyrnox/_lib/editorExport.mjs",
+        "lib/editorRenderInspection.js",
+        "apps/mobile/src/lib/editorMedia/probe.ts",
+        "apps/mobile/modules/editor-media/ios/EditorMp4Encoder.swift",
+        "apps/mobile/src/components/editor/LocalExportSheet.tsx",
+        "apps/mobile/__tests__/editorLocalExport.test.ts",
+        "lib/editorServerRenderTranslate.js",
+        "replica/byecut/screens/export-settings.jpg",
+        "replica/byecut/screens/android-export-settings-device.jpg"
+      ],
+      "evidenceRationale": "The iOS encoder accepts explicit H.264 or HEVC selection, carries the codec through the TypeScript/native contract and inspects the finished MP4 video track before publication.",
+      "auditNote": "Source-complete on iOS on 2026-11-24; an Xcode export and codec inspection journey remains required before yes.",
+      "journeyEvidence": [],
+      "notes": "Do not expose an HEVC selector until an independently verified renderer option, browser/device fallback policy, and HEVC-aware delivery inspection all pass."
+    },
+    "F072": {
+      "feature": "Remember export settings",
+      "area": "export",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorExportPreferences.mjs",
+        "app/veyrnox/_components/editor/ExportPanel.js",
+        "tests/editorExportPreferences.test.mjs",
+        "apps/mobile/src/lib/editorExportPreferences.ts",
+        "apps/mobile/src/components/editor/useServerExport.ts",
+        "apps/mobile/src/lib/editorExportProgressNotification.ts",
+        "apps/mobile/__tests__/editorExportProgressNotification.test.ts",
+        "apps/mobile/src/components/editor/ServerExportSheet.tsx",
+        "apps/mobile/__tests__/editorExportPreferences.test.ts",
+        "replica/byecut/screens/export-settings.jpg",
+        "replica/byecut/screens/android-export-settings-device.jpg"
+      ],
+      "evidenceRationale": "The web export panel validates and remembers resolution, frame rate, MP4/MOV container and quality in a closed-set device-local record. The shared iOS/Android server-export flow validates and remembers the last resolution in an account-scoped durable record and waits for it before requesting a quote.",
+      "auditNote": "Completed in source on 2026-11-23 for web and shared iOS/Android export paths. Browser and device relaunch/account-switch journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Preferences contain settings only—no project media, signed URLs, billing records or job state. Native local export currently has no selectable settings to remember."
+    },
+    "F073": {
+      "feature": "Preview footage while export progresses",
+      "area": "export",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "app/veyrnox/_lib/editorExport.mjs",
+        "app/veyrnox/_components/editor/MultitrackWorkspace.js",
+        "app/veyrnox/_components/editor/ExportPanel.js",
+        "app/veyrnox/_components/editor/ExportReadyCard.js",
+        "tests/editorExportPreview.test.mjs",
+        "tests/editorExportReady.test.mjs",
+        "apps/mobile/src/components/editor/ExportFootagePreview.tsx",
+        "apps/mobile/src/components/editor/LocalExportSheet.tsx",
+        "apps/mobile/src/components/editor/ServerExportSheet.tsx",
+        "apps/mobile/src/components/editor/FullEditorScreen.tsx",
+        "apps/mobile/__tests__/exportFootagePreview.test.ts",
+        "replica/byecut/screens/export-settings.jpg",
+        "replica/byecut/screens/android-export-settings-device.jpg"
+      ],
+      "evidenceRationale": "During browser export, the exact composited frame is downscaled to a bounded 480-pixel JPEG once per encoded second and shown above progress, with object URLs released when replaced. Shared iOS/Android local export displays the canonical timeline preview at the compositor's reported frame; server export displays owned footage during upload, submission and rendering without representing its preview frame as server completion percentage.",
+      "auditNote": "Completed in source on 2026-11-23 for web and shared iOS/Android export paths. Live browser, iOS and Android export journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Preview generation is best-effort and cannot fail the export. Cloud rendering has no trusted per-frame progress, so its footage preview is deliberately not labelled as a render-position indicator."
+    },
+    "F074": {
+      "feature": "Background export progress",
+      "area": "export",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/useServerExport.ts",
+        "apps/mobile/__tests__/serverExportSheet.test.tsx",
+        "replica/byecut/screens/export-settings.jpg",
+        "replica/byecut/screens/android-export-settings-device.jpg"
+      ],
+      "evidenceRationale": "Shared iOS/Android cloud export records the accepted render durably before leaving the foreground, lets the server continue independently, pauses only client polling while backgrounded, and resumes the exact job on foreground or editor remount without requoting.",
+      "auditNote": "Source-complete on 2026-11-24 with durable cloud continuation plus privacy-minimal OS stage notifications, completion routing and stale-card cleanup. A live iOS background journey remains required.",
+      "journeyEvidence": [],
+      "notes": "The app deliberately avoids pretending that paused foreground polling is live OS background progress."
+    },
+    "F075": {
+      "feature": "Save to Photos",
+      "area": "export",
+      "priority": "should",
+      "status": "not-device-verified",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/LocalExportSheet.tsx",
+        "apps/mobile/src/components/editor/useServerExport.ts",
+        "apps/mobile/src/lib/output.ts",
+        "apps/mobile/__tests__/serverExportSheet.test.tsx",
+        "replica/byecut/screens/export-settings.jpg",
+        "replica/byecut/screens/android-export-settings-device.jpg"
+      ],
+      "evidenceRationale": "Both the local MP4 result and the downloaded cloud-render result request add-only media-library permission and create a Photos asset; the cloud path tests success, denial and write failure.",
+      "auditNote": "Completed in source on 2026-11-23 for the shared iOS/Android local and cloud export paths. Live permission, denial and saved-asset journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Native-only permissioned action; requests add-only access rather than photo-library read access."
+    },
+    "F076": {
+      "feature": "Share to social apps",
+      "area": "export",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "4",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "apps/mobile/src/components/editor/LocalExportSheet.tsx",
+        "apps/mobile/src/components/editor/useServerExport.ts",
+        "apps/mobile/src/lib/output.ts",
+        "apps/mobile/__tests__/serverExportSheet.test.tsx",
+        "replica/byecut/screens/export-settings.jpg"
+      ],
+      "evidenceRationale": "Both local and cloud export results hand the finished MP4 to the operating-system share sheet; cloud sharing is covered through its short-lived-link download and invocation path.",
+      "auditNote": "Completed in source on 2026-11-23 for the shared iOS/Android local and cloud export paths. Live iOS/Android target-app journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Use operating-system share sheet"
+    },
+    "F077": {
+      "feature": "Free first AI edit",
+      "area": "monetization",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3B",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "packages/db/schema/supabase/0127_signup_grant_ten_credits.sql",
+        "packages/db/schema/supabase/0453_editor_ai_edit_row_and_speech_activation.sql",
+        "packages/db/schema/supabase/0602_speech_requested_language.sql",
+        "apps/mobile/src/lib/bestCutFlow.ts",
+        "apps/mobile/__tests__/bestCutFlow.test.ts",
+        "tests/bestCutServer.test.mjs",
+        "lib/editorAiEdit.js",
+        "tests/editorAiEdit.test.mjs"
+      ],
+      "evidenceRationale": "A dedicated account-scoped Smart Cut entitlement now quotes exactly one first edit at zero credits, is claimed atomically with the job, cannot be spent by another feature and is released after a refunded or no-speech attempt.",
+      "auditNote": "Source-complete on 2026-11-24. Migration 0602 is authored but unapplied; a live first-edit and retry journey remains required before yes.",
+      "journeyEvidence": [],
+      "notes": "Uses a dedicated atomic Smart Cut first-edit waiver; later edits use Veyrnox credits."
+    },
+    "F078": {
+      "feature": "Recurring AI allowance",
+      "area": "monetization",
+      "priority": "could",
+      "status": "not-device-verified",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "3B",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "packages/db/schema/supabase/0184_subscription_credit_cycle.sql",
+        "packages/db/schema/supabase/0371_monthly_only_credit_subscriptions.sql",
+        "app/veyrnox/_components/CreditSubscriptions.js",
+        "apps/mobile/src/app/(app)/credits.tsx",
+        "apps/mobile/src/lib/i18n/messages/en/credits.ts",
+        "tests/creditSubscriptions.test.mjs",
+        "apps/mobile/__tests__/pricingScreen.test.tsx"
+      ],
+      "evidenceRationale": "Veyrnox monthly AI Generation subscriptions grant a fresh idempotent subscription-credit bucket for each paid billing cycle, expire unused prior-cycle credits without rollover, and expose the plans and entitlement state on web and shared iOS/Android.",
+      "auditNote": "Completed in source on 2026-11-23 using Veyrnox subscription Credits rather than ByeCut plan names. Live web checkout plus iOS/Android purchase, renewal and restored-entitlement journeys remain required before yes.",
+      "journeyEvidence": [],
+      "notes": "Uses Veyrnox monthly Generation subscriptions; subscription Credits expire at cycle end and do not roll over."
+    },
+    "F079": {
+      "feature": "Exact ByeCut Creator Pro Extreme plans",
+      "area": "monetization",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "Exact ByeCut Creator Pro Extreme plans is excluded from clean-room parity: Competitor commercial packaging is not cloned",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Competitor commercial packaging is not cloned"
+    },
+    "F080": {
+      "feature": "ByeCut trial paywall and plan selection UI",
+      "area": "monetization",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "device"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md",
+        "replica/byecut/screens/android-ai-paywall.jpg"
+      ],
+      "evidenceRationale": "ByeCut trial paywall and plan selection UI is excluded from clean-room parity: Observed on Android; Veyrnox uses its own credit confirmation and subscription model",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Observed on Android; Veyrnox uses its own credit confirmation and subscription model"
+    },
+    "F081": {
+      "feature": "ByeCut referral and offer-code network",
+      "area": "monetization",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "ByeCut referral and offer-code network is excluded from clean-room parity: Competitor network and Apple offers are not part of the clone",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Competitor network and Apple offers are not part of the clone"
+    },
+    "F082": {
+      "feature": "ByeCut branding icon and product copy",
+      "area": "brand",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "ByeCut branding icon and product copy is excluded from clean-room parity: Protected identity and copy",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Protected identity and copy"
+    },
+    "F083": {
+      "feature": "Exact ByeCut visual design",
+      "area": "brand",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "Exact ByeCut visual design is excluded from clean-room parity: Build in Veyrnox design language",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Build in Veyrnox design language"
+    },
+    "F084": {
+      "feature": "ByeCut caption presets fonts and artwork",
+      "area": "licensed-content",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "ByeCut caption presets fonts and artwork is excluded from clean-room parity: Create original Veyrnox presets",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Create original Veyrnox presets"
+    },
+    "F085": {
+      "feature": "ByeCut templates music and stock media",
+      "area": "licensed-content",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "public-site"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "ByeCut templates music and stock media is excluded from clean-room parity: Use owned or independently licensed assets only",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Use owned or independently licensed assets only"
+    },
+    "F086": {
+      "feature": "Proprietary best-take model prompts and heuristics",
+      "area": "implementation",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "inference"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "Proprietary best-take model prompts and heuristics is excluded from clean-room parity: Rebuild behavior with an independent explainable design",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Rebuild behavior with an independent explainable design"
+    },
+    "F087": {
+      "feature": "Private APIs telemetry and account data",
+      "area": "implementation",
+      "priority": "skip",
+      "status": "skip",
+      "platforms": [
+        "web",
+        "ios",
+        "android"
+      ],
+      "provenance": [
+        "inference"
+      ],
+      "owningWorkstream": "0",
+      "evidence": [
+        "replica/byecut/recon.md"
+      ],
+      "evidenceRationale": "Private APIs telemetry and account data is excluded from clean-room parity: Never inspect or copy",
+      "auditNote": "",
+      "journeyEvidence": [],
+      "notes": "Never inspect or copy"
+    }
+  }
+}

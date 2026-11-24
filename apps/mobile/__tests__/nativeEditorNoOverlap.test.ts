@@ -39,6 +39,15 @@ describe('editor timeline never overlaps on one track', () => {
         expect(total(pasted.timeline)).toBe(260);
     });
 
+    it('all-track paste moves later captions by the inserted span without changing their content or word timing', () => {
+        const caption = { ...text('t1', 100, 60), caption: true, words: [{ text: 'Hi', start: 0, len: 60 }], wordsEstimated: false };
+        const timeline = { ...base(), text: [caption] };
+        const result = pasteClipboard(timeline, copySelections(timeline, [{ track: 'video', id: 'v1' }]), 0, true)!;
+        expect(result.timeline.video.map(({ start }) => start).sort((a, b) => a - b)).toEqual([0, 100, 200]);
+        expect(result.timeline.text[0]).toEqual(expect.objectContaining({ start: 200, text: 'Hi', words: caption.words }));
+        expect(overlaps(result.timeline)).toBe(false);
+    });
+
     it('duplicating text keeps the text lane clear', () => {
         const timeline = { ...base(), text: [text('t1', 10, 30), text('t2', 40, 20)] };
         const result = duplicateSelections(timeline, [{ track: 'text', id: 't1' }])!;

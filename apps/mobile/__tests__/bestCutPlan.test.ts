@@ -73,10 +73,26 @@ describe('best cut planner', () => {
         expect(buildBestCutPlan([input('a', [['x y z w.', 1]], 61)])).toBeNull();
         expect(buildBestCutPlan([one], '', 'balanced', 29)).toBeNull();
     });
-    test('caps output at 60 s with a tail warning', () => {
-        const long = Array.from({ length: 5 }, (_, i) => input(`c${i}`, [[`distinct words number ${i} for clip ${i} here.`, 0.5], [`more different talk ${i} goes on and on.`, 5]], 15));
-        const plan = buildBestCutPlan(long.concat(Array.from({ length: 5 }, (_, i) => input(`d${i}`, [[`other speech number ${i} for second batch ${i}.`, 0.5], [`yet more unrelated talk ${i} continues forever.`, 5]], 15))))!;
-        const end = plan.ranges.at(-1)!; expect(end.start + (end.to - end.from)).toBeLessThanOrEqual(60 * 30);
+    test('caps output at the last complete word and reports the omitted speech', () => {
+        const inputs: BestCutInput[] = [
+            { mediaId: 'intro', analysis: { version: 1, assetId: 'intro', duration: 1, provider: 'fal-scribe-v2', transcript: 'Intro.', language: 'en',
+                chunks: [{ start: .12, end: .88, text: 'Intro.' }] } },
+            { mediaId: 'main', analysis: { version: 1, assetId: 'main', duration: 60, provider: 'fal-scribe-v2', transcript: 'Main crossing.', language: 'en',
+                chunks: [{ start: 0, end: 59, text: 'Main' }, { start: 59.2, end: 60, text: 'crossing.' }] } },
+        ];
+        const plan = buildBestCutPlan(inputs, 'Intro.\nMain crossing.')!;
+        const end = plan.ranges.at(-1)!;
+        expect(end.start + (end.to - end.from)).toBe(60 * 30);
+        expect(end.to).toBe(59 * 30);
+        expect(end.label).toBe('Main');
+        expect(plan.warnings).toContain('output_limit_reached');
+        expect(plan.warningDetails).toContainEqual(expect.objectContaining({
+            code: 'output_limit_reached',
+            parameters: expect.objectContaining({
+                count: 1,
+                omitted: [expect.objectContaining({ mediaId: 'main', label: 'crossing.' })],
+            }),
+        }));
     });
     test('validator rejects overlaps, out of bounds and non contiguous starts', () => {
         const inputs = [input('a', [['hello there my friend.', 1]])];

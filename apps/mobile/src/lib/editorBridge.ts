@@ -6,6 +6,8 @@ export interface ProjectDocument {
     readonly brief?: string;
     readonly canvas?: unknown;
     readonly timeline?: unknown;
+    readonly editing_summary?: { readonly source_frames: number; readonly edited_frames: number; readonly fps: number };
+    readonly cover?: { readonly frame: number; readonly text: string; readonly text_color: string };
 }
 export interface EngineImport { mediaId: string; kind: 'video' | 'audio' }
 export type AssetError = 'unavailable' | 'expired' | 'offline' | 'rate_limited';
@@ -40,8 +42,12 @@ export function utf8Bytes(text: string): number {
 }
 export function validDocument(value: unknown, projectId: string): value is ProjectDocument {
     if (!isObject(value) || ![1, 2, 3].includes(value.schema_version as number) || value.project_id !== projectId) return false;
-    if (!Object.keys(value).every(k => ['schema_version', 'project_id', 'brief', 'canvas', 'timeline'].includes(k))) return false;
+    if (!Object.keys(value).every(k => ['schema_version', 'project_id', 'brief', 'canvas', 'timeline', 'editing_summary', 'cover'].includes(k))) return false;
     if (value.brief !== undefined && (typeof value.brief !== 'string' || value.brief.length > 6000)) return false;
+    if (value.cover !== undefined && (!isObject(value.cover) || !Object.keys(value.cover).every(k => ['frame', 'text', 'text_color'].includes(k))
+        || Object.keys(value.cover).length !== 3 || !Number.isSafeInteger(value.cover.frame) || Number(value.cover.frame) < 0 || Number(value.cover.frame) >= 2147483647
+        || typeof value.cover.text !== 'string' || value.cover.text.length > 120 || value.cover.text.includes('\u0000')
+        || typeof value.cover.text_color !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value.cover.text_color))) return false;
     try { return utf8Bytes(JSON.stringify(value)) <= 32768; } catch { return false; }
 }
 // Stable across JSONB key reordering, used for snapshot identity, not for logging.

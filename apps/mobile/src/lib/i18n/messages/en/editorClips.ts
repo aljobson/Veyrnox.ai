@@ -45,7 +45,7 @@ export default {
     'editorClips.blocker.resolution': 'Clip Finder handles videos up to 720p.',
     'editorClips.sourceError': 'This video could not be prepared for on-device analysis.',
     'editorClips.invalidError': 'This video format cannot be analysed on this iPhone.',
-    'editorClips.spaceError': 'Free some storage on this iPhone, then try again.',
+    'editorClips.spaceError': 'Free some storage on this phone, then try again.',
     'editorClips.error': 'Clip Finder could not finish. Your timeline was not changed.',
     'editorClips.stale': 'The project changed. Find clips again before adding them.',
     'editorClips.cannotAdd': 'The clips could not be added. Unlock or add a video track and check the project has space.',

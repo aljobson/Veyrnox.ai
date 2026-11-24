@@ -41,7 +41,9 @@ import {
     revokeSession,
     signInWithIdToken,
     signInWithPassword,
+    requestEmailCode,
     signUpWithPassword,
+    verifyEmailCode,
     type OAuthProvider,
     type Session,
 } from '../lib/auth/supabaseAuth';
@@ -71,6 +73,8 @@ interface AuthContextValue {
     signInWithApple(): Promise<void>;
     signInWithOAuth(provider: OAuthProvider): Promise<void>;
     signInWithEmail(email: string, password: string, captchaToken: string): Promise<void>;
+    requestEmailSignInCode(email: string, captchaToken: string): Promise<void>;
+    verifyEmailSignInCode(email: string, code: string): Promise<void>;
     // Resolves true when signed in, false when the user must confirm their email first.
     signUpWithEmail(email: string, password: string, captchaToken: string): Promise<boolean>;
     signInWithPasskey(captchaToken: string): Promise<boolean>;
@@ -381,6 +385,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [finishSignIn],
     );
 
+    const requestEmailSignInCode = useCallback(
+        async (email: string, captchaToken: string) => requestEmailCode(email, captchaToken),
+        [],
+    );
+
+    const verifyEmailSignInCode = useCallback(
+        async (email: string, code: string) => {
+            const gen = generationRef.current;
+            const adoptedGen = await finishSignIn(await verifyEmailCode(email, code), gen);
+            if (adoptedGen === null || generationRef.current !== adoptedGen) return;
+            captureEvent('sign_in_completed', { method: 'email_code' });
+        },
+        [finishSignIn],
+    );
+
     const signUpWithEmail = useCallback(
         async (email: string, password: string, captchaToken: string) => {
             const gen = generationRef.current;
@@ -416,8 +435,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [drop]);
 
     const value = useMemo<AuthContextValue>(
-        () => ({ status, generation, sessionGeneration, beginSessionTask, canReloadSession, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut }),
-        [status, generation, sessionGeneration, beginSessionTask, canReloadSession, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, signUpWithEmail, signInWithPasskey, signOut],
+        () => ({ status, generation, sessionGeneration, beginSessionTask, canReloadSession, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, requestEmailSignInCode, verifyEmailSignInCode, signUpWithEmail, signInWithPasskey, signOut }),
+        [status, generation, sessionGeneration, beginSessionTask, canReloadSession, api, onSessionLost, getAccessToken, adoptSession, appleNativeAvailable, signInWithApple, signInWithOAuth, signInWithEmail, requestEmailSignInCode, verifyEmailSignInCode, signUpWithEmail, signInWithPasskey, signOut],
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
