@@ -7,6 +7,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { escapeCell } from './escape-cell.mjs';
 import { areaNames } from './gen-en-registry.mjs';
+import { MCP_MUSIC_COPY, mcpMusicCurrent } from '../../../lib/i18n/mcpMusicCopy.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const app = join(here, '..');
@@ -15,10 +16,14 @@ const WEB = join(repo, 'lib', 'i18n', 'messages');
 const OUT = join(app, 'src', 'lib', 'i18n', 'messages');
 const CODES = ['es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];
 
-// A catalog file is `export default { ... }` or `const x = { ... } as const; export default x;` with no imports.
+// A catalog file is `export default { ... }` or `const x = { ... } as const; export default x;`.
+// The public catalogs may also import the shared, data-only Music MCP copy module.
 function readCatalog(path) {
     // Skip strings/comments, and strip only the final object assertion (or _order.ts array assertion).
-    const source = readFileSync(path, 'utf8');
+    const source = readFileSync(path, 'utf8').replace(
+        /^import \{\s*MCP_MUSIC_COPY(?:,\s*mcpMusicCurrent)?\s*\} from '\.\.\/mcpMusicCopy\.mjs';\r?\n/m,
+        '',
+    );
     const tokens = /'(?:\\[\s\S]|[^'\\])*'|"(?:\\[\s\S]|[^"\\])*"|`(?:\\[\s\S]|[^`\\])*`|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/|([}\]])\s+as const;/g;
     const trivia = String.raw`(?:\s|\/\/[^\r\n]*|\/\*[\s\S]*?\*\/)*`;
     const exportEnd = new RegExp(`^${trivia}(?:export default \\w+;${trivia})?$`);
@@ -26,7 +31,9 @@ function readCatalog(path) {
         closing && exportEnd.test(source.slice(offset + match.length)) ? `${closing};` : match
     ).replace(/^export default\s+/m, 'return ').replace(/^return (\w+);\s*$/m, 'return $1;');
     const m = { exports: undefined };
-    return new Function('module', text.includes('return ') ? text : `module.exports = ${text}`)(m) ?? m.exports;
+    return new Function('module', 'MCP_MUSIC_COPY', 'mcpMusicCurrent', text.includes('return ') ? text : `module.exports = ${text}`)(
+        m, MCP_MUSIC_COPY, mcpMusicCurrent,
+    ) ?? m.exports;
 }
 
 // Read data-only area catalogs without importing app/runtime code or evaluating en.ts.
