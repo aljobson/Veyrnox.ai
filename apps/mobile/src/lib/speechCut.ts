@@ -7,7 +7,15 @@ export const SILENCE_PRESETS: Record<SilencePreset, { minimumSeconds: number; ed
     snappy: { minimumSeconds: .4, edgePaddingSeconds: .08 }, natural: { minimumSeconds: .75, edgePaddingSeconds: .12 }, relaxed: { minimumSeconds: 1.2, edgePaddingSeconds: .18 } };
 export const silencePreset = (name?: string): SilencePreset => { const key = name === 'balanced' ? 'natural' : name; return key === 'snappy' || key === 'relaxed' ? key : 'natural'; };
 export type SpeechRange = { start: number; end: number; label: string };
+export type SpeechRangeWarning = { code: 'trim_intersects_unit' | 'segment_limit_reached' | 'output_limit_reached'; parameters: Readonly<Record<string, unknown>> };
+export type SpeechRangePlan = { ranges: SpeechRange[]; warningDetails: SpeechRangeWarning[] };
+export type SilenceRemovalProposalPlan = SpeechRangePlan & { removals: SpeechRange[]; checked: boolean[] };
 export type SpeechMode = 'silences' | 'retakes' | 'fillers';
+export class SpeechCutPlanError extends Error {
+    constructor(readonly code: 'trim_intersects_unit' | 'unit_exceeds_budget', message: string, readonly parameters: Readonly<Record<string, unknown>> = {}) {
+        super(message); this.name = 'SpeechCutPlanError';
+    }
+}
 const languages = ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru', 'ja', 'de', 'ko'];
 const iso3: Record<string, string> = { eng: 'en', spa: 'es', zho: 'zh', cmn: 'zh', chi: 'zh', hin: 'hi', ara: 'ar', fra: 'fr', fre: 'fr', por: 'pt', rus: 'ru', jpn: 'ja', deu: 'de', ger: 'de', kor: 'ko' };
 const clean = (v: unknown) => String(v || '').replace(/\s+/g, ' ').trim();
@@ -38,35 +46,85 @@ export function parseSmartCutAnalysis(v: unknown, expected: { assetId?: string; 
     return { ok: true, analysis: { version: 1, assetId: v.assetId, duration: round(v.duration), provider: v.provider as SpeechAnalysis['provider'],
         transcript: clean(v.transcript), language: languages.includes(code) ? code : iso3[code] || 'und', timingQuality: v.provider === 'fal-wizper' ? 'phrase' : 'word', chunks: chunks.sort((a, b) => a.start - b.start || a.end - b.end) } };
 }
-/** Same padded, overlap-merged, shortest-gap-reintroduced ranges as WEB. */
-export function silenceRanges(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural'): SpeechRange[] {
+/** Same complete-unit, padded, overlap-merged ranges as the web and Smart Cut planners. */
+export function silenceRangePlan(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural', maxOutputSeconds = 60): SpeechRangePlan {
     const { minimumSeconds, edgePaddingSeconds } = SILENCE_PRESETS[silencePreset(preset)];
-    const groups: SpeechRange[] = [];
-    for (const c of analysis.chunks) {
-        if (c.end <= start || c.start >= end) continue;
-        const entry = { start: Math.max(start, c.start), end: Math.min(end, c.end), label: c.text }, last = groups.at(-1);
-        if (!last || entry.start - last.end >= minimumSeconds) groups.push(entry);
-        else { last.end = Math.max(last.end, entry.end); last.label += ` ${entry.label}`; }
+    type Group = SpeechRange & { entries: SpeechChunk[] };
+    const overlapping = analysis.chunks.filter((chunk) => chunk.end > start && chunk.start < end);
+    const intersections = overlapping.filter((chunk) => chunk.start < start || chunk.end > end);
+    const entries = overlapping.filter((chunk) => chunk.start >= start && chunk.end <= end);
+    if (!entries.length && intersections.length) throw new SpeechCutPlanError('trim_intersects_unit', 'No complete timed speech unit fits inside the selected clip range.', {
+        reason: 'trim_intersects_all_units', units: intersections,
+    });
+    const groups: Group[] = [];
+    for (const entry of entries) {
+        const last = groups.at(-1);
+        if (!last || entry.start - last.end >= minimumSeconds) groups.push({ start: entry.start, end: entry.end, label: entry.text, entries: [entry] });
+        else { last.end = Math.max(last.end, entry.end); last.label += ` ${entry.text}`; last.entries.push(entry); }
     }
-    const merged: SpeechRange[] = [];
+    const leadingBarrier = intersections.filter((unit) => unit.start < start && unit.end > start).reduce((bound, unit) => Math.max(bound, unit.end), start);
+    const trailingBarrier = intersections.filter((unit) => unit.start < end && unit.end > end).reduce((bound, unit) => Math.min(bound, unit.start), end);
+    const merged: Group[] = [];
     for (const group of groups) {
-        const padded = { ...group, start: Math.min(end, Math.max(start, ceil(group.start - edgePaddingSeconds))), end: Math.min(floor(end), floor(group.end + edgePaddingSeconds)) };
+        const padded = { ...group, entries: [...group.entries], start: Math.min(trailingBarrier, Math.max(leadingBarrier, ceil(group.start - edgePaddingSeconds))), end: Math.min(floor(trailingBarrier), floor(group.end + edgePaddingSeconds)) };
         const last = merged.at(-1);
-        if (last && padded.start <= last.end) { last.end = Math.max(last.end, padded.end); last.label += ` ${padded.label}`; }
+        if (last && padded.start <= last.end) { last.end = Math.max(last.end, padded.end); last.label += ` ${padded.label}`; last.entries.push(...padded.entries); }
         else merged.push(padded);
     }
+    const beforeMerge = merged.length;
     while (merged.length > 10) {
         let index = 0, smallest = Infinity;
         for (let i = 0; i < merged.length - 1; i++) if (merged[i + 1].start - merged[i].end < smallest) { index = i; smallest = merged[i + 1].start - merged[i].end; }
-        merged.splice(index, 2, { start: merged[index].start, end: merged[index + 1].end, label: `${merged[index].label} ${merged[index + 1].label}` });
+        merged.splice(index, 2, { start: merged[index].start, end: merged[index + 1].end, label: `${merged[index].label} ${merged[index + 1].label}`, entries: [...merged[index].entries, ...merged[index + 1].entries] });
     }
+    const ranges: SpeechRange[] = [], warningDetails: SpeechRangeWarning[] = [];
+    if (intersections.length) warningDetails.push({ code: 'trim_intersects_unit', parameters: { count: intersections.length, units: intersections } });
+    if (beforeMerge > merged.length) warningDetails.push({ code: 'segment_limit_reached', parameters: { mergedGroups: beforeMerge - merged.length, omittedGroups: 0, omitted: [] } });
     let offset = 0;
-    return merged.flatMap(g => {
-        const remaining = 60 - offset; if (remaining <= .01) return [];
-        const end = g.end <= g.start + remaining + 1e-9 ? g.end : floor(g.start + remaining), start = ceil(g.start);
-        if (end <= start) return []; offset = round(offset + round(end - start));
-        return [{ start, end, label: g.label.length > 120 ? `${g.label.slice(0, 117).trimEnd()}…` : g.label }];
-    });
+    for (const [index, group] of merged.entries()) {
+        const remaining = maxOutputSeconds - offset;
+        if (remaining <= .01) { warningDetails.push({ code: 'output_limit_reached', parameters: { count: merged.length - index } }); break; }
+        const maximumEnd = group.start + remaining;
+        const complete = group.entries.filter((entry) => entry.end <= maximumEnd + 1e-9).at(-1);
+        const rangeEnd = group.end <= maximumEnd + 1e-9 ? group.end
+            : complete ? Math.min(group.end, maximumEnd, ceil(complete.end)) : undefined;
+        if (rangeEnd == null || rangeEnd <= group.start) {
+            if (!ranges.length) throw new SpeechCutPlanError('unit_exceeds_budget', 'The first complete timed speech unit is longer than the output budget.', {
+                start: group.entries[0]?.start ?? group.start, end: group.entries[0]?.end ?? group.end,
+            });
+            warningDetails.push({ code: 'output_limit_reached', parameters: { count: merged.length - index } });
+            break;
+        }
+        const rangeStart = ceil(group.start);
+        if (rangeEnd <= rangeStart) continue;
+        const label = clean(group.entries.filter((entry) => entry.start < rangeEnd).map((entry) => entry.text).join(' '));
+        ranges.push({ start: rangeStart, end: rangeEnd, label: label.length > 120 ? `${label.slice(0, 117).trimEnd()}…` : label });
+        offset = round(offset + round(rangeEnd - rangeStart));
+        if (rangeEnd < group.end - .01) {
+            if (group.entries.some((entry) => entry.end > rangeEnd) || index < merged.length - 1) warningDetails.push({ code: 'output_limit_reached', parameters: { count: merged.length - index } });
+            break;
+        }
+    }
+    return { ranges, warningDetails };
+}
+export function silenceRanges(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural'): SpeechRange[] {
+    return silenceRangePlan(analysis, start, end, preset).ranges;
+}
+
+/**
+ * Build in-place editor proposals without applying Smart Cut's separate 60-second
+ * output budget. Any gap that contains a trim-boundary word stays unchecked so a
+ * suggestion can never silently delete timed speech.
+ */
+export function silenceRemovalProposalPlan(analysis: SpeechAnalysis, start = 0, end = analysis.duration, preset: SilencePreset | 'balanced' = 'natural'): SilenceRemovalProposalPlan {
+    const plan = silenceRangePlan(analysis, start, end, preset, Math.max(0.01, end - start));
+    const removals = keptAfterRemovals(plan.ranges, start, end);
+    const unsafeUnits = plan.warningDetails
+        .filter((warning) => warning.code === 'trim_intersects_unit')
+        .flatMap((warning) => Array.isArray(warning.parameters.units) ? warning.parameters.units : [])
+        .filter((unit): unit is SpeechChunk => object(unit) && finite(unit.start) && finite(unit.end));
+    const checked = removals.map((range) => !unsafeUnits.some((unit) => unit.end > range.start && unit.start < range.end));
+    return { ...plan, removals, checked };
 }
 function tokens(text: string, language: string) {
     const normalized = text.normalize('NFKC').toLocaleLowerCase(language).replace(/[^\p{L}\p{N}\s]/gu, '').trim();

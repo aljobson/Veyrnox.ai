@@ -11,7 +11,8 @@ import { t } from '../../lib/i18n';
 import { colors, fonts } from '../../theme';
 
 export interface SheetRow { id: string; icon: string; label: string; hint?: string; disabled?: boolean; afterClose?: boolean; onPress(): void }
-export type SimpleSheetName = 'add' | 'ai' | 'more';
+export type SimpleSheetName = 'add' | 'ai' | 'cut' | 'sound' | 'text' | 'layers' | 'more';
+export type SimpleDockTab = 'ai' | 'cut' | 'audio' | 'text' | 'media';
 
 // One bottom sheet for all three entries. Choosing a row closes the sheet first, then runs the action;
 // a row marked afterClose (a native picker) waits until the sheet has finished closing.
@@ -52,19 +53,25 @@ export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDe
     </Modal>;
 }
 
-// The three entry points shown at the bottom of the simple editor.
-export function SimpleEditorBar({ onOpen }: { onOpen(sheet: SimpleSheetName): void }) {
-    const items: readonly { id: SimpleSheetName; icon: string; label: string; primary?: boolean }[] = [
-        { id: 'add', icon: '＋', label: t('editorSimple.add') },
-        { id: 'ai', icon: '✦', label: t('editorSimple.aiEdit'), primary: true },
-        { id: 'more', icon: '⋯', label: t('editorSimple.more') },
+// ByeCut-style editor dock. Each tab reuses a real Veyrnox editor panel; the dock stays visible
+// while a panel is open so switching tools never requires closing and reopening the sheet.
+export function SimpleEditorBar({ active, onOpen }: {
+    active: SimpleDockTab;
+    onOpen(sheet: SimpleSheetName): void;
+}) {
+    const items: readonly { id: SimpleDockTab; icon: string; label: string; onPress(): void }[] = [
+        { id: 'ai', icon: '✦', label: t('editorSimple.aiEdit'), onPress: () => onOpen('ai') },
+        { id: 'cut', icon: '✂', label: t('editorSimple.cut'), onPress: () => onOpen('cut') },
+        { id: 'audio', icon: '♫', label: t('editorSimple.sound'), onPress: () => onOpen('sound') },
+        { id: 'text', icon: 'T', label: t('editorSimple.text'), onPress: () => onOpen('text') },
+        { id: 'media', icon: '▱', label: t('editorSimple.layers'), onPress: () => onOpen('layers') },
     ];
     // Keep the bar above the home indicator; the panel above it scrolls instead of pushing the bar off screen.
     const bottom = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
     return <View style={[styles.bar, { paddingBottom: Math.max(22, bottom + 8) }]}>
-        {items.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} onPress={() => onOpen(item.id)} style={({ pressed }) => [styles.barButton, item.primary && styles.barPrimary, pressed && styles.rowPressed]}>
-            <Text style={[styles.barIcon, item.primary && styles.barPrimaryText]}>{item.icon}</Text>
-            <Text style={[styles.barLabel, item.primary && styles.barPrimaryText]}>{item.label}</Text>
+        {items.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: active === item.id }} onPress={item.onPress} style={({ pressed }) => [styles.barButton, active === item.id && styles.barPrimary, pressed && styles.rowPressed]}>
+            <Text style={[styles.barIcon, active === item.id && styles.barPrimaryText]}>{item.icon}</Text>
+            <Text style={[styles.barLabel, active === item.id && styles.barPrimaryText]}>{item.label}</Text>
         </Pressable>)}
     </View>;
 }
@@ -84,8 +91,8 @@ const styles = StyleSheet.create({
     rowCopy: { flex: 1, minWidth: 0 },
     rowLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
     rowHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
-    bar: { flexShrink: 0, flexDirection: 'row', gap: 10, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 22, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
-    barButton: { flex: 1, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 14, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.surface },
+    bar: { flexShrink: 0, flexDirection: 'row', gap: 4, paddingHorizontal: 8, paddingTop: 7, paddingBottom: 22, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
+    barButton: { flex: 1, minWidth: 0, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 12, borderWidth: 1, borderColor: 'transparent', backgroundColor: colors.surface },
     barPrimary: { borderColor: colors.accent, backgroundColor: colors.accent },
     barIcon: { color: colors.text, fontSize: 18, fontWeight: '800' },
     barLabel: { color: colors.text, fontSize: 13, fontWeight: '800' },

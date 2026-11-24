@@ -9,7 +9,9 @@ import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform } from 'react-native';
 import { useAuth } from '../auth/AuthProvider';
-import { JOBS_CHANNEL, PUSH_ENABLED, jobRouteFromPush, registerDevice, removeDevice, watchPushToken } from '../lib/push';
+import { JOBS_CHANNEL, PUSH_ENABLED, editorExportRouteFromPush, jobRouteFromPush, registerDevice, removeDevice, smartCutRouteFromPush, watchPushToken } from '../lib/push';
+import { SMART_CUT_PROGRESS_ID } from '../lib/smartCutProgressNotification';
+import { EDITOR_EXPORT_PROGRESS_ID } from '../lib/editorExportProgressNotification';
 
 // Push for finished creations. Nothing here runs unless the build switch is on, the device
 // is real, and the person has switched notifications on in Account (the OS permission is
@@ -23,7 +25,13 @@ import { PushContext, type EnableResult } from './pushContext';
 if (PUSH_ENABLED) {
     // Show a push that arrives while the app is open.
     Notifications.setNotificationHandler({
-        handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
+        handleNotification: async (notification) => ({
+            shouldShowBanner: true,
+            shouldShowList: true,
+            // Stage updates replace one ongoing card; they must not chime on every poll.
+            shouldPlaySound: !['smart-cut', 'editor-export'].includes(String(notification.request.content.data?.type)),
+            shouldSetBadge: false,
+        }),
     });
 }
 
@@ -133,7 +141,11 @@ export function PushProviderLive({ children }: { children: ReactNode }) {
         let live = true;
         const open = (data: unknown) => {
             if (!live || !task.current()) return;
-            const route = jobRouteFromPush(data);
+            const smartCutRoute = smartCutRouteFromPush(data);
+            if (smartCutRoute) void Notifications.dismissNotificationAsync(SMART_CUT_PROGRESS_ID).catch(() => undefined);
+            const editorExportRoute = editorExportRouteFromPush(data);
+            if (editorExportRoute) void Notifications.dismissNotificationAsync(EDITOR_EXPORT_PROGRESS_ID).catch(() => undefined);
+            const route = jobRouteFromPush(data) || smartCutRoute || editorExportRoute;
             if (route) router.push(route as never);
         };
         void Notifications.getLastNotificationResponseAsync().then((last) => {

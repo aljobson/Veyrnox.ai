@@ -3,8 +3,16 @@ export const BEST_CUT_LANGUAGES = ['en', 'es', 'zh', 'hi', 'ar', 'fr', 'pt', 'ru
 export type BestCutPreset = 'balanced' | 'vlog' | 'educational' | 'punchy' | 'steps';
 export type BestCutInput = { mediaId: string; analysis: SpeechAnalysis };
 export type BestCutRange = { mediaId: string; from: number; to: number; start: number; label: string };
-export type BestCutPlan = { fps: number; ranges: BestCutRange[]; removedPauses: number; removedRetakes: number; removedRepeats: number; matchedLines: number; missingLines: number[]; droppedClips: number; warnings: ('tail' | 'sections' | 'language')[] };
+export type BestCutWarningCode = 'output_limit_reached' | 'sections' | 'language';
+export type BestCutWarning = { code: BestCutWarningCode; parameters: Readonly<Record<string, unknown>> };
+export type BestCutPlan = { fps: number; ranges: BestCutRange[]; removedPauses: number; removedRetakes: number; removedRepeats: number; matchedLines: number; missingLines: number[]; droppedClips: number; warnings: BestCutWarningCode[]; warningDetails: BestCutWarning[] };
+export type BestCutPlanResult = { ok: true; plan: BestCutPlan } | { ok: false; code: 'unit_exceeds_budget' | 'invalid_plan'; parameters: Readonly<Record<string, unknown>> };
+export const bestCutWarningKey = (code: BestCutWarningCode): 'bestCut.warning.tail' | 'bestCut.warning.sections' | 'bestCut.warning.language' =>
+    code === 'output_limit_reached' ? 'bestCut.warning.tail' : `bestCut.warning.${code}`;
 type Utterance = { mediaId: string; clip: number; words: SpeechChunk[]; text: string; tokens: string[]; language: string; start: number; end: number; quality: number; index: number };
+class BestCutPlanError extends Error {
+    constructor(readonly code: 'unit_exceeds_budget', readonly parameters: Readonly<Record<string, unknown>>) { super(code); this.name = 'BestCutPlanError'; }
+}
 export function bestCutTokens(text: string, language: string): string[] {
     const value = text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{M}\p{N}\s]/gu, '').trim();
     return ['zh', 'ja'].includes(language) ? Array.from(value.replace(/\s/gu, '')) : value.split(/\s+/u).filter(Boolean);
@@ -58,7 +66,7 @@ function buildBestCutPlanInternal(inputs: BestCutInput[], script = '', preset: B
     const all = utterances(parsed), budget = { remaining: 2000000 };
     // Bound quadratic alignment on malformed/dense transcripts; fail closed, never freeze the phone.
     if (all.length > 1000 || all.some(u => u.tokens.length > 600)) return null;
-    const plan: BestCutPlan = { fps, ranges: [], removedPauses: 0, removedRetakes: 0, removedRepeats: 0, matchedLines: 0, missingLines: [], droppedClips: 0, warnings: [] };
+    const plan: BestCutPlan = { fps, ranges: [], removedPauses: 0, removedRetakes: 0, removedRepeats: 0, matchedLines: 0, missingLines: [], droppedClips: 0, warnings: [], warningDetails: [] };
     let chosen = all;
     const lines = script.split(/\n+|(?<=[.!?。！？؟])\s*/u).map(s => s.trim()).filter(Boolean);
     if (lines.length > 200) return null;
@@ -109,7 +117,7 @@ function buildBestCutPlanInternal(inputs: BestCutInput[], script = '', preset: B
         chosen = [...winners.values()].sort((a, b) => a.index - b.index);
         plan.removedRetakes = all.length - chosen.length;
     }
-    if (parsed.some(c => c.analysis.language === 'und')) plan.warnings.push('language');
+    if (parsed.some(c => c.analysis.language === 'und')) { plan.warnings.push('language'); plan.warningDetails.push({ code: 'language', parameters: {} }); }
     const durations = new Map(parsed.map(c => [c.mediaId, c.analysis.duration]));
     let lastWord: { mediaId: string; index: number; end: number } | undefined;
     for (const u of chosen) {
@@ -162,15 +170,43 @@ function buildBestCutPlanInternal(inputs: BestCutInput[], script = '', preset: B
         if (at < 0) return null; // Cannot drop script lines silently to fit the section cap.
         const [a, b] = plan.ranges.slice(at, at + 2);
         plan.ranges.splice(at, 2, { ...a, to: b.to, label: `${a.label} ${b.label}` });
-        if (!plan.warnings.includes('sections')) plan.warnings.push('sections');
+        if (!plan.warnings.includes('sections')) { plan.warnings.push('sections'); plan.warningDetails.push({ code: 'sections', parameters: {} }); }
     }
     let cursor = 0;
-    plan.ranges = plan.ranges.flatMap(r => {
-        if (cursor >= 60 * fps) { if (!plan.warnings.includes('tail')) plan.warnings.push('tail'); return []; }
-        const len = Math.min(r.to - r.from, 60 * fps - cursor);
-        if (len < r.to - r.from && !plan.warnings.includes('tail')) plan.warnings.push('tail');
-        const range = { ...r, to: r.from + len, start: cursor, label: r.label.slice(0, 200) }; cursor += len; return [range];
-    });
+    const candidates = plan.ranges, capped: BestCutRange[] = [], omitted: BestCutRange[] = [];
+    for (const [index, candidate] of candidates.entries()) {
+        const remaining = 60 * fps - cursor;
+        if (remaining <= 0) { omitted.push(...candidates.slice(index)); break; }
+        if (candidate.to - candidate.from <= remaining) {
+            capped.push({ ...candidate, start: cursor, label: candidate.label.slice(0, 200) });
+            cursor += candidate.to - candidate.from; continue;
+        }
+        const maximumTo = candidate.from + remaining;
+        const source = parsed.find((input) => input.mediaId === candidate.mediaId)!;
+        const completeWords = source.analysis.chunks.filter((word) => {
+            const from = Math.floor(word.start * fps + 1e-7), to = Math.ceil(word.end * fps - 1e-7);
+            return to > candidate.from && from < candidate.to && to <= maximumTo;
+        });
+        const complete = completeWords.at(-1);
+        if (!complete) {
+            const first = source.analysis.chunks.find((word) => Math.ceil(word.end * fps - 1e-7) > candidate.from && Math.floor(word.start * fps + 1e-7) < candidate.to);
+            if (!capped.length) throw new BestCutPlanError('unit_exceeds_budget', { mediaId: candidate.mediaId, start: first?.start, end: first?.end });
+            omitted.push(...candidates.slice(index)); break;
+        }
+        const safeTo = Math.min(candidate.to, maximumTo, Math.ceil(complete.end * fps - 1e-7));
+        const label = completeWords.map((word) => word.text).join(' ').trim() || candidate.label;
+        capped.push({ ...candidate, to: safeTo, start: cursor, label: label.slice(0, 200) });
+        cursor += safeTo - candidate.from;
+        const omittedWords = source.analysis.chunks.filter((word) => Math.ceil(word.end * fps - 1e-7) > safeTo && Math.floor(word.start * fps + 1e-7) < candidate.to);
+        if (omittedWords.length) omitted.push({ ...candidate, from: safeTo, label: omittedWords.map((word) => word.text).join(' ').slice(0, 200) });
+        omitted.push(...candidates.slice(index + 1));
+        break;
+    }
+    plan.ranges = capped;
+    if (omitted.length) {
+        plan.warnings.push('output_limit_reached');
+        plan.warningDetails.push({ code: 'output_limit_reached', parameters: { count: omitted.length, omitted } });
+    }
     plan.removedPauses = parsed.reduce((count, input) => count + input.analysis.chunks.filter((word, i, words) => {
         if (!i || word.start - words[i - 1].end < .75) return false;
         const middle = (word.start + words[i - 1].end) * fps / 2;
@@ -179,7 +215,18 @@ function buildBestCutPlanInternal(inputs: BestCutInput[], script = '', preset: B
     return validateBestCutPlan(plan, parsed) ? plan : null;
 }
 export function buildBestCutPlan(inputs: BestCutInput[], script = '', preset: BestCutPreset = 'balanced', fps = 30): BestCutPlan | null {
-    try { return buildBestCutPlanInternal(inputs, script, preset, fps); } catch { return null; }
+    const result = buildBestCutPlanResult(inputs, script, preset, fps);
+    return result.ok ? result.plan : null;
+}
+export function buildBestCutPlanResult(inputs: BestCutInput[], script = '', preset: BestCutPreset = 'balanced', fps = 30): BestCutPlanResult {
+    try {
+        const plan = buildBestCutPlanInternal(inputs, script, preset, fps);
+        return plan ? { ok: true, plan } : { ok: false, code: 'invalid_plan', parameters: {} };
+    } catch (error) {
+        return error instanceof BestCutPlanError
+            ? { ok: false, code: error.code, parameters: error.parameters }
+            : { ok: false, code: 'invalid_plan', parameters: {} };
+    }
 }
 export function validateBestCutPlan(plan: BestCutPlan, inputs: BestCutInput[]): boolean {
     if (![24, 25, 30, 60].includes(plan.fps) || !plan.ranges.length || plan.ranges.length > 10) return false;

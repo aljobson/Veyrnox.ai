@@ -1,3 +1,5 @@
+import { swapSpeechAwareCutTake } from './smartCutAnalysis.js';
+
 const PACING = {
   snappy: { label: 'Snappy', labelKey: 'app.smartCut.pacing.snappy', seconds: 3.2 },
   balanced: { label: 'Balanced', labelKey: 'app.smartCut.pacing.balanced', seconds: 4.8 },
@@ -154,10 +156,7 @@ export function buildSmartCutPlan({ clips, script = '', notes = '', pacing = 'ba
 }
 
 export function swapSmartCutTake(plan, segmentId, takeId) {
-  if (plan?.mode === 'transcript-silence') return {
-    ...plan,
-    warnings: [...new Set([...plan.warnings, 'Transcript-backed sections stay on their analysed source take.'])],
-  };
+  if (plan?.mode === 'transcript-silence') return swapSpeechAwareCutTake(plan, segmentId, takeId);
   const take = plan?.takes?.find((item) => item.id === takeId);
   if (!take) return plan;
   const proposed = plan.segments.map((segment) => {

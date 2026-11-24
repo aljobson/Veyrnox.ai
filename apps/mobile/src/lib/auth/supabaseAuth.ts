@@ -66,6 +66,20 @@ export function signInWithPassword(email: string, password: string, captchaToken
     return tokenRequest('password', withCaptcha({ email, password }, captchaToken));
 }
 
+/**
+ * Ask GoTrue to send the existing account a six-digit email OTP. `create_user`
+ * is deliberately false: the sign-in surface must never create an account by
+ * accident, and the captcha is consumed by Supabase on this request.
+ */
+export async function requestEmailCode(email: string, captchaToken: string): Promise<void> {
+    await authPost('/auth/v1/otp', withCaptcha({ email, create_user: false }, captchaToken));
+}
+
+/** Exchange the six-digit email OTP for the same durable session as other sign-in methods. */
+export function verifyEmailCode(email: string, code: string): Promise<Session> {
+    return tokenRequest('email', { email, token: code, type: 'email' });
+}
+
 // With email confirmation on (production), sign-up returns no session: the user confirms by email first.
 export async function signUpWithPassword(
     email: string,

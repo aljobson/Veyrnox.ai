@@ -23,7 +23,7 @@ test('both UI gates must hold, inaccessible storage and missing mode fail closed
 test('every existing size is preserved or explicitly disabled; cloud document is required', () => {
     assert.deepEqual(EDITOR_EXPORT_HEIGHTS, [360, 480, 720, 1080, 1440, 2160]);
     for (const height of EDITOR_EXPORT_HEIGHTS) {
-        const supported = [720, 1080].includes(height);
+        const supported = [720, 1080, 2160].includes(height);
         assert.equal(serverResolution(height), supported ? `${height}p` : null);
         assert.equal(serverRenderDisabled(document, height, 'Edit'), supported ? null : 'supportedSizes');
         assert.equal(!!renderSnapshot(document, height, 'Edit'), supported);

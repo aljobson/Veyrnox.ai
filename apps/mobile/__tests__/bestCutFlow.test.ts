@@ -8,7 +8,7 @@ jest.mock('../src/lib/aiConsentStore', () => ({ aiConsent: { ensure: jest.fn().m
 const mockUpload = jest.fn();
 jest.mock('../src/lib/uploads', () => ({ uploadSource: (...a: unknown[]) => mockUpload(...a), putFromDisk: jest.fn() }));
 
-const quote = { credits: 3, max_seconds: 60 as const, languages: ['en'] };
+const quote = { credits: 3, max_seconds: 600, billing_block_seconds: 60, languages: ['en'] };
 const analysis = (id: string) => ({ version: 1, assetId: id, duration: 10, provider: 'fal-scribe-v2', transcript: 'hello there my friend', language: 'en',
     chunks: [{ start: 1, end: 1.3, text: 'hello' }, { start: 1.4, end: 1.7, text: 'there' }, { start: 1.8, end: 2.1, text: 'my' }, { start: 2.2, end: 2.5, text: 'friend' }] });
 const clip = (n: number, extra: Partial<BestCutClip> = {}): BestCutClip => ({ media: { id: `l-${n}`, name: 'c', kind: 'video', frames: 300, hasAudio: true, width: 0, height: 0 }, duration: 10,
@@ -33,6 +33,22 @@ test('uploads, shows exact preflight prices, then speech clips produce analyses'
     expect(seen).toEqual(expect.arrayContaining(['uploading', 'preflight', 'transcribing', 'complete']));
     const post = request.mock.calls.find(c => c[1]?.method === 'POST' && c[0] === SPEECH_PATH)!;
     expect(JSON.parse(post[1]!.body!)).toMatchObject({ expectedCredits: 3, accepts_no_speech: true, cacheOnly: false });
+    const preflight = request.mock.calls.find(c => c[0].endsWith('/preflight'))!;
+    expect(JSON.parse(preflight[1]!.body!)).toMatchObject({ durations: [10] });
+});
+test('chosen language scopes both preflight and paid start, and switching language cannot reuse the outcome', async () => {
+    const request = router(); const flow = createBestCutFlow(api(request), 'acct', key), controller = new AbortController();
+    await flow.run([clip(1)], quote, controller.signal, () => {}, 'es');
+    const preflight = request.mock.calls.find(c => c[0].endsWith('/preflight'))!;
+    expect(JSON.parse(preflight[1]!.body!)).toMatchObject({ language: 'es' });
+    const firstPost = request.mock.calls.find(c => c[1]?.method === 'POST' && c[0] === SPEECH_PATH)!;
+    expect(JSON.parse(firstPost[1]!.body!)).toMatchObject({ language: 'es' });
+    request.mockClear();
+    await flow.run([clip(1)], quote, controller.signal, () => {}, 'en');
+    expect(request.mock.calls.some(c => c[0].endsWith('/preflight'))).toBe(true);
+    const secondPost = request.mock.calls.find(c => c[1]?.method === 'POST' && c[0] === SPEECH_PATH)!;
+    expect(JSON.parse(secondPost[1]!.body!)).toMatchObject({ language: 'en' });
+    expect(mockUpload).toHaveBeenCalledTimes(1);
 });
 test('all clips silent: nothing to cut, net charge zero because each is refunded', async () => {
     const out = await createBestCutFlow(api(router({ silent: true })), 'acct', key).run([clip(1), clip(2)], quote, new AbortController().signal, () => {});
@@ -67,8 +83,46 @@ test('a definitive provider failure surfaces the refund and allows a fresh paid 
 test('rejects more than 10 clips or an overlong clip before any network call', async () => {
     const request = router(); const flow = createBestCutFlow(api(request), 'acct', key);
     await expect(flow.run(Array.from({ length: 11 }, (_, i) => clip(i)), quote, new AbortController().signal, () => {})).rejects.toMatchObject({ code: 'source_too_long' });
-    await expect(flow.run([clip(1, { duration: 61 })], quote, new AbortController().signal, () => {})).rejects.toMatchObject({ code: 'source_too_long' });
+    await expect(flow.run([clip(1, { duration: 601 })], quote, new AbortController().signal, () => {})).rejects.toMatchObject({ code: 'source_too_long' });
+    await expect(flow.run([clip(1, { duration: 301 }), clip(2, { duration: 301 })], quote, new AbortController().signal, () => {})).rejects.toMatchObject({ code: 'source_too_long' });
     expect(request).not.toHaveBeenCalled(); expect(mockUpload).not.toHaveBeenCalled();
+});
+
+test('a long clip accepts the exact per-started-minute preflight charge', async () => {
+    const request = jest.fn(async (path: string, init?: { method?: string; body?: string }) => {
+        if (path.endsWith('/preflight')) return { clips: [{ cached: false, credits: 9 }] };
+        if (path.includes('/by-key/')) throw new ApiError(404, 'request_not_found');
+        if (init?.method === 'POST' && path === SPEECH_PATH) return { id: 'x', status: 'completed', analysis: analysis('x'), credits: 9 };
+        throw new Error(`unexpected ${path}`);
+    });
+    const long = clip(1, { duration: 146, media: { ...clip(1).media, frames: 4380 } });
+    await createBestCutFlow(api(request), 'acct', key).run([long], quote, new AbortController().signal, () => {});
+    const post = request.mock.calls.find(c => c[1]?.method === 'POST' && c[0] === SPEECH_PATH)!;
+    expect(JSON.parse(post[1]!.body!)).toMatchObject({ duration: 146, expectedCredits: 9 });
+});
+
+test('the dedicated first free edit is accepted without pretending it is cached', async () => {
+    const request = jest.fn(async (path: string, init?: { method?: string; body?: string }) => {
+        if (path.endsWith('/preflight')) return { clips: [{ cached: false, free: true, paidCredits: 3, credits: 0 }] };
+        if (path.includes('/by-key/')) throw new ApiError(404, 'request_not_found');
+        if (init?.method === 'POST' && path === SPEECH_PATH) return { id: 'x', status: 'completed', analysis: analysis('x'), credits: 0 };
+        throw new Error(`unexpected ${path}`);
+    });
+    await createBestCutFlow(api(request), 'acct', key).run([clip(1)], quote, new AbortController().signal, () => {});
+    const post = request.mock.calls.find(c => c[1]?.method === 'POST' && c[0] === SPEECH_PATH)!;
+    expect(JSON.parse(post[1]!.body!)).toMatchObject({ expectedCredits: 0, cacheOnly: false });
+});
+
+test('only one clip can consume the non-reserving first-free quote', async () => {
+    const request = jest.fn(async (path: string, init?: { method?: string; body?: string }) => {
+        if (path.endsWith('/preflight')) return { clips: [{ cached: false, free: true, paidCredits: 3, credits: 0 }] };
+        if (path.includes('/by-key/')) throw new ApiError(404, 'request_not_found');
+        if (init?.method === 'POST' && path === SPEECH_PATH) return { id: 'x', status: 'completed', analysis: analysis('x'), credits: JSON.parse(init.body!).expectedCredits };
+        throw new Error(`unexpected ${path}`);
+    });
+    await createBestCutFlow(api(request), 'acct', key).run([clip(1), clip(2)], quote, new AbortController().signal, () => {});
+    const credits = request.mock.calls.filter(c => c[1]?.method === 'POST' && c[0] === SPEECH_PATH).map(c => JSON.parse(c[1]!.body!).expectedCredits);
+    expect(credits).toEqual([0, 3]);
 });
 
 test('a clip already admitted under a prior attempt is recovered by key and never charged or POSTed again', async () => {

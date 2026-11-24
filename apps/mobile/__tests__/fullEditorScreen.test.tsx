@@ -41,10 +41,15 @@ const mockStackOptions = jest.fn();
 jest.mock('../src/lib/appCache', () => ({ getCacheUser: () => 'owner', subscribeCacheUser: () => () => {} }));
 jest.mock('../src/lib/editorDrafts', () => ({ readDraft: jest.fn().mockResolvedValue(null), writeDraft: jest.fn().mockResolvedValue(true), removeDraft: jest.fn().mockResolvedValue(undefined) }));
 jest.mock('../src/lib/editorDeviceMedia', () => ({ editorDeviceMedia: { hydrate: jest.fn().mockResolvedValue({}), copy: jest.fn().mockResolvedValue(null), backup: jest.fn().mockResolvedValue(null) } }));
+jest.mock('../src/lib/editorPickedFileReady', () => ({ waitForEditorPickedFile: jest.fn().mockResolvedValue('ready') }));
 jest.mock('../src/lib/editorMediaDuration', () => ({ probeDuration: jest.fn().mockResolvedValue(4) }));
 jest.mock('expo-crypto', () => ({ randomUUID: () => 'native-save-key' }));
 jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn().mockResolvedValue('seen'), setItemAsync: jest.fn().mockResolvedValue(undefined) }));
-jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn(), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } }));
+jest.mock('expo-image-picker', () => ({
+    launchImageLibraryAsync: jest.fn(),
+    UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible', Current: 'current' },
+    VideoExportPreset: { Passthrough: 'passthrough' },
+}));
 jest.mock('expo-document-picker', () => ({ getDocumentAsync: jest.fn() }));
 jest.mock('expo-router', () => ({ Stack: { Screen: ({ options }: any) => { mockStackOptions(options); return options?.headerRight?.() ?? null; } }, usePreventRemove: () => () => {}, useRouter: () => mockRouter }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => { mockScreenRender(); return { api: mockApi, beginSessionTask: mockBeginSessionTask }; } }));
@@ -64,6 +69,7 @@ beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     jest.useFakeTimers();
     jest.clearAllMocks();
+    require('../src/lib/editorPickedFileReady').waitForEditorPickedFile.mockResolvedValue('ready');
     mockSceneState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, detect: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn() };
     mockClipState = { availability: 'available', status: 'idle', progress: 0, rows: [], error: undefined, hadAudio: true, resultKey: undefined,
         find: jest.fn(), cancel: jest.fn(), toggle: jest.fn(), clear: jest.fn(() => { mockClipState.status = 'idle'; mockClipState.rows = []; mockClipState.resultKey = undefined; }) };
@@ -93,33 +99,63 @@ async function renderSimple() {
 }
 const labelled = (label: string) => root.container.queryAll((node) => node.props.accessibilityLabel === label);
 
-test('opens in the simple view: Add, Quick tools and More, with the full toolbars hidden', async () => {
+test('opens in the simple view with the ByeCut-style five-tab dock and full toolbars hidden', async () => {
     await renderSimple();
     expect(visible('Native cut')).toBe(true);
     expect(visible('PREVIEW')).toBe(true);
     expect(visible('TIMELINE')).toBe(true);
-    for (const label of ['Add', 'Quick tools', 'More', 'Undo', 'Redo', 'Export']) expect(labelled(label).length).toBeGreaterThan(0);
+    for (const label of ['AI Edit', 'Cut', 'Sound', 'Text', 'Layers', 'Undo', 'Redo', 'Export']) expect(labelled(label).length).toBeGreaterThan(0);
     for (const label of ['Media', 'Audio', 'Captions', 'Transitions', 'Filters', 'Markers', 'Adjust', 'Snap', 'Zoom out', 'Add video track']) expect(labelled(label)).toHaveLength(0);
+    expect(labelled('Canvas · 16:9')).toHaveLength(1);
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
 });
 
-test('the simple view opens a sheet from each entry and All editing tools reveals the full set', async () => {
+test('the five-tab dock opens AI, Cut, Sound, Text and Layers without hiding the dock', async () => {
     await renderSimple();
-    await press('Quick tools');
+    await press('AI Edit');
     for (const label of ['Smart Cut', 'Make a clip with AI', 'Voice or music with AI', 'Captions']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Close');
+    await press('Cut');
+    for (const label of ['Add', 'Filters', 'Transitions', 'Adjust', 'Canvas', 'All editing tools']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Add');
     for (const label of ['Library video', 'Library image', 'Library audio', 'Photos & videos', 'Files']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Close');
-    await press('More');
-    expect(labelled('Scenes').length).toBeGreaterThan(0);
-    expect(labelled('Find clips').length).toBeGreaterThan(0);
-    expect(labelled('All editing tools').length).toBeGreaterThan(0);
+    await press('Sound');
+    for (const label of ['Music', 'Clean Voice']) expect(labelled(label)).toHaveLength(1);
+    await press('Close');
+    await press('Text');
+    for (const label of ['Edit Text', 'Title', 'Captions', 'Report Issue', 'Open Settings']) expect(labelled(label)).toHaveLength(1);
+    await press('Close');
+    await press('Layers');
+    for (const label of ['Photo', 'Video', 'All layers']) expect(labelled(label)).toHaveLength(1);
+    await press('Close');
+    await press('Cut');
     await press('All editing tools');
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail').length).toBeGreaterThan(0);
     expect(labelled('Simple view').length).toBeGreaterThan(0);
     await press('Simple view');
     expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
+});
+
+test('chooses a project cover frame, title and colour and autosaves them', async () => {
+    serverDocument = { ...document, schema_version: 3, timeline: { schemaVersion: 3, fps: 30, seq: 1, aspect: '16:9', background: '#000000',
+        media: { media1: { id: 'media1', kind: 'video', name: 'Cover clip', frames: 120 } },
+        video: [{ id: 'v1', mediaId: 'media1', start: 0, in: 0, len: 120, trackId: 'video-0' }], audio: [], text: [], tracks: [
+            { id: 'video-0', kind: 'video', name: 'Video 1', locked: false, muted: false, hidden: false },
+            { id: 'audio-0', kind: 'audio', name: 'Audio 1', locked: false, muted: false, hidden: false },
+            { id: 'text-0', kind: 'text', name: 'Text 1', locked: false, muted: false, hidden: false }], markers: [] } };
+    await renderSimple();
+    await press('Choose cover');
+    expect(visible('Choose Cover')).toBe(true);
+    await press('Frame at 00:03');
+    const input = labelled('Cover text');
+    expect(input).toHaveLength(1);
+    await act(async () => input[0].props.onChangeText('Track session'));
+    await press('Text color #FFE66D');
+    await press('Save');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    const body = JSON.parse(puts().at(-1)![1].body);
+    expect(body.document.cover).toEqual({ frame: 119, text: 'Track session', text_color: '#FFE66D' });
 });
 
 test('opens a native project workspace without loading a website', async () => {
@@ -129,7 +165,7 @@ test('opens a native project workspace without loading a website', async () => {
     expect(visible('PREVIEW')).toBe(true);
     expect(visible('TIMELINE')).toBe(true);
     expect(root.container.queryAll((node) => node.type === 'WebView')).toHaveLength(0);
-    for (const label of ['Media', 'Audio', 'Generate', 'Text', 'Captions', 'Transcript', 'Scenes', 'Clip Finder', 'Effects', 'Transitions', 'Filters', 'Animation', 'Markers', 'Brand kit', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
+    for (const label of ['Canvas', 'Media', 'Audio', 'Generate', 'Text', 'Captions', 'Transcript', 'Scenes', 'Clip Finder', 'Effects', 'Transitions', 'Filters', 'Animation', 'Markers', 'Brand kit', 'Adjust']) expect(root.container.queryAll((node) => node.props.accessibilityLabel === label).length).toBeGreaterThan(0);
     const railLabels = root.container.queryAll(node => node.props.accessibilityRole === 'button' && typeof node.props.accessibilityLabel === 'string')
         .map(node => node.props.accessibilityLabel);
     expect(railLabels.slice(railLabels.indexOf('Scenes'), railLabels.indexOf('Scenes') + 2)).toEqual(['Scenes', 'Clip Finder']);
@@ -331,6 +367,30 @@ test('updates canvas settings natively and saves before Done exits', async () =>
     expect(mockRouter.back).toHaveBeenCalledTimes(1);
 });
 
+test('opens canvas settings from the ratio badge and exposes one-tap clip rotation', async () => {
+    serverDocument = twoClips();
+    await renderSimple();
+    await press('Canvas · 16:9');
+    await press('9:16');
+    await act(async () => root.container.queryAll(node => node.props.testID === 'clip-v1')[0].props.onAccessibilityTap());
+    await press('Rotation +90°');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    const saved = JSON.parse(puts().at(-1)![1].body).document;
+    expect(saved.canvas.aspect_ratio).toBe('9:16');
+    expect(saved.timeline.video.find((clip: any) => clip.id === 'v1').transform.rotation).toBe(90);
+    expect(labelled('Flip horizontally')).toHaveLength(1);
+    expect(labelled('Flip vertically')).toHaveLength(1);
+});
+
+test('offers and persists all four ByeCut canvas aspect presets', async () => {
+    await renderSimple();
+    await press('Canvas · 16:9');
+    for (const ratio of ['16:9', '9:16', '1:1', '4:5']) expect(labelled(ratio)).toHaveLength(1);
+    await press('4:5');
+    await act(async () => jest.advanceTimersByTimeAsync(900));
+    expect(JSON.parse(puts().at(-1)![1].body).document.canvas.aspect_ratio).toBe('4:5');
+});
+
 test('keeps the user in the editor when saving fails', async () => {
     serverDocument = { ...document, schema_version: 2, timeline: { schemaVersion: 2, fps: 30, seq: 0, aspect: 'source', media: {}, video: [], audio: [], text: [] } };
     mockRequest.mockImplementation(async (path: string, init?: RequestInit) => {
@@ -371,6 +431,10 @@ test('chooses device media and adds it to the project without leaving the editor
     await render();
     await press('Photos & videos');
     await act(async () => Promise.resolve());
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(expect.objectContaining({
+        preferredAssetRepresentationMode: 'current',
+        videoExportPreset: 'passthrough',
+    }));
     await act(async () => jest.advanceTimersByTimeAsync(900));
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(Object.values(saved.media)).toContainEqual(expect.objectContaining({ name: 'Device shot.mp4', kind: 'video', frames: 60, width: 1080, height: 1920 }));
@@ -414,13 +478,36 @@ test('a backup completing after another edit survives undo and redo without inse
 
 test.each([4, 20])('Files import probes %s seconds before adding its media and clip', async seconds => {
     const picker = require('expo-document-picker');
+    const { editorDeviceMedia } = require('../src/lib/editorDeviceMedia');
     const { probeDuration } = require('../src/lib/editorMediaDuration');
+    editorDeviceMedia.copy.mockResolvedValueOnce({ file: 'file:///durable/from-files.mp4', type: 'video/mp4', size: 100, seconds, verified: true });
     probeDuration.mockResolvedValueOnce(seconds);
     picker.getDocumentAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///picked/from-files.mp4', name: 'Files clip', mimeType: 'video/mp4' }] });
     await render(); await press('Files'); await act(async () => jest.advanceTimersByTimeAsync(900));
     const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
     expect(probeDuration).toHaveBeenCalledWith('file:///picked/from-files.mp4');
     expect(saved.media['l-native-save-key'].frames).toBe(seconds * 30); expect(saved.video[0].len).toBe(seconds * 30);
+});
+
+test('an unavailable iCloud pick stays outside the timeline and retries the same held asset once it is ready', async () => {
+    const picker = require('expo-document-picker');
+    const { editorDeviceMedia } = require('../src/lib/editorDeviceMedia');
+    const { waitForEditorPickedFile } = require('../src/lib/editorPickedFileReady');
+    let finishWait!: (value: string) => void;
+    waitForEditorPickedFile.mockImplementationOnce(() => new Promise(resolve => { finishWait = resolve; })).mockResolvedValueOnce('ready');
+    editorDeviceMedia.copy.mockResolvedValueOnce({ file: 'file:///durable/cloud.mp4', type: 'video/mp4', size: 100, seconds: 4, verified: true });
+    picker.getDocumentAsync.mockResolvedValueOnce({ canceled: false, assets: [{ uri: 'file:///cache/cloud.mp4', name: 'Cloud clip', mimeType: 'video/mp4' }] });
+    await render(); await press('Files'); await act(async () => Promise.resolve());
+    expect(visible('Preparing…')).toBe(true);
+    await act(async () => finishWait('unavailable'));
+    expect(visible('One of this project’s source files is still being prepared. Try again when it is ready.')).toBe(true);
+    expect(puts()).toHaveLength(0);
+    await press('Retry now'); await act(async () => Promise.resolve()); await act(async () => jest.advanceTimersByTimeAsync(900));
+    expect(waitForEditorPickedFile).toHaveBeenCalledTimes(2);
+    expect(editorDeviceMedia.copy).toHaveBeenCalledTimes(1);
+    const saved = JSON.parse(puts().at(-1)![1].body).document.timeline;
+    expect(Object.values(saved.media)).toContainEqual(expect.objectContaining({ name: 'Cloud clip' }));
+    expect(saved.video).toHaveLength(1);
 });
 
 test('an account change during duration probing cannot copy a pick into the next account', async () => {

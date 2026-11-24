@@ -36,6 +36,7 @@ export default {
     'editor.createOffline': 'No connection. Check your internet and try again.',
     'editor.notKept': 'These changes are not saved anywhere yet',
     'editor.retryNow': 'Retry now',
+    'editor.filesUnavailable': 'This file is still unavailable. Retry it, or choose it again from Files.',
     'editor.retryIn': 'Try again in {seconds} s',
     'editor.rejected': 'This edit could not be saved',
     'editor.update': 'Update the app to use the editor',
@@ -298,4 +299,9 @@ export default {
     'editor.clipsOnTimelineCount.other': "{count} clips",
     'editor.textLayersCount.one': "{count} text layer",
     'editor.textLayersCount.other': "{count} text layers",
+    'editor.safeArea': "Safe-area preview",
+    'editor.safeArea.off': "Off",
+    'editor.safeArea.shortForm': "Short-form safe guide",
+    'editor.safeArea.help': "Approximate common-platform guide. Platform controls can change; exports never include it.",
+    'editor.safeArea.keepInside': "Keep titles inside",
 } as const;

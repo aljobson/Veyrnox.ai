@@ -4,11 +4,57 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../../components/I18nProvider';
 import { localeTag } from '../../../lib/i18n/locales.mjs';
 import { useAssetUrl } from '../_lib/useAssetUrl';
-import { buildSpeechAwareCutPlan, parseSmartCutAnalysis } from '../_lib/smartCutAnalysis';
+import { getStoredUserId, onSessionChange } from '../../lib/authClient';
+import { buildSpeechAwareCutPlan, parseSmartCutAnalysis, SmartCutPlanError, SPEECH_CUT_LANGUAGES } from '../_lib/smartCutAnalysis';
 import { smartCutFillerRanges } from '../_lib/smartCutFillers';
 import { buildSmartCutPlan, SMART_CUT_PACING, smartCutPlanUsesAvailableTakes, smartCutPlanWithinLimits, swapSmartCutTake } from '../_lib/smartCut';
+import { readSmartCutSetupDraft, removeSmartCutSetupDraft, smartCutSetupHasWork, writeSmartCutSetupDraft } from '../_lib/smartCutSetupDraft.mjs';
+import { SmartCutFeedback } from './SmartCutFeedback';
 
 const inputClass = 'mt-1 min-h-11 w-full rounded-xl border border-vx-border bg-vx-base px-3 py-2.5 text-sm text-vx-fg focus:border-vx-accent focus:outline-hidden';
+const smartCutStorage = () => { try { return window.localStorage; } catch { return null; } };
+const SMART_CUT_WARNING_KEYS = Object.freeze({
+  review_boundaries: 'app.smartCut.warning.reviewBoundaries',
+  trim_intersects_unit: 'app.smartCut.warning.trimIntersectsUnit',
+  phrase_timing: 'app.smartCut.warning.phraseTiming',
+  removal_retained: 'app.smartCut.warning.removalRetained',
+  segment_limit_reached: 'app.smartCut.warning.segmentLimitReached',
+  output_limit_reached: 'app.smartCut.warning.outputLimitReached',
+  script_not_aligned: 'app.smartCut.warning.scriptNotAligned',
+  script_incomplete: 'app.smartCut.warning.scriptIncomplete',
+  extra_speech_omitted: 'app.smartCut.warning.extraSpeechOmitted',
+  false_start_omitted: 'app.smartCut.warning.falseStartOmitted',
+  retake_omitted: 'app.smartCut.warning.retakeOmitted',
+  join_review: 'app.smartCut.warning.joinReview',
+  language_unknown: 'app.smartCut.warning.languageUnknown',
+  language_mixed: 'app.smartCut.warning.languageMixed',
+});
+const SMART_CUT_ERROR_KEYS = Object.freeze({
+  source_clip_limit_reached: 'app.smartCut.error.sourceClipLimit',
+  unit_exceeds_budget: 'app.smartCut.error.unitExceedsBudget',
+  trim_intersects_unit: 'app.smartCut.error.trimIntersectsAllUnits',
+  script_match_missing: 'app.smartCut.error.scriptMatchMissing',
+  alignment_budget_exceeded: 'app.smartCut.error.alignmentBudgetExceeded',
+  language_override_invalid: 'app.smartCut.error.languageOverrideInvalid',
+});
+
+function segmentMatchText(t, number, segment) {
+  if (segment.matchCode === 'script_line_matched') return t('app.smartCut.match.scriptLine', {
+    line: number(segment.matchParameters?.line || 0),
+    confidence: number(Math.round(Number(segment.matchParameters?.confidence || 0) * 100)),
+  });
+  if (segment.matchCode === 'transcript_section_kept') return t('app.smartCut.match.transcript');
+  return segment.matchStatus;
+}
+
+function segmentReasonText(t, number, segment, take) {
+  if (segment.reasonCode === 'best_take_score') return t('app.smartCut.reason.bestTake', { take: take?.name || '' });
+  if (segment.reasonCode === 'manual_take') return t('app.smartCut.reason.manualTake', { take: take?.name || '' });
+  if (segment.reasonCode === 'transcript_continuity') return t('app.smartCut.reason.transcript', {
+    take: take?.name || '', minimumSilenceSeconds: number(segment.reasonParameters?.minimumSilenceSeconds || 0, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  });
+  return segment.reason;
+}
 
 function analysisOf(analyses, assetId) {
   if (analyses instanceof Map) return analyses.get(assetId);
@@ -23,9 +69,15 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
   const [script, setScript] = useState('');
   const [notes, setNotes] = useState('');
   const [pacing, setPacing] = useState('balanced');
+  const [languageOverride, setLanguageOverride] = useState('auto');
   const [plan, setPlan] = useState(null);
+  const [feedbackTarget, setFeedbackTarget] = useState(null);
   const [view, setView] = useState('cut');
   const [notice, setNotice] = useState('');
+  const [draftCandidate, setDraftCandidate] = useState(undefined);
+  const draftActor = useRef('guest');
+  const draftTimer = useRef();
+  const suppressedDraft = useRef('');
   const lastApplyRevision = useRef(applyRevision);
   const planDisabled = disabled || planningDisabled;
   const ready = clips.length > 0 && clips.every((clip) => Number.isFinite(Number(clip.duration)) && Number(clip.duration) > 0);
@@ -34,10 +86,89 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
     if (Array.isArray(analyses)) return analyses.some((analysis) => analysis?.assetId === clip.job_id);
     return Boolean(analyses[clip.job_id]);
   });
+  const detectedLanguages = useMemo(() => analysisReady ? [...new Set(clips.map((clip) => {
+    const parsed = parseSmartCutAnalysis(analysisOf(analyses, clip.job_id), { assetId: clip.job_id });
+    return parsed.ok ? parsed.analysis.language || 'und' : 'und';
+  }))] : [], [analysisReady, analyses, clips]);
+  const languageName = (code) => new Intl.DisplayNames([localeTag(locale)], { type: 'language' }).of(code) || code;
+  const detectedLanguageText = detectedLanguages.includes('und')
+    ? t('app.smartCut.language.autoUnknown')
+    : detectedLanguages.length > 1
+      ? t('app.smartCut.language.autoMixed')
+      : detectedLanguages.length === 1
+        ? t('app.smartCut.language.autoDetected', { language: languageName(detectedLanguages[0]) })
+        : t('app.smartCut.language.auto');
   const modeLabel = t(plan?.mode === 'transcript-silence' ? 'app.smartCut.mode.speechAware' : 'app.smartCut.mode.localPreview');
+  const displayedWarnings = plan?.warningDetails?.length
+    ? [...new Set(plan.warningDetails.map((warning) => t(
+      SMART_CUT_WARNING_KEYS[warning.code] || 'app.smartCut.notice.failed',
+      warning.parameters,
+    )))]
+    : (plan?.warnings || []);
 
   const [removeFillers, setRemoveFillers] = useState(false);
   const [skippedFillers, setSkippedFillers] = useState([]);
+  const draftClipIdentity = useMemo(() => JSON.stringify(clips.map((clip) => [clip.job_id, clip.uid, clip.in_s ?? 0, clip.out_s ?? null])), [clips]);
+  const draftSetup = useMemo(() => ({ script, notes, pacing, language: languageOverride, removeFillers, skippedFillers }),
+    [languageOverride, notes, pacing, removeFillers, script, skippedFillers]);
+
+  useEffect(() => {
+    let active = true;
+    const activate = (actor) => {
+      clearTimeout(draftTimer.current);
+      draftActor.current = actor || 'guest';
+      const saved = readSmartCutSetupDraft(smartCutStorage(), draftActor.current, clips);
+      if (active) setDraftCandidate(saved);
+    };
+    activate(getStoredUserId() || 'guest');
+    const unsubscribe = onSessionChange((session) => {
+      const actor = session?.user?.id || 'guest';
+      if (actor === draftActor.current) return;
+      suppressedDraft.current = '';
+      setScript(''); setNotes(''); setPacing('balanced'); setLanguageOverride('auto');
+      setRemoveFillers(false); setSkippedFillers([]); setPlan(null); setFeedbackTarget(null); setNotice('');
+      activate(actor);
+    });
+    return () => { active = false; clearTimeout(draftTimer.current); unsubscribe(); };
+  }, [draftClipIdentity]); // Re-scope recovery when the source selection or trims change.
+
+  useEffect(() => {
+    if (draftCandidate !== null) return;
+    clearTimeout(draftTimer.current);
+    if (suppressedDraft.current === JSON.stringify(draftSetup)) return;
+    if (!smartCutSetupHasWork(draftSetup)) {
+      removeSmartCutSetupDraft(smartCutStorage(), draftActor.current);
+      return;
+    }
+    draftTimer.current = setTimeout(() => {
+      try { writeSmartCutSetupDraft(smartCutStorage(), draftActor.current, clips, draftSetup); }
+      catch { /* The editor remains usable when private browser storage is unavailable. */ }
+    }, 500);
+    return () => clearTimeout(draftTimer.current);
+  }, [clips, draftCandidate, draftSetup]);
+
+  function recoverSetupDraft() {
+    if (!draftCandidate) return;
+    const setup = draftCandidate.setup;
+    setScript(setup.script); setNotes(setup.notes); setPacing(setup.pacing); setLanguageOverride(setup.language);
+    setRemoveFillers(setup.removeFillers); setSkippedFillers(setup.skippedFillers); setPlan(null); setNotice('');
+    suppressedDraft.current = '';
+    setDraftCandidate(null);
+  }
+
+  function discardSetupDraft() {
+    clearTimeout(draftTimer.current);
+    suppressedDraft.current = JSON.stringify(draftSetup);
+    removeSmartCutSetupDraft(smartCutStorage(), draftActor.current);
+    setDraftCandidate(null);
+  }
+
+  function clearSetupDraft() {
+    clearTimeout(draftTimer.current);
+    suppressedDraft.current = JSON.stringify(draftSetup);
+    removeSmartCutSetupDraft(smartCutStorage(), draftActor.current);
+    setDraftCandidate(null);
+  }
   // Review-only: nothing is removed unless the person ticks the box, and each suggestion can be unticked.
   const fillerRows = useMemo(() => {
     if (!analysisReady) return [];
@@ -47,10 +178,19 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
       const takeId = String(clip.uid || clip.job_id);
       const low = Math.max(0, Number(clip.in_s) || 0);
       const high = Number.isFinite(Number(clip.out_s)) ? Number(clip.out_s) : Number(clip.duration);
-      return smartCutFillerRanges(parsed.analysis, { start: low, end: high })
+      const effectiveAnalysis = languageOverride === 'auto' ? parsed.analysis : { ...parsed.analysis, language: languageOverride };
+      return smartCutFillerRanges(effectiveAnalysis, { start: low, end: high })
         .map((range) => ({ ...range, takeId, key: `${takeId}:${range.start}` }));
     });
-  }, [analysisReady, analyses, clips]);
+  }, [analysisReady, analyses, clips, languageOverride]);
+
+  function changeLanguage(value) {
+    setLanguageOverride(value);
+    setPlan(null);
+    setFeedbackTarget(null);
+    setSkippedFillers([]);
+    setNotice('');
+  }
 
   function toggleFiller(key) {
     setSkippedFillers((current) => (current.includes(key) ? current.filter((item) => item !== key) : [...current, key]));
@@ -59,37 +199,50 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
   function createPlan() {
     if (planDisabled) return;
     try {
-      setPlan(analysisReady
+      const nextPlan = analysisReady
         ? buildSpeechAwareCutPlan({
           clips,
           analyses,
+          script,
+          notes,
+          languageOverride: languageOverride === 'auto' ? '' : languageOverride,
           silencePreset: pacing,
           removals: removeFillers ? fillerRows.filter((row) => !skippedFillers.includes(row.key)).map(({ takeId, start, end }) => ({ takeId, start, end })) : [],
         })
-        : buildSmartCutPlan({ clips, script, notes, pacing }));
+        : buildSmartCutPlan({ clips, script, notes, pacing });
+      setPlan(nextPlan);
+      setFeedbackTarget({ responseId: crypto.randomUUID(), planMode: nextPlan.mode });
       setView('cut');
       setNotice(t(analysisReady ? 'app.smartCut.notice.speechCreated' : 'app.smartCut.notice.localCreated'));
     } catch (error) {
       setPlan(null);
-      setNotice(error instanceof Error ? error.message : t('app.smartCut.notice.failed'));
+      setFeedbackTarget(null);
+      setNotice(error instanceof SmartCutPlanError
+        ? t(SMART_CUT_ERROR_KEYS[error.code] || 'app.smartCut.notice.failed', error.parameters)
+        : error instanceof Error ? error.message : t('app.smartCut.notice.failed'));
     }
   }
 
   function restart() {
     if (disabled) return;
     setPlan(null);
+    setFeedbackTarget(null);
     setNotice('');
   }
 
   function discard() {
     if (disabled) return;
+    clearSetupDraft();
     setPlan(null);
+    setFeedbackTarget(null);
     setOpen(false);
     setNotice('');
   }
 
   function finishApply() {
+    clearSetupDraft();
     setPlan(null);
+    setFeedbackTarget(null);
     setOpen(false);
     setNotice(t('app.smartCut.notice.applied'));
   }
@@ -97,7 +250,9 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
   useEffect(() => {
     if (lastApplyRevision.current === applyRevision) return;
     lastApplyRevision.current = applyRevision;
+    clearSetupDraft();
     setPlan(null);
+    setFeedbackTarget(null);
     setOpen(false);
     setNotice(t('app.smartCut.notice.applied'));
   }, [applyRevision, t]);
@@ -130,6 +285,11 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
   if (!open) {
     return (
       <section className="mb-4 rounded-2xl border border-vx-accent/40 bg-vx-accent/[0.06] p-4" aria-labelledby="smart-cut-heading">
+      {draftCandidate && <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-vx-accent bg-vx-panel px-4 py-3 text-sm">
+        <p className="min-w-0 flex-1 font-bold">{t('app.editor.workspace.recoverQuestion')}</p>
+        <button type="button" onClick={recoverSetupDraft} className="min-h-11 rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink">{t('app.editor.workspace.recover')}</button>
+        <button type="button" onClick={discardSetupDraft} className="min-h-11 rounded-full border border-vx-border px-4 text-xs font-extrabold">{t('app.publish.drafts.discard')}</button>
+      </div>}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.smartCut.name')} · {t(analysisReady ? 'app.smartCut.mode.speechReady' : 'app.smartCut.mode.localPreview')}</p>
@@ -149,6 +309,11 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
 
   return (
     <section className="mb-4 rounded-2xl border border-vx-accent/40 bg-vx-panel-raised p-4 sm:p-5" aria-labelledby="smart-cut-heading">
+      {draftCandidate && <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-vx-accent bg-vx-panel px-4 py-3 text-sm">
+        <p className="min-w-0 flex-1 font-bold">{t('app.editor.workspace.recoverQuestion')}</p>
+        <button type="button" onClick={recoverSetupDraft} className="min-h-11 rounded-full bg-vx-accent px-4 text-xs font-extrabold text-vx-accent-ink">{t('app.editor.workspace.recover')}</button>
+        <button type="button" onClick={discardSetupDraft} className="min-h-11 rounded-full border border-vx-border px-4 text-xs font-extrabold">{t('app.publish.drafts.discard')}</button>
+      </div>}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-vx-mono text-[10px] font-bold tracking-[0.14em] text-vx-accent">{t('app.smartCut.name')} · {modeLabel}</p>
@@ -161,6 +326,13 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
       {!plan ? (
         <div className="mt-4 grid gap-4">
           {analysisReady && <p className="rounded-xl border border-vx-border bg-vx-base p-3 text-xs leading-5 text-vx-fg-muted">{t('app.smartCut.speechReady')}</p>}
+          {analysisReady && <label className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.language.label')}
+            <select aria-label={t('app.smartCut.language.label')} disabled={disabled} value={languageOverride} onChange={(event) => changeLanguage(event.target.value)} className={`${inputClass} disabled:opacity-50`}>
+              <option value="auto">{detectedLanguageText}</option>
+              {SPEECH_CUT_LANGUAGES.map((code) => <option key={code} value={code}>{languageName(code)}</option>)}
+            </select>
+            <span className="mt-1 block font-normal leading-5">{t('app.smartCut.language.help')}</span>
+          </label>}
           {analysisReady && (
             <fieldset>
               <legend className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.fillers.title')}</legend>
@@ -189,14 +361,12 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
               )}
             </fieldset>
           )}
-          {!analysisReady && <>
           <label className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.script')}
             <textarea disabled={disabled} value={script} onChange={(event) => setScript(event.target.value)} rows="4" placeholder={t('app.smartCut.scriptPlaceholder')} className={`${inputClass} resize-y disabled:opacity-50`} />
           </label>
-          <label className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.notes')}
+          {!analysisReady && <label className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.notes')}
             <textarea disabled={disabled} value={notes} onChange={(event) => setNotes(event.target.value)} rows="2" placeholder={t('app.smartCut.notesPlaceholder')} className={`${inputClass} resize-y disabled:opacity-50`} />
-          </label>
-          </>}
+          </label>}
           <fieldset>
             <legend className="text-[11px] font-bold text-vx-fg-muted">{t('app.smartCut.pacing')}</legend>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -230,7 +400,7 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
               {plan.segments.map((segment, index) => {
                 const take = plan.takes.find((item) => item.id === segment.takeId);
                 const eligibleTakes = plan.mode === 'transcript-silence'
-                  ? plan.takes.filter((item) => item.id === segment.takeId)
+                  ? plan.takes.filter((item) => item.id === segment.takeId || segment.alternates?.includes(item.id))
                   : plan.takes;
                 return (
                   <li key={segment.id} className="rounded-xl border border-vx-border bg-vx-base p-3">
@@ -238,14 +408,16 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
                       <div className="min-w-0 flex-1"><p className="font-vx-mono text-[9px] font-bold text-vx-accent">{t('app.smartCut.section', { count: number(index + 1) })}</p><p className="mt-1 line-clamp-2 text-sm font-bold">{segment.label}</p></div>
                       <span className="font-vx-mono text-[10px] text-vx-fg-muted vx-num">{t('app.smartCut.range', { start: number(segment.start, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), end: number(segment.end, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</span>
                     </div>
-                    <label className="mt-3 block text-[10px] font-bold text-vx-fg-muted">{t('app.smartCut.take')}
-                      <select aria-label={t('app.smartCut.takeForSection', { count: number(index + 1) })} value={segment.takeId} disabled={disabled || eligibleTakes.length < 2} onChange={(event) => setPlan((current) => swapSmartCutTake(current, segment.id, event.target.value))} className={`${inputClass} disabled:opacity-60`}>
-                        {eligibleTakes.map((option) => <option key={option.id} value={option.id}>{option.name}{option.id === take?.id ? t('app.smartCut.selected') : ''}</option>)}
-                      </select>
-                    </label>
+                    <div className="mt-3 block text-[10px] font-bold text-vx-fg-muted">{t('app.smartCut.take')}
+                      {eligibleTakes.length < 2
+                        ? <p className="mt-1 text-sm font-bold text-vx-fg">{take?.name}</p>
+                        : <select aria-label={t('app.smartCut.takeForSection', { count: number(index + 1) })} value={segment.takeId} disabled={disabled} onChange={(event) => setPlan((current) => swapSmartCutTake(current, segment.id, event.target.value))} className={`${inputClass} disabled:opacity-60`}>
+                          {eligibleTakes.map((option) => <option key={option.id} value={option.id}>{option.name}{option.id === take?.id ? t('app.smartCut.selected') : ''}</option>)}
+                        </select>}
+                    </div>
                     <SmartCutSegmentPreview clip={clips.find((clip) => String(clip.uid || clip.job_id) === segment.takeId)} start={segment.start} end={segment.end} />
-                    <p className={`mt-2 text-[10px] font-bold uppercase tracking-wide ${plan.mode === 'transcript-silence' ? 'text-vx-accent' : 'text-vx-danger'}`}>{segment.matchStatus}</p>
-                    <p className="mt-2 text-xs leading-5 text-vx-fg-muted"><span className="font-bold text-vx-fg-body">{t('app.smartCut.why')}</span> {segment.reason}</p>
+                    <p className={`mt-2 text-[10px] font-bold uppercase tracking-wide ${plan.mode === 'transcript-silence' ? 'text-vx-accent' : 'text-vx-danger'}`}>{segmentMatchText(t, number, segment)}</p>
+                    <p className="mt-2 text-xs leading-5 text-vx-fg-muted"><span className="font-bold text-vx-fg-body">{t('app.smartCut.why')}</span> {segmentReasonText(t, number, segment, take)}</p>
                   </li>
                 );
               })}
@@ -254,8 +426,10 @@ export function SmartCutPlanner({ clips, analyses = null, disabled = false, plan
 
           <div className="mt-3 rounded-xl border border-vx-border bg-vx-base p-3">
             <p className="text-[10px] font-bold text-vx-fg-muted">{t('app.smartCut.warnings')}</p>
-            <ul className="mt-2 grid gap-1 text-xs leading-5 text-vx-fg-muted">{plan.warnings.map((warning) => <li key={warning}>• {warning}</li>)}</ul>
+            <ul className="mt-2 grid gap-1 text-xs leading-5 text-vx-fg-muted">{displayedWarnings.map((warning) => <li key={warning}>• {warning}</li>)}</ul>
           </div>
+
+          {feedbackTarget && <SmartCutFeedback key={feedbackTarget.responseId} responseId={feedbackTarget.responseId} planMode={feedbackTarget.planMode} />}
 
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" disabled={planDisabled} onClick={apply} className="min-h-11 rounded-full bg-vx-accent px-5 text-sm font-extrabold text-vx-accent-ink disabled:opacity-40">{t('app.smartCut.action.apply')}</button>

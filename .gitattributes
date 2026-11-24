@@ -1,0 +1,5 @@
+# These owner-supplied clean-room evidence files are hash-frozen, including their final blank line.
+replica/byecut/features.csv -text whitespace=-blank-at-eof
+replica/byecut/recon.md -text whitespace=-blank-at-eof
+replica/byecut/coverage.json -text
+replica/byecut/coverage.sha256 -text

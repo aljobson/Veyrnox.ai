@@ -1,4 +1,4 @@
-import type { TextStyle } from 'react-native';
+import type { TextStyle, ViewStyle } from 'react-native';
 import { mergedTextStyle } from './editorTextEdit';
 import type { TextClip } from './nativeEditorModel';
 const families: Record<string, readonly [string, string]> = {
@@ -27,5 +27,17 @@ export function editorTextPreviewStyle(style: TextClip['style'], size: number, o
         textShadowColor: shadow ? rgba(s.shadowColor, s.shadowOpacity) : outline ? s.stroke : 'transparent',
         textShadowOffset: { width: shadow ? s.shadowX * k : 0, height: shadow ? s.shadowY * k : 0 },
         textShadowRadius: shadow ? s.shadowBlur * k : outline ? s.strokeWidth * k : 0,
+    };
+}
+const clamp = (value: number) => Math.max(0, Math.min(1, value));
+/** Phone preview geometry for the canonical centre-anchored text coordinates. */
+export function editorTextOverlayStyles(item: Pick<TextClip, 'x' | 'y' | 'size' | 'style'>, os: string,
+    options: { outline?: boolean; customFontReady?: boolean } = {}): { wrapper: ViewStyle; text: TextStyle } {
+    const base = editorTextPreviewStyle(item.style, item.size, os, options), fontSize = Math.max(8, Math.min(120, item.size * 3));
+    const factor = fontSize / 18;
+    return {
+        wrapper: { position: 'absolute', width: '84%', left: `${clamp(item.x) * 100 - 42}%`, top: `${clamp(item.y) * 100}%`, marginTop: -fontSize / 2, direction: 'ltr' },
+        text: { ...base, fontSize, lineHeight: typeof base.lineHeight === 'number' ? base.lineHeight * factor : undefined,
+            letterSpacing: typeof base.letterSpacing === 'number' ? base.letterSpacing * factor : undefined },
     };
 }

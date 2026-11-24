@@ -1,6 +1,7 @@
 import { t } from '../../../lib/i18n';
-export type Tool = 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'effects' | 'transitions' | 'filters' | 'animation' | 'motion' | 'mask' | 'markers' | 'brand' | 'adjust';
+export type Tool = 'canvas' | 'media' | 'audio' | 'generate' | 'text' | 'captions' | 'transcript' | 'scenes' | 'clips' | 'effects' | 'transitions' | 'filters' | 'animation' | 'motion' | 'mask' | 'markers' | 'brand' | 'adjust';
 export const tools: readonly { id: Tool; icon: string; label: string }[] = [
+    { id: 'canvas', icon: '▭', label: t('editor.shape') },
     { id: 'media', icon: '▣', label: t('editor.media2') },
     { id: 'audio', icon: '♫', label: t('editor.audio') },
     { id: 'generate', icon: '✦', label: t('editor.generate') },

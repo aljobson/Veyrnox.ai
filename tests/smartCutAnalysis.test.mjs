@@ -9,6 +9,7 @@ import {
   SMART_CUT_SILENCE_DEFAULTS,
   SMART_CUT_SILENCE_PRESETS,
   smartCutSilencePreset,
+  swapSpeechAwareCutTake,
 } from '../app/veyrnox/_lib/smartCutAnalysis.js';
 
 const clip = { job_id: 'take-a', name: 'Opening take', duration: 10, in_s: 0, out_s: 10 };
@@ -101,6 +102,45 @@ test('analysis rejects mismatched assets, durations, unsupported providers and o
   assert.equal(normaliseWizperResult({ assetId: clip.job_id, duration: 10, result: { text: 'tail', chunks: [{ timestamp: [9, null], text: 'tail' }] } }).error, 'analysis_timestamp_invalid', 'incomplete provider timing fails closed instead of silently dropping speech');
 });
 
+test('automatic language metadata is preserved and a matching override can recover unknown-language script alignment', () => {
+  const analysis = {
+    version: 1, assetId: 'a', duration: 3, provider: 'fal-scribe-v2', transcript: '今日は晴れです。', language: 'xxx',
+    chunks: [
+      { start: 0.4, end: 0.7, text: '今日' },
+      { start: 0.8, end: 1.1, text: 'は' },
+      { start: 1.2, end: 1.5, text: '晴れ' },
+      { start: 1.6, end: 1.9, text: 'です。' },
+    ],
+  };
+  const input = { clips: [{ job_id: 'a', duration: 3 }], analyses: { a: analysis }, script: '今日は晴れです。' };
+  assert.throws(() => buildSpeechAwareCutPlan(input), (error) => error?.code === 'script_match_missing');
+  const plan = buildSpeechAwareCutPlan({ ...input, languageOverride: 'ja' });
+  assert.equal(plan.language, 'ja');
+  assert.equal(plan.languageOverride, 'ja');
+  assert.deepEqual(plan.detectedLanguages, ['und']);
+  assert.equal(plan.segments[0].matchCode, 'script_line_matched');
+  assert.ok(!plan.warningDetails.some((warning) => warning.code === 'language_unknown'));
+  assert.throws(() => buildSpeechAwareCutPlan({ ...input, languageOverride: 'xx' }), (error) => error?.code === 'language_override_invalid');
+});
+
+test('automatic mode reports mixed languages and does not cluster identical cross-language takes', () => {
+  const chunks = [
+    { start: 0.5, end: 0.8, text: 'Same' },
+    { start: 0.9, end: 1.2, text: 'complete' },
+    { start: 1.3, end: 1.6, text: 'line.' },
+  ];
+  const make = (assetId, language) => ({ version: 1, assetId, duration: 3, provider: 'fal-scribe-v2', transcript: 'Same complete line.', language, chunks });
+  const plan = buildSpeechAwareCutPlan({
+    clips: [{ job_id: 'english', duration: 3 }, { job_id: 'spanish', duration: 3 }],
+    analyses: { english: make('english', 'en'), spanish: make('spanish', 'es') },
+  });
+  assert.equal(plan.language, 'und');
+  assert.deepEqual(plan.detectedLanguages, ['en', 'es']);
+  assert.equal(plan.segments.length, 2);
+  assert.ok(plan.warningDetails.some((warning) => warning.code === 'language_mixed'));
+  assert.ok(!plan.warningDetails.some((warning) => warning.code === 'retake_omitted'));
+});
+
 test('speech-aware planning removes long pauses while keeping padded transcript ranges', () => {
   const normalized = normaliseWizperResult({ assetId: clip.job_id, duration: clip.duration, result: wizper }).analysis;
   const plan = buildSpeechAwareCutPlan({ clips: [clip], analyses: { [clip.job_id]: normalized } });
@@ -112,20 +152,167 @@ test('speech-aware planning removes long pauses while keeping padded transcript 
   assert.ok(plan.segments.every((segment) => segment.alternates.length === 0));
 });
 
-test('speech-aware planning respects pre-existing trim windows', () => {
-  const trimmed = { ...clip, in_s: 1, out_s: 3.5 };
-  const normalized = normaliseWizperResult({ assetId: clip.job_id, duration: clip.duration, result: wizper }).analysis;
-  const plan = buildSpeechAwareCutPlan({ clips: [trimmed], analyses: { [clip.job_id]: normalized } });
-  assert.ok(plan.segments.every((segment) => segment.start >= 1 && segment.end <= 3.5));
+test('large padding stops at adjacent-word midpoints instead of overlapping the next phrase', () => {
+  const analysis = {
+    version: 1, assetId: 'a', duration: 3, provider: 'fal-scribe-v2', transcript: 'First Second', language: 'en',
+    chunks: [
+      { start: 0.5, end: 0.8, text: 'First' },
+      { start: 1.2, end: 1.5, text: 'Second' },
+    ],
+  };
+  const plan = buildSpeechAwareCutPlan({
+    clips: [{ job_id: 'a', duration: 3 }],
+    analyses: { a: analysis },
+    minimumSilenceSeconds: 0.3,
+    edgePaddingSeconds: 0.5,
+  });
+  assert.equal(plan.segments.length, 2);
+  assert.ok(plan.segments[0].end <= 1);
+  assert.ok(plan.segments[1].start >= 1);
+  assert.ok(plan.qualityChecks.filter((check) => check.code === 'complete_unit_boundaries').length === 2);
+  assert.ok(!plan.qualityChecks.some((check) => check.code === 'clipped_timed_unit'));
 });
 
-test('speech-aware planning rounds fractional trim starts inward', () => {
+test('speech-aware planning aligns supplied script lines and preserves notes', () => {
+  const normalized = normaliseWizperResult({ assetId: clip.job_id, duration: clip.duration, result: wizper }).analysis;
+  const plan = buildSpeechAwareCutPlan({ clips: [clip], analyses: { [clip.job_id]: normalized }, script: '  Hello there.\nThis is the second sentence.  ', notes: '  Prefer the opening.  ' });
+  assert.equal(plan.scriptProvided, true);
+  assert.equal(plan.notes, 'Prefer the opening.');
+  assert.deepEqual(plan.segments.map((segment) => segment.matchCode), ['script_line_matched', 'script_line_matched']);
+  assert.ok(plan.segments.every((segment) => segment.matchParameters.confidence === 1));
+  assert.ok(!plan.warningDetails.some((warning) => warning.code === 'script_not_aligned'));
+});
+
+test('script alignment ranks cleaner takes, keeps deterministic alternates and explains the score', () => {
+  const clips = [
+    { job_id: 'paused', name: 'Paused take', duration: 5 },
+    { job_id: 'clean', name: 'Clean take', duration: 5 },
+  ];
+  const make = (assetId, chunks) => ({ version: 1, assetId, duration: 5, provider: 'fal-scribe-v2', transcript: 'Ship today.', language: 'en', chunks });
+  const plan = buildSpeechAwareCutPlan({ clips, analyses: {
+    paused: make('paused', [{ start: .5, end: .7, text: 'Ship' }, { start: 1.1, end: 1.3, text: 'today.' }]),
+    clean: make('clean', [{ start: .5, end: .7, text: 'Ship' }, { start: .75, end: .95, text: 'today.' }]),
+  }, script: 'Ship today.' });
+  assert.equal(plan.segments[0].takeId, 'clean');
+  assert.deepEqual(plan.segments[0].alternates, ['paused']);
+  assert.equal(plan.segments[0].reasonCode, 'best_take_score');
+  assert.equal(plan.segments[0].matchParameters.confidence, 1);
+  const swapped = swapSpeechAwareCutTake(plan, plan.segments[0].id, 'paused');
+  assert.equal(swapped.segments[0].takeId, 'paused');
+  assert.equal(swapped.segments[0].reasonParameters.manual, true);
+  assert.deepEqual(swapped.segments[0].alternates, ['clean']);
+});
+
+test('script alignment handles paraphrase, repeated lines, missing lines and unrelated speech', () => {
+  const clips = [
+    { job_id: 'a', name: 'Take A', duration: 8 },
+    { job_id: 'b', name: 'Take B', duration: 8 },
+  ];
+  const analysis = (assetId, chunks) => ({ version: 1, assetId, duration: 8, provider: 'fal-scribe-v2', transcript: chunks.map((chunk) => chunk.text).join(' '), language: 'en', chunks });
+  const plan = buildSpeechAwareCutPlan({ clips, analyses: {
+    a: analysis('a', [{ start: .5, end: .8, text: 'Launch' }, { start: .9, end: 1.2, text: 'product' }, { start: 1.3, end: 1.6, text: 'today.' }, { start: 4, end: 4.4, text: 'Unrelated' }, { start: 4.5, end: 4.9, text: 'aside.' }]),
+    b: analysis('b', [{ start: .5, end: .8, text: 'Launch' }, { start: .9, end: 1.2, text: 'product' }, { start: 1.3, end: 1.6, text: 'today.' }]),
+  }, script: 'Launch the product today.\nLaunch product today.\nA missing closing line.' });
+  assert.equal(plan.segments.length, 2);
+  assert.deepEqual(new Set(plan.segments.map((segment) => segment.takeId)), new Set(['a', 'b']));
+  assert.ok(plan.segments.every((segment) => segment.matchCode === 'script_line_matched'));
+  assert.deepEqual(plan.warningDetails.find((warning) => warning.code === 'script_incomplete')?.parameters.lineNumbers, [3]);
+  assert.equal(plan.warningDetails.find((warning) => warning.code === 'extra_speech_omitted')?.parameters.count, 1);
+  assert.ok(plan.qualityChecks.some((check) => check.code === 'source_ranges_non_overlapping'));
+  assert.ok(plan.qualityChecks.some((check) => check.code === 'join_review'));
+});
+
+test('false starts are removed separately while an isolated filler remains review-only', () => {
+  const analysis = {
+    version: 1, assetId: 'a', duration: 8, provider: 'fal-scribe-v2', transcript: 'so today so today we cook. um', language: 'en',
+    chunks: [
+      { start: .5, end: .8, text: 'so' }, { start: .9, end: 1.2, text: 'today' },
+      { start: 3, end: 3.3, text: 'so' }, { start: 3.4, end: 3.7, text: 'today' }, { start: 3.8, end: 4.1, text: 'we' }, { start: 4.2, end: 4.5, text: 'cook.' },
+      { start: 6, end: 6.2, text: 'um' },
+    ],
+  };
+  const plan = buildSpeechAwareCutPlan({ clips: [{ job_id: 'a', duration: 8 }], analyses: { a: analysis } });
+  assert.ok(!plan.segments.some((segment) => segment.label === 'so today'));
+  assert.ok(plan.segments.some((segment) => segment.label === 'so today we cook.'));
+  assert.ok(plan.segments.some((segment) => segment.label === 'um'));
+  assert.equal(plan.warningDetails.find((warning) => warning.code === 'false_start_omitted')?.parameters.count, 1);
+});
+
+test('without a script, a repeated full take in one clip keeps only the later attempt', () => {
+  const analysis = {
+    version: 1, assetId: 'a', duration: 8, provider: 'fal-scribe-v2', transcript: 'Thanks for watching. Thanks for watching.', language: 'en',
+    chunks: [
+      { start: .5, end: .8, text: 'Thanks' }, { start: .9, end: 1.2, text: 'for' }, { start: 1.3, end: 1.6, text: 'watching.' },
+      { start: 3, end: 3.3, text: 'Thanks' }, { start: 3.4, end: 3.7, text: 'for' }, { start: 3.8, end: 4.1, text: 'watching.' },
+    ],
+  };
+  const plan = buildSpeechAwareCutPlan({ clips: [{ job_id: 'a', duration: 8 }], analyses: { a: analysis } });
+  assert.equal(plan.segments.length, 1);
+  assert.ok(plan.segments[0].start >= 2.88);
+  assert.equal(plan.warningDetails.find((warning) => warning.code === 'retake_omitted')?.parameters.count, 1);
+});
+
+test('without a script, repeated takes across clips keep the later clip and expose the earlier alternate', () => {
+  const chunks = [{ start: .5, end: .8, text: 'Thanks' }, { start: .9, end: 1.2, text: 'for' }, { start: 1.3, end: 1.6, text: 'watching.' }];
+  const make = (assetId) => ({ version: 1, assetId, duration: 4, provider: 'fal-scribe-v2', transcript: 'Thanks for watching.', language: 'en', chunks });
+  const plan = buildSpeechAwareCutPlan({
+    clips: [{ job_id: 'first', duration: 4 }, { job_id: 'second', duration: 4 }],
+    analyses: { first: make('first'), second: make('second') },
+  });
+  assert.equal(plan.segments.length, 1);
+  assert.equal(plan.segments[0].takeId, 'second');
+  assert.deepEqual(plan.segments[0].alternates, ['first']);
+  assert.equal(plan.segments[0].reasonCode, 'best_take_score');
+});
+
+test('without a script, short phrases with different final words are not treated as retakes', () => {
+  const chunks = (last) => [{ start: .5, end: .8, text: 'Thanks' }, { start: .9, end: 1.2, text: 'for' }, { start: 1.3, end: 1.6, text: last }];
+  const make = (assetId, last) => ({ version: 1, assetId, duration: 4, provider: 'fal-scribe-v2', transcript: `Thanks for ${last}`, language: 'en', chunks: chunks(last) });
+  const plan = buildSpeechAwareCutPlan({
+    clips: [{ job_id: 'watching', duration: 4 }, { job_id: 'coming', duration: 4 }],
+    analyses: { watching: make('watching', 'watching.'), coming: make('coming', 'coming.') },
+  });
+  assert.equal(plan.segments.length, 2);
+  assert.ok(!plan.warningDetails.some((warning) => warning.code === 'retake_omitted'));
+});
+
+test('equal best-take scores resolve deterministically to the later selected take', () => {
+  const chunks = [{ start: .5, end: .8, text: 'Same' }, { start: .9, end: 1.2, text: 'line.' }];
+  const make = (assetId) => ({ version: 1, assetId, duration: 3, provider: 'fal-scribe-v2', transcript: 'Same line.', language: 'en', chunks });
+  const plan = buildSpeechAwareCutPlan({
+    clips: [{ job_id: 'first', duration: 3 }, { job_id: 'second', duration: 3 }],
+    analyses: { first: make('first'), second: make('second') },
+    script: 'Same line.',
+  });
+  assert.equal(plan.segments[0].takeId, 'second');
+  assert.deepEqual(plan.segments[0].alternates, ['first']);
+  assert.ok(!plan.warningDetails.some((warning) => warning.code === 'retake_omitted'));
+});
+
+test('a script with no transcript match returns an actionable structured error', () => {
+  const analysis = { version: 1, assetId: 'a', duration: 3, provider: 'fal-scribe-v2', transcript: 'Hello there.', language: 'en', chunks: [{ start: .5, end: .8, text: 'Hello' }, { start: .9, end: 1.2, text: 'there.' }] };
+  assert.throws(
+    () => buildSpeechAwareCutPlan({ clips: [{ job_id: 'a', duration: 3 }], analyses: { a: analysis }, script: 'Completely different wording.' }),
+    (error) => error?.code === 'script_match_missing' && error?.parameters?.lineNumbers?.[0] === 1,
+  );
+});
+
+test('speech-aware planning does not restore partial units at both trim boundaries', () => {
+  const trimmed = { ...clip, in_s: 1, out_s: 3.5 };
+  const normalized = normaliseWizperResult({ assetId: clip.job_id, duration: clip.duration, result: wizper }).analysis;
+  assert.throws(
+    () => buildSpeechAwareCutPlan({ clips: [trimmed], analyses: { [clip.job_id]: normalized } }),
+    (error) => error?.code === 'trim_intersects_unit' && error?.parameters?.reason === 'trim_intersects_all_units',
+  );
+});
+
+test('speech-aware planning rejects a fractional trim window containing only partial units', () => {
   const trimmed = { ...clip, in_s: 1.005, out_s: 3.5 };
   const normalized = normaliseWizperResult({ assetId: clip.job_id, duration: clip.duration, result: wizper }).analysis;
-  const plan = buildSpeechAwareCutPlan({ clips: [trimmed], analyses: { [clip.job_id]: normalized } });
-  assert.ok(plan.segments[0].start >= trimmed.in_s);
-  assert.ok(plan.segments.every((segment) => segment.end <= trimmed.out_s));
-  assert.ok(plan.totalDuration <= 60);
+  assert.throws(
+    () => buildSpeechAwareCutPlan({ clips: [trimmed], analyses: { [clip.job_id]: normalized } }),
+    (error) => error?.code === 'trim_intersects_unit' && error?.parameters?.units?.length === 2,
+  );
 });
 
 test('speech-aware planning treats duplicate editor rows as separate source windows', () => {
@@ -146,10 +333,34 @@ test('many transcript groups merge shortest pauses to fit ten renderer sections'
   const normalized = normaliseWizperResult({ assetId: 'long', duration, result: { text: 'many', languages: ['en'], chunks: many } }).analysis;
   const plan = buildSpeechAwareCutPlan({ clips: [{ job_id: 'long', duration }], analyses: { long: normalized } });
   assert.equal(plan.segments.length, 10);
-  assert.ok(plan.warnings.some((warning) => /10-section/i.test(warning)));
+  assert.ok(plan.warningDetails.some((warning) => warning.code === 'segment_limit_reached'));
 });
 
-test('speech-aware planning refuses more source clips than the renderer can represent', () => {
+test('more than ten groups across three takes merge without losing speech', () => {
+  const manyClips = Array.from({ length: 3 }, (_, index) => ({ job_id: `take-${index}`, duration: 10 }));
+  const analyses = Object.fromEntries(manyClips.map((item, takeIndex) => [item.job_id, {
+    version: 1,
+    assetId: item.job_id,
+    duration: 10,
+    provider: 'fal-wizper',
+    transcript: 'four groups',
+    language: 'en',
+    chunks: Array.from({ length: 4 }, (_, groupIndex) => ({
+      start: groupIndex * 2,
+      end: groupIndex * 2 + 0.4,
+      text: `take${takeIndex}-word${groupIndex}`,
+    })),
+  }]));
+  const plan = buildSpeechAwareCutPlan({ clips: manyClips, analyses });
+  const warning = plan.warningDetails.find((item) => item.code === 'segment_limit_reached');
+  assert.equal(plan.segments.length, 10);
+  assert.equal(warning.parameters.mergedGroups, 2);
+  assert.equal(warning.parameters.omittedGroups, 0);
+  assert.deepEqual(plan.segments.flatMap((segment) => segment.label.split(' ')),
+    Array.from({ length: 3 }, (_, take) => Array.from({ length: 4 }, (_, word) => `take${take}-word${word}`)).flat());
+});
+
+test('more than ten source clips return a distinct structured source-limit error', () => {
   const manyClips = Array.from({ length: 11 }, (_, index) => ({ job_id: `take-${index}`, duration: 2 }));
   const analyses = Object.fromEntries(manyClips.map((item) => [item.job_id, {
     version: 1,
@@ -160,25 +371,23 @@ test('speech-aware planning refuses more source clips than the renderer can repr
     language: 'en',
     chunks: [{ start: 0.2, end: 1, text: 'Hello' }],
   }]));
-  assert.throws(() => buildSpeechAwareCutPlan({ clips: manyClips, analyses }), /at most 10 source clips/);
+  assert.throws(
+    () => buildSpeechAwareCutPlan({ clips: manyClips, analyses }),
+    (error) => error?.code === 'source_clip_limit_reached' && error?.parameters?.sourceClips === 11,
+  );
 });
 
-test('speech-aware planning stops at sixty seconds without extending past source', () => {
+test('speech-aware planning refuses to cut an over-budget phrase at sixty seconds', () => {
   const duration = 90;
   const normalized = normaliseWizperResult({
     assetId: 'long',
     duration,
     result: { text: 'continuous speech', languages: ['en'], chunks: [{ timestamp: [0, 80], text: 'continuous speech' }] },
   }).analysis;
-  const plan = buildSpeechAwareCutPlan({ clips: [{ job_id: 'long', duration }], analyses: { long: normalized } });
-  assert.equal(plan.totalDuration, 60);
-  assert.equal(plan.segments[0].end, 60);
-  assert.equal(plan.silenceRemoved, 0, 'speech and silence beyond the rendered cap are not reported as removed');
-  assert.equal(buildSpeechAwareCutPlan({
-    clips: [{ job_id: 'long', duration }], analyses: { long: normalized },
-    removals: [{ takeId: 'long', start: 70, end: 71 }, { takeId: 'long', start: 85, end: 86 }],
-  }).removalsApplied, 0, 'removals beyond the rendered cap or transcript range are not reported as applied');
-  assert.ok(plan.warnings.some((warning) => /60-second/i.test(warning)));
+  assert.throws(
+    () => buildSpeechAwareCutPlan({ clips: [{ job_id: 'long', duration }], analyses: { long: normalized } }),
+    (error) => error?.code === 'unit_exceeds_budget' && error?.parameters?.end === 80,
+  );
 });
 
 test('pauses in a later take beyond the output cap are not reported as removed', () => {
@@ -249,8 +458,8 @@ test('timing quality follows the provider and phrase-level timing adds a plan wa
   assert.equal(phrase.analysis.timingQuality, 'phrase');
   const wordPlan = buildSpeechAwareCutPlan({ clips: [clip], analyses: { [clip.job_id]: word.analysis } });
   const phrasePlan = buildSpeechAwareCutPlan({ clips: [clip], analyses: { [clip.job_id]: phrase.analysis } });
-  assert.ok(!wordPlan.warnings.some((w) => /phrase-level/.test(w)));
-  assert.ok(phrasePlan.warnings.some((w) => /phrase-level/.test(w)));
+  assert.ok(!wordPlan.warningDetails.some((warning) => warning.code === 'phrase_timing'));
+  assert.ok(phrasePlan.warningDetails.some((warning) => warning.code === 'phrase_timing'));
   // A stored v1 record without the field is still accepted and gets its quality from the provider.
   const { timingQuality, ...stored } = word.analysis;
   assert.equal(parseSmartCutAnalysis(stored, { assetId: clip.job_id }).analysis.timingQuality, 'word');
@@ -277,7 +486,30 @@ test('reviewed removals cut a filler out of the middle of a section and keep bot
   assert.ok(withRemoval.segments[0].end <= 0.97 && withRemoval.segments[1].start >= 1.33);
   assert.ok(withRemoval.totalDuration < without.totalDuration);
   assert.equal(withRemoval.removalsApplied, 1);
-  assert.deepEqual(without.warnings, withRemoval.warnings);
+  assert.ok(!without.warnings.includes('join_review'));
+  assert.ok(withRemoval.warnings.includes('join_review'));
+  assert.ok(withRemoval.qualityChecks.some((check) => check.code === 'join_review'));
+});
+
+test('a reviewed removal that intersects words drops complete units instead of clipping them', () => {
+  const analysis = normaliseScribeResult({ assetId: clip.job_id, duration: clip.duration, result: {
+    language_code: 'eng', text: 'hello filler there',
+    words: [
+      { type: 'word', text: 'hello', start: 0.5, end: 0.8 },
+      { type: 'word', text: 'filler', start: 0.9, end: 1.2 },
+      { type: 'word', text: 'there', start: 1.3, end: 1.6 },
+    ],
+  } }).analysis;
+  const plan = buildSpeechAwareCutPlan({
+    clips: [clip],
+    analyses: { [clip.job_id]: analysis },
+    removals: [{ takeId: clip.job_id, start: 0.75, end: 1.0 }],
+  });
+  assert.ok(plan.segments.every((segment) => analysis.chunks.every((word) => (
+    !(word.start < segment.start && segment.start < word.end)
+    && !(word.start < segment.end && segment.end < word.end)
+  ))));
+  assert.ok(!plan.qualityChecks.some((check) => check.code === 'clipped_timed_unit'));
 });
 
 test('a standalone filler between long pauses disappears and malformed removals are ignored', () => {
@@ -313,7 +545,81 @@ test('a removal the ten-section limit merges back is reported, not hidden', () =
   const plan = buildSpeechAwareCutPlan({ ...base, removals: [{ takeId: clip.job_id, start: 1.02, end: 1.38 }] });
   assert.equal(plan.segments.length, 10);
   assert.equal(plan.removalsApplied, 0);
-  assert.ok(plan.warnings.some((warning) => /limited to 10 sections/.test(warning)));
+  assert.ok(plan.warningDetails.some((warning) => warning.code === 'removal_retained'));
+});
+
+test('the sixty-second cap stops at the last complete timed unit', () => {
+  const longClip = { job_id: 'cap-take', name: 'Long take', duration: 70, in_s: 0, out_s: 70 };
+  const analysis = {
+    version: 1, assetId: longClip.job_id, duration: 70, provider: 'fal-scribe-v2', transcript: 'first crossing', language: 'en', timingQuality: 'word',
+    chunks: [{ start: 0, end: 59, text: 'first' }, { start: 59.7, end: 60.3, text: 'crossing' }],
+  };
+  const plan = buildSpeechAwareCutPlan({ clips: [longClip], analyses: { [longClip.job_id]: analysis } });
+  assert.equal(plan.totalDuration, 59);
+  assert.equal(plan.segments.at(-1).end, 59);
+  assert.equal(plan.silenceRemoved, 0, 'speech omitted by the output cap is not reported as silence removal');
+  assert.equal(buildSpeechAwareCutPlan({
+    clips: [longClip], analyses: { [longClip.job_id]: analysis }, removals: [{ takeId: longClip.job_id, start: 65, end: 66 }],
+  }).removalsApplied, 0, 'removals beyond the rendered cap are not reported as applied');
+  assert.ok(plan.warningDetails.some((warning) => warning.code === 'output_limit_reached'));
+});
+
+test('a non-hundredth word end at the cap is canonicalized without clipping the word', () => {
+  const duration = 70;
+  const analysis = {
+    version: 1, assetId: 'cap-rounding', duration, provider: 'fal-scribe-v2', transcript: 'first crossing', language: 'en',
+    chunks: [{ start: 0, end: 59.123, text: 'first' }, { start: 59.7, end: 60.3, text: 'crossing' }],
+  };
+  const plan = buildSpeechAwareCutPlan({ clips: [{ job_id: 'cap-rounding', duration }], analyses: { 'cap-rounding': analysis } });
+  assert.equal(plan.segments.at(-1).end, 59.12);
+  assert.equal(Number((plan.segments.at(-1).end * 100).toFixed(8)) % 1, 0);
+});
+
+test('a trim through a timed unit drops the partial unit instead of restoring trimmed footage', () => {
+  const trimmed = { job_id: 'trim-take', name: 'Trimmed take', duration: 8, in_s: 2, out_s: 6 };
+  const analysis = {
+    version: 1, assetId: trimmed.job_id, duration: 8, provider: 'fal-scribe-v2', transcript: 'partial kept', language: 'en', timingQuality: 'word',
+    chunks: [{ start: 1.8, end: 2.4, text: 'partial' }, { start: 3, end: 3.5, text: 'kept' }],
+  };
+  const plan = buildSpeechAwareCutPlan({ clips: [trimmed], analyses: { [trimmed.job_id]: analysis } });
+  assert.ok(plan.segments.every((segment) => segment.start >= 2 && segment.end <= 6));
+  assert.equal(plan.segments.some((segment) => segment.label.includes('partial')), false);
+  assert.equal(plan.warningDetails.find((warning) => warning.code === 'trim_intersects_unit').parameters.count, 1);
+});
+
+test('padding never leaks back into a dropped trim-boundary word', () => {
+  const trimmed = { job_id: 'trim-padding', name: 'Trim padding', duration: 8, in_s: 2, out_s: 6 };
+  const analysis = {
+    version: 1, assetId: trimmed.job_id, duration: 8, provider: 'fal-scribe-v2', transcript: 'partial kept', language: 'en', timingQuality: 'word',
+    chunks: [{ start: 1.8, end: 2.4, text: 'partial' }, { start: 2.45, end: 3, text: 'kept' }],
+  };
+  const plan = buildSpeechAwareCutPlan({ clips: [trimmed], analyses: { [trimmed.job_id]: analysis } });
+  assert.ok(plan.segments[0].start >= 2.4);
+  assert.equal(plan.segments[0].label, 'kept');
+});
+
+test('an over-budget phrase is rejected with a structured planner error instead of being cut', () => {
+  const longClip = { job_id: 'phrase-take', name: 'Phrase take', duration: 70, in_s: 0, out_s: 70 };
+  const analysis = {
+    version: 1, assetId: longClip.job_id, duration: 70, provider: 'fal-wizper', transcript: 'one long phrase', language: 'en', timingQuality: 'phrase',
+    chunks: [{ start: 0, end: 61, text: 'one long phrase' }],
+  };
+  assert.throws(
+    () => buildSpeechAwareCutPlan({ clips: [longClip], analyses: { [longClip.job_id]: analysis } }),
+    (error) => error?.code === 'unit_exceeds_budget' && error?.parameters?.end === 61,
+  );
+});
+
+test('an anomalously long first word is rejected with the same structured budget error', () => {
+  const longClip = { job_id: 'word-take', name: 'Word take', duration: 70, in_s: 0, out_s: 70 };
+  const analysis = {
+    version: 1, assetId: longClip.job_id, duration: 70, provider: 'fal-scribe-v2', transcript: 'stretched', language: 'en', timingQuality: 'word',
+    chunks: [{ start: 0, end: 61, text: 'stretched' }],
+  };
+  assert.throws(
+    () => buildSpeechAwareCutPlan({ clips: [longClip], analyses: { [longClip.job_id]: analysis } }),
+    (error) => error?.code === 'unit_exceeds_budget' && error?.parameters?.end === 61,
+  );
 });
 
 test('a music-only response (audio-event text and no words) is no speech, not an invalid analysis', () => {

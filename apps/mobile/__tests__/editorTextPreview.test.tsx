@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { createRoot, type TestNode } from 'test-renderer';
-import { platformFontFamily, editorTextPreviewStyle } from '../src/lib/editorTextPreview';
+import { platformFontFamily, editorTextOverlayStyles, editorTextPreviewStyle } from '../src/lib/editorTextPreview';
 import { PlaybackPreview } from '../src/components/editor/EditorPlayback';
 import { createFrameStore } from '../src/components/editor/editorFrameStore';
 import { TEXT_FONTS } from '../../../app/veyrnox/_lib/editorTextStyle.mjs';
@@ -43,6 +43,13 @@ test.each(['Retro pop', 'Serif quote', 'Minimal subtitle', 'Neon heading'])('%s 
 });
 test('underline and letter spacing are drawn', () => {
     expect(editorTextPreviewStyle({ underline: true, letterSpacing: 2 }, 5, 'ios')).toMatchObject({ textDecorationLine: 'underline', letterSpacing: 1 });
+});
+test('overlay geometry reflects canonical position and text size', () => {
+    const small = editorTextOverlayStyles({ x: .1, y: .5, size: 6 }, 'ios');
+    const large = editorTextOverlayStyles({ x: .9, y: .9, size: 12 }, 'ios');
+    expect(small.wrapper).toMatchObject({ left: '-32%', top: '50%', width: '84%', marginTop: -9 });
+    expect(large.wrapper).toMatchObject({ left: '48%', top: '90%', width: '84%', marginTop: -18 });
+    expect(small.text.fontSize).toBe(18); expect(large.text.fontSize).toBe(36);
 });
 test('PlaybackPreview renders the active styled clip only inside its timeline range', async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;

@@ -130,8 +130,7 @@ test('fractional trim starts round inward instead of selecting earlier footage',
 test('speech-aware plans cannot be retimed onto an unanalysed alternate', () => {
   const plan = { ...buildSmartCutPlan({ clips, script: 'First.' }), mode: 'transcript-silence' };
   const swapped = swapSmartCutTake(plan, 'section-1', 'take-b');
-  assert.equal(swapped.segments[0].takeId, plan.segments[0].takeId);
-  assert.ok(swapped.warnings.some((warning) => /analysed source take/i.test(warning)));
+  assert.equal(swapped, plan);
 });
 
 test('Smart Cut undo restores the original list after later fine-tuning', () => {
@@ -234,7 +233,9 @@ test('the existing Clip Editor owns Smart Cut apply and the caption/export hando
   const planner = readFileSync(new URL('../app/veyrnox/_components/SmartCutPlanner.js', import.meta.url), 'utf8');
   const messages = readFileSync(new URL('../lib/i18n/messages/app/en/smart-cut.mjs', import.meta.url), 'utf8');
   assert.match(editor, /<SmartCutWorkbench/);
+  assert.match(editor, /if \(smartCut\)[\s\S]{0,180}removeSmartCutSetupDraft\(window\.localStorage, getStoredUserId\(\) \|\| 'guest'\)/);
   assert.match(editor, /<SmartCutPlanner[\s\S]*clips=\{items\}[\s\S]*applyRevision=\{smartCutApplyRevision\}[\s\S]*onApply=\{applySmartCut\}[\s\S]*startOpen[\s\S]*\/>/);
+  assert.match(planner, /lastApplyRevision\.current = applyRevision;\s*clearSetupDraft\(\);/);
   assert.match(planner, /app\.smartCut\.action\.apply/);
   assert.match(planner, /app\.smartCut\.action\.undo/);
   assert.match(planner, /app\.smartCut\.why/);
@@ -245,6 +246,22 @@ test('the existing Clip Editor owns Smart Cut apply and the caption/export hando
   assert.match(messages, /no analysis upload, external AI call or credit spend/i);
   assert.match(planner, /buildSpeechAwareCutPlan/);
   assert.match(planner, /smartCutPlanWithinLimits/);
+  for (const key of ['reviewBoundaries', 'trimIntersectsUnit', 'phraseTiming', 'removalRetained', 'segmentLimitReached', 'outputLimitReached', 'scriptNotAligned', 'scriptIncomplete', 'extraSpeechOmitted', 'falseStartOmitted', 'retakeOmitted', 'joinReview']) {
+    assert.match(planner, new RegExp(`app\\.smartCut\\.warning\\.${key}`));
+    assert.match(messages, new RegExp(`app\\.smartCut\\.warning\\.${key}`));
+  }
+  for (const key of ['sourceClipLimit', 'unitExceedsBudget', 'trimIntersectsAllUnits', 'scriptMatchMissing', 'alignmentBudgetExceeded']) {
+    assert.match(planner, new RegExp(`app\\.smartCut\\.error\\.${key}`));
+    assert.match(messages, new RegExp(`app\\.smartCut\\.error\\.${key}`));
+  }
+  assert.match(planner, /segment\.alternates\?\.includes\(item\.id\)/);
+  assert.match(planner, /eligibleTakes\.length < 2[\s\S]{0,240}<select/);
+  for (const key of ['scriptLine', 'transcript']) assert.match(planner, new RegExp(`app\\.smartCut\\.match\\.${key}`));
+  for (const key of ['bestTake', 'manualTake', 'transcript']) assert.match(planner, new RegExp(`app\\.smartCut\\.reason\\.${key}`));
+  assert.match(messages, /Phrase-level timing: pauses inside a phrase are kept\./);
+  assert.match(messages, /Left out \{count\} timed speech unit/);
+  assert.match(messages, /Kept \{count\} timed speech unit/);
+  assert.doesNotMatch(planner, /\['segment_limit_reached', 'output_limit_reached'\][\s\S]{0,160}outsideLimits/);
   assert.match(editor, /applySmartCutState/);
   assert.match(editor, /undoSmartCutState/);
   assert.match(editor, /pendingSmartCutApply/);

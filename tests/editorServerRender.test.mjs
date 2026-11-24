@@ -177,6 +177,15 @@ test('done verifies stored bytes and ignores runner user/hash; callback replay i
     assert.equal((await w.handlers.cancel(request(undefined, 'DELETE'))).status, 409);
     assert.equal(w.counts().refunds, 0);
 });
+test('4K 60 fps output is inspected against the saved request before storage', async () => {
+    const w = world(), document = doc(); document.canvas.frame_rate = 60;
+    assert.equal((await w.handlers.create(request({ document, label: '4K 60', resolution: '2160p' }))).status, 202);
+    w.job().inputs.upload_size = 10;
+    w.deps.inspect = async () => ({ width: 3840, height: 2160, seconds: 5, frame_rate: 60 });
+    assert.equal((await editorServerRenderWebhook(w.deps)(await signed({ event: 'done' }))).status, 200);
+    assert.equal(w.job().state, 'STORED');
+    assert.equal(w.calls.find(([name]) => name === 'finalize_server_render')[1].p_frame_rate, 60);
+});
 test('bad signature is 401 before lookup; failed callbacks and cancel refund once', async () => {
     const w = world(); await w.handlers.create(request()); const hook = editorServerRenderWebhook(w.deps);
     assert.equal((await hook(await signed({ event: 'failed' }, false))).status, 401);

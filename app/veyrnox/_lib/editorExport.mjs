@@ -65,7 +65,7 @@ export async function exportBlocker(size = { width: 1280, height: 720 }, options
  * Render the timeline to an MP4 Blob. `blobs` maps media id to the file's bytes. `onProgress({ stage, done, total })`.
  * Rejects with an AbortError when `signal` aborts; any partial output is discarded.
  */
-export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', bitrate = EXPORT_BITRATES[quality], fitMode = 'contain', onProgress = () => {} } = {}) {
+export async function exportTimeline(tl, blobs, { signal = new AbortController().signal, height = 720, frameRate = 30, format = 'mp4', quality = 'standard', bitrate = EXPORT_BITRATES[quality], fitMode = 'contain', onProgress = () => {}, onPreview = null } = {}) {
     if (signal.aborted) throw abortError();
     if(!Number.isFinite(bitrate)||bitrate<128000||bitrate>32000000)throw new Error('Choose a supported video bitrate.');
     const total = totalFrames(tl);
@@ -81,7 +81,7 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
 
     const inputs = new Map();
     const readers = [], relatedReaders = new Map(), images = new Map(), retired = new Set();
-    let output, video, audio;
+    let output, video, audio, previewCanvas;
     try {
         for (const id of new Set([...tl.video, ...tl.audio].flatMap(c => [c.mediaId,...backgroundMediaIds(c)]))) {
             if (tl.media[id].kind === 'graphic') { images.set(id, graphicCanvas(tl.media[id].graphic)); continue; }
@@ -132,6 +132,15 @@ export async function exportTimeline(tl, blobs, { signal = new AbortController()
             paintFrame(g, W, H, layers, await resolvePictures(layers, (k, time, relatedMediaId) => relatedMediaId
                 ? images.get(relatedMediaId) ?? relatedReaders.get(`${relatedMediaId}:${tl.video[k].id}`)?.at(time)
                 : readers[k].at(time)), fitMode);
+            if (onPreview && (i === 0 || (i + 1) % frameRate === 0)) {
+                try {
+                    const previewWidth = Math.min(480, W), previewHeight = Math.max(1, Math.round(H * previewWidth / W));
+                    previewCanvas ||= new OffscreenCanvas(previewWidth, previewHeight);
+                    const context = previewCanvas.getContext('2d'); context.clearRect(0, 0, previewWidth, previewHeight); context.drawImage(canvas, 0, 0, previewWidth, previewHeight);
+                    const blob = await previewCanvas.convertToBlob({ type: 'image/jpeg', quality: .78 });
+                    if (!signal.aborted) onPreview(blob, { frame: i + 1, frames: outputFrames });
+                } catch { /* A thumbnail failure must never fail the actual export. */ }
+            }
             for (const [k, entry] of layout.entries()) {
                 const until = entry.start + entry.clip.len + (tl.schemaVersion === 3 ? sequenceTransitionAfter(tl, entry.clip) : effectiveTransition(tl, k + 1));
                 if (!retired.has(k) && (i + 1) / frameRate * FPS >= until) { await readers[k].close(); retired.add(k); }

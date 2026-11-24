@@ -6,22 +6,23 @@ import { requireOnline, OfflineError, OFFLINE_PAID_MESSAGE } from './network';
 import { t } from './i18n';
 import { parseSmartCutAnalysis, type SpeechAnalysis } from './speechCut';
 export const SPEECH_PATH = '/api/v1/editor/speech-analyses';
-export type SpeechQuote = { credits: number; max_seconds: 60; languages: string[]; source_types?: string[] };
-export type SpeechOutcome = { id: string; status: 'queued' | 'completed' | 'failed'; progress?: 'queued' | 'transcribing'; analysis?: SpeechAnalysis; refunded?: boolean; speech?: boolean; credits?: number };
+export type SpeechQuote = { credits: number; max_seconds: number; billing_block_seconds?: number; languages: string[]; source_types?: string[] };
+export type SpeechOutcome = { id: string; status: 'queued' | 'completed' | 'failed'; progress?: 'queued' | 'transcribing'; analysis?: SpeechAnalysis; refunded?: boolean; speech?: boolean; credits?: number; requested_language?: string };
 // Memory only. appCache's identity subscription invalidates results, keys and active requests together.
 const results = new Map<string, SpeechOutcome>(), keys = new Map<string, PendingSend>(), active = new Set<AbortController>();
 subscribeCacheUser(() => { results.clear(); keys.clear(); for (const controller of active) controller.abort(); active.clear(); });
 const scope = (account: string, job: string) => `${account}:${job}`;
-export function speechKeyFor(account: string, source: string, duration: number, make: () => string): string {
-    const id = scope(account, source), previous = keys.get(id) || null;
+export function speechKeyFor(account: string, source: string, duration: number, make: () => string, language = 'auto'): string {
+    const id = scope(account, `${source}:language=${language}`), previous = keys.get(id) || null;
     const pending = sendKeyFor(previous, source, { thinking: false, web: false }, make, String(duration));
     keys.set(id, pending); return pending.key;
 }
-export function forgetSpeechKey(account: string, source: string) { keys.delete(scope(account, source)); }
+export function forgetSpeechKey(account: string, source: string, language = 'auto') { keys.delete(scope(account, `${source}:language=${language}`)); }
 export async function fetchSpeechQuote(api: ApiClient, signal?: AbortSignal, bestCut = false): Promise<SpeechQuote | null> {
     try {
         const result = await api.request<SpeechQuote>(`${SPEECH_PATH}/quote${bestCut ? '?capability=best-cut' : ''}`, { signal });
-        if (!Number.isSafeInteger(result.credits) || result.credits < 1 || result.max_seconds !== 60 || !Array.isArray(result.languages)) throw new ApiError(200, 'bad_response');
+        if (!Number.isSafeInteger(result.credits) || result.credits < 1 || result.max_seconds !== (bestCut ? 600 : 60)
+            || (bestCut && result.billing_block_seconds !== 60) || !Array.isArray(result.languages)) throw new ApiError(200, 'bad_response');
         return result;
     } catch (error) { if (error instanceof ApiError && error.status === 501) return null; throw error; }
 }
@@ -37,18 +38,18 @@ function outcome(value: SpeechOutcome): SpeechOutcome {
 export async function recoverSpeech(api: ApiClient, key: string, account: string, signal?: AbortSignal) {
     return outcome(await api.request<SpeechOutcome>(`${SPEECH_PATH}/by-key/${encodeURIComponent(key)}`, { signal }, { owner: account }));
 }
-export async function startSpeech(api: ApiClient, input: { account: string; jobId?: string; source?: { type: 'job'; jobId: string } | { type: 'upload'; key: string }; bestCut?: boolean; cacheOnly?: boolean; duration: number; key: string; credits: number }, signal?: AbortSignal) {
+export async function startSpeech(api: ApiClient, input: { account: string; jobId?: string; source?: { type: 'job'; jobId: string } | { type: 'upload'; key: string }; bestCut?: boolean; cacheOnly?: boolean; language?: string; duration: number; key: string; credits: number }, signal?: AbortSignal) {
     requireOnline();
     try {
         return outcome(await api.request<SpeechOutcome>(SPEECH_PATH, { method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source: input.source || { type: 'job', jobId: input.jobId }, duration: input.duration, idempotencyKey: input.key, expectedCredits: input.credits, ...(input.bestCut ? { accepts_no_speech: true, cacheOnly: input.cacheOnly === true } : {}) }) }, { owner: input.account, ...(input.bestCut ? { timeoutMs: 90000 } : {}) }));
+            body: JSON.stringify({ source: input.source || { type: 'job', jobId: input.jobId }, duration: input.duration, idempotencyKey: input.key, expectedCredits: input.credits, ...(input.bestCut ? { accepts_no_speech: true, cacheOnly: input.cacheOnly === true } : {}), ...(input.language && input.language !== 'auto' ? { language: input.language } : {}) }) }, { owner: input.account, ...(input.bestCut ? { timeoutMs: 90000 } : {}) }));
     } catch (error) {
         if (signal?.aborted) throw error;
         if (error instanceof ApiError && (error.body.refunded === true || (error.status > 0 && error.status < 500 && error.code !== 'bad_response'))) throw error;
         try { return await recoverSpeech(api, input.key, input.account, signal); } catch { throw new ApiError(503, 'outcome_pending'); }
     }
 }
-export async function pollSpeech(api: ApiClient, key: string, account: string, signal: AbortSignal, progress: (value: 'queued' | 'transcribing') => void): Promise<SpeechOutcome> {
+export async function pollSpeech(api: ApiClient, key: string, account: string, signal: AbortSignal, progress: (value: 'queued' | 'transcribing' | 'retrying') => void): Promise<SpeechOutcome> {
     const controller = new AbortController(), combined = AbortSignal.any([signal, controller.signal]);
     active.add(controller);
     let timer: ReturnType<typeof setTimeout>;
@@ -60,7 +61,20 @@ export async function pollSpeech(api: ApiClient, key: string, account: string, s
     try {
         let delay = 1000;
         while (!combined.aborted && getCacheUser() === account) {
-            const value = await Promise.race([recoverSpeech(api, key, account, combined), stopped, abort]);
+            let value: SpeechOutcome;
+            try {
+                value = await Promise.race([recoverSpeech(api, key, account, combined), stopped, abort]);
+            } catch (error) {
+                if (combined.aborted || getCacheUser() !== account) throw new ApiError(0, 'cancelled');
+                // Only retry the free owner-only status read. The paid POST is never repeated.
+                if (!(error instanceof ApiError) || !(error.status === 0 || error.status >= 500)) throw error;
+                progress('retrying');
+                let retryTimer: ReturnType<typeof setTimeout> | undefined;
+                try { await Promise.race([new Promise(resolve => { retryTimer = setTimeout(resolve, delay); }), stopped, abort]); }
+                finally { if (retryTimer) clearTimeout(retryTimer); }
+                delay = Math.min(10000, delay * 1.6);
+                continue;
+            }
             // Never serve memory as an ownership/retention check; every preview follows a fresh owner-only read.
             results.set(scope(account, value.id), value);
             if (results.size > 50) results.delete(results.keys().next().value!);
@@ -94,6 +108,6 @@ export function speechMessage(error: unknown): string {
     const messages: Record<string, string> = { source_too_long: 'editorSpeech.tooLong', source_unsupported: 'editorSpeech.sourceRejected', duration_mismatch: 'editorSpeech.durationChanged',
         result_expired: 'editorAi.expired', poll_timeout: 'editorSpeech.timeout', outcome_pending: 'editorSpeech.timeout', price_changed: 'editorSpeech.priceChanged', speech_cut_unavailable: 'editorSpeech.unavailable', provider_admission_paused: 'editorSpeech.unavailable',
         account_frozen: 'accountDeletion.youraccountisfrozenContactsupportto', insufficient_balance: 'editorAi.balance', subscription_required: 'editorAi.subscription',
-        speech_gate_cooldown: 'bestCut.cooldown', source_not_admitted: 'editorSpeech.unavailable', consent_declined: 'editorAi.consent', rate_limited: 'editorAi.rateLimited', idempotency_conflict: 'editorAi.conflict' };
+        speech_gate_cooldown: 'bestCut.cooldown', source_not_admitted: 'editorSpeech.unavailable', consent_declined: 'editorAi.consent', rate_limited: 'editorAi.rateLimited', idempotency_conflict: 'editorAi.conflict', invalid_language: 'app.smartCut.error.languageOverrideInvalid' };
     return t(messages[code] || 'editorSpeech.failed');
 }

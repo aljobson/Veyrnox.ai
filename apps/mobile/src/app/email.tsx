@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { SignedInRedirect } from '../components/SignedInRedirect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
@@ -333,6 +333,8 @@ export default function EmailAuth() {
                 <TurnstileView resetKey={resetKey} onMessage={onCaptcha} />
                 {captchaError ? <Button variant="tertiary" label={t('email.securityRetry')} onPress={retrySecurityCheck} /> : null}
                 {!pendingEmail && <Button label={t(mode === 'signIn' ? 'email.signInCta' : 'email.signUpCta')} loading={busy} disabled={authBusy} onPress={submit} />}
+                {mode === 'signIn' && !pendingEmail ? <Button variant="secondary" label="Email me a 6-digit code" disabled={authBusy}
+                    onPress={() => router.push('/email-code' as Href)} /> : null}
                 {message ? (
                     <Text
                         tone={messageTone === 'error' ? 'danger' : 'secondary'}

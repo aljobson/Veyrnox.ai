@@ -4,7 +4,7 @@ import { ApiError } from './api';
 import { utf8Bytes, type ProjectDocument } from './editorBridge';
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export type ExportBody = { document: ProjectDocument; resolution: '1080p' | '720p'; label: string; quoted_credits: number };
+export type ExportBody = { document: ProjectDocument; resolution: '2160p' | '1080p' | '720p'; label: string; quoted_credits: number };
 export type ExportRecord = { owner: string; projectId: string; key: string; body: ExportBody; credits: number; sentAt: number; jobId?: string };
 const PREFIX = 'editor-server-export.';
 export function checkExportBody(body: ExportBody) {

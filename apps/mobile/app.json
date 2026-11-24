@@ -230,6 +230,12 @@
     },
     "plugins": [
       "./modules/veyrnox-vision/app.plugin.js",
+      [
+        "expo-widgets",
+        {
+          "frequentUpdates": true
+        }
+      ],
       "expo-router",
       [
         "expo-secure-store",

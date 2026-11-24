@@ -10,7 +10,7 @@ import { subscribeCacheUser } from '../../lib/appCache';
 import { useAnnouncement } from '../../lib/useAnnouncement';
 import { type Timeline, type Selection } from '../../lib/nativeEditorModel';
 import { fillerRanges } from '../../lib/speechFillers';
-import { applySpeechRanges, keptAfterRemovals, retakeRanges, silenceRanges, speechClip, parseSmartCutAnalysis, type SpeechMode, type SpeechRange } from '../../lib/speechCut';
+import { applySpeechRanges, keptAfterRemovals, retakeRanges, silenceRemovalProposalPlan, SpeechCutPlanError, speechClip, parseSmartCutAnalysis, type SpeechMode, type SpeechRange } from '../../lib/speechCut';
 import { fetchSpeechQuote, forgetSpeechKey, pollSpeech, recoverSpeech, speechKeyFor, speechMessage, startSpeech, type SpeechOutcome, type SpeechQuote } from '../../lib/speechAnalysis';
 import { useReducedMotion } from '../ui/useReducedMotion';
 import { Text } from '../ui/Text';
@@ -19,7 +19,7 @@ import { useOptionalSafeAreaInsets } from '../../lib/safeArea';
 import { bottomSheetSafePadding } from '../../lib/modalLayout';
 type Snapshot = { timeline: Timeline; freshness: Freshness; selection: Selection | null };
 type Props = { api: ApiClient; quote: SpeechQuote; mode: SpeechMode; snapshot(): Snapshot; apply(next: Timeline, expected: Freshness): DocumentApplyResult; onClose(): void; onUnavailable(): void };
-type Phase = 'quoting' | 'idle' | 'queued' | 'transcribing' | 'planning' | 'preview' | 'error' | 'pending';
+type Phase = 'quoting' | 'idle' | 'queued' | 'transcribing' | 'retrying' | 'planning' | 'preview' | 'error' | 'pending';
 export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot, apply, onClose, onUnavailable }: Props) {
     const insets = useOptionalSafeAreaInsets();
     const [opening] = useState(snapshot), [selected, setSelected] = useState(opening.selection), [quote, setQuote] = useState(initialQuote);
@@ -30,9 +30,11 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
     const jobId = !media?.assetSource && /^j-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(media?.id || '') ? media!.id.slice(2) : null;
     const duration = Number(media?.frames) / opening.timeline.fps;
     const supported = !!jobId && ['audio', 'video'].includes(media?.kind || '') && Number.isFinite(duration) && duration >= .5 && duration <= 60;
-    const unresolved = ['queued', 'transcribing', 'planning', 'pending'].includes(phase);
+    const unresolved = ['queued', 'transcribing', 'retrying', 'planning', 'pending'].includes(phase);
     const heading = t(`editorSpeech.${mode}`);
-    const progressText = ['quoting', 'queued', 'transcribing', 'planning'].includes(phase) ? t(`editorSpeech.${phase}`) : null;
+    const progressText = ['quoting', 'queued', 'transcribing', 'retrying', 'planning'].includes(phase)
+        ? t(`editorSpeech.${phase}`)
+        : null;
     useAnnouncement(progressText || (phase === 'preview' ? t('editorSpeech.preview') : message || null));
     useEffect(() => {
         const abort = controller.current;
@@ -54,10 +56,24 @@ export function EditorSpeechCutSheet({ api, quote: initialQuote, mode, snapshot,
         if (!parsed.ok) { setMessage(t('editorSpeech.failed')); setPhase('error'); return; }
         setPhase('planning');
         const start = (target.clip.in || 0) / current.timeline.fps, end = Math.min(duration, start + target.clip.len * (target.clip.rate || 1) / current.timeline.fps);
-        const proposals = mode === 'silences' ? keptAfterRemovals(silenceRanges(parsed.analysis, start, end), start, end)
-            : mode === 'fillers' ? fillerRanges(parsed.analysis, { start, end }) : retakeRanges(parsed.analysis).filter(r => r.end > start && r.start < end);
-        setRemovals(proposals); setChecked(proposals.map(() => true)); setPhase('preview');
-        setMessage(proposals.length ? '' : t('editorSpeech.noChanges'));
+        let proposals: SpeechRange[], initialChecked: boolean[], previewMessage = '';
+        try {
+            if (mode === 'silences') {
+                const proposalPlan = silenceRemovalProposalPlan(parsed.analysis, start, end);
+                proposals = proposalPlan.removals;
+                initialChecked = proposalPlan.checked;
+                const partialCount = Number(proposalPlan.warningDetails.find((warning) => warning.code === 'trim_intersects_unit')?.parameters.count || 0);
+                if (partialCount) previewMessage = t('app.smartCut.warning.trimUnitsKept', { count: partialCount });
+            } else {
+                proposals = mode === 'fillers' ? fillerRanges(parsed.analysis, { start, end }) : retakeRanges(parsed.analysis).filter(r => r.end > start && r.start < end);
+                initialChecked = proposals.map(() => true);
+            }
+        } catch (error) {
+            setMessage(t(error instanceof SpeechCutPlanError && error.code === 'trim_intersects_unit' ? 'editorSpeech.noChanges' : 'editorSpeech.limits'));
+            setPhase('error'); return;
+        }
+        setRemovals(proposals); setChecked(initialChecked); setPhase('preview');
+        setMessage(proposals.length ? previewMessage : t('editorSpeech.noChanges'));
     };
     function setRefundedSafe(value: boolean) {
         setRefunded(value); if (value && jobId) { forgetSpeechKey(opening.freshness.accountId, jobId); key.current = null; }

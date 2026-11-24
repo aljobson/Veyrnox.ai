@@ -59,6 +59,14 @@ test('confirm displays server credits and only then submits a durable immutable 
     expect(mockWrite).toHaveBeenCalled(); expect(mockWrite.mock.invocationCallOrder[0]).toBeLessThan(request.mock.invocationCallOrder[createIndex]);
     const init = request.mock.calls[createIndex][1]; expect(JSON.parse(init.body)).toMatchObject({ quoted_credits: 17, resolution: '1080p', label: 'Project' }); expect(init.headers['Idempotency-Key']).toBe(B);
 });
+test('offers 4K and sends a 2160p quote before any paid create', async () => {
+    await render();
+    await press('2160p');
+    expect(visible('Export at 2160p for 17 credits?')).toBe(true);
+    const quote = request.mock.calls.filter(([path]) => path.endsWith('/quote')).at(-1);
+    expect(JSON.parse(quote![1].body)).toMatchObject({ resolution: '2160p' });
+    expect(creates()).toHaveLength(0);
+});
 test('402 offers credits', async () => {
     const normal = request.getMockImplementation()!;
     request.mockImplementation((path, init) => path === '/api/v1/editor/server-render' ? Promise.reject(new ApiError(402, 'insufficient_balance')) : normal(path, init));
