@@ -338,6 +338,16 @@ test('pair confirmation requires a UUID quote and a constrained idempotency key'
   assert.deepEqual(parseMusicGeneration({ quote_id: quoteId, idempotency_key: 'music.123456' }), {
     ok: true, quoteId, idempotencyKey: 'music.123456',
   });
+  assert.deepEqual(parseMusicGeneration({
+    quote_id: quoteId, idempotency_key: 'music.123456', provider_contract: 'crun-suno-v1',
+    confirmed_credits: 8, user_approved: true,
+  }), {
+    ok: true, quoteId, idempotencyKey: 'music.123456', providerContract: 'crun-suno-v1',
+    confirmedCredits: 8, userApproved: true,
+  });
+  assert.equal(parseMusicGeneration({ quote_id: quoteId, idempotency_key: 'music.123456', confirmed_credits: 8, user_approved: true }).error, 'contract_required');
+  assert.equal(parseMusicGeneration({ quote_id: quoteId, idempotency_key: 'music.123456', provider_contract: 'crun-suno-v1', confirmed_credits: 8 }).error, 'confirmation_incomplete');
+  assert.equal(parseMusicGeneration({ quote_id: quoteId, idempotency_key: 'music.123456', provider_contract: 'crun-suno-v1', confirmed_credits: 8, user_approved: false }).error, 'approval_required');
   assert.equal(parseMusicGeneration({ quote_id: 'bad', idempotency_key: 'music.123456' }).error, 'quote_id_invalid');
   assert.equal(parseMusicGeneration({ quote_id: quoteId, idempotency_key: 'short' }).error, 'idempotency_key_invalid');
   assert.equal(parseMusicGeneration({ quote_id: quoteId, idempotency_key: 'music.123456', credits: 0 }).error, 'invalid_request');

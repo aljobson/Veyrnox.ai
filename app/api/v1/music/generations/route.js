@@ -32,7 +32,9 @@ export async function POST(request) {
             const userId = users[0]?.id;
             if (users.length && !validMusicAuthId(userId)) throw new Error('invalid_guard_user');
             const quotes = userId ? await select('music_generation_quotes', {
-                columns: input.providerContract ? 'model_id,consumed_at,provider_contract' : 'model_id,consumed_at',
+                columns: input.confirmedCredits !== undefined
+                    ? 'model_id,consumed_at,provider_contract,charged_credits'
+                    : input.providerContract ? 'model_id,consumed_at,provider_contract' : 'model_id,consumed_at',
                 filter: `id=eq.${encodeURIComponent(input.quoteId)}&user_id=eq.${encodeURIComponent(userId)}`,
                 limit: 1,
             }, cfg) : [];
@@ -42,6 +44,13 @@ export async function POST(request) {
             const quote = quotes?.[0];
             if (input.providerContract && quote?.provider_contract !== input.providerContract) {
                 return reply({ error: 'quote_stale' }, 409);
+            }
+            if (input.confirmedCredits !== undefined && quote?.charged_credits !== input.confirmedCredits) {
+                return reply({
+                    error: 'credit_confirmation_mismatch',
+                    confirmed_credits: input.confirmedCredits,
+                    expected_credits: Number.isSafeInteger(quote?.charged_credits) ? quote.charged_credits : null,
+                }, 409);
             }
             if (!musicBeatAiEnabled() && quote?.model_id === MUSIC_BEAT_MODEL_ID && quote.consumed_at === null) {
                 return reply({ error: 'beat_ai_unavailable' }, 503, { 'Retry-After': '60' });
