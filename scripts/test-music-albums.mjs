@@ -66,13 +66,20 @@ try {
   const albumSlug = result.album.slug;
   assert.equal((await call('music_patch_album', owner, album, 1, 'publish', null, null, null, null, null, 'album.release.fixture')).idempotent, true);
   assert.equal((await call('music_read_public_album', albumSlug)).album.tracks.length, 1);
+  assert.equal((await call('music_resolve_album_artwork', albumSlug)).ok, true);
 
   await db.query(`INSERT INTO public.music_user_blocks(blocker_id,blocked_id) VALUES($1,$2)`, [viewer, owner]);
   assert.ok((await call('music_read_public_album_for_viewer', viewer, albumSlug)).blocked);
+  assert.equal((await call('music_resolve_album_artwork_for_viewer', viewer, albumSlug)).code, 'NOT_FOUND');
   await db.query(`DELETE FROM public.music_user_blocks WHERE blocker_id=$1 AND blocked_id=$2`, [viewer, owner]);
+  assert.equal((await call('music_resolve_album_artwork_for_viewer', viewer, albumSlug)).ok, true);
+  await db.query(`UPDATE public.users SET deleted_at=now() WHERE id=$1`, [viewer2]);
+  assert.equal((await call('music_resolve_album_artwork_for_viewer', viewer2, albumSlug)).error, 'account_not_found');
+  await db.query(`UPDATE public.users SET deleted_at=NULL WHERE id=$1`, [viewer2]);
 
   await db.query(`UPDATE public.music_songs SET status='trashed' WHERE id=$1`, [song]);
   assert.equal((await call('music_read_public_album', albumSlug)).code, 'NOT_FOUND');
+  assert.equal((await call('music_resolve_album_artwork', albumSlug)).code, 'NOT_FOUND');
   await db.query(`UPDATE public.music_songs SET status='active' WHERE id=$1`, [song]);
   await db.query(`UPDATE public.music_publications SET status='blocked' WHERE id=$1`, [publication]);
   assert.equal((await call('music_read_public_album', albumSlug)).code, 'NOT_FOUND');
@@ -130,11 +137,21 @@ try {
   result = await call('music_create_album', owner, deletedAlbum, 'Delete me', 'single', '', null, 'album.deleted.create');
   result = await call('music_patch_album', owner, deletedAlbum, 0, 'replace', null, null, null, null, ['d1000000-0000-4000-8000-00000000001d'], 'album.deleted.replace');
   result = await call('music_patch_album', owner, deletedAlbum, 1, 'publish', null, null, null, null, null, 'album.deleted.publish');
+  result = await call('music_patch_album', owner, deletedAlbum, 2, 'update', 'Private title', 'single', 'Private description', null, null, 'album.deleted.update');
   await call('music_report_album', viewer, result.album.slug, 'rights', 'Retain this report', 'album.deleted.report');
-  result = await call('music_patch_album', owner, deletedAlbum, 2, 'delete', null, null, null, null, null, 'album.deleted.delete');
+  result = await call('music_patch_album', owner, deletedAlbum, 3, 'delete', null, null, null, null, null, 'album.deleted.delete');
   assert.equal(result.deleted, true);
+  assert.equal((await call('music_patch_album', owner, deletedAlbum, 3, 'delete', null, null, null, null, null, 'album.deleted.delete')).idempotent, true);
+  const redactedReplay = await call('music_patch_album', owner, deletedAlbum, 2, 'update', 'Private title', 'single', 'Private description', null, null, 'album.deleted.update');
+  assert.equal(redactedReplay.redacted, true); assert.equal(redactedReplay.idempotent, true);
+  assert.equal((await call('music_patch_album', owner, deletedAlbum, 2, 'publish', null, null, null, null, null, 'album.deleted.update')).code, 'IDEMPOTENCY_CONFLICT');
+  assert.equal((await call('music_patch_album', owner, deletedAlbum, 9, 'update', 'Private title', 'single', 'Private description', null, null, 'album.deleted.update')).code, 'IDEMPOTENCY_CONFLICT');
   assert.equal((await one(`SELECT count(*)::int AS n FROM public.music_album_reports WHERE album_id=$1`, [deletedAlbum])).n, 1);
   assert.equal((await one(`SELECT status FROM public.music_albums WHERE id=$1`, [deletedAlbum])).status, 'deleted');
+  const receiptPrivacy = await one(`SELECT bool_and(NOT request ?| ARRAY['title','album_type','description','artwork_asset_id','publication_ids']) AS requests_minimal,
+      bool_and((request::text || result::text) NOT LIKE '%Private title%' AND (request::text || result::text) NOT LIKE '%Private description%') AS text_scrubbed
+      FROM public.music_album_mutations WHERE album_id=$1`, [deletedAlbum]);
+  assert.deepEqual(receiptPrivacy, { requests_minimal: true, text_scrubbed: true });
 
   const started = await call('start_privacy_export', owner, 'aal2');
   const page1 = await call('read_music_album_export_page', owner, 'aal2', started.export_id, null, null, 1);

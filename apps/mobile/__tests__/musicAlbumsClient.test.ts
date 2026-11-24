@@ -1,5 +1,5 @@
-import { type ApiClient } from '../src/lib/api';
-import { convertPlaylistToAlbum, createAlbum, discoverAlbums, getPublicAlbum, getPublicAlbumPage, listAlbumArtwork, listAlbums, listAlbumWorkspace, patchAlbum, reportAlbum } from '../src/lib/music/albumsClient';
+import { ApiError, type ApiClient } from '../src/lib/api';
+import { convertPlaylistToAlbum, createAlbum, discoverAlbums, getAlbumArtworkUrl, getPublicAlbum, getPublicAlbumPage, listAlbumArtwork, listAlbums, listAlbumWorkspace, patchAlbum, reportAlbum } from '../src/lib/music/albumsClient';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const publicationId = '22222222-2222-4222-8222-222222222222';
@@ -41,6 +41,11 @@ test('every patch action sends the exact immutable revision and request nonce', 
     ]);
 });
 
+test('a redacted retry after deletion resolves as a removed album', async () => {
+    request.mockRejectedValueOnce(new ApiError(410, 'album_deleted', { redacted: true, idempotent: true }));
+    await expect(patchAlbum(api, id, { action: 'update', expected_revision: 2, title: 'Private title', album_type: 'single', description: 'Private description', artwork_asset_id: null }, requestNonce)).resolves.toBeNull();
+});
+
 test('lists, discovery and public reads fail closed on malformed or duplicate data', async () => {
     request.mockResolvedValueOnce({ albums: [album] }); expect(await listAlbums(api)).toEqual([album]);
     request.mockResolvedValueOnce({ albums: [album], available_tracks: [trackOption] });
@@ -63,6 +68,14 @@ test('artwork choices require exact safe asset and job references', async () => 
     request.mockResolvedValueOnce({images:[art],covers:[]});expect(await listAlbumArtwork(api)).toEqual([art]);
     request.mockResolvedValueOnce({images:[{...art,image_url:'https://private.test/image'}],covers:[]});
     await expect(listAlbumArtwork(api)).rejects.toMatchObject({code:'bad_response'});
+});
+
+test('public album artwork uses the authenticated viewer-filtered endpoint', async () => {
+    request.mockResolvedValueOnce({url:'https://signed.test/album-art'});
+    await expect(getAlbumArtworkUrl(api,slug)).resolves.toBe('https://signed.test/album-art');
+    expect(request).toHaveBeenCalledWith(`/api/v1/music/explore/albums/${slug}/artwork`);
+    request.mockResolvedValueOnce({url:'/api/music/albums/public-art'});
+    await expect(getAlbumArtworkUrl(api,slug)).rejects.toMatchObject({code:'bad_response'});
 });
 
 test('invalid local inputs never reach the network', async () => {
