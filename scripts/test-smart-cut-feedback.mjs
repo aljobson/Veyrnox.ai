@@ -62,6 +62,9 @@ const check = async (name, fn) => { await fn(); passed += 1; console.log(`ok ${p
 
 try {
     await db.query('BEGIN');
+    // The disposable replay database does not include Supabase Auth's managed MFA table.
+    // Match the privacy-export acceptance fixture so its production MFA guard can execute.
+    await db.query('CREATE TABLE IF NOT EXISTS auth.mfa_factors(user_id uuid,factor_type text,status text)');
     const owner = await person('smart-cut-feedback');
     const response = randomUUID();
 
