@@ -135,8 +135,8 @@ test('text guide controls align the selected layer to shared safe-edge and centr
     const tl = webSequenceV3(), patchSelected = jest.fn();
     await act(async () => root.render(<TextPanel timeline={tl} selection={{ track: 'text', id: 't3' }} selected={tl.text[0]}
         addText={jest.fn()} updateSelectedText={jest.fn()} patchSelected={patchSelected} />));
-    for (const [label, patch] of [['X 10%', { x: .1 }], ['X 50%', { x: .5 }], ['X 90%', { x: .9 }],
-        ['Y 10%', { y: .1 }], ['Y 50%', { y: .5 }], ['Y 90%', { y: .9 }]] as const) {
+    for (const [label, patch] of [['X axis 10%', { x: .1 }], ['X axis 50%', { x: .5 }], ['X axis 90%', { x: .9 }],
+        ['Y axis 10%', { y: .1 }], ['Y axis 50%', { y: .5 }], ['Y axis 90%', { y: .9 }]] as const) {
         await press(label); expect(patchSelected).toHaveBeenLastCalledWith(patch);
     }
 });
