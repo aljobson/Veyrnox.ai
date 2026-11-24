@@ -472,6 +472,7 @@ const ko = {
     'app.create.templatePrompt.error': '프롬프트를 불러오지 못했습니다. 로그인한 후 다시 시도하세요.',
     'app.create.templatePrompt.help': '이 템플릿의 프롬프트를 작성된 그대로 사용합니다.',
     'app.create.templatePrompt.ready': '템플릿 프롬프트 준비 완료',
+    'app.create.error.image_generation_unavailable': '현재 이 모델에서는 이미지 입력을 사용할 수 없습니다. 요금은 청구되지 않았습니다. 나중에 다시 시도하거나 텍스트만 사용하세요.',
 } as const;
 
 export default ko;

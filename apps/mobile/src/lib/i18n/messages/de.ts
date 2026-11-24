@@ -472,6 +472,7 @@ const de = {
     'app.create.templatePrompt.error': 'Der Prompt konnte nicht geladen werden. Melde dich an und versuche es erneut.',
     'app.create.templatePrompt.help': 'Der Prompt dieser Vorlage wird unverändert verwendet.',
     'app.create.templatePrompt.ready': 'Vorlagen-Prompt bereit',
+    'app.create.error.image_generation_unavailable': 'Bildeingaben sind für dieses Modell derzeit nicht verfügbar. Es wurde nichts berechnet. Versuche es später erneut oder verwende nur Text.',
 } as const;
 
 export default de;

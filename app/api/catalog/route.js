@@ -1,3 +1,5 @@
+import { VEO_I2V_CATALOG_TTL_SECONDS } from '../../../lib/veoI2vCatalog.js';
+import { anyVeoI2vEnabled } from '../../../lib/veoI2v.js';
 import { envConfig as r2EnvConfig } from '../../../packages/adapters/r2.js';
 import { loadTemplateSwapClip, loadTemplateSwapRow } from '../../../lib/templateSwapClipGate.js';
 import { TEMPLATE_SWAP_ROW } from '../../../app/veyrnox/_lib/templateSwapRow.js';
@@ -67,6 +69,6 @@ export async function GET(req) {
 
     return NextResponse.json(
         { models },
-        { headers: { 'Cache-Control': `public, max-age=60, s-maxage=${CATALOG_TTL_SECONDS}, stale-while-revalidate=60` } },
+        { headers: { 'Cache-Control': anyVeoI2vEnabled() ? `public, max-age=${VEO_I2V_CATALOG_TTL_SECONDS}, s-maxage=${VEO_I2V_CATALOG_TTL_SECONDS}` : `public, max-age=60, s-maxage=${CATALOG_TTL_SECONDS}, stale-while-revalidate=60` } },
     );
 }

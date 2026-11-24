@@ -468,5 +468,6 @@
   "app.create.templatePrompt.edit",
   "app.create.templatePrompt.error",
   "app.create.templatePrompt.help",
-  "app.create.templatePrompt.ready"
+  "app.create.templatePrompt.ready",
+  "app.create.error.image_generation_unavailable"
 ]

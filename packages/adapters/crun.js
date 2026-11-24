@@ -42,6 +42,9 @@ const MODELS = {
     // asks for synchronized audio by default, so the request always sends it. Veo makes its own audio.
     'bytedance/seedance2-0-fast-t2v': { seconds: new Set([5]), resolutions: new Set(['720p']), aspects: new Set(['16:9', '9:16', '1:1']), audio: true },
 };
+for (const model of ['google/veo3-1-lite', 'google/veo3-1-fast', 'google/veo3-1']) {
+    MODELS[`${model}-i2v`] = MODELS[`${model}-t2v`];
+}
 const SUNO_MODEL = 'suno/music-generate';
 const SUNO_VERSIONS = new Set(['v6', 'v6_mini', 'v6_wild']);
 const SUNO_MODELS = new Set(['v6', 'v6_mini', 'v6_wild', 'chirp-v6']);
@@ -82,7 +85,8 @@ const KLING_O1_SWAP_MODEL = 'kling/o1-r2v';
 const KLING_O1_SWAP_TIERS = Object.freeze({ [KLING_O1_SWAP_MODEL]: '720p', 'kling/o1-r2v-1080': '1080p' });
 const isKlingO1Swap = model => Object.hasOwn(KLING_O1_SWAP_TIERS, model);
 // These requests carry signed links to a person's photo or voice, so Crun's own refusal text is never kept.
-const redactsRefusal = model => !!seedance25Task(model) || model === QWEN_ENDPOINT || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(model);
+const isVeoI2v = model => /^google\/veo3-1-(?:lite-|fast-)?i2v$/.test(model);
+const redactsRefusal = model => isVeoI2v(model) || !!seedance25Task(model) || model === QWEN_ENDPOINT || isKlingO1Swap(model) || model === KLING_AVATAR_MODEL || model === SEEDANCE_R2V_MODEL || model === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(model);
 const ENDPOINT_RE = /^crun:([a-z0-9][a-z0-9./_-]{1,80})$/i;
 const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
@@ -128,7 +132,22 @@ export function buildRequest(target, inputs) {
     const seconds = [...spec.seconds][0];
     const aspect = inputs.aspect_ratio === undefined ? '16:9' : inputs.aspect_ratio;
     if (!spec.aspects.has(aspect)) return { ok: false, error: 'aspect_ratio_unsupported' };
-    if (inputs.image_url || inputs.reference_urls) return { ok: false, error: 'input_media_unsupported' };
+    const veo = target.model.startsWith('google/veo3-1-');
+    const imageRequest = veo && (inputs.image_url !== undefined || target.model.endsWith('-i2v'));
+    if (inputs.img_urls !== undefined || inputs.reference_urls !== undefined || inputs.video_url !== undefined || inputs.audio_url !== undefined || inputs.endImage_url !== undefined
+        || (!veo && inputs.image_url !== undefined)) return { ok: false, error: 'input_media_unsupported' };
+    if (imageRequest) {
+        const images = Array.isArray(inputs.image_url) ? inputs.image_url : [inputs.image_url];
+        if (images.length !== 1) return { ok: false, error: 'source_count_exceeded' };
+        try { if (typeof images[0] !== 'string' || new URL(images[0]).protocol !== 'https:') throw new Error(); }
+        catch { return { ok: false, error: 'inputs_invalid:image_url' }; }
+        if (inputs.resolution !== undefined && inputs.resolution !== '720p') return { ok: false, error: 'resolution_not_supported' };
+        // Five is the existing UI billing unit; the output remains eight seconds.
+        if (inputs.duration_seconds !== undefined && ![5, 8].includes(inputs.duration_seconds)) return { ok: false, error: 'duration_not_supported' };
+        return { ok: true, body: { model: target.model.replace(/-t2v$/, '-i2v'), input: {
+            prompt, duration: 8, resolution: '720p', aspect_ratio: aspect, img_urls: [...images],
+        } } };
+    }
     return {
         ok: true,
         body: { model: target.model, input: { prompt, duration: seconds, resolution: [...spec.resolutions][0], aspect_ratio: aspect, ...(spec.audio ? { audio: true } : {}) } },
@@ -384,6 +403,7 @@ export async function submitTask(job, cfg) {
         else requestBody = { ...req.body, input: { ...req.body.input, prompt: worded } };
     }
 
+    const redactRefusal = redactsRefusal(target.model) || redactsRefusal(requestBody.model);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 15000);
     try {
@@ -399,7 +419,7 @@ export async function submitTask(job, cfg) {
         } catch (err) {
             // Nothing is known about whether the task was created: ambiguous (0329).
             // Models whose refusal text may carry signed media keep the legacy `transport` string and shape.
-            if (redactsRefusal(target.model)) return { ok: false, outcome: 'unknown', error: 'transport' };
+            if (redactRefusal) return { ok: false, outcome: 'unknown', error: 'transport' };
             return { ok: false, outcome: 'unknown', error: 'provider_unreachable', errorCode: err?.name === 'AbortError' ? 'provider_timeout' : 'provider_unreachable' };
         }
         let data = null;
@@ -418,14 +438,15 @@ export async function submitTask(job, cfg) {
         // Models whose refusal text may carry signed media keep the reviewed reason slug in the legacy
         // `crun <http>/<code>: <reason>` shape (callers and failover match on it); never vendor text.
         let error = safe.errorCode;
-        if (redactsRefusal(target.model)) {
+        if (redactRefusal) {
             const reason = klingO1RefusalReason(data && (data.message || data.msg));
             error = `crun ${res.status}/${Number.isInteger(classified.bodyCode) ? classified.bodyCode : 0}${reason ? `: ${reason}` : ''}`;
         }
         // These models keep exactly their legacy result shape for ordinary refusals; only the supplier-level
         // classes (account, route, deferred) carry a typed scope so the shared Crun boundary can act on them.
-        if (redactsRefusal(target.model) && !['account', 'route', 'deferred'].includes(classified.class)) {
-            return { ok: false, outcome: classified.class === 'unknown' ? 'unknown' : 'rejected', error };
+        if (redactRefusal && !['account', 'route', 'deferred'].includes(classified.class)) {
+            return { ok: false, outcome: classified.class === 'unknown' ? 'unknown' : 'rejected', error,
+                ...(isVeoI2v(requestBody.model) && classified.class === 'rejected' ? { errorCode: safe.errorCode } : {}) };
         }
         return { ok: false, outcome: classified.class === 'unknown' ? 'unknown' : 'rejected',
             ...safe, error, scope: classified.class };

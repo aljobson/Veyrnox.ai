@@ -472,6 +472,7 @@ const ar = {
     'app.create.templatePrompt.error': 'تعذّر تحميل الموجّه. سجّل الدخول وحاول مرة أخرى.',
     'app.create.templatePrompt.help': 'سيُستخدم موجّه هذا القالب كما هو مكتوب.',
     'app.create.templatePrompt.ready': 'موجّه القالب جاهز',
+    'app.create.error.image_generation_unavailable': 'إدخال الصور غير متاح لهذا النموذج الآن. لم تُخصم أي رسوم. أعد المحاولة لاحقاً أو استخدم النص فقط.',
 } as const;
 
 export default ar;

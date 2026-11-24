@@ -472,6 +472,7 @@ const ru = {
     'app.create.templatePrompt.error': 'Не удалось загрузить промпт. Войдите в аккаунт и повторите попытку.',
     'app.create.templatePrompt.help': 'Промпт этого шаблона будет использован без изменений.',
     'app.create.templatePrompt.ready': 'Промпт шаблона готов',
+    'app.create.error.image_generation_unavailable': 'Ввод изображений для этой модели сейчас недоступен. Средства не списаны. Повторите попытку позже или используйте только текст.',
 } as const;
 
 export default ru;
