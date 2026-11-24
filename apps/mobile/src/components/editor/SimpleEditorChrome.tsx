@@ -2,17 +2,24 @@ import { useReducedMotion } from '../ui/useReducedMotion';
 import { useContext, useState } from 'react';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { mobileEditorAction } from '../../lib/editorIntentRouter';
-import { Text as UiText, TextField, Button as UiButton } from '../ui';
+import { Icon, Text as UiText, TextField, Button as UiButton } from '../ui';
 import { Modal, Pressable, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { touchTarget } from '../../lib/a11y';
 import { runAfterSheetCloses } from './runAfterSheetCloses';
 import { rawText } from '../../lib/i18n/translate';
 import { t } from '../../lib/i18n';
 import { studioColors as colors, fonts } from '../../theme';
+import { MENU_ICONS, type MenuIcon } from '../../lib/menuIcons';
 
-export interface SheetRow { id: string; icon: string; label: string; hint?: string; disabled?: boolean; afterClose?: boolean; onPress(): void }
+export interface SheetRow { id: string; icon: MenuIcon | string; label: string; hint?: string; disabled?: boolean; afterClose?: boolean; onPress(): void }
 export type SimpleSheetName = 'add' | 'ai' | 'cut' | 'sound' | 'text' | 'layers' | 'more';
 export type SimpleDockTab = 'ai' | 'cut' | 'audio' | 'text' | 'media';
+
+function EditorToolIcon({ name, size = 24, active = false, muted = false }: { name: MenuIcon | string; size?: 20 | 24 | 28; active?: boolean; muted?: boolean }) {
+    const tint = active ? colors.accent : muted ? '#a0a0a7' : '#f1f1f2';
+    if (name in MENU_ICONS) return <Icon name={name as MenuIcon} size={size} tint={tint} />;
+    return <Text style={[styles.fallbackIcon, muted && styles.mutedInk, active && styles.activeInk]}>{name}</Text>;
+}
 
 // One bottom sheet for all three entries. Choosing a row closes the sheet first, then runs the action;
 // a row marked afterClose (a native picker) waits until the sheet has finished closing.
@@ -34,7 +41,7 @@ export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDe
         <View style={[styles.sheet, { flexShrink: 1 }]}>
             <View style={styles.sheetHeader}>
                 <Text accessibilityRole="header" style={styles.sheetTitle}>{title}</Text>
-                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorSimple.close'))} onPress={onClose} style={[styles.closeButton, touchTarget]}><Text style={styles.closeText}>{t('editorSimple.close')}</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={rawText(t('editorSimple.close'))} onPress={onClose} style={[styles.closeButton, touchTarget]}><Icon name="close" size={24} tint={colors.accent} /></Pressable>
             </View>
             <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 8 }}>
             {describe ? <View style={{ gap: 8 }}>
@@ -44,7 +51,7 @@ export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDe
                 <UiButton label={t('editorSimple.openTool')} accessibilityLabel={rawText(t('editorSimple.openTool'))} disabled={!prompt.trim()} onPress={openDescribed} />
             </View> : null}
             {rows.map((row) => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={rawText(row.label)} accessibilityState={{ disabled: !!row.disabled }} disabled={row.disabled} onPress={() => { onClose(); if (row.afterClose) runAfterSheetCloses(row.onPress); else row.onPress(); }} style={({ pressed }) => [styles.row, row.disabled && styles.rowDisabled, pressed && styles.rowPressed]}>
-                <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.rowIcon, row.icon.length > 1 && styles.rowIconWide]}>{row.icon}</Text>
+                <View style={styles.rowIcon}><EditorToolIcon name={row.icon} /></View>
                 <View style={styles.rowCopy}><Text style={styles.rowLabel}>{row.label}</Text>{row.hint ? <Text style={styles.rowHint}>{row.hint}</Text> : null}</View>
             </Pressable>)}
             </ScrollView>
@@ -60,19 +67,19 @@ export function SimpleEditorBar({ active, trayOpen = false, onOpen }: {
     trayOpen?: boolean;
     onOpen(sheet: SimpleSheetName): void;
 }) {
-    const items: readonly { id: SimpleDockTab; icon: string; label: string; onPress(): void }[] = [
-        { id: 'ai', icon: '✦', label: t('editorSimple.aiEdit'), onPress: () => onOpen('ai') },
-        { id: 'cut', icon: '✂', label: t('editorSimple.cut'), onPress: () => onOpen('cut') },
-        { id: 'audio', icon: '♫', label: t('editorSimple.sound'), onPress: () => onOpen('sound') },
-        { id: 'text', icon: 'T', label: t('editorSimple.text'), onPress: () => onOpen('text') },
-        { id: 'media', icon: '▱', label: t('editorSimple.layers'), onPress: () => onOpen('layers') },
+    const items: readonly { id: SimpleDockTab; icon: MenuIcon; label: string; onPress(): void }[] = [
+        { id: 'ai', icon: 'sparkle', label: t('editorSimple.aiEdit'), onPress: () => onOpen('ai') },
+        { id: 'cut', icon: 'scissors', label: t('editorSimple.cut'), onPress: () => onOpen('cut') },
+        { id: 'audio', icon: 'waveform', label: t('editorSimple.sound'), onPress: () => onOpen('sound') },
+        { id: 'text', icon: 'chatText', label: t('editorSimple.text'), onPress: () => onOpen('text') },
+        { id: 'media', icon: 'squares', label: t('editorSimple.layers'), onPress: () => onOpen('layers') },
     ];
     // Keep the bar above the home indicator; the panel above it scrolls instead of pushing the bar off screen.
     const bottom = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
     return <View style={[styles.bar, { paddingBottom: trayOpen ? 7 : Math.max(22, bottom + 8) }]}>
         {items.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: active === item.id }} onPress={item.onPress} style={({ pressed }) => [styles.barButton, active === item.id && styles.barPrimary, pressed && styles.rowPressed]}>
-            <Text style={[styles.barIcon, active === item.id && styles.barPrimaryText]}>{item.icon}</Text>
-            <Text style={[styles.barLabel, active === item.id && styles.barPrimaryText]}>{item.label}</Text>
+            <EditorToolIcon name={item.icon} size={24} active={active === item.id} muted={active !== item.id} />
+            <Text style={[styles.barLabel, active === item.id && styles.activeInk]}>{item.label}</Text>
         </Pressable>)}
     </View>;
 }
@@ -85,7 +92,7 @@ export function SimpleEditorTray({ rows }: { rows: readonly SheetRow[] }) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trayContent}>
             {rows.map((row) => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={rawText(row.label)} accessibilityState={{ disabled: !!row.disabled }}
                 disabled={row.disabled} onPress={row.onPress} style={({ pressed }) => [styles.trayButton, row.disabled && styles.rowDisabled, pressed && styles.rowPressed]}>
-                <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.trayIcon, row.icon.length > 1 && styles.trayIconWide]}>{row.icon}</Text>
+                <View style={styles.trayIcon}><EditorToolIcon name={row.icon} size={24} /></View>
                 <Text numberOfLines={2} style={styles.trayLabel}>{row.label}</Text>
             </Pressable>)}
         </ScrollView>
@@ -97,26 +104,24 @@ const styles = StyleSheet.create({
     sheet: { gap: 8, paddingHorizontal: 14, paddingTop: 14, paddingBottom: 30, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
     sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 4 },
     sheetTitle: { color: colors.text, fontFamily: fonts.display, fontSize: 19 },
-    closeButton: { justifyContent: 'center', paddingHorizontal: 8 },
-    closeText: { color: colors.accent, fontSize: 15, fontWeight: '700' },
-    row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background },
+    closeButton: { alignItems: 'center', justifyContent: 'center' },
+    row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: 'transparent' },
     rowDisabled: { opacity: 0.4 },
     rowPressed: { opacity: 0.65 },
-    rowIcon: { width: 34, color: colors.accent, fontSize: 20, fontWeight: '800', textAlign: 'center' },
-    rowIconWide: { fontSize: 15 },
+    rowIcon: { width: 34, alignItems: 'center', justifyContent: 'center' },
     rowCopy: { flex: 1, minWidth: 0 },
     rowLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
     rowHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
     bar: { flexShrink: 0, flexDirection: 'row', gap: 3, paddingHorizontal: 8, paddingTop: 7, paddingBottom: 7, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#29292c', backgroundColor: '#171719' },
-    barButton: { flex: 1, minWidth: 0, minHeight: 58, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 12, borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
-    barPrimary: { borderColor: 'rgba(52,179,96,0.44)', backgroundColor: '#277c3f' },
-    barIcon: { color: '#a0a0a7', fontSize: 20, fontWeight: '800' },
+    barButton: { flex: 1, minWidth: 0, minHeight: 58, alignItems: 'center', justifyContent: 'center', gap: 3, backgroundColor: 'transparent' },
+    barPrimary: { backgroundColor: 'transparent' },
     barLabel: { color: '#a0a0a7', fontSize: 12, fontWeight: '800' },
-    barPrimaryText: { color: '#ffffff' },
+    activeInk: { color: colors.accent },
+    mutedInk: { color: '#a0a0a7' },
+    fallbackIcon: { color: '#f1f1f2', fontSize: 22, lineHeight: 26, fontWeight: '800', textAlign: 'center' },
     tray: { flexShrink: 0, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#2b2b2e', backgroundColor: '#1a1a1c' },
     trayContent: { minWidth: '100%', paddingHorizontal: 8, paddingTop: 10, gap: 6 },
     trayButton: { width: 82, minHeight: 58, alignItems: 'center', justifyContent: 'flex-start', gap: 4, paddingHorizontal: 4 },
-    trayIcon: { height: 26, color: '#ffffff', fontSize: 23, lineHeight: 26, fontWeight: '800', textAlign: 'center' },
-    trayIconWide: { fontSize: 17 },
+    trayIcon: { height: 26, alignItems: 'center', justifyContent: 'center' },
     trayLabel: { color: '#f1f1f2', fontSize: 12, lineHeight: 15, fontWeight: '600', textAlign: 'center' },
 });

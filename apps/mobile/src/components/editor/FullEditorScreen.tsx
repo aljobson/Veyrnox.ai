@@ -47,6 +47,7 @@ import { useEditorLeaveGuard } from './useEditorLeaveGuard';
 import { EditorSaveSheets } from './EditorSaveSheets';
 import { EditorVersionsSheet } from './EditorVersionsSheet';
 import { Button } from '../ui/Button';
+import { Icon } from '../ui/Icon';
 import { EditorLoadState } from './EditorLoadState';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { SafeAreaInsetsContext } from 'react-native-safe-area-context';
@@ -461,60 +462,60 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     };
     // Simple view: three entries open sheets that reuse the same handlers as the full tool set.
     const showPanel = (next: Tool) => { setTool(next); setPanelOpen(true); }; const addRows: SheetRow[] = [
-        { id: 'library-video', icon: '▣', label: t('editor.libraryvideo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
-        { id: 'library-image', icon: '▧', label: t('editor.libraryimage'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
-        { id: 'library-audio', icon: '♫', label: t('editor.libraryaudio'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
-        { id: 'photos', icon: '▤', label: t('editor.photosvideos'), disabled: replacing, afterClose: true, onPress: () => void choosePhotos() },
-        { id: 'files', icon: '▥', label: t('editor.files'), disabled: replacing || fileImport.status === 'waiting', afterClose: true, onPress: () => void chooseFiles() },
-        { id: 'asset-packs', icon: '▦', label: t('editorPack.title'), disabled: replacing, onPress: openAssetPacks },
-        ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false);
+        { id: 'library-video', icon: 'video', label: t('editor.libraryvideo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
+        { id: 'library-image', icon: 'image', label: t('editor.libraryimage'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
+        { id: 'library-audio', icon: 'audio', label: t('editor.libraryaudio'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
+        { id: 'photos', icon: 'photo', label: t('editor.photosvideos'), disabled: replacing, afterClose: true, onPress: () => void choosePhotos() },
+        { id: 'files', icon: 'folder', label: t('editor.files'), disabled: replacing || fileImport.status === 'waiting', afterClose: true, onPress: () => void chooseFiles() },
+        { id: 'asset-packs', icon: 'squares', label: t('editorPack.title'), disabled: replacing, onPress: openAssetPacks },
+        ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: 'microphone', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false);
             setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []), ]; const aiRows: SheetRow[] = [
-        ...(bestCut.available ? [{ id: 'best-cut', icon: '✦', label: t('bestCut.title'), disabled: !ready, onPress: () => { setSheet(null); bestCut.launch(); } }] : []),
-        ...(speechQuote ? (['silences', 'retakes', 'fillers'] as const).map(mode => ({ id: `speech-${mode}`, icon: '✦', label: t(`editorSpeech.${mode}`), disabled: !ready, onPress: () => {
+        ...(bestCut.available ? [{ id: 'best-cut', icon: 'sparkle', label: t('bestCut.title'), disabled: !ready, onPress: () => { setSheet(null); bestCut.launch(); } }] : []),
+        ...(speechQuote ? (['silences', 'retakes', 'fillers'] as const).map(mode => ({ id: `speech-${mode}`, icon: 'sparkle', label: t(`editorSpeech.${mode}`), disabled: !ready, onPress: () => {
             setPlaying(false); setSheet(null); setSpeechMode(mode); } })) : []),
-        ...(aiQuote ? [{ id: 'describe', icon: '✦', label: t('editorAi.describe'), disabled: !ready, onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } }] : []),
-        { id: 'smart-cut', icon: '✦', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
-        { id: 'make-clip', icon: '▶', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
-        { id: 'make-audio', icon: '♫', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
-        { id: 'captions', icon: 'CC', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') }, ]; const moreRows: SheetRow[] = [
-        { id: 'canvas', icon: '▭', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => showPanel('canvas') },
-        { id: 'text', icon: 'T', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
-        { id: 'scenes', icon: '⌇', label: t('editor.scenes'), hint: t('editorScenes.private'), onPress: () => showPanel('scenes') },
-        { id: 'clips', icon: '▶', label: t('editorClips.find'), hint: t('editorClips.private'), onPress: () => showPanel('clips') },
-        { id: 'export', icon: '⇩', label: t('editor.export'), hint: t('editorLocalExport.help'), onPress: openExport },
-        { id: 'project-file-share', icon: '⇧', label: t('editorSimple.projectFileShare'), hint: t('editorSimple.projectFileShareHint'), disabled: !ready || projectFileBusy,
+        ...(aiQuote ? [{ id: 'describe', icon: 'magicWand', label: t('editorAi.describe'), disabled: !ready, onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } }] : []),
+        { id: 'smart-cut', icon: 'sparkle', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
+        { id: 'make-clip', icon: 'playPlain', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
+        { id: 'make-audio', icon: 'audio', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
+        { id: 'captions', icon: 'chatText', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') }, ]; const moreRows: SheetRow[] = [
+        { id: 'canvas', icon: 'sliders', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => showPanel('canvas') },
+        { id: 'text', icon: 'textSize', label: t('editor.addText'), hint: t('editorSimple.textHint'), onPress: () => { addText(); setPanelOpen(true); } },
+        { id: 'scenes', icon: 'filmReel', label: t('editor.scenes'), hint: t('editorScenes.private'), onPress: () => showPanel('scenes') },
+        { id: 'clips', icon: 'film', label: t('editorClips.find'), hint: t('editorClips.private'), onPress: () => showPanel('clips') },
+        { id: 'export', icon: 'arrowUp', label: t('editor.export'), hint: t('editorLocalExport.help'), onPress: openExport },
+        { id: 'project-file-share', icon: 'shareNetwork', label: t('editorSimple.projectFileShare'), hint: t('editorSimple.projectFileShareHint'), disabled: !ready || projectFileBusy,
             onPress: () => void shareProjectFile() },
-        { id: 'project-file-open', icon: '⇩', label: t('editorSimple.projectFileOpen'), hint: t('editorSimple.projectFileOpenHint'), disabled: !ready || projectFileBusy, afterClose: true,
+        { id: 'project-file-open', icon: 'folder', label: t('editorSimple.projectFileOpen'), hint: t('editorSimple.projectFileOpenHint'), disabled: !ready || projectFileBusy, afterClose: true,
             onPress: () => void openProjectFile() },
-        { id: 'versions', icon: '↺', label: t('editorSave.versions'), hint: t('editorSimple.versionsHint'), onPress: sync.openVersions },
-        { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
+        { id: 'versions', icon: 'seekBack', label: t('editorSave.versions'), hint: t('editorSimple.versionsHint'), onPress: sync.openVersions },
+        { id: 'all-tools', icon: 'squares', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
     const cutRows: SheetRow[] = [
-        { id: 'insert', icon: '▣+', label: t('editorSimple.add'), hint: t('editorSimple.addTitle'), onPress: () => setSheet('add') },
-        { id: 'filters', icon: '◯', label: t('editor.filters'), onPress: () => showPanel('filters') },
-        { id: 'transitions', icon: '⇄', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
-        { id: 'polish', icon: '✦', label: t('editorSimple.polish'), onPress: () => showPanel('adjust') },
+        { id: 'insert', icon: 'folderPlus', label: t('editorSimple.add'), hint: t('editorSimple.addTitle'), onPress: () => setSheet('add') },
+        { id: 'filters', icon: 'filter', label: t('editor.filters'), onPress: () => showPanel('filters') },
+        { id: 'transitions', icon: 'arrowsHorizontal', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
+        { id: 'polish', icon: 'magicWand', label: t('editorSimple.polish'), onPress: () => showPanel('adjust') },
     ];
     const soundRows: SheetRow[] = [
-        { id: 'music', icon: '♫', label: t('editorSimple.music'), hint: t('editorSimple.musicHint'), disabled: replacing, onPress: () => setLibraryKind('audio') },
-        ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: '●', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing,
+        { id: 'music', icon: 'audio', label: t('editorSimple.music'), hint: t('editorSimple.musicHint'), disabled: replacing, onPress: () => setLibraryKind('audio') },
+        ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: 'microphone', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing,
             onPress: () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); } }] : []),
-        { id: 'clean-voice', icon: '≋', label: t('editorSimple.cleanVoice'), hint: selection && (selection.track === 'audio' || selectedMedia?.hasAudio)
+        { id: 'clean-voice', icon: 'waveform', label: t('editorSimple.cleanVoice'), hint: selection && (selection.track === 'audio' || selectedMedia?.hasAudio)
             ? t('editorSimple.cleanVoiceHint') : t('editorSimple.cleanVoiceSelect'), onPress: () => {
                 if (selection && (selection.track === 'audio' || selectedMedia?.hasAudio)) showPanel('adjust');
                 else showPanel('audio');
             } },
     ];
     const textRows: SheetRow[] = [
-        { id: 'edit-text', icon: '✎', label: t('editorSimple.editText'), onPress: () => showPanel('text') },
-        { id: 'title', icon: 'Aa', label: t('editorSimple.title'), onPress: () => { addText(); setPanelOpen(true); } },
-        { id: 'captions', icon: 'CC', label: t('editor.captions'), onPress: () => showPanel('captions') },
-        { id: 'report', icon: '!', label: t('editorSimple.reportIssue'), onPress: () => void openWorkflow('/help') },
-        { id: 'settings', icon: '⚙', label: t('editorSimple.openSettings'), onPress: () => void Linking.openSettings() },
+        { id: 'edit-text', icon: 'edit', label: t('editorSimple.editText'), onPress: () => showPanel('text') },
+        { id: 'title', icon: 'textSize', label: t('editorSimple.title'), onPress: () => { addText(); setPanelOpen(true); } },
+        { id: 'captions', icon: 'chatText', label: t('editor.captions'), onPress: () => showPanel('captions') },
+        { id: 'report', icon: 'flag', label: t('editorSimple.reportIssue'), onPress: () => void openWorkflow('/help') },
+        { id: 'settings', icon: 'gear', label: t('editorSimple.openSettings'), onPress: () => void Linking.openSettings() },
     ];
     const layerRows: SheetRow[] = [
-        { id: 'photo', icon: '▧', label: t('editorSimple.photo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
-        { id: 'video', icon: '▣', label: t('editorSimple.video'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
-        { id: 'all-layers', icon: '☷', label: t('editorSimple.allLayers'), onPress: () => showPanel('media') },
+        { id: 'photo', icon: 'photo', label: t('editorSimple.photo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
+        { id: 'video', icon: 'video', label: t('editorSimple.video'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
+        { id: 'all-layers', icon: 'squares', label: t('editorSimple.allLayers'), onPress: () => showPanel('media') },
     ];
     const simpleDockTab: SimpleDockTab = sheet === 'ai' ? 'ai' : sheet === 'cut' ? 'cut'
         : sheet === 'sound' ? 'audio' : sheet === 'text' ? 'text' : sheet === 'layers' ? 'media'
@@ -538,19 +539,19 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         <Stack.Screen options={{ headerShown: false, gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */ }} />
         <View style={[styles.projectBar, !advanced && styles.simpleProjectBar]}>
             <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={guard.done} style={({ pressed }) => [styles.headerButton, !advanced && styles.simpleHeaderButton, pressed && styles.pressed]}>
-                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerButtonIcon}>‹</Text>
+                <Icon name="arrowLeft" size={28} tint={styles.headerButtonIcon.color} />
             </Pressable>
             {advanced ? <View style={styles.cutBadge}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutMark}>{t('editor.v')}</Text><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}
             {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCover.open')} onPress={openCover} style={({ pressed }) => [styles.coverButton, styles.simpleHeaderButton, pressed && styles.pressed]}>
-                <Text style={styles.coverButtonIcon}>▧</Text>
+                <Icon name="image" size={24} tint={styles.coverButtonIcon.color} />
             </Pressable> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={`${t('projects.rename')} ${displayName}`} onPress={openRename} style={({ pressed }) => [styles.titleGroup, touchTarget, pressed && styles.pressed]}>
-                <View style={styles.titleRow}><Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.title}>{displayName}</Text><Text style={styles.titleEdit}>✎</Text></View>
+                <View style={styles.titleRow}><Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.title}>{displayName}</Text><Icon name="edit" size={16} tint={styles.titleEdit.color} /></View>
                 {advanced ? <StatusText variant="inherit" maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText> : null}
             </Pressable>
             {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={advanced ? t('editor.done') : t('editor.export')} onPress={advanced ? guard.done : openExport}
-                style={({ pressed }) => [styles.headerAction, !advanced && styles.simpleHeaderAction, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerActionText}>{advanced ? t('editor.done') : t('editor.export')}</Text></Pressable>
+                style={({ pressed }) => [styles.headerAction, !advanced && styles.simpleHeaderAction, pressed && styles.pressed]}>{advanced ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerActionText}>{t('editor.done')}</Text> : <Icon name="arrowUp" size={28} tint={styles.headerActionText.color} />}</Pressable>
         </View>
         {problem ? <StatusText key={placement} variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
         {fileImport.status !== 'idle' ? <View testID="editor-files-recovery" style={styles.workflowCard}>
@@ -633,12 +634,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 {!advanced && !panelOpen ? <View style={styles.previewQuickActions}>
                     <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.rotation')} +90°`} accessibilityState={{ disabled: selection?.track !== 'video' || !selected }} hitSlop={4}
                         disabled={selection?.track !== 'video' || !selected} onPress={() => motionActions.transform('rotation', (((selected as Clip)?.transform?.rotation ?? 0) + 90) % 360)}
-                        style={({ pressed }) => [styles.previewQuickButton, (selection?.track !== 'video' || !selected) && styles.disabled, pressed && styles.pressed]}><Text style={styles.previewQuickIcon}>↻</Text></Pressable>
+                        style={({ pressed }) => [styles.previewQuickButton, (selection?.track !== 'video' || !selected) && styles.disabled, pressed && styles.pressed]}><Icon name="seekForward" size={24} tint={styles.previewQuickIcon.color} /></Pressable>
                     <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.fit')} accessibilityState={{ disabled: selection?.track !== 'video' || !selected }} hitSlop={4}
                         disabled={selection?.track !== 'video' || !selected} onPress={() => motionActions.transform('scale', 1)}
-                        style={({ pressed }) => [styles.previewQuickButton, (selection?.track !== 'video' || !selected) && styles.disabled, pressed && styles.pressed]}><Text style={styles.previewQuickIcon}>⤢</Text></Pressable>
+                        style={({ pressed }) => [styles.previewQuickButton, (selection?.track !== 'video' || !selected) && styles.disabled, pressed && styles.pressed]}><Icon name="expand" size={24} tint={styles.previewQuickIcon.color} /></Pressable>
                     <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · 9:16`} accessibilityState={{ selected: canvas.aspect_ratio === '9:16' }} hitSlop={4}
-                        onPress={() => updateCanvas({ aspect_ratio: '9:16' })} style={({ pressed }) => [styles.previewQuickButton, canvas.aspect_ratio === '9:16' && styles.previewQuickSelected, pressed && styles.pressed]}><Text style={styles.previewQuickIcon}>▯</Text></Pressable>
+                        onPress={() => updateCanvas({ aspect_ratio: '9:16' })} style={({ pressed }) => [styles.previewQuickButton, canvas.aspect_ratio === '9:16' && styles.previewQuickSelected, pressed && styles.pressed]}><Icon name="phone" size={24} tint={styles.previewQuickIcon.color} /></Pressable>
                 </View> : null}
             </View>
             {!advanced && !panelOpen ? <View style={styles.simplePreviewFooter}>
@@ -679,7 +680,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         </View>
         {advanced || panelOpen ? <EditorToolSheet inline={advanced} wide={advanced && budget.wideShort} minHeight={budget.wideShort ? undefined : budget.panelMin}
             rail={advanced ? <ToolRail tool={tool} setTool={setTool} /> : undefined}>
-        {!advanced && panelOpen ? <View style={styles.simpleActions}><Action label={t('editorSimple.closePanel')} onPress={() => setPanelOpen(false)} /></View> : null}
+        {!advanced && panelOpen ? <View style={styles.simplePanelHeader}><Pressable accessibilityRole="button" accessibilityLabel={t('editorSimple.closePanel')} onPress={() => setPanelOpen(false)} style={({ pressed }) => [styles.simplePanelClose, pressed && styles.pressed]}><Icon name="close" size={24} tint={styles.headerActionText.color} /></Pressable></View> : null}
         <ScrollView style={styles.inspector} contentContainerStyle={styles.inspectorContent} keyboardShouldPersistTaps="handled">
             {selectedMedia?.kind === 'video' && (tool === 'media' || tool === 'generate') ? <Seedance25EditorActions key={selectedMedia.id} uri={localMediaUris[selectedMedia.id]} assetId={selectedMedia.id.startsWith('j-') ? selectedMedia.id.slice(2) : undefined} /> : null}
             {tool === 'canvas' ? <AdjustPanel {...panelProps} /> : null}
