@@ -46,7 +46,7 @@ export function MarketingNav({ hideAnnouncementOnMobile = false }) {
         <Logo className="sm:hidden" />
         <Logo wordmark className="hidden sm:inline-flex" />
       </Link>
-      {/* Keep the five primary destinations visible at ordinary desktop
+      {/* Keep the six primary destinations visible at ordinary desktop
           widths. The adjacent menu carries the complete list without ever
           forcing the logo or account controls out of the bar. */}
       <nav aria-label={t('ui.primary')} className="hidden xl:flex flex-1 min-w-0 items-center gap-0.5 text-[12px] font-semibold">
