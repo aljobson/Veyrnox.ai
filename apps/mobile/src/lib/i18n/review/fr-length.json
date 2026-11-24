@@ -7500,6 +7500,12 @@
     "ratio": 1.73
   },
   {
+    "id": "music.create.inspiration.apply",
+    "english": "Apply this brief",
+    "translation": "Appliquer cette proposition",
+    "ratio": 1.69
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Ajouter",

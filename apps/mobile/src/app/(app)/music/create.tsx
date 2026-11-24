@@ -8,6 +8,7 @@ import { MusicLyricsPanel } from '../../../components/music/MusicLyricsPanel';
 import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
+import { MusicInspirationCard } from '../../../components/music/MusicInspirationCard';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
 import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { formatLocale, t } from '../../../lib/i18n';
@@ -73,6 +74,8 @@ export default function MusicCreate() {
                         {input.mode === 'simple' ? <>
                             <TextField label={t('music.create.prompt')} value={input.prompt} multiline
                                 maxLength={suno && model ? modelCounterLimit(model, 'prompt') ?? undefined : 500} onChangeText={prompt => edit({ prompt })} />
+                            {e.inspiration_sources.includes('audio') ? <MusicInspirationCard api={api}
+                                onApply={prompt => edit({ prompt: prompt.slice(0, model ? modelCounterLimit(model, 'prompt') ?? 500 : 500) })} /> : null}
                             {suno && model?.controls.instrumental ? <View style={s.row}>
                                 <Text>{t('music.create.instrumental')}</Text><Switch accessibilityLabel={t('music.create.instrumental')}
                                     disabled={model.controls.instrumental === 'required'} value={input.instrumental}

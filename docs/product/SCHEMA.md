@@ -20,6 +20,12 @@ API call) · [diagrams/job-lifecycle.html](diagrams/job-lifecycle.html)
 (`jobs.state`). Sources are the `.json` files beside them (Archify).
 **Defects found:** [ISSUES.md](ISSUES.md) §Schema.
 
+> Addendum (0608): `music_inspiration_requests` stores owner-fenced, default-off
+> iPhone audio-inspiration request state, bounded result briefs/tags and short-lived
+> HMAC receipts. It is service-role-only, capped at five new rows per UTC day,
+> erased when `users.deleted_at` is set, and intentionally excluded from the
+> legacy generic privacy export because that export has no Music section.
+
 ## 1. Rules every table follows
 
 - **RLS enabled and forced on all 166 tables** (161 in `public`, 5 in

@@ -13,10 +13,10 @@ import type { MusicActionQuote, StemStart, StemRequest, StemArchive, CropInput, 
 import { isMusicActionQuote, isStemStart, isStemRequest, isStemArchive, isCropResult } from './validateActions';
 import { ApiError, type ApiClient } from '../api';
 import { isRecord } from '../responseShapes';
-import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext } from './validate';
+import { isMusicDraft, isMusicGenerationView, isMusicEntitlements, isMusicGeneration, isMusicInspirationResult, isMusicQuote, isMusicSongRow, isMusicSongDetail, isPlayableMusicHook, isMusicLifecycle, isMusicReuseContext } from './validate';
 import { isMusicDailyChallenge } from './dailyChallenge';
 import type {
-    MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
+    MusicDraft, MusicDraftInput, MusicGenerationView, MusicCustomQuoteInput, MusicEntitlements, MusicGeneration, MusicInspirationResult, MusicLibraryTab, MusicLibraryTabData, MusicQuote,
     MusicRow, MusicSongRow, MusicLifecycle, MusicSimpleQuoteInput, MusicSong, MusicSongsQuery, MusicProviderContract, MusicReuseContext, MusicReuseInput,
 } from './types';
 
@@ -61,6 +61,13 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
         ...(response.daily_challenge === undefined ? {} : { daily_challenge: safeChallenge }),
     } : response;
     if (!isMusicEntitlements(value)) throw bad();
+    return value;
+}
+
+export async function analyzeMusicInspiration(api: ApiClient, key: string, idempotencyKey: string, signal?: AbortSignal): Promise<MusicInspirationResult> {
+    const value = await api.request<unknown>(`${BASE}/inspiration`, { ...post({ kind: 'audio', key,
+        rights_confirmed: true, idempotency_key: idempotencyKey }), signal }, { timeoutMs: 75_000 });
+    if (!isMusicInspirationResult(value)) throw bad();
     return value;
 }
 

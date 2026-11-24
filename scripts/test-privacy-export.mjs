@@ -327,7 +327,7 @@ try {
         // and are erased with the account. The generic export has no Music section yet.
         // Music actors and blocks (ADR-0367) follow the existing Music exclusion: no generic Music export section.
         // The own block list is available through the API; both tables are erased on account deletion.
-        'music_reference_links', 'music_actors', 'music_user_blocks',
+        'music_reference_links', 'music_actors', 'music_user_blocks', 'music_inspiration_requests',
         // Song reactions, creator follows and their write receipts (0515): ids and an emoji,
         // erased with the account. Counts are public; the generic export has no Music section yet.
         'music_song_reactions', 'music_creator_follows', 'music_social_mutations',

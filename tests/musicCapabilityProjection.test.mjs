@@ -45,9 +45,17 @@ test('inspiration capabilities expose audio only when its private contract is co
     MUSIC_INSPIRATION_ENABLED: 'true',
     MUSIC_INSPIRATION_MODEL: 'google/gemini-test',
     MUSIC_INSPIRATION_API_KEY: 'test-only',
+    MUSIC_INSPIRATION_SCHEMA_ENABLED: 'true',
+    MUSIC_INSPIRATION_RECEIPT_SECRET: 'a'.repeat(32),
+    UPLOAD_INTEGRITY_ENABLED: 'true',
+    MUSIC_RUNTIME_FLAGS: JSON.stringify({ schema: true, inspiration: true }),
   };
   assert.deepEqual(musicInspirationSources({}), []);
   assert.deepEqual(musicInspirationSources(base), ['audio']);
+  for (const key of ['MUSIC_INSPIRATION_ENABLED', 'MUSIC_INSPIRATION_MODEL', 'MUSIC_INSPIRATION_API_KEY',
+    'MUSIC_INSPIRATION_SCHEMA_ENABLED', 'MUSIC_INSPIRATION_RECEIPT_SECRET', 'UPLOAD_INTEGRITY_ENABLED', 'MUSIC_RUNTIME_FLAGS']) {
+    assert.deepEqual(musicInspirationSources({ ...base, [key]: undefined }), [], `${key} fails closed`);
+  }
   assert.deepEqual(musicInspirationSources({
     ...base,
     UPLOAD_HASH_MATCH_REQUIRED: 'true',
@@ -55,6 +63,8 @@ test('inspiration capabilities expose audio only when its private contract is co
     CONTENT_SCAN_ENABLED: 'true',
     OPENAI_API_KEY: 'test-only',
   }), [], 'all pickers stay hidden when required upload admission has no registered provider');
+  assert.deepEqual(musicInspirationSources({ ...base, CONTENT_SCAN_ENABLED: 'true', OPENAI_API_KEY: 'test-only' }), ['audio'],
+    'unimplemented image/video kinds are never advertised');
 });
 
 test('enabled daily challenge is carried by the existing no-store entitlement contract', async () => {

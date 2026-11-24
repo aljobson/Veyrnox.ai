@@ -1,5 +1,5 @@
 import { isFiniteNumber, isRecord } from '../responseShapes';
-import type { MusicDraft, MusicCandidateView, MusicGenerationView, MusicEntitlements, MusicGeneration, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle, MusicVersionCapabilities, MusicReuseContext } from './types';
+import type { MusicDraft, MusicCandidateView, MusicGenerationView, MusicEntitlements, MusicGeneration, MusicInspirationResult, MusicModel, MusicQuote, MusicSongRow, MusicSongDetail, MusicVersion, MusicHook, MusicShareLink, MusicLifecycle, MusicVersionCapabilities, MusicReuseContext } from './types';
 import { isMusicDailyChallenge } from './dailyChallenge';
 
 // Boundary checks: every field the exported types promise is verified, so a screen never meets a
@@ -74,6 +74,12 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
         && optional(v.daily_allowance, ['reset_at'], str)))
     && (v.daily_challenge === undefined || isMusicDailyChallenge(v.daily_challenge))
     && isRecord(v.policy) && str(v.policy.version) && bool(v.policy.pre_debit);
+
+export const isMusicInspirationResult = (v: unknown): v is MusicInspirationResult => isRecord(v)
+    && str(v.analysis_id) && str(v.brief) && str(v.receipt) && str(v.expires_at) && bool(v.idempotent)
+    && v.brief.length > 0 && v.brief.length <= 500
+    && Array.isArray(v.tags) && v.tags.length <= 8 && v.tags.every(tag => str(tag) && tag.length <= 40)
+    && new Set(v.tags).size === v.tags.length;
 
 export const isMusicQuote = (v: unknown): v is MusicQuote => isRecord(v)
     && all(v, ['quote_id', 'model_id', 'expires_at', 'policy_version'], str)

@@ -4848,6 +4848,12 @@
     "ratio": 1.75
   },
   {
+    "id": "music.create.inspiration.retry",
+    "english": "Retry analysis",
+    "translation": "Tentar a análise novamente",
+    "ratio": 1.86
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "Adicionar",

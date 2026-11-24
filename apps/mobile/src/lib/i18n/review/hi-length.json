@@ -2706,6 +2706,12 @@
     "ratio": 1.68
   },
   {
+    "id": "music.create.inspiration.analyzing",
+    "english": "Analyzing audio…",
+    "translation": "ऑडियो का विश्लेषण हो रहा है…",
+    "ratio": 1.75
+  },
+  {
     "id": "musicAlbums.addTrack",
     "english": "Add",
     "translation": "जोड़ें",
