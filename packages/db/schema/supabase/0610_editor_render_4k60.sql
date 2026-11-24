@@ -3,9 +3,15 @@
 -- 100 MiB; 720p/1080p retain their existing duration and 25 MiB ceilings.
 BEGIN;
 
-UPDATE public.model_catalog
-SET editor_render_rates=jsonb_set(coalesce(editor_render_rates,'{}'::jsonb),'{2160p}','{"billing_seconds":5}'::jsonb,true),updated_at=now()
-WHERE id='editor-server-render' AND provider='concat-render';
+DO $$
+DECLARE v_updated integer;
+BEGIN
+ UPDATE public.model_catalog
+ SET editor_render_rates=jsonb_set(coalesce(editor_render_rates,'{}'::jsonb),'{2160p}','{"billing_seconds":5}'::jsonb,true),updated_at=now()
+ WHERE id='editor-server-render' AND provider='concat-render';
+ GET DIAGNOSTICS v_updated = ROW_COUNT;
+ IF v_updated <> 1 THEN RAISE EXCEPTION 'expected one editor-server-render catalog row, updated %', v_updated; END IF;
+END $$;
 
 CREATE OR REPLACE FUNCTION private.editor_render_capacity(p_user UUID,p_actor UUID,p_bytes BIGINT,p_exclude UUID DEFAULT NULL)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
