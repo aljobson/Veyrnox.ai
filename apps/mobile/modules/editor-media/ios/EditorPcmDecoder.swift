@@ -169,8 +169,8 @@ enum EditorPcmDecoder {
 
   private static func sourceChannelCount(_ track: AVAssetTrack) -> Int? {
     for raw in track.formatDescriptions {
-      if let description = raw as? CMAudioFormatDescription,
-         let basic = CMAudioFormatDescriptionGetStreamBasicDescription(description)?.pointee,
+      let description = raw as! CMAudioFormatDescription
+      if let basic = CMAudioFormatDescriptionGetStreamBasicDescription(description)?.pointee,
          basic.mChannelsPerFrame > 0 { return Int(basic.mChannelsPerFrame) }
     }
     return nil

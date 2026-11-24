@@ -1,28 +1,55 @@
-declare const require: (id: string) => any;
-const secureStore = (): typeof import('expo-secure-store') => require('expo-secure-store');
+import { Platform } from 'react-native';
 import type { ApiClient } from './api';
 import { LANGUAGE_SLOT, parseLanguage, serializeLanguage } from './language';
+declare const require: (id: string) => any;
+const secureStore = (): typeof import('expo-secure-store') => require('expo-secure-store');
+
+const iosLanguage = () => {
+    if (Platform.OS !== 'ios') return null;
+    try { return parseLanguage(require('react-native').Settings.get(LANGUAGE_SLOT) as string | null); } catch { return null; }
+};
+const mirrorIosLanguage = (value: string | null) => {
+    if (Platform.OS !== 'ios') return false;
+    try { require('react-native').Settings.set({ [LANGUAGE_SLOT]: value }); return true; } catch { return false; }
+};
 
 // Read synchronously before translated modules mount, like Appearance's startup settings.
 export function readLanguage(): string | null {
-    try { return parseLanguage(secureStore().getItem(LANGUAGE_SLOT)); } catch { return null; }
+    try { return parseLanguage(secureStore().getItem(LANGUAGE_SLOT)) ?? iosLanguage(); } catch { return iosLanguage(); }
 }
 
 export async function loadLanguage(): Promise<string | null> {
     try {
-        return parseLanguage(await secureStore().getItemAsync(LANGUAGE_SLOT));
+        return parseLanguage(await secureStore().getItemAsync(LANGUAGE_SLOT)) ?? iosLanguage();
     } catch {
-        return null;
+        return iosLanguage();
     }
 }
 
 export async function saveLanguage(code: string | null, pendingAccountSync = false): Promise<boolean> {
     try {
+        const value = code === null ? null : JSON.stringify({ ...JSON.parse(serializeLanguage(code)), pendingAccountSync });
         if (code === null) await secureStore().deleteItemAsync(LANGUAGE_SLOT);
-        else await secureStore().setItemAsync(LANGUAGE_SLOT, JSON.stringify({ ...JSON.parse(serializeLanguage(code)), pendingAccountSync }));
+        else await secureStore().setItemAsync(LANGUAGE_SLOT, value!);
+        mirrorIosLanguage(value);
         return true;
     } catch {
-        return false;
+        const value = code === null ? null : JSON.stringify({ ...JSON.parse(serializeLanguage(code)), pendingAccountSync });
+        return mirrorIosLanguage(value);
+    }
+}
+
+// The first-launch gate must update the synchronous startup read before it asks
+// React to reveal sign-in. A cold iOS launch can leave the async native bridge
+// promise pending even after Keychain has accepted this tiny write.
+export function saveLanguageSync(code: string, pendingAccountSync = false): boolean {
+    const value = JSON.stringify({ ...JSON.parse(serializeLanguage(code)), pendingAccountSync });
+    try {
+        secureStore().setItem(LANGUAGE_SLOT, value);
+        mirrorIosLanguage(value);
+        return true;
+    } catch {
+        return mirrorIosLanguage(value);
     }
 }
 
