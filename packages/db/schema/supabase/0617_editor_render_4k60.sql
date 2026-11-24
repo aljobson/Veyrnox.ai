@@ -1,4 +1,3 @@
--- 0617_editor_render_4k60.sql
 -- F070: phone/server editor exports may request the saved project's frame rate,
 -- including 2160p at 60 fps. 4K is intentionally capped at 30 seconds and
 -- 50 MiB; 720p/1080p retain their existing duration and 25 MiB ceilings.
