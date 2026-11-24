@@ -8842,6 +8842,7 @@ export default {
   "editorCover.hideText": "Ocultar texto da capa",
   "editorCover.frameReadout": "Quadro {value1} · {value2}",
   "editorSimple.cut": "Cortar",
+  "editorSimple.polish": "Polir",
   "editorSimple.sound": "Som",
   "editorSimple.text": "Texto",
   "editorSimple.layers": "Camadas",

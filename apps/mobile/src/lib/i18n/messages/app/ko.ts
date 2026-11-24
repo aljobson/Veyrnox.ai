@@ -8608,6 +8608,7 @@ export default {
   "editorCover.hideText": "커버 문구 숨기기",
   "editorCover.frameReadout": "프레임 {value1} · {value2}",
   "editorSimple.cut": "자르기",
+  "editorSimple.polish": "다듬기",
   "editorSimple.sound": "사운드",
   "editorSimple.text": "텍스트",
   "editorSimple.layers": "레이어",

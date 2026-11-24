@@ -5238,6 +5238,12 @@
     "ratio": 2.33
   },
   {
+    "id": "editorSimple.polish",
+    "english": "Polish",
+    "translation": "Optimieren",
+    "ratio": 1.67
+  },
+  {
     "id": "editorSimple.editText",
     "english": "Edit Text",
     "translation": "Text bearbeiten",

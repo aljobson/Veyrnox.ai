@@ -9193,6 +9193,7 @@ export default {
   "editorCover.hideText": "إخفاء نص الغلاف",
   "editorCover.frameReadout": "الإطار {value1} · {value2}",
   "editorSimple.cut": "قص",
+  "editorSimple.polish": "تحسين",
   "editorSimple.sound": "الصوت",
   "editorSimple.text": "النص",
   "editorSimple.layers": "الطبقات",

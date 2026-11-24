@@ -8844,6 +8844,7 @@ export default {
   "editorCover.hideText": "Masquer le texte de couverture",
   "editorCover.frameReadout": "Image {value1} · {value2}",
   "editorSimple.cut": "Découper",
+  "editorSimple.polish": "Peaufiner",
   "editorSimple.sound": "Son",
   "editorSimple.text": "Texte",
   "editorSimple.layers": "Calques",

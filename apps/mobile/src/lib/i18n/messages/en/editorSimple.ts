@@ -7,6 +7,7 @@ export default {
     "editorSimple.add": "Add",
     "editorSimple.aiEdit": "AI Edit",
     "editorSimple.cut": "Cut",
+    "editorSimple.polish": "Polish",
     "editorSimple.sound": "Sound",
     "editorSimple.text": "Text",
     "editorSimple.layers": "Layers",

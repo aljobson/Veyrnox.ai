@@ -8844,6 +8844,7 @@ export default {
   "editorCover.hideText": "Ocultar texto de portada",
   "editorCover.frameReadout": "Fotograma {value1} · {value2}",
   "editorSimple.cut": "Cortar",
+  "editorSimple.polish": "Pulir",
   "editorSimple.sound": "Sonido",
   "editorSimple.text": "Texto",
   "editorSimple.layers": "Capas",

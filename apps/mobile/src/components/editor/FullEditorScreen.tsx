@@ -59,7 +59,7 @@ import { EDITOR_EXPORT_GATE as exportGate } from '../../lib/editorExportGate';
 import { ServerExportSheet } from './ServerExportSheet';
 import { LocalExportSheet } from './LocalExportSheet';
 import { styles } from './fullEditorStyles'; import { EditorToolSheet } from './EditorToolSheet';
-import { SimpleEditorBar, SimpleEditorSheet, type SheetRow, type SimpleSheetName, type SimpleDockTab } from './SimpleEditorChrome';
+import { SimpleEditorBar, SimpleEditorSheet, SimpleEditorTray, type SheetRow, type SimpleSheetName, type SimpleDockTab } from './SimpleEditorChrome';
 import { randomUUID } from 'expo-crypto';
 import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
@@ -490,12 +490,9 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
     const cutRows: SheetRow[] = [
         { id: 'insert', icon: '▣+', label: t('editorSimple.add'), hint: t('editorSimple.addTitle'), onPress: () => setSheet('add') },
-        { id: 'cover', icon: '▧', label: t('editorCover.open'), hint: t('editorCover.openHint'), onPress: openCover },
         { id: 'filters', icon: '◯', label: t('editor.filters'), onPress: () => showPanel('filters') },
         { id: 'transitions', icon: '⇄', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
-        { id: 'polish', icon: '✦', label: t('editor.adjust2'), onPress: () => showPanel('adjust') },
-        { id: 'canvas', icon: '▭', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => showPanel('canvas') },
-        { id: 'all-tools', icon: '☷', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) },
+        { id: 'polish', icon: '✦', label: t('editorSimple.polish'), onPress: () => showPanel('adjust') },
     ];
     const soundRows: SheetRow[] = [
         { id: 'music', icon: '♫', label: t('editorSimple.music'), hint: t('editorSimple.musicHint'), disabled: replacing, onPress: () => setLibraryKind('audio') },
@@ -522,6 +519,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
     const simpleDockTab: SimpleDockTab = sheet === 'ai' ? 'ai' : sheet === 'cut' ? 'cut'
         : sheet === 'sound' ? 'audio' : sheet === 'text' ? 'text' : sheet === 'layers' ? 'media'
         : panelOpen && (tool === 'audio' || tool === 'text' || tool === 'media') ? tool : 'cut';
+    const simpleTrayRows = sheet === 'sound' ? soundRows : sheet === 'text' ? textRows : sheet === 'layers' ? layerRows
+        : sheet === 'cut' || sheet === null ? cutRows : null;
     const openVoiceover = () => { setPlaying(false); setVoiceoverAt(clampFrame(frameStore.get())); setVoiceoverMessage(null); };
     const brandProps = { title: t('editor.brandkit'), body: t('editor.managelogosfontscoloursandapprovedassets'),
         action: t('editor.openBrandkit'), onPress: () => void openWorkflow('/brand-kit') };
@@ -537,21 +536,21 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         {EDITOR_SERVER_EXPORT_ENABLED ? <ServerExportSheet api={api} router={router} now={Date.now} projectId={projectId} name={displayName} document={document} localMediaUris={localMediaUris} dirty={dirty} visible={exportVisible}
             onOpen={() => setExportVisible(true)} onClose={() => setExportVisible(false)} onFallback={() => { setExportVisible(false); setProblem(t('handoff.exportUnavailable')); }} /> : null}
         <Stack.Screen options={{ headerShown: false, gestureEnabled: !timelineTouch && !selection /* a selected clip is about to be dragged: swipe-back must not steal that drag; Done and the leave guard still exit */ }} />
-        <View style={styles.projectBar}>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={guard.done} style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}>
+        <View style={[styles.projectBar, !advanced && styles.simpleProjectBar]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('common.back')} onPress={guard.done} style={({ pressed }) => [styles.headerButton, !advanced && styles.simpleHeaderButton, pressed && styles.pressed]}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerButtonIcon}>‹</Text>
             </Pressable>
             {advanced ? <View style={styles.cutBadge}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutMark}>{t('editor.v')}</Text><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.cutLabel}>{t('editor.cUT')}</Text></View> : null}
-            {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCover.open')} onPress={openCover} style={({ pressed }) => [styles.coverButton, pressed && styles.pressed]}>
+            {!advanced ? <Pressable accessibilityRole="button" accessibilityLabel={t('editorCover.open')} onPress={openCover} style={({ pressed }) => [styles.coverButton, styles.simpleHeaderButton, pressed && styles.pressed]}>
                 <Text style={styles.coverButtonIcon}>▧</Text>
             </Pressable> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={`${t('projects.rename')} ${displayName}`} onPress={openRename} style={({ pressed }) => [styles.titleGroup, touchTarget, pressed && styles.pressed]}>
                 <View style={styles.titleRow}><Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.title}>{displayName}</Text><Text style={styles.titleEdit}>✎</Text></View>
-                <StatusText variant="inherit" maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText>
+                {advanced ? <StatusText variant="inherit" maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText> : null}
             </Pressable>
             {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={advanced ? t('editor.done') : t('editor.export')} onPress={advanced ? guard.done : openExport}
-                style={({ pressed }) => [styles.headerAction, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerActionText}>{advanced ? t('editor.done') : t('editor.export')}</Text></Pressable>
+                style={({ pressed }) => [styles.headerAction, !advanced && styles.simpleHeaderAction, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.headerActionText}>{advanced ? t('editor.done') : t('editor.export')}</Text></Pressable>
         </View>
         {problem ? <StatusText key={placement} variant="inherit" accessibilityRole="alert" style={styles.problem}>{problem}</StatusText> : null}
         {fileImport.status !== 'idle' ? <View testID="editor-files-recovery" style={styles.workflowCard}>
@@ -611,14 +610,12 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             <Action label={t('editorCore.fit')} onPress={() => setZoom(fitPpf(viewport, total))} compact />
         </ScrollView> : null}
         <View testID="editor-workspace" style={[styles.editorWorkspace, advanced && budget.wideShort && styles.editorWorkspaceWide]}>
-        <View style={[styles.previewArea, !advanced && !panelOpen && styles.simpleFill, advanced && budget.wideShort && styles.previewAreaWide]}>
+        <View style={[styles.previewArea, !advanced && styles.simplePreviewArea, !advanced && !panelOpen && styles.simpleFill, advanced && budget.wideShort && styles.previewAreaWide]}>
             {bestCut.result}
-            {advanced && !budget.showPreviewHeading ? null : <View style={styles.previewHeading}>
+            {advanced && budget.showPreviewHeading ? <View style={styles.previewHeading}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
-                {advanced ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewMeta}>{clipCount ? plural('editor.clipsOnTimelineCount', clipCount) : t('editor.emptysequence')}</Text>
-                    : <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => showPanel('canvas')}
-                        style={({ pressed }) => [styles.previewAspect, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewAspectText}>{String.fromCodePoint(9635)} {canvas.aspect_ratio}</Text></Pressable>}
-            </View>}
+                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewMeta}>{clipCount ? plural('editor.clipsOnTimelineCount', clipCount) : t('editor.emptysequence')}</Text>
+            </View> : null}
             {safeGuideSize.height > safeGuideSize.width ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.safeAreaStrip} contentContainerStyle={styles.safeAreaControls}>
                 <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.optionLabel}>{t('editor.safeArea')}</Text>
                 {SAFE_AREA_GUIDES.map(guide => <Choice key={guide.id} label={t(guide.labelKey.replace('app.editor.safeArea.', 'editor.safeArea.'))} selected={safeAreaGuideId === guide.id}
@@ -644,25 +641,25 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                         onPress={() => updateCanvas({ aspect_ratio: '9:16' })} style={({ pressed }) => [styles.previewQuickButton, canvas.aspect_ratio === '9:16' && styles.previewQuickSelected, pressed && styles.pressed]}><Text style={styles.previewQuickIcon}>▯</Text></Pressable>
                 </View> : null}
             </View>
+            {!advanced && !panelOpen ? <View style={styles.simplePreviewFooter}>
+                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{t('editor.pREVIEW')}</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={`${t('editor.shape')} · ${canvas.aspect_ratio}`} onPress={() => showPanel('canvas')}
+                    style={({ pressed }) => [styles.previewAspect, pressed && styles.pressed]}><Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.previewAspectText}>{String.fromCodePoint(9635)} {canvas.aspect_ratio}</Text></Pressable>
+            </View> : null}
             <PlaybackTransport frameStore={frameStore} total={total} fps={timeline.fps} playing={playing} simple={!advanced} canUndo={history.canUndo} canRedo={history.canRedo}
                 onUndo={() => travel('undo')} onRedo={() => travel('redo')} onSeek={setFrame} onPlaying={setPlaying} />
         </View>
-        <View testID="editor-timeline-section" style={[styles.timelineSection, advanced && (budget.wideShort ? styles.timelineSectionWide
+        <View testID="editor-timeline-section" style={[styles.timelineSection, !advanced && styles.simpleTimelineSection, advanced && (budget.wideShort ? styles.timelineSectionWide
             : { flexShrink: 1, flexGrow: 0, maxHeight: budget.timelineMax, minHeight: Math.min(budget.timelineMax, 119) })]}>
             <View style={[styles.timelineHeading, !advanced && styles.simpleTimelineHeading]}>
-                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{t('editor.tIMELINE')}</Text>
+                <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.eyebrow}>{advanced ? t('editor.tIMELINE') : timecode(frameStore.get(), timeline.fps)}</Text>
                 {advanced ? <Text maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.timelineHelp}>{multiSelect ? t('editor.selectedtapclipstoadd', { value1: selections.length }) : selection
                     ? t('editor.tapacommandtoeditselection') : t('editor.tapacliptoselect')}</Text> : <View style={styles.simpleTimelineTools}>
                     <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomOut')} accessibilityState={{ disabled: zoom <= PPF_MIN }} disabled={zoom <= PPF_MIN}
                         onPress={() => setZoom(value => Math.max(PPF_MIN, value / 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom <= PPF_MIN && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>−</Text></Pressable>
+                    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.timelineZoomTrack}><View style={styles.timelineZoomProgress} /><View style={styles.timelineZoomThumb} /></View>
                     <Pressable accessibilityRole="button" accessibilityLabel={t('editorCore.zoomIn')} accessibilityState={{ disabled: zoom >= PPF_MAX }} disabled={zoom >= PPF_MAX}
                         onPress={() => setZoom(value => Math.min(PPF_MAX, value * 2))} style={({ pressed }) => [styles.timelineQuickButton, zoom >= PPF_MAX && styles.disabled, pressed && styles.pressed]}><Text style={styles.timelineQuickIcon}>+</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addvideotrack')} onPress={() => addTimelineTrack('video')}
-                        style={({ pressed }) => [styles.timelineQuickButton, pressed && styles.pressed]}><Text style={styles.timelineQuickLabel}>{t('editor.track.video').slice(0, 1)}+</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addaudiotrack')} onPress={() => addTimelineTrack('audio')}
-                        style={({ pressed }) => [styles.timelineQuickButton, pressed && styles.pressed]}><Text style={styles.timelineQuickLabel}>{t('editor.track.audio').slice(0, 1)}+</Text></Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={t('editor.addtexttrack')} onPress={() => addTimelineTrack('text')}
-                        style={({ pressed }) => [styles.timelineQuickButton, pressed && styles.pressed]}><Text style={styles.timelineQuickLabel}>{t('editor.track.text').slice(0, 1)}+</Text></Pressable>
                 </View>}
             </View>
             {advanced ? <ScrollView testID="editor-timeline-scroll" nestedScrollEnabled scrollEnabled={!timelineTouch} style={{ maxHeight: budget.timelineScrollMax }}
@@ -711,7 +708,8 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         </ScrollView>
         </EditorToolSheet> : null}
         </View>
-        {advanced ? null : <SimpleEditorBar active={simpleDockTab} onOpen={setSheet} />}
+        {advanced ? null : <SimpleEditorBar active={simpleDockTab} trayOpen={!!simpleTrayRows} onOpen={setSheet} />}
+        {advanced || !simpleTrayRows ? null : <SimpleEditorTray rows={simpleTrayRows} />}
         {coverRestoreFrame !== null ? <EditorCoverSheet initial={document.cover ?? { frame: coverRestoreFrame, text: '', text_color: '#FFFFFF' }} frameStore={frameStore} total={total}
             timeline={timeline} aspectRatio={safeGuideSize.width / safeGuideSize.height} api={api} localMediaUris={localMediaUris} fontReady={fontActions.has}
             onFrame={value => { setPlaying(false); setFrame(value); }} onCancel={closeCover} onSave={saveCover} /> : null}
@@ -734,10 +732,6 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             if (id === 'make-clip' || id === 'make-audio') { showPanel('generate'); openGenerate(id === 'make-clip' ? 'video' : 'audio', prompt); }
             else aiRows.find(row => row.id === id)?.onPress();
         }} onClose={() => setSheet(null)} /> : null}
-        {sheet === 'cut' ? <SimpleEditorSheet title={t('editorSimple.cut')} rows={cutRows} onClose={() => setSheet(null)} /> : null}
-        {sheet === 'sound' ? <SimpleEditorSheet title={t('editorSimple.sound')} rows={soundRows} onClose={() => setSheet(null)} /> : null}
-        {sheet === 'text' ? <SimpleEditorSheet title={t('editorSimple.text')} rows={textRows} onClose={() => setSheet(null)} /> : null}
-        {sheet === 'layers' ? <SimpleEditorSheet title={t('editorSimple.layers')} rows={layerRows} onClose={() => setSheet(null)} /> : null}
         {sheet === 'more' ? <SimpleEditorSheet title={t('editorSimple.moreTitle')} rows={moreRows} onClose={() => setSheet(null)} /> : null}
         {generate ? <MakePanel visible={generate.visible && ready} initialKind={generate.kind} initialPrompt={generate.prompt} onClose={() => setGenerate(value => value && { ...value, visible:
             false })} resultNote={t('editorAi.note', { time: timecode(generate.frame, timeline.fps) })} onJobStarted={(id, model) => {

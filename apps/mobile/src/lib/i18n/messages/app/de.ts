@@ -8726,6 +8726,7 @@ export default {
   "editorCover.hideText": "Cover-Text ausblenden",
   "editorCover.frameReadout": "Bild {value1} · {value2}",
   "editorSimple.cut": "Schnitt",
+  "editorSimple.polish": "Optimieren",
   "editorSimple.sound": "Ton",
   "editorSimple.text": "Text",
   "editorSimple.layers": "Ebenen",

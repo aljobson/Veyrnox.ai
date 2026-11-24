@@ -8608,6 +8608,7 @@ export default {
   "editorCover.hideText": "カバーテキストを非表示",
   "editorCover.frameReadout": "フレーム {value1} · {value2}",
   "editorSimple.cut": "カット",
+  "editorSimple.polish": "磨き上げ",
   "editorSimple.sound": "サウンド",
   "editorSimple.text": "テキスト",
   "editorSimple.layers": "レイヤー",

@@ -8726,6 +8726,7 @@ export default {
   "editorCover.hideText": "कवर टेक्स्ट छिपाएँ",
   "editorCover.frameReadout": "फ़्रेम {value1} · {value2}",
   "editorSimple.cut": "कट",
+  "editorSimple.polish": "निखारें",
   "editorSimple.sound": "ध्वनि",
   "editorSimple.text": "टेक्स्ट",
   "editorSimple.layers": "लेयर",

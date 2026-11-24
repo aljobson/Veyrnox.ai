@@ -8958,6 +8958,7 @@ export default {
   "editorCover.hideText": "Скрыть текст обложки",
   "editorCover.frameReadout": "Кадр {value1} · {value2}",
   "editorSimple.cut": "Монтаж",
+  "editorSimple.polish": "Улучшить",
   "editorSimple.sound": "Звук",
   "editorSimple.text": "Текст",
   "editorSimple.layers": "Слои",

@@ -8608,6 +8608,7 @@ export default {
   "editorCover.hideText": "隐藏封面文字",
   "editorCover.frameReadout": "画面 {value1} · {value2}",
   "editorSimple.cut": "剪辑",
+  "editorSimple.polish": "润色",
   "editorSimple.sound": "声音",
   "editorSimple.text": "文字",
   "editorSimple.layers": "图层",

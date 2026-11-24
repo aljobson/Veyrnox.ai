@@ -55,8 +55,9 @@ export function SimpleEditorSheet({ title, rows, onClose, describe = false, onDe
 
 // ByeCut-style editor dock. Each tab reuses a real Veyrnox editor panel; the dock stays visible
 // while a panel is open so switching tools never requires closing and reopening the sheet.
-export function SimpleEditorBar({ active, onOpen }: {
+export function SimpleEditorBar({ active, trayOpen = false, onOpen }: {
     active: SimpleDockTab;
+    trayOpen?: boolean;
     onOpen(sheet: SimpleSheetName): void;
 }) {
     const items: readonly { id: SimpleDockTab; icon: string; label: string; onPress(): void }[] = [
@@ -68,11 +69,26 @@ export function SimpleEditorBar({ active, onOpen }: {
     ];
     // Keep the bar above the home indicator; the panel above it scrolls instead of pushing the bar off screen.
     const bottom = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
-    return <View style={[styles.bar, { paddingBottom: Math.max(22, bottom + 8) }]}>
+    return <View style={[styles.bar, { paddingBottom: trayOpen ? 7 : Math.max(22, bottom + 8) }]}>
         {items.map((item) => <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={rawText(item.label)} accessibilityState={{ selected: active === item.id }} onPress={item.onPress} style={({ pressed }) => [styles.barButton, active === item.id && styles.barPrimary, pressed && styles.rowPressed]}>
             <Text style={[styles.barIcon, active === item.id && styles.barPrimaryText]}>{item.icon}</Text>
             <Text style={[styles.barLabel, active === item.id && styles.barPrimaryText]}>{item.label}</Text>
         </Pressable>)}
+    </View>;
+}
+
+// ByeCut keeps the active tool's shortcuts visible below the five-tab dock. This is deliberately
+// not a modal: editors can scrub the timeline and switch tools without dismissing anything.
+export function SimpleEditorTray({ rows }: { rows: readonly SheetRow[] }) {
+    const bottom = useContext(SafeAreaInsetsContext)?.bottom ?? 0;
+    return <View style={[styles.tray, { paddingBottom: Math.max(10, bottom + 4) }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trayContent}>
+            {rows.map((row) => <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={rawText(row.label)} accessibilityState={{ disabled: !!row.disabled }}
+                disabled={row.disabled} onPress={row.onPress} style={({ pressed }) => [styles.trayButton, row.disabled && styles.rowDisabled, pressed && styles.rowPressed]}>
+                <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.trayIcon, row.icon.length > 1 && styles.trayIconWide]}>{row.icon}</Text>
+                <Text numberOfLines={2} style={styles.trayLabel}>{row.label}</Text>
+            </Pressable>)}
+        </ScrollView>
     </View>;
 }
 
@@ -91,10 +107,16 @@ const styles = StyleSheet.create({
     rowCopy: { flex: 1, minWidth: 0 },
     rowLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
     rowHint: { color: colors.muted, fontSize: 12, marginTop: 2 },
-    bar: { flexShrink: 0, flexDirection: 'row', gap: 4, paddingHorizontal: 8, paddingTop: 7, paddingBottom: 22, borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background },
-    barButton: { flex: 1, minWidth: 0, minHeight: 56, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 12, borderWidth: 1, borderColor: 'transparent', backgroundColor: colors.surface },
-    barPrimary: { borderColor: colors.accent, backgroundColor: colors.accent },
-    barIcon: { color: colors.text, fontSize: 18, fontWeight: '800' },
-    barLabel: { color: colors.text, fontSize: 13, fontWeight: '800' },
-    barPrimaryText: { color: colors.background },
+    bar: { flexShrink: 0, flexDirection: 'row', gap: 3, paddingHorizontal: 8, paddingTop: 7, paddingBottom: 7, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#29292c', backgroundColor: '#171719' },
+    barButton: { flex: 1, minWidth: 0, minHeight: 58, alignItems: 'center', justifyContent: 'center', gap: 3, borderRadius: 12, borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
+    barPrimary: { borderColor: 'rgba(52,179,96,0.44)', backgroundColor: '#277c3f' },
+    barIcon: { color: '#a0a0a7', fontSize: 20, fontWeight: '800' },
+    barLabel: { color: '#a0a0a7', fontSize: 12, fontWeight: '800' },
+    barPrimaryText: { color: '#ffffff' },
+    tray: { flexShrink: 0, borderTopWidth: StyleSheet.hairlineWidth, borderColor: '#2b2b2e', backgroundColor: '#1a1a1c' },
+    trayContent: { minWidth: '100%', paddingHorizontal: 8, paddingTop: 10, gap: 6 },
+    trayButton: { width: 82, minHeight: 58, alignItems: 'center', justifyContent: 'flex-start', gap: 4, paddingHorizontal: 4 },
+    trayIcon: { height: 26, color: '#ffffff', fontSize: 23, lineHeight: 26, fontWeight: '800', textAlign: 'center' },
+    trayIconWide: { fontSize: 17 },
+    trayLabel: { color: '#f1f1f2', fontSize: 12, lineHeight: 15, fontWeight: '600', textAlign: 'center' },
 });

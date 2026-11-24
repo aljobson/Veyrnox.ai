@@ -104,11 +104,12 @@ test('opens in the simple view with the ByeCut-style five-tab dock and full tool
     await renderSimple();
     expect(visible('Native cut')).toBe(true);
     expect(visible('PREVIEW')).toBe(true);
-    expect(visible('TIMELINE')).toBe(true);
     for (const label of ['AI Edit', 'Cut', 'Sound', 'Text', 'Layers', 'Undo', 'Redo', 'Export']) expect(labelled(label).length).toBeGreaterThan(0);
-    for (const label of ['Media', 'Audio', 'Captions', 'Transitions', 'Filters', 'Markers', 'Adjust', 'Snap']) expect(labelled(label)).toHaveLength(0);
-    for (const label of ['Back', 'Choose cover', 'Rename Native cut', 'Go to start', 'Zoom out', 'Zoom in', 'Add video track', 'Add audio track', 'Add text track', 'Rotation +90°', 'Fit', 'Canvas · 9:16'])
+    for (const label of ['Media', 'Audio', 'Captions', 'Markers', 'Snap']) expect(labelled(label)).toHaveLength(0);
+    for (const label of ['Filters', 'Transitions', 'Polish']) expect(labelled(label)).toHaveLength(1);
+    for (const label of ['Back', 'Choose cover', 'Rename Native cut', 'Go to start', 'Zoom out', 'Zoom in', 'Rotation +90°', 'Fit', 'Canvas · 9:16'])
         expect(labelled(label)).toHaveLength(1);
+    for (const label of ['Add video track', 'Add audio track', 'Add text track']) expect(labelled(label)).toHaveLength(0);
     for (const label of ['Previous frame', 'Next frame', 'Go to end']) expect(labelled(label)).toHaveLength(0);
     expect(labelled('Export')).toHaveLength(1);
     expect(labelled('Canvas · 16:9')).toHaveLength(1);
@@ -132,25 +133,18 @@ test('the five-tab dock opens AI, Cut, Sound, Text and Layers without hiding the
     for (const label of ['Smart Cut', 'Make a clip with AI', 'Voice or music with AI', 'Captions']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Close');
     await press('Cut');
-    for (const label of ['Add', 'Filters', 'Transitions', 'Adjust', 'Canvas', 'All editing tools']) expect(labelled(label).length).toBeGreaterThan(0);
+    for (const label of ['Add', 'Filters', 'Transitions', 'Polish']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Add');
     for (const label of ['Library video', 'Library image', 'Library audio', 'Photos & videos', 'Files']) expect(labelled(label).length).toBeGreaterThan(0);
     await press('Close');
     await press('Sound');
     for (const label of ['Music', 'Clean Voice']) expect(labelled(label)).toHaveLength(1);
-    await press('Close');
     await press('Text');
     for (const label of ['Edit Text', 'Title', 'Captions', 'Report Issue', 'Open Settings']) expect(labelled(label)).toHaveLength(1);
-    await press('Close');
     await press('Layers');
     for (const label of ['Photo', 'Video', 'All layers']) expect(labelled(label)).toHaveLength(1);
-    await press('Close');
     await press('Cut');
-    await press('All editing tools');
-    expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail').length).toBeGreaterThan(0);
-    expect(labelled('Simple view').length).toBeGreaterThan(0);
-    await press('Simple view');
-    expect(root.container.queryAll((node) => node.props.testID === 'editor-tool-rail')).toHaveLength(0);
+    expect(labelled('Add')).toHaveLength(1);
 });
 
 test('chooses a project cover frame, title and colour and autosaves them', async () => {
@@ -819,7 +813,7 @@ describe('opening a project that does not load', () => {
     test('the timeline opens when only the project name or the media list fails', async () => {
         mockRequest.mockImplementation(async (path: string) => { if (path.endsWith('/document')) return defaultImpl(path); if (path.includes('/assets')) throw new Error('slow'); throw new Error('project lookup failed'); });
         await renderSimple();
-        expect(visible('TIMELINE')).toBe(true);
+        expect(root.container.queryAll((node) => node.props.testID === 'editor-timeline-section')).toHaveLength(1);
         expect(visible('Check your connection and try again.')).toBe(false);
     });
 });
