@@ -92,7 +92,7 @@ describe('speech analysis RPC acceptance', { skip: !url && 'SPEECH_ANALYSIS_TEST
         assert.equal((await rpc('speech_analysis_request', [other, source, 12, randomUUID(), 2])).code, 'NOT_FOUND');
         assert.equal((await request(randomUUID(), source, 11)).code, 'DURATION_MISMATCH');
         assert.equal((await request(randomUUID(), source, 12, 3)).code, 'PRICE_CHANGED');
-        const long = await makeSource(61); assert.equal((await request(randomUUID(), long.source)).code, 'SOURCE_TOO_LONG');
+        const long = await makeSource(601); assert.equal((await request(randomUUID(), long.source, 601)).code, 'SOURCE_TOO_LONG');
         const unsupported = await makeSource(12, 'image/png'); assert.equal((await request(randomUUID(), unsupported.source)).code, 'SOURCE_UNSUPPORTED');
         await client.query('DELETE FROM public.speech_source_probes WHERE asset_id=$1', [asset]);
         assert.equal((await request()).code, 'SOURCE_UNSUPPORTED');
