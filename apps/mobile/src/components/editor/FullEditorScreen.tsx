@@ -465,7 +465,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'library-video', icon: 'video', label: t('editor.libraryvideo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
         { id: 'library-image', icon: 'image', label: t('editor.libraryimage'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
         { id: 'library-audio', icon: 'audio', label: t('editor.libraryaudio'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('audio') },
-        { id: 'photos', icon: 'photo', label: t('editor.photosvideos'), disabled: replacing, afterClose: true, onPress: () => void choosePhotos() },
+        { id: 'photos', icon: 'image', label: t('editor.photosvideos'), disabled: replacing, afterClose: true, onPress: () => void choosePhotos() },
         { id: 'files', icon: 'folder', label: t('editor.files'), disabled: replacing || fileImport.status === 'waiting', afterClose: true, onPress: () => void chooseFiles() },
         { id: 'asset-packs', icon: 'squares', label: t('editorPack.title'), disabled: replacing, onPress: openAssetPacks },
         ...(VOICEOVER_AVAILABLE ? [{ id: 'voiceover', icon: 'microphone', label: t('editorVoiceover.open'), hint: t('editorSimple.voiceoverHint'), disabled: replacing, onPress: () => { setPlaying(false);
@@ -475,7 +475,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             setPlaying(false); setSheet(null); setSpeechMode(mode); } })) : []),
         ...(aiQuote ? [{ id: 'describe', icon: 'magicWand', label: t('editorAi.describe'), disabled: !ready, onPress: () => { setPlaying(false); setAiAnnouncement(null); setAiEditOpen(true); } }] : []),
         { id: 'smart-cut', icon: 'sparkle', label: t('editorSimple.smartCut'), hint: t('editorSimple.smartCutHint'), onPress: () => void openWorkflow('/smart-cut') },
-        { id: 'make-clip', icon: 'playPlain', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
+        { id: 'make-clip', icon: 'play', label: t('editorSimple.makeClip'), hint: t('editorSimple.makeClipHint'), onPress: () => { showPanel('generate'); openGenerate('video'); } },
         { id: 'make-audio', icon: 'audio', label: t('editorSimple.makeAudio'), hint: t('editorSimple.makeAudioHint'), onPress: () => { showPanel('generate'); openGenerate('audio'); } },
         { id: 'captions', icon: 'chatText', label: t('editor.captions'), hint: t('editorSimple.captionsHint'), onPress: () => showPanel('captions') }, ]; const moreRows: SheetRow[] = [
         { id: 'canvas', icon: 'sliders', label: t('editor.shape'), hint: t('editor.projectSettings'), onPress: () => showPanel('canvas') },
@@ -491,7 +491,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
         { id: 'all-tools', icon: 'squares', label: t('editorSimple.allTools'), hint: t('editorSimple.allToolsHint'), onPress: () => setAdvanced(true) }, ];
     const cutRows: SheetRow[] = [
         { id: 'insert', icon: 'folderPlus', label: t('editorSimple.add'), hint: t('editorSimple.addTitle'), onPress: () => setSheet('add') },
-        { id: 'filters', icon: 'filter', label: t('editor.filters'), onPress: () => showPanel('filters') },
+        { id: 'filters', icon: 'contrast', label: t('editor.filters'), onPress: () => showPanel('filters') },
         { id: 'transitions', icon: 'arrowsHorizontal', label: t('editor.transitions'), onPress: () => showPanel('transitions') },
         { id: 'polish', icon: 'magicWand', label: t('editorSimple.polish'), onPress: () => showPanel('adjust') },
     ];
@@ -506,14 +506,14 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
             } },
     ];
     const textRows: SheetRow[] = [
-        { id: 'edit-text', icon: 'edit', label: t('editorSimple.editText'), onPress: () => showPanel('text') },
+        { id: 'edit-text', icon: 'penNib', label: t('editorSimple.editText'), onPress: () => showPanel('text') },
         { id: 'title', icon: 'textSize', label: t('editorSimple.title'), onPress: () => { addText(); setPanelOpen(true); } },
         { id: 'captions', icon: 'chatText', label: t('editor.captions'), onPress: () => showPanel('captions') },
         { id: 'report', icon: 'flag', label: t('editorSimple.reportIssue'), onPress: () => void openWorkflow('/help') },
         { id: 'settings', icon: 'gear', label: t('editorSimple.openSettings'), onPress: () => void Linking.openSettings() },
     ];
     const layerRows: SheetRow[] = [
-        { id: 'photo', icon: 'photo', label: t('editorSimple.photo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
+        { id: 'photo', icon: 'image', label: t('editorSimple.photo'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('image') },
         { id: 'video', icon: 'video', label: t('editorSimple.video'), disabled: libraryPending || replacing, onPress: () => setLibraryKind('video') },
         { id: 'all-layers', icon: 'squares', label: t('editorSimple.allLayers'), onPress: () => showPanel('media') },
     ];
@@ -546,7 +546,7 @@ export function FullEditorScreen({ projectId, jobId, cuts, startAdvanced = false
                 <Icon name="image" size={24} tint={styles.coverButtonIcon.color} />
             </Pressable> : null}
             <Pressable accessibilityRole="button" accessibilityLabel={`${t('projects.rename')} ${displayName}`} onPress={openRename} style={({ pressed }) => [styles.titleGroup, touchTarget, pressed && styles.pressed]}>
-                <View style={styles.titleRow}><Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.title}>{displayName}</Text><Icon name="edit" size={16} tint={styles.titleEdit.color} /></View>
+                <View style={styles.titleRow}><Text accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} style={styles.title}>{displayName}</Text><Icon name="penNib" size={16} tint={styles.titleEdit.color} /></View>
                 {advanced ? <StatusText variant="inherit" maxFontSizeMultiplier={HEADER_MAX_FONT_SCALE} accessibilityLiveRegion={Platform.OS === 'android' ? 'polite' : undefined} style={styles.status}>{saveStatus}</StatusText> : null}
             </Pressable>
             {advanced ? <Button label={t('editorSave.versions')} variant="tertiary" size="sm" containerStyle={{ marginVertical: -2 }} onPress={sync.openVersions} /> : null}
