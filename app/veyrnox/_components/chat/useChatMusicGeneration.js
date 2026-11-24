@@ -118,6 +118,7 @@ export function useChatMusicGeneration({ active, prompt }) {
     sending: Boolean(busy), jobKind: 'audio',
     generations, generating, activeGenerationCount, concurrencyLimit, hasSharedSlot,
     clearJobs: server.clearGenerations,
+    refreshGeneration: server.refreshGeneration,
     balance: entitlements?.balance ?? null,
     cost: quote?.total_credits ?? model?.total_credits ?? null,
     promptMax: sunoLimit(model, 'prompt'),

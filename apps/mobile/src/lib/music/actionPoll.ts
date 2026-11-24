@@ -12,7 +12,7 @@ export type PollOptions<T> = {
 export function pollUntil<T>(o: PollOptions<T>) {
     const limit = o.ceilingMs ?? 300000;
     let active = (o.initialAppState === undefined ? AppState.currentState : o.initialAppState) === 'active';
-    let disposed = false, flight = false, delay = 1500, epoch = 0;
+    let disposed = false, flight = false, followUp = false, delay = 1500, epoch = 0;
     // Only time spent in the foreground counts toward the ceiling: backgrounded time did no polling.
     let spent = 0, since: number | null = active ? Date.now() : null;
     const remainingMs = () => limit - spent - (since === null ? 0 : Date.now() - since);
@@ -30,7 +30,8 @@ export function pollUntil<T>(o: PollOptions<T>) {
         if (!flight) timer = setTimeout(() => void read(), Math.min(delay, remaining));
     }
     async function read() {
-        if (disposed || !active || flight || snapshot.state === 'done' || snapshot.state === 'off') return;
+        if (disposed || !active || snapshot.state === 'done' || snapshot.state === 'off') return;
+        if (flight) { followUp = true; return; }
         flight = true; const ticket = epoch;
         try {
             const value = await o.read();
@@ -41,7 +42,12 @@ export function pollUntil<T>(o: PollOptions<T>) {
             if (isMusicOff(error)) emit({ state: 'off', value: null });
             // Network, gateway and other read errors do not imply a failed provider job.
         } finally {
-            flight = false; delay = Math.min(5000, delay * 1.5); schedule();
+            flight = false; delay = Math.min(5000, delay * 1.5);
+            // A deadline or account/app-state callback can update the snapshot while the read awaits.
+            const latestState = snapshot.state as PollState<T>['state'];
+            if (followUp && !disposed && active && latestState !== 'done' && latestState !== 'off') {
+                followUp = false; void read();
+            } else { followUp = false; schedule(); }
         }
     }
     const stopApp = (o.subscribeAppState ?? (fn => {
@@ -54,7 +60,7 @@ export function pollUntil<T>(o: PollOptions<T>) {
     const stopAccount = (o.subscribeAccount ?? subscribeCacheUser)(() => dispose());
     function dispose() {
         if (disposed) return;
-        disposed = true; epoch++; cancel(); stopApp(); stopAccount(); snapshot = { state: 'waiting', value: null };
+        disposed = true; epoch++; followUp = false; cancel(); stopApp(); stopAccount(); snapshot = { state: 'waiting', value: null };
     }
     schedule();
     return { snapshot: () => snapshot, refresh: read, dispose };

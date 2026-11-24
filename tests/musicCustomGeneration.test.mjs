@@ -22,5 +22,5 @@ test('Custom quote route reads the authoritative draft before policy and quote R
   assert.match(route, /rpc\('music_get_custom_draft'/);
   assert.match(route, /customDraft\.revision !== input\.draftRevision/);
   assert.match(route, /musicPromptPolicy\(policyInput\)/);
-  assert.match(route, /rpc\('music_create_custom_quote'/);
+  assert.match(route, /allowanceCapable \? 'music_create_custom_quote_with_daily_allowance' : 'music_create_custom_quote'/);
 });

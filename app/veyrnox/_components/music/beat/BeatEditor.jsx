@@ -32,6 +32,7 @@ import BeatStepGrid from './BeatStepGrid';
 import BeatPads from './BeatPads';
 import BeatExportDialog from './BeatExportDialog';
 import BeatMagicBar from './BeatMagicBar';
+import BeatStudioAssistant from './BeatStudioAssistant';
 import { useBeatLoopLayers } from './useBeatLoopLayers';
 import { action, button, input } from './beatStyles';
 
@@ -43,7 +44,7 @@ function MixerLoading() {
   return <div role="status" aria-busy="true" className="min-h-64 rounded-xl bg-vx-panel p-4">{t('app.music.beat.details.d31')}</div>;
 }
 
-export default function BeatEditor({ ai = {}, id, magicBar = false, v5Writes = false, cloud = false, librarySave = false }) {
+export default function BeatEditor({ ai = {}, id, magicBar = false, studioChat = false, v5Writes = false, cloud = false, librarySave = false }) {
   useLayoutEffect(() => { configureBeatWrites(v5Writes); }, [v5Writes]);
   const router = useRouter();
   const { t } = useI18n();
@@ -194,6 +195,7 @@ export default function BeatEditor({ ai = {}, id, magicBar = false, v5Writes = f
     {playback.audioError && <p className="rounded-xl border border-vx-border p-3">{playback.audioError}</p>}
     {playback.recordingRun && <p role="status">{t('app.music.beat.ui.stop.recording.to.edit')}{playback.overlay.length}{t('app.music.beat.ui.pending.notes')}</p>}
     {playback.takeError && <div role="alert" className="rounded-xl border border-vx-border p-3">{playback.takeError}<button className={button} onClick={playback.finalizeRecording}>{t('app.music.beat.ui.try.again')}</button><button className={button} onClick={async () => { try { const take = playback.takeAsBeat(); const id = take && await project.copy(take); if (id) { playback.discardSavedTake(); router.push(`/app/music/beats/${id}`); } } catch (e) { announce(beatErrorMessage(e, 'save-take', t)); } }}>{t('app.music.beat.ui.save.take.as.a.new.beat')}</button></div>}
+    {studioChat && <BeatStudioAssistant key={doc.id} doc={doc} magicBar={magicBar} readOnly={project.readOnly} recording={Boolean(playback.recordingRun)} busy={Boolean(project.conflict || project.replacing)} edit={edit} selectPattern={project.selectPattern} announce={announce} />}
     {cloud && <section className="flex flex-wrap items-center gap-3" aria-label={t('app.music.beat.ui.account.save')}>
       {!(project.readOnly && sync.state === 'read_only') && <p>{sync.message}</p>}
       {['unlinked', 'removed'].includes(sync.state) && <button className={button} onClick={sync.link}>{t('app.music.beat.ui.save.to.your.account')}</button>}

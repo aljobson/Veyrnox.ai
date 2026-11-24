@@ -105,7 +105,8 @@ export function buildSimpleQuote(input: MusicInputSnapshot, e: MusicEntitlements
     const v = checked(input, e, false);
     const model = e.models.find(m => m.id === v.model_id)!;
     if (isSunoModel(model)) return { mode: 'simple', provider_contract: 'crun-suno-v1', prompt: v.prompt.trim(),
-        instrumental: v.instrumental, model_id: v.model_id, suno_model: pickSunoModel(model) };
+        instrumental: v.instrumental, model_id: v.model_id, suno_model: pickSunoModel(model),
+        ...(e.daily_allowance?.enabled ? { daily_allowance_capable: true } : {}) };
     const tempo = model.controls.tempo_key_meter ? parseMusicTempoControls(tempoValues(v))
         : { ok: true as const, bpm: null, keyScale: null, timeSignature: null, used: false };
     if (!tempo.ok) throw new Error(tempo.error);
@@ -128,7 +129,8 @@ export function buildCustomQuote(input: MusicInputSnapshot, e: MusicEntitlements
             instrumental: v.instrumental, rights_confirmed: !v.instrumental, duration_seconds: v.duration,
             suno_model: pickSunoModel(model, v.sunoModel), vocal_gender: v.instrumental ? 'auto' : v.vocalGender,
             style_influence: v.styleInfluence, weirdness: v.weirdness, variety: v.variety,
-            exclude_styles: v.excludeStyles.trim() };
+            exclude_styles: v.excludeStyles.trim(),
+            ...(e.daily_allowance?.enabled ? { daily_allowance_capable: true } : {}) };
     }
     return { mode: 'custom', ...(typeof draft !== 'number' && draft.provider_contract && draft.id ? {
         provider_contract: draft.provider_contract, draft_id: draft.id,

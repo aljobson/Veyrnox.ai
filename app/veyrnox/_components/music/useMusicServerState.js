@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 
 const TERMINAL_STATES = new Set(['succeeded', 'partial', 'failed', 'refunded']);
-const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used', 'contract_stale', 'draft_stale']);
+const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used', 'contract_stale', 'draft_stale', 'daily_allowance_stale']);
 const settleRender = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function normalizedCode(error) {
@@ -21,9 +21,12 @@ export function musicServerError(error) {
     account_changed: 'Your account changed. Reload Music before confirming a quote.',
     music_unavailable: 'Server generation is paused. No credits were spent.',
     prompt_not_allowed: 'That direction cannot be used. Try a different musical description.',
+    prompt_invalid: 'The song brief has a character that cannot be used. Remove it and review the price again.',
+    title_invalid: 'The title has a character that cannot be used. Remove it and review the price again.',
     insufficient_balance: 'You do not have enough spendable credits for both versions.',
     quote_expired: 'That quote expired. Review a new quote before creating.',
     quote_stale: 'The model price changed. Review the refreshed quote before creating.',
+    daily_allowance_stale: 'Your daily allowance changed. Review the price again before creating.',
     contract_stale: 'contract_stale',
     draft_stale: 'draft_stale',
     quote_already_used: 'That quote was already used. Review a new quote to create again.',
@@ -50,6 +53,34 @@ export function useMusicServerState({ active = true } = {}) {
   // of restoring a quote for text the person no longer has.
   const [gate] = useState(createQuoteGate);
   const pollingError = useRef('');
+  const generationReads = useRef(new Map());
+
+  const readGeneration = useCallback(async (id) => {
+    const sequence = (generationReads.current.get(id) || 0) + 1;
+    generationReads.current.set(id, sequence);
+    const next = await gatewayFetch(`/music/generations/${id}`, { promptOnAuth: false });
+    return { id, next, sequence };
+  }, []);
+
+  const applyGeneration = useCallback(({ id, next, sequence }) => {
+    if (generationReads.current.get(id) !== sequence) return false;
+    setGenerations((current) => current.map((item) => item.id === id
+      ? { ...item, ...next, title: next.title || item.title }
+      : item));
+    return true;
+  }, []);
+
+  const refreshGeneration = useCallback(async (id) => {
+    // A confirmed mutation owns these refreshes even if a routine poll later
+    // supersedes its generation read or that read hits a transient failure.
+    notifyBalanceChanged();
+    void gatewayFetch('/music/entitlements', { promptOnAuth: false })
+      .then((next) => setEntitlements(next))
+      .catch(() => {});
+    const generation = await readGeneration(id);
+    if (!applyGeneration(generation)) return null;
+    return generation.next;
+  }, [applyGeneration, readGeneration]);
 
   const loadEntitlements = useCallback(async () => {
     setBusy('loading');
@@ -95,13 +126,15 @@ export function useMusicServerState({ active = true } = {}) {
     setQuote(null);
     confirmKey.current = null;
     try {
+      const capableRequest = entitlements?.daily_allowance?.enabled === true
+        ? { ...request, daily_allowance_capable: true } : request;
       const next = await gatewayFetch('/music/generation-quotes', {
         method: 'POST',
-        body: JSON.stringify(request),
+        body: JSON.stringify(capableRequest),
       });
       if (!gate.isCurrent(mine)) return null;
       setQuote(next);
-      lastQuoteRequest.current = { request, refresh: onContractStale };
+      lastQuoteRequest.current = { request: capableRequest, refresh: onContractStale };
       return next;
     } catch (reason) {
       if (gate.isCurrent(mine)) {
@@ -114,13 +147,15 @@ export function useMusicServerState({ active = true } = {}) {
             // the old quote revision. Retry only after those effects settle.
             await settleRender();
             mine = gate.start();
+            const capableReplacement = fresh?.daily_allowance?.enabled === true
+              ? { ...replacement, daily_allowance_capable: true } : replacement;
             try {
               const next = await gatewayFetch('/music/generation-quotes', {
-                method: 'POST', body: JSON.stringify(replacement),
+                method: 'POST', body: JSON.stringify(capableReplacement),
               });
               if (!gate.isCurrent(mine)) return null;
               setQuote(next);
-              lastQuoteRequest.current = { request: replacement, refresh: onContractStale };
+              lastQuoteRequest.current = { request: capableReplacement, refresh: onContractStale };
               return next;
             } catch (retryError) {
               setErrorCode(normalizedCode(retryError));
@@ -136,7 +171,7 @@ export function useMusicServerState({ active = true } = {}) {
     } finally {
       if (gate.isLatestStart(mine)) setBusy('');
     }
-  }, [gate, loadEntitlements]);
+  }, [entitlements, gate, loadEntitlements]);
 
   const confirmQuote = useCallback(async (context = {}) => {
     if (!quote?.quote_id || confirming.current) return null;
@@ -171,6 +206,9 @@ export function useMusicServerState({ active = true } = {}) {
       confirmKey.current = null;
       lastQuoteRequest.current = null;
       notifyBalanceChanged();
+      void gatewayFetch('/music/entitlements', { promptOnAuth: false })
+        .then((next) => setEntitlements(next))
+        .catch(() => {});
       return result;
     } catch (reason) {
       const code = normalizedCode(reason);
@@ -185,6 +223,8 @@ export function useMusicServerState({ active = true } = {}) {
             await settleRender();
             await reviewQuote(replacement, undefined, previous?.refresh);
           }
+        } else if (code === 'daily_allowance_stale') {
+          await loadEntitlements();
         }
       }
       setErrorCode(code);
@@ -210,18 +250,15 @@ export function useMusicServerState({ active = true } = {}) {
       const ids = activeGenerationKey.split('|');
       const reads = await Promise.all(ids.map(async (id) => {
         try {
-          return { id, next: await gatewayFetch(`/music/generations/${id}`, { promptOnAuth: false }) };
+          return await readGeneration(id);
         } catch (reason) {
           return { id, reason };
         }
       }));
       if (stopped) return;
-      const updates = new Map(reads.filter((item) => item.next).map((item) => [item.id, item.next]));
       const failure = reads.find((item) => item.reason);
       const finished = reads.some((item) => item.next && TERMINAL_STATES.has(item.next.state));
-      setGenerations((current) => current.map((item) => updates.has(item.id)
-        ? { ...item, ...updates.get(item.id), title: updates.get(item.id).title || item.title }
-        : item));
+      reads.filter((item) => item.next).forEach(applyGeneration);
       if (failure) {
         pollingError.current = musicServerError(failure.reason);
         setError(pollingError.current);
@@ -240,10 +277,10 @@ export function useMusicServerState({ active = true } = {}) {
       stopped = true;
       window.clearTimeout(timer);
     };
-  }, [activeGenerationKey]);
+  }, [activeGenerationKey, applyGeneration, readGeneration]);
 
   return {
     entitlements, quote, generations, busy, error, errorCode, quoteRevisionNow,
-    clearQuote, clearGenerations, reviewQuote, confirmQuote, reload: loadEntitlements,
+    clearQuote, clearGenerations, reviewQuote, confirmQuote, refreshGeneration, reload: loadEntitlements,
   };
 }

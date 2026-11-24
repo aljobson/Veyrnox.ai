@@ -41,6 +41,10 @@ function musicCredits(t, locale, count) {
   return t(pluralKey(t, locale, 'app.music.suno.credits', count), { count });
 }
 
+function dailyCovered(t, locale, count) {
+  return t(pluralKey(t, locale, 'app.music.suno.dailyCovered', count), { count });
+}
+
 function MusicFirstRunGuide() {
   const [visible, setVisible] = useState(false);
 
@@ -197,7 +201,11 @@ function SunoSimpleFields({ entitlements, model, modelId, setModelId, descriptio
         <input type="checkbox" checked={instrumental} disabled={model?.instrumental_only} onChange={(event) => { setInstrumental(event.target.checked); clearQuote(); }} className="h-5 w-5 accent-vx-accent" />
       </label>
       <section aria-label={t('app.music.suno.reviewPrice')} className="rounded-2xl border border-dashed border-vx-border-boost bg-vx-base p-4">
-        {quote?.mode === 'simple' ? <div className="flex items-center justify-between gap-3 text-sm"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="font-vx-mono text-vx-money">{musicCredits(t, locale, quote.total_credits)}</strong></div> : <p className="text-sm text-vx-fg-muted">{t('app.music.suno.reviewPrice')}</p>}
+        {quote?.mode === 'simple' ? <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between gap-3"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
+          {quote.daily_free_candidates > 0 ? <p className="text-vx-accent">{dailyCovered(t, locale, quote.daily_free_candidates)}</p> : null}
+          <p className="font-vx-mono text-vx-money">{quote.total_credits === 0 ? t('app.music.suno.noAccountCredits') : t('app.music.suno.payable', { credits: musicCredits(t, locale, quote.total_credits) })}</p>
+        </div> : <p className="text-sm text-vx-fg-muted">{t('app.music.suno.reviewPrice')}</p>}
       </section>
       {quote?.mode === 'simple'
         ? <button type="button" onClick={() => confirmQuote()} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? t('app.music.suno.sending') : t('app.music.suno.sendWithCredits', { credits: musicCredits(t, locale, quote.total_credits) })}</button>
@@ -259,7 +267,11 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
         {custom.status === 'saving' ? t('app.music.suno.savingDraft') : custom.status === 'saved' ? t('app.music.suno.savedRevision', { count: custom.draft.revision }) : custom.status === 'conflict' ? t('app.music.suno.draftConflict') : custom.status === 'error' ? sunoError(t, custom.error) : t('app.music.suno.changesSave')}
       </div>
       {custom.conflict ? <div className="flex flex-wrap gap-2"><button type="button" onClick={custom.loadNewer} className="min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">{t('app.music.suno.useServer')}</button><button type="button" onClick={custom.keepMine} className="min-h-11 rounded-full border border-vx-accent px-4 text-sm font-bold">{t('app.music.suno.keepMine')}</button></div> : null}
-      {quote?.mode === 'custom' ? <div className="rounded-xl border border-vx-border-boost p-3 text-sm"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="float-right font-vx-mono text-vx-money">{musicCredits(t, locale, quote.total_credits)}</strong></div> : null}
+      {quote?.mode === 'custom' ? <div className="space-y-2 rounded-xl border border-vx-border-boost p-3 text-sm">
+        <div><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="float-right font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
+        {quote.daily_free_candidates > 0 ? <p className="text-vx-accent">{dailyCovered(t, locale, quote.daily_free_candidates)}</p> : null}
+        <p className="font-vx-mono text-vx-money">{quote.total_credits === 0 ? t('app.music.suno.noAccountCredits') : t('app.music.suno.payable', { credits: musicCredits(t, locale, quote.total_credits) })}</p>
+      </div> : null}
       {quote?.mode === 'custom'
         ? <button type="button" onClick={() => confirmQuote({ title: custom.draft.title.trim(), onContractStale: refreshQuoteRequest })} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? t('app.music.suno.sending') : t('app.music.suno.sendWithCredits', { credits: musicCredits(t, locale, quote.total_credits) })}</button>
         : <button type="button" onClick={review} disabled={!ready || Boolean(busy)} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'quoting' ? t('app.music.suno.quoting') : t('app.music.suno.reviewPrice')}</button>}
@@ -544,15 +556,17 @@ function CustomDraftFields({ custom, entitlements, quote, busy, clearQuote, quot
   );
 }
 
-export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null }) {
+export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null, challengeSeed = null }) {
   const { t } = useI18n();
-  const { entitlements, quote, generations, busy, error, errorCode, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, reload } = useMusicServerState();
+  const challengePrompt = challengeSeed ? t(challengeSeed.prompt_key) : '';
+  const challengeTitle = challengeSeed ? t(challengeSeed.title_key) : '';
+  const { entitlements, quote, generations, busy, error, errorCode, clearQuote, quoteRevisionNow, reviewQuote, confirmQuote, refreshGeneration, reload } = useMusicServerState();
   const [mode, setMode] = useState('simple');
-  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate }));
+  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate, challengePrompt }));
   const [activeTemplate, setActiveTemplate] = useState(sampleSeed ? null : licensedTemplate);
   const [activeSeed, setActiveSeed] = useState(sampleSeed);
   const [activeMix, setActiveMix] = useState(sampleMix);
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(() => challengeTitle.slice(0, 80));
   const [modelId, setModelId] = useState('ace-step');
   const [variety, setVariety] = useState(50);
   const [styleInfluence, setStyleInfluence] = useState(0);
@@ -587,15 +601,15 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
       try {
         const saved = JSON.parse(sessionStorage.getItem(MUSIC_PUBLIC_DRAFT_KEY) || 'null');
         // An explicit sample or template handoff wins; the stored draft is still consumed.
-        const restored = resolveInitialDescription({ sampleSeed, licensedTemplate, savedPrompt: saved?.prompt });
-        if (!sampleSeed && !licensedTemplate && restored) setDescription(restored);
+        const restored = resolveInitialDescription({ sampleSeed, licensedTemplate, challengePrompt, savedPrompt: saved?.prompt });
+        if (!sampleSeed && !licensedTemplate && !challengeSeed && restored) setDescription(restored);
         sessionStorage.removeItem(MUSIC_PUBLIC_DRAFT_KEY);
       } catch {
         sessionStorage.removeItem(MUSIC_PUBLIC_DRAFT_KEY);
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [sampleSeed, licensedTemplate]);
+  }, [sampleSeed, licensedTemplate, challengeSeed, challengePrompt]);
 
   function change(setter) {
     return (event) => {
@@ -640,7 +654,12 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-vx-border bg-vx-panel px-4 py-3">
           <div><span className="block text-sm text-vx-fg-muted">Spendable balance</span><span className="block text-xs text-vx-fg-faint">Shared pairs {activeGenerationCount}/{concurrencyLimit}</span></div>
-          <strong data-testid="music-credits" className="font-vx-mono text-lg text-vx-money">{entitlements ? entitlements.balance : '—'} cr</strong>
+          <div className="text-right"><strong data-testid="music-credits" className="font-vx-mono text-lg text-vx-money">{entitlements ? entitlements.balance : '—'} cr</strong>
+            {entitlements?.daily_allowance?.unavailable ? <span className="mt-1 block text-xs text-vx-fg-muted">{t('app.music.suno.dailyAllowanceUnavailable')}</span>
+              : entitlements?.daily_allowance?.enabled ? <span className="mt-1 block text-xs text-vx-accent">{entitlements.daily_allowance.candidates_remaining === 0
+                ? t('app.music.suno.dailyAllowanceExhausted')
+                : t(entitlements.daily_allowance.candidates_remaining === 1 ? 'app.music.suno.dailyAllowance.one' : 'app.music.suno.dailyAllowance.other', { count: entitlements.daily_allowance.candidates_remaining })}{entitlements.daily_allowance.reset_at ? ` · ${t('app.music.suno.resetsAt', { time: new Date(entitlements.daily_allowance.reset_at).toLocaleTimeString(locale) })}` : ''}</span> : null}
+          </div>
         </div>
       </div>
 
@@ -763,7 +782,7 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
             <div className="space-y-5">{generations.map((generation, index) => (
               <section key={generation.id} data-testid={`music-generation-${generation.id}`} aria-label={`Music request ${generations.length - index}`} className="rounded-2xl border border-vx-border bg-vx-panel p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><p className="font-vx-mono text-xs font-bold uppercase tracking-widest text-vx-accent">Pair request</p><h3 className="mt-1 font-vx text-xl font-black">{generation.title || 'Untitled sound draft'}</h3></div><span className="rounded-full border border-vx-border px-3 py-1 font-vx-mono text-xs uppercase text-vx-fg-muted">{generation.state}</span></div>
-                <div className="space-y-3">{(generation.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={generation.title} />)}</div>
+                <div className="space-y-3">{(generation.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={generation.title} onCancelled={() => refreshGeneration(generation.id)} />)}</div>
               </section>
             ))}</div>
           )}

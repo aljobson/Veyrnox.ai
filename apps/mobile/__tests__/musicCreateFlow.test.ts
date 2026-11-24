@@ -270,8 +270,10 @@ test('F1 ambiguous recovery ignores current model and length blockers and reuses
     const pending = flow.attempts.snapshot()!;
     changed.models[0].available = false; changed.custom_drafts.title_max = 1;
     request.mockClear(); await flow.confirm();
-    expect(request).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(request.mock.calls[0][1].body)).toEqual({ quote_id: pending.quote.quote_id, idempotency_key: pending.key });
+    const submits = request.mock.calls.filter(([path]) => path === '/api/v1/music/generations');
+    expect(submits).toHaveLength(1);
+    expect(JSON.parse(submits[0][1].body)).toEqual({ quote_id: pending.quote.quote_id, idempotency_key: pending.key });
+    expect(request.mock.calls.filter(([path]) => path === '/api/v1/music/entitlements')).toHaveLength(1);
     expect(flow.attempts.snapshot()).toBeNull(); expect(flow.tracker.snapshot().entries).toHaveLength(1);
 });
 

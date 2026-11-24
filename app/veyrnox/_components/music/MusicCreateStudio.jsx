@@ -10,22 +10,26 @@ import { MusicSampleSeedCard } from './MusicSampleSeedCard';
 import { LicensedTemplateCard } from './LicensedTemplateCard';
 import { resolveInitialDescription } from '../../../../lib/licensedTrackTemplates.js';
 import { buildMusicSamplePrompt, MUSIC_SAMPLE_DIRECTION_MAX } from '../../../../lib/musicDiscover.js';
+import { useI18n } from '../../../../components/I18nProvider';
 
-export function MusicCreateStudio({ serverMode = false, sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null }) {
-  if (serverMode) return <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} />;
-  return <MusicPreviewCreateStudio sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} />;
+export function MusicCreateStudio({ serverMode = false, sourcesEnabled = false, sampleSeed = null, sampleMix = null, licensedTemplate = null, challengeSeed = null }) {
+  if (serverMode) return <MusicServerStudio sourcesEnabled={sourcesEnabled} sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} challengeSeed={challengeSeed} />;
+  return <MusicPreviewCreateStudio sampleSeed={sampleSeed} sampleMix={sampleMix} licensedTemplate={licensedTemplate} challengeSeed={challengeSeed} />;
 }
 
-function MusicPreviewCreateStudio({ sampleSeed, sampleMix, licensedTemplate }) {
+function MusicPreviewCreateStudio({ sampleSeed, sampleMix, licensedTemplate, challengeSeed }) {
+  const { t } = useI18n();
+  const challengePrompt = challengeSeed ? t(challengeSeed.prompt_key) : '';
+  const challengeTitle = challengeSeed ? t(challengeSeed.title_key) : '';
   const { state, rows, storageError, create, cancel, reset } = useMusicPreviewState();
   const [mode, setMode] = useState('simple');
-  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate }));
+  const [description, setDescription] = useState(() => resolveInitialDescription({ sampleSeed, licensedTemplate, challengePrompt }));
   const [activeTemplate, setActiveTemplate] = useState(sampleSeed ? null : licensedTemplate);
   const [activeSeed, setActiveSeed] = useState(sampleSeed);
   const [activeMix, setActiveMix] = useState(sampleMix);
   const [lyrics, setLyrics] = useState('');
   const [styles, setStyles] = useState('');
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(() => challengeTitle.slice(0, 80));
   const [scenario, setScenario] = useState('success');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);

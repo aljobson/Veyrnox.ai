@@ -158,6 +158,6 @@ test('both routes wire the runtime flag and quotes preserve database prices', as
   assert.match(quote, /parseMusicQuote\(decoded\.value, \{ longSongs: musicRuntimeFlag\('longSongs'\) \}\)/);
   assert.match(entitlements, /musicEntitlementProjection\(\{[^}]*longSongs: musicRuntimeFlag\('longSongs'\)/);
   assert.match(quote, /credits_per_candidate: result\.unit_credits,/);
-  assert.match(quote, /total_credits: result\.total_credits,/);
+  assert.match(quote, /total_credits: result\.charged_credits \?\? result\.total_credits,/);
   assert.doesNotMatch(quote, /musicDurationPriceBlocks/);
 });

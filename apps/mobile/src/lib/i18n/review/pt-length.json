@@ -4872,6 +4872,18 @@
     "ratio": 2.14
   },
   {
+    "id": "studioAssistant.value_on",
+    "english": "on",
+    "translation": "ativado",
+    "ratio": 3.5
+  },
+  {
+    "id": "studioAssistant.value_off",
+    "english": "off",
+    "translation": "desativado",
+    "ratio": 3.33
+  },
+  {
     "id": "chrome.privacyPolicy",
     "english": "Privacy Policy",
     "translation": "Política de privacidade",
