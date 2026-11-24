@@ -11,6 +11,7 @@ export async function PATCH(request,{params}){
     try{const result=await rpc('music_patch_album',{p_auth_id:auth,p_id:id,p_expected:input.expectedRevision,p_action:input.action,
         p_title:input.action==='update'?input.title:null,p_album_type:input.action==='update'?input.albumType:null,p_description:input.action==='update'?input.description:null,
         p_artwork_asset_id:input.action==='update'?input.artworkAssetId:null,p_publication_ids:input.action==='replace'?input.publicationIds:null,p_key:input.idempotencyKey},cfg);
+        if(result?.redacted===true)return reply({error:'album_deleted',redacted:true,idempotent:result.idempotent===true},410);
         if(!result?.ok)return reply({error:publicMusicError(result?.code),revision:result?.revision},musicRpcStatus(result?.code));
         return reply(input.action==='delete'?{deleted:true,idempotent:result.idempotent===true}:{album:result.album,idempotent:result.idempotent===true});
     }catch{return reply({error:'temporarily_unavailable'},502);}

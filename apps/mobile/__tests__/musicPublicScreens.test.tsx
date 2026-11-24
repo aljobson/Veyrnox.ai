@@ -102,6 +102,10 @@ test('creator follow and blocked list unblock', async () => {
     publicSessionFor(mockApi as unknown as ApiClient).acknowledge(actor, true, creator.display_name);
     await mount(<Blocked />); await click(t('musicPublic.unblock')); expect(texts(t('musicPublic.noBlocks')).length).toBeGreaterThan(0);
 });
+test('creator album shelf opens the viewer-filtered native album route', async () => {
+    mockParams = { handle: creator.handle }; await mount(<Creator />); await click('Debut album');
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/music/album/[slug]', params: { slug } });
+});
 test('track and comment reports offer server block after success', async () => {
     await mount(<ReportTrack />); await edit(t('comments.reportDetails'), 'Please review this song'); await click(t('comments.send'));
     expect(texts(t('comments.reported')).length).toBeGreaterThan(0); expect(buttons(t('musicPublic.blockNamed', { name: creator.display_name })).length).toBeGreaterThan(0);

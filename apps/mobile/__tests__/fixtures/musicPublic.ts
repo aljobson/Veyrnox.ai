@@ -12,6 +12,9 @@ export const track: TrackPage = { track: { ...creator, title: 'First track', ver
     lyrics: 'A line of lyrics', plays: { count: 7 }, reports: { open: true }, social, comments,
     rails: { by_creator: [{ ...creator, slug, title: 'Another song' }], similar: [] } };
 export const best: BestOf = { playlists: [{ genre: 'pop', tracks: [{ ...creator, slug, title: 'First track' }] }] };
-export const profile: ProfilePage = { profile: creator, tracks: [{ creator_id: actor, slug, title: 'First track', published_at: date, commercial_status: 'personal_use_only' }], social };
+export const profile: ProfilePage = { profile: creator, tracks: [{ creator_id: actor, slug, title: 'First track', published_at: date, commercial_status: 'personal_use_only' }], social,
+    albums: [{ id: commenter, slug, title: 'Debut album', album_type: 'album', description: '', has_artwork: false,
+        handle: creator.handle, display_name: creator.display_name, creator_id: actor, published_at: date,
+        tracks: [{ publication_id: nextId, slug, title: 'First track', position: 1, audio_url: `/api/music/public/${slug}/asset` }] }] };
 export const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 export { deferred } from './musicPlaylists';

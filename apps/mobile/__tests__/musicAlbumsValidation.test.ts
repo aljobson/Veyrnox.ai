@@ -16,7 +16,7 @@ test('validates complete owner and public album shapes without Date.parse', () =
 });
 
 test('public artwork is bound to the album slug and presence bit', () => {
-    const artwork=`/api/music/albums/${slug}/artwork`;
+const artwork=`/api/v1/music/explore/albums/${slug}/artwork`;
     expect(isPublicAlbum({...publicAlbum,has_artwork:true,artwork_url:artwork})).toBe(true);
     expect(isPublicAlbum({...publicAlbum,has_artwork:true})).toBe(false);
     expect(isPublicAlbum({...publicAlbum,artwork_url:artwork})).toBe(false);
