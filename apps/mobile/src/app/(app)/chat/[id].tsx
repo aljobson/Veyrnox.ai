@@ -23,7 +23,6 @@ import { ModelPicker } from '../../../components/chat/ModelPicker';
 import { MakePanel } from '../../../components/chat/MakePanel';
 import { LibraryImagePicker } from '../../../components/chat/LibraryImagePicker';
 import { ApiError } from '../../../lib/api';
-import { MIN_TARGET } from '../../../lib/a11y';
 import { chatApi, cleanOptions, cleanTitle, imagesExtra, retryRefusalIsUnsettled, isLongText, isModelSwitch, longTextState, NO_OPTIONS, replyPrice, sendKeyFor, type ChatMessage, type ChatModel, type PendingSend, type ReplyOptions } from '../../../lib/chat';
 import { imagesBlocked, MAX_ATTACHMENTS, photoNoticeKey, refsForSend, roomFor, type AttachmentRef, type ChatImage, type SentRefs } from '../../../lib/chatAttach';
 import { pickFiles, pickPhotos, pickVideoFrames, uploadChatImages } from '../../../lib/chatPhotos';
@@ -35,10 +34,11 @@ import { isQuiet, makeSendKey, resolveResumedSend, resolveStoppedSend, RESUME_QU
 import { plural, t } from '../../../lib/i18n';
 import { ERROR_TEXT } from '../../../lib/chatErrorText';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
-import { Text, TextField, Button, Icon, themedStyles, useThemedStyles } from '../../../components/ui';
+import { Text, TextField, Button, Icon, useThemedStyles } from '../../../components/ui';
 import { latestServerMusicLyricProposal, musicLyricChatSeed, musicLyricProposalLimit, stageMusicLyricProposal } from '../../../lib/music/lyricAssistantHandoff';
+import { conversationStyles } from './conversationStyles';
 export default function Conversation() {
-    const styles = useThemedStyles(sheets);
+    const styles = useThemedStyles(conversationStyles);
     const { id, starter, asset, prompt, lyricHandoff } = useLocalSearchParams<{ id: string; starter?: string; asset?: string; prompt?: string; lyricHandoff?: string }>();
     const { api, generation } = useAuth();
     const router = useRouter();
@@ -495,25 +495,3 @@ export default function Conversation() {
         </KeyboardScreen>
     );
 }
-const sheets = themedStyles((p) => ({
-    field: { flex: 1 },
-    accentInk: { color: p.accent },
-    screen: { flex: 1, backgroundColor: p.bg },
-    center: { flex: 1 },
-    messageList: { flex: 1 },
-    conversationBar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: p.borderSubtle, backgroundColor: p.bg },
-    conversationTitle: { flex: 1, minWidth: 0 },
-    threadTitle: { color: p.textPrimary },
-    modelMeta: { color: p.textSecondary },
-    headerControl: { minHeight: MIN_TARGET, justifyContent: 'center' },
-    headerControlText: { color: p.textPrimary },
-    moreControl: { width: MIN_TARGET, height: MIN_TARGET, alignItems: 'center', justifyContent: 'center' },
-    renameBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: p.borderSubtle },
-    renameInput: { minHeight: MIN_TARGET },
-    list: { flexGrow: 1, paddingHorizontal: 16, paddingVertical: 18, gap: 20 },
-    emptyList: { justifyContent: 'flex-start' },
-    error: { color: p.danger, paddingHorizontal: 16, paddingBottom: 4 },
-    notice: { color: p.textSecondary, paddingHorizontal: 16, paddingBottom: 4 },
-    again: { alignSelf: 'flex-start', minHeight: MIN_TARGET, justifyContent: 'center' },
-    composerDock: { paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 1, borderTopColor: p.borderSubtle, backgroundColor: p.bg },
-}));

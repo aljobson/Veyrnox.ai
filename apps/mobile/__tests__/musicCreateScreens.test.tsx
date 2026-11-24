@@ -32,6 +32,12 @@ const mode = async (value: string) => {
     const tab = root.container.queryAll(n => n.props.accessibilityRole === 'tab' && n.props.accessibilityLabel === t(`music.create.${value}`))[0];
     await act(async () => tab.props.onClick({ nativeEvent: {} }));
 };
+const customVocal = async () => {
+    await mode('custom');
+    const instrumental = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental')
+        && typeof n.props.onValueChange === 'function')[0];
+    if (instrumental?.props.value) await act(async () => instrumental.props.onValueChange(false));
+};
 const baseResponse = async (path: string, init?: RequestInit): Promise<unknown> => {
     if (path.endsWith('/entitlements')) return entitlements;
     if (path.endsWith('/drafts/custom')) return { draft: init ? { ...draft, ...JSON.parse(init.body as string), revision: 1 } : draft };
@@ -181,7 +187,7 @@ test('custom saves draft then quotes saved revision and resolves conflict', asyn
     expect(body.draft_revision).toBe(1);
 });
 test('custom vocal creation stages only an opaque Lyricist handoff and does not quote', async () => {
-    await mount(); await mode('custom');
+    await mount(); await customVocal();
     expect(field(t('music.lyricAssistant.request'))).toBeDefined();
     await act(async () => field(t('music.lyricAssistant.request')).props.onChangeText('Make the chorus more vivid.'));
     mockApi.request.mockClear();
@@ -195,11 +201,11 @@ test('custom vocal creation stages only an opaque Lyricist handoff and does not 
 test('the Lyricist section is also available for the Suno custom-vocal contract', async () => {
     mockApi.request.mockImplementation((path, init) => path.endsWith('/entitlements') ? crunEntitlements
         : path.endsWith('/drafts/custom') && !init ? { draft: crunDraft } : baseResponse(path, init));
-    await mount(); await mode('custom');
+    await mount(); await customVocal();
     expect(field(t('music.lyricAssistant.request'))).toBeDefined();
 });
 test('returned Lyricist proposal requires review, resets rights, and never quotes on Apply', async () => {
-    await mount(); await mode('custom'); await edit('lyrics', 'Old words'); await edit('styles', 'warm piano');
+    await mount(); await customVocal(); await edit('lyrics', 'Old words'); await edit('styles', 'warm piano');
     const rights = root.container.queryAll(n => n.props.accessibilityRole === 'checkbox')[0];
     await act(async () => rights.props.onClick({ nativeEvent: {} }));
     const flow = getMusicCreateSession(mockApi as unknown as ApiClient), current = flow.snapshot();
@@ -219,7 +225,7 @@ test('returned Lyricist proposal requires review, resets rights, and never quote
     expect(mockApi.request.mock.calls.some(([path]) => String(path).includes('generation'))).toBe(false);
 });
 test('a stale returned proposal is rejected and a reviewed proposal can be discarded idempotently', async () => {
-    await mount(); await mode('custom'); await edit('lyrics', 'Source words'); await edit('styles', 'piano');
+    await mount(); await customVocal(); await edit('lyrics', 'Source words'); await edit('styles', 'piano');
     const flow = getMusicCreateSession(mockApi as unknown as ApiClient), current = flow.snapshot();
     const stale = stageMusicLyricHandoff({ sourceLyrics: current.input.lyrics, lyricLimit: 3000, request: 'Rewrite.',
         draftId: current.draft!.id, draftRevision: current.draft!.revision })!;
@@ -242,7 +248,7 @@ test('a stale returned proposal is rejected and a reviewed proposal can be disca
     expect(button(t('music.lyricAssistant.apply'))).toBeUndefined();
 });
 test('a returned proposal is withdrawn if the active lyric limit shrinks before Apply', async () => {
-    await mount(); await mode('custom'); await edit('lyrics', 'Source'); await edit('styles', 'piano');
+    await mount(); await customVocal(); await edit('lyrics', 'Source'); await edit('styles', 'piano');
     const flow = getMusicCreateSession(mockApi as unknown as ApiClient), current = flow.snapshot();
     const token = stageMusicLyricHandoff({ sourceLyrics: current.input.lyrics, lyricLimit: 3000, request: 'Rewrite.',
         draftId: current.draft!.id, draftRevision: current.draft!.revision })!;
