@@ -19,7 +19,7 @@ const MusicHooksCollection = lazyTab('MusicHooksCollection');
 const MusicCoverArtCollection = lazyTab('MusicCoverArtCollection');
 const MusicWaveform = lazyTab('MusicWaveform');
 
-function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy, waveform = false, tabsEnabled = false }) {
+function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy, waveform = false, tabsEnabled = false, beatEditor = false }) {
   return (
     <article className="rounded-2xl border border-vx-border bg-vx-panel p-4 shadow-lg">
       <div className="flex min-w-0 items-start gap-3">
@@ -30,7 +30,7 @@ function ServerSongRow({ song, checked, onToggle, onFeedback, onTrash, busy, wav
             <Link href={`/app/music/songs/${song.id}`} className="break-words font-bold text-vx-fg underline-offset-4 hover:underline">{song.title}</Link>
             <span className="rounded-full bg-vx-accent/15 px-2 py-1 text-xs font-bold text-vx-accent">Ready</span>
             <span className="rounded-full border border-vx-border px-2 py-1 text-xs text-vx-fg-muted">Private</span>
-            <MusicSongActions songId={song.id} jobId={song.job_id} title={song.title} actions={['view_lineage', 'open_editor', 'organize']} />
+            <MusicSongActions beatEditor={beatEditor} songId={song.id} jobId={song.job_id} title={song.title} actions={beatEditor ? ['view_lineage', 'open_studio', 'open_editor', 'organize'] : ['view_lineage', 'open_editor', 'organize']} />
           </div>
           <p className="mt-2 text-sm text-vx-fg-muted">{song.workspace_name}</p>
           {waveform && song.audio_url ? <MusicWaveform src={song.audio_url} label={song.title} /> : null}
@@ -130,7 +130,7 @@ function MusicUploadsCollection({ active }) {
 // Collections that replace the song list with their own panel.
 const PANEL_COLLECTIONS = ['uploads', 'trash', 'mixes', 'history', 'hooks', 'covers'];
 
-export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = false, collaborationEnabled = false, tabsEnabled = false }) {
+export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = false, collaborationEnabled = false, tabsEnabled = false, beatEditor = false }) {
   const library = useMusicLibraryState();
   const [query, setQuery] = useState('');
   const [workspaceId, setWorkspaceId] = useState(workspaceView ? '' : 'all');
@@ -264,7 +264,7 @@ export function MusicServerLibrary({ workspaceView = false, sourcesEnabled = fal
         ) : (
           <>
             {collection !== 'trash' ? <label className="mb-3 flex min-h-10 items-center gap-3 text-sm font-bold text-vx-fg-body"><input type="checkbox" checked={allVisibleSelected} onChange={() => library.selectVisible(visible.map((song) => song.id))} className="h-5 w-5 accent-vx-accent" />Select all shown</label> : null}
-            <div data-testid="music-library-items" data-view={view} className={view === 'grid' ? 'grid gap-3 md:grid-cols-2' : 'space-y-3'}>{collection === 'trash' ? visible.map((song) => <TrashedSongRow key={song.id} song={song} onRestore={(item) => library.setSongLifecycle(item, 'restore')} busy={library.busy === `restore:${song.id}`} />) : visible.map((song) => <ServerSongRow key={song.id} song={song} checked={library.selectedIds.includes(song.id)} onToggle={library.toggle} onFeedback={library.setFeedback} onTrash={(item) => library.setSongLifecycle(item, 'trash')} busy={library.busy === `trash:${song.id}`} waveform={view === 'waveform'} tabsEnabled={tabsEnabled} />)}</div>
+            <div data-testid="music-library-items" data-view={view} className={view === 'grid' ? 'grid gap-3 md:grid-cols-2' : 'space-y-3'}>{collection === 'trash' ? visible.map((song) => <TrashedSongRow key={song.id} song={song} onRestore={(item) => library.setSongLifecycle(item, 'restore')} busy={library.busy === `restore:${song.id}`} />) : visible.map((song) => <ServerSongRow key={song.id} beatEditor={beatEditor} song={song} checked={library.selectedIds.includes(song.id)} onToggle={library.toggle} onFeedback={library.setFeedback} onTrash={(item) => library.setSongLifecycle(item, 'trash')} busy={library.busy === `trash:${song.id}`} waveform={view === 'waveform'} tabsEnabled={tabsEnabled} />)}</div>
           </>
         )}
       </section> : null}
