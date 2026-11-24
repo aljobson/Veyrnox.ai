@@ -1,6 +1,6 @@
 import { rpc, envConfig } from '../../../../../../packages/db/supabase-client.js';
 import { privacyExportEnabled, UUID_RE, exportJson as json, exportCursor, exportLedgerRow, exportPageLimit } from '../../../../../../lib/privacyExport.js';
-import { missingAlbumExportReader } from '../../../../../../lib/privacyExportCompatibility.js';
+import { missingDedicatedExportReader } from '../../../../../../lib/privacyExportCompatibility.js';
 import { withClientModelIds } from '../../../../../../lib/privateModelIds.js';
 
 export async function GET(req, context) {
@@ -20,14 +20,19 @@ export async function GET(req, context) {
     let result;
     try {
         const aal = req.headers.get('x-veyrnox-auth-aal') || 'aal1';
-        result = args.p_section === 'music_albums'
-            ? await rpc('read_music_album_export_page', { p_auth_id: authId, p_aal: aal, p_export_id: exportId,
+        const dedicatedReader = {
+            music_albums: 'read_music_album_export_page',
+            music_daily_allowance: 'read_music_daily_allowance_export_page',
+        }[args.p_section];
+        result = dedicatedReader
+            ? await rpc(dedicatedReader, { p_auth_id: authId, p_aal: aal, p_export_id: exportId,
                 p_after: args.p_after, p_key: args.p_key, p_page_size: null }, cfg)
             : await rpc('read_privacy_export_page', { p_auth_id: authId, p_aal: aal, p_export_id: exportId, ...args }, cfg);
     } catch (error) {
-        // Code can deploy before migration 0600. A missing album reader means no
-        // album rows can exist yet, so preserve the rest of the legal export.
-        if (args.p_section === 'music_albums' && missingAlbumExportReader(error)) result = { ok: true, rows: [], next: null };
+        // Code can deploy before its dedicated migration. A missing reader means
+        // rows for that section cannot exist yet, so preserve the legal export.
+        if (['music_albums', 'music_daily_allowance'].includes(args.p_section)
+            && missingDedicatedExportReader(error)) result = { ok: true, rows: [], next: null };
         /* never return or log database text */
     }
     if (result?.ok === true) {

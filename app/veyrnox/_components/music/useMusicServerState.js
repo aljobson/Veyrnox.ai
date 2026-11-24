@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { gatewayFetch, makeIdempotencyKey, notifyBalanceChanged } from '../../_lib/gateway';
 
 const TERMINAL_STATES = new Set(['succeeded', 'partial', 'failed', 'refunded']);
-const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used', 'contract_stale', 'draft_stale']);
+const REQUOTE_ERRORS = new Set(['quote_expired', 'quote_stale', 'quote_already_used', 'contract_stale', 'draft_stale', 'daily_allowance_stale']);
 const settleRender = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 function normalizedCode(error) {
@@ -24,6 +24,7 @@ export function musicServerError(error) {
     insufficient_balance: 'You do not have enough spendable credits for both versions.',
     quote_expired: 'That quote expired. Review a new quote before creating.',
     quote_stale: 'The model price changed. Review the refreshed quote before creating.',
+    daily_allowance_stale: 'Your daily allowance changed. Review the price again before creating.',
     contract_stale: 'contract_stale',
     draft_stale: 'draft_stale',
     quote_already_used: 'That quote was already used. Review a new quote to create again.',
@@ -95,13 +96,15 @@ export function useMusicServerState({ active = true } = {}) {
     setQuote(null);
     confirmKey.current = null;
     try {
+      const capableRequest = entitlements?.daily_allowance?.enabled === true
+        ? { ...request, daily_allowance_capable: true } : request;
       const next = await gatewayFetch('/music/generation-quotes', {
         method: 'POST',
-        body: JSON.stringify(request),
+        body: JSON.stringify(capableRequest),
       });
       if (!gate.isCurrent(mine)) return null;
       setQuote(next);
-      lastQuoteRequest.current = { request, refresh: onContractStale };
+      lastQuoteRequest.current = { request: capableRequest, refresh: onContractStale };
       return next;
     } catch (reason) {
       if (gate.isCurrent(mine)) {
@@ -114,13 +117,15 @@ export function useMusicServerState({ active = true } = {}) {
             // the old quote revision. Retry only after those effects settle.
             await settleRender();
             mine = gate.start();
+            const capableReplacement = fresh?.daily_allowance?.enabled === true
+              ? { ...replacement, daily_allowance_capable: true } : replacement;
             try {
               const next = await gatewayFetch('/music/generation-quotes', {
-                method: 'POST', body: JSON.stringify(replacement),
+                method: 'POST', body: JSON.stringify(capableReplacement),
               });
               if (!gate.isCurrent(mine)) return null;
               setQuote(next);
-              lastQuoteRequest.current = { request: replacement, refresh: onContractStale };
+              lastQuoteRequest.current = { request: capableReplacement, refresh: onContractStale };
               return next;
             } catch (retryError) {
               setErrorCode(normalizedCode(retryError));
@@ -136,7 +141,7 @@ export function useMusicServerState({ active = true } = {}) {
     } finally {
       if (gate.isLatestStart(mine)) setBusy('');
     }
-  }, [gate, loadEntitlements]);
+  }, [entitlements, gate, loadEntitlements]);
 
   const confirmQuote = useCallback(async (context = {}) => {
     if (!quote?.quote_id || confirming.current) return null;
@@ -171,6 +176,9 @@ export function useMusicServerState({ active = true } = {}) {
       confirmKey.current = null;
       lastQuoteRequest.current = null;
       notifyBalanceChanged();
+      void gatewayFetch('/music/entitlements', { promptOnAuth: false })
+        .then((next) => setEntitlements(next))
+        .catch(() => {});
       return result;
     } catch (reason) {
       const code = normalizedCode(reason);
@@ -185,6 +193,8 @@ export function useMusicServerState({ active = true } = {}) {
             await settleRender();
             await reviewQuote(replacement, undefined, previous?.refresh);
           }
+        } else if (code === 'daily_allowance_stale') {
+          await loadEntitlements();
         }
       }
       setErrorCode(code);

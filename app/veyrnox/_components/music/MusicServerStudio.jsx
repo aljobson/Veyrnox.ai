@@ -41,6 +41,10 @@ function musicCredits(t, locale, count) {
   return t(pluralKey(t, locale, 'app.music.suno.credits', count), { count });
 }
 
+function dailyCovered(t, locale, count) {
+  return t(pluralKey(t, locale, 'app.music.suno.dailyCovered', count), { count });
+}
+
 function MusicFirstRunGuide() {
   const [visible, setVisible] = useState(false);
 
@@ -197,7 +201,11 @@ function SunoSimpleFields({ entitlements, model, modelId, setModelId, descriptio
         <input type="checkbox" checked={instrumental} disabled={model?.instrumental_only} onChange={(event) => { setInstrumental(event.target.checked); clearQuote(); }} className="h-5 w-5 accent-vx-accent" />
       </label>
       <section aria-label={t('app.music.suno.reviewPrice')} className="rounded-2xl border border-dashed border-vx-border-boost bg-vx-base p-4">
-        {quote?.mode === 'simple' ? <div className="flex items-center justify-between gap-3 text-sm"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="font-vx-mono text-vx-money">{musicCredits(t, locale, quote.total_credits)}</strong></div> : <p className="text-sm text-vx-fg-muted">{t('app.music.suno.reviewPrice')}</p>}
+        {quote?.mode === 'simple' ? <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between gap-3"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
+          {quote.daily_free_candidates > 0 ? <p className="text-vx-accent">{dailyCovered(t, locale, quote.daily_free_candidates)}</p> : null}
+          <p className="font-vx-mono text-vx-money">{quote.total_credits === 0 ? t('app.music.suno.noAccountCredits') : t('app.music.suno.payable', { credits: musicCredits(t, locale, quote.total_credits) })}</p>
+        </div> : <p className="text-sm text-vx-fg-muted">{t('app.music.suno.reviewPrice')}</p>}
       </section>
       {quote?.mode === 'simple'
         ? <button type="button" onClick={() => confirmQuote()} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? t('app.music.suno.sending') : t('app.music.suno.sendWithCredits', { credits: musicCredits(t, locale, quote.total_credits) })}</button>
@@ -259,7 +267,11 @@ function SunoCustomDraftFields({ custom, entitlements, quote, busy, clearQuote, 
         {custom.status === 'saving' ? t('app.music.suno.savingDraft') : custom.status === 'saved' ? t('app.music.suno.savedRevision', { count: custom.draft.revision }) : custom.status === 'conflict' ? t('app.music.suno.draftConflict') : custom.status === 'error' ? sunoError(t, custom.error) : t('app.music.suno.changesSave')}
       </div>
       {custom.conflict ? <div className="flex flex-wrap gap-2"><button type="button" onClick={custom.loadNewer} className="min-h-11 rounded-full border border-vx-border px-4 text-sm font-bold">{t('app.music.suno.useServer')}</button><button type="button" onClick={custom.keepMine} className="min-h-11 rounded-full border border-vx-accent px-4 text-sm font-bold">{t('app.music.suno.keepMine')}</button></div> : null}
-      {quote?.mode === 'custom' ? <div className="rounded-xl border border-vx-border-boost p-3 text-sm"><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="float-right font-vx-mono text-vx-money">{musicCredits(t, locale, quote.total_credits)}</strong></div> : null}
+      {quote?.mode === 'custom' ? <div className="space-y-2 rounded-xl border border-vx-border-boost p-3 text-sm">
+        <div><span>{quote.output_count} × {quote.credits_per_candidate}</span><strong className="float-right font-vx-mono">{musicCredits(t, locale, quote.list_credits ?? quote.total_credits)}</strong></div>
+        {quote.daily_free_candidates > 0 ? <p className="text-vx-accent">{dailyCovered(t, locale, quote.daily_free_candidates)}</p> : null}
+        <p className="font-vx-mono text-vx-money">{quote.total_credits === 0 ? t('app.music.suno.noAccountCredits') : t('app.music.suno.payable', { credits: musicCredits(t, locale, quote.total_credits) })}</p>
+      </div> : null}
       {quote?.mode === 'custom'
         ? <button type="button" onClick={() => confirmQuote({ title: custom.draft.title.trim(), onContractStale: refreshQuoteRequest })} disabled={!quote.affordable || Boolean(busy) || !hasSharedSlot} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'confirming' ? t('app.music.suno.sending') : t('app.music.suno.sendWithCredits', { credits: musicCredits(t, locale, quote.total_credits) })}</button>
         : <button type="button" onClick={review} disabled={!ready || Boolean(busy)} className="min-h-12 w-full rounded-full bg-vx-accent px-5 font-extrabold text-vx-accent-ink disabled:opacity-40">{busy === 'quoting' ? t('app.music.suno.quoting') : t('app.music.suno.reviewPrice')}</button>}
@@ -640,7 +652,12 @@ export function MusicServerStudio({ sourcesEnabled = false, sampleSeed = null, s
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-vx-border bg-vx-panel px-4 py-3">
           <div><span className="block text-sm text-vx-fg-muted">Spendable balance</span><span className="block text-xs text-vx-fg-faint">Shared pairs {activeGenerationCount}/{concurrencyLimit}</span></div>
-          <strong data-testid="music-credits" className="font-vx-mono text-lg text-vx-money">{entitlements ? entitlements.balance : '—'} cr</strong>
+          <div className="text-right"><strong data-testid="music-credits" className="font-vx-mono text-lg text-vx-money">{entitlements ? entitlements.balance : '—'} cr</strong>
+            {entitlements?.daily_allowance?.unavailable ? <span className="mt-1 block text-xs text-vx-fg-muted">{t('app.music.suno.dailyAllowanceUnavailable')}</span>
+              : entitlements?.daily_allowance?.enabled ? <span className="mt-1 block text-xs text-vx-accent">{entitlements.daily_allowance.candidates_remaining === 0
+                ? t('app.music.suno.dailyAllowanceExhausted')
+                : t(entitlements.daily_allowance.candidates_remaining === 1 ? 'app.music.suno.dailyAllowance.one' : 'app.music.suno.dailyAllowance.other', { count: entitlements.daily_allowance.candidates_remaining })}{entitlements.daily_allowance.reset_at ? ` · ${t('app.music.suno.resetsAt', { time: new Date(entitlements.daily_allowance.reset_at).toLocaleTimeString(locale) })}` : ''}</span> : null}
+          </div>
         </div>
       </div>
 

@@ -1,178 +1,201 @@
-# Veyrnox Music parity report
+## Parity: 53.5 / 100
 
-Date: 2026-11-11
-Matrix: [features.csv](./features.csv)
-Recon: [recon.md](./recon.md)
-Verified clone slice: [test-plan.md](./test-plan.md)
+features 53.5  (176 counted, must-haves 13 of 44 done)
 
-## Verdict
+Not shippable yet: 31 must-have features are not done.
 
-**Not shippable as a Suno-capability replacement.**
+## By area, weakest first
+- visuals                        0.0  (3 features)
+- identity                       0.0  (5 features)
+- integrations                  20.0  (5 features)
+- community                     25.0  (4 features)
+- studio                        32.9  (35 features)
+- models                        33.3  (7 features)
+- remix                         34.1  (12 features)
+- stems                         43.8  (4 features)
+- organization                  46.4  (9 features)
+- safety                        50.0  (1 features)
+- collaboration                 50.0  (4 features)
+- personalization               50.0  (2 features)
+- sharing                       50.0  (5 features)
+- downloads                     50.0  (6 features)
+- rights                        50.0  (1 features)
+- speech                        56.2  (5 features)
+- uploads                       62.5  (3 features)
+- editing                       63.5  (11 features)
+- creation                      65.4  (24 features)
+- library                       65.4  (6 features)
+- billing                       73.5  (6 features)
+- results                       77.3  (4 features)
+- lyrics                        86.4  (6 features)
+- onboarding                    92.3  (6 features)
+- sounds                       100.0  (2 features)
 
-Overall scored parity is **53.3 / 100** after build increment 54. This is the feature score; layout is deliberately unscored because no permissible same-state original/clone screenshot pair exists. The clone has **13 of 44 must-haves complete**, leaving 31 must-haves missing or partial. The last complete production-mode Music browser gate remains 51/51 from increment 52; this increment adds a separately driven discovery-to-Create browser flow. Database/R2/provider/SMS acceptance and disabled rollout gates still prevent complete credit.
+## Missing, in build order
+- [must] identity: Voice verification, no  (Independent anti-impersonation system required)
+- [must] billing: Credit quote before generation, partial  (Server UI requires an explicit exact live-catalog quote before a separate pair confirmation and shows affordability expiry and balance-after; production rollout remains gated)
+- [must] billing: Daily Free credits, partial  (Default-off code reserves up to ten Music candidates per verified account per UTC day under a bounded global budget and shows exact allowance-adjusted quotes across web and iOS; production policy and rollout remain disabled pending owner activation)
+- [must] billing: Upgrade feature gates, partial  (ACE-Step 1.5 now has a Music-specific paid-period gate in entitlements quote and confirmation while reusable billing surfaces remain available; broader paid capabilities and live subscription-race acceptance remain)
+- [must] creation: Generate two candidates per request, partial  (Server UI confirms one exact pair then renders two independently polled candidates; atomic RPC exists but production migration and provider activation remain gated)
+- [must] creation: Generation queue and progress, partial  (Server-mode candidate cards poll queued running ready failed and refunded projections independently; cancellation priority and live-provider validation remain)
+- [must] creation: Simple natural-language song creation, partial  (Server-mode UI now connects Simple input to entitlements quote confirmation pair admission and status polling; migration and live-provider activation remain gated off)
+- [must] downloads: Download MP3, partial  (Exact allowance quote and short-lived signed download are implemented only when the immutable source asset is already MP3; migration R2 acceptance and rollout remain)
+- [must] downloads: Download quota ledger, partial  (Owner and period scoped unique version claims make retries and repeat downloads consume allowance at most once; database acceptance remains)
+- [must] downloads: Paid monthly downloads, partial  (Active Starter receives 20 and higher Veyrnox subscriptions receive 60 per period behind the disabled distribution gate)
+- [must] editing: Crop beginning or end, partial  (Owner can save a measured beginning/end range as a new immutable child with a durable edit-source edge; fixed-frame PCM WAV creates a distinct canonical exportable master while MP3 and unsupported WAV remain preview-only and migration R2 acceptance remains gated)
+- [must] editing: Non-destructive versions and take lanes, partial  (Immutable history parent/source links current markers canonical local edits and generated Cover Extend or Replace sibling branches are implemented; Replace now auditions both ready takes and commits one idempotently while broader Studio take lanes and live database acceptance remain unavailable)
+- [must] editing: Replace a section, partial  (A rights-bound exact 1–30 second range on a current source up to 60 seconds can quote two immutable full-song instrumental alternatives audition both and commit exactly one current take while preserving its sibling and source; live provider/database/R2 acceptance remains unavailable)
+- [must] library: Library of owned songs, partial  (Authenticated owner-scoped server Library UI and read APIs now exist behind separate schema/library rollout gates; migration and rollout remain off)
+- [must] lyrics: Lyrics autosave, partial  (Private server draft autosave preserves exact text across reloads; disjoint tab edits three-way merge and same-field conflicts retain both values until resolution; migration and rollout remain gated off)
+- [must] models: Free v6-mini model, partial  (Clean-room default ACE-Step v1 is an active schema-pinned instrumental pair model available without a paid subscription; it is not Suno v6-mini and live Music acceptance remains pending)
+- [must] models: Model picker, partial  (Authenticated entitlements now project two verified instrumental pair models with exact live-catalog prices and availability; free ACE-Step and paid-plan ACE-Step 1.5 are selectable but lyric models remain absent)
+- [must] organization: Create personal Workspaces, partial  (Private default and named personal workspaces with idempotent creation are implemented behind disabled schema/library gates)
+- [must] organization: Move songs to Workspace, partial  (Atomic revision-checked single/batch movement of up to 50 owned songs includes durable same-key replay behind disabled schema/library gates)
+- [must] remix: Cover a song, partial  (Rights-bound current-version Cover freezes prompt influence duration price and source evidence then creates two non-destructive lineage branches; provider catalog row and production gate remain inactive pending billed live acceptance)
+- [must] remix: Extend a song, partial  (A rights-bound current source can quote and create two fixed 30-second instrumental tail continuations as immutable branches; head extension new-ending control lyrics and billed live provider acceptance remain unavailable)
+- [must] remix: Remix attribution and lineage, partial  (Cover Extend and Replace outputs settle as owner-scoped immutable sibling versions with typed source edges exact source version duration/range controls and rights evidence; live database/provider acceptance remains gated)
+- [must] results: Song More Actions menu, partial  (Accessible owner menu exposes implemented Cover tail Extend exact-range Replace owner-only Reuse paid vocals/instrumental separation lineage Library private sharing publication crop render and exact-format export while unsupported transforms and formats stay hidden)
+- [must] rights: Commercial rights flag, partial  (Publication and public profile project personal-use-only or plan-eligible-terms-apply from an allowlisted active paid plan without claiming third-party clearance; legal and rollout acceptance remain)
+- [must] safety: Content moderation before generation, partial  (A clean-room normalized pre-debit policy rejects narrow high-confidence unsafe combinations with one public error; broader classifier and abuse review remain)
+- [must] sharing: Copy share link, partial  (Owner can create and copy a high-entropy private link then revoke it; migration and rollout remain disabled)
+- [must] sharing: Link-Only default visibility, partial  (Revocable hashed listen-only server links and a fail-closed public projection are implemented behind a disabled distribution gate; database rollout remains)
+- [must] sharing: Publish song to profile, partial  (Owner can policy-check and publish the current immutable version to a reversible public track and creator listing behind the disabled publication gate; database/R2 rollout acceptance remains)
+- [must] stems: Stem credit confirmation, partial  (Owner must attest source rights and review the exact 13-credit quote plus an explicit warning that an absent or unclear part may be silent or limited while still spending credits; live database/provider acceptance remains gated)
+- [must] uploads: Attach owned audio to a prompt, partial  (Verified current private song audio now reaches the staged Cover audio-to-audio contract through a server-signed URL; the provider row and rollout gate remain inactive pending live acceptance)
+- [must] uploads: Upload audio up to plan limit, partial  (Private MP3/WAV upload uses a direct signed PUT server-side byte/type inspection immutable rights evidence and measured 8-minute free or 30-minute paid caps; 20 MB storage cap and rollout gate remain)
+- [should] creation: Attach Suno songs or playlists as references, no  (Replace with owned clean-room assets and collections)
+- [should] creation: Attach multiple references in one prompt, no  (Cost may rise with many visual inputs)
+- [should] creation: Eight-minute song generations, no  (All current v6 variants)
+- [should] creation: Inspire from a playlist, no  (Recommended three to five owned songs)
+- [should] identity: Create own Voice profile, no  (Pro/Premier and age/region limits)
+- [should] identity: Use Voice in creation, no  (Compatible model required)
+- [should] identity: Voice privacy setting, no  (Public or private where supported)
+- [should] remix: Mashup exactly two owned songs, no  (Explicit two-source workflow)
+- [should] remix: Sample an owned audio range, no  (Select a slice from song upload or recording)
+- [should] speech: Speech generation with soundtrack, no  (Web beta combines spoken voice and music)
+- [should] collaboration: Invite collaborators by handle, partial  (Owners invite an exact private collaboration handle with durable replay protection and a ten-member transaction limit; removal and live database races remain)
+- [should] collaboration: Owner and collaborator roles, partial  (Membership persists explicit owner or collaborator roles; only owners receive invitation controls while collaborators get read-only shared songs and member lists)
+- [should] collaboration: Share Workspace, partial  (Named private Music workspaces can be shared as a read-only listening view behind a separate disabled collaboration gate; live database isolation and owner-plan gating remain)
+- [should] collaboration: Workspace invitation notifications, partial  (Private Workspaces lists pending invitations with accept and decline actions; external delivery unread counts expiry and live database acceptance remain)
+- [should] creation: Audio strength or influence slider, partial  (Cover exposes a bounded 10–90 source-character control frozen into the quote and mapped to the provider noise level; broader creation and Voice use remain unavailable)
+- [should] creation: Concurrent generations, partial  (Client retains and independently polls multiple accepted pairs while service-role admission serializes each owner and rejects a fifth active shared pair before debit; paid priority capacity and live database races remain pending)
+- [should] downloads: Download WAV, partial  (Exact allowance quote and short-lived signed download are implemented only when the immutable source asset is already WAV; no transcoding exists and migration R2 acceptance and rollout remain)
+- [should] downloads: Download stems, partial  (A completed separation exposes one owner-only five-minute signed ZIP attachment; individual files parent-song allowance accounting and live storage/provider acceptance remain unavailable)
+- [should] downloads: Free lifetime trial downloads, partial  (A seven-download lifetime period is implemented behind the disabled distribution gate)
+- [should] editing: Add Instrumental to an existing song, partial  (The same disabled two-stage Mureka workflow supports a lyric-free Instrumental request against one owner/current MP3 and returns a separate private generated part; it does not claim an automatic mix Premier entitlement parity or live provider acceptance)
+- [should] editing: Add Vocals to an instrumental, partial  (Disabled paid two-stage Mureka workflow freezes one owner/current MP3 up to 10 MB and 120 seconds plus exact lyrics and both rights attestations; it charges a one-credit provider upload plus six-credit vocal generation and returns one separate private vocal part without automatically mixing it into the source; migrated database R2 and billed provider acceptance remain missing)
+- [should] editing: Add a new section, partial  (A rights-bound current MP3 or WAV up to two minutes can quote two 10 20 or 30 second beginning/end outpaint branches with exact style and optional structured lyrics; middle insertion beat-count control and live billed database/R2/provider acceptance remain unavailable)
+- [should] editing: Quick Extend, partial  (More Actions offers one fixed 30-second tail continuation with explicit exact quote and two branches; seamlessness variable length head extension and live provider acceptance are not claimed)
+- [should] editing: Split and reorder sections, partial  (Current owner can split one canonical PCM WAV at an exact measured point and move section 2 before section 1 into a new exportable immutable WAV child with replay-safe edit lineage; arbitrary multi-section ordering compressed formats and a timeline editor remain unavailable)
+- [should] library: Liked songs collection, partial  (Private Library filters the owner-scoped durable liked projection behind disabled schema and Library gates; live database acceptance remains)
+- [should] library: Trash and restore songs, partial  (Owner-only revision-checked soft trash and restore pass; permanent deletion and live database acceptance remain unavailable)
+- [should] library: Uploads and stems collections, partial  (Owner-only verified uploads are browsable and playable and a song action can return a private stem archive; a dedicated browsable Stems collection and individual stem rows remain unavailable)
+- [should] models: Premium v6 model, partial  (Clean-room analogue ACE-Step 1.5 is an active schema-pinned higher-quality pair model; UI and both database spend boundaries require a current active paid period while live Music acceptance remains pending and no Suno v6 identity is claimed)
+- [should] organization: Create playlists, partial  (Private ordered collections of owned songs with atomic revision-checked replacement are implemented behind disabled playlist and schema gates)
+- [should] remix: Reuse styles and lyrics, partial  (One exact owner-current generated version can revision-safely copy selected stored lyrics and/or style direction into the private Custom draft with durable replay and no spend; live database acceptance and reuse from non-generation edits remain unavailable)
+- [should] results: Like and dislike feedback, partial  (Owner-only durable like dislike and clear mutations are implemented behind disabled schema and Library gates; reason capture and live database acceptance remain)
+- [should] sharing: Allow or disable comments, partial  (Publication stores and publicly projects the owner's explicit comments permission; an actual comments system remains absent)
+- [should] sharing: Allow or disable remixes, partial  (Publication stores and publicly projects the owner's explicit remix permission; remix generation remains unavailable)
+- [should] stems: Auto stem separation, partial  (Staged paid Mureka audio-separation-3 splits one owned current MP3 into vocals plus instrumental and returns one opaque ZIP; broader multi-stem output and live billed provider acceptance remain unavailable)
+- [should] stems: Split one instrument from mix, partial  (Owner can isolate one allowlisted sound from a measured current MP3 or WAV up to two minutes and receive separate private target plus residual WAVs; live billed database/R2/provider acceptance and arbitrary instrument prompting remain unavailable)
+- [could] community: Comments likes and play counts, no  (Existing network data excluded)
+- [could] community: Hooks short-form video posts, no  (Song excerpt plus owned video and lyrics)
+- [could] creation: Attach images and video as references, no  (v6 multimodal input)
+- [could] creation: Create mashups from multiple owned sources, no  (Must preserve rights and lineage)
+- [could] creation: Max Mode, no  (Higher-credit quality mode)
+- [could] identity: Create Style Persona, no  (Save essence of an owned song)
+- [could] integrations: Add assistant-created song to playlist, no  (Post-generation organization)
+- [could] integrations: Create music through an assistant, no  (Explicit user confirmation before credit spend)
+- [could] integrations: Remix and mash up Library songs through MCP, no  (Credit spend and lineage must remain explicit)
+- [could] integrations: Upload audio through MCP, no  (Owned voice memo or loop)
+- [could] models: Bulk upload Custom Model training songs, no  (Rights attestation required)
+- [could] models: Create Custom Model from owned tracks, no  (Minimum six tracks and up to three models)
+- [could] models: Experimental v6-wild model, no  (Pro and Premier)
+- [could] models: Share Custom Model with collaborators, no  (Do not replicate Suno model artifacts)
+- [could] onboarding: Sign up with Discord Facebook or Microsoft, no  (Observed on expanded public sign-in modal)
+- [could] organization: Filter playlists by creator type, no  (Own Suno-curated or other creator)
+- [could] organization: Generate playlist cover art, no  (Independent visual assets only)
+- [could] personalization: My Taste personalization, no  (Enabled by default)
+- [could] remix: Keep sample pitch and speed, no  (Optional preservation toggle)
+- [could] remix: Remix another creator's permitted song, no  (Network content itself is not clonable)
+- [could] remix: Sample As-is mode, no  (Places sample without added instrumentation on top)
+- [could] remix: Sample Blend mode, no  (Mixes sample with new instruments)
+- [could] remix: Sample Chop mode, no  (Slices and rearranges the sample)
+- [could] speech: Speech backing music toggle, no  (Advanced control)
+- [could] stems: Advanced custom stem split, no  (Nearly 100 instruments; Premier)
+- [could] studio: Audio to MIDI transcription, no  (Drag audio to MIDI track)
+- [could] studio: Auto-stretch imported audio, no  (Optional tempo matching with exceptions for unsteady audio and stem groups)
+- [could] studio: Full song export from Studio, no  (High-quality render)
+- [could] studio: Generate custom effects by chat, no  (Independent plugin sandbox and safety needed)
+- [could] studio: MIDI to generated audio, no  (Cover MIDI through generation system)
+- [could] studio: Multitrack export from Studio, no  (DAW handoff)
+- [could] studio: Remove FX, no  (Generate dry version)
+- [could] studio: Selected-range export from Studio, no  (Partial render)
+- [could] studio: Stem to MIDI export, no  (Costs credits)
+- [could] studio: Studio chat bar, no  (Generate arrange mix and ask project questions)
+- [could] studio: Take lanes with two generated options, no  (Audition rate and commit)
+- [could] studio: Warp markers and time stretch, no  (Timing correction without pitch shift)
+- [could] visuals: Generate image or video artwork, no  (Independent licensed visual model required)
+- [could] visuals: Prompt-driven cover art editor, no  (Available for songs playlists profiles and banners)
+- [could] visuals: Upload an image as cover-art reference, no  (Iterate with text)
+- [could] community: Discover or home feed, partial  (An original six-beat Veyrnox seed library now provides cover art search mood filters and playable browser-rendered previews; personalized ranking public creator content and the social graph remain excluded)
+- [could] community: Public creator profile, partial  (Public handle and display name list live Music publications behind the disabled publication gate; avatar bio albums and rollout remain)
+- [could] creation: Vocal gender control, partial  (The disabled Mureka matching-vocal workflow exposes only its documented female or male vocal-range preference plus automatic omission and explicitly states that it does not select or clone a person's voice; the control is not available across general creation and live provider acceptance remains missing)
+- [could] organization: Create and publish albums, partial  (Owner-scoped album drafts playlist conversion ordered tracks artwork moderation public shelves and export are implemented behind default-off gates; songs must already be published and publishing an album does not publish included songs)
+- [could] organization: Pin playlists in Library, partial  (Private playlists can be pinned and unpinned behind the disabled playlist gate)
+- [could] organization: Shuffle playlist playback, partial  (Client-side shuffle changes the visible listening order but does not yet provide continuous queue playback)
+- [could] speech: Speech Variety and vocal gender, partial  (Existing stock-voice studio filters female male and neutral voices and supports multi-voice auditions; a dedicated Variety control is absent)
+- [could] studio: Audio and MIDI tracks, partial  (The session workspace renders one real current-song audio clip plus one local MIDI note track through a bounded playable wavetable instrument; additional tracks routing durable clips and full instrument racks remain absent)
+- [could] studio: Automation lanes, partial  (A bounded 16-point local track-volume lane linearly interpolates the live playhead value and drives the audible Web Audio master gain alongside manual volume and mute; drag curves pan effect-parameter lanes copy paste persistence and effect-bearing export remain absent)
+- [could] studio: Clip WAV download, partial  (Real local microphone takes and one rendered trim/reverse/pitch/fade preview each expose immediate object-URL PCM WAV downloads; immutable song versions durable Studio projects and project effects still have no export)
+- [could] studio: Clip settings and info sidebars, partial  (The single audio track exposes current version operation mute volume loop visibility bounded trim reverse semitone/cents tuning and fade settings with a rendered local preview; pitch-preserving stretch formant warp lyrics styles stems and durable sidebar state remain absent)
+- [could] studio: Copy move and duplicate plugins, partial  (The tab-local rack copies a parameter snapshot to a local clipboard pastes or directly duplicates an independent processor instance moves instances earlier/later removes them and caps the chain at ten while retaining one media source; cross-track drag/drop keyboard shortcuts persistence and library reuse remain absent)
+- [could] studio: External MIDI and MIDI Learn, partial  (Permission-on-intent Web MIDI enumerates and selects an input and consumes note-on/off messages with an explicit Safari fallback; MIDI Learn CC transport clock and saved bindings remain absent)
+- [could] studio: Factory audio effects, partial  (After explicit activation one real media-element graph runs an ordered chain with peaking EQ compressor waveshaper distortion feedback delay and generated-impulse convolution reverb plus live controls independent instances reorder and bypass; gate sidechain presets and saved state remain absent)
+- [could] studio: Fine pitch adjustment, partial  (A bounded local renderer applies audible minus/plus 12-semitone and minus/plus 100-cent linear resampling to the selected clip range and creates PCM WAV; pitch and speed remain linked with no formant or pitch-preserving stretch)
+- [could] studio: Grid density and contrast controls, partial  (Local wide or dense grid spacing and soft or high contrast are available in the workspace and disappear with the unsaved session)
+- [could] studio: Latency calibration, partial  (After explicit permission and exact input selection the session emits three scheduled speaker clicks analyses returned microphone peaks inside bounded windows and reports their average acoustic round-trip milliseconds; the result is not persisted and does not shift or align recorded takes)
+- [could] studio: Musical typing, partial  (A focused session MIDI track maps the documented home-row white/black keys plus Z/X octave and C/V velocity controls into audible and recordable local notes and also exposes an eight-key mouse/touch floating keyboard; chords and arpeggiator remain absent)
+- [could] studio: Nonlinear clip fade curves, partial  (The bounded local clip renderer applies measured fade-in and fade-out sample envelopes with selectable linear exponential or logarithmic shapes and produces an audible PCM WAV; timeline dragging crossfades persistence and project export remain absent)
+- [could] studio: Open existing song in Studio, partial  (An owner-only More Actions link opens the current private song and immutable version history in a dedicated workspace without changing the song; session controls are explicitly unsaved)
+- [could] studio: Piano roll editor, partial  (A bounded 64-note local grid can add delete edit pitch start length and velocity and quantize timing to sixteenth-note steps; drag editing pitch bend modulation scale assist and durable clips remain absent)
+- [could] studio: Pop-out synth keyboard and plugin windows, partial  (A labelled floating in-page wavetable keyboard provides eight mouse or touch keys through the current octave velocity and patch; it cannot detach to another display and effect plugin windows do not float yet)
+- [could] studio: Record MIDI in Studio, partial  (An armed local capture records musical-typing or selected Web MIDI note-on/off messages at the playhead-derived beat with pitch timing length and velocity; takes are session-only and do not loop-comp or persist)
+- [could] studio: Record audio in Studio, partial  (A permission-on-intent local recorder selects an enumerated input supports none or 1/2/4-bar count-in or project pre-roll and decodes each take to PCM WAV on a session lane; takes are unsaved unaligned and not latency-corrected)
+- [could] studio: Show and hide tracks, partial  (The audio track can be hidden and restored from the timeline without mutating or deleting its immutable source)
+- [could] studio: Studio Library dock, partial  (A read-only owner dock lists immutable versions and current state beside the workspace; asset drag audition and cross-song browsing remain absent)
+- [could] studio: Suno Studio project hub, partial  (A disabled clean-room Studio entry explains the local session workspace and routes owners through Library songs; durable named projects and saved arrangements remain absent)
+- [could] studio: Tempo and time signature, partial  (Bounded 40–240 BPM and 3/4 4/4 6/8 controls drive the session grid and metronome with explicit disclosure that they do not stretch source audio)
+- [could] studio: Transport and metronome, partial  (Local play pause return-to-start seek loop follow-playhead and an audible tempo-bound metronome work for the single audio clip; record and durable transport state remain absent)
+- [could] studio: Wavetable synthesizer, partial  (A bounded 12-voice Web Audio instrument builds two independent harmonic PeriodicWave tables per voice morphs them through a resonant low-pass filter and amplitude envelope applies a filter LFO and exposes three presets; table upload or timeline capture multiple envelopes full modulation matrix glide detune mono mode persistence and chat patch design remain absent)
 
-Command used:
+## Left out on purpose (not scored)
+- Exact Suno model weights and training corpus: Not clonable or appropriate
+- Suno songs creator graph and engagement data: Network and user content belong to Suno and its users
+- Suno brand logo copy artwork audio and videos: Use original Veyrnox identity and assets
+- Private APIs request shapes bundles and source code: Explicitly excluded from recon
+- WMG BMG and other partner rights: Commercial relationships cannot be cloned
+- Exact moderation fingerprinting watermarking and fraud systems: Implement independent safety provenance and abuse controls
+- Exact recommendation and My Taste behavior: Only the user-facing concept is mapped
 
-```text
-python3 /Users/aljobson/.codex/skills/replica-diff/parity.py replica/suno/features.csv
-```
+## Evidence and layout boundary
 
-Scoring weights are must 3, should 2, could 1; partial counts as one half; clean-room exclusions marked `skip` are not scored.
+Layout remains deliberately unscored. No permissible, same-state Suno/Veyrnox screenshot pair exists: authenticated Suno screenshots, assets, code, requests and private APIs are outside this clean-room project. The archived Craft Anything check in [recon.md](./recon.md) verified only that the local research Markdown was readable; it did not inspect or validate Suno implementation details. Future visual comparison requires independently permissible references at matching viewport and state.
 
-## Scorecard
+## Product behavior decisions retained
 
-| Measure | Score | Interpretation |
-| --- | ---: | --- |
-| Feature parity | 53.3 / 100 | Adds an original six-beat discovery library with generated covers, playable procedural previews and an allowlisted recipe handoff into the existing exact-quote Create flow; it deliberately does not claim copied audio, audio conditioning, personalized ranking or a social feed |
-| Must-haves complete | 12 / 43 | Adds the provider-backed instrumental toggle to Custom creation, exact owned lyrics and style-direction generation, onboarding, billing, results, playback, Library search/filter and selected-line editing slices |
-| Must-haves incomplete | 31 / 44 | Any one keeps the strict parity verdict at not shippable |
-| Layout parity | not scored | No matched, permissible original reference images |
-| Open S1/S2 defects in implemented slice | 0 | Creation, songwriting, source, target/residual and archive stems, Library feedback, publication, crop, playlist, workspace, lineage and private-distribution contracts are covered; missing capability remains the blocker |
+| Flow | Veyrnox decision | Remaining proof |
+| --- | --- | --- |
+| Quote and confirmation | Keep an exact two-candidate server quote and a separate atomic confirmation; daily allowance changes list price only through an advertised capability bit | Production migration/provider acceptance and explicit owner activation |
+| Custom creation | Bind generation to one saved private draft revision, rights attestation and catalog contract | Staging subscription-expiry, stale-revision and two-owner races |
+| Results and edits | Preserve immutable versions, sibling candidates and typed source lineage; never overwrite the source | Live database, storage and billed-provider acceptance for each gated transform |
+| Library and organization | Keep owner-scoped workspaces, playlists, Trash and restoration independent of public discovery | Concurrent replay, mixed-owner and rollout canaries |
+| Sharing and publication | Keep revocable link-only sharing separate from policy-checked public publication | Database/storage races, commercial-rights review and abuse controls |
 
-The matrix was corrected before scoring so reused Veyrnox foundations count honestly: Google and Apple OAuth, one-off credit packs, monthly credit plans, and the existing billing page are present. Music-specific upgrade gates remain partial rather than complete.
+## Next build order
 
-## Area scores
-
-| Area | Score | Area | Score |
-| --- | ---: | --- | ---: |
-| billing | 73.5 | results | 77.3 |
-| onboarding | 92.3 | library | 65.4 |
-| creation | 63.3 | sharing | 50.0 |
-| models | 33.3 | safety | 50.0 |
-| uploads | 62.5 | sounds | 100.0 |
-| speech | 56.2 | remix | 34.1 |
-| visuals | 0.0 | lyrics | 86.4 |
-| organization | 42.9 | collaboration | 50.0 |
-| editing | 63.5 | stems | 43.8 |
-| identity | 0.0 | personalization | 50.0 |
-| community | 12.5 | downloads | 50.0 |
-| rights | 50.0 | studio | 30.0 |
-| integrations | 20.0 |  |  |
-
-## Layout diff
-
-Layout score: **not available**.
-
-The original-screen directory intentionally contains only a provenance policy and public-source notes. Logged-in Suno screenshots were not retained, and public landing/sign-in screenshots are not the same state as the clone's Create, Results, Library, Song Detail and Actions captures. New server-mode S05 mobile, S06 Custom mobile, S08 desktop, S09 Library mobile and S11 Actions mobile captures exist, but they still have no valid matched original. The diff tool was therefore not run and no diff image was fabricated. See [diffs/README.md](./diffs/README.md).
-
-This does not block feature scoring. It does mean the report cannot claim that a switcher will find information in familiar positions. If a future reference is permissible, capture both applications at 1440 × 900 and 390 × 844 with the same data shape and run layout-mode `imgdiff.py`, which ignores brand colour.
-
-## Behavior differences
-
-| Flow | Original behavior from recon | Current clone behavior | Decision |
-| --- | --- | --- | --- |
-| F01 account to Create | Guest enters a prompt, signs in through several providers, then reaches Create | Public Music accepts direction without spending, invokes the existing sign-up handoff with a safe return path, retains the draft in session storage and hydrates authenticated Create. The shared gate now supports real Google, Apple, email, passkey and E.164 phone OTP paths; SMS remains environment-provider dependent. A concise private three-step explanation replaces a long forced tour | Keep the low-friction handoff; run one configured staging SMS delivery/expiry/rate-limit case before treating provider availability as operational evidence |
-| F02 Simple creation | Server-backed model selection, credit spend, shared/priority queue, two music candidates and advanced influence controls | Gated server UI loads entitlements, quotes, separately confirms an atomic pair and polls two candidates. ACE-Step 1.5 Advanced controls freeze Variety, style influence and excluded styles/instruments into the prompt snapshot, then dispatch them through the provider's documented `lm_temperature`, `lm_cfg_scale` and `lm_negative_prompt` fields. Default-preserving values and the potential guidance slowdown are explicit; the base model shows no fake controls. Expired quote, transient polling, partial refund, policy refusal, expired session and same-key network replay are verified; live migration/provider activation remains off | Fix: run staging database/provider acceptance before any flag rollout, then add cancellation and priority semantics |
-| F03 Custom creation | Lyrics, instrumental mode, styles, model and advanced influence controls | Authenticated drafts privately autosave exact lyrics, style, title and catalog target; disjoint tab edits merge and true same-field conflicts keep both values visible. Bounded whole-draft or exact selected-range requests save first and open unsent, priced Veyrnox Chat drafts, then return only for explicit review. ACE-Step 1.5 Custom freezes vocal versus instrumental mode into the exact saved-revision quote: vocals require ownership permission and dispatch saved lyrics, while instrumental dispatches the provider-documented marker and sends no retained lyrics. Both paths independently track two candidates. Base-model drafts remain no-spend | Keep explicit Send, Apply, mode, rights and quote boundaries; run disposable-database/provider acceptance before rollout and retain the base-model fail-closed fallback |
-| F04 Sounds | Focused one-shots plus optional seamless-loop generation with BPM/key direction | Music Sounds links only to the two admitted text-to-audio models. ElevenLabs Sound Effects v2 alone receives a schema-backed Seamless loop checkbox and exact `loop` boolean through generic Create; MMAudio cannot receive it. BPM and musical key remain prompt directions, not guaranteed structured controls | Keep the capability catalog-driven; migrate away from deprecated v2 only after the replacement exposes a verified equivalent loop contract |
-| F05 owned references | An authenticated creator uploads owned audio and attaches it to a creation request | Progressive disclosure reserves private MP3/WAV sources after immutable rights attestation. A staged Cover contract can use the exact current owned song version through a short-lived server-signed URL, while arbitrary browser URLs remain impossible | Run real database/R2 and billed provider acceptance before activating the catalog row or Cover gate |
-| F06 iterate song | More Actions exposes cover, extend, speed and reuse workflows | Accessible More Actions exposes separate rights-bound Cover, fixed 30-second tail Extend, exact-range Replace and owner-only Reuse actions beside lineage, Library organization, crop, fade and speed when their independent gates are enabled. Reuse copies only selected stored lyrics/style from one exact current generated version into the optimistic private Custom draft with no generation or spend. Variable/head/lyric Extend and non-generation reuse remain absent | Activate provider transforms only after billed provider/database/R2 acceptance; run Reuse stale-revision and two-owner database cases before its separate gate |
-| F07 replace section | Select a range, generate two alternates and commit one take | A rights-bound exact 1–30 second range on an owner/current source up to 60 seconds quotes two instrumental full-song branches, auditions both and commits one exact ready version idempotently while retaining its sibling and source | Run billed inpaint/database/R2 acceptance, then add regeneration and explicit restore-current controls |
-| F07 add section | Add a bounded section with prompt or lyrics without overwriting the source | A separate outpaint action freezes beginning/end, 10/20/30 seconds, style, optional structured lyrics and source/lyric rights into an exact two-credit pair; both outputs become immutable `add_section` branches. It explicitly does not claim middle insertion, beat counting or a seamless join | Run billed outpaint/database/R2 acceptance; add beat-count and middle-placement control only when supported by an admitted provider schema |
-| F07 add vocal/instrumental part | Add vocals to an instrumental or an instrumental part to an existing song | A disabled two-stage Mureka workflow remeasures one owner/current MP3 up to 10 MB and 120 seconds, freezes source rights plus exact vocal lyrics/lyric rights where applicable, then atomically debits a one-credit provider upload and six-credit generation. The signed upload callback advances the already-debited generation job; the owner receives a separate private part and the UI explicitly says it is not automatically mixed into the source | Run migration/R2/billed-provider acceptance for both modes and both failure stages before activation; retain separate-part semantics unless a verified provider returns a mixed full song |
-| F08 timeline edits | Crop, split, reorder, fade and remaster without overwriting the source | Gated PCM-WAV crop, fade, speed and deterministic remaster each render a distinct hashed canonical WAV child through zero-credit local jobs and immutable edit-source lineage. Remaster removes per-channel DC bias and uses one linked gain to a selected −3/−2/−1 dBFS peak without claiming compression, EQ or AI mastering. A bounded reorder splits once and moves section 2 before section 1 into another full-length child. MP3, unsupported WAV, arbitrary multi-section order and a timeline remain unavailable; the source stays recoverable | Run database/R2 replay acceptance, add a verified MP3 render path, then widen processing only through explicit measurable contracts |
-| F09 stem extraction | Separate vocals/instrumental or isolate one instrument plus its complement | The existing paid Mureka path returns an opaque private vocals/instrumental ZIP. A separate SAM Audio path freezes one allowlisted target, remeasures an owner/current MP3 or WAV up to 120 seconds, quotes 4/7/10/13 credits by started 30-second tier, and stores two owner-only WAV assets: isolated target and residual. Both warn that absent, ambiguous or blended parts may still spend credits | Run both workflows through disposable-database, real R2 and billed-provider acceptance; retain target/residual atomic settlement and do not call the nine-label target set an arbitrary custom-stem system |
-| F12 organize | Browse/like owned songs, multi-select and move/create personal workspaces, revisit owned uploads/stems, and recover removed songs | Gated authenticated Library adds list/grid views, durable private feedback, Liked, Uploads and Trash collections. Soft trash/restore locks the owner row, revision-checks opposite transitions and treats target-state retries as idempotent; restored songs retain workspace/version lineage. It creates private workspaces idempotently and moves full selections atomically. A song action can deliver one private stem ZIP, but a dedicated Stems collection and individual stem rows remain unavailable; migrations and rollout remain off | Fix: run source/feedback/lifecycle/stem/move concurrency and mixed-owner database/R2 acceptance, then canary the separate gates without broadening mutation privileges |
-| F15 playlists | Ordered collections, search, shuffle, pinning and playlist-conditioned inspiration | Gated authenticated Playlists creates private ordered collections of owned songs with atomic revision-checked replacement, durable mutation replay, selected/all-playlist search, shuffle and pinning. Inspiration is explicitly unavailable because no compatible model is admitted | Run concurrent replay/stale-revision/mixed-owner database acceptance and add continuous queue playback before any inspiration work |
-| F16 share/publish | Link-only, permissions and public publishing | Separate gated flows provide revocable hashed private links and policy/rights-attested public tracks on creator profiles. Public permissions and honest commercial eligibility are projected; unpublish fails closed | Run handle/publication races and real storage acceptance before rollout; comments and remix generation remain separate products |
-| F19 download | MP3/WAV/stems with plan quotas and retries | One gated exact-format flow quotes allowance before commitment, claims one version at most once per free/paid period, reuses one key after ambiguous signed-URL failure, discards expired quotes, and mints a five-minute URL only when an immutable asset is already MP3 or WAV. The separate paid stem request mints an owner-only five-minute ZIP attachment, but does not yet count individual stems against the parent allowance | Run database/R2 race and expiry acceptance; add stem allowance coupling and transcoding only through verified contracts |
-
-Behavior worth keeping:
-
-- One exact two-candidate quote and one atomic debit are clearer than an implicit spend.
-- Candidate failure/cancellation refunds are explicit per version.
-- The browser never calls a model provider directly.
-- The local preview states clearly that it is synthetic and cannot spend real credits.
-
-## Missing must-haves in build order
-
-### 1. Productionize the core creation spine
-
-- Public prompt-first Music landing is implemented and browser-verified.
-- Music model picker and a verified free/default model capability.
-- Instrumental choice is complete for the admitted contracts: the base model remains required-instrumental and Custom explicitly chooses vocals or instrumental output.
-- Independent input moderation before generation.
-- Complete Simple creation, server quote, two-candidate creation, queue/progress, daily credits, and Music-specific upgrade gates.
-
-The UI and backend proof are connected behind disabled gates. This increment is now primarily an isolated migration/provider acceptance and rollout task rather than another speculative UI build.
-
-### 2. Productionize Custom generation after durable drafts
-
-- Durable own-lyrics, style/tag drafts and optimistic conflict handling are implemented behind rollout gates.
-- Exact saved-revision binding, ownership attestation, moderation, quote and two-candidate confirmation are implemented for paid ACE-Step 1.5.
-- Run migration/provider acceptance with stale revisions, plan expiry and two-user isolation before enabling any gate.
-
-The provider-backed Variety, style-influence and exclusion controls are complete for ACE-Step 1.5. Do not expose remaining influence controls as decorative UI; controls remain catalog-driven.
-
-### 3. Complete the Library as the durable product hub
-
-- Run isolated acceptance and canary the implemented server-backed owned-song Library.
-- More Actions and immutable lineage foundations are implemented; keep unsupported actions absent.
-- Personal workspaces and single/batch movement.
-- Add actual non-destructive transform requests and later take lanes on the existing lineage model.
-- Cover, fixed tail Extend, exact-range Replace and rendered Crop are implemented behind disabled gates. Replace preserves both alternatives and commits one exact ready take without deleting its sibling or source. Exact one-line lyric replacement is implemented through the revision-safe Chat boundary.
-
-Operations must create versions and lineage edges; they must never overwrite the original.
-
-### 4. Add owned sources, rights, and paid transformations
-
-- Owned MP3/WAV admission, immutable rights evidence and measured plan duration limits are implemented behind disabled gates; run isolated database/R2 acceptance before rollout.
-- Commercial-rights projection.
-- Voice verification before reusable voice identity.
-- Run both implemented stem contracts—the exact vocals/instrumental ZIP and the target/residual pair—against a disposable database, real R2 and billed provider requests before activation.
-
-Rights attestations and source ownership checks come before provider submission, not after generation.
-
-### 5. Add private distribution before public community
-
-- Run isolated migration/R2 acceptance for the implemented Link-Only, copy-link, exact-format MP3/WAV and allowance contracts.
-- Publish song to profile through a separate policy decision.
-- Add commercial-rights projection before export or publication rollout.
-
-Broader multi-instrument stems, comments, remixes, feeds, hooks and creator graph remain later increments.
-
-## Lower-priority gaps
-
-All should/could rows remain in [features.csv](./features.csv), including collaboration, playlist inspiration and richer playback/search, speech, samples/mashups, Voices, custom models, cover art, My Taste, Studio, community and MCP integration. They are intentionally behind the five must-have increments above. Seven proprietary/network/brand/partnership rows remain `skip` and must not be treated as engineering backlog.
-
-## Top five things to build next
-
-1. Run isolated migration/R2 acceptance for the complete gated Simple, Library, lineage, source, distribution, publication and crop stack.
-2. Add a verified MP3 decode/render path, then regeneration and restore-current controls for the staged Replace Section branches.
-3. Add Music-specific upgrade gates and authoritative daily-credit renewal.
-4. Run stale-revision, rights, paid-plan and provider acceptance for the implemented ACE-Step 1.5 Custom generation path.
-5. Extend creator organization from the implemented private playlist core to albums, without coupling either to the public-feed recommendation network.
-
-Operational prerequisite: apply the full Music migration chain twice and run atomic-money, mixed-owner lineage/workspace and real-provider acceptance only in isolated staging. Keep every production rollout flag off until it passes.
-
-## Next command
-
-Build increment 40 raises the honest score to **47.0 / 100** with 12/43 must-haves complete and brings the Sounds area to 100%. Official ElevenLabs and fal schemas both define the admitted v2 endpoint's `loop` boolean as smooth looping, so generic Create now shows one Seamless loop checkbox only for that model and carries the exact boolean through public capabilities, shared transport validation, model validation and provider shaping without changing price. MMAudio receives no loop field; BPM and key remain prompt directions rather than fabricated controls. The full Music gate is 110/110 unit contracts, 47/47 browser journeys and a passing isolated production build. The project-wide suite passes 3,172 tests with one skip and one unrelated pre-existing nested-landmark failure; Reticle and the prior Craft `rebuild_check` connector are unavailable in this session, so neither verdict is claimed. All Music production gates remain off until migrated database/R2/provider acceptance. The product remains far below the threshold for `/replica-entrepreneur`.
-
-Build increment 41 raises the honest score to **47.6 / 100** and the Editing area to 51.9%. The local renderer now performs a real, bounded remaster: it measures and removes each PCM channel's DC offset, then applies one linked gain to a user-selected −3, −2 or −1 dBFS peak ceiling. Linked gain preserves the stereo image, duration and format; silence, compressed/float WAV and any undeclared ceiling fail closed. Migration `0279` admits one zero-credit local job, immutable `remaster` version, edit-source edge and exact replay receipt without enabling any production gate. F08-H2 proves the exact request, limitation copy, mobile layout, Axe and recoverable version 5. Verification passes 112/112 Music contracts, 47/47 browser journeys, targeted ESLint, `git diff --check` and the isolated production build. The project-wide suite passes 3,174 tests with one skip and the same unrelated pre-existing nested-landmark failure. Craft and Reticle connectors remain unavailable, so neither verdict is claimed. The product remains far below the threshold for `/replica-entrepreneur`.
-
-Build increment 42 raises the honest score to **47.9 / 100** and Editing to 55.8%. Official fal ACE-Step outpaint schema evidence supports explicit before/after seconds, tags and structured lyrics, so Add Section is a separate paid action rather than a renamed fixed Extend. It freezes one owner/current source, beginning/end, 10/20/30 seconds, style, optional structured lyrics and recording/lyric rights, then quotes two independently settled one-credit branches. Migration `0280` stages an inactive max-cost catalog row, strict prompt shape, exact provider payload and immutable `add_section` lineage behind `MUSIC_ADD_SECTION_ENABLED=false`. F07-H2 proves the request, quote, replay key, two playable outputs, version history, mobile layout and Axe. Verification passes 117/117 Music contracts, 48/48 browser journeys, focused ESLint, `git diff --check` and the production build. The project-wide suite passes 3,179 tests with one skip and the same unrelated nested-landmark failure. Middle insertion, beat counting and live billed database/R2/provider acceptance remain missing, so the row stays partial. Craft and Reticle connectors remain unavailable; neither verdict is claimed.
-
-Build increment 43 raises the honest score to **48.3 / 100** and Stems to 43.8%. Official fal SAM Audio evidence explicitly returns an isolated target and residual at $0.05 per started 30 seconds. The new owner-only action freezes one of nine bounded target labels, rights and an exact current MP3/WAV up to 120 seconds, then quotes 4/7/10/13 credits from the measured duration. Migration `0281` stages the provider row inactive, serializes shared stem concurrency, binds one replay-safe debit and dispatches the documented text-guided WAV payload. The signed fal callback copies both provider URLs to deterministic R2 keys and a feature-specific transaction binds both assets before the job becomes stored. F09-H2 proves the exact piano request, 61.2-second ten-credit quote, confirmation key, ready polling, two playable private WAVs, mobile layout and Axe. Verification passes 122/122 Music contracts, 49/49 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,184 tests with one skip and the same unrelated nested-landmark failure. Live billed database/R2/provider acceptance and arbitrary instrument prompting remain missing, so the row stays partial. All production gates remain off; Craft and Reticle connectors remain unavailable and neither verdict is claimed.
-
-Build increment 44 raises the honest score to **48.9 / 100** and Editing to 63.5%. Official Mureka schemas require a general-purpose MP3 upload before `v8/generate/track`, which can generate exactly one vocal or instrumental part from that upload. The disabled workflow therefore freezes one measured owner/current MP3, direction, mode, source rights and exact lyrics/lyric rights for vocals, then quotes and atomically debits one upload credit plus six generation credits. Only the upload dispatches initially; its signed callback stores the opaque upload id into the already-debited track job and wakes that second dispatch. Upload failure or malformed output refunds both stages, while a later generation failure retains the completed one-credit upload and refunds its six-credit job. F07-H3 proves both mode controls, exact vocal request, seven-credit disclosure, one replay key, ready polling, separate private audio, mobile layout and Axe. Verification passes 130/130 Music contracts, 50/50 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,192 tests with one skip and the same unrelated nested-landmark failure. Live migrated-database/R2/billed-provider acceptance and automatic mixing remain missing, so both feature rows stay partial. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 45 raises the honest score to **49.0 / 100** and Creation to 63.3%. The same official Mureka track schema documents `vocal_gender` as an optional `female` or `male` preference valid only for vocal generation. The vocal-part dialog now offers Automatic, Female range and Male range, freezes the selection in the quote and provider payload, clears it when switching to instrumental and explicitly says the control shapes range rather than selecting or cloning a person's voice. Strict parsing rejects unknown values and any non-automatic instrumental request. F07-H3 proves the exact `female` body while retaining mode switching, rights, quote, separate output, mobile layout and Axe. Verification passes 130/130 Music contracts, the focused browser journey, focused ESLint, `git diff --check` and the isolated production build. The row stays partial because the control is not available across general song creation and billed provider acceptance remains missing. All rollout gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 46 raises the honest score to **50.5 / 100** and Studio to 12.9%. A new independently branded, disabled-by-default Studio entry opens one owner/current song into a dedicated session workspace without inventing a durable project record. The workspace operates on the real private audio URL and supports play/pause, return-to-start, seek, loop, follow-playhead, mute, volume, show/hide, bounded tempo/time-signature guides, wide/dense grid contrast and an audible tempo-bound metronome. A read-only dock exposes immutable versions; explicit boundary copy says tempo does not stretch audio and that save, multitrack/MIDI, recording, effects, automation and export do not exist. F21-H1 proves the owner route, controls, unchanged return path, mobile overflow and Axe. Verification passes 133/133 Music contracts, 51/51 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,195 tests with one skip and the same unrelated nested-`main` failure. A Playwright trace identified the prior intermittent strict-locator failures as a hidden Next.js streamed Suspense payload outside `#main`; scoping assertions to the real application landmark preserves duplicate-visible-UI detection and the clean full rerun. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 47 raises the honest score to **50.8 / 100** and Studio to 15.7%. Official Studio recording guidance establishes explicit audio-input arming plus 1/2/4-bar count-in or pre-roll, while latency calibration remains a separate measurement. The local recorder therefore requests permission only after Prepare input, enumerates named audio devices, reopens the exact selected device, supports none/count-in/project-pre-roll lead-in modes, caps capture at 60 seconds, decodes the browser container through Web Audio and writes a real 16-bit PCM WAV with the existing tested encoder. Up to five object-URL takes remain in the tab with start-position labels, playback, removal and download; none is uploaded, aligned, mixed or persisted, and no latency-correction claim is made. F21-H1/F22-H1 proves zero permission before intent, exact USB constraint, recording, WAV lane/download, mobile overflow and Axe. Verification passes 134/134 Music contracts, 51/51 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,196 tests with one skip and the same unrelated nested-`main` failure. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 48 raises the honest score to **51.4 / 100** and Studio to 21.4%. Official Studio MIDI guidance distinguishes note tracks, piano-roll pitch/timing/velocity editing, the A–semicolon home-row map with Z/X octave and C/V velocity, and permission-gated external Web MIDI with a Safari limitation. The session track implements those exact bounded layers: explicit `requestMIDIAccess({sysex:false})`, selected note-on/off input, local capture from the current playhead, a 64-note editable grid, sixteenth-note quantization and audible sine/triangle/saw/square oscillator playback. It explicitly is not a wavetable synth, MIDI Learn/CC/transport system, chord/arpeggiator, pitch-bend/modulation editor, generated cover or saved project. F21-H1/F22-H1 proves zero MIDI permission before intent, exact Test Keys selection, musical-typing and hardware note capture, edit/quantize/playback, mobile overflow and Axe. Verification passes 135/135 Music contracts, 51/51 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,197 tests with one skip and the same unrelated nested-`main` failure. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 49 raises the honest score to **51.7 / 100** and Studio to 24.3%. Official Studio guidance establishes ordered real-time effects with reorder, independent bypass and expanded parameters, while its automation guide starts with track volume and defines live playhead-following values. After explicit intent, the session attaches the real song media element exactly once to a Web Audio graph containing peaking EQ, dynamics compression, waveshaping distortion, feedback delay and generated-impulse convolution reverb. Reordering or bypassing rebuilds the audible route; a bounded 16-point straight-line volume lane multiplies the manual track level at the live playhead through the same master gain. The UI explicitly excludes gate, sidechain, presets, custom chat plugins, curves, pan/effect lanes, persistence, offline rendering and effect-bearing export. F21-H1/F22-H1 proves zero media-source attachment before intent, one attachment afterward, live parameter/bypass state and an exact 0.24 master target from 0.6 manual volume × 0.4 automation, plus mobile overflow and Axe. Verification passes 136/136 Music contracts, 51/51 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,198 tests with one skip and the same unrelated nested-`main` failure. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 50 raises the honest score to **52.1 / 100** and Studio to 27.1%. Official clip guidance groups volume, semitone/cents pitch, loop, reverse and time stretching while the arrangement editor exposes trim and real-time pitch/speed controls. The bounded local renderer decodes the real current clip only after intent, selects at most 60 seconds, reverses samples, applies audible minus/plus 12-semitone and minus/plus 100-cent linear resampling, renders measured fade-in/out envelopes with linear, exponential or logarithmic shapes, and encodes a new PCM WAV for audition/download. Data-backed test sources decode locally without violating CSP; ordinary same-origin/R2 sources retain the permitted fetch path. The UI explicitly says resampling links pitch and speed and excludes pitch-preserving stretch, formant, warp markers, quantize, loop flags, clip-info tabs, persistence and transport replacement. F21-H1/F22-H1 proves the +1-semitone/+25-cent reversed exponential-fade render beside all prior Studio paths, mobile overflow and Axe. Verification passes 137/137 Music contracts, 51/51 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,199 tests with one skip and the same unrelated nested-`main` failure. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 51 raises the honest score to **52.2 / 100** and Studio to 28.6%. The local rack now models effect instances rather than one shared parameter set per type. Copy captures one immutable parameter snapshot; paste and direct duplicate allocate new ids and independent Web Audio processors; later edits diverge, move changes audible order, remove rebuilds the chain and a ten-instance cap bounds work. Identity changes dispose and rebuild only the rack while retaining the one original `MediaElementAudioSourceNode`; parameter-only changes update nodes in place. F21-H1/F22-H1 proves an EQ copied at +6 dB, pasted and changed independently to −4 dB, moved, duplicated again with +6 dB retained, multiple real biquad allocations and exactly one media-source attachment, plus every prior Studio action, mobile overflow and Axe. Cross-track drag/drop, keyboard shortcuts, persistence and library reuse remain explicitly absent. Verification passes 137/137 Music contracts, 51/51 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,199 tests with one skip and the same unrelated nested-`main` failure. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 52 raises the honest score to **52.4 / 100** and Studio to 30.0%. Official recording guidance defines latency calibration as brief output clicks measured through the recording input. After explicit permission, the session enumerates and reopens one exact input with echo cancellation, noise suppression and auto gain disabled; a Web Audio analyser observes three scheduled 1.2 kHz clicks inside bounded return windows and averages only detected peaks. The result reports milliseconds and detected-click confidence, while no-signal and permission failures cleanly stop without a value. Every animation frame, timeout, input node, stream track and AudioContext is released. The UI expressly states that the session diagnostic neither persists nor shifts or aligns recorded takes and cannot distinguish device buffering from acoustic travel. F21-H1/F22-H1 proves exact USB selection, one analyser, 3/3 return detection and a measured result beside all prior Studio paths, mobile overflow and Axe. Verification passes 138/138 Music contracts, 51/51 browser journeys, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,200 tests with one skip and the same unrelated nested-`main` failure. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 53 raises the honest score to **52.7 / 100** and Studio to 32.9%. Official Studio guidance describes two wavetable oscillators, continuous table scanning, filter/envelope/LFO shaping, factory presets and a playable keyboard. The session MIDI track now instantiates two independent harmonic `PeriodicWave` sources per voice, morphs their gains into a resonant low-pass filter, schedules an amplitude attack/release and routes a sine LFO to filter cutoff. Three bounded presets and direct table/morph/filter/envelope/LFO controls feed live typing, selected Web MIDI, sequenced notes and an eight-key floating mouse/touch panel; polyphony is capped at 12 voices and cleanup stops every source. The UI explicitly excludes uploaded or captured tables, multiple auxiliary envelopes, a modulation matrix, glide/detune/mono modes, MIDI Learn, chat patch design, generated covers, persistence and true cross-display plugin windows. F21-H1/F22-H1 proves exact preset values, custom morph state, floating-key playback and at least ten real `PeriodicWave` allocations beside all prior Studio paths, mobile overflow and Axe. Verification passes 138/138 Music contracts, the impacted production-mode browser journey (1/1) while the unchanged complete gate remains 51/51 from Increment 52, focused ESLint, `git diff --check` and the isolated production build. The project suite passes 3,200 tests with one skip and the same unrelated nested-`main` failure. All production gates remain off; Craft and Reticle connectors are unavailable and neither verdict is claimed.
-
-Build increment 54 raises the honest score to **53.3 / 100** and Creation to 65.4%. Six original, allowlisted Veyrnox seed records now drive a searchable and mood-filtered Discover page with project-owned cover art and playable 12-second procedural Web Audio sketches. Each card hands one canonical recipe to Create, where the selected cover is attached and the creator's new direction stays separate and bounded before the existing exact quote and two-candidate confirmation. The preview recording is never copied or represented as audio conditioning. A driven browser journey proved cover rendering, preview playback, handoff, direction entry and quote; it also exposed and repaired an initial public-asset route collision. Verification passes 15 focused contracts, targeted ESLint with zero errors, `git diff --check` and the isolated production build. Reticle's browser SDK could not reach an absent websocket daemon and its CLI returned no verdict, so no Reticle pass is claimed. Personalized ranking, public submissions, engagement and true audio sampling remain absent, and Suno content remains explicitly excluded.
+1. Close the remaining core creation and billing partials with isolated migration/provider acceptance; keep all production gates off.
+2. Finish owner Library durability and non-destructive editing proofs before expanding public or collaborative surfaces.
+3. Add only evidence-backed owned-reference, download and stem capabilities with explicit rights and exact quotes.
+4. Complete identity safety, including independent voice verification, before reusable voice features.
+5. Address should/could rows after must-haves, while preserving the clean-room exclusions above.

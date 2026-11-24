@@ -3,7 +3,8 @@ import { musicRuntimeFlag } from '../../../../../lib/musicRuntime.js';
 import { readFreshMusicCatalog } from '../../../../../lib/publicCatalog.js';
 import {
     MUSIC_BEAT_MODEL_ID, MUSIC_CRUN_CONTRACT, MUSIC_CRUN_JSON_MAX_BYTES, MUSIC_MODEL_IDS,
-    musicBeatAiEnabled, musicGenerationEnabled, musicPromptPolicy, musicRpcStatus, parseMusicQuote, publicMusicError,
+    musicBeatAiEnabled, musicDailyCreditsEnabled, musicGenerationEnabled, musicPromptPolicy, musicRpcStatus,
+    parseMusicQuote, publicMusicError,
     readMusicJson, validMusicAuthId,
 } from '../../../../../lib/musicBackend.js';
 
@@ -81,10 +82,12 @@ export async function POST(request) {
     const policy = musicPromptPolicy(policyInput);
     if (!policy.ok) return reply({ error: policy.error, policy_version: policy.version }, 400);
 
+    const allowanceCapable = musicDailyCreditsEnabled() && input.dailyAllowanceCapable === true
+        && providerContract === MUSIC_CRUN_CONTRACT && requestedModel !== MUSIC_BEAT_MODEL_ID;
     let result;
     try {
         result = input.mode === 'custom'
-            ? await rpc('music_create_custom_quote', {
+            ? await rpc(allowanceCapable ? 'music_create_custom_quote_with_daily_allowance' : 'music_create_custom_quote', {
                 p_auth_id: authId,
                 ...(providerContract ? {
                     p_provider_contract: providerContract,
@@ -103,7 +106,7 @@ export async function POST(request) {
                     p_exclude_styles: input.excludeStyles,
                 } : {}),
             }, cfg)
-            : await rpc('music_create_quote', {
+            : await rpc(allowanceCapable ? 'music_create_quote_with_daily_allowance' : 'music_create_quote', {
                 p_auth_id: authId,
                 p_prompt: input.prompt,
                 p_title: input.title,
@@ -139,7 +142,12 @@ export async function POST(request) {
         provider_contract: result.provider_contract,
         output_count: 2,
         credits_per_candidate: result.unit_credits,
-        total_credits: result.total_credits,
+        total_credits: result.charged_credits ?? result.total_credits,
+        ...(allowanceCapable ? {
+            list_credits: result.list_credits ?? result.total_credits,
+            daily_free_candidates: result.daily_free_candidates ?? 0,
+            ...(result.daily_allowance_reset_at ? { daily_allowance_reset_at: result.daily_allowance_reset_at } : {}),
+        } : {}),
         balance: result.balance,
         balance_after: result.balance_after,
         affordable: result.affordable === true,

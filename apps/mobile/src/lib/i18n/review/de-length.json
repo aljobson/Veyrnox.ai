@@ -3780,6 +3780,12 @@
     "ratio": 2
   },
   {
+    "id": "music.create.dailyAllowanceExhausted",
+    "english": "Daily allowance used for today.",
+    "translation": "Das tägliche Kontingent ist für heute aufgebraucht.",
+    "ratio": 1.65
+  },
+  {
     "id": "music.create.locked_plan",
     "english": "This model requires a paid plan.",
     "translation": "Dieses Modell erfordert einen kostenpflichtigen Tarif.",

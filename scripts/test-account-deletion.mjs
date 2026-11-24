@@ -232,7 +232,7 @@ try {
 
     // 10. Drift guard. Every foreign key to a person's row is classified here on purpose, so a new table
     // that points at users forces a decision about deleting it, keeping it, or refusing the account.
-    const ERASED = new Set(['music_mixdown_reservations', 'speech_gate_daily', 'speech_analyses', 'speech_analysis_cache', 'speech_source_probes','support_intake_receipts', 'support_tickets', 'support_messages', // tombstoned by the deleted_at trigger (0432)
+    const ERASED = new Set(['music_mixdown_reservations', 'music_daily_allowance_reservations', 'speech_gate_daily', 'speech_analyses', 'speech_analysis_cache', 'speech_source_probes','support_intake_receipts', 'support_tickets', 'support_messages', // tombstoned by the deleted_at trigger (0432)
         'chat_threads', 'chat_folders', 'chat_personas', 'chat_closed_sends', 'cinema_profiles', 'cinema_memberships',
         'cinema_creator_applications', 'cinema_creator_follows', 'cinema_series_follows', 'cinema_saved_titles', 'cinema_retention_requests', 'cinema_watch_resume',
         'referral_codes', 'upload_reservations', 'social_uploads', 'film_library_masters', 'editor_library_renders',
@@ -263,6 +263,7 @@ try {
         'user_ai_controls', 'ai_limit_policy', // operator AI switch/limit and reason, no customer content; a tombstoned account stays switched off (ADR-0327)
         // money and its audit trail
         'credit_balances', 'ledger_entries', 'top_ups', 'top_up_flagged_orders', 'account_actions', 'referral_rewards', 'referrals',
+        'music_daily_allowance_claims', // same-day budget facts retained with user_id anonymized
         'store_customers', 'provider_spend_reservations', 'model_free_allowance_claims', 'account_deletions', 'privacy_export_requests',
         // safety and moderation records
         'content_appeals', 'content_reports', 'cinema_unlocks', 'cinema_passes', 'cinema_pass_plays', 'cinema_free_plays',

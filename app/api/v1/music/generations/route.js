@@ -91,6 +91,8 @@ export async function POST(request) {
             ordinal: index + 1, label: index === 0 ? 'A' : 'B', job_id: jobId, state: 'queued',
         })),
         balance_after: result.balance_after,
+        ...(result.daily_free_candidates !== undefined
+            ? { daily_free_candidates: result.daily_free_candidates, charged_credits: result.charged_credits } : {}),
         ...(result.idempotent ? { idempotent: true } : {}),
     }, result.idempotent ? 200 : 202);
 }
