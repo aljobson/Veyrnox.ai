@@ -65,6 +65,7 @@ test('a stale A write cannot be mistaken for B state', async () => {
     };
     const store = createPersistentAudioQueueStore(storage, () => mockCacheOwner);
     const pending = store.save('account-a', envelope());
+    await Promise.resolve();
     mockCacheOwner = 'account-b'; store.ownerChanged(); release();
     await expect(pending).resolves.toBe(false);
     expect(values.size).toBe(0);
