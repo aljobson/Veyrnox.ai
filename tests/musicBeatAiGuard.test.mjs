@@ -78,3 +78,46 @@ test('missing/foreign quotes preserve the RPC NOT_FOUND response; quote-select e
   flags(false); fail = 'music_generation_quotes';
   assert.equal((await submit(request(body))).status, 502); assert.equal(calls.length, 0);
 });
+
+test('MCP confirmation always reads the owned quote and refuses stale cost before admission', async () => {
+  flags(true);
+  rows = [{ model_id: 'ace-step-1.5', consumed_at: null, provider_contract: 'crun-suno-v1', charged_credits: 8 }];
+  const confirmed = { ...body, provider_contract: 'crun-suno-v1', confirmed_credits: 8, user_approved: true };
+  const accepted = await submit(request(confirmed));
+  assert.equal(accepted.status, 202);
+  assert.deepEqual(selects.map(({ table }) => table), ['users', 'music_generation_quotes']);
+  assert.equal(selects[1].args.columns, 'model_id,consumed_at,provider_contract,charged_credits');
+  assert.equal(calls[0].name, 'music_submit_pair');
+
+  flags(true);
+  rows = [{ model_id: 'ace-step-1.5', consumed_at: null, provider_contract: 'crun-suno-v1', charged_credits: 9 }];
+  const stale = await submit(request(confirmed));
+  assert.equal(stale.status, 409);
+  assert.deepEqual(await stale.json(), {
+    error: 'credit_confirmation_mismatch', confirmed_credits: 8, expected_credits: 9,
+  });
+  assert.equal(calls.length, 0);
+
+  flags(true);
+  rows = [{ model_id: 'ace-step-1.5', consumed_at: null, provider_contract: 'fal-ace-v1', charged_credits: 8 }];
+  const contractStale = await submit(request(confirmed));
+  assert.equal(contractStale.status, 409);
+  assert.deepEqual(await contractStale.json(), { error: 'quote_stale' });
+  assert.equal(calls.length, 0);
+
+  flags(true);
+  const missing = await submit(request(confirmed));
+  assert.equal(missing.status, 409);
+  assert.deepEqual(await missing.json(), { error: 'quote_stale' });
+  assert.equal(calls.length, 0);
+});
+
+test('a matching consumed MCP quote still reaches the atomic idempotent replay path', async () => {
+  flags(true);
+  rows = [{ model_id: 'ace-step-1.5', consumed_at: '2026-11-24T00:00:00Z', provider_contract: 'crun-suno-v1', charged_credits: 8 }];
+  rpcResult = { ok: true, request_id: uuid(3), job_ids: [], state: 'running', idempotent: true, provider_contract: 'crun-suno-v1' };
+  const response = await submit(request({ ...body, provider_contract: 'crun-suno-v1', confirmed_credits: 8, user_approved: true }));
+  assert.equal(response.status, 200);
+  assert.equal(calls[0].name, 'music_submit_pair');
+  assert.equal((await response.json()).idempotent, true);
+});
