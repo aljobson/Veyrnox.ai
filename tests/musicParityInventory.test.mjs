@@ -13,11 +13,17 @@ import { MUSIC_RUNTIME_FLAG_NAMES, musicRuntimeFlag } from '../lib/musicRuntime.
 test('the frozen Music parity inventory recomputes the evidence-qualified current score and target', () => {
   const current = calculateMusicParity('current');
   const target = calculateMusicParity('target');
-  assert.deepEqual(current.areas, { creation: 82.5, editing: 72.5, daw: 67.5, library: 75, community: 60, ios: 52.5 });
+  assert.deepEqual(current.areas, { creation: 82.5, editing: 72.5, daw: 67.5, library: 75, community: 65, ios: 52.5 });
   assert.deepEqual(target.areas, { creation: 90, editing: 85, daw: 97.5, library: 100, community: 100, ios: 93 });
-  assert.equal(current.total, 71.125);
+  assert.equal(current.total, 71.625);
   assert.equal(target.total, 93.3);
   assert.equal(Object.values(MUSIC_PARITY_AREA_WEIGHTS).reduce((sum, weight) => sum + weight, 0), 100);
+});
+
+test('Music MCP is credited only after its quote, approval, status, signed-asset and playlist contract ships', () => {
+  const row = MUSIC_PARITY_ROWS.find(item => item.id === 'community.music-mcp');
+  assert.equal(row?.current, 'shipped');
+  assert.equal(row?.proof, 'mcp_music_contract');
 });
 
 test('row weights, statuses and static runtime flag coverage cannot drift', () => {
