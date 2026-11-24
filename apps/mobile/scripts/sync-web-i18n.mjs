@@ -23,12 +23,14 @@ function readImports(source, path) {
     const text = source.replace(/^import\s*\{([^}]*)\}\s*from\s*'(\.{1,2}\/[^']+\.mjs)';[ \t]*\r?\n?/gm, (_match, names, spec) => {
         const file = resolve(dirname(path), spec);
         const body = readFileSync(file, 'utf8');
-        if (/^import\s/m.test(body)) throw new Error(`${file}: a helper imported by a catalog cannot import anything`);
+        if (/^\s*import\b|[^.\w$]import\s*\(/m.test(body)) throw new Error(`${file}: a helper imported by a catalog cannot import anything`);
         const exported = [...body.matchAll(/^export (?:const|function) (\w+)/gm)].map(([, name]) => name);
         const helper = new Function(`${body.replace(/^export (?=const|function)/gm, '')}\nreturn { ${exported.join(', ')} };`)();
-        for (const name of names.split(',').map(part => part.trim()).filter(Boolean)) {
+        for (const part of names.split(',').map(entry => entry.trim()).filter(Boolean)) {
+            const [, name, alias = name] = part.match(/^(\w+)(?:\s+as\s+(\w+))?$/) ?? [];
+            if (!name) throw new Error(`${file}: cannot read the import binding "${part}"`);
             if (!Object.hasOwn(helper, name)) throw new Error(`${file} does not export ${name}`);
-            bindings[name] = helper[name];
+            bindings[alias] = helper[name];
         }
         return '';
     });

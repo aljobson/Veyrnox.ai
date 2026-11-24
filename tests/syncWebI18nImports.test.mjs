@@ -42,3 +42,18 @@ test('every real web catalog loads through the same reader', () => {
     assert.ok(catalog['mcp.lead.current'], `${code} carries the shared Music MCP copy`);
   }
 });
+
+test('a helper with a dynamic import is refused, and `as` renames work', () => {
+  const dir = fixture({
+    'dyn.mjs': "export const A = 1;\nconst p = import('./runtime.mjs');\n",
+    'dyn-cat.mjs': "import { A } from './dyn.mjs';\nexport default { A };\n",
+    'ren.mjs': "export const FOO = { 'k': 'v' };\n",
+    'ren-cat.mjs': "import { FOO as bar } from './ren.mjs';\nexport default { ...bar };\n",
+    'missing-cat.mjs': "import { NOPE as x } from './ren.mjs';\nexport default {};\n",
+  });
+  try {
+    assert.throws(() => readCatalog(join(dir, 'dyn-cat.mjs')), /cannot import/);
+    assert.deepEqual(readCatalog(join(dir, 'ren-cat.mjs')), { k: 'v' });
+    assert.throws(() => readCatalog(join(dir, 'missing-cat.mjs')), /does not export NOPE/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
