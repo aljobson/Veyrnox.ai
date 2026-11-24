@@ -44,6 +44,7 @@ export default async function sitemap() {
     ...videoTemplatePaths.map(path => page(path, 'monthly', 0.5)),
     ...publishedImageTemplates().map(t => page(`/presets/${t.id}`, 'monthly', 0.5)),
     page('/models', 'weekly', 0.8),
+    page('/editors', 'monthly', 0.8),
     page('/tools', 'weekly', 0.7),
     page('/guides', 'monthly', 0.6),
     ...GUIDES.map((g) => page(`/guides/${g.id}`, 'monthly', 0.5)),
