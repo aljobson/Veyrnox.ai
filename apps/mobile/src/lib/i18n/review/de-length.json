@@ -5208,6 +5208,24 @@
     "ratio": 1.64
   },
   {
+    "id": "music.lyricAssistant.profilesError",
+    "english": "Could not load your Lyricists. Try again.",
+    "translation": "Deine Songtexter konnten nicht geladen werden. Versuche es erneut.",
+    "ratio": 1.61
+  },
+  {
+    "id": "music.lyricAssistant.retry",
+    "english": "Try again",
+    "translation": "Erneut versuchen",
+    "ratio": 1.78
+  },
+  {
+    "id": "music.lyricAssistant.emptyDraft",
+    "english": "No lyrics yet.",
+    "translation": "Noch kein Songtext vorhanden.",
+    "ratio": 2.07
+  },
+  {
     "id": "studioAssistant.value_on",
     "english": "on",
     "translation": "einschalten",

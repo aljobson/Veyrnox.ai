@@ -34,9 +34,8 @@ const mode = async (value: string) => {
 };
 const customVocal = async () => {
     await mode('custom');
-    const instrumental = root.container.queryAll(n => n.props.accessibilityLabel === t('music.create.instrumental')
-        && typeof n.props.onValueChange === 'function')[0];
-    if (instrumental?.props.value) await act(async () => instrumental.props.onValueChange(false));
+    const flow = getMusicCreateSession(mockApi as unknown as ApiClient);
+    await act(async () => { await flow.loadDraft(); flow.edit({ instrumental: false }); });
 };
 const baseResponse = async (path: string, init?: RequestInit): Promise<unknown> => {
     if (path.endsWith('/entitlements')) return entitlements;

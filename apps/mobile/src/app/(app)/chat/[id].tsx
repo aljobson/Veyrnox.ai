@@ -36,7 +36,7 @@ import { ERROR_TEXT } from '../../../lib/chatErrorText';
 import { ensureOnline, OFFLINE_PAID_MESSAGE, OfflineError } from '../../../lib/network';
 import { Text, TextField, Button, Icon, useThemedStyles } from '../../../components/ui';
 import { latestServerMusicLyricProposal, musicLyricChatSeed, musicLyricProposalLimit, stageMusicLyricProposal } from '../../../lib/music/lyricAssistantHandoff';
-import { conversationStyles } from './conversationStyles';
+import { conversationStyles } from '../../../components/chat/ConversationStyles';
 export default function Conversation() {
     const styles = useThemedStyles(conversationStyles);
     const { id, starter, asset, prompt, lyricHandoff } = useLocalSearchParams<{ id: string; starter?: string; asset?: string; prompt?: string; lyricHandoff?: string }>();

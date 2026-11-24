@@ -1,5 +1,5 @@
-import { MIN_TARGET } from '../../../lib/a11y';
-import { themedStyles } from '../../../components/ui';
+import { MIN_TARGET } from '../../lib/a11y';
+import { themedStyles } from '../ui';
 
 export const conversationStyles = themedStyles((p) => ({
     field: { flex: 1 },
