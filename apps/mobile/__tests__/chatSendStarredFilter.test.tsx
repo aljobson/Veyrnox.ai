@@ -5,14 +5,16 @@ import Conversation from '../src/app/(app)/chat/[id]';
 import { appCache, bindCacheUser, wipeCache } from '../src/lib/appCache';
 import { createMemoryStorage } from '../src/lib/cache';
 import { t } from '../src/lib/i18n';
+import { bindMusicLyricThread, MUSIC_LYRIC_BEGIN, MUSIC_LYRIC_END, resetMusicLyricHandoffsForTest, selectMusicLyricPersona, stageMusicLyricHandoff } from '../src/lib/music/lyricAssistantHandoff';
 
-const mockRouter = { push: jest.fn(), replace: jest.fn() };
+const mockRouter = { push: jest.fn(), replace: jest.fn(), dismissTo: jest.fn() };
+let mockParams: Record<string, string> = { id: 'thread' };
 const mockApi = { request: jest.fn() };
 let mockGeneration = 0;
 const mockChat = { getThread: jest.fn(), listModelsWithLimits: jest.fn(), listModels: jest.fn(), updateThread: jest.fn(), sendMessage: jest.fn(), createThread: jest.fn(), closeSend: jest.fn(), getJob: jest.fn() };
 jest.mock('expo-crypto', () => ({ randomUUID: () => '12345678-1234-1234-1234-123456789abc' }));
 jest.mock('react-native-safe-area-context', () => ({ ...jest.requireActual('react-native-safe-area-context'), useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => mockRouter, useLocalSearchParams: () => ({ id: 'thread' }) }));
+jest.mock('expo-router', () => ({ Stack: { Screen: () => null }, useRouter: () => mockRouter, useLocalSearchParams: () => mockParams }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: mockApi, generation: mockGeneration }) }));
 jest.mock('../src/lib/chat', () => ({ ...jest.requireActual('../src/lib/chat'), chatApi: () => mockChat }));
 jest.mock('../src/lib/chatLibrary', () => ({ ...jest.requireActual('../src/lib/chatLibrary'), fetchPersonas: async () => ({ personas: [] }) }));
@@ -36,12 +38,13 @@ const press = async (label: string) => { await act(async () => control(label).pr
 
 beforeEach(async () => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true; jest.clearAllMocks(); mockGeneration = 0;
+    mockParams = { id: 'thread' }; resetMusicLyricHandoffsForTest();
     [mockApi.request, ...Object.values(mockChat)].forEach(mock => mock.mockReset());
     await wipeCache(appCache, docs); await bindCacheUser('A', appCache, storage, docs); root = createRoot();
     mockApi.request.mockResolvedValue({ enabled: true, left: { m1: 2 } });
     mockChat.listModelsWithLimits.mockResolvedValue({ models: [model], max_attachments: 4 });
 });
-afterEach(async () => { await act(async () => root.unmount()); });
+afterEach(async () => { await act(async () => root.unmount()); resetMusicLyricHandoffsForTest(); });
 
 test('sending from starred replies reveals the new user and pending assistant messages', async () => {
     let finish!: (result: object) => void;
@@ -63,4 +66,37 @@ test('sending from starred replies reveals the new user and pending assistant me
     expect(control('You: New question')).toBeDefined();
     expect(control(`Assistant: ${t('chat.writing')}`)).toBeDefined();
     await act(async () => finish({}));
+});
+test('a bound completed Lyricist reply returns to the existing Music screen and keeps its one-time seed stable', async () => {
+    const token = stageMusicLyricHandoff({ draftId: null, draftRevision: 0, sourceLyrics: 'Old words', lyricLimit: 3000, request: 'Make it vivid.' })!;
+    selectMusicLyricPersona(token, 'persona'); bindMusicLyricThread(token, 'persona', 'thread');
+    mockParams = { id: 'thread', lyricHandoff: token };
+    mockChat.getThread.mockResolvedValue({ ...loaded, messages: [
+        { id: 'user', role: 'user', content: 'Request' },
+        { id: 'assistant', role: 'assistant', status: 'complete', credits: 2,
+            content: `${MUSIC_LYRIC_BEGIN}\nNew words\n${MUSIC_LYRIC_END}` },
+    ] });
+    await act(async () => root.render(<Conversation />));
+    expect(control(t('chat.composer.message')).props.value).toContain('Make it vivid.');
+    resetMusicLyricHandoffsForTest();
+    await act(async () => root.render(<Conversation />));
+    expect(control(t('chat.composer.message')).props.value).toContain('Make it vivid.');
+    // Re-stage for the return action because clearing above deliberately invalidated the first token.
+    const returnToken = stageMusicLyricHandoff({ draftId: null, draftRevision: 0, sourceLyrics: 'Old words', lyricLimit: 3000, request: 'Make it vivid.' })!;
+    selectMusicLyricPersona(returnToken, 'persona'); bindMusicLyricThread(returnToken, 'persona', 'thread');
+    mockParams = { id: 'thread', lyricHandoff: returnToken };
+    await act(async () => { root.unmount(); root = createRoot(); root.render(<Conversation />); });
+    await press(t('music.lyricAssistant.reviewInMusic'));
+    expect(mockRouter.dismissTo).toHaveBeenCalledWith({ pathname: '/music/create', params: { lyricHandoff: returnToken } });
+});
+test('a Music token bound to another thread never seeds or offers return', async () => {
+    const token = stageMusicLyricHandoff({ draftId: null, draftRevision: 0, sourceLyrics: 'Old words', lyricLimit: 3000, request: 'Make it vivid.' })!;
+    selectMusicLyricPersona(token, 'persona'); bindMusicLyricThread(token, 'persona', 'thread');
+    mockParams = { id: 'other-thread', lyricHandoff: token };
+    mockChat.getThread.mockResolvedValue({ ...loaded, thread: { ...loaded.thread, id: 'other-thread' }, messages: [
+        { id: 'assistant', role: 'assistant', status: 'complete', credits: 2, content: `${MUSIC_LYRIC_BEGIN}\nNew\n${MUSIC_LYRIC_END}` },
+    ] });
+    await act(async () => root.render(<Conversation />));
+    expect(control(t('music.lyricAssistant.reviewInMusic'))).toBeUndefined();
+    expect(control(t('chat.composer.message')).props.value).toBe('');
 });

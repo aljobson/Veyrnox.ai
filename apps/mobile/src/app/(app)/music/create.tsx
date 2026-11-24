@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Switch, View } from 'react-native';
 import { Button, SegmentedControl, Text, TextField, themedStyles, useThemedStyles } from '../../../components/ui';
 import { MusicQuoteCard } from '../../../components/music/MusicQuoteCard';
@@ -9,16 +9,22 @@ import { MusicNotice } from '../../../components/music/MusicNotice';
 import { MusicAdvancedControls } from '../../../components/music/MusicAdvancedControls';
 import { MusicSunoControls } from '../../../components/music/MusicSunoControls';
 import { useMusicCreate } from '../../../lib/music/useMusicCreate';
-import { isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
+import { effectiveLyricsLimit, isSunoModel, modelCounterLimit, modelState, quoteBlockers } from '../../../lib/music/createForm';
 import { formatLocale, t } from '../../../lib/i18n';
 import { ds } from '../../../theme';
 import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrollView';
 import { resolveMusicCreateHandoff } from '../../../lib/music/createHandoff';
+import { consumeMusicLyricReview, MUSIC_LYRIC_REQUEST_MAX, stageMusicLyricHandoff } from '../../../lib/music/lyricAssistantHandoff';
 const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'daily_allowance_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
     const { api, flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
-    const { sample, challenge } = useLocalSearchParams<{ sample?: string; challenge?: string }>();
+    const router = useRouter();
+    const { sample, challenge, lyricHandoff } = useLocalSearchParams<{ sample?: string; challenge?: string; lyricHandoff?: string }>();
+    const [lyricRequest, setLyricRequest] = useState('');
+    const [lyricReview, setLyricReview] = useState<null | { lyrics: string; sourceLyrics: string; draftId: string; draftRevision: number }>(null);
+    const [lyricNotice, setLyricNotice] = useState<string | null>(null);
+    const handledLyricTokens = useRef(new Set<string>());
     const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
     const edit: typeof flow.edit = (...args) => { touched.current = flow; flow.edit(...args); };
     useEffect(() => {
@@ -42,6 +48,42 @@ export default function MusicCreate() {
     const blockers = e && pending ? quoteBlockers({ input: pending.input, entitlements: e, rights: !pending.input.instrumental,
         activeCount: flow.tracker.activeCount(), quote: pending.quote, now, ambiguous }) : [];
     const error = state.error && t(`music.create.${messageKey(state.error)}`);
+    const lyricLimit = e && model ? effectiveLyricsLimit(model, e) : null;
+    useEffect(() => {
+        if (typeof lyricHandoff !== 'string' || handledLyricTokens.current.has(lyricHandoff)
+            || state.status !== 'on' || input.mode !== 'custom' || !state.draft || !lyricLimit) return;
+        handledLyricTokens.current.add(lyricHandoff);
+        router.setParams({ lyricHandoff: undefined });
+        const result = consumeMusicLyricReview(lyricHandoff, { sourceLyrics: input.lyrics, lyricLimit,
+            draftId: state.draft.id, draftRevision: state.draft.revision });
+        if (result.ok) { setLyricReview({ lyrics: result.lyrics, sourceLyrics: input.lyrics,
+            draftId: state.draft.id, draftRevision: state.draft.revision }); setLyricNotice(null); }
+        else { setLyricReview(null); setLyricNotice(t(result.reason === 'over_length'
+            ? 'music.lyricAssistant.overLength' : 'music.lyricAssistant.stale')); }
+    }, [input.mode, input.lyrics, lyricHandoff, lyricLimit, router, state.draft, state.status]);
+
+    useEffect(() => {
+        if (!lyricReview) return;
+        const activeLimit = e && model ? effectiveLyricsLimit(model, e) : null;
+        if (input.mode !== 'custom' || input.instrumental || !state.draft || state.draft.id !== lyricReview.draftId
+            || state.draft.revision !== lyricReview.draftRevision || input.lyrics !== lyricReview.sourceLyrics) {
+            setLyricReview(null); setLyricNotice(t('music.lyricAssistant.stale')); return;
+        }
+        if (!activeLimit || Array.from(lyricReview.lyrics).length > activeLimit) {
+            setLyricReview(null); setLyricNotice(t('music.lyricAssistant.overLength'));
+        }
+    }, [e, input.instrumental, input.lyrics, input.mode, lyricReview, model, state.draft]);
+
+    function openLyricAssistant() {
+        if (!state.draft || !lyricLimit) return;
+        const token = stageMusicLyricHandoff({ sourceLyrics: input.lyrics, lyricLimit, request: lyricRequest,
+            draftId: state.draft.id, draftRevision: state.draft.revision });
+        if (!token) { setLyricNotice(t(Array.from(input.lyrics).length > lyricLimit
+            ? 'music.lyricAssistant.overLength' : 'music.lyricAssistant.requestRequired')); return; }
+        setLyricNotice(null);
+        setLyricReview(null);
+        router.push({ pathname: '/chat/new', params: { lyricHandoff: token } });
+    }
     return <SafeKeyboardFormScrollView style={s.screen} contentContainerStyle={s.content} gutter={ds.space.lg}>
         <Stack.Screen options={{ title: t('music.create.title') }} />
         {state.status === 'off' ? <MusicNotice message={t('music.off')} />
@@ -97,6 +139,40 @@ export default function MusicCreate() {
                                     label={t('music.create.rights')} onPress={() => edit({}, !state.rights)} /> : null}
                                 {!input.instrumental && !state.rights ? <MusicNotice message={t('music.create.rights_required')} /> : null}
                             </>}
+                        {input.mode === 'custom' && !input.instrumental && state.draft && model && lyricLimit ? <View style={s.assistant}>
+                            <Text variant="title3">{t('music.lyricAssistant.title')}</Text>
+                            <Text>{t('music.lyricAssistant.help')}</Text>
+                            <TextField accessibilityLabel={t('music.lyricAssistant.request')} label={t('music.lyricAssistant.request')}
+                                value={lyricRequest} maxLength={MUSIC_LYRIC_REQUEST_MAX} multiline onChangeText={setLyricRequest} />
+                            <View style={s.row}>
+                                <Button variant="secondary" label={t('music.lyricAssistant.manageProfiles')} onPress={() => router.push('/chat/personas')} />
+                                <Button variant="secondary" label={t('music.lyricAssistant.work')} disabled={!lyricRequest.trim()}
+                                    onPress={openLyricAssistant} />
+                            </View>
+                        </View> : null}
+                        {lyricNotice ? <MusicNotice message={lyricNotice} /> : null}
+                        {lyricReview && input.mode === 'custom' && !input.instrumental ? <View style={s.assistant}>
+                            <Text variant="title3">{t('music.lyricAssistant.reviewTitle')}</Text>
+                            <Text variant="bodyStrong">{t('music.lyricAssistant.proposal')}</Text>
+                            <Text selectable>{lyricReview.lyrics}</Text>
+                            <Text variant="bodyStrong">{t('music.lyricAssistant.currentDraft')}</Text>
+                            <Text selectable>{input.lyrics || t('music.lyricAssistant.emptyDraft')}</Text>
+                            <Text>{t('music.lyricAssistant.reviewHelp')}</Text>
+                            <View style={s.row}>
+                                <Button label={t('music.lyricAssistant.apply')} onPress={() => {
+                                    const activeLimit = e && model ? effectiveLyricsLimit(model, e) : null;
+                                    if (!activeLimit || Array.from(lyricReview.lyrics).length > activeLimit) {
+                                        setLyricReview(null); setLyricNotice(t('music.lyricAssistant.overLength')); return;
+                                    }
+                                    if (input.mode !== 'custom' || input.instrumental || !state.draft || state.draft.id !== lyricReview.draftId
+                                        || state.draft.revision !== lyricReview.draftRevision || input.lyrics !== lyricReview.sourceLyrics) {
+                                        setLyricReview(null); setLyricNotice(t('music.lyricAssistant.stale')); return;
+                                    }
+                                    edit({ lyrics: lyricReview.lyrics }, false); setLyricReview(null); setLyricNotice(t('music.lyricAssistant.applied'));
+                                }} />
+                                <Button variant="secondary" label={t('music.lyricAssistant.discard')} onPress={() => setLyricReview(null)} />
+                            </View>
+                        </View> : null}
                         {!suno ? <>
                             <TextField label={t('music.create.songTitle')} value={input.title} maxLength={Math.min(80, e.custom_drafts.title_max)} onChangeText={title => edit({ title })} />
                             <Text>{t('music.create.duration', { seconds: input.duration })}</Text>
@@ -143,4 +219,5 @@ export default function MusicCreate() {
                     </> : null}
     </SafeKeyboardFormScrollView>;
 }
-const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm } }));
+const sheets = themedStyles(p => ({ screen: { flex: 1, backgroundColor: p.bg }, content: { gap: ds.space.md }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: ds.space.sm },
+    assistant: { gap: ds.space.sm, padding: ds.space.md, borderWidth: 1, borderColor: p.borderSubtle, borderRadius: ds.radius.md } }));
