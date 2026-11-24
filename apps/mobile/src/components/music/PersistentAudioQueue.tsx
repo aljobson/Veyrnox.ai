@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AppState, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { useAuth } from '../../auth/AuthProvider';
 import { Button, Text, themedStyles, useThemedStyles } from '../ui';
 import { getCacheUser, subscribeCacheUser } from '../../lib/appCache';
@@ -14,8 +13,10 @@ import {
     type AudioQueueEnvelope, type OwnedQueueEntry, type PersistentQueueCapability, type PublicQueueEntry,
 } from '../../lib/music/persistentAudioQueue';
 import { ds } from '../../theme';
+import { t } from '../../lib/i18n';
 
 type Capability = PersistentQueueCapability;
+type NativeAudioPlayer = ReturnType<typeof import('expo-audio')['createAudioPlayer']>;
 type QueueApi = {
     publicEnabled: boolean; ownedEnabled: boolean; capability: Capability;
     addPublic(entry: Omit<PublicQueueEntry, 'type'>): void;
@@ -34,7 +35,7 @@ export function PersistentAudioQueueProvider({ children }: { children: ReactNode
     const [capability, setCapability] = useState<Capability>('loading');
     const [playing, setPlaying] = useState(false);
     const loaded = useRef(false), epoch = useRef(0), ownerRef = useRef(owner); ownerRef.current = owner;
-    const player = useRef<ReturnType<typeof createAudioPlayer> | null>(null);
+    const player = useRef<NativeAudioPlayer | null>(null);
     const listener = useRef<{ remove(): void } | null>(null);
     const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const playerKey = useRef(''), expiresAt = useRef(0), retry = useRef(0);
@@ -114,6 +115,7 @@ export function PersistentAudioQueueProvider({ children }: { children: ReactNode
                 const at = position.current;
                 dispose(true); claimAudioFocus(focusId, stop);
                 const ticket = playbackEpoch.current;
+                const { createAudioPlayer, setAudioModeAsync } = require('expo-audio') as typeof import('expo-audio');
                 await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: false });
                 if (ticket !== playbackEpoch.current || ownerRef.current !== owner || !current || !isAudioFocusOwner(focusId)) return;
                 const url = current.type === 'public_slug' ? `${config.apiBase}/api/music/public/${current.slug}/asset`
@@ -157,14 +159,14 @@ export function PersistentAudioQueueProvider({ children }: { children: ReactNode
     const styles = useThemedStyles(sheets);
     return <QueueContext.Provider value={apiValue}><View style={styles.host}>
         {children}
-        {current ? <View accessibilityRole="summary" accessibilityLabel="Listening queue" style={[styles.bar, { paddingBottom: Math.max(ds.space.sm, insets.bottom) }]}>
+        {current ? <View accessibilityRole="summary" accessibilityLabel={t('music.queue.title')} style={[styles.bar, { paddingBottom: Math.max(ds.space.sm, insets.bottom) }]}>
             <View style={styles.copy}><Text variant="bodyStrong" numberOfLines={1}>{current.title}</Text>
-                <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">Listening queue · {index + 1} of {visible.length}</Text></View>
+                <Text variant="footnote" tone="secondary" accessibilityLiveRegion="polite">{t('music.queue.position', { position: index + 1, total: visible.length })}</Text></View>
             <View style={styles.controls}>
-                <Button variant="secondary" label="Previous" disabled={index === 0} onPress={() => move(-1)} />
-                <Button label={playing ? 'Pause' : 'Play'} onPress={() => playing ? stop() : void start()} />
-                <Button variant="secondary" label="Next" disabled={index >= visible.length - 1} onPress={() => move(1)} />
-                <Button variant="tertiary" label="Clear" onPress={clear} />
+                <Button variant="secondary" label={t('music.queue.previous')} disabled={index === 0} onPress={() => move(-1)} />
+                <Button label={t(playing ? 'music.pause' : 'music.play')} onPress={() => playing ? stop() : void start()} />
+                <Button variant="secondary" label={t('music.queue.next')} disabled={index >= visible.length - 1} onPress={() => move(1)} />
+                <Button variant="tertiary" label={t('music.queue.clear')} onPress={clear} />
             </View>
         </View> : null}
     </View></QueueContext.Provider>;

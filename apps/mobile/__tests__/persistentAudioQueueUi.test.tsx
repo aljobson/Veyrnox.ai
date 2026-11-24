@@ -5,7 +5,9 @@ import { PersistentAudioQueueProvider, usePersistentAudioQueue } from '../src/co
 import { claimAudioFocus, resetAudioFocusForTests } from '../src/lib/audioFocus';
 
 let mockOwner: string | undefined = 'account-a';
-const mockOwnerListeners = new Set<() => void>();
+function mockListeners(): Set<() => void> {
+    return ((globalThis as any).__persistentAudioQueueOwnerListeners ??= new Set<() => void>());
+}
 const mockDocuments = new Map<string, string>();
 const mockGetEntitlements = jest.fn();
 const mockGetAsset = jest.fn();
@@ -14,7 +16,7 @@ const mockPlayers: any[] = [];
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ api: {} }) }));
 jest.mock('../src/lib/appCache', () => ({
     getCacheUser: () => mockOwner,
-    subscribeCacheUser: (listener: () => void) => { mockOwnerListeners.add(listener); return () => mockOwnerListeners.delete(listener); },
+    subscribeCacheUser: (listener: () => void) => { mockListeners().add(listener); return () => mockListeners().delete(listener); },
     userDocStorage: {
         get: async (key: string) => mockDocuments.get(key) ?? null,
         set: async (key: string, value: string) => void mockDocuments.set(key, value),
@@ -78,7 +80,7 @@ test('enabled queue persists across navigation, disposes synchronously on accoun
     await press('Play');
     expect(mockGetAsset).toHaveBeenCalledWith('12345678-1234-1234-1234-1234567890ab'); expect(mockPlayers).toHaveLength(1);
     mockOwner = 'account-b';
-    await act(async () => { for (const listener of mockOwnerListeners) listener(); });
+    await act(async () => { for (const listener of mockListeners()) listener(); });
     expect(mockPlayers[0].pause).toHaveBeenCalled(); expect(mockPlayers[0].remove).toHaveBeenCalled();
     expect(root.container.queryAll(n => n.props.accessibilityLabel === 'Listening queue')).toHaveLength(0);
 });

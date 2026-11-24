@@ -28,7 +28,7 @@ export default function PublicTrackScreen() {
                 onPress={() => router.push({ pathname: '/music/creator/[handle]', params: { handle: data.track.handle } } as never)} />
             <MusicLinkShare slug={slug} />
             <PublicPlayer key={`player:${slug}:${session.snapshot().account}`} slug={slug} creatorId={data.track.creator_id} session={session} onPosition={setPosition} />
-            {queue?.publicEnabled ? <Button variant="secondary" label="Add to listening queue" onPress={() => queue.addPublic({ slug, title: data.track.title, displayName: creatorName(data.track) })} /> : null}
+            {queue?.publicEnabled ? <Button variant="secondary" label={t('music.queue.add')} onPress={() => queue.addPublic({ slug, title: data.track.title, displayName: creatorName(data.track) })} /> : null}
             {data.plays ? <Text>{t('musicPublic.plays', { count: data.plays.count })}</Text> : null}
             {data.lyrics ? <View style={s.group}><Text variant="title3">{t('musicPublic.lyrics')}</Text><Text>{data.lyrics}</Text></View> : null}
             <PublicSocial counts={data.social} social={state.social} slug={slug} handle={data.track.handle} flow={flow} busy={state.busy} />

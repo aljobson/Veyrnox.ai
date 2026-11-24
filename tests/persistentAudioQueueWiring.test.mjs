@@ -40,7 +40,7 @@ test('native queue is app-level, owner-fenced and wired to generated, owned and 
   assert.doesNotMatch(provider, /position: 'absolute'/);
   assert.match(provider, /useSafeAreaInsets/);
   assert.match(store, /await storage\.remove\(key\)/);
-  assert.match(create, /file\?\.mime_type\.startsWith\('audio\/'\)[\s\S]*Add to listening queue/);
+  assert.match(create, /file\?\.mime_type\.startsWith\('audio\/'\)[\s\S]*t\('music\.queue\.add'\)/);
   assert.match(owned, /source: 'music'/);
   assert.match(publicTrack, /queue\.addPublic/);
 });

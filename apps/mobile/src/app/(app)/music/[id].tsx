@@ -81,7 +81,7 @@ export default function SongDetail() {
             {lifecycle ? <Button label={t('music.restore')} disabled={busy} onPress={() => void mutate('restore')} /> : null}
         </View> : song ? <>
             {!busy && playback ? <MusicPlayer input={playback} /> : !busy ? <MusicNotice message={t('music.player.error')} /> : null}
-            {playback && queue?.ownedEnabled ? <Button variant="secondary" label="Add to listening queue"
+            {playback && queue?.ownedEnabled ? <Button variant="secondary" label={t('music.queue.add')}
                 onPress={() => queue.addOwned({ jobId: song.job_id, songId: song.id, title: song.title, source: 'music' })} /> : null}
             <MusicSongActions song={song} />
             <Button variant="secondary" label={t('beatLabs.makeBeat')} onPress={() => router.push({ pathname: '/beats/new', params: { song: song.id } } as never)} />

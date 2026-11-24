@@ -88,8 +88,8 @@ function ResultTile({ api, id, batch, catalog, onTerminal, onSuccess }: { api: A
         </View>
         {result.state === 'succeeded' && file?.mime_type.startsWith('video/') && !result.held ? <FinishedShapeWarning api={api} id={id} requested={requestedAspect} /> : null}
         <Button variant="secondary" label={t('publishReporting.open')} onPress={open} />
-        {result.state === 'succeeded' && file?.mime_type.startsWith('audio/') && queue?.ownedEnabled && queueSource ? <Button variant="secondary" label="Add to listening queue"
-            onPress={() => queue.addOwned({ jobId: id, title: generatedModel?.name || 'Generated audio', source: queueSource })} /> : null}
+        {result.state === 'succeeded' && file?.mime_type.startsWith('audio/') && queue?.ownedEnabled && queueSource ? <Button variant="secondary" label={t('music.queue.add')}
+            onPress={() => queue.addOwned({ jobId: id, title: generatedModel?.name || t('music.queue.generatedAudio'), source: queueSource })} /> : null}
         {sound?.kind === 'tooLong' ? <Text>{t('libraryCreate.soundTooLong', { seconds: String(sound.seconds) })}</Text> : sound ? <Card>
             <Text variant="caption">{t('libraryCreate.soundEyebrow')}</Text><Text accessibilityRole="header" variant="title3">{t('libraryCreate.soundTitle')}</Text>
             <Text>{t('libraryCreate.soundHelp')}</Text><Button label={t('libraryCreate.soundAction')} onPress={addSound} />
