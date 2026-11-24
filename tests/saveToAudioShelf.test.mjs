@@ -26,6 +26,8 @@ test('Text to Speech exposes shelf saves only for completed audio results', () =
   assert.match(page, /voiceRecipe=\{job\.voice_recipe\}/);
   assert.match(page, /voiceRecipe=\{item\.voice_recipe\} offerSignature/);
   assert.match(page, /voiceRecipe=\{job\.voice_recipe\} offerSignature/);
+  assert.match(page, /purpose="character-performance" queueSource="speech"/);
+  assert.match(page, /purpose="narration-presenter" queueSource="speech"/);
   assert.match(page, /Use for lip sync/);
 });
 
@@ -33,6 +35,7 @@ test('Dialogue saves completed audio for lip sync but never saves photo-dialogue
   const page = read('../app/veyrnox/app/dialogue/DialogueStudioClient.js');
   assert.match(page, /job\?\.state === 'succeeded' && job\?\.asset_url/);
   assert.match(page, /modeId !== 'photo-dialogue' && <SaveToAudioShelfButton[\s\S]*?purpose="lip-sync-dialogue"/);
+  assert.match(page, /purpose="lip-sync-dialogue" queueSource="dialogue"/);
   assert.match(page, /modeId !== 'photo-dialogue' && <Link href=\{`\/app\/performance\?audio=/);
 });
 
@@ -44,5 +47,6 @@ test('Library exposes the same validated shelf action for every completed audio 
   assert.match(card, /row\.model_id === 'elevenlabs-dialogue'[\s\S]*?'lip-sync-dialogue'/);
   assert.match(card, /\['minimax-speech-2\.6-hd', 'qwen3-tts'\]\.includes\(row\.model_id\)\s*\? 'narration-presenter'/);
   assert.match(card, /: 'timing-rhythm'/);
+  assert.match(card, /model\?\.modality\?\.includes\('music'\) \? 'music' : 'audio_shelf'/);
   assert.doesNotMatch(card, /name=\{`Library · \$\{row\.(?:prompt|name)/);
 });

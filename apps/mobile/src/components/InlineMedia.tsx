@@ -9,10 +9,12 @@ import { ds } from '../theme';
 import { t } from '../lib/i18n';
 import { AudioSeekBar } from './AudioSeekBar';
 import { CassetteReels } from './CassetteReels';
+import { claimAudioFocus, releaseAudioFocus } from '../lib/audioFocus';
 
 export function InlineMedia({ url, label, audio = false, onReady }: { url: string; label: string; audio?: boolean; onReady?: () => void }) {
     const styles = useThemedStyles(sheets);
     const started = useRef(false);
+    const focusId = useRef(Symbol('inline-media')).current;
     const [playing, setPlaying] = useState(false);
     const player = useVideoPlayer(url, instance => { instance.muted = true; instance.loop = false; instance.timeUpdateEventInterval = 0.5; });
     useEffect(() => {
@@ -24,11 +26,12 @@ export function InlineMedia({ url, label, audio = false, onReady }: { url: strin
         // No autoplay or decorative motion, including when Reduce Motion is enabled.
         const playingListener = player.addListener('playingChange', ({ isPlaying }) => {
             setPlaying(isPlaying);
+            if (isPlaying) claimAudioFocus(focusId, () => player.pause()); else releaseAudioFocus(focusId);
             if (isPlaying && !started.current) { started.current = true; player.muted = false; }
         });
         const state = AppState.addEventListener('change', value => { if (value !== 'active') player.pause(); });
-        return () => { playingListener.remove(); state.remove(); };
-    }, [player]);
+        return () => { releaseAudioFocus(focusId); playingListener.remove(); state.remove(); };
+    }, [player, focusId]);
     // A clip that fades in or out rests on a black frame before play and after the end, so a frame from
     // just inside it stands in at those two moments. Taken from this player: no second download.
     const [poster, setPoster] = useState<VideoThumbnail | null>(null);

@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "إضافة إلى قائمة انتظار الاستماع",
+  "music.queue.title": "قائمة انتظار الاستماع",
+  "music.queue.position": "قائمة انتظار الاستماع · {position} من {total}",
+  "music.queue.generatedAudio": "صوت مُنشأ",
   "videoShape.all": "كل الأبعاد",
   "videoShape.portrait": "عمودي",
   "videoShape.landscape": "أفقي",

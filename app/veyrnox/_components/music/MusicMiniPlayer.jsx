@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useRef } fro
 import { useI18n } from '../../../../components/I18nProvider';
 import { MusicPrivateAudio } from '../../_lib/useMusicAudioSrc';
 import { idlePlayer, playerReducer } from '../../_lib/music/miniPlayer.mjs';
+import { useMusicQueue } from './MusicQueue';
 
 const PlayerContext = createContext(null);
 
@@ -79,7 +80,11 @@ export function MusicPlayerProvider({ children }) {
 export function PlayInBarButton({ song, className = '' }) {
   const { t } = useI18n();
   const player = useMusicPlayer();
-  if (!player || !song?.audio_url) return null;
+  const queue = useMusicQueue();
+  if (!song?.audio_url) return null;
+  if (queue?.ownedEnabled && song?.job_id) return <button type="button" onClick={() => queue.playOwned({ job_id: song.job_id, song_id: song.id, title: song.title, source: 'music' })}
+    className={`vx-press min-h-10 rounded-full border border-vx-border px-4 text-sm font-bold text-vx-fg-body hover:border-vx-accent ${className}`}>Play in listening queue</button>;
+  if (!player) return null;
   const current = player.track?.id === song.id;
   return (
     <button type="button" aria-pressed={current && player.playing} onClick={() => player.play({ id: song.id, title: song.title, audioUrl: song.audio_url })}

@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "सुनने की कतार में जोड़ें",
+  "music.queue.title": "सुनने की कतार",
+  "music.queue.position": "सुनने की कतार · {total} में से {position}",
+  "music.queue.generatedAudio": "जनरेट किया गया ऑडियो",
   "videoShape.all": "सभी आकार",
   "videoShape.portrait": "लंबवत",
   "videoShape.landscape": "क्षैतिज",
