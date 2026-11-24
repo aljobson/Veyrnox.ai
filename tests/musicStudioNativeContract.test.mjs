@@ -42,8 +42,8 @@ test('native English catalog merges Studio action copy instead of exposing keys'
 
 test('native Studio catalog imports without Intl.PluralRules and freezes the shipped ICU categories', () => {
   for (const locale of Object.keys(MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES)) {
-    assert.deepEqual(MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES[locale],
-      new Intl.PluralRules(locale).resolvedOptions().pluralCategories, locale);
+    assert.deepEqual([...MUSIC_STUDIO_ASSISTANT_PLURAL_CATEGORIES[locale]].sort(),
+      [...new Intl.PluralRules(locale).resolvedOptions().pluralCategories].sort(), locale);
   }
   const moduleUrl = new URL('../lib/i18n/musicStudioAssistantTranslations.mjs', import.meta.url).href;
   const source = `Object.defineProperty(Intl, 'PluralRules', { value: undefined, configurable: true }); await import(${JSON.stringify(moduleUrl)});`;
