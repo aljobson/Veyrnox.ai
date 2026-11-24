@@ -31,6 +31,7 @@ const DEFAULT_MUSIC_FEATURES: MusicEntitlements['features'] = Object.freeze({
     albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false,
 });
 const DISABLED_DAILY_ALLOWANCE = Object.freeze({ enabled: false });
+const INSPIRATION_SOURCES = new Set(['audio', 'image', 'video_frames']);
 
 export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements> {
     const response = await api.request<unknown>(`${BASE}/entitlements`);
@@ -39,9 +40,23 @@ export async function getEntitlements(api: ApiClient): Promise<MusicEntitlements
     const safeChallenge = isRecord(response) && isRecord(response.features)
         && response.features.dailyChallenge === true && isMusicDailyChallenge(response.daily_challenge)
         ? response.daily_challenge : undefined;
+    const safeSources = isRecord(response) && Array.isArray(response.inspiration_sources)
+        && response.inspiration_sources.every(source => typeof source === 'string' && INSPIRATION_SOURCES.has(source))
+        && new Set(response.inspiration_sources).size === response.inspiration_sources.length
+        ? response.inspiration_sources : [];
+    const projectedFeatures = isRecord(response) && response.features === undefined
+        ? DEFAULT_MUSIC_FEATURES : isRecord(response) ? response.features : undefined;
+    const safeFeatures = isRecord(projectedFeatures) ? {
+        ...projectedFeatures,
+        // A server may know the umbrella flag but not yet project the source contract.
+        // Hide the native entry point until at least one safe picker is available.
+        inspiration: projectedFeatures.inspiration === true && safeSources.length > 0,
+    } : projectedFeatures;
+    const inspirationEnabled = isRecord(safeFeatures) && safeFeatures.inspiration === true;
     const value = isRecord(response) ? {
         ...response,
-        ...(response.features === undefined ? { features: DEFAULT_MUSIC_FEATURES } : {}),
+        features: safeFeatures,
+        inspiration_sources: inspirationEnabled ? safeSources : [],
         ...(response.daily_allowance === undefined ? { daily_allowance: DISABLED_DAILY_ALLOWANCE } : {}),
         ...(response.daily_challenge === undefined ? {} : { daily_challenge: safeChallenge }),
     } : response;
