@@ -37,6 +37,8 @@ Status update (2026-11-24): the default-off daily-challenge feed and editable we
 
 Status update (2026-11-24, Studio actions): the shared deterministic planner and default-off web/iOS surfaces qualify both Studio chat rows at half credit. It supports bounded read-only questions and review-before-apply local tempo, mute, solo, view and pattern actions; the dual gate proves generation, stem, replacement, arbitrary-code and plugin intents never become executable local operations. Current DAW is 67.5 and the weighted total is 71.125. The flag remains off, phone Magic Bar remains hard-disabled, and no Reticle `verified: "yes"` or simulator proof is claimed, so local actions are not `shipped` and generative/plugin behavior remains excluded.
 
+Status update (2026-11-24, Music MCP): the OAuth connector now exposes the owned Custom Music draft, exact quote and explicit-confirmation generation path, terminal two-candidate status with signed audio resources, and bounded playlist list/create/replace operations. Transport tests exercise the real MCP handler, trusted identity fence, no-charge approval refusal, frozen-credit guard, signed ready asset, mixed terminal candidates and the 75/76 playlist boundary. `community.music-mcp` is therefore shipped, Community is 65 and the weighted total is 71.625. The connector omits the daily allowance capability, does not expose draft writes, and activates no runtime flag, provider spend, migration or production release by itself.
+
 ### Frozen row rubric
 
 Status credits are `shipped=1`, `qualified=0.5`, `missing=0`, `externally_blocked=0`, and `intentionally_different=1` only when the same outcome is proved. Weights sum to 100 inside each area. `Target` is the planned closeout status; exceeding it may raise an area above its table minimum, but falling below it cannot be hidden by changing weights.
@@ -110,7 +112,7 @@ Current calculation: `35 shipped + 0.5×55 qualified = 62.5`. Target calculation
 
 Target calculation: all rows ship for 100.
 
-#### Community and ecosystem — current 60, target 100
+#### Community and ecosystem — current 65, target 100
 
 | Stable row | Weight | Current | Target | Required proof |
 | --- | ---: | --- | --- | --- |
@@ -118,7 +120,7 @@ Target calculation: all rows ship for 100.
 | `community.comments-reports-blocks` | 15 | shipped | shipped | moderation contract + UI |
 | `community.likes-play-counts` | 10 | shipped | shipped | contract + UI |
 | `community.listen-links-app-handoff` | 10 | shipped | shipped | contract + UI |
-| `community.music-mcp` | 5 | missing | shipped | Music quote/create/status/playlist connector contract |
+| `community.music-mcp` | 5 | shipped | shipped | Music quote/create/status/playlist connector contract |
 | `community.mobile-social-polish` | 10 | qualified | shipped | simulator/device accessibility |
 | `community.discovery-ranking` | 10 | qualified | shipped | production capability + UI |
 | `community.public-albums` | 10 | missing | shipped | moderation + Reticle + simulator |
@@ -126,7 +128,7 @@ Target calculation: all rows ship for 100.
 | `community.album-profile-shelves` | 5 | missing | shipped | block-filtered contract + UI |
 | `community.challenge-discovery-shelf` | 5 | missing | shipped | Reticle + simulator |
 
-Target calculation: Music MCP, all missing rows and the two qualified rows ship, producing `100`. The Music MCP row is not credited until `lib/veyrnoxMcp.js` exposes Music estimate/create/status and playlist operations through the existing quote/confirmation/recovery boundary.
+Target calculation: all remaining missing rows and the two qualified rows ship, producing `100`. The Music MCP row is credited by the bounded connector contract and real-handler transport proof; it does not imply production provider or daily-allowance activation.
 
 #### Production-ready iOS experience — current 52.5, target 93
 

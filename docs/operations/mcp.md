@@ -37,6 +37,18 @@ Seven `publish_*` tools register only while `PUBLISH_AUTOMATION_ENABLED` is on; 
 
 `reserve_source_upload` returns a presigned PUT from `POST /api/v1/uploads` for the signed-in account; nothing is charged. Acceptance, with a disposable client: ask for a PNG reservation, PUT the file bytes to `upload_url` with exactly the returned headers (a wrong `Content-Type` or a longer body is refused by R2), then call `generate_video` with an image-to-video model, `source_uploads: [{ key, slot: "image" }]`, `consent: true` and the confirmed price; the job must reach `succeeded` and the result must come from that still. The same key with `generate_image` and `topaz-upscale` must be accepted; `generate_image` with that model and no `source_uploads` must answer `mcp_image_only`. A key for another account's path must answer `source_not_found` from the route, never a file. An unused reservation disappears within 24 hours (`sweepUploadReservations`).
 
+## Music and playlists
+
+The Music connector is a deliberately bounded view of the existing owned web/iOS routes:
+
+1. `get_music_draft` reads the authoritative Custom Music draft. Draft creation and editing stay in Veyrnox web or iOS.
+2. `estimate_music_generation` creates a short-lived quote for two candidates and charges nothing. It never requests the daily-free allowance. For vocal drafts, `rights_confirmed` may be true only after the user explicitly confirms they own or have permission to use the saved lyrics.
+3. `generate_music` requires the quote's provider contract, exact frozen `total_credits`, `user_approved: true`, and a stable 8–120 character idempotency key. A missing approval, stale contract or changed cost is refused before `music_submit_pair`.
+4. `get_music_generation` can wait briefly for the owned pair. Once polling ends, each ready candidate receives one short-lived signed asset link; failed and refunded candidates keep their terminal state and asset-link failures include retry metadata.
+5. `list_music_playlists`, `create_music_playlist` and `update_music_playlist` use the existing owned playlist routes. Replacement preserves order and accepts at most 75 unique song ids per MCP call; pin/unpin uses the same revision fence. The web/iOS route can still accept its existing 100-song bound.
+
+Acceptance uses a disposable OAuth client and test account. Prove missing/false approval causes no database call, a wrong frozen price never reaches `music_submit_pair`, an exact retry returns the same request, status resolves signed audio only for ready candidates, mixed ready/refunded output remains truthful, 75 replacement ids succeed, and 76 are refused by the transport. Do not enable Music runtime flags, run migrations or place a paid provider request merely to test connector registration.
+
 ## Monitoring
 
 - Watch 401, 409, 429 and 5xx rates on `/api/v1/mcp` separately from tool-level errors.
