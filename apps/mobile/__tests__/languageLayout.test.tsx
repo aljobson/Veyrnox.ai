@@ -4,7 +4,7 @@ import * as RN from 'react-native';
 import { createRoot, type Root } from 'test-renderer';
 import TabsLayout from '../src/app/(app)/(tabs)/_layout';
 import { LanguageChoice } from '../src/components/LanguageChoice';
-import { saveLanguage, syncPendingAccountLanguage } from '../src/lib/languageStore';
+import { saveLanguage, saveLanguageSync, syncPendingAccountLanguage } from '../src/lib/languageStore';
 import { reloadAppAsync } from 'expo';
 import { LanguageGate } from '../src/components/LanguageGate';
 import * as direction from '../src/lib/languageDirection';
@@ -20,7 +20,7 @@ let mockCanGoBack = true;
 const mockScreens: any[] = [];
 const spanish = CATALOGS.es as Record<string, string>;
 const originalTab = spanish['tabs.library'];
-jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, loadLanguage: async () => mockStored, saveLanguage: jest.fn(async (code: string) => { mockStored = code; return true; }), saveAccountLanguage: jest.fn(), syncPendingAccountLanguage: jest.fn(async () => {}) }));
+jest.mock('../src/lib/languageStore', () => ({ readLanguage: () => mockStored, loadLanguage: async () => mockStored, saveLanguage: jest.fn(async (code: string) => { mockStored = code; return true; }), saveLanguageSync: jest.fn((code: string) => { mockStored = code; return true; }), saveAccountLanguage: jest.fn(), syncPendingAccountLanguage: jest.fn(async () => {}) }));
 jest.mock('../src/auth/AuthProvider', () => ({ useAuth: () => ({ generation: 0, sessionGeneration: () => 0, beginSessionTask: () => ({ gen: 0, user: 'u', current: () => true, tokens: async () => null }), status: mockStatus, canReloadSession: () => false, api: {} }) }));
 jest.mock('expo', () => ({ reloadAppAsync: jest.fn() }));
 jest.mock('../src/components/BrandSplash', () => ({ BrandSplash: (props: any) => require('react').createElement('splash', props) }));
@@ -159,22 +159,26 @@ test('first launch remembers an unchanged device language and advances to sign-i
     await act(async () => root.render(<LanguageGate active={['en', 'es']}><RN.Text>Sign-in fixture</RN.Text></LanguageGate>));
     await pastSplash();
     await act(async () => root.container.queryAll(n => n.type === 'button')[0].props.onPress());
-    expect(saveLanguage).toHaveBeenCalledWith('en', true);
+    expect(saveLanguageSync).toHaveBeenCalledWith('en', true);
     expect(root.container.queryAll(n => n.props.children === 'Sign-in fixture')).toHaveLength(1);
     expect(reloadAppAsync).not.toHaveBeenCalled();
 });
 
 
-test.each([true, false])('confirming the current locale reconciles native direction, firstLaunch=%s', async firstLaunch => {
+test.each([true, false])('confirming the current locale only reconciles native direction after first launch, firstLaunch=%s', async firstLaunch => {
     const repair = jest.spyOn(direction, 'reconcileLanguageDirection').mockResolvedValue(true);
     const complete = jest.fn();
     mockStatus = firstLaunch ? 'signedOut' : 'signedIn';
     try {
         await act(async () => root.render(<LanguageChoice active={['en', 'de']} returnPath={firstLaunch ? '/sign-in' : '/language'} onComplete={firstLaunch ? complete : undefined} />));
         await act(async () => root.container.queryAll(n => n.type === 'button')[0].props.onPress());
-        expect(repair).toHaveBeenCalledWith(firstLaunch ? '/sign-in' : '/language', expect.objectContaining({ signedIn: !firstLaunch }));
-        if (firstLaunch) expect(complete).toHaveBeenCalledTimes(1);
-        else expect(mockBack).toHaveBeenCalledTimes(1);
+        if (firstLaunch) {
+            expect(repair).not.toHaveBeenCalled();
+            expect(complete).toHaveBeenCalledTimes(1);
+        } else {
+            expect(repair).toHaveBeenCalledWith('/language', expect.objectContaining({ signedIn: true }));
+            expect(mockBack).toHaveBeenCalledTimes(1);
+        }
     } finally { repair.mockRestore(); }
 });
 

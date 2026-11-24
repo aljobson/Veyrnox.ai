@@ -204,9 +204,10 @@ final class EditorMp4Encoder {
   private func inspectVideoCodec() throws -> String {
     let asset = AVURLAsset(url: output)
     guard let track = asset.tracks(withMediaType: .video).first,
-          let description = track.formatDescriptions.first as? CMFormatDescription else {
+          let rawDescription = track.formatDescriptions.first else {
       throw EditorMediaFailure.result(.writeFailed, "missing-video-format")
     }
+    let description = rawDescription as! CMFormatDescription
     let subtype = CMFormatDescriptionGetMediaSubType(description)
     if subtype == kCMVideoCodecType_H264 { return "avc1" }
     if subtype == kCMVideoCodecType_HEVC { return preservesAlpha ? "hvc1-alpha" : "hvc1" }

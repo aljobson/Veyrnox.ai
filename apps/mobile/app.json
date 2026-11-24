@@ -230,6 +230,7 @@
     },
     "plugins": [
       "./modules/veyrnox-vision/app.plugin.js",
+      "./plugins/withIosSourceExpoModules.js",
       [
         "expo-widgets",
         {
