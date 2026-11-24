@@ -202,3 +202,24 @@ test('an audio (Suno) route is never swept as video: the video sweep skips audio
     assert.equal(urls.find((u) => u.pathname.endsWith('/jobs')).searchParams.get('model_id'), 'in.(veo-3.1-lite-kie)');
   }, mixed);
 });
+
+test('generic Suno Sounds is swept, read as audio, and stored as MP3 without MP4 enforcement', async () => {
+  const calls = [];
+  const routes = [{ model_id: 'suno-sounds', endpoint: 'crun:suno/sounds-generate' }];
+  await withRows([{ ...job('sound'), model_id: 'suno-sounds' }], async (urls) => {
+    const out = await sweepCrun({ ...args,
+      read: async (_id, options) => {
+        assert.equal(options.kind, 'audio');
+        return { ok: true, state: 'success', outputUrl: 'https://audiostream.kie.ai/stream/effect.mp3' };
+      },
+      complete: async (value) => { calls.push(value); return { status: 200, body: { ok: true } }; },
+    });
+    assert.equal(urls.find((url) => url.pathname.endsWith('/jobs')).searchParams.get('model_id'), 'in.(suno-sounds)');
+    assert.deepEqual(out, { checked: 1, applied: 1, pending: 0, errors: 0 });
+  }, routes);
+  assert.equal(calls[0].ext, '.mp3');
+  assert.equal(calls[0].copyOptions.expectMp4, undefined);
+  assert.equal(calls[0].copyOptions.provider, 'crunAudio');
+  assert.equal(calls[0].copyOptions.expectAudio, true);
+  assert.equal(calls[0].copyOptions.maxBytes, 60 * 1024 * 1024);
+});

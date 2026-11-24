@@ -46,6 +46,7 @@ for (const model of ['google/veo3-1-lite', 'google/veo3-1-fast', 'google/veo3-1'
     MODELS[`${model}-i2v`] = MODELS[`${model}-t2v`];
 }
 const SUNO_MODEL = 'suno/music-generate';
+const SUNO_SOUNDS_MODEL = 'suno/sounds-generate';
 const SUNO_VERSIONS = new Set(['v6', 'v6_mini', 'v6_wild']);
 const SUNO_MODELS = new Set(['v6', 'v6_mini', 'v6_wild', 'chirp-v6']);
 // Kling (docs.crun.ai/models/kling/v3-0.json and v2-6.json, read 2026-11-03). Each mirrors the kie row it would back:
@@ -94,13 +95,13 @@ const TASK_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 export function parseEndpoint(endpoint) {
     if (typeof endpoint === 'string' && endpoint.startsWith('crun:') && seedance25Task(endpoint.slice(5))) return { model: endpoint.slice(5) };
     const m = ENDPOINT_RE.exec(String(endpoint || ''));
-    return m && !m[1].includes('..') && (m[1] === QWEN_ENDPOINT || MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(m[1]) || m[1] === SUNO_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
+    return m && !m[1].includes('..') && (m[1] === QWEN_ENDPOINT || MODELS[m[1]] || IMAGE_MODELS[m[1]] || KLING_MODELS[m[1]] || m[1] === WAN_ANIMATE_MODEL || m[1] === KLING_AVATAR_MODEL || m[1] === SEEDANCE_R2V_MODEL || m[1] === CRUN_KLING_O1_REFERENCE_ENDPOINT_MODEL || CRUN_IMAGE_TOOL_MODELS.includes(m[1]) || m[1] === SUNO_MODEL || m[1] === SUNO_SOUNDS_MODEL || isKlingO1Swap(m[1])) ? { model: m[1] } : null;
 }
 
 /** 'video', 'image', 'audio' (music) or 'speech' for a Crun endpoint this adapter owns, else null. */
 export function endpointKind(endpoint) {
     const target = parseEndpoint(endpoint);
-    return target ? (target.model === SUNO_MODEL ? 'audio' : target.model === QWEN_ENDPOINT ? 'speech' : IMAGE_MODELS[target.model] || CRUN_IMAGE_TOOL_MODELS.includes(target.model) ? 'image' : 'video') : null;
+    return target ? ([SUNO_MODEL, SUNO_SOUNDS_MODEL].includes(target.model) ? 'audio' : target.model === QWEN_ENDPOINT ? 'speech' : IMAGE_MODELS[target.model] || CRUN_IMAGE_TOOL_MODELS.includes(target.model) ? 'image' : 'video') : null;
 }
 
 /**
@@ -112,6 +113,7 @@ export function buildRequest(target, inputs) {
     if (target.model === QWEN_ENDPOINT) return buildQwenRequest(inputs);
     if (seedance25Task(target.model)) return buildSeedance25Request(seedance25Task(target.model), inputs);
     if (target.model === SUNO_MODEL) return buildSunoRequest(inputs);
+    if (target.model === SUNO_SOUNDS_MODEL) return buildSunoSoundsRequest(inputs);
     if (target.model === WAN_ANIMATE_MODEL) return buildWanAnimateRequest(inputs);
     if (isKlingO1Swap(target.model)) return buildKlingO1SwapRequest(inputs, KLING_O1_SWAP_TIERS[target.model]);
     if (target.model === FLUX_2_PRO_MODEL) return buildFluxRequest(inputs);
@@ -167,8 +169,12 @@ function buildSunoRequest(inputs) {
     const allowed = new Set(['mode', 'prompt', 'instrumental', 'suno_model', 'title', 'tags', 'lyrics', 'negative_tags',
         'vocal_gender', 'style_weight', 'weirdness_constraint', 'duration', 'variety']);
     for (const key of Object.keys(inputs)) if (!allowed.has(key)) return { ok: false, error: `inputs_key_not_allowed:${key.slice(0, 32)}` };
-    if (typeof inputs.instrumental !== 'boolean') return { ok: false, error: 'inputs_invalid:instrumental' };
     const mode = inputs.mode || 'simple';
+    // Generic Create sells this route as instrumental music and does not expose
+    // the CRUN-only switch, so preserve that contract when simple mode omits it.
+    // Custom mode still requires an explicit choice because it governs lyrics.
+    const instrumental = inputs.instrumental === undefined && mode === 'simple' ? true : inputs.instrumental;
+    if (typeof instrumental !== 'boolean') return { ok: false, error: 'inputs_invalid:instrumental' };
     const requestedModel = inputs.suno_model || 'v6';
     const version = requestedModel === 'chirp-v6' ? 'v6' : requestedModel;
     if (!SUNO_MODELS.has(requestedModel) || !SUNO_VERSIONS.has(version)) return { ok: false, error: 'inputs_invalid:suno_model' };
@@ -176,12 +182,12 @@ function buildSunoRequest(inputs) {
         const prompt = textField(inputs, 'prompt', 500, { required: true });
         if (prompt.error) return { ok: false, error: prompt.error };
         if (Object.keys(inputs).some((key) => !['mode', 'prompt', 'instrumental', 'suno_model'].includes(key))) return { ok: false, error: 'inputs_invalid:mode' };
-        return { ok: true, body: { model: SUNO_MODEL, input: { mode, prompt: prompt.value, instrumental: inputs.instrumental, model: version } } };
+        return { ok: true, body: { model: SUNO_MODEL, input: { mode, prompt: prompt.value, instrumental, model: version } } };
     }
     if (mode !== 'custom') return { ok: false, error: 'inputs_invalid:mode' };
     const title = textField(inputs, 'title', 80);
     const tags = textField(inputs, 'tags', 1000, { required: true });
-    const lyrics = textField(inputs, 'lyrics', 5000, { required: !inputs.instrumental });
+    const lyrics = textField(inputs, 'lyrics', 5000, { required: !instrumental });
     const negative = textField(inputs, 'negative_tags', 200);
     for (const field of [title, tags, lyrics, negative]) if (field.error) return { ok: false, error: field.error };
     if (inputs.vocal_gender !== undefined && !['m', 'f'].includes(inputs.vocal_gender)) return { ok: false, error: 'inputs_invalid:vocal_gender' };
@@ -190,11 +196,24 @@ function buildSunoRequest(inputs) {
     }
     if (inputs.duration !== undefined && (!Number.isInteger(inputs.duration) || inputs.duration < 1 || inputs.duration > 135)) return { ok: false, error: 'inputs_invalid:duration' };
     if (inputs.variety !== undefined && (!Number.isInteger(inputs.variety) || inputs.variety < 0 || inputs.variety > 4)) return { ok: false, error: 'inputs_invalid:variety' };
-    const input = { mode, instrumental: inputs.instrumental, model: version, tags: tags.value };
+    const input = { mode, instrumental, model: version, tags: tags.value };
     for (const [field, value] of [['title', title.value], ['lyrics', lyrics.value], ['negative_tags', negative.value],
         ['vocal_gender', inputs.vocal_gender], ['style_weight', inputs.style_weight], ['weirdness_constraint', inputs.weirdness_constraint],
         ['duration', inputs.duration], ['variety', inputs.variety]]) if (value !== undefined) input[field] = value;
     return { ok: true, body: { model: SUNO_MODEL, input } };
+}
+
+/** CRUN's dedicated short sound-effects endpoint; only controls exposed by Veyrnox are forwarded. */
+function buildSunoSoundsRequest(inputs) {
+    if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) return { ok: false, error: 'inputs_invalid' };
+    const refused = refuseOtherKeys(inputs, new Set(['prompt', 'loop']));
+    if (refused) return refused;
+    const prompt = textField(inputs, 'prompt', 500, { required: true });
+    if (prompt.error) return { ok: false, error: prompt.error };
+    if (inputs.loop !== undefined && typeof inputs.loop !== 'boolean') return { ok: false, error: 'inputs_invalid:loop' };
+    return { ok: true, body: { model: SUNO_SOUNDS_MODEL, input: {
+        model: 'v6', prompt: prompt.value, sound_loop: inputs.loop === true, grab_lyrics: false,
+    } } };
 }
 
 const safeCode = (value, fallback = 0) => Number.isInteger(value) && value >= 0 && value <= 999 ? value : fallback;

@@ -50,7 +50,7 @@ function errorFor(error) {
 export default function TextToSpeechStudio() {
   const { models, live, loading: catalogLoading } = useCatalog();
   const { t } = useI18n();
-  const [modelId, setModelId] = useState('minimax-speech-2.6-hd');
+  const [modelId, setModelId] = useState('qwen3-tts');
   const availableModels = models.filter(item => SPEECH_MODEL_IDS.includes(item.id) && item.isSpeech && !item.gated);
   const model = availableModels.find(item => item.id === modelId) || null;
   const contract = speechContractFor(modelId);

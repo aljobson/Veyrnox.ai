@@ -116,9 +116,8 @@ test('the tokens.js fallback marks the same models as speech that the capability
     // With /api/catalog unreachable the picker is this list; a speech row
     // without the mark would get the starter prompt back.
     const endpointById = {
-        ...LIVE_SPEECH,
         'ace-step': 'fal-ai/ace-step', 'ace-step-1.5': 'fal-ai/ace-step-1.5',
-        'elevenlabs-sfx-v2': 'fal-ai/elevenlabs/sound-effects/v2', 'mmaudio-v2': 'fal-ai/mmaudio-v2/text-to-audio',
+        'suno-sounds': 'crun:suno/sounds-generate',
     };
     const audio = MODELS.filter((m) => m.kind === 'audio');
     assert.deepEqual(audio.map((m) => m.id).sort(), Object.keys(endpointById).sort(), 'every audio row in the fallback is checked');

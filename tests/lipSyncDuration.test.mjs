@@ -44,6 +44,17 @@ test('a constant presentation offset is supported only when its plain edit exact
   }
 });
 
+test('a gap-free reordered H.264 timeline is supported when its edit starts on the first presented frame', async () => {
+  const frame = 1;
+  const options = { video: 4, movie: 4, sampleCount: 4, compositionOffsets: [2, 3, 1, 2].map(value => value * frame) };
+  assert.equal((await info(lipSyncMp4({ ...options, edit: { seconds: 4, start: 2 } }))).videoSeconds, 4);
+  for (const edit of [null, { seconds: 4, start: 0 }, { seconds: 4, start: 1 }]) {
+    assert.equal((await info(lipSyncMp4({ ...options, edit }))).videoSeconds, null);
+  }
+  assert.equal((await info(lipSyncMp4({ ...options, compositionOffsets: [2, 4, 1, 2], edit: { seconds: 4, start: 2 } }))).videoSeconds, null, 'a presentation gap is not accepted');
+  assert.equal((await info(lipSyncMp4({ ...options, compositionOffsets: [2, 2, 1, 2], edit: { seconds: 4, start: 2 } }))).videoSeconds, null, 'overlapping frames are not accepted');
+});
+
 test('LatentSync refuses speech longer than proven visual coverage and unknown lengths before payment', () => {
   assert.deepEqual(checkSource(latent, sources(7.2, 8.542)), { ok: false, error: 'lipsync_audio_exceeds_video' });
   for (const unknown of [null, undefined, NaN, Infinity, 0, -1]) {

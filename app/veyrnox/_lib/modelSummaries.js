@@ -26,6 +26,7 @@ const SUMMARY = {
   'bria-expand': 'Expand an image into a new aspect ratio.',
   'ace-step': 'Generate a full music track from a prompt.',
   'ace-step-1.5': 'Higher-quality music with deeper prompt reasoning.',
+  'suno-sounds': 'Create a focused sound effect from words.',
   'elevenlabs-sfx-v2': 'Create a focused sound effect from words.',
   'mmaudio-v2': 'Add matching sound to a short source video.',
   'elevenlabs-tts-turbo': 'Fast natural speech from a script.',
@@ -58,7 +59,7 @@ export const FEATURED_MODEL_IDS = [
   'nano-banana-pro-grsai',
   'flux-2-pro',
   'ace-step-1.5',
-  'elevenlabs-dialogue',
+  'suno-sounds',
   'bria-bg-remove',
 ];
 

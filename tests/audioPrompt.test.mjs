@@ -12,7 +12,8 @@ register('data:text/javascript,' + encodeURIComponent(
 ));
 Object.assign(process.env, {
     SUPABASE_URL: 'https://db.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service',
-    FAL_KEY: 'test-fal', PUBLIC_HOST: 'https://veyrnox.test',
+    FAL_KEY: 'test-fal', CRUN_ENABLED: 'true', CRUN_API_KEY: 'test-crun', PUBLIC_HOST: 'https://veyrnox.test',
+    R2_ACCOUNT_ID: 'test', R2_ACCESS_KEY_ID: 'test-access', R2_SECRET_ACCESS_KEY: 'test-secret', R2_BUCKET: 'test',
 });
 const { POST } = await import('../app/api/v1/generations/route.js');
 
@@ -23,8 +24,7 @@ const { POST } = await import('../app/api/v1/generations/route.js');
 const LIVE_SOUND = {
     'ace-step': 'fal-ai/ace-step',
     'ace-step-1.5': 'fal-ai/ace-step-1.5',
-    'elevenlabs-sfx-v2': 'fal-ai/elevenlabs/sound-effects/v2',
-    'mmaudio-v2': 'fal-ai/mmaudio-v2/text-to-audio',
+    'suno-sounds': 'crun:suno/sounds-generate',
 };
 const SOUND_PLACEHOLDER = 'Describe the sound or music…';
 
@@ -54,7 +54,7 @@ test('source-only audio does not require text, while all eight prompt-driven aud
 });
 
 test('a music or sound-effect model starts with an empty box; pictures and clips keep the starter', () => {
-    assert.equal(sounds.length, 8);
+    assert.equal(sounds.length, 6);
     for (const model of sounds) assert.equal(promptText(null, model), '', model.id);
     for (const model of [video, image, null]) assert.equal(promptText(null, model), STARTER_PROMPT);
 });
@@ -108,8 +108,8 @@ test('a sound model says what the box is for; every other placeholder is unchang
 test('every text-driven audio capability record refuses an empty prompt', () => {
     // The Music (Suno) song record is not a chat sound model: its custom mode needs title, tags and lyrics, not a prompt, so
     // its inputs are checked by the Music contract (lib/musicCrunContract.js), not here.
-    const records = Object.entries(REGISTRY).filter(([endpoint, r]) => r.kind === 'audio' && !r.media?.audio?.required && endpoint !== 'crun:suno/music-generate');
-    assert.deepEqual(records.map(([endpoint]) => endpoint).sort(), Object.values(LIVE_SOUND).sort(), 'the audio records are the four sound models');
+    const records = Object.values(LIVE_SOUND).map((endpoint) => [endpoint, capabilityFor(endpoint)]);
+    assert.deepEqual(records.map(([endpoint]) => endpoint).sort(), Object.values(LIVE_SOUND).sort(), 'the live audio records are the three sound models');
     for (const [endpoint, record] of records) {
         assert.equal(record.inputs.prompt?.required, true, endpoint);
         assert.equal(publicCapabilities(record).kind, 'audio', endpoint);
@@ -133,7 +133,7 @@ test('the gateway refuses an empty prompt on each live sound model before any de
         throw new Error(`Unexpected test request: ${u.hostname}${u.pathname}`);
     });
     for (const [id, endpoint] of Object.entries(LIVE_SOUND)) {
-        row = { id, provider: 'fal', provider_endpoint: endpoint, modality: 'text-to-audio', credits_5s: 1, gated_flag: false, active: true };
+        row = { id, provider: endpoint.startsWith('crun:') ? 'crun' : 'fal', provider_endpoint: endpoint, modality: 'text-to-audio', credits_5s: 2, gated_flag: false, active: true };
         for (const prompt of ['', '   ']) {
             // What the create page sent for an emptied box, aspect ratio and all.
             const response = await POST(new Request('https://veyrnox.test/api/v1/generations', {
