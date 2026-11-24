@@ -92,6 +92,7 @@ export function MusicGenerationActionBody({ id, kind }: { id: string; kind: Gene
                         {selected?.flow === flow ? <MusicPlayer key={`${selected.input.jobId}:${selected.serial}`} input={selected.input} autoPlay /> : null}
                         {candidates?.map(candidate => <MusicCandidateCard key={candidate.ordinal} candidate={candidate}
                             requireValidSongId openSongLabel={t('musicGenerationActions.openSong')}
+                            cancellation={{ api, refresh: flow.refresh, afterCancel: flow.refreshBalance }}
                             onPlay={input => { if (flow.isLive()) setSelected(previous => ({ flow, input, serial: (previous?.serial ?? 0) + 1 })); }}>
                             {kind === 'replace_section' ? <MusicReplaceTakeControls keeper={keeper} state={keepState} candidate={candidate} songId={id} /> : null}
                         </MusicCandidateCard>)}

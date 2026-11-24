@@ -13,5 +13,5 @@ export function useMusicCreate() {
     useEffect(() => { if (user) void flow.load(); }, [flow, user]);
     useFocusEffect(useCallback(() => { if (user) void flow.refreshEntitlements(); }, [flow, user]));
     useEffect(() => { if (user && state.input.mode === 'custom') void flow.loadDraft(); }, [flow, user, state.input.mode]);
-    return { flow, state, pending, queue };
+    return { api, flow, state, pending, queue };
 }

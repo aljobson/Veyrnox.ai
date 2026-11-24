@@ -7092,6 +7092,8 @@ export default {
     "music.create.ready": "جاهز",
     "music.create.failed": "لم تكتمل هذه النسخة. يُعاد أي رصيد مخصوم تلقائياً.",
     "music.create.refunded": "أُعيد رصيد هذه النسخة.",
+    "music.create.refundedPaid": "لم تكتمل هذه النسخة. أُعيد الرصيد المدفوع إلى مصدره.",
+    "music.create.refundedFree": "لم تكتمل هذه النسخة. أُعيدت الفرصة المجانية إلى يومها الأصلي.",
     "music.create.cancelled": "ملغى",
     "music.create.unplayable": "لا يمكن تشغيل هذه النسخة.",
     "music.create.openSong": "فتح الأغنية",

@@ -6835,6 +6835,8 @@ export default {
     "music.create.ready": "Pronto",
     "music.create.failed": "Esta versão não foi concluída. Qualquer cobrança é devolvida automaticamente.",
     "music.create.refunded": "Créditos devolvidos por esta versão.",
+    "music.create.refundedPaid": "Esta versão não foi concluída. Seus créditos pagos voltaram à origem.",
+    "music.create.refundedFree": "Esta versão não foi concluída. O uso grátis voltou ao dia de origem.",
     "music.create.cancelled": "Cancelado",
     "music.create.unplayable": "Não é possível reproduzir esta versão.",
     "music.create.openSong": "Abrir música",

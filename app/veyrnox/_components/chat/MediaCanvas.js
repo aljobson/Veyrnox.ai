@@ -23,7 +23,7 @@ export function MediaCanvas({ kind, media }) {
     return (
       <div className="mx-auto w-full max-w-[760px] space-y-3 px-4 py-6">
         <div><p className="font-vx-mono text-[10px] uppercase tracking-[0.14em] text-vx-fg-muted">{media.model?.name}</p><h1 className="mt-1 text-xl font-black">{media.generating ? t('app.music.suno.generatingPair') : t('app.music.suno.pairReady')}</h1></div>
-        {(latest.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={latest.title} />)}
+        {(latest.candidates || []).map((candidate) => <MusicServerCandidate key={candidate.job_id || candidate.ordinal} candidate={candidate} title={latest.title} onCancelled={() => media.refreshGeneration(latest.id)} />)}
       </div>
     );
   }

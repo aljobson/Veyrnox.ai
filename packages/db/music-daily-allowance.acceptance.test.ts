@@ -161,6 +161,41 @@ describe('Music daily allowance (0601)', { skip: !local && 'disposable localhost
     assert.equal((await one('SELECT public.cancel_user_job($1,$2) r', [owner.auth, job])).r.replayed, true);
   });
 
+  it('cancels a mixed pair exactly once and projects free-versus-paid refund truth', async () => {
+    const owner = await user();
+    const used = Number((await one(`SELECT coalesce(sum(candidates),0) n FROM (
+      SELECT 1 candidates FROM public.music_daily_allowance_claims WHERE day=(now() AT TIME ZONE 'UTC')::date AND state='TAKEN'
+      UNION ALL SELECT candidates FROM public.music_daily_allowance_reservations
+        WHERE day=(now() AT TIME ZONE 'UTC')::date AND state='LIVE' AND expires_at>now()) x`)).n);
+    await pool.query('UPDATE public.music_daily_allowance_policy SET global_candidates_per_day=$1 WHERE singleton', [used + 1]);
+    const balanceBefore = Number((await one(`SELECT balance-CASE WHEN subscription_expires_at>now() THEN 0 ELSE subscription_balance END balance
+      FROM public.credit_balances WHERE user_id=$1`, [owner.id])).balance);
+    const priced = await quote(owner.auth, 'mixed cancellation projection');
+    assert.equal(priced.daily_free_candidates, 1); assert.equal(priced.total_credits, 4);
+    const made = (await one('SELECT public.music_submit_pair($1,$2,$3) r',
+      [owner.auth, priced.quote_id, `daily.cancel.mixed.${randomUUID()}`])).r;
+    const jobs = (await pool.query(`SELECT j.id,j.free_allowance,j.credits FROM public.jobs j
+      JOIN public.music_generation_candidates c ON c.job_id=j.id
+      WHERE c.generation_request_id=$1 ORDER BY c.ordinal`, [made.request_id])).rows;
+    assert.deepEqual(jobs.map((row: any) => [row.free_allowance, Number(row.credits)]), [[true, 0], [false, 4]]);
+    const originalClaimDay = (await one('SELECT day FROM public.music_daily_allowance_claims WHERE job_id=$1', [jobs[0].id])).day;
+    const first = await Promise.all(jobs.map((job: any) => one('SELECT public.cancel_user_job($1,$2) r', [owner.auth, job.id])));
+    assert.deepEqual(first.map((row: any) => [row.r.ok, row.r.replayed, Number(row.r.credits)]), [[true, false, 0], [true, false, 4]]);
+    const replay = await Promise.all(jobs.map((job: any) => one('SELECT public.cancel_user_job($1,$2) r', [owner.auth, job.id])));
+    assert.deepEqual(replay.map((row: any) => [row.r.ok, row.r.replayed]), [[true, true], [true, true]]);
+    const returnedClaim = await one('SELECT state,day FROM public.music_daily_allowance_claims WHERE job_id=$1', [jobs[0].id]);
+    assert.equal(returnedClaim.state, 'RETURNED'); assert.deepEqual(returnedClaim.day, originalClaimDay);
+    assert.equal(Number((await one(`SELECT count(*) n FROM public.ledger_entries
+      WHERE job_id=ANY($1::uuid[]) AND delta>0 AND reason='refund:user_cancelled'`, [jobs.map((job: any) => job.id)])).n), 1);
+    assert.equal(Number((await one(`SELECT balance-CASE WHEN subscription_expires_at>now() THEN 0 ELSE subscription_balance END balance
+      FROM public.credit_balances WHERE user_id=$1`, [owner.id])).balance), balanceBefore);
+    const projected = (await one('SELECT public.music_get_generation($1,$2) r', [owner.auth, made.request_id])).r;
+    assert.equal(projected.ok, true);
+    assert.equal(projected.generation.state, 'refunded');
+    assert.deepEqual(projected.generation.candidates.map((candidate: any) => [candidate.state, candidate.error_code, Number(candidate.credits)]),
+      [['refunded', 'user_cancelled', 0], ['refunded', 'user_cancelled', 4]]);
+  });
+
   it('fails closed for eligibility, provider pause and insufficient mixed balance', async () => {
     const frozen = await user();
     await pool.query('UPDATE public.users SET frozen_at=now() WHERE id=$1', [frozen.id]);

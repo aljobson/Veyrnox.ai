@@ -17,7 +17,7 @@ import { SafeKeyboardFormScrollView } from '../../../components/SafeContentScrol
 const KNOWN = new Set(['empty_prompt', 'lyrics_required', 'style_required', 'over_length', 'bpm_invalid', 'locked_plan', 'unavailable', 'rights', 'no_slot', 'not_affordable', 'quote_expired', 'quote_stale', 'daily_allowance_stale', 'contract_stale', 'draft_stale', 'quote_already_used', 'conflict', 'prompt_not_allowed', 'model_unavailable', 'plan_unavailable']);
 const messageKey = (code: string) => code === 'rights' ? 'rights_required' : KNOWN.has(code) ? code : 'error';
 export default function MusicCreate() {
-    const { flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
+    const { api, flow, state, pending, queue } = useMusicCreate(), s = useThemedStyles(sheets);
     const { sample } = useLocalSearchParams<{ sample?: string }>();
     const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
     const edit: typeof flow.edit = (...args) => { touched.current = flow; flow.edit(...args); };
@@ -138,7 +138,8 @@ export default function MusicCreate() {
                                     void flow.confirm().finally(() => { lock.current = false; });
                                 }} />
                         </> : null}
-                        <MusicQueue entries={queue.entries} activeCount={flow.tracker.activeCount()} limit={e.concurrency_limit} />
+                        <MusicQueue entries={queue.entries} activeCount={flow.tracker.activeCount()} limit={e.concurrency_limit}
+                            api={api} refresh={flow.tracker.refresh} afterCancel={flow.refreshEntitlements} />
                     </> : null}
     </SafeKeyboardFormScrollView>;
 }

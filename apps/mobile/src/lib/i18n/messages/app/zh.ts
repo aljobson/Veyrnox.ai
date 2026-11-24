@@ -6662,6 +6662,8 @@ export default {
     "music.create.ready": "已就绪",
     "music.create.failed": "此候选未能完成。所扣积分将自动退还。",
     "music.create.refunded": "此候选的积分已退还。",
+    "music.create.refundedPaid": "此版本未完成。付费积分已按原来源退回。",
+    "music.create.refundedFree": "此版本未完成。免费次数已退回原来的日期。",
     "music.create.cancelled": "已取消",
     "music.create.unplayable": "无法播放此候选。",
     "music.create.openSong": "打开歌曲",

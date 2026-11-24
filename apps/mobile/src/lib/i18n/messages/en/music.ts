@@ -142,6 +142,8 @@ export default {
     "music.create.ready": "Ready",
     "music.create.failed": "This candidate did not complete. Any charge is returned automatically.",
     "music.create.refunded": "Credits returned for this candidate.",
+    "music.create.refundedPaid": "This version did not complete. Its paid Credits returned to their original source.",
+    "music.create.refundedFree": "This version did not complete. Its free use returned to the original day.",
     "music.create.cancelled": "Cancelled",
     "music.create.unplayable": "This candidate cannot be played.",
     "music.create.openSong": "Open song",
