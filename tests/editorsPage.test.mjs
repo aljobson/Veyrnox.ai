@@ -10,7 +10,7 @@ test('the public editors page is routed, discoverable and indexed', () => {
   const sitemap = read('app/sitemap.js');
 
   assert.match(config, /source: '\/editors', destination: '\/veyrnox\/editors'/);
-  assert.match(tokens, /href: '\/editors',\s+label: 'Editors'/);
+  assert.match(tokens, /PRIMARY_NAV_CATEGORIES = \[[\s\S]*href: '\/editors',\s+label: 'Editors'/);
   assert.match(tokens, /href: '\/editors',\s+label:\s+'Editors',\s+description:/);
   assert.match(sitemap, /page\('\/editors'/);
 });
