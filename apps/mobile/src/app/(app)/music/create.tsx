@@ -22,7 +22,7 @@ export default function MusicCreate() {
     const router = useRouter();
     const { sample, challenge, lyricHandoff } = useLocalSearchParams<{ sample?: string; challenge?: string; lyricHandoff?: string }>();
     const [lyricRequest, setLyricRequest] = useState('');
-    const [lyricReview, setLyricReview] = useState<null | { lyrics: string; sourceLyrics: string; draftId: string; draftRevision: number }>(null);
+    const [lyricReview, setLyricReview] = useState<null | { lyrics: string; sourceLyrics: string; draftId: string | null; draftRevision: number }>(null);
     const [lyricNotice, setLyricNotice] = useState<string | null>(null);
     const handledLyricTokens = useRef(new Set<string>());
     const seeded = useRef<typeof flow | null>(null), touched = useRef<typeof flow | null>(null);
