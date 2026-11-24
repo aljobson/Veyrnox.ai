@@ -1,7 +1,7 @@
 import { song, version, hook } from './fixtures/music';
 import { ApiError, type ApiClient } from '../src/lib/api';
 import {
-    createQuote, getEntitlements, getLibraryTab, getSong, isMusicOff, listSongs, probeMusic, recordListen,
+    analyzeMusicInspiration, createQuote, getEntitlements, getLibraryTab, getSong, isMusicOff, listSongs, probeMusic, recordListen,
     setSongLifecycle, startGeneration,
 } from '../src/lib/music';
 // @ts-ignore server parsers, used to prove the phone sends bodies the routes accept
@@ -95,6 +95,21 @@ describe('entitlements', () => {
     ])('rejects malformed %j', async (v) => {
         request.mockResolvedValue(v);
         await expect(getEntitlements(api)).rejects.toMatchObject({ code: 'bad_response' });
+    });
+});
+
+describe('audio inspiration', () => {
+    const result = { analysis_id: UUID, brief: 'Warm pulse', tags: ['warm'], receipt: 'a.b',
+        expires_at: '2026-11-24T12:00:00Z', idempotent: false };
+    test('posts the exact rights-bound contract and validates the result', async () => {
+        request.mockResolvedValue(result);
+        await expect(analyzeMusicInspiration(api, 'uploads/key.mp3', KEY)).resolves.toEqual(result);
+        expect(request.mock.calls[0][0]).toBe('/api/v1/music/inspiration');
+        expect(sentBody()).toEqual({ kind: 'audio', key: 'uploads/key.mp3', rights_confirmed: true, idempotency_key: KEY });
+    });
+    test.each([{ ...result, brief: '' }, { ...result, tags: ['x', 'x'] }, { ...result, idempotent: 'no' }])('rejects malformed %j', async value => {
+        request.mockResolvedValue(value);
+        await expect(analyzeMusicInspiration(api, 'uploads/key.mp3', KEY)).rejects.toMatchObject({ code: 'bad_response' });
     });
 });
 

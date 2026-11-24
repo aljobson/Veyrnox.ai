@@ -95,6 +95,15 @@ export type MusicEntitlements = {
     readonly policy: { readonly version: string; readonly pre_debit: boolean };
 };
 
+export type MusicInspirationResult = {
+    readonly analysis_id: string;
+    readonly brief: string;
+    readonly tags: readonly string[];
+    readonly receipt: string;
+    readonly expires_at: string;
+    readonly idempotent: boolean;
+};
+
 export type MusicLibraryTab = 'history' | 'hooks' | 'covers';
 
 // Rows are passed through as the server sent them (RPC json); the phone reads only what a screen needs.
