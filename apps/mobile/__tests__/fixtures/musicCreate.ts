@@ -9,6 +9,7 @@ export const entitlements: MusicEntitlements = { available: true, mode: 'simple'
             credits_per_candidate: 10, total_credits: 20, instrumental_only: false, requires_paid_plan: true, available: true }],
     custom_drafts: { available: true, autosave: true, generation_supported: true, lyrics_max: 3000, styles_max: 500, title_max: 80 },
     features: { albums: false, inspiration: false, studioChat: false, dailyChallenge: false, persistentQueue: false },
+    inspiration_sources: [],
     daily_allowance: { enabled: false },
     policy: { version: 'music-v1', pre_debit: true } };
 export const quote: MusicQuote = { quote_id: JOB, mode: 'simple', model_id: 'ace-step', output_count: 2, credits_per_candidate: 5, total_credits: 10,

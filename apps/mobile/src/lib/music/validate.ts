@@ -12,6 +12,7 @@ const all = (r: Rec, keys: readonly string[], test: (v: unknown) => boolean): bo
 const contracts = ['fal-ace-v1', 'crun-suno-v1'] as const;
 const sunoModels = ['v6', 'v6_mini', 'v6_wild'];
 const genders = ['auto', 'male', 'female'];
+const inspirationSources = ['audio', 'image', 'video_frames'];
 const isContract = (v: unknown): boolean => contracts.includes(v as typeof contracts[number]);
 const isPositiveInteger = (v: unknown): boolean => Number.isSafeInteger(v) && Number(v) > 0;
 const isNonNegativeInteger = (v: unknown): boolean => Number.isSafeInteger(v) && Number(v) >= 0;
@@ -64,6 +65,9 @@ export const isMusicEntitlements = (v: unknown): v is MusicEntitlements => isRec
     && (v.custom_drafts.provider_contract === undefined || isContract(v.custom_drafts.provider_contract))
     && isRecord(v.features)
     && all(v.features, ['albums', 'inspiration', 'studioChat', 'dailyChallenge', 'persistentQueue'], bool)
+    && Array.isArray(v.inspiration_sources)
+    && v.inspiration_sources.every(x => str(x) && inspirationSources.includes(x))
+    && new Set(v.inspiration_sources).size === v.inspiration_sources.length
     && (v.daily_allowance === undefined || (isRecord(v.daily_allowance) && bool(v.daily_allowance.enabled)
         && optional(v.daily_allowance, ['unavailable', 'eligible'], bool)
         && optional(v.daily_allowance, ['candidates_remaining', 'pairs_remaining'], isNonNegativeInteger)
