@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { classifySubmitFailure, nextRoute, submitWithFailover } from '../lib/supplierRoutesFailover.js';
+import { classifySubmitFailure, countsAgainstRoute, nextRoute, submitWithFailover } from '../lib/supplierRoutesFailover.js';
 
 const R = (id, supplier, priority, extra = {}) => ({ id, supplier, endpoint: `${supplier}:ep`, priority, state: 'active', provenance: 'licensed_reseller', parity_record: 'p', cost_per_unit: 0.02, cost_unit: 'per_generation', ...extra });
 const kie = R('r1', 'kie', 1), fal = R('r2', 'fal', 2), grsai = R('r3', 'grsai', 3);
@@ -84,7 +84,119 @@ test('a refused prompt does not hop, and the failed attempt is closed for the re
   const r = await w.run();
   assert.equal(r.result.ok, false);
   assert.deepEqual(w.submits, [['kie', 'kie:ep']]);
+  assert.deepEqual(w.calls, [['job_route_close_refused', { p_job_id: 'job1', p_route_id: 'r1' }]]);
+});
+
+test('only a supplier-side refusal counts against the route', () => {
+  for (const r of [
+    rejected('kie 401/401: key'), rejected('fal 429: slow down'), rejected('x', { errorCode: 'provider_payment_required' }),
+    rejected('provider_auth_failed', { errorCode: 'provider_auth_failed', scope: 'account' }),
+    rejected('provider_rate_limited', { errorCode: 'provider_rate_limited', scope: 'deferred' }),
+    rejected('provider_route_unavailable', { errorCode: 'provider_route_unavailable', scope: 'route' }),
+    rejected('crun 455/455', { errorCode: 'provider_route_unavailable', scope: 'route' }),
+  ]) assert.equal(countsAgainstRoute(r), true, JSON.stringify(r));
+  for (const r of [
+    rejected('provider_moderation', { errorCode: 'provider_moderation', scope: 'rejected' }),
+    rejected('provider_input_rejected', { errorCode: 'provider_input_rejected', scope: 'rejected' }),
+    rejected('crun 451/451'), rejected('crun 422/422: reference_rejected'), rejected('kie 422/422: prompt'), rejected('fal 422: moderation'),
+    rejected('provider_unavailable', { errorCode: 'provider_unavailable', scope: 'circuit' }),
+    rejected('provider_boundary_refused', { errorCode: 'provider_boundary_refused', scope: 'circuit' }),
+    rejected('provider_rate_limited', { errorCode: 'provider_rate_limited', scope: 'deferred', localLimit: true }),
+    { ok: false, outcome: 'unknown', error: 'kie 503/503' }, { ok: true }, null,
+  ]) assert.equal(countsAgainstRoute(r), false, JSON.stringify(r));
+});
+
+test('a genuine supplier failure on the last route is closed through the counting path', async () => {
+  const w = world({ results: { kie: () => rejected('provider_route_unavailable', { errorCode: 'provider_route_unavailable', scope: 'route' }) } });
+  await w.run({ canHop: false });
   assert.deepEqual(w.calls, [['job_route_failover', { p_job_id: 'job1', p_failed_route_id: 'r1', p_next_route_id: null }]]);
+});
+
+test('accounting recognizes kie envelope failures without changing hop eligibility', () => {
+  for (const error of ['kie 200/401: x', 'kie 200/402', 'kie 200/403', 'kie 200/429', 'kie 200/455', 'kie 200/500', 'kie 200/599: x']) {
+    assert.equal(countsAgainstRoute(rejected(error)), true, error);
+    assert.equal(classifySubmitFailure(rejected(error)), 'stop', error);
+  }
+  for (const error of ['kie 200/422: x', 'kie 200/4010', 'kie 200/429 extra', 'kie 20/500', 'crun 200/500', 'provider_request_rejected']) {
+    assert.equal(countsAgainstRoute(rejected(error)), false, error);
+  }
+});
+
+test('scope-free GrsAI and OpenRouter supplier codes count only for rejected submissions', async () => {
+  for (const supplier of ['grsai', 'openrouter']) {
+    for (const errorCode of ['provider_auth_failed', 'provider_payment_required', 'provider_rate_limited', 'provider_model_unavailable']) {
+      const result = rejected(errorCode, { errorCode });
+      assert.equal(countsAgainstRoute(result), true, `${supplier}: ${errorCode}`);
+      assert.equal(classifySubmitFailure(result), errorCode === 'provider_payment_required' ? 'failover' : 'stop');
+      assert.equal(countsAgainstRoute({ ...result, localLimit: true }), false);
+      for (const outcome of [undefined, 'unknown', 'deferred', 'not_sent']) {
+        assert.equal(countsAgainstRoute({ ...result, outcome }), false);
+      }
+      const calls = [];
+      await submitWithFailover({ jobId: 'j', modelRow: { ...offer, provider: supplier }, ownRoute: kie, routes: [kie],
+        canHop: false, first: { provider: { submit: async () => result } },
+        deps: { rpc: async (...args) => { calls.push(args); return { ok: true }; } },
+      }, {});
+      assert.deepEqual(calls, [['job_route_failover', { p_job_id: 'j', p_failed_route_id: 'r1', p_next_route_id: null }, {}]]);
+    }
+  }
+  for (const errorCode of ['provider_request_rejected', 'provider_unavailable', 'provider_refused', 'provider_auth_failed_extra']) {
+    assert.equal(countsAgainstRoute(rejected(errorCode, { errorCode })), false, errorCode);
+  }
+});
+
+test('fal and Higgsfield payment refusals count without changing hop eligibility', async () => {
+  for (const error of ['fal 402: insufficient balance', 'higgsfield 402/rejected']) {
+    const result = rejected(error);
+    assert.equal(countsAgainstRoute(result), true, error);
+    assert.equal(classifySubmitFailure(result), 'stop', error);
+    assert.equal(countsAgainstRoute({ ...result, localLimit: true }), false);
+    for (const outcome of [undefined, 'unknown', 'deferred', 'not_sent']) {
+      assert.equal(countsAgainstRoute({ ...result, outcome }), false);
+    }
+    const w = world({ results: { kie: () => result } });
+    assert.equal((await w.run()).result, result);
+    assert.deepEqual(w.calls, [['job_route_failover', { p_job_id: 'job1', p_failed_route_id: 'r1', p_next_route_id: null }]]);
+  }
+  for (const error of ['upstream_error', 'fal 4020: x', 'Fal 402: x', ' fal 402: x', 'higgsfield 402: x', 'higgsfield 4020/402']) {
+    assert.equal(countsAgainstRoute(rejected(error)), false, error);
+    assert.equal(classifySubmitFailure(rejected(error)), 'stop', error);
+  }
+});
+
+test('submit refusal closure errors log once without counting, including a missing RPC', async () => {
+  const errors = [
+    { status: 404, body: { code: 'PGRST202' } },
+    { status: 500, body: { code: 'PGRST202' } },
+    { status: '404', body: { code: 'PGRST202' } },
+    { status: 404, body: { code: 'PGRST205' } },
+    { status: 404 }, new Error('network error'),
+  ];
+  for (const error of errors) {
+    const calls = [], logs = [];
+    const result = rejected('kie 200/422: x');
+    const w = world({ results: { kie: () => result } });
+    const returned = await w.run({ canHop: false, deps: {
+      rpc: async (name, args) => {
+        calls.push([name, args]);
+        if (name === 'job_route_close_refused') throw error;
+        return { ok: true };
+      }, log: (...args) => logs.push(args),
+    } });
+    assert.equal(returned.result, result);
+    assert.deepEqual(calls, [
+      ['job_route_close_refused', { p_job_id: 'job1', p_route_id: 'r1' }],
+    ]);
+    assert.equal(logs.length, 1);
+  }
+});
+
+test('submit accounting without an outcome stays unchanged for BytePlus', async () => {
+  const result = { ok: false, errorCode: 'provider_auth_failed' };
+  const w = world({ results: { kie: () => result } });
+  assert.equal(countsAgainstRoute(result), false);
+  assert.equal((await w.run({ modelRow: { ...offer, provider: 'byteplus' } })).result, result);
+  assert.deepEqual(w.calls, []);
 });
 
 test('a second refusal hops again, then stops at three attempts and closes the last', async () => {

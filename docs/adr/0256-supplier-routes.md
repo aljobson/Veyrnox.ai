@@ -371,3 +371,99 @@ before a route) does not apply and there is no second supplier. Each has one act
 job Crun refuses is refunded. The upscale pins a 1024 px long edge because a 1024x1536 source came back at its own size and was
 still charged 3 credits; a 1024 px edge doubling is confirmed with one real run after the Worker deploy. The Worker must be live
 before 0599 is applied. Bria and Topaz stay.
+
+## Amendment 2026-11-23: route failure accounting and breaker recovery (0604)
+
+Route failure accounting now records supplier-side failures only, and generic Crun routes recover through the
+documented cooldown.
+
+1. **Submit counting is an allow-list.** `countsAgainstRoute` counts only `outcome === 'rejected'`, with no `localLimit`,
+   and at least one accounting rule: `scope === 'route'`; `classifySubmitFailure` returning `failover`; an exact code of
+   `provider_auth_failed`, `provider_payment_required`, `provider_rate_limited` or `provider_model_unavailable`, with or
+   without a scope; a kie envelope matching `^kie \d{3}/(401|402|403|429|455|5\d\d)(:|$)`; or an error starting exactly
+   `fal 402:` or `higgsfield 402/`. The independent accounting rules cover scope-free GrsAI and OpenRouter codes,
+   kie errors inside HTTP 200, and fal and Higgsfield payment refusals. Sanitised fal `upstream_error` stays uncounted
+   because it carries no status.
+   Bare `provider_unavailable`, customer-content outcomes, unreadable 4xx, local validation and circuit-gate refusals
+   close without counting. `classifySubmitFailure` remains the unchanged hop-safety rule. BytePlus submit failures
+   without an `outcome` remain outside submit accounting. Redacted refusals keep their exact result shape, and vendor
+   text is neither parsed nor added.
+2. **Uncounted submit closure.** `job_route_close_refused(uuid, uuid)` uses the job lock and close-half checks of
+   `job_route_failover`, records a failed attempt and never calls `route_breaker_record`. Missing jobs return
+   `job_not_found`; non-DEBITED jobs or accepted attempts return `job_not_failable_over_or_accepted`; a different last
+   route returns `failed_route_mismatch`. Replay is an `ok: true` no-op. `job_route_failover` remains unchanged for
+   genuine supplier failures, including its eligibility, margin and spend checks.
+3. **Generic Crun recovery.** The gate holds a generic endpoint only while its breaker timestamp is less than ten
+   minutes old. A completed probe resets the count and closes it; a failed probe restarts ten minutes through the
+   existing counting path. Probes are not exclusive: the existing account limiter bounds them to 20 per ten seconds.
+   Suno retains its indefinite hold until fenced reopen, and `reopen_crun_endpoint_routes` is not widened.
+4. **Typed async customer content.** Both completion paths pass the adapter's `errorCode` to `markAttemptOutcome`.
+   Failed outcomes with exactly `provider_moderation` (BytePlus, GrsAI), `provider_moderated` (Higgsfield), or the imported
+   `REFERENCE_REJECTED_LIKENESS` constant (fal) use `mark_job_attempt_refused(text, text)`. It updates only matching
+   supplier/task attempts still `submitted`, sets them to `failed`, and never counts. It returns `{ ok: true, updated: n }`;
+   redelivery updates zero. Completed outcomes and every other failure keep using `mark_job_attempt_outcome`.
+5. **Route identity survives cooldown.** `resolveRouteSet` ranks once with breaker timestamps ignored only on copies
+   of rows matching the offer's supplier and endpoint, and returns the original row if the first route matches the
+   offer. An own route at priority 2 therefore remains tracked when a different priority 1 route is cooling, even
+   when the own route is also cooling; a healthy different priority 1 route still returns
+   no own route. Returned timestamps stay intact. The flag-off, read-error and empty-table cases are unchanged.
+   Route identity remains available across cooldown transitions,
+   so admitted probes retain attempt tracking. Crun gate refusals close uncounted; supplier results update route health
+   through the existing failure and completion paths. Provable supplier refusals may now fail over, but `nextRoute`
+   still excludes cooling destinations. `chooseRoute`, `breakerOpen` and the first supplier receiving the job are unchanged.
+6. **Two exact endpoint exceptions.** The restated gate admits `crun:bytedance/seedance2-5-r2v:edit` and
+   `crun:bytedance/seedance2-5-r2v:extend` alongside its existing grammar. No general second colon is allowed; case
+   variants and suffix lookalikes remain `INVALID_INPUTS`. Breakers compare the full endpoint, so edit, extend and the
+   plain endpoint trip and recover independently. The two offers remain dark as 0598 left them.
+7. **Generic Crun endpoint accounting uses admission-time evidence.** Migration 0604 adds nullable
+   `breaker_first_opened_at` without backfilling it. It records the start of the current open period and stays fixed
+   when `breaker_opened_at` is refreshed. Readers fall back to `breaker_opened_at` when the new column is NULL.
+   `mark_job_attempt_outcome` passes `job_attempts.created_at` to
+   `private.route_breaker_record(uuid, boolean, timestamptz)`. The existing two-argument function delegates with
+   `now()`, keeping submit-phase accounting and `job_route_failover` unchanged.
+
+   For generic Crun routes sharing an endpoint, a failure always increments its own count and writes only its own
+   row. With no stamped route, the fifth consecutive failure opens a period. With a stamped route, a failure
+   refreshes the stamp only if the attempt was created at or after the latest endpoint stamp plus nine minutes.
+   After one failed probe refreshes the stamp, another failure from the same window raises the count without moving
+   the stamp. Earlier attempts leave the stamp unchanged, even at the threshold. An unstamped route joining an open
+   period inherits the earliest endpoint start; an already stamped route retains its own original start.
+   The endpoint lookup is a plain read.
+
+   Completion clears its own count and both timestamps. It also clears stamped siblings when the attempt was created
+   at or after that sibling's period start plus nine minutes, selecting them with `FOR UPDATE SKIP LOCKED`.
+   Thus a completed probe can clear a sibling whose stamp was refreshed by a failed probe, while a task admitted
+   before the trip cannot clear a sibling. Locked siblings remain for a later completion and their stamps still age
+   out at the gate. Neither accounting path waits on another route's row. Own-row behaviour on late completion is
+   unchanged from 0376. Suno and other suppliers retain 0376 accounting, ignore attempt time and leave the new column
+   NULL; Suno's trip and fenced-reopen functions are unchanged.
+
+   Both nine-minute evidence cutoffs include 60 seconds of admission-time grace; the gate still holds for ten minutes.
+   Failure uses the latest endpoint stamp, while sibling completion uses the original period start.
+   Failover attempt rows are opened just before submit, so a row created during the last minute of cooldown can reach
+   the gate after expiry. The first failure from that window restarts the cooldown; subsequent failures from the same
+   window only increment the count, while a completion from that window can still close the endpoint. Crun's submit
+   timeout is 15 seconds, and first attempts are recorded just after acceptance, so a pre-trip admission does not
+   normally produce a row nine minutes later. The SQL regression suite sets attempt timestamps explicitly and covers
+   legacy NULL starts, repeated refreshes, sibling ordering, the grace boundary and committed `SKIP LOCKED` fixtures.
+   The committed fixture requires a loopback host and a database name ending in `_check`, and restores both rows in
+   `finally`.
+8. **Deployment order.** The Worker must be live before 0604 is applied: the old Worker counts circuit-gate refusals,
+   which can keep a shared generic Crun endpoint held. Worker-first is the normal order: `main` deploys the Worker on
+   push, and an owner-approved workflow applies migrations afterwards. If either new uncounted-close RPC fails for any reason,
+   including a missing function (`PGRST202`), the Worker logs the error and makes no counting call. With the Worker
+   first, customer-content outcomes are not counted until 0604 lands. An attempt left open in that window, or by a
+   failed close RPC, stays open in the attempt log: nothing closes it later. The Your Wins readers select only
+   `completed` attempts; `scripts/check-crun-spend.mjs` reads all attempts, shows these rows as `open` and includes
+   them only in its all-attempts upper bound. No path that moves money or routes a job acts on these open rows.
+   Genuine supplier failures
+   keep using the existing counting RPCs throughout.
+
+Known limit: some asynchronous supplier failures carry no reviewed reason code (Crun TaskInfo `provider_task_failed`,
+raw kie and fal codes), so they are treated as supplier failures. Vendor text is not parsed and no mapping is added.
+Generic Crun routes still recover after ten minutes, and a completed job resets their failure count.
+
+The four public functions are service-role-only. Both private breaker overloads revoke execution from PUBLIC, anon,
+authenticated and service_role. All six functions use `SECURITY DEFINER` with an empty search path.
+The gate body is copied from 0591 with only the cooldown predicate and endpoint clause changed. Prices, catalog rows,
+routes, flags, refunds, ledger and Suno controls are unchanged. Veo image input remains dark pending separate work.
