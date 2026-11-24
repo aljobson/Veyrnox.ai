@@ -1,5 +1,11 @@
 [
   {
+    "id": "music.queue.add",
+    "english": "Add to listening queue",
+    "translation": "Zur Wiedergabewarteschlange hinzufügen",
+    "ratio": 1.73
+  },
+  {
     "id": "videoShape.square",
     "english": "Square",
     "translation": "Quadratisch",

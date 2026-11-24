@@ -1,6 +1,10 @@
 // Machine translated (ADR-0270); native review pending
 // App-only catalog. Generated website entries are merged over these values at runtime.
 export default {
+  "music.queue.add": "재생 대기열에 추가",
+  "music.queue.title": "재생 대기열",
+  "music.queue.position": "재생 대기열 · {total}개 중 {position}번째",
+  "music.queue.generatedAudio": "생성된 오디오",
   "videoShape.all": "모든 화면 비율",
   "videoShape.portrait": "세로",
   "videoShape.landscape": "가로",

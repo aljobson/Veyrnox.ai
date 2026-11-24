@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { claimAudioFocus, releaseAudioFocus } from '../_lib/audioFocus';
 
 const SPOOL_MIN = 5;
 const SPOOL_GAIN = 4;
@@ -13,10 +14,11 @@ const SPOOL_GAIN = 4;
  */
 export function CassettePlayer({ src, onError, onLoadedData, autoPlay = false, label }) {
   const audio = useRef(null);
+  const focusId = useId();
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   // Autoplay can start before React attaches onPlay, so pick up a track that is already playing.
-  useEffect(() => { if (audio.current && !audio.current.paused) setPlaying(true); }, []);
+  useEffect(() => { if (audio.current && !audio.current.paused) setPlaying(true); return () => releaseAudioFocus(focusId); }, [focusId]);
   const left = SPOOL_MIN + SPOOL_GAIN * (1 - progress);
   const right = SPOOL_MIN + SPOOL_GAIN * progress;
   const toggle = async () => {
@@ -60,9 +62,9 @@ export function CassettePlayer({ src, onError, onLoadedData, autoPlay = false, l
         aria-label={label}
         onError={onError}
         onLoadedData={onLoadedData}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onEnded={() => { setPlaying(false); setProgress(0); }}
+        onPlay={() => { claimAudioFocus(focusId, () => audio.current?.pause()); setPlaying(true); }}
+        onPause={() => { releaseAudioFocus(focusId); setPlaying(false); }}
+        onEnded={() => { releaseAudioFocus(focusId); setPlaying(false); setProgress(0); }}
         onTimeUpdate={(e) => {
           const { currentTime, duration } = e.currentTarget;
           setProgress(duration > 0 ? Math.min(1, currentTime / duration) : 0);

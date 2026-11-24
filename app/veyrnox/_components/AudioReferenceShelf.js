@@ -32,12 +32,15 @@ import {
   updateAudioReferenceMetadata,
 } from '../_lib/audioReferenceShelf';
 import { stageVoiceRecipeHandoff, voiceRecipeSummary } from '../_lib/voicePalettes';
+import { useMusicQueue } from './music/MusicQueue';
+import { MusicPrivateAudio } from '../_lib/useMusicAudioSrc';
 
 const purposeLabel = (id) => AUDIO_REFERENCE_PURPOSES.find(([value]) => value === id)?.[1] || 'Audio reference';
 const currentAccount = () => getStoredUserId() || '';
 const serverAccount = () => '';
 
 export function AudioReferenceShelf({ audio, disabled, onUse }) {
+  const queue = useMusicQueue();
   const router = useRouter();
   const accountId = useSyncExternalStore(onSessionChange, currentAccount, serverAccount);
   const [items, setItems] = useState([]);
@@ -292,7 +295,7 @@ export function AudioReferenceShelf({ audio, disabled, onUse }) {
       {comparison.length>0&&<div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Fresh owned audio comparison">{comparison.map((row)=>{
         const item = items.find((candidate)=>candidate.id===row.itemId);
         const selected = Boolean(item&&audio?.jobId===item.jobId);
-        return <article key={row.itemId} className={`rounded-lg border bg-vx-base p-3 ${selected?'border-vx-accent':'border-vx-border'}`}><p className="truncate text-xs font-extrabold text-vx-fg">{row.name}</p>{row.available?<><audio controls preload="metadata" src={row.url} className="mt-2 w-full"/>{row.duration?<div className="mt-2" aria-label="Comparison timing fit"><p className="font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-fg-muted">{durationLabel(row.duration)} · live engine fit</p><div className="mt-1 flex flex-wrap gap-1">{row.engines.map((engine)=><span key={engine.id} className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${engine.fits?'border-vx-accent/40 text-vx-accent':'border-vx-border text-vx-fg-faint'}`}>{engine.fits?'Fits':`Shorten ${durationLabel(engine.overBy)}`} · {engine.label}</span>)}</div></div>:<p className="mt-2 text-[10px] font-bold text-vx-fg-muted">Timing unavailable · server limit still applies</p>}<button type="button" disabled={disabled||Boolean(busy)||selected||!item} onClick={()=>item&&activateReference(item)} className="mt-2 w-full rounded-lg border border-vx-accent px-3 py-2 text-xs font-extrabold text-vx-accent disabled:opacity-45">{selected?'Selected for performance':busy===row.itemId?'Checking duration…':'Use for this performance'}</button></>:<p className="mt-2 text-[11px] leading-4 text-vx-danger">This owned audio is unavailable. Remove it from the board or retry later.</p>}</article>})}</div>}
+        return <article key={row.itemId} className={`rounded-lg border bg-vx-base p-3 ${selected?'border-vx-accent':'border-vx-border'}`}><p className="truncate text-xs font-extrabold text-vx-fg">{row.name}</p>{row.available?<><MusicPrivateAudio controls preload="metadata" src={row.url} className="mt-2 w-full"/>{row.duration?<div className="mt-2" aria-label="Comparison timing fit"><p className="font-vx-mono text-[9px] font-bold uppercase tracking-[0.08em] text-vx-fg-muted">{durationLabel(row.duration)} · live engine fit</p><div className="mt-1 flex flex-wrap gap-1">{row.engines.map((engine)=><span key={engine.id} className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${engine.fits?'border-vx-accent/40 text-vx-accent':'border-vx-border text-vx-fg-faint'}`}>{engine.fits?'Fits':`Shorten ${durationLabel(engine.overBy)}`} · {engine.label}</span>)}</div></div>:<p className="mt-2 text-[10px] font-bold text-vx-fg-muted">Timing unavailable · server limit still applies</p>}<button type="button" disabled={disabled||Boolean(busy)||selected||!item} onClick={()=>item&&activateReference(item)} className="mt-2 w-full rounded-lg border border-vx-accent px-3 py-2 text-xs font-extrabold text-vx-accent disabled:opacity-45">{selected?'Selected for performance':busy===row.itemId?'Checking duration…':'Use for this performance'}</button></>:<p className="mt-2 text-[11px] leading-4 text-vx-danger">This owned audio is unavailable. Remove it from the board or retry later.</p>}</article>})}</div>}
     </section>}
     {items.length>0&&visibleItems.length>0?<ul className="mt-3 space-y-2" aria-label="Saved audio references">
       {visibleItems.map(item=><li key={item.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-vx-border bg-vx-base p-3">
@@ -309,6 +312,7 @@ export function AudioReferenceShelf({ audio, disabled, onUse }) {
           </div>}</>}
         </div>
         <button type="button" disabled={disabled||Boolean(busy)} onClick={()=>activateReference(item)} className="rounded-lg border border-vx-accent px-3 py-2 text-xs font-bold text-vx-accent disabled:opacity-40">{busy===item.id?'Checking…':'Use'}</button>
+        {queue?.ownedEnabled?<button type="button" disabled={disabled} onClick={()=>queue.addOwned({job_id:item.jobId,title:item.name,source:'audio_shelf'})} className="rounded-lg border border-vx-accent px-3 py-2 text-xs font-bold text-vx-accent disabled:opacity-40">Add to listening queue</button>:null}
         <button type="button" aria-pressed={compareIds.includes(item.id)} disabled={disabled||Boolean(busy)||(!compareIds.includes(item.id)&&compareIds.length>=MAX_AUDIO_COMPARISON)} onClick={()=>toggleCompare(item.id)} className="rounded-lg border border-vx-border px-3 py-2 text-xs font-bold text-vx-fg-muted hover:border-vx-accent aria-pressed:border-vx-accent aria-pressed:text-vx-accent disabled:opacity-40">{compareIds.includes(item.id)?'Remove compare':'Compare'}</button>
         {item.voiceRecipe&&<button type="button" disabled={disabled||Boolean(busy)} onClick={()=>reuseVoiceRecipe(item)} className="rounded-lg border border-vx-border px-3 py-2 text-xs font-bold text-vx-fg disabled:opacity-40">Reuse Voice Recipe</button>}
         <button type="button" aria-pressed={pinnedIds.includes(item.id)} disabled={disabled||Boolean(busy)||(!pinnedIds.includes(item.id)&&pinnedIds.length>=MAX_PINNED_AUDIO_REFERENCES)} onClick={()=>toggleCuePin(item.id)} className="rounded-lg border border-vx-border px-3 py-2 text-xs font-bold text-vx-fg-muted hover:border-vx-accent aria-pressed:border-vx-accent aria-pressed:text-vx-accent disabled:opacity-40">{pinnedIds.includes(item.id)?'Unpin cue':'Pin cue'}</button>

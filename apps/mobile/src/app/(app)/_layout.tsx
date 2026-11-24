@@ -22,6 +22,7 @@ import { HardPaywallGate } from '../../components/HardPaywallGate';
 import { paletteForScheme } from '../../theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { needsStackHorizontalSafeArea } from '../../lib/appScreenSafeArea';
+import { PersistentAudioQueueProvider } from '../../components/music/PersistentAudioQueue';
 
 export const unstable_settings = { anchor: '(tabs)' };
 
@@ -45,6 +46,7 @@ export default function AppLayout() {
                 <CheckInModal />
                 <PaywallPrompt />
                 <HardPaywallGate>
+                <PersistentAudioQueueProvider>
                 <Stack
                     screenLayout={({ children, route }) => (
                         <>
@@ -103,6 +105,7 @@ export default function AppLayout() {
                     <Stack.Screen name="publish/post/[id]" options={{ title: t('publish.post') }} />
                     <Stack.Screen name="templates/[id]" options={{ title: t('presets.templates') }} />
                 </Stack>
+                </PersistentAudioQueueProvider>
                 </HardPaywallGate>
                 </AgeConfirmationGate>
             </MfaGate>

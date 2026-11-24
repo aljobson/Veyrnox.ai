@@ -13,9 +13,9 @@ import { MUSIC_RUNTIME_FLAG_NAMES, musicRuntimeFlag } from '../lib/musicRuntime.
 test('the frozen Music parity inventory recomputes the evidence-qualified current score and target', () => {
   const current = calculateMusicParity('current');
   const target = calculateMusicParity('target');
-  assert.deepEqual(current.areas, { creation: 82.5, editing: 72.5, daw: 67.5, library: 75, community: 65, ios: 52.5 });
+  assert.deepEqual(current.areas, { creation: 82.5, editing: 72.5, daw: 67.5, library: 77.5, community: 65, ios: 52.5 });
   assert.deepEqual(target.areas, { creation: 90, editing: 85, daw: 97.5, library: 100, community: 100, ios: 93 });
-  assert.equal(current.total, 71.625);
+  assert.equal(current.total, 72);
   assert.equal(target.total, 93.3);
   assert.equal(Object.values(MUSIC_PARITY_AREA_WEIGHTS).reduce((sum, weight) => sum + weight, 0), 100);
 });
@@ -51,6 +51,14 @@ test('daily challenge credits only the qualified creation outcome until live UI 
   assert.equal(MUSIC_PARITY_ROWS.find(item => item.id === 'create.daily-challenge')?.current, 'qualified');
   assert.equal(MUSIC_PARITY_ROWS.find(item => item.id === 'community.daily-challenge-participation')?.current, 'missing');
   assert.equal(MUSIC_PARITY_ROWS.find(item => item.id === 'community.challenge-discovery-shelf')?.current, 'missing');
+});
+
+test('persistent queue earns only qualification until default-off rollout and web/device proof exist', () => {
+  const row = MUSIC_PARITY_ROWS.find(item => item.id === 'library.account-fenced-audio-queue');
+  assert.equal(row?.current, 'qualified');
+  assert.equal(row?.target, 'shipped');
+  assert.equal(row?.proof, 'storage_account_ui_reticle_device');
+  assert.equal(musicRuntimeFlag('persistentQueue', {}), false);
 });
 
 test('Studio actions earn qualification without claiming rollout, Reticle, simulator, generation or plugins', () => {
