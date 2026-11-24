@@ -173,6 +173,7 @@ export const WEB_INVENTORY_EXCLUSIONS: readonly WebInventoryExclusion[] = [
     { webHref: '/social/review/[token]', reason: 'Token-entry public review flow, not a signed-in destination.' },
     { webHref: '/social/team/invite/[token]', reason: 'Token-entry invitation flow, not a signed-in destination.' },
     { webHref: '/design-system', reason: 'Internal design-system reference.' },
+    { webHref: '/editors', reason: 'Public marketing overview of the Video Editor, Audio Editor and Smart Cut. It only links into signed-in screens that already have native routes (Library, Music, Smart Cut).' },
     { webHref: '/listen/[token]', reason: 'Public token audio player.' },
     { webHref: '/oauth/consent', reason: 'OAuth authorization hand-off remains a system web flow.' },
     { webHref: '/m', reason: 'Legacy mobile web client superseded by the native app.' },
