@@ -13,25 +13,27 @@ const join = (...parts: string[]): string => (require('path') as { join: (...p: 
 const root = join(__dirname, '..');
 const repo = join(root, '..', '..');
 
-function readMcpMusicCopy(path: string): { MCP_MUSIC_COPY: Record<string, string>; mcpMusicCurrent: (locale: string) => Record<string, string> } {
-    const source = readFileSync(path, 'utf8')
-        .replace(/^export const /gm, 'const ')
-        .replace(/^export function /gm, 'function ');
-    return new Function(`${source}\nreturn { MCP_MUSIC_COPY, mcpMusicCurrent };`)() as {
-        MCP_MUSIC_COPY: Record<string, string>; mcpMusicCurrent: (locale: string) => Record<string, string>;
-    };
-}
+const dirname = (path: string): string => (require('path') as { dirname: (p: string) => string }).dirname(path);
 
-// The public catalogs are data-only modules. Music MCP copy is shared through one data-only import;
-// scripts/sync-web-i18n.mjs evaluates the same import without loading app/runtime code.
+// The public site's catalog files are `export default { ... }` modules, optionally after data-only helper imports
+// (`import { A, b as c } from '../x.mjs'`, as the shared Music MCP copy). The Publish composer's shared strings live in the
+// signed-in app area; scripts/sync-web-i18n.mjs reads the same catalog files in the same order, with the same rules.
 function readModule(path: string): Record<string, string> {
-    const raw = readFileSync(path, 'utf8');
-    const sharedImport = /^import \{\s*MCP_MUSIC_COPY(?:,\s*mcpMusicCurrent)?\s*\} from '\.\.\/mcpMusicCopy\.mjs';\r?\n/m;
-    const shared = sharedImport.test(raw)
-        ? readMcpMusicCopy(join(repo, 'lib', 'i18n', 'mcpMusicCopy.mjs'))
-        : { MCP_MUSIC_COPY: {}, mcpMusicCurrent: () => ({}) };
-    const text = raw.replace(sharedImport, '').replace(/^export default\s+/m, 'return ');
-    return new Function('MCP_MUSIC_COPY', 'mcpMusicCurrent', text)(shared.MCP_MUSIC_COPY, shared.mcpMusicCurrent) as Record<string, string>;
+    const names: string[] = [];
+    const values: unknown[] = [];
+    const source = readFileSync(path, 'utf8').replace(/^import\s*\{([^}]*)\}\s*from\s*'(\.{1,2}\/[^']+\.mjs)';[ \t]*\r?\n?/gm, (_match: string, list: string, spec: string) => {
+        const body = readFileSync(join(dirname(path), spec), 'utf8');
+        const exported = [...body.matchAll(/^export (?:const|function) (\w+)/gm)].map((m) => m[1]);
+        const helper = new Function(`${body.replace(/^export (?=const|function)/gm, '')}\nreturn { ${exported.join(', ')} };`)() as Record<string, unknown>;
+        for (const part of list.split(',').map((entry) => entry.trim()).filter(Boolean)) {
+            const found = part.match(/^(\w+)(?:\s+as\s+(\w+))?$/);
+            if (!found || !(found[1] in helper)) throw new Error(`${path}: cannot bind "${part}"`);
+            names.push(found[2] ?? found[1]);
+            values.push(helper[found[1]]);
+        }
+        return '';
+    });
+    return new Function(...names, source.replace(/^export default\s+/m, 'return '))(...values) as Record<string, string>;
 }
 function readWebCatalog(code: string): Record<string, string> {
     return {
